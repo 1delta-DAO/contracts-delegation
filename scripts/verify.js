@@ -6,10 +6,22 @@
 
 
 // goerli
-module.exports = [
-  '0x10E38dFfFCfdBaaf590D5A9958B01C9cfcF6A63B', // owner
-  "0xefC2640C978cC5B695815E4B69245943d5e6dcE4", // config
-];
+// module.exports = [
+//   '0x10E38dFfFCfdBaaf590D5A9958B01C9cfcF6A63B', // owner
+//   "0xefC2640C978cC5B695815E4B69245943d5e6dcE4", // config
+// ];
+
+  // polygon
+  // module.exports = [
+  //   '0x999999833d965c275A2C102a4Ebf222ca938546f', // owner
+  //   "0xb92028D62D69a24Fc2A52Fe29CD21432Dd0504a5", // config
+  // ];
+
+  // inp with factory
+  module.exports = [
+    '0x1F98431c8aD98523631AE4a59f267346ea31F984', // uni factory
+    '0x794a61358D6845594F94dc1DB02A252b5b4814aD', // aave pool
+  ];
 
     // mumbai
     // npx hardhat verify --network mumbai 0xE0d077f7C0d87909A939160EDae002cC9f33168f --contract contracts/1delta/modules/aave/AAVEMarginTraderModule.sol:AAVEMarginTraderModule
@@ -27,6 +39,12 @@ module.exports = [
     // npx hardhat verify --network goerli 0xaDDeA1f13e5F8AE790483D14c2bb2d18C40d613b --contract contracts/1delta/modules/aave/UniswapV3SwapCallbackModule.sol:UniswapV3SwapCallbackModule
 
 
+   // matic
+    // npx hardhat verify --network matic 0xf655538718435f7981098821bE19fcE98477007b --contract contracts/1delta/modules/comet/CometMarginTraderModule.sol:CometMarginTraderModule --constructor-args scripts/comet/verify.js
+    // npx hardhat verify --network matic 0xFA9f51D2521515C68B67f5638FF764b74980D7Cc --contract contracts/1delta/modules/comet/CometMoneyMarketModule.sol:CometMoneyMarketModule  --constructor-args scripts/comet/verify.js
+    // npx hardhat verify --network matic 0x04555b0B7367315cdaDe1E1889FA4FCdd27b66D6 --contract contracts/1delta/proxy/DeltaBroker.sol:DeltaBrokerProxy --constructor-args scripts/comet/verify.js
+    // npx hardhat verify --network matic 0xaEc49340f7914511eD6D1F8EA8F081647730C74f --contract contracts/1delta/modules/comet/CometSweeperModule.sol:CometSweeperModule --constructor-args scripts/comet/verify.js
+    // npx hardhat verify --network matic 0x42951aD7Bf54a20E43372dDF5A65BbA7813E19f3 --contract contracts/1delta/modules/aave/UniswapV3SwapCallbackModule.sol:UniswapV3SwapCallbackModule --constructor-args scripts/verify.js
 
 
     // mumbai comet lens

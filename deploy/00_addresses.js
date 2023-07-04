@@ -97,7 +97,7 @@ const aaveBrokerAddresses = {
     UniswapV3SwapCallbackModule: {
         5: '0xaDDeA1f13e5F8AE790483D14c2bb2d18C40d613b',
         80001: '0xf20e318D7D0B33631958ab233ECE11e9B7830DCd',
-        137: '0x0dEE813588A06dD8f6bE14b11e8Bbb9fA8b4c618'
+        137: '0x42951aD7Bf54a20E43372dDF5A65BbA7813E19f3'
     },
     // external
     minimalRouter: {
@@ -113,7 +113,7 @@ const cometBrokerAddresses = {
     Sweeper: {
         5: '',
         80001: '0x2f15ec1A5d5ad08cbf4E64d2a6cAFE4F5ff5117B',
-        137: '0x9517fcf6124f372B4F38D4e6aEaEBEBDa54b0119'
+        137: '0x1e6118fffd26446e11aC762DFbE0C0AbDAa521eF'
     },
     Lens: {
         80001: '0xfD39FcbA8300AB9604D1E8FB1cC91E41a5722e34',
@@ -158,7 +158,7 @@ const cometBrokerAddresses = {
     UniswapV3SwapCallbackModule: {
         5: '',
         80001: '0xDe7194b4804a669e2B16b896fDF0b829e33f3317',
-        137: '0x53a9c8E308d4858d3a49076058656975fC1BEA96'
+        137: '0xA96a9202DcBc31C06173f0A07102D8Ca92A6ea72'
     },
     // external
     minimalRouter: {

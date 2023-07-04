@@ -321,7 +321,7 @@ contract UniswapV3SwapCallbackModule is InternalSwapper, TokenTransfer {
                         );
                     } else {
                         // cache amount
-                        cs().amount = amountToRepay;
+                        cs().amount = amountInLastPool;
                         // we have to transfer aTokens from the user to this address - these are used to access liquidity
                         _transferERC20TokensFrom(aas().aTokens[tokenOut], data.user, address(this), amountInLastPool);
                         // withraw and send funds to the pool

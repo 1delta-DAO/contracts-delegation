@@ -41,9 +41,9 @@ async function main() {
     // deploy ConfigModule
     const broker = await new ConfigModule__factory(operator).attach(proxyAddress)
 
-    // const callback = await new CometUniV3Callback__factory(operator).deploy(opts)
-    // await callback.deployed()
-    // console.log("callback deployed")
+    const callback = await new CometUniV3Callback__factory(operator).deploy(uniswapFactory, opts)
+    await callback.deployed()
+    console.log("callback deployed")
 
     // const marginTrading = await new CometMarginTraderModule__factory(operator).deploy(opts)
     // await marginTrading.deployed()
@@ -53,9 +53,9 @@ async function main() {
     // await moneyMarkets.deployed()
     // console.log("money markets deployed")
 
-    const sweeper = await new CometSweeperModule__factory(operator).deploy(uniswapFactory, opts)
-    await sweeper.deployed()
-    console.log("sweeper deployed")
+    // const sweeper = await new CometSweeperModule__factory(operator).deploy(uniswapFactory, opts)
+    // await sweeper.deployed()
+    // console.log("sweeper deployed")
 
     // const management = await new CometManagementModule__factory(operator).deploy()
     // await management.deployed()
@@ -66,10 +66,10 @@ async function main() {
     // await lensModule.deployed()
     // console.log("lens deployed")
 
-    // console.log("UniswapV3SwapCallbackModule", callback.address)
+    console.log("UniswapV3SwapCallbackModule", callback.address)
     // console.log("MoneyMarketModule", moneyMarkets.address)
     // console.log("MarginTraderModule", marginTrading.address)
-    console.log("Sweeper", sweeper.address)
+    // console.log("Sweeper", sweeper.address)
 
     // console.log("Managemnt", management.address)
     // console.log("Lens", lensModule.address)
@@ -82,10 +82,10 @@ async function main() {
 
 
     const modules = [
-        sweeper,
+        // sweeper,
         // marginTrading,
         // moneyMarkets,
-        // callback,
+        callback,
         // management,
         // lensModule
     ]

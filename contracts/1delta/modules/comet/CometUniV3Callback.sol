@@ -229,7 +229,7 @@ contract CometUniV3Callback is InternalSwapperComet {
                         );
                     } else {
                         // cache amount
-                        cs().amount = amountToRepay;
+                        cs().amount = amountInLastPool;
                         // withraw and send funds to the pool
                         comet.withdrawFrom(data.user, msg.sender, tokenOut, amountInLastPool);
                     }
