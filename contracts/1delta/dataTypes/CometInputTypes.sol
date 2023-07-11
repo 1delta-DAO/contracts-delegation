@@ -43,13 +43,6 @@ struct ExactInputCollateralMultiParams {
     uint8 cometId;
 }
 
-
-struct ExactInputNativeCollateralMultiParams {
-    bytes path;
-    uint256 amountOutMinimum;
-    uint8 cometId;
-}
-
 struct ExactInputMoneyMarketMultiParams {
     bytes path;
     uint256 amountIn;

@@ -52,7 +52,7 @@ const aaveBrokerAddresses = {
     Sweeper: {
         80001: '0xA83129791403c490FaA787FB0A1f03322256DE7D',
         5: '0x687cb2dF3461A8ddA00ef5f3608bA8a091c8144e',
-        137: '0xc08BFef7E778f3519D79E96780b77066F5d4FCC0'
+        137: '0xa2E5C6694248301218bf8A517806C119f88ab993'
     },
     Lens: {
         80001: '0x45B1B6518ABaD20Eb911DE794Eef5F852cF08d7C',
@@ -92,7 +92,7 @@ const aaveBrokerAddresses = {
     MoneyMarketModule: {
         5: '0xc9ea6d976ee5280B777a0c74B986CF3B7CB31f0c',
         80001: '0xAA71A440e4ea9Bd108e06b556A16C60c610aFdf9',
-        137: '0x554E97c885F92F091b08c03AfB24eEBdf8a720f7'
+        137: '0x3a69cdd907b3AfD649bb4D636E31d21A3FFF797f'
     },
     UniswapV3SwapCallbackModule: {
         5: '0xaDDeA1f13e5F8AE790483D14c2bb2d18C40d613b',
@@ -113,7 +113,7 @@ const cometBrokerAddresses = {
     Sweeper: {
         5: '',
         80001: '0x2f15ec1A5d5ad08cbf4E64d2a6cAFE4F5ff5117B',
-        137: '0x1e6118fffd26446e11aC762DFbE0C0AbDAa521eF'
+        137: '0x5763e18f9CfB220d1b23f89701142Fdd18C1f223'
     },
     Lens: {
         80001: '0xfD39FcbA8300AB9604D1E8FB1cC91E41a5722e34',
@@ -153,7 +153,7 @@ const cometBrokerAddresses = {
     MoneyMarketModule: {
         5: '',
         80001: '0xCe9A6D29d57c409881ea284b457e97e3b7F77231',
-        137: '0xFA9f51D2521515C68B67f5638FF764b74980D7Cc'
+        137: '0xF443a1F74e9eeEa693743ed23a85279fef279187'
     },
     UniswapV3SwapCallbackModule: {
         5: '',

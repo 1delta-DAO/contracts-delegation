@@ -126,7 +126,7 @@ contract CometSweeperModule is InternalSwapperComet {
     function swapETHAndRepayAllOut(AllOutputMultiParamsBase calldata params) external payable returns (uint256 amountIn) {
         INativeWrapper _weth = INativeWrapper(us().weth);
         address comet = cos().comet[params.cometId];
-        uint256 amountReceived = msg.value;
+        uint256 amountReceived = params.amountInMaximum;
         _weth.deposit{value: amountReceived}();
         (address tokenOut, address tokenIn, uint24 fee) = params.path.decodeFirstPool();
 

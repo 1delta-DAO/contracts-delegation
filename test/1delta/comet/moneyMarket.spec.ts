@@ -479,7 +479,7 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
 
     it('allows withdraw and swap all in', async () => {
 
-        const originIndex = "USDC"
+        const originIndex = "WMATIC"
         const targetIndex = "DAI"
         const supplied = expandTo18Decimals(100)
 
@@ -518,7 +518,7 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
 
     it('allows withdraw and swap all in to ETH', async () => {
 
-        const originIndex = "USDC"
+        const originIndex = "WMATIC"
         const targetIndex = "WETH"
         const supplied = expandTo18Decimals(1)
 

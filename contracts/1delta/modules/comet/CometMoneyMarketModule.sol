@@ -6,10 +6,10 @@ import {
     MarginSwapParamsMultiExactOut,
     StandaloneExactInputUniswapParams,
     ExactInputCollateralMultiParams,
-    ExactInputNativeCollateralMultiParams,
     ExactOutputCollateralMultiParams,
     ExactInputMoneyMarketMultiParams,
-    ExactOutputMoneyMarketMultiParams
+    ExactOutputMoneyMarketMultiParams,
+    ExactInputMultiParams
     } from "../../dataTypes/CometInputTypes.sol";
 import {IERC20} from "../../../interfaces/IERC20.sol";
 import {IPool} from "../../interfaces/IAAVEV3Pool.sol";
@@ -75,9 +75,9 @@ contract CometMoneyMarketModule is InternalSwapperComet {
         IComet(cos().comet[params.cometId]).supplyTo(msg.sender, params.path.getLastToken(), amountToSupply);
     }
 
-    function swapETHAndSupplyExactIn(ExactInputNativeCollateralMultiParams calldata params) external payable {
+    function swapETHAndSupplyExactIn(ExactInputCollateralMultiParams calldata params) external payable {
         INativeWrapper _weth = INativeWrapper(us().weth);
-        uint256 amountIn = msg.value;
+        uint256 amountIn = params.amountIn;
         // wrap eth
         _weth.deposit{value: amountIn}();
         // swap to self
@@ -117,7 +117,7 @@ contract CometMoneyMarketModule is InternalSwapperComet {
 
     function swapETHAndSupplyExactOut(ExactOutputCollateralMultiParams calldata params) external payable returns (uint256 amountIn) {
         INativeWrapper _weth = INativeWrapper(us().weth);
-        uint256 amountReceived = msg.value;
+        uint256 amountReceived = params.amountInMaximum;
         uint256 amountOut = params.amountOut;
         _weth.deposit{value: amountReceived}();
 
@@ -305,9 +305,9 @@ contract CometMoneyMarketModule is InternalSwapperComet {
         IComet(cos().comet[params.cometId]).supplyTo(msg.sender, params.path.getLastToken(), amountOut);
     }
 
-    function swapETHAndRepayExactIn(ExactInputNativeCollateralMultiParams calldata params) external payable returns (uint256 amountOut) {
+    function swapETHAndRepayExactIn(ExactInputMultiParams calldata params) external payable returns (uint256 amountOut) {
         INativeWrapper _weth = INativeWrapper(us().weth);
-        uint256 amountIn = msg.value;
+        uint256 amountIn = params.amountIn;
         // wrap eth
         _weth.deposit{value: amountIn}();
         // swap to self
@@ -347,7 +347,7 @@ contract CometMoneyMarketModule is InternalSwapperComet {
 
     function swapETHAndRepayExactOut(ExactOutputCollateralMultiParams calldata params) external payable returns (uint256 amountIn) {
         INativeWrapper _weth = INativeWrapper(us().weth);
-        uint256 amountReceived = msg.value;
+        uint256 amountReceived = params.amountInMaximum;
         _weth.deposit{value: amountReceived}();
 
         MarginCallbackData memory data = MarginCallbackData({

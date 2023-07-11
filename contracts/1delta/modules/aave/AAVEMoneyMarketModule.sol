@@ -4,13 +4,13 @@ pragma solidity ^0.8.20;
 
 import {
     MarginSwapParamsMultiExactOut,
-    CollateralParamsNativeInExactOut,
     CollateralParamsMultiExactIn,
+    CollateralParamsMultiExactOut,
+    ExactOutputCollateralMultiParams,
     CollateralWithdrawParamsMultiExactIn,
     CollateralParamsMultiNativeExactIn,
     MoneyMarketParamsMultiExactIn,
-    AllInputMultiParamsBase,
-    MarginSwapParamsNativeInExactOut
+    ExactInputMultiParams
     } from "../../dataTypes/InputTypes.sol";
 import {TokenTransfer} from "./../../libraries/TokenTransfer.sol";
 import {IERC20} from "../../../interfaces/IERC20.sol";
@@ -116,9 +116,9 @@ contract AAVEMoneyMarketModule is InternalSwapper, TokenTransfer {
         _aavePool.supply(params.path.getLastToken(), amountToSupply, msg.sender, 0);
     }
 
-    function swapETHAndSupplyExactIn(CollateralParamsMultiNativeExactIn calldata params) external payable {
+    function swapETHAndSupplyExactIn(CollateralParamsMultiExactIn calldata params) external payable {
         INativeWrapper _weth = INativeWrapper(us().weth);
-        uint256 amountIn = msg.value;
+        uint256 amountIn = params.amountIn;
         // wrap eth
         _weth.deposit{value: amountIn}();
         // swap to self
@@ -128,7 +128,7 @@ contract AAVEMoneyMarketModule is InternalSwapper, TokenTransfer {
         _aavePool.supply(params.path.getLastToken(), amountToSupply, msg.sender, 0);
     }
 
-    function swapAndSupplyExactOut(MarginSwapParamsMultiExactOut calldata params) external payable returns (uint256 amountIn) {
+    function swapAndSupplyExactOut(ExactOutputCollateralMultiParams calldata params) external payable returns (uint256 amountIn) {
         (address tokenOut, address tokenIn, uint24 fee) = params.path.decodeFirstPool();
         uint256 amountOut = params.amountOut;
         MarginCallbackData memory data = MarginCallbackData({
@@ -156,9 +156,12 @@ contract AAVEMoneyMarketModule is InternalSwapper, TokenTransfer {
         _aavePool.supply(tokenOut, amountOut, msg.sender, 0);
     }
 
-    function swapETHAndSupplyExactOut(CollateralParamsNativeInExactOut calldata params) external payable returns (uint256 amountIn) {
+    // for this function it has to be made sure that the input amount matches the ETH amount sent
+    // to enable this function in multicalls, one can still just send the total ETH amount in advance,
+    // and then multicall this function
+    function swapETHAndSupplyExactOut(CollateralParamsMultiExactOut calldata params) external payable returns (uint256 amountIn) {
         INativeWrapper _weth = INativeWrapper(us().weth);
-        uint256 amountReceived = msg.value;
+        uint256 amountReceived = params.amountInMaximum;
         uint256 amountOut = params.amountOut;
         _weth.deposit{value: amountReceived}();
 
@@ -200,7 +203,7 @@ contract AAVEMoneyMarketModule is InternalSwapper, TokenTransfer {
         // the withdrawal amount can deviate
         amountOut = exactInputToSelf(actuallyWithdrawn, params.path);
         require(amountOut >= params.amountOutMinimum, "Received too little");
-        IERC20(params.path.getLastToken()).transfer(params.recipient, amountOut);
+        _transferERC20Tokens(params.path.getLastToken(), params.recipient, amountOut);
     }
 
     function withdrawAndSwapExactInToETH(CollateralWithdrawParamsMultiExactIn memory params) external returns (uint256 amountOut) {
@@ -215,12 +218,12 @@ contract AAVEMoneyMarketModule is InternalSwapper, TokenTransfer {
         payable(params.recipient).transfer(amountOut);
     }
 
-    function withdrawAndSwapExactOut(MarginSwapParamsMultiExactOut calldata params) external payable returns (uint256 amountIn) {
+    function withdrawAndSwapExactOut(CollateralParamsMultiExactOut calldata params) external payable returns (uint256 amountIn) {
         (address tokenOut, address tokenIn, uint24 fee) = params.path.decodeFirstPool();
         MarginCallbackData memory data = MarginCallbackData({
             path: params.path,
             tradeType: 14,
-            interestRateMode: params.interestRateMode,
+            interestRateMode: 0,
             user: msg.sender,
             exactIn: false
         });
@@ -239,13 +242,13 @@ contract AAVEMoneyMarketModule is InternalSwapper, TokenTransfer {
         require(params.amountInMaximum >= amountIn, "Had to withdraw too much");
     }
 
-    function withdrawAndSwapExactOutToETH(MarginSwapParamsMultiExactOut calldata params) external returns (uint256 amountIn) {
+    function withdrawAndSwapExactOutToETH(CollateralParamsMultiExactOut calldata params) external returns (uint256 amountIn) {
         (address tokenOut, address tokenIn, uint24 fee) = params.path.decodeFirstPool();
         uint256 amountOut = params.amountOut;
         MarginCallbackData memory data = MarginCallbackData({
             path: params.path,
             tradeType: 14,
-            interestRateMode: params.interestRateMode,
+            interestRateMode: 0,
             user: msg.sender,
             exactIn: false
         });
@@ -326,7 +329,7 @@ contract AAVEMoneyMarketModule is InternalSwapper, TokenTransfer {
         _toPool(tokenIn, fee, tokenOut).swap(
             address(this),
             zeroForOne,
-            -params.amountOut.toInt256(),
+            -amountOut.toInt256(),
             zeroForOne ? MIN_SQRT_RATIO : MAX_SQRT_RATIO,
             abi.encode(data)
         );
@@ -349,9 +352,9 @@ contract AAVEMoneyMarketModule is InternalSwapper, TokenTransfer {
         amountOut = _aavePool.repay(params.path.getLastToken(), amountOut, params.interestRateMode, msg.sender);
     }
 
-    function swapETHAndRepayExactIn(AllInputMultiParamsBase calldata params) external payable returns (uint256 amountOut) {
+    function swapETHAndRepayExactIn(ExactInputMultiParams calldata params) external payable returns (uint256 amountOut) {
         INativeWrapper _weth = INativeWrapper(us().weth);
-        uint256 amountIn = msg.value;
+        uint256 amountIn = params.amountIn;
         // wrap eth
         _weth.deposit{value: amountIn}();
         // swap to self
@@ -388,9 +391,9 @@ contract AAVEMoneyMarketModule is InternalSwapper, TokenTransfer {
         _aavePool.repay(tokenOut, amountOut, params.interestRateMode, msg.sender);
     }
 
-    function swapETHAndRepayExactOut(MarginSwapParamsNativeInExactOut calldata params) external payable returns (uint256 amountIn) {
+    function swapETHAndRepayExactOut(MarginSwapParamsMultiExactOut calldata params) external payable returns (uint256 amountIn) {
         INativeWrapper _weth = INativeWrapper(us().weth);
-        uint256 amountReceived = msg.value;
+        uint256 amountReceived = params.amountInMaximum;
         _weth.deposit{value: amountReceived}();
 
         MarginCallbackData memory data = MarginCallbackData({

@@ -43,17 +43,17 @@ async function main() {
     // deploy ConfigModule
     const broker = await new ConfigModule__factory(operator).attach(proxyAddress)
 
-    const callback = await new UniswapV3SwapCallbackModule__factory(operator).deploy(uniswapFactory, aavePool, opts)
-    await callback.deployed()
-    console.log("callback deployed")
+    // const callback = await new UniswapV3SwapCallbackModule__factory(operator).deploy(uniswapFactory, aavePool, opts)
+    // await callback.deployed()
+    // console.log("callback deployed")
 
     // const marginTrading = await new AAVEMarginTraderModule__factory(operator).deploy(uniswapFactory, opts)
     // await marginTrading.deployed()
     // console.log("margin trading deployed")
 
-    // const moneyMarkets = await new AAVEMoneyMarketModule__factory(operator).deploy(uniswapFactory, aavePool)
-    // await moneyMarkets.deployed()
-    // console.log("money markets deployed")
+    const moneyMarkets = await new AAVEMoneyMarketModule__factory(operator).deploy(uniswapFactory, aavePool)
+    await moneyMarkets.deployed()
+    console.log("money markets deployed")
 
     // const sweeper = await new AAVESweeperModule__factory(operator).deploy(uniswapFactory, aavePool, opts)
     // await sweeper.deployed()
@@ -68,9 +68,9 @@ async function main() {
     // await balancerFlashModule.deployed()
     // console.log("balancerFlashModule deployed")
 
-    const aaveFlashModule = await new AAVEFlashModule__factory(operator).deploy(aavePool)
-    await aaveFlashModule.deployed()
-    console.log("aaveFlashModule deployed")
+    // const aaveFlashModule = await new AAVEFlashModule__factory(operator).deploy(aavePool)
+    // await aaveFlashModule.deployed()
+    // console.log("aaveFlashModule deployed")
 
     // const lensModule = await new LensModule__factory(operator).deploy(opts)
     // await lensModule.deployed()
@@ -78,8 +78,8 @@ async function main() {
 
     // console.log("BrokerModuleBalancer", balancerFlashModule.address)
     // console.log("BrokerModulAave", aaveFlashModule.address)
-    console.log("UniswapV3SwapCallbackModule", callback.address)
-    // console.log("MoneyMarketModule", moneyMarkets.address)
+    // console.log("UniswapV3SwapCallbackModule", callback.address)
+    console.log("MoneyMarketModule", moneyMarkets.address)
     // console.log("MarginTraderModule", marginTrading.address)
     // console.log("Sweeper", sweeper.address)
 
@@ -98,8 +98,8 @@ async function main() {
         // aaveFlashModule,
         // sweeper,
         // marginTrading,
-        // moneyMarkets,
-        callback,
+        moneyMarkets,
+        // callback,
         // lensModule,
         // management
     ]

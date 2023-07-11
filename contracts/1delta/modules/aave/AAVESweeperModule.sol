@@ -7,7 +7,8 @@ import {
     AllOutputMultiParamsBase,
     AllInputCollateralMultiParamsBase,
     ExactOutputMultiParams,
-    AllInputCollateralMultiParamsBaseWithRecipient
+    AllInputCollateralMultiParamsBaseWithRecipient,
+    MarginSwapParamsMultiExactOut
     } from "../../dataTypes/InputTypes.sol";
 import {TokenTransfer} from "./../../libraries/TokenTransfer.sol";
 import {IERC20} from "../../../interfaces/IERC20.sol";
@@ -77,7 +78,6 @@ contract AAVESweeperModule is InternalSwapper, TokenTransfer {
 
         INativeWrapper(us().weth).withdraw(amountOut);
         payable(params.recipient).transfer(amountOut);
-        require(amountOut >= params.amountOutMinimum, "Received too little");
     }
 
     function swapAndRepayAllOut(AllOutputMultiParamsBase calldata params) external returns (uint256 amountIn) {
@@ -111,7 +111,7 @@ contract AAVESweeperModule is InternalSwapper, TokenTransfer {
     // amountOut will be ignored and replaced with the target maximum repay amount
     function swapETHAndRepayAllOut(AllOutputMultiParamsBase calldata params) external payable returns (uint256 amountIn) {
         INativeWrapper _weth = INativeWrapper(us().weth);
-        uint256 amountReceived = msg.value;
+        uint256 amountReceived = params.amountInMaximum;
         _weth.deposit{value: amountReceived}();
         (address tokenOut, address tokenIn, uint24 fee) = params.path.decodeFirstPool();
         uint8 interestMode = params.interestRateMode;

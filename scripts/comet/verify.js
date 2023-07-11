@@ -32,9 +32,9 @@
 
    // matic
     // npx hardhat verify --network matic 0xf655538718435f7981098821bE19fcE98477007b --contract contracts/1delta/modules/comet/CometMarginTraderModule.sol:CometMarginTraderModule --constructor-args scripts/comet/verify.js
-    // npx hardhat verify --network matic 0xFA9f51D2521515C68B67f5638FF764b74980D7Cc --contract contracts/1delta/modules/comet/CometMoneyMarketModule.sol:CometMoneyMarketModule  --constructor-args scripts/comet/verify.js
+    // npx hardhat verify --network matic 0xF443a1F74e9eeEa693743ed23a85279fef279187 --contract contracts/1delta/modules/comet/CometMoneyMarketModule.sol:CometMoneyMarketModule  --constructor-args scripts/comet/verify.js
     // npx hardhat verify --network matic 0x04555b0B7367315cdaDe1E1889FA4FCdd27b66D6 --contract contracts/1delta/proxy/DeltaBroker.sol:DeltaBrokerProxy --constructor-args scripts/comet/verify.js
-    // npx hardhat verify --network matic 0x1e6118fffd26446e11aC762DFbE0C0AbDAa521eF --contract contracts/1delta/modules/comet/CometSweeperModule.sol:CometSweeperModule --constructor-args scripts/comet/verify.js
+    // npx hardhat verify --network matic 0x5763e18f9CfB220d1b23f89701142Fdd18C1f223 --contract contracts/1delta/modules/comet/CometSweeperModule.sol:CometSweeperModule --constructor-args scripts/comet/verify.js
     // npx hardhat verify --network matic 0x53a9c8E308d4858d3a49076058656975fC1BEA96 --contract contracts/1delta/modules/comet/CometUniV3Callback.sol:CometUniV3Callback --constructor-args scripts/comet/verify.js
 
 

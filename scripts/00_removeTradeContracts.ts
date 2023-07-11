@@ -53,15 +53,15 @@ async function main() {
 
     const callbackSelectors = await lens.moduleFunctionSelectors(callbackAddress)
     // const marginTradingSelectors = await lens.moduleFunctionSelectors(marginTradingAddress)
-    // const moneyMarketSelectors = await lens.moduleFunctionSelectors(moneyMarketAddress)
+    const moneyMarketSelectors = await lens.moduleFunctionSelectors(moneyMarketAddress)
     const managementSelectors = await lens.moduleFunctionSelectors(managementAddress)
     const sweeperSelectors = await lens.moduleFunctionSelectors(sweeperAddress)
     const aaveFlashSelectors = await lens.moduleFunctionSelectors(aaveFlashModuleAddress)
     const balancerFlashSelectors = await lens.moduleFunctionSelectors(balancerFlashAddress)
     const moduleSelectors = [
-        callbackSelectors,
+        // callbackSelectors,
         // marginTradingSelectors,
-        // moneyMarketSelectors,
+        moneyMarketSelectors,
         // sweeperSelectors
         // aaveFlashSelectors,
         // balancerFlashSelectors,

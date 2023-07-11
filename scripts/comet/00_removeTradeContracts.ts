@@ -54,10 +54,10 @@ async function main() {
     const moneyMarketSelectors = await lens.moduleFunctionSelectors(moneyMarketAddress)
     const sweeperSelectors = await lens.moduleFunctionSelectors(sweeperAddress)
     const moduleSelectors = [
-        callbackSelectors,
+        // callbackSelectors,
         // marginTradingSelectors,
-        // sweeperSelectors,
-        // moneyMarketSelectors,
+        sweeperSelectors,
+        moneyMarketSelectors,
         // managementSelectors,
     ]
 

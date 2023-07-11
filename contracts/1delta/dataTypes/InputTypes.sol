@@ -43,6 +43,12 @@ struct ExactInputCollateralMultiParams {
     uint256 amountOutMinimum;
 }
 
+struct ExactOutputCollateralMultiParams {
+    bytes path;
+    uint256 amountOut;
+    uint256 amountInMaximum;
+}
+
 struct ExactInputMultiParams {
     bytes path;
     uint256 amountIn;
@@ -108,7 +114,6 @@ struct CollateralParamsNativeInExactOut {
     bytes path;
     uint256 amountOut;
 }
-
 
 struct CollateralParamsMultiExactOut {
     bytes path;
