@@ -18,10 +18,18 @@
   // ];
 
   // inp with factory
+  // module.exports = [
+  //   '0x1F98431c8aD98523631AE4a59f267346ea31F984', // uni factory
+  //   '0x794a61358D6845594F94dc1DB02A252b5b4814aD', // aave pool
+  // ];
+
+  // flash modules
   module.exports = [
-    '0x1F98431c8aD98523631AE4a59f267346ea31F984', // uni factory
     '0x794a61358D6845594F94dc1DB02A252b5b4814aD', // aave pool
+    '0xBA12222222228d8Ba445958a75a0704d566BF2C8'// balancer
   ];
+  // npx hardhat verify --network matic 0x3011271f49E0eA9D481cf0c0a6d343b458107F4c --contract contracts/1delta/modules/aave/AAVEFlashModule.sol:AAVEFlashModule --constructor-args scripts/verify.js
+// npx hardhat verify --network matic 0xD4F433941EC1A1e8878a9A13cfd9afea0a34509C --contract contracts/1delta/modules/aave/BalancerFlashModule.sol:BalancerFlashModule --constructor-args scripts/verify.js
 
     // mumbai
     // npx hardhat verify --network mumbai 0xE0d077f7C0d87909A939160EDae002cC9f33168f --contract contracts/1delta/modules/aave/AAVEMarginTraderModule.sol:AAVEMarginTraderModule
