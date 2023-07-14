@@ -365,7 +365,7 @@ export const addressesAaveVTokens: { [key: string]: { [chainId: number]: string 
         137: '0x18248226C16BF76c032817854E7C83a2113B4f06',
     },
     MATICX: {
-        137: '0x18248226C16BF76c032817854E7C83a2113B4f06',
+        137: '0xB5b46F918C2923fC7f26DB76e8a6A6e9C4347Cf9',
     },
     STMATIC: {
         137: '0x18248226C16BF76c032817854E7C83a2113B4f06',
