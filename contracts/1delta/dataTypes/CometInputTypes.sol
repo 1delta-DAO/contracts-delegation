@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.21;
 
 // instead of an enum, we use uint8 to pack the trade type together with user and cometId for a single slot
 // the tradeType maps according to the following struct

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity 0.8.20;
+pragma solidity 0.8.21;
 
 import {MarginCallbackData} from "../../dataTypes/InputTypes.sol";
 import "../../../external-protocols/uniswapV2/core/interfaces/IUniswapV2Pair.sol";
