@@ -28,7 +28,9 @@ import {
     BalancerFlashModule__factory,
     BalancerFlashModule,
     AAVEFlashModule__factory,
-    AAVEFlashModule
+    AAVEFlashModule,
+    AaveUniswapV2Callback,
+    AaveUniswapV2Callback__factory
 } from "../../../types";
 import { ModuleConfigAction, getSelectors } from "../../diamond/libraries/diamond";
 import { AAVEFixture } from "./aaveFixture";
@@ -36,6 +38,7 @@ import { UniswapFixtureNoTokens, UniswapMinimalFixtureNoTokens } from "./uniswap
 import MoneyMarketArtifact from "../../../artifacts/contracts/1delta/modules/aave/AAVEMoneyMarketModule.sol/AAVEMoneyMarketModule.json"
 import SweeperArtifact from "../../../artifacts/contracts/1delta/modules/aave/AAVESweeperModule.sol/AAVESweeperModule.json"
 import MarginTraderArtifact from "../../../artifacts/contracts/1delta/modules/aave/AAVEMarginTraderModule.sol/AAVEMarginTraderModule.json"
+import AaveUniswapV2CallbackArtifact from "../../../artifacts/contracts/1delta/modules/aave/UniswapV2Callback.sol/AaveUniswapV2Callback.json"
 
 export const ONE_18 = BigNumber.from(10).pow(18)
 
@@ -216,4 +219,127 @@ export async function addAaveFlashLoans(signer: SignerWithAddress, bf: AaveBroke
     await bf.manager.setValidTarget(router, true)
 
     return data
+}
+
+
+
+export interface AaveBrokerFixtureInclV2 {
+    brokerProxy: DeltaBrokerProxy
+    moduleConfig: ConfigModule
+    broker: AAVEMarginTraderModule & AAVESweeperModule & AaveUniswapV2Callback
+    manager: ManagementModule
+    tradeDataViewer: MarginTradeDataViewerModule
+    moneyMarket: AAVEMoneyMarketModule & AAVESweeperModule
+    sweeper: AAVESweeperModule
+    marginV2: AaveUniswapV2Callback
+}
+
+export async function aaveBrokerFixtureInclV2(signer: SignerWithAddress, uniFactory: string, aavePool: string, uniV2Factory: string): Promise<AaveBrokerFixtureInclV2> {
+
+
+    const moduleConfig = await new ConfigModule__factory(signer).deploy()
+    const proxy = await new DeltaBrokerProxy__factory(signer).deploy(signer.address, moduleConfig.address)
+    const configContract = await new ConfigModule__factory(signer).attach(proxy.address)
+
+    // broker
+    const brokerModule = await new AAVEMarginTraderModule__factory(signer).deploy(uniFactory)
+
+    await configContract.connect(signer).configureModules(
+        [{
+            moduleAddress: brokerModule.address,
+            action: ModuleConfigAction.Add,
+            functionSelectors: getSelectors(brokerModule)
+        }]
+    )
+
+
+    // manager
+    const managerModule = await new ManagementModule__factory(signer).deploy()
+
+    await configContract.connect(signer).configureModules(
+        [{
+            moduleAddress: managerModule.address,
+            action: ModuleConfigAction.Add,
+            functionSelectors: getSelectors(managerModule)
+        }],
+    )
+
+    const manager = (await new ethers.Contract(proxy.address, ManagementModule__factory.createInterface(), signer) as ManagementModule)
+
+    // viewer
+    const viewerModule = await new MarginTradeDataViewerModule__factory(signer).deploy()
+
+    await configContract.connect(signer).configureModules(
+        [{
+            moduleAddress: viewerModule.address,
+            action: ModuleConfigAction.Add,
+            functionSelectors: getSelectors(viewerModule)
+        }],
+    )
+
+    const tradeDataViewer = (await new ethers.Contract(proxy.address, MarginTradeDataViewerModule__factory.createInterface(), signer) as MarginTradeDataViewerModule)
+
+    // callback
+    const callbackModule = await new UniswapV3SwapCallbackModule__factory(signer).deploy(uniFactory, aavePool)
+
+    await configContract.connect(signer).configureModules(
+        [{
+            moduleAddress: callbackModule.address,
+            action: ModuleConfigAction.Add,
+            functionSelectors: getSelectors(callbackModule)
+        }],
+    )
+
+    // money markets
+    const moneyMarketModule = await new AAVEMoneyMarketModule__factory(signer).deploy(uniFactory, aavePool)
+
+    await configContract.connect(signer).configureModules(
+        [{
+            moduleAddress: moneyMarketModule.address,
+            action: ModuleConfigAction.Add,
+            functionSelectors: getSelectors(moneyMarketModule)
+        }],
+    )
+
+
+    const sweeperModule = await new AAVESweeperModule__factory(signer).deploy(uniFactory, aavePool)
+
+    await configContract.connect(signer).configureModules(
+        [{
+            moduleAddress: sweeperModule.address,
+            action: ModuleConfigAction.Add,
+            functionSelectors: getSelectors(sweeperModule)
+        }],
+    )
+
+    const sweeper = (await new ethers.Contract(proxy.address, AAVESweeperModule__factory.createInterface(), signer) as AAVESweeperModule)
+
+
+
+    const moneyMarket = (await new ethers.Contract(
+        proxy.address,
+        [...SweeperArtifact.abi, ...MoneyMarketArtifact.abi],
+        signer) as AAVEMoneyMarketModule & AAVESweeperModule)
+
+
+    const marginV2Module = await new AaveUniswapV2Callback__factory(signer).deploy(uniV2Factory, aavePool)
+
+    await configContract.connect(signer).configureModules(
+        [{
+            moduleAddress: marginV2Module.address,
+            action: ModuleConfigAction.Add,
+            functionSelectors: getSelectors(marginV2Module)
+        }],
+    )
+
+    const marginV2 = (await new ethers.Contract(proxy.address, AaveUniswapV2Callback__factory.createInterface(), signer) as AaveUniswapV2Callback)
+
+    const broker = (await new ethers.Contract(
+        proxy.address,
+        [...SweeperArtifact.abi, ...MarginTraderArtifact.abi, ...AaveUniswapV2CallbackArtifact.abi],
+        signer
+    ) as AAVEMarginTraderModule & AAVESweeperModule & AaveUniswapV2Callback)
+
+    return { broker, brokerProxy: proxy, manager, tradeDataViewer, moneyMarket, moduleConfig, sweeper, marginV2 }
+
 }

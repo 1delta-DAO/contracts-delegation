@@ -2,7 +2,15 @@
 
 pragma solidity 0.8.21;
 
-import {MarginCallbackData} from "../../dataTypes/InputTypes.sol";
+import {
+    MarginCallbackData,
+    ExactInputMultiParams,
+    ExactOutputMultiParams,
+    MarginSwapParamsMultiExactIn,
+    MarginSwapParamsMultiExactOut,
+    ExactInputCollateralMultiParams,
+    CollateralParamsMultiExactOut
+ } from "../../dataTypes/InputTypes.sol";
 import "../../../external-protocols/uniswapV2/core/interfaces/IUniswapV2Pair.sol";
 import {TokenTransfer} from "./../../libraries/TokenTransfer.sol";
 import {IERC20} from "../../../interfaces/IERC20.sol";
@@ -12,8 +20,12 @@ import {IPool} from "../../interfaces/IAAVEV3Pool.sol";
 
 contract AaveUniswapV2Callback is TokenTransfer, WithStorage {
     using Path for bytes;
+    error Slippage();
+
     address immutable v2Factory;
     IPool private immutable _aavePool;
+
+    uint256 private constant DEFAULT_AMOUNT_CACHED = type(uint256).max;
 
     constructor(address _factory, address aavePool) {
         v2Factory = _factory;
@@ -36,7 +48,7 @@ contract AaveUniswapV2Callback is TokenTransfer, WithStorage {
                             hex"ff",
                             v2Factory,
                             keccak256(abi.encodePacked(tokenA, tokenB)),
-                            hex"96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f" // init code hash
+                            hex"f2a343db983032be4e17d2d9d614e0dd9a305aed3083e6757c5bb8e2ab607abe" // init code hash
                         )
                     )
                 )
@@ -104,17 +116,21 @@ contract AaveUniswapV2Callback is TokenTransfer, WithStorage {
         address tokenOut;
         MarginCallbackData memory _data = abi.decode(data, (MarginCallbackData));
         uint256 tradeType = _data.tradeType;
-        address pool = pairFor(tokenIn, tokenOut);
+
 
         {
             bytes memory _path = _data.path;
             assembly {
                 tokenIn := div(mload(add(_path, 0x20)), 0x1000000000000000000000000)
-                tokenOut := div(mload(add(add(_path, 0x20), 0x20)), 0x1000000000000000000000000)
+                tokenOut := div(mload(add(add(_path, 0x20), 23)), 0x1000000000000000000000000)
             }
         }
+        
         bool zeroForOne = tokenIn < tokenOut;
-        require(msg.sender == pool);
+        address pool = pairFor(tokenIn, tokenOut);
+        { 
+            require(msg.sender == pool);
+        }
 
         // get aave pool
         IPool aavePool = _aavePool;
@@ -125,8 +141,8 @@ contract AaveUniswapV2Callback is TokenTransfer, WithStorage {
                 // since v2 does not send the input amount as argument, we have to fetch
                 // the other amount manually through balanceOf
                 (uint256 amountToSwap, uint256 amountToWithdraw) = amount0 > 0
-                    ? (amount0, IERC20(token0).balanceOf(address(this)))
-                    : (amount1, IERC20(token1).balanceOf(address(this)));
+                    ? (amount0, IERC20(token1).balanceOf(address(this)))
+                    : (amount1, IERC20(token0).balanceOf(address(this)));
 
                 if (_data.path.length > 40) {
                     // we need to swap to the token that we want to supply
@@ -160,8 +176,58 @@ contract AaveUniswapV2Callback is TokenTransfer, WithStorage {
                     _data.path = _data.path.skipToken();
                     (tokenOut, tokenIn, ) = _data.path.decodeFirstPool();
                     _data.tradeType = 14;
-                    (uint256 amount0Out, uint256 amount1Out) = zeroForOne ? 
-                        (amountInLastPool, uint256(0)) : 
+                    (uint256 amount0Out, uint256 amount1Out) = zeroForOne ? (amountInLastPool, uint256(0)) :
+                         (uint256(0), amountInLastPool);
+                    IUniswapV2Pair(pairFor(tokenIn, tokenOut)).swap(amount0Out, amount1Out, msg.sender, abi.encode(_data));
+                } else {
+                    // cache amount
+                    cs().amount = amountInLastPool;
+                    _transferERC20TokensFrom(aas().aTokens[tokenOut], _data.user, address(this), amountInLastPool);
+                    aavePool.withdraw(tokenOut, amountInLastPool, msg.sender);
+                }
+            }
+        }
+        if (tradeType == 8) {
+            if (_data.exactIn) {
+                // (address token0, address token1) = sortTokens(tokenIn, tokenOut);
+                // the swap amount is expected to be the nonzero output amount
+                // since v2 does not send the input amount as argument, we have to fetch
+                // the other amount manually through balanceOf
+                (uint256 amountToSwap, uint256 amountToBorrow ) = amount0 > 0
+                    ? (amount0, cs().amount)
+                    : (amount1, cs().amount);
+                if (_data.path.length > 43) {
+                    // we need to swap to the token that we want to supply
+                    // the router returns the amount that we can finally supply to the protocol
+                    _data.path = _data.path.skipToken();
+                    amountToSwap = exactInputToSelf(amountToSwap, _data.path);
+
+                    // supply directly
+                    tokenOut = _data.path.getLastToken();
+                }
+                // cache amount
+                cs().amount = amountToSwap;
+
+                aavePool.supply(tokenOut, amountToSwap, _data.user, 0);
+                aavePool.borrow(tokenIn, amountToBorrow, _data.interestRateMode, 0, _data.user);
+                                // withraw and send funds to the pool
+                _transferERC20Tokens(tokenIn, msg.sender, amountToBorrow);
+            } else {
+                uint256 amountToSupply = zeroForOne ? amount0 : amount1;
+                uint256 amountInLastPool;
+                IUniswapV2Pair pair = IUniswapV2Pair(pool);
+                amountInLastPool = getAmountInByPool(amountToSupply, pair, zeroForOne);
+
+                // we supply the amount received directly - together with user provided amount
+                aavePool.supply(tokenIn, amountToSupply, _data.user, 0);
+                // we then swap exact out where the first amount is
+                // borrowed and paid from the money market
+                // the received amount is paid back to the original pool
+                if (_data.path.hasMultiplePools()) {
+                    _data.path = _data.path.skipToken();
+                    (tokenOut, tokenIn, ) = _data.path.decodeFirstPool();
+                    _data.tradeType = 14;
+                    (uint256 amount0Out, uint256 amount1Out) = zeroForOne ? (amountInLastPool, uint256(0)) : 
                         (uint256(0), amountInLastPool);
                     IUniswapV2Pair(pairFor(tokenIn, tokenOut)).swap(amount0Out, amount1Out, msg.sender, abi.encode(_data));
                 } else {
@@ -203,5 +269,30 @@ contract AaveUniswapV2Callback is TokenTransfer, WithStorage {
                 break;
             }
         }
+    }
+
+    // increase the margin position - borrow (tokenIn) and sell it against collateral (tokenOut)
+    // the user provides the debt amount as input
+    function openMarginPositionExactInV2(MarginSwapParamsMultiExactIn memory params) external returns (uint256 amountOut) {
+        (address tokenIn, address tokenOut, ) = params.path.decodeFirstPool();
+
+        MarginCallbackData memory data = MarginCallbackData({
+            path: params.path,
+            tradeType: 8,
+            interestRateMode: params.interestRateMode,
+            user: msg.sender,
+            exactIn: true
+        });
+
+        bool zeroForOne = tokenIn < tokenOut;
+        cs().amount = params.amountIn;
+        (uint256 amount0Out, uint256 amount1Out) = zeroForOne ? (  uint256(0),
+            getAmountOutByPool(params.amountIn,  IUniswapV2Pair(pairFor(tokenIn, tokenOut)), zeroForOne)) :
+             ( getAmountOutByPool(params.amountIn,  IUniswapV2Pair(pairFor(tokenIn, tokenOut)), zeroForOne),  uint256(0));
+        IUniswapV2Pair(pairFor(tokenIn, tokenOut)).swap(amount0Out, amount1Out, address(this), abi.encode(data));
+
+        amountOut = cs().amount;
+        cs().amount = DEFAULT_AMOUNT_CACHED;
+        if (params.amountOutMinimum > amountOut) revert Slippage();
     }
 }

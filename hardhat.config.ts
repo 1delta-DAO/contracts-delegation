@@ -471,8 +471,9 @@ const config: HardhatUserConfig = {
         settings: {
           optimizer: {
             enabled: true,
-            runs: 1_000_000,
+            runs: 999999,
           },
+          evmVersion: 'istanbul',
         },
       },
       {
@@ -480,8 +481,9 @@ const config: HardhatUserConfig = {
         settings: {
           optimizer: {
             enabled: true,
-            runs: 1_000_000,
+            runs: 999999,
           },
+          evmVersion: 'istanbul',
         },
       }
     ],
