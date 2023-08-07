@@ -4,16 +4,13 @@ import { MockProvider } from 'ethereum-waffle';
 import { ethers, waffle } from 'hardhat'
 import {
     AAVEFlashModule,
-    BalancerFlashModule,
     MintableERC20,
-    MockBalancerVault,
-    MockBalancerVault__factory,
     MockRouter,
     MockRouter__factory,
     WETH9
 } from '../../../types';
 import { expandTo18Decimals } from '../../uniswap-v3/periphery/shared/expandTo18Decimals';
-import { initAaveBroker, aaveBrokerFixture, AaveBrokerFixture, ONE_18, addBalancer, addAaveFlashLoans } from '../shared/aaveBrokerFixture';
+import { initAaveBroker, aaveBrokerFixture, AaveBrokerFixture, ONE_18, addAaveFlashLoans } from '../shared/aaveBrokerFixture';
 import { expect } from '../shared/expect'
 import { initializeMakeSuite, InterestRateMode, AAVEFixture, deposit } from '../shared/aaveFixture';
 import { toNumber } from 'lodash';
@@ -34,6 +31,10 @@ describe('AAVE Flash loans for AAVE', async () => {
     let test1: SignerWithAddress;
     let test2: SignerWithAddress;
     let test3: SignerWithAddress;
+    let test4: SignerWithAddress;
+    let test5: SignerWithAddress;
+    let test6: SignerWithAddress;
+    let test7: SignerWithAddress;
     let aaveTest: AAVEFixture;
     let broker: AaveBrokerFixture;
     let tokens: (MintableERC20 | WETH9)[];
@@ -44,7 +45,7 @@ describe('AAVE Flash loans for AAVE', async () => {
 
 
     before('Deploy Account, Trader, Uniswap and AAVE', async () => {
-        [deployer, alice, bob, carol, gabi, test, test1, test2, test3] = await ethers.getSigners();
+        [deployer, alice, bob, carol, gabi, test, test1, test2, test3, test4, test5, test6, test7] = await ethers.getSigners();
 
 
         provider = waffle.provider;
@@ -81,6 +82,10 @@ describe('AAVE Flash loans for AAVE', async () => {
                 await aaveTest.tokens[key].connect(deployer).transfer(test1.address, expandTo18Decimals(1_000_000))
                 await aaveTest.tokens[key].connect(deployer).transfer(test2.address, expandTo18Decimals(1_000_000))
                 await aaveTest.tokens[key].connect(deployer).transfer(test3.address, expandTo18Decimals(1_000_000))
+                await aaveTest.tokens[key].connect(deployer).transfer(test4.address, expandTo18Decimals(1_000_000))
+                await aaveTest.tokens[key].connect(deployer).transfer(test5.address, expandTo18Decimals(1_000_000))
+                await aaveTest.tokens[key].connect(deployer).transfer(test6.address, expandTo18Decimals(1_000_000))
+                await aaveTest.tokens[key].connect(deployer).transfer(test7.address, expandTo18Decimals(1_000_000))
                 await aaveTest.tokens[key].connect(deployer).transfer(gabi.address, expandTo18Decimals(1_000_000))
                 // fund router 
                 await aaveTest.tokens[key].connect(deployer).transfer(mockRouter.address, expandTo18Decimals(1_000_000))
@@ -92,6 +97,8 @@ describe('AAVE Flash loans for AAVE', async () => {
                 await aaveTest.tokens[key].connect(test1).approve(aaveTest.pool.address, ethers.constants.MaxUint256)
                 await aaveTest.tokens[key].connect(test2).approve(aaveTest.pool.address, ethers.constants.MaxUint256)
                 await aaveTest.tokens[key].connect(test3).approve(aaveTest.pool.address, ethers.constants.MaxUint256)
+                await aaveTest.tokens[key].connect(test4).approve(aaveTest.pool.address, ethers.constants.MaxUint256)
+                await aaveTest.tokens[key].connect(test5).approve(aaveTest.pool.address, ethers.constants.MaxUint256)
                 await aaveTest.tokens[key].connect(gabi).approve(aaveTest.pool.address, ethers.constants.MaxUint256)
 
 
@@ -167,7 +174,7 @@ describe('AAVE Flash loans for AAVE', async () => {
             marginTradeType: 0, // margin open
             interestRateModeIn: InterestRateMode.VARIABLE, // the borrow mode
             interestRateModeOut: 0, // unused
-            referenceAmount: 0
+            max: false
         }
         console.log("user", bob.address)
         await balancerModule.connect(bob).executeOnAave(
@@ -233,7 +240,7 @@ describe('AAVE Flash loans for AAVE', async () => {
             marginTradeType: 0, // margin open
             interestRateModeIn: InterestRateMode.VARIABLE, // the borrow mode
             interestRateModeOut: 0, // unused
-            referenceAmount: amountOut
+            max: false
         }
         console.log("user", carol.address)
         await balancerModule.connect(carol).executeOnAave(
@@ -296,7 +303,7 @@ describe('AAVE Flash loans for AAVE', async () => {
             marginTradeType: 1, // margin close
             interestRateModeIn: 0, // unused
             interestRateModeOut: InterestRateMode.VARIABLE, // repay mode
-            referenceAmount: 0
+            max: false
         }
         console.log("user", test.address, "aInWFee", amountToWithdrawPostFee.toString())
 
@@ -360,7 +367,7 @@ describe('AAVE Flash loans for AAVE', async () => {
             marginTradeType: 1, // margin close
             interestRateModeIn: 0, // unused
             interestRateModeOut: InterestRateMode.VARIABLE, // repay mode
-            referenceAmount: amountToRepay
+            max: false
         }
         console.log("user", test1.address, "aOut", amountToRepay.toString())
 
@@ -432,7 +439,7 @@ describe('AAVE Flash loans for AAVE', async () => {
             marginTradeType: 2, // collateral swap
             interestRateModeIn: 0, // unused
             interestRateModeOut: 0, // unused
-            referenceAmount: 0
+            max: false
         }
         console.log("user", test2.address)
         const balanceInBefore = await aaveTest.aTokens[inId].balanceOf(test2.address)
@@ -502,7 +509,7 @@ describe('AAVE Flash loans for AAVE', async () => {
             marginTradeType: 2, // collateral swap
             interestRateModeIn: 0, // unused
             interestRateModeOut: 0, // unused
-            referenceAmount: amountToSupply
+            max: false
         }
         console.log("user", test1.address, "aOut", amountToSupply.toString())
 
@@ -575,7 +582,7 @@ describe('AAVE Flash loans for AAVE', async () => {
             marginTradeType: 3, // loan swap
             interestRateModeIn: InterestRateMode.VARIABLE, // the input borrow mode
             interestRateModeOut: InterestRateMode.VARIABLE, // the output borrow mode
-            referenceAmount: 0
+            max: false
         }
         console.log("user", gabi.address)
 
@@ -653,7 +660,7 @@ describe('AAVE Flash loans for AAVE', async () => {
             marginTradeType: 3, // loan swap
             interestRateModeIn: InterestRateMode.VARIABLE, // borrow mode in
             interestRateModeOut: InterestRateMode.VARIABLE, // borrow mode out
-            referenceAmount: amountToRepay
+            max: false
         }
         console.log("user", test3.address, "aOut", amountToRepay.toString())
 
@@ -678,6 +685,301 @@ describe('AAVE Flash loans for AAVE', async () => {
         expect(toNumber(debtBalanceIn.sub(debtBalanceInPre))).to.lessThanOrEqual(toNumber(amountToRepay) * 1.01)
     })
 
+    // flash loans input amount [has to be provided including the fee]
+    // steps
+    // 1) flash amount in [has to be adjusted in advance for flash loan fee]
+    // 2) swap flashed amount using target calldata
+    // 3) repay obtained amount
+    // 4) withdraw entire balance
+    //      1) send required repay amount of tokenIn to flash loan vault
+    //      2) send remaining funds to user 
+    it('allows all in margin close', async () => {
+        const inId = 'DAI'
+        const outId = 'AAVE'
+        const repayDepoId = 'WMATIC'
+        const tokenIn = aaveTest.tokens[repayDepoId]
+        const tokenOut = aaveTest.tokens[outId]
+
+        const initDeposit = expandTo18Decimals(20)
+        const initBorrow = expandTo18Decimals(10)
+        const additionalDepo = expandTo18Decimals(5)
+        await depositAndBorrow(test4, aaveTest, inId, outId, initDeposit, initBorrow)
+        await deposit(aaveTest, repayDepoId, test4, additionalDepo)
+
+        console.log("Tokens", tokenIn.address, tokenOut.address)
+
+        const amountToWithdraw = expandTo18Decimals(4)
+
+        // we have to calibrate the amount in for the flash loan fee first - otherwise, the user would experience
+        // a different amount in
+        const amountToWithdrawPostFee = amountToWithdraw.mul(ONE_18).div(ONE_18.add(flashFee)).add(1)
+        // produce swap calldata
+        const targetCalldata = mockRouter.interface.encodeFunctionData(
+            'swapExactIn',
+            [
+                tokenIn.address,
+                tokenOut.address,
+                amountToWithdrawPostFee
+            ]
+        )
+        // approval of actually paid amout
+        await aaveTest.aTokens[repayDepoId].connect(test4).approve(balancerModule.address, amountToWithdraw.mul(2))
+
+        const params = {
+            baseAsset: tokenOut.address, // the asset to interact with
+            target: mockRouter.address,
+            swapType: 0, // exact in
+            marginTradeType: 1, // margin close
+            interestRateModeIn: 0, // unused
+            interestRateModeOut: InterestRateMode.VARIABLE, // repay mode
+            max: true
+        }
+        console.log("user", test4.address, "aInWFee", amountToWithdrawPostFee.toString())
+
+        const balPre = await aaveTest.aTokens[repayDepoId].balanceOf(test4.address)
+        const debtBalancePre = await aaveTest.vTokens[outId].balanceOf(test4.address)
+        console.log("BalsPre", balPre.toString(), debtBalancePre.toString(), test4.address)
+        await balancerModule.connect(test4).executeOnAave(
+            tokenIn.address,  // the asset to flash
+            amountToWithdrawPostFee, // the flash loan amount
+            params, // oneDelta params
+            targetCalldata
+        )
+
+        const balanceOut = await aaveTest.aTokens[repayDepoId].balanceOf(test4.address)
+        const debtBalanceOut = await aaveTest.vTokens[outId].balanceOf(test4.address)
+        console.log("Bals", balanceOut.toString(), debtBalanceOut.toString(), test4.address)
+
+
+        const balanceRouter = await aaveTest.aTokens[repayDepoId].balanceOf(balancerModule.address)
+        expect((balanceOut).toString()).to.equal('0')
+        expect((balanceRouter).toString()).to.equal('0')
+        expect(toNumber(debtBalanceOut)).to.greaterThanOrEqual(toNumber(initBorrow.sub(amountToWithdraw)))
+        expect(toNumber(debtBalanceOut)).to.lessThanOrEqual(toNumber(initBorrow.sub(amountToWithdraw)) * 1.01)
+    })
+
+
+    // flash loans input amount [has to be provided including the fee]
+    // steps
+    // 1) flash amount in [has to be adjusted in advance for flash loan fee]
+    // 2) swap flashed amount using target calldata
+    // 3) supply obtained amount
+    // 4) withdraw required repay amount of tokenIn to repay flash loan 
+    it('allows all in collateral swap', async () => {
+        const inId = 'DAI'
+        const outId = 'AAVE'
+        const borrowId = 'WMATIC'
+        const tokenIn = aaveTest.tokens[inId]
+        const tokenOut = aaveTest.tokens[outId]
+        const tokenBorrow = aaveTest.tokens[borrowId]
+
+        console.log("Tokens", tokenIn.address, tokenOut.address)
+        await tokenBorrow.connect(test5).approve(aaveTest.pool.address, constants.MaxUint256)
+        const deposit = expandTo18Decimals(10)
+        const amountToBorrow = expandTo18Decimals(10)
+
+        // supply 2x collateral positions and borrow an asset
+        await aaveTest.pool.connect(test5).supply(tokenIn.address, deposit, test5.address, 0)
+        await aaveTest.pool.connect(test5).supply(tokenOut.address, deposit, test5.address, 0)
+        await aaveTest.pool.connect(test5).borrow(tokenBorrow.address, amountToBorrow, InterestRateMode.VARIABLE, 0, test5.address)
+
+        const amountToWithdraw = expandTo18Decimals(7)
+
+        // we have to calibrate the amount in for the flash loan fee first - otherwise, the user would experience
+        // a different amount in
+        const amountToWithdrawPostFee = adjustForFlashFee(amountToWithdraw, flashFee)  //amountToWithdraw.mul(ONE_18).div(ONE_18.add(flashFee)).add(1)
+        // produce swap calldata
+        const targetCalldata = mockRouter.interface.encodeFunctionData(
+            'swapExactIn',
+            [
+                tokenIn.address,
+                tokenOut.address,
+                amountToWithdrawPostFee
+            ]
+        )
+
+        await aaveTest.aTokens[inId].connect(test5).approve(balancerModule.address, amountToWithdrawPostFee.mul(2))
+
+        const params = {
+            baseAsset: tokenOut.address, // the asset to interact with
+            target: mockRouter.address,
+            swapType: 0, // exact in
+            marginTradeType: 2, // collateral swap
+            interestRateModeIn: 0, // unused
+            interestRateModeOut: 0, // unused
+            max: true
+        }
+        console.log("user", test5.address)
+        const balanceInBefore = await aaveTest.aTokens[inId].balanceOf(test5.address)
+        const balanceOutBefore = await aaveTest.aTokens[outId].balanceOf(test5.address)
+
+        await balancerModule.connect(test5).executeOnAave(
+            tokenIn.address,  // the asset to flash
+            amountToWithdrawPostFee, // the flash loan amount
+            params, // oneDelta params
+            targetCalldata
+        )
+
+        const balanceIn = await aaveTest.aTokens[inId].balanceOf(test5.address)
+        const balanceRouter = await aaveTest.aTokens[inId].balanceOf(balancerModule.address)
+        const balanceOut = await aaveTest.aTokens[outId].balanceOf(test5.address)
+
+        const debtBalanceOut = await aaveTest.vTokens[inId].balanceOf(test5.address)
+        console.log("Bals", balanceOut.toString(), debtBalanceOut.toString(), test5.address)
+
+        expect(balanceIn.toString()).to.equal('0')
+        expect(balanceRouter.toString()).to.equal('0')
+        expect(toNumber(balanceOut)).to.greaterThanOrEqual(toNumber(balanceOutBefore.add(amountToWithdrawPostFee.mul(99).div(100))) * 0.99)
+        expect(toNumber(balanceOut)).to.lessThanOrEqual(toNumber(balanceOutBefore.add(amountToWithdrawPostFee.mul(99).div(100))) * 1.01)
+    })
+
+
+    // flash loans input amount [has to be provided including the fee]
+    // steps
+    // 1) flash amount in [has to be adjusted in advance for flash loan fee]
+    // 2) swap flashed amount using target calldata
+    // 3) repay obtained amount
+    // 4) withdraw required repay amount of tokenIn to repay flash loan 
+    it('allows all out margin close', async () => {
+        const inId = 'DAI'
+        const outId = 'AAVE'
+        const tokenIn = aaveTest.tokens[inId]
+        const tokenOut = aaveTest.tokens[outId]
+
+        const initDeposit = expandTo18Decimals(20)
+        const initBorrow = expandTo18Decimals(10)
+        await depositAndBorrow(test7, aaveTest, inId, outId, initDeposit, initBorrow)
+
+        console.log("Tokens", tokenIn.address, tokenOut.address)
+
+        const amountToRepay = initBorrow.mul(10001).div(10000)
+
+        const amountToWithdrawMax = amountToRepay.mul(105).div(100)
+        // produce swap calldata
+        const targetCalldata = mockRouter.interface.encodeFunctionData(
+            'swapExactOut',
+            [
+                tokenIn.address,
+                tokenOut.address,
+                amountToRepay
+            ]
+        )
+        // approval of actually paid amout
+        await aaveTest.aTokens[inId].connect(test7).approve(balancerModule.address, amountToWithdrawMax)
+
+        console.log("Tokens in/out", tokenIn.address, tokenOut.address)
+        const params = {
+            baseAsset: tokenOut.address, // the asset to interact with
+            target: mockRouter.address,
+            swapType: 1, // exact out
+            marginTradeType: 1, // margin close
+            interestRateModeIn: 0, // unused
+            interestRateModeOut: InterestRateMode.VARIABLE, // repay mode
+            max: true
+        }
+
+        const balPre = await aaveTest.aTokens[inId].balanceOf(test7.address)
+        const debtBalancePre = await aaveTest.vTokens[outId].balanceOf(test7.address)
+        console.log("BalsPre", balPre.toString(), debtBalancePre.toString(), test7.address)
+        await balancerModule.connect(test7).executeOnAave(
+            tokenIn.address,  // the asset to flash
+            amountToWithdrawMax, // the flash loan amount
+            params, // oneDelta params
+            targetCalldata
+        )
+
+        const balanceOut = await aaveTest.aTokens[inId].balanceOf(test7.address)
+        const debtBalanceOut = await aaveTest.vTokens[outId].balanceOf(test7.address)
+        const debtBalanceOutRouter = await aaveTest.vTokens[outId].balanceOf(balancerModule.address)
+        console.log("Bals", balanceOut.toString(), debtBalanceOut.toString(), test7.address)
+
+        expect(debtBalanceOut.toString()).to.equal('0')
+        expect(debtBalanceOutRouter.toString()).to.equal('0')
+        expect(toNumber(balPre.sub(balanceOut))).to.greaterThanOrEqual(toNumber(amountToRepay))
+        expect(toNumber(balPre.sub(balanceOut))).to.lessThanOrEqual(toNumber(amountToRepay) * 1.01)
+    })
+
+    // flash loans input amount [has to be provided including the fee]
+    // steps
+    // 1) flash amount in [has to be adjusted in advance for flash loan fee]
+    // 2) swap flashed amount using target calldata
+    // 3) repay obtained amount
+    // 4) borrw required repay amount of tokenIn to repay flash loan 
+    it('allows all out loan swap', async () => {
+        const inId = 'DAI'
+        const outId = 'AAVE'
+        const supplyId = 'WMATIC'
+        const tokenIn = aaveTest.tokens[inId]
+        const tokenOut = aaveTest.tokens[outId]
+        const tokenSupply = aaveTest.tokens[supplyId]
+
+        await tokenSupply.connect(test6).approve(aaveTest.pool.address, constants.MaxUint256)
+        const deposit = expandTo18Decimals(15)
+
+        await aaveTest.pool.connect(test6).supply(tokenSupply.address, deposit, test6.address, 0)
+
+        const initialBorrow = expandTo18Decimals(10)
+
+        await aaveTest.pool.connect(test6).borrow(tokenOut.address, initialBorrow, InterestRateMode.VARIABLE, 0, test6.address)
+        console.log("Tokens", tokenIn.address, tokenOut.address)
+
+        const amountToRepay = initialBorrow.mul(10001).div(10000)
+
+        const amountToBorrow = amountToRepay
+
+        // we have to calibrate the amount in for the flash loan fee first - otherwise, the user would experience
+        // a different amount in
+        const allowedSlippage = amountToBorrow.div(100) // 1%
+
+        const amountToBorrowMax = amountToBorrow.mul(ONE_18).div(ONE_18.add(flashFee)).add(1).add(allowedSlippage)
+
+        // produce swap calldata
+        const targetCalldata = mockRouter.interface.encodeFunctionData(
+            'swapExactOut',
+            [
+                tokenIn.address,
+                tokenOut.address,
+                amountToRepay
+            ]
+        )
+
+        // approval of actually paid amout
+        await aaveTest.vTokens[inId].connect(test6).approveDelegation(balancerModule.address, amountToBorrowMax.mul(2))
+
+        const params = {
+            baseAsset: tokenOut.address, // the asset to interact with
+            target: mockRouter.address,
+            swapType: 1, // exact out
+            marginTradeType: 3, // loan swap
+            interestRateModeIn: InterestRateMode.VARIABLE, // borrow mode in
+            interestRateModeOut: InterestRateMode.VARIABLE, // borrow mode out
+            max: true
+        }
+        console.log("user", test6.address, "aOut", amountToRepay.toString())
+
+
+        const debtBalanceInPre = await aaveTest.vTokens[inId].balanceOf(test6.address)
+        const debtBalanceOutPre = await aaveTest.vTokens[outId].balanceOf(test6.address)
+
+        console.log("BalsPre", debtBalanceInPre.toString(), debtBalanceOutPre.toString(), test6.address)
+        await balancerModule.connect(test6).executeOnAave(
+            tokenIn.address,  // the asset to flash
+            amountToBorrowMax, // the flash loan amount
+            params, // oneDelta params
+            targetCalldata
+        )
+
+        const debtBalanceIn = await aaveTest.vTokens[inId].balanceOf(test6.address)
+        const debtBalanceOut = await aaveTest.vTokens[outId].balanceOf(test6.address)
+        const debtBalanceOutRouter = await aaveTest.vTokens[outId].balanceOf(balancerModule.address)
+        console.log("Bals", debtBalanceIn.toString(), debtBalanceOut.toString(), test6.address)
+
+        expect(debtBalanceOut.toString()).to.equal('0')
+        expect(debtBalanceOutRouter.toString()).to.equal('0')
+        expect(toNumber(debtBalanceIn.sub(debtBalanceInPre))).to.greaterThanOrEqual(toNumber(amountToRepay))
+        expect(toNumber(debtBalanceIn.sub(debtBalanceInPre))).to.lessThanOrEqual(toNumber(amountToRepay) * 1.01)
+    })
+
 })
 
 
@@ -690,7 +992,7 @@ describe('AAVE Flash loans for AAVE', async () => {
 // ························································|····································|·············|·············|···········|···············|··············
 // |  @openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20  ·  approve                           ·      34108  ·      51244  ·    46948  ·            4  ·       1.25  │
 // ························································|····································|·············|·············|···········|···············|··············
-// |  AAVEFlashModule                                      ·  executeOnAave                     ·     444096  ·     530580  ·   481608  ·            8  ·      12.99  │
+// |  AAVEFlashModule                                      ·  executeOnAave                     ·     444096  ·     530580  ·   490311  ·            8  ·      12.99  │
 // ························································|····································|·············|·············|···········|···············|··············
 // |  AAVEMarginTraderInit                                 ·  initAAVEMarginTrader              ·          -  ·          -  ·   137473  ·            1  ·       3.66  │
 // ························································|····································|·············|·············|···········|···············|··············

@@ -7,11 +7,12 @@ import {IPool} from "../../interfaces/IAAVEV3Pool.sol";
 import {WithStorage} from "../../storage/BrokerStorage.sol";
 import {TokenTransfer} from "./../../libraries/TokenTransfer.sol";
 import {IBalancerFlashLoans, IFlashLoanRecipient} from "../../../external-protocols/balancer/IBalancerFlashLoans.sol";
+import {IERC20Balance} from "../../interfaces/IERC20Balance.sol";
 
 contract BalancerFlashModule is WithStorage, TokenTransfer {
     IPool private immutable _aavePool;
     IBalancerFlashLoans private immutable _balancerFlashLoans;
-    // trade categories
+    // marginTradeType
     // 0 = Margin open
     // 1 = margin close
     // 2 = collateral / open
@@ -21,11 +22,6 @@ contract BalancerFlashModule is WithStorage, TokenTransfer {
     // 0 = exactIn
     // 1 = exactOut
 
-    // lendingInteraction
-    // 0 = supply
-    // 1 = borrow
-    // 2 = withdraw
-    // 3 = repay
 
     struct DeltaParams {
         address baseAsset; // the asset paired with the flash loan
@@ -34,7 +30,9 @@ contract BalancerFlashModule is WithStorage, TokenTransfer {
         uint8 marginTradeType; // open, close, collateral, debt swap
         uint8 interestRateModeIn; // aave interest mode
         uint8 interestRateModeOut; // aave interest mode
-        uint256 referenceAmount; // amountOut for exactOutSwaps
+        bool max; // a flag that indicates that either
+        // 1) the entire balance is withdrawn (for exactIn); or
+        // 2) the entire debt is repaid (for exactOut) - the referenceAmount must be larger than the debt
     }
 
     struct DeltaFlashParams {
@@ -113,7 +111,7 @@ contract BalancerFlashModule is WithStorage, TokenTransfer {
         if (flashParams.deltaParams.swapType == 0) {
             //margin open [expected to flash borrow amount]
             if (marginType == 0) {
-                // execute trnsaction on target
+                // execute transaction on target
                 (bool success, ) = swapTarget.call(flashParams.encodedSwapCall);
                 require(success, "CALL_FAILED");
 
@@ -132,7 +130,7 @@ contract BalancerFlashModule is WithStorage, TokenTransfer {
             }
             // margin close [expected to flash withdrawal amount]
             else if (marginType == 1) {
-                // execute trnsaction on target
+                // execute transaction on target
                 (bool success, ) = swapTarget.call(flashParams.encodedSwapCall);
                 require(success, "CALL_FAILED");
 
@@ -145,15 +143,31 @@ contract BalancerFlashModule is WithStorage, TokenTransfer {
                 // adjust amount for flash loan fee
                 amountReceived += feeAmounts[0];
 
-                // transfer aTokens from user
-                _transferERC20TokensFrom(aas().aTokens[token], user, address(this), amountReceived);
+                baseAsset = aas().aTokens[token];
+                if (flashParams.deltaParams.max) {
+                    // fetch user balance
+                    uint256 userBalance = IERC20(baseAsset).balanceOf(user);
+                    // transfer aTokens from user
+                    _transferERC20TokensFrom(baseAsset, user, address(this), userBalance);
+                    // withdraw the entire user balance
+                    aavePool.withdraw(token, userBalance, address(this));
+                    //  send required funds back to flash pool
+                    _transferERC20Tokens(token, msg.sender, amountReceived);
+                    // adjust funds for leftovers
+                    amountReceived = userBalance - amountReceived;
+                    // if funds are left, send them to the user
+                    if (amountReceived != 0) _transferERC20Tokens(token, msg.sender, amountReceived);
+                } else {
+                    // transfer aTokens from user
+                    _transferERC20TokensFrom(baseAsset, user, address(this), amountReceived);
 
-                // withdraw and send funds back to flash pool
-                aavePool.withdraw(token, amountReceived, msg.sender);
+                    // withdraw and send funds back to flash pool
+                    aavePool.withdraw(token, amountReceived, msg.sender);
+                }
             }
             //  collateral swap
             else if (marginType == 2) {
-                // execute trnsaction on target
+                // execute transaction on target
                 (bool success, ) = swapTarget.call(flashParams.encodedSwapCall);
                 require(success, "CALL_FAILED");
 
@@ -166,15 +180,31 @@ contract BalancerFlashModule is WithStorage, TokenTransfer {
                 // adjust amount for flash loan fee
                 amountReceived += feeAmounts[0];
 
-                // transfer aTokens from user
-                _transferERC20TokensFrom(aas().aTokens[token], user, address(this), amountReceived);
+                baseAsset = aas().aTokens[token];
+                if (flashParams.deltaParams.max) {
+                    // fetch user balance
+                    uint256 userBalance = IERC20(baseAsset).balanceOf(user);
+                    // transfer aTokens from user
+                    _transferERC20TokensFrom(baseAsset, user, address(this), userBalance);
+                    // withdraw the entire user balance
+                    aavePool.withdraw(token, userBalance, address(this));
+                    //  send required funds back to flash pool
+                    _transferERC20Tokens(token, msg.sender, amountReceived);
+                    // adjust funds for leftovers
+                    amountReceived = userBalance - amountReceived;
+                    // if funds are left, send them to the user
+                    if (amountReceived != 0) _transferERC20Tokens(token, msg.sender, amountReceived);
+                } else {
+                    // transfer aTokens from user
+                    _transferERC20TokensFrom(baseAsset, user, address(this), amountReceived);
 
-                // withdraw and send funds back to flash pool
-                aavePool.withdraw(token, amountReceived, msg.sender);
+                    // withdraw and send funds back to flash pool
+                    aavePool.withdraw(token, amountReceived, msg.sender);
+                }
             }
             // debt swap
             else {
-                // execute trnsaction on target
+                // execute transaction on target
                 (bool success, ) = swapTarget.call(flashParams.encodedSwapCall);
                 require(success, "CALL_FAILED");
 
@@ -201,9 +231,10 @@ contract BalancerFlashModule is WithStorage, TokenTransfer {
                 require(success, "CALL_FAILED");
                 // fetch the current swap amount as flashAmount - (flashAmount - amountIn)
                 uint256 amountSwapped = amountReceived - IERC20(token).balanceOf(address(this));
-
-                // supply the amount out - willl fail if insufficiently swapped
-                aavePool.supply(flashParams.deltaParams.baseAsset, flashParams.deltaParams.referenceAmount, user, 0);
+                address baseAsset = flashParams.deltaParams.baseAsset;
+                uint256 received = IERC20(baseAsset).balanceOf(address(this));
+                // supply the amount out - will fail if insufficiently swapped
+                aavePool.supply(baseAsset, received, user, 0);
 
                 uint256 fee = feeAmounts[0];
                 // borrow amount in plus flash loan fee
@@ -223,18 +254,37 @@ contract BalancerFlashModule is WithStorage, TokenTransfer {
                 // fetch the current swap amount as flashAmount - (flashAmount - amountIn)
                 uint256 amountSwapped = amountReceived - IERC20(token).balanceOf(address(this));
 
-                // repay the amount out - willl fail if insufficiently swapped
-                aavePool.repay(
-                    flashParams.deltaParams.baseAsset,
-                    flashParams.deltaParams.referenceAmount,
-                    flashParams.deltaParams.interestRateModeOut,
-                    user
-                );
+                address baseAsset = flashParams.deltaParams.baseAsset;
+                uint256 received = IERC20(baseAsset).balanceOf(address(this));
+                marginType = flashParams.deltaParams.interestRateModeOut;
+                if (flashParams.deltaParams.max) {
+                    uint256 borrowBalance = getDebtBalance(baseAsset, marginType, user);
+                    require(borrowBalance <= received, "Insufficient swapped");
+                    // repay the amount out - will fail if insufficiently swapped
+                    aavePool.repay(
+                        baseAsset,
+                        borrowBalance, // repay entire balance
+                        marginType,
+                        user
+                    );
+                    // refund excess amount if any
+                    borrowBalance = received - borrowBalance;
+                    if (borrowBalance > 0) _transferERC20Tokens(baseAsset, user, borrowBalance);
+                } else {
+                    // repay the amount out - will fail if insufficiently swapped
+                    aavePool.repay(
+                        baseAsset,
+                        received, // repay reference amount
+                        marginType,
+                        user
+                    );
+                }
                 // adjust amount for fee
                 uint256 fee = feeAmounts[0];
                 amountSwapped += fee;
+                baseAsset = aas().aTokens[token];
                 // transfer aTokens from user - we only need the swap input amount plus flash loan fee
-                _transferERC20TokensFrom(aas().aTokens[token], user, address(this), amountSwapped);
+                _transferERC20TokensFrom(baseAsset, user, address(this), amountSwapped);
                 // withdraw swap amount directly to flash pool
                 aavePool.withdraw(token, amountSwapped, msg.sender);
                 // repay flash loan with residual funds
@@ -249,9 +299,10 @@ contract BalancerFlashModule is WithStorage, TokenTransfer {
                 require(success, "CALL_FAILED");
                 // fetch the current swap amount as flashAmount - (flashAmount - amountIn)
                 uint256 amountSwapped = amountReceived - IERC20(token).balanceOf(address(this));
-
-                // supply the amount out - willl fail if insufficiently swapped
-                aavePool.supply(flashParams.deltaParams.baseAsset, flashParams.deltaParams.referenceAmount, user, 0);
+                address baseAsset = flashParams.deltaParams.baseAsset;
+                uint256 received = IERC20(baseAsset).balanceOf(address(this));
+                // supply the amount out - will fail if insufficiently swapped
+                aavePool.supply(baseAsset, received, user, 0);
 
                 // adjust amount for fee
                 uint256 fee = feeAmounts[0];
@@ -273,13 +324,31 @@ contract BalancerFlashModule is WithStorage, TokenTransfer {
                 // fetch the current swap amount as flashAmount - (flashAmount - amountIn)
                 uint256 amountSwapped = amountReceived - IERC20(token).balanceOf(address(this));
 
-                // repay the amount out - willl fail if insufficiently swapped
-                aavePool.repay(
-                    flashParams.deltaParams.baseAsset,
-                    flashParams.deltaParams.referenceAmount,
-                    flashParams.deltaParams.interestRateModeOut,
-                    user
-                );
+                address baseAsset = flashParams.deltaParams.baseAsset;
+                uint256 received = IERC20(baseAsset).balanceOf(address(this));
+                marginType = flashParams.deltaParams.interestRateModeOut;
+                if (flashParams.deltaParams.max) {
+                    uint256 borrowBalance = getDebtBalance(baseAsset, marginType, user);
+                    require(borrowBalance <= received, "Insufficient swapped");
+                    // repay the amount out - will fail if insufficiently swapped
+                    aavePool.repay(
+                        baseAsset,
+                        borrowBalance, // repay entire balance
+                        marginType,
+                        user
+                    );
+                    // refund excess amount if any
+                    borrowBalance = received - borrowBalance;
+                    if (borrowBalance > 0) _transferERC20Tokens(baseAsset, user, borrowBalance);
+                } else {
+                    // repay the amount out - will fail if insufficiently swapped
+                    aavePool.repay(
+                        baseAsset,
+                        received, // repay ref amount
+                        marginType,
+                        user
+                    );
+                }
                 // adjust amount for fee
                 uint256 fee = feeAmounts[0];
                 amountSwapped += fee;
@@ -291,5 +360,14 @@ contract BalancerFlashModule is WithStorage, TokenTransfer {
             }
         }
         gs().isOpen = 0;
+    }
+
+    function getDebtBalance(
+        address token,
+        uint256 interestRateMode,
+        address user
+    ) private view returns (uint256) {
+        if (interestRateMode == 2) return IERC20Balance(aas().vTokens[token]).balanceOf(user);
+        else return IERC20Balance(aas().sTokens[token]).balanceOf(user);
     }
 }
