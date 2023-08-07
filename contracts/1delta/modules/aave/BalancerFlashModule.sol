@@ -267,7 +267,7 @@ contract BalancerFlashModule is WithStorage, TokenTransfer {
                 if (flashParams.deltaParams.max) {
                     uint256 borrowBalance = getDebtBalance(baseAsset, marginType, user);
                     require(borrowBalance <= received, "Insufficient swapped");
-                    // repay the amount out - will fail if insufficiently swapped
+                    // repay the amount out
                     aavePool.repay(
                         baseAsset,
                         borrowBalance, // repay entire balance
@@ -278,7 +278,7 @@ contract BalancerFlashModule is WithStorage, TokenTransfer {
                     borrowBalance = received - borrowBalance;
                     if (borrowBalance > 0) _transferERC20Tokens(baseAsset, user, borrowBalance);
                 } else {
-                    // repay the amount out - will fail if insufficiently swapped
+                    // repay the amount out - will fail if too much is swapped
                     aavePool.repay(
                         baseAsset,
                         received, // repay reference amount
@@ -337,7 +337,7 @@ contract BalancerFlashModule is WithStorage, TokenTransfer {
                 if (flashParams.deltaParams.max) {
                     uint256 borrowBalance = getDebtBalance(baseAsset, marginType, user);
                     require(borrowBalance <= received, "Insufficient swapped");
-                    // repay the amount out - will fail if insufficiently swapped
+                    // repay the amount out
                     aavePool.repay(
                         baseAsset,
                         borrowBalance, // repay entire balance
@@ -348,7 +348,7 @@ contract BalancerFlashModule is WithStorage, TokenTransfer {
                     borrowBalance = received - borrowBalance;
                     if (borrowBalance > 0) _transferERC20Tokens(baseAsset, user, borrowBalance);
                 } else {
-                    // repay the amount out - will fail if insufficiently swapped
+                    // repay the amount out - will fail if too much is swapped
                     aavePool.repay(
                         baseAsset,
                         received, // repay ref amount

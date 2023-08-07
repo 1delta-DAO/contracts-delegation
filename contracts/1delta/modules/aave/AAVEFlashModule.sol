@@ -68,7 +68,7 @@ contract AAVEFlashModule is WithStorage, TokenTransfer {
     }
 
     /**
-     * @dev When `flashLoan` is called on the Vault, it invokes the `receiveFlashLoan` hook on the recipient.
+     * @dev When `flashLoan` is called on the Vault, it invokes the `executeOperation` hook on the recipient.
      *
      *  We never expect more than one token to be flashed
      */
@@ -276,7 +276,7 @@ contract AAVEFlashModule is WithStorage, TokenTransfer {
                     borrowBalance = received - borrowBalance;
                     if (borrowBalance > 0) _transferERC20Tokens(baseAsset, user, borrowBalance);
                 } else {
-                    // repay the amount out - will fail if insufficiently swapped
+                    // repay the amount out - will fail if too much is swapped
                     aavePool.repay(
                         baseAsset,
                         received, // repay reference amount
@@ -337,7 +337,7 @@ contract AAVEFlashModule is WithStorage, TokenTransfer {
                     borrowBalance = received - borrowBalance;
                     if (borrowBalance > 0) _transferERC20Tokens(baseAsset, user, borrowBalance);
                 } else {
-                    // repay the amount out - will fail if insufficiently swapped
+                    // repay the amount out - will fail if too much is swapped
                     aavePool.repay(
                         baseAsset,
                         received, // repay ref amount
