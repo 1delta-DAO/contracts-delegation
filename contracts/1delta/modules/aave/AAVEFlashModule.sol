@@ -68,7 +68,7 @@ contract AAVEFlashModule is WithStorage, TokenTransfer {
     }
 
     /**
-     * @dev When `flashLoan` is called on the Vault, it invokes the `executeOperation` hook on the recipient.
+     * @dev When `flashLoanSimple` is called on the the Aave pool, it invokes the `executeOperation` hook on the recipient.
      *
      *  We never expect more than one token to be flashed
      */
