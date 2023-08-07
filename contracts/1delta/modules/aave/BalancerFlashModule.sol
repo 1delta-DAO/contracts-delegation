@@ -22,7 +22,6 @@ contract BalancerFlashModule is WithStorage, TokenTransfer {
     // 0 = exactIn
     // 1 = exactOut
 
-
     struct DeltaParams {
         address baseAsset; // the asset paired with the flash loan
         address target; // the swap target
@@ -120,12 +119,13 @@ contract BalancerFlashModule is WithStorage, TokenTransfer {
 
                 // supply the received amount
                 aavePool.supply(baseAsset, amountSwapped, user, 0);
-
                 // adjust amount for flash loan fee
                 amountReceived += feeAmounts[0];
-
-                // borrow amounts plus fee and send them back to the pool
-                aavePool.borrow(token, amountReceived, flashParams.deltaParams.interestRateModeIn, 0, user);
+                // in case the input of the swap was too low, we subtract the balance pre-borrow
+                amountSwapped = amountReceived - IERC20(token).balanceOf(address(this));
+                // borrow the required amount
+                aavePool.borrow(token, amountSwapped, flashParams.deltaParams.interestRateModeIn, 0, user);
+                // send flash amount plus fee to vault
                 _transferERC20Tokens(token, msg.sender, amountReceived);
             }
             // margin close [expected to flash withdrawal amount]
@@ -145,24 +145,27 @@ contract BalancerFlashModule is WithStorage, TokenTransfer {
 
                 baseAsset = aas().aTokens[token];
                 if (flashParams.deltaParams.max) {
-                    // fetch user balance
-                    uint256 userBalance = IERC20(baseAsset).balanceOf(user);
+                    // fetch user balance of collateral tokens
+                    amountSwapped = IERC20(baseAsset).balanceOf(user);
                     // transfer aTokens from user
-                    _transferERC20TokensFrom(baseAsset, user, address(this), userBalance);
+                    _transferERC20TokensFrom(baseAsset, user, address(this), amountSwapped);
                     // withdraw the entire user balance
-                    aavePool.withdraw(token, userBalance, address(this));
+                    aavePool.withdraw(token, amountSwapped, address(this));
                     //  send required funds back to flash pool
                     _transferERC20Tokens(token, msg.sender, amountReceived);
                     // adjust funds for leftovers
-                    amountReceived = userBalance - amountReceived;
+                    amountReceived = amountSwapped - amountReceived;
                     // if funds are left, send them to the user
-                    if (amountReceived != 0) _transferERC20Tokens(token, msg.sender, amountReceived);
+                    if (amountReceived != 0) _transferERC20Tokens(token, user, amountReceived);
                 } else {
                     // transfer aTokens from user
                     _transferERC20TokensFrom(baseAsset, user, address(this), amountReceived);
-
-                    // withdraw and send funds back to flash pool
-                    aavePool.withdraw(token, amountReceived, msg.sender);
+                    // calculate amount to withdraw
+                    amountSwapped = amountReceived - IERC20(token).balanceOf(address(this));
+                    // withdraw required funds
+                    aavePool.withdraw(token, amountSwapped, address(this));
+                    // send flash amount plus fees to vault
+                    _transferERC20Tokens(token, msg.sender, amountReceived);
                 }
             }
             //  collateral swap
@@ -183,23 +186,26 @@ contract BalancerFlashModule is WithStorage, TokenTransfer {
                 baseAsset = aas().aTokens[token];
                 if (flashParams.deltaParams.max) {
                     // fetch user balance
-                    uint256 userBalance = IERC20(baseAsset).balanceOf(user);
+                    amountSwapped = IERC20(baseAsset).balanceOf(user);
                     // transfer aTokens from user
-                    _transferERC20TokensFrom(baseAsset, user, address(this), userBalance);
+                    _transferERC20TokensFrom(baseAsset, user, address(this), amountSwapped);
                     // withdraw the entire user balance
-                    aavePool.withdraw(token, userBalance, address(this));
+                    aavePool.withdraw(token, amountSwapped, address(this));
                     //  send required funds back to flash pool
                     _transferERC20Tokens(token, msg.sender, amountReceived);
                     // adjust funds for leftovers
-                    amountReceived = userBalance - amountReceived;
+                    amountReceived = amountSwapped - amountReceived;
                     // if funds are left, send them to the user
-                    if (amountReceived != 0) _transferERC20Tokens(token, msg.sender, amountReceived);
+                    if (amountReceived != 0) _transferERC20Tokens(token, user, amountReceived);
                 } else {
                     // transfer aTokens from user
                     _transferERC20TokensFrom(baseAsset, user, address(this), amountReceived);
-
-                    // withdraw and send funds back to flash pool
-                    aavePool.withdraw(token, amountReceived, msg.sender);
+                    // calculate amount to withdraw
+                    amountSwapped = amountReceived - IERC20(token).balanceOf(address(this));
+                    // withdraw required funds
+                    aavePool.withdraw(token, amountSwapped, address(this));
+                    // send flash amount plus fees to vault
+                    _transferERC20Tokens(token, msg.sender, amountReceived);
                 }
             }
             // debt swap
@@ -216,9 +222,10 @@ contract BalancerFlashModule is WithStorage, TokenTransfer {
 
                 // adjust amount for flash loan fee
                 amountReceived += feeAmounts[0];
-
+                // in case the input of the swap was too low, we subtract the balance pre-borrow
+                amountSwapped = amountReceived - IERC20(token).balanceOf(address(this));
                 // borrow amounts plus fee and send them back to the pool
-                aavePool.borrow(token, amountReceived, flashParams.deltaParams.interestRateModeIn, 0, user);
+                aavePool.borrow(token, amountSwapped, flashParams.deltaParams.interestRateModeIn, 0, user);
                 _transferERC20Tokens(token, msg.sender, amountReceived);
             }
         }

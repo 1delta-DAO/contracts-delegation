@@ -983,6 +983,70 @@ describe('Balancer Flash loans for AAVE', async () => {
         expect(toNumber(debtBalanceIn.sub(debtBalanceInPre))).to.lessThanOrEqual(toNumber(amountToRepay) * 1.01)
     })
 
+
+        // flash loans input amount [has to be provided including the fee]
+    // steps
+    // 1) flash amount in [has to be adjusted in advance for flash loan fee]
+    // 2) swap flashed amount using target calldata
+    // 3) supply obtained amount
+    // 4) borrow required repay amount of tokenIn to repay flash loan 
+    it('allows exact in margin with too high flash', async () => {
+        const inId = 'DAI'
+        const outId = 'AAVE'
+        const depositId = 'AAVE'
+        const tokenIn = aaveTest.tokens[inId]
+        const tokenOut = aaveTest.tokens[outId]
+        const tokenDeposit = aaveTest.tokens[depositId]
+
+        console.log("Tokens", tokenIn.address, tokenOut.address)
+        await tokenDeposit.connect(bob).approve(aaveTest.pool.address, constants.MaxUint256)
+        const deposit = expandTo18Decimals(10)
+
+        await aaveTest.pool.connect(bob).supply(tokenDeposit.address, deposit, bob.address, 0)
+        const amountToBorrow = expandTo18Decimals(5)
+
+        // we have to calibrate the amount in for the flash loan fee first - otherwise, the user would experience
+        // a different amount in
+        const amountToBorrowPostFee = amountToBorrow.mul(ONE_18).div(ONE_18.add(flashFee)).add(1)
+        // produce swap calldata
+        const targetCalldata = mockRouter.interface.encodeFunctionData(
+            'swapExactIn',
+            [
+                tokenIn.address,
+                tokenOut.address,
+                amountToBorrowPostFee
+            ]
+        )
+
+        await aaveTest.vTokens[inId].connect(bob).approveDelegation(balancerModule.address, amountToBorrowPostFee.mul(2))
+
+        const debtBalanceOutPre = await aaveTest.vTokens[inId].balanceOf(bob.address)
+        const params = {
+            baseAsset: tokenOut.address, // the asset to interact with
+            target: mockRouter.address,
+            swapType: 0, // exact in
+            marginTradeType: 0, // margin open
+            interestRateModeIn: InterestRateMode.VARIABLE, // the borrow mode
+            interestRateModeOut: 0, // unused
+            max: false
+        }
+        console.log("user", bob.address)
+        await balancerModule.connect(bob).executeOnBalancer(
+            tokenIn.address,  // the asset to flash
+            amountToBorrowPostFee.mul(10), // the flash loan amount
+            params, // oneDelta params
+            targetCalldata
+        )
+
+        const balanceOut = await aaveTest.aTokens[outId].balanceOf(bob.address)
+        const debtBalanceOut = await aaveTest.vTokens[inId].balanceOf(bob.address)
+        console.log("Bals", balanceOut.toString(), debtBalanceOut.toString(), bob.address)
+
+        expect(toNumber(balanceOut)).to.greaterThanOrEqual(toNumber(deposit.add(amountToBorrowPostFee.mul(99).div(100))))
+        expect(debtBalanceOut.sub(debtBalanceOutPre).lte(amountToBorrow.mul(101).div(100))).to.equal(true)
+        expect(debtBalanceOut.sub(debtBalanceOutPre).gte(amountToBorrow)).to.equal(true)
+    })
+
 })
 
 
@@ -1005,7 +1069,7 @@ describe('Balancer Flash loans for AAVE', async () => {
 // ························································|·································|·············|·············|···········|···············|··············
 // |  BalancerFlashModule                                  ·  addTarget                      ·          -  ·          -  ·    48869  ·            1  ·       2.68  │
 // ························································|·································|·············|·············|···········|···············|··············
-// |  BalancerFlashModule                                  ·  executeOnBalancer              ·     418710  ·     505293  ·   459145  ·            8  ·      12.92  │
+// |  BalancerFlashModule                                  ·  executeOnBalancer              ·     418710  ·     505293  ·   456686  ·           13  ·      12.92  │
 // ························································|·································|·············|·············|···········|···············|··············
 
 

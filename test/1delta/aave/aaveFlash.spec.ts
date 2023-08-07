@@ -980,6 +980,68 @@ describe('AAVE Flash loans for AAVE', async () => {
         expect(toNumber(debtBalanceIn.sub(debtBalanceInPre))).to.lessThanOrEqual(toNumber(amountToRepay) * 1.01)
     })
 
+        // flash loans input amount [has to be provided including the fee]
+    // steps
+    // 1) flash amount in [has to be adjusted in advance for flash loan fee]
+    // 2) swap flashed amount using target calldata
+    // 3) supply obtained amount
+    // 4) borrow required repay amount of tokenIn to repay flash loan 
+    it('allows exact in margin high flash loan', async () => {
+        const inId = 'DAI'
+        const outId = 'AAVE'
+        const depositId = 'AAVE'
+        const tokenIn = aaveTest.tokens[inId]
+        const tokenOut = aaveTest.tokens[outId]
+        const tokenDeposit = aaveTest.tokens[depositId]
+
+        console.log("Tokens", tokenIn.address, tokenOut.address)
+        await tokenDeposit.connect(bob).approve(aaveTest.pool.address, constants.MaxUint256)
+        const deposit = expandTo18Decimals(10)
+
+        await aaveTest.pool.connect(bob).supply(tokenDeposit.address, deposit, bob.address, 0)
+        const amountToBorrow = expandTo18Decimals(1)
+
+        // we have to calibrate the amount in for the flash loan fee first - otherwise, the user would experience
+        // a different amount in
+        const amountToBorrowPostFee = adjustForFlashFee(amountToBorrow, flashFee) //amountToBorrow.mul(AAVE_FLASH_FEE_DENOMINATOR).div(AAVE_FLASH_FEE_DENOMINATOR.add(flashFee)).add(1)
+        // produce swap calldata
+        const targetCalldata = mockRouter.interface.encodeFunctionData(
+            'swapExactIn',
+            [
+                tokenIn.address,
+                tokenOut.address,
+                amountToBorrowPostFee
+            ]
+        )
+
+        await aaveTest.vTokens[inId].connect(bob).approveDelegation(balancerModule.address, amountToBorrowPostFee.mul(2))
+        const debtBalanceOutPre = await aaveTest.vTokens[inId].balanceOf(bob.address)
+        const params = {
+            baseAsset: tokenOut.address, // the asset to interact with
+            target: mockRouter.address,
+            swapType: 0, // exact in
+            marginTradeType: 0, // margin open
+            interestRateModeIn: InterestRateMode.VARIABLE, // the borrow mode
+            interestRateModeOut: 0, // unused
+            max: false
+        }
+        console.log("user", bob.address)
+        await balancerModule.connect(bob).executeOnAave(
+            tokenIn.address,  // the asset to flash
+            amountToBorrowPostFee.mul(10), // the flash loan amount
+            params, // oneDelta params
+            targetCalldata
+        )
+
+        const balanceOut = await aaveTest.aTokens[outId].balanceOf(bob.address)
+        const debtBalanceOut = await aaveTest.vTokens[inId].balanceOf(bob.address)
+        console.log("Bals", balanceOut.toString(), debtBalanceOut.toString(), bob.address)
+
+        expect(toNumber(balanceOut)).to.greaterThanOrEqual(toNumber(deposit.add(amountToBorrowPostFee.mul(99).div(100))))       
+        expect(debtBalanceOut.sub(debtBalanceOutPre).lte(amountToBorrow.mul(101).div(100))).to.equal(true)
+        expect(debtBalanceOut.sub(debtBalanceOutPre).gte(amountToBorrow)).to.equal(true)
+    })
+
 })
 
 
@@ -992,7 +1054,7 @@ describe('AAVE Flash loans for AAVE', async () => {
 // ························································|····································|·············|·············|···········|···············|··············
 // |  @openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20  ·  approve                           ·      34108  ·      51244  ·    46948  ·            4  ·       1.25  │
 // ························································|····································|·············|·············|···········|···············|··············
-// |  AAVEFlashModule                                      ·  executeOnAave                     ·     444096  ·     530580  ·   490311  ·            8  ·      12.99  │
+// |  AAVEFlashModule                                      ·  executeOnAave                     ·     444096  ·     530580  ·   487399  ·           13  ·      12.99  │
 // ························································|····································|·············|·············|···········|···············|··············
 // |  AAVEMarginTraderInit                                 ·  initAAVEMarginTrader              ·          -  ·          -  ·   137473  ·            1  ·       3.66  │
 // ························································|····································|·············|·············|···········|···············|··············
