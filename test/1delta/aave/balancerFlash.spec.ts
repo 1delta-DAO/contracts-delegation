@@ -172,11 +172,10 @@ describe('Balancer Flash loans for AAVE', async () => {
         const params = {
             baseAsset: tokenOut.address, // the asset to interact with
             target: mockRouter.address,
-            swapType: 0, // exact in
             marginTradeType: 0, // margin open
             interestRateModeIn: InterestRateMode.VARIABLE, // the borrow mode
             interestRateModeOut: 0, // unused
-            max: false
+            withdrawMax: false
         }
         console.log("user", bob.address)
         await balancerModule.connect(bob).executeOnBalancer(
@@ -238,11 +237,10 @@ describe('Balancer Flash loans for AAVE', async () => {
         const params = {
             baseAsset: tokenOut.address, // the asset to interact with
             target: mockRouter.address,
-            swapType: 1, // exact out
             marginTradeType: 0, // margin open
             interestRateModeIn: InterestRateMode.VARIABLE, // the borrow mode
             interestRateModeOut: 0, // unused
-            max: false
+            withdrawMax: false
         }
         console.log("user", carol.address)
         await balancerModule.connect(carol).executeOnBalancer(
@@ -301,11 +299,10 @@ describe('Balancer Flash loans for AAVE', async () => {
         const params = {
             baseAsset: tokenOut.address, // the asset to interact with
             target: mockRouter.address,
-            swapType: 0, // exact in
             marginTradeType: 1, // margin close
             interestRateModeIn: 0, // unused
             interestRateModeOut: InterestRateMode.VARIABLE, // repay mode
-            max: false
+            withdrawMax: false
         }
         console.log("user", test.address, "aInWFee", amountToWithdrawPostFee.toString())
 
@@ -365,11 +362,10 @@ describe('Balancer Flash loans for AAVE', async () => {
         const params = {
             baseAsset: tokenOut.address, // the asset to interact with
             target: mockRouter.address,
-            swapType: 1, // exact out
             marginTradeType: 1, // margin close
             interestRateModeIn: 0, // unused
             interestRateModeOut: InterestRateMode.VARIABLE, // repay mode
-            max: false
+            withdrawMax: false
         }
         console.log("user", test1.address, "aOut", amountToRepay.toString())
 
@@ -437,11 +433,10 @@ describe('Balancer Flash loans for AAVE', async () => {
         const params = {
             baseAsset: tokenOut.address, // the asset to interact with
             target: mockRouter.address,
-            swapType: 0, // exact in
             marginTradeType: 2, // collateral swap
             interestRateModeIn: 0, // unused
             interestRateModeOut: 0, // unused
-            max: false
+            withdrawMax: false
         }
         console.log("user", test2.address)
         const balanceInBefore = await aaveTest.aTokens[inId].balanceOf(test2.address)
@@ -507,11 +502,10 @@ describe('Balancer Flash loans for AAVE', async () => {
         const params = {
             baseAsset: tokenOut.address, // the asset to interact with
             target: mockRouter.address,
-            swapType: 1, // exact out
             marginTradeType: 2, // collateral swap
             interestRateModeIn: 0, // unused
             interestRateModeOut: 0, // unused
-            max: false
+            withdrawMax: false
         }
         console.log("user", test1.address, "aOut", amountToSupply.toString())
 
@@ -580,11 +574,10 @@ describe('Balancer Flash loans for AAVE', async () => {
         const params = {
             baseAsset: tokenOut.address, // the asset to interact with
             target: mockRouter.address,
-            swapType: 0, // exact in
             marginTradeType: 3, // loan swap
             interestRateModeIn: InterestRateMode.VARIABLE, // the input borrow mode
             interestRateModeOut: InterestRateMode.VARIABLE, // the output borrow mode
-            max: false
+            withdrawMax: false
         }
         console.log("user", gabi.address)
 
@@ -658,11 +651,10 @@ describe('Balancer Flash loans for AAVE', async () => {
         const params = {
             baseAsset: tokenOut.address, // the asset to interact with
             target: mockRouter.address,
-            swapType: 1, // exact out
             marginTradeType: 3, // loan swap
             interestRateModeIn: InterestRateMode.VARIABLE, // borrow mode in
             interestRateModeOut: InterestRateMode.VARIABLE, // borrow mode out
-            max: false
+            withdrawMax: false
         }
         console.log("user", test3.address, "aOut", amountToRepay.toString())
 
@@ -707,7 +699,7 @@ describe('Balancer Flash loans for AAVE', async () => {
         const initBorrow = expandTo18Decimals(10)
         const additionalDepo = expandTo18Decimals(5)
         await depositAndBorrow(test4, aaveTest, inId, outId, initDeposit, initBorrow)
-        await deposit( aaveTest, repayDepoId, test4, additionalDepo)
+        await deposit(aaveTest, repayDepoId, test4, additionalDepo)
 
         console.log("Tokens", tokenIn.address, tokenOut.address)
 
@@ -731,11 +723,10 @@ describe('Balancer Flash loans for AAVE', async () => {
         const params = {
             baseAsset: tokenOut.address, // the asset to interact with
             target: mockRouter.address,
-            swapType: 0, // exact in
             marginTradeType: 1, // margin close
             interestRateModeIn: 0, // unused
             interestRateModeOut: InterestRateMode.VARIABLE, // repay mode
-            max: true
+            withdrawMax: true
         }
         console.log("user", test4.address, "aInWFee", amountToWithdrawPostFee.toString())
 
@@ -806,11 +797,10 @@ describe('Balancer Flash loans for AAVE', async () => {
         const params = {
             baseAsset: tokenOut.address, // the asset to interact with
             target: mockRouter.address,
-            swapType: 0, // exact in
             marginTradeType: 2, // collateral swap
             interestRateModeIn: 0, // unused
             interestRateModeOut: 0, // unused
-            max: true
+            withdrawMax: true
         }
         console.log("user", test5.address)
         const balanceInBefore = await aaveTest.aTokens[inId].balanceOf(test5.address)
@@ -870,15 +860,14 @@ describe('Balancer Flash loans for AAVE', async () => {
         // approval of actually paid amout
         await aaveTest.aTokens[inId].connect(test7).approve(balancerModule.address, amountToWithdrawMax)
 
-        console.log("Tokens in/out",tokenIn.address, tokenOut.address)
+        console.log("Tokens in/out", tokenIn.address, tokenOut.address)
         const params = {
             baseAsset: tokenOut.address, // the asset to interact with
             target: mockRouter.address,
-            swapType: 1, // exact out
             marginTradeType: 1, // margin close
             interestRateModeIn: 0, // unused
             interestRateModeOut: InterestRateMode.VARIABLE, // repay mode
-            max: true
+            withdrawMax: false
         }
 
         const balPre = await aaveTest.aTokens[inId].balanceOf(test7.address)
@@ -902,7 +891,7 @@ describe('Balancer Flash loans for AAVE', async () => {
         expect(toNumber(balPre.sub(balanceOut))).to.lessThanOrEqual(toNumber(amountToRepay) * 1.01)
     })
 
-       // flash loans input amount [has to be provided including the fee]
+    // flash loans input amount [has to be provided including the fee]
     // steps
     // 1) flash amount in [has to be adjusted in advance for flash loan fee]
     // 2) swap flashed amount using target calldata
@@ -952,11 +941,10 @@ describe('Balancer Flash loans for AAVE', async () => {
         const params = {
             baseAsset: tokenOut.address, // the asset to interact with
             target: mockRouter.address,
-            swapType: 1, // exact out
             marginTradeType: 3, // loan swap
             interestRateModeIn: InterestRateMode.VARIABLE, // borrow mode in
             interestRateModeOut: InterestRateMode.VARIABLE, // borrow mode out
-            max: true
+            withdrawMax: false
         }
         console.log("user", test6.address, "aOut", amountToRepay.toString())
 
@@ -984,7 +972,7 @@ describe('Balancer Flash loans for AAVE', async () => {
     })
 
 
-        // flash loans input amount [has to be provided including the fee]
+    // flash loans input amount [has to be provided including the fee]
     // steps
     // 1) flash amount in [has to be adjusted in advance for flash loan fee]
     // 2) swap flashed amount using target calldata
@@ -1024,11 +1012,10 @@ describe('Balancer Flash loans for AAVE', async () => {
         const params = {
             baseAsset: tokenOut.address, // the asset to interact with
             target: mockRouter.address,
-            swapType: 0, // exact in
             marginTradeType: 0, // margin open
             interestRateModeIn: InterestRateMode.VARIABLE, // the borrow mode
             interestRateModeOut: 0, // unused
-            max: false
+            withdrawMax: false
         }
         console.log("user", bob.address)
         await balancerModule.connect(bob).executeOnBalancer(
@@ -1045,6 +1032,21 @@ describe('Balancer Flash loans for AAVE', async () => {
         expect(toNumber(balanceOut)).to.greaterThanOrEqual(toNumber(deposit.add(amountToBorrowPostFee.mul(99).div(100))))
         expect(debtBalanceOut.sub(debtBalanceOutPre).lte(amountToBorrow.mul(101).div(100))).to.equal(true)
         expect(debtBalanceOut.sub(debtBalanceOutPre).gte(amountToBorrow)).to.equal(true)
+    })
+
+    it('no dust', async () => {
+        const aaveTokens = Object.keys(aaveTest.tokens)
+        for (let i = 0; i < aaveTokens.length; i++) {
+            const name = aaveTokens[i]
+            const token = aaveTest.tokens[name]
+            const aToken = aaveTest.aTokens[name]
+
+            const bal = await token.balanceOf(balancerModule.address)
+            const aBal = await aToken.balanceOf(balancerModule.address)
+
+            expect(bal.toString()).to.equal('0')
+            expect(aBal.toString()).to.equal('0')
+        }
     })
 
 })
@@ -1069,7 +1071,7 @@ describe('Balancer Flash loans for AAVE', async () => {
 // ························································|·································|·············|·············|···········|···············|··············
 // |  BalancerFlashModule                                  ·  addTarget                      ·          -  ·          -  ·    48869  ·            1  ·       2.68  │
 // ························································|·································|·············|·············|···········|···············|··············
-// |  BalancerFlashModule                                  ·  executeOnBalancer              ·     418710  ·     505293  ·   456686  ·           13  ·      12.92  │
+// |  BalancerFlashModule                                  ·  executeOnBalancer              ·     418710  ·     505293  ·   459260  ·           13  ·      12.92  │
 // ························································|·································|·············|·············|···········|···············|··············
 
 

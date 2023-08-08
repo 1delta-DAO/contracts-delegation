@@ -8,7 +8,11 @@ import {WithStorage} from "../../storage/BrokerStorage.sol";
 import {TokenTransfer} from "./../../libraries/TokenTransfer.sol";
 import {IBalancerFlashLoans, IFlashLoanRecipient} from "../../../external-protocols/balancer/IBalancerFlashLoans.sol";
 import {IERC20Balance} from "../../interfaces/IERC20Balance.sol";
+import "hardhat/console.sol";
 
+/// @notice Balancer flash do NOT loans draw the required loan plus fee from the caller
+//  as such, we have to make sure that we always transer loan plus fee
+//  during the flash loan call
 contract BalancerFlashModule is WithStorage, TokenTransfer {
     IPool private immutable _aavePool;
     IBalancerFlashLoans private immutable _balancerFlashLoans;
@@ -18,18 +22,13 @@ contract BalancerFlashModule is WithStorage, TokenTransfer {
     // 2 = collateral / open
     // 3 = debt / close
 
-    // swapType
-    // 0 = exactIn
-    // 1 = exactOut
-
     struct DeltaParams {
         address baseAsset; // the asset paired with the flash loan
         address target; // the swap target
-        uint8 swapType; // exact in or out
         uint8 marginTradeType; // open, close, collateral, debt swap
         uint8 interestRateModeIn; // aave interest mode
         uint8 interestRateModeOut; // aave interest mode
-        bool max; // a flag that indicates that either
+        bool withdrawMax; // a flag that indicates that either
         // 1) the entire balance is withdrawn (for exactIn); or
         // 2) the entire debt is repaid (for exactOut) - the referenceAmount must be larger than the debt
     }
@@ -107,265 +106,163 @@ contract BalancerFlashModule is WithStorage, TokenTransfer {
 
         // exact in swap
         // that amount is supposed to be swapped by the target to some output amount in asset baseAsset
-        if (flashParams.deltaParams.swapType == 0) {
-            //margin open [expected to flash borrow amount]
-            if (marginType == 0) {
-                // execute transaction on target
-                (bool success, ) = swapTarget.call(flashParams.encodedSwapCall);
-                require(success, "CALL_FAILED");
+        //margin open [expected to flash borrow amount]
+        if (marginType == 0) {
+            // execute transaction on target
+            (bool success, ) = swapTarget.call(flashParams.encodedSwapCall);
+            require(success, "CALL_FAILED");
 
-                address baseAsset = flashParams.deltaParams.baseAsset;
-                uint256 amountSwapped = IERC20(baseAsset).balanceOf(address(this));
+            address baseAsset = flashParams.deltaParams.baseAsset;
+            uint256 amountSwapped = IERC20(baseAsset).balanceOf(address(this));
 
-                // supply the received amount
-                aavePool.supply(baseAsset, amountSwapped, user, 0);
-                // adjust amount for flash loan fee
-                amountReceived += feeAmounts[0];
-                // in case the input of the swap was too low, we subtract the balance pre-borrow
-                amountSwapped = amountReceived - IERC20(token).balanceOf(address(this));
-                // borrow the required amount
-                aavePool.borrow(token, amountSwapped, flashParams.deltaParams.interestRateModeIn, 0, user);
-                // send flash amount plus fee to vault
-                _transferERC20Tokens(token, msg.sender, amountReceived);
-            }
-            // margin close [expected to flash withdrawal amount]
-            else if (marginType == 1) {
-                // execute transaction on target
-                (bool success, ) = swapTarget.call(flashParams.encodedSwapCall);
-                require(success, "CALL_FAILED");
-
-                address baseAsset = flashParams.deltaParams.baseAsset;
-                uint256 amountSwapped = IERC20(baseAsset).balanceOf(address(this));
-
-                // repay obtained amount
-                aavePool.repay(baseAsset, amountSwapped, flashParams.deltaParams.interestRateModeOut, user);
-
-                // adjust amount for flash loan fee
-                amountReceived += feeAmounts[0];
-
-                baseAsset = aas().aTokens[token];
-                if (flashParams.deltaParams.max) {
-                    // fetch user balance of collateral tokens
-                    amountSwapped = IERC20(baseAsset).balanceOf(user);
-                    // transfer aTokens from user
-                    _transferERC20TokensFrom(baseAsset, user, address(this), amountSwapped);
-                    // withdraw the entire user balance
-                    aavePool.withdraw(token, amountSwapped, address(this));
-                    //  send required funds back to flash pool
-                    _transferERC20Tokens(token, msg.sender, amountReceived);
-                    // adjust funds for leftovers
-                    amountReceived = amountSwapped - amountReceived;
-                    // if funds are left, send them to the user
-                    if (amountReceived != 0) _transferERC20Tokens(token, user, amountReceived);
-                } else {
-                    // transfer aTokens from user
-                    _transferERC20TokensFrom(baseAsset, user, address(this), amountReceived);
-                    // calculate amount to withdraw
-                    amountSwapped = amountReceived - IERC20(token).balanceOf(address(this));
-                    // withdraw required funds
-                    aavePool.withdraw(token, amountSwapped, address(this));
-                    // send flash amount plus fees to vault
-                    _transferERC20Tokens(token, msg.sender, amountReceived);
-                }
-            }
-            //  collateral swap
-            else if (marginType == 2) {
-                // execute transaction on target
-                (bool success, ) = swapTarget.call(flashParams.encodedSwapCall);
-                require(success, "CALL_FAILED");
-
-                address baseAsset = flashParams.deltaParams.baseAsset;
-                uint256 amountSwapped = IERC20(baseAsset).balanceOf(address(this));
-
-                // supply the received amount
-                aavePool.supply(baseAsset, amountSwapped, user, 0);
-
-                // adjust amount for flash loan fee
-                amountReceived += feeAmounts[0];
-
-                baseAsset = aas().aTokens[token];
-                if (flashParams.deltaParams.max) {
-                    // fetch user balance
-                    amountSwapped = IERC20(baseAsset).balanceOf(user);
-                    // transfer aTokens from user
-                    _transferERC20TokensFrom(baseAsset, user, address(this), amountSwapped);
-                    // withdraw the entire user balance
-                    aavePool.withdraw(token, amountSwapped, address(this));
-                    //  send required funds back to flash pool
-                    _transferERC20Tokens(token, msg.sender, amountReceived);
-                    // adjust funds for leftovers
-                    amountReceived = amountSwapped - amountReceived;
-                    // if funds are left, send them to the user
-                    if (amountReceived != 0) _transferERC20Tokens(token, user, amountReceived);
-                } else {
-                    // transfer aTokens from user
-                    _transferERC20TokensFrom(baseAsset, user, address(this), amountReceived);
-                    // calculate amount to withdraw
-                    amountSwapped = amountReceived - IERC20(token).balanceOf(address(this));
-                    // withdraw required funds
-                    aavePool.withdraw(token, amountSwapped, address(this));
-                    // send flash amount plus fees to vault
-                    _transferERC20Tokens(token, msg.sender, amountReceived);
-                }
-            }
-            // debt swap
-            else {
-                // execute transaction on target
-                (bool success, ) = swapTarget.call(flashParams.encodedSwapCall);
-                require(success, "CALL_FAILED");
-
-                address baseAsset = flashParams.deltaParams.baseAsset;
-                uint256 amountSwapped = IERC20(baseAsset).balanceOf(address(this));
-
-                // repay obtained amount
-                aavePool.repay(baseAsset, amountSwapped, flashParams.deltaParams.interestRateModeOut, user);
-
-                // adjust amount for flash loan fee
-                amountReceived += feeAmounts[0];
-                // in case the input of the swap was too low, we subtract the balance pre-borrow
-                amountSwapped = amountReceived - IERC20(token).balanceOf(address(this));
-                // borrow amounts plus fee and send them back to the pool
-                aavePool.borrow(token, amountSwapped, flashParams.deltaParams.interestRateModeIn, 0, user);
-                _transferERC20Tokens(token, msg.sender, amountReceived);
-            }
+            // supply the received amount
+            aavePool.supply(baseAsset, amountSwapped, user, 0);
+            // adjust amount for flash loan fee
+            amountReceived += feeAmounts[0];
+            // in case the input of the swap was too low, we subtract the balance pre-borrow
+            amountSwapped = amountReceived - IERC20(token).balanceOf(address(this));
+            // borrow the required amount
+            aavePool.borrow(token, amountSwapped, flashParams.deltaParams.interestRateModeIn, 0, user);
+            // send flash amount plus fee to vault
+            _transferERC20Tokens(token, msg.sender, amountReceived);
         }
-        // exact out swap
-        else {
-            //margin open [expected to flash (optimistic) supply amount]
-            if (marginType == 0) {
-                // swap the flashed amount
-                (bool success, ) = swapTarget.call(flashParams.encodedSwapCall);
-                require(success, "CALL_FAILED");
-                // fetch the current swap amount as flashAmount - (flashAmount - amountIn)
-                uint256 amountSwapped = amountReceived - IERC20(token).balanceOf(address(this));
-                address baseAsset = flashParams.deltaParams.baseAsset;
-                uint256 received = IERC20(baseAsset).balanceOf(address(this));
-                // supply the amount out - will fail if insufficiently swapped
-                aavePool.supply(baseAsset, received, user, 0);
+        // margin close [expected to flash withdrawal amount]
+        else if (marginType == 1) {
+            // execute transaction on target
+            (bool success, ) = swapTarget.call(flashParams.encodedSwapCall);
+            require(success, "CALL_FAILED");
 
-                uint256 fee = feeAmounts[0];
-                // borrow amount in plus flash loan fee
-                amountSwapped += fee;
-                aavePool.borrow(token, amountSwapped, flashParams.deltaParams.interestRateModeIn, 0, user);
-
-                // repay flash loan
-                amountReceived += fee;
-                _transferERC20Tokens(token, msg.sender, amountReceived);
+            address baseAsset = flashParams.deltaParams.baseAsset;
+            uint256 amountSwapped = IERC20(baseAsset).balanceOf(address(this));
+            marginType = flashParams.deltaParams.interestRateModeOut;
+            uint256 borrowBalance = getDebtBalance(baseAsset, marginType, user);
+            if (borrowBalance <= amountSwapped) {
+                // repay the amount out - will fail if insufficiently swapped
+                aavePool.repay(
+                    baseAsset,
+                    borrowBalance, // repay entire balance
+                    marginType,
+                    user
+                );
+                // refund excess amount if any
+                borrowBalance = amountSwapped - borrowBalance;
+                if (borrowBalance > 0) _transferERC20Tokens(baseAsset, user, borrowBalance);
+            } else {
+                // repay the amount out - will fail if too much is swapped
+                aavePool.repay(
+                    baseAsset,
+                    amountSwapped, // repay reference amount
+                    marginType,
+                    user
+                );
             }
-            // margin close [expected to flash withdrawal amount]
-            // the repay amount consists of fee + swapAmount + residual
-            else if (marginType == 1) {
-                // swap the flashed amount exact out
-                (bool success, ) = swapTarget.call(flashParams.encodedSwapCall);
-                require(success, "CALL_FAILED");
-                // fetch the current swap amount as flashAmount - (flashAmount - amountIn)
-                uint256 amountSwapped = amountReceived - IERC20(token).balanceOf(address(this));
-
-                address baseAsset = flashParams.deltaParams.baseAsset;
-                uint256 received = IERC20(baseAsset).balanceOf(address(this));
-                marginType = flashParams.deltaParams.interestRateModeOut;
-                if (flashParams.deltaParams.max) {
-                    uint256 borrowBalance = getDebtBalance(baseAsset, marginType, user);
-                    require(borrowBalance <= received, "Insufficient swapped");
-                    // repay the amount out
-                    aavePool.repay(
-                        baseAsset,
-                        borrowBalance, // repay entire balance
-                        marginType,
-                        user
-                    );
-                    // refund excess amount if any
-                    borrowBalance = received - borrowBalance;
-                    if (borrowBalance > 0) _transferERC20Tokens(baseAsset, user, borrowBalance);
-                } else {
-                    // repay the amount out - will fail if too much is swapped
-                    aavePool.repay(
-                        baseAsset,
-                        received, // repay reference amount
-                        marginType,
-                        user
-                    );
-                }
-                // adjust amount for fee
-                uint256 fee = feeAmounts[0];
-                amountSwapped += fee;
-                baseAsset = aas().aTokens[token];
-                // transfer aTokens from user - we only need the swap input amount plus flash loan fee
+            // adjust amount for flash loan fee
+            amountReceived += feeAmounts[0];
+            baseAsset = aas().aTokens[token];
+            if (flashParams.deltaParams.withdrawMax) {
+                // fetch user balance
+                amountSwapped = IERC20(baseAsset).balanceOf(user);
+                // transfer aTokens from user
                 _transferERC20TokensFrom(baseAsset, user, address(this), amountSwapped);
-                // withdraw swap amount directly to flash pool
-                aavePool.withdraw(token, amountSwapped, msg.sender);
-                // repay flash loan with residual funds
-                amountReceived -= amountSwapped;
-                amountReceived += fee;
+                // withdraw the entire user balance
+                aavePool.withdraw(token, amountSwapped, address(this));
+                //  send required funds back to flash pool
                 _transferERC20Tokens(token, msg.sender, amountReceived);
-            }
-            //  collateral swap
-            else if (marginType == 2) {
-                // swap the flashed amount exact out
-                (bool success, ) = swapTarget.call(flashParams.encodedSwapCall);
-                require(success, "CALL_FAILED");
-                // fetch the current swap amount as flashAmount - (flashAmount - amountIn)
-                uint256 amountSwapped = amountReceived - IERC20(token).balanceOf(address(this));
-                address baseAsset = flashParams.deltaParams.baseAsset;
-                uint256 received = IERC20(baseAsset).balanceOf(address(this));
-                // supply the amount out - will fail if insufficiently swapped
-                aavePool.supply(baseAsset, received, user, 0);
-
-                // adjust amount for fee
-                uint256 fee = feeAmounts[0];
-                amountSwapped += fee;
-                // transfer aTokens from user - we only need the swap input amount plus flash loan fee
-                _transferERC20TokensFrom(aas().aTokens[token], user, address(this), amountSwapped);
-                // withdraw swap amount directly to flash pool
-                aavePool.withdraw(token, amountSwapped, msg.sender);
-                // repay flash loan with residual funds
-                amountReceived -= amountSwapped;
-                amountReceived += fee;
-                _transferERC20Tokens(token, msg.sender, amountReceived);
-            }
-            // debt swap
-            else {
-                // swap the flashed amount exact out
-                (bool success, ) = swapTarget.call(flashParams.encodedSwapCall);
-                require(success, "CALL_FAILED");
-                // fetch the current swap amount as flashAmount - (flashAmount - amountIn)
-                uint256 amountSwapped = amountReceived - IERC20(token).balanceOf(address(this));
-
-                address baseAsset = flashParams.deltaParams.baseAsset;
-                uint256 received = IERC20(baseAsset).balanceOf(address(this));
-                marginType = flashParams.deltaParams.interestRateModeOut;
-                if (flashParams.deltaParams.max) {
-                    uint256 borrowBalance = getDebtBalance(baseAsset, marginType, user);
-                    require(borrowBalance <= received, "Insufficient swapped");
-                    // repay the amount out
-                    aavePool.repay(
-                        baseAsset,
-                        borrowBalance, // repay entire balance
-                        marginType,
-                        user
-                    );
-                    // refund excess amount if any
-                    borrowBalance = received - borrowBalance;
-                    if (borrowBalance > 0) _transferERC20Tokens(baseAsset, user, borrowBalance);
-                } else {
-                    // repay the amount out - will fail if too much is swapped
-                    aavePool.repay(
-                        baseAsset,
-                        received, // repay ref amount
-                        marginType,
-                        user
-                    );
-                }
-                // adjust amount for fee
-                uint256 fee = feeAmounts[0];
-                amountSwapped += fee;
-                // borrow amount in plus flash loan fee
-                // repay flash loan with residual funds
-                amountReceived += fee;
-                aavePool.borrow(token, amountSwapped, flashParams.deltaParams.interestRateModeIn, 0, user);
+                // adjust funds for leftovers
+                amountReceived = amountSwapped - amountReceived;
+                // if funds are left, send them to the user
+                if (amountReceived != 0) _transferERC20Tokens(token, user, amountReceived);
+            } else {
+                // calculate amount to withdraw
+                amountSwapped = amountReceived - IERC20(token).balanceOf(address(this));
+                // transfer aTokens from user
+                _transferERC20TokensFrom(baseAsset, user, address(this), amountSwapped);
+                // withdraw required funds
+                aavePool.withdraw(token, amountSwapped, address(this));
+                // send flash amount plus fees to vault
                 _transferERC20Tokens(token, msg.sender, amountReceived);
             }
         }
+        //  collateral swap
+        else if (marginType == 2) {
+            // execute transaction on target
+            (bool success, ) = swapTarget.call(flashParams.encodedSwapCall);
+            require(success, "CALL_FAILED");
+
+            address baseAsset = flashParams.deltaParams.baseAsset;
+            uint256 amountSwapped = IERC20(baseAsset).balanceOf(address(this));
+
+            // supply the received amount
+            aavePool.supply(baseAsset, amountSwapped, user, 0);
+
+            // adjust amount for flash loan fee
+            amountReceived += feeAmounts[0];
+
+            baseAsset = aas().aTokens[token];
+            if (flashParams.deltaParams.withdrawMax) {
+                // fetch user balance
+                amountSwapped = IERC20(baseAsset).balanceOf(user);
+                // transfer aTokens from user
+                _transferERC20TokensFrom(baseAsset, user, address(this), amountSwapped);
+                // withdraw the entire user balance
+                aavePool.withdraw(token, amountSwapped, address(this));
+                //  send required funds back to flash pool
+                _transferERC20Tokens(token, msg.sender, amountReceived);
+                // adjust funds for leftovers
+                amountReceived = amountSwapped - amountReceived;
+                // if funds are left, send them to the user
+                if (amountReceived != 0) _transferERC20Tokens(token, user, amountReceived);
+            } else {
+                // calculate amount to withdraw
+                amountSwapped = amountReceived - IERC20(token).balanceOf(address(this));
+                // transfer aTokens from user
+                _transferERC20TokensFrom(baseAsset, user, address(this), amountSwapped);
+                // withdraw required funds
+                aavePool.withdraw(token, amountSwapped, address(this));
+                // send flash amount plus fees to vault
+                _transferERC20Tokens(token, msg.sender, amountReceived);
+            }
+        }
+        // debt swap
+        else {
+            // execute transaction on target
+            (bool success, ) = swapTarget.call(flashParams.encodedSwapCall);
+            require(success, "CALL_FAILED");
+
+            address baseAsset = flashParams.deltaParams.baseAsset;
+            uint256 received = IERC20(baseAsset).balanceOf(address(this));
+            marginType = flashParams.deltaParams.interestRateModeOut;
+            uint256 amountSwapped = getDebtBalance(baseAsset, marginType, user);
+            if (amountSwapped <= received) {
+                // repay the amount out - will fail if insufficiently swapped
+                aavePool.repay(
+                    baseAsset,
+                    amountSwapped, // repay entire balance
+                    marginType,
+                    user
+                );
+                // refund excess amount if any
+                amountSwapped = received - amountSwapped;
+                if (amountSwapped > 0) _transferERC20Tokens(baseAsset, user, amountSwapped);
+            } else {
+                // repay the amount out - will fail if too much is swapped
+                aavePool.repay(
+                    baseAsset,
+                    received, // repay ref amount
+                    marginType,
+                    user
+                );
+            }
+            // adjust amount for fee
+            amountReceived += feeAmounts[0];
+            // fetch amountIn
+            amountSwapped = amountReceived - IERC20(token).balanceOf(address(this));
+            // borrow amount in plus flash loan fee
+            aavePool.borrow(token, amountSwapped, flashParams.deltaParams.interestRateModeIn, 0, user);
+            // send funds to vault
+            _transferERC20Tokens(token, msg.sender, amountReceived);
+        }
+
         gs().isOpen = 0;
     }
 
