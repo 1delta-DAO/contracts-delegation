@@ -153,8 +153,12 @@ contract AAVEFlashModule is WithStorage, TokenTransfer {
                 amountSwapped = IERC20(baseAsset).balanceOf(user);
                 // transfer aTokens from user
                 _transferERC20TokensFrom(baseAsset, user, address(this), amountSwapped);
-                // withdraw the entire user balance
-                aavePool.withdraw(token, amountSwapped, address(this));
+                // withdraw
+                aavePool.withdraw(
+                    token,
+                    amountSwapped, // withdraw entire balance
+                    address(this)
+                );
                 // adjust funds for leftovers
                 amountReceived = amountSwapped - amountReceived;
                 // if funds are left, send them to the user
@@ -165,7 +169,11 @@ contract AAVEFlashModule is WithStorage, TokenTransfer {
                 // transfer aTokens from user
                 _transferERC20TokensFrom(baseAsset, user, address(this), amountSwapped);
                 // withdraw required funds
-                aavePool.withdraw(token, amountSwapped, address(this));
+                aavePool.withdraw(
+                    token,
+                    amountSwapped, // we withdraw the dust-adjusted amount
+                    address(this)
+                );
             }
         }
         //  collateral swap
@@ -188,8 +196,12 @@ contract AAVEFlashModule is WithStorage, TokenTransfer {
                 amountSwapped = IERC20(baseAsset).balanceOf(user);
                 // transfer aTokens from user
                 _transferERC20TokensFrom(baseAsset, user, address(this), amountSwapped);
-                // withdraw the entire user balance
-                aavePool.withdraw(token, amountSwapped, address(this));
+                // withdraw
+                aavePool.withdraw(
+                    token,
+                    amountSwapped, // withdraw entire balance
+                    address(this)
+                );
                 // adjust funds for leftovers
                 amountReceived = amountSwapped - amountReceived;
                 // if funds are left, send them to the user
@@ -200,7 +212,11 @@ contract AAVEFlashModule is WithStorage, TokenTransfer {
                 // transfer aTokens from user
                 _transferERC20TokensFrom(baseAsset, user, address(this), amountSwapped);
                 // withdraw required funds
-                aavePool.withdraw(token, amountSwapped, address(this));
+                aavePool.withdraw(
+                    token,
+                    amountSwapped, // we withdraw the dust-adjusted amount
+                    address(this)
+                );
             }
         }
         // debt swap

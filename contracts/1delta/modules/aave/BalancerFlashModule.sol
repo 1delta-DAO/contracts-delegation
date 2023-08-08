@@ -164,8 +164,12 @@ contract BalancerFlashModule is WithStorage, TokenTransfer {
                 amountSwapped = IERC20(baseAsset).balanceOf(user);
                 // transfer aTokens from user
                 _transferERC20TokensFrom(baseAsset, user, address(this), amountSwapped);
-                // withdraw the entire user balance
-                aavePool.withdraw(token, amountSwapped, address(this));
+                // withdraw
+                aavePool.withdraw(
+                    token,
+                    amountSwapped, // withdraw entire balance
+                    address(this)
+                );
                 //  send required funds back to flash pool
                 _transferERC20Tokens(token, msg.sender, amountReceived);
                 // adjust funds for leftovers
@@ -178,7 +182,11 @@ contract BalancerFlashModule is WithStorage, TokenTransfer {
                 // transfer aTokens from user
                 _transferERC20TokensFrom(baseAsset, user, address(this), amountSwapped);
                 // withdraw required funds
-                aavePool.withdraw(token, amountSwapped, address(this));
+                aavePool.withdraw(
+                    token,
+                    amountSwapped, // we withdraw the dust-adjusted amount
+                    address(this)
+                );
                 // send flash amount plus fees to vault
                 _transferERC20Tokens(token, msg.sender, amountReceived);
             }
@@ -204,8 +212,12 @@ contract BalancerFlashModule is WithStorage, TokenTransfer {
                 amountSwapped = IERC20(baseAsset).balanceOf(user);
                 // transfer aTokens from user
                 _transferERC20TokensFrom(baseAsset, user, address(this), amountSwapped);
-                // withdraw the entire user balance
-                aavePool.withdraw(token, amountSwapped, address(this));
+                // withdraw
+                aavePool.withdraw(
+                    token,
+                    amountSwapped, // withdraw entire balance
+                    address(this)
+                );
                 //  send required funds back to flash pool
                 _transferERC20Tokens(token, msg.sender, amountReceived);
                 // adjust funds for leftovers
@@ -218,7 +230,11 @@ contract BalancerFlashModule is WithStorage, TokenTransfer {
                 // transfer aTokens from user
                 _transferERC20TokensFrom(baseAsset, user, address(this), amountSwapped);
                 // withdraw required funds
-                aavePool.withdraw(token, amountSwapped, address(this));
+                aavePool.withdraw(
+                    token,
+                    amountSwapped, // we withdraw the dust-adjusted amount
+                    address(this)
+                );
                 // send flash amount plus fees to vault
                 _transferERC20Tokens(token, msg.sender, amountReceived);
             }
