@@ -139,11 +139,10 @@ it("Mint USDC", async function () {
         const params = {
             baseAsset: toTokenAddress, // the asset to interact with
             target: paraswapRouter,
-            swapType: 1, // exact out
             marginTradeType: 0, // margin open
             interestRateModeIn: InterestRateMode.VARIABLE, // the borrow mode
             interestRateModeOut: 0, // unused
-            referenceAmount: swapAmount.toString()
+            withdrawMax: false
         }
         console.log("Executiong trade", responseTx?.data.data)
         await balancerModule.executeOnBalancer(
@@ -156,11 +155,10 @@ it("Mint USDC", async function () {
         const params = {
             baseAsset: toTokenAddress, // the asset to interact with
             target: paraswapRouter,
-            swapType: 0, // exact in
             marginTradeType: 0, // margin open
             interestRateModeIn: InterestRateMode.VARIABLE, // the borrow mode
             interestRateModeOut: 0, // unused
-            referenceAmount: 0
+            withdrawMax: false
         }
         console.log("Executiong trade")
         await balancerModule.executeOnBalancer(

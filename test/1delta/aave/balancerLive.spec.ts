@@ -107,7 +107,7 @@ it("Mint USDC", async function () {
         marginTradeType: 0, // margin open
         interestRateModeIn: InterestRateMode.VARIABLE, // the borrow mode
         interestRateModeOut: 0, // unused
-        referenceAmount: 0
+        withdrawMax: false
     }
     console.log("Executiong trade")
     await balancerModule.executeOnBalancer(

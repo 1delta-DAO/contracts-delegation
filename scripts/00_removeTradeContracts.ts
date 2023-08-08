@@ -61,10 +61,10 @@ async function main() {
     const moduleSelectors = [
         // callbackSelectors,
         // marginTradingSelectors,
-        moneyMarketSelectors,
+        // moneyMarketSelectors,
         // sweeperSelectors
-        // aaveFlashSelectors,
-        // balancerFlashSelectors,
+        aaveFlashSelectors,
+        balancerFlashSelectors,
         // managementSelectors
     ]
 

@@ -44,10 +44,10 @@ const miscAddresses = {
 
 const aaveBrokerAddresses = {
     BrokerModuleBalancer: {
-        137: '0xD4F433941EC1A1e8878a9A13cfd9afea0a34509C'
+        137: '0x901f9aD609d85763106c903d23B2adA3Ab30A2ea'
     },
     BrokerModuleAave: {
-        137: '0x3011271f49E0eA9D481cf0c0a6d343b458107F4c'
+        137: '0x8Bb5a83B16E639df34ccb3F7b2d3618480c3A121'
     },
     Sweeper: {
         80001: '0xA83129791403c490FaA787FB0A1f03322256DE7D',

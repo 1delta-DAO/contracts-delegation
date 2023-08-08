@@ -11,25 +11,26 @@
 //   "0xefC2640C978cC5B695815E4B69245943d5e6dcE4", // config
 // ];
 
-  // polygon
-  // module.exports = [
-  //   '0x999999833d965c275A2C102a4Ebf222ca938546f', // owner
-  //   "0xb92028D62D69a24Fc2A52Fe29CD21432Dd0504a5", // config
-  // ];
+// polygon
+// module.exports = [
+//   '0x999999833d965c275A2C102a4Ebf222ca938546f', // owner
+//   "0xb92028D62D69a24Fc2A52Fe29CD21432Dd0504a5", // config
+// ];
 
-  // inp with factory
-  // module.exports = [
-  //   '0x1F98431c8aD98523631AE4a59f267346ea31F984', // uni factory
-  //   '0x794a61358D6845594F94dc1DB02A252b5b4814aD', // aave pool
-  // ];
+// inp with factory
+// module.exports = [
+//   '0x1F98431c8aD98523631AE4a59f267346ea31F984', // uni factory
+//   '0x794a61358D6845594F94dc1DB02A252b5b4814aD', // aave pool
+// ];
 
-  // flash modules
-  module.exports = [
-    '0x794a61358D6845594F94dc1DB02A252b5b4814aD', // aave pool
-    '0xBA12222222228d8Ba445958a75a0704d566BF2C8'// balancer
-  ];
-  // npx hardhat verify --network matic 0x3011271f49E0eA9D481cf0c0a6d343b458107F4c --contract contracts/1delta/modules/aave/AAVEFlashModule.sol:AAVEFlashModule --constructor-args scripts/verify.js
-// npx hardhat verify --network matic 0xD4F433941EC1A1e8878a9A13cfd9afea0a34509C --contract contracts/1delta/modules/aave/BalancerFlashModule.sol:BalancerFlashModule --constructor-args scripts/verify.js
+// flash modules
+module.exports = [
+  '0x794a61358D6845594F94dc1DB02A252b5b4814aD', // aave pool
+  '0xBA12222222228d8Ba445958a75a0704d566BF2C8'// balancer
+];
+
+  // npx hardhat verify --network matic 0x8Bb5a83B16E639df34ccb3F7b2d3618480c3A121 --contract contracts/1delta/modules/aave/AAVEFlashModule.sol:AAVEFlashModule --constructor-args scripts/verify.js
+  // npx hardhat verify --network matic 0x901f9aD609d85763106c903d23B2adA3Ab30A2ea --contract contracts/1delta/modules/aave/BalancerFlashModule.sol:BalancerFlashModule --constructor-args scripts/verify.js
 
     // mumbai
     // npx hardhat verify --network mumbai 0xE0d077f7C0d87909A939160EDae002cC9f33168f --contract contracts/1delta/modules/aave/AAVEMarginTraderModule.sol:AAVEMarginTraderModule

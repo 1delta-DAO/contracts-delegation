@@ -8,7 +8,6 @@ import {WithStorage} from "../../storage/BrokerStorage.sol";
 import {TokenTransfer} from "./../../libraries/TokenTransfer.sol";
 import {IBalancerFlashLoans, IFlashLoanRecipient} from "../../../external-protocols/balancer/IBalancerFlashLoans.sol";
 import {IERC20Balance} from "../../interfaces/IERC20Balance.sol";
-import "hardhat/console.sol";
 
 /// @notice Balancer flash do NOT loans draw the required loan plus fee from the caller
 //  as such, we have to make sure that we always transer loan plus fee
