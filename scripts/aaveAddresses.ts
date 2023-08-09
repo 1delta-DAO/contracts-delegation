@@ -308,6 +308,9 @@ export const addressesAaveATokens: { [key: string]: { [chainId: number]: string 
     STMATIC: {
         137: '0xEA1132120ddcDDA2F119e99Fa7A27a0d036F7Ac9',
     },
+    WSTETH: {
+        137: '0x03b54A6e9a984069379fae1a4fC4dBAE93B3bCCD'
+    }
 }
 
 
@@ -369,6 +372,9 @@ export const addressesAaveVTokens: { [key: string]: { [chainId: number]: string 
     },
     STMATIC: {
         137: '0x18248226C16BF76c032817854E7C83a2113B4f06',
+    },
+    WSTETH: {
+        137: '0xf59036CAEBeA7dC4b86638DFA2E3C97dA9FcCd40'
     }
 }
 

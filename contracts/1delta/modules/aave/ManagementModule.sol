@@ -36,10 +36,10 @@ contract ManagementModule is WithStorage {
         address _vToken,
         address _sToken
     ) external onlyManagement {
-        aas().vTokens[_underlying] = _vToken;
-        aas().sTokens[_underlying] = _sToken;
-        aas().vTokens[_underlying] = _vToken;
-        aas().aTokens[_underlying] = _aToken;
+        address asset = _underlying;
+        aas().vTokens[asset] = _vToken;
+        aas().sTokens[asset] = _sToken;
+        aas().aTokens[asset] = _aToken;
     }
 
     function approveAAVEPool(address[] memory assets) external onlyManagement {
