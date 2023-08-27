@@ -135,7 +135,6 @@ contract AAVEMoneyMarketModule is InternalSwapper, TokenTransfer {
             path: params.path,
             tradeType: 12,
             interestRateMode: 0,
-            user: msg.sender,
             exactIn: false
         });
 
@@ -148,8 +147,8 @@ contract AAVEMoneyMarketModule is InternalSwapper, TokenTransfer {
             abi.encode(data)
         );
 
-        amountIn = cs().amount;
-        cs().amount = DEFAULT_AMOUNT_CACHED;
+        amountIn = ncs().amount;
+        ncs().amount = DEFAULT_AMOUNT_CACHED;
         require(params.amountInMaximum >= amountIn, "Paid too much");
 
         // deposit received amount to aave on behalf of user
@@ -169,7 +168,6 @@ contract AAVEMoneyMarketModule is InternalSwapper, TokenTransfer {
             path: params.path,
             tradeType: 12,
             interestRateMode: 0,
-            user: address(this),
             exactIn: false
         });
 
@@ -182,8 +180,8 @@ contract AAVEMoneyMarketModule is InternalSwapper, TokenTransfer {
             zeroForOne ? MIN_SQRT_RATIO : MAX_SQRT_RATIO,
             abi.encode(data)
         );
-        amountIn = cs().amount;
-        cs().amount = DEFAULT_AMOUNT_CACHED;
+        amountIn = ncs().amount;
+        ncs().amount = DEFAULT_AMOUNT_CACHED;
 
         // deposit received amount to the lending protocol on behalf of user
         _aavePool.supply(tokenOut, amountOut, msg.sender, 0);
@@ -224,7 +222,6 @@ contract AAVEMoneyMarketModule is InternalSwapper, TokenTransfer {
             path: params.path,
             tradeType: 14,
             interestRateMode: 0,
-            user: msg.sender,
             exactIn: false
         });
 
@@ -237,8 +234,8 @@ contract AAVEMoneyMarketModule is InternalSwapper, TokenTransfer {
             abi.encode(data)
         );
 
-        amountIn = cs().amount;
-        cs().amount = DEFAULT_AMOUNT_CACHED;
+        amountIn = ncs().amount;
+        ncs().amount = DEFAULT_AMOUNT_CACHED;
         require(params.amountInMaximum >= amountIn, "Had to withdraw too much");
     }
 
@@ -249,7 +246,6 @@ contract AAVEMoneyMarketModule is InternalSwapper, TokenTransfer {
             path: params.path,
             tradeType: 14,
             interestRateMode: 0,
-            user: msg.sender,
             exactIn: false
         });
         bool zeroForOne = tokenIn < tokenOut;
@@ -261,8 +257,8 @@ contract AAVEMoneyMarketModule is InternalSwapper, TokenTransfer {
             abi.encode(data)
         );
 
-        amountIn = cs().amount;
-        cs().amount = DEFAULT_AMOUNT_CACHED;
+        amountIn = ncs().amount;
+        ncs().amount = DEFAULT_AMOUNT_CACHED;
         require(params.amountInMaximum >= amountIn, "Had to withdraw too much");
 
         INativeWrapper(tokenOut).withdraw(amountOut);
@@ -296,7 +292,6 @@ contract AAVEMoneyMarketModule is InternalSwapper, TokenTransfer {
             path: params.path,
             tradeType: 13,
             interestRateMode: params.interestRateMode,
-            user: msg.sender,
             exactIn: false
         });
 
@@ -309,8 +304,8 @@ contract AAVEMoneyMarketModule is InternalSwapper, TokenTransfer {
             abi.encode(data)
         );
 
-        amountIn = cs().amount;
-        cs().amount = DEFAULT_AMOUNT_CACHED;
+        amountIn = ncs().amount;
+        ncs().amount = DEFAULT_AMOUNT_CACHED;
         require(params.amountInMaximum >= amountIn, "Had to borrow too much");
     }
 
@@ -321,7 +316,6 @@ contract AAVEMoneyMarketModule is InternalSwapper, TokenTransfer {
             path: params.path,
             tradeType: 13,
             interestRateMode: params.interestRateMode,
-            user: msg.sender,
             exactIn: false
         });
 
@@ -334,8 +328,8 @@ contract AAVEMoneyMarketModule is InternalSwapper, TokenTransfer {
             abi.encode(data)
         );
 
-        amountIn = cs().amount;
-        cs().amount = DEFAULT_AMOUNT_CACHED;
+        amountIn = ncs().amount;
+        ncs().amount = DEFAULT_AMOUNT_CACHED;
         require(params.amountInMaximum >= amountIn, "Had to borrow too much");
 
         INativeWrapper(us().weth).withdraw(amountOut);
@@ -371,7 +365,6 @@ contract AAVEMoneyMarketModule is InternalSwapper, TokenTransfer {
             path: params.path,
             tradeType: 12,
             interestRateMode: 0,
-            user: msg.sender,
             exactIn: false
         });
 
@@ -383,8 +376,8 @@ contract AAVEMoneyMarketModule is InternalSwapper, TokenTransfer {
             zeroForOne ? MIN_SQRT_RATIO : MAX_SQRT_RATIO,
             abi.encode(data)
         );
-        amountIn = cs().amount;
-        cs().amount = DEFAULT_AMOUNT_CACHED;
+        amountIn = ncs().amount;
+        ncs().amount = DEFAULT_AMOUNT_CACHED;
         require(params.amountInMaximum >= amountIn, "Had to pay too much");
 
         // deposit received amount to aave on behalf of user
@@ -400,7 +393,6 @@ contract AAVEMoneyMarketModule is InternalSwapper, TokenTransfer {
             path: params.path,
             tradeType: 12,
             interestRateMode: 0,
-            user: address(this),
             exactIn: false
         });
 
@@ -414,8 +406,8 @@ contract AAVEMoneyMarketModule is InternalSwapper, TokenTransfer {
             zeroForOne ? MIN_SQRT_RATIO : MAX_SQRT_RATIO,
             abi.encode(data)
         );
-        amountIn = cs().amount;
-        cs().amount = DEFAULT_AMOUNT_CACHED;
+        amountIn = ncs().amount;
+        ncs().amount = DEFAULT_AMOUNT_CACHED;
         _aavePool.repay(tokenOut, amountOut, params.interestRateMode, msg.sender);
         // refund dust
         amountReceived -= amountIn;

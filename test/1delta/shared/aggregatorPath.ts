@@ -1,0 +1,52 @@
+import { ethers } from "hardhat"
+import { FeeAmount } from "../../uniswap-v3/periphery/shared/constants"
+
+// token address, poolFee, poolId, tradeType
+const typeSliceAggregator = ['address', 'uint24', 'uint8','uint8',]
+
+export function encodeAggregatorPathEthers(path: string[], fees: FeeAmount[], flags: number[],pIds:number[], flag: number): string {
+  if (path.length != fees.length + 1) {
+    throw new Error('path/fee lengths do not match')
+  }
+  let types: string[] = []
+  let data: string[] = []
+  for (let i = 0; i < fees.length; i++) {
+    const p = path[i]
+    types = [...types, ...typeSliceAggregator]
+    data = [...data, p, String(fees[i]), String(pIds[i]), String(flags[i])]
+  }
+  // add last address and flag
+  types.push('address')
+  types.push('uint8')
+  
+  data.push(path[path.length - 1])
+  data.push(String(flag))
+
+  // console.log(data)
+  // console.log(types)
+
+  return ethers.utils.solidityPack(types, data)
+}
+
+
+enum Trade{
+  Open = 'Open',
+  Trim = 'Trim',
+  Collateral = 'Collateral',
+  Debt = 'Debt'
+}
+
+enum TradeType {
+  exactIn = 'exactIn',
+  exactOut = 'exactOut'
+}
+
+const encodeTradePath = (route: string[], trade:Trade, tradeType:TradeType) =>{
+  encodeAggregatorPathEthers(
+      route,
+      new Array(route.length - 1).fill(FeeAmount.MEDIUM),
+      [7, 0, 0], // action
+      [0, 0, 0], // pid
+      7 // flag
+  )
+}

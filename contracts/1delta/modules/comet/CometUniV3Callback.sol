@@ -62,7 +62,7 @@ contract CometUniV3Callback is InternalSwapperComet {
                         tokenOut = data.path.getLastToken();
                     }
                     // cache amount
-                    cs().amount = amountToSwap;
+                    ncs().amount = amountToSwap;
 
                     // aavePool.supply(tokenOut, amountToSwap, data.user, 0);
                     comet.supplyTo(data.user, tokenOut, amountToSwap);
@@ -95,7 +95,7 @@ contract CometUniV3Callback is InternalSwapperComet {
                         );
                     } else {
                         // cache amount
-                        cs().amount = amountInLastPool;
+                        ncs().amount = amountInLastPool;
 
                         comet.withdrawFrom(data.user, msg.sender, tokenOut, amountInLastPool);
                     }
@@ -118,7 +118,7 @@ contract CometUniV3Callback is InternalSwapperComet {
                     }
 
                     // cache amount
-                    cs().amount = amountToSwap;
+                    ncs().amount = amountToSwap;
 
                     // supply the provided amounts
                     comet.supplyTo(data.user, tokenOut, amountToSwap);
@@ -151,7 +151,7 @@ contract CometUniV3Callback is InternalSwapperComet {
                         );
                     } else {
                         // cache amount
-                        cs().amount = amountInLastPool;
+                        ncs().amount = amountInLastPool;
                         comet.withdrawFrom(data.user, msg.sender, tokenOut, amountInLastPool);
                     }
                 }
@@ -178,7 +178,7 @@ contract CometUniV3Callback is InternalSwapperComet {
                     tokenIn = tokenOut; // swap in/out because exact output swaps are reversed
                     comet.withdrawFrom(data.user, msg.sender, tokenIn, amountToPay);
                     // cache amount
-                    cs().amount = amountToPay;
+                    ncs().amount = amountToPay;
                 }
             }
             // TRIM
@@ -197,7 +197,7 @@ contract CometUniV3Callback is InternalSwapperComet {
                         tokenOut = data.path.getLastToken();
                     }
                     // cache amount
-                    cs().amount = amountToSwap;
+                    ncs().amount = amountToSwap;
                     // lending protocol underlyings are approved by default
                     comet.supplyTo(data.user, tokenOut, amountToSwap);
 
@@ -229,7 +229,7 @@ contract CometUniV3Callback is InternalSwapperComet {
                         );
                     } else {
                         // cache amount
-                        cs().amount = amountInLastPool;
+                        ncs().amount = amountInLastPool;
                         // withraw and send funds to the pool
                         comet.withdrawFrom(data.user, msg.sender, tokenOut, amountInLastPool);
                     }
@@ -256,7 +256,7 @@ contract CometUniV3Callback is InternalSwapperComet {
                     tokenIn = tokenOut; // swap in/out because exact output swaps are reversed
                     pay(tokenIn, data.user, amountToPay);
                     // cache amount
-                    cs().amount = amountToPay;
+                    ncs().amount = amountToPay;
                 }
             }
         }

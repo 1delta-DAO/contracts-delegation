@@ -28,7 +28,6 @@ pragma solidity ^0.8.21;
 // margin swap input
 struct MarginCallbackData {
     bytes path;
-    address user;
     // determines how to interact with the lending protocol
     uint8 tradeType;
     // determines the specific money market protocol

@@ -107,8 +107,8 @@ contract CometMoneyMarketModule is InternalSwapperComet {
             abi.encode(data)
         );
 
-        amountIn = cs().amount;
-        cs().amount = DEFAULT_AMOUNT_CACHED;
+        amountIn = ncs().amount;
+        ncs().amount = DEFAULT_AMOUNT_CACHED;
         require(params.amountInMaximum >= amountIn, "Paid too much");
 
         // deposit received amount to aave on behalf of user
@@ -138,8 +138,8 @@ contract CometMoneyMarketModule is InternalSwapperComet {
             zeroForOne ? MIN_SQRT_RATIO : MAX_SQRT_RATIO,
             abi.encode(data)
         );
-        amountIn = cs().amount;
-        cs().amount = DEFAULT_AMOUNT_CACHED;
+        amountIn = ncs().amount;
+        ncs().amount = DEFAULT_AMOUNT_CACHED;
         require(params.amountInMaximum >= amountIn, "Paid too much");
         // deposit received amount to the lending protocol on behalf of user
         IComet(cos().comet[params.cometId]).supplyTo(msg.sender, params.path.getFirstToken(), params.amountOut);
@@ -191,8 +191,8 @@ contract CometMoneyMarketModule is InternalSwapperComet {
             abi.encode(data)
         );
 
-        amountIn = cs().amount;
-        cs().amount = DEFAULT_AMOUNT_CACHED;
+        amountIn = ncs().amount;
+        ncs().amount = DEFAULT_AMOUNT_CACHED;
         require(params.amountInMaximum >= amountIn, "Had to withdraw too much");
     }
 
@@ -215,8 +215,8 @@ contract CometMoneyMarketModule is InternalSwapperComet {
             abi.encode(data)
         );
 
-        amountIn = cs().amount;
-        cs().amount = DEFAULT_AMOUNT_CACHED;
+        amountIn = ncs().amount;
+        ncs().amount = DEFAULT_AMOUNT_CACHED;
         require(params.amountInMaximum >= amountIn, "Had to withdraw too much");
 
         INativeWrapper(tokenOut).withdraw(amountOut);
@@ -262,8 +262,8 @@ contract CometMoneyMarketModule is InternalSwapperComet {
             abi.encode(data)
         );
 
-        amountIn = cs().amount;
-        cs().amount = DEFAULT_AMOUNT_CACHED;
+        amountIn = ncs().amount;
+        ncs().amount = DEFAULT_AMOUNT_CACHED;
         require(params.amountInMaximum >= amountIn, "Had to borrow too much");
     }
 
@@ -287,8 +287,8 @@ contract CometMoneyMarketModule is InternalSwapperComet {
             abi.encode(data)
         );
 
-        amountIn = cs().amount;
-        cs().amount = DEFAULT_AMOUNT_CACHED;
+        amountIn = ncs().amount;
+        ncs().amount = DEFAULT_AMOUNT_CACHED;
         require(params.amountInMaximum >= amountIn, "Had to borrow too much");
 
         INativeWrapper(us().weth).withdraw(amountOut);
@@ -337,8 +337,8 @@ contract CometMoneyMarketModule is InternalSwapperComet {
             abi.encode(data)
         );
 
-        amountIn = cs().amount;
-        cs().amount = DEFAULT_AMOUNT_CACHED;
+        amountIn = ncs().amount;
+        ncs().amount = DEFAULT_AMOUNT_CACHED;
         require(params.amountInMaximum >= amountIn, "Had to pay too much");
 
         // deposit received amount to aave on behalf of user
@@ -368,8 +368,8 @@ contract CometMoneyMarketModule is InternalSwapperComet {
             zeroForOne ? MIN_SQRT_RATIO : MAX_SQRT_RATIO,
             abi.encode(data)
         );
-        amountIn = cs().amount;
-        cs().amount = DEFAULT_AMOUNT_CACHED;
+        amountIn = ncs().amount;
+        ncs().amount = DEFAULT_AMOUNT_CACHED;
         // deposit received amount to the lending protocol on behalf of user
         IComet(cos().comet[params.cometId]).supplyTo(msg.sender, params.path.getFirstToken(), params.amountOut);
         // refund dust

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {WithStorage, AAVEStorage, Cache, LibStorage, ManagementStorage} from "../storage/BrokerStorage.sol";
+import {WithStorage, AAVEStorage, LibStorage, ManagementStorage} from "../storage/BrokerStorage.sol";
 
 contract AAVEMarginTraderInit is WithStorage {
     function initAAVEMarginTrader(address _aavePool) external {
@@ -12,9 +12,5 @@ contract AAVEMarginTraderInit is WithStorage {
         ManagementStorage storage ms = LibStorage.managementStorage();
         ms.chief = msg.sender;
         ms.isManager[msg.sender] = true;
-
-        // set cache value for uni routing
-        Cache storage cs = LibStorage.cacheStorage();
-        cs.amount = type(uint256).max;
     }
 }

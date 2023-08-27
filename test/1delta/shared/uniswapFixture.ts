@@ -203,7 +203,7 @@ const overrides = {
     gasLimit: 9999999
   }
 
-export async function addLiquidityV2(
+  export async function addLiquidityV2(
     signer: SignerWithAddress,
     tokenAddressA: string,
     tokenAddressB: string,
@@ -232,5 +232,9 @@ export async function addLiquidityV2(
         constants.MaxUint256,
         overrides
     )
+
+    const pair = await uniswap.factoryV2.getPair(tokenAddressA, tokenAddressB)
+
+    console.log("Pool", pair)
 
 }

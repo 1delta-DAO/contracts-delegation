@@ -82,11 +82,11 @@ contract AAVESweeperModule is InternalSwapper, TokenTransfer {
 
     function swapAndRepayAllOut(AllOutputMultiParamsBase calldata params) external returns (uint256 amountIn) {
         (address tokenOut, address tokenIn, uint24 fee) = params.path.decodeFirstPool();
+        acs().cachedAddress = msg.sender;
         MarginCallbackData memory data = MarginCallbackData({
             path: params.path,
             tradeType: 12,
             interestRateMode: params.interestRateMode,
-            user: msg.sender,
             exactIn: false
         });
         // amount out is the full debt balance
@@ -100,8 +100,8 @@ contract AAVESweeperModule is InternalSwapper, TokenTransfer {
             abi.encode(data)
         );
 
-        amountIn = cs().amount;
-        cs().amount = DEFAULT_AMOUNT_CACHED;
+        amountIn = ncs().amount;
+        ncs().amount = DEFAULT_AMOUNT_CACHED;
         require(params.amountInMaximum >= amountIn, "Had to pay too much");
 
         // deposit received amount to aave on behalf of user
@@ -115,11 +115,11 @@ contract AAVESweeperModule is InternalSwapper, TokenTransfer {
         _weth.deposit{value: amountReceived}();
         (address tokenOut, address tokenIn, uint24 fee) = params.path.decodeFirstPool();
         uint8 interestMode = params.interestRateMode;
+        acs().cachedAddress = address(this);
         MarginCallbackData memory data = MarginCallbackData({
             path: params.path,
             tradeType: 12,
             interestRateMode: 0,
-            user: address(this),
             exactIn: false
         });
         // amount out is the full debt balance
@@ -133,8 +133,8 @@ contract AAVESweeperModule is InternalSwapper, TokenTransfer {
             abi.encode(data)
         );
 
-        amountIn = cs().amount;
-        cs().amount = DEFAULT_AMOUNT_CACHED;
+        amountIn = ncs().amount;
+        ncs().amount = DEFAULT_AMOUNT_CACHED;
         require(params.amountInMaximum >= amountIn, "Had to pay too much");
 
         // deposit received amount to the lending protocol on behalf of user
@@ -151,10 +151,10 @@ contract AAVESweeperModule is InternalSwapper, TokenTransfer {
     function swapBorrowAllOut(AllOutputMultiParamsBase calldata params) external returns (uint256 amountIn) {
         (address tokenOut, address tokenIn, uint24 fee) = params.path.decodeFirstPool();
 
+        acs().cachedAddress = msg.sender;
         MarginCallbackData memory data = MarginCallbackData({
             path: params.path,
             tradeType: 2,
-            user: msg.sender,
             interestRateMode: params.interestRateMode,
             exactIn: false
         });
@@ -170,15 +170,16 @@ contract AAVESweeperModule is InternalSwapper, TokenTransfer {
             abi.encode(data)
         );
 
-        amountIn = cs().amount;
-        cs().amount = DEFAULT_AMOUNT_CACHED;
+        amountIn = ncs().amount;
+        ncs().amount = DEFAULT_AMOUNT_CACHED;
         require(params.amountInMaximum >= amountIn, "Had to borrow too much");
     }
 
     // swaps the collateral from one token (tokenIn) to another (tokenOut) provided tokenOut amount
     function swapCollateralAllIn(AllInputCollateralMultiParamsBase calldata params) external returns (uint256 amountOut) {
         (address tokenIn, address tokenOut, uint24 fee) = params.path.decodeFirstPool();
-        MarginCallbackData memory data = MarginCallbackData({path: params.path, tradeType: 4, user: msg.sender, interestRateMode: 0, exactIn: true});
+        acs().cachedAddress = msg.sender;
+        MarginCallbackData memory data = MarginCallbackData({path: params.path, tradeType: 4, interestRateMode: 0, exactIn: true});
 
         bool zeroForOne = tokenIn < tokenOut;
 
@@ -191,8 +192,8 @@ contract AAVESweeperModule is InternalSwapper, TokenTransfer {
             abi.encode(data)
         );
 
-        amountOut = cs().amount;
-        cs().amount = DEFAULT_AMOUNT_CACHED;
+        amountOut = ncs().amount;
+        ncs().amount = DEFAULT_AMOUNT_CACHED;
         require(params.amountOutMinimum <= amountOut, "Deposited too little");
     }
 
@@ -202,10 +203,10 @@ contract AAVESweeperModule is InternalSwapper, TokenTransfer {
     function trimMarginPositionAllIn(AllInputMultiParamsBase calldata params) external returns (uint256 amountOut) {
         (address tokenIn, address tokenOut, uint24 fee) = params.path.decodeFirstPool();
 
+        acs().cachedAddress = msg.sender;
         MarginCallbackData memory data = MarginCallbackData({
             path: params.path,
             tradeType: 10,
-            user: msg.sender,
             interestRateMode: params.interestRateMode,
             exactIn: true
         });
@@ -221,18 +222,18 @@ contract AAVESweeperModule is InternalSwapper, TokenTransfer {
             abi.encode(data)
         );
 
-        amountOut = cs().amount;
-        cs().amount = DEFAULT_AMOUNT_CACHED;
+        amountOut = ncs().amount;
+        ncs().amount = DEFAULT_AMOUNT_CACHED;
         require(params.amountOutMinimum <= amountOut, "Repaid too little");
     }
 
     function trimMarginPositionAllOut(AllOutputMultiParamsBase calldata params) external returns (uint256 amountIn) {
         (address tokenOut, address tokenIn, uint24 fee) = params.path.decodeFirstPool();
 
+        acs().cachedAddress = msg.sender;
         MarginCallbackData memory data = MarginCallbackData({
             path: params.path,
             tradeType: 10,
-            user: msg.sender,
             interestRateMode: params.interestRateMode,
             exactIn: false
         });
@@ -248,8 +249,8 @@ contract AAVESweeperModule is InternalSwapper, TokenTransfer {
             abi.encode(data)
         );
 
-        amountIn = cs().amount;
-        cs().amount = DEFAULT_AMOUNT_CACHED;
+        amountIn = ncs().amount;
+        ncs().amount = DEFAULT_AMOUNT_CACHED;
         require(params.amountInMaximum >= amountIn, "Had to pay too much");
     }
 

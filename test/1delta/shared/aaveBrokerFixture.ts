@@ -30,13 +30,16 @@ import {
     AAVEFlashModule__factory,
     AAVEFlashModule,
     AaveUniswapV2Callback,
-    AaveUniswapV2Callback__factory
+    AaveUniswapV2Callback__factory,
+    MarginTrading,
+    MarginTrading__factory
 } from "../../../types";
 import { ModuleConfigAction, getSelectors } from "../../diamond/libraries/diamond";
 import { AAVEFixture } from "./aaveFixture";
 import { UniswapFixtureNoTokens, UniswapMinimalFixtureNoTokens } from "./uniswapFixture";
 import MoneyMarketArtifact from "../../../artifacts/contracts/1delta/modules/aave/AAVEMoneyMarketModule.sol/AAVEMoneyMarketModule.json"
 import SweeperArtifact from "../../../artifacts/contracts/1delta/modules/aave/AAVESweeperModule.sol/AAVESweeperModule.json"
+import MarginTradingArtifact from "../../../artifacts/contracts/1delta/modules/aave/MarginTrading.sol/MarginTrading.json"
 import MarginTraderArtifact from "../../../artifacts/contracts/1delta/modules/aave/AAVEMarginTraderModule.sol/AAVEMarginTraderModule.json"
 import AaveUniswapV2CallbackArtifact from "../../../artifacts/contracts/1delta/modules/aave/UniswapV2Callback.sol/AaveUniswapV2Callback.json"
 
@@ -232,6 +235,7 @@ export interface AaveBrokerFixtureInclV2 {
     moneyMarket: AAVEMoneyMarketModule & AAVESweeperModule
     sweeper: AAVESweeperModule
     marginV2: AaveUniswapV2Callback
+    trader: MarginTrading
 }
 
 export async function aaveBrokerFixtureInclV2(signer: SignerWithAddress, uniFactory: string, aavePool: string, uniV2Factory: string): Promise<AaveBrokerFixtureInclV2> {
@@ -280,13 +284,13 @@ export async function aaveBrokerFixtureInclV2(signer: SignerWithAddress, uniFact
     const tradeDataViewer = (await new ethers.Contract(proxy.address, MarginTradeDataViewerModule__factory.createInterface(), signer) as MarginTradeDataViewerModule)
 
     // callback
-    const callbackModule = await new UniswapV3SwapCallbackModule__factory(signer).deploy(uniFactory, aavePool)
+    const marginTrader = await new MarginTrading__factory(signer).deploy(uniV2Factory, uniFactory, aavePool)
 
     await configContract.connect(signer).configureModules(
         [{
-            moduleAddress: callbackModule.address,
+            moduleAddress: marginTrader.address,
             action: ModuleConfigAction.Add,
-            functionSelectors: getSelectors(callbackModule)
+            functionSelectors: getSelectors(marginTrader)
         }],
     )
 
@@ -322,15 +326,15 @@ export async function aaveBrokerFixtureInclV2(signer: SignerWithAddress, uniFact
         signer) as AAVEMoneyMarketModule & AAVESweeperModule)
 
 
-    const marginV2Module = await new AaveUniswapV2Callback__factory(signer).deploy(uniV2Factory, aavePool)
+    // const marginV2Module = await new AaveUniswapV2Callback__factory(signer).deploy(uniV2Factory, aavePool)
 
-    await configContract.connect(signer).configureModules(
-        [{
-            moduleAddress: marginV2Module.address,
-            action: ModuleConfigAction.Add,
-            functionSelectors: getSelectors(marginV2Module)
-        }],
-    )
+    // await configContract.connect(signer).configureModules(
+    //     [{
+    //         moduleAddress: marginV2Module.address,
+    //         action: ModuleConfigAction.Add,
+    //         functionSelectors: getSelectors(marginV2Module)
+    //     }],
+    // )
 
     const marginV2 = (await new ethers.Contract(proxy.address, AaveUniswapV2Callback__factory.createInterface(), signer) as AaveUniswapV2Callback)
 
@@ -339,7 +343,11 @@ export async function aaveBrokerFixtureInclV2(signer: SignerWithAddress, uniFact
         [...SweeperArtifact.abi, ...MarginTraderArtifact.abi, ...AaveUniswapV2CallbackArtifact.abi],
         signer
     ) as AAVEMarginTraderModule & AAVESweeperModule & AaveUniswapV2Callback)
-
-    return { broker, brokerProxy: proxy, manager, tradeDataViewer, moneyMarket, moduleConfig, sweeper, marginV2 }
+    const trader = (await new ethers.Contract(
+        proxy.address,
+        MarginTradingArtifact.abi,
+        signer
+    ) as MarginTrading)
+    return { trader, broker, brokerProxy: proxy, manager, tradeDataViewer, moneyMarket, moduleConfig, sweeper, marginV2 }
 
 }

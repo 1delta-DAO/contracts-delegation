@@ -35,9 +35,14 @@ struct ManagementStorage {
     mapping(address => bool) isManager;
 }
 
-// for fetching the amount that was calculated within a flash swap or flash loan
-struct Cache {
+// for exact output multihop swaps
+struct NumberCache {
     uint256 amount;
+}
+
+// for exact output multihop swaps
+struct AddressCache {
+    address cachedAddress;
 }
 
 // for flash loan validations
@@ -57,9 +62,10 @@ library LibStorage {
     bytes32 constant UNISWAP_STORAGE = keccak256("broker.storage.uniswap");
     bytes32 constant AAVE_STORAGE = keccak256("broker.storage.aave");
     bytes32 constant MANAGEMENT_STORAGE = keccak256("broker.storage.management");
-    bytes32 constant CACHE = keccak256("broker.storage.cache");
     bytes32 constant FLASH_LOAN_GATEWAY = keccak256("broker.storage.flashLoanGateway");
     bytes32 constant INITIALIZER = keccak256("broker.storage.initailizerStorage");
+    bytes32 constant NUMBER_CACHE = keccak256("1deltaAccount.storage.cache.number");
+    bytes32 constant ADDRESS_CACHE = keccak256("1deltaAccount.storage.cache.address");
 
     function dataProviderStorage() internal pure returns (DataProviderStorage storage ps) {
         bytes32 position = DATA_PROVIDER_STORAGE;
@@ -89,8 +95,15 @@ library LibStorage {
         }
     }
 
-    function cacheStorage() internal pure returns (Cache storage cs) {
-        bytes32 position = CACHE;
+    function numberCacheStorage() internal pure returns (NumberCache storage ncs) {
+        bytes32 position = NUMBER_CACHE;
+        assembly {
+            ncs.slot := position
+        }
+    }
+
+    function addressCacheStorage() internal pure returns (AddressCache storage cs) {
+        bytes32 position = ADDRESS_CACHE;
         assembly {
             cs.slot := position
         }
@@ -137,8 +150,12 @@ contract WithStorage {
         return LibStorage.managementStorage();
     }
 
-    function cs() internal pure returns (Cache storage) {
-        return LibStorage.cacheStorage();
+    function ncs() internal pure returns (NumberCache storage) {
+        return LibStorage.numberCacheStorage();
+    }
+
+    function acs() internal pure returns (AddressCache storage) {
+        return LibStorage.addressCacheStorage();
     }
 
     function gs() internal pure returns (FlashLoanGatewayStorage storage) {

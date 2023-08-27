@@ -53,8 +53,8 @@ contract CometMarginTraderModule is InternalSwapperComet, TokenTransfer {
             abi.encode(data)
         );
 
-        amountOut = cs().amount;
-        cs().amount = DEFAULT_AMOUNT_CACHED;
+        amountOut = ncs().amount;
+        ncs().amount = DEFAULT_AMOUNT_CACHED;
         require(params.amountOutMinimum <= amountOut, "Repaid too little");
     }
 
@@ -80,8 +80,8 @@ contract CometMarginTraderModule is InternalSwapperComet, TokenTransfer {
             abi.encode(data)
         );
 
-        amountIn = cs().amount;
-        cs().amount = DEFAULT_AMOUNT_CACHED;
+        amountIn = ncs().amount;
+        ncs().amount = DEFAULT_AMOUNT_CACHED;
         require(params.amountInMaximum >= amountIn, "Had to borrow too much");
     }
 
@@ -106,8 +106,8 @@ contract CometMarginTraderModule is InternalSwapperComet, TokenTransfer {
             abi.encode(data)
         );
 
-        amountOut = cs().amount;
-        cs().amount = DEFAULT_AMOUNT_CACHED;
+        amountOut = ncs().amount;
+        ncs().amount = DEFAULT_AMOUNT_CACHED;
         require(params.amountOutMinimum <= amountOut, "Deposited too little");
     }
 
@@ -133,8 +133,8 @@ contract CometMarginTraderModule is InternalSwapperComet, TokenTransfer {
             abi.encode(data)
         );
 
-        amountIn = cs().amount;
-        cs().amount = DEFAULT_AMOUNT_CACHED;
+        amountIn = ncs().amount;
+        ncs().amount = DEFAULT_AMOUNT_CACHED;
         require(params.amountInMaximum >= amountIn, "Had to withdraw too much");
     }
 
@@ -160,8 +160,8 @@ contract CometMarginTraderModule is InternalSwapperComet, TokenTransfer {
             abi.encode(data)
         );
 
-        amountOut = cs().amount;
-        cs().amount = DEFAULT_AMOUNT_CACHED;
+        amountOut = ncs().amount;
+        ncs().amount = DEFAULT_AMOUNT_CACHED;
         require(params.amountOutMinimum <= amountOut, "Deposited too little");
     }
 
@@ -187,8 +187,8 @@ contract CometMarginTraderModule is InternalSwapperComet, TokenTransfer {
             abi.encode(data)
         );
 
-        amountIn = cs().amount;
-        cs().amount = DEFAULT_AMOUNT_CACHED;
+        amountIn = ncs().amount;
+        ncs().amount = DEFAULT_AMOUNT_CACHED;
         require(params.amountInMaximum >= amountIn, "Had to borrow too much");
     }
 
@@ -213,8 +213,8 @@ contract CometMarginTraderModule is InternalSwapperComet, TokenTransfer {
             abi.encode(data)
         );
 
-        amountOut = cs().amount;
-        cs().amount = DEFAULT_AMOUNT_CACHED;
+        amountOut = ncs().amount;
+        ncs().amount = DEFAULT_AMOUNT_CACHED;
         require(params.amountOutMinimum <= amountOut, "Repaid too little");
     }
 
@@ -238,8 +238,8 @@ contract CometMarginTraderModule is InternalSwapperComet, TokenTransfer {
             abi.encode(data)
         );
 
-        amountIn = cs().amount;
-        cs().amount = DEFAULT_AMOUNT_CACHED;
+        amountIn = ncs().amount;
+        ncs().amount = DEFAULT_AMOUNT_CACHED;
         require(params.amountInMaximum >= amountIn, "Had to withdraw too much");
     }
 }

@@ -154,12 +154,12 @@ contract AaveUniswapV2Callback is TokenTransfer, WithStorage {
                     tokenOut = _data.path.getLastToken();
                 }
                 // cache amount
-                cs().amount = amountToSwap;
+                ncs().amount = amountToSwap;
 
-                aavePool.supply(tokenOut, amountToSwap, _data.user, 0);
+                // aavePool.supply(tokenOut, amountToSwap, _data.user, 0);
 
                 // withraw and send funds to the pool
-                _transferERC20TokensFrom(aas().aTokens[tokenIn], _data.user, address(this), amountToWithdraw);
+                // _transferERC20TokensFrom(aas().aTokens[tokenIn], _data.user, address(this), amountToWithdraw);
                 aavePool.withdraw(tokenIn, amountToWithdraw, msg.sender);
             } else {
                 uint256 amountToSupply = zeroForOne ? amount0 : amount1;
@@ -168,7 +168,7 @@ contract AaveUniswapV2Callback is TokenTransfer, WithStorage {
                 amountInLastPool = getAmountInByPool(amountToSupply, pair, zeroForOne);
 
                 // we supply the amount received directly - together with user provided amount
-                aavePool.supply(tokenIn, amountToSupply, _data.user, 0);
+                // aavePool.supply(tokenIn, amountToSupply, _data.user, 0);
                 // we then swap exact out where the first amount is
                 // borrowed and paid from the money market
                 // the received amount is paid back to the original pool
@@ -181,8 +181,8 @@ contract AaveUniswapV2Callback is TokenTransfer, WithStorage {
                     IUniswapV2Pair(pairFor(tokenIn, tokenOut)).swap(amount0Out, amount1Out, msg.sender, abi.encode(_data));
                 } else {
                     // cache amount
-                    cs().amount = amountInLastPool;
-                    _transferERC20TokensFrom(aas().aTokens[tokenOut], _data.user, address(this), amountInLastPool);
+                    ncs().amount = amountInLastPool;
+                    // _transferERC20TokensFrom(aas().aTokens[tokenOut], _data.user, address(this), amountInLastPool);
                     aavePool.withdraw(tokenOut, amountInLastPool, msg.sender);
                 }
             }
@@ -194,8 +194,8 @@ contract AaveUniswapV2Callback is TokenTransfer, WithStorage {
                 // since v2 does not send the input amount as argument, we have to fetch
                 // the other amount manually through balanceOf
                 (uint256 amountToSwap, uint256 amountToBorrow ) = amount0 > 0
-                    ? (amount0, cs().amount)
-                    : (amount1, cs().amount);
+                    ? (amount0, ncs().amount)
+                    : (amount1, ncs().amount);
                 if (_data.path.length > 43) {
                     // we need to swap to the token that we want to supply
                     // the router returns the amount that we can finally supply to the protocol
@@ -206,10 +206,10 @@ contract AaveUniswapV2Callback is TokenTransfer, WithStorage {
                     tokenOut = _data.path.getLastToken();
                 }
                 // cache amount
-                cs().amount = amountToSwap;
+                ncs().amount = amountToSwap;
 
-                aavePool.supply(tokenOut, amountToSwap, _data.user, 0);
-                aavePool.borrow(tokenIn, amountToBorrow, _data.interestRateMode, 0, _data.user);
+                // aavePool.supply(tokenOut, amountToSwap, _data.user, 0);
+                // aavePool.borrow(tokenIn, amountToBorrow, _data.interestRateMode, 0, _data.user);
                                 // withraw and send funds to the pool
                 _transferERC20Tokens(tokenIn, msg.sender, amountToBorrow);
             } else {
@@ -219,7 +219,7 @@ contract AaveUniswapV2Callback is TokenTransfer, WithStorage {
                 amountInLastPool = getAmountInByPool(amountToSupply, pair, zeroForOne);
 
                 // we supply the amount received directly - together with user provided amount
-                aavePool.supply(tokenIn, amountToSupply, _data.user, 0);
+                // aavePool.supply(tokenIn, amountToSupply, _data.user, 0);
                 // we then swap exact out where the first amount is
                 // borrowed and paid from the money market
                 // the received amount is paid back to the original pool
@@ -232,8 +232,8 @@ contract AaveUniswapV2Callback is TokenTransfer, WithStorage {
                     IUniswapV2Pair(pairFor(tokenIn, tokenOut)).swap(amount0Out, amount1Out, msg.sender, abi.encode(_data));
                 } else {
                     // cache amount
-                    cs().amount = amountInLastPool;
-                    _transferERC20TokensFrom(aas().aTokens[tokenOut], _data.user, address(this), amountInLastPool);
+                    ncs().amount = amountInLastPool;
+                    // _transferERC20TokensFrom(aas().aTokens[tokenOut], _data.user, address(this), amountInLastPool);
                     aavePool.withdraw(tokenOut, amountInLastPool, msg.sender);
                 }
             }
@@ -280,19 +280,19 @@ contract AaveUniswapV2Callback is TokenTransfer, WithStorage {
             path: params.path,
             tradeType: 8,
             interestRateMode: params.interestRateMode,
-            user: msg.sender,
+            // user: msg.sender,
             exactIn: true
         });
 
         bool zeroForOne = tokenIn < tokenOut;
-        cs().amount = params.amountIn;
+        ncs().amount = params.amountIn;
         (uint256 amount0Out, uint256 amount1Out) = zeroForOne ? (  uint256(0),
             getAmountOutByPool(params.amountIn,  IUniswapV2Pair(pairFor(tokenIn, tokenOut)), zeroForOne)) :
              ( getAmountOutByPool(params.amountIn,  IUniswapV2Pair(pairFor(tokenIn, tokenOut)), zeroForOne),  uint256(0));
         IUniswapV2Pair(pairFor(tokenIn, tokenOut)).swap(amount0Out, amount1Out, address(this), abi.encode(data));
 
-        amountOut = cs().amount;
-        cs().amount = DEFAULT_AMOUNT_CACHED;
+        amountOut = ncs().amount;
+        ncs().amount = DEFAULT_AMOUNT_CACHED;
         if (params.amountOutMinimum > amountOut) revert Slippage();
     }
 }

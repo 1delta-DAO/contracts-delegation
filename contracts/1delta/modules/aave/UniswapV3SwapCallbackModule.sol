@@ -67,20 +67,21 @@ contract UniswapV3SwapCallbackModule is InternalSwapper, TokenTransfer {
                         tokenOut = data.path.getLastToken();
                     }
                     // cache amount
-                    cs().amount = amountToSwap;
-
-                    aavePool.supply(tokenOut, amountToSwap, data.user, 0);
+                    ncs().amount = amountToSwap;
+                    address user = acs().cachedAddress;
+                    aavePool.supply(tokenOut, amountToSwap, user, 0);
 
                     // withraw and send funds to the pool
-                    _transferERC20TokensFrom(aas().aTokens[tokenIn], data.user, address(this), amountToWithdraw);
+                    _transferERC20TokensFrom(aas().aTokens[tokenIn], user, address(this), amountToWithdraw);
                     aavePool.withdraw(tokenIn, amountToWithdraw, msg.sender);
+                    acs().cachedAddress = address(0);
                 } else {
                     // multi swap exact out
                     (uint256 amountInLastPool, uint256 amountToSupply) = amount0Delta > 0
                         ? (uint256(amount0Delta), uint256(-amount1Delta))
                         : (uint256(amount1Delta), uint256(-amount0Delta));
                     // we supply the amount received directly - together with user provided amount
-                    aavePool.supply(tokenIn, amountToSupply, data.user, 0);
+                    aavePool.supply(tokenIn, amountToSupply, acs().cachedAddress, 0);
                     // we then swap exact out where the first amount is
                     // borrowed and paid from the money market
                     // the received amount is paid back to the original pool
@@ -100,9 +101,10 @@ contract UniswapV3SwapCallbackModule is InternalSwapper, TokenTransfer {
                         );
                     } else {
                         // cache amount
-                        cs().amount = amountInLastPool;
-                        _transferERC20TokensFrom(aas().aTokens[tokenOut], data.user, address(this), amountInLastPool);
+                        ncs().amount = amountInLastPool;
+                        _transferERC20TokensFrom(aas().aTokens[tokenOut], acs().cachedAddress, address(this), amountInLastPool);
                         aavePool.withdraw(tokenOut, amountInLastPool, msg.sender);
+                        acs().cachedAddress = address(0);
                     }
                 }
             }
@@ -123,14 +125,15 @@ contract UniswapV3SwapCallbackModule is InternalSwapper, TokenTransfer {
                     }
 
                     // cache amount
-                    cs().amount = amountToSwap;
-
+                    ncs().amount = amountToSwap;
+                    address user = acs().cachedAddress;
                     // supply the provided amounts
-                    aavePool.supply(tokenOut, amountToSwap, data.user, 0);
+                    aavePool.supply(tokenOut, amountToSwap, user, 0);
 
                     // borrow funds (amountIn) from pool
-                    aavePool.borrow(tokenIn, amountToBorrow, data.interestRateMode, 0, data.user);
+                    aavePool.borrow(tokenIn, amountToBorrow, data.interestRateMode, 0, user);
                     _transferERC20Tokens(tokenIn, msg.sender, amountToBorrow);
+                    acs().cachedAddress = address(0);
                 } else {
                     // multi swap exact out
                     (uint256 amountInLastPool, uint256 amountToSupply) = amount0Delta > 0
@@ -138,7 +141,7 @@ contract UniswapV3SwapCallbackModule is InternalSwapper, TokenTransfer {
                         : (uint256(amount1Delta), uint256(-amount0Delta));
 
                     // we supply the amount received directly - together with user provided amount
-                    aavePool.supply(tokenIn, amountToSupply, data.user, 0);
+                    aavePool.supply(tokenIn, amountToSupply, acs().cachedAddress, 0);
 
                     if (hasMore) {
                         // we then swap exact out where the first amount is
@@ -158,9 +161,10 @@ contract UniswapV3SwapCallbackModule is InternalSwapper, TokenTransfer {
                         );
                     } else {
                         // cache amount
-                        cs().amount = amountInLastPool;
-                        aavePool.borrow(tokenOut, amountInLastPool, data.interestRateMode, 0, data.user);
+                        ncs().amount = amountInLastPool;
+                        aavePool.borrow(tokenOut, amountInLastPool, data.interestRateMode, 0, acs().cachedAddress);
                         _transferERC20Tokens(tokenOut, msg.sender, amountInLastPool);
+                        acs().cachedAddress = address(0);
                     }
                 }
             }
@@ -178,10 +182,12 @@ contract UniswapV3SwapCallbackModule is InternalSwapper, TokenTransfer {
                         tokenOut = data.path.getLastToken();
                     }
                     // cache amount
-                    cs().amount = amountToSwap;
-                    aavePool.repay(tokenOut, amountToSwap, data.interestRateMode % 10, data.user);
-                    aavePool.borrow(tokenIn, amountToBorrow, data.interestRateMode / 10, 0, data.user);
+                    ncs().amount = amountToSwap;
+                    address user = acs().cachedAddress;
+                    aavePool.repay(tokenOut, amountToSwap, data.interestRateMode % 10, user);
+                    aavePool.borrow(tokenIn, amountToBorrow, data.interestRateMode / 10, 0, user);
                     _transferERC20Tokens(tokenIn, msg.sender, amountToBorrow);
+                    acs().cachedAddress = address(0);
                 } else {
                     // multi swap exact out
                     (uint256 amountInLastPool, uint256 amountToSupply) = amount0Delta > 0
@@ -189,7 +195,7 @@ contract UniswapV3SwapCallbackModule is InternalSwapper, TokenTransfer {
                         : (uint256(amount1Delta), uint256(-amount0Delta));
 
                     // we repay the amount received directly
-                    aavePool.repay(tokenIn, amountToSupply, data.interestRateMode % 10, data.user);
+                    aavePool.repay(tokenIn, amountToSupply, data.interestRateMode % 10, acs().cachedAddress);
                     if (hasMore) {
                         // we then swap exact out where the first amount is
                         // borrowed and paid from the money market
@@ -210,9 +216,10 @@ contract UniswapV3SwapCallbackModule is InternalSwapper, TokenTransfer {
                         );
                     } else {
                         // cache amount
-                        cs().amount = amountInLastPool;
-                        aavePool.borrow(tokenOut, amountInLastPool, data.interestRateMode / 10, 0, data.user);
+                        ncs().amount = amountInLastPool;
+                        aavePool.borrow(tokenOut, amountInLastPool, data.interestRateMode / 10, 0, acs().cachedAddress);
                         _transferERC20Tokens(tokenOut, msg.sender, amountInLastPool);
+                        acs().cachedAddress = address(0);
                     }
                 }
             }
@@ -237,11 +244,12 @@ contract UniswapV3SwapCallbackModule is InternalSwapper, TokenTransfer {
                 } else {
                     tokenIn = tokenOut; // swap in/out because exact output swaps are reversed
                     // we have to transfer aTokens from the user to this address - these are used to access liquidity
-                    _transferERC20TokensFrom(aas().aTokens[tokenIn], data.user, address(this), amountToPay);
+                    _transferERC20TokensFrom(aas().aTokens[tokenIn], acs().cachedAddress, address(this), amountToPay);
                     // cache amount
-                    cs().amount = amountToPay;
+                    ncs().amount = amountToPay;
                     // withraw and send funds to the pool
                     aavePool.withdraw(tokenIn, amountToPay, msg.sender);
+                    acs().cachedAddress = address(0);
                 }
             }
             // EXACT OUT - BORROW
@@ -264,11 +272,12 @@ contract UniswapV3SwapCallbackModule is InternalSwapper, TokenTransfer {
                     );
                 } else {
                     tokenIn = tokenOut; // swap in/out because exact output swaps are reversed
-                    aavePool.borrow(tokenIn, amountToPay, data.interestRateMode, 0, data.user);
+                    aavePool.borrow(tokenIn, amountToPay, data.interestRateMode, 0, acs().cachedAddress);
                     // cache amount
-                    cs().amount = amountToPay;
+                    ncs().amount = amountToPay;
                     // send funds to the pool
                     _transferERC20Tokens(tokenIn, msg.sender, amountToPay);
+                    acs().cachedAddress = address(0);
                 }
             }
             // TRIM
@@ -287,14 +296,16 @@ contract UniswapV3SwapCallbackModule is InternalSwapper, TokenTransfer {
                         tokenOut = data.path.getLastToken();
                     }
                     // cache amount
-                    cs().amount = amountToSwap;
+                    ncs().amount = amountToSwap;
+                    address user = acs().cachedAddress;
                     // lending protocol underlyings are approved by default
-                    aavePool.repay(tokenOut, amountToSwap, data.interestRateMode, data.user);
+                    aavePool.repay(tokenOut, amountToSwap, data.interestRateMode, user);
 
                     // we have to transfer aTokens from the user to this address - these are used to access liquidity
-                    _transferERC20TokensFrom(aas().aTokens[tokenIn], data.user, address(this), amountToWithdraw);
+                    _transferERC20TokensFrom(aas().aTokens[tokenIn], user, address(this), amountToWithdraw);
                     // withraw and send funds to the pool
                     aavePool.withdraw(tokenIn, amountToWithdraw, msg.sender);
+                    acs().cachedAddress = address(0);
                 } else {
                     // multi swap exact out
                     (uint256 amountInLastPool, uint256 amountToRepay) = amount0Delta > 0
@@ -302,7 +313,7 @@ contract UniswapV3SwapCallbackModule is InternalSwapper, TokenTransfer {
                         : (uint256(amount1Delta), uint256(-amount0Delta));
 
                     // repay
-                    aavePool.repay(tokenIn, amountToRepay, data.interestRateMode, data.user);
+                    aavePool.repay(tokenIn, amountToRepay, data.interestRateMode, acs().cachedAddress);
 
                     if (hasMore) {
                         // we then swap exact out where the first amount is
@@ -321,11 +332,12 @@ contract UniswapV3SwapCallbackModule is InternalSwapper, TokenTransfer {
                         );
                     } else {
                         // cache amount
-                        cs().amount = amountInLastPool;
+                        ncs().amount = amountInLastPool;
                         // we have to transfer aTokens from the user to this address - these are used to access liquidity
-                        _transferERC20TokensFrom(aas().aTokens[tokenOut], data.user, address(this), amountInLastPool);
+                        _transferERC20TokensFrom(aas().aTokens[tokenOut], acs().cachedAddress, address(this), amountInLastPool);
                         // withraw and send funds to the pool
                         aavePool.withdraw(tokenOut, amountInLastPool, msg.sender);
+                         acs().cachedAddress = address(0);
                     }
                 }
             }
@@ -349,9 +361,9 @@ contract UniswapV3SwapCallbackModule is InternalSwapper, TokenTransfer {
                     );
                 } else {
                     tokenIn = tokenOut; // swap in/out because exact output swaps are reversed
-                    pay(tokenIn, data.user, amountToPay);
+                    pay(tokenIn,  acs().cachedAddress, amountToPay);
                     // cache amount
-                    cs().amount = amountToPay;
+                    ncs().amount = amountToPay;
                 }
             }
         }

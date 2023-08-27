@@ -34,8 +34,13 @@ struct ManagementStorage {
 }
 
 // for exact output multihop swaps
-struct Cache {
+struct NumberCache {
     uint256 amount;
+}
+
+// for exact output multihop swaps
+struct AddressCache {
+    address cachedAddress;
 }
 
 library LibStorage {
@@ -45,7 +50,8 @@ library LibStorage {
     bytes32 constant UNISWAP_STORAGE = keccak256("broker.storage.uniswap");
     bytes32 constant COMET_STORAGE = keccak256("broker.storage.comet");
     bytes32 constant MANAGEMENT_STORAGE = keccak256("broker.storage.management");
-    bytes32 constant CACHE = keccak256("broker.storage.cache");
+    bytes32 constant NUMBER_CACHE = keccak256("1deltaAccount.storage.cache.number");
+    bytes32 constant ADDRESS_CACHE = keccak256("1deltaAccount.storage.cache.address");
 
     function dataProviderStorage() internal pure returns (DataProviderStorage storage ps) {
         bytes32 position = DATA_PROVIDER_STORAGE;
@@ -75,8 +81,15 @@ library LibStorage {
         }
     }
 
-    function cacheStorage() internal pure returns (Cache storage cs) {
-        bytes32 position = CACHE;
+    function numberCacheStorage() internal pure returns (NumberCache storage ncs) {
+        bytes32 position = NUMBER_CACHE;
+        assembly {
+            ncs.slot := position
+        }
+    }
+
+    function addressCacheStorage() internal pure returns (AddressCache storage cs) {
+        bytes32 position = ADDRESS_CACHE;
         assembly {
             cs.slot := position
         }
@@ -109,7 +122,11 @@ abstract contract WithStorageComet {
         return LibStorage.managementStorage();
     }
 
-    function cs() internal pure returns (Cache storage) {
-        return LibStorage.cacheStorage();
+    function ncs() internal pure returns (NumberCache storage) {
+        return LibStorage.numberCacheStorage();
+    }
+
+    function acs() internal pure returns (AddressCache storage) {
+        return LibStorage.addressCacheStorage();
     }
 }

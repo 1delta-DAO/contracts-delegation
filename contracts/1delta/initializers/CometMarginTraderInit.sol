@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {WithStorageComet, CometStorage, Cache, LibStorage, ManagementStorage} from "../storage/CometBrokerStorage.sol";
+import {WithStorageComet, CometStorage, LibStorage, ManagementStorage} from "../storage/CometBrokerStorage.sol";
 
 contract CometMarginTraderInit is WithStorageComet {
     function initCometMarginTrader(address _comet) external {
@@ -10,9 +10,5 @@ contract CometMarginTraderInit is WithStorageComet {
         ManagementStorage storage ms = LibStorage.managementStorage();
         ms.chief = msg.sender;
         ms.isManager[msg.sender] = true;
-
-        // set cache value for uni routing
-        Cache storage cs = LibStorage.cacheStorage();
-        cs.amount = type(uint256).max;
     }
 }

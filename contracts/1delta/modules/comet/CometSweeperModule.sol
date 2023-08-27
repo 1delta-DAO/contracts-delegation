@@ -114,8 +114,8 @@ contract CometSweeperModule is InternalSwapperComet {
         // so if no price limit has been specified, require this possibility away
         require(amountToRepay == amountOut);
 
-        amountIn = cs().amount;
-        cs().amount = DEFAULT_AMOUNT_CACHED;
+        amountIn = ncs().amount;
+        ncs().amount = DEFAULT_AMOUNT_CACHED;
         require(params.amountInMaximum >= amountIn, "Had to pay too much");
 
         // deposit received amount to aave on behalf of user
@@ -142,8 +142,8 @@ contract CometSweeperModule is InternalSwapperComet {
             abi.encode(data)
         );
 
-        amountIn = cs().amount;
-        cs().amount = DEFAULT_AMOUNT_CACHED;
+        amountIn = ncs().amount;
+        ncs().amount = DEFAULT_AMOUNT_CACHED;
         require(params.amountInMaximum >= amountIn, "Had to pay too much");
         // deposit received amount to the lending protocol on behalf of user
         IComet(comet).supplyTo(msg.sender, params.path.getFirstToken(), amountOut);
@@ -177,8 +177,8 @@ contract CometSweeperModule is InternalSwapperComet {
             abi.encode(data)
         );
 
-        amountOut = cs().amount;
-        cs().amount = DEFAULT_AMOUNT_CACHED;
+        amountOut = ncs().amount;
+        ncs().amount = DEFAULT_AMOUNT_CACHED;
         require(params.amountOutMinimum <= amountOut, "Deposited too little");
     }
 
@@ -204,8 +204,8 @@ contract CometSweeperModule is InternalSwapperComet {
             abi.encode(data)
         );
 
-        amountOut = cs().amount;
-        cs().amount = DEFAULT_AMOUNT_CACHED;
+        amountOut = ncs().amount;
+        ncs().amount = DEFAULT_AMOUNT_CACHED;
         require(params.amountOutMinimum <= amountOut, "Deposited too little");
     }
 
@@ -235,8 +235,8 @@ contract CometSweeperModule is InternalSwapperComet {
             abi.encode(data)
         );
 
-        amountOut = cs().amount;
-        cs().amount = DEFAULT_AMOUNT_CACHED;
+        amountOut = ncs().amount;
+        ncs().amount = DEFAULT_AMOUNT_CACHED;
         require(params.amountOutMinimum <= amountOut, "Repaid too little");
     }
 
@@ -262,8 +262,8 @@ contract CometSweeperModule is InternalSwapperComet {
             abi.encode(data)
         );
 
-        amountIn = cs().amount;
-        cs().amount = DEFAULT_AMOUNT_CACHED;
+        amountIn = ncs().amount;
+        ncs().amount = DEFAULT_AMOUNT_CACHED;
         require(params.amountInMaximum >= amountIn, "Had to pay too much");
     }
 }
