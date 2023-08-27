@@ -8,13 +8,13 @@ import {
 } from '../../../types';
 import { FeeAmount } from '../../uniswap-v3/periphery/shared/constants';
 import { expandTo18Decimals } from '../../uniswap-v3/periphery/shared/expandTo18Decimals';
-import { initAaveBroker, aaveBrokerFixture, AaveBrokerFixture, ONE_18 } from '../shared/aaveBrokerFixture';
+import { initAaveBroker, ONE_18, AaveBrokerFixtureInclV2, aaveBrokerFixtureInclV2 } from '../shared/aaveBrokerFixture';
 import { expect } from '../shared/expect'
 import { initializeMakeSuite, InterestRateMode, AAVEFixture, deposit } from '../shared/aaveFixture';
-import { addLiquidity, uniswapMinimalFixtureNoTokens, UniswapMinimalFixtureNoTokens } from '../shared/uniswapFixture';
+import { addLiquidity, addLiquidityV2, uniswapMinimalFixtureNoTokens, UniswapMinimalFixtureNoTokens } from '../shared/uniswapFixture';
 import { formatEther } from 'ethers/lib/utils';
-import { encodePath } from '../../uniswap-v3/periphery/shared/path';
-import { divide } from 'lodash';
+import { uniV2Fixture, V2Fixture } from '../shared/uniV2Fixture';
+import { encodeAggregatorPathEthers } from '../shared/aggregatorPath';
 
 // we prepare a setup for aave in hardhat
 // this series of tests checks that the features used for the margin swap implementation
@@ -31,9 +31,10 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
     let test3: SignerWithAddress;
     let uniswap: UniswapMinimalFixtureNoTokens;
     let aaveTest: AAVEFixture;
-    let broker: AaveBrokerFixture;
+    let broker: AaveBrokerFixtureInclV2;
     let tokens: (MintableERC20 | WETH9)[];
     let provider: MockProvider
+    let uniswapV2: V2Fixture
 
 
     before('Deploy Account, Trader, Uniswap and AAVE', async () => {
@@ -45,7 +46,8 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
         aaveTest = await initializeMakeSuite(deployer)
         tokens = Object.values(aaveTest.tokens)
         uniswap = await uniswapMinimalFixtureNoTokens(deployer, aaveTest.tokens["WETH"].address)
-        broker = await aaveBrokerFixture(deployer, uniswap.factory.address, aaveTest.pool.address)
+        uniswapV2 = await uniV2Fixture(deployer, aaveTest.tokens["WETH"].address)
+        broker = await aaveBrokerFixtureInclV2(deployer, uniswap.factory.address, aaveTest.pool.address, uniswapV2.factoryV2.address)
 
         await initAaveBroker(deployer, broker, uniswap, aaveTest)
         await broker.manager.setUniswapRouter(uniswap.router.address)
@@ -158,9 +160,59 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
             expandTo18Decimals(1_000_000),
             uniswap
         )
+
+        // V2
+        console.log("add liquidity V2 DAI USDC")
+        await addLiquidityV2(
+            deployer,
+            aaveTest.tokens["DAI"].address,
+            aaveTest.tokens["USDC"].address,
+            expandTo18Decimals(100_000),
+            BigNumber.from(100_000e6), // usdc has 6 decimals
+            uniswapV2
+        )
+        console.log("add liquidity V2 DAI AAVE")
+        await addLiquidityV2(
+            deployer,
+            aaveTest.tokens["DAI"].address,
+            aaveTest.tokens["AAVE"].address,
+            expandTo18Decimals(1_000_000),
+            expandTo18Decimals(1_000_000),
+            uniswapV2
+        )
+
+        console.log("add liquidity V2 AAVE WETH")
+        await addLiquidityV2(
+            deployer,
+            aaveTest.tokens["AAVE"].address,
+            aaveTest.tokens["WETH"].address,
+            expandTo18Decimals(1_000_000),
+            expandTo18Decimals(200),
+            uniswapV2
+        )
+
+        console.log("add liquidity V2 AAVE WMATIC")
+        await addLiquidityV2(
+            deployer,
+            aaveTest.tokens["AAVE"].address,
+            aaveTest.tokens["WMATIC"].address,
+            expandTo18Decimals(1_000_000),
+            expandTo18Decimals(1_000_000),
+            uniswapV2
+        )
+
+        console.log("add liquidity V2 WETH MATIC")
+        await addLiquidityV2(
+            deployer,
+            aaveTest.tokens["WETH"].address,
+            aaveTest.tokens["WMATIC"].address,
+            expandTo18Decimals(200),
+            expandTo18Decimals(1_000_000),
+            uniswapV2
+        )
     })
 
-    // chcecks that the aave protocol is set up correctly, i.e. borrowing and supply works
+    // checks that the aave protocol is set up correctly, i.e. borrowing and supply works
     it('deploys everything', async () => {
         await aaveTest.aDai.symbol()
         const { WETH, DAI } = aaveTest.tokens
@@ -187,7 +239,13 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
             aaveTest.tokens["AAVE"],
             aaveTest.tokens[supplyTokenIndex]
         ].map(t => t.address)
-        const path = encodePath(_tokensInRoute, new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [6, 0], // action
+            [1, 1], // pid - V3
+            2 // flag - borrow variable
+        )
 
         const params = {
             path,
@@ -195,7 +253,6 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
             amountIn: swapAmount,
             amountOutMinimum: swapAmount.mul(99).div(100)
         }
-
         await deposit(aaveTest, supplyTokenIndex, carol, providedAmount)
 
         await aaveTest.tokens[supplyTokenIndex].connect(carol).approve(broker.broker.address, constants.MaxUint256)
@@ -208,7 +265,7 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
         await aaveTest.pool.connect(carol).supply(aaveTest.tokens[supplyTokenIndex].address, 100, carol.address, 0)
         await aaveTest.pool.connect(carol).setUserUseReserveAsCollateral(aaveTest.tokens[supplyTokenIndex].address, true)
 
-        await broker.broker.connect(carol).openMarginPositionExactIn(params)
+        await broker.trader.connect(carol).swapExactIn(params.amountIn, params.amountOutMinimum, params.path)
 
         const bb = await aaveTest.pool.getUserAccountData(carol.address)
         expect(bb.totalDebtBase.toString()).to.equal(swapAmount)
@@ -227,17 +284,22 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
             aaveTest.tokens["AAVE"],
             aaveTest.tokens[supplyTokenIndex]
         ].map(t => t.address)
-        const path = encodePath(_tokensInRoute, new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [6, 0], // action
+            [1, 1], // pid - V3
+            2 // flag - borrow variable
+        )
         const params = {
             path,
             userAmountProvided: providedAmount,
             interestRateMode: InterestRateMode.VARIABLE,
             amountIn: swapAmount,
-            amountOutMinimum: swapAmount.mul(101).div(100)
+            amountOutMinimum: swapAmount.mul(105).div(100)
         }
 
-        await expect(broker.broker.connect(carol).openMarginPositionExactIn(params)).to.be.revertedWith('Slippage(')
+        await expect(broker.trader.connect(carol).swapExactIn(params.amountIn, params.amountOutMinimum, params.path)).to.be.revertedWith('Slippage()')
 
     })
 
@@ -253,11 +315,16 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
             aaveTest.tokens[borrowTokenIndex],
             aaveTest.tokens["AAVE"],
             aaveTest.tokens[supplyTokenIndex]
-        ].map(t => t.address)
+        ].map(t => t.address).reverse()
 
         // reverse path for exact out
-        const path = encodePath(_tokensInRoute.reverse(), new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [3, 1], // action
+            [1, 10], // pid
+            2 // flag
+        )
         const params = {
             path,
             interestRateMode: InterestRateMode.VARIABLE,
@@ -279,8 +346,7 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
 
         await aaveTest.pool.connect(gabi).setUserUseReserveAsCollateral(aaveTest.tokens[supplyTokenIndex].address, true)
 
-        await broker.broker.connect(gabi).openMarginPositionExactOut(params)
-
+        await broker.trader.connect(gabi).swapExactOut(params.amountOut, params.amountInMaximum, params.path)
         const bb = await aaveTest.pool.getUserAccountData(gabi.address)
         expect(bb.totalCollateralBase.toString()).to.equal(swapAmount.add(providedAmount).add(100).toString())
     })
@@ -297,19 +363,24 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
             aaveTest.tokens[borrowTokenIndex],
             aaveTest.tokens["AAVE"],
             aaveTest.tokens[supplyTokenIndex]
-        ].map(t => t.address)
+        ].map(t => t.address).reverse()
 
         // reverse path for exact out
-        const path = encodePath(_tokensInRoute.reverse(), new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [3, 1], // action
+            [1, 10], // pid
+            2 // flag
+        )
         const params = {
             path,
             userAmountProvided: providedAmount,
             interestRateMode: InterestRateMode.VARIABLE,
             amountOut: swapAmount,
-            amountInMaximum: swapAmount.mul(99).div(100)
+            amountInMaximum: swapAmount.mul(95).div(100)
         }
-        await expect(broker.broker.connect(gabi).openMarginPositionExactOut(params)).to.be.revertedWith('Slippage()')
+        await expect(broker.trader.connect(gabi).swapExactOut(params.amountOut, params.amountInMaximum, params.path)).to.be.revertedWith('Slippage()')
     })
 
 
@@ -325,11 +396,16 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
             aaveTest.tokens[borrowTokenIndex],
             aaveTest.tokens["AAVE"],
             aaveTest.tokens[supplyTokenIndex]
-        ].map(t => t.address)
+        ].map(t => t.address).reverse()
 
         // for trimming, we have to revert the swap path
-        const path = encodePath(_tokensInRoute.reverse(), new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [8, 1], // action
+            [1, 10], // pid
+            3 // flag
+        )
 
         const params = {
             path,
@@ -344,9 +420,8 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
 
         const bBefore = await aaveTest.pool.getUserAccountData(carol.address)
 
-        // open margin position
-        await broker.broker.connect(carol).trimMarginPositionExactIn(params)
-
+        // close margin position
+        await broker.trader.connect(carol).swapExactIn(params.amountIn, params.amountOutMinimum, params.path)
         const bAfter = await aaveTest.pool.getUserAccountData(carol.address)
         expect(Number(formatEther(bAfter.totalDebtBase))).to.be.
             lessThanOrEqual(Number(formatEther(bBefore.totalDebtBase.sub(swapAmount))) * 1.05)
@@ -392,11 +467,16 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
             aaveTest.tokens[borrowTokenIndex],
             aaveTest.tokens["AAVE"],
             aaveTest.tokens[supplyTokenIndex]
-        ].map(t => t.address)
+        ].map(t => t.address).reverse()
 
         // for trimming, we have to revert the swap path
-        const path = encodePath(_tokensInRoute.reverse(), new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [8, 1], // action
+            [1, 10], // pid
+            3 // flag
+        )
 
         const params = {
             path,
@@ -415,8 +495,8 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
         await network.provider.send("evm_mine")
 
         // open margin position
-        await broker.broker.connect(test1).trimMarginPositionAllIn(params)
 
+        await broker.trader.connect(test1).swapAllIn(params.amountOutMinimum, params.path)
 
         const balanceSupply = await aaveTest.aTokens[supplyTokenIndex].balanceOf(test1.address)
 
@@ -444,8 +524,13 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
             aaveTest.tokens["AAVE"],
             aaveTest.tokens[supplyTokenIndex]
         ].map(t => t.address)
-        const path = encodePath(_tokensInRoute, new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [5, 1], // action
+            [1, 10], // pid
+            3 // flag
+        )
         const params = {
             path,
             fee: FeeAmount.MEDIUM,
@@ -460,8 +545,7 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
         const bBefore = await aaveTest.pool.getUserAccountData(gabi.address)
 
         // trim margin position
-        await broker.broker.connect(gabi).trimMarginPositionExactOut(params)
-
+        await broker.trader.connect(gabi).swapExactOut(params.amountOut, params.amountInMaximum, params.path)
         const bAfter = await aaveTest.pool.getUserAccountData(gabi.address)
 
         expect(Number(formatEther(bAfter.totalDebtBase))).to.be.
@@ -504,8 +588,13 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
             aaveTest.tokens["AAVE"],
             aaveTest.tokens[supplyTokenIndex]
         ].map(t => t.address)
-        const path = encodePath(_tokensInRoute, new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [5, 1], // action
+            [1, 10], // pid
+            3 // flag
+        )
         const params = {
             path,
             fee: FeeAmount.MEDIUM,
@@ -523,7 +612,7 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
         await network.provider.send("evm_mine")
 
         // trim margin position
-        await broker.broker.connect(test).trimMarginPositionAllOut(params)
+        await broker.trader.connect(test).swapAllOut(params.amountInMaximum, params.path)
 
         const bAfter = await aaveTest.pool.getUserAccountData(test.address)
 

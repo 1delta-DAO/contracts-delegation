@@ -1,7 +1,6 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumber, constants } from 'ethers';
-import { MockProvider } from 'ethereum-waffle';
-import { ethers, network, waffle } from 'hardhat'
+import { ethers, } from 'hardhat'
 import {
     MintableERC20,
     WETH9,
@@ -11,12 +10,13 @@ import { FeeAmount, TICK_SPACINGS } from '../../uniswap-v3/periphery/shared/cons
 import { encodePriceSqrt } from '../../uniswap-v3/periphery/shared/encodePriceSqrt';
 import { expandTo18Decimals } from '../../uniswap-v3/periphery/shared/expandTo18Decimals';
 import { getMaxTick, getMinTick } from '../../uniswap-v3/periphery/shared/ticks';
-import { initAaveBroker, aaveBrokerFixture, AaveBrokerFixture } from '../shared/aaveBrokerFixture';
+import { initAaveBroker, AaveBrokerFixtureInclV2, aaveBrokerFixtureInclV2 } from '../shared/aaveBrokerFixture';
 import { expect } from '../shared/expect'
 import { initializeMakeSuite, InterestRateMode, AAVEFixture } from '../shared/aaveFixture';
-import { uniswapFixtureNoTokens, UniswapFixtureNoTokens } from '../shared/uniswapFixture';
+import { addLiquidityV2, uniswapFixtureNoTokens, UniswapFixtureNoTokens } from '../shared/uniswapFixture';
 import { formatEther } from 'ethers/lib/utils';
-import { encodePath } from '../../uniswap-v3/periphery/shared/path';
+import { uniV2Fixture, V2Fixture } from '../shared/uniV2Fixture';
+import { encodeAggregatorPathEthers } from '../shared/aggregatorPath';
 
 // we prepare a setup for aave in hardhat
 // this series of tests checks that the features used for the margin swap implementation
@@ -31,9 +31,9 @@ describe('AAVE Brokered Collateral Swap operations', async () => {
     let test1: SignerWithAddress;
     let uniswap: UniswapFixtureNoTokens;
     let aaveTest: AAVEFixture;
-    let broker: AaveBrokerFixture;
+    let broker: AaveBrokerFixtureInclV2;
     let tokens: (MintableERC20 | WETH9)[];
-    let provider: MockProvider
+    let uniswapV2: V2Fixture
 
     async function addLiquidity(signer: SignerWithAddress, tokenAddressA: string, tokenAddressB: string, amountA: BigNumber, amountB: BigNumber) {
         if (tokenAddressA.toLowerCase() > tokenAddressB.toLowerCase())
@@ -80,8 +80,8 @@ describe('AAVE Brokered Collateral Swap operations', async () => {
         aaveTest = await initializeMakeSuite(deployer)
         tokens = Object.values(aaveTest.tokens)
         uniswap = await uniswapFixtureNoTokens(deployer, aaveTest.tokens["WETH"].address)
-
-        broker = await aaveBrokerFixture(deployer, uniswap.factory.address, aaveTest.pool.address)
+        uniswapV2 = await uniV2Fixture(deployer, aaveTest.tokens["WETH"].address)
+        broker = await aaveBrokerFixtureInclV2(deployer, uniswap.factory.address, aaveTest.pool.address, uniswapV2.factoryV2.address)
 
         await initAaveBroker(deployer, broker, uniswap, aaveTest)
 
@@ -164,6 +164,41 @@ describe('AAVE Brokered Collateral Swap operations', async () => {
             expandTo18Decimals(100_000),
             expandTo18Decimals(100_000)
         )
+        await addLiquidityV2(
+            deployer,
+            aaveTest.tokens["DAI"].address,
+            aaveTest.tokens["USDC"].address,
+            expandTo18Decimals(100_000),
+            BigNumber.from(100_000e6), // usdc has 6 decimals
+            uniswapV2
+        )
+
+        await addLiquidityV2(
+            deployer,
+            aaveTest.tokens["DAI"].address,
+            aaveTest.tokens["AAVE"].address,
+            expandTo18Decimals(100_000),
+            expandTo18Decimals(100_000),
+            uniswapV2
+        )
+
+        await addLiquidityV2(
+            deployer,
+            aaveTest.tokens["DAI"].address,
+            aaveTest.tokens["WMATIC"].address,
+            expandTo18Decimals(100_000),
+            expandTo18Decimals(100_000),
+            uniswapV2
+        )
+
+        await addLiquidityV2(
+            deployer,
+            aaveTest.tokens["AAVE"].address,
+            aaveTest.tokens["WMATIC"].address,
+            expandTo18Decimals(100_000),
+            expandTo18Decimals(100_000),
+            uniswapV2
+        )
     })
 
     // we illustrate that the trade, if attempted manually in two trades, is not possible
@@ -208,7 +243,7 @@ describe('AAVE Brokered Collateral Swap operations', async () => {
                 providedAmount,
                 bob.address
             )
-        ).to.be.revertedWith('35') // 35 is the error related to healt factor
+        ).to.be.revertedWith('35') // 35 is the error related to health factor
     })
 
 
@@ -250,8 +285,13 @@ describe('AAVE Brokered Collateral Swap operations', async () => {
             aaveTest.tokens[supplyTokenIndex],
             aaveTest.tokens[supplyTokenIndexOther]
         ].map(t => t.address)
-        const path = encodePath(_tokensInRoute, new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [6], // action
+            [1], // pid - V3
+            3 // flag - borrow variable
+        )
         const params = {
             path,
             userAmountProvided: providedAmount,
@@ -273,7 +313,7 @@ describe('AAVE Brokered Collateral Swap operations', async () => {
         const t = await aaveTest.aTokens[supplyTokenIndex].balanceOf(carol.address)
         const t2 = await aaveTest.aTokens[supplyTokenIndexOther].balanceOf(carol.address)
         console.log(t.toString(), t2.toString())
-        await broker.broker.connect(carol).swapCollateralExactIn(params)
+        await broker.trader.connect(carol).swapExactIn(params.amountIn, params.amountOutMinimum, params.path)
 
         const bb = await aaveTest.pool.getUserAccountData(carol.address)
         const ctIn = await aaveTest.aTokens[supplyTokenIndex].balanceOf(carol.address)
@@ -317,8 +357,13 @@ describe('AAVE Brokered Collateral Swap operations', async () => {
             aaveTest.tokens[supplyTokenIndex],
             aaveTest.tokens[supplyTokenIndexOther]
         ].map(t => t.address)
-        const path = encodePath(_tokensInRoute, new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [6], // action
+            [1], // pid - V3
+            3 // flag - borrow variable
+        )
         const params = {
             path,
             amountOutMinimum: providedAmount.mul(98).div(100)
@@ -338,7 +383,7 @@ describe('AAVE Brokered Collateral Swap operations', async () => {
 
         const balBefore = await aaveTest.aTokens[supplyTokenIndexOther].balanceOf(test0.address)
 
-        await broker.broker.connect(test0).swapCollateralAllIn(params)
+        await broker.trader.connect(test0).swapAllIn(params.amountOutMinimum, params.path)
 
         const supplyTokenBalanceAfter = await aaveTest.aTokens[supplyTokenIndex].balanceOf(test0.address)
         const balAfter = await aaveTest.aTokens[supplyTokenIndexOther].balanceOf(test0.address)
@@ -386,8 +431,14 @@ describe('AAVE Brokered Collateral Swap operations', async () => {
         let _tokensInRoute = [
             aaveTest.tokens[supplyTokenIndex],
             aaveTest.tokens[supplyTokenIndexOther]
-        ].map(t => t.address)
-        const path = encodePath(_tokensInRoute.reverse(), new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
+        ].map(t => t.address).reverse()
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [3], // action
+            [1], // pid
+            3 // flag
+        )
 
 
         const params = {
@@ -411,7 +462,7 @@ describe('AAVE Brokered Collateral Swap operations', async () => {
         const t = await aaveTest.aTokens[supplyTokenIndex].balanceOf(gabi.address)
         const t2 = await aaveTest.aTokens[supplyTokenIndexOther].balanceOf(gabi.address)
         console.log(t.toString(), t2.toString())
-        await broker.broker.connect(gabi).swapCollateralExactOut(params)
+        await broker.trader.connect(gabi).swapExactOut(params.amountOut, params.amountInMaximum, params.path)
 
         const ctIn = await aaveTest.aTokens[supplyTokenIndex].balanceOf(gabi.address)
         const ctInOther = await aaveTest.aTokens[supplyTokenIndexOther].balanceOf(gabi.address)
