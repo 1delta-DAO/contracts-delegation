@@ -323,7 +323,7 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
             _tokensInRoute,
             new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
             [3, 1], // action
-            [1, 1], // pid
+            [1, 10], // pid
             2 // flag
         )
         const params = {

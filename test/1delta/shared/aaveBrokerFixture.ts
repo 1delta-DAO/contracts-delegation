@@ -29,8 +29,6 @@ import {
     BalancerFlashModule,
     AAVEFlashModule__factory,
     AAVEFlashModule,
-    AaveUniswapV2Callback,
-    AaveUniswapV2Callback__factory,
     MarginTrading,
     MarginTrading__factory
 } from "../../../types";
@@ -41,7 +39,6 @@ import MoneyMarketArtifact from "../../../artifacts/contracts/1delta/modules/aav
 import SweeperArtifact from "../../../artifacts/contracts/1delta/modules/aave/AAVESweeperModule.sol/AAVESweeperModule.json"
 import MarginTradingArtifact from "../../../artifacts/contracts/1delta/modules/aave/MarginTrading.sol/MarginTrading.json"
 import MarginTraderArtifact from "../../../artifacts/contracts/1delta/modules/aave/AAVEMarginTraderModule.sol/AAVEMarginTraderModule.json"
-import AaveUniswapV2CallbackArtifact from "../../../artifacts/contracts/1delta/modules/aave/UniswapV2Callback.sol/AaveUniswapV2Callback.json"
 
 export const ONE_18 = BigNumber.from(10).pow(18)
 
@@ -229,12 +226,11 @@ export async function addAaveFlashLoans(signer: SignerWithAddress, bf: AaveBroke
 export interface AaveBrokerFixtureInclV2 {
     brokerProxy: DeltaBrokerProxy
     moduleConfig: ConfigModule
-    broker: AAVEMarginTraderModule & AAVESweeperModule & AaveUniswapV2Callback
+    broker: AAVEMarginTraderModule & AAVESweeperModule 
     manager: ManagementModule
     tradeDataViewer: MarginTradeDataViewerModule
     moneyMarket: AAVEMoneyMarketModule & AAVESweeperModule
     sweeper: AAVESweeperModule
-    marginV2: AaveUniswapV2Callback
     trader: MarginTrading
 }
 
@@ -336,18 +332,17 @@ export async function aaveBrokerFixtureInclV2(signer: SignerWithAddress, uniFact
     //     }],
     // )
 
-    const marginV2 = (await new ethers.Contract(proxy.address, AaveUniswapV2Callback__factory.createInterface(), signer) as AaveUniswapV2Callback)
 
     const broker = (await new ethers.Contract(
         proxy.address,
-        [...SweeperArtifact.abi, ...MarginTraderArtifact.abi, ...AaveUniswapV2CallbackArtifact.abi],
+        [...SweeperArtifact.abi, ...MarginTraderArtifact.abi],
         signer
-    ) as AAVEMarginTraderModule & AAVESweeperModule & AaveUniswapV2Callback)
+    ) as AAVEMarginTraderModule & AAVESweeperModule)
     const trader = (await new ethers.Contract(
         proxy.address,
         MarginTradingArtifact.abi,
         signer
     ) as MarginTrading)
-    return { trader, broker, brokerProxy: proxy, manager, tradeDataViewer, moneyMarket, moduleConfig, sweeper, marginV2 }
+    return { trader, broker, brokerProxy: proxy, manager, tradeDataViewer, moneyMarket, moduleConfig, sweeper }
 
 }

@@ -16,15 +16,18 @@ import {IERC20Balance} from "../../interfaces/IERC20Balance.sol";
 // solhint-disable max-line-length
 
 /**
- * @title Contract Module for general Margin Trading on a Compound-Style Lender
- * @notice Contains main logic for uniswap callbacks
+ * @title Contract Module for general Margin Trading on an Aave-style Lender
+ * @notice Contains main logic for uniswap-type callbacks and initiator functions
  */
 contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
+    // errors
     error Slippage();
     error NoBalance();
 
+    // values to reset cache with
     uint256 private constant DEFAULT_AMOUNT_CACHED = type(uint256).max;
     address private constant DEFAULT_ADDRESS_CACHED = address(0);
+
     IPool private immutable _aavePool;
 
     constructor(
@@ -53,15 +56,8 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
             zeroForOne := lt(tokenIn, tokenOut)
         }
 
-        // uniswapV2 style
-        if (identifier == 0) {
-            ncs().amount = amountIn;
-            tokenIn = pairAddress(tokenIn, tokenOut);
-            (uint256 amount0Out, uint256 amount1Out) = zeroForOne
-                ? (uint256(0), getAmountOutDirect(tokenIn, zeroForOne, amountIn))
-                : (getAmountOutDirect(tokenIn, zeroForOne, amountIn), uint256(0));
-            IUniswapV2Pair(tokenIn).swap(amount0Out, amount1Out, address(this), path);
-        } else if (identifier == 1) {
+        // uniswapV3 types
+        if (identifier < 10) {
             uint24 fee;
             assembly {
                 fee := mload(add(add(path, 0x3), 20))
@@ -73,6 +69,15 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
                 zeroForOne ? MIN_SQRT_RATIO : MAX_SQRT_RATIO,
                 path
             );
+        }
+        // uniswapV2 types
+        else if (identifier < 20) {
+            ncs().amount = amountIn;
+            tokenIn = pairAddress(tokenIn, tokenOut);
+            (uint256 amount0Out, uint256 amount1Out) = zeroForOne
+                ? (uint256(0), getAmountOutDirect(tokenIn, zeroForOne, amountIn))
+                : (getAmountOutDirect(tokenIn, zeroForOne, amountIn), uint256(0));
+            IUniswapV2Pair(tokenIn).swap(amount0Out, amount1Out, address(this), path);
         }
         amountOut = ncs().amount;
         ncs().amount = DEFAULT_AMOUNT_CACHED;
@@ -97,11 +102,8 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
             tokenIn := div(mload(add(add(path, 0x20), 25)), 0x1000000000000000000000000)
             zeroForOne := lt(tokenIn, tokenOut)
         }
-        if (identifier == 0) {
-            tokenIn = pairAddress(tokenIn, tokenOut);
-            (uint256 amount0Out, uint256 amount1Out) = zeroForOne ? (uint256(0), amountOut) : (amountOut, uint256(0));
-            IUniswapV2Pair(tokenIn).swap(amount0Out, amount1Out, address(this), path);
-        } else if (identifier == 1) {
+        // unswapV3 types
+        if (identifier < 10) {
             uint24 fee;
             assembly {
                 fee := mload(add(add(path, 0x3), 20))
@@ -113,6 +115,12 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
                 zeroForOne ? MIN_SQRT_RATIO : MAX_SQRT_RATIO,
                 path
             );
+        }
+        // uniswapV2 types
+        else if (identifier < 20) {
+            tokenIn = pairAddress(tokenIn, tokenOut);
+            (uint256 amount0Out, uint256 amount1Out) = zeroForOne ? (uint256(0), amountOut) : (amountOut, uint256(0));
+            IUniswapV2Pair(tokenIn).swap(amount0Out, amount1Out, address(this), path);
         }
         amountIn = ncs().amount;
         ncs().amount = DEFAULT_AMOUNT_CACHED;
@@ -147,15 +155,8 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
         uint256 amountIn = getCollateralBalance(tokenIn);
         if (amountIn == 0) revert NoBalance();
 
-        // uniswapV2 style
-        if (identifier == 0) {
-            ncs().amount = amountIn;
-            tokenIn = pairAddress(tokenIn, tokenOut);
-            (uint256 amount0Out, uint256 amount1Out) = zeroForOne
-                ? (uint256(0), getAmountOutDirect(tokenIn, zeroForOne, amountIn))
-                : (getAmountOutDirect(tokenIn, zeroForOne, amountIn), uint256(0));
-            IUniswapV2Pair(tokenIn).swap(amount0Out, amount1Out, address(this), path);
-        } else if (identifier == 1) {
+        // uniswapV3 style
+        if (identifier < 10) {
             uint24 fee;
             assembly {
                 fee := mload(add(add(path, 0x3), 20))
@@ -167,6 +168,15 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
                 zeroForOne ? MIN_SQRT_RATIO : MAX_SQRT_RATIO,
                 path
             );
+        }
+        // unsiwapV3 types
+        else if (identifier < 20) {
+            ncs().amount = amountIn;
+            tokenIn = pairAddress(tokenIn, tokenOut);
+            (uint256 amount0Out, uint256 amount1Out) = zeroForOne
+                ? (uint256(0), getAmountOutDirect(tokenIn, zeroForOne, amountIn))
+                : (getAmountOutDirect(tokenIn, zeroForOne, amountIn), uint256(0));
+            IUniswapV2Pair(tokenIn).swap(amount0Out, amount1Out, address(this), path);
         }
         amountOut = ncs().amount;
         ncs().amount = DEFAULT_AMOUNT_CACHED;
@@ -198,11 +208,9 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
         assembly {
             identifier := mload(add(add(path, 0x1), 23)) // identifier for poolId
         }
-        if (identifier == 0) {
-            tokenIn = pairAddress(tokenIn, tokenOut);
-            (uint256 amount0Out, uint256 amount1Out) = zeroForOne ? (uint256(0), amountOut) : (amountOut, uint256(0));
-            IUniswapV2Pair(tokenIn).swap(amount0Out, amount1Out, address(this), path);
-        } else if (identifier == 1) {
+
+        // uniswapV3 types
+        if (identifier < 10) {
             uint24 fee;
             assembly {
                 fee := mload(add(add(path, 0x3), 20))
@@ -214,6 +222,12 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
                 zeroForOne ? MIN_SQRT_RATIO : MAX_SQRT_RATIO,
                 path
             );
+        }
+        // uniswapV2 types
+        else if (identifier < 20) {
+            tokenIn = pairAddress(tokenIn, tokenOut);
+            (uint256 amount0Out, uint256 amount1Out) = zeroForOne ? (uint256(0), amountOut) : (amountOut, uint256(0));
+            IUniswapV2Pair(tokenIn).swap(amount0Out, amount1Out, address(this), path);
         }
         amountIn = ncs().amount;
         ncs().amount = DEFAULT_AMOUNT_CACHED;

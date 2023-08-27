@@ -149,11 +149,7 @@ abstract contract BaseSwapper is TokenTransfer, BaseDecoder {
                 tokenOut := div(mload(add(add(path, 0x20), 25)), 0x1000000000000000000000000)
             }
             // uniswapV2 style
-            if (identifier == 0) {
-                amountIn = swapUniV2ExactIn(tokenIn, tokenOut, amountIn);
-            }
-            // uniswapV3 style
-            else if (identifier == 1) {
+            if (identifier < 10) {
                 uint24 fee;
                 assembly {
                     fee := mload(add(add(path, 0x3), 20))
@@ -168,6 +164,10 @@ abstract contract BaseSwapper is TokenTransfer, BaseDecoder {
                 );
 
                 amountIn = uint256(-(zeroForOne ? amount1 : amount0));
+            }
+            // uniswapV3 style
+            else if (identifier < 20) {
+                amountIn = swapUniV2ExactIn(tokenIn, tokenOut, amountIn);
             }
             // decide whether to continue or terminate
             if (path.length > 46) {
@@ -350,20 +350,8 @@ abstract contract BaseSwapper is TokenTransfer, BaseDecoder {
             tokenIn := div(mload(add(add(data, 0x20), 25)), 0x1000000000000000000000000)
         }
 
-        // uniswapV2 style
-        if (identifier == 0) {
-            bool zeroForOne = tokenIn < tokenOut;
-            // get next pool
-            address pool = pairAddress(tokenIn, tokenOut);
-            uint256 amountOut0;
-            uint256 amountOut1;
-            // amountOut0, cache
-            (amountOut0, amountOut1) = zeroForOne ? (uint256(0), amountOut) : (amountOut, uint256(0));
-            IUniswapV2Pair(pool).swap(amountOut0, amountOut1, address(this), data); // cannot swap to sender due to flashSwap
-            _transferERC20Tokens(tokenOut, msg.sender, amountOut);
-        }
         // uniswapV3 style
-        else if (identifier == 1) {
+        if (identifier < 10) {
             bool zeroForOne = tokenIn < tokenOut;
             uint24 fee;
             assembly {
@@ -376,6 +364,18 @@ abstract contract BaseSwapper is TokenTransfer, BaseDecoder {
                 zeroForOne ? MIN_SQRT_RATIO : MAX_SQRT_RATIO,
                 data
             );
+        }
+        // uniswapV2 style
+        else if (identifier < 20) {
+            bool zeroForOne = tokenIn < tokenOut;
+            // get next pool
+            address pool = pairAddress(tokenIn, tokenOut);
+            uint256 amountOut0;
+            uint256 amountOut1;
+            // amountOut0, cache
+            (amountOut0, amountOut1) = zeroForOne ? (uint256(0), amountOut) : (amountOut, uint256(0));
+            IUniswapV2Pair(pool).swap(amountOut0, amountOut1, address(this), data); // cannot swap to sender due to flashSwap
+            _transferERC20Tokens(tokenOut, msg.sender, amountOut);
         }
     }
 
