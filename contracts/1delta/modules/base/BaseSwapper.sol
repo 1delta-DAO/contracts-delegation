@@ -6,17 +6,9 @@ pragma solidity 0.8.21;
 * Author: Achthar | 1delta 
 /******************************************************************************/
 
-import {SafeCast} from "../../dex-tools/uniswap/core/SafeCast.sol";
 import {IUniswapV3Pool} from "../../dex-tools/uniswap/core/IUniswapV3Pool.sol";
 import {IUniswapV2Pair} from "../../../external-protocols/uniswapV2/core/interfaces/IUniswapV2Pair.sol";
-import {ISwapRouter} from "../../dex-tools/uniswap/interfaces/ISwapRouter.sol";
-import {PeripheryValidation} from "../../dex-tools/uniswap/base/PeripheryValidation.sol";
-import {PeripheryPaymentsWithFee} from "../../dex-tools/uniswap/base/PeripheryPaymentsWithFee.sol";
 import {BytesLib} from "../../dex-tools/uniswap/libraries/BytesLib.sol";
-import {PoolAddressCalculator} from "../../dex-tools/uniswap/libraries/PoolAddressCalculator.sol";
-import {CallbackValidation} from "../../dex-tools/uniswap/libraries/CallbackValidation.sol";
-import {TokenTransfer} from "../../libraries/TokenTransfer.sol";
-import {IERC20} from "../../../interfaces/IERC20.sol";
 import {TokenTransfer} from "../../libraries/TokenTransfer.sol";
 import {BaseDecoder} from "./BaseDecoder.sol";
 
@@ -28,7 +20,6 @@ import {BaseDecoder} from "./BaseDecoder.sol";
  */
 abstract contract BaseSwapper is TokenTransfer, BaseDecoder {
     using BytesLib for bytes;
-    using SafeCast for uint256;
 
     /// @dev Mask of lower 20 bytes.
     uint256 private constant ADDRESS_MASK = 0x00ffffffffffffffffffffffffffffffffffffffff;
@@ -119,7 +110,7 @@ abstract contract BaseSwapper is TokenTransfer, BaseDecoder {
             (int256 amount0, int256 amount1) = getUniswapV3Pool(tokenIn, tokenOut, fee).swap(
                 address(this),
                 zeroForOne,
-                amountIn.toInt256(),
+                int256(amountIn),
                 zeroForOne ? MIN_SQRT_RATIO : MAX_SQRT_RATIO,
                 sliceFirstPool(_data)
             );
