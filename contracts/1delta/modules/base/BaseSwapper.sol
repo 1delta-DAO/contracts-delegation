@@ -100,7 +100,7 @@ abstract contract BaseSwapper is TokenTransfer, BaseDecoder {
             uint24 fee;
             uint8 pId;
             assembly {
-                tokenIn := div(mload(add(add(_data, 0x20), 0)), 0x1000000000000000000000000)
+                tokenIn := div(mload(add(_data, 0x20)), 0x1000000000000000000000000)
                 fee := mload(add(add(_data, 0x3), 20))
                 pId := mload(add(add(_data, 0x1), 23))
                 tokenOut := div(mload(add(add(_data, 0x20), 25)), 0x1000000000000000000000000)
@@ -135,7 +135,7 @@ abstract contract BaseSwapper is TokenTransfer, BaseDecoder {
             address tokenOut;
             uint8 identifier;
             assembly {
-                tokenIn := div(mload(add(add(path, 0x20), 0)), 0x1000000000000000000000000)
+                tokenIn := div(mload(add(path, 0x20)), 0x1000000000000000000000000)
                 identifier := mload(add(add(path, 0x1), 23)) // identifier for poolId
                 tokenOut := div(mload(add(add(path, 0x20), 25)), 0x1000000000000000000000000)
             }
@@ -336,7 +336,7 @@ abstract contract BaseSwapper is TokenTransfer, BaseDecoder {
         address tokenOut;
         uint8 identifier;
         assembly {
-            tokenOut := div(mload(add(add(data, 0x20), 0)), 0x1000000000000000000000000)
+            tokenOut := div(mload(add(data, 0x20)), 0x1000000000000000000000000)
             identifier := mload(add(add(data, 0x1), 23)) // identifier for poolId
             tokenIn := div(mload(add(add(data, 0x20), 25)), 0x1000000000000000000000000)
         }

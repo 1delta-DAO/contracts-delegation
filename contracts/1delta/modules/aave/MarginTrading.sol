@@ -268,7 +268,7 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
         address tokenOut;
         uint256 tradeId;
         assembly {
-            tokenIn := div(mload(add(add(_data, 0x20), 0)), 0x1000000000000000000000000)
+            tokenIn := div(mload(add(_data, 0x20)), 0x1000000000000000000000000)
             fee := mload(add(add(_data, 0x3), 20))
             identifier := mload(add(add(_data, 0x1), 23)) // identifier for poolId
             tokenOut := div(mload(add(add(_data, 0x20), 25)), 0x1000000000000000000000000)
