@@ -42,7 +42,7 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
     function swapExactIn(
         uint256 amountIn,
         uint256 amountOutMinimum,
-        bytes memory path
+        bytes calldata path
     ) external returns (uint256 amountOut) {
         acs().cachedAddress = msg.sender;
         address tokenIn;
@@ -50,9 +50,10 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
         bool zeroForOne;
         uint8 identifier;
         assembly {
-            tokenIn := div(mload(add(path, 0x20)), 0x1000000000000000000000000)
-            identifier := mload(add(add(path, 0x1), 23)) // identifier for poolId
-            tokenOut := div(mload(add(add(path, 0x20), 25)), 0x1000000000000000000000000)
+            let firstWord := calldataload(path.offset)
+            tokenIn := shr(96, firstWord)
+            identifier := shr(64, firstWord)
+            tokenOut := shr(96, calldataload(add(path.offset, 25)))
             zeroForOne := lt(tokenIn, tokenOut)
         }
 
@@ -60,7 +61,7 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
         if (identifier < 10) {
             uint24 fee;
             assembly {
-                fee := mload(add(add(path, 0x3), 20))
+                fee := and(shr(72, calldataload(path.offset)), 0xffffff)
             }
             getUniswapV3Pool(tokenIn, tokenOut, fee).swap(
                 address(this),
@@ -89,7 +90,7 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
     function swapExactOut(
         uint256 amountOut,
         uint256 amountInMaximum,
-        bytes memory path
+        bytes calldata path
     ) external returns (uint256 amountIn) {
         acs().cachedAddress = msg.sender;
         address tokenIn;
@@ -97,16 +98,17 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
         bool zeroForOne;
         uint8 identifier;
         assembly {
-            tokenOut := div(mload(add(path, 0x20)), 0x1000000000000000000000000)
-            identifier := mload(add(add(path, 0x1), 23)) // identifier for poolId
-            tokenIn := div(mload(add(add(path, 0x20), 25)), 0x1000000000000000000000000)
+            let firstWord := calldataload(path.offset)
+            tokenOut := shr(96, firstWord)
+            identifier := shr(64, firstWord)
+            tokenIn := shr(96, calldataload(add(path.offset, 25)))
             zeroForOne := lt(tokenIn, tokenOut)
         }
         // unswapV3 types
         if (identifier < 10) {
             uint24 fee;
             assembly {
-                fee := mload(add(add(path, 0x3), 20))
+                fee := and(shr(72, calldataload(path.offset)), 0xffffff)
             }
             getUniswapV3Pool(tokenIn, tokenOut, fee).swap(
                 address(this),
@@ -139,16 +141,17 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
 
     // Exact Input Swap where the entire collateral amount is withdrawn - The path parameters determine the lending actions
     // if the collateral balance is zerp. the tx reverts
-    function swapAllIn(uint256 amountOutMinimum, bytes memory path) external returns (uint256 amountOut) {
+    function swapAllIn(uint256 amountOutMinimum, bytes calldata path) external returns (uint256 amountOut) {
         acs().cachedAddress = msg.sender;
         address tokenIn;
         address tokenOut;
         bool zeroForOne;
         uint8 identifier;
         assembly {
-            tokenIn := div(mload(add(path, 0x20)), 0x1000000000000000000000000)
-            identifier := mload(add(add(path, 0x1), 23)) // identifier for poolId
-            tokenOut := div(mload(add(add(path, 0x20), 25)), 0x1000000000000000000000000)
+            let firstWord := calldataload(path.offset)
+            tokenIn := shr(96, firstWord)
+            identifier := shr(64, firstWord)
+            tokenOut := shr(96, calldataload(add(path.offset, 25)))
             zeroForOne := lt(tokenIn, tokenOut)
         }
         // fetch collateral balance
@@ -159,7 +162,7 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
         if (identifier < 10) {
             uint24 fee;
             assembly {
-                fee := mload(add(add(path, 0x3), 20))
+                fee := and(shr(72, calldataload(path.offset)), 0xffffff)
             }
             getUniswapV3Pool(tokenIn, tokenOut, fee).swap(
                 address(this),
@@ -185,16 +188,17 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
     }
 
     // Exact Output Swap where the entire debt balacne is repaid - The path parameters determine the lending actions
-    function swapAllOut(uint256 amountInMaximum, bytes memory path) external returns (uint256 amountIn) {
+    function swapAllOut(uint256 amountInMaximum, bytes calldata path) external returns (uint256 amountIn) {
         acs().cachedAddress = msg.sender;
         address tokenIn;
         address tokenOut;
         bool zeroForOne;
         uint8 identifier;
         assembly {
-            tokenOut := div(mload(add(path, 0x20)), 0x1000000000000000000000000)
-            identifier := mload(add(add(path, 0x1), 24)) // identifier for tradeType
-            tokenIn := div(mload(add(add(path, 0x20), 25)), 0x1000000000000000000000000)
+            let firstWord := calldataload(path.offset)
+            tokenOut := shr(96, firstWord)
+            identifier := shr(56, firstWord)
+            tokenIn := shr(96, calldataload(add(path.offset, 25)))
             zeroForOne := lt(tokenIn, tokenOut)
         }
 
@@ -206,14 +210,14 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
 
         // fetch poolId - store it in identifier
         assembly {
-            identifier := mload(add(add(path, 0x1), 23)) // identifier for poolId
+            identifier := shr(64, calldataload(path.offset))
         }
 
         // uniswapV3 types
         if (identifier < 10) {
             uint24 fee;
             assembly {
-                fee := mload(add(add(path, 0x3), 20))
+                fee := and(shr(72, calldataload(path.offset)), 0xffffff)
             }
             getUniswapV3Pool(tokenIn, tokenOut, fee).swap(
                 address(this),
@@ -259,7 +263,7 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
     function uniswapV3SwapCallback(
         int256 amount0Delta,
         int256 amount1Delta,
-        bytes memory _data
+        bytes calldata _data
     ) external {
         uint256 cache; // cache value
         uint8 identifier;
@@ -268,17 +272,17 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
         address tokenOut;
         uint256 tradeId;
         assembly {
-            tokenIn := div(mload(add(_data, 0x20)), 0x1000000000000000000000000)
-            fee := mload(add(add(_data, 0x3), 20))
-            identifier := mload(add(add(_data, 0x1), 23)) // identifier for poolId
-            tokenOut := div(mload(add(add(_data, 0x20), 25)), 0x1000000000000000000000000)
+            let firstWord := calldataload(_data.offset)
+            tokenIn := shr(96, firstWord)
+            fee := and(shr(72, firstWord), 0xffffff)
+            identifier := shr(64, firstWord)
+            tokenOut := shr(96, calldataload(add(_data.offset, 25)))
         }
         {
             require(msg.sender == address(getUniswapV3Pool(tokenIn, tokenOut, fee)));
         }
-
         assembly {
-            identifier := mload(add(add(_data, 0x1), 24)) // identifier for tradeType
+            identifier := shr(56, calldataload(_data.offset)) // mload(add(add(_data, 0x1), 24)) // identifier for tradeType
         }
         tradeId = identifier;
         // EXACT IN BASE SWAP
@@ -293,12 +297,12 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
             uint256 amountToPay = amount0Delta > 0 ? uint256(amount0Delta) : uint256(amount1Delta);
             // either initiate the next swap or pay
             if (cache > 46) {
-                _data = skipToken(_data);
+                _data = _data[25:];
                 flashSwapExactOut(amountToPay, _data);
             } else {
                 // re-assign identifier
                 assembly {
-                    identifier := mload(add(add(_data, 0x1), sub(cache, 1))) // identifier for borrow/withdraw
+                    identifier := calldataload(add(_data.offset, 14)) // identifier for borrow/withdraw
                 }
                 tradeId = identifier;
 
@@ -329,7 +333,7 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
                 if (cache > 46) {
                     // we need to swap to the token that we want to supply
                     // the router returns the amount that we can finally supply to the protocol
-                    _data = skipToken(_data);
+                    _data = _data[25:];
                     amountToSwap = swapExactIn(amountToSwap, _data);
                     // supply directly
                     tokenOut = getLastToken(_data);
@@ -349,8 +353,9 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
 
                 // fetch the flag for closing the trade
                 assembly {
-                    identifier := mload(add(add(_data, 0x1), sub(cache, 1)))
+                    identifier := calldataload(add(_data.offset, 14))
                 }
+
                 tradeId = identifier;
                 // 1,2 are is borrow
                 if (tradeId < 3) {
@@ -377,14 +382,14 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
                 }
                 // multihop if required
                 if (cache > 46) {
-                    _data = skipToken(_data);
+                    _data = _data[25:];
                     flashSwapExactOut(amountInLastPool, _data);
                 } else {
                     // cache amount
                     ncs().amount = amountInLastPool;
                     // fetch the flag for closing the trade
                     assembly {
-                        identifier := mload(add(add(_data, 0x1), sub(cache, 1)))
+                        identifier := calldataload(add(_data.offset, 14))
                     }
                     tradeId = identifier;
                     // borrow to pay pool
@@ -446,7 +451,7 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
         address,
         uint256 amount0,
         uint256 amount1,
-        bytes memory data
+        bytes calldata data
     ) external {
         uint256 cache;
         uint8 tradeId;
@@ -456,10 +461,11 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
         uint8 identifier;
         // the fee parameter in the path can be ignored for validating a V2 pool
         assembly {
-            tokenIn := div(mload(add(add(data, 0x20), 0)), 0x1000000000000000000000000)
-            identifier := mload(add(add(data, 0x1), 23)) // uniswap fork identifier
-            tradeId := mload(add(add(data, 0x1), 24)) // interaction identifier
-            tokenOut := div(mload(add(add(data, 0x20), 25)), 0x1000000000000000000000000)
+            let firstWord := calldataload(data.offset)
+            tokenIn := shr(96, firstWord)
+            identifier := shr(64, firstWord)
+            tradeId := shr(56, firstWord)
+            tokenOut := shr(96, calldataload(add(data.offset, 25)))
             zeroForOne := lt(tokenIn, tokenOut)
         }
 
@@ -470,9 +476,6 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
             require(msg.sender == pool);
         }
         // store identifier for tradeType in identifier variable
-        assembly {
-            identifier := mload(add(add(data, 0x1), 24)) // identifier for  tradeType
-        }
         cache = data.length;
         if (tradeId == 1) {
             cache = data.length;
@@ -482,11 +485,11 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
             referenceAmount = getAmountInDirect(pool, zeroForOne, referenceAmount);
             // either initiate the next swap or pay
             if (cache > 46) {
-                data = skipToken(data);
+                data = data[25:];
                 flashSwapExactOut(referenceAmount, data);
             } else {
                 assembly {
-                    identifier := mload(add(add(data, 0x1), sub(cache, 1))) // identifier for borrow/withdraw
+                    identifier := calldataload(add(data.offset, 14)) // identifier for borrow/withdraw
                 }
                 tradeId = identifier;
 
@@ -497,10 +500,8 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
                     _transferERC20Tokens(tokenOut, msg.sender, referenceAmount);
                 } else {
                     // withraw and send funds to the pool
-                    // _redeemUnderlying(tokenOut, referenceAmount);
                     _transferERC20TokensFrom(aas().aTokens[tokenOut], acs().cachedAddress, address(this), referenceAmount);
                     _aavePool.withdraw(tokenOut, referenceAmount, msg.sender);
-                    // _transferERC20Tokens(tokenOut, msg.sender, referenceAmount);
                 }
                 // cache amount
                 ncs().amount = referenceAmount;
@@ -515,7 +516,7 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
             if (cache > 46) {
                 // we need to swap to the token that we want to supply
                 // the router returns the amount that we can finally supply to the protocol
-                data = skipToken(data);
+                data = data[25:];
                 amountToSwap = swapExactIn(amountToSwap, data);
                 // supply directly
                 tokenOut = getLastToken(data);
@@ -535,7 +536,7 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
             }
             // fetch the flag for closing the trade
             assembly {
-                identifier := mload(add(add(data, 0x1), sub(cache, 1)))
+                identifier := calldataload(add(data.offset, 14))
             }
             tradeId = identifier;
             // 1,2 are is borrow
@@ -562,14 +563,14 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
             referenceAmount = getAmountInDirect(pool, zeroForOne, referenceAmount);
             // constinue swapping if more data is provided
             if (cache > 46) {
-                data = skipToken(data);
+                data = data[25:];
                 flashSwapExactOut(referenceAmount, data);
             } else {
                 // cache amount
                 ncs().amount = referenceAmount;
                 // fetch the flag for closing the trade
                 assembly {
-                    identifier := mload(add(add(data, 0x1), sub(cache, 1)))
+                    identifier := calldataload(add(data.offset, 14))
                 }
                 tradeId = identifier;
                 // borrow to pay pool

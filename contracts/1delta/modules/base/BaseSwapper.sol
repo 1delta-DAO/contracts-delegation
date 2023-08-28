@@ -93,17 +93,18 @@ abstract contract BaseSwapper is TokenTransfer, BaseDecoder {
     }
 
     /// @dev deprecated uniswapV3 exat input swapper
-    function exactInputToSelf(uint256 amountIn, bytes memory _data) internal returns (uint256 amountOut) {
+    function exactInputToSelf(uint256 amountIn, bytes calldata _data) internal returns (uint256 amountOut) {
         while (true) {
             address tokenIn;
             address tokenOut;
             uint24 fee;
             uint8 pId;
             assembly {
-                tokenIn := div(mload(add(_data, 0x20)), 0x1000000000000000000000000)
-                fee := mload(add(add(_data, 0x3), 20))
-                pId := mload(add(add(_data, 0x1), 23))
-                tokenOut := div(mload(add(add(_data, 0x20), 25)), 0x1000000000000000000000000)
+                let firstWord := calldataload(_data.offset)
+                tokenIn := shr(96, firstWord)
+                fee := and(shr(72, firstWord), 0xffffff)
+                pId := shr(64, firstWord)
+                tokenOut := shr(96, calldataload(add(_data.offset, 25)))
             }
 
             bool zeroForOne = tokenIn < tokenOut;
@@ -112,14 +113,14 @@ abstract contract BaseSwapper is TokenTransfer, BaseDecoder {
                 zeroForOne,
                 int256(amountIn),
                 zeroForOne ? MIN_SQRT_RATIO : MAX_SQRT_RATIO,
-                sliceFirstPool(_data)
+                _data[:45]
             );
 
             amountIn = uint256(-(zeroForOne ? amount1 : amount0));
 
             // decide whether to continue or terminate
             if (_data.length > 69) {
-                _data = skipToken(_data);
+                _data = _data[25:];
             } else {
                 amountOut = amountIn;
                 break;
@@ -129,21 +130,22 @@ abstract contract BaseSwapper is TokenTransfer, BaseDecoder {
 
     /// @dev swaps exact input through UniswapV3 or UniswapV2 style exactIn
     /// only uniswapV3 executes flashSwaps
-    function swapExactIn(uint256 amountIn, bytes memory path) internal returns (uint256 amountOut) {
+    function swapExactIn(uint256 amountIn, bytes calldata path) internal returns (uint256 amountOut) {
         while (true) {
             address tokenIn;
             address tokenOut;
             uint8 identifier;
             assembly {
-                tokenIn := div(mload(add(path, 0x20)), 0x1000000000000000000000000)
-                identifier := mload(add(add(path, 0x1), 23)) // identifier for poolId
-                tokenOut := div(mload(add(add(path, 0x20), 25)), 0x1000000000000000000000000)
+                let firstWord := calldataload(path.offset)
+                tokenIn := shr(96, firstWord)
+                identifier := shr(64, firstWord)
+                tokenOut := shr(96, calldataload(add(path.offset, 25)))
             }
             // uniswapV2 style
             if (identifier < 10) {
                 uint24 fee;
                 assembly {
-                    fee := mload(add(add(path, 0x3), 20))
+                    fee := and(shr(72, calldataload(path.offset)), 0xffffff)
                 }
                 bool zeroForOne = tokenIn < tokenOut;
                 (int256 amount0, int256 amount1) = getUniswapV3Pool(tokenIn, tokenOut, fee).swap(
@@ -151,7 +153,7 @@ abstract contract BaseSwapper is TokenTransfer, BaseDecoder {
                     zeroForOne,
                     int256(amountIn),
                     zeroForOne ? MIN_SQRT_RATIO : MAX_SQRT_RATIO,
-                    sliceFirstPool(path)
+                    path[:45]
                 );
 
                 amountIn = uint256(-(zeroForOne ? amount1 : amount0));
@@ -162,7 +164,7 @@ abstract contract BaseSwapper is TokenTransfer, BaseDecoder {
             }
             // decide whether to continue or terminate
             if (path.length > 46) {
-                path = skipToken(path);
+                path = path[25:];
             } else {
                 amountOut = amountIn;
                 break;
@@ -331,14 +333,15 @@ abstract contract BaseSwapper is TokenTransfer, BaseDecoder {
         }
     }
 
-    function flashSwapExactOut(uint256 amountOut, bytes memory data) internal {
+    function flashSwapExactOut(uint256 amountOut, bytes calldata data) internal {
         address tokenIn;
         address tokenOut;
         uint8 identifier;
         assembly {
-            tokenOut := div(mload(add(data, 0x20)), 0x1000000000000000000000000)
-            identifier := mload(add(add(data, 0x1), 23)) // identifier for poolId
-            tokenIn := div(mload(add(add(data, 0x20), 25)), 0x1000000000000000000000000)
+            let firstWord := calldataload(data.offset)
+            tokenOut := shr(96, firstWord)
+            identifier := shr(64, firstWord)
+            tokenIn := shr(96, calldataload(add(data.offset, 25)))
         }
 
         // uniswapV3 style
@@ -346,7 +349,7 @@ abstract contract BaseSwapper is TokenTransfer, BaseDecoder {
             bool zeroForOne = tokenIn < tokenOut;
             uint24 fee;
             assembly {
-                fee := mload(add(add(data, 0x3), 20))
+                fee := and(shr(72, calldataload(data.offset)), 0xffffff)
             }
             getUniswapV3Pool(tokenIn, tokenOut, fee).swap(
                 msg.sender,
