@@ -273,7 +273,7 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
         assembly {
             let firstWord := calldataload(_data.offset)
             tokenIn := shr(96, firstWord)
-            fee := and(shr(72, firstWord), 0xffffff)
+            fee := and(shr(72, firstWord), 0xffffff) // uniswapV3 type fee
             identifier := shr(64, firstWord) // poolId
             tokenOut := shr(96, calldataload(add(_data.offset, 25)))
         }
@@ -291,23 +291,22 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
         }
         // EXACT OUT - WITHDRAW or BORROW
         else if (tradeId == 1) {
-            uint256 cache = _data.length;
             // fetch amount that has to be paid to the pool
             uint256 amountToPay = amount0Delta > 0 ? uint256(amount0Delta) : uint256(amount1Delta);
             // either initiate the next swap or pay
-            if (cache > 46) {
+            if (_data.length > 46) {
                 _data = _data[25:];
                 flashSwapExactOut(amountToPay, _data);
             } else {
                 // re-assign identifier
-                assembly {
-                    identifier := calldataload(add(_data.offset, 14)) // identifier for borrow/withdraw
-                }
-                tradeId = identifier;
+                uint256 cache = _data.length;
+                _data = _data[(cache - 1):cache];
+                // assign end flag to cache
+                cache = uint8(bytes1(_data));
 
-                if (tradeId < 3) {
+                if (cache < 3) {
                     // borrow and repay pool - tradeId matches interest rate mode
-                    _aavePool.borrow(tokenOut, amountToPay, tradeId, 0, acs().cachedAddress);
+                    _aavePool.borrow(tokenOut, amountToPay, cache, 0, acs().cachedAddress);
                     _transferERC20Tokens(tokenOut, msg.sender, amountToPay);
                 } else {
                     // withraw and send funds to the pool
@@ -321,24 +320,23 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
         }
         // MARGIN TRADING INTERACTIONS
         else {
-            // fetch identifier at the end of the path
-            uint256 cache = _data.length;
             // exact in
             if (tradeId > 5) {
                 (uint256 amountToRepayToPool, uint256 amountToSwap) = amount0Delta > 0
                     ? (uint256(amount0Delta), uint256(-amount1Delta))
                     : (uint256(amount1Delta), uint256(-amount0Delta));
-
+                uint256 cache = _data.length;
                 if (cache > 46) {
                     // we need to swap to the token that we want to supply
                     // the router returns the amount that we can finally supply to the protocol
                     _data = _data[25:];
                     amountToSwap = swapExactIn(amountToSwap, _data);
-                    // supply directly
+                    // re-assign tokenOut
                     tokenOut = getLastToken(_data);
-                    // update length
                     cache = _data.length;
                 }
+                // slice out the end flag
+                _data = _data[(cache - 1):cache];
                 // cache amount
                 ncs().amount = amountToSwap;
                 address user = acs().cachedAddress;
@@ -351,15 +349,12 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
                 }
 
                 // fetch the flag for closing the trade
-                assembly {
-                    identifier := calldataload(add(_data.offset, 14))
-                }
 
-                tradeId = identifier;
+                cache = uint8(bytes1(_data));
                 // 1,2 are is borrow
-                if (tradeId < 3) {
-                    // the interest mode matches the tradeId in this case
-                    _aavePool.borrow(tokenIn, amountToRepayToPool, tradeId, 0, user);
+                if (cache < 3) {
+                    // the interest mode matches the cache in this case
+                    _aavePool.borrow(tokenIn, amountToRepayToPool, cache, 0, user);
                     _transferERC20Tokens(tokenIn, msg.sender, amountToRepayToPool);
                 } else {
                     // withraw and send funds to the pool
@@ -379,6 +374,7 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
                     // 4, 5 are repay - subtracting 3 yields the interest rate mode
                     _aavePool.repay(tokenIn, amountToSupply, tradeId - 3, user);
                 }
+                uint256 cache = _data.length;
                 // multihop if required
                 if (cache > 46) {
                     _data = _data[25:];
@@ -387,13 +383,12 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
                     // cache amount
                     ncs().amount = amountInLastPool;
                     // fetch the flag for closing the trade
-                    assembly {
-                        identifier := calldataload(add(_data.offset, 14))
-                    }
-                    tradeId = identifier;
+                    _data = _data[(cache - 1):cache];
+                    // assign end flag to cache
+                    cache = uint8(bytes1(_data));
                     // borrow to pay pool
-                    if (tradeId < 3) {
-                        _aavePool.borrow(tokenOut, amountInLastPool, tradeId, 0, user);
+                    if (cache < 3) {
+                        _aavePool.borrow(tokenOut, amountInLastPool, cache, 0, user);
                         _transferERC20Tokens(tokenOut, msg.sender, amountInLastPool);
                     } else {
                         _transferERC20TokensFrom(aas().aTokens[tokenOut], user, address(this), amountInLastPool);
@@ -461,7 +456,7 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
         assembly {
             let firstWord := calldataload(data.offset)
             tokenIn := shr(96, firstWord)
-            identifier := shr(64, firstWord) // uniswap fork identifier
+            identifier := shr(64, firstWord) // swap pool identifier
             tradeId := shr(56, firstWord) // interaction identifier
             tokenOut := shr(96, calldataload(add(data.offset, 25)))
             zeroForOne := lt(tokenIn, tokenOut)
@@ -472,28 +467,27 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
             // validate sender
             require(msg.sender == pool);
         }
-        // store identifier for tradeType in identifier variable
-        uint256 cache = data.length;
+
         if (tradeId == 1) {
-            cache = data.length;
             // fetch amountOut
             uint256 referenceAmount = zeroForOne ? amount0 : amount1;
             // calculte amountIn
             referenceAmount = getAmountInDirect(pool, zeroForOne, referenceAmount);
+            uint256 cache = data.length;
             // either initiate the next swap or pay
             if (cache > 46) {
                 data = data[25:];
                 flashSwapExactOut(referenceAmount, data);
             } else {
-                assembly {
-                    identifier := calldataload(add(data.offset, 14)) // identifier for borrow/withdraw
-                }
-                tradeId = identifier;
+                // re-assign identifier
+                data = data[(cache - 1):cache];
+                // assign end flag to cache
+                cache = uint8(bytes1(data));
 
-                if (tradeId < 3) {
+                if (cache < 3) {
                     // borrow and repay pool
                     // _borrow(tokenIn, amountToPay);
-                    _aavePool.borrow(tokenOut, referenceAmount, tradeId, 0, acs().cachedAddress);
+                    _aavePool.borrow(tokenOut, referenceAmount, cache, 0, acs().cachedAddress);
                     _transferERC20Tokens(tokenOut, msg.sender, referenceAmount);
                 } else {
                     // withraw and send funds to the pool
@@ -506,6 +500,7 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
             return;
         }
         if (tradeId > 5) {
+            uint256 cache = data.length;
             // the swap amount is expected to be the nonzero output amount
             // since v2 does not send the input amount as parameter, we have to fetch
             // the other amount manually through the cache
@@ -517,9 +512,10 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
                 amountToSwap = swapExactIn(amountToSwap, data);
                 // supply directly
                 tokenOut = getLastToken(data);
-                // update length
                 cache = data.length;
             }
+            // slice out the end flag
+            data = data[(cache - 1):cache];
             // cache amount
             ncs().amount = amountToSwap;
             address user = acs().cachedAddress;
@@ -531,11 +527,9 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
                 // _repayBorrow(tokenOut, amountToSwap);
                 _aavePool.repay(tokenOut, amountToSwap, tradeId - 6, user);
             }
-            // fetch the flag for closing the trade
-            assembly {
-                identifier := calldataload(add(data.offset, 14))
-            }
-            tradeId = identifier;
+
+            // assign end flag to tradeId
+            tradeId = uint8(bytes1(data));
             // 1,2 are is borrow
             if (tradeId < 3) {
                 _aavePool.borrow(tokenIn, amountToBorrow, tradeId, 0, user);
@@ -553,11 +547,12 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
             if (tradeId == 3) {
                 _aavePool.supply(tokenIn, referenceAmount, user, 0);
             } else {
-                // 4, 5 are repay
+                // 4, 5 are repay, subtracting 3 yields the interest rate mode
                 _aavePool.repay(tokenIn, referenceAmount, tradeId - 3, user);
             }
             // calculate amountIn
             referenceAmount = getAmountInDirect(pool, zeroForOne, referenceAmount);
+            uint256 cache = data.length;
             // constinue swapping if more data is provided
             if (cache > 46) {
                 data = data[25:];
@@ -565,14 +560,13 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
             } else {
                 // cache amount
                 ncs().amount = referenceAmount;
-                // fetch the flag for closing the trade
-                assembly {
-                    identifier := calldataload(add(data.offset, 14))
-                }
-                tradeId = identifier;
+                // slice out the end flag
+                data = data[(cache - 1):cache];
+                // assign end flag to cache
+                cache = uint8(bytes1(data));
                 // borrow to pay pool
-                if (tradeId < 3) {
-                    _aavePool.borrow(tokenOut, referenceAmount, tradeId, 0, user);
+                if (cache < 3) {
+                    _aavePool.borrow(tokenOut, referenceAmount, cache, 0, user);
                     _transferERC20Tokens(tokenOut, msg.sender, referenceAmount);
                 } else {
                     _transferERC20TokensFrom(aas().aTokens[tokenOut], user, address(this), referenceAmount);

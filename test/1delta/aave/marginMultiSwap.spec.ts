@@ -43,7 +43,7 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
 
         provider = waffle.provider;
 
-        aaveTest = await initializeMakeSuite(deployer)
+        aaveTest = await initializeMakeSuite(deployer,1, true)
         tokens = Object.values(aaveTest.tokens)
         uniswap = await uniswapMinimalFixtureNoTokens(deployer, aaveTest.tokens["WETH"].address)
         uniswapV2 = await uniV2Fixture(deployer, aaveTest.tokens["WETH"].address)
@@ -161,6 +161,16 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
             uniswap
         )
 
+        console.log("add liquidity DAI CRV")
+        await addLiquidity(
+            deployer,
+            aaveTest.tokens["DAI"].address,
+            aaveTest.tokens["CRV"].address,
+            expandTo18Decimals(1_000_000),
+            expandTo18Decimals(1_000_000),
+            uniswap
+        )
+
         // V2
         console.log("add liquidity V2 DAI USDC")
         await addLiquidityV2(
@@ -207,6 +217,16 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
             aaveTest.tokens["WETH"].address,
             aaveTest.tokens["WMATIC"].address,
             expandTo18Decimals(200),
+            expandTo18Decimals(10_000_000),
+            uniswapV2
+        )
+
+        console.log("add liquidity V2 DAI CRV")
+        await addLiquidityV2(
+            deployer,
+            aaveTest.tokens["DAI"].address,
+            aaveTest.tokens["CRV"].address,
+            expandTo18Decimals(10_000_000),
             expandTo18Decimals(10_000_000),
             uniswapV2
         )
@@ -271,6 +291,53 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
         expect(bb.totalDebtBase.toString()).to.equal(swapAmount)
     })
 
+    it('allows margin swap multi exact in 3-hop', async () => {
+
+        const supplyTokenIndex = "CRV"
+        const borrowTokenIndex = "WMATIC"
+        const providedAmount = expandTo18Decimals(500)
+
+        const swapAmount = expandTo18Decimals(950)
+
+        let _tokensInRoute = [
+            aaveTest.tokens[borrowTokenIndex],
+            aaveTest.tokens["AAVE"],
+            aaveTest.tokens["DAI"],
+            aaveTest.tokens[supplyTokenIndex]
+        ].map(t => t.address)
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [6, 0, 0], // action
+            [8, 91 , 9], // pid - V3
+            2 // flag - borrow variable
+        )
+
+        const params = {
+            path,
+            interestRateMode: InterestRateMode.VARIABLE,
+            amountIn: swapAmount,
+            amountOutMinimum: swapAmount.mul(97).div(100)
+        }
+        await deposit(aaveTest, supplyTokenIndex, carol, providedAmount)
+
+        await aaveTest.tokens[supplyTokenIndex].connect(carol).approve(broker.broker.address, constants.MaxUint256)
+        await aaveTest.tokens["AAVE"].connect(carol).approve(broker.broker.address, constants.MaxUint256)
+
+        await aaveTest.vTokens[borrowTokenIndex].connect(carol).approveDelegation(broker.broker.address, constants.MaxUint256)
+
+        await aaveTest.tokens[supplyTokenIndex].connect(carol).approve(aaveTest.pool.address, constants.MaxUint256)
+
+        await aaveTest.pool.connect(carol).supply(aaveTest.tokens[supplyTokenIndex].address, 100, carol.address, 0)
+        await aaveTest.pool.connect(carol).setUserUseReserveAsCollateral(aaveTest.tokens[supplyTokenIndex].address, true)
+        const bbefore = await aaveTest.vTokens[borrowTokenIndex].balanceOf(carol.address)
+        await broker.trader.connect(carol).swapExactIn(params.amountIn, params.amountOutMinimum, params.path)
+
+        const bb = await aaveTest.vTokens[borrowTokenIndex].balanceOf(carol.address)
+        expect(bb.sub(bbefore).toString()).to.equal(swapAmount)
+    })
+
+
     it('respects slippage - multi exact in', async () => {
 
         const supplyTokenIndex = "DAI"
@@ -314,6 +381,55 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
         let _tokensInRoute = [
             aaveTest.tokens[borrowTokenIndex],
             aaveTest.tokens["AAVE"],
+            aaveTest.tokens[supplyTokenIndex]
+        ].map(t => t.address).reverse()
+
+        // reverse path for exact out
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [3, 1], // action
+            [1, 2], // pid
+            2 // flag
+        )
+        const params = {
+            path,
+            interestRateMode: InterestRateMode.VARIABLE,
+            amountOut: swapAmount,
+            amountInMaximum: swapAmount.mul(105).div(100)
+        }
+
+        await deposit(aaveTest, supplyTokenIndex, gabi, providedAmount)
+
+        await aaveTest.tokens[borrowTokenIndex].connect(gabi).approve(broker.broker.address, constants.MaxUint256)
+        await aaveTest.tokens[supplyTokenIndex].connect(gabi).approve(broker.broker.address, constants.MaxUint256)
+        await aaveTest.tokens["AAVE"].connect(gabi).approve(broker.broker.address, constants.MaxUint256)
+
+        await aaveTest.vTokens[borrowTokenIndex].connect(gabi).approveDelegation(broker.broker.address, constants.MaxUint256)
+
+        await aaveTest.tokens[supplyTokenIndex].connect(gabi).approve(aaveTest.pool.address, constants.MaxUint256)
+
+        await aaveTest.pool.connect(gabi).supply(aaveTest.tokens[supplyTokenIndex].address, 100, gabi.address, 0)
+
+        await aaveTest.pool.connect(gabi).setUserUseReserveAsCollateral(aaveTest.tokens[supplyTokenIndex].address, true)
+
+        await broker.trader.connect(gabi).swapExactOut(params.amountOut, params.amountInMaximum, params.path)
+        const bb = await aaveTest.pool.getUserAccountData(gabi.address)
+        expect(bb.totalCollateralBase.toString()).to.equal(swapAmount.add(providedAmount).add(100).toString())
+    })
+
+    it('allows margin swap multi exact out 3-hop', async () => {
+
+        const supplyTokenIndex = "CRV"
+        const borrowTokenIndex = "WMATIC"
+        const providedAmount = expandTo18Decimals(500)
+
+        const swapAmount = expandTo18Decimals(950)
+
+        let _tokensInRoute = [
+            aaveTest.tokens[borrowTokenIndex],
+            aaveTest.tokens["AAVE"],
+            aaveTest.tokens["DAI"],
             aaveTest.tokens[supplyTokenIndex]
         ].map(t => t.address).reverse()
 
@@ -665,11 +781,11 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
 // ························································|······································|·············|·············|·············|···············|··············
 
 // ························································|······································|·············|·············|·············|···············|··············
-// |  MarginTrading                                        ·  swapAllIn                           ·          -  ·          -  ·     500076  ·            1  ·      13.16  │
+// |  MarginTrading                                        ·  swapAllIn                           ·          -  ·          -  ·     535375  ·            1  ·      49.51  │
 // ························································|······································|·············|·············|·············|···············|··············
-// |  MarginTrading                                        ·  swapAllOut                          ·          -  ·          -  ·     455782  ·            1  ·      12.00  │
+// |  MarginTrading                                        ·  swapAllOut                          ·          -  ·          -  ·     455943  ·            1  ·      42.16  │
 // ························································|······································|·············|·············|·············|···············|··············
-// |  MarginTrading                                        ·  swapExactIn                         ·     539501  ·     561709  ·     550605  ·            2  ·      14.49  │
+// |  MarginTrading                                        ·  swapExactIn                         ·     551688  ·     564411  ·     557690  ·            3  ·      51.57  │
 // ························································|······································|·············|·············|·············|···············|··············
-// |  MarginTrading                                        ·  swapExactOut                        ·     473208  ·     493406  ·     483307  ·            2  ·      12.72  │
+// |  MarginTrading                                        ·  swapExactOut                        ·     474192  ·     493775  ·     483984  ·            2  ·      44.75  │
 // ························································|······································|·············|·············|·············|···············|··············

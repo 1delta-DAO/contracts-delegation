@@ -106,6 +106,7 @@ const testEnv: AAVEFixture = {
 const _tokenData = [
   { symbol: 'WETH', name: 'WETH', decimals: 18, emode: false },
   { symbol: 'DAI', name: 'DAI', decimals: 18, emode: true },
+  { symbol: 'CRV', name: 'CRV', decimals: 18, emode: true },
   { symbol: 'AAVE', name: 'AAVE', decimals: 18, emode: false },
   { symbol: 'WMATIC', name: 'WMATIC', decimals: 18, emode: false },
   { symbol: 'USDC', name: 'USDC', decimals: 18, emode: true }
