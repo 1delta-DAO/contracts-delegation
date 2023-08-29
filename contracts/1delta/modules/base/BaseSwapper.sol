@@ -141,8 +141,8 @@ abstract contract BaseSwapper is TokenTransfer, BaseDecoder {
                 identifier := shr(64, firstWord)
                 tokenOut := shr(96, calldataload(add(path.offset, 25)))
             }
-            // uniswapV2 style
-            if (identifier < 10) {
+            // uniswapV3 style
+            if (identifier < 50) {
                 uint24 fee;
                 assembly {
                     fee := and(shr(72, calldataload(path.offset)), 0xffffff)
@@ -158,8 +158,8 @@ abstract contract BaseSwapper is TokenTransfer, BaseDecoder {
 
                 amountIn = uint256(-(zeroForOne ? amount1 : amount0));
             }
-            // uniswapV3 style
-            else if (identifier < 20) {
+            // uniswapV2 style
+            else if (identifier < 100) {
                 amountIn = swapUniV2ExactIn(tokenIn, tokenOut, amountIn);
             }
             // decide whether to continue or terminate
@@ -345,7 +345,7 @@ abstract contract BaseSwapper is TokenTransfer, BaseDecoder {
         }
 
         // uniswapV3 style
-        if (identifier < 10) {
+        if (identifier < 50) {
             bool zeroForOne = tokenIn < tokenOut;
             uint24 fee;
             assembly {
@@ -360,7 +360,7 @@ abstract contract BaseSwapper is TokenTransfer, BaseDecoder {
             );
         }
         // uniswapV2 style
-        else if (identifier < 20) {
+        else if (identifier < 100) {
             bool zeroForOne = tokenIn < tokenOut;
             // get next pool
             address pool = pairAddress(tokenIn, tokenOut);

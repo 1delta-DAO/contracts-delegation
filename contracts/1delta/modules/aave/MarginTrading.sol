@@ -58,7 +58,7 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
         }
 
         // uniswapV3 types
-        if (identifier < 10) {
+        if (identifier < 50) {
             uint24 fee;
             assembly {
                 fee := and(shr(72, calldataload(path.offset)), 0xffffff)
@@ -72,7 +72,7 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
             );
         }
         // uniswapV2 types
-        else if (identifier < 20) {
+        else if (identifier < 100) {
             ncs().amount = amountIn;
             tokenIn = pairAddress(tokenIn, tokenOut);
             (uint256 amount0Out, uint256 amount1Out) = zeroForOne
@@ -105,7 +105,7 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
             zeroForOne := lt(tokenIn, tokenOut)
         }
         // unswapV3 types
-        if (identifier < 10) {
+        if (identifier < 50) {
             uint24 fee;
             assembly {
                 fee := and(shr(72, calldataload(path.offset)), 0xffffff)
@@ -119,7 +119,7 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
             );
         }
         // uniswapV2 types
-        else if (identifier < 20) {
+        else if (identifier < 100) {
             tokenIn = pairAddress(tokenIn, tokenOut);
             (uint256 amount0Out, uint256 amount1Out) = zeroForOne ? (uint256(0), amountOut) : (amountOut, uint256(0));
             IUniswapV2Pair(tokenIn).swap(amount0Out, amount1Out, address(this), path);
@@ -159,7 +159,7 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
         if (amountIn == 0) revert NoBalance();
 
         // uniswapV3 style
-        if (identifier < 10) {
+        if (identifier < 50) {
             uint24 fee;
             assembly {
                 fee := and(shr(72, calldataload(path.offset)), 0xffffff)
@@ -173,7 +173,7 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
             );
         }
         // unsiwapV3 types
-        else if (identifier < 20) {
+        else if (identifier < 100) {
             ncs().amount = amountIn;
             tokenIn = pairAddress(tokenIn, tokenOut);
             (uint256 amount0Out, uint256 amount1Out) = zeroForOne
@@ -214,7 +214,7 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
         }
 
         // uniswapV3 types
-        if (identifier < 10) {
+        if (identifier < 50) {
             uint24 fee;
             assembly {
                 fee := and(shr(72, calldataload(path.offset)), 0xffffff)
@@ -228,7 +228,7 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
             );
         }
         // uniswapV2 types
-        else if (identifier < 20) {
+        else if (identifier < 100) {
             tokenIn = pairAddress(tokenIn, tokenOut);
             (uint256 amount0Out, uint256 amount1Out) = zeroForOne ? (uint256(0), amountOut) : (amountOut, uint256(0));
             IUniswapV2Pair(tokenIn).swap(amount0Out, amount1Out, address(this), path);
@@ -265,7 +265,6 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
         int256 amount1Delta,
         bytes calldata _data
     ) external {
-        uint256 cache; // cache value
         uint8 identifier;
         address tokenIn;
         uint24 fee;
@@ -275,24 +274,24 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
             let firstWord := calldataload(_data.offset)
             tokenIn := shr(96, firstWord)
             fee := and(shr(72, firstWord), 0xffffff)
-            identifier := shr(64, firstWord)
+            identifier := shr(64, firstWord) // poolId
             tokenOut := shr(96, calldataload(add(_data.offset, 25)))
         }
         {
             require(msg.sender == address(getUniswapV3Pool(tokenIn, tokenOut, fee)));
         }
         assembly {
-            identifier := shr(56, calldataload(_data.offset)) // mload(add(add(_data, 0x1), 24)) // identifier for tradeType
+            identifier := shr(56, calldataload(_data.offset)) // identifier for tradeType
         }
         tradeId = identifier;
         // EXACT IN BASE SWAP
         if (tradeId == 0) {
-            cache = amount0Delta > 0 ? uint256(amount0Delta) : uint256(amount1Delta);
-            _transferERC20Tokens(tokenIn, msg.sender, cache);
+            tradeId = amount0Delta > 0 ? uint256(amount0Delta) : uint256(amount1Delta);
+            _transferERC20Tokens(tokenIn, msg.sender, tradeId);
         }
         // EXACT OUT - WITHDRAW or BORROW
         else if (tradeId == 1) {
-            cache = _data.length;
+            uint256 cache = _data.length;
             // fetch amount that has to be paid to the pool
             uint256 amountToPay = amount0Delta > 0 ? uint256(amount0Delta) : uint256(amount1Delta);
             // either initiate the next swap or pay
@@ -323,7 +322,7 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
         // MARGIN TRADING INTERACTIONS
         else {
             // fetch identifier at the end of the path
-            cache = _data.length;
+            uint256 cache = _data.length;
             // exact in
             if (tradeId > 5) {
                 (uint256 amountToRepayToPool, uint256 amountToSwap) = amount0Delta > 0
@@ -453,7 +452,6 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
         uint256 amount1,
         bytes calldata data
     ) external {
-        uint256 cache;
         uint8 tradeId;
         address tokenIn;
         address tokenOut;
@@ -463,12 +461,11 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
         assembly {
             let firstWord := calldataload(data.offset)
             tokenIn := shr(96, firstWord)
-            identifier := shr(64, firstWord)
-            tradeId := shr(56, firstWord)
+            identifier := shr(64, firstWord) // uniswap fork identifier
+            tradeId := shr(56, firstWord) // interaction identifier
             tokenOut := shr(96, calldataload(add(data.offset, 25)))
             zeroForOne := lt(tokenIn, tokenOut)
         }
-
         // calculate pool address
         address pool = pairAddress(tokenIn, tokenOut);
         {
@@ -476,7 +473,7 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
             require(msg.sender == pool);
         }
         // store identifier for tradeType in identifier variable
-        cache = data.length;
+        uint256 cache = data.length;
         if (tradeId == 1) {
             cache = data.length;
             // fetch amountOut

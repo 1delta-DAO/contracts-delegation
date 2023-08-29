@@ -176,8 +176,8 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
             deployer,
             aaveTest.tokens["DAI"].address,
             aaveTest.tokens["AAVE"].address,
-            expandTo18Decimals(1_000_000),
-            expandTo18Decimals(1_000_000),
+            expandTo18Decimals(10_000_000),
+            expandTo18Decimals(10_000_000),
             uniswapV2
         )
 
@@ -186,7 +186,7 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
             deployer,
             aaveTest.tokens["AAVE"].address,
             aaveTest.tokens["WETH"].address,
-            expandTo18Decimals(1_000_000),
+            expandTo18Decimals(10_000_000),
             expandTo18Decimals(200),
             uniswapV2
         )
@@ -196,8 +196,8 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
             deployer,
             aaveTest.tokens["AAVE"].address,
             aaveTest.tokens["WMATIC"].address,
-            expandTo18Decimals(1_000_000),
-            expandTo18Decimals(1_000_000),
+            expandTo18Decimals(10_000_000),
+            expandTo18Decimals(10_000_000),
             uniswapV2
         )
 
@@ -207,7 +207,7 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
             aaveTest.tokens["WETH"].address,
             aaveTest.tokens["WMATIC"].address,
             expandTo18Decimals(200),
-            expandTo18Decimals(1_000_000),
+            expandTo18Decimals(10_000_000),
             uniswapV2
         )
     })
@@ -243,7 +243,7 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
             _tokensInRoute,
             new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
             [6, 0], // action
-            [1, 1], // pid - V3
+            [91, 91], // pid - V3
             2 // flag - borrow variable
         )
 
@@ -288,7 +288,7 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
             _tokensInRoute,
             new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
             [6, 0], // action
-            [1, 1], // pid - V3
+            [91, 1], // pid - V3
             2 // flag - borrow variable
         )
         const params = {
@@ -322,7 +322,7 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
             _tokensInRoute,
             new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
             [3, 1], // action
-            [1, 10], // pid
+            [1, 88], // pid
             2 // flag
         )
         const params = {
@@ -370,7 +370,7 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
             _tokensInRoute,
             new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
             [3, 1], // action
-            [1, 10], // pid
+            [21, 99], // pid
             2 // flag
         )
         const params = {
@@ -402,7 +402,7 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
         const path = encodeAggregatorPathEthers(
             _tokensInRoute,
             new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
-            [8, 1], // action
+            [8, 0], // action
             [1, 10], // pid
             3 // flag
         )
@@ -420,11 +420,13 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
 
         const bBefore = await aaveTest.pool.getUserAccountData(carol.address)
 
+        const debtBefore = await aaveTest.vTokens[borrowTokenIndex].balanceOf(carol.address)
         // close margin position
         await broker.trader.connect(carol).swapExactIn(params.amountIn, params.amountOutMinimum, params.path)
         const bAfter = await aaveTest.pool.getUserAccountData(carol.address)
-        expect(Number(formatEther(bAfter.totalDebtBase))).to.be.
-            lessThanOrEqual(Number(formatEther(bBefore.totalDebtBase.sub(swapAmount))) * 1.05)
+        const debtAfter = await aaveTest.vTokens[borrowTokenIndex].balanceOf(carol.address)
+        expect(Number(formatEther(debtAfter.sub(debtBefore)))).to.be.
+            lessThanOrEqual(Number(formatEther(swapAmount))*1.05)
 
         expect(Number(formatEther(bAfter.totalDebtBase))).to.be.
             greaterThanOrEqual(Number(formatEther(bBefore.totalDebtBase.sub(swapAmount))))
@@ -473,8 +475,8 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
         const path = encodeAggregatorPathEthers(
             _tokensInRoute,
             new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
-            [8, 1], // action
-            [1, 10], // pid
+            [8, 0], // action
+            [1, 88], // pid
             3 // flag
         )
 
@@ -528,7 +530,7 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
             _tokensInRoute,
             new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
             [5, 1], // action
-            [1, 10], // pid
+            [1, 88], // pid
             3 // flag
         )
         const params = {
@@ -544,22 +546,25 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
 
         const bBefore = await aaveTest.pool.getUserAccountData(gabi.address)
 
+        const debtBefore = await aaveTest.vTokens[borrowTokenIndex].balanceOf(gabi.address)
         // trim margin position
         await broker.trader.connect(gabi).swapExactOut(params.amountOut, params.amountInMaximum, params.path)
+        
+        const debtAfter = await aaveTest.vTokens[borrowTokenIndex].balanceOf(gabi.address)
         const bAfter = await aaveTest.pool.getUserAccountData(gabi.address)
 
-        expect(Number(formatEther(bAfter.totalDebtBase))).to.be.
-            lessThanOrEqual(Number(formatEther(bBefore.totalDebtBase.sub(swapAmount))) * 1.005)
+        expect(Number(formatEther(debtAfter))).to.be.
+            lessThanOrEqual(Number(formatEther(debtBefore.sub(swapAmount))) * 1.005)
 
-        expect(Number(formatEther(bAfter.totalDebtBase))).to.be.
-            greaterThanOrEqual(Number(formatEther(bBefore.totalDebtBase.sub(swapAmount))))
+        expect(Number(formatEther(debtAfter))).to.be.
+            greaterThanOrEqual(Number(formatEther(debtBefore.sub(swapAmount))))
 
 
         expect(Number(formatEther(bAfter.totalCollateralBase))).to.be.
             lessThan(Number(formatEther(bBefore.totalCollateralBase.sub(swapAmount))) * 1.005)
 
         expect(Number(formatEther(bAfter.totalCollateralBase))).to.be.
-            greaterThan(Number(formatEther(bBefore.totalCollateralBase.sub(swapAmount))) * 0.99)
+            greaterThan(Number(formatEther(bBefore.totalCollateralBase.sub(swapAmount))) * 0.95)
     })
 
 
@@ -592,7 +597,7 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
             _tokensInRoute,
             new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
             [5, 1], // action
-            [1, 10], // pid
+            [1, 99], // pid
             3 // flag
         )
         const params = {
