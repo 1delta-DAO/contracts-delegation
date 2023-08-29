@@ -92,42 +92,6 @@ abstract contract BaseSwapper is TokenTransfer, BaseDecoder {
         }
     }
 
-    /// @dev deprecated uniswapV3 exat input swapper
-    function exactInputToSelf(uint256 amountIn, bytes calldata _data) internal returns (uint256 amountOut) {
-        while (true) {
-            address tokenIn;
-            address tokenOut;
-            uint24 fee;
-            uint8 pId;
-            assembly {
-                let firstWord := calldataload(_data.offset)
-                tokenIn := shr(96, firstWord)
-                fee := and(shr(72, firstWord), 0xffffff)
-                pId := shr(64, firstWord)
-                tokenOut := shr(96, calldataload(add(_data.offset, 25)))
-            }
-
-            bool zeroForOne = tokenIn < tokenOut;
-            (int256 amount0, int256 amount1) = getUniswapV3Pool(tokenIn, tokenOut, fee).swap(
-                address(this),
-                zeroForOne,
-                int256(amountIn),
-                zeroForOne ? MIN_SQRT_RATIO : MAX_SQRT_RATIO,
-                _data[:45]
-            );
-
-            amountIn = uint256(-(zeroForOne ? amount1 : amount0));
-
-            // decide whether to continue or terminate
-            if (_data.length > 69) {
-                _data = _data[25:];
-            } else {
-                amountOut = amountIn;
-                break;
-            }
-        }
-    }
-
     /// @dev swaps exact input through UniswapV3 or UniswapV2 style exactIn
     /// only uniswapV3 executes flashSwaps
     function swapExactIn(uint256 amountIn, bytes calldata path) internal returns (uint256 amountOut) {
@@ -370,29 +334,6 @@ abstract contract BaseSwapper is TokenTransfer, BaseDecoder {
             (amountOut0, amountOut1) = zeroForOne ? (uint256(0), amountOut) : (amountOut, uint256(0));
             IUniswapV2Pair(pool).swap(amountOut0, amountOut1, address(this), data); // cannot swap to sender due to flashSwap
             _transferERC20Tokens(tokenOut, msg.sender, amountOut);
-        }
-    }
-
-    // fetches first pool as bytes slice (tokenIn, tradeId, poolId, fee, tokenOut) from bytes array
-    function sliceFirstPool(bytes memory _bytes) internal pure returns (bytes memory tempBytes) {
-        assembly {
-            tempBytes := mload(0x40)
-            let lengthmod := and(45, 31)
-            let mc := add(add(tempBytes, lengthmod), mul(0x20, iszero(lengthmod)))
-            let end := add(mc, 45)
-
-            for {
-                let cc := add(add(_bytes, lengthmod), mul(0x20, iszero(lengthmod)))
-            } lt(mc, end) {
-                mc := add(mc, 0x20)
-                cc := add(cc, 0x20)
-            } {
-                mstore(mc, mload(cc))
-            }
-
-            mstore(tempBytes, 45)
-
-            mstore(0x40, and(add(mc, 31), not(31)))
         }
     }
 }
