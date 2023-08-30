@@ -203,7 +203,7 @@ describe('AAVE Brokered Margin Swap operations', async () => {
             _tokensInRoute,
             new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
             [6], // action
-            [1], // pid - V3
+            [99], // pid - V3
             2 // flag - borrow variable
         )
         const params = {
@@ -266,7 +266,7 @@ describe('AAVE Brokered Margin Swap operations', async () => {
             _tokensInRoute,
             new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
             [3], // action
-            [1], // pid
+            [99], // pid
             2 // flag
         )
         const params = {
@@ -303,7 +303,7 @@ describe('AAVE Brokered Margin Swap operations', async () => {
             _tokensInRoute,
             new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
             [8], // action
-            [1], // pid
+            [99], // pid
             3 // flag
         )
         const params = {
@@ -372,7 +372,7 @@ describe('AAVE Brokered Margin Swap operations', async () => {
             _tokensInRoute,
             new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
             [8], // action
-            [1], // pid
+            [99], // pid
             3 // flag
         )
 
@@ -423,7 +423,7 @@ describe('AAVE Brokered Margin Swap operations', async () => {
             _tokensInRoute,
             new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
             [5], // action
-            [1], // pid
+            [99], // pid
             3 // flag
         )
         const params = {
@@ -485,7 +485,7 @@ describe('AAVE Brokered Margin Swap operations', async () => {
             _tokensInRoute,
             new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
             [5], // action
-            [1], // pid
+            [99], // pid
             3 // flag
         )
         const params = {
@@ -543,6 +543,7 @@ describe('AAVE Brokered Margin Swap operations', async () => {
 // |  AAVESweeperModule                                    ·  trimMarginPositionAllOut            ·          -  ·          -  ·   399518  ·            1  ·      10.58  │
 // ························································|······································|·············|·············|···········|···············|··············
 
+// V3
 // ························································|······································|·············|·············|·············|···············|··············
 // |  MarginTrading                                        ·  swapAllIn                           ·          -  ·          -  ·     442579  ·            1  ·      76.91  │
 // ························································|······································|·············|·············|·············|···············|··············
@@ -551,4 +552,15 @@ describe('AAVE Brokered Margin Swap operations', async () => {
 // |  MarginTrading                                        ·  swapExactIn                         ·     448122  ·     466685  ·     457404  ·            2  ·      79.48  │
 // ························································|······································|·············|·············|·············|···············|··············
 // |  MarginTrading                                        ·  swapExactOut                        ·     407247  ·     412037  ·     409642  ·            2  ·      71.18  │
+// ························································|······································|·············|·············|·············|···············|··············
+
+// V3
+// ························································|······································|·············|·············|·············|···············|··············
+// |  MarginTrading                                        ·  swapAllIn                           ·          -  ·          -  ·     436869  ·            1  ·      24.50  │
+// ························································|······································|·············|·············|·············|···············|··············
+// |  MarginTrading                                        ·  swapAllOut                          ·          -  ·          -  ·     387407  ·            1  ·      21.72  │
+// ························································|······································|·············|·············|·············|···············|··············
+// |  MarginTrading                                        ·  swapExactIn                         ·     425296  ·     470252  ·     447774  ·            2  ·      25.11  │
+// ························································|······································|·············|·············|·············|···············|··············
+// |  MarginTrading                                        ·  swapExactOut                        ·     401427  ·     405103  ·     403265  ·            2  ·      22.61  │
 // ························································|······································|·············|·············|·············|···············|··············

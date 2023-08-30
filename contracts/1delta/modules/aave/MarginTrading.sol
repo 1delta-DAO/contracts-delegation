@@ -537,7 +537,7 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
             } else {
                 // withraw and send funds to the pool
                 _transferERC20TokensFrom(aas().aTokens[tokenIn], user, address(this), amountToBorrow);
-                _aavePool.withdraw(tokenIn, amountToBorrow, user);
+                _aavePool.withdraw(tokenIn, amountToBorrow, msg.sender);
             }
         } else {
             // fetch amountOut

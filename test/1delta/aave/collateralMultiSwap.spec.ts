@@ -1,21 +1,18 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumber, constants } from 'ethers';
 import { MockProvider } from 'ethereum-waffle';
-import { ethers, network, waffle } from 'hardhat'
+import { ethers} from 'hardhat'
 import {
     MintableERC20,
-    WETH9,
-    PathTesterBroker__factory,
-    PathTesterBroker
+    WETH9
 } from '../../../types';
 import { FeeAmount } from '../../uniswap-v3/periphery/shared/constants';
 import { expandTo18Decimals } from '../../uniswap-v3/periphery/shared/expandTo18Decimals';
-import { initAaveBroker, AaveBrokerFixture, aaveBrokerFixture, AaveBrokerFixtureInclV2, aaveBrokerFixtureInclV2 } from '../shared/aaveBrokerFixture';
+import { initAaveBroker, AaveBrokerFixtureInclV2, aaveBrokerFixtureInclV2 } from '../shared/aaveBrokerFixture';
 import { expect } from '../shared/expect'
 import { initializeMakeSuite, InterestRateMode, AAVEFixture } from '../shared/aaveFixture';
 import { addLiquidity, addLiquidityV2, UniswapMinimalFixtureNoTokens, uniswapMinimalFixtureNoTokens } from '../shared/uniswapFixture';
 import { formatEther } from 'ethers/lib/utils';
-import { encodePath } from '../../uniswap-v3/periphery/shared/path';
 import { uniV2Fixture, V2Fixture } from '../shared/uniV2Fixture';
 import { encodeAggregatorPathEthers } from '../shared/aggregatorPath';
 
