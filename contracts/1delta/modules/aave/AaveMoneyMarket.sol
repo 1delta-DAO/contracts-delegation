@@ -19,10 +19,16 @@ import {WithStorage} from "../../storage/BrokerStorage.sol";
  * @author Achthar
  */
 contract AaveMoneyMarket is BaseSwapper, WithStorage {
+    // errors
+    error Slippage();
+    error NoBalance();
+
+    // constants
     uint256 private constant DEFAULT_AMOUNT_CACHED = type(uint256).max;
+    address private constant DEFAULT_ADDRESS_CACHED = address(0);
 
+    // immutables
     IPool private immutable _aavePool;
-
     address private immutable networkTokenId = address(0);
     address private immutable wrappedNative;
 
@@ -38,23 +44,20 @@ contract AaveMoneyMarket is BaseSwapper, WithStorage {
 
     /** BASE LENDING FUNCTIONS */
 
-    // deposit ERC20
+    // deposit ERC20 to Aave on behalf of recipient
     function deposit(address asset, address recipient) external {
         address _asset = asset;
         uint256 balance = IERC20(_asset).balanceOf(address(this));
         _aavePool.supply(_asset, balance, recipient, 0);
     }
 
-    // borrow and transfer
+    // borrow on sender's behalf
     function borrow(
         address asset,
         uint256 amount,
-        uint8 interestRateMode,
-        address recipient
+        uint8 interestRateMode
     ) external {
-        address _asset = asset;
-        _aavePool.borrow(_asset, amount, interestRateMode, 0, msg.sender);
-        if (recipient != address(this)) _transferERC20Tokens(_asset, recipient, amount);
+        _aavePool.borrow(asset, amount, interestRateMode, 0, msg.sender);
     }
 
     // wraps the repay function
@@ -79,21 +82,23 @@ contract AaveMoneyMarket is BaseSwapper, WithStorage {
 
     /** TRANSFER FUNCTIONS */
 
+    /** @notice transfer an ERC20token in */
     function transferERC20In(address asset, uint256 amount) external {
         _transferERC20TokensFrom(asset, msg.sender, address(this), amount);
     }
 
-    // transfer balance to sender
+    /** @notice transfer an a balance to the sender */
     function sweep(address asset) external {
         address _asset = asset;
         uint256 balance = IERC20(_asset).balanceOf(address(this));
         if (balance > 0) _transferERC20Tokens(_asset, msg.sender, balance);
     }
 
+    /** @notice transfer an a balance to the and validate that the amount is larger than a provided value */
     function validateAndSweep(address asset, uint256 amountMin) external {
         address _asset = asset;
         uint256 balance = IERC20(_asset).balanceOf(address(this));
-        require(balance >= amountMin, "Insufficient Sweep");
+        if (balance < amountMin) revert Slippage();
         _transferERC20Tokens(_asset, msg.sender, balance);
     }
 
@@ -116,7 +121,7 @@ contract AaveMoneyMarket is BaseSwapper, WithStorage {
     }
 
     // unwrap wrappd native, validate balance and send to sender
-    function validateAndunwrap(uint256 amountMin) external {
+    function validateAndUnwrap(uint256 amountMin) external {
         INativeWrapper _weth = INativeWrapper(wrappedNative);
         uint256 balance = _weth.balanceOf(address(this));
         require(balance >= amountMin, "Insufficient Sweep");
@@ -125,7 +130,7 @@ contract AaveMoneyMarket is BaseSwapper, WithStorage {
         payable(msg.sender).transfer(balance);
     }
 
-    // call an approved target
+    // call an approved target (can also be the contract itself)
     function callTarget(address target, bytes calldata params) external {
         // exectue call
         {
@@ -138,15 +143,47 @@ contract AaveMoneyMarket is BaseSwapper, WithStorage {
 
     /** 1DELTA SWAP WRAPPERS */
 
-    function flashExactOutStandard(uint256 amountOut, bytes calldata path) external {
+    /**
+     * @notice This flash swap allows either a direct withdrawal or borrow, or can just be paid by the user
+     * Has to be batch-called togehter with a sweep, deposit or repay function.
+     * The flash swap will pull the funds directly from the user, as such there is no need f
+     */
+    function swapExactOutSpot(
+        uint256 amountOut,
+        uint256 maximumAmountIn,
+        bytes calldata path
+    ) external {
+        acs().cachedAddress = msg.sender;
         flashSwapExactOut(amountOut, path);
+        if (maximumAmountIn < ncs().amount) revert Slippage();
+        ncs().amount = DEFAULT_AMOUNT_CACHED;
+        acs().cachedAddress = DEFAULT_ADDRESS_CACHED;
     }
 
-    function swapExactInStandard(uint256 amountIn, bytes calldata path) external {
-        swapExactIn(amountIn, path);
+    /**
+     * @notice A simple exact input spot swap using internal callbacks.
+     * Has to be batch-called with transfer in / sweep functions
+     * Requires that the funds already have been transferred to this contract
+     */
+    function swapExactInSpot(
+        uint256 amountIn,
+        uint256 minimumAmountOut,
+        bytes calldata path
+    ) external {
+        uint256 amountOut = swapExactIn(amountIn, path);
+        if (minimumAmountOut > amountOut) revert Slippage();
     }
 
-    function flashAllOutStandard(uint256 interestRateMode, bytes calldata path) external {
+    /**
+     * @notice The same as swapExactOutSpot, except that we snipe the debt balance
+     * This ensures that no borrow dust will be left. The next step in the batch has to the repay function.
+     */
+    function swapAllOutSpot(
+        uint256 interestRateMode,
+        uint256 maximumAmountIn,
+        bytes calldata path
+    ) external {
+        acs().cachedAddress = msg.sender;
         uint256 _debtBalance;
         uint256 _interestRateMode = interestRateMode;
         address tokenOut;
@@ -155,148 +192,25 @@ contract AaveMoneyMarket is BaseSwapper, WithStorage {
         }
         if (_interestRateMode == 2) _debtBalance = IERC20Balance(aas().vTokens[tokenOut]).balanceOf(msg.sender);
         else _debtBalance = IERC20Balance(aas().sTokens[tokenOut]).balanceOf(msg.sender);
+        if (_debtBalance == 0) revert NoBalance(); // revert if amount is zero
+
         flashSwapExactOut(_debtBalance, path);
+        if (maximumAmountIn < ncs().amount) revert Slippage();
+        ncs().amount = DEFAULT_AMOUNT_CACHED;
+        acs().cachedAddress = DEFAULT_ADDRESS_CACHED;
     }
 
-    function swapAllInStandard(bytes calldata path) external {
+    /**
+     * @notice The same as swapExactInSpot, except that we swap the entire balance
+     * This function can be used after a withdrawal - to make sure that no dust is left
+     */
+    function swapAllInSpot(bytes calldata path) external {
         address tokenIn;
         assembly {
             tokenIn := shr(96, calldataload(path.offset))
         }
         uint256 amountIn = IERC20(tokenIn).balanceOf(address(this));
+        if (amountIn == 0) revert NoBalance(); // revert if amount is zero
         swapExactIn(amountIn, path);
-    }
-
-    struct DepositParameters {
-        address tokenIn;
-        address tokenOut;
-        uint256 amountIn;
-        address recipient;
-        address target;
-        bytes data;
-    }
-
-    // call before deposit
-    function callAndDeposit(DepositParameters calldata params) external payable {
-        address tokenIn = params.tokenIn;
-        // if tokenIn is the network currency, wrap asset
-        if (tokenIn == networkTokenId) {
-            tokenIn = wrappedNative;
-            require(msg.value > 0, "NO_ETHER_SENT");
-            INativeWrapper(tokenIn).deposit{value: msg.value}();
-        } else _transferERC20TokensFrom(tokenIn, msg.sender, address(this), params.amountIn);
-
-        address tokenOut = params.tokenOut;
-        // exectue call
-        {
-            address target = params.target;
-            require(gs().isValidTarget[target], "TARGET");
-            (bool success, ) = target.call(params.data);
-            require(success, "CALL_FAILED");
-        }
-        uint256 received = IERC20Balance(tokenOut).balanceOf(address(this));
-        // note that we wrapped the entire amount, we will therefore refund wrapped native in case of ETH in
-        uint256 remaining = IERC20Balance(tokenIn).balanceOf(address(this));
-        if (remaining > 0) _transferERC20Tokens(tokenIn, msg.sender, remaining);
-        _aavePool.supply(tokenOut, received, params.recipient, 0);
-    }
-
-    struct RepayParameters {
-        address tokenIn;
-        address tokenOut;
-        uint256 amountIn;
-        uint8 interestRateMode;
-        address recipient;
-        address target;
-        bytes data;
-    }
-
-    function callAndRepay(RepayParameters calldata params) external payable {
-        // fetch tokenIn and transfer funds
-        address tokenIn = params.tokenIn;
-        // if tokenIn is the network currency, wrap asset
-        if (tokenIn == networkTokenId) {
-            tokenIn = wrappedNative;
-            require(msg.value > 0, "NO_ETHER_SENT");
-            INativeWrapper(tokenIn).deposit{value: msg.value}();
-        } else _transferERC20TokensFrom(tokenIn, msg.sender, address(this), params.amountIn);
-
-        address tokenOut = params.tokenOut;
-
-        // exectue call
-        {
-            address target = params.target;
-            require(gs().isValidTarget[target], "TARGET");
-            (bool success, ) = target.call(params.data);
-            require(success, "CALL_FAILED");
-        }
-
-        // fetch received amount
-        uint256 received = IERC20Balance(tokenOut).balanceOf(address(this));
-        // note that we wrapped the entire amount, we will therefore refund wrapped native in case of ETH
-        uint256 remaining = IERC20Balance(tokenIn).balanceOf(address(this));
-        if (remaining > 0) _transferERC20Tokens(tokenIn, msg.sender, remaining);
-        // reassign variable to prevent new slot
-        remaining = params.interestRateMode;
-        uint256 debtBalance;
-        if (remaining == 2) debtBalance = IERC20Balance(aas().vTokens[tokenOut]).balanceOf(msg.sender);
-        else debtBalance = IERC20Balance(aas().sTokens[tokenOut]).balanceOf(msg.sender);
-
-        // repay obtained amount if less than debt
-        if (debtBalance >= received) _aavePool.repay(tokenOut, received, remaining, params.recipient);
-        else {
-            address recipient = params.recipient;
-            // otherwise, repay entire debt balance and refund dust
-            _aavePool.repay(tokenOut, received, remaining, recipient);
-            _transferERC20Tokens(tokenOut, recipient, received - debtBalance);
-        }
-    }
-
-    struct BorrowParameters {
-        address tokenIn;
-        address tokenOut;
-        uint256 amountIn;
-        uint8 interestRateMode;
-        address recipient;
-        address target;
-        bytes data;
-    }
-
-    function borrowAndCall(BorrowParameters calldata params) external payable {
-        // fetch tokenIn and transfer funds
-        address tokenIn = params.tokenIn;
-        _aavePool.borrow(tokenIn, params.amountIn, params.interestRateMode, 0, msg.sender); //(tokenOut, received, remaining, recipient);
-
-        // exectue call
-        (bool success, ) = params.target.call(params.data);
-        require(success, "CALL_FAILED");
-
-        address tokenOut = params.tokenOut;
-        // fetch received amount
-        uint256 received = IERC20Balance(tokenOut).balanceOf(address(this));
-        // note that we send the funds to the user instead of repaying them
-        uint256 remaining = IERC20Balance(tokenIn).balanceOf(address(this));
-        if (remaining > 0) _transferERC20Tokens(tokenIn, msg.sender, remaining);
-        // reassign variable to prevent new slot
-        remaining = params.interestRateMode;
-        uint256 debtBalance;
-        if (remaining == 2) debtBalance = IERC20Balance(aas().vTokens[tokenOut]).balanceOf(msg.sender);
-        else debtBalance = IERC20Balance(aas().sTokens[tokenOut]).balanceOf(msg.sender);
-
-        // repay obtained amount if less than debt
-        if (debtBalance >= received) _aavePool.repay(tokenOut, received, remaining, params.recipient);
-        else {
-            address recipient = params.recipient;
-            // otherwise, repay entire debt balance and refund dust
-            _aavePool.repay(tokenOut, received, remaining, recipient);
-            _transferERC20Tokens(tokenOut, recipient, received - debtBalance);
-        }
-
-        // if tokenIn is the network currency, wrap asset
-        if (tokenIn == networkTokenId) {
-            tokenIn = wrappedNative;
-            require(msg.value > 0, "NO_ETHER_SENT");
-            INativeWrapper(tokenIn).deposit{value: msg.value}();
-        } else _transferERC20TokensFrom(tokenIn, msg.sender, address(this), params.amountIn);
     }
 }

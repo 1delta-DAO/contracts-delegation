@@ -8,7 +8,6 @@ pragma solidity 0.8.21;
 
 import {IUniswapV3Pool} from "../../dex-tools/uniswap/core/IUniswapV3Pool.sol";
 import {IUniswapV2Pair} from "../../../external-protocols/uniswapV2/core/interfaces/IUniswapV2Pair.sol";
-import {BytesLib} from "../../dex-tools/uniswap/libraries/BytesLib.sol";
 import {TokenTransfer} from "../../libraries/TokenTransfer.sol";
 import {BaseDecoder} from "./BaseDecoder.sol";
 
@@ -19,7 +18,6 @@ import {BaseDecoder} from "./BaseDecoder.sol";
  * @notice Contains main logic for uniswap callbacks
  */
 abstract contract BaseSwapper is TokenTransfer, BaseDecoder {
-    using BytesLib for bytes;
 
     /// @dev Mask of lower 20 bytes.
     uint256 private constant ADDRESS_MASK = 0x00ffffffffffffffffffffffffffffffffffffffff;

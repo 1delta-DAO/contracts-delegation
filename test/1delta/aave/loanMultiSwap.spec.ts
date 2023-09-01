@@ -46,10 +46,10 @@ describe('AAVE Brokered Loan Multi Swap operations', async () => {
         tokens = Object.values(aaveTest.tokens)
         uniswap = await uniswapMinimalFixtureNoTokens(deployer, aaveTest.tokens["WETH"].address)
         uniswapV2 = await uniV2Fixture(deployer, aaveTest.tokens["WETH"].address)
-        broker = await aaveBrokerFixtureInclV2(deployer, uniswap.factory.address, aaveTest.pool.address, uniswapV2.factoryV2.address)
+        broker = await aaveBrokerFixtureInclV2(deployer, uniswap.factory.address, aaveTest.pool.address, uniswapV2.factoryV2.address, aaveTest.tokens["WETH"].address)
 
         pathTester = await new PathTesterBroker__factory(deployer).deploy()
-        await initAaveBroker(deployer, broker, uniswap, aaveTest)
+        await initAaveBroker(deployer, broker as any, uniswap, aaveTest)
         await broker.manager.setUniswapRouter(uniswap.router.address)
         // approve & fund wallets
         let keys = Object.keys(aaveTest.tokens)

@@ -28,6 +28,7 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
     uint256 private constant DEFAULT_AMOUNT_CACHED = type(uint256).max;
     address private constant DEFAULT_ADDRESS_CACHED = address(0);
 
+    // immutable pool
     IPool private immutable _aavePool;
 
     constructor(
