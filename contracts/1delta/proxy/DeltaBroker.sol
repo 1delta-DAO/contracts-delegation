@@ -27,7 +27,7 @@ contract DeltaBrokerProxy {
         LibModules.configureModules(cut);
     }
 
-    // An efficient multicall implementation for 1Delta Accounts across multiple modules
+    // An efficient multicall implementation for delegatecalls across multiple modules
     // The modules are validated before anything is called.
     function multicallMultiModule(address[] calldata modules, bytes[] calldata data) external payable returns (bytes[] memory results) {
         results = new bytes[](data.length);
@@ -57,8 +57,8 @@ contract DeltaBrokerProxy {
         }
     }
 
-    // An efficient multicall implementation for 1Delta Accounts on a single module
-    // The module is validated and then the delegatecalls are executed.
+    // An efficient multicall implementation for delegatecalls on a single module
+    // The single module is validated and then the delegatecalls are executed.
     function multicallSingleModule(address module, bytes[] calldata data) external payable returns (bytes[] memory results) {
         results = new bytes[](data.length);
         address moduleAddress = module;

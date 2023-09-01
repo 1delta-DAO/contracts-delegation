@@ -2,15 +2,13 @@
 
 pragma solidity ^0.8.21;
 
-import {MarginSwapParamsMultiExactOut, CollateralParamsMultiExactIn, CollateralParamsMultiExactOut, ExactOutputCollateralMultiParams, CollateralWithdrawParamsMultiExactIn, CollateralParamsMultiNativeExactIn, MoneyMarketParamsMultiExactIn, ExactInputMultiParams} from "../../dataTypes/InputTypes.sol";
-import {TokenTransfer} from "./../../libraries/TokenTransfer.sol";
 import {IERC20} from "../../../interfaces/IERC20.sol";
 import {IPool} from "../../interfaces/IAAVEV3Pool.sol";
 import {IUniswapV3Pool} from "../../dex-tools/uniswap/core/IUniswapV3Pool.sol";
 import {INativeWrapper} from "../../interfaces/INativeWrapper.sol";
-import "../base/InternalSwapper.sol";
 import {BaseSwapper} from "../base/BaseSwapper.sol";
 import {IERC20Balance} from "../../interfaces/IERC20Balance.sol";
+import {WithStorage} from "../../storage/BrokerStorage.sol";
 
 // solhint-disable max-line-length
 
@@ -20,10 +18,7 @@ import {IERC20Balance} from "../../interfaces/IERC20Balance.sol";
  * Direct lending pool interactions are unnecessary as the user can directly interact with the lending protocol
  * @author Achthar
  */
-contract AaveMoneyMarket is InternalSwapper, TokenTransfer {
-    using Path for bytes;
-    using SafeCast for uint256;
-
+contract AaveMoneyMarket is BaseSwapper, WithStorage {
     uint256 private constant DEFAULT_AMOUNT_CACHED = type(uint256).max;
 
     IPool private immutable _aavePool;
@@ -32,20 +27,144 @@ contract AaveMoneyMarket is InternalSwapper, TokenTransfer {
     address private immutable wrappedNative;
 
     constructor(
-        address uniFactory,
+        address _factoryV2,
+        address _factoryV3,
         address aavePool,
         address weth
-    ) InternalSwapper(uniFactory) {
+    ) BaseSwapper(_factoryV2, _factoryV3) {
         _aavePool = IPool(aavePool);
         wrappedNative = weth;
     }
 
-    function wrapAndDeposit() external payable returns (uint256 supplied) {
-        address _nativeWrapper = us().weth;
-        supplied = msg.value;
-        INativeWrapper _weth = INativeWrapper(_nativeWrapper);
+    /** BASE LENDING FUNCTIONS */
+
+    // deposit ERC20
+    function deposit(address asset, address recipient) external {
+        address _asset = asset;
+        uint256 balance = IERC20(_asset).balanceOf(address(this));
+        _aavePool.supply(_asset, balance, recipient, 0);
+    }
+
+    // borrow and transfer
+    function borrow(
+        address asset,
+        uint256 amount,
+        uint8 interestRateMode,
+        address recipient
+    ) external {
+        address _asset = asset;
+        _aavePool.borrow(_asset, amount, interestRateMode, 0, msg.sender);
+        if (recipient != address(this)) _transferERC20Tokens(_asset, recipient, amount);
+    }
+
+    // wraps the repay function
+    function repay(
+        address asset,
+        address recipient,
+        uint8 interestRateMode
+    ) external {
+        address _asset = asset;
+        uint256 _balance = IERC20(_asset).balanceOf(address(this));
+        uint256 _debtBalance;
+        uint256 _interestRateMode = interestRateMode;
+        if (_interestRateMode == 2) _debtBalance = IERC20Balance(aas().vTokens[_asset]).balanceOf(msg.sender);
+        else _debtBalance = IERC20Balance(aas().sTokens[_asset]).balanceOf(msg.sender);
+        _aavePool.repay(_asset, _balance, _interestRateMode, recipient);
+    }
+
+    // wraps the withdraw
+    function withdraw(address asset, address recipient) external {
+        _aavePool.withdraw(asset, type(uint256).max, recipient);
+    }
+
+    /** TRANSFER FUNCTIONS */
+
+    function transferERC20In(address asset, uint256 amount) external {
+        _transferERC20TokensFrom(asset, msg.sender, address(this), amount);
+    }
+
+    // transfer balance to sender
+    function sweep(address asset) external {
+        address _asset = asset;
+        uint256 balance = IERC20(_asset).balanceOf(address(this));
+        if (balance > 0) _transferERC20Tokens(_asset, msg.sender, balance);
+    }
+
+    function validateAndSweep(address asset, uint256 amountMin) external {
+        address _asset = asset;
+        uint256 balance = IERC20(_asset).balanceOf(address(this));
+        require(balance >= amountMin, "Insufficient Sweep");
+        _transferERC20Tokens(_asset, msg.sender, balance);
+    }
+
+    /** WRAPPED NATIVE FUNCTIONS  */
+
+    // deposit native and wrap
+    function wrap() external payable {
+        uint256 supplied = msg.value;
+        INativeWrapper _weth = INativeWrapper(wrappedNative);
         _weth.deposit{value: supplied}();
-        _aavePool.supply(_nativeWrapper, supplied, msg.sender, 0);
+    }
+
+    // unwrap wrappd native and send funds to sender
+    function unwrap() external {
+        INativeWrapper _weth = INativeWrapper(wrappedNative);
+        uint256 balance = _weth.balanceOf(address(this));
+        _weth.withdraw(balance);
+        // transfer eth to sender
+        payable(msg.sender).transfer(balance);
+    }
+
+    // unwrap wrappd native, validate balance and send to sender
+    function validateAndunwrap(uint256 amountMin) external {
+        INativeWrapper _weth = INativeWrapper(wrappedNative);
+        uint256 balance = _weth.balanceOf(address(this));
+        require(balance >= amountMin, "Insufficient Sweep");
+        _weth.withdraw(balance);
+        // transfer eth to sender
+        payable(msg.sender).transfer(balance);
+    }
+
+    // call an approved target
+    function callTarget(address target, bytes calldata params) external {
+        // exectue call
+        {
+            address _target = target;
+            require(gs().isValidTarget[_target], "TARGET");
+            (bool success, ) = _target.call(params);
+            require(success, "CALL_FAILED");
+        }
+    }
+
+    /** 1DELTA SWAP WRAPPERS */
+
+    function flashExactOutStandard(uint256 amountOut, bytes calldata path) external {
+        flashSwapExactOut(amountOut, path);
+    }
+
+    function swapExactInStandard(uint256 amountIn, bytes calldata path) external {
+        swapExactIn(amountIn, path);
+    }
+
+    function flashAllOutStandard(uint256 interestRateMode, bytes calldata path) external {
+        uint256 _debtBalance;
+        uint256 _interestRateMode = interestRateMode;
+        address tokenOut;
+        assembly {
+            tokenOut := shr(96, calldataload(path.offset))
+        }
+        if (_interestRateMode == 2) _debtBalance = IERC20Balance(aas().vTokens[tokenOut]).balanceOf(msg.sender);
+        else _debtBalance = IERC20Balance(aas().sTokens[tokenOut]).balanceOf(msg.sender);
+        flashSwapExactOut(_debtBalance, path);
+    }
+
+    function swapAllInStandard(bytes calldata path) external {
+        address tokenIn;
+        assembly {
+            tokenIn := shr(96, calldataload(path.offset))
+        }
+        uint256 amountIn = IERC20(tokenIn).balanceOf(address(this));
+        swapExactIn(amountIn, path);
     }
 
     struct DepositParameters {
@@ -57,6 +176,7 @@ contract AaveMoneyMarket is InternalSwapper, TokenTransfer {
         bytes data;
     }
 
+    // call before deposit
     function callAndDeposit(DepositParameters calldata params) external payable {
         address tokenIn = params.tokenIn;
         // if tokenIn is the network currency, wrap asset
@@ -113,7 +233,7 @@ contract AaveMoneyMarket is InternalSwapper, TokenTransfer {
 
         // fetch received amount
         uint256 received = IERC20Balance(tokenOut).balanceOf(address(this));
-        // note that we wrapped the entire amount, we will therefore refund wrapped native in case of ETH in
+        // note that we wrapped the entire amount, we will therefore refund wrapped native in case of ETH
         uint256 remaining = IERC20Balance(tokenIn).balanceOf(address(this));
         if (remaining > 0) _transferERC20Tokens(tokenIn, msg.sender, remaining);
         // reassign variable to prevent new slot
@@ -178,343 +298,5 @@ contract AaveMoneyMarket is InternalSwapper, TokenTransfer {
             require(msg.value > 0, "NO_ETHER_SENT");
             INativeWrapper(tokenIn).deposit{value: msg.value}();
         } else _transferERC20TokensFrom(tokenIn, msg.sender, address(this), params.amountIn);
-    }
-
-    function wrapAndRepayAll(uint256 interestRateMode) external payable returns (uint256 repaid) {
-        address _nativeWrapper = us().weth;
-        INativeWrapper _weth = INativeWrapper(_nativeWrapper);
-        // fetch borrow balance
-        if (interestRateMode == 2) repaid = IERC20(aas().vTokens[_nativeWrapper]).balanceOf(msg.sender);
-        else repaid = IERC20(aas().sTokens[_nativeWrapper]).balanceOf(msg.sender);
-        // deposit projected borrow balance
-        _weth.deposit{value: repaid}();
-        // returns the actual amount repaid, should match the target value
-        repaid = _aavePool.repay(_nativeWrapper, repaid, interestRateMode, msg.sender);
-        // refund excess eth
-        payable(msg.sender).transfer(msg.value - repaid);
-    }
-
-    function wrapAndRepay(uint256 interestRateMode) external payable returns (uint256 repaid) {
-        address _nativeWrapper = us().weth;
-        repaid = msg.value;
-        INativeWrapper _weth = INativeWrapper(_nativeWrapper);
-        _weth.deposit{value: repaid}();
-        repaid = _aavePool.repay(_nativeWrapper, repaid, interestRateMode, msg.sender);
-    }
-
-    function withdrawAndUnwrap(uint256 amountToWithdraw, address payable recipient) external returns (uint256 withdrawn) {
-        address _nativeWrapper = us().weth;
-        withdrawn = amountToWithdraw;
-        _transferERC20TokensFrom(aas().aTokens[_nativeWrapper], msg.sender, address(this), withdrawn);
-        withdrawn = _aavePool.withdraw(_nativeWrapper, withdrawn, address(this));
-        INativeWrapper _weth = INativeWrapper(_nativeWrapper);
-        _weth.withdraw(withdrawn);
-        // transfer eth to recipient
-        recipient.transfer(withdrawn);
-    }
-
-    function withdrawAllAndUnwrap(address payable recipient) external returns (uint256 withdrawn) {
-        address _nativeWrapper = us().weth;
-        address _aToken = aas().aTokens[_nativeWrapper];
-        withdrawn = IERC20(_aToken).balanceOf(msg.sender);
-        _transferERC20TokensFrom(_aToken, msg.sender, address(this), withdrawn);
-        withdrawn = _aavePool.withdraw(_nativeWrapper, withdrawn, address(this));
-        INativeWrapper _weth = INativeWrapper(_nativeWrapper);
-        _weth.withdraw(withdrawn);
-        // transfer eth to recipient
-        recipient.transfer(withdrawn);
-    }
-
-    function borrowAndUnwrap(
-        uint256 amountToBorrow,
-        address payable recipient,
-        uint8 interestRateMode
-    ) external {
-        address _nativeWrapper = us().weth;
-        uint256 borrowAmount = amountToBorrow;
-        _aavePool.borrow(_nativeWrapper, borrowAmount, interestRateMode, 0, msg.sender);
-        INativeWrapper _weth = INativeWrapper(_nativeWrapper);
-        _weth.withdraw(borrowAmount);
-        // transfer eth to recipient
-        recipient.transfer(borrowAmount);
-    }
-
-    function swapAndSupplyExactIn(CollateralParamsMultiExactIn memory params) external {
-        uint256 amountIn = params.amountIn;
-        _transferERC20TokensFrom(params.path.getFirstToken(), msg.sender, address(this), amountIn);
-        // swap to self
-        uint256 amountToSupply = exactInputToSelf(amountIn, params.path);
-        require(amountToSupply >= params.amountOutMinimum, "Received too little");
-        // deposit received amount to aave on behalf of user
-        _aavePool.supply(params.path.getLastToken(), amountToSupply, msg.sender, 0);
-    }
-
-    function swapETHAndSupplyExactIn(CollateralParamsMultiExactIn calldata params) external payable {
-        INativeWrapper _weth = INativeWrapper(us().weth);
-        uint256 amountIn = params.amountIn;
-        // wrap eth
-        _weth.deposit{value: amountIn}();
-        // swap to self
-        uint256 amountToSupply = exactInputToSelf(amountIn, params.path);
-        require(amountToSupply >= params.amountOutMinimum, "Received too little");
-        // deposit received amount to the lending protocol on behalf of user
-        _aavePool.supply(params.path.getLastToken(), amountToSupply, msg.sender, 0);
-    }
-
-    function swapAndSupplyExactOut(ExactOutputCollateralMultiParams calldata params) external payable returns (uint256 amountIn) {
-        (address tokenOut, address tokenIn, uint24 fee) = params.path.decodeFirstPool();
-        uint256 amountOut = params.amountOut;
-        MarginCallbackData memory data = MarginCallbackData({path: params.path, tradeType: 12, interestRateMode: 0, exactIn: false});
-
-        bool zeroForOne = tokenIn < tokenOut;
-        _toPool(tokenIn, fee, tokenOut).swap(
-            address(this),
-            zeroForOne,
-            -amountOut.toInt256(),
-            zeroForOne ? MIN_SQRT_RATIO : MAX_SQRT_RATIO,
-            abi.encode(data)
-        );
-
-        amountIn = ncs().amount;
-        ncs().amount = DEFAULT_AMOUNT_CACHED;
-        require(params.amountInMaximum >= amountIn, "Paid too much");
-
-        // deposit received amount to aave on behalf of user
-        _aavePool.supply(tokenOut, amountOut, msg.sender, 0);
-    }
-
-    // for this function it has to be made sure that the input amount matches the ETH amount sent
-    // to enable this function in multicalls, one can still just send the total ETH amount in advance,
-    // and then multicall this function
-    function swapETHAndSupplyExactOut(CollateralParamsMultiExactOut calldata params) external payable returns (uint256 amountIn) {
-        INativeWrapper _weth = INativeWrapper(us().weth);
-        uint256 amountReceived = params.amountInMaximum;
-        uint256 amountOut = params.amountOut;
-        _weth.deposit{value: amountReceived}();
-
-        MarginCallbackData memory data = MarginCallbackData({path: params.path, tradeType: 12, interestRateMode: 0, exactIn: false});
-
-        (address tokenOut, address tokenIn, uint24 fee) = params.path.decodeFirstPool();
-        bool zeroForOne = tokenIn < tokenOut;
-        _toPool(tokenIn, fee, tokenOut).swap(
-            address(this),
-            zeroForOne,
-            -amountOut.toInt256(),
-            zeroForOne ? MIN_SQRT_RATIO : MAX_SQRT_RATIO,
-            abi.encode(data)
-        );
-        amountIn = ncs().amount;
-        ncs().amount = DEFAULT_AMOUNT_CACHED;
-
-        // deposit received amount to the lending protocol on behalf of user
-        _aavePool.supply(tokenOut, amountOut, msg.sender, 0);
-        // refund dust - reverts if lippage too high
-        amountReceived -= amountIn;
-        _weth.withdraw(amountReceived);
-        payable(msg.sender).transfer(amountReceived);
-    }
-
-    function withdrawAndSwapExactIn(CollateralWithdrawParamsMultiExactIn memory params) external returns (uint256 amountOut) {
-        address tokenIn = params.path.getFirstToken();
-        uint256 actuallyWithdrawn = params.amountIn;
-        // we have to transfer aTokens from the user to this address - these are used to access liquidity
-        _transferERC20TokensFrom(aas().aTokens[tokenIn], msg.sender, address(this), actuallyWithdrawn);
-        // withraw and send funds to this address for swaps
-        actuallyWithdrawn = _aavePool.withdraw(tokenIn, actuallyWithdrawn, address(this));
-        // the withdrawal amount can deviate
-        amountOut = exactInputToSelf(actuallyWithdrawn, params.path);
-        require(amountOut >= params.amountOutMinimum, "Received too little");
-        _transferERC20Tokens(params.path.getLastToken(), params.recipient, amountOut);
-    }
-
-    function withdrawAndSwapExactInToETH(CollateralWithdrawParamsMultiExactIn memory params) external returns (uint256 amountOut) {
-        address tokenIn = params.path.getFirstToken();
-        uint256 actuallyWithdrawn = params.amountIn;
-        // withraw and send funds to this address for swaps
-        _transferERC20TokensFrom(aas().aTokens[tokenIn], msg.sender, address(this), actuallyWithdrawn);
-        actuallyWithdrawn = _aavePool.withdraw(tokenIn, actuallyWithdrawn, address(this));
-        amountOut = exactInputToSelf(actuallyWithdrawn, params.path);
-        require(amountOut >= params.amountOutMinimum, "Received too little");
-        INativeWrapper(us().weth).withdraw(amountOut);
-        payable(params.recipient).transfer(amountOut);
-    }
-
-    function withdrawAndSwapExactOut(CollateralParamsMultiExactOut calldata params) external payable returns (uint256 amountIn) {
-        (address tokenOut, address tokenIn, uint24 fee) = params.path.decodeFirstPool();
-        MarginCallbackData memory data = MarginCallbackData({path: params.path, tradeType: 14, interestRateMode: 0, exactIn: false});
-
-        bool zeroForOne = tokenIn < tokenOut;
-        _toPool(tokenIn, fee, tokenOut).swap(
-            msg.sender,
-            zeroForOne,
-            -params.amountOut.toInt256(),
-            zeroForOne ? MIN_SQRT_RATIO : MAX_SQRT_RATIO,
-            abi.encode(data)
-        );
-
-        amountIn = ncs().amount;
-        ncs().amount = DEFAULT_AMOUNT_CACHED;
-        require(params.amountInMaximum >= amountIn, "Had to withdraw too much");
-    }
-
-    function withdrawAndSwapExactOutToETH(CollateralParamsMultiExactOut calldata params) external returns (uint256 amountIn) {
-        (address tokenOut, address tokenIn, uint24 fee) = params.path.decodeFirstPool();
-        uint256 amountOut = params.amountOut;
-        MarginCallbackData memory data = MarginCallbackData({path: params.path, tradeType: 14, interestRateMode: 0, exactIn: false});
-        bool zeroForOne = tokenIn < tokenOut;
-        _toPool(tokenIn, fee, tokenOut).swap(
-            address(this),
-            zeroForOne,
-            -amountOut.toInt256(),
-            zeroForOne ? MIN_SQRT_RATIO : MAX_SQRT_RATIO,
-            abi.encode(data)
-        );
-
-        amountIn = ncs().amount;
-        ncs().amount = DEFAULT_AMOUNT_CACHED;
-        require(params.amountInMaximum >= amountIn, "Had to withdraw too much");
-
-        INativeWrapper(tokenOut).withdraw(amountOut);
-        payable(msg.sender).transfer(amountOut);
-    }
-
-    function borrowAndSwapExactIn(MoneyMarketParamsMultiExactIn memory params) external returns (uint256 amountOut) {
-        uint256 amountIn = params.amountIn;
-        // borrow and send funds to this address for swaps
-        _aavePool.borrow(params.path.getFirstToken(), amountIn, params.interestRateMode, 0, msg.sender);
-        amountOut = exactInputToSelf(amountIn, params.path);
-        IERC20(params.path.getLastToken()).transfer(params.recipient, amountOut);
-        require(amountOut >= params.amountOutMinimum, "Received too little");
-    }
-
-    function borrowAndSwapExactInToETH(MoneyMarketParamsMultiExactIn calldata params) external returns (uint256 amountOut) {
-        uint256 amountIn = params.amountIn;
-        // borrow and send funds to this address for swaps
-        _aavePool.borrow(params.path.getFirstToken(), amountIn, params.interestRateMode, 0, msg.sender);
-        // swap exact in with common router
-        amountOut = exactInputToSelf(amountIn, params.path);
-        require(amountOut >= params.amountOutMinimum, "Received too little");
-        INativeWrapper(us().weth).withdraw(amountOut);
-        payable(params.recipient).transfer(amountOut);
-    }
-
-    function borrowAndSwapExactOut(MarginSwapParamsMultiExactOut memory params) external payable returns (uint256 amountIn) {
-        (address tokenOut, address tokenIn, uint24 fee) = params.path.decodeFirstPool();
-        uint256 amountOut = params.amountOut;
-        MarginCallbackData memory data = MarginCallbackData({
-            path: params.path,
-            tradeType: 13,
-            interestRateMode: params.interestRateMode,
-            exactIn: false
-        });
-
-        bool zeroForOne = tokenIn < tokenOut;
-        _toPool(tokenIn, fee, tokenOut).swap(
-            msg.sender,
-            zeroForOne,
-            -amountOut.toInt256(),
-            zeroForOne ? MIN_SQRT_RATIO : MAX_SQRT_RATIO,
-            abi.encode(data)
-        );
-
-        amountIn = ncs().amount;
-        ncs().amount = DEFAULT_AMOUNT_CACHED;
-        require(params.amountInMaximum >= amountIn, "Had to borrow too much");
-    }
-
-    function borrowAndSwapExactOutToETH(MarginSwapParamsMultiExactOut calldata params) external returns (uint256 amountIn) {
-        (address tokenOut, address tokenIn, uint24 fee) = params.path.decodeFirstPool();
-        uint256 amountOut = params.amountOut;
-        MarginCallbackData memory data = MarginCallbackData({
-            path: params.path,
-            tradeType: 13,
-            interestRateMode: params.interestRateMode,
-            exactIn: false
-        });
-
-        bool zeroForOne = tokenIn < tokenOut;
-        _toPool(tokenIn, fee, tokenOut).swap(
-            address(this),
-            zeroForOne,
-            -amountOut.toInt256(),
-            zeroForOne ? MIN_SQRT_RATIO : MAX_SQRT_RATIO,
-            abi.encode(data)
-        );
-
-        amountIn = ncs().amount;
-        ncs().amount = DEFAULT_AMOUNT_CACHED;
-        require(params.amountInMaximum >= amountIn, "Had to borrow too much");
-
-        INativeWrapper(us().weth).withdraw(amountOut);
-        payable(msg.sender).transfer(amountOut);
-    }
-
-    function swapAndRepayExactIn(MoneyMarketParamsMultiExactIn calldata params) external returns (uint256 amountOut) {
-        uint256 amountIn = params.amountIn;
-        _transferERC20TokensFrom(params.path.getFirstToken(), msg.sender, address(this), amountIn);
-        // swap to self
-        amountOut = exactInputToSelf(amountIn, params.path);
-        require(amountOut >= params.amountOutMinimum, "Received too little");
-        // deposit received amount to aave on behalf of user
-        amountOut = _aavePool.repay(params.path.getLastToken(), amountOut, params.interestRateMode, msg.sender);
-    }
-
-    function swapETHAndRepayExactIn(ExactInputMultiParams calldata params) external payable returns (uint256 amountOut) {
-        INativeWrapper _weth = INativeWrapper(us().weth);
-        uint256 amountIn = params.amountIn;
-        // wrap eth
-        _weth.deposit{value: amountIn}();
-        // swap to self
-        amountOut = exactInputToSelf(amountIn, params.path);
-        require(amountOut >= params.amountOutMinimum, "Received too little");
-        // deposit received amount to the lending protocol on behalf of user
-        amountOut = _aavePool.repay(params.path.getLastToken(), amountOut, params.interestRateMode, msg.sender);
-    }
-
-    function swapAndRepayExactOut(MarginSwapParamsMultiExactOut memory params) external payable returns (uint256 amountIn) {
-        (address tokenOut, address tokenIn, uint24 fee) = params.path.decodeFirstPool();
-        uint256 amountOut = params.amountOut;
-        MarginCallbackData memory data = MarginCallbackData({path: params.path, tradeType: 12, interestRateMode: 0, exactIn: false});
-
-        bool zeroForOne = tokenIn < tokenOut;
-        _toPool(tokenIn, fee, tokenOut).swap(
-            address(this),
-            zeroForOne,
-            -amountOut.toInt256(),
-            zeroForOne ? MIN_SQRT_RATIO : MAX_SQRT_RATIO,
-            abi.encode(data)
-        );
-        amountIn = ncs().amount;
-        ncs().amount = DEFAULT_AMOUNT_CACHED;
-        require(params.amountInMaximum >= amountIn, "Had to pay too much");
-
-        // deposit received amount to aave on behalf of user
-        _aavePool.repay(tokenOut, amountOut, params.interestRateMode, msg.sender);
-    }
-
-    function swapETHAndRepayExactOut(MarginSwapParamsMultiExactOut calldata params) external payable returns (uint256 amountIn) {
-        INativeWrapper _weth = INativeWrapper(us().weth);
-        uint256 amountReceived = params.amountInMaximum;
-        _weth.deposit{value: amountReceived}();
-
-        MarginCallbackData memory data = MarginCallbackData({path: params.path, tradeType: 12, interestRateMode: 0, exactIn: false});
-
-        (address tokenOut, address tokenIn, uint24 fee) = params.path.decodeFirstPool();
-        bool zeroForOne = tokenIn < tokenOut;
-        uint256 amountOut = params.amountOut;
-        _toPool(tokenIn, fee, tokenOut).swap(
-            address(this),
-            zeroForOne,
-            -amountOut.toInt256(),
-            zeroForOne ? MIN_SQRT_RATIO : MAX_SQRT_RATIO,
-            abi.encode(data)
-        );
-        amountIn = ncs().amount;
-        ncs().amount = DEFAULT_AMOUNT_CACHED;
-        _aavePool.repay(tokenOut, amountOut, params.interestRateMode, msg.sender);
-        // refund dust
-        amountReceived -= amountIn;
-        _weth.withdraw(amountReceived);
-        payable(msg.sender).transfer(amountReceived);
     }
 }

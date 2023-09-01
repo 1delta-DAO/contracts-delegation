@@ -42,7 +42,7 @@ abstract contract BaseSwapper is TokenTransfer, BaseDecoder {
     constructor(address _factoryV2, address _factoryV3) {
         // V3 factory
         UNI_V3_FF_FACTORY = bytes32((uint256(0xff) << 248) | (uint256(uint160(_factoryV3)) << 88));
-        // v2 factory
+        // V2 factory
         UNI_V2_FF_FACTORY = bytes32((uint256(0xff) << 248) | (uint256(uint160(_factoryV2)) << 88));
     }
 
@@ -275,7 +275,7 @@ abstract contract BaseSwapper is TokenTransfer, BaseDecoder {
                 revert(0, 0)
             }
 
-            // Compute the buy amount based on the pair reserves.
+            // Compute the sell amount based on the pair reserves.
             {
                 let sellReserve
                 let buyReserve

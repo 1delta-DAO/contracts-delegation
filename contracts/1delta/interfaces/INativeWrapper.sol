@@ -9,6 +9,8 @@ interface INativeWrapper {
 
     function totalSupply() external view returns (uint256);
 
+    function balanceOf(address account) external view returns (uint256);
+
     function approve(address guy, uint256 wad) external returns (bool);
 
     function transfer(address dst, uint256 wad) external returns (bool);

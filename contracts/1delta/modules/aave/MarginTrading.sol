@@ -130,15 +130,6 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
         if (amountInMaximum < amountIn) revert Slippage();
     }
 
-    function getDebtBalance(address token, uint256 interestRateMode) private view returns (uint256) {
-        if (interestRateMode == 2) return IERC20Balance(aas().vTokens[token]).balanceOf(msg.sender);
-        else return IERC20Balance(aas().sTokens[token]).balanceOf(msg.sender);
-    }
-
-    function getCollateralBalance(address token) private view returns (uint256) {
-        return IERC20Balance(aas().aTokens[token]).balanceOf(msg.sender);
-    }
-
     // Exact Input Swap where the entire collateral amount is withdrawn - The path parameters determine the lending actions
     // if the collateral balance is zerp. the tx reverts
     function swapAllIn(uint256 amountOutMinimum, bytes calldata path) external returns (uint256 amountOut) {
@@ -155,7 +146,7 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
             zeroForOne := lt(tokenIn, tokenOut)
         }
         // fetch collateral balance
-        uint256 amountIn = getCollateralBalance(tokenIn);
+        uint256 amountIn = IERC20Balance(aas().aTokens[tokenIn]).balanceOf(msg.sender);
         if (amountIn == 0) revert NoBalance();
 
         // uniswapV3 style
