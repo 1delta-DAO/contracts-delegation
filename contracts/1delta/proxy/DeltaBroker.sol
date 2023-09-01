@@ -29,8 +29,7 @@ contract DeltaBrokerProxy {
 
     // An efficient multicall implementation for delegatecalls across multiple modules
     // The modules are validated before anything is called.
-    function multicallMultiModule(address[] calldata modules, bytes[] calldata data) external payable returns (bytes[] memory results) {
-        results = new bytes[](data.length);
+    function multicallMultiModule(address[] calldata modules, bytes[] calldata data) external payable {
         LibModules.ModuleStorage storage ds;
         bytes32 position = LibModules.MODULE_STORAGE_POSITION;
         // get diamond storage
@@ -38,7 +37,7 @@ contract DeltaBrokerProxy {
             ds.slot := position
         }
 
-        for (uint256 i = 0; i < data.length; i++) {
+        for (uint256 i = 0; i != data.length; i++) {
             // we verify that the module exists
             address moduleAddress = modules[i];
             require(ds.moduleExists[moduleAddress], "Broker: Invalid module");
@@ -52,15 +51,12 @@ contract DeltaBrokerProxy {
                 }
                 revert(abi.decode(result, (string)));
             }
-
-            results[i] = result;
         }
     }
 
     // An efficient multicall implementation for delegatecalls on a single module
     // The single module is validated and then the delegatecalls are executed.
-    function multicallSingleModule(address module, bytes[] calldata data) external payable returns (bytes[] memory results) {
-        results = new bytes[](data.length);
+    function multicallSingleModule(address module, bytes[] calldata data) external payable {
         address moduleAddress = module;
 
         LibModules.ModuleStorage storage ds;
@@ -72,7 +68,7 @@ contract DeltaBrokerProxy {
 
         // important check that the input is in fact an implementation by 1DeltaDAO
         require(ds.moduleExists[moduleAddress], "Broker: Invalid module");
-        for (uint256 i = 0; i < data.length; i++) {
+        for (uint256 i = 0; i != data.length; i++) {
             (bool success, bytes memory result) = moduleAddress.delegatecall(data[i]);
 
             if (!success) {
@@ -83,8 +79,6 @@ contract DeltaBrokerProxy {
                 }
                 revert(abi.decode(result, (string)));
             }
-
-            results[i] = result;
         }
     }
 

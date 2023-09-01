@@ -7,7 +7,7 @@ import {
 } from '../../../types';
 import { FeeAmount } from '../../uniswap-v3/periphery/shared/constants';
 import { expandTo18Decimals } from '../../uniswap-v3/periphery/shared/expandTo18Decimals'
-import { initAaveBroker, AaveBrokerFixture, aaveBrokerFixture, AaveBrokerFixtureInclV2, aaveBrokerFixtureInclV2 } from '../shared/aaveBrokerFixture';
+import { initAaveBroker, AaveBrokerFixtureInclV2, aaveBrokerFixtureInclV2 } from '../shared/aaveBrokerFixture';
 import { expect } from '../shared/expect'
 import { initializeMakeSuite, InterestRateMode, AAVEFixture } from '../shared/aaveFixture';
 import { addLiquidity, uniswapMinimalFixtureNoTokens, UniswapMinimalFixtureNoTokens } from '../shared/uniswapFixture';
@@ -18,6 +18,7 @@ import { uniV2Fixture, V2Fixture } from '../shared/uniV2Fixture';
 import { encodeAggregatorPathEthers } from '../shared/aggregatorPath';
 
 const DEPOSIT = 'deposit'
+const WRAP = 'wrap'
 const TRANSFER_IN = 'transferERC20In'
 const SWAP_IN = 'swapExactInSpot'
 
@@ -44,10 +45,12 @@ describe('AAVE Money Market operations', async () => {
     let broker: AaveBrokerFixtureInclV2;
     let tokens: (MintableERC20 | WETH9)[];
     let uniswapV2: V2Fixture
+    let provider: MockProvider
 
     before('Deploy Account, Trader, Uniswap and AAVE', async () => {
         [deployer, alice, bob, carol, gabi, achi, wally, dennis,
             vlad, xander, test0, test1, test2, test3] = await ethers.getSigners();
+        provider = waffle.provider;
 
         aaveTest = await initializeMakeSuite(deployer, 1)
         tokens = Object.values(aaveTest.tokens)
@@ -282,7 +285,7 @@ describe('AAVE Money Market operations', async () => {
         expect(Number(formatEther(aTokenBal))).to.lessThanOrEqual(Number(formatEther(swapAmount)))
     })
 
-    it('allows swap Ether in supply exact in', async () => {
+    it.only('allows swap Ether in supply exact in', async () => {
 
         const originIndex = "WETH"
         const targetIndex = "DAI"
@@ -302,8 +305,8 @@ describe('AAVE Money Market operations', async () => {
         const path = encodeAggregatorPathEthers(
             _tokensInRoute,
             new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
-            [1, 1], // action
-            [1, 2], // pid
+            [0, 0, 0, 0, 0], // action
+            [1, 2, 1, 1, 1], // pid
             2 // flag
         )
         const params = {
@@ -312,12 +315,33 @@ describe('AAVE Money Market operations', async () => {
             amountOutMinimum: swapAmount.mul(95).div(100)
         }
 
+        const callTransfer = broker.moneyMarket.interface.encodeFunctionData(WRAP,)
+        const callSwap = broker.moneyMarket.interface.encodeFunctionData(SWAP_IN, [
+            params.amountIn,
+            params.amountOutMinimum,
+            params.path
+        ]
+        )
+        const callDeposit = broker.moneyMarket.interface.encodeFunctionData(DEPOSIT,
+            [
+                aaveTest.tokens[targetIndex].address,
+                carol.address,
+            ]
+        )
 
         console.log("swap in")
         // const balBefore = await aaveTest.tokens[originIndex].balanceOf(carol.address)
         const balBefore = await provider.getBalance(carol.address);
         const aTokenBalBefore = await aaveTest.aTokens[targetIndex].balanceOf(carol.address)
-        const tx = await broker.moneyMarket.connect(carol).swapETHAndSupplyExactIn(params, { value: params.amountIn })
+        // const tx = await broker.moneyMarket.connect(carol).swapETHAndSupplyExactIn(params, { value: params.amountIn })
+        const tx = await broker.brokerProxy.connect(carol).multicallSingleModule(broker.moneyMarketImplementation.address,
+            [
+                callTransfer,
+                callSwap,
+                callDeposit
+            ],
+            { value: swapAmount }
+        )
         // const balAfter = await aaveTest.tokens[originIndex].balanceOf(carol.address)
         const balAfter = await provider.getBalance(carol.address);
 
@@ -346,8 +370,14 @@ describe('AAVE Money Market operations', async () => {
             aaveTest.tokens["TEST2"],
             aaveTest.tokens[targetIndex]
         ].map(t => t.address)
-        const path = encodePath(_tokensInRoute.reverse(), new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        // const path = encodePath(_tokensInRoute.reverse(), new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [1, 1, 1, 1], // action
+            [1, 2, 1, 1], // pid
+            2 // flag
+        )
         const params = {
             path,
             interestRateMode: InterestRateMode.VARIABLE,

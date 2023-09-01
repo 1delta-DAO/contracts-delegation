@@ -44,7 +44,7 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
         uint256 amountIn,
         uint256 amountOutMinimum,
         bytes calldata path
-    ) external returns (uint256 amountOut) {
+    ) external payable returns (uint256 amountOut) {
         acs().cachedAddress = msg.sender;
         address tokenIn;
         address tokenOut;
@@ -92,7 +92,7 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
         uint256 amountOut,
         uint256 amountInMaximum,
         bytes calldata path
-    ) external returns (uint256 amountIn) {
+    ) external payable returns (uint256 amountIn) {
         acs().cachedAddress = msg.sender;
         address tokenIn;
         address tokenOut;
@@ -133,7 +133,7 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
 
     // Exact Input Swap where the entire collateral amount is withdrawn - The path parameters determine the lending actions
     // if the collateral balance is zerp. the tx reverts
-    function swapAllIn(uint256 amountOutMinimum, bytes calldata path) external returns (uint256 amountOut) {
+    function swapAllIn(uint256 amountOutMinimum, bytes calldata path) external payable returns (uint256 amountOut) {
         acs().cachedAddress = msg.sender;
         address tokenIn;
         address tokenOut;
@@ -180,7 +180,7 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
     }
 
     // Exact Output Swap where the entire debt balacne is repaid - The path parameters determine the lending actions
-    function swapAllOut(uint256 amountInMaximum, bytes calldata path) external returns (uint256 amountIn) {
+    function swapAllOut(uint256 amountInMaximum, bytes calldata path) external payable returns (uint256 amountIn) {
         acs().cachedAddress = msg.sender;
         address tokenIn;
         address tokenOut;

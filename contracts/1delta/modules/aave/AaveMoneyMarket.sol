@@ -45,7 +45,7 @@ contract AaveMoneyMarket is BaseSwapper, WithStorage {
     /** BASE LENDING FUNCTIONS */
 
     // deposit ERC20 to Aave on behalf of recipient
-    function deposit(address asset, address recipient) external {
+    function deposit(address asset, address recipient) external payable {
         address _asset = asset;
         uint256 balance = IERC20(_asset).balanceOf(address(this));
         _aavePool.supply(_asset, balance, recipient, 0);
@@ -56,7 +56,7 @@ contract AaveMoneyMarket is BaseSwapper, WithStorage {
         address asset,
         uint256 amount,
         uint8 interestRateMode
-    ) external {
+    ) external payable {
         _aavePool.borrow(asset, amount, interestRateMode, 0, msg.sender);
     }
 
@@ -65,7 +65,7 @@ contract AaveMoneyMarket is BaseSwapper, WithStorage {
         address asset,
         address recipient,
         uint8 interestRateMode
-    ) external {
+    ) external payable {
         address _asset = asset;
         uint256 _balance = IERC20(_asset).balanceOf(address(this));
         uint256 _debtBalance;
@@ -76,26 +76,26 @@ contract AaveMoneyMarket is BaseSwapper, WithStorage {
     }
 
     // wraps the withdraw
-    function withdraw(address asset, address recipient) external {
+    function withdraw(address asset, address recipient) external payable {
         _aavePool.withdraw(asset, type(uint256).max, recipient);
     }
 
     /** TRANSFER FUNCTIONS */
 
     /** @notice transfer an ERC20token in */
-    function transferERC20In(address asset, uint256 amount) external {
+    function transferERC20In(address asset, uint256 amount) external payable {
         _transferERC20TokensFrom(asset, msg.sender, address(this), amount);
     }
 
     /** @notice transfer an a balance to the sender */
-    function sweep(address asset) external {
+    function sweep(address asset) external payable {
         address _asset = asset;
         uint256 balance = IERC20(_asset).balanceOf(address(this));
         if (balance > 0) _transferERC20Tokens(_asset, msg.sender, balance);
     }
 
     /** @notice transfer an a balance to the and validate that the amount is larger than a provided value */
-    function validateAndSweep(address asset, uint256 amountMin) external {
+    function validateAndSweep(address asset, uint256 amountMin) external payable {
         address _asset = asset;
         uint256 balance = IERC20(_asset).balanceOf(address(this));
         if (balance < amountMin) revert Slippage();
@@ -112,7 +112,7 @@ contract AaveMoneyMarket is BaseSwapper, WithStorage {
     }
 
     // unwrap wrappd native and send funds to sender
-    function unwrap() external {
+    function unwrap() external payable {
         INativeWrapper _weth = INativeWrapper(wrappedNative);
         uint256 balance = _weth.balanceOf(address(this));
         _weth.withdraw(balance);
@@ -121,7 +121,7 @@ contract AaveMoneyMarket is BaseSwapper, WithStorage {
     }
 
     // unwrap wrappd native, validate balance and send to sender
-    function validateAndUnwrap(uint256 amountMin) external {
+    function validateAndUnwrap(uint256 amountMin) external payable {
         INativeWrapper _weth = INativeWrapper(wrappedNative);
         uint256 balance = _weth.balanceOf(address(this));
         require(balance >= amountMin, "Insufficient Sweep");
@@ -131,7 +131,7 @@ contract AaveMoneyMarket is BaseSwapper, WithStorage {
     }
 
     // call an approved target (can also be the contract itself)
-    function callTarget(address target, bytes calldata params) external {
+    function callTarget(address target, bytes calldata params) external payable {
         // exectue call
         {
             address _target = target;
@@ -152,7 +152,7 @@ contract AaveMoneyMarket is BaseSwapper, WithStorage {
         uint256 amountOut,
         uint256 maximumAmountIn,
         bytes calldata path
-    ) external {
+    ) external payable {
         acs().cachedAddress = msg.sender;
         flashSwapExactOut(amountOut, path);
         if (maximumAmountIn < ncs().amount) revert Slippage();
@@ -169,7 +169,7 @@ contract AaveMoneyMarket is BaseSwapper, WithStorage {
         uint256 amountIn,
         uint256 minimumAmountOut,
         bytes calldata path
-    ) external {
+    ) external payable {
         uint256 amountOut = swapExactIn(amountIn, path);
         if (minimumAmountOut > amountOut) revert Slippage();
     }
@@ -182,7 +182,7 @@ contract AaveMoneyMarket is BaseSwapper, WithStorage {
         uint256 interestRateMode,
         uint256 maximumAmountIn,
         bytes calldata path
-    ) external {
+    ) external payable {
         acs().cachedAddress = msg.sender;
         uint256 _debtBalance;
         uint256 _interestRateMode = interestRateMode;
@@ -204,7 +204,7 @@ contract AaveMoneyMarket is BaseSwapper, WithStorage {
      * @notice The same as swapExactInSpot, except that we swap the entire balance
      * This function can be used after a withdrawal - to make sure that no dust is left
      */
-    function swapAllInSpot(bytes calldata path) external {
+    function swapAllInSpot(bytes calldata path) external payable {
         address tokenIn;
         assembly {
             tokenIn := shr(96, calldataload(path.offset))

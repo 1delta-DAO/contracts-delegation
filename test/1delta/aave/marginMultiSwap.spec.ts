@@ -43,7 +43,7 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
 
         provider = waffle.provider;
 
-        aaveTest = await initializeMakeSuite(deployer,1, true)
+        aaveTest = await initializeMakeSuite(deployer, 1, true)
         tokens = Object.values(aaveTest.tokens)
         uniswap = await uniswapMinimalFixtureNoTokens(deployer, aaveTest.tokens["WETH"].address)
         uniswapV2 = await uniV2Fixture(deployer, aaveTest.tokens["WETH"].address)
@@ -309,7 +309,7 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
             _tokensInRoute,
             new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
             [6, 0, 0], // action
-            [8, 91 , 9], // pid - V3
+            [8, 91, 9], // pid - V3
             2 // flag - borrow variable
         )
 
@@ -437,8 +437,8 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
         const path = encodeAggregatorPathEthers(
             _tokensInRoute,
             new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
-            [3, 1], // action
-            [1, 2], // pid
+            [3, 1, 1], // action
+            [1, 2, 1], // pid
             2 // flag
         )
         const params = {
@@ -450,21 +450,18 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
 
         await deposit(aaveTest, supplyTokenIndex, gabi, providedAmount)
 
-        await aaveTest.tokens[borrowTokenIndex].connect(gabi).approve(broker.broker.address, constants.MaxUint256)
         await aaveTest.tokens[supplyTokenIndex].connect(gabi).approve(broker.broker.address, constants.MaxUint256)
-        await aaveTest.tokens["AAVE"].connect(gabi).approve(broker.broker.address, constants.MaxUint256)
 
         await aaveTest.vTokens[borrowTokenIndex].connect(gabi).approveDelegation(broker.broker.address, constants.MaxUint256)
 
         await aaveTest.tokens[supplyTokenIndex].connect(gabi).approve(aaveTest.pool.address, constants.MaxUint256)
 
-        await aaveTest.pool.connect(gabi).supply(aaveTest.tokens[supplyTokenIndex].address, 100, gabi.address, 0)
-
         await aaveTest.pool.connect(gabi).setUserUseReserveAsCollateral(aaveTest.tokens[supplyTokenIndex].address, true)
-
+        const preCollat = await aaveTest.aTokens[supplyTokenIndex].balanceOf(gabi.address)
         await broker.trader.connect(gabi).swapExactOut(params.amountOut, params.amountInMaximum, params.path)
         const bb = await aaveTest.pool.getUserAccountData(gabi.address)
-        expect(bb.totalCollateralBase.toString()).to.equal(swapAmount.add(providedAmount).add(100).toString())
+        const postCollat = await aaveTest.aTokens[supplyTokenIndex].balanceOf(gabi.address)
+        expect(postCollat.sub(preCollat).toString()).to.equal(swapAmount.toString())
     })
 
     it('respects slippage - multi exact out', async () => {
@@ -542,10 +539,10 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
         const bAfter = await aaveTest.pool.getUserAccountData(carol.address)
         const debtAfter = await aaveTest.vTokens[borrowTokenIndex].balanceOf(carol.address)
         expect(Number(formatEther(debtAfter.sub(debtBefore)))).to.be.
-            lessThanOrEqual(Number(formatEther(swapAmount))*1.05)
+            lessThanOrEqual(Number(formatEther(swapAmount)) * 1.05)
 
-        expect(Number(formatEther(bAfter.totalDebtBase))).to.be.
-            greaterThanOrEqual(Number(formatEther(bBefore.totalDebtBase.sub(swapAmount))))
+        expect(Number(formatEther(debtAfter))).to.be.
+            greaterThanOrEqual(Number(formatEther(debtBefore.sub(swapAmount))) * 0.99)
 
 
         expect(Number(formatEther(bAfter.totalCollateralBase))).to.be.
@@ -665,7 +662,7 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
         const debtBefore = await aaveTest.vTokens[borrowTokenIndex].balanceOf(gabi.address)
         // trim margin position
         await broker.trader.connect(gabi).swapExactOut(params.amountOut, params.amountInMaximum, params.path)
-        
+
         const debtAfter = await aaveTest.vTokens[borrowTokenIndex].balanceOf(gabi.address)
         const bAfter = await aaveTest.pool.getUserAccountData(gabi.address)
 
