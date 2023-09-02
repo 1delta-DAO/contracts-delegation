@@ -96,14 +96,55 @@ abstract contract TokenTransfer {
         }
     }
 
-    /// @dev Transfers some amount of ETH to the given recipient and
-    ///      reverts if the transfer fails.
-    /// @param recipient The recipient of the ETH.
-    /// @param amount The amount of ETH to transfer.
-    function _transferEth(address payable recipient, uint256 amount) internal {
-        if (amount > 0) {
-            (bool success, ) = recipient.call{value: amount}("");
-            require(success, "FixinTokenSpender::_transferEth/TRANSFER_FAILED");
+    function _transferEth(address recipient, uint256 amount) internal {
+        assembly {
+            pop(
+                call(
+                    21000,
+                    recipient,
+                    amount,
+                    0x0, // input = empty for fallback
+                    0x0, // input size = zero
+                    0x0, // output = empty
+                    0x0 // output size = zero
+                )
+            )
+        }
+    }
+
+    function _depositWeth(address weth, uint256 amount) internal {
+        assembly {
+            let ptr := mload(0x40) // free memory pointer
+            // selector for deposit()
+            mstore(ptr, 0xd0e30db000000000000000000000000000000000000000000000000000000000)
+            pop(
+                call(
+                    gas(),
+                    and(weth, ADDRESS_MASK),
+                    amount, // ETH to deposit
+                    ptr, // seletor for deposit()
+                    0x4, // input size = zero
+                    0x0, // output = empty
+                    0x0 // output size = zero
+                )
+            )
+        }
+    }
+
+    function _approve(
+        address token,
+        address to,
+        uint256 value
+    ) internal {
+        assembly {
+            let ptr := mload(0x40) // free memory pointer
+
+            // selector for approve(address,uint256)
+            mstore(ptr, 0x095ea7b300000000000000000000000000000000000000000000000000000000)
+            mstore(add(ptr, 0x04), and(to, ADDRESS_MASK))
+            mstore(add(ptr, 0x24), value)
+
+            pop(call(gas(), and(token, ADDRESS_MASK), 0, ptr, 0x44, ptr, 32))
         }
     }
 

@@ -54,7 +54,7 @@ contract AAVEFlashModule is WithStorage, TokenTransfer {
         uint256 amount,
         DeltaParams calldata deltaParams,
         bytes calldata swapCalldata
-    ) external {
+    ) external payable {
         _aavePool.flashLoanSimple(
             address(this),
             asset,

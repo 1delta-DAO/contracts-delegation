@@ -297,13 +297,17 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
                 cache = uint8(bytes1(_data));
 
                 if (cache < 3) {
-                    // borrow and repay pool - tradeId matches interest rate mode
+                    // borrow and repay pool - tradeId matches interest rate mode (reverts within Aave when 0 is selected)
                     _aavePool.borrow(tokenOut, amountToPay, cache, 0, acs().cachedAddress);
                     _transferERC20Tokens(tokenOut, msg.sender, amountToPay);
-                } else {
+                } else if (cache < 8) {
+                    // ids 3-7 are reserved
                     // withraw and send funds to the pool
                     _transferERC20TokensFrom(aas().aTokens[tokenOut], acs().cachedAddress, address(this), amountToPay);
                     _aavePool.withdraw(tokenOut, amountToPay, msg.sender);
+                } else {
+                    // otherwise, just transfer it from cached address
+                    pay(tokenOut, acs().cachedAddress, amountToPay);
                 }
                 // cache amount
                 ncs().amount = amountToPay;
@@ -481,10 +485,14 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
                     // _borrow(tokenIn, amountToPay);
                     _aavePool.borrow(tokenOut, referenceAmount, cache, 0, acs().cachedAddress);
                     _transferERC20Tokens(tokenOut, msg.sender, referenceAmount);
-                } else {
+                } else if (cache < 8) {
+                    // ids 3-7 are reserved
                     // withraw and send funds to the pool
                     _transferERC20TokensFrom(aas().aTokens[tokenOut], acs().cachedAddress, address(this), referenceAmount);
                     _aavePool.withdraw(tokenOut, referenceAmount, msg.sender);
+                } else {
+                    // otherwise, just transfer it from cached address
+                    pay(tokenOut, acs().cachedAddress, referenceAmount);
                 }
                 // cache amount
                 ncs().amount = referenceAmount;
@@ -568,6 +576,47 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
         }
     }
 
+    // a flash swap where the output is sent to msg.sender
+    function flashSwapExactOut(uint256 amountOut, bytes calldata data) internal {
+        address tokenIn;
+        address tokenOut;
+        uint8 identifier;
+        assembly {
+            let firstWord := calldataload(data.offset)
+            tokenOut := shr(96, firstWord)
+            identifier := shr(64, firstWord)
+            tokenIn := shr(96, calldataload(add(data.offset, 25)))
+        }
+
+        // uniswapV3 style
+        if (identifier < 50) {
+            bool zeroForOne = tokenIn < tokenOut;
+            uint24 fee;
+            assembly {
+                fee := and(shr(72, calldataload(data.offset)), 0xffffff)
+            }
+            getUniswapV3Pool(tokenIn, tokenOut, fee).swap(
+                msg.sender,
+                zeroForOne,
+                -int256(amountOut),
+                zeroForOne ? MIN_SQRT_RATIO : MAX_SQRT_RATIO,
+                data
+            );
+        }
+        // uniswapV2 style
+        else if (identifier < 100) {
+            bool zeroForOne = tokenIn < tokenOut;
+            // get next pool
+            address pool = pairAddress(tokenIn, tokenOut);
+            uint256 amountOut0;
+            uint256 amountOut1;
+            // amountOut0, cache
+            (amountOut0, amountOut1) = zeroForOne ? (uint256(0), amountOut) : (amountOut, uint256(0));
+            IUniswapV2Pair(pool).swap(amountOut0, amountOut1, address(this), data); // cannot swap to sender due to flashSwap
+            _transferERC20Tokens(tokenOut, msg.sender, amountOut);
+        }
+    }
+
     /// @param token The token to pay
     /// @param payer The entity that must pay
     /// @param value The amount to pay
@@ -576,7 +625,7 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
         address payer,
         uint256 value
     ) internal {
-        if (payer == address(this)) {
+        if (payer == address(0)) {
             // pay with tokens already in the contract (for the exact input multihop case)
             _transferERC20Tokens(token, msg.sender, value);
         } else {

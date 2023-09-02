@@ -294,44 +294,4 @@ abstract contract BaseSwapper is TokenTransfer, BaseDecoder {
             }
         }
     }
-
-    function flashSwapExactOut(uint256 amountOut, bytes calldata data) internal {
-        address tokenIn;
-        address tokenOut;
-        uint8 identifier;
-        assembly {
-            let firstWord := calldataload(data.offset)
-            tokenOut := shr(96, firstWord)
-            identifier := shr(64, firstWord)
-            tokenIn := shr(96, calldataload(add(data.offset, 25)))
-        }
-
-        // uniswapV3 style
-        if (identifier < 50) {
-            bool zeroForOne = tokenIn < tokenOut;
-            uint24 fee;
-            assembly {
-                fee := and(shr(72, calldataload(data.offset)), 0xffffff)
-            }
-            getUniswapV3Pool(tokenIn, tokenOut, fee).swap(
-                msg.sender,
-                zeroForOne,
-                -int256(amountOut),
-                zeroForOne ? MIN_SQRT_RATIO : MAX_SQRT_RATIO,
-                data
-            );
-        }
-        // uniswapV2 style
-        else if (identifier < 100) {
-            bool zeroForOne = tokenIn < tokenOut;
-            // get next pool
-            address pool = pairAddress(tokenIn, tokenOut);
-            uint256 amountOut0;
-            uint256 amountOut1;
-            // amountOut0, cache
-            (amountOut0, amountOut1) = zeroForOne ? (uint256(0), amountOut) : (amountOut, uint256(0));
-            IUniswapV2Pair(pool).swap(amountOut0, amountOut1, address(this), data); // cannot swap to sender due to flashSwap
-            _transferERC20Tokens(tokenOut, msg.sender, amountOut);
-        }
-    }
 }

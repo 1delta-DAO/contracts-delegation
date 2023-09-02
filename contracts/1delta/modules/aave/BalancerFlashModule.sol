@@ -58,7 +58,7 @@ contract BalancerFlashModule is WithStorage, TokenTransfer {
         uint256 amount,
         DeltaParams calldata deltaParams,
         bytes calldata swapCalldata
-    ) external {
+    ) external payable {
         IERC20[] memory tokens = new IERC20[](1);
         uint256[] memory amounts = new uint256[](1);
         tokens[0] = asset;
