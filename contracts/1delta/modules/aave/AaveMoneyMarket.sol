@@ -9,7 +9,6 @@ import {INativeWrapper} from "../../interfaces/INativeWrapper.sol";
 import {BaseSwapper, IUniswapV2Pair} from "../base/BaseSwapper.sol";
 import {IERC20Balance} from "../../interfaces/IERC20Balance.sol";
 import {WithStorage} from "../../storage/BrokerStorage.sol";
-import "hardhat/console.sol";
 
 // solhint-disable max-line-length
 

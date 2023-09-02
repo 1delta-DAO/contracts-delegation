@@ -18,7 +18,6 @@ import {BaseDecoder} from "./BaseDecoder.sol";
  * @notice Contains main logic for uniswap callbacks
  */
 abstract contract BaseSwapper is TokenTransfer, BaseDecoder {
-
     /// @dev Mask of lower 20 bytes.
     uint256 private constant ADDRESS_MASK = 0x00ffffffffffffffffffffffffffffffffffffffff;
     /// @dev Mask of upper 20 bytes.
@@ -255,6 +254,7 @@ abstract contract BaseSwapper is TokenTransfer, BaseDecoder {
         }
     }
 
+    /// @dev calculates the input amount for a UniswapV2 style swap
     function getAmountInDirect(
         address pair,
         bool zeroForOne,
