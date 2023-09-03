@@ -10,18 +10,18 @@ import {IERC20Balance} from "../../interfaces/IERC20Balance.sol";
 
 /// @notice Aave flash loans draw the required loan plus fee from the caller
 //  as such, there is no need to transfer the funds manually back to the pool
-contract AAVEFlashModule is WithStorage, TokenTransfer {
+contract AaveFlashModule is WithStorage, TokenTransfer {
+    // immutable
     IPool private immutable _aavePool;
-    // marginTradeType
-    // 0 = Margin open
-    // 1 = margin close
-    // 2 = collateral / open
-    // 3 = debt / close
 
     struct DeltaParams {
         address baseAsset; // the asset paired with the flash loan
         address target; // the swap target
-        uint8 marginTradeType; // open, close, collateral, debt swap
+        uint8 marginTradeType; // trade type determining the lending actions
+        // 0 = Margin open
+        // 1 = margin close
+        // 2 = collateral / open
+        // 3 = debt / close
         uint8 interestRateModeIn; // aave interest mode
         uint8 interestRateModeOut; // aave interest mode
         bool withdrawMax; // a flag that indicates that either
@@ -33,11 +33,6 @@ contract AAVEFlashModule is WithStorage, TokenTransfer {
         DeltaParams deltaParams;
         bytes encodedSwapCall;
         address user;
-    }
-
-    modifier onlyManagement() {
-        require(ms().isManager[msg.sender], "Only management can interact.");
-        _;
     }
 
     constructor(address _aave) {

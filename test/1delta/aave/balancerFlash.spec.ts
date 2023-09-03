@@ -58,8 +58,8 @@ describe('Balancer Flash loans for AAVE', async () => {
         tokens = Object.values(aaveTest.tokens)
         broker = await aaveBrokerFixture(deployer, ethers.constants.AddressZero, aaveTest.pool.address)
         await initAaveBroker(deployer, broker, undefined, aaveTest)
-        balancerModule = await addBalancer(deployer, broker, mockRouter.address, mockBalancer.address, aaveTest.pool.address)
-
+        const dat = await addBalancer(deployer, broker, mockRouter.address, mockBalancer.address, aaveTest.pool.address)
+        balancerModule = dat.delta
 
         // approve & fund wallets
         let keys = Object.keys(aaveTest.tokens)
@@ -119,7 +119,7 @@ describe('Balancer Flash loans for AAVE', async () => {
         await broker.manager.connect(deployer).approveAddress(tokens.map(t => t.address), mockRouter.address)
     })
 
-    // chcecks that the aave protocol is set up correctly, i.e. borrowing and supply works
+    // checks that the aave protocol is set up correctly, i.e. borrowing and supply works
     it('deploys everything', async () => {
         const { WETH, DAI } = aaveTest.tokens
         await (DAI as MintableERC20).connect(test3)['mint(address,uint256)'](test3.address, ONE_18.mul(1_000))

@@ -3,7 +3,7 @@ import { BigNumber, constants } from 'ethers';
 import { MockProvider } from 'ethereum-waffle';
 import { ethers, waffle } from 'hardhat'
 import {
-    AAVEFlashModule,
+    AaveFlashModule,
     MintableERC20,
     MockRouter,
     MockRouter__factory,
@@ -40,7 +40,7 @@ describe('AAVE Flash loans for AAVE', async () => {
     let tokens: (MintableERC20 | WETH9)[];
     let provider: MockProvider
     let mockRouter: MockRouter
-    let balancerModule: AAVEFlashModule
+    let balancerModule: AaveFlashModule
     let flashFee: BigNumber
 
 
@@ -1056,7 +1056,7 @@ describe('AAVE Flash loans for AAVE', async () => {
 // ························································|····································|·············|·············|···········|···············|··············
 // |  @openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20  ·  approve                           ·      34108  ·      51244  ·    46948  ·            4  ·       1.25  │
 // ························································|····································|·············|·············|···········|···············|··············
-// |  AAVEFlashModule                                      ·  executeOnAave                     ·     444096  ·     530580  ·   486487  ·           13  ·      12.99  │
+// |  AaveFlashModule                                      ·  executeOnAave                     ·     444096  ·     530580  ·   486487  ·           13  ·      12.99  │
 // ························································|····································|·············|·············|···········|···············|··············
 // |  AAVEMarginTraderInit                                 ·  initAAVEMarginTrader              ·          -  ·          -  ·   137473  ·            1  ·       3.66  │
 // ························································|····································|·············|·············|···········|···············|··············

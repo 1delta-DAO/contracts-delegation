@@ -23,12 +23,10 @@ import {
     ConfigModule__factory,
     AAVESweeperModule__factory,
     AAVESweeperModule,
-    MockRouter,
-    MockBalancerVault,
     BalancerFlashModule__factory,
     BalancerFlashModule,
-    AAVEFlashModule__factory,
-    AAVEFlashModule,
+    AaveFlashModule__factory,
+    AaveFlashModule,
     MarginTrading,
     MarginTrading__factory,
     AaveMoneyMarket__factory,
@@ -183,7 +181,7 @@ export async function initAaveBroker(signer: SignerWithAddress, bf: AaveBrokerFi
 }
 
 
-export async function addBalancer(signer: SignerWithAddress, bf: AaveBrokerFixture, router: string, balancerVault: string, aavePool: string) {
+export async function addBalancer(signer: SignerWithAddress, bf: AaveBrokerFixture | AaveBrokerFixtureInclV2, router: string, balancerVault: string, aavePool: string) {
 
     const dc = await new ethers.Contract(bf.brokerProxy.address, OneDeltaModuleManager__factory.createInterface(), signer) as OneDeltaModuleManager
     const balancerModule = await new BalancerFlashModule__factory(signer).deploy(aavePool, balancerVault)
@@ -196,18 +194,18 @@ export async function addBalancer(signer: SignerWithAddress, bf: AaveBrokerFixtu
         }],
     )
 
-    const data = await new ethers.Contract(bf.brokerProxy.address, BalancerFlashModule__factory.createInterface(), signer) as BalancerFlashModule
+    const delta = await new ethers.Contract(bf.brokerProxy.address, BalancerFlashModule__factory.createInterface(), signer) as BalancerFlashModule
 
     await bf.manager.setValidTarget(router, true)
 
-    return data
+    return {delta, balancerModule}
 }
 
 
 export async function addAaveFlashLoans(signer: SignerWithAddress, bf: AaveBrokerFixture, router: string, aavePool: string) {
 
     const dc = await new ethers.Contract(bf.brokerProxy.address, OneDeltaModuleManager__factory.createInterface(), signer) as OneDeltaModuleManager
-    const balancerModule = await new AAVEFlashModule__factory(signer).deploy(aavePool)
+    const balancerModule = await new AaveFlashModule__factory(signer).deploy(aavePool)
 
     await dc.configureModules(
         [{
@@ -217,7 +215,7 @@ export async function addAaveFlashLoans(signer: SignerWithAddress, bf: AaveBroke
         }],
     )
 
-    const data = await new ethers.Contract(bf.brokerProxy.address, AAVEFlashModule__factory.createInterface(), signer) as AAVEFlashModule
+    const data = await new ethers.Contract(bf.brokerProxy.address, AaveFlashModule__factory.createInterface(), signer) as AaveFlashModule
 
     await bf.manager.setValidTarget(router, true)
 
@@ -229,16 +227,16 @@ export async function addAaveFlashLoans(signer: SignerWithAddress, bf: AaveBroke
 export interface AaveBrokerFixtureInclV2 {
     brokerProxy: DeltaBrokerProxy
     moduleConfig: ConfigModule
-    broker: AAVEMarginTraderModule & AAVESweeperModule 
+    broker: AAVEMarginTraderModule & AAVESweeperModule
     manager: ManagementModule
     tradeDataViewer: MarginTradeDataViewerModule
-    moneyMarket: AaveMoneyMarket 
-    moneyMarketImplementation: AaveMoneyMarket 
+    moneyMarket: AaveMoneyMarket
+    moneyMarketImplementation: AaveMoneyMarket
     sweeper: AAVESweeperModule
     trader: MarginTrading
 }
 
-export async function aaveBrokerFixtureInclV2(signer: SignerWithAddress, uniFactory: string, aavePool: string, uniV2Factory: string, weth:string): Promise<AaveBrokerFixtureInclV2> {
+export async function aaveBrokerFixtureInclV2(signer: SignerWithAddress, uniFactory: string, aavePool: string, uniV2Factory: string, weth: string): Promise<AaveBrokerFixtureInclV2> {
 
 
     const moduleConfig = await new ConfigModule__factory(signer).deploy()
@@ -322,7 +320,7 @@ export async function aaveBrokerFixtureInclV2(signer: SignerWithAddress, uniFact
 
     const moneyMarket = (await new ethers.Contract(
         proxy.address,
-       AaveMoneyMarketArtifact.abi,
+        AaveMoneyMarketArtifact.abi,
         signer) as AaveMoneyMarket)
 
 

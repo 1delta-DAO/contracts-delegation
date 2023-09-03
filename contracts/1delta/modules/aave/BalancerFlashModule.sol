@@ -9,22 +9,22 @@ import {TokenTransfer} from "./../../libraries/TokenTransfer.sol";
 import {IBalancerFlashLoans, IFlashLoanRecipient} from "../../../external-protocols/balancer/IBalancerFlashLoans.sol";
 import {IERC20Balance} from "../../interfaces/IERC20Balance.sol";
 
-/// @notice Balancer flash do NOT loans draw the required loan plus fee from the caller
+/// @notice Balancer flash loans do NOT draw the required loan plus fee from the caller
 //  as such, we have to make sure that we always transer loan plus fee
 //  during the flash loan call
 contract BalancerFlashModule is WithStorage, TokenTransfer {
+    // immutables
     IPool private immutable _aavePool;
     IBalancerFlashLoans private immutable _balancerFlashLoans;
-    // marginTradeType
-    // 0 = Margin open
-    // 1 = margin close
-    // 2 = collateral / open
-    // 3 = debt / close
 
     struct DeltaParams {
         address baseAsset; // the asset paired with the flash loan
         address target; // the swap target
-        uint8 marginTradeType; // open, close, collateral, debt swap
+        uint8 marginTradeType; // trade type determining the lending actions
+        // 0 = Margin open
+        // 1 = margin close
+        // 2 = collateral / open
+        // 3 = debt / close
         uint8 interestRateModeIn; // aave interest mode
         uint8 interestRateModeOut; // aave interest mode
         bool withdrawMax; // a flag that indicates that either
@@ -36,11 +36,6 @@ contract BalancerFlashModule is WithStorage, TokenTransfer {
         DeltaParams deltaParams;
         bytes encodedSwapCall;
         address user;
-    }
-
-    modifier onlyManagement() {
-        require(ms().isManager[msg.sender], "Only management can interact.");
-        _;
     }
 
     constructor(address _aave, address _balancer) {

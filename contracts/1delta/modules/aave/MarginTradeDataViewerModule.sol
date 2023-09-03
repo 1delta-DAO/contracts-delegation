@@ -9,7 +9,7 @@ import {PoolAddress} from "../../dex-tools/uniswap/libraries/PoolAddress.sol";
 // solhint-disable max-line-length
 
 /**
- * @title MarginTrader contract
+ * @title Lens contract for viewing the current state of the contract
  * @notice Allows users to build large margin positions with one contract interaction
  * @author Achthar
  */
@@ -49,5 +49,9 @@ contract MarginTradeDataViewerModule is WithStorage {
 
     function getVToken(address _underlying) external view returns (address) {
         return aas().vTokens[_underlying];
+    }
+
+    function getIsValidTarget(address _target) external view returns (bool) {
+        return gs().isValidTarget[_target];
     }
 }

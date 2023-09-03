@@ -22,10 +22,6 @@ import {
     LensModule__factory,
     AAVESweeperModule__factory,
     AAVESweeperModule,
-    AAVEFlashModule__factory,
-    BalancerFlashModule__factory,
-    BalancerFlashModule,
-    AAVEFlashModule
 } from "../../types";
 import { ModuleConfigAction, getSelectors } from "../../test/diamond/libraries/diamond";
 import { parseUnits } from "ethers/lib/utils";

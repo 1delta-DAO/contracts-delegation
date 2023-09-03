@@ -15,7 +15,8 @@ import {WithStorage} from "../../storage/BrokerStorage.sol";
 /**
  * @title Money market module
  * @notice Allows users to chain a single money market transaction with a swap.
- * Direct lending pool interactions are unnecessary as the user can directly interact with the lending protocol
+ * Direct lending pool interactions are unnecessary as the user can directly interact 
+ * with the lending protocol except if they are multicalled with other transactions
  * @author Achthar
  */
 contract AaveMoneyMarket is BaseSwapper, WithStorage {
@@ -112,12 +113,11 @@ contract AaveMoneyMarket is BaseSwapper, WithStorage {
         if (balance > 0) _transferERC20Tokens(_asset, msg.sender, balance);
     }
 
-    /** @notice transfer an a balance to the and validate that the amount is larger than a provided value */
-    function validateAndSweep(address asset, uint256 amountMin) external payable {
+    /** @notice transfer an a balance to the recipient */
+    function sweepTo(address asset, address recipient) external payable {
         address _asset = asset;
         uint256 balance = IERC20(_asset).balanceOf(address(this));
-        if (balance < amountMin) revert Slippage();
-        _transferERC20Tokens(_asset, msg.sender, balance);
+        if (balance > 0) _transferERC20Tokens(_asset, recipient, balance);
     }
 
     function refundNative() external payable {

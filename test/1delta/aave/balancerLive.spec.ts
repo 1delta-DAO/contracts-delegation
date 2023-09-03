@@ -70,7 +70,7 @@ it("Mint USDC", async function () {
     const broker = await createBroker(signer, uniswapFactoryAddress, aavePool)
     await initializeBroker(signer, broker, uniswapFactoryAddress, aavePool, wethAddress)
 
-    const balancerModule = await addBalancer(signer, broker as any, paraswapRouter, balancerV2Vault, aavePool)
+    const balancerModule = (await addBalancer(signer, broker as any, paraswapRouter, balancerV2Vault, aavePool)).delta
     await broker.manager.setValidTarget(oneInchRouter, true)
     await usdcContract.connect(signer).approve(aavePoolContract.address, constants.MaxUint256)
 

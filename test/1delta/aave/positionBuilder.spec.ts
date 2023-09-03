@@ -2,12 +2,17 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumber, constants } from 'ethers';
 import { ethers, waffle } from 'hardhat'
 import {
+    BalancerFlashModule,
     MintableERC20,
+    MockBalancerVault,
+    MockBalancerVault__factory,
+    MockRouter,
+    MockRouter__factory,
     WETH9,
 } from '../../../types';
 import { FeeAmount } from '../../uniswap-v3/periphery/shared/constants';
 import { expandTo18Decimals } from '../../uniswap-v3/periphery/shared/expandTo18Decimals'
-import { initAaveBroker, AaveBrokerFixtureInclV2, aaveBrokerFixtureInclV2 } from '../shared/aaveBrokerFixture';
+import { initAaveBroker, AaveBrokerFixtureInclV2, aaveBrokerFixtureInclV2, addBalancer, ONE_18 } from '../shared/aaveBrokerFixture';
 import { expect } from '../shared/expect'
 import { initializeMakeSuite, InterestRateMode, AAVEFixture } from '../shared/aaveFixture';
 import { addLiquidity, uniswapMinimalFixtureNoTokens, UniswapMinimalFixtureNoTokens } from '../shared/uniswapFixture';
@@ -57,11 +62,20 @@ describe('AAVE Money Market operations', async () => {
     let tokens: (MintableERC20 | WETH9)[];
     let uniswapV2: V2Fixture
     let provider: MockProvider
+    let balancerModule: BalancerFlashModule
+    let delta: BalancerFlashModule
+    let mockRouter: MockRouter
+    let mockBalancer: MockBalancerVault
+    let flashFee: BigNumber
+
 
     before('Deploy Account, Trader, Uniswap and AAVE', async () => {
         [deployer, alice, bob, carol, gabi, achi, wally, dennis,
             vlad, xander, test0, test1, test2, test3] = await ethers.getSigners();
         provider = waffle.provider;
+        flashFee = BigNumber.from(1_233_422_122)
+        mockBalancer = await new MockBalancerVault__factory(deployer).deploy()
+        mockRouter = await new MockRouter__factory(deployer).deploy(ONE_18, 4321);
 
         aaveTest = await initializeMakeSuite(deployer, 1)
         tokens = Object.values(aaveTest.tokens)
@@ -70,7 +84,9 @@ describe('AAVE Money Market operations', async () => {
         broker = await aaveBrokerFixtureInclV2(deployer, uniswap.factory.address, aaveTest.pool.address, uniswapV2.factoryV2.address, aaveTest.tokens["WETH"].address)
 
         await initAaveBroker(deployer, broker as any, uniswap, aaveTest)
-
+        const dat = await addBalancer(deployer, broker, mockRouter.address, mockBalancer.address, aaveTest.pool.address)
+        delta = dat.delta
+        balancerModule = dat.balancerModule
         await broker.manager.setUniswapRouter(uniswap.router.address)
         // approve & fund wallets
         let keys = Object.keys(aaveTest.tokens)
@@ -80,6 +96,9 @@ describe('AAVE Money Market operations', async () => {
             if (key === "WETH") {
                 await (aaveTest.tokens[key] as WETH9).deposit({ value: expandTo18Decimals(5_000) })
                 await aaveTest.pool.connect(deployer).supply(aaveTest.tokens[key].address, expandTo18Decimals(2_000), deployer.address, 0)
+                await aaveTest.tokens[key].connect(deployer).transfer(mockRouter.address, expandTo18Decimals(100))
+                await aaveTest.tokens[key].connect(deployer).transfer(mockBalancer.address, expandTo18Decimals(100))
+
 
             } else {
                 await (aaveTest.tokens[key] as MintableERC20)['mint(address,uint256)'](deployer.address, expandTo18Decimals(100_000_000_000))
@@ -114,6 +133,11 @@ describe('AAVE Money Market operations', async () => {
                 await aaveTest.tokens[key].connect(deployer).transfer(test2.address, expandTo18Decimals(1_000_000))
                 await aaveTest.tokens[key].connect(test2).approve(aaveTest.pool.address, ethers.constants.MaxUint256)
 
+                // fund router and balancer
+                await aaveTest.tokens[key].connect(deployer).transfer(mockBalancer.address, expandTo18Decimals(1_000_000))
+                await aaveTest.tokens[key].connect(deployer).transfer(mockRouter.address, expandTo18Decimals(1_000_000))
+
+
             }
 
             const token = aaveTest.tokens[key]
@@ -143,6 +167,7 @@ describe('AAVE Money Market operations', async () => {
 
 
         await broker.manager.connect(deployer).approveAAVEPool(tokens.map(t => t.address))
+        await broker.manager.connect(deployer).approveAddress(tokens.map(t => t.address), mockRouter.address)
 
         console.log("add liquidity DAI USDC")
         await addLiquidity(
@@ -236,12 +261,13 @@ describe('AAVE Money Market operations', async () => {
         )
     })
 
-    it.only('allows swap in supply exact in', async () => {
+    it.only('allows swap in supply exact in, open EI', async () => {
 
         const originIndex = "WMATIC"
         const targetIndex = "DAI"
+        const borrowIndex = "AAVE"
 
-        const swapAmount = expandTo18Decimals(70)
+        const swapAmount = expandTo18Decimals(5)
         await aaveTest.tokens[originIndex].connect(carol).approve(broker.broker.address, constants.MaxUint256)
 
         let _tokensInRoute = [
@@ -279,24 +305,75 @@ describe('AAVE Money Market operations', async () => {
             ])
         console.log("swap in")
         const balBefore = await aaveTest.tokens[originIndex].balanceOf(carol.address)
-        await broker.brokerProxy.connect(carol).multicallSingleModule(broker.moneyMarketImplementation.address,
+
+        const tokenOut = aaveTest.tokens[targetIndex]
+        const tokenIn = aaveTest.tokens[borrowIndex]
+        const amountToBorrow = expandTo18Decimals(5)
+
+        // we have to calibrate the amount in for the flash loan fee first - otherwise, the user would experience
+        // a different amount in
+        const amountToBorrowPostFee = amountToBorrow.mul(ONE_18).div(ONE_18.add(flashFee)).add(1)
+        // produce swap calldata
+        const targetCalldata = mockRouter.interface.encodeFunctionData(
+            'swapExactIn',
+            [
+                tokenIn.address,
+                tokenOut.address,
+                amountToBorrowPostFee
+            ]
+        )
+
+        await aaveTest.vTokens[borrowIndex].connect(carol).approveDelegation(broker.brokerProxy.address, amountToBorrowPostFee.mul(2))
+
+        const paramsBal = {
+            baseAsset: tokenOut.address, // the asset to interact with
+            target: mockRouter.address,
+            marginTradeType: 0, // margin open
+            interestRateModeIn: InterestRateMode.VARIABLE, // the borrow mode
+            interestRateModeOut: 0, // unused
+            withdrawMax: false
+        }
+        console.log("user", carol.address)
+        const callBalancer = balancerModule.interface.encodeFunctionData(
+            'executeOnBalancer',
+            [
+                tokenIn.address,  // the asset to flash
+                amountToBorrowPostFee, // the flash loan amount
+                paramsBal, // oneDelta params
+                targetCalldata
+            ]
+        )
+
+
+        await broker.brokerProxy.connect(carol).multicallMultiModule(
+            [
+                broker.moneyMarketImplementation.address,
+
+                broker.moneyMarketImplementation.address,
+
+
+                balancerModule.address
+
+            ],
             [
                 callTransfer,
                 callSwap,
-                callDeposit
+                callBalancer
             ]
         )
+
+
         // await broker.moneyMarket.connect(carol).swapAndSupplyExactIn(params)
         const balAfter = await aaveTest.tokens[originIndex].balanceOf(carol.address)
         const aTokenBal = await aaveTest.aTokens[targetIndex].balanceOf(carol.address)
 
         expect(swapAmount.toString()).to.equal(balBefore.sub(balAfter).toString())
 
-        expect(Number(formatEther(aTokenBal))).to.greaterThanOrEqual(Number(formatEther(swapAmount)) * 0.98)
-        expect(Number(formatEther(aTokenBal))).to.lessThanOrEqual(Number(formatEther(swapAmount)))
+        expect(Number(formatEther(aTokenBal))).to.greaterThanOrEqual(Number(formatEther(swapAmount.add(amountToBorrow))) * 0.98)
+        expect(Number(formatEther(aTokenBal))).to.lessThanOrEqual(Number(formatEther(swapAmount.add(amountToBorrow))))
     })
 
-    it.only('allows swap Ether in supply exact in', async () => {
+    it('allows swap Ether in supply exact in', async () => {
 
         const originIndex = "WETH"
         const targetIndex = "DAI"
@@ -366,7 +443,7 @@ describe('AAVE Money Market operations', async () => {
         expect(Number(formatEther(aTokenBal.sub(aTokenBalBefore)))).to.lessThanOrEqual(Number(formatEther(swapAmount)))
     })
 
-    it.only('allows swap in supply exact out', async () => {
+    it('allows swap in supply exact out', async () => {
 
         const originIndex = "WMATIC"
         const targetIndex = "DAI"
@@ -432,7 +509,7 @@ describe('AAVE Money Market operations', async () => {
         expect(Number(formatEther(swapAmount))).to.lessThanOrEqual(Number(formatEther(balBefore.sub(balAfter))))
     })
 
-    it.only('allows swap Ether and supply exact out', async () => {
+    it('allows swap Ether and supply exact out', async () => {
 
 
         const originIndex = "WETH"
@@ -508,7 +585,7 @@ describe('AAVE Money Market operations', async () => {
         expect(Number(formatEther(swapAmount))).to.lessThanOrEqual(Number(formatEther(balBefore.sub(balAfter))))
     })
 
-    it.only('allows withdraw and swap exact in', async () => {
+    it('allows withdraw and swap exact in', async () => {
 
         const originIndex = "WMATIC"
         const targetIndex = "DAI"
@@ -572,7 +649,7 @@ describe('AAVE Money Market operations', async () => {
         expect(Number(formatEther(swapAmount))).to.lessThanOrEqual(Number(formatEther(balAfter.sub(balBefore))) * 1.03)
     })
 
-    it.only('allows withdraw and swap all in', async () => {
+    it('allows withdraw and swap all in', async () => {
 
         const originIndex = "WMATIC"
         const targetIndex = "DAI"
@@ -638,7 +715,7 @@ describe('AAVE Money Market operations', async () => {
         expect(Number(formatEther(supplied))).to.lessThanOrEqual(Number(formatEther(balAfter.sub(balBefore))) * 1.03)
     })
 
-    it.only('allows withdraw and swap all in to ETH', async () => {
+    it('allows withdraw and swap all in to ETH', async () => {
 
         const originIndex = "WMATIC"
         const targetIndex = "WETH"
@@ -700,7 +777,7 @@ describe('AAVE Money Market operations', async () => {
         expect(Number(formatEther(supplied))).to.lessThanOrEqual(Number(formatEther(balAfter.sub(balBefore))) * 1.03)
     })
 
-    it.only('allows withdraw and swap exact out', async () => {
+    it('allows withdraw and swap exact out', async () => {
 
         const originIndex = "WMATIC"
         const targetIndex = "DAI"
@@ -766,7 +843,7 @@ describe('AAVE Money Market operations', async () => {
 
     })
 
-    it.only('allows borrow and swap exact in', async () => {
+    it('allows borrow and swap exact in', async () => {
 
         const originIndex = "WMATIC"
         const supplyIndex = "AAVE"
@@ -838,7 +915,7 @@ describe('AAVE Money Market operations', async () => {
         expect(Number(formatEther(swapAmount)) * 0.98).to.lessThanOrEqual(Number(formatEther(balAfter.sub(balBefore))))
     })
 
-    it.only('allows borrow and swap exact out', async () => {
+    it('allows borrow and swap exact out', async () => {
 
         const originIndex = "WMATIC"
         const supplyIndex = "AAVE"
@@ -905,7 +982,7 @@ describe('AAVE Money Market operations', async () => {
     })
 
 
-    it.only('allows swap and repay exact in', async () => {
+    it('allows swap and repay exact in', async () => {
 
         const originIndex = "WMATIC"
         const supplyIndex = "AAVE"
@@ -1097,7 +1174,7 @@ describe('AAVE Money Market operations', async () => {
             .lessThanOrEqual(Number(formatEther(swapAmount)))
     })
 
-    it.only('allows swap and repay exact out', async () => {
+    it('allows swap and repay exact out', async () => {
 
         const originIndex = "WMATIC"
         const supplyIndex = "AAVE"
@@ -1193,7 +1270,7 @@ describe('AAVE Money Market operations', async () => {
             .lessThanOrEqual(Number(formatEther(swapAmount)) * 1.02)
     })
 
-    it.only('allows swap and repay all out', async () => {
+    it('allows swap and repay all out', async () => {
 
         const originIndex = "WMATIC"
         const supplyIndex = "AAVE"
@@ -1281,7 +1358,7 @@ describe('AAVE Money Market operations', async () => {
             .lessThanOrEqual(Number(formatEther(borrowAmount)) * 1.02)
     })
 
-    it.only('allows swap Ether and repay exact out', async () => {
+    it('allows swap Ether and repay exact out', async () => {
 
         const originIndex = "WETH"
         const supplyIndex = "AAVE"
@@ -1394,7 +1471,7 @@ describe('AAVE Money Market operations', async () => {
             .lessThanOrEqual(Number(formatEther(swapAmount)) * 1.07)
     })
 
-    it.only('allows swap Ether and repay all out', async () => {
+    it('allows swap Ether and repay all out', async () => {
 
         const originIndex = "WETH"
         const supplyIndex = "AAVE"

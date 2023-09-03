@@ -8,8 +8,8 @@ import {WithStorage} from "../../storage/BrokerStorage.sol";
 // solhint-disable max-line-length
 
 /**
- * @title AAVE management contract
- * @notice allows the management of AAVE V3 protocol data
+ * @title Management contract
+ * @notice Allows the management of to insert token and protocol data
  * @author Achthar
  */
 contract ManagementModule is WithStorage {

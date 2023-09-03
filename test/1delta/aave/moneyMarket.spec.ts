@@ -7,13 +7,31 @@ import {
 } from '../../../types';
 import { FeeAmount } from '../../uniswap-v3/periphery/shared/constants';
 import { expandTo18Decimals } from '../../uniswap-v3/periphery/shared/expandTo18Decimals'
-import { initAaveBroker, AaveBrokerFixture, aaveBrokerFixture } from '../shared/aaveBrokerFixture';
+import { initAaveBroker, AaveBrokerFixtureInclV2, aaveBrokerFixtureInclV2 } from '../shared/aaveBrokerFixture';
 import { expect } from '../shared/expect'
 import { initializeMakeSuite, InterestRateMode, AAVEFixture } from '../shared/aaveFixture';
 import { addLiquidity, uniswapMinimalFixtureNoTokens, UniswapMinimalFixtureNoTokens } from '../shared/uniswapFixture';
 import { formatEther } from 'ethers/lib/utils';
-import { encodePath } from '../../uniswap-v3/periphery/shared/path';
 import { MockProvider } from 'ethereum-waffle';
+import { uniV2Fixture, V2Fixture } from '../shared/uniV2Fixture';
+import { encodeAggregatorPathEthers } from '../shared/aggregatorPath';
+
+const DEPOSIT = 'deposit'
+const WITHDRAW = 'withdraw'
+const BORROW = 'borrow'
+const REPAY = 'repay'
+
+const WRAP = 'wrap'
+const TRANSFER_IN = 'transferERC20In'
+const TRANSFER_ALL_IN = 'transferERC20AllIn'
+const SWAP_IN = 'swapExactInSpot'
+const SWAP_ALL_IN = 'swapAllInSpot'
+const SWAP_OUT = 'swapExactOutSpot'
+const SWAP_ALL_OUT = 'swapAllOutSpot'
+const SWAP_OUT_INTERNAL = 'swapExactOutSpotSelf'
+const SWAP_ALL_OUT_INTERNAL = 'swapAllOutSpotSelf'
+const SWEEP = 'sweep'
+const UNWRAP = 'unwrap'
 
 // we prepare a setup for aave in hardhat
 // this series of tests checks that the features used for the margin swap implementation
@@ -35,23 +53,23 @@ describe('AAVE Money Market operations', async () => {
     let test3: SignerWithAddress;
     let uniswap: UniswapMinimalFixtureNoTokens;
     let aaveTest: AAVEFixture;
-    let broker: AaveBrokerFixture;
+    let broker: AaveBrokerFixtureInclV2;
     let tokens: (MintableERC20 | WETH9)[];
+    let uniswapV2: V2Fixture
     let provider: MockProvider
 
     before('Deploy Account, Trader, Uniswap and AAVE', async () => {
         [deployer, alice, bob, carol, gabi, achi, wally, dennis,
             vlad, xander, test0, test1, test2, test3] = await ethers.getSigners();
-
         provider = waffle.provider;
 
         aaveTest = await initializeMakeSuite(deployer, 1)
         tokens = Object.values(aaveTest.tokens)
         uniswap = await uniswapMinimalFixtureNoTokens(deployer, aaveTest.tokens["WETH"].address)
+        uniswapV2 = await uniV2Fixture(deployer, aaveTest.tokens["WETH"].address)
+        broker = await aaveBrokerFixtureInclV2(deployer, uniswap.factory.address, aaveTest.pool.address, uniswapV2.factoryV2.address, aaveTest.tokens["WETH"].address)
 
-        broker = await aaveBrokerFixture(deployer, uniswap.factory.address, aaveTest.pool.address)
-
-        await initAaveBroker(deployer, broker, uniswap, aaveTest)
+        await initAaveBroker(deployer, broker as any, uniswap, aaveTest)
 
         await broker.manager.setUniswapRouter(uniswap.router.address)
         // approve & fund wallets
@@ -233,20 +251,42 @@ describe('AAVE Money Market operations', async () => {
             aaveTest.tokens["TEST2"],
             aaveTest.tokens[targetIndex]
         ].map(t => t.address)
-        const path = encodePath(_tokensInRoute, new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        // const path = encodePath(_tokensInRoute, new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [0, 0, 0, 0], // action
+            [1, 2, 1, 1], // pid
+            2 // flag
+        )
         const params = {
             path,
             interestRateMode: InterestRateMode.VARIABLE,
             amountIn: swapAmount,
             amountOutMinimum: swapAmount.mul(98).div(100)
         }
-
-
+        const callTransfer = broker.moneyMarket.interface.encodeFunctionData(TRANSFER_IN, [aaveTest.tokens[originIndex].address, swapAmount])
+        const callSwap = broker.moneyMarket.interface.encodeFunctionData(SWAP_IN, [
+            params.amountIn,
+            params.amountOutMinimum,
+            params.path
+        ]
+        )
+        const callDeposit = broker.moneyMarket.interface.encodeFunctionData(DEPOSIT,
+            [
+                aaveTest.tokens[targetIndex].address,
+                carol.address,
+            ])
         console.log("swap in")
         const balBefore = await aaveTest.tokens[originIndex].balanceOf(carol.address)
-
-        await broker.moneyMarket.connect(carol).swapAndSupplyExactIn(params)
+        await broker.brokerProxy.connect(carol).multicallSingleModule(broker.moneyMarketImplementation.address,
+            [
+                callTransfer,
+                callSwap,
+                callDeposit
+            ]
+        )
+        // await broker.moneyMarket.connect(carol).swapAndSupplyExactIn(params)
         const balAfter = await aaveTest.tokens[originIndex].balanceOf(carol.address)
         const aTokenBal = await aaveTest.aTokens[targetIndex].balanceOf(carol.address)
 
@@ -272,20 +312,47 @@ describe('AAVE Money Market operations', async () => {
             aaveTest.tokens["TEST2"],
             aaveTest.tokens[targetIndex]
         ].map(t => t.address)
-        const path = encodePath(_tokensInRoute, new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        // const path = encodePath(_tokensInRoute, new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [0, 0, 0, 0, 0], // action
+            [1, 2, 1, 1, 1], // pid
+            2 // flag
+        )
         const params = {
             path,
             amountIn: swapAmount,
             amountOutMinimum: swapAmount.mul(95).div(100)
         }
 
+        const callTransfer = broker.moneyMarket.interface.encodeFunctionData(WRAP,)
+        const callSwap = broker.moneyMarket.interface.encodeFunctionData(SWAP_IN, [
+            params.amountIn,
+            params.amountOutMinimum,
+            params.path
+        ]
+        )
+        const callDeposit = broker.moneyMarket.interface.encodeFunctionData(DEPOSIT,
+            [
+                aaveTest.tokens[targetIndex].address,
+                carol.address,
+            ]
+        )
 
         console.log("swap in")
         // const balBefore = await aaveTest.tokens[originIndex].balanceOf(carol.address)
         const balBefore = await provider.getBalance(carol.address);
         const aTokenBalBefore = await aaveTest.aTokens[targetIndex].balanceOf(carol.address)
-        const tx = await broker.moneyMarket.connect(carol).swapETHAndSupplyExactIn(params, { value: params.amountIn })
+        // const tx = await broker.moneyMarket.connect(carol).swapETHAndSupplyExactIn(params, { value: params.amountIn })
+        const tx = await broker.brokerProxy.connect(carol).multicallSingleModule(broker.moneyMarketImplementation.address,
+            [
+                callTransfer,
+                callSwap,
+                callDeposit
+            ],
+            { value: swapAmount }
+        )
         // const balAfter = await aaveTest.tokens[originIndex].balanceOf(carol.address)
         const balAfter = await provider.getBalance(carol.address);
 
@@ -313,9 +380,15 @@ describe('AAVE Money Market operations', async () => {
             aaveTest.tokens["TEST1"],
             aaveTest.tokens["TEST2"],
             aaveTest.tokens[targetIndex]
-        ].map(t => t.address)
-        const path = encodePath(_tokensInRoute.reverse(), new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        ].map(t => t.address).reverse()
+        // const path = encodePath(_tokensInRoute.reverse(), new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [1, 1, 1, 1], // action
+            [1, 2, 1, 1], // pid
+            99 // flag
+        )
         const params = {
             path,
             interestRateMode: InterestRateMode.VARIABLE,
@@ -327,8 +400,29 @@ describe('AAVE Money Market operations', async () => {
 
         console.log("swap in")
         const balBefore = await aaveTest.tokens[originIndex].balanceOf(gabi.address)
-
-        await broker.moneyMarket.connect(gabi).swapAndSupplyExactOut(params)
+        const callTransfer = broker.moneyMarket.interface.encodeFunctionData(TRANSFER_IN, [aaveTest.tokens[originIndex].address, params.amountInMaximum])
+        const callSwap = broker.moneyMarket.interface.encodeFunctionData(SWAP_OUT, [
+            params.amountOut,
+            params.amountInMaximum,
+            params.path
+        ]
+        )
+        const callDeposit = broker.moneyMarket.interface.encodeFunctionData(DEPOSIT,
+            [
+                aaveTest.tokens[targetIndex].address,
+                gabi.address,
+            ]
+        )
+        const callSweep = broker.moneyMarket.interface.encodeFunctionData(SWEEP, [aaveTest.tokens[originIndex].address])
+        // await broker.moneyMarket.connect(gabi).swapAndSupplyExactOut(params)
+        await broker.brokerProxy.connect(gabi).multicallSingleModule(broker.moneyMarketImplementation.address,
+            [
+                // callTransfer,
+                callSwap,
+                callDeposit,
+                // callSweep
+            ],
+        )
         const balAfter = await aaveTest.tokens[originIndex].balanceOf(gabi.address)
         const aTokenBal = await aaveTest.aTokens[targetIndex].balanceOf(gabi.address)
 
@@ -354,9 +448,16 @@ describe('AAVE Money Market operations', async () => {
             aaveTest.tokens["TEST1"],
             aaveTest.tokens["TEST2"],
             aaveTest.tokens[targetIndex]
-        ].map(t => t.address)
-        const path = encodePath(_tokensInRoute.reverse(), new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
+        ].map(t => t.address).reverse()
 
+        // const path = encodePath(_tokensInRoute.reverse(), new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [1, 1, 1, 1, 1], // action
+            [1, 1, 2, 1, 1], // pid
+            99 // flag
+        )
         const params = {
             path,
             interestRateMode: InterestRateMode.VARIABLE,
@@ -370,7 +471,33 @@ describe('AAVE Money Market operations', async () => {
         // const balBefore = await aaveTest.tokens[originIndex].balanceOf(gabi.address)
         const aTokenBalBefore = await aaveTest.aTokens[targetIndex].balanceOf(gabi.address)
         const balBefore = await provider.getBalance(gabi.address);
-        await broker.moneyMarket.connect(gabi).swapETHAndSupplyExactOut(params, { value: params.amountInMaximum })
+
+        const callWrap = broker.moneyMarket.interface.encodeFunctionData(WRAP,)
+        const callSwap = broker.moneyMarket.interface.encodeFunctionData(SWAP_OUT_INTERNAL, [
+            params.amountOut,
+            params.amountInMaximum,
+            params.path
+        ]
+        )
+        const callDeposit = broker.moneyMarket.interface.encodeFunctionData(DEPOSIT,
+            [
+                aaveTest.tokens[targetIndex].address,
+                gabi.address,
+            ]
+        )
+        const callSweep = broker.moneyMarket.interface.encodeFunctionData(UNWRAP,)
+
+        // await broker.moneyMarket.connect(gabi).swapETHAndSupplyExactOut(params, { value: params.amountInMaximum })
+
+        await broker.brokerProxy.connect(gabi).multicallSingleModule(broker.moneyMarketImplementation.address,
+            [
+                callWrap,
+                callSwap,
+                callDeposit,
+                callSweep
+            ],
+            { value: params.amountInMaximum }
+        )
         // const balAfter = await aaveTest.tokens[originIndex].balanceOf(gabi.address)
         const balAfter = await provider.getBalance(gabi.address);
         const aTokenBal = await aaveTest.aTokens[targetIndex].balanceOf(gabi.address)
@@ -400,8 +527,14 @@ describe('AAVE Money Market operations', async () => {
             aaveTest.tokens["TEST2"],
             aaveTest.tokens[targetIndex]
         ].map(t => t.address)
-        const path = encodePath(_tokensInRoute, new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        // const path = encodePath(_tokensInRoute, new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [0, 0, 0, 0], // action
+            [1, 2, 1, 1], // pid
+            2 // flag
+        )
         const params = {
             path,
             interestRateMode: InterestRateMode.VARIABLE,
@@ -410,9 +543,26 @@ describe('AAVE Money Market operations', async () => {
             recipient: achi.address,
         }
 
+        const callTransfer = broker.moneyMarket.interface.encodeFunctionData(TRANSFER_IN, [aaveTest.aTokens[originIndex].address, swapAmount])
+        const callWithdraw = broker.moneyMarket.interface.encodeFunctionData(WITHDRAW, [aaveTest.tokens[originIndex].address, broker.brokerProxy.address])
+        const callSwap = broker.moneyMarket.interface.encodeFunctionData(SWAP_IN, [
+            params.amountIn,
+            params.amountOutMinimum,
+            params.path
+        ]
+        )
+        const callSweep = broker.moneyMarket.interface.encodeFunctionData(SWEEP, [aaveTest.tokens[targetIndex].address])
         const balBefore = await aaveTest.tokens[targetIndex].balanceOf(achi.address)
         console.log("withdraw and swap exact in")
-        await broker.moneyMarket.connect(achi).withdrawAndSwapExactIn(params)
+        // await broker.moneyMarket.connect(achi).withdrawAndSwapExactIn(params)
+        await broker.brokerProxy.connect(achi).multicallSingleModule(broker.moneyMarketImplementation.address,
+            [
+                callTransfer,
+                callWithdraw,
+                callSwap,
+                callSweep
+            ],
+        )
 
         const balAfter = await aaveTest.tokens[targetIndex].balanceOf(achi.address)
         const bb = await aaveTest.pool.getUserAccountData(achi.address)
@@ -438,19 +588,46 @@ describe('AAVE Money Market operations', async () => {
             aaveTest.tokens["TEST2"],
             aaveTest.tokens[targetIndex]
         ].map(t => t.address)
-        const path = encodePath(_tokensInRoute, new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        // const path = encodePath(_tokensInRoute, new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [0, 0, 0, 0], // action
+            [1, 2, 1, 1], // pid
+            2 // flag
+        )
         const params = {
             path,
             recipient: test0.address,
             amountOutMinimum: supplied.mul(95).div(100)
         }
+
+
+        const callTransfer = broker.moneyMarket.interface.encodeFunctionData(TRANSFER_ALL_IN, [aaveTest.aTokens[originIndex].address])
+        const callWithdraw = broker.moneyMarket.interface.encodeFunctionData(WITHDRAW, [
+            aaveTest.tokens[originIndex].address,
+            broker.brokerProxy.address
+        ])
+        const callSwap = broker.moneyMarket.interface.encodeFunctionData(SWAP_ALL_IN, [
+            params.amountOutMinimum,
+            params.path
+        ]
+        )
+        const callSweep = broker.moneyMarket.interface.encodeFunctionData(SWEEP, [aaveTest.tokens[targetIndex].address])
+
         await aaveTest.aTokens[originIndex].connect(test0).approve(broker.moneyMarket.address, ethers.constants.MaxUint256)
         const ba = await aaveTest.aTokens[originIndex].balanceOf(test0.address)
-        console.log("test", ba.toString())
         const balBefore = await aaveTest.tokens[targetIndex].balanceOf(test0.address)
         console.log("withdraw and swap all in")
-        await broker.moneyMarket.connect(test0).withdrawAndSwapAllIn(params)
+        // await broker.moneyMarket.connect(test0).withdrawAndSwapAllIn(params)
+        await broker.brokerProxy.connect(test0).multicallSingleModule(broker.moneyMarketImplementation.address,
+            [
+                callTransfer,
+                callWithdraw,
+                callSwap,
+                callSweep
+            ],
+        )
 
         const balAfter = await aaveTest.tokens[targetIndex].balanceOf(test0.address)
         const balAfterCollateral = await aaveTest.aTokens[originIndex].balanceOf(test0.address)
@@ -475,20 +652,45 @@ describe('AAVE Money Market operations', async () => {
             aaveTest.tokens["AAVE"],
             aaveTest.tokens[targetIndex]
         ].map(t => t.address)
-        const path = encodePath(_tokensInRoute, new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        // const path = encodePath(_tokensInRoute, new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [0, 0,], // action
+            [1, 2,], // pid
+            2 // flag
+        )
         const params = {
             path,
             recipient: test0.address,
             amountOutMinimum: supplied.mul(95).div(100)
         }
+        const callTransfer = broker.moneyMarket.interface.encodeFunctionData(TRANSFER_ALL_IN, [aaveTest.aTokens[originIndex].address])
+        const callWithdraw = broker.moneyMarket.interface.encodeFunctionData(WITHDRAW, [
+            aaveTest.tokens[originIndex].address,
+            broker.brokerProxy.address
+        ])
+        const callSwap = broker.moneyMarket.interface.encodeFunctionData(SWAP_ALL_IN, [
+            params.amountOutMinimum,
+            params.path
+        ]
+        )
+        const callSweep = broker.moneyMarket.interface.encodeFunctionData(UNWRAP,)
+
         await aaveTest.aTokens[originIndex].connect(test0).approve(broker.moneyMarket.address, ethers.constants.MaxUint256)
         const ba = await aaveTest.aTokens[originIndex].balanceOf(test0.address)
         console.log("test", ba.toString())
         const balBefore = await provider.getBalance(test0.address);
         console.log("withdraw and swap all in")
-        await broker.moneyMarket.connect(test0).withdrawAndSwapAllInToETH(params)
-
+        // await broker.moneyMarket.connect(test0).withdrawAndSwapAllInToETH(params)
+        await broker.brokerProxy.connect(test0).multicallSingleModule(broker.moneyMarketImplementation.address,
+            [
+                callTransfer,
+                callWithdraw,
+                callSwap,
+                callSweep
+            ],
+        )
         const balAfter = await provider.getBalance(test0.address);
         const balAfterCollateral = await aaveTest.aTokens[originIndex].balanceOf(test0.address)
 
@@ -515,9 +717,15 @@ describe('AAVE Money Market operations', async () => {
             aaveTest.tokens["TEST1"],
             aaveTest.tokens["TEST2"],
             aaveTest.tokens[targetIndex]
-        ].map(t => t.address)
-        const path = encodePath(_tokensInRoute.reverse(), new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        ].map(t => t.address).reverse()
+        // const path = encodePath(_tokensInRoute.reverse(), new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [1, 1, 1, 1], // action
+            [1, 2, 1, 1], // pid
+            3 // flag
+        )
         const params = {
             path,
             interestRateMode: InterestRateMode.VARIABLE,
@@ -526,11 +734,27 @@ describe('AAVE Money Market operations', async () => {
             recipient: achi.address,
         }
 
+        const callSwap = broker.moneyMarket.interface.encodeFunctionData(SWAP_OUT, [
+            params.amountOut,
+            params.amountInMaximum,
+            params.path
+        ]
+        )
+        const callSweep = broker.moneyMarket.interface.encodeFunctionData(SWEEP, [aaveTest.tokens[targetIndex].address])
+
+
         const balBefore = await aaveTest.tokens[targetIndex].balanceOf(achi.address)
         const bbBefore = await aaveTest.pool.getUserAccountData(achi.address)
         console.log("withdraw and swap exact out")
-        await broker.moneyMarket.connect(achi).withdrawAndSwapExactOut(params)
-
+        // await broker.moneyMarket.connect(achi).withdrawAndSwapExactOut(params)
+        await broker.brokerProxy.connect(achi).multicallSingleModule(broker.moneyMarketImplementation.address,
+            [
+                // callTransfer,
+                // callWithdraw,
+                callSwap,
+                callSweep
+            ],
+        )
         const balAfter = await aaveTest.tokens[targetIndex].balanceOf(achi.address)
         const bb = await aaveTest.pool.getUserAccountData(achi.address)
 
@@ -561,8 +785,14 @@ describe('AAVE Money Market operations', async () => {
             aaveTest.tokens["TEST2"],
             aaveTest.tokens[targetIndex]
         ].map(t => t.address)
-        const path = encodePath(_tokensInRoute, new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        // const path = encodePath(_tokensInRoute, new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [0, 0, 0, 0], // action
+            [1, 2, 1, 1], // pid
+            2 // flag
+        )
         const params = {
             path,
             interestRateMode: InterestRateMode.VARIABLE,
@@ -571,13 +801,33 @@ describe('AAVE Money Market operations', async () => {
             recipient: wally.address,
         }
 
+        const callBorrow = broker.moneyMarket.interface.encodeFunctionData(BORROW, [
+            aaveTest.tokens[originIndex].address,
+            swapAmount,
+            InterestRateMode.VARIABLE
+        ])
+        const callSwap = broker.moneyMarket.interface.encodeFunctionData(SWAP_IN, [
+            params.amountIn,
+            params.amountOutMinimum,
+            params.path
+        ]
+        )
+        const callSweep = broker.moneyMarket.interface.encodeFunctionData(SWEEP, [aaveTest.tokens[targetIndex].address])
+
         const balBefore = await aaveTest.tokens[targetIndex].balanceOf(wally.address)
 
         console.log("approve delegation")
         await aaveTest.vTokens[originIndex].connect(wally).approveDelegation(broker.moneyMarket.address, constants.MaxUint256)
 
         console.log("withdraw and swap exact in")
-        await broker.moneyMarket.connect(wally).borrowAndSwapExactIn(params)
+        // await broker.moneyMarket.connect(wally).borrowAndSwapExactIn(params)
+        await broker.brokerProxy.connect(wally).multicallSingleModule(broker.moneyMarketImplementation.address,
+            [
+                callBorrow,
+                callSwap,
+                callSweep
+            ],
+        )
 
         const balAfter = await aaveTest.tokens[targetIndex].balanceOf(wally.address)
         const bb = await aaveTest.pool.getUserAccountData(wally.address)
@@ -606,9 +856,15 @@ describe('AAVE Money Market operations', async () => {
             aaveTest.tokens["TEST1"],
             aaveTest.tokens["TEST2"],
             aaveTest.tokens[targetIndex]
-        ].map(t => t.address)
-        const path = encodePath(_tokensInRoute.reverse(), new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        ].map(t => t.address).reverse()
+        // const path = encodePath(_tokensInRoute.reverse(), new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [1, 1, 1, 1], // action
+            [1, 2, 1, 1], // pid
+            2 // flag
+        )
         const params = {
             path,
             interestRateMode: InterestRateMode.VARIABLE,
@@ -617,14 +873,28 @@ describe('AAVE Money Market operations', async () => {
             recipient: alice.address,
         }
 
-        const balBefore = await aaveTest.tokens[targetIndex].balanceOf(alice.address)
 
+        const callSwap = broker.moneyMarket.interface.encodeFunctionData(SWAP_OUT, [
+            params.amountOut,
+            params.amountInMaximum,
+            params.path
+        ]
+        )
+        const callSweep = broker.moneyMarket.interface.encodeFunctionData(SWEEP, [aaveTest.tokens[targetIndex].address])
+
+        const balBefore = await aaveTest.tokens[targetIndex].balanceOf(alice.address)
 
         console.log("approve delegation")
         await aaveTest.vTokens[originIndex].connect(alice).approveDelegation(broker.moneyMarket.address, constants.MaxUint256)
 
         console.log("withdraw and swap exact in")
-        await broker.moneyMarket.connect(alice).borrowAndSwapExactOut(params)
+        // await broker.moneyMarket.connect(alice).borrowAndSwapExactOut(params)
+        await broker.brokerProxy.connect(alice).multicallSingleModule(broker.moneyMarketImplementation.address,
+            [
+                callSwap,
+                callSweep
+            ],
+        )
 
         const balAfter = await aaveTest.tokens[targetIndex].balanceOf(alice.address)
         const bb = await aaveTest.pool.getUserAccountData(alice.address)
@@ -667,8 +937,14 @@ describe('AAVE Money Market operations', async () => {
             aaveTest.tokens["TEST2"],
             aaveTest.tokens[targetIndex]
         ].map(t => t.address)
-        const path = encodePath(_tokensInRoute, new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        // const path = encodePath(_tokensInRoute, new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [0, 0, 0, 0], // action
+            [1, 2, 1, 1], // pid
+            2 // flag
+        )
         const params = {
             path,
             interestRateMode: InterestRateMode.VARIABLE,
@@ -676,6 +952,21 @@ describe('AAVE Money Market operations', async () => {
             amountIn: swapAmount,
             recipient: dennis.address,
         }
+
+        const callTransfer = broker.moneyMarket.interface.encodeFunctionData(TRANSFER_IN, [aaveTest.tokens[originIndex].address, swapAmount])
+
+        const callSwap = broker.moneyMarket.interface.encodeFunctionData(SWAP_IN, [
+            params.amountIn,
+            params.amountOutMinimum,
+            params.path
+        ]
+        )
+
+        const callRepay = broker.moneyMarket.interface.encodeFunctionData(REPAY, [
+            aaveTest.tokens[targetIndex].address,
+            dennis.address,
+            InterestRateMode.VARIABLE
+        ])
 
 
         await aaveTest.tokens[originIndex].connect(dennis).approve(broker.moneyMarket.address, constants.MaxUint256)
@@ -688,7 +979,14 @@ describe('AAVE Money Market operations', async () => {
         const bbBefore = await aaveTest.pool.getUserAccountData(dennis.address)
 
         console.log("swap and repay exact in")
-        await broker.moneyMarket.connect(dennis).swapAndRepayExactIn(params)
+        // await broker.moneyMarket.connect(dennis).swapAndRepayExactIn(params)
+        await broker.brokerProxy.connect(dennis).multicallSingleModule(broker.moneyMarketImplementation.address,
+            [
+                callTransfer,
+                callSwap,
+                callRepay
+            ],
+        )
 
         const balAfter = await aaveTest.tokens[originIndex].balanceOf(dennis.address)
         const bb = await aaveTest.pool.getUserAccountData(dennis.address)
@@ -733,8 +1031,14 @@ describe('AAVE Money Market operations', async () => {
             aaveTest.tokens["TEST2"],
             aaveTest.tokens[targetIndex]
         ].map(t => t.address)
-        const path = encodePath(_tokensInRoute, new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        // const path = encodePath(_tokensInRoute, new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [0, 0, 0, 0, 0], // action
+            [1, 2, 1, 1, 1], // pid
+            2 // flag
+        )
         const params = {
             path,
             interestRateMode: InterestRateMode.VARIABLE,
@@ -742,6 +1046,21 @@ describe('AAVE Money Market operations', async () => {
             amountIn: swapAmount,
             recipient: dennis.address,
         }
+
+        const callWrap = broker.moneyMarket.interface.encodeFunctionData(WRAP,)
+
+        const callSwap = broker.moneyMarket.interface.encodeFunctionData(SWAP_IN, [
+            params.amountIn,
+            params.amountOutMinimum,
+            params.path
+        ]
+        )
+
+        const callRepay = broker.moneyMarket.interface.encodeFunctionData(REPAY, [
+            aaveTest.tokens[originIndex].address,
+            dennis.address,
+            InterestRateMode.VARIABLE
+        ])
 
 
         await aaveTest.tokens[originIndex].connect(dennis).approve(broker.moneyMarket.address, constants.MaxUint256)
@@ -754,7 +1073,16 @@ describe('AAVE Money Market operations', async () => {
         const bbBefore = await aaveTest.pool.getUserAccountData(dennis.address)
 
         console.log("swap and repay exact in")
-        const tx = await broker.moneyMarket.connect(dennis).swapETHAndRepayExactIn(params, { value: params.amountIn })
+        // const tx = await broker.moneyMarket.connect(dennis).swapETHAndRepayExactIn(params, { value: params.amountIn })
+        const tx = await broker.brokerProxy.connect(dennis).multicallSingleModule(broker.moneyMarketImplementation.address,
+            [
+                callWrap,
+                callSwap,
+                callRepay
+            ],
+            { value: swapAmount }
+        )
+
         const receipt = await tx.wait();
         // here we receive ETH, but the transaction costs some, too - so we have to record and subtract that
         const gasUsed = (receipt.cumulativeGasUsed).mul(receipt.effectiveGasPrice);
@@ -784,7 +1112,6 @@ describe('AAVE Money Market operations', async () => {
         await aaveTest.pool.connect(xander).supply(aaveTest.tokens[supplyIndex].address, providedAmount, xander.address, 0)
         await aaveTest.pool.connect(xander).setUserUseReserveAsCollateral(aaveTest.tokens[supplyIndex].address, true)
 
-
         console.log("borrow")
         await aaveTest.pool.connect(xander).borrow(
             aaveTest.tokens[borrowTokenIndex].address,
@@ -800,9 +1127,15 @@ describe('AAVE Money Market operations', async () => {
             aaveTest.tokens["TEST1"],
             aaveTest.tokens["TEST2"],
             aaveTest.tokens[targetIndex]
-        ].map(t => t.address)
-        const path = encodePath(_tokensInRoute.reverse(), new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        ].map(t => t.address).reverse()
+        // const path = encodePath(_tokensInRoute.reverse(), new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [1, 1, 1, 1], // action
+            [1, 2, 1, 1], // pid
+            99 // flag
+        )
         const params = {
             path,
             interestRateMode: InterestRateMode.VARIABLE,
@@ -811,19 +1144,33 @@ describe('AAVE Money Market operations', async () => {
             amountInMaximum: swapAmount.mul(102).div(100)
         }
 
+        const callSwap = broker.moneyMarket.interface.encodeFunctionData(SWAP_OUT, [
+            params.amountOut,
+            params.amountInMaximum,
+            params.path
+        ]
+        )
+
+        const callRepay = broker.moneyMarket.interface.encodeFunctionData(REPAY, [
+            aaveTest.tokens[targetIndex].address,
+            xander.address,
+            InterestRateMode.VARIABLE
+        ])
 
         await aaveTest.tokens[originIndex].connect(xander).approve(broker.moneyMarket.address, constants.MaxUint256)
-
-        await aaveTest.aTokens[borrowTokenIndex].connect(xander).approve(broker.broker.address, constants.MaxUint256)
-
-        await aaveTest.vTokens[borrowTokenIndex].connect(xander).approveDelegation(broker.broker.address, constants.MaxUint256)
 
         const balBefore = await aaveTest.tokens[originIndex].balanceOf(xander.address)
         const vBalBefore = await aaveTest.vTokens[borrowTokenIndex].balanceOf(xander.address)
         const bbBefore = await aaveTest.pool.getUserAccountData(xander.address)
 
         console.log("swap and repay exact out")
-        await broker.moneyMarket.connect(xander).swapAndRepayExactOut(params)
+        // await broker.moneyMarket.connect(xander).swapAndRepayExactOut(params)
+        await broker.brokerProxy.connect(xander).multicallSingleModule(broker.moneyMarketImplementation.address,
+            [
+                callSwap,
+                callRepay
+            ]
+        )
 
         const balAfter = await aaveTest.tokens[originIndex].balanceOf(xander.address)
         const vBalAfter = await aaveTest.vTokens[borrowTokenIndex].balanceOf(xander.address)
@@ -875,9 +1222,15 @@ describe('AAVE Money Market operations', async () => {
             aaveTest.tokens["TEST1"],
             aaveTest.tokens["TEST2"],
             aaveTest.tokens[targetIndex]
-        ].map(t => t.address)
-        const path = encodePath(_tokensInRoute.reverse(), new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        ].map(t => t.address).reverse()
+        // const path = encodePath(_tokensInRoute.reverse(), new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [1, 1, 1, 1], // action
+            [1, 2, 1, 1], // pid
+            99 // flag
+        )
         const params = {
             path,
             interestRateMode: InterestRateMode.VARIABLE,
@@ -885,6 +1238,17 @@ describe('AAVE Money Market operations', async () => {
             amountInMaximum: borrowAmount.mul(105).div(100)
         }
 
+        const callSwap = broker.moneyMarket.interface.encodeFunctionData(SWAP_ALL_OUT, [
+            params.amountInMaximum,
+            InterestRateMode.VARIABLE,
+            params.path
+        ]
+        )
+        const callRepay = broker.moneyMarket.interface.encodeFunctionData(REPAY, [
+            aaveTest.tokens[targetIndex].address,
+            test1.address,
+            InterestRateMode.VARIABLE
+        ])
         await aaveTest.tokens[originIndex].connect(test1).approve(broker.moneyMarket.address, constants.MaxUint256)
 
         await aaveTest.aTokens[borrowTokenIndex].connect(test1).approve(broker.broker.address, constants.MaxUint256)
@@ -896,8 +1260,13 @@ describe('AAVE Money Market operations', async () => {
         const bbBefore = await aaveTest.pool.getUserAccountData(test1.address)
 
         console.log("swap and repay all out")
-        await broker.moneyMarket.connect(test1).swapAndRepayAllOut(params)
-
+        // await broker.moneyMarket.connect(test1).swapAllOutSpot(params.amountInMaximum, params.interestRateMode, params.path)
+        await broker.brokerProxy.connect(test1).multicallSingleModule(broker.moneyMarketImplementation.address,
+            [
+                callSwap,
+                callRepay
+            ]
+        )
         const balAfter = await aaveTest.tokens[originIndex].balanceOf(test1.address)
         const vBalAfter = await aaveTest.vTokens[borrowTokenIndex].balanceOf(test1.address)
         const bb = await aaveTest.pool.getUserAccountData(test1.address)
@@ -945,9 +1314,15 @@ describe('AAVE Money Market operations', async () => {
             aaveTest.tokens["TEST1"],
             aaveTest.tokens["TEST2"],
             aaveTest.tokens[targetIndex]
-        ].map(t => t.address)
-        const path = encodePath(_tokensInRoute.reverse(), new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        ].map(t => t.address).reverse()
+        // const path = encodePath(_tokensInRoute.reverse(), new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [1, 1, 1, 1, 1], // action
+            [1, 2, 1, 1, 1], // pid
+            99 // flag
+        )
         const params = {
             path,
             amountOut: swapAmount,
@@ -956,6 +1331,19 @@ describe('AAVE Money Market operations', async () => {
             interestRateMode: InterestRateMode.VARIABLE,
         }
 
+        const callWrap = broker.moneyMarket.interface.encodeFunctionData(WRAP,)
+        const callSwap = broker.moneyMarket.interface.encodeFunctionData(SWAP_OUT_INTERNAL, [
+            params.amountOut,
+            params.amountInMaximum,
+            params.path
+        ]
+        )
+        const callRepay = broker.moneyMarket.interface.encodeFunctionData(REPAY, [
+            aaveTest.tokens[targetIndex].address,
+            xander.address,
+            InterestRateMode.VARIABLE
+        ])
+        const callUnwrap = broker.moneyMarket.interface.encodeFunctionData(UNWRAP,)
 
         await aaveTest.tokens[originIndex].connect(xander).approve(broker.moneyMarket.address, constants.MaxUint256)
 
@@ -969,7 +1357,16 @@ describe('AAVE Money Market operations', async () => {
         const bbBefore = await aaveTest.pool.getUserAccountData(xander.address)
 
         console.log("swap and repay exact out")
-        const tx = await broker.moneyMarket.connect(xander).swapETHAndRepayExactOut(params, { value: params.amountInMaximum })
+        // const tx = await broker.moneyMarket.connect(xander).swapETHAndRepayExactOut(params, { value: params.amountInMaximum })
+        const tx = await broker.brokerProxy.connect(xander).multicallSingleModule(broker.moneyMarketImplementation.address,
+            [
+                callWrap,
+                callSwap,
+                callUnwrap,
+                callRepay
+            ],
+            { value: params.amountInMaximum }
+        )
         const receipt = await tx.wait();
         // here we receive ETH, but the transaction costs some, too - so we have to record and subtract that
         const gasUsed = (receipt.cumulativeGasUsed).mul(receipt.effectiveGasPrice);
@@ -1028,9 +1425,15 @@ describe('AAVE Money Market operations', async () => {
             aaveTest.tokens["TEST1"],
             aaveTest.tokens["TEST2"],
             aaveTest.tokens[targetIndex]
-        ].map(t => t.address)
-        const path = encodePath(_tokensInRoute.reverse(), new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        ].map(t => t.address).reverse()
+        // const path = encodePath(_tokensInRoute.reverse(), new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [1, 1, 1, 1, 1], // action
+            [1, 2, 1, 1, 1], // pid
+            99 // flag
+        )
         const params = {
             path,
             recipient: test2.address,
@@ -1038,6 +1441,20 @@ describe('AAVE Money Market operations', async () => {
             interestRateMode: InterestRateMode.VARIABLE
         }
 
+        const callWrap = broker.moneyMarket.interface.encodeFunctionData(WRAP,)
+        const callSwap = broker.moneyMarket.interface.encodeFunctionData(SWAP_ALL_OUT_INTERNAL, [
+            params.amountInMaximum,
+            InterestRateMode.VARIABLE,
+            params.path
+        ]
+        )
+        const callRepay = broker.moneyMarket.interface.encodeFunctionData(REPAY, [
+            aaveTest.tokens[targetIndex].address,
+            test2.address,
+            InterestRateMode.VARIABLE
+        ])
+
+        const callUnwrap = broker.moneyMarket.interface.encodeFunctionData(UNWRAP,)
 
         await aaveTest.tokens[originIndex].connect(test2).approve(broker.moneyMarket.address, constants.MaxUint256)
 
@@ -1051,8 +1468,18 @@ describe('AAVE Money Market operations', async () => {
         const bbBefore = await aaveTest.pool.getUserAccountData(test2.address)
 
         console.log("swap and repay exact out")
-        const tx = await broker.moneyMarket.connect(test2).swapETHAndRepayAllOut(params,
-            { value: params.amountInMaximum })
+        // const tx = await broker.moneyMarket.connect(test2).swapETHAndRepayAllOut(params,
+        //     { value: params.amountInMaximum })
+
+        const tx = await broker.brokerProxy.connect(test2).multicallSingleModule(broker.moneyMarketImplementation.address,
+            [
+                callWrap,
+                callSwap,
+                callRepay,
+                callUnwrap,
+            ],
+            { value: params.amountInMaximum }
+        )
         const receipt = await tx.wait();
         // here we receive ETH, but the transaction costs some, too - so we have to record and subtract that
         const gasUsed = (receipt.cumulativeGasUsed).mul(receipt.effectiveGasPrice);
@@ -1114,4 +1541,8 @@ describe('AAVE Money Market operations', async () => {
 // |  AAVESweeperModule                                    ·  withdrawAndSwapAllIn                ·          -  ·          -  ·   503422  ·            1  ·      12.23  │
 // ························································|······································|·············|·············|···········|···············|··············
 // |  AAVESweeperModule                                    ·  withdrawAndSwapAllInToETH           ·          -  ·          -  ·   375522  ·            1  ·       9.12  │
-// ························································|······································|·············|·············|···········|···············|··············
+// ························································|······································|·············|·············|···········|···············|··············7
+
+// ························································|······································|·············|·············|·············|···············|··············
+// |  DeltaBrokerProxy                                     ·  multicallSingleModule               ·     367802  ·     565994  ·     492302  ·           18  ·      12.08  │
+// ························································|······································|·············|·············|·············|···············|··············
