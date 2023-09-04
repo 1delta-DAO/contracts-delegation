@@ -9,7 +9,7 @@ pragma solidity 0.8.21;
 import {IUniswapV2Pair} from "../../../external-protocols/uniswapV2/core/interfaces/IUniswapV2Pair.sol";
 import {TokenTransfer} from "../../libraries/TokenTransfer.sol";
 import {WithStorage} from "../../storage/BrokerStorage.sol";
-import {BaseSwapper} from "../base/BaseSwapper.sol";
+import {BaseSwapper} from "./BaseSwapper.sol";
 import {IPool} from "../../interfaces/IAAVEV3Pool.sol";
 import {IERC20Balance} from "../../interfaces/IERC20Balance.sol";
 
@@ -19,7 +19,7 @@ import {IERC20Balance} from "../../interfaces/IERC20Balance.sol";
  * @title Contract Module for general Margin Trading on an Aave-style Lender
  * @notice Contains main logic for uniswap-type callbacks and initiator functions
  */
-contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
+abstract contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
     // errors
     error Slippage();
     error NoBalance();
@@ -28,16 +28,10 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
     uint256 private constant DEFAULT_AMOUNT_CACHED = type(uint256).max;
     address private constant DEFAULT_ADDRESS_CACHED = address(0);
 
-    // immutable pool
-    IPool internal immutable _aavePool;
+    // constant pool
+    IPool internal constant _aavePool = IPool(0x794a61358D6845594F94dc1DB02A252b5b4814aD);
 
-    constructor(
-        address _factoryV2,
-        address _factoryV3,
-        address aavePool
-    ) BaseSwapper(_factoryV2, _factoryV3) {
-        _aavePool = IPool(aavePool);
-    }
+    constructor() BaseSwapper() {}
 
     // Exact Input Swap - The path parameters determine the lending actions
     function flashSwapExactIn(
@@ -596,7 +590,7 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
     }
 
     // a flash swap where the output is sent to msg.sender
-    function flashSwapExactOut(uint256 amountOut, bytes calldata data) internal {
+    function flashSwapExactOut(uint256 amountOut, bytes calldata data) private {
         address tokenIn;
         address tokenOut;
         uint8 identifier;

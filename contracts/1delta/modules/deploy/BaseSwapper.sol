@@ -25,22 +25,23 @@ abstract contract BaseSwapper is TokenTransfer {
     uint256 private constant UINT24_MASK = 0xffffff;
 
     /// @dev MIN_SQRT_RATIO + 1 from Uniswap's TickMath
-    uint160 internal immutable MIN_SQRT_RATIO = 4295128740;
+    uint160 internal constant MIN_SQRT_RATIO = 4295128740;
     /// @dev MAX_SQRT_RATIO - 1 from Uniswap's TickMath
-    uint160 internal immutable MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970341;
-
-    bytes32 private immutable UNI_V3_FF_FACTORY;
+    uint160 internal constant MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970341;
+    
+    //  bytes32((uint256(0xff) << 248) | (uint256(uint160(0x1F98431c8aD98523631AE4a59f267346ea31F984)) << 88));
+    bytes32 private constant UNI_V3_FF_FACTORY = 0xff1f98431c8ad98523631ae4a59f267346ea31f9840000000000000000000000;
     bytes32 private constant UNI_POOL_INIT_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
 
-    bytes32 private immutable UNI_V2_FF_FACTORY;
-    bytes32 private constant CODE_HASH_UNI_V2 = 0x1a39f3b48bfeecc839ed1f8018cb533055200a40a7e19ef735744ed10ec18cb2;
+    // bytes32((uint256(0xff) << 248) | (uint256(uint160(0x2D98E2FA9da15aa6dC9581AB097Ced7af697CB92)) << 88));
+    bytes32 private constant ALGEBRA_V3_FF_DEPLOYER = 0xff2d98e2fa9da15aa6dc9581ab097ced7af697cb920000000000000000000000;
+    bytes32 private constant ALGEBRA_POOL_INIT_CODE_HASH = 0x6ec6c9c8091d160c0aa74b2b14ba9c1717e95093bd3ac085cee99a49aab294a4;
 
-    constructor(address _factoryV2, address _factoryV3) {
-        // V3 factory
-        UNI_V3_FF_FACTORY = bytes32((uint256(0xff) << 248) | (uint256(uint160(_factoryV3)) << 88));
-        // V2 factory
-        UNI_V2_FF_FACTORY = bytes32((uint256(0xff) << 248) | (uint256(uint160(_factoryV2)) << 88));
-    }
+    // bytes32((uint256(0xff) << 248) | (uint256(uint160(0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32)) << 88));
+    bytes32 private constant QUICK_V2_FF_FACTORY = 0xff5757371414417b8c6caad45baef941abc7d3ab320000000000000000000000;
+    bytes32 private constant CODE_HASH_QUICK_V2 = 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f;
+
+    constructor() {}
 
     function getLastToken(bytes memory data) internal pure returns (address token) {
         // fetches the last token
@@ -55,29 +56,57 @@ abstract contract BaseSwapper is TokenTransfer {
         address tokenA,
         address tokenB,
         uint24 fee,
-        uint8
-    ) internal view returns (IUniswapV3Pool pool) {
-        bytes32 ffFactoryAddress = UNI_V3_FF_FACTORY;
-        (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
+        uint8 pId
+    ) internal pure returns (IUniswapV3Pool pool) {
         assembly {
+            let pairOrder := lt(tokenA, tokenB)
             let s := mload(0x40)
             let p := s
-            mstore(p, ffFactoryAddress)
-            p := add(p, 21)
-            // Compute the inner hash in-place
-            mstore(p, token0)
-            mstore(add(p, 32), token1)
-            mstore(add(p, 64), and(UINT24_MASK, fee))
-            mstore(p, keccak256(p, 96))
-            p := add(p, 32)
-            mstore(p, UNI_POOL_INIT_CODE_HASH)
-            pool := and(ADDRESS_MASK, keccak256(s, 85))
+            switch pId
+            // Uni
+            case 0 {
+                mstore(p, UNI_V3_FF_FACTORY)
+                p := add(p, 21)
+                // Compute the inner hash in-place
+                switch pairOrder
+                case 0 {
+                    mstore(p, tokenB)
+                    mstore(add(p, 32), tokenA)
+                }
+                default {
+                    mstore(p, tokenA)
+                    mstore(add(p, 32), tokenB)
+                }
+                mstore(add(p, 64), and(UINT24_MASK, fee))
+                mstore(p, keccak256(p, 96))
+                p := add(p, 32)
+                mstore(p, UNI_POOL_INIT_CODE_HASH)
+                pool := and(ADDRESS_MASK, keccak256(s, 85))
+            }
+            // Algebra / Quickswap
+            default {
+                mstore(p, QUICK_V2_FF_FACTORY)
+                p := add(p, 21)
+                // Compute the inner hash in-place
+                switch pairOrder
+                case 0 {
+                    mstore(p, tokenB)
+                    mstore(add(p, 32), tokenA)
+                }
+                default {
+                    mstore(p, tokenA)
+                    mstore(add(p, 32), tokenB)
+                }
+                mstore(p, keccak256(p, 64))
+                p := add(p, 32)
+                mstore(p, ALGEBRA_POOL_INIT_CODE_HASH)
+                pool := and(ADDRESS_MASK, keccak256(s, 85))
+            }
         }
     }
 
     /// @dev gets uniswapV2 (and fork) pair addresses
-    function pairAddress(address tokenA, address tokenB) internal view returns (address pair) {
-        bytes32 ff_uni = UNI_V2_FF_FACTORY;
+    function pairAddress(address tokenA, address tokenB) internal pure returns (address pair) {
         assembly {
             switch lt(tokenA, tokenB)
             case 0 {
@@ -89,9 +118,9 @@ abstract contract BaseSwapper is TokenTransfer {
                 mstore(0xB00, tokenA)
             }
             let salt := keccak256(0xB0C, 0x28)
-            mstore(0xB00, ff_uni)
+            mstore(0xB00, QUICK_V2_FF_FACTORY)
             mstore(0xB15, salt)
-            mstore(0xB35, CODE_HASH_UNI_V2)
+            mstore(0xB35, CODE_HASH_QUICK_V2)
 
             pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
         }
@@ -147,7 +176,7 @@ abstract contract BaseSwapper is TokenTransfer {
         address tokenOut,
         uint256 amountIn
     ) private returns (uint256 buyAmount) {
-        bytes32 ff_uni = UNI_V2_FF_FACTORY;
+        bytes32 ff_uni = QUICK_V2_FF_FACTORY;
         assembly {
             let zeroForOne := lt(tokenIn, tokenOut)
             switch zeroForOne
@@ -162,7 +191,7 @@ abstract contract BaseSwapper is TokenTransfer {
             let salt := keccak256(0xB0C, 0x28)
             mstore(0xB00, ff_uni)
             mstore(0xB15, salt)
-            mstore(0xB35, CODE_HASH_UNI_V2)
+            mstore(0xB35, CODE_HASH_QUICK_V2)
 
             let pair := and(ADDRESS_MASK_UPPER, keccak256(0xB00, 0x55))
 

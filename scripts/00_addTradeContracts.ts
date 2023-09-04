@@ -1,6 +1,6 @@
 
 import { ethers } from "hardhat";
-import { AAVEFlashModule__factory, AAVEMarginTraderModule__factory, AAVEMoneyMarketModule__factory, AAVESweeperModule__factory, BalancerFlashModule__factory, ConfigModule__factory, DeltaBrokerProxy__factory, LensModule__factory, ManagementModule__factory, UniswapV3SwapCallbackModule__factory } from "../types";
+import { AaveFlashModule__factory, AAVEMarginTraderModule__factory, AAVEMoneyMarketModule__factory, AAVESweeperModule__factory, BalancerFlashModule__factory, ConfigModule__factory, DeltaBrokerProxy__factory, DeltaFlashAggregator__factory, LensModule__factory, ManagementModule__factory, UniswapV3SwapCallbackModule__factory } from "../types";
 import { aaveAddresses, aaveBrokerAddresses, uniswapAddresses } from "../deploy/00_addresses"
 import { validateAddresses } from "../utils/types";
 import { parseUnits } from "ethers/lib/utils";
@@ -43,6 +43,10 @@ async function main() {
     // deploy ConfigModule
     const broker = await new ConfigModule__factory(operator).attach(proxyAddress)
 
+    const flashBroker = await new DeltaFlashAggregator__factory(operator).deploy(aavePool)
+    await flashBroker.deployed()
+    console.log("flashBroker deployed")
+
     // const callback = await new UniswapV3SwapCallbackModule__factory(operator).deploy(uniswapFactory, aavePool, opts)
     // await callback.deployed()
     // console.log("callback deployed")
@@ -68,16 +72,16 @@ async function main() {
     await balancerFlashModule.deployed()
     console.log("balancerFlashModule deployed")
 
-    const aaveFlashModule = await new AAVEFlashModule__factory(operator).deploy(aavePool)
+    const aaveFlashModule = await new AaveFlashModule__factory(operator).deploy(aavePool)
     await aaveFlashModule.deployed()
     console.log("aaveFlashModule deployed")
 
     // const lensModule = await new LensModule__factory(operator).deploy(opts)
     // await lensModule.deployed()
     // console.log("lens deployed")
-
-    console.log("BrokerModuleBalancer", balancerFlashModule.address)
-    console.log("BrokerModulAave", aaveFlashModule.address)
+    console.log("FlashBroker", flashBroker.address)
+    // console.log("BrokerModuleBalancer", balancerFlashModule.address)
+    // console.log("BrokerModulAave", aaveFlashModule.address)
     // console.log("UniswapV3SwapCallbackModule", callback.address)
     // console.log("MoneyMarketModule", moneyMarkets.address)
     // console.log("MarginTraderModule", marginTrading.address)
@@ -96,6 +100,7 @@ async function main() {
     const modules = [
         balancerFlashModule,
         aaveFlashModule,
+        flashBroker
         // sweeper,
         // marginTrading,
         // moneyMarkets,
