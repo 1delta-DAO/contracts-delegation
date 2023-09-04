@@ -49,7 +49,7 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
         broker = await cometBrokerFixture(deployer, uniswap.factory.address)
 
         await initCometBroker(deployer, broker, uniswap, compound)
-        await broker.manager.setUniswapRouter(uniswap.router.address)
+
 
         const tokens = Object.values(compound.tokens)
         const keys = Object.keys(compound.tokens)
@@ -236,7 +236,7 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
         const targetIndex = "DAI"
 
         const swapAmount = expandTo18Decimals(70)
-        await compound.tokens[originIndex].connect(carol).approve(broker.broker.address, constants.MaxUint256)
+        await compound.tokens[originIndex].connect(carol).approve(broker.brokerProxy.address, constants.MaxUint256)
 
         let _tokensInRoute = [
             compound.tokens[originIndex],
@@ -275,7 +275,7 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
         const targetIndex = "DAI"
 
         const swapAmount = expandTo18Decimals(1)
-        await compound.tokens[originIndex].connect(carol).approve(broker.broker.address, constants.MaxUint256)
+        await compound.tokens[originIndex].connect(carol).approve(broker.brokerProxy.address, constants.MaxUint256)
 
         let _tokensInRoute = [
             compound.tokens[originIndex],
@@ -320,7 +320,7 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
         const targetIndex = "DAI"
 
         const swapAmount = expandTo18Decimals(70)
-        await compound.tokens[originIndex].connect(gabi).approve(broker.broker.address, constants.MaxUint256)
+        await compound.tokens[originIndex].connect(gabi).approve(broker.brokerProxy.address, constants.MaxUint256)
 
         let _tokensInRoute = [
             compound.tokens[originIndex],
@@ -361,7 +361,7 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
         const targetIndex = "DAI"
 
         const swapAmount = expandTo18Decimals(1)
-        await compound.tokens[originIndex].connect(gabi).approve(broker.broker.address, constants.MaxUint256)
+        await compound.tokens[originIndex].connect(gabi).approve(broker.brokerProxy.address, constants.MaxUint256)
 
         let _tokensInRoute = [
             compound.tokens[originIndex],
@@ -402,7 +402,7 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
         const originIndex = "WETH"
         const targetIndex = "WETH"
         const swapAmount = BigNumber.from(10000)
-        await compound.tokens[originIndex].connect(deployer).approve(broker.broker.address, constants.MaxUint256)
+        await compound.tokens[originIndex].connect(deployer).approve(broker.brokerProxy.address, constants.MaxUint256)
 
         const cBefore = await compound.comet.collateralBalanceOf(deployer.address, compound.tokens[targetIndex].address)
         console.log("wrap in")
@@ -421,7 +421,7 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
 
         await compound.comet.connect(deployer).allow(broker.moneyMarket.address, true)
 
-        await compound.tokens[originIndex].connect(deployer).approve(broker.broker.address, constants.MaxUint256)
+        await compound.tokens[originIndex].connect(deployer).approve(broker.brokerProxy.address, constants.MaxUint256)
 
         const cBefore = await compound.comet.collateralBalanceOf(deployer.address, compound.tokens[targetIndex].address)
         console.log("wrap out")
@@ -442,7 +442,7 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
 
         // supply
         await compound.comet.connect(achi).supply(compound.tokens[originIndex].address, supplied)
-        // await compound.tokens[originIndex].connect(achi).approve(broker.broker.address, constants.MaxUint256)
+        // await compound.tokens[originIndex].connect(achi).approve(broker.brokerProxy.address, constants.MaxUint256)
 
         let _tokensInRoute = [
             compound.tokens[originIndex],
@@ -461,7 +461,7 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
             amountOutMinimum: swapAmount.mul(98).div(100)
         }
 
-        await compound.comet.connect(achi).allow(broker.broker.address, true)
+        await compound.comet.connect(achi).allow(broker.brokerProxy.address, true)
 
         const balBefore = await compound.tokens[targetIndex].balanceOf(achi.address)
         console.log("withdraw and swap exact in")
@@ -501,7 +501,7 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
             amountOutMinimum: supplied.mul(95).div(100),
             cometId: 0
         }
-        await compound.comet.connect(test0).allow(broker.broker.address, true)
+        await compound.comet.connect(test0).allow(broker.brokerProxy.address, true)
         const balBefore = await compound.tokens[targetIndex].balanceOf(test0.address)
         console.log("withdraw and swap all in")
         await broker.moneyMarket.connect(test0).withdrawAndSwapAllIn(params)
@@ -539,7 +539,7 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
             cometId: 0
         }
 
-        await compound.comet.connect(test0).allow(broker.broker.address, true)
+        await compound.comet.connect(test0).allow(broker.brokerProxy.address, true)
         const balBefore = await provider.getBalance(test0.address);
         console.log("withdraw and swap all in")
         await broker.moneyMarket.connect(test0).withdrawAndSwapAllInToETH(params)
@@ -581,7 +581,7 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
             recipient: achi.address,
         }
 
-        await compound.comet.connect(achi).allow(broker.broker.address, true)
+        await compound.comet.connect(achi).allow(broker.brokerProxy.address, true)
 
         const cBefore = await compound.comet.collateralBalanceOf(achi.address, compound.tokens[originIndex].address)
         const balBefore = await compound.tokens[targetIndex].balanceOf(achi.address)
@@ -634,7 +634,7 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
         const balBefore = await compound.tokens[targetIndex].balanceOf(wally.address)
 
         console.log("approve delegation")
-        await compound.comet.connect(wally).allow(broker.broker.address, true)
+        await compound.comet.connect(wally).allow(broker.brokerProxy.address, true)
         console.log("withdraw and swap exact in")
         await broker.moneyMarket.connect(wally).borrowAndSwapExactIn(params)
 
@@ -680,7 +680,7 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
 
 
         console.log("approve delegation")
-        await compound.comet.connect(alice).allow(broker.broker.address, true)
+        await compound.comet.connect(alice).allow(broker.brokerProxy.address, true)
 
         await broker.moneyMarket.connect(alice).borrowAndSwapExactOut(params)
 
@@ -924,7 +924,7 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
 
         await compound.tokens[originIndex].connect(test1).approve(broker.moneyMarket.address, constants.MaxUint256)
 
-        await compound.comet.connect(test1).allow(broker.broker.address, true)
+        await compound.comet.connect(test1).allow(broker.brokerProxy.address, true)
 
         const balBefore = await compound.tokens[originIndex].balanceOf(test1.address)
 

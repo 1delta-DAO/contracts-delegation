@@ -11,10 +11,10 @@ import {
     OwnershipModule__factory,
     ConfigModule__factory,
     LensModule__factory,
-    AAVEFlashModule__factory,
+    AaveFlashModule__factory,
     BalancerFlashModule__factory,
     BalancerFlashModule,
-    AAVEFlashModule
+    AaveFlashModule
 } from "../../types";
 import { ModuleConfigAction, getSelectors } from "../../test/diamond/libraries/diamond";
 
@@ -22,7 +22,7 @@ export const ONE_18 = BigNumber.from(10).pow(18)
 
 
 export interface FlashBrokerFixture {
-    flashBrokerAave: AAVEFlashModule
+    flashBrokerAave: AaveFlashModule
     flashBrokerBalancer: BalancerFlashModule
     manager: ManagementModule
     tradeDataViewer: MarginTradeDataViewerModule
@@ -52,7 +52,7 @@ export async function createFlashBroker(signer: SignerWithAddress, aavePool: str
     const configurator = await new ConfigModule__factory(signer).attach(proxy.address)
 
     // broker
-    const brokerModuleAave = await new AAVEFlashModule__factory(signer).deploy(
+    const brokerModuleAave = await new AaveFlashModule__factory(signer).deploy(
         aavePool,
         opts
     )
@@ -70,7 +70,7 @@ export async function createFlashBroker(signer: SignerWithAddress, aavePool: str
     await tx.wait()
     console.log("brokerModuleAave added")
 
-    const flashBrokerAave = (await new ethers.Contract(proxy.address, AAVEFlashModule__factory.createInterface(), signer) as AAVEFlashModule)
+    const flashBrokerAave = (await new ethers.Contract(proxy.address, AaveFlashModule__factory.createInterface(), signer) as AaveFlashModule)
 
     // broker
     const brokerModuleBalancer = await new BalancerFlashModule__factory(signer).deploy(

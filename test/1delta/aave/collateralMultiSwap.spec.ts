@@ -8,7 +8,7 @@ import {
 } from '../../../types';
 import { FeeAmount } from '../../uniswap-v3/periphery/shared/constants';
 import { expandTo18Decimals } from '../../uniswap-v3/periphery/shared/expandTo18Decimals';
-import { initAaveBroker, AaveBrokerFixtureInclV2, aaveBrokerFixtureInclV2 } from '../shared/aaveBrokerFixture';
+import {  AaveBrokerFixtureInclV2, aaveBrokerFixtureInclV2, initAaveBroker } from '../shared/aaveBrokerFixture';
 import { expect } from '../shared/expect'
 import { initializeMakeSuite, InterestRateMode, AAVEFixture } from '../shared/aaveFixture';
 import { addLiquidity, addLiquidityV2, UniswapMinimalFixtureNoTokens, uniswapMinimalFixtureNoTokens } from '../shared/uniswapFixture';
@@ -43,8 +43,8 @@ describe('AAVE Brokered Collateral Multi Swap operations', async () => {
         uniswapV2 = await uniV2Fixture(deployer, aaveTest.tokens["WETH"].address)
         broker = await aaveBrokerFixtureInclV2(deployer, uniswap.factory.address, aaveTest.pool.address, uniswapV2.factoryV2.address, aaveTest.tokens["WETH"].address)
 
-        await initAaveBroker(deployer, broker as any, uniswap, aaveTest)
-        await broker.manager.setUniswapRouter(uniswap.router.address)
+        await initAaveBroker(deployer, broker as any, aaveTest.pool.address)
+
         // approve & fund wallets
         let keys = Object.keys(aaveTest.tokens)
         for (let i = 0; i < keys.length; i++) {
@@ -257,8 +257,8 @@ describe('AAVE Brokered Collateral Multi Swap operations', async () => {
         }
 
 
-        await aaveTest.aTokens[supplyTokenIndex].connect(carol).approve(broker.broker.address, constants.MaxUint256)
-        await aaveTest.aTokens[supplyTokenIndexOther].connect(carol).approve(broker.broker.address, constants.MaxUint256)
+        await aaveTest.aTokens[supplyTokenIndex].connect(carol).approve(broker.brokerProxy.address, constants.MaxUint256)
+        await aaveTest.aTokens[supplyTokenIndexOther].connect(carol).approve(broker.brokerProxy.address, constants.MaxUint256)
 
 
         // swap collateral
@@ -327,8 +327,8 @@ describe('AAVE Brokered Collateral Multi Swap operations', async () => {
         }
 
 
-        await aaveTest.aTokens[supplyTokenIndex].connect(test0).approve(broker.broker.address, constants.MaxUint256)
-        await aaveTest.aTokens[supplyTokenIndexOther].connect(test0).approve(broker.broker.address, constants.MaxUint256)
+        await aaveTest.aTokens[supplyTokenIndex].connect(test0).approve(broker.brokerProxy.address, constants.MaxUint256)
+        await aaveTest.aTokens[supplyTokenIndexOther].connect(test0).approve(broker.brokerProxy.address, constants.MaxUint256)
 
 
         // swap collateral
@@ -336,7 +336,7 @@ describe('AAVE Brokered Collateral Multi Swap operations', async () => {
 
         const balBefore = await aaveTest.aTokens[supplyTokenIndexOther].balanceOf(test0.address)
 
-        await broker.trader.connect(test0).swapAllIn(params.amountOutMinimum, params.path)
+        await broker.trader.connect(test0).flashSwapAllIn(params.amountOutMinimum, params.path)
 
         const supplyTokenBalanceAfter = await aaveTest.aTokens[supplyTokenIndex].balanceOf(test0.address)
         const balAfter = await aaveTest.aTokens[supplyTokenIndexOther].balanceOf(test0.address)
@@ -400,8 +400,8 @@ describe('AAVE Brokered Collateral Multi Swap operations', async () => {
             amountInMaximum: swapAmount.mul(102).div(100)
         }
 
-        await aaveTest.aTokens[supplyTokenIndex].connect(gabi).approve(broker.broker.address, constants.MaxUint256)
-        await aaveTest.aTokens[supplyTokenIndexOther].connect(gabi).approve(broker.broker.address, constants.MaxUint256)
+        await aaveTest.aTokens[supplyTokenIndex].connect(gabi).approve(broker.brokerProxy.address, constants.MaxUint256)
+        await aaveTest.aTokens[supplyTokenIndexOther].connect(gabi).approve(broker.brokerProxy.address, constants.MaxUint256)
 
 
         // swap collateral

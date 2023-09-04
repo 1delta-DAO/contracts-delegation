@@ -5,7 +5,7 @@ pragma solidity ^0.8.0;
 /******************************************************************************\
 * Author: Achthar <achim@1delta.io>
 *
-* Implementation of the 1Delta brokerage proxy.
+* Implementation of the 1delta margin aggregator proxy.
 /******************************************************************************/
 
 import {LibModules} from "./libraries/LibModules.sol";

@@ -1,13 +1,11 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import {
-    AAVEMarginTraderInit,
-    AAVEMarginTraderInit__factory,
+    AaveMarginTraderInit,
+    AaveMarginTraderInit__factory,
     ConfigModule__factory,
     ManagementModule__factory,
 } from "../../types";
 import { ModuleConfigAction, getSelectors } from "../../test/diamond/libraries/diamond";
-import { FlashBrokerFixture } from "./00_helperFlash";
-import { generalAddresses } from "../00_addresses";
 import { addressesAaveATokens, addressesAaveSTokens, addressesAaveVTokens, addressesTokens } from "../../scripts/aaveAddresses";
 import { oneInchRouter, paraswapRouter, paraswapTransferProxy } from "../../scripts/miscAddresses";
 import { ethers } from "hardhat";
@@ -18,7 +16,7 @@ export async function initializeFlashBroker(_chainId: number, signer: SignerWith
     let tx;
 
     const dc = await new ConfigModule__factory(signer).attach(deltaProxy)
-    const initAAVE = await new AAVEMarginTraderInit__factory(signer).deploy(
+    const initAAVE = await new AaveMarginTraderInit__factory(signer).deploy(
         opts
     )
     console.log("Deploy config: ", initAAVE.deployTransaction.hash)
@@ -36,21 +34,14 @@ export async function initializeFlashBroker(_chainId: number, signer: SignerWith
     await tx.wait()
 
     // initialize storage
-    const dcInit = await new ethers.Contract(deltaProxy, AAVEMarginTraderInit__factory.createInterface(), signer) as AAVEMarginTraderInit
+    const dcInit = await new ethers.Contract(deltaProxy, AaveMarginTraderInit__factory.createInterface(), signer) as AaveMarginTraderInit
     tx = await dcInit.initAAVEMarginTrader(aavePool)
     await tx.wait()
 
-    console.log("completed initialization of AaveMargintraderInit")
+    console.log("completed initialization of AaveMarginTraderInit")
 
     // get management module
     const management = await new ManagementModule__factory(signer).attach(deltaProxy)
-
-    const aaveWETH = (generalAddresses as any).WETH[chainId]
-
-    console.log("set weth", aaveWETH)
-    tx = await management.setNativeWrapper(aaveWETH, opts)
-    await tx.wait()
-    console.log("weth set")
 
     const aTokenKeys = Object.keys(addressesAaveATokens).filter(k => Boolean(addressesAaveATokens[k][chainId]))
 

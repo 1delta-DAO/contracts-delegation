@@ -38,7 +38,7 @@ describe('CompoundV3 Brokered Margin Multi Swap operations', async () => {
         broker = await cometBrokerFixture(deployer, uniswap.factory.address)
 
         await initCometBroker(deployer, broker, uniswap, compound)
-        await broker.manager.setUniswapRouter(uniswap.router.address)
+
 
         const tokens = Object.values(compound.tokens)
         const keys = Object.keys(compound.tokens)
@@ -169,8 +169,8 @@ describe('CompoundV3 Brokered Margin Multi Swap operations', async () => {
 
         await compound.comet.connect(carol).supply(compound.tokens[supplyTokenIndex].address, providedAmount)
 
-        await compound.tokens[supplyTokenIndex].connect(carol).approve(broker.broker.address, constants.MaxUint256)
-        await compound.tokens["USDC"].connect(carol).approve(broker.broker.address, constants.MaxUint256)
+        await compound.tokens[supplyTokenIndex].connect(carol).approve(broker.brokerProxy.address, constants.MaxUint256)
+        await compound.tokens["USDC"].connect(carol).approve(broker.brokerProxy.address, constants.MaxUint256)
 
 
         await compound.tokens[supplyTokenIndex].connect(carol).approve(compound.comet.address, constants.MaxUint256)
@@ -180,7 +180,7 @@ describe('CompoundV3 Brokered Margin Multi Swap operations', async () => {
         const cBefore = await compound.comet.collateralBalanceOf(gabi.address, compound.tokens[supplyTokenIndex].address)
         const dBefore = await compound.comet.borrowBalanceOf(gabi.address)
 
-        await compound.comet.connect(carol).allow(broker.broker.address, true)
+        await compound.comet.connect(carol).allow(broker.brokerProxy.address, true)
         await broker.broker.connect(carol).openMarginPositionExactIn(params)
 
 
@@ -212,7 +212,7 @@ describe('CompoundV3 Brokered Margin Multi Swap operations', async () => {
             amountOutMinimum: swapAmount.mul(101).div(100)
         }
 
-        await compound.comet.connect(carol).allow(broker.broker.address, true)
+        await compound.comet.connect(carol).allow(broker.brokerProxy.address, true)
 
         await expect(broker.broker.connect(carol).openMarginPositionExactIn(params)).to.be.revertedWith('Deposited too little')
 
@@ -245,16 +245,16 @@ describe('CompoundV3 Brokered Margin Multi Swap operations', async () => {
         await compound.comet.connect(gabi).supply(compound.tokens[supplyTokenIndex].address, providedAmount)
 
 
-        await compound.tokens[borrowTokenIndex].connect(gabi).approve(broker.broker.address, constants.MaxUint256)
-        await compound.tokens[supplyTokenIndex].connect(gabi).approve(broker.broker.address, constants.MaxUint256)
-        await compound.tokens["USDC"].connect(gabi).approve(broker.broker.address, constants.MaxUint256)
+        await compound.tokens[borrowTokenIndex].connect(gabi).approve(broker.brokerProxy.address, constants.MaxUint256)
+        await compound.tokens[supplyTokenIndex].connect(gabi).approve(broker.brokerProxy.address, constants.MaxUint256)
+        await compound.tokens["USDC"].connect(gabi).approve(broker.brokerProxy.address, constants.MaxUint256)
 
 
         await compound.tokens[supplyTokenIndex].connect(gabi).approve(compound.comet.address, constants.MaxUint256)
 
         await compound.comet.connect(gabi).supply(compound.tokens[supplyTokenIndex].address, 100, )
 
-        await compound.comet.connect(gabi).allow(broker.broker.address, true)
+        await compound.comet.connect(gabi).allow(broker.brokerProxy.address, true)
 
         await broker.broker.connect(gabi).openMarginPositionExactOut(params)
 
@@ -288,7 +288,7 @@ describe('CompoundV3 Brokered Margin Multi Swap operations', async () => {
             amountInMaximum: swapAmount.mul(99).div(100)
         }
 
-        await compound.comet.connect(gabi).allow(broker.broker.address, true)
+        await compound.comet.connect(gabi).allow(broker.brokerProxy.address, true)
         await expect(broker.broker.connect(gabi).openMarginPositionExactOut(params)).to.be.revertedWith('Had to borrow too much')
     })
 
@@ -323,7 +323,7 @@ describe('CompoundV3 Brokered Margin Multi Swap operations', async () => {
         const cBefore = await compound.comet.collateralBalanceOf(carol.address, compound.tokens[supplyTokenIndex].address)
         const dBefore = await compound.comet.borrowBalanceOf(carol.address)
 
-        await compound.comet.connect(carol).allow(broker.broker.address, true)
+        await compound.comet.connect(carol).allow(broker.brokerProxy.address, true)
         // open margin position
         await broker.broker.connect(carol).trimMarginPositionExactIn(params)
 
@@ -434,7 +434,7 @@ describe('CompoundV3 Brokered Margin Multi Swap operations', async () => {
         const cBefore = await compound.comet.collateralBalanceOf(gabi.address, compound.tokens[supplyTokenIndex].address)
         const dBefore = await compound.comet.borrowBalanceOf(gabi.address)
 
-        await compound.comet.connect(gabi).allow(broker.broker.address, true)
+        await compound.comet.connect(gabi).allow(broker.brokerProxy.address, true)
         // trim margin position
         await broker.broker.connect(gabi).trimMarginPositionExactOut(params)
 

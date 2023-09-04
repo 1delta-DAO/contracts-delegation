@@ -4,7 +4,7 @@ import { findBalanceSlot, getSlot } from "../shared/forkUtils";
 import { aaveAddresses, generalAddresses, uniswapAddresses } from "../../../deploy/00_addresses";
 import { addressesTokens } from "../../../scripts/aaveAddresses";
 import { ERC20, Pool, Pool__factory, VariableDebtToken } from "../../../types";
-import { createBroker, initializeBroker } from '../../../deploy/1delta/00_helper'
+import { createBrokerV2, initializeBroker } from '../../../deploy/1delta/00_helper'
 import { addBalancer } from "../shared/aaveBrokerFixture";
 import { expandToDecimals } from "../shared/misc";
 import axios from "axios";
@@ -67,8 +67,8 @@ it("Mint USDC", async function () {
     const aavePoolContract = await ethers.getContractAt("Pool", aavePool) as Pool
 
     console.log("Deploy  broker")
-    const broker = await createBroker(signer, uniswapFactoryAddress, aavePool)
-    await initializeBroker(signer, broker, uniswapFactoryAddress, aavePool, wethAddress)
+    const broker = await createBrokerV2(signer, uniswapFactoryAddress, aavePool)
+    await initializeBroker(signer, broker, aavePool)
 
     const balancerModule = (await addBalancer(signer, broker as any, paraswapRouter, balancerV2Vault, aavePool)).delta
     await broker.manager.setValidTarget(oneInchRouter, true)
@@ -109,7 +109,7 @@ it("Mint USDC", async function () {
         interestRateModeOut: 0, // unused
         withdrawMax: false
     }
-    console.log("Executiong trade")
+    console.log("Executing trade")
     await balancerModule.executeOnBalancer(
         wethAddress,
         swapAmount,

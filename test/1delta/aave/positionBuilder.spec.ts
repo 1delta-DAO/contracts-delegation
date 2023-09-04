@@ -12,7 +12,7 @@ import {
 } from '../../../types';
 import { FeeAmount } from '../../uniswap-v3/periphery/shared/constants';
 import { expandTo18Decimals } from '../../uniswap-v3/periphery/shared/expandTo18Decimals'
-import { initAaveBroker, AaveBrokerFixtureInclV2, aaveBrokerFixtureInclV2, addBalancer, ONE_18 } from '../shared/aaveBrokerFixture';
+import { AaveBrokerFixtureInclV2, aaveBrokerFixtureInclV2, addBalancer, initAaveBroker, ONE_18 } from '../shared/aaveBrokerFixture';
 import { expect } from '../shared/expect'
 import { initializeMakeSuite, InterestRateMode, AAVEFixture } from '../shared/aaveFixture';
 import { addLiquidity, uniswapMinimalFixtureNoTokens, UniswapMinimalFixtureNoTokens } from '../shared/uniswapFixture';
@@ -83,11 +83,11 @@ describe('AAVE Money Market operations', async () => {
         uniswapV2 = await uniV2Fixture(deployer, aaveTest.tokens["WETH"].address)
         broker = await aaveBrokerFixtureInclV2(deployer, uniswap.factory.address, aaveTest.pool.address, uniswapV2.factoryV2.address, aaveTest.tokens["WETH"].address)
 
-        await initAaveBroker(deployer, broker as any, uniswap, aaveTest)
+        await initAaveBroker(deployer, broker as any, aaveTest.pool.address)
         const dat = await addBalancer(deployer, broker, mockRouter.address, mockBalancer.address, aaveTest.pool.address)
         delta = dat.delta
         balancerModule = dat.balancerModule
-        await broker.manager.setUniswapRouter(uniswap.router.address)
+
         // approve & fund wallets
         let keys = Object.keys(aaveTest.tokens)
         for (let i = 0; i < keys.length; i++) {
@@ -161,7 +161,7 @@ describe('AAVE Money Market operations', async () => {
             await broker.manager.addAToken(token.address, aaveTest.aTokens[key].address)
             await broker.manager.addSToken(token.address, aaveTest.sTokens[key].address)
             await broker.manager.addVToken(token.address, aaveTest.vTokens[key].address)
-            await broker.manager.approveRouter([token.address])
+
 
         }
 
@@ -268,7 +268,7 @@ describe('AAVE Money Market operations', async () => {
         const borrowIndex = "AAVE"
 
         const swapAmount = expandTo18Decimals(5)
-        await aaveTest.tokens[originIndex].connect(carol).approve(broker.broker.address, constants.MaxUint256)
+        await aaveTest.tokens[originIndex].connect(carol).approve(broker.brokerProxy.address, constants.MaxUint256)
 
         let _tokensInRoute = [
             aaveTest.tokens[originIndex],
@@ -379,7 +379,7 @@ describe('AAVE Money Market operations', async () => {
         const targetIndex = "DAI"
 
         const swapAmount = expandTo18Decimals(1)
-        await aaveTest.tokens[originIndex].connect(carol).approve(broker.broker.address, constants.MaxUint256)
+        await aaveTest.tokens[originIndex].connect(carol).approve(broker.brokerProxy.address, constants.MaxUint256)
 
         let _tokensInRoute = [
             aaveTest.tokens[originIndex],
@@ -449,7 +449,7 @@ describe('AAVE Money Market operations', async () => {
         const targetIndex = "DAI"
 
         const swapAmount = expandTo18Decimals(70)
-        await aaveTest.tokens[originIndex].connect(gabi).approve(broker.broker.address, constants.MaxUint256)
+        await aaveTest.tokens[originIndex].connect(gabi).approve(broker.brokerProxy.address, constants.MaxUint256)
 
         let _tokensInRoute = [
             aaveTest.tokens[originIndex],
@@ -516,7 +516,7 @@ describe('AAVE Money Market operations', async () => {
         const targetIndex = "DAI"
 
         const swapAmount = expandTo18Decimals(1)
-        await aaveTest.tokens[originIndex].connect(gabi).approve(broker.broker.address, constants.MaxUint256)
+        await aaveTest.tokens[originIndex].connect(gabi).approve(broker.brokerProxy.address, constants.MaxUint256)
 
         let _tokensInRoute = [
             aaveTest.tokens[originIndex],
@@ -594,8 +594,8 @@ describe('AAVE Money Market operations', async () => {
 
         // supply
         await aaveTest.pool.connect(achi).supply(aaveTest.tokens[originIndex].address, supplied, achi.address, 0)
-        // await aaveTest.tokens[originIndex].connect(achi).approve(broker.broker.address, constants.MaxUint256)
-        await aaveTest.aTokens[originIndex].connect(achi).approve(broker.broker.address, constants.MaxUint256)
+        // await aaveTest.tokens[originIndex].connect(achi).approve(broker.brokerProxy.address, constants.MaxUint256)
+        await aaveTest.aTokens[originIndex].connect(achi).approve(broker.brokerProxy.address, constants.MaxUint256)
 
         let _tokensInRoute = [
             aaveTest.tokens[originIndex],
@@ -786,7 +786,7 @@ describe('AAVE Money Market operations', async () => {
 
         // supply
         await aaveTest.pool.connect(achi).supply(aaveTest.tokens[originIndex].address, supplied, achi.address, 0)
-        await aaveTest.aTokens[originIndex].connect(achi).approve(broker.broker.address, constants.MaxUint256)
+        await aaveTest.aTokens[originIndex].connect(achi).approve(broker.brokerProxy.address, constants.MaxUint256)
 
         let _tokensInRoute = [
             aaveTest.tokens[originIndex],
@@ -1048,9 +1048,9 @@ describe('AAVE Money Market operations', async () => {
 
         await aaveTest.tokens[originIndex].connect(dennis).approve(broker.moneyMarket.address, constants.MaxUint256)
 
-        await aaveTest.aTokens[borrowTokenIndex].connect(dennis).approve(broker.broker.address, constants.MaxUint256)
+        await aaveTest.aTokens[borrowTokenIndex].connect(dennis).approve(broker.brokerProxy.address, constants.MaxUint256)
 
-        await aaveTest.vTokens[borrowTokenIndex].connect(dennis).approveDelegation(broker.broker.address, constants.MaxUint256)
+        await aaveTest.vTokens[borrowTokenIndex].connect(dennis).approveDelegation(broker.brokerProxy.address, constants.MaxUint256)
 
         const balBefore = await aaveTest.tokens[originIndex].balanceOf(dennis.address)
         const bbBefore = await aaveTest.pool.getUserAccountData(dennis.address)
@@ -1142,9 +1142,9 @@ describe('AAVE Money Market operations', async () => {
 
         await aaveTest.tokens[originIndex].connect(dennis).approve(broker.moneyMarket.address, constants.MaxUint256)
 
-        await aaveTest.aTokens[borrowTokenIndex].connect(dennis).approve(broker.broker.address, constants.MaxUint256)
+        await aaveTest.aTokens[borrowTokenIndex].connect(dennis).approve(broker.brokerProxy.address, constants.MaxUint256)
 
-        await aaveTest.vTokens[borrowTokenIndex].connect(dennis).approveDelegation(broker.broker.address, constants.MaxUint256)
+        await aaveTest.vTokens[borrowTokenIndex].connect(dennis).approveDelegation(broker.brokerProxy.address, constants.MaxUint256)
 
         const balBefore = await provider.getBalance(dennis.address);
         const bbBefore = await aaveTest.pool.getUserAccountData(dennis.address)
@@ -1328,9 +1328,9 @@ describe('AAVE Money Market operations', async () => {
         ])
         await aaveTest.tokens[originIndex].connect(test1).approve(broker.moneyMarket.address, constants.MaxUint256)
 
-        await aaveTest.aTokens[borrowTokenIndex].connect(test1).approve(broker.broker.address, constants.MaxUint256)
+        await aaveTest.aTokens[borrowTokenIndex].connect(test1).approve(broker.brokerProxy.address, constants.MaxUint256)
 
-        await aaveTest.vTokens[borrowTokenIndex].connect(test1).approveDelegation(broker.broker.address, constants.MaxUint256)
+        await aaveTest.vTokens[borrowTokenIndex].connect(test1).approveDelegation(broker.brokerProxy.address, constants.MaxUint256)
 
         const balBefore = await aaveTest.tokens[originIndex].balanceOf(test1.address)
         const vBalBefore = await aaveTest.vTokens[borrowTokenIndex].balanceOf(test1.address)
@@ -1424,9 +1424,9 @@ describe('AAVE Money Market operations', async () => {
 
         await aaveTest.tokens[originIndex].connect(xander).approve(broker.moneyMarket.address, constants.MaxUint256)
 
-        await aaveTest.aTokens[borrowTokenIndex].connect(xander).approve(broker.broker.address, constants.MaxUint256)
+        await aaveTest.aTokens[borrowTokenIndex].connect(xander).approve(broker.brokerProxy.address, constants.MaxUint256)
 
-        await aaveTest.vTokens[borrowTokenIndex].connect(xander).approveDelegation(broker.broker.address, constants.MaxUint256)
+        await aaveTest.vTokens[borrowTokenIndex].connect(xander).approveDelegation(broker.brokerProxy.address, constants.MaxUint256)
 
         // const balBefore = await aaveTest.tokens[originIndex].balanceOf(xander.address)
         const balBefore = await provider.getBalance(xander.address);
@@ -1535,9 +1535,9 @@ describe('AAVE Money Market operations', async () => {
 
         await aaveTest.tokens[originIndex].connect(test2).approve(broker.moneyMarket.address, constants.MaxUint256)
 
-        await aaveTest.aTokens[borrowTokenIndex].connect(test2).approve(broker.broker.address, constants.MaxUint256)
+        await aaveTest.aTokens[borrowTokenIndex].connect(test2).approve(broker.brokerProxy.address, constants.MaxUint256)
 
-        await aaveTest.vTokens[borrowTokenIndex].connect(test2).approveDelegation(broker.broker.address, constants.MaxUint256)
+        await aaveTest.vTokens[borrowTokenIndex].connect(test2).approveDelegation(broker.brokerProxy.address, constants.MaxUint256)
 
         // const balBefore = await aaveTest.tokens[originIndex].balanceOf(test2.address)
         const balBefore = await provider.getBalance(test2.address);

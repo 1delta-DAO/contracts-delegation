@@ -49,21 +49,6 @@ contract ManagementModule is WithStorage {
         }
     }
 
-    function setUniswapRouter(address _router) external onlyManagement {
-        us().swapRouter = _router;
-    }
-
-    function setNativeWrapper(address _nativeWrapper) external onlyManagement {
-        us().weth = _nativeWrapper;
-    }
-
-    function approveRouter(address[] memory assets) external onlyManagement {
-        address router = us().swapRouter;
-        for (uint256 i = 0; i < assets.length; i++) {
-            IERC20(assets[i]).approve(router, type(uint256).max);
-        }
-    }
-
     function setValidTarget(address target, bool value) external onlyManagement {
         gs().isValidTarget[target] = value;
     }

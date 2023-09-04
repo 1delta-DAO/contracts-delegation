@@ -7,7 +7,7 @@ import {
 } from '../../../types';
 import { FeeAmount } from '../../uniswap-v3/periphery/shared/constants';
 import { expandTo18Decimals } from '../../uniswap-v3/periphery/shared/expandTo18Decimals';
-import { initAaveBroker,  ONE_18, AaveBrokerFixtureInclV2, aaveBrokerFixtureInclV2 } from '../shared/aaveBrokerFixture';
+import { ONE_18, AaveBrokerFixtureInclV2, aaveBrokerFixtureInclV2, initAaveBroker } from '../shared/aaveBrokerFixture';
 import { expect } from '../shared/expect'
 import { initializeMakeSuite, InterestRateMode, AAVEFixture, deposit } from '../shared/aaveFixture';
 import { addLiquidity, addLiquidityV2, uniswapMinimalFixtureNoTokens, UniswapMinimalFixtureNoTokens } from '../shared/uniswapFixture';
@@ -44,7 +44,7 @@ describe('AAVE Brokered Margin Swap operations', async () => {
         uniswapV2 = await uniV2Fixture(deployer, aaveTest.tokens["WETH"].address)
         broker = await aaveBrokerFixtureInclV2(deployer, uniswap.factory.address, aaveTest.pool.address, uniswapV2.factoryV2.address, aaveTest.tokens["WETH"].address)
 
-        await initAaveBroker(deployer, broker as any, uniswap, aaveTest)
+        await initAaveBroker(deployer, broker as any, aaveTest.pool.address)
 
         // approve & fund wallets
         let keys = Object.keys(aaveTest.tokens)
@@ -210,12 +210,12 @@ describe('AAVE Brokered Margin Swap operations', async () => {
 
         await deposit(aaveTest, supplyTokenIndex, carol, providedAmount)
 
-        await aaveTest.tokens[borrowTokenIndex].connect(carol).approve(broker.broker.address, constants.MaxUint256)
-        await aaveTest.tokens[supplyTokenIndex].connect(carol).approve(broker.broker.address, constants.MaxUint256)
+        await aaveTest.tokens[borrowTokenIndex].connect(carol).approve(broker.brokerProxy.address, constants.MaxUint256)
+        await aaveTest.tokens[supplyTokenIndex].connect(carol).approve(broker.brokerProxy.address, constants.MaxUint256)
 
-        await aaveTest.vTokens[borrowTokenIndex].connect(carol).approveDelegation(broker.broker.address, constants.MaxUint256)
+        await aaveTest.vTokens[borrowTokenIndex].connect(carol).approveDelegation(broker.brokerProxy.address, constants.MaxUint256)
 
-        await aaveTest.sTokens[borrowTokenIndex].connect(carol).approveDelegation(broker.broker.address, constants.MaxUint256)
+        await aaveTest.sTokens[borrowTokenIndex].connect(carol).approveDelegation(broker.brokerProxy.address, constants.MaxUint256)
 
         await aaveTest.tokens[supplyTokenIndex].connect(carol).approve(aaveTest.pool.address, constants.MaxUint256)
         await aaveTest.pool.connect(carol).supply(aaveTest.tokens[supplyTokenIndex].address, ONE_18, carol.address, 0)
@@ -235,12 +235,12 @@ describe('AAVE Brokered Margin Swap operations', async () => {
 
         const swapAmount = expandTo18Decimals(950)
 
-        await aaveTest.tokens[borrowTokenIndex].connect(gabi).approve(broker.broker.address, constants.MaxUint256)
-        await aaveTest.tokens[supplyTokenIndex].connect(gabi).approve(broker.broker.address, constants.MaxUint256)
+        await aaveTest.tokens[borrowTokenIndex].connect(gabi).approve(broker.brokerProxy.address, constants.MaxUint256)
+        await aaveTest.tokens[supplyTokenIndex].connect(gabi).approve(broker.brokerProxy.address, constants.MaxUint256)
 
-        await aaveTest.vTokens[borrowTokenIndex].connect(gabi).approveDelegation(broker.broker.address, constants.MaxUint256)
+        await aaveTest.vTokens[borrowTokenIndex].connect(gabi).approveDelegation(broker.brokerProxy.address, constants.MaxUint256)
 
-        await aaveTest.sTokens[borrowTokenIndex].connect(gabi).approveDelegation(broker.broker.address, constants.MaxUint256)
+        await aaveTest.sTokens[borrowTokenIndex].connect(gabi).approveDelegation(broker.brokerProxy.address, constants.MaxUint256)
 
         await aaveTest.tokens[supplyTokenIndex].connect(gabi).approve(aaveTest.pool.address, constants.MaxUint256)
 
@@ -308,8 +308,8 @@ describe('AAVE Brokered Margin Swap operations', async () => {
             amountIn: swapAmount,
             amountOutMinimum: swapAmount.mul(99).div(100)
         }
-        await aaveTest.aTokens[supplyTokenIndex].connect(carol).approve(broker.broker.address, constants.MaxUint256)
-        await aaveTest.vTokens[borrowTokenIndex].connect(carol).approveDelegation(broker.broker.address, constants.MaxUint256)
+        await aaveTest.aTokens[supplyTokenIndex].connect(carol).approve(broker.brokerProxy.address, constants.MaxUint256)
+        await aaveTest.vTokens[borrowTokenIndex].connect(carol).approveDelegation(broker.brokerProxy.address, constants.MaxUint256)
 
         const bBefore = await aaveTest.pool.getUserAccountData(carol.address)
 
@@ -378,8 +378,8 @@ describe('AAVE Brokered Margin Swap operations', async () => {
             amountOutMinimum: supply.mul(95).div(100)
         }
 
-        await aaveTest.aTokens[supplyTokenIndex].connect(test1).approve(broker.broker.address, constants.MaxUint256)
-        await aaveTest.vTokens[borrowTokenIndex].connect(test1).approveDelegation(broker.broker.address, constants.MaxUint256)
+        await aaveTest.aTokens[supplyTokenIndex].connect(test1).approve(broker.brokerProxy.address, constants.MaxUint256)
+        await aaveTest.vTokens[borrowTokenIndex].connect(test1).approveDelegation(broker.brokerProxy.address, constants.MaxUint256)
 
         // increase ime to make sure that interest accrues
         await network.provider.send("evm_increaseTime", [3600])
@@ -429,8 +429,8 @@ describe('AAVE Brokered Margin Swap operations', async () => {
             interestRateMode: InterestRateMode.VARIABLE,
         }
 
-        await aaveTest.aTokens[supplyTokenIndex].connect(gabi).approve(broker.broker.address, constants.MaxUint256)
-        await aaveTest.vTokens[borrowTokenIndex].connect(gabi).approveDelegation(broker.broker.address, constants.MaxUint256)
+        await aaveTest.aTokens[supplyTokenIndex].connect(gabi).approve(broker.brokerProxy.address, constants.MaxUint256)
+        await aaveTest.vTokens[borrowTokenIndex].connect(gabi).approveDelegation(broker.brokerProxy.address, constants.MaxUint256)
 
         const bBefore = await aaveTest.pool.getUserAccountData(gabi.address)
 
@@ -490,8 +490,8 @@ describe('AAVE Brokered Margin Swap operations', async () => {
             interestRateMode: InterestRateMode.VARIABLE,
         }
 
-        await aaveTest.aTokens[supplyTokenIndex].connect(test2).approve(broker.broker.address, constants.MaxUint256)
-        await aaveTest.vTokens[borrowTokenIndex].connect(test2).approveDelegation(broker.broker.address, constants.MaxUint256)
+        await aaveTest.aTokens[supplyTokenIndex].connect(test2).approve(broker.brokerProxy.address, constants.MaxUint256)
+        await aaveTest.vTokens[borrowTokenIndex].connect(test2).approveDelegation(broker.brokerProxy.address, constants.MaxUint256)
 
         // increase ime to make sure that interest accrues
         await network.provider.send("evm_increaseTime", [3600])

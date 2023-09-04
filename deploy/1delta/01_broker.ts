@@ -1,7 +1,8 @@
 import '@nomiclabs/hardhat-ethers'
 import hre from 'hardhat'
-import { aaveAddresses, generalAddresses, uniswapAddresses } from "../00_addresses";
-import { createBroker, initializeBroker } from './00_helper';
+import { balancerV2Vault } from '../../scripts/miscAddresses';
+import { aaveAddresses } from "../00_addresses";
+import { createBrokerV2, initializeBroker } from './00_helper';
 
 async function main() {
 
@@ -10,10 +11,10 @@ async function main() {
     const chainId = await operator.getChainId();
 
     console.log("Deploy Broker Proxy on", chainId, "by", operator.address)
-    const broker = await createBroker(operator, uniswapAddresses.factory[chainId], aaveAddresses.v3pool[chainId])
+    const broker = await createBrokerV2(operator, balancerV2Vault[chainId], aaveAddresses.v3pool[chainId])
 
     console.log('Initialize')
-    await initializeBroker(operator, broker, uniswapAddresses.factory[chainId], aaveAddresses.v3pool[chainId], generalAddresses.WETH[chainId])
+    await initializeBroker(operator, broker, aaveAddresses.v3pool[chainId])
 
     console.log('Completed')
 }

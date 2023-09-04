@@ -43,7 +43,7 @@ async function main() {
     // deploy ConfigModule
     const broker = await new ConfigModule__factory(operator).attach(proxyAddress)
 
-    const flashBroker = await new DeltaFlashAggregator__factory(operator).deploy(aavePool)
+    const flashBroker = await new DeltaFlashAggregator__factory(operator).deploy()
     await flashBroker.deployed()
     console.log("flashBroker deployed")
 

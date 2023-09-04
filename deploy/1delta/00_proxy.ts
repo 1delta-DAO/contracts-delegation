@@ -9,14 +9,14 @@ async function main() {
     const chainId = await operator.getChainId();
     console.log("Deploy Module Manager on", chainId, "by", operator.address)
     // deploy ConfigModule
-    const confgModule = await new ConfigModule__factory(operator).deploy()
-    await confgModule.deployed()
+    const configModule = await new ConfigModule__factory(operator).deploy()
+    await configModule.deployed()
 
     console.log("deploy broker proxy")
-    const proxy = await new DeltaBrokerProxy__factory(operator).deploy(operator.address, confgModule.address)
+    const proxy = await new DeltaBrokerProxy__factory(operator).deploy(operator.address, configModule.address)
     await proxy.deployed()
 
-    console.log('ModuleConfig:', confgModule.address)
+    console.log('ModuleConfig:', configModule.address)
     console.log('Proxy:', proxy.address)
 }
 

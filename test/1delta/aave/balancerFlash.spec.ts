@@ -12,7 +12,7 @@ import {
     WETH9
 } from '../../../types';
 import { expandTo18Decimals } from '../../uniswap-v3/periphery/shared/expandTo18Decimals';
-import { initAaveBroker, aaveBrokerFixture, AaveBrokerFixture, ONE_18, addBalancer } from '../shared/aaveBrokerFixture';
+import { ONE_18, addBalancer, initAaveBroker, AaveBrokerFixtureInclV2, aaveBrokerFixtureInclV2 } from '../shared/aaveBrokerFixture';
 import { expect } from '../shared/expect'
 import { initializeMakeSuite, InterestRateMode, AAVEFixture, deposit } from '../shared/aaveFixture';
 import { toNumber } from 'lodash';
@@ -35,7 +35,7 @@ describe('Balancer Flash loans for AAVE', async () => {
     let test6: SignerWithAddress;
     let test7: SignerWithAddress;
     let aaveTest: AAVEFixture;
-    let broker: AaveBrokerFixture;
+    let broker: AaveBrokerFixtureInclV2;
     let tokens: (MintableERC20 | WETH9)[];
     let provider: MockProvider
     let mockRouter: MockRouter
@@ -56,8 +56,8 @@ describe('Balancer Flash loans for AAVE', async () => {
 
         aaveTest = await initializeMakeSuite(deployer, 0, true)
         tokens = Object.values(aaveTest.tokens)
-        broker = await aaveBrokerFixture(deployer, ethers.constants.AddressZero, aaveTest.pool.address)
-        await initAaveBroker(deployer, broker, undefined, aaveTest)
+        broker = await aaveBrokerFixtureInclV2(deployer, ethers.constants.AddressZero, aaveTest.pool.address, ethers.constants.AddressZero, ethers.constants.AddressZero)
+        await initAaveBroker(deployer, broker, aaveTest.pool.address)
         const dat = await addBalancer(deployer, broker, mockRouter.address, mockBalancer.address, aaveTest.pool.address)
         balancerModule = dat.delta
 
@@ -1061,7 +1061,7 @@ describe('Balancer Flash loans for AAVE', async () => {
 // ························································|·································|·············|·············|···········|···············|··············
 // |  @openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20  ·  approve                        ·      34108  ·      51244  ·    46948  ·            4  ·       2.58  │
 // ························································|·································|·············|·············|···········|···············|··············
-// |  AAVEMarginTraderInit                                 ·  initAAVEMarginTrader           ·          -  ·          -  ·   115213  ·            1  ·       6.32  │
+// |  AaveMarginTraderInit                                 ·  initAAVEMarginTrader           ·          -  ·          -  ·   115213  ·            1  ·       6.32  │
 // ························································|·································|·············|·············|···········|···············|··············
 // |  ACLManager                                           ·  addEmergencyAdmin              ·          -  ·          -  ·    50777  ·            1  ·       2.79  │
 // ························································|·································|·············|·············|···········|···············|··············

@@ -144,7 +144,7 @@ it("Mint USDC", async function () {
             interestRateModeOut: 0, // unused
             withdrawMax: false
         }
-        console.log("Executiong trade", responseTx?.data.data)
+        console.log("Executing trade", responseTx?.data.data)
         await balancerModule.executeOnBalancer(
             fromToken,
             amountToBorrowMax,
@@ -160,7 +160,7 @@ it("Mint USDC", async function () {
             interestRateModeOut: 0, // unused
             withdrawMax: false
         }
-        console.log("Executiong trade")
+        console.log("Executing trade")
         await balancerModule.executeOnBalancer(
             fromToken,
             responseQuote.data.priceRoute.srcAmount,

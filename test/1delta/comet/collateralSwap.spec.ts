@@ -37,7 +37,7 @@ describe('CompoundV3 Brokered Collateral Swap operations', async () => {
         broker = await cometBrokerFixture(deployer, uniswap.factory.address)
 
         await initCometBroker(deployer, broker, uniswap, compound)
-        await broker.manager.setUniswapRouter(uniswap.router.address)
+
 
         const tokens = Object.values(compound.tokens)
         const keys = Object.keys(compound.tokens)
@@ -151,10 +151,10 @@ describe('CompoundV3 Brokered Collateral Swap operations', async () => {
             cometId: 0
         }
 
-        await compound.tokens[supplyTokenIndex].connect(carol).approve(broker.broker.address, constants.MaxUint256)
-        await compound.tokens[supplyTokenIndexOther].connect(carol).approve(broker.broker.address, constants.MaxUint256)
+        await compound.tokens[supplyTokenIndex].connect(carol).approve(broker.brokerProxy.address, constants.MaxUint256)
+        await compound.tokens[supplyTokenIndexOther].connect(carol).approve(broker.brokerProxy.address, constants.MaxUint256)
 
-        await compound.comet.connect(carol).allow(broker.broker.address, true)
+        await compound.comet.connect(carol).allow(broker.brokerProxy.address, true)
   
         const cBeforeIn = await compound.comet.collateralBalanceOf(carol.address, compound.tokens[supplyTokenIndex].address)
         const cBeforeOut = await compound.comet.collateralBalanceOf(carol.address, compound.tokens[supplyTokenIndexOther].address)
@@ -201,8 +201,8 @@ describe('CompoundV3 Brokered Collateral Swap operations', async () => {
     //         amountOutMinimum: providedAmount.mul(98).div(100)
     //     }
 
-    //     await compound.tokens[supplyTokenIndex].connect(test0).approve(broker.broker.address, constants.MaxUint256)
-    //     await compound.tokens[supplyTokenIndexOther].connect(test0).approve(broker.broker.address, constants.MaxUint256)
+    //     await compound.tokens[supplyTokenIndex].connect(test0).approve(broker.brokerProxy.address, constants.MaxUint256)
+    //     await compound.tokens[supplyTokenIndexOther].connect(test0).approve(broker.brokerProxy.address, constants.MaxUint256)
 
 
     //     // swap collateral
@@ -259,13 +259,13 @@ describe('CompoundV3 Brokered Collateral Swap operations', async () => {
             amountInMaximum: swapAmount.mul(102).div(100),
             cometId: 0
         }
-        await compound.tokens[supplyTokenIndex].connect(gabi).approve(broker.broker.address, constants.MaxUint256)
-        await compound.tokens[supplyTokenIndexOther].connect(gabi).approve(broker.broker.address, constants.MaxUint256)
+        await compound.tokens[supplyTokenIndex].connect(gabi).approve(broker.brokerProxy.address, constants.MaxUint256)
+        await compound.tokens[supplyTokenIndexOther].connect(gabi).approve(broker.brokerProxy.address, constants.MaxUint256)
 
         const cBeforeIn = await compound.comet.collateralBalanceOf(gabi.address, compound.tokens[supplyTokenIndex].address)
         const cBeforeOut = await compound.comet.collateralBalanceOf(gabi.address, compound.tokens[supplyTokenIndexOther].address)
 
-        await compound.comet.connect(gabi).allow(broker.broker.address, true)
+        await compound.comet.connect(gabi).allow(broker.brokerProxy.address, true)
         // swap collateral
         console.log("collateral swap")
         await broker.broker.connect(gabi).swapCollateralExactOut(params)

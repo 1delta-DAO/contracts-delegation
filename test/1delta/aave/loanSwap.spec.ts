@@ -10,7 +10,7 @@ import { FeeAmount, TICK_SPACINGS } from '../../uniswap-v3/periphery/shared/cons
 import { encodePriceSqrt } from '../../uniswap-v3/periphery/shared/encodePriceSqrt';
 import { expandTo18Decimals } from '../../uniswap-v3/periphery/shared/expandTo18Decimals';
 import { getMaxTick, getMinTick } from '../../uniswap-v3/periphery/shared/ticks';
-import { initAaveBroker, AaveBrokerFixture, aaveBrokerFixture, AaveBrokerFixtureInclV2, aaveBrokerFixtureInclV2 } from '../shared/aaveBrokerFixture';
+import { AaveBrokerFixtureInclV2, aaveBrokerFixtureInclV2, initAaveBroker } from '../shared/aaveBrokerFixture';
 import { expect } from '../shared/expect'
 import { initializeMakeSuite, InterestRateMode, AAVEFixture } from '../shared/aaveFixture';
 import { addLiquidityV2, uniswapFixtureNoTokens, UniswapFixtureNoTokens } from '../shared/uniswapFixture';
@@ -85,7 +85,7 @@ describe('AAVE Brokered Loan Swap operations', async () => {
         uniswapV2 = await uniV2Fixture(deployer, aaveTest.tokens["WETH"].address)
         broker = await aaveBrokerFixtureInclV2(deployer, uniswap.factory.address, aaveTest.pool.address, uniswapV2.factoryV2.address, aaveTest.tokens["WETH"].address)
 
-        await initAaveBroker(deployer, broker as any, uniswap, aaveTest)
+        await initAaveBroker(deployer, broker as any, aaveTest.pool.address)
 
         // approve & fund wallets
         let keys = Object.keys(aaveTest.tokens)
@@ -319,11 +319,11 @@ describe('AAVE Brokered Loan Swap operations', async () => {
             amountOutMinimum: swapAmount.mul(98).div(100)
         }
 
-        await aaveTest.vTokens[borrowTokenIndex].connect(carol).approveDelegation(broker.broker.address, constants.MaxUint256)
-        await aaveTest.vTokens[borrowTokenIndexOther].connect(carol).approveDelegation(broker.broker.address, constants.MaxUint256)
+        await aaveTest.vTokens[borrowTokenIndex].connect(carol).approveDelegation(broker.brokerProxy.address, constants.MaxUint256)
+        await aaveTest.vTokens[borrowTokenIndexOther].connect(carol).approveDelegation(broker.brokerProxy.address, constants.MaxUint256)
 
-        await aaveTest.sTokens[borrowTokenIndex].connect(carol).approveDelegation(broker.broker.address, constants.MaxUint256)
-        await aaveTest.sTokens[borrowTokenIndexOther].connect(carol).approveDelegation(broker.broker.address, constants.MaxUint256)
+        await aaveTest.sTokens[borrowTokenIndex].connect(carol).approveDelegation(broker.brokerProxy.address, constants.MaxUint256)
+        await aaveTest.sTokens[borrowTokenIndexOther].connect(carol).approveDelegation(broker.brokerProxy.address, constants.MaxUint256)
 
         // swap loan
         console.log("loan swap")
@@ -402,11 +402,11 @@ describe('AAVE Brokered Loan Swap operations', async () => {
             amountInMaximum: swapAmount.mul(102).div(100)
         }
 
-        await aaveTest.vTokens[borrowTokenIndex].connect(gabi).approveDelegation(broker.broker.address, constants.MaxUint256)
-        await aaveTest.vTokens[borrowTokenIndexOther].connect(gabi).approveDelegation(broker.broker.address, constants.MaxUint256)
+        await aaveTest.vTokens[borrowTokenIndex].connect(gabi).approveDelegation(broker.brokerProxy.address, constants.MaxUint256)
+        await aaveTest.vTokens[borrowTokenIndexOther].connect(gabi).approveDelegation(broker.brokerProxy.address, constants.MaxUint256)
 
-        await aaveTest.sTokens[borrowTokenIndex].connect(gabi).approveDelegation(broker.broker.address, constants.MaxUint256)
-        await aaveTest.sTokens[borrowTokenIndexOther].connect(gabi).approveDelegation(broker.broker.address, constants.MaxUint256)
+        await aaveTest.sTokens[borrowTokenIndex].connect(gabi).approveDelegation(broker.brokerProxy.address, constants.MaxUint256)
+        await aaveTest.sTokens[borrowTokenIndexOther].connect(gabi).approveDelegation(broker.brokerProxy.address, constants.MaxUint256)
 
         // swap loan
         console.log("loan swap")
@@ -481,11 +481,11 @@ describe('AAVE Brokered Loan Swap operations', async () => {
             amountInMaximum: borrowAmountOther.mul(102).div(100)
         }
 
-        await aaveTest.vTokens[borrowTokenIndex].connect(test0).approveDelegation(broker.broker.address, constants.MaxUint256)
-        await aaveTest.vTokens[borrowTokenIndexOther].connect(test0).approveDelegation(broker.broker.address, constants.MaxUint256)
+        await aaveTest.vTokens[borrowTokenIndex].connect(test0).approveDelegation(broker.brokerProxy.address, constants.MaxUint256)
+        await aaveTest.vTokens[borrowTokenIndexOther].connect(test0).approveDelegation(broker.brokerProxy.address, constants.MaxUint256)
 
-        await aaveTest.sTokens[borrowTokenIndex].connect(test0).approveDelegation(broker.broker.address, constants.MaxUint256)
-        await aaveTest.sTokens[borrowTokenIndexOther].connect(test0).approveDelegation(broker.broker.address, constants.MaxUint256)
+        await aaveTest.sTokens[borrowTokenIndex].connect(test0).approveDelegation(broker.brokerProxy.address, constants.MaxUint256)
+        await aaveTest.sTokens[borrowTokenIndexOther].connect(test0).approveDelegation(broker.brokerProxy.address, constants.MaxUint256)
 
         // swap loan
         // increase ime to make sure that interest accrues

@@ -3,7 +3,6 @@
 pragma solidity ^0.8.21;
 
 import {WithStorage} from "../../storage/BrokerStorage.sol";
-import {IUniswapV3Pool} from "../../dex-tools/uniswap/core/IUniswapV3Pool.sol";
 import {PoolAddress} from "../../dex-tools/uniswap/libraries/PoolAddress.sol";
 
 // solhint-disable max-line-length
@@ -14,27 +13,6 @@ import {PoolAddress} from "../../dex-tools/uniswap/libraries/PoolAddress.sol";
  * @author Achthar
  */
 contract MarginTradeDataViewerModule is WithStorage {
-    /// @dev Returns the pool for the given token pair and fee. The pool contract may or may not exist.
-    function getUniswapV3Pool(
-        address tokenA,
-        address tokenB,
-        uint24 fee
-    ) external view returns (IUniswapV3Pool) {
-        return IUniswapV3Pool(PoolAddress.computeAddress(us().v3factory, PoolAddress.getPoolKey(tokenA, tokenB, fee)));
-    }
-
-    function getFactory() external view returns (address factory) {
-        factory = us().v3factory;
-    }
-
-    function getSwapRouter() external view returns (address) {
-        return us().swapRouter;
-    }
-
-    function getNativeWrapper() external view returns (address) {
-        return us().weth;
-    }
-
     function getAAVEPool() external view returns (address pool) {
         pool = aas().v3Pool;
     }

@@ -37,7 +37,7 @@ describe('CompoundV3 Brokered Margin Swap operations', async () => {
         broker = await cometBrokerFixture(deployer, uniswap.factory.address)
 
         await initCometBroker(deployer, broker, uniswap, compound)
-        await broker.manager.setUniswapRouter(uniswap.router.address)
+
 
         const tokens = Object.values(compound.tokens)
         const keys = Object.keys(compound.tokens)
@@ -132,8 +132,8 @@ describe('CompoundV3 Brokered Margin Swap operations', async () => {
             amountOutMinimum: swapAmount.mul(99).div(100)
         }
 
-        await compound.tokens[borrowTokenIndex].connect(carol).approve(broker.broker.address, constants.MaxUint256)
-        await compound.tokens[supplyTokenIndex].connect(carol).approve(broker.broker.address, constants.MaxUint256)
+        await compound.tokens[borrowTokenIndex].connect(carol).approve(broker.brokerProxy.address, constants.MaxUint256)
+        await compound.tokens[supplyTokenIndex].connect(carol).approve(broker.brokerProxy.address, constants.MaxUint256)
 
 
         await compound.tokens[supplyTokenIndex].connect(carol).approve(compound.comet.address, constants.MaxUint256)
@@ -141,7 +141,7 @@ describe('CompoundV3 Brokered Margin Swap operations', async () => {
         // supply collateral, allow delegation
 
         await compound.comet.connect(carol).supply(compound.tokens[supplyTokenIndex].address, providedAmount)
-        await compound.comet.connect(carol).allow(broker.broker.address, true)
+        await compound.comet.connect(carol).allow(broker.brokerProxy.address, true)
 
 
         const cBefore = await compound.comet.collateralBalanceOf(carol.address, compound.tokens[supplyTokenIndex].address)
@@ -170,8 +170,8 @@ describe('CompoundV3 Brokered Margin Swap operations', async () => {
 
         const swapAmount = expandTo18Decimals(950)
 
-        await compound.tokens[borrowTokenIndex].connect(gabi).approve(broker.broker.address, constants.MaxUint256)
-        await compound.tokens[supplyTokenIndex].connect(gabi).approve(broker.broker.address, constants.MaxUint256)
+        await compound.tokens[borrowTokenIndex].connect(gabi).approve(broker.brokerProxy.address, constants.MaxUint256)
+        await compound.tokens[supplyTokenIndex].connect(gabi).approve(broker.brokerProxy.address, constants.MaxUint256)
 
 
         await compound.tokens[supplyTokenIndex].connect(gabi).approve(compound.comet.address, constants.MaxUint256)
@@ -179,7 +179,7 @@ describe('CompoundV3 Brokered Margin Swap operations', async () => {
         // supply collateral, allow delegation
 
         await compound.comet.connect(gabi).supply(compound.tokens[supplyTokenIndex].address, providedAmount)
-        await compound.comet.connect(gabi).allow(broker.broker.address, true)
+        await compound.comet.connect(gabi).allow(broker.brokerProxy.address, true)
 
         let _tokensInRoute = [
             compound.tokens[borrowTokenIndex],

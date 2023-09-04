@@ -11,14 +11,12 @@ import {
     CometManagementModule__factory,
     CometMarginTradeDataViewerModule,
     CometMarginTradeDataViewerModule__factory,
-    UniswapV3ProviderInit__factory,
     CometUniV3Callback__factory,
     DeltaBrokerProxy__factory,
     DeltaBrokerProxy,
     OneDeltaModuleManager,
     OneDeltaModuleManager__factory,
     CometMarginTraderInit,
-    UniswapV3ProviderInit,
     ConfigModule,
     ConfigModule__factory,
     CometSweeperModule__factory,
@@ -225,20 +223,5 @@ export async function initCometBroker(signer: SignerWithAddress, bf: CometBroker
         }],
     )
 
-    const dcInit = await new ethers.Contract(bf.brokerProxy.address, CometMarginTraderInit__factory.createInterface(), signer) as CometMarginTraderInit
 
-
-    await dcInit.initCometMarginTrader(compound.comet.address)
-    const initUni = await new UniswapV3ProviderInit__factory(signer).deploy()
-
-    await dc.configureModules(
-        [{
-            moduleAddress: initUni.address,
-            action: ModuleConfigAction.Add,
-            functionSelectors: getSelectors(initUni)
-        }]
-    )
-
-    const dcInitUni = await new ethers.Contract(bf.brokerProxy.address, UniswapV3ProviderInit__factory.createInterface(), signer) as UniswapV3ProviderInit
-    await dcInitUni.initUniswapV3Provider(uniswapFixture.factory.address, compound.tokens["WETH"].address)
 }

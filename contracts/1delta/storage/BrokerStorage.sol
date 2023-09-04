@@ -3,12 +3,7 @@ pragma solidity ^0.8.16;
 
 // We do not use an array of stucts to avoid pointer conflicts
 
-// Management storage that stores the different DAO roles
-struct TradeDataStorage {
-    uint256 test;
-}
-
-struct AAVEStorage {
+struct AaveStorage {
     mapping(address => address) aTokens;
     mapping(address => address) vTokens;
     mapping(address => address) sTokens;
@@ -18,12 +13,6 @@ struct AAVEStorage {
 struct CompoundStorage {
     address comptroller;
     mapping(address => address) cTokens;
-}
-
-struct UniswapStorage {
-    address v3factory;
-    address weth;
-    address swapRouter;
 }
 
 struct DataProviderStorage {
@@ -59,13 +48,12 @@ library LibStorage {
     // Storage are structs where the data gets updated throughout the lifespan of the project
     bytes32 constant DATA_PROVIDER_STORAGE = keccak256("broker.storage.dataProvider");
     bytes32 constant MARGIN_SWAP_STORAGE = keccak256("broker.storage.marginSwap");
-    bytes32 constant UNISWAP_STORAGE = keccak256("broker.storage.uniswap");
     bytes32 constant AAVE_STORAGE = keccak256("broker.storage.aave");
     bytes32 constant MANAGEMENT_STORAGE = keccak256("broker.storage.management");
     bytes32 constant FLASH_LOAN_GATEWAY = keccak256("broker.storage.flashLoanGateway");
     bytes32 constant INITIALIZER = keccak256("broker.storage.initailizerStorage");
-    bytes32 constant NUMBER_CACHE = keccak256("1deltaAccount.storage.cache.number");
-    bytes32 constant ADDRESS_CACHE = keccak256("1deltaAccount.storage.cache.address");
+    bytes32 constant NUMBER_CACHE = keccak256("broker.storage.cache.number");
+    bytes32 constant ADDRESS_CACHE = keccak256("broker.storage.cache.address");
 
     function dataProviderStorage() internal pure returns (DataProviderStorage storage ps) {
         bytes32 position = DATA_PROVIDER_STORAGE;
@@ -74,17 +62,10 @@ library LibStorage {
         }
     }
 
-    function aaveStorage() internal pure returns (AAVEStorage storage aas) {
+    function aaveStorage() internal pure returns (AaveStorage storage aas) {
         bytes32 position = AAVE_STORAGE;
         assembly {
             aas.slot := position
-        }
-    }
-
-    function uniswapStorage() internal pure returns (UniswapStorage storage us) {
-        bytes32 position = UNISWAP_STORAGE;
-        assembly {
-            us.slot := position
         }
     }
 
@@ -138,12 +119,8 @@ contract WithStorage {
         return LibStorage.dataProviderStorage();
     }
 
-    function aas() internal pure returns (AAVEStorage storage) {
+    function aas() internal pure returns (AaveStorage storage) {
         return LibStorage.aaveStorage();
-    }
-
-    function us() internal pure returns (UniswapStorage storage) {
-        return LibStorage.uniswapStorage();
     }
 
     function ms() internal pure returns (ManagementStorage storage) {

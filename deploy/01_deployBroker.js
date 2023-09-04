@@ -69,7 +69,7 @@ async function main() {
     // call to init functions
     const initializerNames = [
         'DiamondInit',
-        'AAVEMarginTraderInit',
+        'AaveMarginTraderInit',
         'UniswapV3ProviderInit'
     ]
     const initailizerParams = [

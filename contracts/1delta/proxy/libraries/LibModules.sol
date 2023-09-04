@@ -4,8 +4,7 @@ pragma solidity ^0.8.0;
 
 /******************************************************************************\
 * Author: Achthar - 1delta.io
-* Modified Diamond module handling library
-* external contract.
+* Modified diamond module handling library
 /******************************************************************************/
 
 import {IModuleConfig} from "../interfaces/IModuleConfig.sol";
