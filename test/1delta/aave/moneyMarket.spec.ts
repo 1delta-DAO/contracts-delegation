@@ -1057,7 +1057,7 @@ describe('AAVE Money Market operations', async () => {
         )
 
         const callRepay = broker.moneyMarket.interface.encodeFunctionData(REPAY, [
-            aaveTest.tokens[originIndex].address,
+            aaveTest.tokens[targetIndex].address,
             dennis.address,
             InterestRateMode.VARIABLE
         ])

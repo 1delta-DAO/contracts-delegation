@@ -72,11 +72,11 @@ contract AaveFlashModule is WithStorage, TokenTransfer {
         bytes calldata params
     ) external returns (bool) {
         // validate callback
-        require(initiator == address(this), "CANNOT_ENTER");
+        require(initiator == address(this), "CannotEnter()");
 
         IPool aavePool = _aavePool;
 
-        require(msg.sender == address(aavePool), "POOL_NOT_CALLER");
+        require(msg.sender == address(aavePool), "PoolNotCaller()");
 
         // fetch flash loan parameters
         address token = asset;
@@ -89,13 +89,13 @@ contract AaveFlashModule is WithStorage, TokenTransfer {
         address user = flashParams.user;
 
         // validate swap router
-        require(gs().isValidTarget[swapTarget], "TARGET");
+        require(gs().isValidTarget[swapTarget], "Target()");
 
         //margin open [expected to flash borrow amount]
         if (marginType == 0) {
             // execute transaction on target
             (bool success, ) = swapTarget.call(flashParams.encodedSwapCall);
-            require(success, "CALL_FAILED");
+            require(success, "CallFailed()");
 
             address baseAsset = flashParams.deltaParams.baseAsset;
             uint256 amountSwapped = IERC20(baseAsset).balanceOf(address(this));
@@ -114,7 +114,7 @@ contract AaveFlashModule is WithStorage, TokenTransfer {
         else if (marginType == 1) {
             // execute transaction on target
             (bool success, ) = swapTarget.call(flashParams.encodedSwapCall);
-            require(success, "CALL_FAILED");
+            require(success, "CallFailed()");
 
             address baseAsset = flashParams.deltaParams.baseAsset;
             uint256 amountSwapped = IERC20(baseAsset).balanceOf(address(this));
@@ -175,7 +175,7 @@ contract AaveFlashModule is WithStorage, TokenTransfer {
         else if (marginType == 2) {
             // execute transaction on target
             (bool success, ) = swapTarget.call(flashParams.encodedSwapCall);
-            require(success, "CALL_FAILED");
+            require(success, "CallFailed()");
 
             address baseAsset = flashParams.deltaParams.baseAsset;
             uint256 amountSwapped = IERC20(baseAsset).balanceOf(address(this));
@@ -218,7 +218,7 @@ contract AaveFlashModule is WithStorage, TokenTransfer {
         else {
             // swap the flashed amount exact out
             (bool success, ) = swapTarget.call(flashParams.encodedSwapCall);
-            require(success, "CALL_FAILED");
+            require(success, "CallFailed()");
             // fetch amountIn
             amountReceived -= IERC20(token).balanceOf(address(this));
 

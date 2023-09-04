@@ -1,22 +1,17 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumber, constants } from 'ethers';
-import { MockProvider } from 'ethereum-waffle';
-import { ethers, network, waffle } from 'hardhat'
+import { ethers, network } from 'hardhat'
 import {
     MintableERC20,
-    WETH9,
-    IERC20__factory
+    WETH9
 } from '../../../types';
-import { FeeAmount, TICK_SPACINGS } from '../../uniswap-v3/periphery/shared/constants';
-import { encodePriceSqrt } from '../../uniswap-v3/periphery/shared/encodePriceSqrt';
+import { FeeAmount } from '../../uniswap-v3/periphery/shared/constants';
 import { expandTo18Decimals } from '../../uniswap-v3/periphery/shared/expandTo18Decimals';
-import { getMaxTick, getMinTick } from '../../uniswap-v3/periphery/shared/ticks';
-import { initAaveBroker, aaveBrokerFixture, AaveBrokerFixture, ONE_18, AaveBrokerFixtureInclV2, aaveBrokerFixtureInclV2 } from '../shared/aaveBrokerFixture';
+import { initAaveBroker,  ONE_18, AaveBrokerFixtureInclV2, aaveBrokerFixtureInclV2 } from '../shared/aaveBrokerFixture';
 import { expect } from '../shared/expect'
 import { initializeMakeSuite, InterestRateMode, AAVEFixture, deposit } from '../shared/aaveFixture';
 import { addLiquidity, addLiquidityV2, uniswapMinimalFixtureNoTokens, UniswapMinimalFixtureNoTokens } from '../shared/uniswapFixture';
 import { formatEther } from 'ethers/lib/utils';
-import { encodePath } from '../../uniswap-v3/periphery/shared/path';
 import { uniV2Fixture, V2Fixture } from '../shared/uniV2Fixture';
 import { encodeAggregatorPathEthers } from '../shared/aggregatorPath';
 
@@ -227,7 +222,7 @@ describe('AAVE Brokered Margin Swap operations', async () => {
         await aaveTest.pool.connect(carol).setUserUseReserveAsCollateral(aaveTest.tokens[supplyTokenIndex].address, true)
 
         // open margin position
-        await broker.trader.connect(carol).swapExactIn(params.amountIn, params.amountOutMinimum, params.path)
+        await broker.trader.connect(carol).flashSwapExactIn(params.amountIn, params.amountOutMinimum, params.path)
         const bb = await aaveTest.pool.getUserAccountData(carol.address)
         expect(bb.totalDebtBase.toString()).to.equal(swapAmount)
     })
@@ -279,7 +274,7 @@ describe('AAVE Brokered Margin Swap operations', async () => {
         await deposit(aaveTest, supplyTokenIndex, gabi, providedAmount)
 
         // open margin position
-        await broker.trader.connect(gabi).swapExactOut(params.amountOut, params.amountInMaximum, params.path)
+        await broker.trader.connect(gabi).flashSwapExactOut(params.amountOut, params.amountInMaximum, params.path)
         const bb = await aaveTest.pool.getUserAccountData(gabi.address)
         expect(bb.totalCollateralBase.toString()).to.equal(swapAmount.add(providedAmount).add(ONE_18).toString())
 
@@ -319,7 +314,7 @@ describe('AAVE Brokered Margin Swap operations', async () => {
         const bBefore = await aaveTest.pool.getUserAccountData(carol.address)
 
         // open margin position
-        await broker.trader.connect(carol).swapExactIn(params.amountIn, params.amountOutMinimum, params.path)
+        await broker.trader.connect(carol).flashSwapExactIn(params.amountIn, params.amountOutMinimum, params.path)
         const bAfter = await aaveTest.pool.getUserAccountData(carol.address)
         expect(Number(formatEther(bAfter.totalDebtBase))).to.be.
             lessThanOrEqual(Number(formatEther(bBefore.totalDebtBase.sub(swapAmount))) * 1.05)
@@ -393,7 +388,7 @@ describe('AAVE Brokered Margin Swap operations', async () => {
         const bBefore = await aaveTest.pool.getUserAccountData(test1.address)
 
         // open margin position
-        await broker.trader.connect(test1).swapAllIn(params.amountOutMinimum, params.path)
+        await broker.trader.connect(test1).flashSwapAllIn(params.amountOutMinimum, params.path)
 
         const balanceSupply = await aaveTest.aTokens[supplyTokenIndex].balanceOf(test1.address)
 
@@ -440,7 +435,7 @@ describe('AAVE Brokered Margin Swap operations', async () => {
         const bBefore = await aaveTest.pool.getUserAccountData(gabi.address)
 
         // trim margin position
-        await broker.trader.connect(gabi).swapExactOut(params.amountOut, params.amountInMaximum, params.path)
+        await broker.trader.connect(gabi).flashSwapExactOut(params.amountOut, params.amountInMaximum, params.path)
 
         const bAfter = await aaveTest.pool.getUserAccountData(gabi.address)
         expect(Number(formatEther(bAfter.totalDebtBase))).to.be.
@@ -505,7 +500,7 @@ describe('AAVE Brokered Margin Swap operations', async () => {
         const bBefore = await aaveTest.pool.getUserAccountData(test2.address)
 
         // trim margin position
-        await broker.trader.connect(test2).swapAllOut(params.amountInMaximum, params.path)
+        await broker.trader.connect(test2).flashSwapAllOut(params.amountInMaximum, params.path)
 
 
         const bAfter = await aaveTest.pool.getUserAccountData(test2.address)
@@ -549,9 +544,9 @@ describe('AAVE Brokered Margin Swap operations', async () => {
 // ························································|······································|·············|·············|·············|···············|··············
 // |  MarginTrading                                        ·  swapAllOut                          ·          -  ·          -  ·     394409  ·            1  ·      68.54  │
 // ························································|······································|·············|·············|·············|···············|··············
-// |  MarginTrading                                        ·  swapExactIn                         ·     448122  ·     466685  ·     457404  ·            2  ·      79.48  │
+// |  MarginTrading                                        ·  flashSwapExactIn                         ·     448122  ·     466685  ·     457404  ·            2  ·      79.48  │
 // ························································|······································|·············|·············|·············|···············|··············
-// |  MarginTrading                                        ·  swapExactOut                        ·     407247  ·     412037  ·     409642  ·            2  ·      71.18  │
+// |  MarginTrading                                        ·  flashSwapExactOut                        ·     407247  ·     412037  ·     409642  ·            2  ·      71.18  │
 // ························································|······································|·············|·············|·············|···············|··············
 
 // V3
@@ -560,7 +555,7 @@ describe('AAVE Brokered Margin Swap operations', async () => {
 // ························································|······································|·············|·············|·············|···············|··············
 // |  MarginTrading                                        ·  swapAllOut                          ·          -  ·          -  ·     387407  ·            1  ·      21.72  │
 // ························································|······································|·············|·············|·············|···············|··············
-// |  MarginTrading                                        ·  swapExactIn                         ·     425296  ·     470252  ·     447774  ·            2  ·      25.11  │
+// |  MarginTrading                                        ·  flashSwapExactIn                         ·     425296  ·     470252  ·     447774  ·            2  ·      25.11  │
 // ························································|······································|·············|·············|·············|···············|··············
-// |  MarginTrading                                        ·  swapExactOut                        ·     401427  ·     405103  ·     403265  ·            2  ·      22.61  │
+// |  MarginTrading                                        ·  flashSwapExactOut                        ·     401427  ·     405103  ·     403265  ·            2  ·      22.61  │
 // ························································|······································|·············|·············|·············|···············|··············

@@ -2,6 +2,10 @@
 
 pragma solidity ^0.8.21;
 
+/******************************************************************************\
+* Author: Achthar | 1delta 
+/******************************************************************************/
+
 import {IERC20} from "../../../interfaces/IERC20.sol";
 import {IPool} from "../../interfaces/IAAVEV3Pool.sol";
 import {IUniswapV3Pool} from "../../dex-tools/uniswap/core/IUniswapV3Pool.sol";
@@ -9,39 +13,26 @@ import {INativeWrapper} from "../../interfaces/INativeWrapper.sol";
 import {BaseSwapper, IUniswapV2Pair} from "../base/BaseSwapper.sol";
 import {IERC20Balance} from "../../interfaces/IERC20Balance.sol";
 import {WithStorage} from "../../storage/BrokerStorage.sol";
+import {MarginTrading} from "./MarginTrading.sol";
+import {WrappedNativeHandler} from "./WrappedNativeHandler.sol";
 
 // solhint-disable max-line-length
 
 /**
- * @title Money market module
- * @notice Allows users to chain a single money market transaction with a swap.
- * Direct lending pool interactions are unnecessary as the user can directly interact 
- * with the lending protocol except if they are multicalled with other transactions
- * @author Achthar
+ * @title FlashAggregator
+ * @notice Adds money market and default transfer functions to margin trading
  */
-contract AaveMoneyMarket is BaseSwapper, WithStorage {
-    // errors
-    error Slippage();
-    error NoBalance();
-
+contract FlashAggregator is MarginTrading, WrappedNativeHandler {
     // constants
     uint256 private constant DEFAULT_AMOUNT_CACHED = type(uint256).max;
     address private constant DEFAULT_ADDRESS_CACHED = address(0);
-
-    // immutables
-    IPool private immutable _aavePool;
-    address private immutable networkTokenId = address(0);
-    address private immutable wrappedNative;
 
     constructor(
         address _factoryV2,
         address _factoryV3,
         address aavePool,
         address weth
-    ) BaseSwapper(_factoryV2, _factoryV3) {
-        _aavePool = IPool(aavePool);
-        wrappedNative = weth;
-    }
+    ) MarginTrading(_factoryV2, _factoryV3, aavePool) WrappedNativeHandler(weth) {}
 
     /** BASE LENDING FUNCTIONS */
 
@@ -125,40 +116,14 @@ contract AaveMoneyMarket is BaseSwapper, WithStorage {
         if (balance > 0) _transferEth(msg.sender, balance);
     }
 
-    /** WRAPPED NATIVE FUNCTIONS  */
-
-    // deposit native and wrap
-    function wrap() external payable {
-        uint256 supplied = msg.value;
-        INativeWrapper _weth = INativeWrapper(wrappedNative);
-        _weth.deposit{value: supplied}();
-    }
-
-    // unwrap wrappd native and send funds to sender
-    function unwrap() external payable {
-        INativeWrapper _weth = INativeWrapper(wrappedNative);
-        uint256 balance = _weth.balanceOf(address(this));
-        _weth.withdraw(balance);
-        // transfer eth to sender
-        payable(msg.sender).transfer(balance);
-    }
-
-    // unwrap wrappd native, validate balance and send to sender
-    function validateAndUnwrap(uint256 amountMin) external payable {
-        INativeWrapper _weth = INativeWrapper(wrappedNative);
-        uint256 balance = _weth.balanceOf(address(this));
-        require(balance >= amountMin, "Insufficient Sweep");
-        _weth.withdraw(balance);
-        // transfer eth to sender
-        payable(msg.sender).transfer(balance);
-    }
+    /** GENERIC CALL WRAPPER FOR APPROVED CALLS */
 
     // call an approved target (can also be the contract itself)
     function callTarget(address target, bytes calldata params) external payable {
         address _target = target;
-        require(gs().isValidTarget[_target], "TARGET");
+        require(gs().isValidTarget[_target], "Target()");
         (bool success, ) = _target.call(params);
-        require(success, "CALL_FAILED");
+        require(success, "CallFailed()");
     }
 
     /** 1DELTA SWAP WRAPPERS */
@@ -174,7 +139,7 @@ contract AaveMoneyMarket is BaseSwapper, WithStorage {
         bytes calldata path
     ) external payable {
         acs().cachedAddress = msg.sender;
-        flashSwapExactOut(amountOut, path);
+        flashSwapExactOutInternal(amountOut, path);
         if (maximumAmountIn < ncs().amount) revert Slippage();
         ncs().amount = DEFAULT_AMOUNT_CACHED;
         acs().cachedAddress = DEFAULT_ADDRESS_CACHED;
@@ -188,7 +153,7 @@ contract AaveMoneyMarket is BaseSwapper, WithStorage {
         uint256 maximumAmountIn,
         bytes calldata path
     ) external payable {
-        flashSwapExactOut(amountOut, path);
+        flashSwapExactOutInternal(amountOut, path);
         if (maximumAmountIn < ncs().amount) revert Slippage();
         ncs().amount = DEFAULT_AMOUNT_CACHED;
     }
@@ -227,7 +192,7 @@ contract AaveMoneyMarket is BaseSwapper, WithStorage {
         else _debtBalance = IERC20Balance(aas().sTokens[tokenOut]).balanceOf(msg.sender);
         if (_debtBalance == 0) revert NoBalance(); // revert if amount is zero
 
-        flashSwapExactOut(_debtBalance, path);
+        flashSwapExactOutInternal(_debtBalance, path);
         if (maximumAmountIn < ncs().amount) revert Slippage();
         ncs().amount = DEFAULT_AMOUNT_CACHED;
         acs().cachedAddress = DEFAULT_ADDRESS_CACHED;
@@ -251,7 +216,7 @@ contract AaveMoneyMarket is BaseSwapper, WithStorage {
         else _debtBalance = IERC20Balance(aas().sTokens[tokenOut]).balanceOf(msg.sender);
         if (_debtBalance == 0) revert NoBalance(); // revert if amount is zero
 
-        flashSwapExactOut(_debtBalance, path);
+        flashSwapExactOutInternal(_debtBalance, path);
         if (maximumAmountIn < ncs().amount) revert Slippage();
         ncs().amount = DEFAULT_AMOUNT_CACHED;
     }
@@ -272,7 +237,7 @@ contract AaveMoneyMarket is BaseSwapper, WithStorage {
     }
 
     // a flash swap whre the output is sent to this address
-    function flashSwapExactOut(uint256 amountOut, bytes calldata data) internal {
+    function flashSwapExactOutInternal(uint256 amountOut, bytes calldata data) internal {
         address tokenIn;
         address tokenOut;
         uint8 identifier;

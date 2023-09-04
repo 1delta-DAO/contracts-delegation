@@ -14,7 +14,7 @@ import { initializeMakeSuite, InterestRateMode, AAVEFixture, deposit } from '../
 import { addLiquidity, addLiquidityV2, uniswapMinimalFixtureNoTokens, UniswapMinimalFixtureNoTokens } from '../shared/uniswapFixture';
 import { formatEther } from 'ethers/lib/utils';
 import { uniV2Fixture, V2Fixture } from '../shared/uniV2Fixture';
-import { encodeAggregatorPathEthers } from '../shared/aggregatorPath';
+import { encodeAggregatorPathEthers, encodeTradePathMargin, TradeOperation, TradeType } from '../shared/aggregatorPath';
 
 // we prepare a setup for aave in hardhat
 // this series of tests checks that the features used for the margin swap implementation
@@ -285,7 +285,7 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
         await aaveTest.pool.connect(carol).supply(aaveTest.tokens[supplyTokenIndex].address, 100, carol.address, 0)
         await aaveTest.pool.connect(carol).setUserUseReserveAsCollateral(aaveTest.tokens[supplyTokenIndex].address, true)
 
-        await broker.trader.connect(carol).swapExactIn(params.amountIn, params.amountOutMinimum, params.path)
+        await broker.trader.connect(carol).flashSwapExactIn(params.amountIn, params.amountOutMinimum, params.path)
 
         const bb = await aaveTest.pool.getUserAccountData(carol.address)
         expect(bb.totalDebtBase.toString()).to.equal(swapAmount)
@@ -331,7 +331,7 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
         await aaveTest.pool.connect(carol).supply(aaveTest.tokens[supplyTokenIndex].address, 100, carol.address, 0)
         await aaveTest.pool.connect(carol).setUserUseReserveAsCollateral(aaveTest.tokens[supplyTokenIndex].address, true)
         const bbefore = await aaveTest.vTokens[borrowTokenIndex].balanceOf(carol.address)
-        await broker.trader.connect(carol).swapExactIn(params.amountIn, params.amountOutMinimum, params.path)
+        await broker.trader.connect(carol).flashSwapExactIn(params.amountIn, params.amountOutMinimum, params.path)
 
         const bb = await aaveTest.vTokens[borrowTokenIndex].balanceOf(carol.address)
         expect(bb.sub(bbefore).toString()).to.equal(swapAmount)
@@ -366,7 +366,7 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
             amountOutMinimum: swapAmount.mul(105).div(100)
         }
 
-        await expect(broker.trader.connect(carol).swapExactIn(params.amountIn, params.amountOutMinimum, params.path)).to.be.revertedWith('Slippage()')
+        await expect(broker.trader.connect(carol).flashSwapExactIn(params.amountIn, params.amountOutMinimum, params.path)).to.be.revertedWith('Slippage()')
 
     })
 
@@ -385,12 +385,21 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
         ].map(t => t.address).reverse()
 
         // reverse path for exact out
-        const path = encodeAggregatorPathEthers(
+        // const path = encodeAggregatorPathEthers(
+        //     _tokensInRoute,
+        //     new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+        //     [3, 1], // action
+        //     [1, 2], // pid
+        //     2 // flag
+        // )
+        const path = encodeTradePathMargin(
             _tokensInRoute,
             new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
-            [3, 1], // action
-            [1, 2], // pid
-            2 // flag
+            [1, 2],
+            TradeOperation.Open,
+            TradeType.exactOut,
+            InterestRateMode.VARIABLE,
+            InterestRateMode.VARIABLE
         )
         const params = {
             path,
@@ -413,7 +422,7 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
 
         await aaveTest.pool.connect(gabi).setUserUseReserveAsCollateral(aaveTest.tokens[supplyTokenIndex].address, true)
 
-        await broker.trader.connect(gabi).swapExactOut(params.amountOut, params.amountInMaximum, params.path)
+        await broker.trader.connect(gabi).flashSwapExactOut(params.amountOut, params.amountInMaximum, params.path)
         const bb = await aaveTest.pool.getUserAccountData(gabi.address)
         expect(bb.totalCollateralBase.toString()).to.equal(swapAmount.add(providedAmount).add(100).toString())
     })
@@ -458,7 +467,7 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
 
         await aaveTest.pool.connect(gabi).setUserUseReserveAsCollateral(aaveTest.tokens[supplyTokenIndex].address, true)
         const preCollat = await aaveTest.aTokens[supplyTokenIndex].balanceOf(gabi.address)
-        await broker.trader.connect(gabi).swapExactOut(params.amountOut, params.amountInMaximum, params.path)
+        await broker.trader.connect(gabi).flashSwapExactOut(params.amountOut, params.amountInMaximum, params.path)
         const bb = await aaveTest.pool.getUserAccountData(gabi.address)
         const postCollat = await aaveTest.aTokens[supplyTokenIndex].balanceOf(gabi.address)
         expect(postCollat.sub(preCollat).toString()).to.equal(swapAmount.toString())
@@ -493,7 +502,7 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
             amountOut: swapAmount,
             amountInMaximum: swapAmount.mul(95).div(100)
         }
-        await expect(broker.trader.connect(gabi).swapExactOut(params.amountOut, params.amountInMaximum, params.path)).to.be.revertedWith('Slippage()')
+        await expect(broker.trader.connect(gabi).flashSwapExactOut(params.amountOut, params.amountInMaximum, params.path)).to.be.revertedWith('Slippage()')
     })
 
 
@@ -535,7 +544,7 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
 
         const debtBefore = await aaveTest.vTokens[borrowTokenIndex].balanceOf(carol.address)
         // close margin position
-        await broker.trader.connect(carol).swapExactIn(params.amountIn, params.amountOutMinimum, params.path)
+        await broker.trader.connect(carol).flashSwapExactIn(params.amountIn, params.amountOutMinimum, params.path)
         const bAfter = await aaveTest.pool.getUserAccountData(carol.address)
         const debtAfter = await aaveTest.vTokens[borrowTokenIndex].balanceOf(carol.address)
         expect(Number(formatEther(debtAfter.sub(debtBefore)))).to.be.
@@ -611,7 +620,7 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
 
         // open margin position
 
-        await broker.trader.connect(test1).swapAllIn(params.amountOutMinimum, params.path)
+        await broker.trader.connect(test1).flashSwapAllIn(params.amountOutMinimum, params.path)
 
         const balanceSupply = await aaveTest.aTokens[supplyTokenIndex].balanceOf(test1.address)
 
@@ -661,7 +670,7 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
 
         const debtBefore = await aaveTest.vTokens[borrowTokenIndex].balanceOf(gabi.address)
         // trim margin position
-        await broker.trader.connect(gabi).swapExactOut(params.amountOut, params.amountInMaximum, params.path)
+        await broker.trader.connect(gabi).flashSwapExactOut(params.amountOut, params.amountInMaximum, params.path)
 
         const debtAfter = await aaveTest.vTokens[borrowTokenIndex].balanceOf(gabi.address)
         const bAfter = await aaveTest.pool.getUserAccountData(gabi.address)
@@ -730,7 +739,7 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
         await network.provider.send("evm_mine")
 
         // trim margin position
-        await broker.trader.connect(test).swapAllOut(params.amountInMaximum, params.path)
+        await broker.trader.connect(test).flashSwapAllOut(params.amountInMaximum, params.path)
 
         const bAfter = await aaveTest.pool.getUserAccountData(test.address)
 
@@ -768,21 +777,21 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
 
 
 // ··············································|······································|·············|·············|·············|···············|··············
-// |  MarginTrading                                        ·  swapAllIn                           ·          -  ·          -  ·     500104  ·            1  ·      16.55  │
+// |  MarginTrading                                        ·  flashSwapAllIn                           ·          -  ·          -  ·     500104  ·            1  ·      16.55  │
 // ························································|······································|·············|·············|·············|···············|··············
 // |  MarginTrading                                        ·  swapAllOut                          ·          -  ·          -  ·     462905  ·            1  ·      15.32  │
 // ························································|······································|·············|·············|·············|···············|··············
-// |  MarginTrading                                        ·  swapExactIn                         ·     505647  ·     550295  ·     527971  ·            2  ·      17.47  │
+// |  MarginTrading                                        ·  flashSwapExactIn                         ·     505647  ·     550295  ·     527971  ·            2  ·      17.47  │
 // ························································|······································|·············|·············|·············|···············|··············
-// |  MarginTrading                                        ·  swapExactOut                        ·     503799  ·     524412  ·     514106  ·            2  ·      17.01  │
+// |  MarginTrading                                        ·  flashSwapExactOut                        ·     503799  ·     524412  ·     514106  ·            2  ·      17.01  │
 // ························································|······································|·············|·············|·············|···············|··············
 
 // ························································|······································|·············|·············|·············|···············|··············
-// |  MarginTrading                                        ·  swapAllIn                           ·          -  ·          -  ·     535375  ·            1  ·      49.51  │
+// |  MarginTrading                                        ·  flashSwapAllIn                           ·          -  ·          -  ·     535375  ·            1  ·      49.51  │
 // ························································|······································|·············|·············|·············|···············|··············
 // |  MarginTrading                                        ·  swapAllOut                          ·          -  ·          -  ·     455943  ·            1  ·      42.16  │
 // ························································|······································|·············|·············|·············|···············|··············
-// |  MarginTrading                                        ·  swapExactIn                         ·     551688  ·     564411  ·     557690  ·            3  ·      51.57  │
+// |  MarginTrading                                        ·  flashSwapExactIn                         ·     551688  ·     564411  ·     557690  ·            3  ·      51.57  │
 // ························································|······································|·············|·············|·············|···············|··············
-// |  MarginTrading                                        ·  swapExactOut                        ·     474192  ·     493775  ·     483984  ·            2  ·      44.75  │
+// |  MarginTrading                                        ·  flashSwapExactOut                        ·     474192  ·     493775  ·     483984  ·            2  ·      44.75  │
 // ························································|······································|·············|·············|·············|···············|··············

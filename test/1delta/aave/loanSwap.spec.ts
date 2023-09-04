@@ -331,7 +331,7 @@ describe('AAVE Brokered Loan Swap operations', async () => {
         const t2 = await aaveTest.aTokens[borrowTokenIndexOther].balanceOf(carol.address)
         console.log(t.toString(), t2.toString())
         // await broker.broker.connect(carol).swapBorrowExactIn(params)
-        await broker.trader.connect(carol).swapExactIn(params.amountIn, params.amountOutMinimum, params.path)
+        await broker.trader.connect(carol).flashSwapExactIn(params.amountIn, params.amountOutMinimum, params.path)
 
         const ctIn = await aaveTest.vTokens[borrowTokenIndex].balanceOf(carol.address)
         const ctInOther = await aaveTest.vTokens[borrowTokenIndexOther].balanceOf(carol.address)
@@ -413,7 +413,7 @@ describe('AAVE Brokered Loan Swap operations', async () => {
         const t = await aaveTest.aTokens[supplyTokenIndex].balanceOf(gabi.address)
         const t2 = await aaveTest.aTokens[borrowTokenIndexOther].balanceOf(gabi.address)
         console.log(t.toString(), t2.toString())
-        await broker.trader.connect(gabi).swapExactOut(params.amountOut, params.amountInMaximum, params.path)
+        await broker.trader.connect(gabi).flashSwapExactOut(params.amountOut, params.amountInMaximum, params.path)
 
         const ctIn = await aaveTest.vTokens[borrowTokenIndex].balanceOf(gabi.address)
         const ctInOther = await aaveTest.vTokens[borrowTokenIndexOther].balanceOf(gabi.address)
@@ -494,7 +494,7 @@ describe('AAVE Brokered Loan Swap operations', async () => {
 
         const borrowFromBefore = await aaveTest.vTokens[borrowTokenIndex].balanceOf(test0.address)
 
-        await broker.trader.connect(test0).swapAllOut(params.amountInMaximum, params.path)
+        await broker.trader.connect(test0).flashSwapAllOut(params.amountInMaximum, params.path)
 
         const borrowFromAfter = await aaveTest.vTokens[borrowTokenIndex].balanceOf(test0.address)
         const borrowToAfter = await aaveTest.vTokens[borrowTokenIndexOther].balanceOf(test0.address)

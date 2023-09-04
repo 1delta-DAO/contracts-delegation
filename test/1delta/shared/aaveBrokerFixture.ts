@@ -29,8 +29,8 @@ import {
     AaveFlashModule,
     MarginTrading,
     MarginTrading__factory,
-    AaveMoneyMarket__factory,
-    AaveMoneyMarket
+    FlashAggregator__factory,
+    FlashAggregator
 } from "../../../types";
 import { ModuleConfigAction, getSelectors } from "../../diamond/libraries/diamond";
 import { AAVEFixture } from "./aaveFixture";
@@ -39,7 +39,7 @@ import MoneyMarketArtifact from "../../../artifacts/contracts/1delta/modules/aav
 import SweeperArtifact from "../../../artifacts/contracts/1delta/modules/aave/AAVESweeperModule.sol/AAVESweeperModule.json"
 import MarginTradingArtifact from "../../../artifacts/contracts/1delta/modules/aave/MarginTrading.sol/MarginTrading.json"
 import MarginTraderArtifact from "../../../artifacts/contracts/1delta/modules/aave/AAVEMarginTraderModule.sol/AAVEMarginTraderModule.json"
-import AaveMoneyMarketArtifact from "../../../artifacts/contracts/1delta/modules/aave/AaveMoneyMarket.sol/AaveMoneyMarket.json"
+import FlashAggregatorArtifact from "../../../artifacts/contracts/1delta/modules/aave/FlashAggregator.sol/FlashAggregator.json"
 
 export const ONE_18 = BigNumber.from(10).pow(18)
 
@@ -230,8 +230,8 @@ export interface AaveBrokerFixtureInclV2 {
     broker: AAVEMarginTraderModule & AAVESweeperModule
     manager: ManagementModule
     tradeDataViewer: MarginTradeDataViewerModule
-    moneyMarket: AaveMoneyMarket
-    moneyMarketImplementation: AaveMoneyMarket
+    moneyMarket: FlashAggregator
+    moneyMarketImplementation: FlashAggregator
     sweeper: AAVESweeperModule
     trader: MarginTrading
 }
@@ -282,18 +282,18 @@ export async function aaveBrokerFixtureInclV2(signer: SignerWithAddress, uniFact
     const tradeDataViewer = (await new ethers.Contract(proxy.address, MarginTradeDataViewerModule__factory.createInterface(), signer) as MarginTradeDataViewerModule)
 
     // callback
-    const marginTrader = await new MarginTrading__factory(signer).deploy(uniV2Factory, uniFactory, aavePool)
+    // const marginTrader = await new MarginTrading__factory(signer).deploy(uniV2Factory, uniFactory, aavePool)
 
-    await configContract.connect(signer).configureModules(
-        [{
-            moduleAddress: marginTrader.address,
-            action: ModuleConfigAction.Add,
-            functionSelectors: getSelectors(marginTrader)
-        }],
-    )
+    // await configContract.connect(signer).configureModules(
+    //     [{
+    //         moduleAddress: marginTrader.address,
+    //         action: ModuleConfigAction.Add,
+    //         functionSelectors: getSelectors(marginTrader)
+    //     }],
+    // )
 
     // money markets
-    const moneyMarketModule = await new AaveMoneyMarket__factory(signer).deploy(uniV2Factory, uniFactory, aavePool, weth)
+    const moneyMarketModule = await new FlashAggregator__factory(signer).deploy(uniV2Factory, uniFactory, aavePool, weth)
 
     await configContract.connect(signer).configureModules(
         [{
@@ -320,8 +320,8 @@ export async function aaveBrokerFixtureInclV2(signer: SignerWithAddress, uniFact
 
     const moneyMarket = (await new ethers.Contract(
         proxy.address,
-        AaveMoneyMarketArtifact.abi,
-        signer) as AaveMoneyMarket)
+        FlashAggregatorArtifact.abi,
+        signer) as FlashAggregator)
 
 
     // const marginV2Module = await new AaveUniswapV2Callback__factory(signer).deploy(uniV2Factory, aavePool)

@@ -79,8 +79,8 @@ contract BalancerFlashModule is WithStorage, TokenTransfer {
         bytes memory userData
     ) external {
         // validate callback
-        require(gs().isOpen == 1, "CANNOT_ENTER");
-        require(msg.sender == address(_balancerFlashLoans), "VAULT_NOT_CALLER");
+        require(gs().isOpen == 1, "CannotEnter()");
+        require(msg.sender == address(_balancerFlashLoans), "VaultNotCaller()");
 
         // fetch flash loan parameters
         address token = address(tokens[0]);
@@ -96,7 +96,7 @@ contract BalancerFlashModule is WithStorage, TokenTransfer {
         IPool aavePool = _aavePool;
 
         // validate swap router
-        require(gs().isValidTarget[swapTarget], "TARGET");
+        require(gs().isValidTarget[swapTarget], "Target()");
 
         // exact in swap
         // that amount is supposed to be swapped by the target to some output amount in asset baseAsset
@@ -104,7 +104,7 @@ contract BalancerFlashModule is WithStorage, TokenTransfer {
         if (marginType == 0) {
             // execute transaction on target
             (bool success, ) = swapTarget.call(flashParams.encodedSwapCall);
-            require(success, "CALL_FAILED");
+            require(success, "CallFailed()");
 
             address baseAsset = flashParams.deltaParams.baseAsset;
             uint256 amountSwapped = IERC20(baseAsset).balanceOf(address(this));
@@ -124,7 +124,7 @@ contract BalancerFlashModule is WithStorage, TokenTransfer {
         else if (marginType == 1) {
             // execute transaction on target
             (bool success, ) = swapTarget.call(flashParams.encodedSwapCall);
-            require(success, "CALL_FAILED");
+            require(success, "CallFailed()");
 
             address baseAsset = flashParams.deltaParams.baseAsset;
             uint256 amountSwapped = IERC20(baseAsset).balanceOf(address(this));
@@ -189,7 +189,7 @@ contract BalancerFlashModule is WithStorage, TokenTransfer {
         else if (marginType == 2) {
             // execute transaction on target
             (bool success, ) = swapTarget.call(flashParams.encodedSwapCall);
-            require(success, "CALL_FAILED");
+            require(success, "CallFailed()");
 
             address baseAsset = flashParams.deltaParams.baseAsset;
             uint256 amountSwapped = IERC20(baseAsset).balanceOf(address(this));
@@ -237,7 +237,7 @@ contract BalancerFlashModule is WithStorage, TokenTransfer {
         else {
             // execute transaction on target
             (bool success, ) = swapTarget.call(flashParams.encodedSwapCall);
-            require(success, "CALL_FAILED");
+            require(success, "CallFailed()");
 
             address baseAsset = flashParams.deltaParams.baseAsset;
             uint256 received = IERC20(baseAsset).balanceOf(address(this));

@@ -268,7 +268,7 @@ describe('AAVE Brokered Collateral Multi Swap operations', async () => {
         console.log(t.toString(), t2.toString())
         // await broker.broker.connect(carol).swapCollateralExactIn(params)
 
-        await broker.trader.connect(carol).swapExactIn(params.amountIn, params.amountOutMinimum, params.path)
+        await broker.trader.connect(carol).flashSwapExactIn(params.amountIn, params.amountOutMinimum, params.path)
 
         const bb = await aaveTest.pool.getUserAccountData(carol.address)
         const ctIn = await aaveTest.aTokens[supplyTokenIndex].balanceOf(carol.address)
@@ -409,7 +409,7 @@ describe('AAVE Brokered Collateral Multi Swap operations', async () => {
         const t = await aaveTest.aTokens[supplyTokenIndex].balanceOf(gabi.address)
         const t2 = await aaveTest.aTokens[supplyTokenIndexOther].balanceOf(gabi.address)
         console.log(formatEther(t), formatEther(t2))
-        await broker.trader.connect(gabi).swapExactOut(params.amountOut, params.amountInMaximum, params.path)
+        await broker.trader.connect(gabi).flashSwapExactOut(params.amountOut, params.amountInMaximum, params.path)
 
         const ctIn = await aaveTest.aTokens[supplyTokenIndex].balanceOf(gabi.address)
         const ctInOther = await aaveTest.aTokens[supplyTokenIndexOther].balanceOf(gabi.address)
