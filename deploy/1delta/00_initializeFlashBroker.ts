@@ -118,20 +118,19 @@ export async function approveSpending(chainId: number, signer: SignerWithAddress
     const management = await new ManagementModule__factory(signer).attach(deltaProxy)
 
     const aTokenKeys = Object.keys(addressesAaveATokens).filter(k => Boolean(addressesAaveATokens[k][chainId]))
+    const underlyingAddresses = aTokenKeys.map(k => addressesTokens[k][chainId])
+    console.log("Assets", underlyingAddresses)
 
-    console.log("Assets", aTokenKeys)
-    console.log("approve 1inch")
-
-    tx = await management.approveAddress(
-        aTokenKeys.map(a => addressesTokens[a][chainId]),
-        oneInchRouter[chainId]
-    )
+    console.log("add target - 1inch")
+    tx = await management.setValidTarget(oneInchRouter[chainId], true)
     await tx.wait()
-    console.log("approve paraswap")
 
-    tx = await management.approveAddress(
-        aTokenKeys.map(a => addressesTokens[a][chainId]),
-        paraswapTransferProxy[chainId]
-    )
+    console.log("add target - paraswap")
+    tx = await management.setValidTarget(paraswapRouter[chainId], true)
+    await tx.wait()
+
+    console.log("approve aave pool")
+    tx = await management.approveAAVEPool(underlyingAddresses, opts)
+    await tx.wait()
 
 }

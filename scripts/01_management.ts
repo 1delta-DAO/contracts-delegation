@@ -11,7 +11,7 @@ import { aTokens, sTokens, tokens, vTokens } from "./aaveAddresses";
 const opts = {
     // maxFeePerGas: usedMaxFeePerGas,
     // maxPriorityFeePerGas: usedMaxPriorityFeePerGas
-    gasLimit: 3500000
+    // gasLimit: 3500000
 }
 
 const addresses = aaveBrokerAddresses as any
@@ -34,23 +34,12 @@ async function main() {
     const management = await new ManagementModule__factory(operator).attach(proxyAddress)
 
     // on testnet aave uses a custom WETH
-    const aaveWETH = chainId === 80001 ? tokens[chainId]['WMATIC'] : (generalAddresses as any).WETH[chainId]
-    console.log("set weth", aaveWETH)
-    let tx = await management.setNativeWrapper(aaveWETH, opts)
-    await tx.wait()
-    console.log("weth set", aaveWETH)
-
-    tx = await management.setUniswapRouter(minimalRouter, opts)
-    await tx.wait()
 
     const underlyingAddresses = Object.values(tokens[chainId])
     console.log("Assets", underlyingAddresses)
 
-    console.log("approve router")
-    tx = await management.approveRouter(underlyingAddresses, opts)
-    await tx.wait()
     console.log("approve aave pool")
-    tx = await management.approveAAVEPool(underlyingAddresses, opts)
+    let tx = await management.approveAAVEPool(underlyingAddresses, opts)
     await tx.wait()
 
     const keys = Object.keys(tokens[chainId])

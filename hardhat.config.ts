@@ -160,10 +160,10 @@ const config: HardhatUserConfig = {
       accounts
     },
     hardhat: {
-      // forking: {
-      //   blockNumber: undefined,
-      //   url: `https://rpc.ankr.com/polygon`,
-      // },
+      forking: {
+        blockNumber: undefined,
+        url: `https://rpc.ankr.com/polygon`,
+      },
     },
     rinkeby: {
       url: `https://rinkeby.infura.io/v3/${process.env.INFURA_API_KEY}`,
@@ -448,6 +448,7 @@ const config: HardhatUserConfig = {
       {
         version: '0.8.21',
         settings: {
+          viaIR: true,
           optimizer: {
             enabled: true,
             runs: 1_000_000,

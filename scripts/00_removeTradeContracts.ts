@@ -48,21 +48,22 @@ async function main() {
 
     // get lens to fetch modules
     const lens = await new LensModule__factory(operator).attach(proxyAddress)
-
-    const callbackSelectors = await lens.moduleFunctionSelectors(callbackAddress)
+    console.log(marginTradingAddress)
+    // const callbackSelectors = await lens.moduleFunctionSelectors(callbackAddress)
     const marginTradingSelectors = await lens.moduleFunctionSelectors(marginTradingAddress)
-    const moneyMarketSelectors = await lens.moduleFunctionSelectors(moneyMarketAddress)
-    const managementSelectors = await lens.moduleFunctionSelectors(managementAddress)
-    const sweeperSelectors = await lens.moduleFunctionSelectors(sweeperAddress)
-    const aaveFlashSelectors = await lens.moduleFunctionSelectors(aaveFlashModuleAddress)
-    const balancerFlashSelectors = await lens.moduleFunctionSelectors(balancerFlashAddress)
+    console.log(marginTradingSelectors)
+    // const moneyMarketSelectors = await lens.moduleFunctionSelectors(moneyMarketAddress)
+    // const managementSelectors = await lens.moduleFunctionSelectors(managementAddress)
+    // const sweeperSelectors = await lens.moduleFunctionSelectors(sweeperAddress)
+    // const aaveFlashSelectors = await lens.moduleFunctionSelectors(aaveFlashModuleAddress)
+    // const balancerFlashSelectors = await lens.moduleFunctionSelectors(balancerFlashAddress)
     const moduleSelectors = [
-        callbackSelectors,
+        // callbackSelectors,
         marginTradingSelectors,
-        moneyMarketSelectors,
-        sweeperSelectors,
-        aaveFlashSelectors,
-        balancerFlashSelectors,
+        // moneyMarketSelectors,
+        // sweeperSelectors,
+        // aaveFlashSelectors,
+        // balancerFlashSelectors,
         // managementSelectors
     ]
 

@@ -180,7 +180,7 @@ export async function createBrokerV2(signer: SignerWithAddress, balancer: string
             action: ModuleConfigAction.Add,
             functionSelectors: getSelectors(brokerModuleBalancer)
         }
-            ,],
+        ],
         opts
     )
     await tx.wait()

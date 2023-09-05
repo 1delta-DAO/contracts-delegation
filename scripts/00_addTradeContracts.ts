@@ -1,6 +1,14 @@
 
 import { ethers } from "hardhat";
-import { AaveFlashModule__factory, AAVEMarginTraderModule__factory, AAVEMoneyMarketModule__factory, AAVESweeperModule__factory, BalancerFlashModule__factory, ConfigModule__factory, DeltaBrokerProxy__factory, DeltaFlashAggregator__factory, LensModule__factory, ManagementModule__factory, UniswapV3SwapCallbackModule__factory } from "../types";
+import {
+    AaveFlashModule__factory,
+    BalancerFlashModule__factory,
+    ConfigModule__factory,
+    DeltaBrokerProxy__factory,
+    DeltaFlashAggregator__factory,
+    LensModule__factory,
+    ManagementModule__factory,
+} from "../types";
 import { aaveAddresses, aaveBrokerAddresses, uniswapAddresses } from "../deploy/00_addresses"
 import { validateAddresses } from "../utils/types";
 import { parseUnits } from "ethers/lib/utils";
@@ -68,13 +76,13 @@ async function main() {
     // console.log("management deployed")
 
 
-    const balancerFlashModule = await new BalancerFlashModule__factory(operator).deploy(aavePool, balancerV2Vault[chainId])
-    await balancerFlashModule.deployed()
-    console.log("balancerFlashModule deployed")
+    // const balancerFlashModule = await new BalancerFlashModule__factory(operator).deploy(aavePool, balancerV2Vault[chainId])
+    // await balancerFlashModule.deployed()
+    // console.log("balancerFlashModule deployed")
 
-    const aaveFlashModule = await new AaveFlashModule__factory(operator).deploy(aavePool)
-    await aaveFlashModule.deployed()
-    console.log("aaveFlashModule deployed")
+    // const aaveFlashModule = await new AaveFlashModule__factory(operator).deploy(aavePool)
+    // await aaveFlashModule.deployed()
+    // console.log("aaveFlashModule deployed")
 
     // const lensModule = await new LensModule__factory(operator).deploy(opts)
     // await lensModule.deployed()
@@ -98,8 +106,8 @@ async function main() {
 
 
     const modules = [
-        balancerFlashModule,
-        aaveFlashModule,
+        // balancerFlashModule,
+        // aaveFlashModule,
         flashBroker
         // sweeper,
         // marginTrading,
@@ -156,4 +164,3 @@ main()
     // MarginTraderModule 0x8AD54D6aF1cE5f5EE075118d0aFBE8b9800eE6Eb
     // Sweeper 0xc08BFef7E778f3519D79E96780b77066F5d4FCC0
     // Management 0xD3Bc8DCED6813e7E77b6380E534Da23Ff262AcD0
-    

@@ -28,7 +28,7 @@ abstract contract BaseSwapper is TokenTransfer {
     uint160 internal constant MIN_SQRT_RATIO = 4295128740;
     /// @dev MAX_SQRT_RATIO - 1 from Uniswap's TickMath
     uint160 internal constant MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970341;
-    
+
     //  bytes32((uint256(0xff) << 248) | (uint256(uint160(0x1F98431c8aD98523631AE4a59f267346ea31F984)) << 88));
     bytes32 private constant UNI_V3_FF_FACTORY = 0xff1f98431c8ad98523631ae4a59f267346ea31f9840000000000000000000000;
     bytes32 private constant UNI_POOL_INIT_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
@@ -58,17 +58,17 @@ abstract contract BaseSwapper is TokenTransfer {
         uint24 fee,
         uint8 pId
     ) internal pure returns (IUniswapV3Pool pool) {
+        uint256 _pId = pId;
         assembly {
-            let pairOrder := lt(tokenA, tokenB)
             let s := mload(0x40)
             let p := s
-            switch pId
+            switch _pId
             // Uni
             case 0 {
                 mstore(p, UNI_V3_FF_FACTORY)
                 p := add(p, 21)
                 // Compute the inner hash in-place
-                switch pairOrder
+                switch lt(tokenA, tokenB)
                 case 0 {
                     mstore(p, tokenB)
                     mstore(add(p, 32), tokenA)
@@ -85,10 +85,10 @@ abstract contract BaseSwapper is TokenTransfer {
             }
             // Algebra / Quickswap
             default {
-                mstore(p, QUICK_V2_FF_FACTORY)
+                mstore(p, ALGEBRA_V3_FF_DEPLOYER)
                 p := add(p, 21)
                 // Compute the inner hash in-place
-                switch pairOrder
+                switch lt(tokenA, tokenB)
                 case 0 {
                     mstore(p, tokenB)
                     mstore(add(p, 32), tokenA)

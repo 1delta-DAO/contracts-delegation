@@ -7,10 +7,11 @@ import { createBrokerV2, initializeBroker } from './00_helper';
 async function main() {
 
     const accounts = await hre.ethers.getSigners()
-    const operator = accounts[0]
+    const operator = accounts[1]
     const chainId = await operator.getChainId();
 
     console.log("Deploy Broker Proxy on", chainId, "by", operator.address)
+    console.log("params", balancerV2Vault[chainId], aaveAddresses.v3pool[chainId])
     const broker = await createBrokerV2(operator, balancerV2Vault[chainId], aaveAddresses.v3pool[chainId])
 
     console.log('Initialize')
