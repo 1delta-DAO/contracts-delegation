@@ -36,7 +36,7 @@ const UNWRAP = 'unwrap'
 // we prepare a setup for aave in hardhat
 // this series of tests checks that the features used for the margin swap implementation
 // are correctly set up and working
-describe('AAVE Money Market operations', async () => {
+describe('Aave Money Market operations', async () => {
     let deployer: SignerWithAddress;
     let alice: SignerWithAddress;
     let bob: SignerWithAddress;
@@ -58,7 +58,7 @@ describe('AAVE Money Market operations', async () => {
     let uniswapV2: V2Fixture
     let provider: MockProvider
 
-    before('Deploy Account, Trader, Uniswap and Aave', async () => {
+    before('Deploy Account, Trader, Uniswap and AAVE', async () => {
         [deployer, alice, bob, carol, gabi, achi, wally, dennis,
             vlad, xander, test0, test1, test2, test3] = await ethers.getSigners();
         provider = waffle.provider;
