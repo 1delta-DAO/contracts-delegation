@@ -15,6 +15,7 @@ import {IERC20Balance} from "../../interfaces/IERC20Balance.sol";
 import {WithStorage} from "../../storage/BrokerStorage.sol";
 import {MarginTrading} from "./MarginTrading.sol";
 import {WrappedNativeHandler} from "./WrappedNativeHandler.sol";
+import {SelfPermit} from "../aave/SelfPermit.sol";
 
 // solhint-disable max-line-length
 
@@ -22,12 +23,12 @@ import {WrappedNativeHandler} from "./WrappedNativeHandler.sol";
  * @title FlashAggregator
  * @notice Adds money market and default transfer functions to margin trading
  */
-contract DeltaFlashAggregator is MarginTrading, WrappedNativeHandler {
+contract DeltaFlashAggregator is MarginTrading, WrappedNativeHandler, SelfPermit {
     // constants
     uint256 private constant DEFAULT_AMOUNT_CACHED = type(uint256).max;
     address private constant DEFAULT_ADDRESS_CACHED = address(0);
 
-    constructor() MarginTrading() WrappedNativeHandler() {}
+    constructor() {}
 
     /** BASE LENDING FUNCTIONS */
 
