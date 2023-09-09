@@ -4,8 +4,6 @@ pragma solidity ^0.8.0;
 
 /******************************************************************************\
 * Author: Achthar <achim@1delta.io>
-*
-* Implementation of the 1delta margin aggregator proxy.
 /******************************************************************************/
 
 import {LibModules} from "./libraries/LibModules.sol";
@@ -64,7 +62,7 @@ contract DeltaBrokerProxy {
     // Find module for function that is called and execute the
     // function if a module is found and return any value.
     fallback() external payable {
-        // This is used in assembly below as impls_slot.
+        // This is used in assembly below as impls.slot.
         mapping(bytes4 => address) storage impls = LibModules.moduleStorage().selectorToModule;
 
         assembly {
