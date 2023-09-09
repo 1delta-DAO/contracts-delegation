@@ -83,40 +83,5 @@ describe('Multicall on raw Proxy', async () => {
 })
 
 // ··························|····················|·············|·············|·············|···············|··············
-// |  DeltaBrokerProxy       ·  multicall         ·          -  ·          -  ·      37745  ·            1  ·       0.62  │
+// |  DeltaBrokerProxy       ·  multicall         ·          -  ·          -  ·      37594  ·            1  ·       0.74  │
 // ··························|····················|·············|·············|·············|···············|··············
-
-
-
-    // // An efficient multicall implementation for delegatecalls
-    // function multicall(bytes[] calldata data) external payable {
-    //     // This is used in assembly below as impls.slot.
-    //     mapping(bytes4 => address) storage impls = LibModules.moduleStorage().selectorToModule;
-    //     for (uint256 i = 0; i != data.length; i++) {
-    //         bytes calldata call = data[i];
-
-    //         assembly {
-    //             let selector := and(calldataload(call.offset), 0xFFFFFFFF00000000000000000000000000000000000000000000000000000000)
-    //             mstore(0, selector)
-    //             mstore(0x20, impls.slot)
-    //             let slot := keccak256(0, 0x40)
-    //             let delegate := sload(slot)
-    //             if iszero(delegate) {
-    //                 // Revert with:
-    //                 // abi.encodeWithSelector(
-    //                 //   bytes4(keccak256("NoImplementation(bytes4)")),
-    //                 //   selector)
-    //                 mstore(0, 0x734e6e1c00000000000000000000000000000000000000000000000000000000)
-    //                 mstore(4, selector)
-    //                 revert(0, 0x24)
-    //             }
-    //             calldatacopy(0, call.offset, call.length)
-    //             let success := delegatecall(gas(), delegate, 0, call.length, 0, 0)
-    //             let rdlen := returndatasize()
-    //             returndatacopy(0, 0, rdlen)
-    //             if iszero(success) {
-    //                 revert(0, rdlen)
-    //             }
-    //         }
-    //     }
-    // }

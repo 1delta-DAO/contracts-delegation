@@ -30,10 +30,15 @@ contract DeltaBrokerProxy {
         // This is used in assembly below as impls.slot.
         mapping(bytes4 => address) storage impls = LibModules.moduleStorage().selectorToModule;
         // loop throught the calls and execute
-        for (uint256 i = 0; i != data.length; ) {
+        for (uint256 i; i != data.length; ) {
             bytes calldata call = data[i];
             assembly {
-                let selector := and(calldataload(call.offset), 0xFFFFFFFF00000000000000000000000000000000000000000000000000000000)
+                let len := call.length
+                calldatacopy(0x40, call.offset, len) // copy calldata to free memory pointer
+                let selector := and(
+                    mload(0x40), // calldata was copied to 0, we load the selector from there
+                    0xFFFFFFFF00000000000000000000000000000000000000000000000000000000
+                )
                 mstore(0, selector)
                 mstore(0x20, impls.slot)
                 let slot := keccak256(0, 0x40)
@@ -44,11 +49,10 @@ contract DeltaBrokerProxy {
                     mstore(4, selector)
                     revert(0, 0x24)
                 }
-                let len := call.length
-                calldatacopy(0, call.offset, len)
-                let success := delegatecall(gas(), delegate, 0, len, 0, 0)
+                let success := delegatecall(gas(), delegate, 0x40, len, 0, 0)
                 len := returndatasize()
                 returndatacopy(0, 0, len)
+                // revert if not successful - do not return any values on success
                 if iszero(success) {
                     revert(0, len)
                 }
