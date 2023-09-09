@@ -1,5 +1,5 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { BigNumber } from "ethers";
+import { BigNumber, constants } from "ethers";
 import { ethers } from "hardhat";
 import {
     ManagementModule,
@@ -20,10 +20,14 @@ import {
     FlashAggregator__factory,
     FlashAggregator,
     AaveMarginTraderInit__factory,
-    AaveMarginTraderInit
+    AaveMarginTraderInit,
+    DebtTokenBase,
+    VariableDebtToken,
+    StableDebtToken
 } from "../../../types";
 import { ModuleConfigAction, getSelectors } from "../../diamond/libraries/diamond";
 import FlashAggregatorArtifact from "../../../artifacts/contracts/1delta/modules/aave/FlashAggregator.sol/FlashAggregator.json"
+import { buildDelegationWithSigParams, getSignatureFromTypedData } from "./contracts-helpers";
 
 export const ONE_18 = BigNumber.from(10).pow(18)
 
@@ -46,7 +50,7 @@ export async function addBalancer(signer: SignerWithAddress, bf: AaveBrokerFixtu
 
     await bf.manager.setValidTarget(router, true)
 
-    return {delta, balancerModule}
+    return { delta, balancerModule }
 }
 
 
@@ -141,7 +145,7 @@ export async function aaveBrokerFixtureInclV2(signer: SignerWithAddress, uniFact
 
 
 
-export async function initAaveBroker(signer: SignerWithAddress, bf: AaveBrokerFixtureInclV2, aavePool:string) {
+export async function initAaveBroker(signer: SignerWithAddress, bf: AaveBrokerFixtureInclV2, aavePool: string) {
 
     const dc = await new ethers.Contract(bf.brokerProxy.address, OneDeltaModuleManager__factory.createInterface(), signer) as OneDeltaModuleManager
     const initAAVE = await new AaveMarginTraderInit__factory(signer).deploy()
@@ -157,3 +161,43 @@ export async function initAaveBroker(signer: SignerWithAddress, bf: AaveBrokerFi
 
     await dcInit.initAAVEMarginTrader(aavePool)
 }
+
+const EIP712_REVISION = '1';
+
+export async function createDelegationPermit(signer: SignerWithAddress, token: VariableDebtToken | StableDebtToken, amount: string, target: string, chainId: number): Promise<{
+    v: number, r: string, s: string, expiration: string
+}> {
+
+    // const variableSeparator = await token.DOMAIN_SEPARATOR();
+
+    // const variableDomain = {
+    //     name: await token.name(),
+    //     version: EIP712_REVISION,
+    //     chainId,
+    //     verifyingContract: token.address,
+    // };
+
+    const expiration = constants.MaxUint256.toString();
+    const nonce = (await token.nonces(signer.address)).toNumber();
+    const msgParams = buildDelegationWithSigParams(
+        chainId,
+        token.address,
+        EIP712_REVISION,
+        await token.name(),
+       target,
+        nonce,
+        expiration,
+        amount.toString()
+    );
+
+    const { v, r, s } = await getSignatureFromTypedData(signer,
+        msgParams.domain,
+        {
+            DelegationWithSig: msgParams.types.DelegationWithSig
+        },
+        msgParams.message);
+
+    return { v, r, s, expiration }
+
+
+} 
