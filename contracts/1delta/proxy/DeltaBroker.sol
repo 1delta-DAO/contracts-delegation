@@ -31,6 +31,7 @@ contract DeltaBrokerProxy {
     function multicall(bytes[] calldata data) external payable {
         // This is used in assembly below as impls.slot.
         mapping(bytes4 => address) storage impls = LibModules.moduleStorage().selectorToModule;
+        // loop throught the calls and execute
         for (uint256 i = 0; i != data.length; ) {
             bytes calldata call = data[i];
             assembly {
