@@ -27,7 +27,7 @@ contract DeltaBrokerProxy {
         LibModules.configureModules(cut);
     }
 
-    // An efficient multicall implementation for delegatecalls
+    // An efficient multicall implementation for directly calling functions across multiple modules
     function multicall(bytes[] calldata data) external payable {
         // This is used in assembly below as impls.slot.
         mapping(bytes4 => address) storage impls = LibModules.moduleStorage().selectorToModule;
@@ -40,10 +40,7 @@ contract DeltaBrokerProxy {
                 let slot := keccak256(0, 0x40)
                 let delegate := sload(slot)
                 if iszero(delegate) {
-                    // Revert with:
-                    // abi.encodeWithSelector(
-                    //   bytes4(keccak256("NoImplementation(bytes4)")),
-                    //   selector)
+                    // Reverting with NoImplementation
                     mstore(0, 0x734e6e1c00000000000000000000000000000000000000000000000000000000)
                     mstore(4, selector)
                     revert(0, 0x24)
