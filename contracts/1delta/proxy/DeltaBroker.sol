@@ -4,8 +4,6 @@ pragma solidity ^0.8.0;
 
 /******************************************************************************\
 * Author: Achthar <achim@1delta.io>
-*
-* Implementation of the 1delta margin aggregator proxy.
 /******************************************************************************/
 
 import {LibModules} from "./libraries/LibModules.sol";
@@ -27,39 +25,36 @@ contract DeltaBrokerProxy {
         LibModules.configureModules(cut);
     }
 
-    // An efficient multicall implementation for delegatecalls
+    // An efficient multicall implementation for directly calling functions across multiple modules
     function multicall(bytes[] calldata data) external payable {
         // This is used in assembly below as impls.slot.
         mapping(bytes4 => address) storage impls = LibModules.moduleStorage().selectorToModule;
-        for (uint256 i = 0; i != data.length; i++) {
+        // loop throught the calls and execute
+        for (uint256 i = 0; i != data.length; ) {
             bytes calldata call = data[i];
-
-            address delegate;
             assembly {
                 let selector := and(calldataload(call.offset), 0xFFFFFFFF00000000000000000000000000000000000000000000000000000000)
                 mstore(0, selector)
                 mstore(0x20, impls.slot)
                 let slot := keccak256(0, 0x40)
-                delegate := sload(slot)
+                let delegate := sload(slot)
                 if iszero(delegate) {
-                    // Revert with:
-                    // abi.encodeWithSelector(
-                    //   bytes4(keccak256("NoImplementation(bytes4)")),
-                    //   selector)
+                    // Reverting with NoImplementation
                     mstore(0, 0x734e6e1c00000000000000000000000000000000000000000000000000000000)
                     mstore(4, selector)
                     revert(0, 0x24)
                 }
-            }
-            (bool success, bytes memory result) = delegate.delegatecall(call);
-
-            if (!success) {
-                // Next 5 lines from https://ethereum.stackexchange.com/a/83577
-                if (result.length < 68) revert();
-                assembly {
-                    result := add(result, 0x04)
+                let len := call.length
+                calldatacopy(0, call.offset, len)
+                let success := delegatecall(gas(), delegate, 0, len, 0, 0)
+                len := returndatasize()
+                returndatacopy(0, 0, len)
+                if iszero(success) {
+                    revert(0, len)
                 }
-                revert(abi.decode(result, (string)));
+            }
+            unchecked {
+                i++;
             }
         }
     }
@@ -67,7 +62,7 @@ contract DeltaBrokerProxy {
     // Find module for function that is called and execute the
     // function if a module is found and return any value.
     fallback() external payable {
-        // This is used in assembly below as impls_slot.
+        // This is used in assembly below as impls.slot.
         mapping(bytes4 => address) storage impls = LibModules.moduleStorage().selectorToModule;
 
         assembly {
@@ -76,7 +71,7 @@ contract DeltaBrokerProxy {
             calldatacopy(0x40, 0, cdlen)
             let selector := and(mload(0x40), 0xFFFFFFFF00000000000000000000000000000000000000000000000000000000)
 
-            // Slot for impls[selector] is keccak256(selector . impls_slot).
+            // Slot for impls[selector] is keccak256(selector . impls.slot).
             mstore(0, selector)
             mstore(0x20, impls.slot)
             let slot := keccak256(0, 0x40)
