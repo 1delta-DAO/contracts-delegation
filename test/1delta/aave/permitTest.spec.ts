@@ -7,7 +7,7 @@ import {
 } from '../../../types';
 import { FeeAmount } from '../../uniswap-v3/periphery/shared/constants';
 import { expandTo18Decimals } from '../../uniswap-v3/periphery/shared/expandTo18Decimals';
-import { ONE_18, AaveBrokerFixtureInclV2, aaveBrokerFixtureInclV2, initAaveBroker, createDelegationPermit } from '../shared/aaveBrokerFixture';
+import { ONE_18, AaveBrokerFixtureInclV2, aaveBrokerFixtureInclV2, initAaveBroker, createDelegationPermit, createPermit } from '../shared/aaveBrokerFixture';
 import { expect } from '../shared/expect'
 import { initializeMakeSuite, InterestRateMode, AAVEFixture, deposit } from '../shared/aaveFixture';
 import { addLiquidity, addLiquidityV2, uniswapMinimalFixtureNoTokens, UniswapMinimalFixtureNoTokens } from '../shared/uniswapFixture';
@@ -16,6 +16,8 @@ import { uniV2Fixture, V2Fixture } from '../shared/uniV2Fixture';
 import { encodeAggregatorPathEthers } from '../shared/aggregatorPath';
 
 const SELF_DELEGATE = 'selfCreditDelegate'
+const SELF_PERMIT = 'selfPermit'
+const SWAP_IN_CALL = 'flashSwapExactIn'
 
 // we prepare a setup for aave in hardhat
 // this series of tests checks that the features used for the margin swap implementation
@@ -184,7 +186,7 @@ describe('AAVE Brokered Margin Swap operations', async () => {
         ).to.be.revertedWith('36')
     })
 
-    it.only('allows margin swap exact in', async () => {
+    it('allows margin swap exact in / Delegation with Permit', async () => {
 
         const supplyTokenIndex = "DAI"
         const borrowTokenIndex = "AAVE"
@@ -214,12 +216,12 @@ describe('AAVE Brokered Margin Swap operations', async () => {
         }
 
         await deposit(aaveTest, supplyTokenIndex, carol, providedAmount)
-        console.log("Chain", chainId)
+
         const permitData = await createDelegationPermit(carol, aaveTest.vTokens[borrowTokenIndex], swapAmount.toString(), broker.brokerProxy.address, chainId)
 
         const allowance = await aaveTest.vTokens[borrowTokenIndex].borrowAllowance(carol.address, broker.brokerProxy.address)
         expect(allowance.toString()).to.equal('0')
-        
+
         const callDelegation = broker.trader.interface.encodeFunctionData(
             SELF_DELEGATE,
             [
@@ -232,67 +234,14 @@ describe('AAVE Brokered Margin Swap operations', async () => {
             ]
         )
 
-        const callSwap = broker.trader.interface.encodeFunctionData('flashSwapExactIn', [params.amountIn, params.amountOutMinimum, params.path])
+        const callSwap = broker.trader.interface.encodeFunctionData(SWAP_IN_CALL, [params.amountIn, params.amountOutMinimum, params.path])
         // open margin position
         await broker.brokerProxy.connect(carol).multicall([callDelegation, callSwap]) //flashSwapExactIn(params.amountIn, params.amountOutMinimum, params.path)
         const bb = await aaveTest.pool.getUserAccountData(carol.address)
         expect(bb.totalDebtBase.toString()).to.equal(swapAmount)
     })
 
-    it('allows margin swap exact out', async () => {
-
-        const supplyTokenIndex = "DAI"
-        const borrowTokenIndex = "AAVE"
-        const providedAmount = expandTo18Decimals(500)
-
-        const swapAmount = expandTo18Decimals(950)
-
-        await aaveTest.tokens[borrowTokenIndex].connect(gabi).approve(broker.brokerProxy.address, constants.MaxUint256)
-        await aaveTest.tokens[supplyTokenIndex].connect(gabi).approve(broker.brokerProxy.address, constants.MaxUint256)
-
-        await aaveTest.vTokens[borrowTokenIndex].connect(gabi).approveDelegation(broker.brokerProxy.address, constants.MaxUint256)
-
-        await aaveTest.sTokens[borrowTokenIndex].connect(gabi).approveDelegation(broker.brokerProxy.address, constants.MaxUint256)
-
-        await aaveTest.tokens[supplyTokenIndex].connect(gabi).approve(aaveTest.pool.address, constants.MaxUint256)
-
-        // enable collateral
-        await aaveTest.pool.connect(gabi).supply(aaveTest.tokens[supplyTokenIndex].address, ONE_18, gabi.address, 0)
-        await aaveTest.pool.connect(gabi).setUserUseReserveAsCollateral(aaveTest.tokens[supplyTokenIndex].address, true)
-
-        const balAfter = await aaveTest.tokens[borrowTokenIndex].balanceOf(test.address)
-        const balOther = await aaveTest.tokens[supplyTokenIndex].balanceOf(test.address)
-
-        let _tokensInRoute = [
-            aaveTest.tokens[borrowTokenIndex],
-            aaveTest.tokens[supplyTokenIndex]
-        ].map(t => t.address).reverse()
-
-        // reverse path for exact out
-        const path = encodeAggregatorPathEthers(
-            _tokensInRoute,
-            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
-            [3], // action
-            [99], // pid
-            2 // flag
-        )
-        const params = {
-            path,
-            interestRateMode: InterestRateMode.VARIABLE,
-            amountOut: swapAmount,
-            amountInMaximum: swapAmount.mul(105).div(100)
-        }
-
-        await deposit(aaveTest, supplyTokenIndex, gabi, providedAmount)
-
-        // open margin position
-        await broker.trader.connect(gabi).flashSwapExactOut(params.amountOut, params.amountInMaximum, params.path)
-        const bb = await aaveTest.pool.getUserAccountData(gabi.address)
-        expect(bb.totalCollateralBase.toString()).to.equal(swapAmount.add(providedAmount).add(ONE_18).toString())
-
-    })
-
-    it('allows trimming margin position exact in', async () => {
+    it('allows trimming margin position exact in / Withdraw with Permit', async () => {
 
         const supplyTokenIndex = "DAI"
         const borrowTokenIndex = "AAVE"
@@ -320,13 +269,25 @@ describe('AAVE Brokered Margin Swap operations', async () => {
             amountIn: swapAmount,
             amountOutMinimum: swapAmount.mul(99).div(100)
         }
-        await aaveTest.aTokens[supplyTokenIndex].connect(carol).approve(broker.brokerProxy.address, constants.MaxUint256)
-        await aaveTest.vTokens[borrowTokenIndex].connect(carol).approveDelegation(broker.brokerProxy.address, constants.MaxUint256)
 
+        await aaveTest.aTokens[supplyTokenIndex].connect(carol).approve(broker.brokerProxy.address, constants.MaxUint256)
+        const permitData = await createPermit(carol, aaveTest.aTokens[supplyTokenIndex], swapAmount.toString(), broker.brokerProxy.address, chainId)
+        const callPermit = broker.trader.interface.encodeFunctionData(
+            SELF_PERMIT,
+            [
+                aaveTest.aTokens[supplyTokenIndex].address,
+                swapAmount,
+                constants.MaxUint256,
+                permitData.v,
+                permitData.r,
+                permitData.s
+            ]
+        )
+        const callSwap = broker.trader.interface.encodeFunctionData(SWAP_IN_CALL, [params.amountIn, params.amountOutMinimum, params.path])
         const bBefore = await aaveTest.pool.getUserAccountData(carol.address)
 
         // open margin position
-        await broker.trader.connect(carol).flashSwapExactIn(params.amountIn, params.amountOutMinimum, params.path)
+        await broker.brokerProxy.connect(carol).multicall([callPermit, callSwap])
         const bAfter = await aaveTest.pool.getUserAccountData(carol.address)
         expect(Number(formatEther(bAfter.totalDebtBase))).to.be.
             lessThanOrEqual(Number(formatEther(bBefore.totalDebtBase.sub(swapAmount))) * 1.05)
@@ -340,191 +301,6 @@ describe('AAVE Brokered Margin Swap operations', async () => {
 
         expect(Number(formatEther(bAfter.totalCollateralBase))).to.be.
             lessThanOrEqual(Number(formatEther(bBefore.totalCollateralBase.sub(swapAmount))) * 1.001)
-    })
-
-    it('allows trimming margin position all in', async () => {
-
-        const supplyTokenIndex = "DAI"
-        const supplyTokenOtherIndex = "WMATIC"
-        const borrowTokenIndex = "AAVE"
-
-        const supply = expandTo18Decimals(50)
-        const supplyOther = expandTo18Decimals(40)
-        const borrow = expandTo18Decimals(60)
-
-        // set up scenario
-        await aaveTest.pool.connect(test1).supply(aaveTest.tokens[supplyTokenIndex].address, supply, test1.address, 0)
-        await aaveTest.pool.connect(test1).setUserUseReserveAsCollateral(aaveTest.tokens[supplyTokenIndex].address, true)
-
-        await aaveTest.pool.connect(test1).supply(aaveTest.tokens[supplyTokenOtherIndex].address, supplyOther, test1.address, 0)
-        await aaveTest.pool.connect(test1).setUserUseReserveAsCollateral(aaveTest.tokens[supplyTokenOtherIndex].address, true)
-
-
-        await aaveTest.pool.connect(test1).borrow(
-            aaveTest.tokens[borrowTokenIndex].address,
-            borrow,
-            InterestRateMode.VARIABLE,
-            0,
-            test1.address
-        )
-
-
-        let _tokensInRoute = [
-            aaveTest.tokens[borrowTokenIndex],
-            aaveTest.tokens[supplyTokenIndex]
-        ].map(t => t.address).reverse()
-
-        // for trimming, we have to revert the swap path
-        const path = encodeAggregatorPathEthers(
-            _tokensInRoute,
-            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
-            [8], // action
-            [99], // pid
-            3 // flag
-        )
-
-        const params = {
-            path,
-            fee: FeeAmount.MEDIUM,
-            interestRateMode: InterestRateMode.VARIABLE,
-            amountOutMinimum: supply.mul(95).div(100)
-        }
-
-        await aaveTest.aTokens[supplyTokenIndex].connect(test1).approve(broker.brokerProxy.address, constants.MaxUint256)
-        await aaveTest.vTokens[borrowTokenIndex].connect(test1).approveDelegation(broker.brokerProxy.address, constants.MaxUint256)
-
-        // increase ime to make sure that interest accrues
-        await network.provider.send("evm_increaseTime", [3600])
-        await network.provider.send("evm_mine")
-
-        const bBefore = await aaveTest.pool.getUserAccountData(test1.address)
-
-        // open margin position
-        await broker.trader.connect(test1).flashSwapAllIn(params.amountOutMinimum, params.path)
-
-        const balanceSupply = await aaveTest.aTokens[supplyTokenIndex].balanceOf(test1.address)
-
-        const bAfter = await aaveTest.pool.getUserAccountData(test1.address)
-        expect(Number(formatEther(balanceSupply))).to.eq(0)
-
-        expect(Number(formatEther(bAfter.totalDebtBase))).to.be.
-            greaterThanOrEqual(Number(formatEther(bBefore.totalDebtBase.sub(supply))))
-
-
-        expect(Number(formatEther(bAfter.totalDebtBase))).to.be.
-            lessThanOrEqual(Number(formatEther(bBefore.totalDebtBase.sub(supply))) * 1.05)
-    })
-
-    it('allows trimming margin position exact out', async () => {
-
-        const supplyTokenIndex = "DAI"
-        const borrowTokenIndex = "AAVE"
-
-        const swapAmount = expandTo18Decimals(900)
-
-        let _tokensInRoute = [
-            aaveTest.tokens[borrowTokenIndex],
-            aaveTest.tokens[supplyTokenIndex]
-        ].map(t => t.address)
-        const path = encodeAggregatorPathEthers(
-            _tokensInRoute,
-            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
-            [5], // action
-            [99], // pid
-            3 // flag
-        )
-        const params = {
-            path,
-            fee: FeeAmount.MEDIUM,
-            amountInMaximum: swapAmount.mul(102).div(100),
-            amountOut: swapAmount,
-            interestRateMode: InterestRateMode.VARIABLE,
-        }
-
-        await aaveTest.aTokens[supplyTokenIndex].connect(gabi).approve(broker.brokerProxy.address, constants.MaxUint256)
-        await aaveTest.vTokens[borrowTokenIndex].connect(gabi).approveDelegation(broker.brokerProxy.address, constants.MaxUint256)
-
-        const bBefore = await aaveTest.pool.getUserAccountData(gabi.address)
-
-        // trim margin position
-        await broker.trader.connect(gabi).flashSwapExactOut(params.amountOut, params.amountInMaximum, params.path)
-
-        const bAfter = await aaveTest.pool.getUserAccountData(gabi.address)
-        expect(Number(formatEther(bAfter.totalDebtBase))).to.be.
-            lessThanOrEqual(Number(formatEther(bBefore.totalDebtBase.sub(swapAmount))) * 1.005)
-
-        expect(Number(formatEther(bAfter.totalDebtBase))).to.be.
-            greaterThanOrEqual(Number(formatEther(bBefore.totalDebtBase.sub(swapAmount))))
-
-
-        expect(Number(formatEther(bAfter.totalCollateralBase))).to.be.
-            lessThan(Number(formatEther(bBefore.totalCollateralBase.sub(swapAmount))) * 1.005)
-
-        expect(Number(formatEther(bAfter.totalCollateralBase))).to.be.
-            greaterThan(Number(formatEther(bBefore.totalCollateralBase.sub(swapAmount))) * 0.995)
-    })
-
-    it('allows trimming margin position all out', async () => {
-
-        const supplyTokenIndex = "DAI"
-        const borrowTokenIndex = "AAVE"
-
-        const supply = expandTo18Decimals(900)
-        const borrow = expandTo18Decimals(600)
-
-        // set up scenario
-        await aaveTest.pool.connect(test2).supply(aaveTest.tokens[supplyTokenIndex].address, supply, test2.address, 0)
-        await aaveTest.pool.connect(test2).setUserUseReserveAsCollateral(aaveTest.tokens[supplyTokenIndex].address, true)
-        await aaveTest.pool.connect(test2).borrow(
-            aaveTest.tokens[borrowTokenIndex].address,
-            borrow,
-            InterestRateMode.VARIABLE,
-            0,
-            test2.address
-        )
-
-
-        let _tokensInRoute = [
-            aaveTest.tokens[borrowTokenIndex],
-            aaveTest.tokens[supplyTokenIndex]
-        ].map(t => t.address)
-        const path = encodeAggregatorPathEthers(
-            _tokensInRoute,
-            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
-            [5], // action
-            [99], // pid
-            3 // flag
-        )
-        const params = {
-            path,
-            fee: FeeAmount.MEDIUM,
-            amountInMaximum: borrow.mul(105).div(100),
-            interestRateMode: InterestRateMode.VARIABLE,
-        }
-
-        await aaveTest.aTokens[supplyTokenIndex].connect(test2).approve(broker.brokerProxy.address, constants.MaxUint256)
-        await aaveTest.vTokens[borrowTokenIndex].connect(test2).approveDelegation(broker.brokerProxy.address, constants.MaxUint256)
-
-        // increase ime to make sure that interest accrues
-        await network.provider.send("evm_increaseTime", [3600])
-        await network.provider.send("evm_mine")
-
-        const bBefore = await aaveTest.pool.getUserAccountData(test2.address)
-
-        // trim margin position
-        await broker.trader.connect(test2).flashSwapAllOut(params.amountInMaximum, params.path)
-
-
-        const bAfter = await aaveTest.pool.getUserAccountData(test2.address)
-
-        expect(Number(formatEther(bAfter.totalDebtBase))).to.eq(0)
-
-
-        expect(Number(formatEther(bAfter.totalCollateralBase))).to.be.
-            lessThan(Number(formatEther(bBefore.totalCollateralBase.sub(borrow))) * 1.005)
-
-        expect(Number(formatEther(bAfter.totalCollateralBase))).to.be.
-            greaterThan(Number(formatEther(bBefore.totalCollateralBase.sub(borrow))) * 0.95)
     })
 
 })

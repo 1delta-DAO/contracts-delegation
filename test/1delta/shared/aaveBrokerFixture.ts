@@ -23,11 +23,12 @@ import {
     AaveMarginTraderInit,
     DebtTokenBase,
     VariableDebtToken,
-    StableDebtToken
+    StableDebtToken,
+    AToken
 } from "../../../types";
 import { ModuleConfigAction, getSelectors } from "../../diamond/libraries/diamond";
 import FlashAggregatorArtifact from "../../../artifacts/contracts/1delta/modules/aave/FlashAggregator.sol/FlashAggregator.json"
-import { buildDelegationWithSigParams, getSignatureFromTypedData } from "./contracts-helpers";
+import { buildDelegationWithSigParams, buildPermitParams, getSignatureFromTypedData } from "./contracts-helpers";
 
 export const ONE_18 = BigNumber.from(10).pow(18)
 
@@ -167,16 +168,6 @@ const EIP712_REVISION = '1';
 export async function createDelegationPermit(signer: SignerWithAddress, token: VariableDebtToken | StableDebtToken, amount: string, target: string, chainId: number): Promise<{
     v: number, r: string, s: string, expiration: string
 }> {
-
-    // const variableSeparator = await token.DOMAIN_SEPARATOR();
-
-    // const variableDomain = {
-    //     name: await token.name(),
-    //     version: EIP712_REVISION,
-    //     chainId,
-    //     verifyingContract: token.address,
-    // };
-
     const expiration = constants.MaxUint256.toString();
     const nonce = (await token.nonces(signer.address)).toNumber();
     const msgParams = buildDelegationWithSigParams(
@@ -184,13 +175,14 @@ export async function createDelegationPermit(signer: SignerWithAddress, token: V
         token.address,
         EIP712_REVISION,
         await token.name(),
-       target,
+        target,
         nonce,
         expiration,
         amount.toString()
     );
 
-    const { v, r, s } = await getSignatureFromTypedData(signer,
+    const { v, r, s } = await getSignatureFromTypedData(
+        signer,
         msgParams.domain,
         {
             DelegationWithSig: msgParams.types.DelegationWithSig
@@ -198,6 +190,33 @@ export async function createDelegationPermit(signer: SignerWithAddress, token: V
         msgParams.message);
 
     return { v, r, s, expiration }
+}
 
 
+export async function createPermit(signer: SignerWithAddress, token: AToken, amount: string, target: string, chainId: number): Promise<{
+    v: number, r: string, s: string, expiration: string
+}> {
+    const expiration = constants.MaxUint256.toString();
+    const nonce = (await token.nonces(signer.address)).toNumber();
+    const msgParams = buildPermitParams(
+        chainId,
+        token.address,
+        EIP712_REVISION,
+        await token.name(),
+        signer.address,
+        target,
+        nonce,
+        expiration,
+        amount.toString()
+    );
+
+    const { v, r, s } = await getSignatureFromTypedData(
+        signer,
+        msgParams.domain,
+        {
+            Permit: msgParams.types.Permit
+        },
+        msgParams.message);
+
+    return { v, r, s, expiration }
 } 
