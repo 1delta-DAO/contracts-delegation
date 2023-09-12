@@ -44,6 +44,24 @@ struct InitializerStorage {
     bool initialized;
 }
 
+struct OrderStorage {
+    // How much taker token has been filled in order.
+    // The lower `uint128` is the taker token fill amount.
+    // The high bit will be `1` if the order was directly cancelled.
+    mapping(bytes32 => uint256) orderHashToTakerTokenFilledAmount;
+    // The minimum valid order salt for a given maker and order pair (maker, taker) for limit orders.
+    // solhint-disable-next-line max-line-length
+    mapping(address => mapping(address => mapping(address => uint256))) limitOrdersMakerToMakerTokenToTakerTokenToMinValidOrderSalt;
+    // The minimum valid order salt for a given maker and order pair (maker, taker) for RFQ orders.
+    // solhint-disable-next-line max-line-length
+    mapping(address => mapping(address => mapping(address => uint256))) rfqOrdersMakerToMakerTokenToTakerTokenToMinValidOrderSalt;
+    // For a given order origin, which tx.origin addresses are allowed to fill the order.
+    mapping(address => mapping(address => bool)) originRegistry;
+    // For a given maker address, which addresses are allowed to
+    // sign on its behalf.
+    mapping(address => mapping(address => bool)) orderSignerRegistry;
+}
+
 library LibStorage {
     // Storage are structs where the data gets updated throughout the lifespan of the project
     bytes32 constant DATA_PROVIDER_STORAGE = keccak256("broker.storage.dataProvider");
@@ -54,6 +72,7 @@ library LibStorage {
     bytes32 constant INITIALIZER = keccak256("broker.storage.initailizerStorage");
     bytes32 constant NUMBER_CACHE = keccak256("broker.storage.cache.number");
     bytes32 constant ADDRESS_CACHE = keccak256("broker.storage.cache.address");
+    bytes32 constant ORDER_STORAGE = keccak256("broker.storage.cache.address");
 
     function dataProviderStorage() internal pure returns (DataProviderStorage storage ps) {
         bytes32 position = DATA_PROVIDER_STORAGE;
@@ -103,6 +122,13 @@ library LibStorage {
             izs.slot := position
         }
     }
+
+    function orderStorage() internal pure returns (OrderStorage storage os) {
+        bytes32 position = ORDER_STORAGE;
+        assembly {
+            os.slot := position
+        }
+    }
 }
 
 /**
@@ -141,5 +167,9 @@ contract WithStorage {
 
     function izs() internal pure returns (InitializerStorage storage) {
         return LibStorage.initializerStorage();
+    }
+
+    function os() internal pure returns (OrderStorage storage) {
+        return LibStorage.orderStorage();
     }
 }

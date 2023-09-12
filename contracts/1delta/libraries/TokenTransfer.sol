@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BUSL 1.1
 
 pragma solidity ^0.8.21;
 
@@ -153,11 +153,11 @@ abstract contract TokenTransfer {
     /// @param token The token to spend.
     /// @param owner The owner of the tokens.
     /// @return amount The amount of tokens that can be pulled.
-    function _getSpendableERC20BalanceOf(IERC20 token, address owner) internal view returns (uint256) {
-        return min256(token.allowance(owner, address(this)), token.balanceOf(owner));
+    function _getSpendableERC20BalanceOf(address token, address owner) internal view returns (uint256) {
+        return min256(IERC20(token).allowance(owner, address(this)), IERC20(token).balanceOf(owner));
     }
 
-    function min256(uint256 a, uint256 b) private pure returns (uint256) {
+    function min256(uint256 a, uint256 b) internal pure returns (uint256) {
         return a < b ? a : b;
     }
 }
