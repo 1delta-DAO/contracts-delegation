@@ -133,4 +133,11 @@ export async function approveSpending(chainId: number, signer: SignerWithAddress
     tx = await management.approveAAVEPool(underlyingAddresses, opts)
     await tx.wait()
 
+    console.log("Approve 1inch")
+    tx = await management.approveAddress(underlyingAddresses, oneInchRouter[chainId])
+    await tx.wait()
+
+    console.log("Approve paraswap transfer proxy")
+    tx = await management.approveAddress(underlyingAddresses, paraswapTransferProxy[chainId])
+    await tx.wait()
 }

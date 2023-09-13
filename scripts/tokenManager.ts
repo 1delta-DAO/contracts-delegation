@@ -19,7 +19,6 @@ const addresses = aaveBrokerAddresses as any
 
 async function main() {
 
-
     const accounts = await ethers.getSigners()
     const operator = accounts[1]
     const chainId = await operator.getChainId();

@@ -2,15 +2,15 @@
 import { ethers } from "hardhat";
 import { aaveBrokerAddresses } from "../deploy/00_addresses"
 import { validateAddresses } from "../utils/types";
-import {  approveSpending } from "../deploy/1delta/00_initializeFlashBroker";
+import { approveSpending } from "../deploy/1delta/00_initializeFlashBroker";
 
 
 const usedMaxFeePerGas = 270_000_000_000
 const usedMaxPriorityFeePerGas = 170_000_000_000
 
 const opts = {
-    // maxFeePerGas: usedMaxFeePerGas,
-    // maxPriorityFeePerGas: usedMaxPriorityFeePerGas,
+    maxFeePerGas: usedMaxFeePerGas,
+    maxPriorityFeePerGas: usedMaxPriorityFeePerGas,
     // gasLimit: 4_500_000
 }
 
