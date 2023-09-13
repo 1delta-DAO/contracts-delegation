@@ -10,6 +10,8 @@ import {LibModules} from "./libraries/LibModules.sol";
 import {IModuleConfig} from "./interfaces/IModuleConfig.sol";
 
 contract DeltaBrokerProxy {
+    error noImplementation();
+
     constructor(address _contractOwner, address _moduleConfigModule) payable {
         LibModules.setContractOwner(_contractOwner);
 
@@ -34,22 +36,21 @@ contract DeltaBrokerProxy {
             bytes calldata call = data[i];
             assembly {
                 let len := call.length
-                calldatacopy(0x40, call.offset, len) // copy calldata to free memory pointer
-                let selector := and(
+                calldatacopy(0x40, call.offset, len) // copy calldata to 0x40
+                let target := and(
                     mload(0x40), // calldata was copied to 0, we load the selector from there
                     0xFFFFFFFF00000000000000000000000000000000000000000000000000000000
                 )
-                mstore(0, selector)
+                mstore(0, target)
                 mstore(0x20, impls.slot)
                 let slot := keccak256(0, 0x40)
-                let delegate := sload(slot)
-                if iszero(delegate) {
+                target := sload(slot)
+                if iszero(target) {
                     // Reverting with NoImplementation
-                    mstore(0, 0x734e6e1c00000000000000000000000000000000000000000000000000000000)
-                    mstore(4, selector)
-                    revert(0, 0x24)
+                    mstore(0, 0x6826a5a500000000000000000000000000000000000000000000000000000000)
+                    revert(0, 4)
                 }
-                let success := delegatecall(gas(), delegate, 0x40, len, 0, 0)
+                let success := delegatecall(gas(), target, 0x40, len, 0, 0)
                 len := returndatasize()
                 returndatacopy(0, 0, len)
                 // revert if not successful - do not return any values on success
@@ -73,25 +74,22 @@ contract DeltaBrokerProxy {
             let cdlen := calldatasize()
             // Store at 0x40, to leave 0x00-0x3F for slot calculation below.
             calldatacopy(0x40, 0, cdlen)
-            let selector := and(mload(0x40), 0xFFFFFFFF00000000000000000000000000000000000000000000000000000000)
+            let target := and(mload(0x40), 0xFFFFFFFF00000000000000000000000000000000000000000000000000000000)
 
-            // Slot for impls[selector] is keccak256(selector . impls.slot).
-            mstore(0, selector)
+            // Slot for impls[target] is keccak256(target . impls.slot).
+            mstore(0, target)
             mstore(0x20, impls.slot)
             let slot := keccak256(0, 0x40)
-
-            let delegate := sload(slot)
-            if iszero(delegate) {
+            target := sload(slot) // overwrite target to delegate address
+            if iszero(target) {
                 // Revert with:
                 // abi.encodeWithSelector(
-                //   bytes4(keccak256("NoImplementation(bytes4)")),
-                //   selector)
-                mstore(0, 0x734e6e1c00000000000000000000000000000000000000000000000000000000)
-                mstore(4, selector)
-                revert(0, 0x24)
+                //   bytes4(keccak256("NoImplementation()")))
+                mstore(0, 0x6826a5a500000000000000000000000000000000000000000000000000000000)
+                revert(0, 4)
             }
 
-            let success := delegatecall(gas(), delegate, 0x40, cdlen, 0, 0)
+            let success := delegatecall(gas(), target, 0x40, cdlen, 0, 0)
             let rdlen := returndatasize()
             returndatacopy(0, 0, rdlen)
             if success {

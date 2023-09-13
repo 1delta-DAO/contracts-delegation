@@ -6,16 +6,20 @@ import {
     ConfigModule__factory,
     DeltaBrokerProxy,
     DeltaBrokerProxy__factory,
+    ERC20Base__factory,
+    ERC20__factory,
     MintableERC20,
     TestModuleA,
     TestModuleA__factory,
     TestModuleB,
     TestModuleB__factory,
+    TestModuleC__factory,
     WETH9,
 } from '../../../types';
 import { MockProvider } from 'ethereum-waffle';
 import { uniV2Fixture, V2Fixture } from '../shared/uniV2Fixture';
 import { getSelectors, ModuleConfigAction } from '../../diamond/libraries/diamond';
+import { expect } from 'chai';
 
 
 // we prepare a setup for aave in hardhat
@@ -78,6 +82,18 @@ describe('Multicall on raw Proxy', async () => {
         const call2 = moduleB.interface.encodeFunctionData('testBFunc20')
 
         await proxy.multicall([call1, call2])
+    })
+
+    it('throws correct error', async () => {
+
+        const call1 = ERC20Base__factory.createInterface().encodeFunctionData('totalSupply')
+        const call2 = moduleB.interface.encodeFunctionData('testBFunc20')
+
+        // test for multicall
+        await expect(proxy.multicall([call1, call2])).to.be.revertedWith('noImplementation()')
+        // test for base call
+        const newCont = await new TestModuleC__factory(deployer).attach(proxy.address)
+        await expect(newCont.testCFunc1()).to.be.revertedWith('noImplementation()')
     })
 
 })

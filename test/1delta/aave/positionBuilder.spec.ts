@@ -345,16 +345,7 @@ describe('AAVE Money Market operations', async () => {
         )
 
 
-        await broker.brokerProxy.connect(carol).multicallMultiModule(
-            [
-                broker.moneyMarketImplementation.address,
-
-                broker.moneyMarketImplementation.address,
-
-
-                balancerModule.address
-
-            ],
+        await broker.brokerProxy.connect(carol).multicall(
             [
                 callTransfer,
                 callSwap,
@@ -422,7 +413,7 @@ describe('AAVE Money Market operations', async () => {
         const balBefore = await provider.getBalance(carol.address);
         const aTokenBalBefore = await aaveTest.aTokens[targetIndex].balanceOf(carol.address)
         // const tx = await broker.moneyMarket.connect(carol).swapETHAndSupplyExactIn(params, { value: params.amountIn })
-        const tx = await broker.brokerProxy.connect(carol).multicallSingleModule(broker.moneyMarketImplementation.address,
+        const tx = await broker.brokerProxy.connect(carol).multicall(
             [
                 callTransfer,
                 callSwap,
@@ -492,7 +483,7 @@ describe('AAVE Money Market operations', async () => {
         )
         const callSweep = broker.moneyMarket.interface.encodeFunctionData(SWEEP, [aaveTest.tokens[originIndex].address])
         // await broker.moneyMarket.connect(gabi).swapAndSupplyExactOut(params)
-        await broker.brokerProxy.connect(gabi).multicallSingleModule(broker.moneyMarketImplementation.address,
+        await broker.brokerProxy.connect(gabi).multicall(
             [
                 // callTransfer,
                 callSwap,
@@ -566,7 +557,7 @@ describe('AAVE Money Market operations', async () => {
 
         // await broker.moneyMarket.connect(gabi).swapETHAndSupplyExactOut(params, { value: params.amountInMaximum })
 
-        await broker.brokerProxy.connect(gabi).multicallSingleModule(broker.moneyMarketImplementation.address,
+        await broker.brokerProxy.connect(gabi).multicall(
             [
                 callWrap,
                 callSwap,
@@ -632,7 +623,7 @@ describe('AAVE Money Market operations', async () => {
         const balBefore = await aaveTest.tokens[targetIndex].balanceOf(achi.address)
         console.log("withdraw and swap exact in")
         // await broker.moneyMarket.connect(achi).withdrawAndSwapExactIn(params)
-        await broker.brokerProxy.connect(achi).multicallSingleModule(broker.moneyMarketImplementation.address,
+        await broker.brokerProxy.connect(achi).multicall(
             [
                 callTransfer,
                 callWithdraw,
@@ -697,7 +688,7 @@ describe('AAVE Money Market operations', async () => {
         const balBefore = await aaveTest.tokens[targetIndex].balanceOf(test0.address)
         console.log("withdraw and swap all in")
         // await broker.moneyMarket.connect(test0).withdrawAndSwapAllIn(params)
-        await broker.brokerProxy.connect(test0).multicallSingleModule(broker.moneyMarketImplementation.address,
+        await broker.brokerProxy.connect(test0).multicall(
             [
                 callTransfer,
                 callWithdraw,
@@ -760,7 +751,7 @@ describe('AAVE Money Market operations', async () => {
         const balBefore = await provider.getBalance(test0.address);
         console.log("withdraw and swap all in")
         // await broker.moneyMarket.connect(test0).withdrawAndSwapAllInToETH(params)
-        await broker.brokerProxy.connect(test0).multicallSingleModule(broker.moneyMarketImplementation.address,
+        await broker.brokerProxy.connect(test0).multicall(
             [
                 callTransfer,
                 callWithdraw,
@@ -824,7 +815,7 @@ describe('AAVE Money Market operations', async () => {
         const bbBefore = await aaveTest.pool.getUserAccountData(achi.address)
         console.log("withdraw and swap exact out")
         // await broker.moneyMarket.connect(achi).withdrawAndSwapExactOut(params)
-        await broker.brokerProxy.connect(achi).multicallSingleModule(broker.moneyMarketImplementation.address,
+        await broker.brokerProxy.connect(achi).multicall(
             [
                 // callTransfer,
                 // callWithdraw,
@@ -898,7 +889,7 @@ describe('AAVE Money Market operations', async () => {
 
         console.log("withdraw and swap exact in")
         // await broker.moneyMarket.connect(wally).borrowAndSwapExactIn(params)
-        await broker.brokerProxy.connect(wally).multicallSingleModule(broker.moneyMarketImplementation.address,
+        await broker.brokerProxy.connect(wally).multicall(
             [
                 callBorrow,
                 callSwap,
@@ -966,7 +957,7 @@ describe('AAVE Money Market operations', async () => {
 
         console.log("withdraw and swap exact in")
         // await broker.moneyMarket.connect(alice).borrowAndSwapExactOut(params)
-        await broker.brokerProxy.connect(alice).multicallSingleModule(broker.moneyMarketImplementation.address,
+        await broker.brokerProxy.connect(alice).multicall(
             [
                 callSwap,
                 callSweep
@@ -1057,7 +1048,7 @@ describe('AAVE Money Market operations', async () => {
 
         console.log("swap and repay exact in")
         // await broker.moneyMarket.connect(dennis).swapAndRepayExactIn(params)
-        await broker.brokerProxy.connect(dennis).multicallSingleModule(broker.moneyMarketImplementation.address,
+        await broker.brokerProxy.connect(dennis).multicall(
             [
                 callTransfer,
                 callSwap,
@@ -1151,7 +1142,7 @@ describe('AAVE Money Market operations', async () => {
 
         console.log("swap and repay exact in")
         // const tx = await broker.moneyMarket.connect(dennis).swapETHAndRepayExactIn(params, { value: params.amountIn })
-        const tx = await broker.brokerProxy.connect(dennis).multicallSingleModule(broker.moneyMarketImplementation.address,
+        const tx = await broker.brokerProxy.connect(dennis).multicall(
             [
                 callWrap,
                 callSwap,
@@ -1242,7 +1233,7 @@ describe('AAVE Money Market operations', async () => {
 
         console.log("swap and repay exact out")
         // await broker.moneyMarket.connect(xander).swapAndRepayExactOut(params)
-        await broker.brokerProxy.connect(xander).multicallSingleModule(broker.moneyMarketImplementation.address,
+        await broker.brokerProxy.connect(xander).multicall(
             [
                 callSwap,
                 callRepay
@@ -1338,7 +1329,7 @@ describe('AAVE Money Market operations', async () => {
 
         console.log("swap and repay all out")
         // await broker.moneyMarket.connect(test1).swapAllOutSpot(params.amountInMaximum, params.interestRateMode, params.path)
-        await broker.brokerProxy.connect(test1).multicallSingleModule(broker.moneyMarketImplementation.address,
+        await broker.brokerProxy.connect(test1).multicall(
             [
                 callSwap,
                 callRepay
@@ -1435,7 +1426,7 @@ describe('AAVE Money Market operations', async () => {
 
         console.log("swap and repay exact out")
         // const tx = await broker.moneyMarket.connect(xander).swapETHAndRepayExactOut(params, { value: params.amountInMaximum })
-        const tx = await broker.brokerProxy.connect(xander).multicallSingleModule(broker.moneyMarketImplementation.address,
+        const tx = await broker.brokerProxy.connect(xander).multicall(
             [
                 callWrap,
                 callSwap,
@@ -1548,7 +1539,7 @@ describe('AAVE Money Market operations', async () => {
         // const tx = await broker.moneyMarket.connect(test2).swapETHAndRepayAllOut(params,
         //     { value: params.amountInMaximum })
 
-        const tx = await broker.brokerProxy.connect(test2).multicallSingleModule(broker.moneyMarketImplementation.address,
+        const tx = await broker.brokerProxy.connect(test2).multicall(
             [
                 callWrap,
                 callSwap,
@@ -1621,5 +1612,5 @@ describe('AAVE Money Market operations', async () => {
 // ························································|······································|·············|·············|···········|···············|··············7
 
 // ························································|······································|·············|·············|·············|···············|··············
-// |  DeltaBrokerProxy                                     ·  multicallSingleModule               ·     367802  ·     565994  ·     492302  ·           18  ·      12.08  │
+// |  DeltaBrokerProxy                                     ·  multicall     565994  ·     492302  ·           18  ·      12.08  │
 // ························································|······································|·············|·············|·············|···············|··············
