@@ -79,7 +79,7 @@ async function main() {
     ]
     const initializerFunctionNames = [
         'init',
-        'initAAVEMarginTrader',
+        'initAaveMarginTrader',
         'initUniswapV3Provider'
     ]
 

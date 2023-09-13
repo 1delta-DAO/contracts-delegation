@@ -35,7 +35,7 @@ export async function initializeFlashBroker(_chainId: number, signer: SignerWith
 
     // initialize storage
     const dcInit = await new ethers.Contract(deltaProxy, AaveMarginTraderInit__factory.createInterface(), signer) as AaveMarginTraderInit
-    tx = await dcInit.initAAVEMarginTrader(aavePool)
+    tx = await dcInit.initAaveMarginTrader(aavePool)
     await tx.wait()
 
     console.log("completed initialization of AaveMarginTraderInit")

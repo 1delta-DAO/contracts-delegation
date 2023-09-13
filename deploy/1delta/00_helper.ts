@@ -58,7 +58,7 @@ export async function initializeBroker(signer: SignerWithAddress, bf: AaveBroker
     const dcInit = await new ethers.Contract(bf.brokerProxy.address, AaveMarginTraderInit__factory.createInterface(), signer) as AaveMarginTraderInit
 
 
-    tx = await dcInit.initAAVEMarginTrader(aavePool)
+    tx = await dcInit.initAaveMarginTrader(aavePool)
     await tx.wait()
     console.log("completed initialization")
 }

@@ -160,7 +160,7 @@ export async function initAaveBroker(signer: SignerWithAddress, bf: AaveBrokerFi
     )
     const dcInit = await new ethers.Contract(bf.brokerProxy.address, AaveMarginTraderInit__factory.createInterface(), signer) as AaveMarginTraderInit
 
-    await dcInit.initAAVEMarginTrader(aavePool)
+    await dcInit.initAaveMarginTrader(aavePool)
 }
 
 const EIP712_REVISION = '1';
