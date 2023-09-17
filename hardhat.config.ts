@@ -222,6 +222,11 @@ const config: HardhatUserConfig = {
       accounts: [pk5, pk1],
       chainId: 137,
     },
+    mantle: {
+      url: 'https://rpc.mantle.xyz',
+      accounts: [pk5, pk1],
+      chainId: 5000,
+    },
     mumbai: {
       url: 'https://rpc-mumbai.maticvigil.com/',
       accounts: [pk3, pk2],
