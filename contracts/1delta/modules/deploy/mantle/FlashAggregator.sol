@@ -6,16 +6,16 @@ pragma solidity ^0.8.21;
 * Author: Achthar | 1delta 
 /******************************************************************************/
 
-import {IERC20} from "../../../interfaces/IERC20.sol";
-import {IPool} from "../../interfaces/IAAVEV3Pool.sol";
-import {IUniswapV3Pool} from "../../dex-tools/uniswap/core/IUniswapV3Pool.sol";
-import {INativeWrapper} from "../../interfaces/INativeWrapper.sol";
-import {BaseSwapper, IUniswapV2Pair} from "../base/BaseSwapper.sol";
-import {IERC20Balance} from "../../interfaces/IERC20Balance.sol";
-import {WithStorage} from "../../storage/BrokerStorage.sol";
+import {IERC20} from "../../../../interfaces/IERC20.sol";
+import {IPool} from "../../../interfaces/IAAVEV3Pool.sol";
+import {IUniswapV3Pool} from "../../../dex-tools/uniswap/core/IUniswapV3Pool.sol";
+import {INativeWrapper} from "../../../interfaces/INativeWrapper.sol";
+import {BaseSwapper, IUniswapV2Pair} from "../../base/BaseSwapper.sol";
+import {IERC20Balance} from "../../../interfaces/IERC20Balance.sol";
+import {WithStorage} from "../../../storage/BrokerStorage.sol";
 import {MarginTrading} from "./MarginTrading.sol";
 import {WrappedNativeHandler} from "./WrappedNativeHandler.sol";
-import {SelfPermit} from "../aave/SelfPermit.sol";
+import {SelfPermit} from "../../aave/SelfPermit.sol";
 
 // solhint-disable max-line-length
 
@@ -23,7 +23,7 @@ import {SelfPermit} from "../aave/SelfPermit.sol";
  * @title FlashAggregator
  * @notice Adds money market and default transfer functions to margin trading
  */
-contract DeltaFlashAggregator is MarginTrading, WrappedNativeHandler, SelfPermit {
+contract DeltaFlashAggregatorMantle is MarginTrading, WrappedNativeHandler, SelfPermit {
     // constants
     uint256 private constant DEFAULT_AMOUNT_CACHED = type(uint256).max;
     address private constant DEFAULT_ADDRESS_CACHED = address(0);
