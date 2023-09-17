@@ -233,7 +233,7 @@ abstract contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
         uniswapV3SwapCallbackInternal(amount0Delta, amount1Delta, data);
     }
 
-    function uniswapV3SwapCallback(
+    function agniSwapCallback(
         int256 amount0Delta,
         int256 amount1Delta,
         bytes calldata _data
@@ -448,8 +448,8 @@ abstract contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
         }
     }
 
-    // The uniswapV2 style callback
-    function uniswapV2Call(
+    // The uniswapV2 style callback for fusionX
+    function FusionXCall(
         address,
         uint256 amount0,
         uint256 amount1,
