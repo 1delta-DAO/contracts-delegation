@@ -6,13 +6,8 @@ pragma solidity ^0.8.21;
 * Author: Achthar | 1delta 
 /******************************************************************************/
 
-import {IERC20} from "../../../../interfaces/IERC20.sol";
-import {IPool} from "../../../interfaces/IAAVEV3Pool.sol";
-import {IUniswapV3Pool} from "../../../dex-tools/uniswap/core/IUniswapV3Pool.sol";
-import {INativeWrapper} from "../../../interfaces/INativeWrapper.sol";
-import {BaseSwapper, IUniswapV2Pair} from "../../base/BaseSwapper.sol";
+import {IUniswapV2Pair} from "../../base/BaseSwapper.sol";
 import {IERC20Balance} from "../../../interfaces/IERC20Balance.sol";
-import {WithStorage} from "../../../storage/BrokerStorage.sol";
 import {MarginTrading} from "./MarginTrading.sol";
 import {WrappedNativeHandler} from "./WrappedNativeHandler.sol";
 import {SelfPermit} from "../../aave/SelfPermit.sol";
@@ -35,7 +30,7 @@ contract DeltaFlashAggregator is MarginTrading, WrappedNativeHandler, SelfPermit
     // deposit ERC20 to Aave on behalf of recipient
     function deposit(address asset, address recipient) external payable {
         address _asset = asset;
-        uint256 balance = IERC20(_asset).balanceOf(address(this));
+        uint256 balance = IERC20Balance(_asset).balanceOf(address(this));
         _aavePool.supply(_asset, balance, recipient, 0);
     }
 
@@ -55,7 +50,7 @@ contract DeltaFlashAggregator is MarginTrading, WrappedNativeHandler, SelfPermit
         uint256 interestRateMode
     ) external payable {
         address _asset = asset;
-        uint256 _balance = IERC20(_asset).balanceOf(address(this));
+        uint256 _balance = IERC20Balance(_asset).balanceOf(address(this));
         uint256 _debtBalance;
         uint256 _interestRateMode = interestRateMode;
         if (_interestRateMode == 2) _debtBalance = IERC20Balance(aas().vTokens[_asset]).balanceOf(msg.sender);
@@ -89,21 +84,21 @@ contract DeltaFlashAggregator is MarginTrading, WrappedNativeHandler, SelfPermit
             _asset,
             msg.sender,
             address(this),
-            IERC20(_asset).balanceOf(msg.sender) // transfer entire balance
+            IERC20Balance(_asset).balanceOf(msg.sender) // transfer entire balance
         );
     }
 
     /** @notice transfer an a balance to the sender */
     function sweep(address asset) external payable {
         address _asset = asset;
-        uint256 balance = IERC20(_asset).balanceOf(address(this));
+        uint256 balance = IERC20Balance(_asset).balanceOf(address(this));
         if (balance > 0) _transferERC20Tokens(_asset, msg.sender, balance);
     }
 
     /** @notice transfer an a balance to the recipient */
     function sweepTo(address asset, address recipient) external payable {
         address _asset = asset;
-        uint256 balance = IERC20(_asset).balanceOf(address(this));
+        uint256 balance = IERC20Balance(_asset).balanceOf(address(this));
         if (balance > 0) _transferERC20Tokens(_asset, recipient, balance);
     }
 
@@ -226,7 +221,7 @@ contract DeltaFlashAggregator is MarginTrading, WrappedNativeHandler, SelfPermit
         assembly {
             tokenIn := shr(96, calldataload(path.offset))
         }
-        uint256 amountIn = IERC20(tokenIn).balanceOf(address(this));
+        uint256 amountIn = IERC20Balance(tokenIn).balanceOf(address(this));
         if (amountIn == 0) revert NoBalance(); // revert if amount is zero
         uint256 amountOut = swapExactIn(amountIn, path);
         if (minimumAmountOut > amountOut) revert Slippage();
