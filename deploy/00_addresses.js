@@ -90,7 +90,7 @@ const aaveBrokerAddresses = {
     MarginTraderModule: {
         5: '0xa8d1C7D918ABc6F112F89A8496962c9A6cdA52d0',
         80001: '0xE0d077f7C0d87909A939160EDae002cC9f33168f',
-        137: '0xDFbc4D2E5EA06B5D54cf55369f1F0b8ef5FA9111'
+        137: '0x168B4C2Cc2df4635D521Aa1F8961DD7218f0f427'
     },
     MoneyMarketModule: {
         5: '0xc9ea6d976ee5280B777a0c74B986CF3B7CB31f0c',

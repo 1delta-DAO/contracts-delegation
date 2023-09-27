@@ -60,7 +60,7 @@ contract DeltaFlashAggregatorMantle is MarginTrading, WrappedNativeHandler, Self
             _lendingPool.repay(_asset, _balance, _interestRateMode, recipient);
         } else {
             // otherwise, repay all - make sure to call sweep afterwards
-            _lendingPool.repay(_asset, type(uint256).max, _interestRateMode, recipient);
+            _lendingPool.repay(_asset, _debtBalance, _interestRateMode, recipient);
         }
     }
 

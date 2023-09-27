@@ -65,7 +65,7 @@ contract FlashAggregator is MarginTrading, WrappedNativeHandler, SelfPermit {
             _aavePool.repay(_asset, _balance, _interestRateMode, recipient);
         } else {
             // otherwise, repay all - make sure to call sweep afterwards
-            _aavePool.repay(_asset, type(uint256).max, _interestRateMode, recipient);
+            _aavePool.repay(_asset, _debtBalance, _interestRateMode, recipient);
         }
     }
 
