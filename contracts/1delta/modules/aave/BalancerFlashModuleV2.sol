@@ -46,8 +46,7 @@ contract BalancerFlashModuleV2 is WithStorage, TokenTransfer {
 
     /**
      * @dev When `flashLoan` is called on the Vault, it invokes the `receiveFlashLoan` hook on the recipient.
-     *
-     *  We never expect more than one token to be flashed
+     * Ideally, a multitude of calls via the multicall function are executed via the calldata.
      */
     function receiveFlashLoan(
         address[] calldata tokens, // token to be flash borrowed
