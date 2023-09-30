@@ -43,12 +43,19 @@ struct AddressCache {
     address cachedAddress;
 }
 
+// for flash loan validations and call targets
+struct FlashLoanGatewayStorage {
+    uint256 isOpen;
+    mapping(address => bool) isValidTarget;
+}
+
 library LibStorage {
     // Storage are structs where the data gets updated throughout the lifespan of the project
     bytes32 constant DATA_PROVIDER_STORAGE = keccak256("broker.storage.dataProvider");
     bytes32 constant MARGIN_SWAP_STORAGE = keccak256("broker.storage.marginSwap");
     bytes32 constant UNISWAP_STORAGE = keccak256("broker.storage.uniswap");
     bytes32 constant COMET_STORAGE = keccak256("broker.storage.comet");
+    bytes32 constant FLASH_LOAN_GATEWAY = keccak256("broker.storage.flashLoanGateway");
     bytes32 constant MANAGEMENT_STORAGE = keccak256("broker.storage.management");
     bytes32 constant NUMBER_CACHE = keccak256("1deltaAccount.storage.cache.number");
     bytes32 constant ADDRESS_CACHE = keccak256("1deltaAccount.storage.cache.address");
@@ -78,6 +85,13 @@ library LibStorage {
         bytes32 position = MANAGEMENT_STORAGE;
         assembly {
             ms.slot := position
+        }
+    }
+
+    function flashLoanGatewayStorage() internal pure returns (FlashLoanGatewayStorage storage gs) {
+        bytes32 position = FLASH_LOAN_GATEWAY;
+        assembly {
+            gs.slot := position
         }
     }
 
@@ -128,5 +142,9 @@ abstract contract WithStorageComet {
 
     function acs() internal pure returns (AddressCache storage) {
         return LibStorage.addressCacheStorage();
+    }
+
+    function gs() internal pure returns (FlashLoanGatewayStorage storage) {
+        return LibStorage.flashLoanGatewayStorage();
     }
 }

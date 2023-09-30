@@ -10,7 +10,7 @@ import {IUniswapV2Pair} from "../../base/BaseSwapper.sol";
 import {IERC20Balance} from "../../../interfaces/IERC20Balance.sol";
 import {MarginTrading} from "./MarginTrading.sol";
 import {WrappedNativeHandler} from "./WrappedNativeHandler.sol";
-import {SelfPermit} from "../../aave/SelfPermit.sol";
+import {SelfPermit} from "../../base/SelfPermit.sol";
 
 // solhint-disable max-line-length
 

@@ -34,7 +34,7 @@ struct AddressCache {
     address cachedAddress;
 }
 
-// for flash loan validations
+// for flash loan validations and call targets
 struct FlashLoanGatewayStorage {
     uint256 isOpen;
     mapping(address => bool) isValidTarget;
@@ -72,7 +72,7 @@ library LibStorage {
     bytes32 constant INITIALIZER = keccak256("broker.storage.initailizerStorage");
     bytes32 constant NUMBER_CACHE = keccak256("broker.storage.cache.number");
     bytes32 constant ADDRESS_CACHE = keccak256("broker.storage.cache.address");
-    bytes32 constant ORDER_STORAGE = keccak256("broker.storage.cache.address");
+    bytes32 constant ORDER_STORAGE = keccak256("broker.storage.orders");
 
     function dataProviderStorage() internal pure returns (DataProviderStorage storage ps) {
         bytes32 position = DATA_PROVIDER_STORAGE;

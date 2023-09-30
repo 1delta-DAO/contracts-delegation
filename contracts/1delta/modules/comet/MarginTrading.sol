@@ -183,7 +183,7 @@ contract CometMarginTrading is WithStorageComet, TokenTransfer, BaseSwapper {
         assembly {
             let firstWord := calldataload(path.offset)
             tokenOut := shr(96, firstWord)
-            identifier := shr(56, firstWord)
+            identifier := shr(64, calldataload(path.offset))
             tokenIn := shr(96, calldataload(add(path.offset, 25)))
             zeroForOne := lt(tokenIn, tokenOut)
         }
@@ -192,11 +192,6 @@ contract CometMarginTrading is WithStorageComet, TokenTransfer, BaseSwapper {
         // determine output amount as respective debt balance
         uint256 amountOut = IComet(cos().comet[uint8(bytes1(path[amountIn--:amountIn]))]).borrowBalanceOf(msg.sender);
         if (amountOut == 0) revert NoBalance();
-
-        // fetch poolId - store it in identifier
-        assembly {
-            identifier := shr(64, calldataload(path.offset))
-        }
 
         // uniswapV3 types
         if (identifier < 50) {
