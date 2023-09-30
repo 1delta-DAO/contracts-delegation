@@ -119,12 +119,12 @@ contract OneDeltaQuoter {
         bool zeroForOne = tokenIn < tokenOut;
 
         try
-            getUniswapV3Pool(tokenIn, tokenOut, fee, pId).swap(
+            v3TypePool(tokenIn, tokenOut, fee, pId).swap(
                 address(this), // address(0) might cause issues with some tokens
                 zeroForOne,
                 int256(amountIn),
                 zeroForOne ? MIN_SQRT_RATIO : MAX_SQRT_RATIO,
-                abi.encodePacked(tokenIn, fee, tokenOut)
+                abi.encodePacked(tokenIn, fee, pId, tokenOut)
             )
         {} catch (bytes memory reason) {
             return parseRevertReason(reason);
@@ -169,12 +169,12 @@ contract OneDeltaQuoter {
         // if no price limit has been specified, cache the output amount for comparison in the swap callback
         amountOutCached = amountOut;
         try
-            getUniswapV3Pool(tokenIn, tokenOut, fee, poolId).swap(
+            v3TypePool(tokenIn, tokenOut, fee, poolId).swap(
                 address(this), // address(0) might cause issues with some tokens
                 zeroForOne,
                 -int256(amountOut),
                 zeroForOne ? MIN_SQRT_RATIO : MAX_SQRT_RATIO,
-                abi.encodePacked(tokenOut, fee, tokenIn)
+                abi.encodePacked(tokenOut, fee, poolId, tokenIn)
             )
         {} catch (bytes memory reason) {
             delete amountOutCached; // clear cache
@@ -211,7 +211,7 @@ contract OneDeltaQuoter {
 
     /// @dev Returns the pool for the given token pair and fee.
     /// The pool contract may or may not exist.
-    function getUniswapV3Pool(
+    function v3TypePool(
         address tokenA,
         address tokenB,
         uint24 fee,
@@ -265,7 +265,7 @@ contract OneDeltaQuoter {
     }
 
     /// @dev gets uniswapV2 (and fork) pair addresses
-    function pairAddress(
+    function v2TypePairAddress(
         address tokenA,
         address tokenB,
         uint8 // currently only one V2 type implemented
@@ -317,8 +317,8 @@ contract OneDeltaQuoter {
             }
             // V2
             else if (poolId < 100) {
-                address pair = pairAddress(tokenIn, tokenOut, poolId);
-                amountIn = getAmountOutDirect(pair, tokenIn < tokenOut, amountIn);
+                address pair = v2TypePairAddress(tokenIn, tokenOut, poolId);
+                amountIn = getV2AmountOutDirect(pair, tokenIn < tokenOut, amountIn);
             }
 
             /// decide whether to continue or terminate
@@ -330,7 +330,45 @@ contract OneDeltaQuoter {
         }
     }
 
-    function getAmountOutDirect(
+    /// @dev Get the quote for an exactIn swap between an array of Stable, V2 and/or V3 pools
+    function quoteExactOutput(
+        bytes calldata path, // calldata more efficient than memory
+        uint256 amountOut
+    ) public returns (uint256 amountIn) {
+        while (true) {
+            address tokenIn;
+            address tokenOut;
+            uint8 poolId;
+            assembly {
+                let firstWord := calldataload(path.offset)
+                tokenOut := shr(96, firstWord) // get first token
+                poolId := shr(64, firstWord) // right shift by 8 bytes ends in byte 24 from the left
+                tokenIn := shr(96, calldataload(add(path.offset, 24))) // tokenOut starts at 24th byte
+            }
+
+            // v3
+            if (poolId < 50) {
+                uint24 fee;
+                assembly {
+                    fee := and(shr(72, calldataload(path.offset)), 0xffffff)
+                }
+                amountOut = quoteExactOutputSingleV3(tokenIn, tokenOut, fee, poolId, amountOut);
+            }
+            // V2
+            else if (poolId < 100) {
+                address pair = v2TypePairAddress(tokenIn, tokenOut, poolId);
+                amountOut = getV2AmountInDirect(pair, tokenOut < tokenIn, amountOut);
+            }
+            /// decide whether to continue or terminate
+            if (path.length > 20 + 20 + 4) {
+                path = path[24:];
+            } else {
+                return amountOut;
+            }
+        }
+    }
+
+    function getV2AmountOutDirect(
         address pair,
         bool zeroForOne,
         uint256 sellAmount
@@ -371,7 +409,7 @@ contract OneDeltaQuoter {
     }
 
     /// @dev calculates the input amount for a UniswapV2 style swap
-    function getAmountInDirect(
+    function getV2AmountInDirect(
         address pair,
         bool zeroForOne,
         uint256 buyAmount
