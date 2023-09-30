@@ -32,17 +32,22 @@ contract OneDeltaQuoter {
     /// @dev MAX_SQRT_RATIO - 1 from Uniswap's TickMath
     uint160 internal immutable MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970341;
 
-    //  bytes32((uint256(0xff) << 248) | (uint256(uint160(0x1F98431c8aD98523631AE4a59f267346ea31F984)) << 88));
+    // _FF_ is given as follows: bytes32((uint256(0xff) << 248) | (uint256(uint160(address)) << 88));
+
     bytes32 private constant UNI_V3_FF_FACTORY = 0xff1f98431c8ad98523631ae4a59f267346ea31f9840000000000000000000000;
     bytes32 private constant UNI_POOL_INIT_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
 
-    // bytes32((uint256(0xff) << 248) | (uint256(uint160(0x2D98E2FA9da15aa6dC9581AB097Ced7af697CB92)) << 88));
     bytes32 private constant ALGEBRA_V3_FF_DEPLOYER = 0xff2d98e2fa9da15aa6dc9581ab097ced7af697cb920000000000000000000000;
     bytes32 private constant ALGEBRA_POOL_INIT_CODE_HASH = 0x6ec6c9c8091d160c0aa74b2b14ba9c1717e95093bd3ac085cee99a49aab294a4;
 
-    // bytes32((uint256(0xff) << 248) | (uint256(uint160(0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32)) << 88));
+    bytes32 private constant SUSHI_V3_FF_DEPLOYER = 0xff917933899c6a5F8E37F31E19f92CdBFF7e8FF0e20000000000000000000000;
+    bytes32 private constant SUSHI_POOL_INIT_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
+
     bytes32 private constant QUICK_V2_FF_FACTORY = 0xff5757371414417b8c6caad45baef941abc7d3ab320000000000000000000000;
     bytes32 private constant CODE_HASH_QUICK_V2 = 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f;
+
+    bytes32 private constant SUSHI_V2_FF_FACTORY = 0xffc35DADB65012eC5796536bD9864eD8773aBc74C40000000000000000000000;
+    bytes32 private constant CODE_HASH_SUSHI_V2 = 0xe18a34eb0e04b04f7a0ac29a6e80748dca96319b42c54d679cb821dca90c6303;
 
     constructor() {}
 
@@ -56,10 +61,13 @@ contract OneDeltaQuoter {
         // as such, we do not need to decode poolId and fee
         address tokenIn;
         address tokenOut;
+        uint8 pid;
         assembly {
             tokenIn := shr(96, calldataload(path.offset)) // right shift by 12 bytes yields the 1st token
+            pid := shr(64, calldataload(path.offset)) // right shift by 8 = (9 - 1) bytes
             tokenOut := shr(96, calldataload(add(path.offset, 24))) // we load starting from the 2nd token and slice the rest
         }
+
         (bool isExactInput, uint256 amountToPay, uint256 amountReceived) = amount0Delta > 0
             ? (tokenIn < tokenOut, uint256(amount0Delta), uint256(-amount1Delta))
             : (tokenOut < tokenIn, uint256(amount1Delta), uint256(-amount0Delta));
@@ -243,7 +251,7 @@ contract OneDeltaQuoter {
                 pool := and(ADDRESS_MASK, keccak256(s, 85))
             }
             // Algebra / Quickswap
-            default {
+            case 1 {
                 mstore(p, ALGEBRA_V3_FF_DEPLOYER)
                 p := add(p, 21)
                 // Compute the inner hash in-place
@@ -261,6 +269,26 @@ contract OneDeltaQuoter {
                 mstore(p, ALGEBRA_POOL_INIT_CODE_HASH)
                 pool := and(ADDRESS_MASK, keccak256(s, 85))
             }
+            // Sushiswap V3
+            default {
+                mstore(p, SUSHI_V3_FF_DEPLOYER)
+                p := add(p, 21)
+                // Compute the inner hash in-place
+                switch lt(tokenA, tokenB)
+                case 0 {
+                    mstore(p, tokenB)
+                    mstore(add(p, 32), tokenA)
+                }
+                default {
+                    mstore(p, tokenA)
+                    mstore(add(p, 32), tokenB)
+                }
+                mstore(add(p, 64), and(UINT24_MASK, fee))
+                mstore(p, keccak256(p, 96))
+                p := add(p, 32)
+                mstore(p, SUSHI_POOL_INIT_CODE_HASH)
+                pool := and(ADDRESS_MASK, keccak256(s, 85))
+            }
         }
     }
 
@@ -268,8 +296,9 @@ contract OneDeltaQuoter {
     function v2TypePairAddress(
         address tokenA,
         address tokenB,
-        uint8 // currently only one V2 type implemented
+        uint8 pId
     ) internal pure returns (address pair) {
+        uint256 poolId = pId;
         assembly {
             switch lt(tokenA, tokenB)
             case 0 {
@@ -281,10 +310,19 @@ contract OneDeltaQuoter {
                 mstore(0xB00, tokenA)
             }
             let salt := keccak256(0xB0C, 0x28)
-            mstore(0xB00, QUICK_V2_FF_FACTORY)
-            mstore(0xB15, salt)
-            mstore(0xB35, CODE_HASH_QUICK_V2)
-
+            switch poolId
+            case 50 {
+                // Quickswap
+                mstore(0xB00, QUICK_V2_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, CODE_HASH_QUICK_V2)
+            }
+            default {
+                // Sushiswap
+                mstore(0xB00, SUSHI_V2_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, CODE_HASH_SUSHI_V2)
+            }
             pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
         }
     }
