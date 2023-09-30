@@ -18,6 +18,8 @@ import {IERC20Balance} from "../../interfaces/IERC20Balance.sol";
 /**
  * @title Contract Module for general Margin Trading on an Aave-style Lender
  * @notice Contains main logic for uniswap-type callbacks and initiator functions
+ * @dev path is encoded as address | uint24 | uint8 | uint8 | address | ...
+ *                         token0  | fee    | poolId| type  | token1  | ...
  */
 contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
     // errors
