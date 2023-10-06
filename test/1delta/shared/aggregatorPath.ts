@@ -119,3 +119,29 @@ export const encodeTradePathMargin = (
       last // flag
     )
 }
+
+
+
+// token address, poolFee, poolId
+const typeSliceQuoter = ['address', 'uint24', 'uint8']
+
+export function encodeQuoterPathEthers(path: string[], fees: FeeAmount[], pIds: number[]): string {
+  if (path.length != fees.length + 1) {
+    throw new Error('path/fee lengths do not match')
+  }
+  let types: string[] = []
+  let data: string[] = []
+  for (let i = 0; i < fees.length; i++) {
+    const p = path[i]
+    types = [...types, ...typeSliceQuoter]
+    data = [...data, p, String(fees[i]), String(pIds[i])]
+  }
+  // add last address 
+  types.push('address')
+  data.push(path[path.length - 1])
+
+  // console.log(data)
+  // console.log(types)
+
+  return ethers.utils.solidityPack(types, data)
+}

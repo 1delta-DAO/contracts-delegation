@@ -8,20 +8,19 @@ pragma solidity 0.8.21;
 
 import {IUniswapV2Pair} from "../../../external-protocols/uniswapV2/core/interfaces/IUniswapV2Pair.sol";
 import {TokenTransfer} from "../../libraries/TokenTransfer.sol";
-import {WithStorage} from "../../storage/BrokerStorage.sol";
+import {WithStorageComet} from "../../storage/CometBrokerStorage.sol";
 import {BaseSwapper} from "../base/BaseSwapper.sol";
 import {IPool} from "../../interfaces/IAAVEV3Pool.sol";
 import {IERC20Balance} from "../../interfaces/IERC20Balance.sol";
+import {IComet} from "../../interfaces/IComet.sol";
 
 // solhint-disable max-line-length
 
 /**
- * @title Contract Module for general Margin Trading on an Aave-style Lender
+ * @title Contract Module for general Margin Trading on an Compound V3-style Lender
  * @notice Contains main logic for uniswap-type callbacks and initiator functions
- * @dev path is encoded as address | uint24 | uint8 | uint8 | address | ...
- *                         token0  | fee    | poolId| type  | token1  | ...
  */
-contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
+contract CometMarginTrading is WithStorageComet, TokenTransfer, BaseSwapper {
     // errors
     error Slippage();
     error NoBalance();
@@ -30,16 +29,7 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
     uint256 private constant DEFAULT_AMOUNT_CACHED = type(uint256).max;
     address private constant DEFAULT_ADDRESS_CACHED = address(0);
 
-    // immutable pool
-    IPool internal immutable _aavePool;
-
-    constructor(
-        address _factoryV2,
-        address _factoryV3,
-        address aavePool
-    ) BaseSwapper(_factoryV2, _factoryV3) {
-        _aavePool = IPool(aavePool);
-    }
+    constructor(address _factoryV2, address _factoryV3) BaseSwapper(_factoryV2, _factoryV3) {}
 
     // Exact Input Swap - The path parameters determine the lending actions
     function flashSwapExactIn(
@@ -144,12 +134,14 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
         assembly {
             let firstWord := calldataload(path.offset)
             tokenIn := shr(96, firstWord)
-            identifier := shr(64, firstWord)
+            identifier := shr(64, calldataload(path.offset))
             tokenOut := shr(96, calldataload(add(path.offset, 25)))
             zeroForOne := lt(tokenIn, tokenOut)
         }
+        // abuse amountOut variable
+        amountOut = path.length;
         // fetch collateral balance
-        uint256 amountIn = IERC20Balance(aas().aTokens[tokenIn]).balanceOf(msg.sender);
+        uint256 amountIn = IComet(cos().comet[uint8(bytes1(path[amountOut--:amountOut]))]).balanceOf(msg.sender);
         if (amountIn == 0) revert NoBalance();
 
         // uniswapV3 style
@@ -191,21 +183,15 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
         assembly {
             let firstWord := calldataload(path.offset)
             tokenOut := shr(96, firstWord)
-            identifier := shr(56, firstWord)
+            identifier := shr(64, calldataload(path.offset))
             tokenIn := shr(96, calldataload(add(path.offset, 25)))
             zeroForOne := lt(tokenIn, tokenOut)
         }
-
+        // abuse amountIn variable
+        amountIn = path.length;
         // determine output amount as respective debt balance
-        uint256 amountOut;
-        if (identifier == 5) amountOut = IERC20Balance(aas().vTokens[tokenOut]).balanceOf(msg.sender);
-        else amountOut = IERC20Balance(aas().sTokens[tokenOut]).balanceOf(msg.sender);
+        uint256 amountOut = IComet(cos().comet[uint8(bytes1(path[amountIn--:amountIn]))]).borrowBalanceOf(msg.sender);
         if (amountOut == 0) revert NoBalance();
-
-        // fetch poolId - store it in identifier
-        assembly {
-            identifier := shr(64, calldataload(path.offset))
-        }
 
         // uniswapV3 types
         if (identifier < 50) {
@@ -294,6 +280,7 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
             identifier := shr(56, calldataload(_data.offset)) // identifier for tradeType
         }
         tradeId = identifier;
+
         // EXACT IN BASE SWAP
         if (tradeId == 0) {
             tradeId = amount0Delta > 0 ? uint256(amount0Delta) : uint256(amount1Delta);
@@ -313,16 +300,14 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
                 _data = _data[(cache - 1):cache];
                 // assign end flag to cache
                 cache = uint8(bytes1(_data));
-
-                if (cache < 3) {
-                    // borrow and repay pool - tradeId matches interest rate mode (reverts within Aave when 0 is selected)
-                    _aavePool.borrow(tokenOut, amountToPay, cache, 0, acs().cachedAddress);
-                    _transferERC20Tokens(tokenOut, msg.sender, amountToPay);
-                } else if (cache < 8) {
-                    // ids 3-7 are reserved
-                    // withraw and send funds to the pool
-                    _transferERC20TokensFrom(aas().aTokens[tokenOut], acs().cachedAddress, address(this), amountToPay);
-                    _aavePool.withdraw(tokenOut, amountToPay, msg.sender);
+                if (cache < 8) {
+                    // withdraw or borrow and repay pool
+                    IComet(cos().comet[uint8(cache)]).withdrawFrom(
+                        acs().cachedAddress, // user adddress
+                        msg.sender,
+                        tokenOut,
+                        amountToPay // required pay amount
+                    );
                 } else {
                     // otherwise, just transfer it from cached address
                     pay(tokenOut, acs().cachedAddress, amountToPay);
@@ -354,43 +339,30 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
                 // cache amount
                 ncs().amount = amountToSwap;
                 address user = acs().cachedAddress;
-                // 6 is mint / deposit
-                if (tradeId == 6) {
-                    _aavePool.supply(tokenOut, amountToSwap, user, 0);
-                } else {
-                    // tradeId minus 6 yields the interest rate mode
-                    tradeId -= 6;
-                    _aavePool.repay(tokenOut, amountToSwap, tradeId, user);
-                }
 
-                // fetch the flag for closing the trade
+                // data holds the cometId
+                IComet comet = IComet(cos().comet[uint8(bytes1(_data))]);
 
-                cache = uint8(bytes1(_data));
-                // 1,2 are is borrow
-                if (cache < 3) {
-                    // the interest mode matches the cache in this case
-                    _aavePool.borrow(tokenIn, amountToRepayToPool, cache, 0, user);
-                    _transferERC20Tokens(tokenIn, msg.sender, amountToRepayToPool);
-                } else {
-                    // withraw and send funds to the pool
-                    _transferERC20TokensFrom(aas().aTokens[tokenIn], user, address(this), amountToRepayToPool);
-                    _aavePool.withdraw(tokenIn, amountToRepayToPool, msg.sender);
-                }
+                // deposit or repay
+                comet.supplyTo(user, tokenOut, amountToSwap);
+
+                // wihdraw or borrow
+                comet.withdrawFrom(user, msg.sender, tokenIn, amountToRepayToPool);
             } else {
                 // exact out
                 (uint256 amountInLastPool, uint256 amountToSupply) = amount0Delta > 0
                     ? (uint256(amount0Delta), uint256(-amount1Delta))
                     : (uint256(amount1Delta), uint256(-amount0Delta));
                 address user = acs().cachedAddress;
-                // 3 is deposit
-                if (tradeId == 3) {
-                    _aavePool.supply(tokenIn, amountToSupply, user, 0);
-                } else {
-                    // 4, 5 are repay - subtracting 3 yields the interest rate mode
-                    tradeId -= 3;
-                    _aavePool.repay(tokenIn, amountToSupply, tradeId, user);
-                }
+
+                // use a number to store data length
                 uint256 cache = _data.length;
+
+                // assign end flag to cache
+                IComet comet = IComet(cos().comet[uint8(bytes1(_data[(cache - 1):cache]))]);
+
+                // deposit or repay
+                comet.supplyTo(user, tokenOut, amountToSupply);
                 // multihop if required
                 if (cache > 46) {
                     _data = _data[25:];
@@ -398,18 +370,8 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
                 } else {
                     // cache amount
                     ncs().amount = amountInLastPool;
-                    // fetch the flag for closing the trade
-                    _data = _data[(cache - 1):cache];
-                    // assign end flag to cache
-                    cache = uint8(bytes1(_data));
-                    // borrow to pay pool
-                    if (cache < 3) {
-                        _aavePool.borrow(tokenOut, amountInLastPool, cache, 0, user);
-                        _transferERC20Tokens(tokenOut, msg.sender, amountInLastPool);
-                    } else {
-                        _transferERC20TokensFrom(aas().aTokens[tokenOut], user, address(this), amountInLastPool);
-                        _aavePool.withdraw(tokenOut, amountInLastPool, msg.sender);
-                    }
+                    // wihdraw or borrow
+                    comet.withdrawFrom(user, msg.sender, tokenOut, amountInLastPool);
                 }
             }
             return;
@@ -483,7 +445,7 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
             // validate sender
             require(msg.sender == pool);
         }
-
+        // EXACT OUT - WITHDRAW or BORROW
         if (tradeId == 1) {
             // fetch amountOut
             uint256 referenceAmount = zeroForOne ? amount0 : amount1;
@@ -500,15 +462,14 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
                 // assign end flag to cache
                 cache = uint8(bytes1(data));
 
-                if (cache < 3) {
-                    // borrow and repay pool
-                    _aavePool.borrow(tokenOut, referenceAmount, cache, 0, acs().cachedAddress);
-                    _transferERC20Tokens(tokenOut, msg.sender, referenceAmount);
-                } else if (cache < 8) {
-                    // ids 3-7 are reserved
-                    // withraw and send funds to the pool
-                    _transferERC20TokensFrom(aas().aTokens[tokenOut], acs().cachedAddress, address(this), referenceAmount);
-                    _aavePool.withdraw(tokenOut, referenceAmount, msg.sender);
+                if (cache < 8) {
+                    // withdraw or borrow and repay pool
+                    IComet(cos().comet[uint8(cache)]).withdrawFrom(
+                        acs().cachedAddress, // user adddress
+                        msg.sender,
+                        tokenOut,
+                        referenceAmount // required pay amount
+                    );
                 } else {
                     // otherwise, just transfer it from cached address
                     pay(tokenOut, acs().cachedAddress, referenceAmount);
@@ -535,45 +496,35 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
             }
             // slice out the end flag
             data = data[(cache - 1):cache];
+            tradeId = uint8(bytes1(data));
+
             // cache amount
             ncs().amount = amountToSwap;
+            // fetch user address
             address user = acs().cachedAddress;
-            // 6 is mint / deposit
-            if (tradeId == 6) {
-                // deposit funds for id == 6
-                _aavePool.supply(tokenOut, amountToSwap, user, 0);
-            } else {
-                // repay - tradeId is irMode plus 6
-                tradeId -= 6;
-                _aavePool.repay(tokenOut, amountToSwap, tradeId, user);
-            }
 
-            // assign end flag to tradeId
-            tradeId = uint8(bytes1(data));
-            // 1,2 are is borrow
-            if (tradeId < 3) {
-                _aavePool.borrow(tokenIn, amountToBorrow, tradeId, 0, user);
-                _transferERC20Tokens(tokenIn, msg.sender, amountToBorrow);
-            } else {
-                // withraw and send funds to the pool
-                _transferERC20TokensFrom(aas().aTokens[tokenIn], user, address(this), amountToBorrow);
-                _aavePool.withdraw(tokenIn, amountToBorrow, msg.sender);
-            }
+            IComet comet = IComet(cos().comet[tradeId]);
+
+            // deposit or repay
+            comet.supplyTo(user, tokenOut, amountToSwap);
+
+            // wihdraw or borrow
+            comet.withdrawFrom(user, msg.sender, tokenIn, amountToBorrow);
         } else {
             // fetch amountOut
             uint256 referenceAmount = zeroForOne ? amount0 : amount1;
             address user = acs().cachedAddress;
-            // 3 is deposit
-            if (tradeId == 3) {
-                _aavePool.supply(tokenIn, referenceAmount, user, 0);
-            } else {
-                // 4, 5 are repay, subtracting 3 yields the interest rate mode
-                tradeId -= 3;
-                _aavePool.repay(tokenIn, referenceAmount, tradeId, user);
-            }
+            // use a number to store data length
+            uint256 cache = data.length;
+            // fetch comet contrct
+            IComet comet = IComet(cos().comet[uint8(bytes1(data[(cache - 1):cache]))]);
+
+            // deposit or repay
+            comet.supplyTo(user, tokenOut, referenceAmount);
+
             // calculate amountIn
             referenceAmount = getAmountInDirect(pool, zeroForOne, referenceAmount);
-            uint256 cache = data.length;
+            cache = data.length;
             // constinue swapping if more data is provided
             if (cache > 46) {
                 data = data[25:];
@@ -581,18 +532,9 @@ contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
             } else {
                 // cache amount
                 ncs().amount = referenceAmount;
-                // slice out the end flag
-                data = data[(cache - 1):cache];
-                // assign end flag to cache
-                cache = uint8(bytes1(data));
-                // borrow to pay pool
-                if (cache < 3) {
-                    _aavePool.borrow(tokenOut, referenceAmount, cache, 0, user);
-                    _transferERC20Tokens(tokenOut, msg.sender, referenceAmount);
-                } else {
-                    _transferERC20TokensFrom(aas().aTokens[tokenOut], user, address(this), referenceAmount);
-                    _aavePool.withdraw(tokenOut, referenceAmount, msg.sender);
-                }
+
+                // wihdraw or borrow
+                comet.withdrawFrom(user, msg.sender, tokenOut, referenceAmount);
             }
         }
     }

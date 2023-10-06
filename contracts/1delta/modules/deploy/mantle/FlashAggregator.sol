@@ -6,11 +6,11 @@ pragma solidity ^0.8.21;
 * Author: Achthar | 1delta 
 /******************************************************************************/
 
-import {IUniswapV2Pair} from "../base/BaseSwapper.sol";
-import {IERC20Balance} from "../../interfaces/IERC20Balance.sol";
+import {IUniswapV2Pair} from "../../base/BaseSwapper.sol";
+import {IERC20Balance} from "../../../interfaces/IERC20Balance.sol";
 import {MarginTrading} from "./MarginTrading.sol";
-import {WrappedNativeHandler} from "../base/WrappedNativeHandler.sol";
-import {SelfPermit} from "../base/SelfPermit.sol";
+import {WrappedNativeHandler} from "./WrappedNativeHandler.sol";
+import {SelfPermit} from "../../base/SelfPermit.sol";
 
 // solhint-disable max-line-length
 
@@ -18,17 +18,12 @@ import {SelfPermit} from "../base/SelfPermit.sol";
  * @title FlashAggregator
  * @notice Adds money market and default transfer functions to margin trading
  */
-contract FlashAggregator is MarginTrading, WrappedNativeHandler, SelfPermit {
+contract DeltaFlashAggregatorMantle is MarginTrading, WrappedNativeHandler, SelfPermit {
     // constants
     uint256 private constant DEFAULT_AMOUNT_CACHED = type(uint256).max;
     address private constant DEFAULT_ADDRESS_CACHED = address(0);
 
-    constructor(
-        address _factoryV2,
-        address _factoryV3,
-        address aavePool,
-        address weth
-    ) MarginTrading(_factoryV2, _factoryV3, aavePool) WrappedNativeHandler(weth) {}
+    constructor() {}
 
     /** BASE LENDING FUNCTIONS */
 
@@ -36,7 +31,7 @@ contract FlashAggregator is MarginTrading, WrappedNativeHandler, SelfPermit {
     function deposit(address asset, address recipient) external payable {
         address _asset = asset;
         uint256 balance = IERC20Balance(_asset).balanceOf(address(this));
-        _aavePool.supply(_asset, balance, recipient, 0);
+        _lendingPool.supply(_asset, balance, recipient, 0);
     }
 
     // borrow on sender's behalf
@@ -45,7 +40,7 @@ contract FlashAggregator is MarginTrading, WrappedNativeHandler, SelfPermit {
         uint256 amount,
         uint256 interestRateMode
     ) external payable {
-        _aavePool.borrow(asset, amount, interestRateMode, 0, msg.sender);
+        _lendingPool.borrow(asset, amount, interestRateMode, 0, msg.sender);
     }
 
     // wraps the repay function
@@ -62,16 +57,16 @@ contract FlashAggregator is MarginTrading, WrappedNativeHandler, SelfPermit {
         else _debtBalance = IERC20Balance(aas().sTokens[_asset]).balanceOf(msg.sender);
         // if the amount lower higher than the balance, repay the amount
         if (_debtBalance >= _balance) {
-            _aavePool.repay(_asset, _balance, _interestRateMode, recipient);
+            _lendingPool.repay(_asset, _balance, _interestRateMode, recipient);
         } else {
             // otherwise, repay all - make sure to call sweep afterwards
-            _aavePool.repay(_asset, _debtBalance, _interestRateMode, recipient);
+            _lendingPool.repay(_asset, _debtBalance, _interestRateMode, recipient);
         }
     }
 
     // wraps the withdraw
     function withdraw(address asset, address recipient) external payable {
-        _aavePool.withdraw(asset, type(uint256).max, recipient);
+        _lendingPool.withdraw(asset, type(uint256).max, recipient);
     }
 
     /** TRANSFER FUNCTIONS */
@@ -233,7 +228,7 @@ contract FlashAggregator is MarginTrading, WrappedNativeHandler, SelfPermit {
     }
 
     // a flash swap whre the output is sent to this address
-    function flashSwapExactOutInternal(uint256 amountOut, bytes calldata data) internal {
+    function flashSwapExactOutInternal(uint256 amountOut, bytes calldata data) private {
         address tokenIn;
         address tokenOut;
         uint8 identifier;

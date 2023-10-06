@@ -161,7 +161,7 @@ const config: HardhatUserConfig = {
     },
     hardhat: {
       // forking: {
-      //   blockNumber: undefined,
+      //   blockNumber: 48177605,
       //   url: `https://rpc.ankr.com/polygon`,
       // },
     },
@@ -221,6 +221,11 @@ const config: HardhatUserConfig = {
       // url:  `https://polygon-mainnet.public.blastapi.io`,
       accounts: [pk5, pk1],
       chainId: 137,
+    },
+    mantle: {
+      url: 'https://rpc.mantle.xyz',
+      accounts: [pk5, pk1],
+      chainId: 5000,
     },
     mumbai: {
       url: 'https://rpc-mumbai.maticvigil.com/',

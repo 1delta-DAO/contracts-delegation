@@ -6,7 +6,7 @@ pragma solidity ^0.8.21;
 * Author: Achthar | 1delta 
 /******************************************************************************/
 
-import {INativeWrapper} from "../../interfaces/INativeWrapper.sol";
+import {INativeWrapper} from "../../../interfaces/INativeWrapper.sol";
 
 // solhint-disable max-line-length
 
@@ -16,7 +16,7 @@ import {INativeWrapper} from "../../interfaces/INativeWrapper.sol";
  */
 abstract contract WrappedNativeHandler {
     // constant
-    address private constant wrappedNative = 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270;
+    address private constant wrappedNative = 0x78c1b0C915c4FAA5FffA6CAbf0219DA63d7f4cb8;
 
     constructor() {}
 
