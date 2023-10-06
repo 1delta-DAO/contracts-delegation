@@ -160,10 +160,10 @@ const config: HardhatUserConfig = {
       accounts
     },
     hardhat: {
-      forking: {
-        blockNumber: 48167737,
-        url: `https://rpc.ankr.com/polygon`,
-      },
+      // forking: {
+      //   blockNumber: 48177605,
+      //   url: `https://rpc.ankr.com/polygon`,
+      // },
     },
     rinkeby: {
       url: `https://rinkeby.infura.io/v3/${process.env.INFURA_API_KEY}`,
