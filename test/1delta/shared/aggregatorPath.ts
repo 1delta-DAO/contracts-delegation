@@ -50,8 +50,8 @@ export const encodeTradePathMargin = (
   pIds: number[],
   tradeOperation: TradeOperation,
   tradeType: TradeType,
-  modeIn: InterestRateMode,
-  modeOut: InterestRateMode
+  modeIn = InterestRateMode.VARIABLE,
+  modeOut = InterestRateMode.VARIABLE
 ) => {
   let first: number; let last: number;
   switch (tradeType) {
@@ -78,6 +78,7 @@ export const encodeTradePathMargin = (
           break;
         }
       }
+      break;
     default:
       switch (tradeOperation) {
         case TradeOperation.Open: {
@@ -101,6 +102,7 @@ export const encodeTradePathMargin = (
           break;
         }
       }
+      break;
   }
   if (route.length === 2) {
     return encodeAggregatorPathEthers(

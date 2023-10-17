@@ -13,7 +13,7 @@ import { initializeMakeSuite, InterestRateMode, AAVEFixture, deposit } from '../
 import { addLiquidity, addLiquidityV2, uniswapMinimalFixtureNoTokens, UniswapMinimalFixtureNoTokens } from '../shared/uniswapFixture';
 import { formatEther } from 'ethers/lib/utils';
 import { uniV2Fixture, V2Fixture } from '../shared/uniV2Fixture';
-import { encodeAggregatorPathEthers } from '../shared/aggregatorPath';
+import { TradeOperation, TradeType, encodeAggregatorPathEthers, encodeTradePathMargin } from '../shared/aggregatorPath';
 
 // we prepare a setup for aave in hardhat
 // this series of tests checks that the features used for the margin swap implementation
@@ -194,12 +194,16 @@ describe('AAVE Brokered Margin Swap operations', async () => {
             aaveTest.tokens[borrowTokenIndex],
             aaveTest.tokens[supplyTokenIndex]
         ].map(t => t.address)
-        const path = encodeAggregatorPathEthers(
+
+        const path = encodeTradePathMargin(
             _tokensInRoute,
             new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
-            [6], // action
-            [99], // pid - V3
-            2 // flag - borrow variable
+            [99],
+            TradeOperation.Open,
+            TradeType.exactIn,
+            InterestRateMode.VARIABLE,
+            InterestRateMode.NONE
+
         )
         const params = {
             path,

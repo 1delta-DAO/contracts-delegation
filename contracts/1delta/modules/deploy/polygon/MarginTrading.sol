@@ -7,7 +7,6 @@ pragma solidity 0.8.21;
 /******************************************************************************/
 
 import {IUniswapV2Pair} from "../../../../external-protocols/uniswapV2/core/interfaces/IUniswapV2Pair.sol";
-import {TokenTransfer} from "../../../libraries/TokenTransfer.sol";
 import {WithStorage} from "../../../storage/BrokerStorage.sol";
 import {BaseSwapper} from "./BaseSwapper.sol";
 import {IPool} from "../../../interfaces/IAAVEV3Pool.sol";
@@ -18,8 +17,10 @@ import {IERC20Balance} from "../../../interfaces/IERC20Balance.sol";
 /**
  * @title Contract Module for general Margin Trading on an Aave-style Lender
  * @notice Contains main logic for uniswap-type callbacks and initiator functions
+ * @dev path is encoded as address | uint24 | uint8 | uint8 | address | ...
+ *                         token0  | fee    | poolId| type  | token1  | ...
  */
-abstract contract MarginTrading is WithStorage, TokenTransfer, BaseSwapper {
+abstract contract MarginTrading is WithStorage, BaseSwapper {
     // errors
     error Slippage();
     error NoBalance();
