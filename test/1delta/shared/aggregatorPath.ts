@@ -44,6 +44,17 @@ export enum TradeType {
   exactOut = 'exactOut'
 }
 
+/**
+ * 
+ * @param route token path as array of addresses
+ * @param fees pool fee identifiers
+ * @param pIds poolIds [0=Uni V3, 1=QuickswapV3,2=SushiV3, 50=QuickswapV2, 51=SushiV2]
+ * @param tradeOperation Margin trade type
+ * @param tradeType exactIn or exactOut
+ * @param modeIn interest rate mode input 
+ * @param modeOut interest rate mode output
+ * @returns bytes encoded path
+ */
 export const encodeTradePathMargin = (
   route: string[],
   fees: FeeAmount[],
