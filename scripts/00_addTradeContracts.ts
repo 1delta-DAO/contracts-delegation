@@ -51,9 +51,9 @@ async function main() {
     // deploy ConfigModule
     const broker = await new ConfigModule__factory(operator).attach(proxyAddress)
 
-    const flashBroker = await new DeltaFlashAggregator__factory(operator).deploy()
-    await flashBroker.deployed()
-    console.log("flashBroker deployed")
+    // const flashBroker = await new DeltaFlashAggregator__factory(operator).deploy()
+    // await flashBroker.deployed()
+    // console.log("flashBroker deployed")
 
     // const callback = await new UniswapV3SwapCallbackModule__factory(operator).deploy(uniswapFactory, aavePool, opts)
     // await callback.deployed()
@@ -71,9 +71,9 @@ async function main() {
     // await sweeper.deployed()
     // console.log("sweeper deployed")
 
-    // const management = await new ManagementModule__factory(operator).deploy()
-    // await management.deployed()
-    // console.log("management deployed")
+    const management = await new ManagementModule__factory(operator).deploy()
+    await management.deployed()
+    console.log("management deployed")
 
 
     // const balancerFlashModule = await new BalancerFlashModule__factory(operator).deploy(aavePool, balancerV2Vault[chainId])
@@ -87,7 +87,7 @@ async function main() {
     // const lensModule = await new LensModule__factory(operator).deploy(opts)
     // await lensModule.deployed()
     // console.log("lens deployed")
-    console.log("FlashBroker", flashBroker.address)
+    // console.log("FlashBroker", flashBroker.address)
     // console.log("BrokerModuleBalancer", balancerFlashModule.address)
     // console.log("BrokerModulAave", aaveFlashModule.address)
     // console.log("UniswapV3SwapCallbackModule", callback.address)
@@ -96,7 +96,7 @@ async function main() {
     // console.log("Sweeper", sweeper.address)
 
     // console.log("Lens", lensModule.address)
-    // console.log("Management", management.address)
+    console.log("Management", management.address)
 
     const cut: {
         moduleAddress: string,
@@ -108,13 +108,13 @@ async function main() {
     const modules = [
         // balancerFlashModule,
         // aaveFlashModule,
-        flashBroker
+        // flashBroker
         // sweeper,
         // marginTrading,
         // moneyMarkets,
         // callback,
         // lensModule,
-        // management
+        management
     ]
 
     for (const module of modules) {

@@ -43,7 +43,7 @@ const miscAddresses = {
 }
 
 const aaveBrokerAddresses = {
-    Init:{
+    Init: {
         137: '0x2e9C883702B53c7ae3E31943D9DE4e49e43DAe71'
     },
     BrokerModuleBalancer: {
@@ -85,7 +85,7 @@ const aaveBrokerAddresses = {
     ManagementModule: {
         5: '0x0Be9058fE2DB31E2DaCEbbE566D227D0CbfA41C8',
         80001: '0x72D580D4e59eCB3E25Dd7D1530981625640Dba15',
-        137: '0x892e4a7d578Be979E5329655949fC56781eEFdb0'
+        137: '0x3EdAB7c8E32be3817e5c8612a6F1160a7D67A170'
     },
     MarginTraderModule: {
         5: '0xa8d1C7D918ABc6F112F89A8496962c9A6cdA52d0',
@@ -121,7 +121,7 @@ const cometBrokerAddresses = {
     Lens: {
         80001: '0xfD39FcbA8300AB9604D1E8FB1cC91E41a5722e34',
         5: '',
-        137:'0x237620397eC1F38456Af370132E62f104f98C9A6'
+        137: '0x237620397eC1F38456Af370132E62f104f98C9A6'
     },
     BrokerProxy: {
         5: '',
