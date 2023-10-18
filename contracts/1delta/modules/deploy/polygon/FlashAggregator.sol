@@ -6,9 +6,8 @@ pragma solidity ^0.8.21;
 * Author: Achthar | 1delta 
 /******************************************************************************/
 
-import {IUniswapV2Pair} from "../../base/BaseSwapper.sol";
 import {IERC20Balance} from "../../../interfaces/IERC20Balance.sol";
-import {MarginTrading} from "./MarginTrading.sol";
+import {MarginTrading, IUniswapV2Pair} from "./MarginTrading.sol";
 import {WrappedNativeHandler} from "./WrappedNativeHandler.sol";
 import {SelfPermit} from "../../base/SelfPermit.sol";
 
