@@ -6,7 +6,7 @@ const FEE_SIZE = 3
 const OFFSET = ADDR_SIZE + FEE_SIZE
 const DATA_SIZE = OFFSET + ADDR_SIZE
 
-export function encodePath(path: string[], fees: FeeAmount[]): string {
+export function encodePath(path: string[], fees: number[]): string {
   if (path.length != fees.length + 1) {
     throw new Error('path/fee lengths do not match')
   }

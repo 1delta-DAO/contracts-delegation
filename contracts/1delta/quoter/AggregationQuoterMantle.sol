@@ -380,9 +380,9 @@ contract OneDeltaQuoterMantle {
                     buyReserve := mload(0xC00)
                 }
                 // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
-                // buyAmount = (pairSellAmount * 997 * buyReserve) /
-                //     (pairSellAmount * 997 + sellReserve * 1000);
-                let sellAmountWithFee := mul(sellAmount, 997)
+                // buyAmount = (pairSellAmount * 998 * buyReserve) /
+                //     (pairSellAmount * 998 + sellReserve * 1000);
+                let sellAmountWithFee := mul(sellAmount, 998)
                 buyAmount := div(mul(sellAmountWithFee, buyReserve), add(sellAmountWithFee, mul(sellReserve, 1000)))
             }
         }
@@ -419,8 +419,8 @@ contract OneDeltaQuoterMantle {
                 }
                 // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
                 // sellAmount = (reserveIn * amountOut * 1000) /
-                //     ((reserveOut - amountOut) * 997) + 1;
-                sellAmount := add(div(mul(mul(sellReserve, buyAmount), 1000), mul(sub(buyReserve, buyAmount), 997)), 1)
+                //     ((reserveOut - amountOut) * 998) + 1;
+                sellAmount := add(div(mul(mul(sellReserve, buyAmount), 1000), mul(sub(buyReserve, buyAmount), 998)), 1)
             }
         }
     }

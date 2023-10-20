@@ -16,7 +16,8 @@ const generalAddresses = {
     WETH: {
         5: '0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6',
         80001: '0x9c3c9283d3e44854697cd22d3faa240cfb032889',
-        137: '0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270'
+        137: '0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270',
+        5000: '0x78c1b0c915c4faa5fffa6cabf0219da63d7f4cb8'
     }
 }
 
