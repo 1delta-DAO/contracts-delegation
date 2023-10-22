@@ -56,8 +56,8 @@ contract OneDeltaQuoter {
         int256 amount0Delta,
         int256 amount1Delta,
         bytes calldata path
-    ) private view {
-        // we do not validate the callback since it's just a view function
+    ) private pure {
+        // we do not validate the callback since it's just a pure function
         // as such, we do not need to decode poolId and fee
         address tokenIn;
         address tokenOut;
@@ -79,8 +79,6 @@ contract OneDeltaQuoter {
                 revert(ptr, 32)
             }
         } else {
-            // if the cache has been populated, ensure that the full output amount has been received
-            if (amountOutCached != 0) require(amountReceived == amountOutCached);
             assembly {
                 let ptr := mload(0x40)
                 mstore(ptr, amountToPay)
@@ -89,19 +87,21 @@ contract OneDeltaQuoter {
         }
     }
 
+    // quickswap
     function algebraSwapCallback(
         int256 amount0Delta,
         int256 amount1Delta,
         bytes calldata path
-    ) external view {
+    ) external pure {
         _v3SwapCallback(amount0Delta, amount1Delta, path);
     }
 
+     // uniswap & sushiswap
     function uniswapV3SwapCallback(
         int256 amount0Delta,
         int256 amount1Delta,
         bytes calldata path
-    ) external view {
+    ) external pure {
         _v3SwapCallback(amount0Delta, amount1Delta, path);
     }
 
@@ -118,9 +118,9 @@ contract OneDeltaQuoter {
     }
 
     function quoteExactInputSingleV3(
-        address tokenIn,
+        address tokenIn, 
         address tokenOut,
-        uint24 fee,
+        uint24 fee, 
         uint8 pId,
         uint256 amountIn
     ) public returns (uint256 amountOut) {
@@ -219,12 +219,7 @@ contract OneDeltaQuoter {
 
     /// @dev Returns the pool for the given token pair and fee.
     /// The pool contract may or may not exist.
-    function v3TypePool(
-        address tokenA,
-        address tokenB,
-        uint24 fee,
-        uint8 pId
-    ) internal pure returns (ISwapPool pool) {
+    function v3TypePool(address tokenA, address tokenB, uint24 fee, uint8 pId) internal pure returns (ISwapPool pool) {
         uint256 _pId = pId; // switch-caseing uint8 is bad
         assembly {
             let s := mload(0x40)
@@ -293,11 +288,7 @@ contract OneDeltaQuoter {
     }
 
     /// @dev gets uniswapV2 (and fork) pair addresses
-    function v2TypePairAddress(
-        address tokenA,
-        address tokenB,
-        uint8 pId
-    ) internal pure returns (address pair) {
+    function v2TypePairAddress(address tokenA, address tokenB, uint8 pId) internal pure returns (address pair) {
         uint256 poolId = pId;
         assembly {
             switch lt(tokenA, tokenB)
@@ -406,11 +397,7 @@ contract OneDeltaQuoter {
         }
     }
 
-    function getV2AmountOutDirect(
-        address pair,
-        bool zeroForOne,
-        uint256 sellAmount
-    ) private view returns (uint256 buyAmount) {
+    function getV2AmountOutDirect(address pair, bool zeroForOne, uint256 sellAmount) private view returns (uint256 buyAmount) {
         assembly {
             // Call pair.getReserves(), store the results at `0xC00`
             mstore(0xB00, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
@@ -447,11 +434,7 @@ contract OneDeltaQuoter {
     }
 
     /// @dev calculates the input amount for a UniswapV2 style swap
-    function getV2AmountInDirect(
-        address pair,
-        bool zeroForOne,
-        uint256 buyAmount
-    ) internal view returns (uint256 sellAmount) {
+    function getV2AmountInDirect(address pair, bool zeroForOne, uint256 buyAmount) internal view returns (uint256 sellAmount) {
         assembly {
             let ptr := mload(0x40)
             // Call pair.getReserves(), store the results at `free memo`
