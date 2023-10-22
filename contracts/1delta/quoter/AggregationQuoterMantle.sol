@@ -28,9 +28,9 @@ contract OneDeltaQuoterMantle {
     uint256 private constant UINT24_MASK = 0xffffff;
 
     /// @dev MIN_SQRT_RATIO + 1 from Uniswap's TickMath
-    uint160 internal immutable MIN_SQRT_RATIO = 4295128740;
+    uint160 private immutable MIN_SQRT_RATIO = 4295128740;
     /// @dev MAX_SQRT_RATIO - 1 from Uniswap's TickMath
-    uint160 internal immutable MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970341;
+    uint160 private immutable MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970341;
 
     // _FF_ is given as follows: bytes32((uint256(0xff) << 248) | (uint256(uint160(address)) << 88));
 
@@ -46,7 +46,7 @@ contract OneDeltaQuoterMantle {
     constructor() {}
 
     // uniswap V3 type callback
-    function _v3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata path) private view {
+    function _v3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata path) private pure {
         // we do not validate the callback since it's just a view function
         // as such, we do not need to decode poolId and fee
         address tokenIn;
@@ -69,8 +69,6 @@ contract OneDeltaQuoterMantle {
                 revert(ptr, 32)
             }
         } else {
-            // if the cache has been populated, ensure that the full output amount has been received
-            if (amountOutCached != 0) require(amountReceived == amountOutCached);
             assembly {
                 let ptr := mload(0x40)
                 mstore(ptr, amountToPay)
@@ -79,11 +77,11 @@ contract OneDeltaQuoterMantle {
         }
     }
 
-    function fusionXV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata path) external view {
+    function fusionXV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata path) external pure {
         _v3SwapCallback(amount0Delta, amount1Delta, path);
     }
 
-    function agniSwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata path) external view {
+    function agniSwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata path) external pure {
         _v3SwapCallback(amount0Delta, amount1Delta, path);
     }
 
@@ -201,7 +199,7 @@ contract OneDeltaQuoterMantle {
 
     /// @dev Returns the pool for the given token pair and fee.
     /// The pool contract may or may not exist.
-    function v3TypePool(address tokenA, address tokenB, uint24 fee, uint8 pId) internal pure returns (ISwapPool pool) {
+    function v3TypePool(address tokenA, address tokenB, uint24 fee, uint8 pId) private pure returns (ISwapPool pool) {
         uint256 _pId = pId; // switch-caseing uint8 is bad
         assembly {
             let s := mload(0x40)
@@ -251,7 +249,7 @@ contract OneDeltaQuoterMantle {
     }
 
     /// @dev gets uniswapV2 (and fork) pair addresses
-    function v2TypePairAddress(address tokenA, address tokenB, uint8) internal pure returns (address pair) {
+    function v2TypePairAddress(address tokenA, address tokenB, uint8) private pure returns (address pair) {
         assembly {
             switch lt(tokenA, tokenB)
             case 0 {
@@ -389,7 +387,7 @@ contract OneDeltaQuoterMantle {
     }
 
     /// @dev calculates the input amount for a UniswapV2 style swap
-    function getV2AmountInDirect(address pair, bool zeroForOne, uint256 buyAmount) internal view returns (uint256 sellAmount) {
+    function getV2AmountInDirect(address pair, bool zeroForOne, uint256 buyAmount) private view returns (uint256 sellAmount) {
         assembly {
             let ptr := mload(0x40)
             // Call pair.getReserves(), store the results at `free memo`
