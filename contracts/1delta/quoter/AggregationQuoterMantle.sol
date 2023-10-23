@@ -46,7 +46,7 @@ contract OneDeltaQuoterMantle {
     constructor() {}
 
     // uniswap V3 type callback
-    function _v3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata path) private pure {
+    function _v3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata path) private view {
         // we do not validate the callback since it's just a view function
         // as such, we do not need to decode poolId and fee
         address tokenIn;
@@ -69,6 +69,8 @@ contract OneDeltaQuoterMantle {
                 revert(ptr, 32)
             }
         } else {
+            // if the cache has been populated, ensure that the full output amount has been received
+            if (amountOutCached != 0) require(amountReceived == amountOutCached);
             assembly {
                 let ptr := mload(0x40)
                 mstore(ptr, amountToPay)
@@ -77,11 +79,11 @@ contract OneDeltaQuoterMantle {
         }
     }
 
-    function fusionXV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata path) external pure {
+    function fusionXV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata path) external view {
         _v3SwapCallback(amount0Delta, amount1Delta, path);
     }
 
-    function agniSwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata path) external pure {
+    function agniSwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata path) external view {
         _v3SwapCallback(amount0Delta, amount1Delta, path);
     }
 

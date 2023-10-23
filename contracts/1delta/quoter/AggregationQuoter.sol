@@ -56,7 +56,7 @@ contract OneDeltaQuoter {
         int256 amount0Delta,
         int256 amount1Delta,
         bytes calldata path
-    ) private pure {
+    ) private view {
         // we do not validate the callback since it's just a pure function
         // as such, we do not need to decode poolId and fee
         address tokenIn;
@@ -78,7 +78,9 @@ contract OneDeltaQuoter {
                 mstore(ptr, amountReceived)
                 revert(ptr, 32)
             }
-        } else {
+        } else {       
+            // if the cache has been populated, ensure that the full output amount has been received
+            if (amountOutCached != 0) require(amountReceived == amountOutCached);
             assembly {
                 let ptr := mload(0x40)
                 mstore(ptr, amountToPay)
@@ -92,7 +94,7 @@ contract OneDeltaQuoter {
         int256 amount0Delta,
         int256 amount1Delta,
         bytes calldata path
-    ) external pure {
+    ) external view {
         _v3SwapCallback(amount0Delta, amount1Delta, path);
     }
 
@@ -101,7 +103,7 @@ contract OneDeltaQuoter {
         int256 amount0Delta,
         int256 amount1Delta,
         bytes calldata path
-    ) external pure {
+    ) external view {
         _v3SwapCallback(amount0Delta, amount1Delta, path);
     }
 
