@@ -10,7 +10,7 @@ async function main() {
     console.log("Deploy Module Manager on", chainId, "by", operator.address)
 
 
-    console.log("deploy broker proxy")
+    console.log("deploy quoter on mantle")
 
     const deploymentData = await new OneDeltaQuoterMantle__factory(operator).getDeployTransaction()
     const estimatedGas = await ethers.provider.estimateGas({ data: deploymentData.data });
@@ -19,7 +19,7 @@ async function main() {
     const quoter = await new OneDeltaQuoterMantle__factory(operator).deploy({ gasLimit: estimatedGas.mul(105).div(100) })
     await quoter.deployed()
 
-    console.log('quoter:', quoter.address)
+    console.log('quoter:', quoter.address) // 0xcB6Eb8df68153cebF60E1872273Ef52075a5C297
 }
 
 main()

@@ -82,6 +82,25 @@ it("Test Fusion V3 Exact Out", async function () {
 })
 
 
+it("Test Fusion V3 Exact Out mixed v2 v3", async function () {
+
+    const amountOut = 1 // parseUnits('0.1', 8)
+
+    console.log("Test Quoter multi EO Fusion v2 v3:")
+
+    const route = encodeQuoterPathEthers(
+        [usdc, wmt, usdc, btc].reverse(),
+        [500, 100, 0].reverse(),
+        [0, 0, 50].reverse()
+    )
+    const quote = await quoter.callStatic.quoteExactOutput(
+        route,
+        amountOut
+    )
+    console.log("Quote Mixed", quote.toString())
+})
+
+
 it("Test Fusion V3 Exact Out 2", async function () {
 
     const amountOut = parseUnits('4000', 18)
@@ -119,7 +138,7 @@ it("Test Fusion V3 Exact Out 3", async function () {
 })
 
 
-it.only("Test Fusion V3 Exact Out custorm", async function () {
+it("Test Fusion V3 Exact Out custorm", async function () {
 
     const amountOut = parseUnits('1', 18)
 

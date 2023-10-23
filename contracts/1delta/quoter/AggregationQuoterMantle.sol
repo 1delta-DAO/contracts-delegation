@@ -415,6 +415,10 @@ contract OneDeltaQuoterMantle {
                     sellReserve := mload(ptr)
                     buyReserve := mload(add(ptr, 0x20))
                 }
+                // if the buy amount is higher than the reserve, revert.
+                if lt(buyReserve, buyAmount) {
+                    revert(0, 0)
+                }
                 // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
                 // sellAmount = (reserveIn * amountOut * 1000) /
                 //     ((reserveOut - amountOut) * 998) + 1;

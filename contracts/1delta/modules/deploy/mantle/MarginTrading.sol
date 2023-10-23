@@ -6,9 +6,8 @@ pragma solidity 0.8.21;
 * Author: Achthar | 1delta 
 /******************************************************************************/
 
-import {IUniswapV2Pair} from "../../../../external-protocols/uniswapV2/core/interfaces/IUniswapV2Pair.sol";
 import {WithStorage} from "../../../storage/BrokerStorage.sol";
-import {BaseSwapper} from "./BaseSwapper.sol";
+import {BaseSwapper, IUniswapV2Pair} from "./BaseSwapper.sol";
 import {IPool} from "../../../interfaces/IAAVEV3Pool.sol";
 import {IERC20Balance} from "../../../interfaces/IERC20Balance.sol";
 
