@@ -30,7 +30,7 @@ contract DeltaFlashAggregatorMantle is MarginTrading, WrappedNativeHandler, Self
     function deposit(address asset, address recipient) external payable {
         address _asset = asset;
         uint256 balance = IERC20Balance(_asset).balanceOf(address(this));
-        _lendingPool.supply(_asset, balance, recipient, 0);
+        _lendingPool.deposit(_asset, balance, recipient, 0);
     }
 
     // borrow on sender's behalf

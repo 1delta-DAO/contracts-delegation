@@ -130,7 +130,7 @@ export async function approveSpending(chainId: number, signer: SignerWithAddress
     await tx.wait()
 
     console.log("approve aave pool")
-    tx = await management.approveAAVEPool(underlyingAddresses, opts)
+    tx = await management.approveLendingPool(underlyingAddresses, opts)
     await tx.wait()
 
     console.log("Approve 1inch")

@@ -8,7 +8,7 @@ import {WithStorage} from "../../storage/BrokerStorage.sol";
 // solhint-disable max-line-length
 
 /**
- * @title Management contract
+ * @title Management/Data Viewer contract
  * @notice Allows the management of to insert token and protocol data
  * @author Achthar
  */
@@ -17,6 +17,8 @@ contract ManagementModule is WithStorage {
         require(ms().isManager[msg.sender], "Only management can interact.");
         _;
     }
+
+    // STATE CHANGING FUNCTION
 
     function addAToken(address _underlying, address _aToken) external onlyManagement {
         aas().aTokens[_underlying] = _aToken;
@@ -30,22 +32,17 @@ contract ManagementModule is WithStorage {
         aas().vTokens[_underlying] = _vToken;
     }
 
-    function addAaveTokens(
-        address _underlying,
-        address _aToken,
-        address _vToken,
-        address _sToken
-    ) external onlyManagement {
+    function addLenderTokens(address _underlying, address _aToken, address _vToken, address _sToken) external onlyManagement {
         address asset = _underlying;
         aas().vTokens[asset] = _vToken;
         aas().sTokens[asset] = _sToken;
         aas().aTokens[asset] = _aToken;
     }
 
-    function approveAAVEPool(address[] memory assets) external onlyManagement {
-        address aavePool = aas().v3Pool;
+    function approveLendingPool(address[] memory assets) external onlyManagement {
+        address lendingPool = aas().lendingPool;
         for (uint256 i = 0; i < assets.length; i++) {
-            IERC20(assets[i]).approve(aavePool, type(uint256).max);
+            IERC20(assets[i]).approve(lendingPool, type(uint256).max);
         }
     }
 
@@ -63,5 +60,27 @@ contract ManagementModule is WithStorage {
         for (uint256 i = 0; i < assets.length; i++) {
             IERC20(assets[i]).approve(target, 0);
         }
+    }
+
+    // VIEW FUNCTIONS
+
+    function getLendingPool() external view returns (address pool) {
+        pool = aas().lendingPool;
+    }
+
+    function getAToken(address _underlying) external view returns (address) {
+        return aas().aTokens[_underlying];
+    }
+
+    function getSToken(address _underlying) external view returns (address) {
+        return aas().sTokens[_underlying];
+    }
+
+    function getVToken(address _underlying) external view returns (address) {
+        return aas().vTokens[_underlying];
+    }
+
+    function getIsValidTarget(address _target) external view returns (bool) {
+        return gs().isValidTarget[_target];
     }
 }

@@ -7,7 +7,7 @@ struct AaveStorage {
     mapping(address => address) aTokens;
     mapping(address => address) vTokens;
     mapping(address => address) sTokens;
-    address v3Pool;
+    address lendingPool;
 }
 
 struct CompoundStorage {

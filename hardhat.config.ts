@@ -166,7 +166,7 @@ const config: HardhatUserConfig = {
       //   // url: 'https://rpc-mainnet.maticvigil.com',
       // },
       forking: {
-        blockNumber: 17118209,
+        blockNumber: 17347166,
         url: `https://rpc.mantle.xyz`,
       },
     },

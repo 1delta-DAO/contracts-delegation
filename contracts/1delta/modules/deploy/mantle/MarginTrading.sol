@@ -8,7 +8,7 @@ pragma solidity 0.8.21;
 
 import {WithStorage} from "../../../storage/BrokerStorage.sol";
 import {BaseSwapper, IUniswapV2Pair} from "./BaseSwapper.sol";
-import {IPool} from "../../../interfaces/IAAVEV3Pool.sol";
+import {ILendingPool} from "./ILendingPool.sol";
 import {IERC20Balance} from "../../../interfaces/IERC20Balance.sol";
 
 // solhint-disable max-line-length
@@ -27,7 +27,7 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
     address private constant DEFAULT_ADDRESS_CACHED = address(0);
 
     // constant pool
-    IPool internal constant _lendingPool = IPool(0xCFa5aE7c2CE8Fadc6426C1ff872cA45378Fb7cF3);
+    ILendingPool internal constant _lendingPool = ILendingPool(0xCFa5aE7c2CE8Fadc6426C1ff872cA45378Fb7cF3);
 
     constructor() BaseSwapper() {}
 
@@ -346,7 +346,7 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
                 address user = acs().cachedAddress;
                 // 6 is mint / deposit
                 if (tradeId == 6) {
-                    _lendingPool.supply(tokenOut, amountToSwap, user, 0);
+                    _lendingPool.deposit(tokenOut, amountToSwap, user, 0);
                 } else {
                     // tradeId minus 6 yields the interest rate mode
                     tradeId -= 6;
@@ -374,7 +374,7 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
                 address user = acs().cachedAddress;
                 // 3 is deposit
                 if (tradeId == 3) {
-                    _lendingPool.supply(tokenIn, amountToSupply, user, 0);
+                    _lendingPool.deposit(tokenIn, amountToSupply, user, 0);
                 } else {
                     // 4, 5 are repay - subtracting 3 yields the interest rate mode
                     tradeId -= 3;
@@ -531,7 +531,7 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
             // 6 is mint / deposit
             if (tradeId == 6) {
                 // deposit funds for id == 6
-                _lendingPool.supply(tokenOut, amountToSwap, user, 0);
+                _lendingPool.deposit(tokenOut, amountToSwap, user, 0);
             } else {
                 // repay - tradeId is irMode plus 6
                 tradeId -= 6;
@@ -555,7 +555,7 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
             address user = acs().cachedAddress;
             // 3 is deposit
             if (tradeId == 3) {
-                _lendingPool.supply(tokenIn, referenceAmount, user, 0);
+                _lendingPool.deposit(tokenIn, referenceAmount, user, 0);
             } else {
                 // 4, 5 are repay, subtracting 3 yields the interest rate mode
                 tradeId -= 3;
