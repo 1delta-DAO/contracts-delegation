@@ -10,7 +10,7 @@ import {
     LensModule__factory,
     ManagementModule__factory,
 } from "../../types";
-import { aaveAddresses, aaveBrokerAddresses, uniswapAddresses } from "../../deploy/00_addresses"
+import { aaveAddresses, aaveBrokerAddresses, uniswapAddresses } from "../../deploy/polygon_addresses"
 import { validateAddresses } from "../../utils/types";
 import { parseUnits } from "ethers/lib/utils";
 import { getContractSelectors, getSelectors, ModuleConfigAction } from "../../test/diamond/libraries/diamond";

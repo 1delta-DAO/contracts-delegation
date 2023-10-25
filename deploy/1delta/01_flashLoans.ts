@@ -1,7 +1,7 @@
 import '@nomiclabs/hardhat-ethers'
 import hre from 'hardhat'
 import { balancerV2Vault } from '../../scripts/miscAddresses';
-import { aaveAddresses } from "../00_addresses";
+import { aaveAddresses } from "../polygon_addresses";
 import { createFlashBroker } from './00_helperFlash';
 import { initializeFlashBroker } from './00_initializeFlashBroker';
 

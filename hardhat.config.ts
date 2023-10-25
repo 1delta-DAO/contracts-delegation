@@ -119,10 +119,11 @@ const config: HardhatUserConfig = {
         }
       }
     ],
-    // apiKey: process.env.ETHERSCAN_API_KEY,
     apiKey: {
-      mantle: 'abc'
-    }// process.env.POLYGONSCAN_API_KEY,
+      mantle: 'abc',
+      mainnet: process.env.ETHERSCAN_API_KEY ?? '',
+      matic: process.env.POLYGONSCAN_API_KEY ?? ''
+    }
   },
   gasReporter: {
     coinmarketcap: process.env.COINMARKETCAP_API_KEY,
@@ -172,15 +173,14 @@ const config: HardhatUserConfig = {
       accounts
     },
     hardhat: {
-      // forking: {
-      //   blockNumber: 48674681,
-      //   url: `https://rpc.ankr.com/polygon`,
-      //   // url: 'https://rpc-mainnet.maticvigil.com',
-      // },
       forking: {
-        blockNumber: 17347166,
-        url: `https://rpc.mantle.xyz`,
+        blockNumber: 49099941,
+        url: `https://rpc.ankr.com/polygon`,
       },
+      // forking: {
+      //   blockNumber: 17347166,
+      //   url: `https://rpc.mantle.xyz`,
+      // },
     },
     rinkeby: {
       url: `https://rinkeby.infura.io/v3/${process.env.INFURA_API_KEY}`,

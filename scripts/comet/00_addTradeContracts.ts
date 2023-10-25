@@ -1,7 +1,7 @@
 
 import { ethers } from "hardhat";
 import { CometManagementModule__factory, CometMarginTraderModule__factory, CometMoneyMarketModule__factory, CometSweeperModule__factory, CometUniV3Callback__factory, ConfigModule__factory, DeltaBrokerProxy__factory, LensModule__factory, ManagementModule__factory, UniswapV3SwapCallbackModule__factory } from "../../types";
-import { cometBrokerAddresses, uniswapAddresses } from "../../deploy/00_addresses"
+import { cometBrokerAddresses, uniswapAddresses } from "../../deploy/polygon_addresses"
 import { validateAddresses } from "../../utils/types";
 import { parseUnits } from "ethers/lib/utils";
 import { getContractSelectors, getSelectors, ModuleConfigAction } from "../../test/diamond/libraries/diamond";

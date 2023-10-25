@@ -1,7 +1,7 @@
 
 import { ethers } from "hardhat";
 import { ConfigModule__factory, LensModule__factory } from "../types";
-import { aaveBrokerAddresses } from "../deploy/00_addresses"
+import { aaveBrokerAddresses } from "../deploy/polygon_addresses"
 import { validateAddresses } from "../utils/types";
 import { parseUnits } from "ethers/lib/utils";
 import { ModuleConfigAction } from "../test/diamond/libraries/diamond";

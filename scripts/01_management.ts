@@ -1,7 +1,7 @@
 
 import { ethers } from "hardhat";
 import { ManagementModule__factory } from "../types";
-import { aaveBrokerAddresses, generalAddresses, uniswapAddresses } from "../deploy/00_addresses"
+import { aaveBrokerAddresses, generalAddresses, uniswapAddresses } from "../deploy/polygon_addresses"
 import { validateAddresses } from "../utils/types";
 import { aTokens, sTokens, tokens, vTokens } from "./aaveAddresses";
 
@@ -39,7 +39,7 @@ async function main() {
     console.log("Assets", underlyingAddresses)
 
     console.log("approve aave pool")
-    let tx = await management.approveAAVEPool(underlyingAddresses, opts)
+    let tx = await management.approveLendingPool(underlyingAddresses, opts)
     await tx.wait()
 
     const keys = Object.keys(tokens[chainId])

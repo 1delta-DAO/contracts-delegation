@@ -3,7 +3,7 @@
 
 const { getSelectors, ModuleConfigAction } = require('../test/diamond/libraries/diamond.ts')
 const { ethers } = require('hardhat')
-const { aaveAddresses, generalAddresses, uniswapAddresses } = require('./00_addresses')
+const { aaveAddresses, generalAddresses, uniswapAddresses } = require('./polygon_addresses.ts')
 
 function delay(delayInms) {
     return new Promise(resolve => {

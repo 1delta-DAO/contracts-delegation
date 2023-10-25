@@ -101,7 +101,7 @@ describe('AAVE Brokered Margin Swap operations', async () => {
 
         }
 
-        await broker.manager.connect(deployer).approveAAVEPool(tokens.map(t => t.address))
+        await broker.manager.connect(deployer).approveLendingPool(tokens.map(t => t.address))
 
         console.log("add liquidity")
         await addLiquidity(

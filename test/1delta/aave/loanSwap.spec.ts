@@ -139,7 +139,7 @@ describe('AAVE Brokered Loan Swap operations', async () => {
         }
 
 
-        await broker.manager.connect(deployer).approveAAVEPool(tokens.map(t => t.address))
+        await broker.manager.connect(deployer).approveLendingPool(tokens.map(t => t.address))
 
         await addLiquidity(
             deployer,

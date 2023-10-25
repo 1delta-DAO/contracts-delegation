@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { constants } from "ethers";
 import { findBalanceSlot, getSlot } from "../shared/forkUtils";
-import { aaveAddresses, generalAddresses, uniswapAddresses } from "../../../deploy/00_addresses";
+import { aaveAddresses, generalAddresses, uniswapAddresses } from "../../../deploy/polygon_addresses";
 import { addressesTokens } from "../../../scripts/aaveAddresses";
 import { ERC20, Pool, VariableDebtToken } from "../../../types";
 import { expandToDecimals } from "../shared/misc";
@@ -80,7 +80,7 @@ it("Mint USDC", async function () {
     const vWETHContract = await ethers.getContractAt("VariableDebtToken", vWETHAddress) as VariableDebtToken
 
     await vWETHContract.connect(signer).approveDelegation(balancerModule.address, constants.MaxUint256)
-    await broker.manager.connect(signer).approveAAVEPool([usdcAddress])
+    await broker.manager.connect(signer).approveLendingPool([usdcAddress])
     const swapAmount = expandToDecimals(10000, 6)
     const amountToBorrowMax = expandToDecimals(20, 18)
     const fromToken = wethAddress

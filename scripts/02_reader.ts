@@ -1,7 +1,7 @@
 
 import { ethers } from "hardhat";
-import { LensModule__factory, ManagementModule__factory, MarginTradeDataViewerModule__factory } from "../types";
-import { aaveBrokerAddresses } from "../deploy/00_addresses"
+import { LensModule__factory, ManagementModule__factory } from "../types";
+import { aaveBrokerAddresses } from "../deploy/polygon_addresses"
 import { validateAddresses } from "../utils/types";
 import { aTokens, sTokens, tokens, vTokens } from "./aaveAddresses";
 
@@ -31,7 +31,7 @@ async function main() {
     console.log("Operate on", chainId, "by", operator.address)
 
     // deploy ConfigModule
-    const management = await new MarginTradeDataViewerModule__factory(operator).attach(proxyAddress)
+    const management = await new ManagementModule__factory(operator).attach(proxyAddress)
 
 
     const keys = ['GHO'] // Object.keys(tokens[chainId])

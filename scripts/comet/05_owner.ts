@@ -1,7 +1,7 @@
 
 import { ethers } from "hardhat";
 import { OwnershipModule__factory } from "../../types";
-import { cometBrokerAddresses } from "../../deploy/00_addresses"
+import { cometBrokerAddresses } from "../../deploy/polygon_addresses"
 import { validateAddresses } from "../../utils/types";
 import { compoundTokens, cometAddress } from "./cometAddresses";
 

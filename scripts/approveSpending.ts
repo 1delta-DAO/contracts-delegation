@@ -1,6 +1,6 @@
 
 import { ethers } from "hardhat";
-import { aaveBrokerAddresses } from "../deploy/00_addresses"
+import { aaveBrokerAddresses } from "../deploy/polygon_addresses"
 import { validateAddresses } from "../utils/types";
 import { approveSpending } from "../deploy/1delta/00_initializeFlashBroker";
 

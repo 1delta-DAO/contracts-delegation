@@ -1,6 +1,6 @@
 import '@nomiclabs/hardhat-ethers'
 import hre from 'hardhat'
-import { compoundAddresses, generalAddresses, uniswapAddresses } from "../../00_addresses";
+import { compoundAddresses, generalAddresses, uniswapAddresses } from "../../polygon_addresses";
 import { createBroker, initializeBroker } from './00_helper';
 
 const usedMaxFeePerGas = 350_000_000_000
