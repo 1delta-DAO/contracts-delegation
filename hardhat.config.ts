@@ -109,8 +109,20 @@ const config: HardhatUserConfig = {
   },
   defaultNetwork: 'hardhat',
   etherscan: {
+    customChains: [
+      {
+        network: "mantle",
+        chainId: 5000,
+        urls: {
+          apiURL: "https://explorer.mantle.xyz/api",
+          browserURL: "https://explorer.mantle.xyz/"
+        }
+      }
+    ],
     // apiKey: process.env.ETHERSCAN_API_KEY,
-    apiKey: process.env.POLYGONSCAN_API_KEY,
+    apiKey: {
+      mantle: 'abc'
+    }// process.env.POLYGONSCAN_API_KEY,
   },
   gasReporter: {
     coinmarketcap: process.env.COINMARKETCAP_API_KEY,
