@@ -76,20 +76,20 @@ async function main() {
     console.log("management deployed")
 
 
-    // const balancerFlashModule = await new BalancerFlashModule__factory(operator).deploy(aavePool, balancerV2Vault[chainId])
-    // await balancerFlashModule.deployed()
-    // console.log("balancerFlashModule deployed")
+    const balancerFlashModule = await new BalancerFlashModule__factory(operator).deploy(aavePool, balancerV2Vault[chainId])
+    await balancerFlashModule.deployed()
+    console.log("balancerFlashModule deployed")
 
-    // const aaveFlashModule = await new AaveFlashModule__factory(operator).deploy(aavePool)
-    // await aaveFlashModule.deployed()
-    // console.log("aaveFlashModule deployed")
+    const aaveFlashModule = await new AaveFlashModule__factory(operator).deploy(aavePool)
+    await aaveFlashModule.deployed()
+    console.log("aaveFlashModule deployed")
 
     // const lensModule = await new LensModule__factory(operator).deploy(opts)
     // await lensModule.deployed()
     // console.log("lens deployed")
     // console.log("FlashBroker", flashBroker.address)
-    // console.log("BrokerModuleBalancer", balancerFlashModule.address)
-    // console.log("BrokerModulAave", aaveFlashModule.address)
+    console.log("BrokerModuleBalancer", balancerFlashModule.address)
+    console.log("BrokerModulAave", aaveFlashModule.address)
     // console.log("UniswapV3SwapCallbackModule", callback.address)
     // console.log("MoneyMarketModule", moneyMarkets.address)
     // console.log("MarginTraderModule", marginTrading.address)
@@ -106,8 +106,8 @@ async function main() {
 
 
     const modules = [
-        // balancerFlashModule,
-        // aaveFlashModule,
+        balancerFlashModule,
+        aaveFlashModule,
         // flashBroker
         // sweeper,
         // marginTrading,

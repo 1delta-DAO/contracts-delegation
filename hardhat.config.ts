@@ -122,7 +122,7 @@ const config: HardhatUserConfig = {
     apiKey: {
       mantle: 'abc',
       mainnet: process.env.ETHERSCAN_API_KEY ?? '',
-      matic: process.env.POLYGONSCAN_API_KEY ?? ''
+      polygon: process.env.POLYGONSCAN_API_KEY ?? ''
     }
   },
   gasReporter: {

@@ -50,10 +50,10 @@ export const aaveBrokerAddresses: ChainMap = {
         137: '0x2e9C883702B53c7ae3E31943D9DE4e49e43DAe71'
     },
     BrokerModuleBalancer: {
-        137: '0x5494b574bEe7aa091799ECbf3DDBFEeF5da4F720'
+        137: '0x2552ecbc4820bbF9B48200E6353Afa51856559c3'
     },
     BrokerModuleAave: {
-        137: '0x476a0D24790a88185c721eE728d18465c66e9611'
+        137: '0xbb4e38021a7E4f9CA0f440EFf8a5B45792777015'
     },
     Sweeper: {
         80001: '0xA83129791403c490FaA787FB0A1f03322256DE7D',
@@ -78,7 +78,7 @@ export const aaveBrokerAddresses: ChainMap = {
     MarginTradeDataViewerModule: {
         5: '0x636Ea7E9C4409Be6CE24A4E14bE73ef8830D83F0',
         80001: '0x8b8ADa768C1FD30d9B65da568F7098178590c307',
-        137: '0xB2B6Bd4C88124D73dE0ea128c86267AB64Fd1069'
+        137:  '' // deprecated
     },
     OwnershipModule: {
         5: '0x1ae0E121d80C93862e725BD2F4E92E59d6fbEb29',
@@ -88,7 +88,7 @@ export const aaveBrokerAddresses: ChainMap = {
     ManagementModule: {
         5: '0x0Be9058fE2DB31E2DaCEbbE566D227D0CbfA41C8',
         80001: '0x72D580D4e59eCB3E25Dd7D1530981625640Dba15',
-        137: '0x3EdAB7c8E32be3817e5c8612a6F1160a7D67A170'
+        137: '0x749E32805C11637ec6c1636B868D8e880f2E07D5'
     },
     MarginTraderModule: {
         5: '0xa8d1C7D918ABc6F112F89A8496962c9A6cdA52d0',

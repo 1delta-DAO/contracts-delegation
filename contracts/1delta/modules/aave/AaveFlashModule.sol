@@ -6,7 +6,6 @@ import {IERC20} from "../../../interfaces/IERC20.sol";
 import {IPool} from "../../interfaces/IAAVEV3Pool.sol";
 import {WithStorage} from "../../storage/BrokerStorage.sol";
 import {TokenTransfer} from "./../../libraries/TokenTransfer.sol";
-import {IERC20Balance} from "../../interfaces/IERC20Balance.sol";
 
 /// @notice Aave flash loans draw the required loan plus fee from the caller
 //  as such, there is no need to transfer the funds manually back to the pool
@@ -24,9 +23,7 @@ contract AaveFlashModule is WithStorage, TokenTransfer {
         // 3 = debt / close
         uint8 interestRateModeIn; // aave interest mode
         uint8 interestRateModeOut; // aave interest mode
-        bool withdrawMax; // a flag that indicates that either
-        // 1) the entire balance is withdrawn (for exactIn); or
-        // 2) the entire debt is repaid (for exactOut) - the referenceAmount must be larger than the debt
+        bool withdrawMax; // a flag that indicates that the entire balance is withdrawn
     }
 
     struct DeltaFlashParams {
@@ -47,7 +44,7 @@ contract AaveFlashModule is WithStorage, TokenTransfer {
     function executeOnAave(
         address asset,
         uint256 amount,
-        DeltaParams calldata deltaParams,
+        DeltaParams calldata deltaParams, // params are kept separate
         bytes calldata swapCalldata
     ) external payable {
         _aavePool.flashLoanSimple(
@@ -69,34 +66,41 @@ contract AaveFlashModule is WithStorage, TokenTransfer {
         uint256 amount,
         uint256 premium,
         address initiator,
-        bytes calldata params
+        bytes calldata params // user params
     ) external returns (bool) {
-        // validate callback
-        require(initiator == address(this), "CannotEnter()");
-
         IPool aavePool = _aavePool;
-
-        require(msg.sender == address(aavePool), "PoolNotCaller()");
 
         // fetch flash loan parameters
         address token = asset;
         uint256 amountReceived = amount;
+
         // decode delta parameters
         DeltaFlashParams memory flashParams = abi.decode(params, (DeltaFlashParams));
 
-        address swapTarget = flashParams.deltaParams.target;
         uint256 marginType = flashParams.deltaParams.marginTradeType;
         address user = flashParams.user;
 
-        // validate swap router
-        require(gs().isValidTarget[swapTarget], "Target()");
+        // execute transaction on target
+        {
+            address swapTarget = flashParams.deltaParams.target;
+            // validate callback
+            require(initiator == address(this), "CannotEnter()");
+            // validate swap router
+            require(gs().isValidTarget[swapTarget], "Target()");
+            require(msg.sender == address(aavePool), "PoolNotCaller()");
+
+            (bool success, bytes memory swapResult) = swapTarget.call(flashParams.encodedSwapCall);
+            if (!success) {
+                if (swapResult.length < 68) revert();
+                assembly {
+                    swapResult := add(swapResult, 0x04)
+                }
+                revert(abi.decode(swapResult, (string)));
+            }
+        }
 
         //margin open [expected to flash borrow amount]
         if (marginType == 0) {
-            // execute transaction on target
-            (bool success, ) = swapTarget.call(flashParams.encodedSwapCall);
-            require(success, "CallFailed()");
-
             address baseAsset = flashParams.deltaParams.baseAsset;
             uint256 amountSwapped = IERC20(baseAsset).balanceOf(address(this));
 
@@ -112,10 +116,6 @@ contract AaveFlashModule is WithStorage, TokenTransfer {
         }
         // margin close [expected to flash withdrawal amount]
         else if (marginType == 1) {
-            // execute transaction on target
-            (bool success, ) = swapTarget.call(flashParams.encodedSwapCall);
-            require(success, "CallFailed()");
-
             address baseAsset = flashParams.deltaParams.baseAsset;
             uint256 amountSwapped = IERC20(baseAsset).balanceOf(address(this));
             marginType = flashParams.deltaParams.interestRateModeOut;
@@ -173,10 +173,6 @@ contract AaveFlashModule is WithStorage, TokenTransfer {
         }
         //  collateral swap
         else if (marginType == 2) {
-            // execute transaction on target
-            (bool success, ) = swapTarget.call(flashParams.encodedSwapCall);
-            require(success, "CallFailed()");
-
             address baseAsset = flashParams.deltaParams.baseAsset;
             uint256 amountSwapped = IERC20(baseAsset).balanceOf(address(this));
 
@@ -216,9 +212,6 @@ contract AaveFlashModule is WithStorage, TokenTransfer {
         }
         // debt swap
         else {
-            // swap the flashed amount exact out
-            (bool success, ) = swapTarget.call(flashParams.encodedSwapCall);
-            require(success, "CallFailed()");
             // fetch amountIn
             amountReceived -= IERC20(token).balanceOf(address(this));
 
@@ -255,12 +248,8 @@ contract AaveFlashModule is WithStorage, TokenTransfer {
         return true;
     }
 
-    function getDebtBalance(
-        address token,
-        uint256 interestRateMode,
-        address user
-    ) private view returns (uint256) {
-        if (interestRateMode == 2) return IERC20Balance(aas().vTokens[token]).balanceOf(user);
-        else return IERC20Balance(aas().sTokens[token]).balanceOf(user);
+    function getDebtBalance(address token, uint256 interestRateMode, address user) private view returns (uint256) {
+        if (interestRateMode == 2) return IERC20(aas().vTokens[token]).balanceOf(user);
+        else return IERC20(aas().sTokens[token]).balanceOf(user);
     }
 }

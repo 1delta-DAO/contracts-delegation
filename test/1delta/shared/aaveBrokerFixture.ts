@@ -4,8 +4,6 @@ import { ethers } from "hardhat";
 import {
     ManagementModule,
     ManagementModule__factory,
-    MarginTradeDataViewerModule,
-    MarginTradeDataViewerModule__factory,
     DeltaBrokerProxy__factory,
     DeltaBrokerProxy,
     OneDeltaModuleManager,
@@ -16,12 +14,10 @@ import {
     BalancerFlashModule,
     AaveFlashModule__factory,
     AaveFlashModule,
-    MarginTrading,
     FlashAggregator__factory,
     FlashAggregator,
     AaveMarginTraderInit__factory,
     AaveMarginTraderInit,
-    DebtTokenBase,
     VariableDebtToken,
     StableDebtToken,
     AToken
@@ -81,7 +77,6 @@ export interface AaveBrokerFixtureInclV2 {
     brokerProxy: DeltaBrokerProxy
     moduleConfig: ConfigModule
     manager: ManagementModule
-    tradeDataViewer: MarginTradeDataViewerModule
     moneyMarket: FlashAggregator
     moneyMarketImplementation: FlashAggregator
     trader: FlashAggregator
@@ -107,19 +102,6 @@ export async function aaveBrokerFixtureInclV2(signer: SignerWithAddress, uniFact
 
     const manager = (await new ethers.Contract(proxy.address, ManagementModule__factory.createInterface(), signer) as ManagementModule)
 
-    // viewer
-    const viewerModule = await new MarginTradeDataViewerModule__factory(signer).deploy()
-
-    await configContract.connect(signer).configureModules(
-        [{
-            moduleAddress: viewerModule.address,
-            action: ModuleConfigAction.Add,
-            functionSelectors: getSelectors(viewerModule)
-        }],
-    )
-
-    const tradeDataViewer = (await new ethers.Contract(proxy.address, MarginTradeDataViewerModule__factory.createInterface(), signer) as MarginTradeDataViewerModule)
-
     const moneyMarketModule = await new FlashAggregator__factory(signer).deploy(uniV2Factory, uniFactory, aavePool, weth)
 
     await configContract.connect(signer).configureModules(
@@ -140,7 +122,7 @@ export async function aaveBrokerFixtureInclV2(signer: SignerWithAddress, uniFact
         FlashAggregatorArtifact.abi,
         signer
     ) as FlashAggregator)
-    return { trader, brokerProxy: proxy, manager, tradeDataViewer, moneyMarket, moduleConfig, moneyMarketImplementation: moneyMarketModule }
+    return { trader, brokerProxy: proxy, manager, moneyMarket, moduleConfig, moneyMarketImplementation: moneyMarketModule }
 
 }
 

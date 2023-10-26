@@ -32,7 +32,7 @@ async function main() {
     const balancerFlashAddress = addresses.BrokerModuleBalancer[chainId]
     const aaveFlashModuleAddress = addresses.BrokerModuleAave[chainId]
     const sweeperAddress = addresses.Sweeper[chainId]
-
+    const viewerModule = addresses.MarginTradeDataViewerModule[chainId]
     validateAddresses([proxyAddress, balancerFlashAddress, aaveFlashModuleAddress])
 
     console.log("Operate on", chainId, "by", operator.address)
@@ -55,15 +55,17 @@ async function main() {
     // const moneyMarketSelectors = await lens.moduleFunctionSelectors(moneyMarketAddress)
     const managementSelectors = await lens.moduleFunctionSelectors(managementAddress)
     // const sweeperSelectors = await lens.moduleFunctionSelectors(sweeperAddress)
-    // const aaveFlashSelectors = await lens.moduleFunctionSelectors(aaveFlashModuleAddress)
-    // const balancerFlashSelectors = await lens.moduleFunctionSelectors(balancerFlashAddress)
+    const viewerSelectors = await lens.moduleFunctionSelectors(viewerModule)
+    const aaveFlashSelectors = await lens.moduleFunctionSelectors(aaveFlashModuleAddress)
+    const balancerFlashSelectors = await lens.moduleFunctionSelectors(balancerFlashAddress)
     const moduleSelectors = [
         // callbackSelectors,
         // marginTradingSelectors,
         // moneyMarketSelectors,
         // sweeperSelectors,
-        // aaveFlashSelectors,
-        // balancerFlashSelectors,
+        aaveFlashSelectors,
+        balancerFlashSelectors,
+        viewerSelectors,
         managementSelectors
     ]
 
