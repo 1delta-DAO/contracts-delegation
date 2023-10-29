@@ -49,7 +49,6 @@ contract CometMarginTrading is WithStorageComet, TokenTransfer, BaseSwapper {
             tokenOut := shr(96, calldataload(add(path.offset, 25)))
             zeroForOne := lt(tokenIn, tokenOut)
         }
-
         // uniswapV3 types
         if (identifier < 50) {
             uint24 fee;
@@ -336,10 +335,8 @@ contract CometMarginTrading is WithStorageComet, TokenTransfer, BaseSwapper {
 
                 // data holds the cometId
                 IComet comet = IComet(cos().comet[uint8(bytes1(_data))]);
-
                 // deposit or repay
                 comet.supplyTo(user, tokenOut, amountToSwap);
-
                 // wihdraw or borrow
                 comet.withdrawFrom(user, msg.sender, tokenIn, amountToRepayToPool);
             } else {
@@ -356,7 +353,7 @@ contract CometMarginTrading is WithStorageComet, TokenTransfer, BaseSwapper {
                 IComet comet = IComet(cos().comet[uint8(bytes1(_data[(cache - 1):cache]))]);
 
                 // deposit or repay
-                comet.supplyTo(user, tokenOut, amountToSupply);
+                comet.supplyTo(user, tokenIn, amountToSupply);
                 // multihop if required
                 if (cache > 46) {
                     _data = _data[25:];
@@ -514,7 +511,7 @@ contract CometMarginTrading is WithStorageComet, TokenTransfer, BaseSwapper {
             IComet comet = IComet(cos().comet[uint8(bytes1(data[(cache - 1):cache]))]);
 
             // deposit or repay
-            comet.supplyTo(user, tokenOut, referenceAmount);
+            comet.supplyTo(user, tokenIn, referenceAmount);
 
             // calculate amountIn
             referenceAmount = getAmountInDirect(pool, zeroForOne, referenceAmount);

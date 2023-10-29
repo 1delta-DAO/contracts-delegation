@@ -106,7 +106,7 @@ export async function cometBrokerFixture(signer: SignerWithAddress, uniFactory: 
     const configContract = await new ConfigModule__factory(signer).attach(proxy.address)
 
     // broker
-    const brokerModule = await new CometFlashAggregator__factory(signer).deploy(uniFactory, uniFactoryV2, weth)
+    const brokerModule = await new CometFlashAggregator__factory(signer).deploy(uniFactoryV2, uniFactory, weth)
 
     await configContract.connect(signer).configureModules(
         [{
@@ -163,7 +163,7 @@ export async function cometBrokerFixture(signer: SignerWithAddress, uniFactory: 
 }
 
 
-export async function initCometBroker(signer: SignerWithAddress, bf: CometBrokerFixture, comet:string) {
+export async function initCometBroker(signer: SignerWithAddress, bf: CometBrokerFixture, comet: string) {
 
     const dc = await new ethers.Contract(bf.brokerProxy.address, OneDeltaModuleManager__factory.createInterface(), signer) as OneDeltaModuleManager
     const initComet = await new CometMarginTraderInit__factory(signer).deploy()
