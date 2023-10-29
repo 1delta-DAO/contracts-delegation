@@ -79,11 +79,7 @@ contract CometMarginTrading is WithStorageComet, TokenTransfer, BaseSwapper {
     }
 
     // Exact Output Swap - The path parameters determine the lending actions
-    function flashSwapExactOut(
-        uint256 amountOut,
-        uint256 amountInMaximum,
-        bytes calldata path
-    ) external payable returns (uint256 amountIn) {
+    function flashSwapExactOut(uint256 amountOut, uint256 amountInMaximum, bytes calldata path) external payable returns (uint256 amountIn) {
         acs().cachedAddress = msg.sender;
         address tokenIn;
         address tokenOut;
@@ -189,7 +185,7 @@ contract CometMarginTrading is WithStorageComet, TokenTransfer, BaseSwapper {
         // abuse amountIn variable
         amountIn = path.length;
         // determine output amount as respective debt balance
-        uint256 amountOut = IComet(cos().comet[uint8(bytes1(path[(amountIn-1):amountIn]))]).borrowBalanceOf(msg.sender);
+        uint256 amountOut = IComet(cos().comet[uint8(bytes1(path[(amountIn - 1):amountIn]))]).borrowBalanceOf(msg.sender);
         if (amountOut == 0) revert NoBalance();
 
         // uniswapV3 types
@@ -244,16 +240,12 @@ contract CometMarginTrading is WithStorageComet, TokenTransfer, BaseSwapper {
     // cometId
 
     // [start flag (>1)]
-    // 6: exact in collateral swap / open / close 
+    // 6: exact in collateral swap / open / close
 
-    // 3: exact out collateral swap / open / close 
+    // 3: exact out collateral swap / open / close
 
     // The uniswapV3 style callback
-    function uniswapV3SwapCallbackInternal(
-        int256 amount0Delta,
-        int256 amount1Delta,
-        bytes calldata _data
-    ) private {
+    function uniswapV3SwapCallbackInternal(int256 amount0Delta, int256 amount1Delta, bytes calldata _data) private {
         uint8 identifier;
         address tokenIn;
         uint24 fee;
@@ -332,9 +324,10 @@ contract CometMarginTrading is WithStorageComet, TokenTransfer, BaseSwapper {
                 // cache amount
                 ncs().amount = amountToSwap;
                 address user = acs().cachedAddress;
-
+                // assign idetifier to cometId
+                identifier = uint8(bytes1(_data));
                 // data holds the cometId
-                IComet comet = IComet(cos().comet[uint8(bytes1(_data))]);
+                IComet comet = IComet(cos().comet[identifier]);
                 // deposit or repay
                 comet.supplyTo(user, tokenOut, amountToSwap);
                 // wihdraw or borrow
@@ -348,9 +341,10 @@ contract CometMarginTrading is WithStorageComet, TokenTransfer, BaseSwapper {
 
                 // use a number to store data length
                 uint256 cache = _data.length;
-
+                // assign idetifier to cometId
+                identifier = uint8(bytes1(_data[(cache - 1):cache]));
                 // assign end flag to cache
-                IComet comet = IComet(cos().comet[uint8(bytes1(_data[(cache - 1):cache]))]);
+                IComet comet = IComet(cos().comet[identifier]);
 
                 // deposit or repay
                 comet.supplyTo(user, tokenIn, amountToSupply);

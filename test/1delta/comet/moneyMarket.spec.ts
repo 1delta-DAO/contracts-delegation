@@ -11,6 +11,7 @@ import { FeeAmount } from '../../uniswap-v3/periphery/shared/constants';
 import { expect } from 'chai';
 import { encodePath } from '../../uniswap-v3/periphery/shared/path';
 import { MockProvider } from 'ethereum-waffle';
+import { V2Fixture, uniV2Fixture } from '../shared/uniV2Fixture';
 
 
 // we prepare a setup for compound in hardhat
@@ -36,6 +37,7 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
     let broker: CometBrokerFixture;
     let tokens: (MintableERC20 | WETH9)[];
     let provider: MockProvider
+    let uniswapV2: V2Fixture
 
 
     before('Deploy Account, Trader, Uniswap and Compound', async () => {
@@ -46,9 +48,10 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
 
         compound = await makeProtocol({ base: 'USDC', targetReserves: 0, assets: TestConfig1delta });
         uniswap = await uniswapMinimalFixtureNoTokens(deployer, compound.tokens["WETH"].address)
-        broker = await cometBrokerFixture(deployer, uniswap.factory.address)
+        uniswapV2 = await uniV2Fixture(deployer, compound.tokens["WETH"].address)
+        broker = await cometBrokerFixture(deployer, uniswap.factory.address, uniswapV2.factoryV2.address, compound.tokens["WETH"].address)
 
-        await initCometBroker(deployer, broker, uniswap, compound)
+        await initCometBroker(deployer, broker, compound.comet.address)
 
 
         const tokens = Object.values(compound.tokens)

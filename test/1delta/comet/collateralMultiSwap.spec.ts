@@ -10,6 +10,8 @@ import { UniswapMinimalFixtureNoTokens, addLiquidity, uniswapMinimalFixtureNoTok
 import { FeeAmount } from '../../uniswap-v3/periphery/shared/constants';
 import { expect } from 'chai';
 import { encodePath } from '../../uniswap-v3/periphery/shared/path';
+import { V2Fixture, uniV2Fixture } from '../shared/uniV2Fixture';
+import { encodeAggregatorPathEthers } from '../shared/aggregatorPath';
 
 
 // we prepare a setup for compound in hardhat
@@ -29,15 +31,17 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
     let compound: CompoundV3Protocol
     let uniswap: UniswapMinimalFixtureNoTokens;
     let broker: CometBrokerFixture
+    let uniswapV2: V2Fixture
 
     before('Deploy Account, Trader, Uniswap and Compound', async () => {
         [deployer, alice, bob, carol, gabi, test, test1, test2, test0] = await ethers.getSigners();
 
         compound = await makeProtocol({ base: 'USDC', targetReserves: 0, assets: TestConfig1delta });
         uniswap = await uniswapMinimalFixtureNoTokens(deployer, compound.tokens["WETH"].address)
-        broker = await cometBrokerFixture(deployer, uniswap.factory.address)
+        uniswapV2 = await uniV2Fixture(deployer, compound.tokens["WETH"].address)
+        broker = await cometBrokerFixture(deployer, uniswap.factory.address, uniswapV2.factoryV2.address, compound.tokens["WETH"].address)
 
-        await initCometBroker(deployer, broker, uniswap, compound)
+        await initCometBroker(deployer, broker, compound.comet.address)
 
 
         const tokens = Object.values(compound.tokens)
@@ -176,8 +180,14 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
             compound.tokens["USDC"],
             compound.tokens[supplyTokenIndexOther]
         ].map(t => t.address)
-        const path = encodePath(_tokensInRoute, new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        // const path = encodePath(_tokensInRoute, new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [6, 0], // action
+            [0, 0], // pid - V3
+            0 // cometId
+        )
         const params = {
             path,
             amountIn: swapAmount,
@@ -198,7 +208,7 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
         // swap collateral
         console.log("collateral swap")
         // console.log(t.toString(), t2.toString())
-        await broker.broker.connect(carol).swapCollateralExactIn(params)
+        await broker.broker.connect(carol).flashSwapExactIn(params.amountIn, params.amountOutMinimum, params.path)
 
 
         const cAfterIn = await compound.comet.collateralBalanceOf(carol.address, compound.tokens[supplyTokenIndex].address)
@@ -206,65 +216,6 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
 
         expect(cBeforeIn.sub(cAfterIn).toString()).to.equal(swapAmount.toString())
     })
-
-    // it('allows collateral swap all in', async () => {
-
-    //     const supplyTokenIndex = "DAI"
-    //     const supplyTokenIndexOther = "WMATIC"
-    //     const borrowTokenIndex = "USDC"
-    //     const providedAmount = expandTo18Decimals(50)
-    //     const providedAmountOther = expandTo18Decimals(50)
-
-    //     const swapAmount = expandTo18Decimals(45)
-    //     const borrowAmount = expandTo18Decimals(70)
-
-    //     console.log("approve")
-    //     await compound.tokens[supplyTokenIndex].connect(test0).approve(compound.comet.address, constants.MaxUint256)
-    //     await compound.tokens[supplyTokenIndexOther].connect(test0).approve(compound.comet.address, constants.MaxUint256)
-
-    //     // open first position
-    //     await compound.comet.connect(test0).supply(compound.tokens[supplyTokenIndex].address, providedAmount)
-
-    //     // open second position
-    //     await compound.comet.connect(test0).supply(compound.tokens[supplyTokenIndexOther].address, providedAmountOther)
-
-    //     console.log("borrow")
-    //     await compound.comet.connect(test0).withdraw(
-    //         compound.tokens[borrowTokenIndex].address,
-    //         borrowAmount,
-    //     )
-
-    //     let _tokensInRoute = [
-    //         compound.tokens[supplyTokenIndex],
-    //         compound.tokens["USDC"],
-    //         compound.tokens[supplyTokenIndexOther]
-    //     ].map(t => t.address)
-    //     const path = encodePath(_tokensInRoute, new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
-    //     const params = {
-    //         path,
-    //         amountOutMinimum: swapAmount.mul(98).div(100)
-    //     }
-
-    //     await compound.tokens[supplyTokenIndex].connect(test0).approve(broker.brokerProxy.address, constants.MaxUint256)
-    //     await compound.tokens[supplyTokenIndexOther].connect(test0).approve(broker.brokerProxy.address, constants.MaxUint256)
-
-
-
-
-
-
-    //     // swap collateral
-    //     console.log("collateral swap")
-
-
-    //     await broker.broker.connect(test0).swapCollateralAllIn(params)
-
-
-    //     // expect(supplyTokenBalanceAfter.toString()).to.equal('0')
-    //     // expect(Number(formatEther(providedAmount))).to.greaterThanOrEqual(Number(formatEther(balAfter.sub(balBefore))))
-    //     // expect(Number(formatEther(providedAmount))).to.lessThanOrEqual(Number(formatEther(balAfter.sub(balBefore))) * 1.05)
-    // })
 
     it('allows collateral swap exact out', async () => {
 
@@ -299,9 +250,15 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
             compound.tokens[supplyTokenIndex],
             compound.tokens["USDC"],
             compound.tokens[supplyTokenIndexOther]
-        ].map(t => t.address)
-        const path = encodePath(_tokensInRoute.reverse(), new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        ].map(t => t.address).reverse()
+        // const path = encodePath(_tokensInRoute.reverse(), new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [3, 1], // action
+            [0, 0], // pid - V3
+            0 // cometId
+        )
 
         const params = {
             path,
@@ -324,7 +281,7 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
         // swap collateral
         console.log("collateral swap", formatEther(params.amountOut))
         // console.log(formatEther(t), formatEther(t2))
-        await broker.broker.connect(gabi).swapCollateralExactOut(params)
+        await broker.broker.connect(gabi).flashSwapExactOut(params.amountOut, params.amountInMaximum, params.path)
 
         const cAfterIn = await compound.comet.collateralBalanceOf(gabi.address, compound.tokens[supplyTokenIndex].address)
         const cAfterOut = await compound.comet.collateralBalanceOf(gabi.address, compound.tokens[supplyTokenIndexOther].address)

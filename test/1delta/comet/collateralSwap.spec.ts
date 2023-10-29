@@ -164,7 +164,6 @@ describe('CompoundV3 Brokered Collateral Swap operations', async () => {
             compound.tokens[supplyTokenIndex],
             compound.tokens[supplyTokenIndexOther]
         ].map(t => t.address)
-        // const path = encodePath(_tokensInRoute, new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
         const path = encodeAggregatorPathEthers(
             _tokensInRoute,
             new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
@@ -197,57 +196,6 @@ describe('CompoundV3 Brokered Collateral Swap operations', async () => {
         expect(cBeforeIn.sub(cAfterIn).toString()).to.equal(swapAmount.toString())
     })
 
-    // it('allows collateral swap all in', async () => {
-
-    //     const supplyTokenIndex = "DAI"
-    //     const supplyTokenIndexOther = "WMATIC"
-    //     const borrowTokenIndex = "USDC"
-
-    //     const providedAmount = expandTo18Decimals(50)
-    //     const providedAmountOther = expandTo18Decimals(50)
-    //     const borrowAmount = expandTo18Decimals(90)
-
-    //     console.log("approve")
-    //     await compound.tokens[supplyTokenIndex].connect(test0).approve(compound.comet.address, constants.MaxUint256)
-    //     await compound.tokens[supplyTokenIndexOther].connect(test0).approve(compound.comet.address, constants.MaxUint256)
-
-    //     // open first position
-    //     await compound.comet.connect(test0).supply(compound.tokens[supplyTokenIndex].address, providedAmount)
-
-    //     // open second position
-    //     await compound.comet.connect(test0).supply(compound.tokens[supplyTokenIndexOther].address, providedAmountOther)
-
-    //     console.log("borrow")
-    //     await compound.comet.connect(test0).withdraw(
-    //         compound.tokens[borrowTokenIndex].address,
-    //         borrowAmount,
-    //     )
-    //     const params = {
-    //         tokenIn: compound.tokens[supplyTokenIndex].address,
-    //         tokenOut: compound.tokens[supplyTokenIndexOther].address,
-    //         fee: FeeAmount.MEDIUM,
-    //         amountOutMinimum: providedAmount.mul(98).div(100)
-    //     }
-
-    //     await compound.tokens[supplyTokenIndex].connect(test0).approve(broker.brokerProxy.address, constants.MaxUint256)
-    //     await compound.tokens[supplyTokenIndexOther].connect(test0).approve(broker.brokerProxy.address, constants.MaxUint256)
-
-
-    //     // swap collateral
-    //     console.log("collateral swap")
-
-    //     const cBeforeIn = await compound.comet.collateralBalanceOf(test0.address, compound.tokens[supplyTokenIndex].address)
-    //     const cBeforeOut = await compound.comet.collateralBalanceOf(test0.address, compound.tokens[supplyTokenIndexOther].address)
-
-
-    //     await broker.broker.connect(test0).swapCollateralAllIn(params)
-
-
-    //     expect(supplyTokenBalanceAfter.toString()).to.equal('0')
-    //     expect(Number(formatEther(providedAmount))).to.greaterThanOrEqual(Number(formatEther(balAfter.sub(balBefore))))
-    //     expect(Number(formatEther(providedAmount))).to.lessThanOrEqual(Number(formatEther(balAfter.sub(balBefore))) * 1.05)
-    // })
-
     it('allows collateral swap exact out', async () => {
 
         const supplyTokenIndex = "DAI"
@@ -278,7 +226,6 @@ describe('CompoundV3 Brokered Collateral Swap operations', async () => {
             compound.tokens[supplyTokenIndex],
             compound.tokens[supplyTokenIndexOther]
         ].map(t => t.address).reverse()
-        // const path = encodePath(_tokensInRoute.reverse(), new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
         const path = encodeAggregatorPathEthers(
             _tokensInRoute,
             new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),

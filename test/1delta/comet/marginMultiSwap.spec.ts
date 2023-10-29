@@ -10,6 +10,8 @@ import { UniswapMinimalFixtureNoTokens, addLiquidity, uniswapMinimalFixtureNoTok
 import { FeeAmount } from '../../uniswap-v3/periphery/shared/constants';
 import { expect } from 'chai';
 import { encodePath } from '../../uniswap-v3/periphery/shared/path';
+import { V2Fixture, uniV2Fixture } from '../shared/uniV2Fixture';
+import { encodeAggregatorPathEthers } from '../shared/aggregatorPath';
 
 
 // we prepare a setup for compound in hardhat
@@ -29,15 +31,17 @@ describe('CompoundV3 Brokered Margin Multi Swap operations', async () => {
     let compound: CompoundV3Protocol
     let uniswap: UniswapMinimalFixtureNoTokens;
     let broker: CometBrokerFixture
+    let uniswapV2: V2Fixture
 
     before('Deploy Account, Trader, Uniswap and Compound', async () => {
         [deployer, alice, bob, carol, gabi, test, test1, test2, test0] = await ethers.getSigners();
 
         compound = await makeProtocol({ base: 'USDC', targetReserves: 0, assets: TestConfig1delta });
         uniswap = await uniswapMinimalFixtureNoTokens(deployer, compound.tokens["WETH"].address)
-        broker = await cometBrokerFixture(deployer, uniswap.factory.address)
+        uniswapV2 = await uniV2Fixture(deployer, compound.tokens["WETH"].address)
+        broker = await cometBrokerFixture(deployer, uniswap.factory.address, uniswapV2.factoryV2.address, compound.tokens["WETH"].address)
 
-        await initCometBroker(deployer, broker, uniswap, compound)
+        await initCometBroker(deployer, broker, compound.comet.address)
 
 
         const tokens = Object.values(compound.tokens)
@@ -97,7 +101,7 @@ describe('CompoundV3 Brokered Margin Multi Swap operations', async () => {
 
         }
         await broker.manager.connect(deployer).approveComet(tokens.map(t => t.address), 0)
-        await broker.manager.connect(deployer).addComet(compound.comet.address,0)
+        await broker.manager.connect(deployer).addComet(compound.comet.address, 0)
         console.log("add liquidity")
 
         console.log("add liquidity DAI WMATIC")
@@ -157,12 +161,17 @@ describe('CompoundV3 Brokered Margin Multi Swap operations', async () => {
             compound.tokens["WMATIC"],
             compound.tokens[supplyTokenIndex]
         ].map(t => t.address)
-        const path = encodePath(_tokensInRoute, new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [6, 0], // action
+            [0, 0], // pid - V3
+            0 // cometId
+        )
         const params = {
             path,
             userAmountProvided: providedAmount,
-           cometId:0,
+            cometId: 0,
             amountIn: swapAmount,
             amountOutMinimum: swapAmount.mul(99).div(100)
         }
@@ -175,13 +184,13 @@ describe('CompoundV3 Brokered Margin Multi Swap operations', async () => {
 
         await compound.tokens[supplyTokenIndex].connect(carol).approve(compound.comet.address, constants.MaxUint256)
 
-        await compound.comet.connect(carol).supply(compound.tokens[supplyTokenIndex].address, 100, )
+        await compound.comet.connect(carol).supply(compound.tokens[supplyTokenIndex].address, 100,)
 
         const cBefore = await compound.comet.collateralBalanceOf(gabi.address, compound.tokens[supplyTokenIndex].address)
         const dBefore = await compound.comet.borrowBalanceOf(gabi.address)
 
         await compound.comet.connect(carol).allow(broker.brokerProxy.address, true)
-        await broker.broker.connect(carol).openMarginPositionExactIn(params)
+        await broker.broker.connect(carol).flashSwapExactIn(params.amountIn, params.amountOutMinimum, params.path)
 
 
         const cAfter = await compound.comet.collateralBalanceOf(carol.address, compound.tokens[supplyTokenIndex].address)
@@ -202,19 +211,24 @@ describe('CompoundV3 Brokered Margin Multi Swap operations', async () => {
             compound.tokens["WMATIC"],
             compound.tokens[supplyTokenIndex]
         ].map(t => t.address)
-        const path = encodePath(_tokensInRoute, new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [6, 0], // action
+            [0, 0], // pid - V3
+            0 // cometId
+        )
         const params = {
             path,
             userAmountProvided: providedAmount,
-           cometId:0,
+            cometId: 0,
             amountIn: swapAmount,
             amountOutMinimum: swapAmount.mul(101).div(100)
         }
 
         await compound.comet.connect(carol).allow(broker.brokerProxy.address, true)
 
-        await expect(broker.broker.connect(carol).openMarginPositionExactIn(params)).to.be.revertedWith('Deposited too little')
+        await expect(broker.broker.connect(carol).flashSwapExactIn(params.amountIn, params.amountOutMinimum, params.path)).to.be.revertedWith('Slippage()')
 
     })
 
@@ -230,15 +244,20 @@ describe('CompoundV3 Brokered Margin Multi Swap operations', async () => {
             compound.tokens[borrowTokenIndex],
             compound.tokens["WMATIC"],
             compound.tokens[supplyTokenIndex]
-        ].map(t => t.address)
+        ].map(t => t.address).reverse()
 
         // reverse path for exact out
-        const path = encodePath(_tokensInRoute.reverse(), new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [3, 1], // action
+            [0, 0], // pid - V3
+            0 // cometId
+        )
         const params = {
             path,
             userAmountProvided: providedAmount,
-           cometId:0,
+            cometId: 0,
             amountOut: swapAmount,
             amountInMaximum: swapAmount.mul(105).div(100)
         }
@@ -252,11 +271,11 @@ describe('CompoundV3 Brokered Margin Multi Swap operations', async () => {
 
         await compound.tokens[supplyTokenIndex].connect(gabi).approve(compound.comet.address, constants.MaxUint256)
 
-        await compound.comet.connect(gabi).supply(compound.tokens[supplyTokenIndex].address, 100, )
+        await compound.comet.connect(gabi).supply(compound.tokens[supplyTokenIndex].address, 100,)
 
         await compound.comet.connect(gabi).allow(broker.brokerProxy.address, true)
 
-        await broker.broker.connect(gabi).openMarginPositionExactOut(params)
+        await broker.broker.connect(gabi).flashSwapExactOut(params.amountOut, params.amountInMaximum, params.path)
 
         const cAfter = await compound.comet.collateralBalanceOf(gabi.address, compound.tokens[supplyTokenIndex].address)
         const dAfter = await compound.comet.borrowBalanceOf(gabi.address)
@@ -275,21 +294,26 @@ describe('CompoundV3 Brokered Margin Multi Swap operations', async () => {
             compound.tokens[borrowTokenIndex],
             compound.tokens["WMATIC"],
             compound.tokens[supplyTokenIndex]
-        ].map(t => t.address)
+        ].map(t => t.address).reverse()
 
         // reverse path for exact out
-        const path = encodePath(_tokensInRoute.reverse(), new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [3, 1], // action
+            [0, 0], // pid - V3
+            0 // cometId
+        )
         const params = {
             path,
             userAmountProvided: providedAmount,
-           cometId:0,
+            cometId: 0,
             amountOut: swapAmount,
             amountInMaximum: swapAmount.mul(99).div(100)
         }
 
         await compound.comet.connect(gabi).allow(broker.brokerProxy.address, true)
-        await expect(broker.broker.connect(gabi).openMarginPositionExactOut(params)).to.be.revertedWith('Had to borrow too much')
+        await expect(broker.broker.connect(gabi).flashSwapExactOut(params.amountOut, params.amountInMaximum, params.path)).to.be.revertedWith('Slippage()')
     })
 
 
@@ -305,16 +329,21 @@ describe('CompoundV3 Brokered Margin Multi Swap operations', async () => {
             compound.tokens[borrowTokenIndex],
             compound.tokens["WMATIC"],
             compound.tokens[supplyTokenIndex]
-        ].map(t => t.address)
+        ].map(t => t.address).reverse()
 
         // for trimming, we have to revert the swap path
-        const path = encodePath(_tokensInRoute.reverse(), new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [6, 0], // action
+            [0, 0], // pid - V3
+            0 // cometId
+        )
 
         const params = {
             path,
             fee: FeeAmount.MEDIUM,
-           cometId:0,
+            cometId: 0,
             amountIn: swapAmount,
             amountOutMinimum: swapAmount.mul(99).div(100)
         }
@@ -325,7 +354,7 @@ describe('CompoundV3 Brokered Margin Multi Swap operations', async () => {
 
         await compound.comet.connect(carol).allow(broker.brokerProxy.address, true)
         // open margin position
-        await broker.broker.connect(carol).trimMarginPositionExactIn(params)
+        await broker.broker.connect(carol).flashSwapExactIn(params.amountIn, params.amountOutMinimum, params.path)
 
         const cAfter = await compound.comet.collateralBalanceOf(carol.address, compound.tokens[supplyTokenIndex].address)
         const dAfter = await compound.comet.borrowBalanceOf(carol.address)
@@ -344,71 +373,6 @@ describe('CompoundV3 Brokered Margin Multi Swap operations', async () => {
             lessThanOrEqual(Number(formatEther(cBefore.sub(swapAmount))) * 1.001)
     })
 
-    // it('allows trimming margin position all in', async () => {
-
-    //     const supplyTokenIndex = "DAI"
-    //     const supplyTokenOtherIndex = "USDC"
-    //     const borrowTokenIndex = "USDC"
-
-    //     const supply = expandTo18Decimals(50)
-    //     const supplyOther = expandTo18Decimals(40)
-    //     const borrow = expandTo18Decimals(60)
-
-
-    //     // set up scenario
-    //     await compound.comet.connect(test1).supply(compound.tokens[supplyTokenIndex].address, supply, )
-
-    //     await compound.comet.connect(test1).supply(compound.tokens[supplyTokenOtherIndex].address, supplyOther, )
-
-    //     await compound.comet.connect(test1).withdraw(
-    //         compound.tokens[borrowTokenIndex].address,
-    //         borrow,
-    //     )
-
-    //     let _tokensInRoute = [
-    //         compound.tokens[borrowTokenIndex],
-    //         compound.tokens["USDC"],
-    //         compound.tokens[supplyTokenIndex]
-    //     ].map(t => t.address)
-
-    //     // for trimming, we have to revert the swap path
-    //     const path = encodePath(_tokensInRoute.reverse(), new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
-
-    //     const params = {
-    //         path,
-    //         fee: FeeAmount.MEDIUM,
-    //        cometId:0,
-    //         amountOutMinimum: supply.mul(95).div(100)
-    //     }
-
-
-
-    //     // increase ime to make sure that interest accrues
-    //     await network.provider.send("evm_increaseTime", [3600])
-    //     await network.provider.send("evm_mine")
-
-
-    //     const cBefore = await compound.comet.collateralBalanceOf(gabi.address, compound.tokens[supplyTokenIndex].address)
-    //     const dBefore = await compound.comet.borrowBalanceOf(gabi.address)
-
-    //     // open margin position
-    //     await broker.broker.connect(test1).trimMarginPositionAllIn(params)
-
-    //     const cAfter = await compound.comet.collateralBalanceOf(gabi.address, compound.tokens[supplyTokenIndex].address)
-    //     const dAfter = await compound.comet.borrowBalanceOf(gabi.address)
-
-
-    //     expect(Number(formatEther(balanceSupply))).to.eq(0)
-
-    //     expect(Number(formatEther(dAfter))).to.be.
-    //         greaterThanOrEqual(Number(formatEther(dBefore.sub(supply))))
-
-
-    //     expect(Number(formatEther(dAfter))).to.be.
-    //         lessThanOrEqual(Number(formatEther(dBefore.sub(supply))) * 1.05)
-
-    // })
 
     it('allows trimming margin position exact out', async () => {
 
@@ -422,21 +386,26 @@ describe('CompoundV3 Brokered Margin Multi Swap operations', async () => {
             compound.tokens["WMATIC"],
             compound.tokens[supplyTokenIndex]
         ].map(t => t.address)
-        const path = encodePath(_tokensInRoute, new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [3, 1], // action
+            [0, 0], // pid - V3
+            0 // cometId
+        )
         const params = {
             path,
             fee: FeeAmount.MEDIUM,
             amountInMaximum: swapAmount.mul(102).div(100),
             amountOut: swapAmount,
-           cometId:0,
+            cometId: 0,
         }
         const cBefore = await compound.comet.collateralBalanceOf(gabi.address, compound.tokens[supplyTokenIndex].address)
         const dBefore = await compound.comet.borrowBalanceOf(gabi.address)
 
         await compound.comet.connect(gabi).allow(broker.brokerProxy.address, true)
         // trim margin position
-        await broker.broker.connect(gabi).trimMarginPositionExactOut(params)
+        await broker.broker.connect(gabi).flashSwapExactOut(params.amountOut, params.amountInMaximum, params.path)
 
         const cAfter = await compound.comet.collateralBalanceOf(gabi.address, compound.tokens[supplyTokenIndex].address)
         const dAfter = await compound.comet.borrowBalanceOf(gabi.address)
@@ -455,61 +424,6 @@ describe('CompoundV3 Brokered Margin Multi Swap operations', async () => {
         expect(Number(formatEther(cAfter))).to.be.
             greaterThan(Number(formatEther(cBefore.sub(swapAmount))) * 0.99)
     })
-
-
-    // it('allows trimming margin position All out', async () => {
-
-    //     const supplyTokenIndex = "DAI"
-    //     const borrowTokenIndex = "USDC"
-
-    //     const supply = expandTo18Decimals(900)
-    //     const borrow = expandTo18Decimals(600)
-
-
-    //     // set up scenario
-    //     await compound.comet.connect(test).supply(compound.tokens[supplyTokenIndex].address, supply, )
-    //     await compound.comet.connect(test).withdraw(
-    //         compound.tokens[borrowTokenIndex].address,
-    //         borrow,
-    //     )
-
-    //     let _tokensInRoute = [
-    //         compound.tokens[borrowTokenIndex],
-    //         compound.tokens["USDC"],
-    //         compound.tokens[supplyTokenIndex]
-    //     ].map(t => t.address)
-    //     const path = encodePath(_tokensInRoute, new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
-    //     const params = {
-    //         path,
-    //         fee: FeeAmount.MEDIUM,
-    //         amountInMaximum: borrow.mul(105).div(100),
-    //        cometId:0,
-    //     }
-
-
-
-    //     // increase ime to make sure that interest accrues
-    //     await network.provider.send("evm_increaseTime", [3600])
-    //     await network.provider.send("evm_mine")
-
-    //     const cBefore = await compound.comet.collateralBalanceOf(carol.address, compound.tokens[supplyTokenIndex].address)
-    //     const dBefore = await compound.comet.borrowBalanceOf(carol.address)
-    //     // trim margin position
-    //     await broker.broker.connect(test).trimMarginPositionAllOut(params)
-    //     const cAfter = await compound.comet.collateralBalanceOf(carol.address, compound.tokens[supplyTokenIndex].address)
-    //     const dAfter = await compound.comet.borrowBalanceOf(carol.address)
-
-
-    //     expect(Number(formatEther(dAfter))).to.eq(0)
-
-
-    //     expect(Number(formatEther(cAfter))).to.be.
-    //         lessThan(Number(formatEther(cBefore.sub(borrow))) * 1.005)
-
-    //     expect(Number(formatEther(cAfter))).to.be.
-    //         greaterThan(Number(formatEther(cBefore.sub(borrow))) * 0.95)
-    // })
 
 })
 
