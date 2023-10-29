@@ -247,7 +247,6 @@ describe('AAVE Money Market operations', async () => {
             aaveTest.tokens["TEST2"],
             aaveTest.tokens[targetIndex]
         ].map(t => t.address)
-        // const path = encodePath(_tokensInRoute, new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
         const path = encodeAggregatorPathEthers(
             _tokensInRoute,
             new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
@@ -308,7 +307,6 @@ describe('AAVE Money Market operations', async () => {
             aaveTest.tokens["TEST2"],
             aaveTest.tokens[targetIndex]
         ].map(t => t.address)
-        // const path = encodePath(_tokensInRoute, new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
         const path = encodeAggregatorPathEthers(
             _tokensInRoute,
             new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
@@ -377,7 +375,6 @@ describe('AAVE Money Market operations', async () => {
             aaveTest.tokens["TEST2"],
             aaveTest.tokens[targetIndex]
         ].map(t => t.address).reverse()
-        // const path = encodePath(_tokensInRoute.reverse(), new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
         const path = encodeAggregatorPathEthers(
             _tokensInRoute,
             new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
@@ -446,7 +443,6 @@ describe('AAVE Money Market operations', async () => {
             aaveTest.tokens[targetIndex]
         ].map(t => t.address).reverse()
 
-        // const path = encodePath(_tokensInRoute.reverse(), new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
         const path = encodeAggregatorPathEthers(
             _tokensInRoute,
             new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
@@ -482,8 +478,6 @@ describe('AAVE Money Market operations', async () => {
             ]
         )
         const callSweep = broker.moneyMarket.interface.encodeFunctionData(UNWRAP,)
-
-        // await broker.moneyMarket.connect(gabi).swapETHAndSupplyExactOut(params, { value: params.amountInMaximum })
 
         await broker.brokerProxy.connect(gabi).multicall(
             [
@@ -523,7 +517,6 @@ describe('AAVE Money Market operations', async () => {
             aaveTest.tokens["TEST2"],
             aaveTest.tokens[targetIndex]
         ].map(t => t.address)
-        // const path = encodePath(_tokensInRoute, new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
         const path = encodeAggregatorPathEthers(
             _tokensInRoute,
             new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
@@ -584,7 +577,6 @@ describe('AAVE Money Market operations', async () => {
             aaveTest.tokens["TEST2"],
             aaveTest.tokens[targetIndex]
         ].map(t => t.address)
-        // const path = encodePath(_tokensInRoute, new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
         const path = encodeAggregatorPathEthers(
             _tokensInRoute,
             new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
@@ -648,7 +640,6 @@ describe('AAVE Money Market operations', async () => {
             aaveTest.tokens["AAVE"],
             aaveTest.tokens[targetIndex]
         ].map(t => t.address)
-        // const path = encodePath(_tokensInRoute, new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
         const path = encodeAggregatorPathEthers(
             _tokensInRoute,
             new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
@@ -714,7 +705,6 @@ describe('AAVE Money Market operations', async () => {
             aaveTest.tokens["TEST2"],
             aaveTest.tokens[targetIndex]
         ].map(t => t.address).reverse()
-        // const path = encodePath(_tokensInRoute.reverse(), new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
         const path = encodeAggregatorPathEthers(
             _tokensInRoute,
             new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
@@ -781,7 +771,6 @@ describe('AAVE Money Market operations', async () => {
             aaveTest.tokens["TEST2"],
             aaveTest.tokens[targetIndex]
         ].map(t => t.address)
-        // const path = encodePath(_tokensInRoute, new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
         const path = encodeAggregatorPathEthers(
             _tokensInRoute,
             new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
@@ -853,7 +842,6 @@ describe('AAVE Money Market operations', async () => {
             aaveTest.tokens["TEST2"],
             aaveTest.tokens[targetIndex]
         ].map(t => t.address).reverse()
-        // const path = encodePath(_tokensInRoute.reverse(), new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
         const path = encodeAggregatorPathEthers(
             _tokensInRoute,
             new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
@@ -933,7 +921,6 @@ describe('AAVE Money Market operations', async () => {
             aaveTest.tokens["TEST2"],
             aaveTest.tokens[targetIndex]
         ].map(t => t.address)
-        // const path = encodePath(_tokensInRoute, new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
         const path = encodeAggregatorPathEthers(
             _tokensInRoute,
             new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
@@ -1027,7 +1014,6 @@ describe('AAVE Money Market operations', async () => {
             aaveTest.tokens["TEST2"],
             aaveTest.tokens[targetIndex]
         ].map(t => t.address)
-        // const path = encodePath(_tokensInRoute, new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
         const path = encodeAggregatorPathEthers(
             _tokensInRoute,
             new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
@@ -1124,7 +1110,6 @@ describe('AAVE Money Market operations', async () => {
             aaveTest.tokens["TEST2"],
             aaveTest.tokens[targetIndex]
         ].map(t => t.address).reverse()
-        // const path = encodePath(_tokensInRoute.reverse(), new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
         const path = encodeAggregatorPathEthers(
             _tokensInRoute,
             new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
@@ -1219,7 +1204,6 @@ describe('AAVE Money Market operations', async () => {
             aaveTest.tokens["TEST2"],
             aaveTest.tokens[targetIndex]
         ].map(t => t.address).reverse()
-        // const path = encodePath(_tokensInRoute.reverse(), new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
         const path = encodeAggregatorPathEthers(
             _tokensInRoute,
             new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
@@ -1311,7 +1295,6 @@ describe('AAVE Money Market operations', async () => {
             aaveTest.tokens["TEST2"],
             aaveTest.tokens[targetIndex]
         ].map(t => t.address).reverse()
-        // const path = encodePath(_tokensInRoute.reverse(), new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
         const path = encodeAggregatorPathEthers(
             _tokensInRoute,
             new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
@@ -1422,7 +1405,6 @@ describe('AAVE Money Market operations', async () => {
             aaveTest.tokens["TEST2"],
             aaveTest.tokens[targetIndex]
         ].map(t => t.address).reverse()
-        // const path = encodePath(_tokensInRoute.reverse(), new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
         const path = encodeAggregatorPathEthers(
             _tokensInRoute,
             new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),

@@ -10,7 +10,6 @@ import {IUniswapV2Pair} from "../../../external-protocols/uniswapV2/core/interfa
 import {TokenTransfer} from "../../libraries/TokenTransfer.sol";
 import {WithStorageComet} from "../../storage/CometBrokerStorage.sol";
 import {BaseSwapper} from "../base/BaseSwapper.sol";
-import {IPool} from "../../interfaces/IAAVEV3Pool.sol";
 import {IERC20Balance} from "../../interfaces/IERC20Balance.sol";
 import {IComet} from "../../interfaces/IComet.sol";
 
@@ -237,7 +236,8 @@ contract CometMarginTrading is WithStorageComet, TokenTransfer, BaseSwapper {
     // 1: exact output swap - flavored by the id given at the end of the path
 
     // [end flag]
-    // cometId
+    // cometId for all numbers <255 
+    // 255: pay from caller's wallet
 
     // [start flag (>1)]
     // 6: exact in collateral swap / open / close
@@ -285,7 +285,7 @@ contract CometMarginTrading is WithStorageComet, TokenTransfer, BaseSwapper {
                 _data = _data[(cache - 1):cache];
                 // assign end flag to cache
                 cache = uint8(bytes1(_data));
-                if (cache < 8) {
+                if (cache < 255) {
                     // withdraw or borrow and repay pool
                     IComet(cos().comet[uint8(cache)]).withdrawFrom(
                         acs().cachedAddress, // user adddress

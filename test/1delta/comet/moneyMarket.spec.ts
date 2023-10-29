@@ -9,10 +9,27 @@ import { CometBrokerFixture, TestConfig1delta, cometBrokerFixture, initCometBrok
 import { UniswapMinimalFixtureNoTokens, addLiquidity, uniswapMinimalFixtureNoTokens } from '../shared/uniswapFixture';
 import { FeeAmount } from '../../uniswap-v3/periphery/shared/constants';
 import { expect } from 'chai';
-import { encodePath } from '../../uniswap-v3/periphery/shared/path';
 import { MockProvider } from 'ethereum-waffle';
 import { V2Fixture, uniV2Fixture } from '../shared/uniV2Fixture';
+import { encodeAggregatorPathEthers } from '../shared/aggregatorPath';
 
+const SUPPLY_TO = 'supplyTo'
+const WITHDRAW_FROM = 'withdrawFrom'
+const BORROW = 'borrow'
+const REPAY = 'repay'
+
+const WRAP = 'wrap'
+const TRANSFER_IN = 'transferERC20In'
+const TRANSFER_ALL_IN = 'transferERC20AllIn'
+const SWAP_IN = 'swapExactInSpot'
+const FLASH_SWAP_IN = 'flashSwapExactIn'
+const SWAP_ALL_IN = 'swapAllInSpot'
+const SWAP_OUT = 'swapExactOutSpot'
+const SWAP_ALL_OUT = 'swapAllOutSpot'
+const SWAP_OUT_INTERNAL = 'swapExactOutSpotSelf'
+const SWAP_ALL_OUT_INTERNAL = 'swapAllOutSpotSelf'
+const SWEEP = 'sweep'
+const UNWRAP = 'unwrap'
 
 // we prepare a setup for compound in hardhat
 // this series of tests checks that the features used for the margin swap implementation
@@ -248,8 +265,13 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
             compound.tokens["TEST2"],
             compound.tokens[targetIndex]
         ].map(t => t.address)
-        const path = encodePath(_tokensInRoute, new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [0, 0, 0, 0], // action
+            [1, 2, 1, 1], // pid
+            0 // flag
+        )
         const params = {
             path,
             cometId: 0,
@@ -257,11 +279,27 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
             amountOutMinimum: swapAmount.mul(98).div(100)
         }
 
-
+        const callTransfer = broker.moneyMarket.interface.encodeFunctionData(TRANSFER_IN, [compound.tokens[originIndex].address, swapAmount])
+        const callSwap = broker.moneyMarket.interface.encodeFunctionData(SWAP_IN, [
+            params.amountIn,
+            params.amountOutMinimum,
+            params.path
+        ]
+        )
+        const callDeposit = broker.moneyMarket.interface.encodeFunctionData(SUPPLY_TO,
+            [
+                compound.tokens[targetIndex].address,
+                carol.address,
+                0
+            ])
         console.log("swap in")
         const balBefore = await compound.tokens[originIndex].balanceOf(carol.address)
 
-        await broker.moneyMarket.connect(carol).swapAndSupplyExactIn(params)
+        await broker.brokerProxy.connect(carol).multicall([
+            callTransfer,
+            callSwap,
+            callDeposit
+        ])
         const balAfter = await compound.tokens[originIndex].balanceOf(carol.address)
 
         expect(swapAmount.toString()).to.equal(balBefore.sub(balAfter).toString())
@@ -288,8 +326,13 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
             compound.tokens["TEST2"],
             compound.tokens[targetIndex]
         ].map(t => t.address)
-        const path = encodePath(_tokensInRoute, new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [0, 0, 0, 0, 0], // action
+            [1, 2, 1, 1, 1], // pid
+            2 // flag
+        )
         const params = {
             path,
             cometId: 0,
@@ -297,12 +340,34 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
             amountOutMinimum: swapAmount.mul(95).div(100)
         }
 
+        const callTransfer = broker.moneyMarket.interface.encodeFunctionData(WRAP,)
+        const callSwap = broker.moneyMarket.interface.encodeFunctionData(SWAP_IN, [
+            params.amountIn,
+            params.amountOutMinimum,
+            params.path
+        ]
+        )
+        const callDeposit = broker.moneyMarket.interface.encodeFunctionData(SUPPLY_TO,
+            [
+                compound.tokens[targetIndex].address,
+                carol.address,
+                0
+            ]
+        )
+
 
         console.log("swap in")
         // const balBefore = await compound.tokens[originIndex].balanceOf(carol.address)
         const balBefore = await provider.getBalance(carol.address);
         const cBefore = await compound.comet.collateralBalanceOf(carol.address, compound.tokens[targetIndex].address)
-        const tx = await broker.moneyMarket.connect(carol).swapETHAndSupplyExactIn(params, { value: params.amountIn })
+        const tx = await broker.brokerProxy.connect(carol).multicall(
+            [
+                callTransfer,
+                callSwap,
+                callDeposit
+            ],
+            { value: swapAmount }
+        )
         // const balAfter = await compound.tokens[originIndex].balanceOf(carol.address)
         const balAfter = await provider.getBalance(carol.address);
 
@@ -331,9 +396,14 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
             compound.tokens["TEST1"],
             compound.tokens["TEST2"],
             compound.tokens[targetIndex]
-        ].map(t => t.address)
-        const path = encodePath(_tokensInRoute.reverse(), new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        ].map(t => t.address).reverse()
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [1, 1, 1, 1], // action
+            [1, 2, 1, 1], // pid
+            255 // flag
+        )
         const params = {
             path,
             cometId: 0,
@@ -341,12 +411,33 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
             amountInMaximum: swapAmount.mul(102).div(100),
             recipient: gabi.address,
         }
-
+        const callTransfer = broker.moneyMarket.interface.encodeFunctionData(TRANSFER_IN, [compound.tokens[originIndex].address, params.amountInMaximum])
+        const callSwap = broker.moneyMarket.interface.encodeFunctionData(SWAP_OUT, [
+            params.amountOut,
+            params.amountInMaximum,
+            params.path
+        ]
+        )
+        const callDeposit = broker.moneyMarket.interface.encodeFunctionData(SUPPLY_TO,
+            [
+                compound.tokens[targetIndex].address,
+                gabi.address,
+                0
+            ]
+        )
+        const callSweep = broker.moneyMarket.interface.encodeFunctionData(SWEEP, [compound.tokens[originIndex].address])
 
         console.log("swap in")
         const balBefore = await compound.tokens[originIndex].balanceOf(gabi.address)
 
-        await broker.moneyMarket.connect(gabi).swapAndSupplyExactOut(params)
+        await broker.brokerProxy.connect(gabi).multicall(
+            [
+                // callTransfer,
+                callSwap,
+                callDeposit,
+                // callSweep
+            ],
+        )
         const balAfter = await compound.tokens[originIndex].balanceOf(gabi.address)
 
         const cAfter = await compound.comet.collateralBalanceOf(gabi.address, compound.tokens[targetIndex].address)
@@ -373,9 +464,14 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
             compound.tokens["TEST1"],
             compound.tokens["TEST2"],
             compound.tokens[targetIndex]
-        ].map(t => t.address)
-        const path = encodePath(_tokensInRoute.reverse(), new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        ].map(t => t.address).reverse()
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [1, 1, 1, 1, 1], // action
+            [1, 1, 2, 1, 1], // pid
+            255 // flag
+        )
         const params = {
             path,
             cometId: 0,
@@ -384,11 +480,39 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
             recipient: gabi.address,
         }
 
+
+        const callWrap = broker.moneyMarket.interface.encodeFunctionData(WRAP,)
+        const callSwap = broker.moneyMarket.interface.encodeFunctionData(SWAP_OUT_INTERNAL, [
+            params.amountOut,
+            params.amountInMaximum,
+            params.path
+        ]
+        )
+        const callDeposit = broker.moneyMarket.interface.encodeFunctionData(SUPPLY_TO,
+            [
+                compound.tokens[targetIndex].address,
+                gabi.address,
+                0
+            ]
+        )
+        const callSweep = broker.moneyMarket.interface.encodeFunctionData(UNWRAP,)
+
+
         const cBefore = await compound.comet.collateralBalanceOf(gabi.address, compound.tokens[targetIndex].address)
         console.log("swap in")
         // const balBefore = await compound.tokens[originIndex].balanceOf(gabi.address)
         const balBefore = await provider.getBalance(gabi.address);
-        await broker.moneyMarket.connect(gabi).swapETHAndSupplyExactOut(params, { value: params.amountInMaximum })
+
+        await broker.brokerProxy.connect(gabi).multicall(
+            [
+                callWrap,
+                callSwap,
+                callDeposit,
+                callSweep
+            ],
+            { value: params.amountInMaximum }
+        )
+
         // const balAfter = await compound.tokens[originIndex].balanceOf(gabi.address)
         const balAfter = await provider.getBalance(gabi.address);
 
@@ -408,8 +532,22 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
         await compound.tokens[originIndex].connect(deployer).approve(broker.brokerProxy.address, constants.MaxUint256)
 
         const cBefore = await compound.comet.collateralBalanceOf(deployer.address, compound.tokens[targetIndex].address)
+        const callWrap = broker.moneyMarket.interface.encodeFunctionData(WRAP,)
+        const callDeposit = broker.moneyMarket.interface.encodeFunctionData(SUPPLY_TO,
+            [
+                compound.tokens[targetIndex].address,
+                deployer.address,
+                0
+            ]
+        )
         console.log("wrap in")
-        await broker.moneyMarket.connect(deployer).wrapAndSupply(0, { value: swapAmount })
+        await broker.brokerProxy.connect(deployer).multicall(
+            [
+                callWrap,
+                callDeposit
+            ],
+            { value: swapAmount }
+        )
 
 
         const cAfter = await compound.comet.collateralBalanceOf(deployer.address, compound.tokens[targetIndex].address)
@@ -421,6 +559,8 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
         const originIndex = "WETH"
         const targetIndex = "WETH"
         const swapAmount = BigNumber.from(10000)
+        const callWithdraw = broker.moneyMarket.interface.encodeFunctionData(WITHDRAW_FROM, [compound.tokens[targetIndex].address, swapAmount, broker.brokerProxy.address, 0])
+        const callUnwrap = broker.moneyMarket.interface.encodeFunctionData(UNWRAP,)
 
         await compound.comet.connect(deployer).allow(broker.moneyMarket.address, true)
 
@@ -428,8 +568,12 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
 
         const cBefore = await compound.comet.collateralBalanceOf(deployer.address, compound.tokens[targetIndex].address)
         console.log("wrap out")
-        await broker.moneyMarket.connect(deployer).withdrawAndUnwrap(swapAmount, deployer.address, 0)
-
+        await broker.brokerProxy.connect(deployer).multicall(
+            [
+                callWithdraw,
+                callUnwrap
+            ]
+        )
 
         const cAfter = await compound.comet.collateralBalanceOf(deployer.address, compound.tokens[targetIndex].address)
 
@@ -445,7 +589,6 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
 
         // supply
         await compound.comet.connect(achi).supply(compound.tokens[originIndex].address, supplied)
-        // await compound.tokens[originIndex].connect(achi).approve(broker.brokerProxy.address, constants.MaxUint256)
 
         let _tokensInRoute = [
             compound.tokens[originIndex],
@@ -454,8 +597,13 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
             compound.tokens["TEST2"],
             compound.tokens[targetIndex]
         ].map(t => t.address)
-        const path = encodePath(_tokensInRoute, new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [0, 0, 0, 0], // action
+            [1, 2, 1, 1], // pid
+            0 // flag
+        )
         const params = {
             path,
             cometId: 0,
@@ -464,11 +612,29 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
             amountOutMinimum: swapAmount.mul(98).div(100)
         }
 
+
+        const callWithdraw = broker.moneyMarket.interface.encodeFunctionData(WITHDRAW_FROM,
+            [compound.tokens[originIndex].address, swapAmount, broker.brokerProxy.address, 0]
+        )
+        const callSwap = broker.moneyMarket.interface.encodeFunctionData(SWAP_IN, [
+            params.amountIn,
+            params.amountOutMinimum,
+            params.path
+        ]
+        )
+        const callSweep = broker.moneyMarket.interface.encodeFunctionData(SWEEP, [compound.tokens[targetIndex].address])
+
         await compound.comet.connect(achi).allow(broker.brokerProxy.address, true)
 
         const balBefore = await compound.tokens[targetIndex].balanceOf(achi.address)
         console.log("withdraw and swap exact in")
-        await broker.moneyMarket.connect(achi).withdrawAndSwapExactIn(params)
+        await broker.brokerProxy.connect(achi).multicall(
+            [
+                callWithdraw,
+                callSwap,
+                callSweep
+            ]
+        )
 
         const balAfter = await compound.tokens[targetIndex].balanceOf(achi.address)
 
@@ -496,18 +662,45 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
             compound.tokens["TEST2"],
             compound.tokens[targetIndex]
         ].map(t => t.address)
-        const path = encodePath(_tokensInRoute, new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [0, 0, 0, 0], // action
+            [1, 2, 1, 1], // pid
+            0 // flag
+        )
         const params = {
             path,
             recipient: test0.address,
             amountOutMinimum: supplied.mul(95).div(100),
             cometId: 0
         }
+
+        const balToWithdraw = await compound.comet.collateralBalanceOf(test0.address, compound.tokens[originIndex].address)
+        const callWithdraw = broker.moneyMarket.interface.encodeFunctionData(WITHDRAW_FROM, [
+            compound.tokens[originIndex].address,
+            balToWithdraw,
+            broker.brokerProxy.address,
+            0
+        ])
+        const callSwap = broker.moneyMarket.interface.encodeFunctionData(SWAP_ALL_IN, [
+            params.amountOutMinimum,
+            params.path
+        ]
+        )
+        const callSweep = broker.moneyMarket.interface.encodeFunctionData(SWEEP, [compound.tokens[targetIndex].address])
+
+
         await compound.comet.connect(test0).allow(broker.brokerProxy.address, true)
         const balBefore = await compound.tokens[targetIndex].balanceOf(test0.address)
         console.log("withdraw and swap all in")
-        await broker.moneyMarket.connect(test0).withdrawAndSwapAllIn(params)
+        await broker.brokerProxy.connect(test0).multicall(
+            [
+                callWithdraw,
+                callSwap,
+                callSweep
+            ],
+        )
 
         const balAfter = await compound.tokens[targetIndex].balanceOf(test0.address)
 
@@ -533,8 +726,13 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
             compound.tokens["AAVE"],
             compound.tokens[targetIndex]
         ].map(t => t.address)
-        const path = encodePath(_tokensInRoute, new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [0, 0,], // action
+            [1, 2,], // pid
+            0 // flag
+        )
         const params = {
             path,
             recipient: test0.address,
@@ -542,10 +740,30 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
             cometId: 0
         }
 
+        const callWithdraw = broker.moneyMarket.interface.encodeFunctionData(WITHDRAW_FROM, [
+            compound.tokens[originIndex].address,
+            supplied,
+            broker.brokerProxy.address,
+            0
+        ])
+        const callSwap = broker.moneyMarket.interface.encodeFunctionData(SWAP_ALL_IN, [
+            params.amountOutMinimum,
+            params.path
+        ]
+        )
+        const callSweep = broker.moneyMarket.interface.encodeFunctionData(UNWRAP,)
+
+
         await compound.comet.connect(test0).allow(broker.brokerProxy.address, true)
         const balBefore = await provider.getBalance(test0.address);
         console.log("withdraw and swap all in")
-        await broker.moneyMarket.connect(test0).withdrawAndSwapAllInToETH(params)
+        await broker.brokerProxy.connect(test0).multicall(
+            [
+                callWithdraw,
+                callSwap,
+                callSweep
+            ],
+        )
 
         const balAfter = await provider.getBalance(test0.address);
 
@@ -573,9 +791,14 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
             compound.tokens["TEST1"],
             compound.tokens["TEST2"],
             compound.tokens[targetIndex]
-        ].map(t => t.address)
-        const path = encodePath(_tokensInRoute.reverse(), new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        ].map(t => t.address).reverse()
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [1, 1, 1, 1], // action
+            [1, 2, 1, 1], // pid
+            0 // flag
+        )
         const params = {
             path,
             cometId: 0,
@@ -583,14 +806,27 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
             amountInMaximum: swapAmount.mul(102).div(100),
             recipient: achi.address,
         }
+        const callSwap = broker.moneyMarket.interface.encodeFunctionData(SWAP_OUT, [
+            params.amountOut,
+            params.amountInMaximum,
+            params.path
+        ]
+        )
+        const callSweep = broker.moneyMarket.interface.encodeFunctionData(SWEEP, [compound.tokens[targetIndex].address])
 
         await compound.comet.connect(achi).allow(broker.brokerProxy.address, true)
 
         const cBefore = await compound.comet.collateralBalanceOf(achi.address, compound.tokens[originIndex].address)
         const balBefore = await compound.tokens[targetIndex].balanceOf(achi.address)
         console.log("withdraw and swap exact out")
-        await broker.moneyMarket.connect(achi).withdrawAndSwapExactOut(params)
-
+        await broker.brokerProxy.connect(achi).multicall(
+            [
+                // callTransfer,
+                // callWithdraw,
+                callSwap,
+                callSweep
+            ],
+        )
         const balAfter = await compound.tokens[targetIndex].balanceOf(achi.address)
 
         const cAfter = await compound.comet.collateralBalanceOf(achi.address, compound.tokens[originIndex].address)
@@ -624,8 +860,13 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
             compound.tokens["TEST2"],
             compound.tokens[targetIndex]
         ].map(t => t.address)
-        const path = encodePath(_tokensInRoute, new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [0, 0, 0, 0], // action
+            [1, 2, 1, 1], // pid
+            0 // flag
+        )
         const params = {
             path,
             cometId: 0,
@@ -634,12 +875,32 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
             recipient: wally.address,
         }
 
+        const callBorrow = broker.moneyMarket.interface.encodeFunctionData(WITHDRAW_FROM, [
+            compound.tokens[originIndex].address,
+            swapAmount,
+            broker.brokerProxy.address,
+            0
+        ])
+        const callSwap = broker.moneyMarket.interface.encodeFunctionData(SWAP_IN, [
+            params.amountIn,
+            params.amountOutMinimum,
+            params.path
+        ]
+        )
+        const callSweep = broker.moneyMarket.interface.encodeFunctionData(SWEEP, [compound.tokens[targetIndex].address])
+
         const balBefore = await compound.tokens[targetIndex].balanceOf(wally.address)
 
         console.log("approve delegation")
         await compound.comet.connect(wally).allow(broker.brokerProxy.address, true)
         console.log("withdraw and swap exact in")
-        await broker.moneyMarket.connect(wally).borrowAndSwapExactIn(params)
+        await broker.brokerProxy.connect(wally).multicall(
+            [
+                callBorrow,
+                callSwap,
+                callSweep
+            ],
+        )
 
         const balAfter = await compound.tokens[targetIndex].balanceOf(wally.address)
 
@@ -668,9 +929,14 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
             compound.tokens["TEST1"],
             compound.tokens["TEST2"],
             compound.tokens[targetIndex]
-        ].map(t => t.address)
-        const path = encodePath(_tokensInRoute.reverse(), new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        ].map(t => t.address).reverse()
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [1, 1, 1, 1], // action
+            [1, 2, 1, 1], // pid
+            0 // flag
+        )
         const params = {
             path,
             cometId: 0,
@@ -679,13 +945,26 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
             recipient: alice.address,
         }
 
+        const callSwap = broker.moneyMarket.interface.encodeFunctionData(SWAP_OUT, [
+            params.amountOut,
+            params.amountInMaximum,
+            params.path
+        ]
+        )
+        const callSweep = broker.moneyMarket.interface.encodeFunctionData(SWEEP, [compound.tokens[targetIndex].address])
+
         const balBefore = await compound.tokens[targetIndex].balanceOf(alice.address)
 
 
         console.log("approve delegation")
         await compound.comet.connect(alice).allow(broker.brokerProxy.address, true)
 
-        await broker.moneyMarket.connect(alice).borrowAndSwapExactOut(params)
+        await broker.brokerProxy.connect(alice).multicall(
+            [
+                callSwap,
+                callSweep
+            ],
+        )
 
         const balAfter = await compound.tokens[targetIndex].balanceOf(alice.address)
         expect(swapAmount.toString()).to.equal(balAfter.sub(balBefore).toString())
@@ -725,8 +1004,13 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
             compound.tokens["TEST2"],
             compound.tokens[targetIndex]
         ].map(t => t.address)
-        const path = encodePath(_tokensInRoute, new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [0, 0, 0, 0], // action
+            [1, 2, 1, 1], // pid
+            0 // flag
+        )
         const params = {
             path,
             cometId: 0,
@@ -736,16 +1020,38 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
         }
 
 
+        const callTransfer = broker.moneyMarket.interface.encodeFunctionData(TRANSFER_IN, [
+            compound.tokens[originIndex].address,
+            swapAmount
+        ]
+        )
+
+        const callSwap = broker.moneyMarket.interface.encodeFunctionData(SWAP_IN, [
+            params.amountIn,
+            params.amountOutMinimum,
+            params.path
+        ]
+        )
+
+        const callRepay = broker.moneyMarket.interface.encodeFunctionData(SUPPLY_TO, [
+            compound.tokens[targetIndex].address,
+            dennis.address,
+            0
+        ])
+
         await compound.tokens[originIndex].connect(dennis).approve(broker.moneyMarket.address, constants.MaxUint256)
-
-
 
         const balBefore = await compound.tokens[originIndex].balanceOf(dennis.address)
 
         const dBefore = await compound.comet.borrowBalanceOf(dennis.address)
         console.log("swap and repay exact in")
-        await broker.moneyMarket.connect(dennis).swapAndRepayExactIn(params)
-
+        await broker.brokerProxy.connect(dennis).multicall(
+            [
+                callTransfer,
+                callSwap,
+                callRepay
+            ],
+        )
         const balAfter = await compound.tokens[originIndex].balanceOf(dennis.address)
 
         const dAfter = await compound.comet.borrowBalanceOf(dennis.address)
@@ -786,8 +1092,13 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
             compound.tokens["TEST2"],
             compound.tokens[targetIndex]
         ].map(t => t.address)
-        const path = encodePath(_tokensInRoute, new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [0, 0, 0, 0, 0], // action
+            [1, 2, 1, 1, 1], // pid
+            0 // flag
+        )
         const params = {
             path,
             cometId: 0,
@@ -796,16 +1107,36 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
             recipient: dennis.address,
         }
 
+        const callWrap = broker.moneyMarket.interface.encodeFunctionData(WRAP,)
+
+        const callSwap = broker.moneyMarket.interface.encodeFunctionData(SWAP_IN, [
+            params.amountIn,
+            params.amountOutMinimum,
+            params.path
+        ]
+        )
+
+        const callRepay = broker.moneyMarket.interface.encodeFunctionData(REPAY, [
+            compound.tokens[targetIndex].address,
+            dennis.address,
+            0
+        ])
 
         await compound.tokens[originIndex].connect(dennis).approve(broker.moneyMarket.address, constants.MaxUint256)
-
 
 
         const balBefore = await provider.getBalance(dennis.address);
 
         const dBefore = await compound.comet.borrowBalanceOf(dennis.address)
         console.log("swap and repay exact in")
-        const tx = await broker.moneyMarket.connect(dennis).swapETHAndRepayExactIn(params, { value: params.amountIn })
+        const tx = await broker.brokerProxy.connect(dennis).multicall(
+            [
+                callWrap,
+                callSwap,
+                callRepay
+            ],
+            { value: swapAmount }
+        )
         const receipt = await tx.wait();
         // here we receive ETH, but the transaction costs some, too - so we have to record and subtract that
         const gasUsed = (receipt.cumulativeGasUsed).mul(receipt.effectiveGasPrice);
@@ -848,9 +1179,14 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
             compound.tokens["TEST1"],
             compound.tokens["TEST2"],
             compound.tokens[targetIndex]
-        ].map(t => t.address)
-        const path = encodePath(_tokensInRoute.reverse(), new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        ].map(t => t.address).reverse()
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [1, 1, 1, 1], // action
+            [1, 2, 1, 1], // pid
+            255 // flag
+        )
         const params = {
             path,
             cometId: 0,
@@ -858,18 +1194,31 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
             recipient: xander.address,
             amountInMaximum: swapAmount.mul(102).div(100)
         }
+        const callSwap = broker.moneyMarket.interface.encodeFunctionData(SWAP_OUT, [
+            params.amountOut,
+            params.amountInMaximum,
+            params.path
+        ]
+        )
 
+        const callRepay = broker.moneyMarket.interface.encodeFunctionData(REPAY, [
+            compound.tokens[targetIndex].address,
+            xander.address,
+            0
+        ])
 
         await compound.tokens[originIndex].connect(xander).approve(broker.moneyMarket.address, constants.MaxUint256)
-
-
 
         const dBefore = await compound.comet.borrowBalanceOf(xander.address)
         const balBefore = await compound.tokens[originIndex].balanceOf(xander.address)
 
         console.log("swap and repay exact out")
-        await broker.moneyMarket.connect(xander).swapAndRepayExactOut(params)
-
+        await broker.brokerProxy.connect(xander).multicall(
+            [
+                callSwap,
+                callRepay
+            ]
+        )
         const balAfter = await compound.tokens[originIndex].balanceOf(xander.address)
 
         const dAfter = await compound.comet.borrowBalanceOf(xander.address)
@@ -915,15 +1264,31 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
             compound.tokens["TEST1"],
             compound.tokens["TEST2"],
             compound.tokens[targetIndex]
-        ].map(t => t.address)
-        const path = encodePath(_tokensInRoute.reverse(), new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        ].map(t => t.address).reverse()
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [1, 1, 1, 1], // action
+            [1, 2, 1, 1], // pid
+            255 // flag
+        )
         const params = {
             path,
             cometId: 0,
             recipient: test1.address,
             amountInMaximum: borrowAmount.mul(105).div(100)
         }
+        const callSwap = broker.moneyMarket.interface.encodeFunctionData(SWAP_ALL_OUT, [
+            params.amountInMaximum,
+            0,
+            params.path
+        ]
+        )
+        const callRepay = broker.moneyMarket.interface.encodeFunctionData(REPAY, [
+            compound.tokens[targetIndex].address,
+            test1.address,
+            0
+        ])
 
         await compound.tokens[originIndex].connect(test1).approve(broker.moneyMarket.address, constants.MaxUint256)
 
@@ -932,8 +1297,12 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
         const balBefore = await compound.tokens[originIndex].balanceOf(test1.address)
 
         console.log("swap and repay all out")
-        await broker.moneyMarket.connect(test1).swapAndRepayAllOut(params)
-
+        await broker.brokerProxy.connect(test1).multicall(
+            [
+                callSwap,
+                callRepay
+            ]
+        )
         const balAfter = await compound.tokens[originIndex].balanceOf(test1.address)
         const borrowBalAfter = await compound.comet.borrowBalanceOf(test1.address)
         // sometimes the debt accrues interest and minimally deviates, that is for safety
@@ -974,9 +1343,14 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
             compound.tokens["TEST1"],
             compound.tokens["TEST2"],
             compound.tokens[targetIndex]
-        ].map(t => t.address)
-        const path = encodePath(_tokensInRoute.reverse(), new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        ].map(t => t.address).reverse()
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [1, 1, 1, 1, 1], // action
+            [1, 2, 1, 1, 1], // pid
+            255 // flag
+        )
         const params = {
             path,
             amountOut: swapAmount,
@@ -985,17 +1359,38 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
             cometId: 0
         }
 
+        const callWrap = broker.moneyMarket.interface.encodeFunctionData(WRAP,)
+        const callSwap = broker.moneyMarket.interface.encodeFunctionData(SWAP_OUT_INTERNAL, [
+            params.amountOut,
+            params.amountInMaximum,
+            params.path
+        ]
+        )
+        const callRepay = broker.moneyMarket.interface.encodeFunctionData(REPAY, [
+            compound.tokens[targetIndex].address,
+            xander.address,
+            0
+        ])
+        const callUnwrap = broker.moneyMarket.interface.encodeFunctionData(UNWRAP,)
+
 
         await compound.tokens[originIndex].connect(xander).approve(broker.moneyMarket.address, constants.MaxUint256)
-
-
 
         // const balBefore = await compound.tokens[originIndex].balanceOf(xander.address)
         const balBefore = await provider.getBalance(xander.address);
 
         const dBefore = await compound.comet.borrowBalanceOf(xander.address)
         console.log("swap and repay exact out")
-        const tx = await broker.moneyMarket.connect(xander).swapETHAndRepayExactOut(params, { value: params.amountInMaximum })
+        // const tx = await broker.moneyMarket.connect(xander).swapETHAndRepayExactOut(params, { value: params.amountInMaximum })
+        const tx = await broker.brokerProxy.connect(xander).multicall(
+            [
+                callWrap,
+                callSwap,
+                callUnwrap,
+                callRepay
+            ],
+            { value: params.amountInMaximum }
+        )
         const receipt = await tx.wait();
         // here we receive ETH, but the transaction costs some, too - so we have to record and subtract that
         const gasUsed = (receipt.cumulativeGasUsed).mul(receipt.effectiveGasPrice);
@@ -1049,9 +1444,14 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
             compound.tokens["TEST1"],
             compound.tokens["TEST2"],
             compound.tokens[targetIndex]
-        ].map(t => t.address)
-        const path = encodePath(_tokensInRoute.reverse(), new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM))
-
+        ].map(t => t.address).reverse()
+        const path = encodeAggregatorPathEthers(
+            _tokensInRoute,
+            new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
+            [1, 1, 1, 1, 1], // action
+            [1, 2, 1, 1, 1], // pid
+            255 // flag
+        )
         const params = {
             path,
             recipient: test2.address,
@@ -1060,15 +1460,41 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
         }
 
 
+        const callWrap = broker.moneyMarket.interface.encodeFunctionData(WRAP,)
+        const callSwap = broker.moneyMarket.interface.encodeFunctionData(SWAP_ALL_OUT_INTERNAL,
+            [
+                params.amountInMaximum,
+                0,
+                params.path
+            ]
+        )
+
+        const callRepay = broker.moneyMarket.interface.encodeFunctionData(REPAY,
+            [
+                compound.tokens[targetIndex].address,
+                test2.address,
+                0
+            ]
+        )
+
+        const callUnwrap = broker.moneyMarket.interface.encodeFunctionData(UNWRAP,)
+
         await compound.tokens[originIndex].connect(test2).approve(broker.moneyMarket.address, constants.MaxUint256)
-
-
 
         // const balBefore = await compound.tokens[originIndex].balanceOf(test2.address)
         const balBefore = await provider.getBalance(test2.address);
 
         console.log("swap and repay exact out")
-        const tx = await broker.moneyMarket.connect(test2).swapETHAndRepayAllOut(params, { value: params.amountInMaximum })
+        // const tx = await broker.moneyMarket.connect(test2).swapETHAndRepayAllOut(params, { value: params.amountInMaximum })
+        const tx = await broker.brokerProxy.connect(test2).multicall(
+            [
+                callWrap,
+                callSwap,
+                callRepay,
+                callUnwrap,
+            ],
+            { value: params.amountInMaximum }
+        )
         const receipt = await tx.wait();
         // here we receive ETH, but the transaction costs some, too - so we have to record and subtract that
         const gasUsed = (receipt.cumulativeGasUsed).mul(receipt.effectiveGasPrice);

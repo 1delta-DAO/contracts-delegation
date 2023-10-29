@@ -385,13 +385,6 @@ describe('AAVE Brokered Margin Multi Swap operations', async () => {
         ].map(t => t.address).reverse()
 
         // reverse path for exact out
-        // const path = encodeAggregatorPathEthers(
-        //     _tokensInRoute,
-        //     new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),
-        //     [3, 1], // action
-        //     [1, 2], // pid
-        //     2 // flag
-        // )
         const path = encodeTradePathMargin(
             _tokensInRoute,
             new Array(_tokensInRoute.length - 1).fill(FeeAmount.MEDIUM),

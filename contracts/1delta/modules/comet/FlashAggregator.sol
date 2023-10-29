@@ -47,9 +47,10 @@ contract CometFlashAggregator is CometMarginTrading, WrappedNativeHandler, SelfP
     function withdrawFrom(
         address asset,
         uint256 amount,
+        address receiver,
         uint8 cometId
     ) external payable {
-        IComet(cos().comet[cometId]).withdrawFrom(msg.sender, address(this), asset, amount);
+        IComet(cos().comet[cometId]).withdrawFrom(msg.sender, receiver, asset, amount);
     }
 
     // repay via supply to and make sure to not deposit any excess funds
