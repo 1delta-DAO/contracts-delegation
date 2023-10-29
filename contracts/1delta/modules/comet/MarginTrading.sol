@@ -190,7 +190,7 @@ contract CometMarginTrading is WithStorageComet, TokenTransfer, BaseSwapper {
         // abuse amountIn variable
         amountIn = path.length;
         // determine output amount as respective debt balance
-        uint256 amountOut = IComet(cos().comet[uint8(bytes1(path[amountIn--:amountIn]))]).borrowBalanceOf(msg.sender);
+        uint256 amountOut = IComet(cos().comet[uint8(bytes1(path[(amountIn-1):amountIn]))]).borrowBalanceOf(msg.sender);
         if (amountOut == 0) revert NoBalance();
 
         // uniswapV3 types
@@ -242,18 +242,12 @@ contract CometMarginTrading is WithStorageComet, TokenTransfer, BaseSwapper {
     // 1: exact output swap - flavored by the id given at the end of the path
 
     // [end flag]
-    // 1: borrow stable
-    // 2: borrow variable
-    // 3: withdraw
+    // cometId
 
     // [start flag (>1)]
-    // 6: deposit exact in
-    // 7: repay exact in stable
-    // 8: repay exact in variable
+    // 6: exact in collateral swap / open / close 
 
-    // 3: deposit exact out
-    // 4: repay exact out stable
-    // 5: repay exact out variable
+    // 3: exact out collateral swap / open / close 
 
     // The uniswapV3 style callback
     function uniswapV3SwapCallbackInternal(

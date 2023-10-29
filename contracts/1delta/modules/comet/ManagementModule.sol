@@ -18,6 +18,8 @@ contract CometManagementModule is WithStorageComet {
         _;
     }
 
+    // STATE SETTERS
+
     function addComet(address _comet, uint8 _id) external onlyManagement {
         cos().comet[_id] = _comet;
     }
@@ -42,5 +44,23 @@ contract CometManagementModule is WithStorageComet {
         for (uint256 i = 0; i < assets.length; i++) {
             IERC20(assets[i]).approve(comet, type(uint256).max);
         }
+    }
+
+    // VIEW FUNCTIONS
+
+    function getFactory() external view returns (address factory) {
+        factory = us().v3factory;
+    }
+
+    function getSwapRouter() external view returns (address) {
+        return us().swapRouter;
+    }
+
+    function getNativeWrapper() external view returns (address) {
+        return us().weth;
+    }
+
+    function getComet(uint8 _id) external view returns (address pool) {
+        pool = cos().comet[_id];
     }
 }
