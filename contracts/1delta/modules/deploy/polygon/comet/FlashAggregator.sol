@@ -6,66 +6,65 @@ pragma solidity ^0.8.21;
 * Author: Achthar | 1delta 
 /******************************************************************************/
 
-import {IERC20Balance} from "../../../interfaces/IERC20Balance.sol";
-import {MarginTrading, IUniswapV2Pair} from "./MarginTrading.sol";
-import {WrappedNativeHandler} from "./WrappedNativeHandler.sol";
-import {SelfPermit} from "../../base/SelfPermit.sol";
+import {IUniswapV2Pair} from "../base/BaseSwapper.sol";
+import {IERC20Balance} from "../../../../interfaces/IERC20Balance.sol";
+import {CometMarginTrading, IComet} from "./MarginTrading.sol";
+import {WrappedNativeHandler} from "../base/WrappedNativeHandler.sol";
+import {SelfPermit} from "../../../base/SelfPermit.sol";
 
 // solhint-disable max-line-length
 
 /**
- * @title FlashAggregator
+ * @title FlashAggregator for Compound V3
  * @notice Adds money market and default transfer functions to margin trading
  */
-contract DeltaFlashAggregator is MarginTrading, WrappedNativeHandler, SelfPermit {
+contract CometFlashAggregator is CometMarginTrading, WrappedNativeHandler, SelfPermit {
     // constants
     uint256 private constant DEFAULT_AMOUNT_CACHED = type(uint256).max;
     address private constant DEFAULT_ADDRESS_CACHED = address(0);
 
-    constructor() {}
+    constructor(  ) CometMarginTrading() WrappedNativeHandler() {}
 
     /** BASE LENDING FUNCTIONS */
 
-    // deposit ERC20 to Aave on behalf of recipient
-    function deposit(address asset, address recipient) external payable {
+    // deposit or repay to Compound V3
+    function supplyTo(
+        address asset,
+        address recipient,
+        uint8 cometId
+    ) external payable {
         address _asset = asset;
         uint256 balance = IERC20Balance(_asset).balanceOf(address(this));
-        _aavePool.supply(_asset, balance, recipient, 0);
+        IComet(cos().comet[cometId]).supplyTo(recipient, asset, balance);
     }
 
-    // borrow on sender's behalf
-    function borrow(
+    // borrow or withdraw on the sender's behalf
+    function withdrawFrom(
         address asset,
         uint256 amount,
-        uint256 interestRateMode
+        address receiver,
+        uint8 cometId
     ) external payable {
-        _aavePool.borrow(asset, amount, interestRateMode, 0, msg.sender);
+        IComet(cos().comet[cometId]).withdrawFrom(msg.sender, receiver, asset, amount);
     }
 
-    // wraps the repay function
+    // repay via supply to and make sure to not deposit any excess funds
     function repay(
         address asset,
         address recipient,
-        uint256 interestRateMode
+        uint8 cometId
     ) external payable {
         address _asset = asset;
         uint256 _balance = IERC20Balance(_asset).balanceOf(address(this));
-        uint256 _debtBalance;
-        uint256 _interestRateMode = interestRateMode;
-        if (_interestRateMode == 2) _debtBalance = IERC20Balance(aas().vTokens[_asset]).balanceOf(msg.sender);
-        else _debtBalance = IERC20Balance(aas().sTokens[_asset]).balanceOf(msg.sender);
+        IComet comet = IComet(cos().comet[cometId]);
+        uint256 _debtBalance = comet.borrowBalanceOf(msg.sender);
         // if the amount lower higher than the balance, repay the amount
         if (_debtBalance >= _balance) {
-            _aavePool.repay(_asset, _balance, _interestRateMode, recipient);
+            comet.supplyTo(recipient, asset, _balance);
         } else {
             // otherwise, repay all - make sure to call sweep afterwards
-            _aavePool.repay(_asset, _debtBalance, _interestRateMode, recipient);
+            comet.supplyTo(recipient, asset, _debtBalance);
         }
-    }
-
-    // wraps the withdraw
-    function withdraw(address asset, address recipient) external payable {
-        _aavePool.withdraw(asset, type(uint256).max, recipient);
     }
 
     /** TRANSFER FUNCTIONS */
@@ -168,18 +167,15 @@ contract DeltaFlashAggregator is MarginTrading, WrappedNativeHandler, SelfPermit
      */
     function swapAllOutSpot(
         uint256 maximumAmountIn,
-        uint256 interestRateMode,
+        uint8 cometId,
         bytes calldata path
     ) external payable {
         acs().cachedAddress = msg.sender;
-        uint256 _debtBalance;
-        uint256 _interestRateMode = interestRateMode;
         address tokenOut;
         assembly {
             tokenOut := shr(96, calldataload(path.offset))
         }
-        if (_interestRateMode == 2) _debtBalance = IERC20Balance(aas().vTokens[tokenOut]).balanceOf(msg.sender);
-        else _debtBalance = IERC20Balance(aas().sTokens[tokenOut]).balanceOf(msg.sender);
+        uint256 _debtBalance = IComet(cos().comet[cometId]).borrowBalanceOf(msg.sender);
         if (_debtBalance == 0) revert NoBalance(); // revert if amount is zero
 
         flashSwapExactOutInternal(_debtBalance, path);
@@ -193,17 +189,14 @@ contract DeltaFlashAggregator is MarginTrading, WrappedNativeHandler, SelfPermit
      */
     function swapAllOutSpotSelf(
         uint256 maximumAmountIn,
-        uint256 interestRateMode,
+        uint8 cometId,
         bytes calldata path
     ) external payable {
-        uint256 _debtBalance;
-        uint256 _interestRateMode = interestRateMode;
         address tokenOut;
         assembly {
             tokenOut := shr(96, calldataload(path.offset))
         }
-        if (_interestRateMode == 2) _debtBalance = IERC20Balance(aas().vTokens[tokenOut]).balanceOf(msg.sender);
-        else _debtBalance = IERC20Balance(aas().sTokens[tokenOut]).balanceOf(msg.sender);
+        uint256 _debtBalance = IComet(cos().comet[cometId]).borrowBalanceOf(msg.sender);
         if (_debtBalance == 0) revert NoBalance(); // revert if amount is zero
 
         flashSwapExactOutInternal(_debtBalance, path);
@@ -227,7 +220,7 @@ contract DeltaFlashAggregator is MarginTrading, WrappedNativeHandler, SelfPermit
     }
 
     // a flash swap whre the output is sent to this address
-    function flashSwapExactOutInternal(uint256 amountOut, bytes calldata data) private {
+    function flashSwapExactOutInternal(uint256 amountOut, bytes calldata data) internal {
         address tokenIn;
         address tokenOut;
         uint8 identifier;

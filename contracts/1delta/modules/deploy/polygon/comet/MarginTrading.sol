@@ -6,10 +6,10 @@ pragma solidity 0.8.21;
 * Author: Achthar | 1delta 
 /******************************************************************************/
 
-import {WithStorageComet} from "../../storage/CometBrokerStorage.sol";
+import {WithStorageComet} from "../../../../storage/CometBrokerStorage.sol";
 import {BaseSwapper, IUniswapV2Pair} from "../base/BaseSwapper.sol";
-import {IERC20Balance} from "../../interfaces/IERC20Balance.sol";
-import {IComet} from "../../interfaces/IComet.sol";
+import {IERC20Balance} from "../../../../interfaces/IERC20Balance.sol";
+import {IComet} from "../../../../interfaces/IComet.sol";
 
 // solhint-disable max-line-length
 
@@ -26,7 +26,7 @@ contract CometMarginTrading is WithStorageComet, BaseSwapper {
     uint256 private constant DEFAULT_AMOUNT_CACHED = type(uint256).max;
     address private constant DEFAULT_ADDRESS_CACHED = address(0);
 
-    constructor(address _factoryV2, address _factoryV3) BaseSwapper(_factoryV2, _factoryV3) {}
+    constructor() BaseSwapper() {}
 
     // Exact Input Swap - The path parameters determine the lending actions
     function flashSwapExactIn(

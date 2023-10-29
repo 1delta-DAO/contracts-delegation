@@ -6,7 +6,7 @@ pragma solidity ^0.8.21;
 * Author: Achthar | 1delta 
 /******************************************************************************/
 
-import {INativeWrapper} from "../../../interfaces/INativeWrapper.sol";
+import {INativeWrapper} from "../../../../interfaces/INativeWrapper.sol";
 
 // solhint-disable max-line-length
 

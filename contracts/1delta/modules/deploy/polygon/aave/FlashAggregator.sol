@@ -6,10 +6,10 @@ pragma solidity ^0.8.21;
 * Author: Achthar | 1delta 
 /******************************************************************************/
 
-import {IERC20Balance} from "../../interfaces/IERC20Balance.sol";
+import {IERC20Balance} from "../../../../interfaces/IERC20Balance.sol";
 import {MarginTrading, IUniswapV2Pair} from "./MarginTrading.sol";
 import {WrappedNativeHandler} from "../base/WrappedNativeHandler.sol";
-import {SelfPermit} from "../base/SelfPermit.sol";
+import {SelfPermit} from "../../../base/SelfPermit.sol";
 
 // solhint-disable max-line-length
 
@@ -17,17 +17,12 @@ import {SelfPermit} from "../base/SelfPermit.sol";
  * @title FlashAggregator
  * @notice Adds money market and default transfer functions to margin trading
  */
-contract FlashAggregator is MarginTrading, WrappedNativeHandler, SelfPermit {
+contract DeltaFlashAggregator is MarginTrading, WrappedNativeHandler, SelfPermit {
     // constants
     uint256 private constant DEFAULT_AMOUNT_CACHED = type(uint256).max;
     address private constant DEFAULT_ADDRESS_CACHED = address(0);
 
-    constructor(
-        address _factoryV2,
-        address _factoryV3,
-        address aavePool,
-        address weth
-    ) MarginTrading(_factoryV2, _factoryV3, aavePool) WrappedNativeHandler(weth) {}
+    constructor() {}
 
     /** BASE LENDING FUNCTIONS */
 
@@ -232,7 +227,7 @@ contract FlashAggregator is MarginTrading, WrappedNativeHandler, SelfPermit {
     }
 
     // a flash swap whre the output is sent to this address
-    function flashSwapExactOutInternal(uint256 amountOut, bytes calldata data) internal {
+    function flashSwapExactOutInternal(uint256 amountOut, bytes calldata data) private {
         address tokenIn;
         address tokenOut;
         uint8 identifier;
