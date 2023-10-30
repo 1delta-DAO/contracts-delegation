@@ -17,7 +17,7 @@ import {IComet} from "../../../../interfaces/IComet.sol";
  * @title Contract Module for general Margin Trading on an Compound V3-style Lender
  * @notice Contains main logic for uniswap-type callbacks and initiator functions
  */
-contract CometMarginTrading is WithStorageComet, BaseSwapper {
+abstract contract CometMarginTrading is WithStorageComet, BaseSwapper {
     // errors
     error Slippage();
     error NoBalance();

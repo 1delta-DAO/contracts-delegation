@@ -19,10 +19,10 @@ async function main() {
     const chainId = await operator.getChainId();
 
     console.log("Deploy Broker Proxy on", chainId, "by", operator.address)
-    const broker = await createBroker(operator, uniswapAddresses.factory[chainId], opts)
+    const broker = await createBroker(operator, opts)
 
     console.log('Initialize')
-    await initializeBroker(operator, broker, uniswapAddresses.factory[chainId], compoundAddresses.cometUSDC[chainId], generalAddresses.WETH[chainId], opts)
+    await initializeBroker(operator, broker, compoundAddresses.cometUSDC[chainId], opts)
 
     console.log('Completed')
 }

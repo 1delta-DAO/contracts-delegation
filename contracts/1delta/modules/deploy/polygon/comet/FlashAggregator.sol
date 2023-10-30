@@ -18,7 +18,7 @@ import {SelfPermit} from "../../../base/SelfPermit.sol";
  * @title FlashAggregator for Compound V3
  * @notice Adds money market and default transfer functions to margin trading
  */
-contract CometFlashAggregator is CometMarginTrading, WrappedNativeHandler, SelfPermit {
+contract CometFlashAggregatorPolygon is CometMarginTrading, WrappedNativeHandler, SelfPermit {
     // constants
     uint256 private constant DEFAULT_AMOUNT_CACHED = type(uint256).max;
     address private constant DEFAULT_ADDRESS_CACHED = address(0);
@@ -257,5 +257,28 @@ contract CometFlashAggregator is CometMarginTrading, WrappedNativeHandler, SelfP
             (amountOut0, amountOut1) = zeroForOne ? (uint256(0), amountOut) : (amountOut, uint256(0));
             IUniswapV2Pair(pool).swap(amountOut0, amountOut1, address(this), data); // cannot swap to sender due to flashSwap
         }
+    }
+
+    function seldAllowBySig(
+        uint8 cometId,
+        address owner,
+        address manager,
+        bool isAllowed_,
+        uint256 nonce,
+        uint256 expiry,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external {
+        IComet(cos().comet[cometId]).allowBySig(
+            owner,
+            manager,
+            isAllowed_,
+            nonce,
+            expiry,
+            v,
+            r,
+            s
+         );
     }
 }

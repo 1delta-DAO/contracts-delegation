@@ -11,13 +11,10 @@ import {
     OneDeltaModuleManager__factory,
     ConfigModule,
     ConfigModule__factory,
-    CometSweeperModule__factory,
-    CometSweeperModule,
     CometFlashAggregator__factory,
     CometFlashAggregator
 } from "../../../types";
 import { ModuleConfigAction, getSelectors } from "../../diamond/libraries/diamond";
-import { UniswapFixtureNoTokens, UniswapMinimalFixtureNoTokens } from "./uniswapFixture";
 import FlashAggregatorArtifact from "../../../artifacts/contracts/1delta/modules/comet/FlashAggregator.sol/CometFlashAggregator.json"
 import { CompoundV3Protocol, exp } from "./compoundV3Fixture";
 
@@ -29,7 +26,6 @@ export interface CometBrokerFixture {
     broker: CometFlashAggregator
     manager: CometManagementModule
     moneyMarket: CometFlashAggregator
-    sweeper: CometSweeperModule
 }
 
 // we do not need to care for decimals in our tests
@@ -134,18 +130,6 @@ export async function cometBrokerFixture(signer: SignerWithAddress, uniFactory: 
         signer
     ) as CometManagementModule)
 
-    const sweeperModule = await new CometSweeperModule__factory(signer).deploy(uniFactory)
-
-    await configContract.connect(signer).configureModules(
-        [{
-            moduleAddress: sweeperModule.address,
-            action: ModuleConfigAction.Add,
-            functionSelectors: getSelectors(sweeperModule)
-        }],
-    )
-
-    const sweeper = (await new ethers.Contract(proxy.address, CometSweeperModule__factory.createInterface(), signer) as CometSweeperModule)
-
     const broker = (await new ethers.Contract(
         proxy.address,
         FlashAggregatorArtifact.abi,
@@ -158,7 +142,7 @@ export async function cometBrokerFixture(signer: SignerWithAddress, uniFactory: 
         signer) as CometFlashAggregator)
 
 
-    return { broker, brokerProxy: proxy, manager, moneyMarket, moduleConfig, sweeper }
+    return { broker, brokerProxy: proxy, manager, moneyMarket, moduleConfig }
 
 }
 

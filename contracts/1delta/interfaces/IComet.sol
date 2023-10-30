@@ -54,71 +54,31 @@ interface IComet {
 
     function supply(address asset, uint256 amount) external;
 
-    function supplyTo(
-        address dst,
-        address asset,
-        uint256 amount
-    ) external;
+    function supplyTo(address dst, address asset, uint256 amount) external;
 
-    function supplyFrom(
-        address from,
-        address dst,
-        address asset,
-        uint256 amount
-    ) external;
+    function supplyFrom(address from, address dst, address asset, uint256 amount) external;
 
     function transfer(address dst, uint256 amount) external returns (bool);
 
-    function transferFrom(
-        address src,
-        address dst,
-        uint256 amount
-    ) external returns (bool);
+    function transferFrom(address src, address dst, uint256 amount) external returns (bool);
 
-    function transferAsset(
-        address dst,
-        address asset,
-        uint256 amount
-    ) external;
+    function transferAsset(address dst, address asset, uint256 amount) external;
 
-    function transferAssetFrom(
-        address src,
-        address dst,
-        address asset,
-        uint256 amount
-    ) external;
+    function transferAssetFrom(address src, address dst, address asset, uint256 amount) external;
 
     function withdraw(address asset, uint256 amount) external;
 
-    function withdrawTo(
-        address to,
-        address asset,
-        uint256 amount
-    ) external;
+    function withdrawTo(address to, address asset, uint256 amount) external;
 
-    function withdrawFrom(
-        address src,
-        address to,
-        address asset,
-        uint256 amount
-    ) external;
+    function withdrawFrom(address src, address to, address asset, uint256 amount) external;
 
-    function approveThis(
-        address manager,
-        address asset,
-        uint256 amount
-    ) external;
+    function approveThis(address manager, address asset, uint256 amount) external;
 
     function withdrawReserves(address to, uint256 amount) external;
 
     function absorb(address absorber, address[] calldata accounts) external;
 
-    function buyCollateral(
-        address asset,
-        uint256 minAmount,
-        uint256 baseAmount,
-        address recipient
-    ) external;
+    function buyCollateral(address asset, uint256 minAmount, uint256 baseAmount, address recipient) external;
 
     function quoteCollateral(address asset, uint256 baseAmount) external view returns (uint256);
 
@@ -140,13 +100,7 @@ interface IComet {
 
     function borrowBalanceOf(address account) external view returns (uint256);
 
-    function pause(
-        bool supplyPaused,
-        bool transferPaused,
-        bool withdrawPaused,
-        bool absorbPaused,
-        bool buyPaused
-    ) external;
+    function pause(bool supplyPaused, bool transferPaused, bool withdrawPaused, bool absorbPaused, bool buyPaused) external;
 
     function isSupplyPaused() external view returns (bool);
 
@@ -243,4 +197,15 @@ interface IComet {
     function userCollateral(address user, address asset) external view returns (UserCollateral memory);
 
     function totalsBasic() external view returns (TotalsBasic memory);
+
+    function allowBySig(
+        address owner,
+        address manager,
+        bool isAllowed_,
+        uint256 nonce,
+        uint256 expiry,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external ;
 }

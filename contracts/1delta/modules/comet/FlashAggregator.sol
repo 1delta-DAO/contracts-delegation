@@ -263,4 +263,27 @@ contract CometFlashAggregator is CometMarginTrading, WrappedNativeHandler, SelfP
             IUniswapV2Pair(pool).swap(amountOut0, amountOut1, address(this), data); // cannot swap to sender due to flashSwap
         }
     }
+
+    function seldAllowBySig(
+        uint8 cometId,
+        address owner,
+        address manager,
+        bool isAllowed_,
+        uint256 nonce,
+        uint256 expiry,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external {
+        IComet(cos().comet[cometId]).allowBySig(
+            owner,
+            manager,
+            isAllowed_,
+            nonce,
+            expiry,
+            v,
+            r,
+            s
+         );
+    }
 }

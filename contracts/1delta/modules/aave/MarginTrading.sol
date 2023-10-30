@@ -20,7 +20,7 @@ import {IERC20Balance} from "../../interfaces/IERC20Balance.sol";
  * @dev path is encoded as address | uint24 | uint8 | uint8 | address | ...
  *                         token0  | fee    | poolId| type  | token1  | ...
  */
-contract MarginTrading is WithStorage, BaseSwapper {
+abstract contract MarginTrading is WithStorage, BaseSwapper {
     // errors
     error Slippage();
     error NoBalance();
