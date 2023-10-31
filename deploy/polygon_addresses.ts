@@ -129,7 +129,7 @@ export const cometBrokerAddresses = {
     BrokerProxy: {
         5: '',
         80001: '0x178E4EB141BBaEAcd56DAE120693D48d4B5f198d',
-        137: '0x04555b0B7367315cdaDe1E1889FA4FCdd27b66D6'
+        137: '0x0893B8446fe77eaD760921D34d332d290FF89Ee6'
     },
     ConfigModule: {
         5: '',
@@ -154,7 +154,7 @@ export const cometBrokerAddresses = {
     MarginTraderModule: {
         5: '',
         80001: '0x01D8853Fd8C78B2c26097B5003184037F219F77a',
-        137: '0x6aB8Ab831966da6f60B236A6f4559E2DA7211ff5'
+        137: '0x41d0705DF35Ad7eAad2D5ECF41D7b42561345861'
     },
     MoneyMarketModule: {
         5: '',

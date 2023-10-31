@@ -1,6 +1,6 @@
 
 import { ethers } from "hardhat";
-import { ConfigModule__factory, LensModule__factory, ManagementModule__factory, UniswapV3SwapCallbackModule__factory } from "../../types";
+import { ConfigModule__factory, LensModule__factory } from "../../types";
 import { cometBrokerAddresses } from "../../deploy/polygon_addresses"
 import { validateAddresses } from "../../utils/types";
 import { parseUnits } from "ethers/lib/utils";
@@ -16,23 +16,20 @@ const opts = {
     maxPriorityFeePerGas: usedMaxPriorityFeePerGas
 }
 
-const addresses: { [field: string]: { [chain: number]: string } } = cometBrokerAddresses
 
 async function main() {
     const accounts = await ethers.getSigners()
     const operator = accounts[1]
     const chainId = await operator.getChainId();
 
-    const proxyAddress = addresses.BrokerProxy[chainId]
-    const minimalRouter = addresses.minimalRouter[chainId]
-    const callbackAddress = addresses.UniswapV3SwapCallbackModule[chainId]
-    const marginTradingAddress = addresses.MarginTraderModule[chainId]
-    const moneyMarketAddress = addresses.MoneyMarketModule[chainId]
-    const managementAddress = addresses.ManagementModule[chainId]
-    const sweeperAddress = addresses.Sweeper[chainId]
+    if (chainId !== 137) throw new Error("Invalid chain")
+
+    const proxyAddress = cometBrokerAddresses.BrokerProxy[chainId]
+    const flashAggregatorAddress = cometBrokerAddresses.MarginTraderModule[chainId]
+    const managementAddress = cometBrokerAddresses.ManagementModule[chainId]
 
 
-    validateAddresses([proxyAddress, minimalRouter, callbackAddress, marginTradingAddress, moneyMarketAddress, sweeperAddress])
+    validateAddresses([proxyAddress, flashAggregatorAddress])
 
     console.log("Operate on", chainId, "by", operator.address)
 
@@ -48,16 +45,12 @@ async function main() {
     // get lens to fetch modules
     const lens = await new LensModule__factory(operator).attach(proxyAddress)
 
-    const callbackSelectors = await lens.moduleFunctionSelectors(callbackAddress)
-    const marginTradingSelectors = await lens.moduleFunctionSelectors(marginTradingAddress)
+    const flashAggregatorSelectors = await lens.moduleFunctionSelectors(flashAggregatorAddress)
     const managementSelectors = await lens.moduleFunctionSelectors(managementAddress)
-    const moneyMarketSelectors = await lens.moduleFunctionSelectors(moneyMarketAddress)
-    const sweeperSelectors = await lens.moduleFunctionSelectors(sweeperAddress)
+
     const moduleSelectors = [
         // callbackSelectors,
-        // marginTradingSelectors,
-        sweeperSelectors,
-        moneyMarketSelectors,
+        flashAggregatorSelectors,
         // managementSelectors,
     ]
 

@@ -31,7 +31,7 @@ const tokensGoerli: { [key: string]: string } = {
 }
 
 
-const tokensPolygon: { [key: string]: string } = {
+export const compoundTokensPolygon: { [key: string]: string } = {
     USDC: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174',
     WETH: '0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619',
     WBTC: '0x1BFD67037B42Cf73acF2047067bd4F2C47D9BfD6',
@@ -45,5 +45,5 @@ const tokensPolygon: { [key: string]: string } = {
 export const compoundTokens: { [chainId: number]: { [key: string]: string } } = {
     5: tokensGoerli,
     80001: tokensMumbai,
-    137: tokensPolygon
+    137: compoundTokensPolygon
 }

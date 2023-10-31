@@ -133,7 +133,7 @@ abstract contract CometMarginTrading is WithStorageComet, BaseSwapper {
         // abuse amountOut variable
         amountOut = path.length;
         // fetch collateral balance
-        uint256 amountIn = IComet(cos().comet[uint8(bytes1(path[amountOut--:amountOut]))]).balanceOf(msg.sender);
+        uint256 amountIn = IComet(cos().comet[uint8(bytes1(path[(amountOut - 1):amountOut]))]).balanceOf(msg.sender);
         if (amountIn == 0) revert NoBalance();
 
         // uniswapV3 style
