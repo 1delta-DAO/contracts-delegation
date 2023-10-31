@@ -145,7 +145,6 @@ describe('CompoundV3 Brokered Collateral Multi Swap operations', async () => {
 
             }
         }
-        await broker.manager.approveRouter(tokens.map(t => t.address))
         await broker.manager.connect(deployer).approveComet(tokens.map(t => t.address), 0)
         await broker.manager.connect(deployer).addComet(compound.comet.address, 0)
 

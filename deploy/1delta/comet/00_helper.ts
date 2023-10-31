@@ -61,17 +61,6 @@ export async function createBroker(signer: SignerWithAddress, opts: any = {}): P
     await brokerModule.deployed()
     console.log("marginTrader:", brokerModule.address)
 
-    tx = await configurator.connect(signer).configureModules(
-        [{
-            moduleAddress: brokerModule.address,
-            action: ModuleConfigAction.Add,
-            functionSelectors: getSelectors(brokerModule)
-        }],
-        opts
-    )
-    await tx.wait()
-    console.log("margin broker added")
-
     const broker = (await new ethers.Contract(proxy.address, CometFlashAggregatorPolygon__factory.createInterface(), signer) as CometFlashAggregatorPolygon)
 
     // manager
@@ -81,16 +70,6 @@ export async function createBroker(signer: SignerWithAddress, opts: any = {}): P
     await managerModule.deployed()
     console.log("managementModule:", managerModule.address)
 
-    tx = await configurator.connect(signer).configureModules(
-        [{
-            moduleAddress: managerModule.address,
-            action: ModuleConfigAction.Add,
-            functionSelectors: getSelectors(managerModule)
-        }],
-        opts
-    )
-    await tx.wait()
-    console.log("management added")
 
     const manager = (await new ethers.Contract(proxy.address, CometManagementModule__factory.createInterface(), signer) as CometManagementModule)
 
@@ -99,34 +78,41 @@ export async function createBroker(signer: SignerWithAddress, opts: any = {}): P
     await ownershipModule.deployed()
     console.log("ownership:", ownershipModule.address)
 
-    tx = await configurator.connect(signer).configureModules(
-        [{
-            moduleAddress: ownershipModule.address,
-            action: ModuleConfigAction.Add,
-            functionSelectors: getSelectors(ownershipModule)
-        }],
-        opts
-    )
-    await tx.wait()
-    console.log("ownership added")
-
-
 
     // lens
     const lensModule = await new LensModule__factory(signer).deploy()
     await lensModule.deployed()
-    console.log("ownership:", lensModule.address)
+    console.log("lens:", lensModule.address)
 
     tx = await configurator.connect(signer).configureModules(
-        [{
-            moduleAddress: lensModule.address,
-            action: ModuleConfigAction.Add,
-            functionSelectors: getSelectors(lensModule)
-        }],
+        [
+            {
+                moduleAddress: brokerModule.address,
+                action: ModuleConfigAction.Add,
+                functionSelectors: getSelectors(brokerModule)
+            },
+
+            {
+                moduleAddress: managerModule.address,
+                action: ModuleConfigAction.Add,
+                functionSelectors: getSelectors(managerModule)
+            },
+            {
+                moduleAddress: ownershipModule.address,
+                action: ModuleConfigAction.Add,
+                functionSelectors: getSelectors(ownershipModule)
+            },
+            {
+                moduleAddress: lensModule.address,
+                action: ModuleConfigAction.Add,
+                functionSelectors: getSelectors(lensModule)
+            }
+        ],
         opts
     )
     await tx.wait()
-    console.log("lens added")
+    console.log("modulkes added")
+
     console.log("---- addresses ---")
     console.log("configModule:", confgModule.address)
     console.log("lens:", lensModule.address)
@@ -139,7 +125,7 @@ export async function createBroker(signer: SignerWithAddress, opts: any = {}): P
 }
 
 
-export async function initializeBroker(signer: SignerWithAddress, bf: CometBrokerFixture, comet: string,  opts: any = {}) {
+export async function initializeBroker(signer: SignerWithAddress, bf: CometBrokerFixture, comet: string, opts: any = {}) {
     let tx;
     const dc = await new ConfigModule__factory(signer).attach(bf.brokerProxy.address)
     const initComet = await new CometMarginTraderInit__factory(signer).deploy(

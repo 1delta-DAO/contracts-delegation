@@ -5,8 +5,6 @@ import {
     AaveMarginTraderInit__factory,
     ManagementModule,
     ManagementModule__factory,
-    MarginTradeDataViewerModule,
-    MarginTradeDataViewerModule__factory,
     DeltaBrokerProxy__factory,
     DeltaBrokerProxy,
     AaveMarginTraderInit,
@@ -67,7 +65,6 @@ export interface BrokerV2 {
     brokerProxy: DeltaBrokerProxy
     broker: FlashAggregator
     manager: ManagementModule
-    tradeDataViewer: MarginTradeDataViewerModule
 }
 
 export async function createBrokerV2(signer: SignerWithAddress, balancer: string, aavePool: string, opts = _opts): Promise<BrokerV2> {
@@ -107,14 +104,6 @@ export async function createBrokerV2(signer: SignerWithAddress, balancer: string
     console.log("managementModule:", managerModule.address)
 
     const manager = (await new ethers.Contract(proxy.address, ManagementModule__factory.createInterface(), signer) as ManagementModule)
-
-    // viewer
-    const viewerModule = await new MarginTradeDataViewerModule__factory(signer).deploy(
-        opts
-    )
-    await viewerModule.deployed()
-    console.log("viewerModule:", viewerModule.address)
-
 
     // ownership
     const ownershipModule = await new OwnershipModule__factory(signer).deploy()
@@ -161,11 +150,6 @@ export async function createBrokerV2(signer: SignerWithAddress, balancer: string
             functionSelectors: getSelectors(ownershipModule)
         },
         {
-            moduleAddress: viewerModule.address,
-            action: ModuleConfigAction.Add,
-            functionSelectors: getSelectors(viewerModule)
-        },
-        {
             moduleAddress: brokerModule.address,
             action: ModuleConfigAction.Add,
             functionSelectors: getSelectors(brokerModule)
@@ -190,10 +174,9 @@ export async function createBrokerV2(signer: SignerWithAddress, balancer: string
     console.log("ownership:", ownershipModule.address)
     console.log("marginTrader:", brokerModule.address)
     console.log("managementModule:", managerModule.address)
-    console.log("viewerModule:", viewerModule.address)
     console.log("brokerModuleAave:", brokerModuleAave.address)
     console.log("brokerModuleBalancer:", brokerModuleBalancer.address)
 
-    return { broker, brokerProxy: proxy, manager, tradeDataViewer: viewerModule }
+    return { broker, brokerProxy: proxy, manager }
 
 }

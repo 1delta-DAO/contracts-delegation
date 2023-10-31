@@ -8,8 +8,8 @@ const usedMaxPriorityFeePerGas = 40_000_000_000
 
 
 const opts = {
-    maxFeePerGas: usedMaxFeePerGas,
-    maxPriorityFeePerGas: usedMaxPriorityFeePerGas,
+    // maxFeePerGas: usedMaxFeePerGas,
+    // maxPriorityFeePerGas: usedMaxPriorityFeePerGas,
 }
 
 async function main() {

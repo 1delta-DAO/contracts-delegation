@@ -24,21 +24,6 @@ contract CometManagementModule is WithStorageComet {
         cos().comet[_id] = _comet;
     }
 
-    function setUniswapRouter(address _router) external onlyManagement {
-        us().swapRouter = _router;
-    }
-
-    function setNativeWrapper(address _nativeWrapper) external onlyManagement {
-        us().weth = _nativeWrapper;
-    }
-
-    function approveRouter(address[] memory assets) external onlyManagement {
-        address router = us().swapRouter;
-        for (uint256 i = 0; i < assets.length; i++) {
-            IERC20(assets[i]).approve(router, type(uint256).max);
-        }
-    }
-
     function approveComet(address[] memory assets, uint8 _cometId) external onlyManagement {
         address comet = cos().comet[_cometId];
         for (uint256 i = 0; i < assets.length; i++) {
@@ -47,18 +32,6 @@ contract CometManagementModule is WithStorageComet {
     }
 
     // VIEW FUNCTIONS
-
-    function getFactory() external view returns (address factory) {
-        factory = us().v3factory;
-    }
-
-    function getSwapRouter() external view returns (address) {
-        return us().swapRouter;
-    }
-
-    function getNativeWrapper() external view returns (address) {
-        return us().weth;
-    }
 
     function getComet(uint8 _id) external view returns (address pool) {
         pool = cos().comet[_id];
