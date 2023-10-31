@@ -14,22 +14,18 @@ const opts = {
     // gasLimit: 4000000
 }
 
-const addresses = cometBrokerAddresses as any
-const addressesComet = cometAddress as any
-
 async function main() {
-
 
     const accounts = await ethers.getSigners()
     const operator = accounts[1]
     const chainId = await operator.getChainId();
 
-    const proxyAddress = addresses.BrokerProxy[chainId]
-    // const minimalRouter = addresses.minimalRouter[chainId]
+    if (chainId !== 137) throw new Error("invalid chain")
+
+    const proxyAddress = cometBrokerAddresses.BrokerProxy[chainId]
 
     validateAddresses([
         proxyAddress,
-        //  minimalRouter
     ])
 
     console.log("Operate on", chainId, "by", operator.address)
@@ -37,32 +33,18 @@ async function main() {
     // deploy ConfigModule
     const management = await new CometManagementModule__factory(operator).attach(proxyAddress)
 
-    const cometWETH = compoundTokens[chainId][chainId === 80001 || chainId === 137 ? 'WMATIC' : 'WETH']
-    console.log("set weth", cometWETH)
-
-    let tx = await management.setNativeWrapper(cometWETH, opts)
-    await tx.wait()
-    console.log("weth set", cometWETH)
-
-    // tx = await management.setUniswapRouter(minimalRouter, opts)
-    // await tx.wait()
-    // console.log("router set", minimalRouter)
-
     const underlyingAddresses = Object.values(compoundTokens[chainId])
     console.log("Assets", underlyingAddresses)
 
-    // console.log("approve router")
-    // tx = await management.approveRouter(underlyingAddresses, opts)
-    // await tx.wait()
-
-    console.log("set comet", addressesComet[chainId].USDC)
-    tx = await management.addComet(addressesComet[chainId].USDC, 0, opts)
+    console.log("set comet", cometAddress[chainId].USDC)
+    let tx = await management.addComet(cometAddress[chainId].USDC, 0, opts)
     await tx.wait()
 
     console.log("approve comet")
     tx = await management.approveComet(underlyingAddresses, 0, opts)
     await tx.wait()
 
+    console.log("completed")
 }
 
 main()

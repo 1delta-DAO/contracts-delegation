@@ -36,6 +36,8 @@ const tokensPolygon: { [key: string]: string } = {
     WETH: '0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619',
     WBTC: '0x1BFD67037B42Cf73acF2047067bd4F2C47D9BfD6',
     WMATIC: '0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270',
+    STMATIC: '0x3a58a54c066fdc0f2d55fc9c89f0415c92ebf3c4',
+    MATICX: '0xfa68fb4628dff1028cfec22b4162fccd0d45efb6',
 }
 
 

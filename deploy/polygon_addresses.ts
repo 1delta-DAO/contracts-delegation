@@ -119,12 +119,12 @@ export const cometBrokerAddresses = {
     Sweeper: {
         5: '',
         80001: '0x2f15ec1A5d5ad08cbf4E64d2a6cAFE4F5ff5117B',
-        137: '0x5763e18f9CfB220d1b23f89701142Fdd18C1f223'
+        137: '' // deprecated
     },
     Lens: {
         80001: '0xfD39FcbA8300AB9604D1E8FB1cC91E41a5722e34',
         5: '',
-        137: '0x237620397eC1F38456Af370132E62f104f98C9A6'
+        137: '0xa2e49883b47d33ec8E3924a60Bfb7b58477c4470'
     },
     BrokerProxy: {
         5: '',
@@ -134,37 +134,37 @@ export const cometBrokerAddresses = {
     ConfigModule: {
         5: '',
         80001: '0x93c0774b0e269d4191efb3bdf65645a3722001a8',
-        137: '0xb92028D62D69a24Fc2A52Fe29CD21432Dd0504a5'
+        137: '0xBA0623509DAC6642359357b7570616Bd3ed03Aac'
     },
     MarginTradeDataViewerModule: {
         5: '',
         80001: '0x354631d9B36563eDc9c71b0f6ED1D717925882a5',
-        137: '0xa6eE39deb10A177e79bdd8233811e5E6D53F34A8'
+        137: '' // deprecated
     },
     OwnershipModule: {
         5: '',
         80001: '0x77fEa88b8661131147596330cD2208525F49Ff1A',
-        137: '0xbabe787FFdf5b8630bBBBFb39582416C03f8d558'
+        137: '0xff64a55bF958ff8710703B83e9358D90f69f0361'
     },
     ManagementModule: {
         5: '',
         80001: '0x8650715F2048E233adEd8f6539a22C8BC5d7C5a9',
-        137: '0x12d18DfD5Bb73482E315f551bec5B8D662fDdC53'
+        137: '0x44FA7E546C6a490C39AF2245A4A781e25E2e1Dbc'
     },
     MarginTraderModule: {
         5: '',
         80001: '0x01D8853Fd8C78B2c26097B5003184037F219F77a',
-        137: '0xf655538718435f7981098821bE19fcE98477007b'
+        137: '0x6aB8Ab831966da6f60B236A6f4559E2DA7211ff5'
     },
     MoneyMarketModule: {
         5: '',
         80001: '0xCe9A6D29d57c409881ea284b457e97e3b7F77231',
-        137: '0xF443a1F74e9eeEa693743ed23a85279fef279187'
+        137: '' // deprecated
     },
     UniswapV3SwapCallbackModule: {
         5: '',
         80001: '0xDe7194b4804a669e2B16b896fDF0b829e33f3317',
-        137: '0xA96a9202DcBc31C06173f0A07102D8Ca92A6ea72'
+        137: '' // deprecated
     },
     // external
     minimalRouter: {

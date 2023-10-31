@@ -34,13 +34,15 @@ main()
         process.exit(1);
     });
 
-// goerli
-// configModule: 0xefC2640C978cC5B695815E4B69245943d5e6dcE4
-// brokerProxy: 0x0C233b11F886da1D5206Fa9e0d48293c23A4fDb9
-// ownership: 0x1ae0E121d80C93862e725BD2F4E92E59d6fbEb29
-// marginTrader: 0x628Ef1FE0A45be404c451c613c0B2c901452684f
-// managementModule: 0x0Be9058fE2DB31E2DaCEbbE566D227D0CbfA41C8
-// viewerModule: 0x636Ea7E9C4409Be6CE24A4E14bE73ef8830D83F0
-// callbackModule: 0x90Ff5Fe462d3CB10221dc9B1A767D803757d3216
-// moneyMarket: 0x66107C04AfB3740fE0A3760f88C4022E4e968847
-
+    // ---- addresses ---
+    // proxy: 0x0893B8446fe77eaD760921D34d332d290FF89Ee6
+    // configModule: 0xBA0623509DAC6642359357b7570616Bd3ed03Aac
+    // lens: 0xa2e49883b47d33ec8E3924a60Bfb7b58477c4470
+    // ownership: 0xff64a55bF958ff8710703B83e9358D90f69f0361
+    // marginTrader: 0x6aB8Ab831966da6f60B236A6f4559E2DA7211ff5
+    // managementModule: 0x44FA7E546C6a490C39AF2245A4A781e25E2e1Dbc
+    // Initialize
+    // initComet: 0xC59cf2347635D3404a7Eb11F7E17e26F24205f9a
+    // completed initialization
+    // Completed
+    

@@ -114,6 +114,7 @@ export async function createBroker(signer: SignerWithAddress, opts: any = {}): P
     console.log("modulkes added")
 
     console.log("---- addresses ---")
+    console.log("proxy:", proxy.address)
     console.log("configModule:", confgModule.address)
     console.log("lens:", lensModule.address)
     console.log("ownership:", ownershipModule.address)
@@ -145,7 +146,6 @@ export async function initializeBroker(signer: SignerWithAddress, bf: CometBroke
     await tx.wait()
 
     const dcInit = await new ethers.Contract(bf.brokerProxy.address, CometMarginTraderInit__factory.createInterface(), signer) as CometMarginTraderInit
-
 
     tx = await dcInit.initCometMarginTrader(comet, opts)
     await tx.wait()
