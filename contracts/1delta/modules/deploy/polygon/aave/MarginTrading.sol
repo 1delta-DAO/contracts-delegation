@@ -70,7 +70,7 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
         // uniswapV2 types
         else if (identifier < 100) {
             ncs().amount = amountIn;
-            tokenIn = pairAddress(tokenIn, tokenOut);
+            tokenIn = pairAddress(tokenIn, tokenOut, identifier);
             (uint256 amount0Out, uint256 amount1Out) = zeroForOne
                 ? (uint256(0), getAmountOutDirect(tokenIn, zeroForOne, amountIn))
                 : (getAmountOutDirect(tokenIn, zeroForOne, amountIn), uint256(0));
@@ -116,7 +116,7 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
         }
         // uniswapV2 types
         else if (identifier < 100) {
-            tokenIn = pairAddress(tokenIn, tokenOut);
+            tokenIn = pairAddress(tokenIn, tokenOut, identifier);
             (uint256 amount0Out, uint256 amount1Out) = zeroForOne ? (uint256(0), amountOut) : (amountOut, uint256(0));
             IUniswapV2Pair(tokenIn).swap(amount0Out, amount1Out, address(this), path);
         }
@@ -162,7 +162,7 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
         // unsiwapV3 types
         else if (identifier < 100) {
             ncs().amount = amountIn;
-            tokenIn = pairAddress(tokenIn, tokenOut);
+            tokenIn = pairAddress(tokenIn, tokenOut, identifier);
             (uint256 amount0Out, uint256 amount1Out) = zeroForOne
                 ? (uint256(0), getAmountOutDirect(tokenIn, zeroForOne, amountIn))
                 : (getAmountOutDirect(tokenIn, zeroForOne, amountIn), uint256(0));
@@ -216,7 +216,7 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
         }
         // uniswapV2 types
         else if (identifier < 100) {
-            tokenIn = pairAddress(tokenIn, tokenOut);
+            tokenIn = pairAddress(tokenIn, tokenOut, identifier);
             (uint256 amount0Out, uint256 amount1Out) = zeroForOne ? (uint256(0), amountOut) : (amountOut, uint256(0));
             IUniswapV2Pair(tokenIn).swap(amount0Out, amount1Out, address(this), path);
         }
@@ -471,7 +471,7 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
             zeroForOne := lt(tokenIn, tokenOut)
         }
         // calculate pool address
-        address pool = pairAddress(tokenIn, tokenOut);
+        address pool = pairAddress(tokenIn, tokenOut, identifier);
         {
             // validate sender
             require(msg.sender == pool);
@@ -621,7 +621,7 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
         else if (identifier < 100) {
             bool zeroForOne = tokenIn < tokenOut;
             // get next pool
-            address pool = pairAddress(tokenIn, tokenOut);
+            address pool = pairAddress(tokenIn, tokenOut, identifier);
             uint256 amountOut0;
             uint256 amountOut1;
             // amountOut0, cache

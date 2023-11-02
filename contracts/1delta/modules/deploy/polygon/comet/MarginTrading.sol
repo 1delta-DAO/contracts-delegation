@@ -63,7 +63,7 @@ abstract contract CometMarginTrading is WithStorageComet, BaseSwapper {
         // uniswapV2 types
         else if (identifier < 100) {
             ncs().amount = amountIn;
-            tokenIn = pairAddress(tokenIn, tokenOut);
+            tokenIn = pairAddress(tokenIn, tokenOut, identifier);
             (uint256 amount0Out, uint256 amount1Out) = zeroForOne
                 ? (uint256(0), getAmountOutDirect(tokenIn, zeroForOne, amountIn))
                 : (getAmountOutDirect(tokenIn, zeroForOne, amountIn), uint256(0));
@@ -105,7 +105,7 @@ abstract contract CometMarginTrading is WithStorageComet, BaseSwapper {
         }
         // uniswapV2 types
         else if (identifier < 100) {
-            tokenIn = pairAddress(tokenIn, tokenOut);
+            tokenIn = pairAddress(tokenIn, tokenOut, identifier);
             (uint256 amount0Out, uint256 amount1Out) = zeroForOne ? (uint256(0), amountOut) : (amountOut, uint256(0));
             IUniswapV2Pair(tokenIn).swap(amount0Out, amount1Out, address(this), path);
         }
@@ -153,7 +153,7 @@ abstract contract CometMarginTrading is WithStorageComet, BaseSwapper {
         // unsiwapV3 types
         else if (identifier < 100) {
             ncs().amount = amountIn;
-            tokenIn = pairAddress(tokenIn, tokenOut);
+            tokenIn = pairAddress(tokenIn, tokenOut, identifier);
             (uint256 amount0Out, uint256 amount1Out) = zeroForOne
                 ? (uint256(0), getAmountOutDirect(tokenIn, zeroForOne, amountIn))
                 : (getAmountOutDirect(tokenIn, zeroForOne, amountIn), uint256(0));
@@ -201,7 +201,7 @@ abstract contract CometMarginTrading is WithStorageComet, BaseSwapper {
         }
         // uniswapV2 types
         else if (identifier < 100) {
-            tokenIn = pairAddress(tokenIn, tokenOut);
+            tokenIn = pairAddress(tokenIn, tokenOut, identifier);
             (uint256 amount0Out, uint256 amount1Out) = zeroForOne ? (uint256(0), amountOut) : (amountOut, uint256(0));
             IUniswapV2Pair(tokenIn).swap(amount0Out, amount1Out, address(this), path);
         }
@@ -423,7 +423,7 @@ abstract contract CometMarginTrading is WithStorageComet, BaseSwapper {
             zeroForOne := lt(tokenIn, tokenOut)
         }
         // calculate pool address
-        address pool = pairAddress(tokenIn, tokenOut);
+        address pool = pairAddress(tokenIn, tokenOut, identifier);
         {
             // validate sender
             require(msg.sender == pool);
@@ -487,10 +487,8 @@ abstract contract CometMarginTrading is WithStorageComet, BaseSwapper {
             address user = acs().cachedAddress;
 
             IComet comet = IComet(cos().comet[tradeId]);
-
             // deposit or repay
             comet.supplyTo(user, tokenOut, amountToSwap);
-
             // wihdraw or borrow
             comet.withdrawFrom(user, msg.sender, tokenIn, amountToBorrow);
         } else {
@@ -553,7 +551,7 @@ abstract contract CometMarginTrading is WithStorageComet, BaseSwapper {
         else if (identifier < 100) {
             bool zeroForOne = tokenIn < tokenOut;
             // get next pool
-            address pool = pairAddress(tokenIn, tokenOut);
+            address pool = pairAddress(tokenIn, tokenOut, identifier);
             uint256 amountOut0;
             uint256 amountOut1;
             // amountOut0, cache

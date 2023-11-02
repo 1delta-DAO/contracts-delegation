@@ -93,7 +93,7 @@ export const aaveBrokerAddresses: ChainMap = {
     MarginTraderModule: {
         5: '0xa8d1C7D918ABc6F112F89A8496962c9A6cdA52d0',
         80001: '0xE0d077f7C0d87909A939160EDae002cC9f33168f',
-        137: '0xb7F9DE6e69BcbB11cBa4bd8FD0021bB808BE03d5'
+        137: '0x6C03Ab8140134E44282e6F5645047275e6EC215c'
     },
     MoneyMarketModule: {
         5: '0xc9ea6d976ee5280B777a0c74B986CF3B7CB31f0c',
@@ -154,7 +154,7 @@ export const cometBrokerAddresses = {
     MarginTraderModule: {
         5: '',
         80001: '0x01D8853Fd8C78B2c26097B5003184037F219F77a',
-        137: '0x41d0705DF35Ad7eAad2D5ECF41D7b42561345861'
+        137: '0x984c1Dc8255A2BB8664A6B402Ca482cC23ED28F0'
     },
     MoneyMarketModule: {
         5: '',

@@ -6,8 +6,8 @@ import { validateAddresses } from "../utils/types";
 import { parseUnits } from "ethers/lib/utils";
 import { ModuleConfigAction } from "../test/diamond/libraries/diamond";
 
-const usedMaxFeePerGas = parseUnits('200', 9)
-const usedMaxPriorityFeePerGas = parseUnits('20', 9)
+const usedMaxFeePerGas = parseUnits('100', 9)
+const usedMaxPriorityFeePerGas = parseUnits('30', 9)
 
 const opts = {
     maxFeePerGas: usedMaxFeePerGas,
@@ -25,14 +25,11 @@ async function main() {
 
     const proxyAddress = addresses.BrokerProxy[chainId]
     // const minimalRouter = addresses.minimalRouter[chainId]
-    const callbackAddress = addresses.UniswapV3SwapCallbackModule[chainId]
     const marginTradingAddress = addresses.MarginTraderModule[chainId]
-    const moneyMarketAddress = addresses.MoneyMarketModule[chainId]
     const managementAddress = addresses.ManagementModule[chainId]
     const balancerFlashAddress = addresses.BrokerModuleBalancer[chainId]
     const aaveFlashModuleAddress = addresses.BrokerModuleAave[chainId]
     const sweeperAddress = addresses.Sweeper[chainId]
-    const viewerModule = addresses.MarginTradeDataViewerModule[chainId]
     validateAddresses([proxyAddress, balancerFlashAddress, aaveFlashModuleAddress])
 
     console.log("Operate on", chainId, "by", operator.address)
@@ -49,24 +46,21 @@ async function main() {
     // get lens to fetch modules
     const lens = await new LensModule__factory(operator).attach(proxyAddress)
     console.log(marginTradingAddress)
-    // const callbackSelectors = await lens.moduleFunctionSelectors(callbackAddress)
-    // const marginTradingSelectors = await lens.moduleFunctionSelectors(marginTradingAddress)
+    const marginTradingSelectors = await lens.moduleFunctionSelectors(marginTradingAddress)
     // console.log(marginTradingSelectors)
-    // const moneyMarketSelectors = await lens.moduleFunctionSelectors(moneyMarketAddress)
     const managementSelectors = await lens.moduleFunctionSelectors(managementAddress)
     // const sweeperSelectors = await lens.moduleFunctionSelectors(sweeperAddress)
-    const viewerSelectors = await lens.moduleFunctionSelectors(viewerModule)
     const aaveFlashSelectors = await lens.moduleFunctionSelectors(aaveFlashModuleAddress)
     const balancerFlashSelectors = await lens.moduleFunctionSelectors(balancerFlashAddress)
     const moduleSelectors = [
         // callbackSelectors,
-        // marginTradingSelectors,
+        marginTradingSelectors,
         // moneyMarketSelectors,
         // sweeperSelectors,
-        aaveFlashSelectors,
-        balancerFlashSelectors,
-        viewerSelectors,
-        managementSelectors
+        // aaveFlashSelectors,
+        // balancerFlashSelectors,
+        // viewerSelectors,
+        // managementSelectors
     ]
 
     for (const selector of moduleSelectors) {
@@ -81,7 +75,7 @@ async function main() {
     console.log("Attempt module adjustment - estimate gas")
     await broker.estimateGas.configureModules(cut)
     console.log("Estimate successful - configure!")
-    const tx = await broker.configureModules(cut)
+    const tx = await broker.configureModules(cut, opts)
     console.log('Module adjustment tx: ', tx.hash)
     const receipt = await tx.wait()
     if (!receipt.status) {

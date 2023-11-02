@@ -4,18 +4,15 @@ import { ConfigModule__factory, LensModule__factory } from "../../types";
 import { cometBrokerAddresses } from "../../deploy/polygon_addresses"
 import { validateAddresses } from "../../utils/types";
 import { parseUnits } from "ethers/lib/utils";
-import { getContractSelectors, getSelectors, ModuleConfigAction } from "../../test/diamond/libraries/diamond";
+import { ModuleConfigAction } from "../../test/diamond/libraries/diamond";
 
-
-
-const usedMaxFeePerGas = parseUnits('200', 9)
-const usedMaxPriorityFeePerGas = parseUnits('20', 9)
+const usedMaxFeePerGas = parseUnits('100', 9)
+const usedMaxPriorityFeePerGas = parseUnits('30', 9)
 
 const opts = {
     maxFeePerGas: usedMaxFeePerGas,
     maxPriorityFeePerGas: usedMaxPriorityFeePerGas
 }
-
 
 async function main() {
     const accounts = await ethers.getSigners()
@@ -64,7 +61,7 @@ async function main() {
 
     console.log("Cut:", cut)
     console.log("Attempt module adjustment")
-    const tx = await broker.configureModules(cut)
+    const tx = await broker.configureModules(cut, opts)
     console.log('Module adjustment tx: ', tx.hash)
     const receipt = await tx.wait()
     if (!receipt.status) {

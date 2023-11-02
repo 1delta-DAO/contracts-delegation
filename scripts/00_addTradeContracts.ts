@@ -12,21 +12,14 @@ import {
 import { aaveAddresses, aaveBrokerAddresses, uniswapAddresses } from "../deploy/polygon_addresses"
 import { validateAddresses } from "../utils/types";
 import { parseUnits } from "ethers/lib/utils";
-import { getContractSelectors, getSelectors, ModuleConfigAction } from "../test/diamond/libraries/diamond";
-import { balancerV2Vault } from "./miscAddresses";
-
-
+import { getContractSelectors, ModuleConfigAction } from "../test/diamond/libraries/diamond";
 
 const usedMaxFeePerGas = parseUnits('100', 9)
-const usedMaxPriorityFeePerGas = parseUnits('10', 9)
-const gasPrice = parseUnits('250', 9)
+const usedMaxPriorityFeePerGas = parseUnits('30', 9)
 
-// options for deployment
 const opts = {
-    // maxFeePerGas: usedMaxFeePerGas,
-    // maxPriorityFeePerGas: usedMaxPriorityFeePerGas,
-    // gasPrice
-    // gasLimit: 3500000
+    maxFeePerGas: usedMaxFeePerGas,
+    maxPriorityFeePerGas: usedMaxPriorityFeePerGas
 }
 
 const addresses = aaveBrokerAddresses as any
@@ -51,9 +44,9 @@ async function main() {
     // deploy ConfigModule
     const broker = await new ConfigModule__factory(operator).attach(proxyAddress)
 
-    // const flashBroker = await new DeltaFlashAggregator__factory(operator).deploy()
-    // await flashBroker.deployed()
-    // console.log("flashBroker deployed")
+    const flashBroker = await new DeltaFlashAggregator__factory(operator).deploy(opts)
+    await flashBroker.deployed()
+    console.log("flashBroker deployed")
 
     // const callback = await new UniswapV3SwapCallbackModule__factory(operator).deploy(uniswapFactory, aavePool, opts)
     // await callback.deployed()
@@ -71,32 +64,32 @@ async function main() {
     // await sweeper.deployed()
     // console.log("sweeper deployed")
 
-    const management = await new ManagementModule__factory(operator).deploy()
-    await management.deployed()
-    console.log("management deployed")
+    // const management = await new ManagementModule__factory(operator).deploy()
+    // await management.deployed()
+    // console.log("management deployed")
 
 
-    const balancerFlashModule = await new BalancerFlashModule__factory(operator).deploy(aavePool, balancerV2Vault[chainId])
-    await balancerFlashModule.deployed()
-    console.log("balancerFlashModule deployed")
+    // const balancerFlashModule = await new BalancerFlashModule__factory(operator).deploy(aavePool, balancerV2Vault[chainId])
+    // await balancerFlashModule.deployed()
+    // console.log("balancerFlashModule deployed")
 
-    const aaveFlashModule = await new AaveFlashModule__factory(operator).deploy(aavePool)
-    await aaveFlashModule.deployed()
-    console.log("aaveFlashModule deployed")
+    // const aaveFlashModule = await new AaveFlashModule__factory(operator).deploy(aavePool)
+    // await aaveFlashModule.deployed()
+    // console.log("aaveFlashModule deployed")
 
     // const lensModule = await new LensModule__factory(operator).deploy(opts)
     // await lensModule.deployed()
     // console.log("lens deployed")
-    // console.log("FlashBroker", flashBroker.address)
-    console.log("BrokerModuleBalancer", balancerFlashModule.address)
-    console.log("BrokerModulAave", aaveFlashModule.address)
+    console.log("FlashBroker", flashBroker.address)
+    // console.log("BrokerModuleBalancer", balancerFlashModule.address)
+    // console.log("BrokerModulAave", aaveFlashModule.address)
     // console.log("UniswapV3SwapCallbackModule", callback.address)
     // console.log("MoneyMarketModule", moneyMarkets.address)
     // console.log("MarginTraderModule", marginTrading.address)
     // console.log("Sweeper", sweeper.address)
 
     // console.log("Lens", lensModule.address)
-    console.log("Management", management.address)
+    // console.log("Management", management.address)
 
     const cut: {
         moduleAddress: string,
@@ -106,15 +99,15 @@ async function main() {
 
 
     const modules = [
-        balancerFlashModule,
-        aaveFlashModule,
-        // flashBroker
+        // balancerFlashModule,
+        // aaveFlashModule,
+        flashBroker
         // sweeper,
         // marginTrading,
         // moneyMarkets,
         // callback,
         // lensModule,
-        management
+        // management
     ]
 
     for (const module of modules) {

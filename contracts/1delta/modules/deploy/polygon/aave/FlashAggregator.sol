@@ -257,7 +257,7 @@ contract DeltaFlashAggregator is MarginTrading, WrappedNativeHandler, SelfPermit
         else if (identifier < 100) {
             bool zeroForOne = tokenIn < tokenOut;
             // get next pool
-            address pool = pairAddress(tokenIn, tokenOut);
+            address pool = pairAddress(tokenIn, tokenOut, identifier);
             uint256 amountOut0;
             uint256 amountOut1;
             // amountOut0, cache

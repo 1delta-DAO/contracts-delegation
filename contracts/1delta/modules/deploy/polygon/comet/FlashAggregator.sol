@@ -23,7 +23,7 @@ contract CometFlashAggregatorPolygon is CometMarginTrading, WrappedNativeHandler
     uint256 private constant DEFAULT_AMOUNT_CACHED = type(uint256).max;
     address private constant DEFAULT_ADDRESS_CACHED = address(0);
 
-    constructor(  ) CometMarginTrading() WrappedNativeHandler() {}
+    constructor() {}
 
     /** BASE LENDING FUNCTIONS */
 
@@ -250,7 +250,7 @@ contract CometFlashAggregatorPolygon is CometMarginTrading, WrappedNativeHandler
         else if (identifier < 100) {
             bool zeroForOne = tokenIn < tokenOut;
             // get next pool
-            address pool = pairAddress(tokenIn, tokenOut);
+            address pool = pairAddress(tokenIn, tokenOut, identifier);
             uint256 amountOut0;
             uint256 amountOut1;
             // amountOut0, cache

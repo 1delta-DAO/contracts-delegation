@@ -7,17 +7,12 @@ import { parseUnits } from "ethers/lib/utils";
 import { getContractSelectors, ModuleConfigAction } from "../../test/diamond/libraries/diamond";
 
 
-
 const usedMaxFeePerGas = parseUnits('100', 9)
-const usedMaxPriorityFeePerGas = parseUnits('10', 9)
-const gasPrice = parseUnits('250', 9)
+const usedMaxPriorityFeePerGas = parseUnits('30', 9)
 
-// options for deployment
 const opts = {
-    // maxFeePerGas: usedMaxFeePerGas,
-    // maxPriorityFeePerGas: usedMaxPriorityFeePerGas,
-    // gasPrice
-    // gasLimit: 3500000
+    maxFeePerGas: usedMaxFeePerGas,
+    maxPriorityFeePerGas: usedMaxPriorityFeePerGas
 }
 
 async function main() {
