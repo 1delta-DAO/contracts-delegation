@@ -173,10 +173,10 @@ const config: HardhatUserConfig = {
       accounts
     },
     hardhat: {
-      forking: {
-        blockNumber: 49463469,
-        url: `https://rpc.ankr.com/polygon`,
-      },
+      // forking: {
+      //   blockNumber: 49463469,
+      //   url: `https://rpc.ankr.com/polygon`,
+      // },
       // forking: {
       //   blockNumber: 17347166,
       //   url: `https://rpc.mantle.xyz`,
@@ -503,6 +503,27 @@ const config: HardhatUserConfig = {
             bytecodeHash: 'none',
           },
         },
+      },
+      // iZi
+      {
+        version: "0.8.4",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 100
+          },
+          outputSelection: {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+            }
+          }
+        }
       },
 
       // aave

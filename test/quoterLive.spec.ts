@@ -66,7 +66,7 @@ it("Test custom multicall", async function () {
 
     const path = encodePath([wethAddress, usdcAddress], [100])
     const quoterUni = await new Quoter__factory(signer).attach('0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6')
-    const calldataUni = quoterUni.interface.encodeFunctionData('quoteExactInput', [path, '0x22b1c8c1227a0000'])
+    const calldataUni = quoterUni.interface.encodeFunctionData('quoteExactInput' as any, [path, '0x22b1c8c1227a0000'])
     // const test = await quoterUni.callStatic.quoteExactInput(path, '0x22b1c8c1227a0000')
     // console.log("UNI", test.toString())
     console.log("TE")
