@@ -199,7 +199,7 @@ const config: HardhatUserConfig = {
       //   url: `https://rpc.ankr.com/polygon`,
       // },
       forking: {
-        blockNumber: 17347166,
+        blockNumber: 20240225,
         url: `https://rpc.mantle.xyz`,
       },
     },
