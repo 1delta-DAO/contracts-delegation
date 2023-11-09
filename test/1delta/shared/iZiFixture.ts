@@ -67,12 +67,12 @@ export async function deploy_iZi(signer: SignerWithAddress,
   console.log("factory addr: " + factory.address);
 
   const liquidityManager = await new LiquidityManager__factory(signer).deploy(factory.address, weth)
-
+  await factory.enableFeeAmount(FeeAmount.MEDIUM, 10)
   return { factory, liquidityManager }
 }
 
 
-export async function addLiquidity(
+export async function addLiquidity_iZi(
   signer: SignerWithAddress,
   tokenAddressA: string,
   tokenAddressB: string,
@@ -84,15 +84,15 @@ export async function addLiquidity(
     [tokenAddressA, tokenAddressB, amountA, amountB] = [tokenAddressB, tokenAddressA, amountB, amountA]
 
 
-  await uniswap.liquidityManager.connect(signer).createPool(tokenAddressA, tokenAddressB, FeeAmount.MEDIUM, 0)
+  await uniswap.liquidityManager.connect(signer).createPool(tokenAddressA, tokenAddressB, FeeAmount.MEDIUM, 10)
 
   const poolAddr = await uniswap.factory.pool(tokenAddressA, tokenAddressB, FeeAmount.MEDIUM)
 
   const tA = await new ethers.Contract(tokenAddressA, IERC20__factory.createInterface(), signer)
-  await tA.connect(signer).approve(uniswap.factory.address, constants.MaxUint256)
+  await tA.connect(signer).approve(uniswap.liquidityManager.address, constants.MaxUint256)
 
   const tB = await new ethers.Contract(tokenAddressB, IERC20__factory.createInterface(), signer)
-  await tB.connect(signer).approve(uniswap.factory.address, constants.MaxUint256)
+  await tB.connect(signer).approve(uniswap.liquidityManager.address, constants.MaxUint256)
 
   console.log("add liquidity", tokenAddressA, tokenAddressB)
 
@@ -104,11 +104,11 @@ export async function addLiquidity(
     fee: FeeAmount.MEDIUM,
     pl: -1000,
     pr: 1050,
-    xLim: "104869958",
-    yLim: "100000000",
+    xLim: amountA,
+    yLim: amountB,
     amountXMin: 0,
     amountYMin: 0,
-    deadline: 1,
+    deadline: constants.MaxUint256,
     miner: signer.address,
     poolId
   }

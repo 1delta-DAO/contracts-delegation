@@ -53,6 +53,7 @@ export function getCreate2Address(
     // init code. bytecode + constructor arguments
     utils.keccak256(bytecode),
   ]
+  // console.log("Code hash", utils.keccak256(bytecode))
   const sanitizedInputs = `0x${create2Inputs.map((i) => i.slice(2)).join('')}`
   return utils.getAddress(`0x${utils.keccak256(sanitizedInputs).slice(-40)}`)
 }

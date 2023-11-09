@@ -66,6 +66,27 @@ const DEFAULT_COMPILER_SETTINGS = {
 }
 
 
+const IZI_COMPILER_SETTINGS = {
+  version: "0.8.4",
+  settings: {
+    optimizer: {
+      enabled: true,
+      runs: 100
+    },
+    outputSelection: {
+      "*": {
+        "*": [
+          "abi",
+          "evm.bytecode",
+          "evm.deployedBytecode",
+          "evm.methodIdentifiers",
+          "metadata"
+        ],
+      }
+    }
+  }
+}
+
 const LOWEST_OPTIMIZER_COMPILER_SETTINGS = {
   version: '0.8.17',
   settings: {
@@ -177,10 +198,10 @@ const config: HardhatUserConfig = {
       //   blockNumber: 49463469,
       //   url: `https://rpc.ankr.com/polygon`,
       // },
-      // forking: {
-      //   blockNumber: 17347166,
-      //   url: `https://rpc.mantle.xyz`,
-      // },
+      forking: {
+        blockNumber: 17347166,
+        url: `https://rpc.mantle.xyz`,
+      },
     },
     rinkeby: {
       url: `https://rinkeby.infura.io/v3/${process.env.INFURA_API_KEY}`,
@@ -602,6 +623,9 @@ const config: HardhatUserConfig = {
           },
         },
       },
+      // izi
+      "contracts/external-protocols/iZi/core/iZiSwapFactory.sol": IZI_COMPILER_SETTINGS,
+      "contracts/external-protocols/iZi/periphery/LiquidityManager.sol": IZI_COMPILER_SETTINGS,
       // algebra settings
       "contracts/external-protocols/algebra/core/base/AlgebraPoolBase.sol": DEFAULT_COMPILER_SETTINGS,
       "contracts/external-protocols/algebra/core/base/DerivedState.sol": DEFAULT_COMPILER_SETTINGS,

@@ -13,6 +13,40 @@ interface ISwapPool {
     function token0() external view returns (address);
 }
 
+interface IiZiSwapPool {
+    function swapY2X(
+        // exact in swap token1 to 0
+        address recipient,
+        uint128 amount,
+        int24 highPt,
+        bytes calldata data
+    ) external returns (uint256 amountX, uint256 amountY);
+
+    function swapY2XDesireX(
+        // exact out swap token1 to 0
+        address recipient,
+        uint128 desireX,
+        int24 highPt,
+        bytes calldata data
+    ) external returns (uint256 amountX, uint256 amountY);
+
+    function swapX2Y(
+        // exact in swap token0 to 1
+        address recipient,
+        uint128 amount,
+        int24 lowPt,
+        bytes calldata data
+    ) external returns (uint256 amountX, uint256 amountY);
+
+    function swapX2YDesireY(
+        // exact out swap token0 to 1
+        address recipient,
+        uint128 desireY,
+        int24 lowPt,
+        bytes calldata data
+    ) external returns (uint256 amountX, uint256 amountY);
+}
+
 /**
  * Quoter contract
  * Paths have to be encoded as follows: token0 (address) | param0 (uint24) | poolId (uint8) | token1 (address) |
@@ -42,6 +76,9 @@ contract OneDeltaQuoterMantle {
 
     bytes32 private constant FUSION_V2_FF_FACTORY = 0xffE5020961fA51ffd3662CDf307dEf18F9a87Cce7c0000000000000000000000;
     bytes32 private constant CODE_HASH_FUSION_V2 = 0x58c684aeb03fe49c8a3080db88e425fae262c5ef5bf0e8acffc0526c6e3c03a0;
+
+    bytes32 private constant IZI_FF_FACTORY = 0xff45e5F26451CDB01B0fA1f8582E0aAD9A6F27C2180000000000000000000000;
+    bytes32 private constant IZI_POOL_INIT_CODE_HASH = 0xbe0bfe068cdd78cafa3ddd44e214cfa4e412c15d7148e932f8043fe883865e40;
 
     constructor() {}
 
@@ -87,14 +124,72 @@ contract OneDeltaQuoterMantle {
         _v3SwapCallback(amount0Delta, amount1Delta, path);
     }
 
+    // iZi callbacks
+
+    function swapY2XCallback(uint256 x, uint256 y, bytes calldata path) external view {
+        // we do not validate the callback since it's just a view function
+        // as such, we do not need to decode poolId and fee
+        address tokenIn;
+        address tokenOut;
+        assembly {
+            tokenIn := shr(96, calldataload(path.offset)) // right shift by 12 bytes yields the 1st token
+            tokenOut := shr(96, calldataload(add(path.offset, 24))) // we load starting from the 2nd token and slice the rest
+        }
+        if (tokenIn < tokenOut) {
+            // token1 is y, amount of token1 is calculated
+            // called from swapY2XDesireX(...)
+            if (amountOutCached != 0) require(x >= amountOutCached);
+            assembly {
+                let ptr := mload(0x40)
+                mstore(ptr, y)
+                revert(ptr, 64)
+            }
+        } else {
+            // token0 is y, amount of token0 is input param
+            // called from swapY2X(...)
+            assembly {
+                let ptr := mload(0x40)
+                mstore(ptr, x)
+                revert(ptr, 64)
+            }
+        }
+    }
+
+    function swapX2YCallback(uint256 x, uint256 y, bytes calldata path) external view {
+        // we do not validate the callback since it's just a view function
+        // as such, we do not need to decode poolId and fee
+        address tokenIn;
+        address tokenOut;
+        assembly {
+            tokenIn := shr(96, calldataload(path.offset)) // right shift by 12 bytes yields the 1st token
+            tokenOut := shr(96, calldataload(add(path.offset, 24))) // we load starting from the 2nd token and slice the rest
+        }
+        if (tokenIn < tokenOut) {
+            // token0 is x, amount of token0 is input param
+            // called from swapX2Y(...)
+            assembly {
+                let ptr := mload(0x40)
+                mstore(ptr, y)
+                revert(ptr, 64)
+            }
+        } else {
+            // token1 is x, amount of token1 is calculated param
+            // called from swapX2YDesireY(...)
+            if (amountOutCached != 0) require(y >= amountOutCached);
+            assembly {
+                let ptr := mload(0x40)
+                mstore(ptr, x)
+                revert(ptr, 64)
+            }
+        }
+    }
+
     /// @dev Parses a revert reason that should contain the numeric quote
     function parseRevertReason(bytes memory reason) private pure returns (uint256) {
         if (reason.length != 32) {
-            if (reason.length < 68) revert("Unexpected error");
-            assembly {
-                reason := add(reason, 0x04)
-            }
-            revert(abi.decode(reason, (string)));
+            if (reason.length != 64) revert("Unexpected error");
+            // iZi catches errors of length other than 64 internally
+            return abi.decode(reason, (uint256));
         }
         return abi.decode(reason, (uint256));
     }
@@ -118,6 +213,40 @@ contract OneDeltaQuoterMantle {
             )
         {} catch (bytes memory reason) {
             return parseRevertReason(reason);
+        }
+    }
+
+    function quoteExactInputSingle_iZi(
+        // no pool identifier
+        address tokenIn,
+        address tokenOut,
+        uint24 fee,
+        uint128 amount
+    ) public returns (uint256 amountOut) {
+        if (tokenIn < tokenOut) {
+            int24 boundaryPoint = -799999;
+            try
+                getiZiPool(tokenOut, tokenIn, fee).swapX2Y(
+                    address(this), // address(0) might cause issues with some tokens
+                    amount,
+                    boundaryPoint,
+                    abi.encodePacked(tokenIn, fee, uint8(0), tokenOut)
+                )
+            {} catch (bytes memory reason) {
+                return parseRevertReason(reason);
+            }
+        } else {
+            int24 boundaryPoint = 799999;
+            try
+                getiZiPool(tokenOut, tokenIn, fee).swapY2X(
+                    address(this), // address(0) might cause issues with some tokens
+                    amount,
+                    boundaryPoint,
+                    abi.encodePacked(tokenIn, fee, uint8(0), tokenOut)
+                )
+            {} catch (bytes memory reason) {
+                return parseRevertReason(reason);
+            }
         }
     }
 
@@ -169,6 +298,41 @@ contract OneDeltaQuoterMantle {
         {} catch (bytes memory reason) {
             delete amountOutCached; // clear cache
             return parseRevertReason(reason);
+        }
+    }
+
+    function quoteExactOutputSingle_iZi(
+        // no pool identifier, using `desire` functions fir exact out
+        address tokenIn,
+        address tokenOut,
+        uint24 fee,
+        uint128 desire
+    ) public returns (uint256 amountIn) {
+        amountOutCached = desire;
+        if (tokenIn < tokenOut) {
+            int24 boundaryPoint = -799999;
+            try
+                getiZiPool(tokenOut, tokenIn, fee).swapX2YDesireY(
+                    address(this), // address(0) might cause issues with some tokens
+                    desire + 1,
+                    boundaryPoint,
+                    abi.encodePacked(tokenOut, fee, uint8(0), tokenIn)
+                )
+            {} catch (bytes memory reason) {
+                return parseRevertReason(reason);
+            }
+        } else {
+            int24 boundaryPoint = 799999;
+            try
+                getiZiPool(tokenOut, tokenIn, fee).swapY2XDesireX(
+                    address(this), // address(0) might cause issues with some tokens
+                    desire + 1,
+                    boundaryPoint,
+                    abi.encodePacked(tokenOut, fee, uint8(0), tokenIn)
+                )
+            {} catch (bytes memory reason) {
+                return parseRevertReason(reason);
+            }
         }
     }
 
@@ -250,6 +414,26 @@ contract OneDeltaQuoterMantle {
         }
     }
 
+    /// @dev Returns the pool for the given token pair and fee. The pool contract may or may not exist.
+    function getiZiPool(address tokenA, address tokenB, uint24 fee) private pure returns (IiZiSwapPool pool) {
+        bytes32 ffFactoryAddress = IZI_FF_FACTORY;
+        (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
+        assembly {
+            let s := mload(0x40)
+            let p := s
+            mstore(p, ffFactoryAddress)
+            p := add(p, 21)
+            // Compute the inner hash in-place
+            mstore(p, token0)
+            mstore(add(p, 32), token1)
+            mstore(add(p, 64), and(UINT24_MASK, fee))
+            mstore(p, keccak256(p, 96))
+            p := add(p, 32)
+            mstore(p, IZI_POOL_INIT_CODE_HASH)
+            pool := and(ADDRESS_MASK, keccak256(s, 85))
+        }
+    }
+
     /// @dev gets uniswapV2 (and fork) pair addresses
     function v2TypePairAddress(address tokenA, address tokenB, uint8) private pure returns (address pair) {
         assembly {
@@ -304,6 +488,14 @@ contract OneDeltaQuoterMantle {
                 address pair = v2TypePairAddress(tokenIn, tokenOut, poolId);
                 amountIn = getV2AmountOutDirect(pair, tokenIn < tokenOut, amountIn);
             }
+            // iZi
+            else if (poolId == 100) {
+                uint24 fee;
+                assembly {
+                    fee := and(shr(72, calldataload(path.offset)), 0xffffff)
+                }
+                amountIn = quoteExactInputSingle_iZi(tokenIn, tokenOut, fee, uint128(amountIn));
+            }
 
             /// decide whether to continue or terminate
             if (path.length > 20 + 20 + 4) {
@@ -342,6 +534,12 @@ contract OneDeltaQuoterMantle {
             else if (poolId < 100) {
                 address pair = v2TypePairAddress(tokenIn, tokenOut, poolId);
                 amountOut = getV2AmountInDirect(pair, tokenOut < tokenIn, amountOut);
+            } else if (poolId == 100) {
+                uint24 fee;
+                assembly {
+                    fee := and(shr(72, calldataload(path.offset)), 0xffffff)
+                }
+                amountOut = quoteExactOutputSingle_iZi(tokenIn, tokenOut, fee, uint128(amountOut));
             }
             /// decide whether to continue or terminate
             if (path.length > 20 + 20 + 4) {
