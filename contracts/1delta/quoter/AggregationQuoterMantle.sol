@@ -416,16 +416,20 @@ contract OneDeltaQuoterMantle {
 
     /// @dev Returns the pool for the given token pair and fee. The pool contract may or may not exist.
     function getiZiPool(address tokenA, address tokenB, uint24 fee) private pure returns (IiZiSwapPool pool) {
-        bytes32 ffFactoryAddress = IZI_FF_FACTORY;
-        (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
         assembly {
             let s := mload(0x40)
             let p := s
-            mstore(p, ffFactoryAddress)
+            mstore(p, IZI_FF_FACTORY)
             p := add(p, 21)
-            // Compute the inner hash in-place
-            mstore(p, token0)
-            mstore(add(p, 32), token1)
+            switch lt(tokenA, tokenB)
+            case 0 {
+                mstore(p, tokenB)
+                mstore(add(p, 32), tokenA)
+            }
+            default {
+                mstore(p, tokenA)
+                mstore(add(p, 32), tokenB)
+            }
             mstore(add(p, 64), and(UINT24_MASK, fee))
             mstore(p, keccak256(p, 96))
             p := add(p, 32)

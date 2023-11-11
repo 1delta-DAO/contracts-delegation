@@ -7,6 +7,7 @@ pragma solidity 0.8.21;
 /******************************************************************************/
 
 import {IUniswapV3Pool} from "../../../dex-tools/uniswap/core/IUniswapV3Pool.sol";
+import {IUniversalV3StyleSwap} from "../../../dex-tools/interfaces/IUniversalSwap.sol";
 import {IUniswapV2Pair} from "../../../../external-protocols/uniswapV2/core/interfaces/IUniswapV2Pair.sol";
 import {TokenTransfer} from "../../../libraries/TokenTransfer.sol";
 
@@ -29,17 +30,17 @@ abstract contract BaseSwapper is TokenTransfer {
     /// @dev MAX_SQRT_RATIO - 1 from Uniswap's TickMath
     uint160 internal constant MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970341;
 
-    //  bytes32((uint256(0xff) << 248) | (uint256(uint160(0x8790c2C3BA67223D83C8FCF2a5E3C650059987b4)) << 88));
     bytes32 private constant FUSION_V3_FF_FACTORY = 0xff8790c2C3BA67223D83C8FCF2a5E3C650059987b40000000000000000000000;
     bytes32 private constant FUSION_POOL_INIT_CODE_HASH = 0x1bce652aaa6528355d7a339037433a20cd28410e3967635ba8d2ddb037440dbf;
 
-    //  bytes32((uint256(0xff) << 248) | (uint256(uint160(0xe9827B4EBeB9AE41FC57efDdDd79EDddC2EA4d03)) << 88));
     bytes32 private constant AGNI_V3_FF_FACTORY = 0xffe9827B4EBeB9AE41FC57efDdDd79EDddC2EA4d030000000000000000000000;
     bytes32 private constant AGNI_POOL_INIT_CODE_HASH = 0xaf9bd540c3449b723624376f906d8d3a0e6441ff18b847f05f4f85789ab64d9a;
 
-    // bytes32((uint256(0xff) << 248) | (uint256(uint160(0xE5020961fA51ffd3662CDf307dEf18F9a87Cce7c)) << 88));
     bytes32 private constant FUSION_V2_FF_FACTORY = 0xffE5020961fA51ffd3662CDf307dEf18F9a87Cce7c0000000000000000000000;
     bytes32 private constant CODE_HASH_FUSION_V2 = 0x58c684aeb03fe49c8a3080db88e425fae262c5ef5bf0e8acffc0526c6e3c03a0;
+
+    bytes32 private constant IZI_FF_FACTORY = 0xff45e5F26451CDB01B0fA1f8582E0aAD9A6F27C2180000000000000000000000;
+    bytes32 private constant IZI_POOL_INIT_CODE_HASH = 0xbe0bfe068cdd78cafa3ddd44e214cfa4e412c15d7148e932f8043fe883865e40;
 
     constructor() {}
 
@@ -57,7 +58,7 @@ abstract contract BaseSwapper is TokenTransfer {
         address tokenB,
         uint24 fee,
         uint8 pId
-    ) internal pure returns (IUniswapV3Pool pool) {
+    ) internal pure returns (IUniversalV3StyleSwap pool) {
         uint256 _pId = pId;
         assembly {
             let s := mload(0x40)
@@ -84,7 +85,7 @@ abstract contract BaseSwapper is TokenTransfer {
                 pool := and(ADDRESS_MASK, keccak256(s, 85))
             }
             // agni
-            default {
+            case 1 {
                 mstore(p, AGNI_V3_FF_FACTORY)
                 p := add(p, 21)
                 // Compute the inner hash in-place
@@ -103,11 +104,31 @@ abstract contract BaseSwapper is TokenTransfer {
                 mstore(p, AGNI_POOL_INIT_CODE_HASH)
                 pool := and(ADDRESS_MASK, keccak256(s, 85))
             }
+            // iZi
+            default {
+                mstore(p, IZI_FF_FACTORY)
+                p := add(p, 21)
+                // Compute the inner hash in-place
+                switch lt(tokenA, tokenB)
+                case 0 {
+                    mstore(p, tokenB)
+                    mstore(add(p, 32), tokenA)
+                }
+                default {
+                    mstore(p, tokenA)
+                    mstore(add(p, 32), tokenB)
+                }
+                mstore(add(p, 64), and(UINT24_MASK, fee))
+                mstore(p, keccak256(p, 96))
+                p := add(p, 32)
+                mstore(p, IZI_POOL_INIT_CODE_HASH)
+                pool := and(ADDRESS_MASK, keccak256(s, 85))
+            }
         }
     }
 
     /// @dev gets uniswapV2 (and fork) pair addresses
-    function pairAddress(address tokenA, address tokenB) internal pure returns (address pair) {
+    function pairAddress(address tokenA, address tokenB, uint8) internal pure returns (address pair) {
         assembly {
             switch lt(tokenA, tokenB)
             case 0 {
@@ -160,6 +181,29 @@ abstract contract BaseSwapper is TokenTransfer {
             // uniswapV2 style
             else if (identifier < 100) {
                 amountIn = swapUniV2ExactIn(tokenIn, tokenOut, amountIn);
+            }
+            // iZi
+            else if (identifier == 100) {
+                uint24 fee;
+                bool zeroForOne ;
+                assembly {
+                    fee := and(shr(72, calldataload(path.offset)), 0xffffff)
+                    zeroForOne := lt(tokenIn, tokenOut)
+                }
+            if (zeroForOne)
+                    getUniswapV3Pool(tokenIn, tokenOut, fee, identifier).swapX2Y(
+                        address(this),
+                        uint128(amountIn),
+                        -799999,
+                        path
+                    );
+                else
+                    getUniswapV3Pool(tokenIn, tokenOut, fee, identifier).swapY2X(
+                        address(this),
+                        uint128(amountIn),
+                        799999,
+                        path
+                    );
             }
             // decide whether to continue or terminate
             if (path.length > 46) {

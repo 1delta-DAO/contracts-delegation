@@ -129,7 +129,7 @@ contract DeltaFlashAggregator is MarginTrading, WrappedNativeHandler, SelfPermit
         bytes calldata path
     ) external payable {
         acs().cachedAddress = msg.sender;
-        flashSwapExactOutInternal(amountOut, path);
+        flashSwapExactOutInternal(amountOut, address(this), path);
         if (maximumAmountIn < ncs().amount) revert Slippage();
         ncs().amount = DEFAULT_AMOUNT_CACHED;
         acs().cachedAddress = DEFAULT_ADDRESS_CACHED;
@@ -143,7 +143,7 @@ contract DeltaFlashAggregator is MarginTrading, WrappedNativeHandler, SelfPermit
         uint256 maximumAmountIn,
         bytes calldata path
     ) external payable {
-        flashSwapExactOutInternal(amountOut, path);
+        flashSwapExactOutInternal(amountOut, address(this), path);
         if (maximumAmountIn < ncs().amount) revert Slippage();
         ncs().amount = DEFAULT_AMOUNT_CACHED;
     }
@@ -182,7 +182,7 @@ contract DeltaFlashAggregator is MarginTrading, WrappedNativeHandler, SelfPermit
         else _debtBalance = IERC20Balance(aas().sTokens[tokenOut]).balanceOf(msg.sender);
         if (_debtBalance == 0) revert NoBalance(); // revert if amount is zero
 
-        flashSwapExactOutInternal(_debtBalance, path);
+        flashSwapExactOutInternal(_debtBalance, address(this), path);
         if (maximumAmountIn < ncs().amount) revert Slippage();
         ncs().amount = DEFAULT_AMOUNT_CACHED;
         acs().cachedAddress = DEFAULT_ADDRESS_CACHED;
@@ -206,7 +206,7 @@ contract DeltaFlashAggregator is MarginTrading, WrappedNativeHandler, SelfPermit
         else _debtBalance = IERC20Balance(aas().sTokens[tokenOut]).balanceOf(msg.sender);
         if (_debtBalance == 0) revert NoBalance(); // revert if amount is zero
 
-        flashSwapExactOutInternal(_debtBalance, path);
+        flashSwapExactOutInternal(_debtBalance, address(this), path);
         if (maximumAmountIn < ncs().amount) revert Slippage();
         ncs().amount = DEFAULT_AMOUNT_CACHED;
     }
@@ -224,45 +224,5 @@ contract DeltaFlashAggregator is MarginTrading, WrappedNativeHandler, SelfPermit
         if (amountIn == 0) revert NoBalance(); // revert if amount is zero
         uint256 amountOut = swapExactIn(amountIn, path);
         if (minimumAmountOut > amountOut) revert Slippage();
-    }
-
-    // a flash swap whre the output is sent to this address
-    function flashSwapExactOutInternal(uint256 amountOut, bytes calldata data) private {
-        address tokenIn;
-        address tokenOut;
-        uint8 identifier;
-        assembly {
-            let firstWord := calldataload(data.offset)
-            tokenOut := shr(96, firstWord)
-            identifier := shr(64, firstWord)
-            tokenIn := shr(96, calldataload(add(data.offset, 25)))
-        }
-
-        // uniswapV3 style
-        if (identifier < 50) {
-            bool zeroForOne = tokenIn < tokenOut;
-            uint24 fee;
-            assembly {
-                fee := and(shr(72, calldataload(data.offset)), 0xffffff)
-            }
-            getUniswapV3Pool(tokenIn, tokenOut, fee, identifier).swap(
-                address(this),
-                zeroForOne,
-                -int256(amountOut),
-                zeroForOne ? MIN_SQRT_RATIO : MAX_SQRT_RATIO,
-                data
-            );
-        }
-        // uniswapV2 style
-        else if (identifier < 100) {
-            bool zeroForOne = tokenIn < tokenOut;
-            // get next pool
-            address pool = pairAddress(tokenIn, tokenOut, identifier);
-            uint256 amountOut0;
-            uint256 amountOut1;
-            // amountOut0, cache
-            (amountOut0, amountOut1) = zeroForOne ? (uint256(0), amountOut) : (amountOut, uint256(0));
-            IUniswapV2Pair(pool).swap(amountOut0, amountOut1, address(this), data); // cannot swap to sender due to flashSwap
-        }
     }
 }

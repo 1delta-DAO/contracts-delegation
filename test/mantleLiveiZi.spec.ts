@@ -1,0 +1,186 @@
+import { impersonateAccount, mine, setCode } from "@nomicfoundation/hardhat-network-helpers";
+import { parseUnits } from "ethers/lib/utils";
+import { ConfigModule__factory, DeltaBrokerProxy, DeltaBrokerProxy__factory, DeltaFlashAggregatorMantle, DeltaFlashAggregatorMantle__factory, LensModule__factory, OneDeltaQuoterMantle, OneDeltaQuoterMantle__factory, StableDebtToken__factory, SwapX2YModule__factory, } from "../types";
+import { lendleBrokerAddresses } from "../deploy/mantle_addresses";
+import { DeltaFlashAggregatorMantleInterface } from "../types/DeltaFlashAggregatorMantle";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { addressesLendleVTokens, addressesTokensMantle } from "../scripts/mantle/lendleAddresses";
+import { network } from "hardhat";
+import { encodeAggregatorPathEthers } from "./1delta/shared/aggregatorPath";
+import { FeeAmount, MaxUint128 } from "./uniswap-v3/periphery/shared/constants";
+import { BigNumber } from "ethers";
+import { ModuleConfigAction, getSelectors } from "./diamond/libraries/diamond";
+const { ethers } = require("hardhat");
+
+
+// block: 20240225
+const MANTLE_CHAIN_ID = 5000;
+const trader0 = '0xaffe73AA5EBd0CD95D89ab9fa2512Fc9e2d3289b'
+const admin = ''
+
+const weth = "0xdEAddEaDdeadDEadDEADDEAddEADDEAddead1111"
+const usdc = "0x09Bc4E0D864854c6aFB6eB9A9cdF58aC190D0dF9"
+const wmnt = "0x78c1b0c915c4faa5fffa6cabf0219da63d7f4cb8"
+const usdt = "0x201EBa5CC46D216Ce6DC03F6a759e8E766e956aE"
+
+const izimuX2YModule = '0x88867BF3bB3321d8c7Da71a8eAb70680037068E4'
+const brokerProxy = lendleBrokerAddresses.BrokerProxy[MANTLE_CHAIN_ID]
+const traderModule = lendleBrokerAddresses.MarginTraderModule[MANTLE_CHAIN_ID]
+let multicaller: DeltaBrokerProxy
+let flashAggregatorInterface: DeltaFlashAggregatorMantleInterface
+let user: SignerWithAddress
+let trader: SignerWithAddress
+before(async function () {
+    const [signer] = await ethers.getSigners();
+    user = signer
+    console.log("get aggregator")
+    multicaller = await new DeltaBrokerProxy__factory(user).attach(brokerProxy)
+    flashAggregatorInterface = DeltaFlashAggregatorMantle__factory.createInterface()
+
+    console.log("deploy new aggregator")
+    const newflashAggregator = await new DeltaFlashAggregatorMantle__factory(signer).deploy()
+    await impersonateAccount(admin)
+    const impersonatedSigner = await ethers.getSigner(admin);
+    console.log(impersonatedSigner.address)
+
+    const config = await new ConfigModule__factory(impersonatedSigner).attach(brokerProxy)
+    const lens = await new LensModule__factory(impersonatedSigner).attach(brokerProxy)
+
+    const selectors = await lens.moduleFunctionSelectors(traderModule)
+    await config.configureModules([{
+        moduleAddress: ethers.constants.AddressZero,
+        action: ModuleConfigAction.Remove,
+        functionSelectors: selectors
+    }])
+
+    await config.configureModules([{
+        moduleAddress: newflashAggregator.address,
+        action: ModuleConfigAction.Add,
+        functionSelectors: getSelectors(newflashAggregator)
+    }])
+
+    // const newiZiModule = await new SwapX2YModule__factory(signer).deploy()
+
+    // console.log("get code")
+    // const newIzICode = await network.provider.send("eth_getCode", [
+    //     newiZiModule.address,
+    // ]
+    // )
+    // console.log("set code")
+    // // set the code
+    // await setCode(izimuX2YModule, newIzICode)
+    // await mine(2)
+
+})
+
+it("Deposit", async function () {
+    const amount = parseUnits('5000.0', 18)
+    const callWrap = flashAggregatorInterface.encodeFunctionData('wrap',)
+    const callDeposit = flashAggregatorInterface.encodeFunctionData('deposit' as any, [wmnt, user.address])
+
+    await multicaller.connect(user).multicall([
+        callWrap,
+        callDeposit
+    ], { value: amount })
+})
+
+it("Opens exact in", async function () {
+    await impersonateAccount(trader0)
+    const impersonatedSigner = await ethers.getSigner(trader0);
+
+    const amount = parseUnits('2.0', 6)
+    const tokenIn = addressesTokensMantle.WMNT
+
+    const borrowToken = await new StableDebtToken__factory(user).attach(addressesLendleVTokens.USDT)
+    await borrowToken.approveDelegation(multicaller.address, MaxUint128)
+    // v3 single
+    const path1 = encodeAggregatorPathEthers(
+        [usdt, wmnt],
+        [FeeAmount.MEDIUM],
+        [6],
+        [100],
+        2
+    )
+    const callSwap = flashAggregatorInterface.encodeFunctionData('flashSwapExactIn', [amount, 0, path1])
+    console.log("attempt swap")
+    await multicaller.connect(impersonatedSigner).multicall([
+        callSwap
+    ])
+
+})
+
+
+
+it("Opens exact out", async function () {
+    await impersonateAccount(trader0)
+    const impersonatedSigner = await ethers.getSigner(trader0);
+
+    const amount = parseUnits('3.0', 18)
+    const tokenIn = addressesTokensMantle.WMNT
+
+    const borrowToken = await new StableDebtToken__factory(user).attach(addressesLendleVTokens.USDT)
+    await borrowToken.approveDelegation(multicaller.address, MaxUint128)
+    // v3 single
+    const path1 = encodeAggregatorPathEthers(
+        [ wmnt, usdt],
+        [FeeAmount.MEDIUM],
+        [3],
+        [100],
+        2
+    )
+    const callSwap = flashAggregatorInterface.encodeFunctionData('flashSwapExactOut', [amount, MaxUint128, path1])
+    console.log("attempt swap")
+    await multicaller.connect(impersonatedSigner).multicall([
+        callSwap
+    ])
+
+})
+
+it("Opens exact in multi", async function () {
+    await impersonateAccount(trader0)
+    const impersonatedSigner = await ethers.getSigner(trader0);
+
+    const amount = parseUnits('1.0', 6)
+    const tokenIn = addressesTokensMantle.WMNT
+
+    const borrowToken = await new StableDebtToken__factory(user).attach(addressesLendleVTokens.USDT)
+    await borrowToken.approveDelegation(multicaller.address, MaxUint128)
+    // v3 single
+    const path1 = encodeAggregatorPathEthers(
+        [usdt, weth, wmnt],
+        [FeeAmount.MEDIUM, FeeAmount.LOW],
+        [6, 0],
+        [100, 0],
+        2
+    )
+    const callSwap = flashAggregatorInterface.encodeFunctionData('flashSwapExactIn', [amount, 0, path1])
+    console.log("attempt swap")
+    await multicaller.connect(impersonatedSigner).multicall([
+        callSwap
+    ])
+})
+
+
+it("Opens exact out multi", async function () {
+    await impersonateAccount(trader0)
+    const impersonatedSigner = await ethers.getSigner(trader0);
+
+    const amount = parseUnits('1.0', 18)
+
+    const borrowToken = await new StableDebtToken__factory(user).attach(addressesLendleVTokens.USDT)
+    await borrowToken.approveDelegation(multicaller.address, MaxUint128)
+    // v3 single
+    const path1 = encodeAggregatorPathEthers(
+        [wmnt, weth, usdt],
+        [FeeAmount.MEDIUM, FeeAmount.LOW],
+        [3, 1],
+        [100, 0],
+        2
+    )
+    const callSwap = flashAggregatorInterface.encodeFunctionData('flashSwapExactOut', [amount, MaxUint128, path1])
+    console.log("attempt swap")
+    await multicaller.connect(impersonatedSigner).multicall([
+        callSwap
+    ])
+
+})

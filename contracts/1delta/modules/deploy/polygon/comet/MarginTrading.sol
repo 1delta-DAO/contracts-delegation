@@ -78,37 +78,7 @@ abstract contract CometMarginTrading is WithStorageComet, BaseSwapper {
     // Exact Output Swap - The path parameters determine the lending actions
     function flashSwapExactOut(uint256 amountOut, uint256 amountInMaximum, bytes calldata path) external payable returns (uint256 amountIn) {
         acs().cachedAddress = msg.sender;
-        address tokenIn;
-        address tokenOut;
-        bool zeroForOne;
-        uint8 identifier;
-        assembly {
-            let firstWord := calldataload(path.offset)
-            tokenOut := shr(96, firstWord)
-            identifier := shr(64, firstWord)
-            tokenIn := shr(96, calldataload(add(path.offset, 25)))
-            zeroForOne := lt(tokenIn, tokenOut)
-        }
-        // unswapV3 types
-        if (identifier < 50) {
-            uint24 fee;
-            assembly {
-                fee := and(shr(72, calldataload(path.offset)), 0xffffff)
-            }
-            getUniswapV3Pool(tokenIn, tokenOut, fee, identifier).swap(
-                address(this),
-                zeroForOne,
-                -int256(amountOut),
-                zeroForOne ? MIN_SQRT_RATIO : MAX_SQRT_RATIO,
-                path
-            );
-        }
-        // uniswapV2 types
-        else if (identifier < 100) {
-            tokenIn = pairAddress(tokenIn, tokenOut, identifier);
-            (uint256 amount0Out, uint256 amount1Out) = zeroForOne ? (uint256(0), amountOut) : (amountOut, uint256(0));
-            IUniswapV2Pair(tokenIn).swap(amount0Out, amount1Out, address(this), path);
-        }
+        flashSwapExactOutInternal(amountOut, address(this), path);
         amountIn = ncs().amount;
         ncs().amount = DEFAULT_AMOUNT_CACHED;
         acs().cachedAddress = DEFAULT_ADDRESS_CACHED;
@@ -276,7 +246,7 @@ abstract contract CometMarginTrading is WithStorageComet, BaseSwapper {
             // either initiate the next swap or pay
             if (_data.length > 46) {
                 _data = _data[25:];
-                flashSwapExactOut(amountToPay, _data);
+                flashSwapExactOutInternal(amountToPay, msg.sender, _data);
             } else {
                 // re-assign identifier
                 uint256 cache = _data.length;
@@ -349,7 +319,7 @@ abstract contract CometMarginTrading is WithStorageComet, BaseSwapper {
                 // multihop if required
                 if (cache > 46) {
                     _data = _data[25:];
-                    flashSwapExactOut(amountInLastPool, _data);
+                    flashSwapExactOutInternal(amountInLastPool, msg.sender, _data);
                 } else {
                     // cache amount
                     ncs().amount = amountInLastPool;
@@ -438,7 +408,7 @@ abstract contract CometMarginTrading is WithStorageComet, BaseSwapper {
             // either initiate the next swap or pay
             if (cache > 46) {
                 data = data[25:];
-                flashSwapExactOut(referenceAmount, data);
+                flashSwapExactOutInternal(referenceAmount, msg.sender, data);
             } else {
                 // re-assign identifier
                 data = data[(cache - 1):cache];
@@ -509,7 +479,7 @@ abstract contract CometMarginTrading is WithStorageComet, BaseSwapper {
             // constinue swapping if more data is provided
             if (cache > 46) {
                 data = data[25:];
-                flashSwapExactOut(referenceAmount, data);
+                flashSwapExactOutInternal(referenceAmount, msg.sender, data);
             } else {
                 // cache amount
                 ncs().amount = referenceAmount;
@@ -521,26 +491,27 @@ abstract contract CometMarginTrading is WithStorageComet, BaseSwapper {
     }
 
     // a flash swap where the output is sent to msg.sender
-    function flashSwapExactOut(uint256 amountOut, bytes calldata data) internal {
+    function flashSwapExactOutInternal(uint256 amountOut, address receiver, bytes calldata data) internal {
         address tokenIn;
         address tokenOut;
         uint8 identifier;
+        bool zeroForOne;
         assembly {
             let firstWord := calldataload(data.offset)
             tokenOut := shr(96, firstWord)
             identifier := shr(64, firstWord)
             tokenIn := shr(96, calldataload(add(data.offset, 25)))
+            zeroForOne := lt(tokenIn, tokenOut)
         }
 
         // uniswapV3 style
         if (identifier < 50) {
-            bool zeroForOne = tokenIn < tokenOut;
             uint24 fee;
             assembly {
                 fee := and(shr(72, calldataload(data.offset)), 0xffffff)
             }
             getUniswapV3Pool(tokenIn, tokenOut, fee, identifier).swap(
-                msg.sender,
+                receiver,
                 zeroForOne,
                 -int256(amountOut),
                 zeroForOne ? MIN_SQRT_RATIO : MAX_SQRT_RATIO,
@@ -549,15 +520,13 @@ abstract contract CometMarginTrading is WithStorageComet, BaseSwapper {
         }
         // uniswapV2 style
         else if (identifier < 100) {
-            bool zeroForOne = tokenIn < tokenOut;
             // get next pool
-            address pool = pairAddress(tokenIn, tokenOut, identifier);
-            uint256 amountOut0;
-            uint256 amountOut1;
+            tokenIn = pairAddress(tokenIn, tokenOut, identifier);
             // amountOut0, cache
-            (amountOut0, amountOut1) = zeroForOne ? (uint256(0), amountOut) : (amountOut, uint256(0));
-            IUniswapV2Pair(pool).swap(amountOut0, amountOut1, address(this), data); // cannot swap to sender due to flashSwap
-            _transferERC20Tokens(tokenOut, msg.sender, amountOut);
+            (uint256 amountOut0, uint256 amountOut1) = zeroForOne ? (uint256(0), amountOut) : (amountOut, uint256(0));
+            IUniswapV2Pair(tokenIn).swap(amountOut0, amountOut1, address(this), data); // cannot swap to sender due to flashSwap
+            tokenIn  = receiver;
+            if(tokenIn != address(this)) _transferERC20Tokens(tokenOut, tokenIn, amountOut);
         }
     }
 
