@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity >=0.8.21;
+pragma solidity >=0.8.23;
 
 import "../libraries/BytesLib.sol";
 import "../libraries/Path.sol";

@@ -198,10 +198,10 @@ const config: HardhatUserConfig = {
       //   blockNumber: 49463469,
       //   url: `https://rpc.ankr.com/polygon`,
       // },
-      forking: {
-        blockNumber: 20240225,
-        url: `https://rpc.mantle.xyz`,
-      },
+      // forking: {
+      //   blockNumber: 20240225,
+      //   url: `https://rpc.mantle.xyz`,
+      // },
     },
     rinkeby: {
       url: `https://rinkeby.infura.io/v3/${process.env.INFURA_API_KEY}`,
@@ -489,7 +489,7 @@ const config: HardhatUserConfig = {
       },
       // 1delta
       {
-        version: '0.8.21',
+        version: '0.8.23',
         settings: {
           optimizer: {
             enabled: true,
