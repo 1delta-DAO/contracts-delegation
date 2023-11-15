@@ -156,6 +156,27 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
                 : (getAmountOutDirect(tokenIn, zeroForOne, amountIn), uint256(0));
             IUniswapV2Pair(tokenIn).swap(amount0Out, amount1Out, address(this), path);
         }
+        // iZi
+        else if (identifier == 100) {
+            uint24 fee;
+            assembly {
+                fee := and(shr(72, calldataload(path.offset)), 0xffffff)
+            }
+            if (zeroForOne)
+                getUniswapV3Pool(tokenIn, tokenOut, fee, identifier).swapX2Y(
+                    address(this),
+                    uint128(amountIn),
+                    -799999,
+                    path
+                );
+            else
+                getUniswapV3Pool(tokenIn, tokenOut, fee, identifier).swapY2X(
+                    address(this),
+                    uint128(amountIn),
+                    799999,
+                    path
+                );
+        }
         amountOut = ncs().amount;
         ncs().amount = DEFAULT_AMOUNT_CACHED;
         acs().cachedAddress = DEFAULT_ADDRESS_CACHED;
@@ -207,6 +228,27 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
             tokenIn = pairAddress(tokenIn, tokenOut, identifier);
             (uint256 amount0Out, uint256 amount1Out) = zeroForOne ? (uint256(0), amountOut) : (amountOut, uint256(0));
             IUniswapV2Pair(tokenIn).swap(amount0Out, amount1Out, address(this), path);
+        }
+        // iZi
+        else if (identifier == 100) {
+            uint24 fee;
+            assembly {
+                fee := and(shr(72, calldataload(path.offset)), 0xffffff)
+            }
+            if (zeroForOne)
+                getUniswapV3Pool(tokenIn, tokenOut, fee, identifier).swapX2YDesireY(
+                    address(this),
+                    uint128(amountOut),
+                    -800001,
+                    path
+                );
+            else
+                getUniswapV3Pool(tokenIn, tokenOut, fee, identifier).swapY2XDesireX(
+                    address(this),
+                    uint128(amountOut),
+                    800001,
+                    path
+                );
         }
         amountIn = ncs().amount;
         ncs().amount = DEFAULT_AMOUNT_CACHED;
@@ -593,7 +635,7 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
     function swapX2YCallback(uint256 x, uint256 y, bytes calldata path) external {
         uniswapV3SwapCallbackInternal(
             int256(x),
-            -int256 (y),
+            -int256(y),
             path
         );
     }

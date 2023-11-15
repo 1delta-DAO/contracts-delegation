@@ -191,14 +191,14 @@ abstract contract BaseSwapper is TokenTransfer {
                     zeroForOne := lt(tokenIn, tokenOut)
                 }
             if (zeroForOne)
-                    getUniswapV3Pool(tokenIn, tokenOut, fee, identifier).swapX2Y(
+                    (, amountIn) = getUniswapV3Pool(tokenIn, tokenOut, fee, identifier).swapX2Y(
                         address(this),
                         uint128(amountIn),
                         -799999,
                         path
                     );
                 else
-                    getUniswapV3Pool(tokenIn, tokenOut, fee, identifier).swapY2X(
+                    (amountIn, ) = getUniswapV3Pool(tokenIn, tokenOut, fee, identifier).swapY2X(
                         address(this),
                         uint128(amountIn),
                         799999,
