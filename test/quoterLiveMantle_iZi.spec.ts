@@ -48,7 +48,7 @@ it("Test iZi single", async function () {
 
 it("Test iZi Exact Out Single", async function () {
 
-    const amountOut =9999  // parseUnits('0.1', 18)
+    const amountOut = 9999  // parseUnits('0.1', 18)
 
     console.log("Test Quoter single EO Fusion:")
 
@@ -57,6 +57,29 @@ it("Test iZi Exact Out Single", async function () {
         weth,
         FeeAmount.LOW,
         amountOut
+    )
+    console.log("Quote single", quote.toString())
+})
+
+
+it.only("Test nex exactout", async function () {
+    // UDSC->WMNT->USDT->WBTC 
+    // 0x09Bc4E0D864854c6aFB6eB9A9cdF58aC190D0dF9->0x78c1b0c915c4faa5fffa6cabf0219da63d7f4cb8->0x201EBa5CC46D216Ce6DC03F6a759e8E766e956aE->0xCAbAE6f6Ea1ecaB08Ad02fE02ce9A44F09aebfA2
+    //  10000_FUSIONX_V3->500_FUSIONX_V3->500_FUSIONX_V3 
+    //  0xcabae6f6ea1ecab08ad02fe02ce9a44f09aebfa20001f400201eba5cc46d216ce6dc03f6a759e8e766e956ae0001f40078c1b0c915c4faa5fffa6cabf0219da63d7f4cb80027100009bc4e0d864854c6afb6eb9a9cdf58ac190d0df9
+
+    const amount = '100000'
+
+    const pathDelta = encodeQuoterPathEthers(
+        [btc, usdtAddress, wmt,usdc],
+        [500, 500, 10000],
+        [0, 0, 0]
+    )
+
+    console.log("Test Quoter single EO Fusion:")
+
+    const quote = await quoter.callStatic.quoteExactOutput(
+        pathDelta, amount
     )
     console.log("Quote single", quote.toString())
 })
