@@ -15,9 +15,7 @@ const opts = {
     maxPriorityFeePerGas: usedMaxPriorityFeePerGas
 }
 
-
 async function main() {
-
 
     const accounts = await ethers.getSigners()
     const operator = accounts[1]

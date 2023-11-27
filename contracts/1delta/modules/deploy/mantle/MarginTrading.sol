@@ -272,6 +272,15 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
         uniswapV3SwapCallbackInternal(amount0Delta, amount1Delta, _data);
     }
 
+    // swapsicle
+    function algebraSwapCallback(
+        int256 amount0Delta,
+        int256 amount1Delta,
+        bytes calldata path
+    ) external {
+        uniswapV3SwapCallbackInternal(amount0Delta, amount1Delta, path);
+    }
+
     // PATH IDENTIFICATION
 
     // [between pools if more than one]
@@ -282,6 +291,7 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
     // 1: borrow stable
     // 2: borrow variable
     // 3: withdraw
+    // 4: pay from wallet
 
     // [start flag (>1)]
     // 6: deposit exact in

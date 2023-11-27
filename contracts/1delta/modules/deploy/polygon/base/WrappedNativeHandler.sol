@@ -38,6 +38,15 @@ abstract contract WrappedNativeHandler {
         payable(msg.sender).transfer(balance);
     }
 
+    // unwrap wrappd native and send funds to a receiver
+    function unwrapTo(address payable receiver) external payable {
+        INativeWrapper _weth = INativeWrapper(wrappedNative);
+        uint256 balance = _weth.balanceOf(address(this));
+        _weth.withdraw(balance);
+        // transfer eth to receiver
+        receiver.transfer(balance);
+    }
+
     // unwrap wrappd native, validate balance and send to sender
     function validateAndUnwrap(uint256 amountMin) external payable {
         INativeWrapper _weth = INativeWrapper(wrappedNative);
