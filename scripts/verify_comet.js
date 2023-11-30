@@ -12,7 +12,7 @@ module.exports = [
 // mumbai comet lens
 // npx hardhat verify --network mumbai 0x934E7212656df04E3526f6481277bDA92f082053 --contract contracts/misc/CometLens.sol:CometLens
 
-// npx hardhat verify --network matic 0x45C3783AE0086d30C7a507634F02b41cB3C1e4a8 --contract contracts/1delta/modules/deploy/polygon/comet/FlashAggregator.sol:CometFlashAggregatorPolygon 
+// npx hardhat verify --network matic 0x109F1b042145C58C35107be46d8080EB598E0cE5 --contract contracts/1delta/modules/deploy/polygon/comet/FlashAggregator.sol:CometFlashAggregatorPolygon 
 
 // npx hardhat verify --network matic 0x74E95F3Ec71372756a01eB9317864e3fdde1AC53 --contract contracts/1delta/proxy/DeltaBroker.sol:DeltaBrokerProxy --constructor-args scripts/verify.js
 

@@ -24,7 +24,8 @@ abstract contract BaseSwapper is TokenTransfer {
     uint256 private constant ADDRESS_MASK_UPPER = 0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff;
     /// @dev Mask of lower 3 bytes.
     uint256 private constant UINT24_MASK = 0xffffff;
-
+    /// @dev Mask of upper 31 bytes.
+    uint256 private constant UINT8_MASK_UPPER =   0x00000000000000000000000000000000000000000000000000000000ffffffff;
     /// @dev MIN_SQRT_RATIO + 1 from Uniswap's TickMath
     uint160 internal constant MIN_SQRT_RATIO = 4295128740;
     /// @dev MAX_SQRT_RATIO - 1 from Uniswap's TickMath
@@ -62,11 +63,10 @@ abstract contract BaseSwapper is TokenTransfer {
         uint24 fee,
         uint8 pId
     ) internal pure returns (IUniversalV3StyleSwap pool) {
-        uint256 _pId = pId;
         assembly {
             let s := mload(0x40)
             let p := s
-            switch _pId
+            switch and(UINT8_MASK_UPPER, pId)
             // Fusion
             case 0 {
                 mstore(p, FUSION_V3_FF_FACTORY)
@@ -243,7 +243,6 @@ abstract contract BaseSwapper is TokenTransfer {
         address tokenOut,
         uint256 amountIn
     ) private returns (uint256 buyAmount) {
-        bytes32 ff_uni = FUSION_V2_FF_FACTORY;
         assembly {
             let zeroForOne := lt(tokenIn, tokenOut)
             switch zeroForOne
@@ -256,7 +255,7 @@ abstract contract BaseSwapper is TokenTransfer {
                 mstore(0xB00, tokenIn)
             }
             let salt := keccak256(0xB0C, 0x28)
-            mstore(0xB00, ff_uni)
+            mstore(0xB00, FUSION_V2_FF_FACTORY)
             mstore(0xB15, salt)
             mstore(0xB35, CODE_HASH_FUSION_V2)
 

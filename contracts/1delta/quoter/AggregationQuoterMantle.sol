@@ -60,7 +60,8 @@ contract OneDeltaQuoterMantle {
     uint256 private constant ADDRESS_MASK = 0x00ffffffffffffffffffffffffffffffffffffffff;
     /// @dev Mask of lower 3 bytes.
     uint256 private constant UINT24_MASK = 0xffffff;
-
+    /// @dev Mask of upper 31 bytes.
+    uint256 private constant UINT8_MASK_UPPER =   0x00000000000000000000000000000000000000000000000000000000ffffffff;
     /// @dev MIN_SQRT_RATIO + 1 from Uniswap's TickMath
     uint160 private immutable MIN_SQRT_RATIO = 4295128740;
     /// @dev MAX_SQRT_RATIO - 1 from Uniswap's TickMath
@@ -378,11 +379,10 @@ contract OneDeltaQuoterMantle {
     /// @dev Returns the pool for the given token pair and fee.
     /// The pool contract may or may not exist.
     function v3TypePool(address tokenA, address tokenB, uint24 fee, uint8 pId) private pure returns (ISwapPool pool) {
-        uint256 _pId = pId; // switch-caseing uint8 is bad
         assembly {
             let s := mload(0x40)
             let p := s
-            switch _pId
+            switch and(UINT8_MASK_UPPER, pId)
             // FusionX
             case 0 {
                 mstore(p, FUSION_V3_FF_FACTORY)

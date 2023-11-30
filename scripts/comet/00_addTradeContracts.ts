@@ -7,8 +7,8 @@ import { parseUnits } from "ethers/lib/utils";
 import { getContractSelectors, ModuleConfigAction } from "../../test/diamond/libraries/diamond";
 
 
-const usedMaxFeePerGas = parseUnits('100', 9)
-const usedMaxPriorityFeePerGas = parseUnits('30', 9)
+const usedMaxFeePerGas = parseUnits('800', 9)
+const usedMaxPriorityFeePerGas = parseUnits('40', 9)
 
 const opts = {
     maxFeePerGas: usedMaxFeePerGas,

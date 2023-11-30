@@ -21,7 +21,7 @@ async function main() {
     console.log('Quoter:', quoter.address)
 }
 
-// Quoter: 0x1420E68e422F673C95Bf37aE8938C87285BA75De
+// Quoter: 0x62CF92A2dBbc4436ee508f4923e6Aa8dfF2A5E0c
 main()
     .then(() => process.exit(0))
     .catch((error) => {

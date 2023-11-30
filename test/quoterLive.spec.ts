@@ -22,7 +22,7 @@ let quoter: OneDeltaQuoter
 before(async function () {
     const [signer] = await ethers.getSigners();
     console.log("deploy quoter")
-    quoter = await new OneDeltaQuoter__factory(signer).deploy()
+    quoter = await new OneDeltaQuoter__factory(signer).attach('0x62CF92A2dBbc4436ee508f4923e6Aa8dfF2A5E0c')
 })
 
 it("Test custom", async function () {

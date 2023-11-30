@@ -9,7 +9,6 @@ pragma solidity 0.8.23;
 import {IUniswapV3Pool} from "../../../../dex-tools/uniswap/core/IUniswapV3Pool.sol";
 import {IUniswapV2Pair} from "../../../../../external-protocols/uniswapV2/core/interfaces/IUniswapV2Pair.sol";
 import {TokenTransfer} from "../../../../libraries/TokenTransfer.sol";
-
 // solhint-disable max-line-length
 
 /**
@@ -21,6 +20,8 @@ abstract contract BaseSwapper is TokenTransfer {
     uint256 private constant ADDRESS_MASK = 0x00ffffffffffffffffffffffffffffffffffffffff;
     /// @dev Mask of upper 20 bytes.
     uint256 private constant ADDRESS_MASK_UPPER = 0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff;
+    /// @dev Mask of upper 31 bytes.
+    uint256 private constant UINT8_MASK_UPPER =   0x00000000000000000000000000000000000000000000000000000000ffffffff;
     /// @dev Mask of lower 3 bytes.
     uint256 private constant UINT24_MASK = 0xffffff;
 
@@ -61,11 +62,10 @@ abstract contract BaseSwapper is TokenTransfer {
         uint24 fee,
         uint8 pId
     ) internal pure returns (IUniswapV3Pool pool) {
-        uint256 _pId = pId;
         assembly {
             let s := mload(0x40)
             let p := s
-            switch _pId
+            switch and(UINT8_MASK_UPPER, pId)
             // Uni
             case 0 {
                 mstore(p, UNI_V3_FF_FACTORY)
@@ -130,7 +130,6 @@ abstract contract BaseSwapper is TokenTransfer {
 
     /// @dev gets uniswapV2 (and fork) pair addresses
     function pairAddress(address tokenA, address tokenB, uint8 pId) internal pure returns (address pair) {
-        uint256 poolId = pId;
         assembly {
             switch lt(tokenA, tokenB)
             case 0 {
@@ -142,7 +141,7 @@ abstract contract BaseSwapper is TokenTransfer {
                 mstore(0xB00, tokenA)
             }
             let salt := keccak256(0xB0C, 0x28)
-            switch poolId
+            switch and(UINT8_MASK_UPPER, pId)
             case 50 {
                 // Quickswap
                 mstore(0xB00, QUICK_V2_FF_FACTORY)
@@ -191,7 +190,7 @@ abstract contract BaseSwapper is TokenTransfer {
             }
             // uniswapV2 style
             else if (identifier < 100) {
-                amountIn = swapUniV2ExactIn(tokenIn, tokenOut, amountIn);
+                amountIn = swapUniV2ExactIn(tokenIn, tokenOut, identifier, amountIn);
             }
             // decide whether to continue or terminate
             if (path.length > 46) {
@@ -207,9 +206,9 @@ abstract contract BaseSwapper is TokenTransfer {
     function swapUniV2ExactIn(
         address tokenIn,
         address tokenOut,
+        uint8 pId,
         uint256 amountIn
     ) private returns (uint256 buyAmount) {
-        bytes32 ff_uni = QUICK_V2_FF_FACTORY;
         assembly {
             let zeroForOne := lt(tokenIn, tokenOut)
             switch zeroForOne
@@ -222,9 +221,20 @@ abstract contract BaseSwapper is TokenTransfer {
                 mstore(0xB00, tokenIn)
             }
             let salt := keccak256(0xB0C, 0x28)
-            mstore(0xB00, ff_uni)
-            mstore(0xB15, salt)
-            mstore(0xB35, CODE_HASH_QUICK_V2)
+
+            switch and(UINT8_MASK_UPPER, pId)
+            case 50 {
+                // Quickswap
+                mstore(0xB00, QUICK_V2_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, CODE_HASH_QUICK_V2)
+            }
+            default {
+                // Sushiswap
+                mstore(0xB00, SUSHI_V2_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, CODE_HASH_SUSHI_V2)
+            }
 
             let pair := and(ADDRESS_MASK_UPPER, keccak256(0xB00, 0x55))
 

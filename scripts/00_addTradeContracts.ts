@@ -14,8 +14,8 @@ import { validateAddresses } from "../utils/types";
 import { parseUnits } from "ethers/lib/utils";
 import { getContractSelectors, ModuleConfigAction } from "../test/diamond/libraries/diamond";
 
-const usedMaxFeePerGas = parseUnits('100', 9)
-const usedMaxPriorityFeePerGas = parseUnits('30', 9)
+const usedMaxFeePerGas = parseUnits('800', 9)
+const usedMaxPriorityFeePerGas = parseUnits('40', 9)
 
 const opts = {
     maxFeePerGas: usedMaxFeePerGas,
@@ -122,7 +122,7 @@ async function main() {
     console.log("Attempt module adjustment - estimate gas")
     await broker.estimateGas.configureModules(cut)
     console.log("Estimate successful - configure!")
-    const tx = await broker.configureModules(cut, opts)
+    const tx = await broker.configureModules(cut)
     console.log('Module adjustment tx: ', tx.hash)
     const receipt = await tx.wait()
     if (!receipt.status) {
