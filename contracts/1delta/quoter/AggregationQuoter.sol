@@ -26,8 +26,6 @@ contract OneDeltaQuoter {
     uint256 private constant ADDRESS_MASK = 0x00ffffffffffffffffffffffffffffffffffffffff;
     /// @dev Mask of lower 3 bytes.
     uint256 private constant UINT24_MASK = 0xffffff;
-    /// @dev Mask of upper 31 bytes.
-    uint256 private constant UINT8_MASK_UPPER =   0x00000000000000000000000000000000000000000000000000000000ffffffff;
     /// @dev MIN_SQRT_RATIO + 1 from Uniswap's TickMath
     uint160 internal immutable MIN_SQRT_RATIO = 4295128740;
     /// @dev MAX_SQRT_RATIO - 1 from Uniswap's TickMath
@@ -223,10 +221,11 @@ contract OneDeltaQuoter {
     /// @dev Returns the pool for the given token pair and fee.
     /// The pool contract may or may not exist.
     function v3TypePool(address tokenA, address tokenB, uint24 fee, uint8 pId) internal pure returns (ISwapPool pool) {
+        uint256 _pId = pId;
         assembly {
             let s := mload(0x40)
             let p := s
-            switch and(UINT8_MASK_UPPER, pId)
+            switch _pId
             // Uni
             case 0 {
                 mstore(p, UNI_V3_FF_FACTORY)
@@ -291,6 +290,7 @@ contract OneDeltaQuoter {
 
     /// @dev gets uniswapV2 (and fork) pair addresses
     function v2TypePairAddress(address tokenA, address tokenB, uint8 pId) internal pure returns (address pair) {
+        uint256 _pId = pId;
         assembly {
             switch lt(tokenA, tokenB)
             case 0 {
@@ -302,7 +302,7 @@ contract OneDeltaQuoter {
                 mstore(0xB00, tokenA)
             }
             let salt := keccak256(0xB0C, 0x28)
-            switch and(UINT8_MASK_UPPER, pId)
+            switch _pId
             case 50 {
                 // Quickswap
                 mstore(0xB00, QUICK_V2_FF_FACTORY)

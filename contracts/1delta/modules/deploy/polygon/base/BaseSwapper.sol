@@ -20,8 +20,6 @@ abstract contract BaseSwapper is TokenTransfer {
     uint256 private constant ADDRESS_MASK = 0x00ffffffffffffffffffffffffffffffffffffffff;
     /// @dev Mask of upper 20 bytes.
     uint256 private constant ADDRESS_MASK_UPPER = 0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff;
-    /// @dev Mask of upper 31 bytes.
-    uint256 private constant UINT8_MASK_UPPER =   0x00000000000000000000000000000000000000000000000000000000ffffffff;
     /// @dev Mask of lower 3 bytes.
     uint256 private constant UINT24_MASK = 0xffffff;
 
@@ -62,10 +60,11 @@ abstract contract BaseSwapper is TokenTransfer {
         uint24 fee,
         uint8 pId
     ) internal pure returns (IUniswapV3Pool pool) {
+        uint256 _pId = pId;
         assembly {
             let s := mload(0x40)
             let p := s
-            switch and(UINT8_MASK_UPPER, pId)
+            switch _pId
             // Uni
             case 0 {
                 mstore(p, UNI_V3_FF_FACTORY)
@@ -130,6 +129,7 @@ abstract contract BaseSwapper is TokenTransfer {
 
     /// @dev gets uniswapV2 (and fork) pair addresses
     function pairAddress(address tokenA, address tokenB, uint8 pId) internal pure returns (address pair) {
+        uint256 _pId = pId;
         assembly {
             switch lt(tokenA, tokenB)
             case 0 {
@@ -141,7 +141,7 @@ abstract contract BaseSwapper is TokenTransfer {
                 mstore(0xB00, tokenA)
             }
             let salt := keccak256(0xB0C, 0x28)
-            switch and(UINT8_MASK_UPPER, pId)
+            switch _pId
             case 50 {
                 // Quickswap
                 mstore(0xB00, QUICK_V2_FF_FACTORY)
@@ -209,6 +209,7 @@ abstract contract BaseSwapper is TokenTransfer {
         uint8 pId,
         uint256 amountIn
     ) private returns (uint256 buyAmount) {
+        uint256 _pId = pId;
         assembly {
             let zeroForOne := lt(tokenIn, tokenOut)
             switch zeroForOne
@@ -222,7 +223,7 @@ abstract contract BaseSwapper is TokenTransfer {
             }
             let salt := keccak256(0xB0C, 0x28)
 
-            switch and(UINT8_MASK_UPPER, pId)
+            switch _pId
             case 50 {
                 // Quickswap
                 mstore(0xB00, QUICK_V2_FF_FACTORY)

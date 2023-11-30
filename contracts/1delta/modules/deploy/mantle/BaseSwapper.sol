@@ -24,8 +24,6 @@ abstract contract BaseSwapper is TokenTransfer {
     uint256 private constant ADDRESS_MASK_UPPER = 0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff;
     /// @dev Mask of lower 3 bytes.
     uint256 private constant UINT24_MASK = 0xffffff;
-    /// @dev Mask of upper 31 bytes.
-    uint256 private constant UINT8_MASK_UPPER =   0x00000000000000000000000000000000000000000000000000000000ffffffff;
     /// @dev MIN_SQRT_RATIO + 1 from Uniswap's TickMath
     uint160 internal constant MIN_SQRT_RATIO = 4295128740;
     /// @dev MAX_SQRT_RATIO - 1 from Uniswap's TickMath
@@ -63,10 +61,11 @@ abstract contract BaseSwapper is TokenTransfer {
         uint24 fee,
         uint8 pId
     ) internal pure returns (IUniversalV3StyleSwap pool) {
+        uint256 _pId = pId;
         assembly {
             let s := mload(0x40)
             let p := s
-            switch and(UINT8_MASK_UPPER, pId)
+            switch _pId
             // Fusion
             case 0 {
                 mstore(p, FUSION_V3_FF_FACTORY)
