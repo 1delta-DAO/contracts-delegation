@@ -22,7 +22,7 @@ let quoter: OneDeltaQuoter
 before(async function () {
     const [signer] = await ethers.getSigners();
     console.log("deploy quoter")
-    quoter = await new OneDeltaQuoter__factory(signer).attach('0x62CF92A2dBbc4436ee508f4923e6Aa8dfF2A5E0c')
+    quoter = await new OneDeltaQuoter__factory(signer).deploy() // ('0x62CF92A2dBbc4436ee508f4923e6Aa8dfF2A5E0c')
 })
 
 it("Test custom", async function () {
@@ -178,7 +178,7 @@ it("Test Quick and Uni Mix", async function () {
 })
 
 
-it("Test Quick, Uni, Quick V2 Mix", async function () {
+it.only("Test Quick, Retro, Quick V2 Mix", async function () {
 
     const amountIn = parseUnits('100', 18)
 
@@ -186,8 +186,8 @@ it("Test Quick, Uni, Quick V2 Mix", async function () {
 
     const route = encodeQuoterPathEthers(
         [crvAddress, wmaticAddress, wethAddress, usdcAddress],
-        [FeeAmount.MEDIUM, 0, 0],
-        [0, 1, 50]
+        [FeeAmount.MEDIUM, FeeAmount.LOW, 0],
+        [0, 3, 50]
     )
     const quote = await quoter.callStatic.quoteExactInput(
         route,

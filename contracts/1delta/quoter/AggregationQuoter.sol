@@ -36,6 +36,9 @@ contract OneDeltaQuoter {
     bytes32 private constant UNI_V3_FF_FACTORY = 0xff1f98431c8ad98523631ae4a59f267346ea31f9840000000000000000000000;
     bytes32 private constant UNI_POOL_INIT_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
 
+    bytes32 private constant RETRO_FF_FACTORY = 0xff91e1B99072f238352f59e58de875691e20Dc19c10000000000000000000000;
+    bytes32 private constant RETRO_POOL_INIT_CODE_HASH = 0x817e07951f93017a93327ac8cc31e946540203a19e1ecc37bc1761965c2d1090;
+
     bytes32 private constant ALGEBRA_V3_FF_DEPLOYER = 0xff2d98e2fa9da15aa6dc9581ab097ced7af697cb920000000000000000000000;
     bytes32 private constant ALGEBRA_POOL_INIT_CODE_HASH = 0x6ec6c9c8091d160c0aa74b2b14ba9c1717e95093bd3ac085cee99a49aab294a4;
 
@@ -47,6 +50,9 @@ contract OneDeltaQuoter {
 
     bytes32 private constant SUSHI_V2_FF_FACTORY = 0xffc35DADB65012eC5796536bD9864eD8773aBc74C40000000000000000000000;
     bytes32 private constant CODE_HASH_SUSHI_V2 = 0xe18a34eb0e04b04f7a0ac29a6e80748dca96319b42c54d679cb821dca90c6303;
+ 
+    bytes32 private constant DFYN_FF_FACTORY = 0xffE7Fb3e833eFE5F9c441105EB65Ef8b261266423B0000000000000000000000;
+    bytes32 private constant CODE_HASH_DFYN = 0xf187ed688403aa4f7acfada758d8d53698753b998a3071b06f1b777f4330eaf3;
 
     constructor() {}
 
@@ -266,7 +272,7 @@ contract OneDeltaQuoter {
                 pool := and(ADDRESS_MASK, keccak256(s, 85))
             }
             // Sushiswap V3
-            default {
+            case 2 {
                 mstore(p, SUSHI_V3_FF_DEPLOYER)
                 p := add(p, 21)
                 // Compute the inner hash in-place
@@ -283,6 +289,26 @@ contract OneDeltaQuoter {
                 mstore(p, keccak256(p, 96))
                 p := add(p, 32)
                 mstore(p, SUSHI_POOL_INIT_CODE_HASH)
+                pool := and(ADDRESS_MASK, keccak256(s, 85))
+            }
+            // Retro
+            default {
+                mstore(p, RETRO_FF_FACTORY)
+                p := add(p, 21)
+                // Compute the inner hash in-place
+                switch lt(tokenA, tokenB)
+                case 0 {
+                    mstore(p, tokenB)
+                    mstore(add(p, 32), tokenA)
+                }
+                default {
+                    mstore(p, tokenA)
+                    mstore(add(p, 32), tokenB)
+                }
+                mstore(add(p, 64), and(UINT24_MASK, fee))
+                mstore(p, keccak256(p, 96))
+                p := add(p, 32)
+                mstore(p, RETRO_POOL_INIT_CODE_HASH)
                 pool := and(ADDRESS_MASK, keccak256(s, 85))
             }
         }
@@ -309,11 +335,17 @@ contract OneDeltaQuoter {
                 mstore(0xB15, salt)
                 mstore(0xB35, CODE_HASH_QUICK_V2)
             }
-            default {
+            case 51 {
                 // Sushiswap
                 mstore(0xB00, SUSHI_V2_FF_FACTORY)
                 mstore(0xB15, salt)
                 mstore(0xB35, CODE_HASH_SUSHI_V2)
+            }
+            default {
+                // dfyn
+                mstore(0xB00, DFYN_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, CODE_HASH_DFYN)
             }
             pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
         }
