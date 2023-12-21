@@ -57,7 +57,7 @@ export async function initializeFlashBroker(_chainId: number, signer: SignerWith
     await tx.wait()
 
     console.log("approve aave pool")
-    tx = await management.approveAAVEPool(underlyingAddresses, opts)
+    tx = await management.approveLendingPool(underlyingAddresses, opts)
     await tx.wait()
 
     console.log("add aave tokens")
@@ -94,17 +94,13 @@ export async function addTokens(chainId: number, signer: SignerWithAddress, delt
     for (let k of aTokenKeys) {
         console.log("add aave tokens a", k)
         const token = addressesTokens[k][chainId]
-        tx = await management.addAToken(token, addressesAaveATokens[k][chainId], opts)
-        await tx.wait()
-        if (addressesAaveSTokens?.[k] && addressesAaveSTokens?.[k]?.[chainId]) {
-            console.log("add aave tokens s", k)
-            tx = await management.addSToken(token, addressesAaveSTokens[k][chainId], opts)
-            await tx.wait()
-        } else {
-            console.log("No sToken")
-        }
-        console.log("add aave tokens v", k)
-        tx = await management.addVToken(token, addressesAaveVTokens[k][chainId], opts)
+        tx = await management.addLenderTokens(
+            token,
+            addressesAaveATokens[k][chainId],
+            addressesAaveVTokens[k][chainId],
+            addressesAaveSTokens[k]?.[chainId] ?? ethers.constants.AddressZero,
+            opts
+        )
         await tx.wait()
         console.log("add aave tokens base", k)
 

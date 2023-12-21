@@ -52,14 +52,13 @@ contract DeltaBrokerProxy {
                 }
                 let success := delegatecall(gas(), target, 0x40, len, 0, 0)
                 len := returndatasize()
-                returndatacopy(0, 0, len)
                 // revert if not successful - do not return any values on success
                 if iszero(success) {
+                    returndatacopy(0, 0, len)
                     revert(0, len)
                 }
-            }
-            unchecked {
-                i++;
+                // increase loop index
+                i := add(i, 1)
             }
         }
     }

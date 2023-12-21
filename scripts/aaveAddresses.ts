@@ -156,6 +156,9 @@ export const addressesTokens: { [key: string]: { [chainId: number]: string } } =
         1: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
         137: '0x2791bca1f2de4661ed88a30c99a7a9449aa84174',
     },
+    USDC_NATIVE: {
+        137: '0x3c499c542cef5e3811e1192ce70d8cc03d5c3359',
+    },
     USDT: {
         1: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
         137: '0xc2132d05d31c914a87c6611c10748aeb04b58e8f',
@@ -288,6 +291,9 @@ export const addressesAaveATokens: { [key: string]: { [chainId: number]: string 
     USDC: {
         137: '0x625E7708f30cA75bfd92586e17077590C60eb4cD',
     },
+    USDC_NATIVE: {
+        137: '0xA4D94019934D8333Ef880ABFFbF2FDd611C762BD',
+    },
     USDT: {
         137: '0x6ab707Aca953eDAeFBc4fD23bA73294241490620',
     },
@@ -352,6 +358,9 @@ export const addressesAaveVTokens: { [key: string]: { [chainId: number]: string 
     },
     USDC: {
         137: '0xFCCf3cAbbe80101232d343252614b6A3eE81C989',
+    },
+    USDC_NATIVE: {
+        137: '0xE701126012EC0290822eEA17B794454d1AF8b030',
     },
     USDT: {
         137: '0xfb00AC187a8Eb5AFAE4eACE434F493Eb62672df7',
