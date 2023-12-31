@@ -41,12 +41,10 @@ abstract contract BaseSwapper is TokenTransfer {
         // V2 factory
         UNI_V2_FF_FACTORY = bytes32((uint256(0xff) << 248) | (uint256(uint160(_factoryV2)) << 88));
     }
-
-    function getLastToken(bytes memory data) internal pure returns (address token) {
-        // fetches the last token
-        uint256 len = data.length;
+    
+    function getLastToken(bytes calldata data) internal pure returns (address token) {
         assembly {
-            token := div(mload(add(add(data, 0x20), sub(len, 21))), 0x1000000000000000000000000)
+            token := shr(96, calldataload(add(data.offset, sub(data.length, 21))))
         }
     }
 

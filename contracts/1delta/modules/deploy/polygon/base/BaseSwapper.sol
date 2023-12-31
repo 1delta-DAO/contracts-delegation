@@ -51,11 +51,9 @@ abstract contract BaseSwapper is TokenTransfer {
 
     constructor() {}
 
-    function getLastToken(bytes memory data) internal pure returns (address token) {
-        // fetches the last token
-        uint256 len = data.length;
+    function getLastToken(bytes calldata data) internal pure returns (address token) {
         assembly {
-            token := div(mload(add(add(data, 0x20), sub(len, 21))), 0x1000000000000000000000000)
+            token := shr(96, calldataload(add(data.offset, sub(data.length, 21))))
         }
     }
 
