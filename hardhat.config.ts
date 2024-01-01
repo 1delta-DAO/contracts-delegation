@@ -194,6 +194,8 @@ const config: HardhatUserConfig = {
       accounts
     },
     hardhat: {
+      // allowUnlimitedContractSize: true,
+
       // forking: {
       //   blockNumber: 50534168,
       //   url: `https://rpc.ankr.com/polygon`,

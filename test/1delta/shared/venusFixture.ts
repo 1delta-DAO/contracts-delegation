@@ -19,6 +19,8 @@ import {
     Unitroller__factory,
     WhitePaperInterestRateModel,
     AccessControlManagerHarness__factory,
+    ComptrollerLens__factory,
+    ComptrollerLens,
 }
     from "../../../types"
 import ComptrollerHarnessArtifact from "../../../artifacts/contracts/external-protocols/venus/test/ComptrollerHarness.sol/ComptrollerHarness.json"
@@ -39,6 +41,7 @@ export function etherMantissa(num: number | BigNumber, scale: number | BigNumber
 export interface CompoundFixture {
     cTokens: VenusBep20Harness[]
     cEther: VBNBHarness
+    lens: ComptrollerLens
     comptroller: ComptrollerHarness
     unitroller: Unitroller
     interestRateModels: (InterestRateModelHarness | WhitePaperInterestRateModel | JumpRateModel)[]
@@ -85,7 +88,7 @@ export async function generateVenusFixture(signer: SignerWithAddress, options: C
     const closeFactor = options?.closeFactor ?? ONE_18.mul(51).div(1000);
 
     const accessControl = await new AccessControlManagerHarness__factory(signer).deploy()
-
+    const lens = await new ComptrollerLens__factory(signer).deploy()
     const liquidationIncentive = etherMantissa(1);
     const compRate = options?.compRate ?? ONE_18;
     console.log("start venus config")
@@ -97,6 +100,8 @@ export async function generateVenusFixture(signer: SignerWithAddress, options: C
     console.log("_setCloseFactor")
     await comptroller.connect(signer)._setVenusRate(compRate)
     console.log("_setVenusRate")
+    await comptroller.connect(signer)._setComptrollerLens(lens.address)
+    console.log("_setComptrollerLens")
     await comptroller.connect(signer)._setPriceOracle(priceOracle.address);
     console.log("venus config complete")
     const interestRateModelCETH = await new InterestRateModelHarness__factory(signer).deploy(options.cEthBorrowRate)
@@ -143,13 +148,14 @@ export async function generateVenusFixture(signer: SignerWithAddress, options: C
         await priceOracle.setUnderlyingPrice(cToken.address, price);
         await comptroller._supportMarket(cToken.address)
         await comptroller.harnessAddCompMarkets([cToken.address]);
-        await comptroller._setCollateralFactor(cToken.address, options.collateralFactors[i])
         await comptroller._setMarketSupplyCaps([cToken.address], [constants.MaxUint256])
         await comptroller._setMarketBorrowCaps([cToken.address], [constants.MaxUint256])
+        await comptroller._setCollateralFactor(cToken.address, options.collateralFactors[i])
     }
 
     return {
         cEther,
+        lens,
         cTokens,
         comptroller,
         unitroller,

@@ -17,10 +17,10 @@ describe('Compound Baseline Test Hardhat', async () => {
     before('get wallets and fixture', async () => {
         [deployer, alice, bob, carol] = await ethers.getSigners();
         const arr = [1, 2, 4, 5, 6]
-         underlyings = await Promise.all(arr.map(async (a) => await new ERC20Mock__factory(deployer).deploy(`Token ${a}`, `T${a}`, deployer.address, parseUnits('1000000', 18))))
+        underlyings = await Promise.all(arr.map(async (a) => await new ERC20Mock__factory(deployer).deploy(`Token ${a}`, `T${a}`, deployer.address, parseUnits('1000000', 18))))
         const options = {
             underlyings: underlyings,
-            collateralFactors: arr.map(x => ONE_18.mul(99).div(10)),
+            collateralFactors: arr.map(x => ONE_18.mul(8).div(10)),
             exchangeRates: arr.map(x => ONE_18),
             borrowRates: arr.map(x => ONE_18.div(1e8)),
             cEthExchangeRate: ONE_18,
@@ -70,17 +70,15 @@ describe('Compound Baseline Test Hardhat', async () => {
         // supply amount to protocol for other acc to borrow
         await borrow_underlying.connect(deployer).approve(borrow_cToken.address, borrow_am)
         await borrow_cToken.connect(deployer).mint(borrow_am.div(2))
-
         // enter market
         await comptroller.connect(bob).enterMarkets(compoundFixture.cTokens.map(cT => cT.address))
 
         // user has to add collateral
         await supply_underlying.connect(bob).approve(supply_cToken.address, borrow_am)
         await supply_cToken.connect(bob).mint(borrow_am.div(2))
-
+        await comptroller.connect(bob).enterMarkets([supply_cToken.address])
         // other account borrows amount
         await borrow_cToken.connect(bob).borrow(borrow_am.div(4))
-
         await network.provider.send("evm_increaseTime", [3600])
         await network.provider.send("evm_mine")
 
@@ -88,9 +86,4 @@ describe('Compound Baseline Test Hardhat', async () => {
         await borrow_underlying.connect(bob).approve(borrow_cToken.address, borrow_am.div(4))
         await borrow_cToken.connect(bob).repayBorrow(borrow_am.div(4))
     })
-
-
-
-
-    //    
 })
