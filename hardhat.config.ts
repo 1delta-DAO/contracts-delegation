@@ -202,10 +202,10 @@ const config: HardhatUserConfig = {
       //   blockNumber: 18748428,
       //   url: 'https://rpc.ankr.com/eth'
       // },
-      forking: {
-        blockNumber: 29148766,
-        url: `https://rpc.mantle.xyz`,
-      },
+      // forking: {
+      //   blockNumber: 29148766,
+      //   url: `https://rpc.mantle.xyz`,
+      // },
     },
     rinkeby: {
       url: `https://rinkeby.infura.io/v3/${process.env.INFURA_API_KEY}`,
@@ -624,6 +624,27 @@ const config: HardhatUserConfig = {
           },
           metadata: {
             bytecodeHash: 'none',
+          },
+        },
+      },
+      // venus
+      "contracts/external-protocols/venus/test/ComptrollerHarness.sol": {
+        version: "0.5.16",
+        settings: {
+          evmVersion: 'istanbul',
+          optimizer: {
+            enabled: true,
+            runs: 0,
+          },
+        },
+      },
+      "contracts/external-protocols/venus/test/VenusBep20Harness.sol": {
+        version: "0.5.16",
+        settings: {
+          evmVersion: 'istanbul',
+          optimizer: {
+            enabled: true,
+            runs: 1,
           },
         },
       },
