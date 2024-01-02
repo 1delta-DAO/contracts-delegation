@@ -112,7 +112,7 @@ abstract contract TokenTransfer {
         }
     }
 
-    function _depositWeth(address weth, uint256 amount) internal {
+    function _depositNative(address weth, uint256 amount) internal {
         assembly {
             let ptr := mload(0x40) // free memory pointer
             // selector for deposit()

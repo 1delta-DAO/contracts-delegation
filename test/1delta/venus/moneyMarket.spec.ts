@@ -20,7 +20,7 @@ describe('Venus 1delta Test', async () => {
 
     before('get wallets and fixture', async () => {
         [deployer, alice, bob, carol] = await ethers.getSigners();
-        const arr = [0, 1, 2, 3, 4, 5]
+        const arr = [0, 1, 2, 3]
         underlyings = await Promise.all(arr.map(async (a) => await new ERC20Mock__factory(deployer).deploy(`Token ${a}`, `T${a}`, deployer.address, parseUnits('1000000000', 18))))
         weth = await new WETH9__factory(deployer).deploy()
         const options = {
@@ -48,9 +48,12 @@ describe('Venus 1delta Test', async () => {
             const baseAm = parseUnits('1000000', 18)
             await cTok.connect(deployer).mint(baseAm)
             await underlying.connect(deployer).transfer(alice.address, baseAm)
+            await underlying.connect(deployer).transfer(bob.address, baseAm)
             await venusBroker.manager.addCollateralToken(underlying.address, cTok.address)
 
         }
+
+        await venusBroker.manager.approveCollateralTokens(underlyings.map(a => a.address))
     })
 
     it('deploys everything', async () => {
@@ -58,6 +61,18 @@ describe('Venus 1delta Test', async () => {
             venusFixture.comptroller.address
         ).to.not.be.equal('')
     })
+
+    it('allows delegated collateral provision', async () => {
+        const underlying = underlyings[0]
+        const am = parseUnits('1000', 18)
+
+        await underlying.connect(bob).approve(venusBroker.aggregator.address, am)
+        await venusBroker.aggregator.connect(bob).deposit(underlying.address, am)
+
+        const expBal = await venusFixture.cTokens[0].callStatic.balanceOfUnderlying(bob.address)
+        expect(expBal.toString()).to.equal(am.toString())
+    })
+
 
     it('allows collateral provision and redemption', async () => {
         const underlying = underlyings[0]
@@ -103,9 +118,9 @@ describe('Venus 1delta Test', async () => {
         await borrow_cToken.connect(bob).borrow(borrow_am.div(4))
         await network.provider.send("evm_increaseTime", [3600])
         await network.provider.send("evm_mine")
-
-        // repay amount
-        await borrow_underlying.connect(bob).approve(borrow_cToken.address, borrow_am.div(4))
-        await borrow_cToken.connect(bob).repayBorrow(borrow_am.div(4))
+        
+        const am = supply_am.div(10)
+        await supply_underlying.connect(bob).approve(venusBroker.aggregator.address, am)
+        await venusBroker.aggregator.connect(bob).deposit(supply_underlying.address, am)
     })
 })

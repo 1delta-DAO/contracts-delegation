@@ -185,7 +185,86 @@ abstract contract LendingOps is WithVenusStorage {
         }
     }
 
-    function _withdraw(address underlying, uint256 amount) internal {
+    /**
+    * @notice Withdrawal from Venus
+    * 1) calculate vToken amount to transfer
+    * 2) transfer vTokens from user
+    * 3) withdraw / redeem underlying
+    * 4) send funds to recever
+     */
+    function _withdraw(address underlying, uint256 amount, address receiver) internal {
+        address _cNative = cNative;
+        address _wNative = wNative;
+        mapping(address => address) storage c_data = ls().collateralTokens;
+        assembly {
+            let ptr := mload(0x40) // free memory pointer
+            mstore(ptr, underlying) // pad the lender number (agnostic to uint_x)
+            mstore(add(ptr, 0x20), c_data.slot) // add pointer to slot
+            let _cAsset := sload(keccak256(ptr, 0x40)) // acces element
+            switch eq(_cAsset, _cNative)
+            case 1 {
+                ptr := mload(0x40) // free memory pointer
+                // selector for redeemUnderlying(uint256)
+                mstore(ptr, 0x852a12e300000000000000000000000000000000000000000000000000000000)
+                mstore(add(ptr, 0x4), amount)
+
+                let success := call(
+                    gas(),
+                    and(_cNative, ADDRESS_MASK),
+                    0x0,
+                    ptr, // input = selector
+                    0x24, // input selector + uint256
+                    ptr, // output
+                    0x0 // output size = zero
+                )
+                let rdsize := returndatasize()
+
+                if iszero(success) {
+                    returndatacopy(ptr, 0, rdsize)
+                    revert(ptr, rdsize)
+                }
+
+                // selector for deposit()
+                mstore(ptr, 0xd0e30db000000000000000000000000000000000000000000000000000000000)
+                pop(
+                    call(
+                        gas(),
+                        and(_wNative, ADDRESS_MASK),
+                        amount, // ETH to deposit
+                        ptr, // seletor for deposit()
+                        0x4, // input size = selector
+                        0x0, // output = empty
+                        0x0 // output size = zero
+                    )
+                )
+            }
+            default {
+                ptr := mload(0x40) // free memory pointer
+
+                // selector for redeemUnderlying(uint256)
+                mstore(ptr, 0x852a12e300000000000000000000000000000000000000000000000000000000)
+                mstore(add(ptr, 0x4), amount)
+
+                let success := call(
+                    gas(),
+                    and(_cAsset, ADDRESS_MASK),
+                    0x0,
+                    ptr, // input = empty for fallback
+                    0x24, // input size = selector + uint256
+                    ptr, // output
+                    0x0 // output size = zero
+                )
+                let rdsize := returndatasize()
+
+                if iszero(success) {
+                    returndatacopy(ptr, 0, rdsize)
+                    revert(ptr, rdsize)
+                }
+            }
+        }
+    }
+
+    function _withdrawLegacy(address underlying, uint256 amount) internal {
         address _cNative = cNative;
         address _wNative = wNative;
         mapping(address => address) storage c_data = ls().collateralTokens;

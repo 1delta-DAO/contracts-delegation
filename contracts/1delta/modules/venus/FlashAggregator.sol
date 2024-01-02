@@ -7,6 +7,7 @@ pragma solidity ^0.8.23;
 /******************************************************************************/
 
 import {LendingOps} from "./VenusOps.sol";
+import {TokenTransfer} from "../../libraries/TokenTransfer.sol";
 
 // solhint-disable max-line-length
 
@@ -14,12 +15,13 @@ import {LendingOps} from "./VenusOps.sol";
  * @title FlashAggregator for Venus
  * @notice Adds money market and default transfer functions to margin trading
  */
-contract VenusFlashAggregator is LendingOps {
+contract VenusFlashAggregator is LendingOps, TokenTransfer {
     // constants
 
     constructor(address _cNative, address _wNative) LendingOps(_cNative, _wNative) {}
 
-    function depo(address underlying, uint amount) external {
+    function deposit(address underlying, uint amount) external {
+        _transferERC20TokensFrom(underlying, msg.sender, address(this), amount);
         _deposit(underlying, amount, msg.sender);
     }
 }
