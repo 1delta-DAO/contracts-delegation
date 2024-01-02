@@ -3,11 +3,11 @@ pragma solidity ^0.8.23;
 
 // We do not use an array of stucts to avoid pointer conflicts
 
-struct AaveStorage {
-    mapping(address => address) aTokens;
-    mapping(address => address) vTokens;
-    mapping(address => address) sTokens;
-    address lendingPool;
+struct LendersStorage {
+    // map underlying address to lender tokens
+    mapping(address => address) collateralTokens;
+    // comptroller
+    address comptroller;
 }
 
 struct ManagementStorage {
@@ -57,7 +57,7 @@ library LibStorage {
     // Storage are structs where the data gets updated throughout the lifespan of the project
     bytes32 constant DATA_PROVIDER_STORAGE = keccak256("broker.storage.dataProvider");
     bytes32 constant MARGIN_SWAP_STORAGE = keccak256("broker.storage.marginSwap");
-    bytes32 constant AAVE_STORAGE = keccak256("broker.storage.aave");
+    bytes32 constant LENDERS_STORAGE = keccak256("broker.storage.lenders");
     bytes32 constant MANAGEMENT_STORAGE = keccak256("broker.storage.management");
     bytes32 constant FLASH_LOAN_GATEWAY = keccak256("broker.storage.flashLoanGateway");
     bytes32 constant INITIALIZER = keccak256("broker.storage.initailizerStorage");
@@ -65,10 +65,10 @@ library LibStorage {
     bytes32 constant ADDRESS_CACHE = keccak256("broker.storage.cache.address");
     bytes32 constant ORDER_STORAGE = keccak256("broker.storage.orders");
 
-    function aaveStorage() internal pure returns (AaveStorage storage aas) {
-        bytes32 position = AAVE_STORAGE;
+    function lendersStorage() internal pure returns (LendersStorage storage ls) {
+        bytes32 position = LENDERS_STORAGE;
         assembly {
-            aas.slot := position
+            ls.slot := position
         }
     }
 
@@ -116,12 +116,11 @@ library LibStorage {
 }
 
 /**
- * The `WithStorage` contract provides a base contract for Module contracts to inherit.
+ * The `WithVenusStorage` contract provides a base contract for Module contracts to inherit.
  */
-contract WithStorage {
-
-    function aas() internal pure returns (AaveStorage storage) {
-        return LibStorage.aaveStorage();
+contract WithVenusStorage {
+    function ls() internal pure returns (LendersStorage storage) {
+        return LibStorage.lendersStorage();
     }
 
     function ms() internal pure returns (ManagementStorage storage) {

@@ -38,7 +38,7 @@ export function etherMantissa(num: number | BigNumber, scale: number | BigNumber
 }
 
 
-export interface CompoundFixture {
+export interface VenusFixture {
     cTokens: VenusBep20Harness[]
     cEther: VBNBHarness
     lens: ComptrollerLens
@@ -62,7 +62,7 @@ export interface CompoundOptions {
 
 }
 
-export async function generateVenusFixture(signer: SignerWithAddress, options: CompoundOptions): Promise<CompoundFixture> {
+export async function generateVenusFixture(signer: SignerWithAddress, options: CompoundOptions): Promise<VenusFixture> {
 
     // deploy unitroller
     const unitroller = await new Unitroller__factory(signer).deploy()

@@ -1,23 +1,24 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { ethers, network } from 'hardhat'
-import { CompoundFixture, generateVenusFixture, ONE_18 } from '../shared/venusFixture'
+import { VenusFixture, generateVenusFixture, ONE_18 } from '../1delta/shared/venusFixture'
 import { expect } from 'chai';
-import { ERC20Mock, ERC20Mock__factory } from '../../../types';
+import { ERC20Mock, ERC20Mock__factory } from '../../types';
 import { parseUnits } from 'ethers/lib/utils';
+import { constants } from 'ethers';
 
 
 // we prepare a setup for compound in hardhat
 // this series of tests checks that the features used for the margin swap implementation
 // are correctly set up and working
-describe('Compound Baseline Test Hardhat', async () => {
+describe('Venus Baseline Test Hardhat', async () => {
     let deployer: SignerWithAddress, alice: SignerWithAddress, bob: SignerWithAddress, carol: SignerWithAddress;
-    let compoundFixture: CompoundFixture
+    let venusFixture: VenusFixture
     let underlyings: ERC20Mock[]
 
     before('get wallets and fixture', async () => {
         [deployer, alice, bob, carol] = await ethers.getSigners();
-        const arr = [1, 2, 4, 5, 6]
-        underlyings = await Promise.all(arr.map(async (a) => await new ERC20Mock__factory(deployer).deploy(`Token ${a}`, `T${a}`, deployer.address, parseUnits('1000000', 18))))
+        const arr = [0, 1, 2, 4, 5]
+        underlyings = await Promise.all(arr.map(async (a) => await new ERC20Mock__factory(deployer).deploy(`Token ${a}`, `T${a}`, deployer.address, parseUnits('1000000000', 18))))
         const options = {
             underlyings: underlyings,
             collateralFactors: arr.map(x => ONE_18.mul(8).div(10)),
@@ -28,18 +29,27 @@ describe('Compound Baseline Test Hardhat', async () => {
             compRate: ONE_18,
             closeFactor: ONE_18
         }
-        compoundFixture = await generateVenusFixture(deployer, options)
+        venusFixture = await generateVenusFixture(deployer, options)
+
+        for (const i of arr) {
+            const cTok = venusFixture.cTokens[i]
+            const underlying = underlyings[i]
+            await underlying.connect(deployer).approve(cTok.address, constants.MaxUint256)
+            const baseAm = parseUnits('1000000', 18)
+            await cTok.connect(deployer).mint(baseAm)
+            await underlying.connect(deployer).transfer(alice.address, baseAm)
+        }
     })
 
     it('deploys everything', async () => {
         await expect(
-            compoundFixture.comptroller.address
+            venusFixture.comptroller.address
         ).to.not.be.equal('')
     })
 
     it('allows collateral provision and redemption', async () => {
         const underlying = underlyings[0]
-        const cToken = compoundFixture.cTokens[0]
+        const cToken = venusFixture.cTokens[0]
         const am = await underlying.totalSupply()
         await underlying.connect(deployer).transfer(alice.address, am.div(2))
 
@@ -55,10 +65,10 @@ describe('Compound Baseline Test Hardhat', async () => {
         const borrow_underlying = underlyings[0]
         const supply_underlying = underlyings[1]
 
-        const borrow_cToken = compoundFixture.cTokens[0]
-        const supply_cToken = compoundFixture.cTokens[1]
+        const borrow_cToken = venusFixture.cTokens[0]
+        const supply_cToken = venusFixture.cTokens[1]
 
-        const comptroller = compoundFixture.comptroller
+        const comptroller = venusFixture.comptroller
 
         // supplies
         const supply_am = await supply_underlying.totalSupply()
@@ -71,7 +81,7 @@ describe('Compound Baseline Test Hardhat', async () => {
         await borrow_underlying.connect(deployer).approve(borrow_cToken.address, borrow_am)
         await borrow_cToken.connect(deployer).mint(borrow_am.div(2))
         // enter market
-        await comptroller.connect(bob).enterMarkets(compoundFixture.cTokens.map(cT => cT.address))
+        await comptroller.connect(bob).enterMarkets(venusFixture.cTokens.map(cT => cT.address))
 
         // user has to add collateral
         await supply_underlying.connect(bob).approve(supply_cToken.address, borrow_am)

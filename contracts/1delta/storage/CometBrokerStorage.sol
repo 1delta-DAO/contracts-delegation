@@ -1,16 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.16;
+pragma solidity ^0.8.23;
 
 // We do not use an array of stucts to avoid pointer conflicts
 
 struct CometStorage {
     mapping(uint8 => address) comet;
     mapping(uint8 => address) base;
-}
-
-struct CompoundStorage {
-    address comptroller;
-    mapping(address => address) cTokens;
 }
 
 struct ManagementStorage {
@@ -92,13 +87,7 @@ library LibStorage {
 }
 
 /**
- * The `WithStorage` contract provides a base contract for Module contracts to inherit.
- *
- * It mainly provides internal helpers to access the storage structs, which reduces
- * calls like `LibStorage.treasuryStorage()` to just `ts()`.
- *
- * To understand why the storage stucts must be accessed using a function instead of a
- * state variable, please refer to the documentation above `LibStorage` in this file.
+ * The `WithStorageComet` contract provides a base contract for Module contracts to inherit.
  */
 abstract contract WithStorageComet {
     function cos() internal pure returns (CometStorage storage) {
