@@ -6,6 +6,12 @@ import {WithVenusStorage} from "../../storage/VenusStorage.sol";
 
 interface IVT {
     function exchangeRateStored() external view returns (uint);
+
+    function balanceOfUnderlying(address a) external returns (uint);
+
+    function redeemUnderlying(uint redeemAmount) external returns (uint);
+
+    function redeem(uint redeemAmount) external returns (uint);
 }
 
 /**
@@ -192,17 +198,16 @@ abstract contract LendingOps is WithVenusStorage {
 
             // 2) GET BALANCE OF COLLATERAL TOKEN
 
-            let params := mload(0x40)
             // selector for balanceOf(address)
-            mstore(params, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+            mstore(ptr, 0x70a0823100000000000000000000000000000000000000000000000000000000)
             // add this address as parameter
-            mstore(add(params, 0x4), address())
+            mstore(add(ptr, 0x4), address())
 
             // call to collateralToken
-            pop(staticcall(5000, _cAsset, params, 0x24, params, 0x20))
+            pop(staticcall(5000, _cAsset, ptr, 0x24, ptr, 0x20))
 
             // load the retrieved balance
-            amount := mload(params)
+            amount := mload(ptr)
 
             // 3) TRANSFER TOKENS TO RECEIVER
 
@@ -237,8 +242,10 @@ abstract contract LendingOps is WithVenusStorage {
     }
 
     /**
-     * @notice Withdrawal from Venus
+     * @notice Withdrawal from Venus, delegated from user
      * 1) calculate vToken amount to transfer
+     *  -> note that we have to round up here since we MUST make sure that we receive amount
+        -> as such, we have to fetch the user balance and see whether the rounding overflows the balance
      * 2) transfer vTokens from user
      * 3) withdraw / redeem underlying
      * 4) send funds to recever
@@ -247,26 +254,26 @@ abstract contract LendingOps is WithVenusStorage {
         address _cNative = cNative;
         address _wNative = wNative;
         mapping(address => address) storage c_data = ls().collateralTokens;
-        address _cAsset;
-        uint transferAmount;
         assembly {
             let ptr := mload(0x40) // free memory pointer
             mstore(ptr, underlying) // pad the lender number (agnostic to uint_x)
             mstore(add(ptr, 0x20), c_data.slot) // add pointer to slot
-            _cAsset := and(sload(keccak256(ptr, 0x40)), ADDRESS_MASK) // access element
+            let _cAsset := and(sload(keccak256(ptr, 0x40)), ADDRESS_MASK) // access element
 
             // 1) CALCULTAE TRANSFER AMOUNT
-            // Store fnSig (=bytes4(abi.encodeWithSignature("exchangeRateStored()"))) at params
+            // Store fnSig (=bytes4(abi.encodeWithSignature("exchangeRateCurrent()"))) at params
             // - here we store 32 bytes : 4 bytes of fnSig and 28 bytes of RIGHT padding
             mstore(
                 ptr,
-                0x182df0f500000000000000000000000000000000000000000000000000000000 // with padding
+                0xbd6d894d00000000000000000000000000000000000000000000000000000000 // with padding
             )
             // call to collateralToken
+            // accrues interest. No real risk of failure.
             pop(
-                staticcall(
+                call(
                     gas(),
                     _cAsset,
+                    0x0,
                     ptr,
                     0x24,
                     ptr, // store back to ptr
@@ -275,12 +282,32 @@ abstract contract LendingOps is WithVenusStorage {
             )
 
             // load the retrieved protocol share
-            let exchangeRate := mload(ptr)
-            // calculate collateral token amount
-            transferAmount := div(
-                mul(amount, 1000000000000000000), // multiply with 1e18
-                exchangeRate // divide by rate
+            let refAmount := mload(ptr)
+
+            // calculate collateral token amount, rounding up
+            let transferAmount := add(
+                div(
+                    mul(amount, 1000000000000000000), // multiply with 1e18
+                    refAmount // divide by rate
+                ),
+                1
             )
+            // FETCH BALANCE
+            // selector for balanceOf(address)
+            mstore(ptr, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+            // add this address as parameter
+            mstore(add(ptr, 0x4), user)
+
+            // call to collateralToken
+            pop(staticcall(5000, _cAsset, ptr, 0x24, ptr, 0x20))
+
+            // load the retrieved balance
+            refAmount := mload(ptr)
+
+            // floor to the balance
+            if gt(transferAmount, refAmount) {
+                transferAmount := refAmount
+            }
 
             // 2) TRANSFER VTOKENS
 
@@ -299,7 +326,6 @@ abstract contract LendingOps is WithVenusStorage {
                 revert(ptr, rdsize)
             }
 
-            ptr := mload(0x40) // free memory pointer
             // 3) REDEEM
             // selector for redeem(uint256)
             mstore(ptr, 0xdb006a7500000000000000000000000000000000000000000000000000000000)
@@ -307,7 +333,7 @@ abstract contract LendingOps is WithVenusStorage {
 
             success := call(
                 gas(),
-                and(_cAsset, ADDRESS_MASK),
+                _cAsset,
                 0x0,
                 ptr, // input = selector
                 0x24, // input selector + uint256
@@ -321,6 +347,7 @@ abstract contract LendingOps is WithVenusStorage {
                 revert(ptr, rdsize)
             }
 
+            // case native
             if eq(_cAsset, _cNative) {
                 // if it is native, we convert to WETH
                 // selector for deposit() (deposit ETH to WETH)
@@ -328,7 +355,7 @@ abstract contract LendingOps is WithVenusStorage {
                 pop(
                     call(
                         gas(),
-                        and(_wNative, ADDRESS_MASK),
+                        _wNative,
                         amount, // ETH to deposit
                         ptr, // seletor for deposit()
                         0x4, // input size = selector

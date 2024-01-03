@@ -6,7 +6,7 @@ pragma solidity ^0.8.23;
 * Author: Achthar | 1delta 
 /******************************************************************************/
 
-import {LendingOps} from "./VenusOps.sol";
+import {LendingOps, IERC20} from "./VenusOps.sol";
 import {TokenTransfer} from "../../libraries/TokenTransfer.sol";
 
 // solhint-disable max-line-length

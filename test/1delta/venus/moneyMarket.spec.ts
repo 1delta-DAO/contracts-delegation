@@ -3,7 +3,7 @@ import { ethers, network } from 'hardhat'
 import { VenusFixture, generateVenusFixture, ONE_18 } from '../shared/venusFixture'
 import { expect } from 'chai';
 import { ERC20Mock, ERC20Mock__factory, WETH9, WETH9__factory } from '../../../types';
-import { parseUnits } from 'ethers/lib/utils';
+import { formatEther, parseUnits } from 'ethers/lib/utils';
 import { VenusBrokerFixture, initVenusBroker, venusBrokerFixture } from '../shared/venusBrokerFixture';
 import { constants } from 'ethers';
 
@@ -26,7 +26,8 @@ describe('Venus 1delta Test', async () => {
         const options = {
             underlyings: underlyings,
             collateralFactors: arr.map(x => ONE_18.mul(8).div(10)),
-            exchangeRates: arr.map(x => ONE_18),
+            exchangeRates: arr.map(x => ONE_18.mul(912).div(333)),
+            // exchangeRates: arr.map(x => ONE_18),
             borrowRates: arr.map(x => ONE_18.div(1e8)),
             cEthExchangeRate: ONE_18,
             cEthBorrowRate: ONE_18,
@@ -71,10 +72,9 @@ describe('Venus 1delta Test', async () => {
         await venusBroker.aggregator.connect(bob).deposit(underlying.address, am)
 
         const expBal = await venusFixture.cTokens[0].callStatic.balanceOfUnderlying(bob.address)
-        expect(expBal.toString()).to.equal(am.toString())
+        // venus produces rounding errors when converting balances
+        expect(Number(formatEther(expBal))).to.approximately(Number(formatEther(am)), 1e-17)
     })
-
-
 
     it('allows delegated collateral withdrawal', async () => {
         const underlying = underlyings[0]
@@ -89,18 +89,34 @@ describe('Venus 1delta Test', async () => {
 
         const expBal = await cToken.callStatic.balanceOfUnderlying(bob.address)
         expect(expBal.sub(expBalBefore).toString()).to.equal(am.toString())
-        const exRate = await venusBroker.aggregator.getExRate(cToken.address)
-        const exRateC = await cToken.exchangeRateStored()
-        console.log("exRate", exRate.toString(), exRateC.toString())
-        const ctok = await venusBroker.aggregator.getCollateralTokenAssembly(underlyings[0].address)
-        console.log("ctok", ctok, cToken.address)
         const withdrawAm = am.div(3)
-        console.log("withdrawAm", withdrawAm.toString())
-        const da = await venusBroker.aggregator.calculateWithdrawCollateralAmount(cToken.address, withdrawAm)
-        console.log("CAT", da.toString())
-        const ts = await cToken.totalSupply()
-        console.log("supply", ts.toString())
         await venusBroker.aggregator.connect(bob).withdraw(underlying.address, withdrawAm)
+        const expBalAfter = await cToken.callStatic.balanceOfUnderlying(bob.address)
+        // allow minimal deviation
+        expect(Number(formatEther(expBal.sub(expBalAfter)))).to.approximately(Number(formatEther(withdrawAm)), 1e-17)
+    })
+
+    it('allows delegated collateral withdrawal full', async () => {
+        const underlying = underlyings[0]
+        const cToken = venusFixture.cTokens[0]
+        console.log("underlying", underlying.address, "cTok", cToken.address)
+        const am = parseUnits('1000', 18)
+
+        await underlying.connect(bob).approve(venusBroker.aggregator.address, am)
+        await cToken.connect(bob).approve(venusBroker.aggregator.address, constants.MaxUint256)
+
+        const withdrawAm = await cToken.callStatic.balanceOfUnderlying(bob.address)
+        const balBefore = await underlying.balanceOf(bob.address)
+        console.log("before:", balBefore.toString())
+        await venusBroker.aggregator.connect(bob).withdraw(underlying.address, withdrawAm)
+        const balAfter = await underlying.balanceOf(bob.address)
+        console.log("before:", balBefore.toString(), "after:", balAfter.toString())
+        expect(balAfter.sub(balBefore).toString()).to.equal(withdrawAm.toString())
+        const balRouter = await underlying.balanceOf(venusBroker.aggregator.address)
+        expect(Number(balRouter.toString())).to.lessThanOrEqual(1) // we accept the smallest unit as dust
+
+        const balWithLender = await cToken.callStatic.balanceOfUnderlying(bob.address)
+        expect(Number(balWithLender.toString())).to.lessThanOrEqual(0) // we accept the smallest unit as dust
     })
 
     it('allows collateral provision and redemption', async () => {
