@@ -24,4 +24,9 @@ contract VenusFlashAggregator is LendingOps, TokenTransfer {
         _transferERC20TokensFrom(underlying, msg.sender, address(this), amount);
         _deposit(underlying, amount, msg.sender);
     }
+
+    function withdraw(address underlying, uint amount) external {
+        _withdraw(underlying, amount, msg.sender);
+        _transferERC20Tokens(underlying, msg.sender, amount);
+    }
 }

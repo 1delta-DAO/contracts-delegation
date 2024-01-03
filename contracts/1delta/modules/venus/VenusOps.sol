@@ -8,6 +8,23 @@ interface IVT {
     function exchangeRateStored() external view returns (uint);
 }
 
+/**
+ * @dev Interface of the ERC20 standard as defined in the EIP.
+ */
+interface IERC20 {
+    function totalSupply() external view returns (uint256);
+
+    function balanceOf(address account) external view returns (uint256);
+
+    function transfer(address to, uint256 amount) external returns (bool);
+
+    function allowance(address owner, address spender) external view returns (uint256);
+
+    function approve(address spender, uint256 amount) external returns (bool);
+
+    function transferFrom(address from, address to, uint256 amount) external returns (bool);
+}
+
 // assembly library for efficient compound style lending interactions
 abstract contract LendingOps is WithVenusStorage {
     // Mask of the lower 20 bytes of a bytes32.
@@ -21,7 +38,7 @@ abstract contract LendingOps is WithVenusStorage {
         wNative = _wNative;
     }
 
-    function getCollateralToken(address underlying) internal view returns (address token) {
+    function getCollateralTokenAssembly(address underlying) public view returns (address token) {
         mapping(address => address) storage c_data = ls().collateralTokens;
         assembly {
             let ptr := mload(0x40)
@@ -44,17 +61,16 @@ abstract contract LendingOps is WithVenusStorage {
                 0x182df0f500000000000000000000000000000000000000000000000000000000 // with padding
             )
             // call to collateralToken
-            let success := staticcall(
-                5000,
-                collateralToken,
-                params,
-                0x24,
-                params, // store back to params
-                0x20
+            pop(
+                staticcall(
+                    21000,
+                    collateralToken,
+                    params,
+                    0x4,
+                    params, // store back to params
+                    0x20
+                )
             )
-            if iszero(success) {
-                revert(params, 0x40)
-            }
             // load the retrieved protocol share
             let exchangeRate := mload(params)
             // calculate collateral token amount
@@ -65,6 +81,41 @@ abstract contract LendingOps is WithVenusStorage {
         }
     }
 
+    /**
+     * @dev Converts underlying amount to collateral token amount
+     */
+    function getExRate(address collateralToken) public view returns (uint256 res) {
+        assembly {
+            let params := mload(0x40)
+            // Store fnSig (=bytes4(abi.encodeWithSignature("exchangeRateStored()"))) at params
+            // - here we store 32 bytes : 4 bytes of fnSig and 28 bytes of RIGHT padding
+            mstore(
+                params,
+                0x182df0f500000000000000000000000000000000000000000000000000000000 // with padding
+            )
+            // call to collateralToken
+            let success := staticcall(
+                21000,
+                collateralToken,
+                params,
+                0x4,
+                params, // store back to params
+                0x20
+            )
+            if iszero(success) {
+                revert(params, 0x40)
+            }
+            // load the retrieved protocol share
+            res := mload(params)
+        }
+    }
+
+    /**
+     * @notice Approach
+     * 1) deposit asset (for wNative, wrap first)
+     * 2) read collateral token balance
+     * 3) transfer balance to receiver
+     */
     function _deposit(address underlying, uint256 amount, address receiver) internal {
         address _cNative = cNative;
         address _wNative = wNative;
@@ -73,7 +124,7 @@ abstract contract LendingOps is WithVenusStorage {
             let ptr := mload(0x40)
             mstore(ptr, underlying) // pad the lender number (agnostic to uint_x)
             mstore(add(ptr, 0x20), c_data.slot) // add pointer to slot
-            let _cAsset := sload(keccak256(ptr, 0x40)) // acces element
+            let _cAsset := and(sload(keccak256(ptr, 0x40)), ADDRESS_MASK) // acces element
 
             // 1) DEPOSIT
             switch eq(_cAsset, _cNative)
@@ -122,7 +173,7 @@ abstract contract LendingOps is WithVenusStorage {
 
                 let success := call(
                     gas(),
-                    and(_cAsset, ADDRESS_MASK),
+                    _cAsset,
                     0x0,
                     ptr, // input = selector and data
                     0x24, // input size = 4 + 32
@@ -160,7 +211,7 @@ abstract contract LendingOps is WithVenusStorage {
             mstore(add(ptr, 0x04), and(receiver, ADDRESS_MASK))
             mstore(add(ptr, 0x24), amount)
 
-            let success := call(gas(), and(_cAsset, ADDRESS_MASK), 0, ptr, 0x44, ptr, 32)
+            let success := call(gas(), _cAsset, 0, ptr, 0x44, ptr, 32)
 
             let rdsize := returndatasize()
 
@@ -186,45 +237,93 @@ abstract contract LendingOps is WithVenusStorage {
     }
 
     /**
-    * @notice Withdrawal from Venus
-    * 1) calculate vToken amount to transfer
-    * 2) transfer vTokens from user
-    * 3) withdraw / redeem underlying
-    * 4) send funds to recever
+     * @notice Withdrawal from Venus
+     * 1) calculate vToken amount to transfer
+     * 2) transfer vTokens from user
+     * 3) withdraw / redeem underlying
+     * 4) send funds to recever
      */
-    function _withdraw(address underlying, uint256 amount, address receiver) internal {
+    function _withdraw(address underlying, uint256 amount, address user) internal {
         address _cNative = cNative;
         address _wNative = wNative;
         mapping(address => address) storage c_data = ls().collateralTokens;
+        address _cAsset;
+        uint transferAmount;
         assembly {
             let ptr := mload(0x40) // free memory pointer
             mstore(ptr, underlying) // pad the lender number (agnostic to uint_x)
             mstore(add(ptr, 0x20), c_data.slot) // add pointer to slot
-            let _cAsset := sload(keccak256(ptr, 0x40)) // acces element
-            switch eq(_cAsset, _cNative)
-            case 1 {
-                ptr := mload(0x40) // free memory pointer
-                // selector for redeemUnderlying(uint256)
-                mstore(ptr, 0x852a12e300000000000000000000000000000000000000000000000000000000)
-                mstore(add(ptr, 0x4), amount)
+            _cAsset := and(sload(keccak256(ptr, 0x40)), ADDRESS_MASK) // access element
 
-                let success := call(
+            // 1) CALCULTAE TRANSFER AMOUNT
+            // Store fnSig (=bytes4(abi.encodeWithSignature("exchangeRateStored()"))) at params
+            // - here we store 32 bytes : 4 bytes of fnSig and 28 bytes of RIGHT padding
+            mstore(
+                ptr,
+                0x182df0f500000000000000000000000000000000000000000000000000000000 // with padding
+            )
+            // call to collateralToken
+            pop(
+                staticcall(
                     gas(),
-                    and(_cNative, ADDRESS_MASK),
-                    0x0,
-                    ptr, // input = selector
-                    0x24, // input selector + uint256
-                    ptr, // output
-                    0x0 // output size = zero
+                    _cAsset,
+                    ptr,
+                    0x24,
+                    ptr, // store back to ptr
+                    0x20
                 )
-                let rdsize := returndatasize()
+            )
 
-                if iszero(success) {
-                    returndatacopy(ptr, 0, rdsize)
-                    revert(ptr, rdsize)
-                }
+            // load the retrieved protocol share
+            let exchangeRate := mload(ptr)
+            // calculate collateral token amount
+            transferAmount := div(
+                mul(amount, 1000000000000000000), // multiply with 1e18
+                exchangeRate // divide by rate
+            )
 
-                // selector for deposit()
+            // 2) TRANSFER VTOKENS
+
+            // selector for transferFrom(address,address,uint256)
+            mstore(ptr, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
+            mstore(add(ptr, 0x04), user) // from user
+            mstore(add(ptr, 0x24), address()) // to this address
+            mstore(add(ptr, 0x44), transferAmount)
+
+            let success := call(gas(), _cAsset, 0, ptr, 0x64, ptr, 32)
+
+            let rdsize := returndatasize()
+
+            if iszero(success) {
+                returndatacopy(ptr, 0, rdsize)
+                revert(ptr, rdsize)
+            }
+
+            ptr := mload(0x40) // free memory pointer
+            // 3) REDEEM
+            // selector for redeem(uint256)
+            mstore(ptr, 0xdb006a7500000000000000000000000000000000000000000000000000000000)
+            mstore(add(ptr, 0x4), transferAmount)
+
+            success := call(
+                gas(),
+                and(_cAsset, ADDRESS_MASK),
+                0x0,
+                ptr, // input = selector
+                0x24, // input selector + uint256
+                ptr, // output
+                0x0 // output size = zero
+            )
+            rdsize := returndatasize()
+
+            if iszero(success) {
+                returndatacopy(ptr, 0, rdsize)
+                revert(ptr, rdsize)
+            }
+
+            if eq(_cAsset, _cNative) {
+                // if it is native, we convert to WETH
+                // selector for deposit() (deposit ETH to WETH)
                 mstore(ptr, 0xd0e30db000000000000000000000000000000000000000000000000000000000)
                 pop(
                     call(
@@ -237,101 +336,6 @@ abstract contract LendingOps is WithVenusStorage {
                         0x0 // output size = zero
                     )
                 )
-            }
-            default {
-                ptr := mload(0x40) // free memory pointer
-
-                // selector for redeemUnderlying(uint256)
-                mstore(ptr, 0x852a12e300000000000000000000000000000000000000000000000000000000)
-                mstore(add(ptr, 0x4), amount)
-
-                let success := call(
-                    gas(),
-                    and(_cAsset, ADDRESS_MASK),
-                    0x0,
-                    ptr, // input = empty for fallback
-                    0x24, // input size = selector + uint256
-                    ptr, // output
-                    0x0 // output size = zero
-                )
-                let rdsize := returndatasize()
-
-                if iszero(success) {
-                    returndatacopy(ptr, 0, rdsize)
-                    revert(ptr, rdsize)
-                }
-            }
-        }
-    }
-
-    function _withdrawLegacy(address underlying, uint256 amount) internal {
-        address _cNative = cNative;
-        address _wNative = wNative;
-        mapping(address => address) storage c_data = ls().collateralTokens;
-        assembly {
-            let ptr := mload(0x40) // free memory pointer
-            mstore(ptr, underlying) // pad the lender number (agnostic to uint_x)
-            mstore(add(ptr, 0x20), c_data.slot) // add pointer to slot
-            let _cAsset := sload(keccak256(ptr, 0x40)) // acces element
-            switch eq(_cAsset, _cNative)
-            case 1 {
-                ptr := mload(0x40) // free memory pointer
-                // selector for redeemUnderlying(uint256)
-                mstore(ptr, 0x852a12e300000000000000000000000000000000000000000000000000000000)
-                mstore(add(ptr, 0x4), amount)
-
-                let success := call(
-                    gas(),
-                    and(_cNative, ADDRESS_MASK),
-                    0x0,
-                    ptr, // input = selector
-                    0x24, // input selector + uint256
-                    ptr, // output
-                    0x0 // output size = zero
-                )
-                let rdsize := returndatasize()
-
-                if iszero(success) {
-                    returndatacopy(ptr, 0, rdsize)
-                    revert(ptr, rdsize)
-                }
-
-                // selector for deposit()
-                mstore(ptr, 0xd0e30db000000000000000000000000000000000000000000000000000000000)
-                pop(
-                    call(
-                        gas(),
-                        and(_wNative, ADDRESS_MASK),
-                        amount, // ETH to deposit
-                        ptr, // seletor for deposit()
-                        0x4, // input size = selector
-                        0x0, // output = empty
-                        0x0 // output size = zero
-                    )
-                )
-            }
-            default {
-                ptr := mload(0x40) // free memory pointer
-
-                // selector for redeemUnderlying(uint256)
-                mstore(ptr, 0x852a12e300000000000000000000000000000000000000000000000000000000)
-                mstore(add(ptr, 0x4), amount)
-
-                let success := call(
-                    gas(),
-                    and(_cAsset, ADDRESS_MASK),
-                    0x0,
-                    ptr, // input = empty for fallback
-                    0x24, // input size = selector + uint256
-                    ptr, // output
-                    0x0 // output size = zero
-                )
-                let rdsize := returndatasize()
-
-                if iszero(success) {
-                    returndatacopy(ptr, 0, rdsize)
-                    revert(ptr, rdsize)
-                }
             }
         }
     }

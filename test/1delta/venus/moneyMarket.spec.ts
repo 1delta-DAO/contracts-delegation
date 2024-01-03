@@ -49,6 +49,7 @@ describe('Venus 1delta Test', async () => {
             await cTok.connect(deployer).mint(baseAm)
             await underlying.connect(deployer).transfer(alice.address, baseAm)
             await underlying.connect(deployer).transfer(bob.address, baseAm)
+            await underlying.connect(deployer).transfer(carol.address, baseAm)
             await venusBroker.manager.addCollateralToken(underlying.address, cTok.address)
 
         }
@@ -74,17 +75,42 @@ describe('Venus 1delta Test', async () => {
     })
 
 
+
+    it('allows delegated collateral withdrawal', async () => {
+        const underlying = underlyings[0]
+        const cToken = venusFixture.cTokens[0]
+        const am = parseUnits('1000', 18)
+
+        await underlying.connect(bob).approve(venusBroker.aggregator.address, am)
+        await cToken.connect(bob).approve(venusBroker.aggregator.address, am)
+
+        const expBalBefore = await cToken.callStatic.balanceOfUnderlying(bob.address)
+        await venusBroker.aggregator.connect(bob).deposit(underlying.address, am)
+
+        const expBal = await cToken.callStatic.balanceOfUnderlying(bob.address)
+        expect(expBal.sub(expBalBefore).toString()).to.equal(am.toString())
+        const exRate = await venusBroker.aggregator.getExRate(cToken.address)
+        const exRateC = await cToken.exchangeRateStored()
+        console.log("exRate", exRate.toString(), exRateC.toString())
+        const ctok = await venusBroker.aggregator.getCollateralTokenAssembly(underlyings[0].address)
+        console.log("ctok", ctok, cToken.address)
+        const withdrawAm = am.div(3)
+        console.log("withdrawAm", withdrawAm.toString())
+        const da = await venusBroker.aggregator.calculateWithdrawCollateralAmount(cToken.address, withdrawAm)
+        console.log("CAT", da.toString())
+        const ts = await cToken.totalSupply()
+        console.log("supply", ts.toString())
+        await venusBroker.aggregator.connect(bob).withdraw(underlying.address, withdrawAm)
+    })
+
     it('allows collateral provision and redemption', async () => {
         const underlying = underlyings[0]
         const cToken = venusFixture.cTokens[0]
         const am = parseUnits('1000', 18)
-        await underlying.connect(deployer).transfer(alice.address, am.div(2))
 
-        await underlying.connect(alice).approve(cToken.address, am)
-
-        await cToken.connect(alice).mint(am.div(2))
-
-        await cToken.connect(alice).redeemUnderlying(am.div(2))
+        await underlying.connect(carol).approve(cToken.address, am)
+        await cToken.connect(carol).mint(am)
+        await cToken.connect(carol).redeemUnderlying(am.div(2))
     })
 
     it('allows borrow and repay', async () => {
@@ -118,7 +144,7 @@ describe('Venus 1delta Test', async () => {
         await borrow_cToken.connect(bob).borrow(borrow_am.div(4))
         await network.provider.send("evm_increaseTime", [3600])
         await network.provider.send("evm_mine")
-        
+
         const am = supply_am.div(10)
         await supply_underlying.connect(bob).approve(venusBroker.aggregator.address, am)
         await venusBroker.aggregator.connect(bob).deposit(supply_underlying.address, am)
