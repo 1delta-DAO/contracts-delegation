@@ -12,14 +12,14 @@ import { constants } from 'ethers';
 // this series of tests checks that the features used for the margin swap implementation
 // are correctly set up and working
 describe('Venus 1delta Test', async () => {
-    let deployer: SignerWithAddress, alice: SignerWithAddress, bob: SignerWithAddress, carol: SignerWithAddress;
+    let deployer: SignerWithAddress, alice: SignerWithAddress, bob: SignerWithAddress, carol: SignerWithAddress, zed: SignerWithAddress;
     let venusFixture: VenusFixture
     let venusBroker: VenusBrokerFixture
     let underlyings: ERC20Mock[]
     let weth: WETH9
 
     before('get wallets and fixture', async () => {
-        [deployer, alice, bob, carol] = await ethers.getSigners();
+        [deployer, alice, bob, carol, zed] = await ethers.getSigners();
         const arr = [0, 1, 2, 3]
         underlyings = await Promise.all(arr.map(async (a) => await new ERC20Mock__factory(deployer).deploy(`Token ${a}`, `T${a}`, deployer.address, parseUnits('1000000000', 18))))
         weth = await new WETH9__factory(deployer).deploy()
@@ -51,6 +51,7 @@ describe('Venus 1delta Test', async () => {
             await underlying.connect(deployer).transfer(alice.address, baseAm)
             await underlying.connect(deployer).transfer(bob.address, baseAm)
             await underlying.connect(deployer).transfer(carol.address, baseAm)
+            await underlying.connect(deployer).transfer(zed.address, baseAm)
             await venusBroker.manager.addCollateralToken(underlying.address, cTok.address)
 
         }
@@ -127,9 +128,11 @@ describe('Venus 1delta Test', async () => {
         await underlying.connect(carol).approve(cToken.address, am)
         await cToken.connect(carol).mint(am)
         await cToken.connect(carol).redeemUnderlying(am.div(2))
+        const bal = await cToken.balanceOf(carol.address)
+        await cToken.connect(carol).redeem(bal)
     })
 
-    it('allows borrow and repay', async () => {
+    it('allows delegated borrow', async () => {
 
         const borrow_underlying = underlyings[0]
         const supply_underlying = underlyings[1]
@@ -143,26 +146,59 @@ describe('Venus 1delta Test', async () => {
         const supply_am = parseUnits('1000', 18)
         const borrow_am = parseUnits('700', 18)
 
-        // transfer supply amount to other acc
-        await supply_underlying.connect(deployer).transfer(bob.address, supply_am.div(2))
-
-        // supply amount to protocol for other acc to borrow
-        await borrow_underlying.connect(deployer).approve(borrow_cToken.address, borrow_am)
-        await borrow_cToken.connect(deployer).mint(borrow_am.div(2))
         // enter market
         await comptroller.connect(bob).enterMarkets(venusFixture.cTokens.map(cT => cT.address))
 
         // user has to add collateral
-        await supply_underlying.connect(bob).approve(supply_cToken.address, borrow_am)
-        await supply_cToken.connect(bob).mint(borrow_am.div(2))
+        await supply_underlying.connect(bob).approve(supply_cToken.address, supply_am)
+        await supply_cToken.connect(bob).mint(supply_am)
         await comptroller.connect(bob).enterMarkets([supply_cToken.address])
-        // other account borrows amount
-        await borrow_cToken.connect(bob).borrow(borrow_am.div(4))
-        await network.provider.send("evm_increaseTime", [3600])
-        await network.provider.send("evm_mine")
 
-        const am = supply_am.div(10)
-        await supply_underlying.connect(bob).approve(venusBroker.aggregator.address, am)
-        await venusBroker.aggregator.connect(bob).deposit(supply_underlying.address, am)
+        await venusFixture.comptroller.connect(bob).updateDelegate(venusBroker.aggregator.address, true)
+
+        const balBefore = await borrow_underlying.balanceOf(bob.address)
+        await venusBroker.aggregator.connect(bob).borrow(borrow_underlying.address, borrow_am)
+        const balAfter = await borrow_underlying.balanceOf(bob.address)
+        expect(balAfter.sub(balBefore).toString()).to.equal(borrow_am.toString())
+
+    })
+
+
+    it('allows delegated repay', async () => {
+
+        const borrow_underlying = underlyings[0]
+        const supply_underlying = underlyings[1]
+
+        const borrow_cToken = venusFixture.cTokens[0]
+        const supply_cToken = venusFixture.cTokens[1]
+
+        const comptroller = venusFixture.comptroller
+
+        // supplies
+        const supply_am = parseUnits('1000', 18)
+        const borrow_am = parseUnits('700', 18)
+
+        // enter market
+        await comptroller.connect(zed).enterMarkets(venusFixture.cTokens.map(cT => cT.address))
+
+        // user has to add collateral
+        await supply_underlying.connect(zed).approve(supply_cToken.address, supply_am)
+        await supply_cToken.connect(zed).mint(supply_am)
+        await comptroller.connect(zed).enterMarkets([supply_cToken.address])
+
+        await venusFixture.comptroller.connect(zed).updateDelegate(venusBroker.aggregator.address, true)
+
+        const balBefore = await borrow_underlying.balanceOf(zed.address)
+        await venusBroker.aggregator.connect(zed).borrow(borrow_underlying.address, borrow_am)
+        const balAfter = await borrow_underlying.balanceOf(zed.address)
+        expect(balAfter.sub(balBefore).toString()).to.equal(borrow_am.toString())
+        await borrow_underlying.connect(zed).approve(venusBroker.aggregator.address, borrow_am)
+        const repayAmount = borrow_am.div(2)
+        const borrowBalBefore = await borrow_cToken.callStatic.borrowBalanceCurrent(zed.address)
+        await venusBroker.aggregator.connect(zed).repay(borrow_underlying.address, repayAmount)
+        const borrowBalAfter = await borrow_cToken.callStatic.borrowBalanceCurrent(zed.address)
+
+        expect(Number(formatEther(borrowBalBefore.sub(borrowBalAfter)))).to.approximately(Number(formatEther(repayAmount)), 1e-5)
+
     })
 })

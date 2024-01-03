@@ -16,7 +16,6 @@ import {TokenTransfer} from "../../libraries/TokenTransfer.sol";
  * @notice Adds money market and default transfer functions to margin trading
  */
 contract VenusFlashAggregator is LendingOps, TokenTransfer {
-    // constants
 
     constructor(address _cNative, address _wNative) LendingOps(_cNative, _wNative) {}
 
@@ -28,5 +27,15 @@ contract VenusFlashAggregator is LendingOps, TokenTransfer {
     function withdraw(address underlying, uint amount) external {
         _withdraw(underlying, amount, msg.sender);
         _transferERC20Tokens(underlying, msg.sender, amount);
+    }
+
+    function borrow(address underlying, uint amount) external {
+        _borrow(underlying, amount, msg.sender);
+        _transferERC20Tokens(underlying, msg.sender, amount);
+    }
+
+    function repay(address underlying, uint amount) external {
+        _transferERC20TokensFrom(underlying, msg.sender, address(this), amount);
+        _repay(underlying, amount, msg.sender);
     }
 }
