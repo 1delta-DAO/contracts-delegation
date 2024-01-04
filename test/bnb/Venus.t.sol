@@ -33,7 +33,7 @@ contract OneDeltaVenuseMoneyMarketTest is OneDeltaBNBFixture, Test {
         address underlying = assets[i];
 
         // 10 units to deposit
-        uint amount = 10 ** IERC20Minimal(underlying).decimals();
+        uint amount = 10 * 10 ** IERC20Minimal(underlying).decimals();
         // approve delta
         IERC20Minimal(underlying).approve(oneDelta, amount);
         // call deposit
@@ -46,7 +46,29 @@ contract OneDeltaVenuseMoneyMarketTest is OneDeltaBNBFixture, Test {
     }
 
     function test_withdraw_base() public {
-        console.log("Bal", IERC20Minimal(assets[0]).balanceOf(address(this)));
-        // assertEq(x, x);
+        // asset config
+        uint i = 0;
+        address vToken = vTokens[i];
+        address underlying = assets[i];
+
+        // 10 units to deposit
+        uint amount = 10 * 10 ** IERC20Minimal(underlying).decimals();
+        // approve delta
+        IERC20Minimal(underlying).approve(vToken, amount);
+        // call mint
+        IVToken(vToken).mint(amount);
+
+        // approve vToken
+        IVToken(vToken).approve(oneDelta, type(uint).max);
+
+        uint withdrawAmount = (amount * 30) / 100;
+
+        // withdraw
+        aggregator.withdraw(underlying, withdrawAmount);
+
+        // validate balance
+        uint balRec = IVToken(vToken).balanceOfUnderlying(address(this));
+        console.log(balRec, amount - withdrawAmount);
+        assertApproxEqAbs(balRec, amount - withdrawAmount, 1e10);
     }
 }
