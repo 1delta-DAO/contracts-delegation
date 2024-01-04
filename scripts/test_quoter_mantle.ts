@@ -1,6 +1,6 @@
 
-import { encodeQuoterPathEthers } from "../test/1delta/shared/aggregatorPath";
-import { OneDeltaQuoter, OneDeltaQuoterMantle__factory, UniswapInterfaceMulticall__factory } from "../types";
+import { encodeQuoterPathEthers } from "../test-ts/1delta/shared/aggregatorPath";
+import { OneDeltaQuoterMantle__factory, UniswapInterfaceMulticall__factory } from "../types";
 const { ethers } = require("hardhat");
 
 

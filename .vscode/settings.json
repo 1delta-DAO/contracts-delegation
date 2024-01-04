@@ -1,5 +1,7 @@
 {
     "solidity.compileUsingRemoteVersion": "v0.8.23+commit.a1b79de6",
+    "solidity.packageDefaultDependenciesContractsDirectory": "node_modules/forge-std/src",
+    "solidity.packageDefaultDependenciesDirectory": "/node_modules/forge-std/lib",
     "cSpell.words": [
         "achi",
         "annualize",

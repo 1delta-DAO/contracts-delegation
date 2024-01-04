@@ -10,7 +10,7 @@
   },
   "include": [
     "./scripts",
-    "./test",
+    "test-ts",
     "utils/types.ts"
   ],
   "files": [

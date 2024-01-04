@@ -5,7 +5,7 @@ import {
     ConfigModule__factory,
     ManagementModule__factory,
 } from "../../types";
-import { ModuleConfigAction, getSelectors } from "../../test/diamond/libraries/diamond";
+import { ModuleConfigAction, getSelectors } from "../../test-ts/libraries/diamond";
 import { addressesAaveATokens, addressesAaveSTokens, addressesAaveVTokens, addressesTokens } from "../../scripts/aaveAddresses";
 import { oneInchRouter, paraswapRouter, paraswapTransferProxy } from "../../scripts/miscAddresses";
 import { ethers } from "hardhat";

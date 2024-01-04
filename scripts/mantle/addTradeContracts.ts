@@ -13,7 +13,7 @@ import {
 import { aaveAddresses, aaveBrokerAddresses, uniswapAddresses } from "../../deploy/polygon_addresses"
 import { validateAddresses } from "../../utils/types";
 import { parseUnits } from "ethers/lib/utils";
-import { getContractSelectors, getSelectors, ModuleConfigAction } from "../../test/diamond/libraries/diamond";
+import { getContractSelectors, getSelectors, ModuleConfigAction } from "../../test-ts/libraries/diamond";
 import { balancerV2Vault } from "../miscAddresses";
 import { lendleBrokerAddresses } from "../../deploy/mantle_addresses";
 
