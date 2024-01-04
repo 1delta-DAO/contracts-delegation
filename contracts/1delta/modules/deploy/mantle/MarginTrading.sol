@@ -256,6 +256,7 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
         if (amountInMaximum < amountIn) revert Slippage();
     }
 
+    // fusionx
     function fusionXV3SwapCallback(
         int256 amount0Delta,
         int256 amount1Delta,
@@ -264,6 +265,7 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
         uniswapV3SwapCallbackInternal(amount0Delta, amount1Delta, data);
     }
 
+    // agni
     function agniSwapCallback(
         int256 amount0Delta,
         int256 amount1Delta,
@@ -278,6 +280,15 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
         int256 amount1Delta,
         bytes calldata path
     ) external {
+        uniswapV3SwapCallbackInternal(amount0Delta, amount1Delta, path);
+    }
+
+    // butter
+    function butterSwapCallback(
+        int256 amount0Delta,
+        int256 amount1Delta,
+        bytes calldata path
+    ) external  {
         uniswapV3SwapCallbackInternal(amount0Delta, amount1Delta, path);
     }
 

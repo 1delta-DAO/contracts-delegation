@@ -162,9 +162,9 @@ it("Opens exact out multi", async function () {
     // v3 single
     const path1 = encodeAggregatorPathEthers(
         [wmnt, weth, usdt],
-        [FeeAmount.MEDIUM, FeeAmount.LOW],
+        [FeeAmount.LOW, FeeAmount.LOW],
         [3, 1],
-        [100, 0],
+        [3, 0],
         2
     )
     const callSwap = flashAggregatorInterface.encodeFunctionData('flashSwapExactOut', [amount, MaxUint128, path1])

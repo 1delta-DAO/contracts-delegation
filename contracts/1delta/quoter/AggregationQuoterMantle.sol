@@ -82,6 +82,9 @@ contract OneDeltaQuoterMantle {
     bytes32 private constant ALGEBRA_V3_FF_DEPLOYER = 0xff9dE2dEA5c68898eb4cb2DeaFf357DFB26255a4aa0000000000000000000000;
     bytes32 private constant ALGEBRA_POOL_INIT_CODE_HASH = 0x177d5fbf994f4d130c008797563306f1a168dc689f81b2fa23b4396931014d91;
 
+    bytes32 private constant BUTTER_FF_FACTORY = 0xffeeca0a86431a7b42ca2ee5f479832c3d4a4c26440000000000000000000000;
+    bytes32 private constant BUTTER_POOL_INIT_CODE_HASH = 0xc7d06444331e4f63b0764bb53c88788882395aa31961eed3c2768cc9568323ee;
+
     constructor() {}
 
     // uniswap V3 type callback
@@ -118,11 +121,23 @@ contract OneDeltaQuoterMantle {
         }
     }
 
+    // fusionx v3
     function fusionXV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata path) external view {
         _v3SwapCallback(amount0Delta, amount1Delta, path);
     }
 
+    // agni
     function agniSwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata path) external view {
+        _v3SwapCallback(amount0Delta, amount1Delta, path);
+    }
+
+    //butter
+    function butterSwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata _data) external view {
+        _v3SwapCallback(amount0Delta, amount1Delta, _data);
+    }
+
+    // swapsicle
+    function algebraSwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata path) external view {
         _v3SwapCallback(amount0Delta, amount1Delta, path);
     }
 
@@ -184,15 +199,6 @@ contract OneDeltaQuoterMantle {
                 revert(ptr, 64)
             }
         }
-    }
-
-    // swapsicle
-    function algebraSwapCallback(
-        int256 amount0Delta,
-        int256 amount1Delta,
-        bytes calldata path
-    ) external view {
-        _v3SwapCallback(amount0Delta, amount1Delta, path);
     }
 
     /// @dev Parses a revert reason that should contain the numeric quote
@@ -423,7 +429,7 @@ contract OneDeltaQuoterMantle {
                 pool := and(ADDRESS_MASK, keccak256(s, 85))
             }
             // Algebra / Swapsicle
-            default {
+            case 2 {
                 mstore(p, ALGEBRA_V3_FF_DEPLOYER)
                 p := add(p, 21)
                 // Compute the inner hash in-place
@@ -439,6 +445,26 @@ contract OneDeltaQuoterMantle {
                 mstore(p, keccak256(p, 64))
                 p := add(p, 32)
                 mstore(p, ALGEBRA_POOL_INIT_CODE_HASH)
+                pool := and(ADDRESS_MASK, keccak256(s, 85))
+            }
+            // Butter
+            default {
+                mstore(p, BUTTER_FF_FACTORY)
+                p := add(p, 21)
+                // Compute the inner hash in-place
+                switch lt(tokenA, tokenB)
+                case 0 {
+                    mstore(p, tokenB)
+                    mstore(add(p, 32), tokenA)
+                }
+                default {
+                    mstore(p, tokenA)
+                    mstore(add(p, 32), tokenB)
+                }
+                mstore(add(p, 64), and(UINT24_MASK, fee))
+                mstore(p, keccak256(p, 96))
+                p := add(p, 32)
+                mstore(p, BUTTER_POOL_INIT_CODE_HASH)
                 pool := and(ADDRESS_MASK, keccak256(s, 85))
             }
         }
