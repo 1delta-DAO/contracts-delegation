@@ -1,7 +1,7 @@
 /* global ethers */
 /* eslint prefer-const: "off" */
 
-const { getSelectors, ModuleConfigAction } = require('../test/diamond/libraries/diamond.ts')
+const { getSelectors, ModuleConfigAction } = require('../test-ts/libraries/diamond.js')
 
 const { ethers } = require('hardhat');
 const { constants } = require('ethers');

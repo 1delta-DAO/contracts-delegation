@@ -1,0 +1,6 @@
+@openzeppelin/contracts/=node_modules/@openzeppelin/contracts/
+forge-std/=node_modules/forge-std/src
+ds-test/=contracts/ds-test/
+@chainlink/contracts/=node_modules/@chainlink/contracts/
+base64-sol/=node_modules/base64-sol/
+hardhat/=node_modules/hardhat/

@@ -4,7 +4,7 @@ import { CometFlashAggregatorPolygon__factory, ConfigModule__factory } from "../
 import { cometBrokerAddresses } from "../../deploy/polygon_addresses"
 import { validateAddresses } from "../../utils/types";
 import { parseUnits } from "ethers/lib/utils";
-import { getContractSelectors, ModuleConfigAction } from "../../test/diamond/libraries/diamond";
+import { getContractSelectors, ModuleConfigAction } from "../../test-ts/libraries/diamond";
 
 
 const usedMaxFeePerGas = parseUnits('800', 9)

@@ -1,0 +1,4 @@
+[profile.default]
+src = "contracts/1delta"
+out = "out"
+libs = ["lib"]

@@ -4,8 +4,6 @@ import { ethers } from "hardhat";
 import {
     ManagementModule,
     ManagementModule__factory,
-    MarginTradeDataViewerModule,
-    MarginTradeDataViewerModule__factory,
     DeltaBrokerProxy__factory,
     DeltaBrokerProxy,
     OwnershipModule__factory,
@@ -16,7 +14,7 @@ import {
     BalancerFlashModule,
     AaveFlashModule
 } from "../../types";
-import { ModuleConfigAction, getSelectors } from "../../test/diamond/libraries/diamond";
+import { ModuleConfigAction, getSelectors } from "../../test-ts/libraries/diamond";
 
 export const ONE_18 = BigNumber.from(10).pow(18)
 
@@ -25,7 +23,7 @@ export interface FlashBrokerFixture {
     flashBrokerAave: AaveFlashModule
     flashBrokerBalancer: BalancerFlashModule
     manager: ManagementModule
-    tradeDataViewer: MarginTradeDataViewerModule
+    tradeDataViewer: ManagementModule
     proxy: DeltaBrokerProxy
 }
 
@@ -114,24 +112,6 @@ export async function createFlashBroker(signer: SignerWithAddress, aavePool: str
 
     const manager = (await new ethers.Contract(proxy.address, ManagementModule__factory.createInterface(), signer) as ManagementModule)
 
-    // viewer
-    const viewerModule = await new MarginTradeDataViewerModule__factory(signer).deploy(
-        opts
-    )
-    await viewerModule.deployed()
-    console.log("viewerModule:", viewerModule.address)
-
-    tx = await configurator.connect(signer).configureModules(
-        [{
-            moduleAddress: viewerModule.address,
-            action: ModuleConfigAction.Add,
-            functionSelectors: getSelectors(viewerModule)
-        }],
-        opts
-    )
-    await tx.wait()
-    console.log("viewer added")
-
     // ownership
     const ownershipModule = await new OwnershipModule__factory(signer).deploy()
     await ownershipModule.deployed()
@@ -171,8 +151,7 @@ export async function createFlashBroker(signer: SignerWithAddress, aavePool: str
     console.log("brokerModuleBalancer:", brokerModuleBalancer.address)
     console.log("brokerModuleAave:", brokerModuleAave.address)
     console.log("managementModule:", managerModule.address)
-    console.log("viewerModule:", viewerModule.address)
 
-    return { flashBrokerAave, flashBrokerBalancer, proxy, manager, tradeDataViewer: viewerModule }
+    return { flashBrokerAave, flashBrokerBalancer, proxy, manager, tradeDataViewer: manager }
 
 }

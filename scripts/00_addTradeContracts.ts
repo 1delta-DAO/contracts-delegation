@@ -12,7 +12,7 @@ import {
 import { aaveAddresses, aaveBrokerAddresses, uniswapAddresses } from "../deploy/polygon_addresses"
 import { validateAddresses } from "../utils/types";
 import { parseUnits } from "ethers/lib/utils";
-import { getContractSelectors, ModuleConfigAction } from "../test/diamond/libraries/diamond";
+import { getContractSelectors, ModuleConfigAction } from "../test-ts/libraries/diamond";
 
 const usedMaxFeePerGas = parseUnits('800', 9)
 const usedMaxPriorityFeePerGas = parseUnits('40', 9)

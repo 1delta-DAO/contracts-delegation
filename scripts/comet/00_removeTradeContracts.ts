@@ -4,7 +4,7 @@ import { ConfigModule__factory, LensModule__factory } from "../../types";
 import { cometBrokerAddresses } from "../../deploy/polygon_addresses"
 import { validateAddresses } from "../../utils/types";
 import { parseUnits } from "ethers/lib/utils";
-import { ModuleConfigAction } from "../../test/diamond/libraries/diamond";
+import { ModuleConfigAction } from "../../test-ts/libraries/diamond";
 
 const usedMaxFeePerGas = parseUnits('800', 9)
 const usedMaxPriorityFeePerGas = parseUnits('40', 9)

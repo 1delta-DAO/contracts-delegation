@@ -1,6 +1,6 @@
 
 import { ethers } from "hardhat";
-import { Comet } from "../../test/1delta/shared/compoundV3Fixture";
+import { Comet } from "../../test-ts/1delta/shared/compoundV3Fixture";
 import { CometExt, CometExt__factory, CometLens__factory, Comet__factory } from "../../types";
 
 async function main() {

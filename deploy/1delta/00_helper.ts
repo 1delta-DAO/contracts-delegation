@@ -17,9 +17,8 @@ import {
     AaveFlashModule__factory,
     BalancerFlashModule__factory,
 } from "../../types";
-import { ModuleConfigAction, getSelectors } from "../../test/diamond/libraries/diamond";
-import { parseUnits } from "ethers/lib/utils";
-import { AaveBrokerFixtureInclV2 } from "../../test/1delta/shared/aaveBrokerFixture";
+import { ModuleConfigAction, getSelectors } from "../../test-ts/libraries/diamond";
+import { AaveBrokerFixtureInclV2 } from "../../test-ts/1delta/shared/aaveBrokerFixture";
 
 export const ONE_18 = BigNumber.from(10).pow(18)
 

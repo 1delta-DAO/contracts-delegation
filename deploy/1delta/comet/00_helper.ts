@@ -14,7 +14,7 @@ import {
     CometFlashAggregatorPolygon__factory,
     LensModule__factory
 } from "../../../types";
-import { ModuleConfigAction, getSelectors } from "../../../test/diamond/libraries/diamond";
+import { ModuleConfigAction, getSelectors } from "../../../test-ts/libraries/diamond";
 import { parseUnits } from "ethers/lib/utils";
 
 export const ONE_18 = BigNumber.from(10).pow(18)
