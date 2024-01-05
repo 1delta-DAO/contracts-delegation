@@ -6,6 +6,8 @@ interface ComptrollerInterface {
     function enterMarkets(address[] calldata vTokens) external returns (uint[] memory);
 
     function exitMarket(address vToken) external returns (uint);
+
+    function updateDelegate(address delegate, bool allowBorrows) external;
 }
 
 contract CommonBNBAddresses {
