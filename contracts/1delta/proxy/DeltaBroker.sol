@@ -27,38 +27,67 @@ contract DeltaBrokerProxy {
         LibModules.configureModules(cut);
     }
 
-    // An efficient multicall implementation for directly calling functions across multiple modules
     function multicall(bytes[] calldata data) external payable {
-        // This is used in assembly below as impls.slot.
         mapping(bytes4 => address) storage impls = LibModules.moduleStorage().selectorToModule;
-        // loop throught the calls and execute
-        for (uint256 i; i != data.length; ) {
-            bytes calldata call = data[i];
-            assembly {
-                let len := call.length
-                calldatacopy(0x40, call.offset, len) // copy calldata to 0x40
+        assembly {
+            mstore(0x00, 0x20)
+            let results := 0x40
+            // `shl` 5 is equivalent to multiplying by 0x20.
+            let end := shl(5, data.length)
+            // Copy the offsets from calldata into memory.
+            calldatacopy(0x40, data.offset, end)
+            // Offset into `results`.
+            let resultsOffset := end
+            // Pointer to the end of `results`.
+            end := add(results, end)
+
+            for {
+
+            } 1 {
+
+            } {
+                // The offset of the current bytes in the calldata.
+                let o := add(data.offset, mload(results))
+                let m := add(resultsOffset, 0x40)
+                // Copy the current bytes from calldata to the memory.
+                calldatacopy(
+                    m,
+                    add(o, 0x20), // The offset of the current bytes' bytes.
+                    calldataload(o) // The length of the current bytes.
+                )
+                // determine the selector
                 let target := and(
-                    mload(0x40), // calldata was copied to 0, we load the selector from there
+                    mload(m), // calldata was copied to 0, we load the selector from there
                     0xFFFFFFFF00000000000000000000000000000000000000000000000000000000
                 )
                 mstore(0, target)
                 mstore(0x20, impls.slot)
                 let slot := keccak256(0, 0x40)
+                // assign module
                 target := sload(slot)
                 if iszero(target) {
                     // Reverting with NoImplementation
                     mstore(0, 0x6826a5a500000000000000000000000000000000000000000000000000000000)
                     revert(0, 4)
                 }
-                let success := delegatecall(gas(), target, 0x40, len, 0, 0)
-                len := returndatasize()
-                // revert if not successful - do not return any values on success
-                if iszero(success) {
-                    returndatacopy(0, 0, len)
-                    revert(0, len)
+
+                if iszero(delegatecall(gas(), target, m, calldataload(o), codesize(), 0x00)) {
+                    // Bubble up the revert if the delegatecall reverts.
+                    returndatacopy(0x00, 0x00, returndatasize())
+                    revert(0x00, returndatasize())
                 }
-                // increase loop index
-                i := add(i, 1)
+                // Append the current `resultsOffset` into `results`.
+                mstore(results, resultsOffset)
+                results := add(results, 0x20)
+                // Append the `returndatasize()`, and the return data.
+                mstore(m, returndatasize())
+                returndatacopy(add(m, 0x20), 0x00, returndatasize())
+                // Advance the `resultsOffset` by `returndatasize() + 0x20`,
+                // rounded up to the next multiple of 32.
+                resultsOffset := and(add(add(resultsOffset, returndatasize()), 0x3f), 0xffffffffffffffe0)
+                if iszero(lt(results, end)) {
+                    break
+                }
             }
         }
     }
