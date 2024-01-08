@@ -28,14 +28,11 @@ abstract contract BaseSwapper is TokenTransfer {
     /// @dev MAX_SQRT_RATIO - 1 from Uniswap's TickMath
     uint160 internal constant MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970341;
 
-    bytes32 private constant FUSION_V3_FF_FACTORY = 0xff8790c2C3BA67223D83C8FCF2a5E3C650059987b40000000000000000000000;
-    bytes32 private constant FUSION_POOL_INIT_CODE_HASH = 0x1bce652aaa6528355d7a339037433a20cd28410e3967635ba8d2ddb037440dbf;
+    bytes32 private constant PANCAKE_V3_FF_FACTORY = 0xff8790c2C3BA67223D83C8FCF2a5E3C650059987b40000000000000000000000;
+    bytes32 private constant PANCAKE_POOL_INIT_CODE_HASH = 0x1bce652aaa6528355d7a339037433a20cd28410e3967635ba8d2ddb037440dbf;
 
-    bytes32 private constant AGNI_V3_FF_FACTORY = 0xffe9827B4EBeB9AE41FC57efDdDd79EDddC2EA4d030000000000000000000000;
-    bytes32 private constant AGNI_POOL_INIT_CODE_HASH = 0xaf9bd540c3449b723624376f906d8d3a0e6441ff18b847f05f4f85789ab64d9a;
-
-    bytes32 private constant FUSION_V2_FF_FACTORY = 0xffE5020961fA51ffd3662CDf307dEf18F9a87Cce7c0000000000000000000000;
-    bytes32 private constant CODE_HASH_FUSION_V2 = 0x58c684aeb03fe49c8a3080db88e425fae262c5ef5bf0e8acffc0526c6e3c03a0;
+    bytes32 private constant BISWAPV3_FF_FACTORY = 0xffe9827B4EBeB9AE41FC57efDdDd79EDddC2EA4d030000000000000000000000;
+    bytes32 private constant BISWAPPOOL_INIT_CODE_HASH = 0xaf9bd540c3449b723624376f906d8d3a0e6441ff18b847f05f4f85789ab64d9a;
 
     bytes32 private constant IZI_FF_FACTORY = 0xff45e5F26451CDB01B0fA1f8582E0aAD9A6F27C2180000000000000000000000;
     bytes32 private constant IZI_POOL_INIT_CODE_HASH = 0xbe0bfe068cdd78cafa3ddd44e214cfa4e412c15d7148e932f8043fe883865e40;
@@ -43,8 +40,19 @@ abstract contract BaseSwapper is TokenTransfer {
     bytes32 private constant ALGEBRA_V3_FF_DEPLOYER = 0xff9dE2dEA5c68898eb4cb2DeaFf357DFB26255a4aa0000000000000000000000;
     bytes32 private constant ALGEBRA_POOL_INIT_CODE_HASH = 0x177d5fbf994f4d130c008797563306f1a168dc689f81b2fa23b4396931014d91;
 
-    bytes32 private constant BUTTER_FF_FACTORY = 0xffeeca0a86431a7b42ca2ee5f479832c3d4a4c26440000000000000000000000;
-    bytes32 private constant BUTTER_POOL_INIT_CODE_HASH = 0xc7d06444331e4f63b0764bb53c88788882395aa31961eed3c2768cc9568323ee;
+    bytes32 private constant UNISWAP_FF_FACTORY = 0xffeeca0a86431a7b42ca2ee5f479832c3d4a4c26440000000000000000000000;
+    bytes32 private constant UNISWAP_POOL_INIT_CODE_HASH = 0xc7d06444331e4f63b0764bb53c88788882395aa31961eed3c2768cc9568323ee;
+
+    // V2 types
+
+    bytes32 private constant PANCAKE_V2_FF_FACTORY = 0xffE5020961fA51ffd3662CDf307dEf18F9a87Cce7c0000000000000000000000;
+    bytes32 private constant CODE_HASH_PANCAKE_V2 = 0x58c684aeb03fe49c8a3080db88e425fae262c5ef5bf0e8acffc0526c6e3c03a0;
+
+    bytes32 private constant BISWAP_V2_FF_FACTORY = 0xffE5020961fA51ffd3662CDf307dEf18F9a87Cce7c0000000000000000000000;
+    bytes32 private constant CODE_HASH_BISWAP_V2 = 0x58c684aeb03fe49c8a3080db88e425fae262c5ef5bf0e8acffc0526c6e3c03a0;
+
+    bytes32 private constant APESWAP_V2_FF_FACTORY = 0xffE5020961fA51ffd3662CDf307dEf18F9a87Cce7c0000000000000000000000;
+    bytes32 private constant CODE_HASH_APESWAP_V2 = 0x58c684aeb03fe49c8a3080db88e425fae262c5ef5bf0e8acffc0526c6e3c03a0;
 
     constructor() {}
 
@@ -55,12 +63,7 @@ abstract contract BaseSwapper is TokenTransfer {
     }
 
     /// @dev Returns the pool for the given token pair and fee. The pool contract may or may not exist.
-    function getUniswapV3Pool(
-        address tokenA,
-        address tokenB,
-        uint24 fee,
-        uint8 pId
-    ) internal pure returns (IUniversalV3StyleSwap pool) {
+    function getUniswapV3Pool(address tokenA, address tokenB, uint24 fee, uint8 pId) internal pure returns (IUniversalV3StyleSwap pool) {
         uint256 _pId = pId;
         assembly {
             let s := mload(0x40)
@@ -68,7 +71,7 @@ abstract contract BaseSwapper is TokenTransfer {
             switch _pId
             // Fusion
             case 0 {
-                mstore(p, FUSION_V3_FF_FACTORY)
+                mstore(p, PANCAKE_V3_FF_FACTORY)
                 p := add(p, 21)
                 // Compute the inner hash in-place
                 switch lt(tokenA, tokenB)
@@ -83,12 +86,12 @@ abstract contract BaseSwapper is TokenTransfer {
                 mstore(add(p, 64), and(UINT24_MASK, fee))
                 mstore(p, keccak256(p, 96))
                 p := add(p, 32)
-                mstore(p, FUSION_POOL_INIT_CODE_HASH)
+                mstore(p, PANCAKE_POOL_INIT_CODE_HASH)
                 pool := and(ADDRESS_MASK, keccak256(s, 85))
             }
             // agni
             case 1 {
-                mstore(p, AGNI_V3_FF_FACTORY)
+                mstore(p, BISWAPV3_FF_FACTORY)
                 p := add(p, 21)
                 // Compute the inner hash in-place
                 switch lt(tokenA, tokenB)
@@ -103,10 +106,10 @@ abstract contract BaseSwapper is TokenTransfer {
                 mstore(add(p, 64), and(UINT24_MASK, fee))
                 mstore(p, keccak256(p, 96))
                 p := add(p, 32)
-                mstore(p, AGNI_POOL_INIT_CODE_HASH)
+                mstore(p, BISWAPPOOL_INIT_CODE_HASH)
                 pool := and(ADDRESS_MASK, keccak256(s, 85))
             }
-            // Algebra / Swapsicle
+            // Algebra / Thena
             case 2 {
                 mstore(p, ALGEBRA_V3_FF_DEPLOYER)
                 p := add(p, 21)
@@ -125,9 +128,9 @@ abstract contract BaseSwapper is TokenTransfer {
                 mstore(p, ALGEBRA_POOL_INIT_CODE_HASH)
                 pool := and(ADDRESS_MASK, keccak256(s, 85))
             }
-            // Butter
+            // uniswap V3
             case 3 {
-                mstore(p, BUTTER_FF_FACTORY)
+                mstore(p, UNISWAP_FF_FACTORY)
                 p := add(p, 21)
                 // Compute the inner hash in-place
                 switch lt(tokenA, tokenB)
@@ -142,7 +145,7 @@ abstract contract BaseSwapper is TokenTransfer {
                 mstore(add(p, 64), and(UINT24_MASK, fee))
                 mstore(p, keccak256(p, 96))
                 p := add(p, 32)
-                mstore(p, BUTTER_POOL_INIT_CODE_HASH)
+                mstore(p, UNISWAP_POOL_INIT_CODE_HASH)
                 pool := and(ADDRESS_MASK, keccak256(s, 85))
             }
             // iZi
@@ -181,9 +184,9 @@ abstract contract BaseSwapper is TokenTransfer {
                 mstore(0xB00, tokenA)
             }
             let salt := keccak256(0xB0C, 0x28)
-            mstore(0xB00, FUSION_V2_FF_FACTORY)
+            mstore(0xB00, PANCAKE_V2_FF_FACTORY)
             mstore(0xB15, salt)
-            mstore(0xB35, CODE_HASH_FUSION_V2)
+            mstore(0xB35, CODE_HASH_PANCAKE_V2)
 
             pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
         }
@@ -226,25 +229,14 @@ abstract contract BaseSwapper is TokenTransfer {
             // iZi
             else if (identifier == 100) {
                 uint24 fee;
-                bool zeroForOne ;
+                bool zeroForOne;
                 assembly {
                     fee := and(shr(72, calldataload(path.offset)), 0xffffff)
                     zeroForOne := lt(tokenIn, tokenOut)
                 }
-            if (zeroForOne)
-                    (, amountIn) = getUniswapV3Pool(tokenIn, tokenOut, fee, identifier).swapX2Y(
-                        address(this),
-                        uint128(amountIn),
-                        -799999,
-                        path
-                    );
-                else
-                    (amountIn, ) = getUniswapV3Pool(tokenIn, tokenOut, fee, identifier).swapY2X(
-                        address(this),
-                        uint128(amountIn),
-                        799999,
-                        path
-                    );
+                if (zeroForOne)
+                    (, amountIn) = getUniswapV3Pool(tokenIn, tokenOut, fee, identifier).swapX2Y(address(this), uint128(amountIn), -799999, path);
+                else (amountIn, ) = getUniswapV3Pool(tokenIn, tokenOut, fee, identifier).swapY2X(address(this), uint128(amountIn), 799999, path);
             }
             // decide whether to continue or terminate
             if (path.length > 46) {
@@ -257,11 +249,7 @@ abstract contract BaseSwapper is TokenTransfer {
     }
 
     /// @dev simple exact input swap using uniswapV2 or fork
-    function swapUniV2ExactIn(
-        address tokenIn,
-        address tokenOut,
-        uint256 amountIn
-    ) private returns (uint256 buyAmount) {
+    function swapUniV2ExactIn(address tokenIn, address tokenOut, uint256 amountIn) private returns (uint256 buyAmount) {
         assembly {
             let zeroForOne := lt(tokenIn, tokenOut)
             switch zeroForOne
@@ -274,9 +262,9 @@ abstract contract BaseSwapper is TokenTransfer {
                 mstore(0xB00, tokenIn)
             }
             let salt := keccak256(0xB0C, 0x28)
-            mstore(0xB00, FUSION_V2_FF_FACTORY)
+            mstore(0xB00, PANCAKE_V2_FF_FACTORY)
             mstore(0xB15, salt)
-            mstore(0xB35, CODE_HASH_FUSION_V2)
+            mstore(0xB35, CODE_HASH_PANCAKE_V2)
 
             let pair := and(ADDRESS_MASK_UPPER, keccak256(0xB00, 0x55))
 
@@ -377,11 +365,7 @@ abstract contract BaseSwapper is TokenTransfer {
     }
 
     /// @dev calculates the input amount for a UniswapV2 style swap
-    function getAmountInDirect(
-        address pair,
-        bool zeroForOne,
-        uint256 buyAmount
-    ) internal view returns (uint256 sellAmount) {
+    function getAmountInDirect(address pair, bool zeroForOne, uint256 buyAmount) internal view returns (uint256 sellAmount) {
         assembly {
             let ptr := mload(0x40)
             // Call pair.getReserves(), store the results at `free memo`
