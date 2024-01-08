@@ -5,7 +5,7 @@ pragma solidity ^0.8.23;
 import "./CommonAddresses.f.sol";
 
 // modules
-import {VenusFlashAggregator} from "../../contracts/1delta/modules/venus/FlashAggregator.sol";
+import {VenusFlashAggregatorBNB} from "../../contracts/1delta/modules/deploy/bnb/venus/FlashAggregator.sol";
 import {VenusManagementModule} from "../../contracts/1delta/modules/venus/ManagementModule.sol";
 import {VenusMarginTraderInit} from "../../contracts/1delta/initializers/VenusMarginTraderInit.sol";
 // proxy & config
@@ -16,7 +16,7 @@ contract OneDeltaBNBFixture is CommonBNBAddresses {
     DeltaBrokerProxy proxy;
     ConfigModule config;
     VenusManagementModule management;
-    VenusFlashAggregator aggregator;
+    VenusFlashAggregatorBNB aggregator;
     address oneDelta;
 
     function mmtSelectors() internal pure returns (bytes4[] memory selectors) {
@@ -35,10 +35,10 @@ contract OneDeltaBNBFixture is CommonBNBAddresses {
 
     function aggSelectors() internal pure returns (bytes4[] memory selectors) {
         selectors = new bytes4[](4);
-        selectors[0] = VenusFlashAggregator.deposit.selector;
-        selectors[1] = VenusFlashAggregator.withdraw.selector;
-        selectors[2] = VenusFlashAggregator.borrow.selector;
-        selectors[3] = VenusFlashAggregator.repay.selector;
+        selectors[0] = VenusFlashAggregatorBNB.deposit.selector;
+        selectors[1] = VenusFlashAggregatorBNB.withdraw.selector;
+        selectors[2] = VenusFlashAggregatorBNB.borrow.selector;
+        selectors[3] = VenusFlashAggregatorBNB.repay.selector;
         return selectors;
     }
 
@@ -52,18 +52,18 @@ contract OneDeltaBNBFixture is CommonBNBAddresses {
         // config & proxy
         ConfigModule _config = new ConfigModule();
         proxy = new DeltaBrokerProxy(address(this), address(_config));
-        
+
         oneDelta = address(proxy);
         config = ConfigModule(oneDelta);
 
         // deploy mdoules
         VenusManagementModule _management = new VenusManagementModule();
-        VenusFlashAggregator _aggregator = new VenusFlashAggregator(vNative, wNative);
+        VenusFlashAggregatorBNB _aggregator = new VenusFlashAggregatorBNB();
         VenusMarginTraderInit init = new VenusMarginTraderInit();
 
         // assign env
         management = VenusManagementModule(oneDelta);
-        aggregator = VenusFlashAggregator(oneDelta);
+        aggregator = VenusFlashAggregatorBNB(oneDelta);
 
         // define configs to add to proxy
         IModuleConfig.ModuleConfig[] memory _moduleConfig = new IModuleConfig.ModuleConfig[](3);
