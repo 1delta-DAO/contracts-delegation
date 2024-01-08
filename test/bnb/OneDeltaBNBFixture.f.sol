@@ -88,5 +88,6 @@ contract OneDeltaBNBFixture is CommonBNBAddresses {
 
         // approve all relevant spending
         management.approveCollateralTokens(assets);
+        management.addCollateralToken(wNative, vNative);
     }
 }

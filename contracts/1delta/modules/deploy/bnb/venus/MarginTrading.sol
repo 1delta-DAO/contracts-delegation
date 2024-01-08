@@ -338,7 +338,6 @@ abstract contract MarginTrading is LendingOps, BaseSwapper {
                 }
 
                 // fetch the flag for closing the trade
-
                 cache = uint8(bytes1(_data));
                 // 1,2 are is borrow
                 if (cache < 3) {

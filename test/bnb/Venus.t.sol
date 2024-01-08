@@ -151,6 +151,8 @@ contract OneDeltaVenuseMoneyMarketTest is OneDeltaBNBFixture, Test {
     }
 
     function test_margin_open() public {
+        // deposit 10 BNB, borrow 6,000 BUSC, depo approx. 20
+
         // asset config
         address vToken = vNative;
         address underlying = wNative;
@@ -171,10 +173,21 @@ contract OneDeltaVenuseMoneyMarketTest is OneDeltaBNBFixture, Test {
         // approve vToken
         comptroller.updateDelegate(oneDelta, true);
 
-        uint borrowAmount = (baseAmount / 2) * 10 ** IERC20Minimal(underlyingBorrow).decimals();
-
+        uint approxPrice = 300; // BNB is about 300 USDC
+        // borrow amount is 2x depo assuming price of 300
+        uint borrowAmount = 2 * approxPrice * baseAmount * 10 ** IERC20Minimal(underlyingBorrow).decimals();
+        // create calldata
         bytes memory path = getOpen(USDC, wNative);
-        aggregator.flashSwapExactIn(borrowAmount, 0, path);
+
+        uint gas = gasleft();
+        uint received = aggregator.flashSwapExactIn(borrowAmount, 0, path);
+        uint gasConsumed = gas - gasleft();
+
+        uint balRec = IVToken(vTokenBorrow).borrowBalanceStored(address(this));
+        assertApproxEqAbs(balRec, borrowAmount, 1e10);
+
+        balRec = IVToken(vToken).balanceOfUnderlying(address(this));
+        assertApproxEqAbs(balRec, amount + received, 1e10);
     }
 
     function getOpen(address tokenIn, address tokenOut) private view returns (bytes memory data) {
