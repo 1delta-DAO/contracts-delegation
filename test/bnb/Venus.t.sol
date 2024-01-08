@@ -182,17 +182,18 @@ contract OneDeltaVenuseMoneyMarketTest is OneDeltaBNBFixture, Test {
         uint gas = gasleft();
         uint received = aggregator.flashSwapExactIn(borrowAmount, 0, path);
         uint gasConsumed = gas - gasleft();
+        console.log("gasConsumed", gasConsumed);
 
         uint balRec = IVToken(vTokenBorrow).borrowBalanceStored(address(this));
         assertApproxEqAbs(balRec, borrowAmount, 1e10);
 
         balRec = IVToken(vToken).balanceOfUnderlying(address(this));
         assertApproxEqAbs(balRec, amount + received, 1e10);
+        console.log("collateral", balRec);
     }
 
     function getOpen(address tokenIn, address tokenOut) private view returns (bytes memory data) {
         uint24 fee = 500;
-        uint8 tradeId = 8;
         uint8 poolId = 0;
         uint8 actionId = 6;
         uint8 endId = 2;
