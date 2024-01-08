@@ -15,15 +15,19 @@ contract OneDeltaVenuseMoneyMarketTest is OneDeltaBNBFixture, Test {
         vm.createSelectFork({blockNumber: 34_958_582, urlOrAlias: "https://rpc.ankr.com/bsc"});
         // set up 1delta
         deployAndInit1delta();
-
+        address asset;
         // fund 10 first assets
         for (uint i; i < 10; i++) {
-            address asset = assets[i];
+            asset = assets[i];
             vm.startPrank(asset);
             uint balance = IERC20Minimal(asset).balanceOf(asset);
             if (balance > 0) IERC20Minimal(asset).transfer(address(this), balance);
             vm.stopPrank();
         }
+        asset = wNative;
+        vm.startPrank(asset);
+        IERC20Minimal(asset).transfer(address(this), 1e20);
+        vm.stopPrank();
     }
 
     function test_depo_base() public {
@@ -144,5 +148,41 @@ contract OneDeltaVenuseMoneyMarketTest is OneDeltaBNBFixture, Test {
         uint balRec = IVToken(vTokenBorrow).borrowBalanceStored(address(this));
         console.log(balRec, borrowAmount - repay);
         assertApproxEqAbs(balRec, borrowAmount - repay, 1e10);
+    }
+
+    function test_margin_open() public {
+        // asset config
+        address vToken = vNative;
+        address underlying = wNative;
+
+        address vTokenBorrow = vUSDC;
+        address underlyingBorrow = USDC;
+        uint baseAmount = 10;
+
+        // 10 units to deposit
+        uint amount = baseAmount * 10 ** IERC20Minimal(underlying).decimals();
+        // approve delta
+        IERC20Minimal(underlying).approve(vToken, amount);
+        // call mint
+        IVToken(vToken).mint{value: amount}();
+        address[] memory enter = new address[](1);
+        enter[0] = vToken;
+        comptroller.enterMarkets(enter);
+        // approve vToken
+        comptroller.updateDelegate(oneDelta, true);
+
+        uint borrowAmount = (baseAmount / 2) * 10 ** IERC20Minimal(underlyingBorrow).decimals();
+
+        bytes memory path = getOpen(USDC, wNative);
+        aggregator.flashSwapExactIn(borrowAmount, 0, path);
+    }
+
+    function getOpen(address tokenIn, address tokenOut) private view returns (bytes memory data) {
+        uint24 fee = 500;
+        uint8 tradeId = 8;
+        uint8 poolId = 0;
+        uint8 actionId = 6;
+        uint8 endId = 2;
+        return abi.encodePacked(tokenIn, fee, poolId, actionId, tokenOut, endId);
     }
 }

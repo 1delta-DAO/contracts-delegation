@@ -52,6 +52,9 @@ contract CommonBNBAddresses {
 
     address vNative = 0xA07c5b74C9B40447a954e1466938b865b6BBea36; // vBNB
 
+    address USDC = 0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d;
+    address vUSDC = 0xecA88125a5ADbe82614ffC12D0DB554E2e2867C8;
+
     address[] vTokens = [
         0x26DA28954763B92139ED49283625ceCAf52C6f94, // vAAVE
         0x9A0AF7FDb2065Ce470D72664DE73cAE409dA28Ec, // vADA

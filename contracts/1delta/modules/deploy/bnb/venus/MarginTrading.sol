@@ -218,12 +218,17 @@ abstract contract MarginTrading is LendingOps, BaseSwapper {
     }
 
     // swapsicle
-    function algebraSwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata path) external {
+    function pancakeCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata path) external {
         uniswapV3SwapCallbackInternal(amount0Delta, amount1Delta, path);
     }
 
     // butter
     function butterSwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata path) external {
+        uniswapV3SwapCallbackInternal(amount0Delta, amount1Delta, path);
+    }
+
+    // pancake
+    function pancakeV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata path) external {
         uniswapV3SwapCallbackInternal(amount0Delta, amount1Delta, path);
     }
 
@@ -234,19 +239,16 @@ abstract contract MarginTrading is LendingOps, BaseSwapper {
     // 1: exact output swap - flavored by the id given at the end of the path
 
     // [end flag]
-    // 1: borrow stable
-    // 2: borrow variable
+    // 1: borrow variable
     // 3: withdraw
     // 4: pay from wallet
 
     // [start flag (>1)]
     // 6: deposit exact in
-    // 7: repay exact in stable
-    // 8: repay exact in variable
+    // 7: repay exact in variable
 
     // 3: deposit exact out
-    // 4: repay exact out stable
-    // 5: repay exact out variable
+    // 4: repay exact out variable
 
     // The uniswapV3 style callback
     function uniswapV3SwapCallbackInternal(int256 amount0Delta, int256 amount1Delta, bytes calldata _data) private {
@@ -331,8 +333,7 @@ abstract contract MarginTrading is LendingOps, BaseSwapper {
                 if (tradeId == 6) {
                     _deposit(tokenOut, amountToSwap, user);
                 } else {
-                    // tradeId minus 6 yields the interest rate mode
-                    tradeId -= 6;
+                    // otherwise we borrow
                     _repay(tokenOut, amountToSwap, user);
                 }
 
@@ -357,8 +358,7 @@ abstract contract MarginTrading is LendingOps, BaseSwapper {
                 if (tradeId == 3) {
                     _deposit(tokenIn, amountToSupply, user);
                 } else {
-                    // 4, 5 are repay - subtracting 3 yields the interest rate mode
-                    tradeId -= 3;
+                    // otherwise we repay
                     _repay(tokenIn, amountToSupply, user);
                 }
                 uint256 cache = _data.length;
@@ -501,8 +501,7 @@ abstract contract MarginTrading is LendingOps, BaseSwapper {
                 // deposit funds for id == 6
                 _deposit(tokenOut, amountToSwap, user);
             } else {
-                // repay - tradeId is irMode plus 6
-                tradeId -= 6;
+                // repay otherwise
                 _repay(tokenOut, amountToSwap, user);
             }
 
@@ -523,8 +522,7 @@ abstract contract MarginTrading is LendingOps, BaseSwapper {
             if (tradeId == 3) {
                 _deposit(tokenIn, referenceAmount, user);
             } else {
-                // 4, 5 are repay, subtracting 3 yields the interest rate mode
-                tradeId -= 3;
+                // repay otherwise
                 _repay(tokenIn, referenceAmount, user);
             }
             // calculate amountIn

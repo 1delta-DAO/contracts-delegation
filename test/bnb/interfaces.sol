@@ -51,6 +51,8 @@ interface IVToken {
 
     function mint(uint mintAmount) external returns (uint);
 
+    function mint() external payable; // vBNB does not return a value
+
     function mintBehalf(address receiver, uint mintAmount) external returns (uint);
 
     function redeem(uint redeemTokens) external returns (uint);
@@ -78,4 +80,6 @@ interface IERC20Minimal {
     function transfer(address to, uint amount) external returns (bool);
 
     function approve(address spender, uint amount) external returns (bool);
+
+    function withdraw(uint am) external;
 }
