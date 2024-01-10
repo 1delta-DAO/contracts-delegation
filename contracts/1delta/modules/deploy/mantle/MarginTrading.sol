@@ -69,8 +69,8 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
             ncs().amount = amountIn;
             tokenIn = pairAddress(tokenIn, tokenOut, identifier);
             (uint256 amount0Out, uint256 amount1Out) = zeroForOne
-                ? (uint256(0), getAmountOutDirect(tokenIn, zeroForOne, amountIn))
-                : (getAmountOutDirect(tokenIn, zeroForOne, amountIn), uint256(0));
+                ? (uint256(0), getAmountOutUniV2(tokenIn, zeroForOne, amountIn, identifier))
+                : (getAmountOutUniV2(tokenIn, zeroForOne, amountIn, identifier), uint256(0));
             IUniswapV2Pair(tokenIn).swap(amount0Out, amount1Out, address(this), path);
         }
         // iZi
@@ -152,8 +152,8 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
             ncs().amount = amountIn;
             tokenIn = pairAddress(tokenIn, tokenOut, identifier);
             (uint256 amount0Out, uint256 amount1Out) = zeroForOne
-                ? (uint256(0), getAmountOutDirect(tokenIn, zeroForOne, amountIn))
-                : (getAmountOutDirect(tokenIn, zeroForOne, amountIn), uint256(0));
+                ? (uint256(0), getAmountOutUniV2(tokenIn, zeroForOne, amountIn, identifier))
+                : (getAmountOutUniV2(tokenIn, zeroForOne, amountIn, identifier), uint256(0));
             IUniswapV2Pair(tokenIn).swap(amount0Out, amount1Out, address(this), path);
         }
         // iZi
@@ -460,11 +460,13 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
         }
     }
 
-    function getAmountOutDirect(
+    function getAmountOutUniV2(
         address pair,
         bool zeroForOne,
-        uint256 sellAmount
+        uint256 sellAmount,
+        uint8 pId // to identify the fee
     ) private view returns (uint256 buyAmount) {
+        uint256 _pId = pId;
         assembly {
             // Call pair.getReserves(), store the results at `0xC00`
             mstore(0xB00, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
@@ -492,10 +494,19 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
                     buyReserve := mload(0xC00)
                 }
                 // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
-                // buyAmount = (pairSellAmount * 997 * buyReserve) /
-                //     (pairSellAmount * 997 + sellReserve * 1000);
-                let sellAmountWithFee := mul(sellAmount, 997)
-                buyAmount := div(mul(sellAmountWithFee, buyReserve), add(sellAmountWithFee, mul(sellReserve, 1000)))
+                // buyAmount = (pairSellAmount * feeAm * buyReserve) /
+                //     (pairSellAmount * feeAm + sellReserve * 1000);
+                switch _pId
+                case 50 {
+                    // fusionX v2 feeAm: 998
+                    let sellAmountWithFee := mul(sellAmount, 998)
+                    buyAmount := div(mul(sellAmountWithFee, buyReserve), add(sellAmountWithFee, mul(sellReserve, 1000)))
+                }
+                default {
+                    // merchant moe feeAm: 997
+                    let sellAmountWithFee := mul(sellAmount, 997)
+                    buyAmount := div(mul(sellAmountWithFee, buyReserve), add(sellAmountWithFee, mul(sellReserve, 1000)))
+                }
             }
         }
     }
@@ -546,8 +557,9 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
             // validate sender
             require(msg.sender == pool);
         }
-
-        if (tradeId == 1) {
+        // exact in is handled outside a callback
+        if (tradeId == 0) return;
+        else if (tradeId == 1) {
             // fetch amountOut
             uint256 referenceAmount = zeroForOne ? amount0 : amount1;
             // calculte amountIn

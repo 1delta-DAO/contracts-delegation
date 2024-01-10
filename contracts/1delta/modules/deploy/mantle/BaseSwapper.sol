@@ -10,7 +10,6 @@ import {IUniswapV3Pool} from "../../../dex-tools/uniswap/core/IUniswapV3Pool.sol
 import {IUniversalV3StyleSwap} from "../../../dex-tools/interfaces/IUniversalSwap.sol";
 import {IUniswapV2Pair} from "../../../../external-protocols/uniswapV2/core/interfaces/IUniswapV2Pair.sol";
 import {TokenTransfer} from "../../../libraries/TokenTransfer.sol";
-
 // solhint-disable max-line-length
 
 /**
@@ -405,7 +404,7 @@ abstract contract BaseSwapper is TokenTransfer {
                     pair,
                     0x0,
                     0xB00, // input selector
-                    0xA4, // input size = 164 (selector (4bytes) plus 5*32bytes)
+                    100, // input size = 164 (selector (4bytes) plus 5*32bytes)
                     0, // output = 0
                     0 // output size = 0
                 )
