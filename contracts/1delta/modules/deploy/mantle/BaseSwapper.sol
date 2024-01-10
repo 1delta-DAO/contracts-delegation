@@ -47,6 +47,8 @@ abstract contract BaseSwapper is TokenTransfer {
     bytes32 private constant BUTTER_FF_FACTORY = 0xffeeca0a86431a7b42ca2ee5f479832c3d4a4c26440000000000000000000000;
     bytes32 private constant BUTTER_POOL_INIT_CODE_HASH = 0xc7d06444331e4f63b0764bb53c88788882395aa31961eed3c2768cc9568323ee;
 
+    address private constant MERCHANT_MOE_FACTORY = 0x5bEf015CA9424A7C07B68490616a4C1F094BEdEc;
+
     constructor() {}
 
     function getLastToken(bytes calldata data) internal pure returns (address token) {
@@ -56,12 +58,7 @@ abstract contract BaseSwapper is TokenTransfer {
     }
 
     /// @dev Returns the pool for the given token pair and fee. The pool contract may or may not exist.
-    function getUniswapV3Pool(
-        address tokenA,
-        address tokenB,
-        uint24 fee,
-        uint8 pId
-    ) internal pure returns (IUniversalV3StyleSwap pool) {
+    function getUniswapV3Pool(address tokenA, address tokenB, uint24 fee, uint8 pId) internal pure returns (IUniversalV3StyleSwap pool) {
         uint256 _pId = pId;
         assembly {
             let s := mload(0x40)
@@ -170,23 +167,41 @@ abstract contract BaseSwapper is TokenTransfer {
     }
 
     /// @dev gets uniswapV2 (and fork) pair addresses
-    function pairAddress(address tokenA, address tokenB, uint8) internal pure returns (address pair) {
+    function pairAddress(address tokenA, address tokenB, uint8 pId) internal view returns (address pair) {
+        uint256 _pId = pId;
         assembly {
-            switch lt(tokenA, tokenB)
-            case 0 {
-                mstore(0xB14, tokenA)
-                mstore(0xB00, tokenB)
-            }
-            default {
-                mstore(0xB14, tokenB)
-                mstore(0xB00, tokenA)
-            }
-            let salt := keccak256(0xB0C, 0x28)
-            mstore(0xB00, FUSION_V2_FF_FACTORY)
-            mstore(0xB15, salt)
-            mstore(0xB35, CODE_HASH_FUSION_V2)
+            switch _pId
+            // FusionX
+            case 50 {
+                switch lt(tokenA, tokenB)
+                case 0 {
+                    mstore(0xB14, tokenA)
+                    mstore(0xB00, tokenB)
+                }
+                default {
+                    mstore(0xB14, tokenB)
+                    mstore(0xB00, tokenA)
+                }
+                let salt := keccak256(0xB0C, 0x28)
+                mstore(0xB00, FUSION_V2_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, CODE_HASH_FUSION_V2)
 
-            pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+            }
+            // 51: Merchant Moe
+            default {
+                // selector for getPair(address,address
+                mstore(0xB00, 0xe6a4390500000000000000000000000000000000000000000000000000000000)
+                mstore(add(0xB00, 0x4), tokenA)
+                mstore(add(0xB00, 0x24), tokenB)
+
+                // call to collateralToken
+                pop(staticcall(gas(), MERCHANT_MOE_FACTORY, 0xB00, 0x48, 0xB00, 0x20))
+
+                // load the retrieved protocol share
+                pair := and(ADDRESS_MASK, mload(0xB00))
+            }
         }
     }
 
@@ -222,28 +237,28 @@ abstract contract BaseSwapper is TokenTransfer {
             }
             // uniswapV2 style
             else if (identifier < 100) {
-                amountIn = swapUniV2ExactIn(tokenIn, tokenOut, amountIn);
+                amountIn = swapUniV2ExactIn(tokenIn, tokenOut, amountIn, identifier);
             }
             // iZi
             else if (identifier == 100) {
                 uint24 fee;
-                bool zeroForOne ;
+                bool zeroForOne;
                 assembly {
                     fee := and(shr(72, calldataload(path.offset)), 0xffffff)
                     zeroForOne := lt(tokenIn, tokenOut)
                 }
-            if (zeroForOne)
+                if (zeroForOne)
                     (, amountIn) = getUniswapV3Pool(tokenIn, tokenOut, fee, identifier).swapX2Y(
                         address(this),
                         uint128(amountIn),
-                        -799999,
+                        -799999, // low tick
                         path
                     );
                 else
                     (amountIn, ) = getUniswapV3Pool(tokenIn, tokenOut, fee, identifier).swapY2X(
                         address(this),
                         uint128(amountIn),
-                        799999,
+                        799999, // high tick
                         path
                     );
             }
@@ -261,25 +276,43 @@ abstract contract BaseSwapper is TokenTransfer {
     function swapUniV2ExactIn(
         address tokenIn,
         address tokenOut,
-        uint256 amountIn
+        uint256 amountIn,
+        uint8 pId // we need to know the DEX for the fee
     ) private returns (uint256 buyAmount) {
+        uint256 _pId = pId;
         assembly {
             let zeroForOne := lt(tokenIn, tokenOut)
-            switch zeroForOne
-            case 0 {
-                mstore(0xB14, tokenIn)
-                mstore(0xB00, tokenOut)
+            let pair := mload(0x40) // use free memo for pair
+            switch _pId
+            case 50 {
+                switch zeroForOne
+                case 0 {
+                    mstore(0xB14, tokenIn)
+                    mstore(0xB00, tokenOut)
+                }
+                default {
+                    mstore(0xB14, tokenOut)
+                    mstore(0xB00, tokenIn)
+                }
+                let salt := keccak256(0xB0C, 0x28)
+                mstore(0xB00, FUSION_V2_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, CODE_HASH_FUSION_V2)
+
+                pair := and(ADDRESS_MASK_UPPER, keccak256(0xB00, 0x55))
             }
             default {
-                mstore(0xB14, tokenOut)
-                mstore(0xB00, tokenIn)
-            }
-            let salt := keccak256(0xB0C, 0x28)
-            mstore(0xB00, FUSION_V2_FF_FACTORY)
-            mstore(0xB15, salt)
-            mstore(0xB35, CODE_HASH_FUSION_V2)
+                // selector for getPair(address,address
+                mstore(0xB00, 0xe6a4390500000000000000000000000000000000000000000000000000000000)
+                mstore(add(0xB00, 0x4), tokenIn)
+                mstore(add(0xB00, 0x24), tokenOut)
 
-            let pair := and(ADDRESS_MASK_UPPER, keccak256(0xB00, 0x55))
+                // call to collateralToken
+                pop(staticcall(gas(), MERCHANT_MOE_FACTORY, 0xB00, 0x48, 0xB00, 0x20))
+
+                // load the retrieved protocol share
+                pair := and(ADDRESS_MASK, mload(0xB00))
+            }
 
             // EXECUTE TRANSFER TO PAIR
             let ptr := mload(0x40) // free memory pointer
@@ -338,11 +371,19 @@ abstract contract BaseSwapper is TokenTransfer {
                     buyReserve := mload(0xC00)
                 }
                 // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
-                // buyAmount = (pairSellAmount * 997 * buyReserve) /
-                //     (pairSellAmount * 997 + sellReserve * 1000);
-                let sellAmountWithFee := mul(amountIn, 997)
-                buyAmount := div(mul(sellAmountWithFee, buyReserve), add(sellAmountWithFee, mul(sellReserve, 1000)))
-
+                // buyAmount = (pairSellAmount * feeAm * buyReserve) /
+                //     (pairSellAmount * feeAm + sellReserve * 1000);
+                switch _pId
+                case 50 {
+                    // feeAm is 998 for fusionX (1000 - 2) for 0.2% fee
+                    let sellAmountWithFee := mul(amountIn, 998)
+                    buyAmount := div(mul(sellAmountWithFee, buyReserve), add(sellAmountWithFee, mul(sellReserve, 1000)))
+                }
+                default {
+                    // feeAm is 997 for Moe (1000 - 3) for 0.3% fee
+                    let sellAmountWithFee := mul(amountIn, 997)
+                    buyAmount := div(mul(sellAmountWithFee, buyReserve), add(sellAmountWithFee, mul(sellReserve, 1000)))
+                }
                 // selector for swap(...)
                 mstore(0xB00, 0x022c0d9f00000000000000000000000000000000000000000000000000000000)
 
@@ -378,11 +419,13 @@ abstract contract BaseSwapper is TokenTransfer {
     }
 
     /// @dev calculates the input amount for a UniswapV2 style swap
-    function getAmountInDirect(
+    function getV2AmountInDirect(
         address pair,
         bool zeroForOne,
-        uint256 buyAmount
+        uint256 buyAmount,
+        uint8 pId // required to apply the correct fee
     ) internal view returns (uint256 sellAmount) {
+        uint256 _pId = pId;
         assembly {
             let ptr := mload(0x40)
             // Call pair.getReserves(), store the results at `free memo`
@@ -410,10 +453,19 @@ abstract contract BaseSwapper is TokenTransfer {
                     sellReserve := mload(ptr)
                     buyReserve := mload(add(ptr, 0x20))
                 }
+
                 // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
                 // sellAmount = (reserveIn * amountOut * 1000) /
-                //     ((reserveOut - amountOut) * 997) + 1;
-                sellAmount := add(div(mul(mul(sellReserve, buyAmount), 1000), mul(sub(buyReserve, buyAmount), 997)), 1)
+                //     ((reserveOut - amountOut) * feeAm) + 1;
+                switch _pId
+                case 50 {
+                    // feeAm is 998 for fusionX
+                    sellAmount := add(div(mul(mul(sellReserve, buyAmount), 1000), mul(sub(buyReserve, buyAmount), 998)), 1)
+                }
+                default {
+                    // feAm is 997 for Moe
+                    sellAmount := add(div(mul(mul(sellReserve, buyAmount), 1000), mul(sub(buyReserve, buyAmount), 997)), 1)
+                }
             }
         }
     }

@@ -507,6 +507,25 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
         uint256 amount1,
         bytes calldata data
     ) external {
+        _uniswapV2StyleCallback(amount0, amount1, data);
+    }
+
+    // The uniswapV2 style callback for Merchant Moe
+    function moeCall(
+        address,
+        uint256 amount0,
+        uint256 amount1,
+        bytes calldata data
+    ) external {
+        _uniswapV2StyleCallback(amount0, amount1, data);
+    }
+
+    // The general uniswapV2 style callback
+    function _uniswapV2StyleCallback(
+        uint256 amount0,
+        uint256 amount1,
+        bytes calldata data
+    ) private {
         uint8 tradeId;
         address tokenIn;
         address tokenOut;
@@ -532,7 +551,7 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
             // fetch amountOut
             uint256 referenceAmount = zeroForOne ? amount0 : amount1;
             // calculte amountIn
-            referenceAmount = getAmountInDirect(pool, zeroForOne, referenceAmount);
+            referenceAmount = getV2AmountInDirect(pool, zeroForOne, referenceAmount, identifier);
             uint256 cache = data.length;
             // either initiate the next swap or pay
             if (cache > 46) {
@@ -616,7 +635,7 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
                 _lendingPool.repay(tokenIn, referenceAmount, tradeId, user);
             }
             // calculate amountIn
-            referenceAmount = getAmountInDirect(pool, zeroForOne, referenceAmount);
+            referenceAmount = getV2AmountInDirect(pool, zeroForOne, referenceAmount, identifier);
             uint256 cache = data.length;
             // constinue swapping if more data is provided
             if (cache > 46) {

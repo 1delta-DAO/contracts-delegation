@@ -85,6 +85,8 @@ contract OneDeltaQuoterMantle {
     bytes32 private constant BUTTER_FF_FACTORY = 0xffeeca0a86431a7b42ca2ee5f479832c3d4a4c26440000000000000000000000;
     bytes32 private constant BUTTER_POOL_INIT_CODE_HASH = 0xc7d06444331e4f63b0764bb53c88788882395aa31961eed3c2768cc9568323ee;
 
+    address private constant MERCHANT_MOE_FACTORY = 0x5bEf015CA9424A7C07B68490616a4C1F094BEdEc;
+
     constructor() {}
 
     // uniswap V3 type callback
@@ -495,25 +497,42 @@ contract OneDeltaQuoterMantle {
     }
 
     /// @dev gets uniswapV2 (and fork) pair addresses
-    function v2TypePairAddress(address tokenA, address tokenB, uint8) private pure returns (address pair) {
+    function v2TypePairAddress(address tokenA, address tokenB, uint8 pId) private view returns (address pair) {
+        uint256 _pId = pId;
         assembly {
-            switch lt(tokenA, tokenB)
-            case 0 {
-                mstore(0xB14, tokenA)
-                mstore(0xB00, tokenB)
-            }
-            default {
-                mstore(0xB14, tokenB)
-                mstore(0xB00, tokenA)
-            }
-            let salt := keccak256(0xB0C, 0x28)
-
+            switch _pId
             // FusionX
-            mstore(0xB00, FUSION_V2_FF_FACTORY)
-            mstore(0xB15, salt)
-            mstore(0xB35, CODE_HASH_FUSION_V2)
+            case 50 {
+                switch lt(tokenA, tokenB)
+                case 0 {
+                    mstore(0xB14, tokenA)
+                    mstore(0xB00, tokenB)
+                }
+                default {
+                    mstore(0xB14, tokenB)
+                    mstore(0xB00, tokenA)
+                }
+                let salt := keccak256(0xB0C, 0x28)
 
-            pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+                mstore(0xB00, FUSION_V2_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, CODE_HASH_FUSION_V2)
+
+                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+            }
+            // 51: Merchant Moe
+            default {
+                // selector for getPair(address,address
+                mstore(0xB00, 0xe6a4390500000000000000000000000000000000000000000000000000000000)
+                mstore(add(0xB00, 0x4), tokenA)
+                mstore(add(0xB00, 0x24), tokenB)
+
+                // call to collateralToken
+                pop(staticcall(gas(), MERCHANT_MOE_FACTORY, 0xB00, 0x48, 0xB00, 0x20))
+
+                // load the retrieved protocol share
+                pair := and(ADDRESS_MASK, mload(0xB00))
+            }
         }
     }
 
@@ -546,7 +565,7 @@ contract OneDeltaQuoterMantle {
             // V2
             else if (poolId < 100) {
                 address pair = v2TypePairAddress(tokenIn, tokenOut, poolId);
-                amountIn = getV2AmountOutDirect(pair, tokenIn < tokenOut, amountIn);
+                amountIn = getV2AmountOutDirect(pair, tokenIn < tokenOut, amountIn, poolId);
             }
             // iZi
             else if (poolId == 100) {
@@ -593,7 +612,7 @@ contract OneDeltaQuoterMantle {
             // V2
             else if (poolId < 100) {
                 address pair = v2TypePairAddress(tokenIn, tokenOut, poolId);
-                amountOut = getV2AmountInDirect(pair, tokenOut < tokenIn, amountOut);
+                amountOut = getV2AmountInDirect(pair, tokenOut < tokenIn, amountOut, poolId);
             } else if (poolId == 100) {
                 uint24 fee;
                 assembly {
@@ -610,7 +629,13 @@ contract OneDeltaQuoterMantle {
         }
     }
 
-    function getV2AmountOutDirect(address pair, bool zeroForOne, uint256 sellAmount) private view returns (uint256 buyAmount) {
+    function getV2AmountOutDirect(
+        address pair,
+        bool zeroForOne,
+        uint256 sellAmount,
+        uint8 pId // required to apply the correct fee
+    ) private view returns (uint256 buyAmount) {
+        uint256 _pId = pId;
         assembly {
             // Call pair.getReserves(), store the results at `0xC00`
             mstore(0xB00, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
@@ -638,16 +663,31 @@ contract OneDeltaQuoterMantle {
                     buyReserve := mload(0xC00)
                 }
                 // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
-                // buyAmount = (pairSellAmount * 998 * buyReserve) /
-                //     (pairSellAmount * 998 + sellReserve * 1000);
-                let sellAmountWithFee := mul(sellAmount, 998)
-                buyAmount := div(mul(sellAmountWithFee, buyReserve), add(sellAmountWithFee, mul(sellReserve, 1000)))
+                // buyAmount = (pairSellAmount * feeAm * buyReserve) /
+                //     (pairSellAmount * feeAm + sellReserve * 1000);
+                switch _pId
+                case 50 {
+                    // fusionX V2
+                    let sellAmountWithFee := mul(sellAmount, 998)
+                    buyAmount := div(mul(sellAmountWithFee, buyReserve), add(sellAmountWithFee, mul(sellReserve, 1000)))
+                }
+                default {
+                    // Moe
+                    let sellAmountWithFee := mul(sellAmount, 997)
+                    buyAmount := div(mul(sellAmountWithFee, buyReserve), add(sellAmountWithFee, mul(sellReserve, 1000)))
+                }
             }
         }
     }
 
     /// @dev calculates the input amount for a UniswapV2 style swap
-    function getV2AmountInDirect(address pair, bool zeroForOne, uint256 buyAmount) private view returns (uint256 sellAmount) {
+    function getV2AmountInDirect(
+        address pair,
+        bool zeroForOne,
+        uint256 buyAmount,
+        uint8 pId // required to apply the correct fee
+    ) private view returns (uint256 sellAmount) {
+        uint256 _pId = pId;
         assembly {
             let ptr := mload(0x40)
             // Call pair.getReserves(), store the results at `free memo`
@@ -679,10 +719,19 @@ contract OneDeltaQuoterMantle {
                 if lt(buyReserve, buyAmount) {
                     revert(0, 0)
                 }
+
                 // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
                 // sellAmount = (reserveIn * amountOut * 1000) /
-                //     ((reserveOut - amountOut) * 998) + 1;
-                sellAmount := add(div(mul(mul(sellReserve, buyAmount), 1000), mul(sub(buyReserve, buyAmount), 998)), 1)
+                //     ((reserveOut - amountOut) * feeAm) + 1;
+                switch _pId
+                case 50 {
+                    // feeAm is 998 for fusionX
+                    sellAmount := add(div(mul(mul(sellReserve, buyAmount), 1000), mul(sub(buyReserve, buyAmount), 998)), 1)
+                }
+                default {
+                    // feAm is 997 for Moe
+                    sellAmount := add(div(mul(mul(sellReserve, buyAmount), 1000), mul(sub(buyReserve, buyAmount), 997)), 1)
+                }
             }
         }
     }
