@@ -8,7 +8,7 @@ module.exports = [
 ];
 
 
-// npx hardhat verify --network mantle 0x033BA8191568403957b89C2f3636a6AbFa131512 --contract contracts/1delta/modules/deploy/mantle/FlashAggregator.sol:DeltaFlashAggregatorMantle 
+// npx hardhat verify --network mantle 0xBB6Aa6200127EAe67ee4DA7B01CbCDec0a9f0E0e --contract contracts/1delta/modules/deploy/mantle/FlashAggregator.sol:DeltaFlashAggregatorMantle 
 
 // npx hardhat verify --network mantle 0x4b5458BB47dCBC1a41B31b41e1a8773dE312BE9d --contract contracts/1delta/proxy/DeltaBroker.sol:DeltaBrokerProxy --constructor-args scripts/verify_mantle.js
 
