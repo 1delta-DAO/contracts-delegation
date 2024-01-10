@@ -10,6 +10,7 @@ import {IUniswapV3Pool} from "../../../dex-tools/uniswap/core/IUniswapV3Pool.sol
 import {IUniversalV3StyleSwap} from "../../../dex-tools/interfaces/IUniversalSwap.sol";
 import {IUniswapV2Pair} from "../../../../external-protocols/uniswapV2/core/interfaces/IUniswapV2Pair.sol";
 import {TokenTransfer} from "../../../libraries/TokenTransfer.sol";
+
 // solhint-disable max-line-length
 
 /**
@@ -283,7 +284,7 @@ abstract contract BaseSwapper is TokenTransfer {
             let zeroForOne := lt(tokenIn, tokenOut)
             let pair := mload(0x40) // use free memo for pair
             switch _pId
-            case 50 {
+            case 50 { // fusionX
                 switch zeroForOne
                 case 0 {
                     mstore(0xB14, tokenIn)
@@ -300,13 +301,13 @@ abstract contract BaseSwapper is TokenTransfer {
 
                 pair := and(ADDRESS_MASK_UPPER, keccak256(0xB00, 0x55))
             }
-            default {
+            default { // merchant moe -> call to factory to identify pair address
                 // selector for getPair(address,address
                 mstore(0xB00, 0xe6a4390500000000000000000000000000000000000000000000000000000000)
                 mstore(add(0xB00, 0x4), tokenIn)
                 mstore(add(0xB00, 0x24), tokenOut)
 
-                // call to collateralToken
+                // call to factory
                 pop(staticcall(gas(), MERCHANT_MOE_FACTORY, 0xB00, 0x48, 0xB00, 0x20))
 
                 // load the retrieved protocol share
@@ -404,7 +405,7 @@ abstract contract BaseSwapper is TokenTransfer {
                     pair,
                     0x0,
                     0xB00, // input selector
-                    100, // input size = 164 (selector (4bytes) plus 5*32bytes)
+                    0xA4, // input size = 164 (selector (4bytes) plus 5*32bytes)
                     0, // output = 0
                     0 // output size = 0
                 )

@@ -1,6 +1,6 @@
 import { impersonateAccount, mine, setCode } from "@nomicfoundation/hardhat-network-helpers";
 import { parseUnits } from "ethers/lib/utils";
-import { ConfigModule__factory, DeltaBrokerProxy, DeltaBrokerProxy__factory, DeltaFlashAggregatorMantle, DeltaFlashAggregatorMantle__factory, DeltaFlashAggregator__factory, OneDeltaQuoterMantle, OneDeltaQuoterMantle__factory, } from "../types";
+import { ConfigModule__factory, DeltaBrokerProxy, DeltaBrokerProxy__factory, DeltaFlashAggregatorMantle, DeltaFlashAggregatorMantle__factory, DeltaFlashAggregator__factory, ERC20Mock__factory, OneDeltaQuoterMantle, OneDeltaQuoterMantle__factory, } from "../types";
 import { lendleBrokerAddresses } from "../deploy/mantle_addresses";
 import { DeltaFlashAggregatorMantleInterface } from "../types/DeltaFlashAggregatorMantle";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
@@ -13,12 +13,13 @@ const { ethers } = require("hardhat");
 
 // block: 
 const MANTLE_CHAIN_ID = 5000;
-const trader0 = ''
+const trader0 = '0x5c382c7c80BE53edaA982378540B8797667859F7'
 
 const weth = "0xdEAddEaDdeadDEadDEADDEAddEADDEAddead1111"
 const usdc = "0x09Bc4E0D864854c6aFB6eB9A9cdF58aC190D0dF9"
 const wmnt = "0x78c1b0c915c4faa5fffa6cabf0219da63d7f4cb8"
 const usdt = "0x201EBa5CC46D216Ce6DC03F6a759e8E766e956aE"
+const moe = "0x4515A45337F461A11Ff0FE8aBF3c606AE5dC00c9"
 const usdy = '0x5be26527e817998a7206475496fde1e68957c5a6'
 
 let multicaller: DeltaBrokerProxy
@@ -51,7 +52,41 @@ before(async function () {
 
 const adjustForSlippage = (s: string, slippageBp: number) => BigNumber.from(s).mul(10000 - slippageBp).div(10000)
 
-it("Test Swap", async function () {
+
+it("Test Moe Swap", async function () {
+    await impersonateAccount(trader0)
+    const impersonatedSigner = await ethers.getSigner(trader0);
+
+    const slippage = 30
+
+    const amountIn2 = '2000000'
+    const transferIn = flashAggregatorInterface.encodeFunctionData('transferERC20In', [usdt, amountIn2])
+    const USDTContract = await new ERC20Mock__factory(impersonatedSigner).attach(usdt)
+    const bal = await USDTContract.balanceOf(trader0)
+    await USDTContract.approve(multicaller.address, amountIn2)
+    console.log("bal", bal.toString())
+
+    // v3 single
+    const path2 = encodeAggregatorPathEthers(
+        [usdt, moe],
+        [0],
+        [0],
+        [51], // moe
+        99
+    )
+    const swap2 = flashAggregatorInterface.encodeFunctionData('swapExactInSpot', [amountIn2, 0, path2])
+
+    const sweep = flashAggregatorInterface.encodeFunctionData('sweep', [moe])
+
+    await multicaller.connect(impersonatedSigner).multicall([
+        transferIn,
+        swap2,
+        sweep
+    ])
+})
+
+
+it.skip("Test Swap", async function () {
     await impersonateAccount(trader0)
     const impersonatedSigner = await ethers.getSigner(trader0);
 
