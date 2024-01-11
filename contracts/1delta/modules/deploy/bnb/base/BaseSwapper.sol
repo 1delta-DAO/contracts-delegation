@@ -326,10 +326,10 @@ abstract contract BaseSwapper is TokenTransfer {
                     buyReserve := mload(0xC00)
                 }
                 // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
-                // buyAmount = (pairSellAmount * 997 * buyReserve) /
-                //     (pairSellAmount * 997 + sellReserve * 1000);
-                let sellAmountWithFee := mul(amountIn, 997)
-                buyAmount := div(mul(sellAmountWithFee, buyReserve), add(sellAmountWithFee, mul(sellReserve, 1000)))
+                // buyAmount = (pairSellAmount * 9975 * buyReserve) /
+                //     (pairSellAmount * 9975 + sellReserve * 10000);
+                let sellAmountWithFee := mul(amountIn, 9975)
+                buyAmount := div(mul(sellAmountWithFee, buyReserve), add(sellAmountWithFee, mul(sellReserve, 10000)))
 
                 // selector for swap(...)
                 mstore(0xB00, 0x022c0d9f00000000000000000000000000000000000000000000000000000000)
@@ -396,8 +396,8 @@ abstract contract BaseSwapper is TokenTransfer {
                 }
                 // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
                 // sellAmount = (reserveIn * amountOut * 1000) /
-                //     ((reserveOut - amountOut) * 997) + 1;
-                sellAmount := add(div(mul(mul(sellReserve, buyAmount), 1000), mul(sub(buyReserve, buyAmount), 997)), 1)
+                //     ((reserveOut - amountOut) * 9975) + 1;
+                sellAmount := add(div(mul(mul(sellReserve, buyAmount), 10000), mul(sub(buyReserve, buyAmount), 9975)), 1)
             }
         }
     }

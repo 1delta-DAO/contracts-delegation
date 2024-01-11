@@ -412,16 +412,21 @@ abstract contract MarginTrading is LendingOps, BaseSwapper {
                     buyReserve := mload(0xC00)
                 }
                 // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
-                // buyAmount = (pairSellAmount * 997 * buyReserve) /
-                //     (pairSellAmount * 997 + sellReserve * 1000);
-                let sellAmountWithFee := mul(sellAmount, 997)
-                buyAmount := div(mul(sellAmountWithFee, buyReserve), add(sellAmountWithFee, mul(sellReserve, 1000)))
+                // buyAmount = (pairSellAmount * 9975 * buyReserve) /
+                //     (pairSellAmount * 9975 + sellReserve * 1000);
+                let sellAmountWithFee := mul(sellAmount, 9975)
+                buyAmount := div(mul(sellAmountWithFee, buyReserve), add(sellAmountWithFee, mul(sellReserve, 10000)))
             }
         }
     }
 
+
+    function pancakeCall(address, uint256 amount0, uint256 amount1, bytes calldata data) external {
+        _uniswapV2StyleCall(amount0, amount1, data);
+    }
+
     // The uniswapV2 style callback for fusionX
-    function FusionXCall(address, uint256 amount0, uint256 amount1, bytes calldata data) external {
+    function _uniswapV2StyleCall(uint256 amount0, uint256 amount1, bytes calldata data) private {
         uint8 tradeId;
         address tokenIn;
         address tokenOut;
