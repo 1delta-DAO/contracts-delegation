@@ -177,7 +177,7 @@ contract OneDeltaVenuseMoneyMarketTest is OneDeltaBNBFixture, Test {
         // borrow amount is 2x depo assuming price of 300
         uint borrowAmount = 2 * approxPrice * baseAmount * 10 ** IERC20Minimal(underlyingBorrow).decimals();
         // create calldata
-        bytes memory path = getOpen(USDC, wNative);
+        bytes memory path = getOpenSingle(USDC, wNative);
 
         uint gas = gasleft();
         uint received = aggregator.flashSwapExactIn(borrowAmount, 0, path);
@@ -192,11 +192,75 @@ contract OneDeltaVenuseMoneyMarketTest is OneDeltaBNBFixture, Test {
         console.log("collateral", balRec);
     }
 
-    function getOpen(address tokenIn, address tokenOut) private view returns (bytes memory data) {
+    function test_margin_close() public {
+        // deposit 10 BNB, borrow 6,000 BUSC, depo approx. 20
+
+        // asset config
+        address vToken = vNative;
+        address underlying = wNative;
+
+        address vTokenBorrow = vUSDC;
+        address underlyingBorrow = USDC;
+        uint baseAmount = 10;
+
+        // 10 units to deposit
+        uint amount = baseAmount * 10 ** IERC20Minimal(underlying).decimals();
+        // approve delta
+        IERC20Minimal(underlying).approve(vToken, amount);
+        // call mint
+        IVToken(vToken).mint{value: amount}();
+        address[] memory enter = new address[](1);
+        enter[0] = vToken;
+        comptroller.enterMarkets(enter);
+        // approve vToken
+        // comptroller.updateDelegate(oneDelta, true);
+
+        uint approxPrice = 300; // BNB is about 300 USDC
+        // borrow amount is 2x depo assuming price of 300
+        uint borrowAmount = (approxPrice * baseAmount * 10 ** IERC20Minimal(underlyingBorrow).decimals()) / 3; // 30%
+
+        IVToken(vTokenBorrow).borrow(borrowAmount);
+        // approve withdrawal
+        IVToken(vToken).approve(address(aggregator), type(uint).max);
+        uint borrowBalBefore = IVToken(vTokenBorrow).borrowBalanceStored(address(this));
+        uint collatBalBefore = IVToken(vToken).balanceOfUnderlying(address(this));
+
+        // create calldata
+        bytes memory path = getCloseSingle(wNative, USDC);
+        uint withdrawAmount = amount / 4; // 25%
+        uint received;
+        {
+            uint gas = gasleft();
+            console.log("close");
+            received = aggregator.flashSwapExactIn(withdrawAmount, 0, path);
+            uint gasConsumed = gas - gasleft();
+            console.log("gasConsumed", gasConsumed);
+        }
+        console.log("received", received);
+
+        uint balRec = IVToken(vTokenBorrow).borrowBalanceStored(address(this));
+        uint balDelta = borrowBalBefore - balRec;
+        assertApproxEqAbs(balDelta, received, 1e10);
+
+        // check collateral
+        balRec = IVToken(vToken).balanceOfUnderlying(address(this));
+        balDelta = collatBalBefore - balRec;
+        assertApproxEqAbs(balDelta, withdrawAmount, 1e10);
+    }
+
+    function getOpenSingle(address tokenIn, address tokenOut) private pure returns (bytes memory data) {
         uint24 fee = 500;
         uint8 poolId = 0;
         uint8 actionId = 6;
         uint8 endId = 2;
+        return abi.encodePacked(tokenIn, fee, poolId, actionId, tokenOut, endId);
+    }
+
+    function getCloseSingle(address tokenIn, address tokenOut) private pure returns (bytes memory data) {
+        uint24 fee = 500;
+        uint8 poolId = 0;
+        uint8 actionId = 7;
+        uint8 endId = 3;
         return abi.encodePacked(tokenIn, fee, poolId, actionId, tokenOut, endId);
     }
 }
