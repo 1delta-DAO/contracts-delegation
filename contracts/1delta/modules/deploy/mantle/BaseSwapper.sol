@@ -47,6 +47,9 @@ abstract contract BaseSwapper is TokenTransfer {
     bytes32 private constant BUTTER_FF_FACTORY = 0xffeeca0a86431a7b42ca2ee5f479832c3d4a4c26440000000000000000000000;
     bytes32 private constant BUTTER_POOL_INIT_CODE_HASH = 0xc7d06444331e4f63b0764bb53c88788882395aa31961eed3c2768cc9568323ee;
 
+    bytes32 private constant CLEO_FF_FACTORY = 0xffAAA32926fcE6bE95ea2c51cB4Fcb60836D320C420000000000000000000000;
+    bytes32 private constant CLEO_POOL_INIT_CODE_HASH = 0x1565b129f2d1790f12d45301b9b084335626f0c92410bc43130763b69971135d;
+
     address private constant MERCHANT_MOE_FACTORY = 0x5bEf015CA9424A7C07B68490616a4C1F094BEdEc;
 
     constructor() {}
@@ -141,6 +144,26 @@ abstract contract BaseSwapper is TokenTransfer {
                 mstore(p, keccak256(p, 96))
                 p := add(p, 32)
                 mstore(p, BUTTER_POOL_INIT_CODE_HASH)
+                pool := and(ADDRESS_MASK, keccak256(s, 85))
+            }
+            // Cleo
+            case 4 {
+                mstore(p, CLEO_FF_FACTORY)
+                p := add(p, 21)
+                // Compute the inner hash in-place
+                switch lt(tokenA, tokenB)
+                case 0 {
+                    mstore(p, tokenB)
+                    mstore(add(p, 32), tokenA)
+                }
+                default {
+                    mstore(p, tokenA)
+                    mstore(add(p, 32), tokenB)
+                }
+                mstore(add(p, 64), and(UINT24_MASK, fee))
+                mstore(p, keccak256(p, 96))
+                p := add(p, 32)
+                mstore(p, CLEO_POOL_INIT_CODE_HASH)
                 pool := and(ADDRESS_MASK, keccak256(s, 85))
             }
             // iZi
