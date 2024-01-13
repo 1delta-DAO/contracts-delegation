@@ -14,7 +14,13 @@ import {MarginTrading} from "../../contracts/1delta/modules/deploy/bnb/venus/Mar
 import {DeltaBrokerProxy} from "../../contracts/1delta/proxy/DeltaBroker.sol";
 import {ConfigModule, IModuleConfig} from "../../contracts/1delta/proxy/modules/ConfigModule.sol";
 
-contract OneDeltaBNBFixture is CommonBNBAddresses {
+// misc
+import {IVToken, IERC20Minimal} from "./interfaces.sol";
+
+// forge
+import {Test} from "forge-std/Test.sol";
+
+contract OneDeltaBNBFixture is CommonBNBAddresses, Test {
     DeltaBrokerProxy proxy;
     ConfigModule config;
     VenusManagementModule management;
@@ -92,5 +98,25 @@ contract OneDeltaBNBFixture is CommonBNBAddresses {
         // approve all relevant spending
         management.approveCollateralTokens(assets);
         management.addCollateralToken(wNative, vNative);
+    }
+
+    function setUp() public {
+        // select bnb chain to fork
+        vm.createSelectFork({blockNumber: 34_958_582, urlOrAlias: "https://rpc.ankr.com/bsc"});
+        // set up 1delta
+        deployAndInit1delta();
+        address asset;
+        // fund 10 first assets
+        for (uint i; i < 10; i++) {
+            asset = assets[i];
+            vm.startPrank(asset);
+            uint balance = IERC20Minimal(asset).balanceOf(asset);
+            if (balance > 0) IERC20Minimal(asset).transfer(address(this), balance);
+            vm.stopPrank();
+        }
+        asset = wNative;
+        vm.startPrank(asset);
+        IERC20Minimal(asset).transfer(address(this), 1e20);
+        vm.stopPrank();
     }
 }

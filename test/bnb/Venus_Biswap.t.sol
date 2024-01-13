@@ -2,34 +2,13 @@
 
 pragma solidity ^0.8.23;
 
-import {Test, console2} from "forge-std/Test.sol";
 import "forge-std/console.sol";
 
 import {IVToken, IERC20Minimal} from "./interfaces.sol";
 
 import {OneDeltaBNBFixture} from "./OneDeltaBNBFixture.f.sol";
 
-contract OneDeltaVenuseMoneyMarketTest is OneDeltaBNBFixture, Test {
-    function setUp() public {
-        // select bnb chain to fork
-        vm.createSelectFork({blockNumber: 34_958_582, urlOrAlias: "https://rpc.ankr.com/bsc"});
-        // set up 1delta
-        deployAndInit1delta();
-        address asset;
-        // fund 10 first assets
-        for (uint i; i < 10; i++) {
-            asset = assets[i];
-            vm.startPrank(asset);
-            uint balance = IERC20Minimal(asset).balanceOf(asset);
-            if (balance > 0) IERC20Minimal(asset).transfer(address(this), balance);
-            vm.stopPrank();
-        }
-        asset = wNative;
-        vm.startPrank(asset);
-        IERC20Minimal(asset).transfer(address(this), 1e20);
-        vm.stopPrank();
-    }
-    
+contract OneDeltaVenuseMoneyMarketTest is OneDeltaBNBFixture {
     function test_margin_open_exact_in() public {
         // deposit 10 BNB, borrow 6,000 BUSC, depo approx. 20
 
