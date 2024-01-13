@@ -31,15 +31,14 @@ abstract contract BaseSwapper is TokenTransfer {
     bytes32 private constant PANCAKE_V3_FF_FACTORY = 0xff41ff9AA7e16B8B1a8a8dc4f0eFacd93D02d071c90000000000000000000000;
     bytes32 private constant PANCAKE_POOL_INIT_CODE_HASH = 0x6ce8eb472fa82df5469c6ab6d485f17c3ad13c8cd7af59b3d4a8026c5ce0f7e2;
 
-    bytes32 private constant BISWAPV3_FF_FACTORY = 0xffe9827B4EBeB9AE41FC57efDdDd79EDddC2EA4d030000000000000000000000;
-    bytes32 private constant BISWAPPOOL_INIT_CODE_HASH = 0xaf9bd540c3449b723624376f906d8d3a0e6441ff18b847f05f4f85789ab64d9a;
+    bytes32 private constant BISWAPV3_FF_FACTORY = 0xff4d175F2cFe3e2215c1B55865B07787b751CEdD360000000000000000000000;
+    bytes32 private constant BISWAPV3_POOL_INIT_CODE_HASH = 0xf3034e9d7a0088686a7f25c4f21bbc3aaef5c12a91c85768621e4d450abb1cb1;
 
     bytes32 private constant IZI_FF_FACTORY = 0xff93BB94a0d5269cb437A1F71FF3a77AB7538444220000000000000000000000;
-    // TBU
     bytes32 private constant IZI_POOL_INIT_CODE_HASH = 0xbe0bfe068cdd78cafa3ddd44e214cfa4e412c15d7148e932f8043fe883865e40;
 
-    bytes32 private constant ALGEBRA_V3_FF_DEPLOYER = 0xff9dE2dEA5c68898eb4cb2DeaFf357DFB26255a4aa0000000000000000000000;
-    bytes32 private constant ALGEBRA_POOL_INIT_CODE_HASH = 0x177d5fbf994f4d130c008797563306f1a168dc689f81b2fa23b4396931014d91;
+    bytes32 private constant ALGEBRA_V3_FF_DEPLOYER = 0xffc89F69Baa3ff17a842AB2DE89E5Fc8a8e2cc73580000000000000000000000;
+    bytes32 private constant ALGEBRA_POOL_INIT_CODE_HASH = 0xd61302e7691f3169f5ebeca3a0a4ab8f7f998c01e55ec944e62cfb1109fd2736;
 
     bytes32 private constant UNISWAP_FF_FACTORY = 0xffdB1d10011AD0Ff90774D0C6Bb92e5C5c8b4461F70000000000000000000000;
     bytes32 private constant UNISWAP_POOL_INIT_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
@@ -70,7 +69,7 @@ abstract contract BaseSwapper is TokenTransfer {
             let s := mload(0x40)
             let p := s
             switch _pId
-            // Fusion
+            // Pancake
             case 0 {
                 mstore(p, PANCAKE_V3_FF_FACTORY)
                 p := add(p, 21)
@@ -90,28 +89,8 @@ abstract contract BaseSwapper is TokenTransfer {
                 mstore(p, PANCAKE_POOL_INIT_CODE_HASH)
                 pool := and(ADDRESS_MASK, keccak256(s, 85))
             }
-            // agni
-            case 1 {
-                mstore(p, BISWAPV3_FF_FACTORY)
-                p := add(p, 21)
-                // Compute the inner hash in-place
-                switch lt(tokenA, tokenB)
-                case 0 {
-                    mstore(p, tokenB)
-                    mstore(add(p, 32), tokenA)
-                }
-                default {
-                    mstore(p, tokenA)
-                    mstore(add(p, 32), tokenB)
-                }
-                mstore(add(p, 64), and(UINT24_MASK, fee))
-                mstore(p, keccak256(p, 96))
-                p := add(p, 32)
-                mstore(p, BISWAPPOOL_INIT_CODE_HASH)
-                pool := and(ADDRESS_MASK, keccak256(s, 85))
-            }
             // Algebra / Thena
-            case 2 {
+            case 1 {
                 mstore(p, ALGEBRA_V3_FF_DEPLOYER)
                 p := add(p, 21)
                 // Compute the inner hash in-place
@@ -130,7 +109,7 @@ abstract contract BaseSwapper is TokenTransfer {
                 pool := and(ADDRESS_MASK, keccak256(s, 85))
             }
             // uniswap V3
-            case 3 {
+            case 2 {
                 mstore(p, UNISWAP_FF_FACTORY)
                 p := add(p, 21)
                 // Compute the inner hash in-place
@@ -147,6 +126,26 @@ abstract contract BaseSwapper is TokenTransfer {
                 mstore(p, keccak256(p, 96))
                 p := add(p, 32)
                 mstore(p, UNISWAP_POOL_INIT_CODE_HASH)
+                pool := and(ADDRESS_MASK, keccak256(s, 85))
+            }
+            // biswap
+            case 100 {
+                mstore(p, BISWAPV3_FF_FACTORY)
+                p := add(p, 21)
+                // Compute the inner hash in-place
+                switch lt(tokenA, tokenB)
+                case 0 {
+                    mstore(p, tokenB)
+                    mstore(add(p, 32), tokenA)
+                }
+                default {
+                    mstore(p, tokenA)
+                    mstore(add(p, 32), tokenB)
+                }
+                mstore(add(p, 64), and(UINT24_MASK, fee))
+                mstore(p, keccak256(p, 96))
+                p := add(p, 32)
+                mstore(p, BISWAPV3_POOL_INIT_CODE_HASH)
                 pool := and(ADDRESS_MASK, keccak256(s, 85))
             }
             // iZi
@@ -173,23 +172,64 @@ abstract contract BaseSwapper is TokenTransfer {
     }
 
     /// @dev gets uniswapV2 (and fork) pair addresses
-    function pairAddress(address tokenA, address tokenB, uint8) internal pure returns (address pair) {
+    function pairAddress(address tokenA, address tokenB, uint8 pId) internal pure returns (address pair) {
+        uint256 _pId = pId;
         assembly {
-            switch lt(tokenA, tokenB)
-            case 0 {
-                mstore(0xB14, tokenA)
-                mstore(0xB00, tokenB)
+            switch _pId
+            case 50 {
+                // pancake
+                switch lt(tokenA, tokenB)
+                case 0 {
+                    mstore(0xB14, tokenA)
+                    mstore(0xB00, tokenB)
+                }
+                default {
+                    mstore(0xB14, tokenB)
+                    mstore(0xB00, tokenA)
+                }
+                let salt := keccak256(0xB0C, 0x28)
+                mstore(0xB00, PANCAKE_V2_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, CODE_HASH_PANCAKE_V2)
+
+                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+            }
+            case 51 {
+                // biswap
+                switch lt(tokenA, tokenB)
+                case 0 {
+                    mstore(0xB14, tokenA)
+                    mstore(0xB00, tokenB)
+                }
+                default {
+                    mstore(0xB14, tokenB)
+                    mstore(0xB00, tokenA)
+                }
+                let salt := keccak256(0xB0C, 0x28)
+                mstore(0xB00, BISWAP_V2_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, CODE_HASH_BISWAP_V2)
+
+                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
             }
             default {
-                mstore(0xB14, tokenB)
-                mstore(0xB00, tokenA)
-            }
-            let salt := keccak256(0xB0C, 0x28)
-            mstore(0xB00, PANCAKE_V2_FF_FACTORY)
-            mstore(0xB15, salt)
-            mstore(0xB35, CODE_HASH_PANCAKE_V2)
+                // apeswap
+                switch lt(tokenA, tokenB)
+                case 0 {
+                    mstore(0xB14, tokenA)
+                    mstore(0xB00, tokenB)
+                }
+                default {
+                    mstore(0xB14, tokenB)
+                    mstore(0xB00, tokenA)
+                }
+                let salt := keccak256(0xB0C, 0x28)
+                mstore(0xB00, APESWAP_V2_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, CODE_HASH_APESWAP_V2)
 
-            pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+            }
         }
     }
 
@@ -225,7 +265,7 @@ abstract contract BaseSwapper is TokenTransfer {
             }
             // uniswapV2 style
             else if (identifier < 100) {
-                amountIn = swapUniV2ExactIn(tokenIn, tokenOut, amountIn);
+                amountIn = swapUniV2ExactIn(tokenIn, tokenOut, amountIn, identifier);
             }
             // iZi
             else if (identifier == 100) {
@@ -250,7 +290,8 @@ abstract contract BaseSwapper is TokenTransfer {
     }
 
     /// @dev simple exact input swap using uniswapV2 or fork
-    function swapUniV2ExactIn(address tokenIn, address tokenOut, uint256 amountIn) private returns (uint256 buyAmount) {
+    function swapUniV2ExactIn(address tokenIn, address tokenOut, uint256 amountIn, uint8 pId) private returns (uint256 buyAmount) {
+        uint256 _pId = pId;
         assembly {
             let zeroForOne := lt(tokenIn, tokenOut)
             switch zeroForOne
@@ -263,11 +304,47 @@ abstract contract BaseSwapper is TokenTransfer {
                 mstore(0xB00, tokenIn)
             }
             let salt := keccak256(0xB0C, 0x28)
-            mstore(0xB00, PANCAKE_V2_FF_FACTORY)
-            mstore(0xB15, salt)
-            mstore(0xB35, CODE_HASH_PANCAKE_V2)
+            let feeAm  // 10000 - fee
+            let pair
+            switch _pId
+            case 50 {
+                feeAm := 9975
+                mstore(0xB00, PANCAKE_V2_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, CODE_HASH_PANCAKE_V2)
+                pair := and(ADDRESS_MASK_UPPER, keccak256(0xB00, 0x55))
+            }
+            case 51 {
+                mstore(0xB00, BISWAP_V2_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, CODE_HASH_BISWAP_V2)
+                pair := and(ADDRESS_MASK_UPPER, keccak256(0xB00, 0x55))
+                // we have to get the fee from the pair
+                mstore(
+                    0xB00,
+                    0x54cf2aeb00000000000000000000000000000000000000000000000000000000 // swapFee()
+                )
+                pop(
+                    staticcall(
+                        5000,
+                        pair, // call to pair
+                        0xB00,
+                        0x4, // only selector
+                        0xB00,
+                        0x20 // 1 slot
+                    )
+                )
 
-            let pair := and(ADDRESS_MASK_UPPER, keccak256(0xB00, 0x55))
+                // fee of biswap has too low denom
+                feeAm := sub(10000, mul(mload(0xB00), 10))
+            }
+            default {
+                feeAm := 9920
+                mstore(0xB00, APESWAP_V2_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, CODE_HASH_APESWAP_V2)
+                pair := and(ADDRESS_MASK_UPPER, keccak256(0xB00, 0x55))
+            }
 
             // EXECUTE TRANSFER TO PAIR
             let ptr := mload(0x40) // free memory pointer
@@ -326,9 +403,9 @@ abstract contract BaseSwapper is TokenTransfer {
                     buyReserve := mload(0xC00)
                 }
                 // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
-                // buyAmount = (pairSellAmount * 9975 * buyReserve) /
-                //     (pairSellAmount * 9975 + sellReserve * 10000);
-                let sellAmountWithFee := mul(amountIn, 9975)
+                // buyAmount = (pairSellAmount * feeAm * buyReserve) /
+                //     (pairSellAmount * feeAm + sellReserve * 10000);
+                let sellAmountWithFee := mul(amountIn, feeAm)
                 buyAmount := div(mul(sellAmountWithFee, buyReserve), add(sellAmountWithFee, mul(sellReserve, 10000)))
 
                 // selector for swap(...)
@@ -366,7 +443,8 @@ abstract contract BaseSwapper is TokenTransfer {
     }
 
     /// @dev calculates the input amount for a UniswapV2 style swap
-    function getAmountInDirect(address pair, bool zeroForOne, uint256 buyAmount) internal view returns (uint256 sellAmount) {
+    function getAmountInDirect(address pair, bool zeroForOne, uint256 buyAmount, uint8 pId) internal view returns (uint256 sellAmount) {
+        uint256 _pId = pId;
         assembly {
             let ptr := mload(0x40)
             // Call pair.getReserves(), store the results at `free memo`
@@ -394,10 +472,41 @@ abstract contract BaseSwapper is TokenTransfer {
                     sellReserve := mload(ptr)
                     buyReserve := mload(add(ptr, 0x20))
                 }
+                let feeAm  // 10000 - fee
+                switch _pId
+                case 50 {
+                    // pancake: const fee
+                    feeAm := 9975
+                }
+                case 51 {
+                    // biswap, fetch fee
+                    // we have to get the fee from the pair
+                    mstore(
+                        ptr,
+                        0x54cf2aeb00000000000000000000000000000000000000000000000000000000 // swapFee()
+                    )
+                    // we know that a pair has this field
+                    pop(
+                        staticcall(
+                            5000,
+                            pair, // call to pair
+                            ptr,
+                            0x4, // only selector
+                            ptr,
+                            0x20 // 1 slot
+                        )
+                    )
+                    // fee of biswap has too low denom
+                    feeAm := sub(10000, mul(mload(ptr), 10))
+                }
+                default {
+                    // apeswap lower fee
+                    feeAm := 9920
+                }
                 // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
                 // sellAmount = (reserveIn * amountOut * 1000) /
-                //     ((reserveOut - amountOut) * 9975) + 1;
-                sellAmount := add(div(mul(mul(sellReserve, buyAmount), 10000), mul(sub(buyReserve, buyAmount), 9975)), 1)
+                //     ((reserveOut - amountOut) * feeAm) + 1;
+                sellAmount := add(div(mul(mul(sellReserve, buyAmount), 10000), mul(sub(buyReserve, buyAmount), feeAm)), 1)
             }
         }
     }

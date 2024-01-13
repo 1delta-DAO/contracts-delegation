@@ -66,8 +66,8 @@ abstract contract MarginTrading is LendingOps, BaseSwapper {
                 : (getAmountOutDirect(tokenIn, zeroForOne, amountIn), uint256(0));
             IUniswapV2Pair(tokenIn).swap(amount0Out, amount1Out, address(this), path);
         }
-        // iZi
-        else if (identifier == 100) {
+        // iZi & Biswap
+        else {
             uint24 fee;
             assembly {
                 fee := and(shr(72, calldataload(path.offset)), 0xffffff)
@@ -133,8 +133,8 @@ abstract contract MarginTrading is LendingOps, BaseSwapper {
                 : (getAmountOutDirect(tokenIn, zeroForOne, amountIn), uint256(0));
             IUniswapV2Pair(tokenIn).swap(amount0Out, amount1Out, address(this), path);
         }
-        // iZi
-        else if (identifier == 100) {
+        // iZi & Biswap
+        else {
             uint24 fee;
             assembly {
                 fee := and(shr(72, calldataload(path.offset)), 0xffffff)
@@ -192,8 +192,8 @@ abstract contract MarginTrading is LendingOps, BaseSwapper {
             (uint256 amount0Out, uint256 amount1Out) = zeroForOne ? (uint256(0), amountOut) : (amountOut, uint256(0));
             IUniswapV2Pair(tokenIn).swap(amount0Out, amount1Out, address(this), path);
         }
-        // iZi
-        else if (identifier == 100) {
+        // iZi & Biswap
+        else {
             uint24 fee;
             assembly {
                 fee := and(shr(72, calldataload(path.offset)), 0xffffff)
@@ -420,8 +420,11 @@ abstract contract MarginTrading is LendingOps, BaseSwapper {
         }
     }
 
-
     function pancakeCall(address, uint256 amount0, uint256 amount1, bytes calldata data) external {
+        _uniswapV2StyleCall(amount0, amount1, data);
+    }
+
+    function BiswapCall(address, uint256 amount0, uint256 amount1, bytes calldata data) external {
         _uniswapV2StyleCall(amount0, amount1, data);
     }
 
@@ -452,7 +455,7 @@ abstract contract MarginTrading is LendingOps, BaseSwapper {
             // fetch amountOut
             uint256 referenceAmount = zeroForOne ? amount0 : amount1;
             // calculte amountIn
-            referenceAmount = getAmountInDirect(pool, zeroForOne, referenceAmount);
+            referenceAmount = getAmountInDirect(pool, zeroForOne, referenceAmount, identifier);
             uint256 cache = data.length;
             // either initiate the next swap or pay
             if (cache > 46) {
@@ -530,7 +533,7 @@ abstract contract MarginTrading is LendingOps, BaseSwapper {
                 _repay(tokenIn, referenceAmount, user);
             }
             // calculate amountIn
-            referenceAmount = getAmountInDirect(pool, zeroForOne, referenceAmount);
+            referenceAmount = getAmountInDirect(pool, zeroForOne, referenceAmount, identifier);
             uint256 cache = data.length;
             // constinue swapping if more data is provided
             if (cache > 46) {
@@ -553,7 +556,7 @@ abstract contract MarginTrading is LendingOps, BaseSwapper {
         }
     }
 
-    // iZi callbacks
+    // iZi & Biswap callbacks
 
     // zeroForOne = true
     function swapY2XCallback(uint256 x, uint256 y, bytes calldata path) external {
@@ -603,8 +606,8 @@ abstract contract MarginTrading is LendingOps, BaseSwapper {
             tokenIn = receiver;
             if (tokenIn != address(this)) _transferERC20Tokens(tokenOut, tokenIn, amountOut);
         }
-        // iZi
-        else if (identifier == 100) {
+        // iZi & Biswap
+        else {
             uint24 fee;
             assembly {
                 fee := and(shr(72, calldataload(data.offset)), 0xffffff)

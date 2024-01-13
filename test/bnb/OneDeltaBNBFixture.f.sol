@@ -36,7 +36,7 @@ contract OneDeltaBNBFixture is CommonBNBAddresses {
     }
 
     function aggSelectors() internal pure returns (bytes4[] memory selectors) {
-        selectors = new bytes4[](8);
+        selectors = new bytes4[](9);
         selectors[0] = VenusFlashAggregatorBNB.deposit.selector;
         selectors[1] = VenusFlashAggregatorBNB.withdraw.selector;
         selectors[2] = VenusFlashAggregatorBNB.borrow.selector;
@@ -45,6 +45,7 @@ contract OneDeltaBNBFixture is CommonBNBAddresses {
         selectors[5] = MarginTrading.pancakeV3SwapCallback.selector;
         selectors[6] = MarginTrading.pancakeCall.selector;
         selectors[7] = MarginTrading.flashSwapExactOut.selector;
+        selectors[8] = MarginTrading.BiswapCall.selector;
         return selectors;
     }
 
