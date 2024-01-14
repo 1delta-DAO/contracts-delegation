@@ -20,6 +20,8 @@ interface IAll {
     function getAmountOut(uint amountIn, address tokenIn) external view returns (uint);
 
     function getFee(address pair) external view returns (uint256);
+
+    function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external;
 }
 
 contract VelocimeterTest is AddressesMantle, Script, StdCheats {
@@ -47,21 +49,78 @@ contract VelocimeterTest is AddressesMantle, Script, StdCheats {
 
         amountOut = getAmountOutWrapped(amountIn, tokenIn, token0, token1, pair);
         console.log("Am", amountOut);
-        // IAll(tokenIn).transfer(pair, 0.1e18);
+        IAll(tokenIn).transfer(pair, amountIn);
+        IAll(pair).swap(tokenOut == token0 ? amountOut : 0, tokenOut == token1 ? amountOut : 0, address(this), "0x");
     }
 
-    function test_velo_swap_exact_out() external {
+    function test_velo_swap_exact_in_vari(uint amountIn) external {
+        amountIn = amountIn < 100 ? 100 : amountIn > 1e10 ? 1e10 : amountIn;
+        console.log("Am in", amountIn);
+        address pair = pairAddress(USDC, USDT, 53);
+        address tokenIn = USDC;
+        address tokenOut = USDT;
+        (address token0, address token1) = tokenIn < tokenOut ? (tokenIn, tokenOut) : (tokenOut, tokenIn);
+
+        uint amountOut = IAll(pair).getAmountOut(amountIn, tokenIn);
+        console.log("Am true", amountOut);
+
+        uint amountOutC = getAmountOutWrapped(amountIn, tokenIn, token0, token1, pair);
+        assert(amountOutC == amountOut);
+    }
+
+    function test_velo_swap_exact_in_more() external {
+        address pair = pairAddress(USDC, USDT, 53);
+        address tokenIn = USDC;
+        address tokenOut = USDT;
+        deal(tokenIn, address(this), 1e10);
+        (address token0, address token1) = tokenIn < tokenOut ? (tokenIn, tokenOut) : (tokenOut, tokenIn);
+
+        uint amountIn = 35806667; // 10
+        uint amountOut = IAll(pair).getAmountOut(amountIn, tokenIn);
+        console.log("Am in true - more", amountIn);
+
+        amountOut = getAmountOutWrapped(amountIn, tokenIn, token0, token1, pair);
+        console.log("Am - more", amountOut);
+        IAll(tokenIn).transfer(pair, amountIn);
+        IAll(pair).swap(tokenOut == token0 ? amountOut : 0, tokenOut == token1 ? amountOut : 0, address(this), "0x");
+    }
+
+    function hook(address sender, uint amount0, uint amount1, bytes calldata data) external {}
+
+    function test_velo_swap_exact_out(uint amountOut) external {
         address pair = pairAddress(USDC, USDT, 53);
         address tokenIn = USDC;
         address tokenOut = USDT;
         deal(tokenIn, address(this), 1e40);
         (address token0, address token1) = tokenIn < tokenOut ? (tokenIn, tokenOut) : (tokenOut, tokenIn);
 
-        uint amountOut = 1e6;
+        amountOut = amountOut < 100 ? 100 : amountOut > 1e9 ? 1e9 : amountOut; // bound(amountOut, 100, 100.0e6);
+        vm.recordLogs();
         console.log("out", amountOut);
-        amountOut = getAmountInWrapped(amountOut, tokenIn, token0, token1, pair);
-        console.log("in", amountOut);
-        // IAll(tokenIn).transfer(pair, 0.1e18);
+        uint amountIn = getAmountInWrapped(amountOut, tokenIn, token0, token1, pair);
+        console.log("in", amountIn);
+        IAll(tokenIn).transfer(pair, amountIn);
+        console.log("swap");
+        IAll(pair).swap(tokenOut == token0 ? amountOut : 0, tokenOut == token1 ? amountOut : 0, address(this), "0x");
+        console.log("swap complete");
+    }
+
+    function test_velo_swap_exact_out_more() external {
+        address pair = pairAddress(USDC, USDT, 53);
+        address tokenIn = USDC;
+        address tokenOut = USDT;
+        deal(tokenIn, address(this), 1e40);
+        (address token0, address token1) = tokenIn < tokenOut ? (tokenIn, tokenOut) : (tokenOut, tokenIn);
+
+        uint amountOut = 35801795;
+        vm.recordLogs();
+        console.log("out - more", amountOut);
+        uint amountIn = getAmountInWrapped(amountOut, tokenIn, token0, token1, pair);
+        console.log("in - more", amountIn);
+        IAll(tokenIn).transfer(pair, amountIn);
+        console.log("swap");
+        IAll(pair).swap(tokenOut == token0 ? amountOut : 0, tokenOut == token1 ? amountOut : 0, address(this), "0x");
+        console.log("swap complete");
     }
 
     function getAmountOutWrapped(uint amountIn, address tokenIn, address token0, address token1, address pair) internal view returns (uint) {
@@ -147,7 +206,7 @@ contract VelocimeterTest is AddressesMantle, Script, StdCheats {
     function new_getX(uint y0, uint xy, uint x) internal pure returns (uint) {
         for (uint i = 0; i < 255; i++) {
             uint x_prev = x;
-            uint k = _f(x, y0);
+            uint k = _f(y0, x);
             if (k < xy) {
                 uint dx = ((xy - k) * 1e18) / _d_x(y0, x);
                 x = x + dx;
@@ -221,7 +280,6 @@ contract VelocimeterTest is AddressesMantle, Script, StdCheats {
         address pair
     ) internal view returns (uint) {
         amountIn -= (amountIn * IAll(veloFactory).getFee(pair)) / 10000; // remove fee from amount received
-        console.log("AmountIn act", amountIn);
         return _getAmountOut(amountIn, tokenIn, token0, _reserve0, _reserve1, _decimals0, _decimals1);
     }
 
@@ -235,8 +293,7 @@ contract VelocimeterTest is AddressesMantle, Script, StdCheats {
         uint _decimals1,
         address pair
     ) internal view returns (uint) {
-        amountOut = amountOut * (10000 - IAll(veloFactory).getFee(pair)); // add fee to amount received
-        return _getAmountIn(amountOut, tokenIn, token0, _reserve0 * 10000, _reserve1 * 10000, _decimals0, _decimals1) / 10000 + 1;
+        return _getAmountIn(amountOut, tokenIn == token0, _reserve0, _reserve1, _decimals0, _decimals1, pair);
     }
 
     function _getAmountOut(
@@ -252,54 +309,35 @@ contract VelocimeterTest is AddressesMantle, Script, StdCheats {
         uint xy = _k(_reserve0, _reserve1, _decimals0, _decimals1);
         _reserve0 = (_reserve0 * 1e18) / _decimals0;
         _reserve1 = (_reserve1 * 1e18) / _decimals1;
-        (uint reserveA, uint reserveB) = tokenIn == token0 ? (_reserve0, _reserve1) : (_reserve1, _reserve0);
+        (uint reserveIn, uint reserveOut) = tokenIn == token0 ? (_reserve0, _reserve1) : (_reserve1, _reserve0);
         amountIn = tokenIn == token0 ? (amountIn * 1e18) / _decimals0 : (amountIn * 1e18) / _decimals1;
-        uint y = reserveB - _get_y(amountIn + reserveA, xy, reserveB);
+        uint y = reserveOut - _get_y(amountIn + reserveIn, xy, reserveOut);
         return (y * (tokenIn == token0 ? _decimals1 : _decimals0)) / 1e18;
-
-        // } else {
-        //     (uint reserveIn, uint reserveOut) = tokenIn == token0 ? (_reserve0, _reserve1) : (_reserve1, _reserve0);
-        //     return (amountIn * reserveOut) / (reserveIn + amountIn);
-        // }
     }
 
     function _getAmountIn(
         uint amountOut,
-        address tokenIn,
-        address token0,
+        bool inIs0,
         uint _reserve0,
         uint _reserve1,
         uint _decimals0,
-        uint _decimals1
+        uint _decimals1,
+        address pair
     ) internal view returns (uint) {
-        // if (stable) {
         uint xy = _k(_reserve0, _reserve1, _decimals0, _decimals1);
-        console.log("K", xy);
         _reserve0 = (_reserve0 * 1e18) / _decimals0;
         _reserve1 = (_reserve1 * 1e18) / _decimals1;
-        (uint reserveIn, uint reserveOut) = tokenIn != token0 ? (_reserve0, _reserve1) : (_reserve1, _reserve0);
-        amountOut = tokenIn != token0 ? (amountOut * 1e18) / _decimals0 : (amountOut * 1e18) / _decimals1;
-        console.log("amountOut", amountOut);
-        console.log("reserveOut", reserveOut);
-        console.log("reserveIn", reserveIn);
-        uint x = reserveIn - _get_y(reserveIn, xy, reserveOut - amountOut);
-        console.log("x", x);
-        return (x * (tokenIn != token0 ? _decimals1 : _decimals0)) / 1e18;
-        // } else {
-        //     (uint reserveIn, uint reserveOut) = tokenIn == token0 ? (_reserve0, _reserve1) : (_reserve1, _reserve0);
-        //     return (amountIn * reserveOut) / (reserveIn + amountIn);
-        // }
+        (uint reserveIn, uint reserveOut) = inIs0 ? (_reserve0, _reserve1) : (_reserve1, _reserve0);
+        amountOut = !inIs0 ? (amountOut * 1e18) / _decimals0 : (amountOut * 1e18) / _decimals1;
+        uint x = (new_getX(reserveOut - amountOut, xy, reserveIn) - reserveIn);
+        return ((x * (inIs0 ? _decimals0 : _decimals1)) * 10000) / (10000 - IAll(veloFactory).getFee(pair)) / 1e18 + 1;
     }
 
     function _k(uint x, uint y, uint _decimals0, uint _decimals1) internal view returns (uint) {
-        // if (stable) {
         uint _x = (x * 1e18) / _decimals0;
         uint _y = (y * 1e18) / _decimals1;
         uint _a = (_x * _y) / 1e18;
         uint _b = ((_x * _x) / 1e18 + (_y * _y) / 1e18);
         return (_a * _b) / 1e18; // x3y+y3x >= k
-        // } else {
-        //     return x * y; // xy >= k
-        // }
     }
 }
