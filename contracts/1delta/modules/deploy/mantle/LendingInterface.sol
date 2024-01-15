@@ -18,7 +18,7 @@ import {WithStorage} from "../../../storage/BrokerStorage.sol";
  * @title LendingInterface
  * @notice Adds money market and default transfer functions to margin trading - also includes permits
  */
-contract DeltaLendingIntergfaceMantle is WithStorage, WrappedNativeHandler, SelfPermit {
+contract DeltaLendingInterfaceMantle is WithStorage, WrappedNativeHandler, SelfPermit {
     // constant pool
     ILendingPool internal constant _lendingPool = ILendingPool(0xCFa5aE7c2CE8Fadc6426C1ff872cA45378Fb7cF3);
 

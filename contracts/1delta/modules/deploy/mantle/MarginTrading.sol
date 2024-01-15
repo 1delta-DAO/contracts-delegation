@@ -474,9 +474,8 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
         address tokenIn, // only used for velo
         bool zeroForOne,
         uint256 sellAmount,
-        uint8 pId // to identify the fee
+        uint256 _pId // to identify the fee
     ) private view returns (uint256 buyAmount) {
-        uint256 _pId = pId;
         assembly {
             // Compute the buy amount based on the pair reserves.
             {
@@ -545,7 +544,7 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
                     mstore(0xB00, 0xf140a35a00000000000000000000000000000000000000000000000000000000)
                     mstore(0xB04, sellAmount)
                     mstore(0xB24, tokenIn)
-                    if iszero(staticcall(gas(), pair, 0xB00, 0x42, 0xB00, 0x20)) {
+                    if iszero(staticcall(gas(), pair, 0xB00, 0x44, 0xB00, 0x20)) {
                         returndatacopy(0, 0, returndatasize())
                         revert(0, returndatasize())
                     }

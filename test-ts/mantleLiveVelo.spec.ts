@@ -1,6 +1,6 @@
 import { impersonateAccount } from "@nomicfoundation/hardhat-network-helpers";
 import { parseUnits } from "ethers/lib/utils";
-import { AToken__factory, ConfigModule__factory, DeltaBrokerProxy, DeltaBrokerProxy__factory, DeltaFlashAggregatorMantle__factory, DeltaLendingIntergfaceMantle, DeltaLendingIntergfaceMantle__factory, LensModule__factory, StableDebtToken__factory, } from "../types";
+import { AToken__factory, ConfigModule__factory, DeltaBrokerProxy, DeltaBrokerProxy__factory, DeltaFlashAggregatorMantle__factory, DeltaLendingInterfaceMantle, DeltaLendingInterfaceMantle__factory, LensModule__factory, StableDebtToken__factory, } from "../types";
 import { lendleBrokerAddresses } from "../deploy/mantle_addresses";
 import { DeltaFlashAggregatorMantleInterface } from "../types/DeltaFlashAggregatorMantle";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
@@ -8,7 +8,7 @@ import { addressesLendleATokens, addressesLendleVTokens, addressesTokensMantle }
 import { encodeAggregatorPathEthers } from "./1delta/shared/aggregatorPath";
 import { FeeAmount, MaxUint128 } from "./uniswap-v3/periphery/shared/constants";
 import { ModuleConfigAction, getSelectors } from "./libraries/diamond";
-import { DeltaLendingIntergfaceMantleInterface } from "../types/DeltaLendingIntergfaceMantle";
+import { DeltaLendingInterfaceMantleInterface } from "../types/DeltaLendingInterfaceMantle";
 const { ethers } = require("hardhat");
 
 
@@ -26,7 +26,7 @@ const brokerProxy = lendleBrokerAddresses.BrokerProxy[MANTLE_CHAIN_ID]
 const traderModule = lendleBrokerAddresses.MarginTraderModule[MANTLE_CHAIN_ID]
 let multicaller: DeltaBrokerProxy
 let flashAggregatorInterface: DeltaFlashAggregatorMantleInterface
-let lendingInterfaceInterface: DeltaLendingIntergfaceMantleInterface
+let lendingInterfaceInterface: DeltaLendingInterfaceMantleInterface
 let user: SignerWithAddress
 let trader: SignerWithAddress
 before(async function () {
@@ -35,12 +35,12 @@ before(async function () {
     console.log("get aggregator")
     multicaller = await new DeltaBrokerProxy__factory(user).attach(brokerProxy)
     flashAggregatorInterface = DeltaFlashAggregatorMantle__factory.createInterface()
-    lendingInterfaceInterface = DeltaLendingIntergfaceMantle__factory.createInterface()
+    lendingInterfaceInterface = DeltaLendingInterfaceMantle__factory.createInterface()
 
     console.log("deploy new aggregator")
     const newflashAggregator = await new DeltaFlashAggregatorMantle__factory(signer).deploy()
     console.log("deploy new lending interface")
-    const newLendingInterface = await new DeltaLendingIntergfaceMantle__factory(signer).deploy()
+    const newLendingInterface = await new DeltaLendingInterfaceMantle__factory(signer).deploy()
 
     await impersonateAccount(admin)
     const impersonatedSigner = await ethers.getSigner(admin);
@@ -92,7 +92,7 @@ it("Opens exact in", async function () {
         [usdt, usdc],
         [0],
         [6],
-        [51], // Moe
+        [53], // Velo Stable
         2
     )
     const callSwap = flashAggregatorInterface.encodeFunctionData('flashSwapExactIn', [amount, 0, path1])
@@ -116,7 +116,7 @@ it("Opens exact out", async function () {
         [usdc, usdt],
         [FeeAmount.MEDIUM],
         [3],
-        [51], // Moe
+        [53], // Velo Stable
         2
     )
     const callSwap = flashAggregatorInterface.encodeFunctionData('flashSwapExactOut', [amount, MaxUint128, path1])
@@ -136,10 +136,10 @@ it("Opens exact in multi", async function () {
     await borrowToken.approveDelegation(multicaller.address, MaxUint128)
     // v3 single
     const path1 = encodeAggregatorPathEthers(
-        [usdc, weth, wmnt],
+        [usdc, wmnt, weth],
         [0, FeeAmount.LOW],
         [6, 0],
-        [51, 0], // Moe, fusionX
+        [52, 0], // Velo Volatile, fusionX
         2
     )
     const callSwap = flashAggregatorInterface.encodeFunctionData('flashSwapExactIn', [amount, 0, path1])
@@ -152,16 +152,16 @@ it("Opens exact in multi", async function () {
 
 it("Opens exact out multi", async function () {
 
-    const amount = parseUnits('1.0', 18)
+    const amount = parseUnits('0.0001', 18)
 
     const borrowToken = await new StableDebtToken__factory(user).attach(addressesLendleVTokens.USDT)
     await borrowToken.approveDelegation(multicaller.address, MaxUint128)
     // v3 single
     const path1 = encodeAggregatorPathEthers(
-        [wmnt, weth, usdc],
+        [weth, wmnt, usdc],
         [FeeAmount.LOW, FeeAmount.LOW],
         [3, 1],
-        [3, 51], // butter, moe
+        [3, 52], // butter, Velo volatile
         2
     )
     const callSwap = flashAggregatorInterface.encodeFunctionData('flashSwapExactOut', [amount, MaxUint128, path1])

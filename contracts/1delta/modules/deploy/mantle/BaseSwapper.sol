@@ -194,8 +194,7 @@ abstract contract BaseSwapper is TokenTransfer {
     }
 
     /// @dev gets uniswapV2 (and fork) pair addresses
-    function pairAddress(address tokenA, address tokenB, uint8 pId) internal view returns (address pair) {
-        uint256 _pId = pId;
+    function pairAddress(address tokenA, address tokenB, uint256 _pId) internal view returns (address pair) {
         assembly {
             switch _pId
             // FusionX
@@ -342,9 +341,8 @@ abstract contract BaseSwapper is TokenTransfer {
         address tokenIn,
         address tokenOut,
         uint256 amountIn,
-        uint8 pId // we need to know the DEX for the fee
+        uint256 _pId // we need to know the DEX for the fee
     ) private returns (uint256 buyAmount) {
-        uint256 _pId = pId;
         assembly {
             let zeroForOne := lt(tokenIn, tokenOut)
             let pair := mload(0x40) // use free memo for pair
@@ -501,9 +499,8 @@ abstract contract BaseSwapper is TokenTransfer {
         address tokenIn,
         address tokenOut,
         uint256 buyAmount,
-        uint8 pId // required to apply the correct fee
+        uint256 x // poolId
     ) internal view returns (uint256 sellAmount) {
-        uint256 x = pId;
         assembly {
             let ptr := mload(0x40)
             // Call pair.getReserves(), store the results at `free memo`
@@ -582,7 +579,16 @@ abstract contract BaseSwapper is TokenTransfer {
                     // sellAmount = (reserveIn * amountOut * 10000) /
                     //     ((reserveOut - amountOut) * feeAm) + 1;
                     // for Velo volatile, we fetch the fee
-                    sellAmount := add(div(mul(mul(sellReserve, buyAmount), 10000), mul(sub(buyReserve, buyAmount), sub(10000, mload(ptr)))), 1)
+                    sellAmount := add(
+                        div(
+                            mul(mul(sellReserve, buyAmount), 10000),
+                            mul(
+                                sub(buyReserve, buyAmount),
+                                sub(10000, mload(ptr)) // adjust for Velo fee
+                            )
+                        ),
+                        1
+                    )
                 }
                 default {
                     // for stable, we have to do a little more
