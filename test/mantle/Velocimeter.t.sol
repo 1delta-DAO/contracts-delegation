@@ -123,6 +123,44 @@ contract VelocimeterTest is AddressesMantle, Script, StdCheats {
         console.log("swap complete");
     }
 
+    function test_velo_loop() external // uint y0,
+    // uint xy, //dc
+    // uint x
+    {
+        // uint _y0 = 2134321;
+        // uint _xy = 432323243;
+        // uint _x = 2323432;
+        uint _y0 = 1412642061000000000000;
+        uint _xy = 7101217886410926127276352072866;
+        uint _x = 1296962992000000000000;
+        console.log("getX");
+        uint o = new_getX(_y0, _xy, _x);
+        console.log("o", o);
+        uint n = new_getX_a(_y0, _xy, _x);
+        console.log("n", n);
+        assert(n == o);
+    }
+
+    function test_velo_f() external {
+        uint x = 213213321321;
+        uint y = 48740834812604276470692694885616;
+        uint f = _f(x, y);
+        console.log("f", f);
+        uint f_new = _f_a(x, y);
+        assert(f_new == f);
+    }
+
+    function test_velo_dx() external {
+        uint x = 213213321321;
+        uint y = 48740834812604276470692694885616;
+        uint f = _d_x(y, x);
+        console.log("f", f);
+        uint f_new = _d_x_a(y, x);
+        assert(f_new == f);
+    }
+
+    // FS
+
     function getAmountOutWrapped(uint amountIn, address tokenIn, address token0, address token1, address pair) internal view returns (uint) {
         (uint112 _reserve0, uint112 _reserve1, ) = IAll(pair).getReserves();
         uint _decimals0 = 10 ** IAll(token0).decimals();
@@ -140,8 +178,6 @@ contract VelocimeterTest is AddressesMantle, Script, StdCheats {
     // calculates the CREATE2 address for a pair without making any external calls
     function pairForOriginal(address tokenA, address tokenB, bool stable) public view returns (address pair) {
         (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
-        console.log("Bytes");
-        console.logBytes(abi.encodePacked(token0, token1, stable));
         pair = address(
             uint160(
                 uint256(
@@ -203,7 +239,7 @@ contract VelocimeterTest is AddressesMantle, Script, StdCheats {
         }
     }
 
-    function new_getX(uint y0, uint xy, uint x) internal pure returns (uint) {
+    function new_getX(uint y0, uint xy, uint x) internal view returns (uint) {
         for (uint i = 0; i < 255; i++) {
             uint x_prev = x;
             uint k = _f(y0, x);
@@ -243,24 +279,18 @@ contract VelocimeterTest is AddressesMantle, Script, StdCheats {
         for (uint i = 0; i < 255; i++) {
             uint y_prev = y;
             uint k = _f(x0, y);
-            // console.log("K", k);
-            // console.log("xy", xy);
             if (k < xy) {
                 uint dy = ((xy - k) * 1e18) / _d_y(x0, y);
-                // console.log("dy", dy);
                 y = y + dy;
             } else {
                 uint dy = ((k - xy) * 1e18) / _d_y(x0, y);
-                // console.log("dy", dy);
                 y = y - dy;
             }
             if (y > y_prev) {
-                // console.log("y > y_prev", y);
                 if (y - y_prev <= 1) {
                     return y;
                 }
             } else {
-                // console.log("y <= y_prev", y);
                 if (y_prev - y <= 1) {
                     return y;
                 }
@@ -293,7 +323,7 @@ contract VelocimeterTest is AddressesMantle, Script, StdCheats {
         uint _decimals1,
         address pair
     ) internal view returns (uint) {
-        return _getAmountIn(amountOut, tokenIn == token0, _reserve0, _reserve1, _decimals0, _decimals1, pair);
+        return _getAmountIn_assembly(amountOut, tokenIn == token0, _reserve0, _reserve1, _decimals0, _decimals1);
     }
 
     function _getAmountOut(
@@ -305,10 +335,10 @@ contract VelocimeterTest is AddressesMantle, Script, StdCheats {
         uint _decimals0,
         uint _decimals1
     ) internal view returns (uint) {
-        // if (stable) {
-        uint xy = _k(_reserve0, _reserve1, _decimals0, _decimals1);
         _reserve0 = (_reserve0 * 1e18) / _decimals0;
         _reserve1 = (_reserve1 * 1e18) / _decimals1;
+        // if (stable) {
+        uint xy = _k(_reserve0, _reserve1);
         (uint reserveIn, uint reserveOut) = tokenIn == token0 ? (_reserve0, _reserve1) : (_reserve1, _reserve0);
         amountIn = tokenIn == token0 ? (amountIn * 1e18) / _decimals0 : (amountIn * 1e18) / _decimals1;
         uint y = reserveOut - _get_y(amountIn + reserveIn, xy, reserveOut);
@@ -317,27 +347,233 @@ contract VelocimeterTest is AddressesMantle, Script, StdCheats {
 
     function _getAmountIn(
         uint amountOut,
-        bool inIs0,
+        bool zeroForOne,
         uint _reserve0,
         uint _reserve1,
         uint _decimals0,
         uint _decimals1,
         address pair
     ) internal view returns (uint) {
-        uint xy = _k(_reserve0, _reserve1, _decimals0, _decimals1);
         _reserve0 = (_reserve0 * 1e18) / _decimals0;
         _reserve1 = (_reserve1 * 1e18) / _decimals1;
-        (uint reserveIn, uint reserveOut) = inIs0 ? (_reserve0, _reserve1) : (_reserve1, _reserve0);
-        amountOut = !inIs0 ? (amountOut * 1e18) / _decimals0 : (amountOut * 1e18) / _decimals1;
+        uint xy = _k(_reserve0, _reserve1);
+        (uint reserveIn, uint reserveOut) = zeroForOne ? (_reserve0, _reserve1) : (_reserve1, _reserve0);
+        amountOut = !zeroForOne ? (amountOut * 1e18) / _decimals0 : (amountOut * 1e18) / _decimals1;
         uint x = (new_getX(reserveOut - amountOut, xy, reserveIn) - reserveIn);
-        return ((x * (inIs0 ? _decimals0 : _decimals1)) * 10000) / (10000 - IAll(veloFactory).getFee(pair)) / 1e18 + 1;
+        return ((x * (zeroForOne ? _decimals0 : _decimals1)) * 10000) / (10000 - IAll(veloFactory).getFee(pair)) / 1e18 + 1;
     }
 
-    function _k(uint x, uint y, uint _decimals0, uint _decimals1) internal view returns (uint) {
-        uint _x = (x * 1e18) / _decimals0;
-        uint _y = (y * 1e18) / _decimals1;
-        uint _a = (_x * _y) / 1e18;
-        uint _b = ((_x * _x) / 1e18 + (_y * _y) / 1e18);
+    function _getAmountIn_assembly(
+        uint amountOut,
+        bool zeroForOne,
+        uint _reserve0,
+        uint _reserve1,
+        uint _decimals0,
+        uint _decimals1
+    ) internal view returns (uint xD) {
+        assembly {
+            let xy
+            let y0
+            let x
+            let reserveIn
+            {
+                let _reserve0Scaled := div(mul(_reserve0, 1000000000000000000), _decimals0)
+                let _reserve1Scaled := div(mul(_reserve1, 1000000000000000000), _decimals1)
+                xy := div(
+                    mul(
+                        div(mul(_reserve0Scaled, _reserve1Scaled), 1000000000000000000),
+                        add(
+                            div(mul(_reserve0Scaled, _reserve0Scaled), 1000000000000000000),
+                            div(mul(_reserve1Scaled, _reserve1Scaled), 1000000000000000000)
+                        )
+                    ),
+                    1000000000000000000
+                )
+
+                
+                    switch zeroForOne
+                    case 1 {
+                        y0 := sub(_reserve1Scaled, div(mul(amountOut, _decimals1), 1000000000000000000))
+                    }
+                    default {
+                        y0 := sub(_reserve0Scaled, div(mul(amountOut, _decimals0), 1000000000000000000))
+                    }
+                    x := reserveIn
+                
+            }
+            let i := 0
+            for {
+
+            } lt(i, 255) {
+
+            } {
+                let x_prev := x
+                let k := add(
+                    div(mul(x, div(mul(div(mul(y0, y0), 1000000000000000000), y0), 1000000000000000000)), 1000000000000000000),
+                    div(mul(y0, div(mul(div(mul(x, x), 1000000000000000000), x), 1000000000000000000)), 1000000000000000000)
+                )
+                switch lt(k, xy)
+                case 1 {
+                    x := add(
+                        x,
+                        div(
+                            mul(sub(xy, k), 1000000000000000000),
+                            add(
+                                div(mul(mul(3, y0), div(mul(x, x), 1000000000000000000)), 1000000000000000000),
+                                div(mul(div(mul(y0, y0), 1000000000000000000), y0), 1000000000000000000)
+                            )
+                        )
+                    )
+                }
+                default {
+                    x := sub(
+                        x,
+                        div(
+                            mul(sub(k, xy), 1000000000000000000),
+                            add(
+                                div(mul(mul(3, y0), div(mul(x, x), 1000000000000000000)), 1000000000000000000),
+                                div(mul(div(mul(y0, y0), 1000000000000000000), y0), 1000000000000000000)
+                            )
+                        )
+                    )
+                }
+                switch gt(x, x_prev)
+                case 1 {
+                    if lt(sub(x, x_prev), 2) {
+                        break
+                    }
+                }
+                default {
+                    if lt(sub(x_prev, x), 2) {
+                        break
+                    }
+                }
+                i := add(i, 1)
+            }
+            x := sub(x, reserveIn)
+            switch zeroForOne
+            case 1 {
+                xD := add(div(div(mul(mul(x, _decimals0), 10000), sub(10000, 3)), 1000000000000000000), 1)
+            }
+            default {
+                xD := add(div(div(mul(mul(x, _decimals1), 10000), sub(10000, 3)), 1000000000000000000), 1)
+            }
+        }
+        // _reserve0 = (_reserve0 * 1e18) / _decimals0;
+        // _reserve1 = (_reserve1 * 1e18) / _decimals1;
+        // uint xy = _k(_reserve0, _reserve1);
+        // (uint reserveIn, uint reserveOut) = zeroForOne ? (_reserve0, _reserve1) : (_reserve1, _reserve0);
+        // amountOut = !zeroForOne ? (amountOut * 1e18) / _decimals0 : (amountOut * 1e18) / _decimals1;
+        // uint x = (new_getX(reserveOut - amountOut, xy, reserveIn) - reserveIn);
+        // return ((x * (zeroForOne ? _decimals0 : _decimals1)) * 10000) / (10000 - IAll(veloFactory).getFee(pair)) / 1e18 + 1;
+    }
+
+    function _k(uint x, uint y) internal view returns (uint) {
+        uint _a = (x * y) / 1e18;
+        uint _b = ((x * x) / 1e18 + (y * y) / 1e18);
         return (_a * _b) / 1e18; // x3y+y3x >= k
     }
+
+    function _k_a(uint x, uint y, uint _decimals0, uint _decimals1) internal view returns (uint k) {
+        assembly {
+            let _x := div(mul(x, 1000000000000000000), _decimals0)
+            let _y := div(mul(y, 1000000000000000000), _decimals1)
+            let _a := div(mul(_x, _y), 1000000000000000000)
+            let _b := add(div(mul(_x, _x), 1000000000000000000), div(mul(_y, _y), 1000000000000000000))
+            k := div(mul(_a, _b), 1000000000000000000)
+        }
+    }
+
+    function _f_a(uint x, uint y) internal pure returns (uint f) {
+        assembly {
+            f := add(
+                div(mul(x, div(mul(div(mul(y, y), 1000000000000000000), y), 1000000000000000000)), 1000000000000000000), // y
+                div(mul(y, div(mul(div(mul(x, x), 1000000000000000000), x), 1000000000000000000)), 1000000000000000000) // x
+            )
+        }
+    }
+
+    function _d_x_a(uint y0, uint x) internal pure returns (uint dx) {
+        assembly {
+            dx := add(
+                div(mul(mul(3, y0), div(mul(x, x), 1000000000000000000)), 1000000000000000000),
+                div(mul(div(mul(y0, y0), 1000000000000000000), y0), 1000000000000000000)
+            )
+        }
+    }
+
+    function new_getXCompare(uint y0, uint xy, uint x) internal view returns (uint) {
+        for (uint i = 0; i < 255; i++) {
+            uint x_prev = x;
+            uint k = _f(y0, x);
+            if (k < xy) {
+                uint dx = ((xy - k) * 1e18) / _d_x(y0, x);
+                x = x + dx;
+            } else {
+                uint dx = ((k - xy) * 1e18) / _d_x(y0, x);
+                x = x - dx;
+            }
+            if (x > x_prev) {
+                if (x - x_prev <= 1) {
+                    return x;
+                }
+            } else {
+                if (x_prev - x <= 1) {
+                    return x;
+                }
+            }
+        }
+        return x;
+    }
+
+    function new_getX_a(uint y0, uint xy, uint x) internal view returns (uint result) {
+        assembly {
+            let i := 0
+            function _f(_x, _y) -> f {
+                f := add(
+                    div(mul(_x, div(mul(div(mul(_y, _y), 1000000000000000000), _y), 1000000000000000000)), 1000000000000000000),
+                    div(mul(_y, div(mul(div(mul(_x, _x), 1000000000000000000), _x), 1000000000000000000)), 1000000000000000000)
+                )
+            }
+            function _dx(_y, _x) -> dx_ {
+                dx_ := add(
+                    div(mul(mul(3, _y), div(mul(_x, _x), 1000000000000000000)), 1000000000000000000),
+                    div(mul(div(mul(_y, _y), 1000000000000000000), _y), 1000000000000000000)
+                )
+            }
+            for {
+
+            } lt(i, 255) {
+
+            } {
+                let x_prev := x
+                let k := _f(y0, x)
+                switch lt(k, xy)
+                case 1 {
+                    let dx := div(mul(sub(xy, k), 1000000000000000000), _dx(y0, x))
+                    x := add(x, dx)
+                }
+                default {
+                    let dx := div(mul(sub(k, xy), 1000000000000000000), _dx(y0, x))
+                    x := sub(x, dx)
+                }
+                switch gt(x, x_prev)
+                case 1 {
+                    if lt(sub(x, x_prev), 2) {
+                        result := x
+                        break
+                    }
+                }
+                default {
+                    if lt(sub(x_prev, x), 2) {
+                        result := x
+                        break
+                    }
+                }
+                i := add(i, 1)
+            }
+        }
+    }
+
+    // function calcInAmount(uint amount, bool zeroForOne, )
 }
