@@ -28,9 +28,10 @@ contract DeltaBrokerProxy {
     }
 
     // An efficient multicall implementation for directly calling functions across multiple modules
-    // Note that this multicall is payable, as such, multi-spending has to be taken into account by
+    // Note that this multicall is payable, as such, native multi-spending has to be taken into account by
     // the caller
     function multicall(bytes[] calldata data) external payable {
+        // This is used in assembly below as impls.slot.
         mapping(bytes4 => address) storage impls = LibModules.moduleStorage().selectorToModule;
         assembly {
             mstore(0x00, 0x20)

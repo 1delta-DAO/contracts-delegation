@@ -67,11 +67,11 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
         // uniswapV2 types
         else if (identifier < 100) {
             ncs().amount = amountIn;
-            tokenIn = pairAddress(tokenIn, tokenOut, identifier);
+            tokenOut = pairAddress(tokenIn, tokenOut, identifier);
             (uint256 amount0Out, uint256 amount1Out) = zeroForOne
-                ? (uint256(0), getAmountOutUniV2(tokenIn, zeroForOne, amountIn, identifier))
-                : (getAmountOutUniV2(tokenIn, zeroForOne, amountIn, identifier), uint256(0));
-            IUniswapV2Pair(tokenIn).swap(amount0Out, amount1Out, address(this), path);
+                ? (uint256(0), getAmountOutUniV2(tokenOut, tokenIn, zeroForOne, amountIn, identifier))
+                : (getAmountOutUniV2(tokenOut, tokenIn, zeroForOne, amountIn, identifier), uint256(0));
+            IUniswapV2Pair(tokenOut).swap(amount0Out, amount1Out, address(this), path);
         }
         // iZi
         else if (identifier == 100) {
@@ -150,11 +150,11 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
         // unsiwapV2 types
         else if (identifier < 100) {
             ncs().amount = amountIn;
-            tokenIn = pairAddress(tokenIn, tokenOut, identifier);
+            tokenOut = pairAddress(tokenIn, tokenOut, identifier);
             (uint256 amount0Out, uint256 amount1Out) = zeroForOne
-                ? (uint256(0), getAmountOutUniV2(tokenIn, zeroForOne, amountIn, identifier))
-                : (getAmountOutUniV2(tokenIn, zeroForOne, amountIn, identifier), uint256(0));
-            IUniswapV2Pair(tokenIn).swap(amount0Out, amount1Out, address(this), path);
+                ? (uint256(0), getAmountOutUniV2(tokenOut, tokenIn, zeroForOne, amountIn, identifier))
+                : (getAmountOutUniV2(tokenOut, tokenIn, zeroForOne, amountIn, identifier), uint256(0));
+            IUniswapV2Pair(tokenOut).swap(amount0Out, amount1Out, address(this), path);
         }
         // iZi
         else if (identifier == 100) {
@@ -471,50 +471,86 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
 
     function getAmountOutUniV2(
         address pair,
+        address tokenIn, // only used for velo
         bool zeroForOne,
         uint256 sellAmount,
         uint8 pId // to identify the fee
     ) private view returns (uint256 buyAmount) {
         uint256 _pId = pId;
         assembly {
-            // Call pair.getReserves(), store the results at `0xC00`
-            mstore(0xB00, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
-            if iszero(staticcall(gas(), pair, 0xB00, 0x4, 0xC00, 0x40)) {
-                returndatacopy(0, 0, returndatasize())
-                revert(0, returndatasize())
-            }
-            // Revert if the pair contract does not return at least two words.
-            if lt(returndatasize(), 0x40) {
-                revert(0, 0)
-            }
-
             // Compute the buy amount based on the pair reserves.
             {
-                let sellReserve
-                let buyReserve
-                switch iszero(zeroForOne)
-                case 0 {
-                    // Transpose if pair order is different.
-                    sellReserve := mload(0xC00)
-                    buyReserve := mload(0xC20)
-                }
-                default {
-                    sellReserve := mload(0xC20)
-                    buyReserve := mload(0xC00)
-                }
                 // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
                 // buyAmount = (pairSellAmount * feeAm * buyReserve) /
                 //     (pairSellAmount * feeAm + sellReserve * 1000);
                 switch _pId
                 case 50 {
+                    // Call pair.getReserves(), store the results at `0xC00`
+                    mstore(0xB00, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
+                    if iszero(staticcall(gas(), pair, 0xB00, 0x4, 0xC00, 0x40)) {
+                        returndatacopy(0, 0, returndatasize())
+                        revert(0, returndatasize())
+                    }
+                    // Revert if the pair contract does not return at least two words.
+                    if lt(returndatasize(), 0x40) {
+                        revert(0, 0)
+                    }
+
+                    let sellReserve
+                    let buyReserve
+                    switch iszero(zeroForOne)
+                    case 0 {
+                        // Transpose if pair order is different.
+                        sellReserve := mload(0xC00)
+                        buyReserve := mload(0xC20)
+                    }
+                    default {
+                        sellReserve := mload(0xC20)
+                        buyReserve := mload(0xC00)
+                    }
                     // fusionX v2 feeAm: 998
                     let sellAmountWithFee := mul(sellAmount, 998)
                     buyAmount := div(mul(sellAmountWithFee, buyReserve), add(sellAmountWithFee, mul(sellReserve, 1000)))
                 }
-                default {
+                case 51 {
+                    // Call pair.getReserves(), store the results at `0xC00`
+                    mstore(0xB00, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
+                    if iszero(staticcall(gas(), pair, 0xB00, 0x4, 0xC00, 0x40)) {
+                        returndatacopy(0, 0, returndatasize())
+                        revert(0, returndatasize())
+                    }
+                    // Revert if the pair contract does not return at least two words.
+                    if lt(returndatasize(), 0x40) {
+                        revert(0, 0)
+                    }
+
+                    let sellReserve
+                    let buyReserve
+                    switch iszero(zeroForOne)
+                    case 0 {
+                        // Transpose if pair order is different.
+                        sellReserve := mload(0xC00)
+                        buyReserve := mload(0xC20)
+                    }
+                    default {
+                        sellReserve := mload(0xC20)
+                        buyReserve := mload(0xC00)
+                    }
                     // merchant moe feeAm: 997
                     let sellAmountWithFee := mul(sellAmount, 997)
                     buyAmount := div(mul(sellAmountWithFee, buyReserve), add(sellAmountWithFee, mul(sellReserve, 1000)))
+                }
+                default {
+                    // selector for getAmountOut(uint256,address)
+                    mstore(0xB00, 0xf140a35a00000000000000000000000000000000000000000000000000000000)
+                    mstore(0xB04, sellAmount)
+                    mstore(0xB24, tokenIn)
+                    if iszero(staticcall(gas(), pair, 0xB00, 0x42, 0xB00, 0x20)) {
+                        returndatacopy(0, 0, returndatasize())
+                        revert(0, returndatasize())
+                    }
+
+                    buyAmount := mload(0xB00)
                 }
             }
         }
@@ -532,6 +568,16 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
 
     // The uniswapV2 style callback for Merchant Moe
     function moeCall(
+        address,
+        uint256 amount0,
+        uint256 amount1,
+        bytes calldata data
+    ) external {
+        _uniswapV2StyleCallback(amount0, amount1, data);
+    }
+
+    // The uniswapV2 style callback for Velocimeter
+    function hook(
         address,
         uint256 amount0,
         uint256 amount1,
@@ -572,7 +618,7 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
             // fetch amountOut
             uint256 referenceAmount = zeroForOne ? amount0 : amount1;
             // calculte amountIn
-            referenceAmount = getV2AmountInDirect(pool, zeroForOne, referenceAmount, identifier);
+            referenceAmount = getV2AmountInDirect(pool, tokenIn, tokenOut, referenceAmount, identifier);
             uint256 cache = data.length;
             // either initiate the next swap or pay
             if (cache > 46) {
@@ -656,7 +702,7 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
                 _lendingPool.repay(tokenIn, referenceAmount, tradeId, user);
             }
             // calculate amountIn
-            referenceAmount = getV2AmountInDirect(pool, zeroForOne, referenceAmount, identifier);
+            referenceAmount = getV2AmountInDirect(pool, tokenIn, tokenOut, referenceAmount, identifier);
             uint256 cache = data.length;
             // constinue swapping if more data is provided
             if (cache > 46) {
@@ -719,8 +765,7 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
         if (identifier < 50) {
             uint24 fee;
             assembly {
-                fee := and(shr(72, calldataload(data.offset)), 0xffffff)
-                
+                fee := and(shr(72, calldataload(data.offset)), 0xffffff)   
             }
             getUniswapV3Pool(tokenIn, tokenOut, fee, identifier).swap(
                 receiver,
@@ -737,8 +782,8 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
             // amountOut0, cache
             (uint256 amountOut0, uint256 amountOut1) = zeroForOne ? (uint256(0), amountOut) : (amountOut, uint256(0));
             IUniswapV2Pair(tokenIn).swap(amountOut0, amountOut1, address(this), data); // cannot swap to sender due to flashSwap
-            tokenIn  = receiver;
-            if(tokenIn != address(this)) _transferERC20Tokens(tokenOut, tokenIn, amountOut);
+            tokenIn = receiver;
+            if (tokenIn != address(this)) _transferERC20Tokens(tokenOut, tokenIn, amountOut);
         }
         // iZi
         else if (identifier == 100) {
