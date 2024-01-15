@@ -325,7 +325,7 @@ abstract contract BaseSwapper is TokenTransfer {
                 pair := and(ADDRESS_MASK_UPPER, keccak256(0xB00, 0x55))
             }
             default { // merchant moe -> call to factory to identify pair address
-                // selector for getPair(address,address
+                // selector for getPair(address,address)
                 mstore(0xB00, 0xe6a4390500000000000000000000000000000000000000000000000000000000)
                 mstore(add(0xB00, 0x4), tokenIn)
                 mstore(add(0xB00, 0x24), tokenOut)

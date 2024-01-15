@@ -7,10 +7,14 @@ contract AddressesMantle {
     address internal WMNT = 0x78c1b0C915c4FAA5FffA6CAbf0219DA63d7f4cb8;
     address internal USDC = 0x09Bc4E0D864854c6aFB6eB9A9cdF58aC190D0dF9;
     address internal USDT = 0x201EBa5CC46D216Ce6DC03F6a759e8E766e956aE;
+    address internal axlFRAX = 0x406Cde76a3fD20e48bc1E0F60651e60Ae204B040;
+    address internal axlUSDC = 0xEB466342C4d449BC9f53A865D5Cb90586f405215;
     address internal USDY = address(0);
     address internal mUSD = address(0);
 
     address veloFactory = 0x99F9a4A96549342546f9DAE5B2738EDDcD43Bf4C;
+
+    address internal constant VELO_FACOTRY = 0x99F9a4A96549342546f9DAE5B2738EDDcD43Bf4C;
     address veloRouter = 0xCe30506F6c1Cea34aC704f93d51d55058791E497;
 
     bytes32 internal constant VELO_FF_FACTORY = 0xff99F9a4A96549342546f9DAE5B2738EDDcD43Bf4C0000000000000000000000;
