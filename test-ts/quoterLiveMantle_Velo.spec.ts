@@ -66,8 +66,36 @@ it("Test fusion Velo single stable exact out", async function () {
     console.log("Quote single", quote.toString())
 })
 
+it("Test Velo EI single stable (2)", async function () {
 
+    const amountIn = parseUnits('2', 18)
+    const route = encodeQuoterPathEthers(
+        [axlFrax, axlUsdc],
+        [0],
+        [53]
+    )
+    const quote = await quoter.callStatic.quoteExactInput(
+        route,
+        amountIn
+    )
+    console.log("Quote Mixed", quote.toString())
 
+})
+
+it("Test fusion Velo single stable exact out (2)", async function () {
+    // this is the output of the previous quote
+    const amountOut = '2006672'
+    const pathDelta = encodeQuoterPathEthers(
+        [axlUsdc, axlFrax],
+        [0],
+        [53]
+    )
+
+    const quote = await quoter.callStatic.quoteExactOutput(
+        pathDelta, amountOut
+    )
+    console.log("Quote single", quote.toString())
+})
 
 it("Test Velo EI single volatile", async function () {
 
