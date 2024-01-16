@@ -14,7 +14,7 @@ import {TokenTransfer} from "../../../libraries/TokenTransfer.sol";
 // solhint-disable max-line-length
 
 /**
- * @title Uniswap Callback Base contract
+ * @title Any Uniswap Callback Base contract
  * @notice Contains main logic for uniswap callbacks
  */
 abstract contract BaseSwapper is TokenTransfer {
@@ -365,7 +365,7 @@ abstract contract BaseSwapper is TokenTransfer {
 
                 pair := and(ADDRESS_MASK_UPPER, keccak256(0xB00, 0x55))
             }
-            default {
+            case 51 {
                 // merchant moe -> call to factory to identify pair address
                 // selector for getPair(address,address)
                 mstore(0xB00, 0xe6a4390500000000000000000000000000000000000000000000000000000000)
@@ -374,9 +374,46 @@ abstract contract BaseSwapper is TokenTransfer {
 
                 // call to factory
                 pop(staticcall(gas(), MERCHANT_MOE_FACTORY, 0xB00, 0x48, 0xB00, 0x20))
-
                 // load the retrieved protocol share
                 pair := and(ADDRESS_MASK, mload(0xB00))
+            }
+            // Velo Volatile
+            case 52 {
+                switch zeroForOne
+                case 0 {
+                    mstore(0xB14, tokenIn)
+                    mstore(0xB00, tokenOut)
+                }
+                default {
+                    mstore(0xB14, tokenOut)
+                    mstore(0xB00, tokenIn)
+                }
+                mstore8(0xB34, 0)
+                let salt := keccak256(0xB0C, 0x29)
+                mstore(0xB00, VELO_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, VELO_CODE_HASH)
+
+                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+            }
+            // Velo Stable
+            default {
+                switch zeroForOne
+                case 0 {
+                    mstore(0xB14, tokenIn)
+                    mstore(0xB00, tokenOut)
+                }
+                default {
+                    mstore(0xB14, tokenOut)
+                    mstore(0xB00, tokenIn)
+                }
+                mstore8(0xB34, 1)
+                let salt := keccak256(0xB0C, 0x29)
+                mstore(0xB00, VELO_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, VELO_CODE_HASH)
+
+                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
             }
 
             // EXECUTE TRANSFER TO PAIR
@@ -410,54 +447,77 @@ abstract contract BaseSwapper is TokenTransfer {
             }
             // TRANSFER COMPLETE
 
-            // Call pair.getReserves(), store the results at `0xC00`
-            mstore(0xB00, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
-            if iszero(staticcall(gas(), pair, 0xB00, 0x4, 0xC00, 0x40)) {
-                returndatacopy(0, 0, returndatasize())
-                revert(0, returndatasize())
-            }
-            // Revert if the pair contract does not return at least two words.
-            if lt(returndatasize(), 0x40) {
-                revert(0, 0)
-            }
-
             // Compute the buy amount based on the pair reserves.
             {
-                let sellReserve
-                let buyReserve
-                switch iszero(zeroForOne)
-                case 0 {
-                    // Transpose if pair order is different.
-                    sellReserve := mload(0xC00)
-                    buyReserve := mload(0xC20)
-                }
-                default {
-                    sellReserve := mload(0xC20)
-                    buyReserve := mload(0xC00)
-                }
                 // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
                 // buyAmount = (pairSellAmount * feeAm * buyReserve) /
                 //     (pairSellAmount * feeAm + sellReserve * 1000);
                 switch _pId
                 case 50 {
+                    // Call pair.getReserves(), store the results at `0xC00`
+                    mstore(0xB00, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
+                    if iszero(staticcall(gas(), pair, 0xB00, 0x4, 0xC00, 0x40)) {
+                        returndatacopy(0, 0, returndatasize())
+                        revert(0, returndatasize())
+                    }
+                    // Revert if the pair contract does not return at least two words.
+                    if lt(returndatasize(), 0x40) {
+                        revert(0, 0)
+                    }
+                    let sellReserve
+                    let buyReserve
+                    switch iszero(zeroForOne)
+                    case 0 {
+                        // Transpose if pair order is different.
+                        sellReserve := mload(0xC00)
+                        buyReserve := mload(0xC20)
+                    }
+                    default {
+                        sellReserve := mload(0xC20)
+                        buyReserve := mload(0xC00)
+                    }
                     // feeAm is 998 for fusionX (1000 - 2) for 0.2% fee
                     let sellAmountWithFee := mul(amountIn, 998)
                     buyAmount := div(mul(sellAmountWithFee, buyReserve), add(sellAmountWithFee, mul(sellReserve, 1000)))
                 }
                 case 51 {
+                    // Call pair.getReserves(), store the results at `0xC00`
+                    mstore(0xB00, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
+                    if iszero(staticcall(gas(), pair, 0xB00, 0x4, 0xC00, 0x40)) {
+                        returndatacopy(0, 0, returndatasize())
+                        revert(0, returndatasize())
+                    }
+                    // Revert if the pair contract does not return at least two words.
+                    if lt(returndatasize(), 0x40) {
+                        revert(0, 0)
+                    }
+                    let sellReserve
+                    let buyReserve
+                    switch iszero(zeroForOne)
+                    case 0 {
+                        // Transpose if pair order is different.
+                        sellReserve := mload(0xC00)
+                        buyReserve := mload(0xC20)
+                    }
+                    default {
+                        sellReserve := mload(0xC20)
+                        buyReserve := mload(0xC00)
+                    }
                     // feeAm is 997 for Moe (1000 - 3) for 0.3% fee
                     let sellAmountWithFee := mul(amountIn, 997)
                     buyAmount := div(mul(sellAmountWithFee, buyReserve), add(sellAmountWithFee, mul(sellReserve, 1000)))
                 }
                 default {
-                    // fetch the fee from the factory
-                    // selector for getFee(address)
-                    mstore(ptr, 0xb88c914800000000000000000000000000000000000000000000000000000000)
-                    mstore(add(ptr, 0x4), pair)
-                    pop(staticcall(gas(), VELO_FACOTRY, ptr, 0x24, ptr, 0x20))
-                    // get amount
-                    let sellAmountWithFee := mul(amountIn, sub(10000, mload(ptr))) // load fee here
-                    buyAmount := div(mul(sellAmountWithFee, buyReserve), add(sellAmountWithFee, mul(sellReserve, 10000)))
+                    // selector for getAmountOut(uint256,address)
+                    mstore(0xB00, 0xf140a35a00000000000000000000000000000000000000000000000000000000)
+                    mstore(0xB04, amountIn)
+                    mstore(0xB24, tokenIn)
+                    if iszero(staticcall(gas(), pair, 0xB00, 0x44, 0xB00, 0x20)) {
+                        returndatacopy(0, 0, returndatasize())
+                        revert(0, returndatasize())
+                    }
+
+                    buyAmount := mload(0xB00)
                 }
                 // selector for swap(...)
                 mstore(0xB00, 0x022c0d9f00000000000000000000000000000000000000000000000000000000)
@@ -496,11 +556,11 @@ abstract contract BaseSwapper is TokenTransfer {
     /// @dev calculates the input amount for a UniswapV2 style swap
     function getV2AmountInDirect(
         address pair,
-        address tokenIn,
+        address tokenIn, // some DEXs are more efficiently queried directly
         address tokenOut,
         uint256 buyAmount,
-        uint256 x // poolId
-    ) internal view returns (uint256 sellAmount) {
+        uint256 pId // poolId
+    ) internal view returns (uint256 x) {
         assembly {
             let ptr := mload(0x40)
             // Call pair.getReserves(), store the results at `free memo`
@@ -516,12 +576,12 @@ abstract contract BaseSwapper is TokenTransfer {
 
             // Compute the sell amount based on the pair reserves.
             {
-                switch x
+                switch pId
                 case 50 {
                     let sellReserve
                     let buyReserve
                     switch lt(tokenIn, tokenOut)
-                    case 1 {
+                    case 0 {
                         // Transpose if pair order is different.
                         sellReserve := mload(add(ptr, 0x20))
                         buyReserve := mload(ptr)
@@ -532,16 +592,16 @@ abstract contract BaseSwapper is TokenTransfer {
                     }
 
                     // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
-                    // sellAmount = (reserveIn * amountOut * 1000) /
+                    // x = (reserveIn * amountOut * 1000) /
                     //     ((reserveOut - amountOut) * feeAm) + 1;
                     // feeAm is 998 for fusionX
-                    sellAmount := add(div(mul(mul(sellReserve, buyAmount), 1000), mul(sub(buyReserve, buyAmount), 998)), 1)
+                    x := add(div(mul(mul(sellReserve, buyAmount), 1000), mul(sub(buyReserve, buyAmount), 998)), 1)
                 }
                 case 51 {
                     let sellReserve
                     let buyReserve
                     switch lt(tokenIn, tokenOut)
-                    case 1 {
+                    case 0 {
                         // Transpose if pair order is different.
                         sellReserve := mload(add(ptr, 0x20))
                         buyReserve := mload(ptr)
@@ -552,16 +612,16 @@ abstract contract BaseSwapper is TokenTransfer {
                     }
 
                     // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
-                    // sellAmount = (reserveIn * amountOut * 1000) /
+                    // x = (reserveIn * amountOut * 1000) /
                     //     ((reserveOut - amountOut) * feeAm) + 1;
                     // feAm is 997 for Moe
-                    sellAmount := add(div(mul(mul(sellReserve, buyAmount), 1000), mul(sub(buyReserve, buyAmount), 997)), 1)
+                    x := add(div(mul(mul(sellReserve, buyAmount), 1000), mul(sub(buyReserve, buyAmount), 997)), 1)
                 }
                 case 52 {
                     let sellReserve
                     let buyReserve
                     switch lt(tokenIn, tokenOut)
-                    case 1 {
+                    case 0 {
                         // Transpose if pair order is different.
                         sellReserve := mload(add(ptr, 0x20))
                         buyReserve := mload(ptr)
@@ -576,10 +636,10 @@ abstract contract BaseSwapper is TokenTransfer {
                     mstore(add(ptr, 0x4), pair)
                     pop(staticcall(gas(), VELO_FACOTRY, ptr, 0x24, ptr, 0x20))
                     // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
-                    // sellAmount = (reserveIn * amountOut * 10000) /
+                    // x = (reserveIn * amountOut * 10000) /
                     //     ((reserveOut - amountOut) * feeAm) + 1;
                     // for Velo volatile, we fetch the fee
-                    sellAmount := add(
+                    x := add(
                         div(
                             mul(mul(sellReserve, buyAmount), 10000),
                             mul(
@@ -591,12 +651,11 @@ abstract contract BaseSwapper is TokenTransfer {
                     )
                 }
                 default {
-                    // for stable, we have to do a little more
+                    let _decimalsIn
+                    let _decimalsOut
                     let y0
                     let _reserveInScaled
-                    let _decimalsIn
                     {
-                        let _decimalsOut
                         {
                             let ptrPlus4 := add(ptr, 0x4)
                             // selector for decimals()
@@ -628,11 +687,8 @@ abstract contract BaseSwapper is TokenTransfer {
                             _reserveInScaled := div(mul(mload(add(ptr, 0x20)), 1000000000000000000), _decimalsIn)
                             _reserveOutScaled := div(mul(mload(ptr), 1000000000000000000), _decimalsOut)
                         }
-
-                        sellAmount := sub(_reserveOutScaled, div(mul(buyAmount, 1000000000000000000), _decimalsOut))
-                        x := _reserveInScaled
-                        // get xy - store it in sellAmount
-                        sellAmount := div(
+                        // get xy
+                        pId := div(
                             mul(
                                 div(mul(_reserveInScaled, _reserveOutScaled), 1000000000000000000),
                                 add(
@@ -642,6 +698,9 @@ abstract contract BaseSwapper is TokenTransfer {
                             ),
                             1000000000000000000
                         )
+
+                        y0 := sub(_reserveOutScaled, div(mul(buyAmount, 1000000000000000000), _decimalsOut))
+                        x := _reserveInScaled
                     }
                     // for-loop for approximation
                     let i := 0
@@ -651,23 +710,19 @@ abstract contract BaseSwapper is TokenTransfer {
 
                     } {
                         let x_prev := x
-                        // abuse buyAmount variable for calcs
-                        buyAmount := add(
-                            div(
-                                mul(x, div(mul(div(mul(sellAmount, sellAmount), 1000000000000000000), sellAmount), 1000000000000000000)),
-                                1000000000000000000
-                            ),
-                            div(mul(sellAmount, div(mul(div(mul(x, x), 1000000000000000000), x), 1000000000000000000)), 1000000000000000000)
+                        let k := add(
+                            div(mul(x, div(mul(div(mul(y0, y0), 1000000000000000000), y0), 1000000000000000000)), 1000000000000000000),
+                            div(mul(y0, div(mul(div(mul(x, x), 1000000000000000000), x), 1000000000000000000)), 1000000000000000000)
                         )
-                        switch lt(buyAmount, sellAmount)
+                        switch lt(k, pId)
                         case 1 {
                             x := add(
                                 x,
                                 div(
-                                    mul(sub(sellAmount, buyAmount), 1000000000000000000),
+                                    mul(sub(pId, k), 1000000000000000000),
                                     add(
-                                        div(mul(mul(3, sellAmount), div(mul(x, x), 1000000000000000000)), 1000000000000000000),
-                                        div(mul(div(mul(sellAmount, sellAmount), 1000000000000000000), sellAmount), 1000000000000000000)
+                                        div(mul(mul(3, y0), div(mul(x, x), 1000000000000000000)), 1000000000000000000),
+                                        div(mul(div(mul(y0, y0), 1000000000000000000), y0), 1000000000000000000)
                                     )
                                 )
                             )
@@ -676,10 +731,10 @@ abstract contract BaseSwapper is TokenTransfer {
                             x := sub(
                                 x,
                                 div(
-                                    mul(sub(buyAmount, sellAmount), 1000000000000000000),
+                                    mul(sub(k, pId), 1000000000000000000),
                                     add(
-                                        div(mul(mul(3, sellAmount), div(mul(x, x), 1000000000000000000)), 1000000000000000000),
-                                        div(mul(div(mul(sellAmount, sellAmount), 1000000000000000000), sellAmount), 1000000000000000000)
+                                        div(mul(mul(3, y0), div(mul(x, x), 1000000000000000000)), 1000000000000000000),
+                                        div(mul(div(mul(y0, y0), 1000000000000000000), y0), 1000000000000000000)
                                     )
                                 )
                             )
@@ -703,7 +758,7 @@ abstract contract BaseSwapper is TokenTransfer {
                     mstore(add(ptr, 0x4), pair)
                     pop(staticcall(gas(), VELO_FACOTRY, ptr, 0x24, ptr, 0x20))
                     // calculate and adjust the result (reserveInNew - reserveIn) * 10k / (10k - fee)
-                    sellAmount := add(
+                    x := add(
                         div(
                             div(
                                 mul(mul(sub(x, _reserveInScaled), _decimalsIn), 10000),
@@ -711,7 +766,7 @@ abstract contract BaseSwapper is TokenTransfer {
                             ),
                             1000000000000000000
                         ),
-                        1
+                        1 // rounding up
                     )
                 }
             }

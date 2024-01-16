@@ -18,6 +18,7 @@ const trader0 = '0xaffe73AA5EBd0CD95D89ab9fa2512Fc9e2d3289b'
 const admin = '0x999999833d965c275A2C102a4Ebf222ca938546f'
 
 const weth = "0xdEAddEaDdeadDEadDEADDEAddEADDEAddead1111"
+const wbtc = "0xCAbAE6f6Ea1ecaB08Ad02fE02ce9A44F09aebfA2"
 const usdc = "0x09Bc4E0D864854c6aFB6eB9A9cdF58aC190D0dF9"
 const wmnt = "0x78c1b0c915c4faa5fffa6cabf0219da63d7f4cb8"
 const usdt = "0x201EBa5CC46D216Ce6DC03F6a759e8E766e956aE"
@@ -82,7 +83,7 @@ it("Deposit", async function () {
     ], { value: amount })
 })
 
-it("Opens exact in", async function () {
+it("Opens exact in stable", async function () {
     const amount = parseUnits('2.0', 6)
 
     const borrowToken = await new StableDebtToken__factory(user).attach(addressesLendleVTokens.USDT)
@@ -105,7 +106,7 @@ it("Opens exact in", async function () {
 
 
 
-it("Opens exact out", async function () {
+it("Opens exact out stable", async function () {
     const amount = parseUnits('1.0', 6)
     const tokenIn = addressesTokensMantle.WMNT
 
@@ -169,7 +170,48 @@ it("Opens exact out multi", async function () {
     await multicaller.connect(user).multicall([
         callSwap
     ])
+})
 
+it("Opens exact out multi Stable & Variable", async function () {
+
+    const amount = parseUnits('0.0001', 8)
+
+    const borrowToken = await new StableDebtToken__factory(user).attach(addressesLendleVTokens.USDT)
+    await borrowToken.approveDelegation(multicaller.address, MaxUint128)
+    // v3 single
+    const path1 = encodeAggregatorPathEthers(
+        [wbtc, usdc, usdt],
+        [FeeAmount.LOW, FeeAmount.LOW],
+        [3, 1],
+        [52, 53], // butter, Velo volatile
+        2
+    )
+    const callSwap = flashAggregatorInterface.encodeFunctionData('flashSwapExactOut', [amount, MaxUint128, path1])
+    console.log("attempt swap")
+    await multicaller.connect(user).multicall([
+        callSwap
+    ])
+})
+
+it("Opens exact in multi Stable & Variable", async function () {
+
+    const amount = parseUnits('10', 6)
+
+    const borrowToken = await new StableDebtToken__factory(user).attach(addressesLendleVTokens.WBTC)
+    await borrowToken.approveDelegation(multicaller.address, MaxUint128)
+    // v3 single
+    const path1 = encodeAggregatorPathEthers(
+        [wbtc, usdc, usdt].reverse(),
+        [0, 0],
+        [6, 0],
+        [52, 53].reverse(), // butter, Velo volatile
+        2
+    )
+    const callSwap = flashAggregatorInterface.encodeFunctionData('flashSwapExactIn', [amount, 0, path1])
+    console.log("attempt swap")
+    await multicaller.connect(user).multicall([
+        callSwap
+    ])
 })
 
 // it("Closes all out multi", async function () {

@@ -26,7 +26,7 @@ interface IAll {
 
 contract VelocimeterTest is AddressesMantle, Script, StdCheats {
     function setUp() public virtual {
-        vm.createSelectFork({blockNumber: 46560609, urlOrAlias: "https://rpc.ankr.com/mantle"});
+        vm.createSelectFork({blockNumber: 47960813, urlOrAlias: "https://rpc.ankr.com/mantle"});
     }
 
     function test_velo_pair_addr() external view {

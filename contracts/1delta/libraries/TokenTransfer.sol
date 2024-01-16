@@ -98,9 +98,9 @@ abstract contract TokenTransfer {
 
     function _transferEth(address recipient, uint256 amount) internal {
         assembly {
-            pop(
+            if iszero(
                 call(
-                    21000,
+                    gas(),
                     recipient,
                     amount,
                     0x0, // input = empty for fallback
@@ -108,7 +108,9 @@ abstract contract TokenTransfer {
                     0x0, // output = empty
                     0x0 // output size = zero
                 )
-            )
+            ) {
+                revert(0, 0) // revert when native transfer fails
+            }
         }
     }
 
@@ -117,7 +119,7 @@ abstract contract TokenTransfer {
             let ptr := mload(0x40) // free memory pointer
             // selector for deposit()
             mstore(ptr, 0xd0e30db000000000000000000000000000000000000000000000000000000000)
-            pop(
+            if iszero(
                 call(
                     gas(),
                     and(weth, ADDRESS_MASK),
@@ -127,7 +129,9 @@ abstract contract TokenTransfer {
                     0x0, // output = empty
                     0x0 // output size = zero
                 )
-            )
+            ) {
+                revert(0, 0) // revert when native transfer fails
+            }
         }
     }
 

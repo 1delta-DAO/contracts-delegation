@@ -616,8 +616,8 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
         else if (tradeId == 1) {
             // fetch amountOut
             uint256 referenceAmount = zeroForOne ? amount0 : amount1;
-            // calculte amountIn
-            referenceAmount = getV2AmountInDirect(pool, tokenIn, tokenOut, referenceAmount, identifier);
+            // calculte amountIn (note that tokenIn/out are read inverted at the top)
+            referenceAmount = getV2AmountInDirect(pool, tokenOut, tokenIn, referenceAmount, identifier);
             uint256 cache = data.length;
             // either initiate the next swap or pay
             if (cache > 46) {
@@ -700,8 +700,8 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
                 tradeId -= 3;
                 _lendingPool.repay(tokenIn, referenceAmount, tradeId, user);
             }
-            // calculate amountIn
-            referenceAmount = getV2AmountInDirect(pool, tokenIn, tokenOut, referenceAmount, identifier);
+            // calculate amountIn (note that tokenIn/out are read inverted at the top)
+            referenceAmount = getV2AmountInDirect(pool, tokenOut, tokenIn, referenceAmount, identifier);
             uint256 cache = data.length;
             // constinue swapping if more data is provided
             if (cache > 46) {
