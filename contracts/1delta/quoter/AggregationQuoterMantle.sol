@@ -725,7 +725,7 @@ contract OneDeltaQuoterMantle {
                     let sellReserve
                     let buyReserve
                     switch lt(tokenIn, tokenOut)
-                    case 0 {
+                    case 1 {
                         // Transpose if pair order is different.
                         sellReserve := mload(0xC00)
                         buyReserve := mload(0xC20)
@@ -753,7 +753,7 @@ contract OneDeltaQuoterMantle {
                     let sellReserve
                     let buyReserve
                     switch lt(tokenIn, tokenOut)
-                    case 0 {
+                    case 1 {
                         // Transpose if pair order is different.
                         sellReserve := mload(0xC00)
                         buyReserve := mload(0xC20)
@@ -782,7 +782,7 @@ contract OneDeltaQuoterMantle {
         }
     }
 
-  /// @dev calculates the input amount for a UniswapV2 style swap
+    /// @dev calculates the input amount for a UniswapV2 style swap
     function getV2AmountInDirect(
         address pair,
         address tokenIn, // some DEXs are more efficiently queried directly
@@ -810,14 +810,14 @@ contract OneDeltaQuoterMantle {
                     let sellReserve
                     let buyReserve
                     switch lt(tokenIn, tokenOut)
-                    case 0 {
+                    case 1 {
                         // Transpose if pair order is different.
-                        sellReserve := mload(add(ptr, 0x20))
-                        buyReserve := mload(ptr)
-                    }
-                    default {
                         sellReserve := mload(ptr)
                         buyReserve := mload(add(ptr, 0x20))
+                    }
+                    default {
+                        buyReserve := mload(ptr)
+                        sellReserve := mload(add(ptr, 0x20))
                     }
 
                     // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
@@ -830,14 +830,14 @@ contract OneDeltaQuoterMantle {
                     let sellReserve
                     let buyReserve
                     switch lt(tokenIn, tokenOut)
-                    case 0 {
+                    case 1 {
                         // Transpose if pair order is different.
-                        sellReserve := mload(add(ptr, 0x20))
-                        buyReserve := mload(ptr)
-                    }
-                    default {
                         sellReserve := mload(ptr)
                         buyReserve := mload(add(ptr, 0x20))
+                    }
+                    default {
+                        buyReserve := mload(ptr)
+                        sellReserve := mload(add(ptr, 0x20))
                     }
 
                     // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
@@ -850,14 +850,14 @@ contract OneDeltaQuoterMantle {
                     let sellReserve
                     let buyReserve
                     switch lt(tokenIn, tokenOut)
-                    case 0 {
+                    case 1 {
                         // Transpose if pair order is different.
-                        sellReserve := mload(add(ptr, 0x20))
-                        buyReserve := mload(ptr)
-                    }
-                    default {
                         sellReserve := mload(ptr)
                         buyReserve := mload(add(ptr, 0x20))
+                    }
+                    default {
+                        buyReserve := mload(ptr)
+                        sellReserve := mload(add(ptr, 0x20))
                     }
                     // fetch the fee from the factory
                     // selector for getFee(address)
