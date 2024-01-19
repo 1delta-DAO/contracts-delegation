@@ -34,6 +34,41 @@ before(async function () {
 
 
 
+it("Test V2 EI Moe Mix", async function () {
+
+    const amount = '1000000'
+    const route = encodeQuoterPathEthers(
+        [usdc, wmt, btc],
+        [250, 0],
+        [4, 50]
+    )
+    const quote = await quoter.callStatic.quoteExactInput(
+        route,
+        amount
+    )
+    console.log("Quote Mixed", quote.toString())
+
+})
+
+
+it("Test V2 EO Moe Mix", async function () {
+
+    const amount = '2423'
+    const route = encodeQuoterPathEthers(
+        [usdc, wmt, btc].reverse(),
+        [250, 0].reverse(),
+        [4, 50].reverse()
+    )
+    const quote = await quoter.callStatic.quoteExactOutput(
+        route,
+        amount
+    )
+    console.log("Quote Mixed", quote.toString())
+
+})
+
+
+
 it("Test V2 EI Fusion", async function () {
 
     const amount = '1000000000'

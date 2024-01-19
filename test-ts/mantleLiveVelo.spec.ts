@@ -83,7 +83,7 @@ it("Deposit", async function () {
     ], { value: amount })
 })
 
-it("Opens exact in stable", async function () {
+it("USDT->USDC exactIn (velo_stable)", async function () {
     const amount = parseUnits('2.0', 6)
 
     const borrowToken = await new StableDebtToken__factory(user).attach(addressesLendleVTokens.USDT)
@@ -101,12 +101,11 @@ it("Opens exact in stable", async function () {
     await multicaller.connect(user).multicall([
         callSwap
     ])
-
 })
 
 
 
-it("Opens exact out stable", async function () {
+it("USDT->USDC exactOut (velo_stable)", async function () {
     const amount = parseUnits('1.0', 6)
     const tokenIn = addressesTokensMantle.WMNT
 
@@ -128,10 +127,9 @@ it("Opens exact out stable", async function () {
 
 })
 
-it("Opens exact in multi", async function () {
+it("USDC->WMNT->WETH exactIn (velo_volatile, fusionx_v2)", async function () {
 
     const amount = parseUnits('1.0', 6)
-    const tokenIn = addressesTokensMantle.WMNT
 
     const borrowToken = await new StableDebtToken__factory(user).attach(addressesLendleVTokens.USDC)
     await borrowToken.approveDelegation(multicaller.address, MaxUint128)
@@ -140,7 +138,7 @@ it("Opens exact in multi", async function () {
         [usdc, wmnt, weth],
         [0, FeeAmount.LOW],
         [6, 0],
-        [52, 0], // Velo Volatile, fusionX
+        [52, 51], // Velo Volatile, fusionX
         2
     )
     const callSwap = flashAggregatorInterface.encodeFunctionData('flashSwapExactIn', [amount, 0, path1])
@@ -151,7 +149,7 @@ it("Opens exact in multi", async function () {
 })
 
 
-it("Opens exact out multi", async function () {
+it("USDC->WMNT->WETH exactOut (velo_volatile, butter)", async function () {
 
     const amount = parseUnits('0.0001', 18)
 
@@ -172,7 +170,7 @@ it("Opens exact out multi", async function () {
     ])
 })
 
-it("Opens exact out multi Stable & Variable", async function () {
+it("WBTC->USDC->USDT exactOut (velo_stable, velo_volatile)", async function () {
 
     const amount = parseUnits('0.0001', 8)
 
@@ -183,7 +181,7 @@ it("Opens exact out multi Stable & Variable", async function () {
         [wbtc, usdc, usdt],
         [FeeAmount.LOW, FeeAmount.LOW],
         [3, 1],
-        [52, 53], // butter, Velo volatile
+        [52, 53], // Velo volatile, velo stable
         2
     )
     const callSwap = flashAggregatorInterface.encodeFunctionData('flashSwapExactOut', [amount, MaxUint128, path1])
@@ -193,7 +191,7 @@ it("Opens exact out multi Stable & Variable", async function () {
     ])
 })
 
-it("Opens exact in multi Stable & Variable", async function () {
+it("WBTC->USDC->USDT exactIn (velo_vola, velo_stable)", async function () {
 
     const amount = parseUnits('10', 6)
 
@@ -204,7 +202,7 @@ it("Opens exact in multi Stable & Variable", async function () {
         [wbtc, usdc, usdt].reverse(),
         [0, 0],
         [6, 0],
-        [52, 53].reverse(), // butter, Velo volatile
+        [52, 53].reverse(), // Velo stable, Velo volatile
         2
     )
     const callSwap = flashAggregatorInterface.encodeFunctionData('flashSwapExactIn', [amount, 0, path1])
@@ -214,127 +212,89 @@ it("Opens exact in multi Stable & Variable", async function () {
     ])
 })
 
-// it("Closes all out multi", async function () {
 
-//     const collateralToken = await new AToken__factory(user).attach(addressesLendleATokens.WMNT)
-//     const borrowToken = await new StableDebtToken__factory(user).attach(addressesLendleVTokens.USDT)
+it("USDC->WMNT->WETH exactOut (fusionV2, moe)", async function () {
 
-//     const balDebt = await borrowToken.balanceOf(user.address)
-//     const balCollateral = await collateralToken.balanceOf(user.address)
+    const amount = parseUnits('0.001', 18)
 
-//     console.log("Bal", balCollateral.toString(), balDebt.toString())
-//     // aprove withdrawal
-//     await collateralToken.approve(multicaller.address, MaxUint128)
+    const borrowToken = await new StableDebtToken__factory(user).attach(addressesLendleVTokens.USDT)
+    await borrowToken.approveDelegation(multicaller.address, MaxUint128)
+    // v3 single
+    const path1 = encodeAggregatorPathEthers(
+        [weth, wmnt, usdc],
+        [FeeAmount.LOW, FeeAmount.LOW],
+        [3, 1],
+        [51, 50], // butter, Fusion
+        2
+    )
+    const callSwap = flashAggregatorInterface.encodeFunctionData('flashSwapExactOut', [amount, MaxUint128, path1])
+    console.log("attempt swap")
+    await multicaller.connect(user).multicall([
+        callSwap
+    ])
+})
 
-//     // v3 single
-//     const path1 = encodeAggregatorPathEthers(
-//         [usdt, weth, wmnt],
-//         [FeeAmount.LOW, FeeAmount.MEDIUM],
-//         [5, 1],
-//         [100, 100],
-//         3
-//     )
-//     const callSwap = flashAggregatorInterface.encodeFunctionData('flashSwapAllOut', [MaxUint128, path1])
-//     console.log("attempt swap")
-//     await multicaller.connect(user).multicall([
-//         callSwap
-//     ])
+it("USDC->WMNT->WETH exactOut (cleo, moe)", async function () {
 
-//     const bal = await borrowToken.balanceOf(user.address)
-//     console.log(bal.toString())
+    const amount = parseUnits('0.001', 18)
 
-// })
-
-
-// it("Swaps collatera all in", async function () {
-
-//     const collateralToken = await new AToken__factory(user).attach(addressesLendleATokens.WMNT)
-
-//     const balCollateral = await collateralToken.balanceOf(user.address)
-
-//     console.log("Bal", balCollateral.toString())
-//     // aprove withdrawal
-//     await collateralToken.approve(multicaller.address, MaxUint128)
-
-//     // v3 single
-//     const path1 = encodeAggregatorPathEthers(
-//         [wmnt, weth, usdt],
-//         [FeeAmount.MEDIUM, FeeAmount.LOW],
-//         [6, 0],
-//         [100, 100],
-//         3
-//         // [wmnt, weth, usdt],
-//         // [FeeAmount.LOW, FeeAmount.LOW],
-//         // [6, 0],
-//         // [0, 100],
-//         // 3
-//     )
-//     const callSwap = flashAggregatorInterface.encodeFunctionData('flashSwapAllIn', [0, path1])
-//     console.log("attempt swap")
-//     await multicaller.connect(user).multicall([
-//         callSwap
-//     ])
-
-//     const bal = await collateralToken.balanceOf(user.address)
-//     console.log(bal.toString())
-
-// })
+    const borrowToken = await new StableDebtToken__factory(user).attach(addressesLendleVTokens.USDT)
+    await borrowToken.approveDelegation(multicaller.address, MaxUint128)
+    // v3 single
+    const path1 = encodeAggregatorPathEthers(
+        [wmnt, weth, usdc],
+        [FeeAmount.LOW, FeeAmount.LOW],
+        [3, 1],
+        [51, 3], // moe, cleo
+        2
+    )
+    const callSwap = flashAggregatorInterface.encodeFunctionData('flashSwapExactOut', [amount, MaxUint128, path1])
+    console.log("attempt swap")
+    await multicaller.connect(user).multicall([
+        callSwap
+    ])
+})
 
 
+it("USDC->WMNT-WBTC exactOut (moe, moe)", async function () {
 
-// it("Opens exact in multi (WMNT-USDT)", async function () {
-//     const amount = parseUnits('5.0', 18)
-//     const tokenIn = addressesTokensMantle.WMNT
+    const amount = parseUnits('0.0001', 8)
 
-//     const borrowToken = await new StableDebtToken__factory(user).attach(addressesLendleVTokens.WMNT)
-//     await borrowToken.approveDelegation(multicaller.address, MaxUint128)
-//     // v3 single
-//     const path1 = encodeAggregatorPathEthers(
-//         [wmnt, weth, usdt],
-//         [FeeAmount.MEDIUM, FeeAmount.LOW],
-//         [6, 0],
-//         [100, 0],
-//         2
-//     )
-//     const callSwap = flashAggregatorInterface.encodeFunctionData('flashSwapExactIn', [amount, 0, path1])
-//     console.log("attempt swap")
-//     await multicaller.connect(user).multicall([
-//         callSwap
-//     ])
-// })
+    const borrowToken = await new StableDebtToken__factory(user).attach(addressesLendleVTokens.USDC)
+    await borrowToken.approveDelegation(multicaller.address, MaxUint128)
+    // v3 single
+    const path1 = encodeAggregatorPathEthers(
+        [wbtc, wmnt, usdc],
+        [FeeAmount.LOW, FeeAmount.LOW],
+        [3, 1],
+        [51, 51], // Velo volatile, fusion
+        2
+    )
+    const callSwap = flashAggregatorInterface.encodeFunctionData('flashSwapExactOut', [amount, MaxUint128, path1])
+    console.log("attempt swap")
+    await multicaller.connect(user).multicall([
+        callSwap
+    ])
+})
 
 
-// it("Closes all out multi (USDT-WMNT)", async function () {
+it("WBTC->WMNT->USDC exactOut (moe, moe)", async function () {
 
-//     const collateralToken = await new AToken__factory(user).attach(addressesLendleATokens.USDT)
-//     const borrowToken = await new StableDebtToken__factory(user).attach(addressesLendleVTokens.WMNT)
+    const amount = parseUnits('1', 6)
 
-//     const balDebt = await borrowToken.balanceOf(user.address)
-//     const balCollateral = await collateralToken.balanceOf(user.address)
-
-//     console.log("Bal", balCollateral.toString(), balDebt.toString())
-//     // aprove withdrawal
-//     await collateralToken.approve(multicaller.address, MaxUint128)
-
-//     // v3 single
-//     const path1 = encodeAggregatorPathEthers(
-//         [wmnt, weth, usdt],
-//         [FeeAmount.MEDIUM, FeeAmount.LOW],
-//         [5, 1],
-//         [100, 100],
-//         3
-//     )
-//     const callSwap = flashAggregatorInterface.encodeFunctionData('flashSwapAllOut', [MaxUint128, path1])
-//     console.log("attempt swap")
-//     await multicaller.connect(user).multicall([
-//         callSwap
-//     ])
-
-//     const bal = await borrowToken.balanceOf(user.address)
-//     console.log("left:", bal.toString())
-//     const wmntToken = await new AToken__factory(user).attach(wmnt)
-
-//     const dust = await wmntToken.balanceOf(multicaller.address)
-//     console.log("dust:", dust.toString())
-// })
-
+    const borrowToken = await new StableDebtToken__factory(user).attach(addressesLendleVTokens.WBTC)
+    await borrowToken.approveDelegation(multicaller.address, MaxUint128)
+    // v3 single
+    const path1 = encodeAggregatorPathEthers(
+        [wbtc, wmnt, usdc].reverse(),
+        [FeeAmount.LOW, FeeAmount.LOW],
+        [3, 1],
+        [51, 51].reverse(), // Velo volatile, fusion
+        2
+    )
+    const callSwap = flashAggregatorInterface.encodeFunctionData('flashSwapExactOut', [amount, MaxUint128, path1])
+    console.log("attempt swap")
+    await multicaller.connect(user).multicall([
+        callSwap
+    ])
+})

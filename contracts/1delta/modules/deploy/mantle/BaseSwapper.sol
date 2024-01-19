@@ -285,10 +285,11 @@ abstract contract BaseSwapper is TokenTransfer {
             // uniswapV3 style
             if (identifier < 50) {
                 uint24 fee;
+                bool zeroForOne;
                 assembly {
                     fee := and(shr(72, calldataload(path.offset)), 0xffffff)
+                    zeroForOne := lt(tokenIn, tokenOut)
                 }
-                bool zeroForOne = tokenIn < tokenOut;
                 (int256 amount0, int256 amount1) = getUniswapV3Pool(tokenIn, tokenOut, fee, identifier).swap(
                     address(this),
                     zeroForOne,
@@ -466,8 +467,8 @@ abstract contract BaseSwapper is TokenTransfer {
                     }
                     let sellReserve
                     let buyReserve
-                    switch iszero(zeroForOne)
-                    case 0 {
+                    switch zeroForOne
+                    case 1 {
                         // Transpose if pair order is different.
                         sellReserve := mload(0xC00)
                         buyReserve := mload(0xC20)
@@ -493,8 +494,8 @@ abstract contract BaseSwapper is TokenTransfer {
                     }
                     let sellReserve
                     let buyReserve
-                    switch iszero(zeroForOne)
-                    case 0 {
+                    switch zeroForOne
+                    case 1 {
                         // Transpose if pair order is different.
                         sellReserve := mload(0xC00)
                         buyReserve := mload(0xC20)
