@@ -19,7 +19,7 @@ async function main() {
     const quoter = await new OneDeltaQuoterMantle__factory(operator).deploy({ gasLimit: estimatedGas.mul(105).div(100) })
     await quoter.deployed()
 
-    console.log('quoter:', quoter.address) // 0xe40667C540eA548AE1358E61637d0269458D7a77
+    console.log('quoter:', quoter.address) // 0x9944327aEe1276c1E9343De9E7131877B6B2aC38
 }
 
 main()

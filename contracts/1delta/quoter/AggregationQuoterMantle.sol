@@ -696,6 +696,7 @@ contract OneDeltaQuoterMantle {
         }
     }
 
+    /// @dev calculate amountOut for uniV2 style pools - does not require overflow checks
     function getAmountOutUniV2Type(
         address pair,
         address tokenIn, // only used for velo
@@ -782,7 +783,7 @@ contract OneDeltaQuoterMantle {
         }
     }
 
-    /// @dev calculates the input amount for a UniswapV2 style swap
+    /// @dev calculates the input amount for a UniswapV2 style swap - requires overflow checks
     function getV2AmountInDirect(
         address pair,
         address tokenIn, // some DEXs are more efficiently queried directly
@@ -819,6 +820,10 @@ contract OneDeltaQuoterMantle {
                         buyReserve := mload(ptr)
                         sellReserve := mload(add(ptr, 0x20))
                     }
+                    // revert if insufficient reserves
+                    if lt(buyReserve, buyAmount) {
+                        revert(0, 0)
+                    }
 
                     // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
                     // x = (reserveIn * amountOut * 1000) /
@@ -839,6 +844,10 @@ contract OneDeltaQuoterMantle {
                         buyReserve := mload(ptr)
                         sellReserve := mload(add(ptr, 0x20))
                     }
+                    // revert if insufficient reserves
+                    if lt(buyReserve, buyAmount) {
+                        revert(0, 0)
+                    }
 
                     // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
                     // x = (reserveIn * amountOut * 1000) /
@@ -858,6 +867,10 @@ contract OneDeltaQuoterMantle {
                     default {
                         buyReserve := mload(ptr)
                         sellReserve := mload(add(ptr, 0x20))
+                    }
+                    // revert if insufficient reserves
+                    if lt(buyReserve, buyAmount) {
+                        revert(0, 0)
                     }
                     // fetch the fee from the factory
                     // selector for getFee(address)
@@ -910,11 +923,21 @@ contract OneDeltaQuoterMantle {
                         switch lt(tokenIn, tokenOut)
                         case 1 {
                             _reserveInScaled := div(mul(mload(ptr), 1000000000000000000), _decimalsIn)
-                            _reserveOutScaled := div(mul(mload(add(ptr, 0x20)), 1000000000000000000), _decimalsOut)
+                            let reserveOut := mload(add(ptr, 0x20))
+                            // revert if insufficient reserves
+                            if lt(reserveOut, buyAmount) {
+                                revert(0, 0)
+                            }
+                            _reserveOutScaled := div(mul(reserveOut, 1000000000000000000), _decimalsOut)
                         }
                         default {
                             _reserveInScaled := div(mul(mload(add(ptr, 0x20)), 1000000000000000000), _decimalsIn)
-                            _reserveOutScaled := div(mul(mload(ptr), 1000000000000000000), _decimalsOut)
+                            let reserveOut := mload(ptr)
+                            // revert if insufficient reserves
+                            if lt(reserveOut, buyAmount) {
+                                revert(0, 0)
+                            }
+                            _reserveOutScaled := div(mul(reserveOut, 1000000000000000000), _decimalsOut)
                         }
                         // get xy
                         pId := div(

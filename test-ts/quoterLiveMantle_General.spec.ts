@@ -34,6 +34,23 @@ before(async function () {
 
 
 
+it.only("Test V2 TO WBTC", async function () {
+
+    const amount = '2423'
+    const route = encodeQuoterPathEthers(
+        [usdc, wmt, btc].reverse(),
+        [500, 0].reverse(),
+        [1, 50].reverse()
+    )
+    const quote = await quoter.callStatic.quoteExactOutput(
+        route,
+        amount
+    )
+    console.log("Quote Mixed", quote.toString())
+
+})
+
+
 it("Test V2 EI Moe Mix", async function () {
 
     const amount = '1000000'
