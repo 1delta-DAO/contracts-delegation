@@ -66,7 +66,6 @@ async function main() {
         console.log('Completed module adjustment')
         console.log("Upgrade done")
     }
-
 }
 
 main()
@@ -104,7 +103,7 @@ const getRemoveCuts = async (operator: SignerWithAddress, proxyAddress: string) 
         // balancerFlashSelectors,
         // managementSelectors
     ]
-
+    console.log("Having", moduleSelectors.length, "removals")
     for (const selector of moduleSelectors) {
         cut.push({
             moduleAddress: ethers.constants.AddressZero,
@@ -119,14 +118,12 @@ const getRemoveCuts = async (operator: SignerWithAddress, proxyAddress: string) 
 
 
 const getAddCuts = async (operator: SignerWithAddress, flashAggregatorAddress: string, lendingInterfaceAddress: string) => {
-    const flashBroker = await new DeltaFlashAggregatorMantle__factory(operator).deploy()
-    await flashBroker.deployed()
-    console.log("flashBroker deployed")
+    const flashBroker = await new DeltaFlashAggregatorMantle__factory(operator).attach(flashAggregatorAddress)
+    console.log("flashBroker picked")
 
 
-    const moneyMarket = await new DeltaLendingInterfaceMantle__factory(operator).deploy()
-    await moneyMarket.deployed()
-    console.log("moneyMarket deployed")
+    const moneyMarket = await new DeltaLendingInterfaceMantle__factory(operator).attach(lendingInterfaceAddress)
+    console.log("moneyMarket picked")
 
 
     // const callback = await new UniswapV3SwapCallbackModule__factory(operator).deploy(uniswapFactory, aavePool, opts)
@@ -180,6 +177,7 @@ const getAddCuts = async (operator: SignerWithAddress, flashAggregatorAddress: s
         // lensModule,
         // management
     ]
+    console.log("Having", modules.length, "additions")
 
     for (const module of modules) {
         cut.push({
