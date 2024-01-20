@@ -34,7 +34,7 @@ before(async function () {
 
 
 
-it.only("Test V2 TO WBTC", async function () {
+it("Test V2 TO WBTC", async function () {
 
     const amount = '2423'
     const route = encodeQuoterPathEthers(

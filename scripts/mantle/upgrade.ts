@@ -43,7 +43,11 @@ async function main() {
     const broker = await new ConfigModule__factory(operator).attach(proxyAddress)
 
     const removeCuts = await getRemoveCuts(operator, proxyAddress)
-    const addCuts = await getAddCuts(operator)
+    // add cuts
+    const marginTradingAddress = lendleBrokerAddresses.MarginTraderModule[chainId]
+    const lendingInterfacegAddress = lendleBrokerAddresses.LendingInterface[chainId]
+    const addCuts = await getAddCuts(operator, marginTradingAddress, lendingInterfacegAddress)
+
     const cut = [
         ...removeCuts,
         ...addCuts
@@ -75,7 +79,7 @@ main()
 
 const getRemoveCuts = async (operator: SignerWithAddress, proxyAddress: string) => {
     const chainId = 5000
-    const marginTradingAddress = lendleBrokerAddresses.MarginTraderModule[chainId]
+    const marginTradingAddress = '0x97716A91e4e7Eb6f5E0449E23410D6E16B32e3C8' // lendleBrokerAddresses.MarginTraderModule[chainId]
     const cut: {
         moduleAddress: string,
         action: any,
@@ -114,7 +118,7 @@ const getRemoveCuts = async (operator: SignerWithAddress, proxyAddress: string) 
 
 
 
-const getAddCuts = async (operator: SignerWithAddress,) => {
+const getAddCuts = async (operator: SignerWithAddress, flashAggregatorAddress: string, lendingInterfaceAddress: string) => {
     const flashBroker = await new DeltaFlashAggregatorMantle__factory(operator).deploy()
     await flashBroker.deployed()
     console.log("flashBroker deployed")

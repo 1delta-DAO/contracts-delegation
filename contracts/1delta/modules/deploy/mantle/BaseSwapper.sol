@@ -65,8 +65,7 @@ abstract contract BaseSwapper is TokenTransfer {
     }
 
     /// @dev Returns the pool for the given token pair and fee. The pool contract may or may not exist.
-    function getUniswapV3Pool(address tokenA, address tokenB, uint24 fee, uint8 pId) internal pure returns (IUniversalV3StyleSwap pool) {
-        uint256 _pId = pId;
+    function getUniswapV3Pool(address tokenA, address tokenB, uint24 fee, uint256 _pId) internal pure returns (IUniversalV3StyleSwap pool) {
         assembly {
             let s := mload(0x40)
             let p := s

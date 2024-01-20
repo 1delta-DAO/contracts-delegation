@@ -395,8 +395,7 @@ contract OneDeltaQuoterMantle {
 
     /// @dev Returns the pool for the given token pair and fee.
     /// The pool contract may or may not exist.
-    function v3TypePool(address tokenA, address tokenB, uint24 fee, uint8 pId) private pure returns (ISwapPool pool) {
-        uint256 _pId = pId;
+    function v3TypePool(address tokenA, address tokenB, uint24 fee, uint256 _pId) private pure returns (ISwapPool pool) {
         assembly {
             let s := mload(0x40)
             let p := s
