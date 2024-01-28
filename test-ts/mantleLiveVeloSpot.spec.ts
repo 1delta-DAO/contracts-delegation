@@ -54,6 +54,7 @@ before(async function () {
 
     const selectors = await lens.moduleFunctionSelectors(traderModule)
     const selectorsLending = await lens.moduleFunctionSelectors(lendingModule)
+
     await config.configureModules([{
         moduleAddress: ethers.constants.AddressZero,
         action: ModuleConfigAction.Remove,
@@ -63,16 +64,13 @@ before(async function () {
         moduleAddress: ethers.constants.AddressZero,
         action: ModuleConfigAction.Remove,
         functionSelectors: selectorsLending
-    }
-    ])
-
-    await config.configureModules([{
+    },
+    {
         moduleAddress: newflashAggregator.address,
         action: ModuleConfigAction.Add,
         functionSelectors: getSelectors(newflashAggregator)
-    }])
-
-    await config.configureModules([{
+    },
+    {
         moduleAddress: newLendingInterface.address,
         action: ModuleConfigAction.Add,
         functionSelectors: getSelectors(newLendingInterface)

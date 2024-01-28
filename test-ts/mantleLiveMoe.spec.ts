@@ -24,6 +24,7 @@ const usdt = "0x201EBa5CC46D216Ce6DC03F6a759e8E766e956aE"
 
 const brokerProxy = lendleBrokerAddresses.BrokerProxy[MANTLE_CHAIN_ID]
 const traderModule = lendleBrokerAddresses.MarginTraderModule[MANTLE_CHAIN_ID]
+const lendingModule = lendleBrokerAddresses.LendingInterface[MANTLE_CHAIN_ID]
 let multicaller: DeltaBrokerProxy
 let flashAggregatorInterface: DeltaFlashAggregatorMantleInterface
 let lendingInterfaceInterface: DeltaLendingInterfaceMantleInterface
@@ -50,19 +51,24 @@ before(async function () {
     const lens = await new LensModule__factory(impersonatedSigner).attach(brokerProxy)
 
     const selectors = await lens.moduleFunctionSelectors(traderModule)
+    const selectorsLending = await lens.moduleFunctionSelectors(lendingModule)
+
     await config.configureModules([{
         moduleAddress: ethers.constants.AddressZero,
         action: ModuleConfigAction.Remove,
         functionSelectors: selectors
-    }])
-
-    await config.configureModules([{
+    },
+    {
+        moduleAddress: ethers.constants.AddressZero,
+        action: ModuleConfigAction.Remove,
+        functionSelectors: selectorsLending
+    },
+    {
         moduleAddress: newflashAggregator.address,
         action: ModuleConfigAction.Add,
         functionSelectors: getSelectors(newflashAggregator)
-    }])
-
-    await config.configureModules([{
+    },
+    {
         moduleAddress: newLendingInterface.address,
         action: ModuleConfigAction.Add,
         functionSelectors: getSelectors(newLendingInterface)

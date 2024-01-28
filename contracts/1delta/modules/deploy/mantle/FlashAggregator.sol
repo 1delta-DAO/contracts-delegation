@@ -8,7 +8,7 @@ pragma solidity ^0.8.23;
 
 import {IERC20Balance} from "../../../interfaces/IERC20Balance.sol";
 import {MarginTrading} from "./MarginTrading.sol";
-import {SelfPermit} from "../../base/SelfPermit.sol";
+
 // solhint-disable max-line-length
 
 /**

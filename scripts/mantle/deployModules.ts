@@ -16,13 +16,13 @@ async function main() {
     await flashBroker.deployed()
     console.log("flashBroker deployed")
 
-    // lending interactions
-    const lendingInterface = await new DeltaLendingInterfaceMantle__factory(operator).deploy()
-    await lendingInterface.deployed()
-    console.log("lendingInterface deployed")
+    // // lending interactions
+    // const lendingInterface = await new DeltaLendingInterfaceMantle__factory(operator).deploy()
+    // await lendingInterface.deployed()
+    // console.log("lendingInterface deployed")
 
     console.log("FlashBroker", flashBroker.address)
-    console.log("LendingInterface", lendingInterface.address)
+    // console.log("LendingInterface", lendingInterface.address)
 
 }
 
