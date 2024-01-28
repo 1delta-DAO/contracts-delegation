@@ -22,11 +22,13 @@ interface IAll {
     function getFee(address pair) external view returns (uint256);
 
     function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external;
+
+    function balanceOf(address a) external view returns (uint);
 }
 
 contract VelocimeterTest is AddressesMantle, Script, StdCheats {
     function setUp() public virtual {
-        vm.createSelectFork({blockNumber: 47960813, urlOrAlias: "https://rpc.ankr.com/mantle"});
+        vm.createSelectFork({blockNumber: 50663864, urlOrAlias: "https://rpc.ankr.com/mantle"});
     }
 
     function test_velo_pair_addr() external view {
@@ -298,6 +300,19 @@ contract VelocimeterTest is AddressesMantle, Script, StdCheats {
         console.log("f", f);
         uint f_new = _d_x_a(y, x);
         assert(f_new == f);
+    }
+
+    function test_cleo_pair() external {
+        address tokenIn = WMNT;
+        address tokenOut = CLEO;
+        uint amountOut = 4195993827708820;
+        uint amountIn = 999999999999999821;
+        address pair = CLEO_WMNT_POOL;
+        deal(tokenIn, address(this), 1e40);
+        IAll(tokenIn).transfer(pair, amountIn);
+        uint b = IAll(tokenOut).balanceOf(address(this));
+        IAll(pair).swap(0, amountOut, address(this), "0x");
+        b = IAll(tokenOut).balanceOf(address(this)) - b;
     }
 
     // FS

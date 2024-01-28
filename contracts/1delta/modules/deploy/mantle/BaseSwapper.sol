@@ -56,6 +56,10 @@ abstract contract BaseSwapper is TokenTransfer {
     bytes32 constant VELO_CODE_HASH = 0x0ccd005ee58d5fb11632ef5c2e0866256b240965c62c8e990c0f84a97f311879;
     address internal constant VELO_FACOTRY = 0x99F9a4A96549342546f9DAE5B2738EDDcD43Bf4C;
 
+    bytes32 internal constant CLEO_V1_FF_FACTORY = 0xffAAA16c016BF556fcD620328f0759252E29b1AB570000000000000000000000;
+    bytes32 constant CLEO_V1_CODE_HASH = 0xbf2404274de2b11f05e5aebd49e508de933034cb5fa2d0ac3de8cbd4bcef47dc;
+    address internal constant CLEO_V1_FACTORY = 0xAAA16c016BF556fcD620328f0759252E29b1AB57;
+
     constructor() {}
 
     function getLastToken(bytes calldata data) internal pure returns (address token) {
@@ -247,7 +251,7 @@ abstract contract BaseSwapper is TokenTransfer {
                 pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
             }
             // Velo Stable
-            default {
+            case 53 {
                 switch lt(tokenA, tokenB)
                 case 0 {
                     mstore(0xB14, tokenA)
@@ -262,6 +266,44 @@ abstract contract BaseSwapper is TokenTransfer {
                 mstore(0xB00, VELO_FF_FACTORY)
                 mstore(0xB15, salt)
                 mstore(0xB35, VELO_CODE_HASH)
+
+                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+            }
+            // Cleo V1 Volatile
+            case 54 {
+                switch lt(tokenA, tokenB)
+                case 0 {
+                    mstore(0xB14, tokenA)
+                    mstore(0xB00, tokenB)
+                }
+                default {
+                    mstore(0xB14, tokenB)
+                    mstore(0xB00, tokenA)
+                }
+                mstore8(0xB34, 0)
+                let salt := keccak256(0xB0C, 0x29)
+                mstore(0xB00, CLEO_V1_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, CLEO_V1_CODE_HASH)
+
+                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+            }
+            // Cleo V1 Stable
+            default {
+                switch lt(tokenA, tokenB)
+                case 0 {
+                    mstore(0xB14, tokenA)
+                    mstore(0xB00, tokenB)
+                }
+                default {
+                    mstore(0xB14, tokenB)
+                    mstore(0xB00, tokenA)
+                }
+                mstore8(0xB34, 1)
+                let salt := keccak256(0xB0C, 0x29)
+                mstore(0xB00, CLEO_V1_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, CLEO_V1_CODE_HASH)
 
                 pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
             }
@@ -397,7 +439,7 @@ abstract contract BaseSwapper is TokenTransfer {
                 pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
             }
             // Velo Stable
-            default {
+            case 53 {
                 switch zeroForOne
                 case 0 {
                     mstore(0xB14, tokenIn)
@@ -412,6 +454,44 @@ abstract contract BaseSwapper is TokenTransfer {
                 mstore(0xB00, VELO_FF_FACTORY)
                 mstore(0xB15, salt)
                 mstore(0xB35, VELO_CODE_HASH)
+
+                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+            }
+            // Cleo V1 Volatile
+            case 54 {
+                switch zeroForOne
+                case 0 {
+                    mstore(0xB14, tokenIn)
+                    mstore(0xB00, tokenOut)
+                }
+                default {
+                    mstore(0xB14, tokenOut)
+                    mstore(0xB00, tokenIn)
+                }
+                mstore8(0xB34, 0)
+                let salt := keccak256(0xB0C, 0x29)
+                mstore(0xB00, CLEO_V1_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, CLEO_V1_CODE_HASH)
+
+                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+            }
+            // Cleo V1 Stable
+            default {
+                switch zeroForOne
+                case 0 {
+                    mstore(0xB14, tokenIn)
+                    mstore(0xB00, tokenOut)
+                }
+                default {
+                    mstore(0xB14, tokenOut)
+                    mstore(0xB00, tokenIn)
+                }
+                mstore8(0xB34, 1)
+                let salt := keccak256(0xB0C, 0x29)
+                mstore(0xB00, CLEO_V1_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, CLEO_V1_CODE_HASH)
 
                 pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
             }
@@ -507,6 +587,7 @@ abstract contract BaseSwapper is TokenTransfer {
                     let sellAmountWithFee := mul(amountIn, 997)
                     buyAmount := div(mul(sellAmountWithFee, buyReserve), add(sellAmountWithFee, mul(sellReserve, 1000)))
                 }
+                // all solidly-based protocols (velo, cleo V1)
                 default {
                     // selector for getAmountOut(uint256,address)
                     mstore(0xB00, 0xf140a35a00000000000000000000000000000000000000000000000000000000)
@@ -597,6 +678,7 @@ abstract contract BaseSwapper is TokenTransfer {
                     // feeAm is 998 for fusionX
                     x := add(div(mul(mul(sellReserve, buyAmount), 1000), mul(sub(buyReserve, buyAmount), 998)), 1)
                 }
+                // merchant moe
                 case 51 {
                     let sellReserve
                     let buyReserve
@@ -617,6 +699,7 @@ abstract contract BaseSwapper is TokenTransfer {
                     // feAm is 997 for Moe
                     x := add(div(mul(mul(sellReserve, buyAmount), 1000), mul(sub(buyReserve, buyAmount), 997)), 1)
                 }
+                // velo volatile
                 case 52 {
                     let sellReserve
                     let buyReserve
@@ -650,9 +733,56 @@ abstract contract BaseSwapper is TokenTransfer {
                         1
                     )
                 }
+                // cleo V1 volatile
+                case 54 {
+                    let sellReserve
+                    let buyReserve
+                    switch lt(tokenIn, tokenOut)
+                    case 1 {
+                        // Transpose if pair order is different.
+                        sellReserve := mload(ptr)
+                        buyReserve := mload(add(ptr, 0x20))
+                    }
+                    default {
+                        buyReserve := mload(ptr)
+                        sellReserve := mload(add(ptr, 0x20))
+                    }
+                    // revert if insufficient reserves
+                    if lt(buyReserve, buyAmount) {
+                        revert(0, 0)
+                    }
+                    // fetch the fee from the factory
+                    // selector for pairFee(address)
+                    mstore(ptr, 0x841fa66b00000000000000000000000000000000000000000000000000000000)
+                    mstore(add(ptr, 0x4), pair)
+                    pop(staticcall(gas(), CLEO_V1_FACTORY, ptr, 0x24, ptr, 0x20))
+                    let fee := mload(ptr)
+                    // if the fee is zero, it will be overridden by the default ones
+                    if iszero(fee) {
+                        // selector for volatileFee()
+                        mstore(ptr, 0x5084ed0300000000000000000000000000000000000000000000000000000000)
+                        pop(staticcall(gas(), CLEO_V1_FACTORY, ptr, 0x24, ptr, 0x20))
+                        fee := mload(ptr)
+                    }
+                    // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
+                    // x = (reserveIn * amountOut * 10000) /
+                    //     ((reserveOut - amountOut) * feeAm) + 1;
+                    // for Velo volatile, we fetch the fee
+                    x := add(
+                        div(
+                            mul(mul(sellReserve, buyAmount), 10000),
+                            mul(
+                                sub(buyReserve, buyAmount),
+                                sub(10000, fee) // adjust for Cleo fee
+                            )
+                        ),
+                        1
+                    )
+                }
+                // covers solidly forks for stable pools (53, 55)
                 default {
                     let _decimalsIn
-                    let _decimalsOut
+                    let _decimalsOut_xy_fee
                     let y0
                     let _reserveInScaled
                     {
@@ -663,7 +793,7 @@ abstract contract BaseSwapper is TokenTransfer {
                             pop(staticcall(gas(), tokenIn, ptr, 0x4, ptrPlus4, 0x20))
                             _decimalsIn := exp(10, mload(ptrPlus4))
                             pop(staticcall(gas(), tokenOut, ptr, 0x4, ptrPlus4, 0x20))
-                            _decimalsOut := exp(10, mload(ptrPlus4))
+                            _decimalsOut_xy_fee := exp(10, mload(ptrPlus4))
                         }
 
                         // Call pair.getReserves(), store the results at `free memo`
@@ -681,14 +811,16 @@ abstract contract BaseSwapper is TokenTransfer {
                         switch lt(tokenIn, tokenOut)
                         case 1 {
                             _reserveInScaled := div(mul(mload(ptr), 1000000000000000000), _decimalsIn)
-                            _reserveOutScaled := div(mul(mload(add(ptr, 0x20)), 1000000000000000000), _decimalsOut)
+                            _reserveOutScaled := div(mul(mload(add(ptr, 0x20)), 1000000000000000000), _decimalsOut_xy_fee)
                         }
                         default {
                             _reserveInScaled := div(mul(mload(add(ptr, 0x20)), 1000000000000000000), _decimalsIn)
-                            _reserveOutScaled := div(mul(mload(ptr), 1000000000000000000), _decimalsOut)
+                            _reserveOutScaled := div(mul(mload(ptr), 1000000000000000000), _decimalsOut_xy_fee)
                         }
+                        y0 := sub(_reserveOutScaled, div(mul(buyAmount, 1000000000000000000), _decimalsOut_xy_fee))
+                        x := _reserveInScaled
                         // get xy
-                        pId := div(
+                        _decimalsOut_xy_fee := div(
                             mul(
                                 div(mul(_reserveInScaled, _reserveOutScaled), 1000000000000000000),
                                 add(
@@ -698,9 +830,6 @@ abstract contract BaseSwapper is TokenTransfer {
                             ),
                             1000000000000000000
                         )
-
-                        y0 := sub(_reserveOutScaled, div(mul(buyAmount, 1000000000000000000), _decimalsOut))
-                        x := _reserveInScaled
                     }
                     // for-loop for approximation
                     let i := 0
@@ -714,12 +843,12 @@ abstract contract BaseSwapper is TokenTransfer {
                             div(mul(x, div(mul(div(mul(y0, y0), 1000000000000000000), y0), 1000000000000000000)), 1000000000000000000),
                             div(mul(y0, div(mul(div(mul(x, x), 1000000000000000000), x), 1000000000000000000)), 1000000000000000000)
                         )
-                        switch lt(k, pId)
+                        switch lt(k, _decimalsOut_xy_fee)
                         case 1 {
                             x := add(
                                 x,
                                 div(
-                                    mul(sub(pId, k), 1000000000000000000),
+                                    mul(sub(_decimalsOut_xy_fee, k), 1000000000000000000),
                                     add(
                                         div(mul(mul(3, y0), div(mul(x, x), 1000000000000000000)), 1000000000000000000),
                                         div(mul(div(mul(y0, y0), 1000000000000000000), y0), 1000000000000000000)
@@ -731,7 +860,7 @@ abstract contract BaseSwapper is TokenTransfer {
                             x := sub(
                                 x,
                                 div(
-                                    mul(sub(k, pId), 1000000000000000000),
+                                    mul(sub(k, _decimalsOut_xy_fee), 1000000000000000000),
                                     add(
                                         div(mul(mul(3, y0), div(mul(x, x), 1000000000000000000)), 1000000000000000000),
                                         div(mul(div(mul(y0, y0), 1000000000000000000), y0), 1000000000000000000)
@@ -754,15 +883,36 @@ abstract contract BaseSwapper is TokenTransfer {
                     }
                     // fetch the fee from the factory
                     // selector for getFee(address)
-                    mstore(ptr, 0xb88c914800000000000000000000000000000000000000000000000000000000)
-                    mstore(add(ptr, 0x4), pair)
-                    pop(staticcall(gas(), VELO_FACOTRY, ptr, 0x24, ptr, 0x20))
+                    switch pId
+                    // velo stable
+                    case 53 {
+                        mstore(ptr, 0xb88c914800000000000000000000000000000000000000000000000000000000)
+                        mstore(add(ptr, 0x4), pair)
+                        pop(staticcall(gas(), VELO_FACOTRY, ptr, 0x24, ptr, 0x20))
+                        _decimalsOut_xy_fee := mload(ptr)
+                    }
+                    // cleo stable
+                    default {
+                        // selector for pairFee(address)
+                        mstore(ptr, 0x841fa66b00000000000000000000000000000000000000000000000000000000)
+                        mstore(add(ptr, 0x4), pair)
+                        pop(staticcall(gas(), CLEO_V1_FACTORY, ptr, 0x24, ptr, 0x20))
+                        // store fee in param
+                        _decimalsOut_xy_fee := mload(ptr)
+                        // if the fee is zero, it is overridden by the stableFee default
+                        if iszero(_decimalsOut_xy_fee) {
+                            // selector for stableFee()
+                            mstore(ptr, 0x40bbd77500000000000000000000000000000000000000000000000000000000)
+                            pop(staticcall(gas(), CLEO_V1_FACTORY, ptr, 0x24, ptr, 0x20))
+                            _decimalsOut_xy_fee := mload(ptr)
+                        }
+                    }
                     // calculate and adjust the result (reserveInNew - reserveIn) * 10k / (10k - fee)
                     x := add(
                         div(
                             div(
                                 mul(mul(sub(x, _reserveInScaled), _decimalsIn), 10000),
-                                sub(10000, mload(ptr)) // 10000 - fee
+                                sub(10000, _decimalsOut_xy_fee) // 10000 - fee
                             ),
                             1000000000000000000
                         ),

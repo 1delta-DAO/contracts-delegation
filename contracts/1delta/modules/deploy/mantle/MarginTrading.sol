@@ -10,7 +10,6 @@ import {WithStorage} from "../../../storage/BrokerStorage.sol";
 import {BaseSwapper, IUniswapV2Pair} from "./BaseSwapper.sol";
 import {ILendingPool} from "./ILendingPool.sol";
 import {IERC20Balance} from "../../../interfaces/IERC20Balance.sol";
-
 // solhint-disable max-line-length
 
 /**
@@ -575,7 +574,7 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
         _uniswapV2StyleCallback(amount0, amount1, data);
     }
 
-    // The uniswapV2 style callback for Velocimeter
+    // The uniswapV2 style callback for Velocimeter and Cleopatra V1
     function hook(
         address,
         uint256 amount0,

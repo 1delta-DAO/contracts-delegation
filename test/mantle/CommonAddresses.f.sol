@@ -5,12 +5,15 @@ contract AddressesMantle {
     address internal WETH = 0xdEAddEaDdeadDEadDEADDEAddEADDEAddead1111;
     address internal WBTC = 0xCAbAE6f6Ea1ecaB08Ad02fE02ce9A44F09aebfA2;
     address internal WMNT = 0x78c1b0C915c4FAA5FffA6CAbf0219DA63d7f4cb8;
+    address internal CLEO = 0xC1E0C8C30F251A07a894609616580ad2CEb547F2;
     address internal USDC = 0x09Bc4E0D864854c6aFB6eB9A9cdF58aC190D0dF9;
     address internal USDT = 0x201EBa5CC46D216Ce6DC03F6a759e8E766e956aE;
     address internal axlFRAX = 0x406Cde76a3fD20e48bc1E0F60651e60Ae204B040;
     address internal axlUSDC = 0xEB466342C4d449BC9f53A865D5Cb90586f405215;
     address internal USDY = address(0);
     address internal mUSD = address(0);
+
+    address internal CLEO_WMNT_POOL = 0x762B916297235dc920a8c684419e41Ab0099A242;
 
     address veloFactory = 0x99F9a4A96549342546f9DAE5B2738EDDcD43Bf4C;
 
@@ -20,6 +23,7 @@ contract AddressesMantle {
     bytes32 internal constant VELO_FF_FACTORY = 0xff99F9a4A96549342546f9DAE5B2738EDDcD43Bf4C0000000000000000000000;
     bytes32 constant VELO_CODE_HASH = 0x0ccd005ee58d5fb11632ef5c2e0866256b240965c62c8e990c0f84a97f311879;
     address internal constant VELO_FACOTRY = 0x99F9a4A96549342546f9DAE5B2738EDDcD43Bf4C;
+    address internal constant CLEO_V1_FACOTRY = 0xAAA16c016BF556fcD620328f0759252E29b1AB57;
     
     bytes32 internal constant FUSION_V2_FF_FACTORY = 0xffE5020961fA51ffd3662CDf307dEf18F9a87Cce7c0000000000000000000000;
     bytes32 internal constant CODE_HASH_FUSION_V2 = 0x58c684aeb03fe49c8a3080db88e425fae262c5ef5bf0e8acffc0526c6e3c03a0;

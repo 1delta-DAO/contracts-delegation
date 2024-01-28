@@ -91,7 +91,11 @@ contract OneDeltaQuoterMantle {
 
     bytes32 internal constant VELO_FF_FACTORY = 0xff99F9a4A96549342546f9DAE5B2738EDDcD43Bf4C0000000000000000000000;
     bytes32 constant VELO_CODE_HASH = 0x0ccd005ee58d5fb11632ef5c2e0866256b240965c62c8e990c0f84a97f311879;
-    address internal constant VELO_FACOTRY = 0x99F9a4A96549342546f9DAE5B2738EDDcD43Bf4C;
+    address internal constant VELO_FACTORY = 0x99F9a4A96549342546f9DAE5B2738EDDcD43Bf4C;
+
+    bytes32 internal constant CLEO_V1_FF_FACTORY = 0xffAAA16c016BF556fcD620328f0759252E29b1AB570000000000000000000000;
+    bytes32 constant CLEO_V1_CODE_HASH = 0xbf2404274de2b11f05e5aebd49e508de933034cb5fa2d0ac3de8cbd4bcef47dc;
+    address internal constant CLEO_V1_FACTORY = 0xAAA16c016BF556fcD620328f0759252E29b1AB57;
 
     constructor() {}
 
@@ -230,7 +234,7 @@ contract OneDeltaQuoterMantle {
         uint24 fee,
         uint8 pId, // pool identifier
         uint256 amountIn
-    ) public returns (uint256 amountOut) {
+    ) private returns (uint256 amountOut) {
         bool zeroForOne = tokenIn < tokenOut;
 
         try
@@ -252,7 +256,7 @@ contract OneDeltaQuoterMantle {
         address tokenOut,
         uint24 fee,
         uint128 amount
-    ) public returns (uint256 amountOut) {
+    ) private returns (uint256 amountOut) {
         if (tokenIn < tokenOut) {
             int24 boundaryPoint = -799999;
             try
@@ -280,39 +284,13 @@ contract OneDeltaQuoterMantle {
         }
     }
 
-    function quoteExactInputV3(bytes calldata path, uint256 amountIn) external returns (uint256 amountOut) {
-        while (true) {
-            bool hasMultiplePools = path.length > 20 + 20 + 3 + 1;
-
-            address tokenIn;
-            address tokenOut;
-            uint24 fee;
-            uint8 poolId;
-            assembly {
-                let firstWord := calldataload(path.offset) // load first 32 bytes
-                tokenIn := shr(96, firstWord) // right shift by 12 yields first token
-                fee := and(shr(72, firstWord), 0xffffff) // right shft by 9 (=12-3) bytes is the fee
-                poolId := shr(64, firstWord) // right shift by 8 = (9 - 1) bytes
-                tokenOut := shr(96, calldataload(add(path.offset, 24))) // tokenOut starts at 24th byte
-            }
-            // the outputs of prior swaps become the inputs to subsequent ones
-            amountIn = quoteExactInputSingleV3(tokenIn, tokenOut, fee, poolId, amountIn);
-            // decide whether to continue or terminate
-            if (hasMultiplePools) {
-                path = path[24:];
-            } else {
-                return amountIn;
-            }
-        }
-    }
-
     function quoteExactOutputSingleV3(
         address tokenIn,
         address tokenOut,
         uint24 fee,
         uint8 poolId,
         uint256 amountOut
-    ) public returns (uint256 amountIn) {
+    ) private returns (uint256 amountIn) {
         bool zeroForOne = tokenIn < tokenOut;
 
         // if no price limit has been specified, cache the output amount for comparison in the swap callback
@@ -337,7 +315,7 @@ contract OneDeltaQuoterMantle {
         address tokenOut,
         uint24 fee,
         uint128 desire
-    ) public returns (uint256 amountIn) {
+    ) private returns (uint256 amountIn) {
         amountOutCached = desire;
         if (tokenIn < tokenOut) {
             int24 boundaryPoint = -799999;
@@ -581,7 +559,7 @@ contract OneDeltaQuoterMantle {
                 pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
             }
             // Velo Stable
-            default {
+            case 53 {
                 switch lt(tokenA, tokenB)
                 case 0 {
                     mstore(0xB14, tokenA)
@@ -596,6 +574,44 @@ contract OneDeltaQuoterMantle {
                 mstore(0xB00, VELO_FF_FACTORY)
                 mstore(0xB15, salt)
                 mstore(0xB35, VELO_CODE_HASH)
+
+                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+            }
+            // Cleo V1 Volatile
+            case 54 {
+                switch lt(tokenA, tokenB)
+                case 0 {
+                    mstore(0xB14, tokenA)
+                    mstore(0xB00, tokenB)
+                }
+                default {
+                    mstore(0xB14, tokenB)
+                    mstore(0xB00, tokenA)
+                }
+                mstore8(0xB34, 0)
+                let salt := keccak256(0xB0C, 0x29)
+                mstore(0xB00, CLEO_V1_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, CLEO_V1_CODE_HASH)
+
+                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+            }
+            // Cleo V1 Stable
+            default {
+                switch lt(tokenA, tokenB)
+                case 0 {
+                    mstore(0xB14, tokenA)
+                    mstore(0xB00, tokenB)
+                }
+                default {
+                    mstore(0xB14, tokenB)
+                    mstore(0xB00, tokenA)
+                }
+                mstore8(0xB34, 1)
+                let salt := keccak256(0xB0C, 0x29)
+                mstore(0xB00, CLEO_V1_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, CLEO_V1_CODE_HASH)
 
                 pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
             }
@@ -698,7 +714,7 @@ contract OneDeltaQuoterMantle {
     /// @dev calculate amountOut for uniV2 style pools - does not require overflow checks
     function getAmountOutUniV2Type(
         address pair,
-        address tokenIn, // only used for velo
+        address tokenIn, // only used for solidly forks
         address tokenOut,
         uint256 sellAmount,
         uint256 _pId // to identify the fee
@@ -738,6 +754,7 @@ contract OneDeltaQuoterMantle {
                     let sellAmountWithFee := mul(sellAmount, 998)
                     buyAmount := div(mul(sellAmountWithFee, buyReserve), add(sellAmountWithFee, mul(sellReserve, 1000)))
                 }
+                // merchant moe
                 case 51 {
                     // Call pair.getReserves(), store the results at `0xC00`
                     mstore(0xB00, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
@@ -766,6 +783,7 @@ contract OneDeltaQuoterMantle {
                     let sellAmountWithFee := mul(sellAmount, 997)
                     buyAmount := div(mul(sellAmountWithFee, buyReserve), add(sellAmountWithFee, mul(sellReserve, 1000)))
                 }
+                // covers velo volatile, stable and cleo V1 volatile, stable
                 default {
                     // selector for getAmountOut(uint256,address)
                     mstore(0xB00, 0xf140a35a00000000000000000000000000000000000000000000000000000000)
@@ -875,7 +893,7 @@ contract OneDeltaQuoterMantle {
                     // selector for getFee(address)
                     mstore(ptr, 0xb88c914800000000000000000000000000000000000000000000000000000000)
                     mstore(add(ptr, 0x4), pair)
-                    pop(staticcall(gas(), VELO_FACOTRY, ptr, 0x24, ptr, 0x20))
+                    pop(staticcall(gas(), VELO_FACTORY, ptr, 0x24, ptr, 0x20))
                     // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
                     // x = (reserveIn * amountOut * 10000) /
                     //     ((reserveOut - amountOut) * feeAm) + 1;
@@ -891,11 +909,58 @@ contract OneDeltaQuoterMantle {
                         1
                     )
                 }
+                // cleo volatile
+                case 54 {
+                    let sellReserve
+                    let buyReserve
+                    switch lt(tokenIn, tokenOut)
+                    case 1 {
+                        // Transpose if pair order is different.
+                        sellReserve := mload(ptr)
+                        buyReserve := mload(add(ptr, 0x20))
+                    }
+                    default {
+                        buyReserve := mload(ptr)
+                        sellReserve := mload(add(ptr, 0x20))
+                    }
+                    // revert if insufficient reserves
+                    if lt(buyReserve, buyAmount) {
+                        revert(0, 0)
+                    }
+                    // fetch the fee from the factory
+                    // selector for pairFee(address)
+                    mstore(ptr, 0x841fa66b00000000000000000000000000000000000000000000000000000000)
+                    mstore(add(ptr, 0x4), pair)
+                    pop(staticcall(gas(), CLEO_V1_FACTORY, ptr, 0x24, ptr, 0x20))
+                    let fee := mload(ptr)
+                    // if the fee is zero, it will be overridden by the default ones
+                    if iszero(fee) {
+                        // selector for volatileFee()
+                        mstore(ptr, 0x5084ed0300000000000000000000000000000000000000000000000000000000)
+                        pop(staticcall(gas(), CLEO_V1_FACTORY, ptr, 0x24, ptr, 0x20))
+                        fee := mload(ptr)
+                    }
+                    // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
+                    // x = (reserveIn * amountOut * 10000) /
+                    //     ((reserveOut - amountOut) * feeAm) + 1;
+                    // for Velo volatile, we fetch the fee
+                    x := add(
+                        div(
+                            mul(mul(sellReserve, buyAmount), 10000),
+                            mul(
+                                sub(buyReserve, buyAmount),
+                                sub(10000, fee) // adjust for Cleo fee
+                            )
+                        ),
+                        1
+                    )
+                }
+                // covers solidly forks for stable pools (53, 55)
                 default {
                     let _decimalsIn
-                    let _decimalsOut
                     let y0
                     let _reserveInScaled
+                    let _decimalsOut_xy_fee
                     {
                         {
                             let ptrPlus4 := add(ptr, 0x4)
@@ -904,7 +969,7 @@ contract OneDeltaQuoterMantle {
                             pop(staticcall(gas(), tokenIn, ptr, 0x4, ptrPlus4, 0x20))
                             _decimalsIn := exp(10, mload(ptrPlus4))
                             pop(staticcall(gas(), tokenOut, ptr, 0x4, ptrPlus4, 0x20))
-                            _decimalsOut := exp(10, mload(ptrPlus4))
+                            _decimalsOut_xy_fee := exp(10, mload(ptrPlus4))
                         }
 
                         // Call pair.getReserves(), store the results at `free memo`
@@ -927,7 +992,7 @@ contract OneDeltaQuoterMantle {
                             if lt(reserveOut, buyAmount) {
                                 revert(0, 0)
                             }
-                            _reserveOutScaled := div(mul(reserveOut, 1000000000000000000), _decimalsOut)
+                            _reserveOutScaled := div(mul(reserveOut, 1000000000000000000), _decimalsOut_xy_fee)
                         }
                         default {
                             _reserveInScaled := div(mul(mload(add(ptr, 0x20)), 1000000000000000000), _decimalsIn)
@@ -936,10 +1001,13 @@ contract OneDeltaQuoterMantle {
                             if lt(reserveOut, buyAmount) {
                                 revert(0, 0)
                             }
-                            _reserveOutScaled := div(mul(reserveOut, 1000000000000000000), _decimalsOut)
+                            _reserveOutScaled := div(mul(reserveOut, 1000000000000000000), _decimalsOut_xy_fee)
                         }
+
+                        y0 := sub(_reserveOutScaled, div(mul(buyAmount, 1000000000000000000), _decimalsOut_xy_fee))
+                        x := _reserveInScaled
                         // get xy
-                        pId := div(
+                        _decimalsOut_xy_fee := div(
                             mul(
                                 div(mul(_reserveInScaled, _reserveOutScaled), 1000000000000000000),
                                 add(
@@ -949,9 +1017,6 @@ contract OneDeltaQuoterMantle {
                             ),
                             1000000000000000000
                         )
-
-                        y0 := sub(_reserveOutScaled, div(mul(buyAmount, 1000000000000000000), _decimalsOut))
-                        x := _reserveInScaled
                     }
                     // for-loop for approximation
                     let i := 0
@@ -965,12 +1030,12 @@ contract OneDeltaQuoterMantle {
                             div(mul(x, div(mul(div(mul(y0, y0), 1000000000000000000), y0), 1000000000000000000)), 1000000000000000000),
                             div(mul(y0, div(mul(div(mul(x, x), 1000000000000000000), x), 1000000000000000000)), 1000000000000000000)
                         )
-                        switch lt(k, pId)
+                        switch lt(k, _decimalsOut_xy_fee)
                         case 1 {
                             x := add(
                                 x,
                                 div(
-                                    mul(sub(pId, k), 1000000000000000000),
+                                    mul(sub(_decimalsOut_xy_fee, k), 1000000000000000000),
                                     add(
                                         div(mul(mul(3, y0), div(mul(x, x), 1000000000000000000)), 1000000000000000000),
                                         div(mul(div(mul(y0, y0), 1000000000000000000), y0), 1000000000000000000)
@@ -982,7 +1047,7 @@ contract OneDeltaQuoterMantle {
                             x := sub(
                                 x,
                                 div(
-                                    mul(sub(k, pId), 1000000000000000000),
+                                    mul(sub(k, _decimalsOut_xy_fee), 1000000000000000000),
                                     add(
                                         div(mul(mul(3, y0), div(mul(x, x), 1000000000000000000)), 1000000000000000000),
                                         div(mul(div(mul(y0, y0), 1000000000000000000), y0), 1000000000000000000)
@@ -1004,16 +1069,37 @@ contract OneDeltaQuoterMantle {
                         i := add(i, 1)
                     }
                     // fetch the fee from the factory
-                    // selector for getFee(address)
-                    mstore(ptr, 0xb88c914800000000000000000000000000000000000000000000000000000000)
-                    mstore(add(ptr, 0x4), pair)
-                    pop(staticcall(gas(), VELO_FACOTRY, ptr, 0x24, ptr, 0x20))
+                    switch pId
+                    // velo stable
+                    case 53 {
+                        // selector for getFee(address)
+                        mstore(ptr, 0xb88c914800000000000000000000000000000000000000000000000000000000)
+                        mstore(add(ptr, 0x4), pair)
+                        pop(staticcall(gas(), VELO_FACTORY, ptr, 0x24, ptr, 0x20))
+                        _decimalsOut_xy_fee := mload(ptr)
+                    }
+                    // cleo stable
+                    default {
+                        // selector for pairFee(address)
+                        mstore(ptr, 0x841fa66b00000000000000000000000000000000000000000000000000000000)
+                        mstore(add(ptr, 0x4), pair)
+                        pop(staticcall(gas(), CLEO_V1_FACTORY, ptr, 0x24, ptr, 0x20))
+                        // store fee in param
+                        _decimalsOut_xy_fee := mload(ptr)
+                        // if the fee is zero, it is overridden by the stableFee default
+                        if iszero(_decimalsOut_xy_fee) {
+                            // selector for stableFee()
+                            mstore(ptr, 0x40bbd77500000000000000000000000000000000000000000000000000000000)
+                            pop(staticcall(gas(), CLEO_V1_FACTORY, ptr, 0x24, ptr, 0x20))
+                            _decimalsOut_xy_fee := mload(ptr)
+                        }
+                    }
                     // calculate and adjust the result (reserveInNew - reserveIn) * 10k / (10k - fee)
                     x := add(
                         div(
                             div(
                                 mul(mul(sub(x, _reserveInScaled), _decimalsIn), 10000),
-                                sub(10000, mload(ptr)) // 10000 - fee
+                                sub(10000, _decimalsOut_xy_fee) // 10000 - fee
                             ),
                             1000000000000000000
                         ),
