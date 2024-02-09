@@ -28,6 +28,22 @@ before(async function () {
 })
 
 
+it("Test Moe EI Large", async function () {
+
+    const amountIn = parseUnits('45000', 18)
+    const route = encodeQuoterPathEthers(
+        [wmt, usdc],
+        [0, ],
+        [51]
+    )
+    const quote = await quoter.callStatic.quoteExactInput(
+        route,
+        amountIn
+    )
+    console.log("Quote Mixed", quote.toString())
+
+})
+
 
 it("Test Moe EI Mix", async function () {
 

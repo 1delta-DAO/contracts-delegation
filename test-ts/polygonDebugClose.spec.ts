@@ -62,8 +62,10 @@ it("Test Close", async function () {
     const blockNumBefore = await ethers.provider.getBlockNumber();
     const debtToken = await new StableDebtToken__factory(impersonatedSigner).attach(addressesAaveVTokens.WETH[POLYGON_CHAIN_ID])
     const balanceBefore = await debtToken.balanceOf(trader)
-    console.log("block", blockNumBefore)
+    console.log("block before tx", blockNumBefore)
     await multicaller.connect(impersonatedSigner).multicall(close_calldatas)
+    const blockNumAfter = await ethers.provider.getBlockNumber();
+    console.log("block after tx", blockNumAfter)
     await mine(1)
     const balanceAfter = await debtToken.balanceOf(trader)
     console.log("debt balance before to after:", formatEther(balanceBefore), "->", formatEther(balanceAfter))
