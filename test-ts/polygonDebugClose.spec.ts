@@ -4,7 +4,8 @@ import {
     DeltaBrokerProxy__factory,
     DeltaFlashAggregator__factory,
     Pool,
-    Pool__factory
+    Pool__factory,
+    StableDebtToken__factory
 } from "../types";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { network } from "hardhat";
@@ -13,9 +14,10 @@ import {
     aaveBrokerAddresses
 } from "../deploy/polygon_addresses";
 import { DeltaFlashAggregator, DeltaFlashAggregatorInterface } from "../types/DeltaFlashAggregator";
-import { addressesTokens } from "../scripts/aaveAddresses";
+import { addressesAaveVTokens, addressesTokens } from "../scripts/aaveAddresses";
 import { encodeAggregatorPathEthers } from "./1delta/shared/aggregatorPath";
 import { Contract } from "ethers";
+import { formatEther } from "ethers/lib/utils";
 const { ethers } = require("hardhat");
 
 const POLYGON_CHAIN_ID = 137;
@@ -47,7 +49,6 @@ before(async function () {
     // console.log("set code")
     // set the code
     // await setCode(traderModule, newflashAggregatorCode)
-    await mine(3)
     console.log("fetch flash broker")
     flashConract = await new DeltaFlashAggregator__factory(impersonatedSigner).attach(proxy)
 
@@ -56,12 +57,16 @@ before(async function () {
 
 
 it("Test Close", async function () {
-
     await impersonateAccount(trader)
     const impersonatedSigner = await ethers.getSigner(trader);
-
+    const blockNumBefore = await ethers.provider.getBlockNumber();
+    const debtToken = await new StableDebtToken__factory(impersonatedSigner).attach(addressesAaveVTokens.WETH[POLYGON_CHAIN_ID])
+    const balanceBefore = await debtToken.balanceOf(trader)
+    console.log("block", blockNumBefore)
     await multicaller.connect(impersonatedSigner).multicall(close_calldatas)
-
+    await mine(1)
+    const balanceAfter = await debtToken.balanceOf(trader)
+    console.log("debt balance before to after:", formatEther(balanceBefore), "->", formatEther(balanceAfter))
 })
 
 const close_calldatas = [

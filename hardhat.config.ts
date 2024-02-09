@@ -194,6 +194,10 @@ const config: HardhatUserConfig = {
       accounts
     },
     hardhat: {
+      mining: {
+        // auto: false,
+        // interval: 0
+      },
       // allowUnlimitedContractSize: true,
 
       forking: {
