@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.24;
 
 interface ISwapPool {
     function swap(
@@ -345,33 +345,6 @@ contract OneDeltaQuoterMantle {
         }
     }
 
-    function quoteExactOutputV3(bytes calldata path, uint256 amountOut) external returns (uint256 amountIn) {
-        while (true) {
-            bool hasMultiplePools = path.length > 20 + 20 + 3 + 1;
-
-            address tokenIn;
-            address tokenOut;
-            uint24 fee;
-            uint8 poolId;
-            assembly {
-                let firstWord := calldataload(path.offset)
-                tokenOut := shr(96, firstWord) // in exact out case, tokens are switched
-                poolId := shr(64, firstWord) // poolId and fee are still in the same order
-                fee := and(shr(72, firstWord), 0xffffff)
-                tokenIn := shr(96, calldataload(add(path.offset, 24)))
-            }
-            // the inputs of prior swaps become the outputs of subsequent ones
-            amountOut = quoteExactOutputSingleV3(tokenIn, tokenOut, fee, poolId, amountOut);
-
-            // decide whether to continue or terminate
-            if (hasMultiplePools) {
-                path = path[24:];
-            } else {
-                return amountOut;
-            }
-        }
-    }
-
     /// @dev Returns the pool for the given token pair and fee.
     /// The pool contract may or may not exist.
     function v3TypePool(address tokenA, address tokenB, uint24 fee, uint256 _pId) private pure returns (ISwapPool pool) {
@@ -637,7 +610,7 @@ contract OneDeltaQuoterMantle {
                 tokenOut := shr(96, calldataload(add(path.offset, 24))) // tokenOut starts at 24th byte
             }
 
-            // v3
+            // v3 types
             if (poolId < 50) {
                 uint24 fee;
                 assembly {
@@ -645,7 +618,7 @@ contract OneDeltaQuoterMantle {
                 }
                 amountIn = quoteExactInputSingleV3(tokenIn, tokenOut, fee, poolId, amountIn);
             }
-            // V2
+            // v2 types
             else if (poolId < 100) {
                 address pair = v2TypePairAddress(tokenIn, tokenOut, poolId);
                 amountIn = getAmountOutUniV2Type(pair, tokenIn, tokenOut, amountIn, poolId);
@@ -688,7 +661,7 @@ contract OneDeltaQuoterMantle {
                 tokenIn := shr(96, calldataload(add(path.offset, 24))) // tokenOut starts at 24th byte
             }
 
-            // v3
+            // v3 types
             if (poolId < 50) {
                 uint24 fee;
                 assembly {
@@ -696,7 +669,7 @@ contract OneDeltaQuoterMantle {
                 }
                 amountOut = quoteExactOutputSingleV3(tokenIn, tokenOut, fee, poolId, amountOut);
             }
-            // V2
+            // v2 types
             else if (poolId < 100) {
                 address pair = v2TypePairAddress(tokenIn, tokenOut, poolId);
                 amountOut = getV2AmountInDirect(pair, tokenIn, tokenOut, amountOut, poolId);

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.23;
+pragma solidity 0.8.24;
 
 /// @title Immutable state
 /// @notice Immutable state used by periphery contracts
