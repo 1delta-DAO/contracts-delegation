@@ -52,6 +52,7 @@ interface IiZiSwapPool {
  * Paths have to be encoded as follows: token0 (address) | param0 (uint24) | poolId (uint8) | token1 (address) |
  */
 contract OneDeltaQuoterMantle {
+    error invalidDexId();
     /// @dev Transient storage variable used to check a safety condition in exact output swaps.
     uint256 private amountOutCached;
 
@@ -656,6 +657,10 @@ contract OneDeltaQuoterMantle {
                     fee := and(shr(72, calldataload(path.offset)), 0xffffff)
                 }
                 amountIn = quoteExactInputSingle_iZi(tokenIn, tokenOut, fee, uint128(amountIn));
+            } else if  (poolId == 101) {
+                amountIn = quoteWOO(tokenIn, tokenOut, amountIn);
+            } else {
+                revert invalidDexId();
             }
 
             /// decide whether to continue or terminate
@@ -701,6 +706,8 @@ contract OneDeltaQuoterMantle {
                     fee := and(shr(72, calldataload(path.offset)), 0xffffff)
                 }
                 amountOut = quoteExactOutputSingle_iZi(tokenIn, tokenOut, fee, uint128(amountOut));
+            } else {
+                revert invalidDexId();
             }
             /// decide whether to continue or terminate
             if (path.length > 20 + 20 + 4) {
@@ -797,6 +804,30 @@ contract OneDeltaQuoterMantle {
                     buyAmount := mload(0xB00)
                 }
             }
+        }
+    }
+
+    function quoteWOO(address tokenIn, address tokenOut, uint256 amountIn) private view returns (uint256 amountOut) {
+          assembly {
+            // selector for querySwap(address,address,uint256)
+            mstore(
+                0xB00,
+                0xe94803f400000000000000000000000000000000000000000000000000000000
+            )
+            mstore(0xB04, tokenIn)
+            mstore(0xB24, tokenOut)
+            mstore(0xB44, amountIn)
+            if iszero(
+                staticcall(
+                    gas(), 
+                    0xd14a997308F9e7514a8FEA835064D596CDCaa99E, // Woo Router
+                    0xB00, 0x64, 0xB00, 0x20
+                    )
+                ) {
+                revert(0, 0)
+            }
+
+            amountOut := mload(0xB00)
         }
     }
 
