@@ -25,11 +25,11 @@ abstract contract TokenTransfer {
 
             // selector for transferFrom(address,address,uint256)
             mstore(ptr, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
-            mstore(add(ptr, 0x04), and(owner, ADDRESS_MASK))
-            mstore(add(ptr, 0x24), and(to, ADDRESS_MASK))
+            mstore(add(ptr, 0x04), owner)
+            mstore(add(ptr, 0x24), to)
             mstore(add(ptr, 0x44), amount)
 
-            let success := call(gas(), and(token, ADDRESS_MASK), 0, ptr, 0x64, ptr, 32)
+            let success := call(gas(), token, 0, ptr, 0x64, ptr, 32)
 
             let rdsize := returndatasize()
 
@@ -68,10 +68,10 @@ abstract contract TokenTransfer {
 
             // selector for transfer(address,uint256)
             mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
-            mstore(add(ptr, 0x04), and(to, ADDRESS_MASK))
+            mstore(add(ptr, 0x04), to)
             mstore(add(ptr, 0x24), amount)
 
-            let success := call(gas(), and(token, ADDRESS_MASK), 0, ptr, 0x44, ptr, 32)
+            let success := call(gas(), token, 0, ptr, 0x44, ptr, 32)
 
             let rdsize := returndatasize()
 
@@ -122,7 +122,7 @@ abstract contract TokenTransfer {
             if iszero(
                 call(
                     gas(),
-                    and(weth, ADDRESS_MASK),
+                    weth,
                     amount, // ETH to deposit
                     ptr, // seletor for deposit()
                     0x4, // input size = zero
@@ -145,10 +145,10 @@ abstract contract TokenTransfer {
 
             // selector for approve(address,uint256)
             mstore(ptr, 0x095ea7b300000000000000000000000000000000000000000000000000000000)
-            mstore(add(ptr, 0x04), and(to, ADDRESS_MASK))
+            mstore(add(ptr, 0x04), to)
             mstore(add(ptr, 0x24), value)
 
-            pop(call(gas(), and(token, ADDRESS_MASK), 0, ptr, 0x44, ptr, 32))
+            pop(call(gas(), token, 0, ptr, 0x44, ptr, 32))
         }
     }
 

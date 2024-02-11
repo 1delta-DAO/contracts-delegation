@@ -59,6 +59,10 @@ abstract contract BaseSwapper is TokenTransfer {
     bytes32 constant CLEO_V1_CODE_HASH = 0xbf2404274de2b11f05e5aebd49e508de933034cb5fa2d0ac3de8cbd4bcef47dc;
     address internal constant CLEO_V1_FACTORY = 0xAAA16c016BF556fcD620328f0759252E29b1AB57;
 
+    address private constant WOO_ROUTER = 0x9D1A92e601db0901e69bd810029F2C14bCCA3128;
+    address private constant WOO_POOL = 0x9D1A92e601db0901e69bd810029F2C14bCCA3128;
+    address internal constant FEE_COLLECTOR = 0x0000000000000000000000000000000000000000;
+
     constructor() {}
 
     function getLastToken(bytes calldata data) internal pure returns (address token) {
@@ -367,6 +371,10 @@ abstract contract BaseSwapper is TokenTransfer {
                         path
                     );
             }
+            // WOO Fi
+            else if (identifier == 101) {
+                amountIn = swapWooFiExactIn(tokenIn, tokenOut, amountIn);
+            }
             // decide whether to continue or terminate
             if (path.length > 46) {
                 path = path[25:];
@@ -374,6 +382,65 @@ abstract contract BaseSwapper is TokenTransfer {
                 amountOut = amountIn;
                 break;
             }
+        }
+    }
+
+    function swapWooFiExactIn(address tokenIn, address tokenOut, uint256 amountIn) private returns (uint256 amountOut) {
+          assembly {
+            // selector for transfer(address,uint256)
+            mstore(0xB00, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+            mstore(add(0xB00, 0x04), WOO_POOL)
+            mstore(add(0xB00, 0x24), amountIn)
+
+            let success := call(gas(), tokenIn, 0, 0xB00, 0x44, 0xB00, 32)
+
+            let rdsize := returndatasize()
+
+            // Check for ERC20 success. ERC20 tokens should return a boolean,
+            // but some don't. We accept 0-length return data as success, or at
+            // least 32 bytes that starts with a 32-byte boolean true.
+            success := and(
+                success, // call itself succeeded
+                or(
+                    iszero(rdsize), // no return data, or
+                    and(
+                        iszero(lt(rdsize, 32)), // at least 32 bytes
+                        eq(mload(0xB00), 1) // starts with uint256(1)
+                    )
+                )
+            )
+
+            if iszero(success) {
+                returndatacopy(0xB00, 0, rdsize)
+                revert(0xB00, rdsize)
+            }
+            // selector for swap(address,address,uint256,uint256,address,address)
+            mstore(
+                0xB00, // 2816
+                0x7dc2038200000000000000000000000000000000000000000000000000000000
+            )
+            mstore(0xB04, tokenIn)
+            mstore(0xB24, tokenOut)
+            mstore(0xB44, amountIn)
+            mstore(0xB64, 0x0) // amountOutMin unused
+            mstore(0xB84, address()) // recipient
+            mstore(0xBA4, FEE_COLLECTOR) // rebateTo
+            success :=  call(
+                    gas(), 
+                    WOO_ROUTER,
+                    0x0, // no native transfer
+                    0xB00,
+                    0xC4, // input length 196
+                    0xB00, // store output here
+                    0x20 // output is just uint
+            )
+            if iszero(success) {
+                rdsize := returndatasize()
+                returndatacopy(0xB00, 0, rdsize)
+                revert(0xB00, rdsize)
+            }
+
+            amountOut := mload(0xB00)
         }
     }
 
