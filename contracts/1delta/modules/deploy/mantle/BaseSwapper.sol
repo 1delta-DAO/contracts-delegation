@@ -59,9 +59,8 @@ abstract contract BaseSwapper is TokenTransfer {
     bytes32 constant CLEO_V1_CODE_HASH = 0xbf2404274de2b11f05e5aebd49e508de933034cb5fa2d0ac3de8cbd4bcef47dc;
     address internal constant CLEO_V1_FACTORY = 0xAAA16c016BF556fcD620328f0759252E29b1AB57;
 
-    address private constant WOO_ROUTER = 0x9D1A92e601db0901e69bd810029F2C14bCCA3128;
     address private constant WOO_POOL = 0x9D1A92e601db0901e69bd810029F2C14bCCA3128;
-    address internal constant FEE_COLLECTOR = 0x0000000000000000000000000000000000000000;
+    address internal constant REBATE_RECIPIENT = 0xC95eED7F6E8334611765F84CEb8ED6270F08907E;
 
     constructor() {}
 
@@ -424,10 +423,10 @@ abstract contract BaseSwapper is TokenTransfer {
             mstore(0xB44, amountIn)
             mstore(0xB64, 0x0) // amountOutMin unused
             mstore(0xB84, address()) // recipient
-            mstore(0xBA4, FEE_COLLECTOR) // rebateTo
+            mstore(0xBA4, REBATE_RECIPIENT) // rebateTo
             success :=  call(
                     gas(), 
-                    WOO_ROUTER,
+                    WOO_POOL,
                     0x0, // no native transfer
                     0xB00,
                     0xC4, // input length 196
