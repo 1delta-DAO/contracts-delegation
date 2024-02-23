@@ -17,7 +17,8 @@ const meth = "0xcda86a272531e8640cd7f1a92c01839911b90bb0"
 const symbols = ["usdc", "usdt", "wmnt", "wbtc", "weth", "meth",]
 const assets = [usdc, usdt, wmnt, wbtc, weth, meth]
 
-// 52469580
+// 52469580 -> open
+// 55865166 -> close
 let signer: SignerWithAddress
 before(async function () {
     const [_signer] = await ethers.getSigners();

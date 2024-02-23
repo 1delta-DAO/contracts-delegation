@@ -53,11 +53,15 @@ abstract contract BaseSwapper is TokenTransfer {
 
     bytes32 internal constant VELO_FF_FACTORY = 0xff99F9a4A96549342546f9DAE5B2738EDDcD43Bf4C0000000000000000000000;
     bytes32 constant VELO_CODE_HASH = 0x0ccd005ee58d5fb11632ef5c2e0866256b240965c62c8e990c0f84a97f311879;
-    address internal constant VELO_FACOTRY = 0x99F9a4A96549342546f9DAE5B2738EDDcD43Bf4C;
+    address internal constant VELO_FACTORY = 0x99F9a4A96549342546f9DAE5B2738EDDcD43Bf4C;
 
     bytes32 internal constant CLEO_V1_FF_FACTORY = 0xffAAA16c016BF556fcD620328f0759252E29b1AB570000000000000000000000;
     bytes32 constant CLEO_V1_CODE_HASH = 0xbf2404274de2b11f05e5aebd49e508de933034cb5fa2d0ac3de8cbd4bcef47dc;
     address internal constant CLEO_V1_FACTORY = 0xAAA16c016BF556fcD620328f0759252E29b1AB57;
+
+    bytes32 internal constant STRATUM_FF_FACTORY = 0xff061FFE84B0F9E1669A6bf24548E5390DBf1e03b20000000000000000000000;
+    bytes32 constant STRATUM_CODE_HASH = 0xeb675862e19b0846fd47f7db0e8f2bf8f8da0dcd0c9aa75603248566f3faa805;
+    address internal constant STRATUM_FACTORY = 0x061FFE84B0F9E1669A6bf24548E5390DBf1e03b2;
 
     address private constant WOO_POOL = 0x9D1A92e601db0901e69bd810029F2C14bCCA3128;
     address internal constant REBATE_RECIPIENT = 0xC95eED7F6E8334611765F84CEb8ED6270F08907E;
@@ -291,7 +295,7 @@ abstract contract BaseSwapper is TokenTransfer {
                 pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
             }
             // Cleo V1 Stable
-            default {
+            case 55 {
                 switch lt(tokenA, tokenB)
                 case 0 {
                     mstore(0xB14, tokenA)
@@ -306,6 +310,44 @@ abstract contract BaseSwapper is TokenTransfer {
                 mstore(0xB00, CLEO_V1_FF_FACTORY)
                 mstore(0xB15, salt)
                 mstore(0xB35, CLEO_V1_CODE_HASH)
+
+                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+            }
+            // Stratum Volatile
+            case 56 {
+                switch lt(tokenA, tokenB)
+                case 0 {
+                    mstore(0xB14, tokenA)
+                    mstore(0xB00, tokenB)
+                }
+                default {
+                    mstore(0xB14, tokenB)
+                    mstore(0xB00, tokenA)
+                }
+                mstore8(0xB34, 0)
+                let salt := keccak256(0xB0C, 0x29)
+                mstore(0xB00, STRATUM_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, STRATUM_CODE_HASH)
+
+                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+            }
+            // 57: Stratum Stable
+            default {
+                switch lt(tokenA, tokenB)
+                case 0 {
+                    mstore(0xB14, tokenA)
+                    mstore(0xB00, tokenB)
+                }
+                default {
+                    mstore(0xB14, tokenB)
+                    mstore(0xB00, tokenA)
+                }
+                mstore8(0xB34, 1)
+                let salt := keccak256(0xB0C, 0x29)
+                mstore(0xB00, STRATUM_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, STRATUM_CODE_HASH)
 
                 pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
             }
@@ -652,7 +694,7 @@ abstract contract BaseSwapper is TokenTransfer {
                     let sellAmountWithFee := mul(amountIn, 997)
                     buyAmount := div(mul(sellAmountWithFee, buyReserve), add(sellAmountWithFee, mul(sellReserve, 1000)))
                 }
-                // all solidly-based protocols (velo, cleo V1)
+                // all solidly-based protocols (velo, cleo V1, stratum)
                 default {
                     // selector for getAmountOut(uint256,address)
                     mstore(0xB00, 0xf140a35a00000000000000000000000000000000000000000000000000000000)
@@ -782,7 +824,41 @@ abstract contract BaseSwapper is TokenTransfer {
                     // selector for getFee(address)
                     mstore(ptr, 0xb88c914800000000000000000000000000000000000000000000000000000000)
                     mstore(add(ptr, 0x4), pair)
-                    pop(staticcall(gas(), VELO_FACOTRY, ptr, 0x24, ptr, 0x20))
+                    pop(staticcall(gas(), VELO_FACTORY, ptr, 0x24, ptr, 0x20))
+                    // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
+                    // x = (reserveIn * amountOut * 10000) /
+                    //     ((reserveOut - amountOut) * feeAm) + 1;
+                    // for Velo volatile, we fetch the fee
+                    x := add(
+                        div(
+                            mul(mul(sellReserve, buyAmount), 10000),
+                            mul(
+                                sub(buyReserve, buyAmount),
+                                sub(10000, mload(ptr)) // adjust for Velo fee
+                            )
+                        ),
+                        1
+                    )
+                }
+                // stratum volatile
+                case 56 {
+                    let sellReserve
+                    let buyReserve
+                    switch lt(tokenIn, tokenOut)
+                    case 0 {
+                        // Transpose if pair order is different.
+                        sellReserve := mload(add(ptr, 0x20))
+                        buyReserve := mload(ptr)
+                    }
+                    default {
+                        sellReserve := mload(ptr)
+                        buyReserve := mload(add(ptr, 0x20))
+                    }
+                    // fetch the fee from the factory
+                    // selector for getFee(address)
+                    mstore(ptr, 0xb88c914800000000000000000000000000000000000000000000000000000000)
+                    mstore(add(ptr, 0x4), pair)
+                    pop(staticcall(gas(), STRATUM_FACTORY, ptr, 0x24, ptr, 0x20))
                     // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
                     // x = (reserveIn * amountOut * 10000) /
                     //     ((reserveOut - amountOut) * feeAm) + 1;
@@ -844,7 +920,7 @@ abstract contract BaseSwapper is TokenTransfer {
                         1
                     )
                 }
-                // covers solidly forks for stable pools (53, 55)
+                // covers solidly forks for stable pools (53, 55, 57)
                 default {
                     let _decimalsIn
                     let _decimalsOut_xy_fee
@@ -953,7 +1029,14 @@ abstract contract BaseSwapper is TokenTransfer {
                     case 53 {
                         mstore(ptr, 0xb88c914800000000000000000000000000000000000000000000000000000000)
                         mstore(add(ptr, 0x4), pair)
-                        pop(staticcall(gas(), VELO_FACOTRY, ptr, 0x24, ptr, 0x20))
+                        pop(staticcall(gas(), VELO_FACTORY, ptr, 0x24, ptr, 0x20))
+                        _decimalsOut_xy_fee := mload(ptr)
+                    }
+                    // stratum stable
+                    case 57 {
+                        mstore(ptr, 0xb88c914800000000000000000000000000000000000000000000000000000000)
+                        mstore(add(ptr, 0x4), pair)
+                        pop(staticcall(gas(), STRATUM_FACTORY, ptr, 0x24, ptr, 0x20))
                         _decimalsOut_xy_fee := mload(ptr)
                     }
                     // cleo stable

@@ -100,11 +100,19 @@ contract DeltaLendingInterfaceMantle is WithStorage, WrappedNativeHandler, SelfP
 
     /** GENERIC CALL WRAPPER FOR APPROVED CALLS */
 
-    // call an approved target (can also be the contract itself)
-    function callTarget(address target, bytes calldata params) external payable {
+    // Call to an approved target (can also be the contract itself)
+    // Can be for swaps or wraps
+    function callTarget(address target, bytes memory data) external payable {
         address _target = target;
         require(gs().isValidTarget[_target], "Target()");
-        (bool success, ) = _target.call(params);
-        require(success, "CallFailed()");
+        bool success;
+        (success, data) = _target.call(data);
+        if (!success) {
+            if (data.length < 68) revert("Unexpected Error");
+            assembly {
+                data := add(data, 0x04)
+            }
+            revert(abi.decode(data, (string)));
+        }
     }
 }
