@@ -1,13 +1,16 @@
 import { impersonateAccount, mine, setCode } from "@nomicfoundation/hardhat-network-helpers";
-import { parseUnits } from "ethers/lib/utils";
-import { ConfigModule__factory, DeltaBrokerProxy, DeltaBrokerProxy__factory, DeltaFlashAggregatorMantle, DeltaFlashAggregatorMantle__factory, DeltaFlashAggregator__factory, ERC20Mock__factory, OneDeltaQuoterMantle, OneDeltaQuoterMantle__factory, } from "../types";
+import {
+    DeltaBrokerProxy,
+    DeltaBrokerProxy__factory,
+    DeltaFlashAggregatorMantle,
+    DeltaFlashAggregatorMantle__factory,
+    DeltaLendingInterfaceMantle__factory,
+    ERC20Mock__factory
+} from "../types";
 import { lendleBrokerAddresses } from "../deploy/mantle_addresses";
-import { DeltaFlashAggregatorMantleInterface } from "../types/DeltaFlashAggregatorMantle";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { addressesTokensMantle } from "../scripts/mantle/lendleAddresses";
 import { network } from "hardhat";
 import { encodeAggregatorPathEthers } from "./1delta/shared/aggregatorPath";
-import { FeeAmount } from "./uniswap-v3/periphery/shared/constants";
 import { BigNumber } from "ethers";
 const { ethers } = require("hardhat");
 
@@ -24,15 +27,14 @@ const usdy = '0x5be26527e817998a7206475496fde1e68957c5a6'
 
 let multicaller: DeltaBrokerProxy
 let flashAggregator: DeltaFlashAggregatorMantle
-let flashAggregatorInterface: DeltaFlashAggregatorMantleInterface
+const flashAggregatorInterface = DeltaFlashAggregatorMantle__factory.createInterface()
+const moneyMarketInterface = DeltaLendingInterfaceMantle__factory.createInterface()
 let user: SignerWithAddress
-let trader: SignerWithAddress
 before(async function () {
     const [signer] = await ethers.getSigners();
     user = signer
     console.log("get aggregator")
     multicaller = await new DeltaBrokerProxy__factory(user).attach(lendleBrokerAddresses.BrokerProxy[MANTLE_CHAIN_ID])
-    flashAggregatorInterface = DeltaFlashAggregatorMantle__factory.createInterface()
     flashAggregator = await new DeltaFlashAggregatorMantle__factory(signer).attach(multicaller.address)
     console.log("deploy new aggregator")
     const newflashAggregator = await new DeltaFlashAggregatorMantle__factory(signer).deploy()
@@ -60,7 +62,7 @@ it("Test Moe Swap", async function () {
     const slippage = 30
 
     const amountIn2 = '2000000'
-    const transferIn = flashAggregatorInterface.encodeFunctionData('transferERC20In', [usdt, amountIn2])
+    const transferIn = moneyMarketInterface.encodeFunctionData('transferERC20In', [usdt, amountIn2])
     const USDTContract = await new ERC20Mock__factory(impersonatedSigner).attach(usdt)
     const bal = await USDTContract.balanceOf(trader0)
     await USDTContract.approve(multicaller.address, amountIn2)
@@ -76,7 +78,7 @@ it("Test Moe Swap", async function () {
     )
     const swap2 = flashAggregatorInterface.encodeFunctionData('swapExactInSpot', [amountIn2, 0, path2])
 
-    const sweep = flashAggregatorInterface.encodeFunctionData('sweep', [moe])
+    const sweep = moneyMarketInterface.encodeFunctionData('sweep', [moe])
 
     await multicaller.connect(impersonatedSigner).multicall([
         transferIn,
@@ -93,7 +95,7 @@ it.skip("Test Swap", async function () {
     const slippage = 30
 
 
-    const transferIn = flashAggregatorInterface.encodeFunctionData('transferERC20In', [usdt, '10000000'])
+    const transferIn = moneyMarketInterface.encodeFunctionData('transferERC20In', [usdt, '10000000'])
     // v3 multi
     const path1 = encodeAggregatorPathEthers(
         [usdt, weth, usdc, usdy],
@@ -119,7 +121,7 @@ it.skip("Test Swap", async function () {
     const amountOutMin2 = adjustForSlippage("490388027145743534", slippage)
     const swap2 = flashAggregatorInterface.encodeFunctionData('swapExactInSpot', [amountIn2, amountOutMin2, path2])
 
-    const sweep = flashAggregatorInterface.encodeFunctionData('sweep', [usdy])
+    const sweep = moneyMarketInterface.encodeFunctionData('sweep', [usdy,])
 
     await multicaller.connect(impersonatedSigner).multicall([
         transferIn,
