@@ -621,7 +621,7 @@ abstract contract BaseSwapper is TokenTransfer {
 
                 pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
             }
-            // Stratum Stable
+            // 57: Stratum Stable
             default {
                 switch zeroForOne
                 case 0 {
