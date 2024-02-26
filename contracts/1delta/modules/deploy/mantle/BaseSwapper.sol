@@ -584,7 +584,7 @@ abstract contract BaseSwapper is TokenTransfer {
                 pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
             }
             // Cleo V1 Stable
-            default {
+            case 55 {
                 switch zeroForOne
                 case 0 {
                     mstore(0xB14, tokenIn)
@@ -602,7 +602,44 @@ abstract contract BaseSwapper is TokenTransfer {
 
                 pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
             }
+            // Stratum Volatile
+            case 56 {
+                switch zeroForOne
+                case 0 {
+                    mstore(0xB14, tokenIn)
+                    mstore(0xB00, tokenOut)
+                }
+                default {
+                    mstore(0xB14, tokenOut)
+                    mstore(0xB00, tokenIn)
+                }
+                mstore8(0xB34, 0)
+                let salt := keccak256(0xB0C, 0x29)
+                mstore(0xB00, STRATUM_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, STRATUM_CODE_HASH)
 
+                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+            }
+            // Stratum Stable
+            default {
+                switch zeroForOne
+                case 0 {
+                    mstore(0xB14, tokenIn)
+                    mstore(0xB00, tokenOut)
+                }
+                default {
+                    mstore(0xB14, tokenOut)
+                    mstore(0xB00, tokenIn)
+                }
+                mstore8(0xB34, 1)
+                let salt := keccak256(0xB0C, 0x29)
+                mstore(0xB00, STRATUM_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, STRATUM_CODE_HASH)
+
+                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+            }
             // EXECUTE TRANSFER TO PAIR
             let ptr := mload(0x40) // free memory pointer
             // selector for transfer(address,uint256)

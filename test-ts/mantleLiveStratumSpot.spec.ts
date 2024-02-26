@@ -1,6 +1,14 @@
 import { impersonateAccount } from "@nomicfoundation/hardhat-network-helpers";
 import { formatEther, parseUnits } from "ethers/lib/utils";
-import { ConfigModule__factory, DeltaBrokerProxy, DeltaBrokerProxy__factory, DeltaFlashAggregatorMantle__factory, DeltaLendingInterfaceMantle__factory, ERC20Mock__factory, LensModule__factory, } from "../types";
+import {
+    ConfigModule__factory,
+    DeltaBrokerProxy,
+    DeltaBrokerProxy__factory,
+    DeltaFlashAggregatorMantle__factory,
+    DeltaLendingInterfaceMantle__factory,
+    LensModule__factory,
+    ERC20Mock__factory,
+} from "../types";
 import { lendleBrokerAddresses } from "../deploy/mantle_addresses";
 import { DeltaFlashAggregatorMantleInterface } from "../types/DeltaFlashAggregatorMantle";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
@@ -19,7 +27,6 @@ const strat = '0x5a093a9c4f440c6b105F0AF7f7C4f1fBE45567f9'
 const usdc = "0x09Bc4E0D864854c6aFB6eB9A9cdF58aC190D0dF9"
 const wmnt = "0x78c1b0c915c4faa5fffa6cabf0219da63d7f4cb8"
 const usdt = "0x201EBa5CC46D216Ce6DC03F6a759e8E766e956aE"
-const grai = '0x894134a25a5faC1c2C26F1d8fBf05111a3CB9487'
 
 const brokerProxy = lendleBrokerAddresses.BrokerProxy[MANTLE_CHAIN_ID]
 const traderModule = lendleBrokerAddresses.MarginTraderModule[MANTLE_CHAIN_ID]
@@ -83,7 +90,7 @@ it("WMNT->USDC->STRAT exactIn (agni,stratum)", async function () {
     await impersonateAccount(trader0)
     const impersonatedSigner = await ethers.getSigner(trader0);
     console.log(impersonatedSigner.address)
-    const tokencleo = await new ERC20Mock__factory(user).attach(strat)
+    const tokenStrat = await new ERC20Mock__factory(user).attach(strat)
     // v3 single
     const path1 = encodeAggregatorPathEthers(
         [wmnt, usdc, strat],
@@ -92,10 +99,10 @@ it("WMNT->USDC->STRAT exactIn (agni,stratum)", async function () {
         [1, 56], // strat v
         99
     )
-    const callSwap = flashAggregatorInterface.encodeFunctionData('swapExactInSpot', [amount, 0, path1])
+    const callSwap = flashAggregatorInterface.encodeFunctionData('swapExactInSpot', [amount, amount, path1])
     console.log("attempt swap")
 
-    const balPre = await tokencleo.balanceOf(trader0)
+    const balPre = await tokenStrat.balanceOf(trader0)
 
     await multicaller.connect(impersonatedSigner).multicall([
         wrap,
@@ -105,8 +112,8 @@ it("WMNT->USDC->STRAT exactIn (agni,stratum)", async function () {
     ],
         { value: amount })
 
-    const balAfter = await tokencleo.balanceOf(trader0)
-    console.log("receive", formatEther(balAfter.sub(balPre)))
+    const balAfter = await tokenStrat.balanceOf(trader0)
+    console.log("receive", (balAfter.sub(balPre)))
     console.log("paid", formatEther(amount))
 })
 
@@ -154,12 +161,14 @@ it("WMNT->USDC->STRAT exactOut (agni, strat_vola)", async function () {
 
 it("WMNT->USDC->USDT exactIn (agni,stratum_stable)", async function () {
     const amount = parseUnits('10', 18)
-    const sweep = lendingInterfaceInterface.encodeFunctionData('sweep', [usdt])
-    const wrap = lendingInterfaceInterface.encodeFunctionData('wrap',)
     await impersonateAccount(trader0)
     const impersonatedSigner = await ethers.getSigner(trader0);
     console.log(impersonatedSigner.address)
+    const sweep = lendingInterfaceInterface.encodeFunctionData('sweep', [usdt])
+    const wrap = lendingInterfaceInterface.encodeFunctionData('wrap',)
+
     const tokenUsdt = await new ERC20Mock__factory(user).attach(usdt)
+    const tokenUsdc = await new ERC20Mock__factory(user).attach(usdc)
     // v3 single
     const path1 = encodeAggregatorPathEthers(
         [wmnt, usdc, usdt],
@@ -177,12 +186,13 @@ it("WMNT->USDC->USDT exactIn (agni,stratum_stable)", async function () {
         wrap,
         callSwap,
         sweep,
-        // unwrap
     ],
-        { value: amount })
+        { value: amount }
+    )
 
     const balAfter = await tokenUsdt.balanceOf(trader0)
-    console.log("receive", balAfter.toString(), balPre.toString(), (balAfter.sub(balPre)).toString())
+
+    console.log("receive", (balAfter.sub(balPre)).toString())
     console.log("paid", formatEther(amount))
 })
 

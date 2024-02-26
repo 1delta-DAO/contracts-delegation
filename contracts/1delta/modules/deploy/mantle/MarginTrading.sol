@@ -575,7 +575,7 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
         _uniswapV2StyleCallback(amount0, amount1, data);
     }
 
-    // The uniswapV2 style callback for Velocimeter and Cleopatra V1
+    // The uniswapV2 style callback for Velocimeter, Cleopatra V and Stratum
     function hook(
         address,
         uint256 amount0,
