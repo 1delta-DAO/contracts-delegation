@@ -113,7 +113,7 @@ it("WMNT->USDC->STRAT exactIn (agni,stratum)", async function () {
         { value: amount })
 
     const balAfter = await tokenStrat.balanceOf(trader0)
-    console.log("receive", (balAfter.sub(balPre)))
+    console.log("receive", (balAfter.sub(balPre)).toString())
     console.log("paid", formatEther(amount))
 })
 
