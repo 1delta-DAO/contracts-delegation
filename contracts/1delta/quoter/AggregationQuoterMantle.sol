@@ -105,6 +105,10 @@ contract OneDeltaQuoterMantle {
 
     address private constant WOO_ROUTER = 0xd14a997308F9e7514a8FEA835064D596CDCaa99E;
 
+    address internal constant STRATUM_3POOL = 0xD6F312AA90Ad4C92224436a7A4a648d69482e47e;
+    address internal constant USDY = 0x5bE26527e817998A7206475496fDE1E68957c5A6;
+    address internal constant MUSD = 0xab575258d37EaA5C8956EfABe71F4eE8F6397cF3;
+
     constructor() {}
 
     // uniswap V3 type callback
@@ -675,8 +679,10 @@ contract OneDeltaQuoterMantle {
                     fee := and(shr(72, calldataload(path.offset)), 0xffffff)
                 }
                 amountIn = quoteExactInputSingle_iZi(tokenIn, tokenOut, fee, uint128(amountIn));
-            } else if  (poolId == 101) {
+            } else if (poolId == 101) {
                 amountIn = quoteWOO(tokenIn, tokenOut, amountIn);
+            } else if (poolId == 102) {
+                amountIn = quoteStratum3(tokenIn, tokenOut, amountIn);
             } else {
                 revert invalidDexId();
             }
@@ -826,26 +832,95 @@ contract OneDeltaQuoterMantle {
     }
 
     function quoteWOO(address tokenIn, address tokenOut, uint256 amountIn) private view returns (uint256 amountOut) {
-          assembly {
+        assembly {
             // selector for querySwap(address,address,uint256)
-            mstore(
-                0xB00,
-                0xe94803f400000000000000000000000000000000000000000000000000000000
-            )
+            mstore(0xB00, 0xe94803f400000000000000000000000000000000000000000000000000000000)
             mstore(0xB04, tokenIn)
             mstore(0xB24, tokenOut)
             mstore(0xB44, amountIn)
-            if iszero(
-                staticcall(
-                    gas(), 
-                    WOO_ROUTER,
-                    0xB00, 0x64, 0xB00, 0x20
-                    )
-                ) {
+            if iszero(staticcall(gas(), WOO_ROUTER, 0xB00, 0x64, 0xB00, 0x20)) {
                 revert(0, 0)
             }
 
             amountOut := mload(0xB00)
+        }
+    }
+
+    function quoteStratum3(address tokenIn, address tokenOut, uint256 amountIn) private view returns (uint256 amountOut) {
+        assembly {
+            let indexIn
+            let indexOut
+            switch tokenIn
+            // USDY
+            case 0x5bE26527e817998A7206475496fDE1E68957c5A6 {
+                // calculate USDY->mUSD unwrap
+                // selector for getRUSDYByShares(uint256)
+                mstore(0xB00, 0xbc0ca91500000000000000000000000000000000000000000000000000000000)
+
+                mstore(0xB04, amountIn)
+                if iszero(staticcall(gas(), MUSD, 0xB00, 0x24, 0xB00, 0x20)) {
+                    revert(0, 0)
+                }
+                amountIn := mul(mload(0xB00), 10000)
+                indexIn := 0
+            }
+            // MUSD
+            case 0xab575258d37EaA5C8956EfABe71F4eE8F6397cF3 {
+                indexIn := 0
+            }
+            // USDC
+            case 0x09Bc4E0D864854c6aFB6eB9A9cdF58aC190D0dF9 {
+                indexIn := 1
+            }
+            // USDT
+            case 0x201EBa5CC46D216Ce6DC03F6a759e8E766e956aE {
+                indexIn := 2
+            }
+            default {
+                revert(0, 0)
+            }
+
+            switch tokenOut
+            // USDY
+            case 0x5bE26527e817998A7206475496fDE1E68957c5A6 {
+                indexOut := 0
+            }
+            // MUSD
+            case 0xab575258d37EaA5C8956EfABe71F4eE8F6397cF3 {
+                indexOut := 0
+            }
+            // USDC
+            case 0x09Bc4E0D864854c6aFB6eB9A9cdF58aC190D0dF9 {
+                indexOut := 1
+            }
+            // USDT
+            case 0x201EBa5CC46D216Ce6DC03F6a759e8E766e956aE {
+                indexOut := 2
+            }
+            default {
+                revert(0, 0)
+            }
+            // selector for calculateSwap(uint8,uint8,uint256)
+            mstore(0xB00, 0xa95b089f00000000000000000000000000000000000000000000000000000000)
+            mstore(0xB04, indexIn)
+            mstore(0xB24, indexOut)
+            mstore(0xB44, amountIn)
+            if iszero(staticcall(gas(), STRATUM_3POOL, 0xB00, 0x64, 0xB00, 0x20)) {
+                revert(0, 0)
+            }
+
+            amountOut := mload(0xB00)
+
+            if eq(tokenOut, USDY) {
+                // calculate mUSD->USDY wrap
+                // selector for getSharesByRUSDY(uint256)
+                mstore(0xB00, 0xb15f291e00000000000000000000000000000000000000000000000000000000)
+                mstore(0xB04, amountOut)
+                if iszero(staticcall(gas(), MUSD, 0xB00, 0x24, 0xB00, 0x20)) {
+                    revert(0, 0)
+                }
+                amountOut := div(mload(0xB00), 10000)
+            }
         }
     }
 
