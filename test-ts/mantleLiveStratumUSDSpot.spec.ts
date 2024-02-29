@@ -204,7 +204,7 @@ it.only("USDC->USDY 3USD", async function () {
 
     const balAfter = await tokenOut.balanceOf(trader0)
     console.log("receive", (balAfter.sub(balPre)).toString())
-    expect((balAfter.sub(balPre)).gte(quote)).to.equal(true)
+    expect((balAfter.sub(balPre).toString())).to.equal(quote.toString())
 })
 
 it.only("USDY->USDT 3USD", async function () {
@@ -247,5 +247,5 @@ it.only("USDY->USDT 3USD", async function () {
 
     const balAfter = await tokenOut.balanceOf(trader0)
     console.log("receive", (balAfter.sub(balPre)).toString())
-    expect((balAfter.sub(balPre)).toString()).to.equal(quote.toString())
+    expect((balAfter.sub(balPre).toString())).to.equal(quote.toString())
 })

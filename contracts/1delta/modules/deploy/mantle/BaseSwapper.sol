@@ -419,7 +419,9 @@ abstract contract BaseSwapper is TokenTransfer {
             // WOO Fi
             else if (identifier == 101) {
                 amountIn = swapWooFiExactIn(tokenIn, tokenOut, amountIn);
-            } else if (identifier == 102) {
+            }
+            // Stratum 3USD
+            else if (identifier == 102) {
                 amountIn = swapStratum3(tokenIn, tokenOut, amountIn);
             }
             // decide whether to continue or terminate
