@@ -66,6 +66,10 @@ abstract contract BaseSwapper is TokenTransfer {
     address private constant WOO_POOL = 0x9D1A92e601db0901e69bd810029F2C14bCCA3128;
     address internal constant REBATE_RECIPIENT = 0xC95eED7F6E8334611765F84CEb8ED6270F08907E;
 
+    address internal constant STRATUM_3POOL = 0xD6F312AA90Ad4C92224436a7A4a648d69482e47e;
+    address internal constant MUSD = 0xab575258d37EaA5C8956EfABe71F4eE8F6397cF3;
+    address internal constant USDY = 0x5bE26527e817998A7206475496fDE1E68957c5A6;
+
     constructor() {}
 
     function getLastToken(bytes calldata data) internal pure returns (address token) {
@@ -416,6 +420,10 @@ abstract contract BaseSwapper is TokenTransfer {
             else if (identifier == 101) {
                 amountIn = swapWooFiExactIn(tokenIn, tokenOut, amountIn);
             }
+            // Stratum 3USD
+            else if (identifier == 102) {
+                amountIn = swapStratum3(tokenIn, tokenOut, amountIn);
+            }
             // decide whether to continue or terminate
             if (path.length > 46) {
                 path = path[25:];
@@ -427,7 +435,7 @@ abstract contract BaseSwapper is TokenTransfer {
     }
 
     function swapWooFiExactIn(address tokenIn, address tokenOut, uint256 amountIn) private returns (uint256 amountOut) {
-          assembly {
+        assembly {
             // selector for transfer(address,uint256)
             mstore(0xB00, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
             mstore(add(0xB00, 0x04), WOO_POOL)
@@ -466,14 +474,14 @@ abstract contract BaseSwapper is TokenTransfer {
             mstore(0xB64, 0x0) // amountOutMin unused
             mstore(0xB84, address()) // recipient
             mstore(0xBA4, REBATE_RECIPIENT) // rebateTo
-            success :=  call(
-                    gas(), 
-                    WOO_POOL,
-                    0x0, // no native transfer
-                    0xB00,
-                    0xC4, // input length 196
-                    0xB00, // store output here
-                    0x20 // output is just uint
+            success := call(
+                gas(),
+                WOO_POOL,
+                0x0, // no native transfer
+                0xB00,
+                0xC4, // input length 196
+                0xB00, // store output here
+                0x20 // output is just uint
             )
             if iszero(success) {
                 rdsize := returndatasize()
@@ -482,6 +490,106 @@ abstract contract BaseSwapper is TokenTransfer {
             }
 
             amountOut := mload(0xB00)
+        }
+    }
+
+    function swapStratum3(address tokenIn, address tokenOut, uint256 amountIn) private returns (uint256 amountOut) {
+        assembly {
+            let indexIn
+            let indexOut
+            switch tokenIn
+            // USDY
+            case 0x5bE26527e817998A7206475496fDE1E68957c5A6 {
+                // execute USDY->mUSD wrap
+                // selector for wrap(uint256)
+                mstore(0xB00, 0xea598cb000000000000000000000000000000000000000000000000000000000)
+                mstore(0xB04, amountIn)
+                if iszero(call(gas(), MUSD, 0x0, 0xB00, 0x24, 0xB00, 0x0)) {
+                    let rdsize := returndatasize()
+                    returndatacopy(0xB00, 0, rdsize)
+                    revert(0xB00, rdsize)
+                }
+                // selector for balanceOf(address)
+                mstore(0xB00, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+                // add this address as parameter
+                mstore(0xB04, address())
+                // call to token
+                pop(staticcall(gas(), MUSD, 0xB00, 0x24, 0xB00, 0x20))
+
+                // load the retrieved balance
+                amountIn := mload(0xB00)
+                indexIn := 0
+            }
+            // MUSD
+            case 0xab575258d37EaA5C8956EfABe71F4eE8F6397cF3 {
+                indexIn := 0
+            }
+            // USDC
+            case 0x09Bc4E0D864854c6aFB6eB9A9cdF58aC190D0dF9 {
+                indexIn := 1
+            }
+            // USDT
+            case 0x201EBa5CC46D216Ce6DC03F6a759e8E766e956aE {
+                indexIn := 2
+            }
+            default {
+                revert(0, 0)
+            }
+
+            switch tokenOut
+            // USDY
+            case 0x5bE26527e817998A7206475496fDE1E68957c5A6 {
+                indexOut := 0
+            }
+            // MUSD
+            case 0xab575258d37EaA5C8956EfABe71F4eE8F6397cF3 {
+                indexOut := 0
+            }
+            // USDC
+            case 0x09Bc4E0D864854c6aFB6eB9A9cdF58aC190D0dF9 {
+                indexOut := 1
+            }
+            // USDT
+            case 0x201EBa5CC46D216Ce6DC03F6a759e8E766e956aE {
+                indexOut := 2
+            }
+            default {
+                revert(0, 0)
+            }
+            // selector for swap(uint8,uint8,uint256,uint256,uint256)
+            mstore(0xB00, 0x9169558600000000000000000000000000000000000000000000000000000000)
+            mstore(0xB04, indexIn)
+            mstore(0xB24, indexOut)
+            mstore(0xB44, amountIn)
+            mstore(0xB64, 0) // min out is zero, we validate slippage at the end
+            mstore(0xB84, 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff) // no deadline
+            if iszero(call(gas(), STRATUM_3POOL, 0x0, 0xB00, 0xA4, 0xB00, 0x20)) {
+                let rdsize := returndatasize()
+                returndatacopy(0xB00, 0, rdsize)
+                revert(0xB00, rdsize)
+            }
+
+            amountOut := mload(0xB00)
+
+            if eq(tokenOut, USDY) {
+                // calculate mUSD->USDY unwrap
+                // selector for unwrap(uint256)
+                mstore(0xB00, 0xde0e9a3e00000000000000000000000000000000000000000000000000000000)
+                mstore(0xB04, amountOut)
+                if iszero(call(gas(), MUSD, 0x0, 0xB00, 0x24, 0xB00, 0x20)) {
+                    let rdsize := returndatasize()
+                    returndatacopy(0xB00, 0, rdsize)
+                    revert(0xB00, rdsize)
+                }
+                // selector for balanceOf(address)
+                mstore(0xB00, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+                // add this address as parameter
+                mstore(add(0xB00, 0x4), address())
+                // call to token
+                pop(staticcall(5000, USDY, 0xB00, 0x24, 0xB00, 0x20))
+                // load the retrieved balance
+                amountOut := mload(0xB00)
+            }
         }
     }
 
