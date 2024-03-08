@@ -853,7 +853,7 @@ contract OneDeltaQuoterMantle {
             switch tokenIn
             // USDY
             case 0x5bE26527e817998A7206475496fDE1E68957c5A6 {
-                // calculate USDY->mUSD unwrap
+                // calculate USDY->mUSD wrap
                 // selector for getRUSDYByShares(uint256)
                 mstore(0xB00, 0xbc0ca91500000000000000000000000000000000000000000000000000000000)
 
@@ -912,7 +912,7 @@ contract OneDeltaQuoterMantle {
             amountOut := mload(0xB00)
 
             if eq(tokenOut, USDY) {
-                // calculate mUSD->USDY wrap
+                // calculate mUSD->USDY unwrap
                 // selector for getSharesByRUSDY(uint256)
                 mstore(0xB00, 0xb15f291e00000000000000000000000000000000000000000000000000000000)
                 mstore(0xB04, amountOut)
