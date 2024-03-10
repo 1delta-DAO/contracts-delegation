@@ -8,28 +8,22 @@ pragma solidity 0.8.24;
 
 import {WithStorage} from "../../../storage/BrokerStorage.sol";
 import {BaseSwapper, IUniswapV2Pair} from "./BaseSwapper.sol";
-import {ILendingPool} from "./ILendingPool.sol";
-import {IERC20Balance} from "../../../interfaces/IERC20Balance.sol";
-
+import {CacheLending} from "./CacheLending.sol";
 // solhint-disable max-line-length
 
 /**
  * @title Contract Module for general Margin Trading on an Aave-style Lender
  * @notice Contains main logic for uniswap-type callbacks and initiator functions
  */
-abstract contract MarginTrading is WithStorage, BaseSwapper {
+abstract contract MarginTrading is WithStorage, BaseSwapper, CacheLending {
+    // for transfers
+    uint256 private constant ADDRESS_MASK_UPPER = 0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff;
     // errors
     error Slippage();
     error NoBalance();
+    error InvalidDexId();
 
-    // values to reset cache with
-    uint256 private constant DEFAULT_AMOUNT_CACHED = type(uint256).max;
-    address private constant DEFAULT_ADDRESS_CACHED = address(0);
-
-    // constant pool
-    ILendingPool internal constant _lendingPool = ILendingPool(0xCFa5aE7c2CE8Fadc6426C1ff872cA45378Fb7cF3);
-
-    constructor() BaseSwapper() {}
+    constructor() BaseSwapper() CacheLending() {}
 
     // Exact Input Swap - The path parameters determine the lending actions
     function flashSwapExactIn(
@@ -37,11 +31,12 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
         uint256 amountOutMinimum,
         bytes calldata path
     ) external payable returns (uint256 amountOut) {
-        acs().cachedAddress = msg.sender;
         address tokenIn;
         address tokenOut;
         bool zeroForOne;
-        uint8 identifier;
+        uint8 identifier = uint8(bytes1(path[0:1]));
+        _cacheContext(identifier);
+        path = path[1:];
         assembly {
             let firstWord := calldataload(path.offset)
             tokenIn := shr(96, firstWord)
@@ -93,10 +88,10 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
                     799999,
                     path
                 );
-        }
-        amountOut = ncs().amount;
-        ncs().amount = DEFAULT_AMOUNT_CACHED;
-        acs().cachedAddress = DEFAULT_ADDRESS_CACHED;
+        } else revert InvalidDexId();
+
+        amountOut = uint256(gcs().cache);
+        gcs().cache = 0x0;
         if (amountOutMinimum > amountOut) revert Slippage();
     }
 
@@ -106,11 +101,12 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
         uint256 amountInMaximum,
         bytes calldata path
     ) external payable returns (uint256 amountIn) {
-        acs().cachedAddress = msg.sender;
+        uint8 identifier = uint8(bytes1(path[0:1]));
+        _cacheContext(identifier);
+        path = path[1:];
         flashSwapExactOutInternal(amountOut, address(this), path);
-        amountIn = ncs().amount;
-        ncs().amount = DEFAULT_AMOUNT_CACHED;
-        acs().cachedAddress = DEFAULT_ADDRESS_CACHED;
+        amountIn = uint256(gcs().cache);
+        gcs().cache = 0x0;
         if (amountInMaximum < amountIn) revert Slippage();
     }
 
@@ -121,17 +117,23 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
         address tokenIn;
         address tokenOut;
         bool zeroForOne;
-        uint8 identifier;
+        uint8 identifier = uint8(bytes1(path[0:1]));
+        _cacheContext(identifier);
+        path = path[1:];
+        // we need tokenIn together with lender id for he balance fetch
         assembly {
-            let firstWord := calldataload(path.offset)
-            tokenIn := shr(96, firstWord)
-            identifier := shr(64, firstWord)
+            tokenIn := shr(96, calldataload(path.offset))
+        }
+
+        // fetch collateral balance
+        uint256 amountIn = _callerCollateralBalance(tokenIn, identifier);
+        if (amountIn == 0) revert NoBalance();
+
+        assembly {
+            identifier := shr(64, calldataload(path.offset))
             tokenOut := shr(96, calldataload(add(path.offset, 25)))
             zeroForOne := lt(tokenIn, tokenOut)
         }
-        // fetch collateral balance
-        uint256 amountIn = IERC20Balance(aas().aTokens[tokenIn]).balanceOf(msg.sender);
-        if (amountIn == 0) revert NoBalance();
 
         // uniswapV3 style
         if (identifier < 50) {
@@ -176,32 +178,33 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
                     799999,
                     path
                 );
-        }
-        amountOut = ncs().amount;
-        ncs().amount = DEFAULT_AMOUNT_CACHED;
-        acs().cachedAddress = DEFAULT_ADDRESS_CACHED;
+        } else revert InvalidDexId();
+        amountOut = uint256(gcs().cache);
+        gcs().cache = 0x0;
         if (amountOutMinimum > amountOut) revert Slippage();
     }
 
     // Exact Output Swap where the entire debt balacne is repaid - The path parameters determine the lending actions
     function flashSwapAllOut(uint256 amountInMaximum, bytes calldata path) external payable returns (uint256 amountIn) {
-        acs().cachedAddress = msg.sender;
         address tokenIn;
         address tokenOut;
         bool zeroForOne;
+        uint8 lenderId = uint8(bytes1(path[0:1]));
         uint8 identifier;
+        _cacheContext(lenderId);
+        path = path[1:];
+        // we need tokenIn together with lender id for he balance fetch
         assembly {
             let firstWord := calldataload(path.offset)
             tokenOut := shr(96, firstWord)
             identifier := shr(56, firstWord)
             tokenIn := shr(96, calldataload(add(path.offset, 25)))
             zeroForOne := lt(tokenIn, tokenOut)
-        }
-
+        }   
         // determine output amount as respective debt balance
         uint256 amountOut;
-        if (identifier == 5) amountOut = IERC20Balance(aas().vTokens[tokenOut]).balanceOf(msg.sender);
-        else amountOut = IERC20Balance(aas().sTokens[tokenOut]).balanceOf(msg.sender);
+        if (identifier == 5) amountOut = _callerVariableDebtBalance(tokenOut, lenderId);
+        else amountOut = _callerStableDebtBalance(tokenOut, lenderId);
         if (amountOut == 0) revert NoBalance();
 
         // fetch poolId - store it in identifier
@@ -249,10 +252,9 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
                     800001,
                     path
                 );
-        }
-        amountIn = ncs().amount;
-        ncs().amount = DEFAULT_AMOUNT_CACHED;
-        acs().cachedAddress = DEFAULT_ADDRESS_CACHED;
+        } else revert InvalidDexId();
+        amountIn = uint256(gcs().cache);
+        gcs().cache = 0x0;
         if (amountInMaximum < amountIn) revert Slippage();
     }
 
@@ -369,19 +371,21 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
 
                 if (cache < 3) {
                     // borrow and repay pool - tradeId matches interest rate mode (reverts within Aave when 0 is selected)
-                    _lendingPool.borrow(tokenOut, amountToPay, cache, 0, acs().cachedAddress);
-                    _transferERC20Tokens(tokenOut, msg.sender, amountToPay);
+                    // _lendingPool.borrow(tokenOut, amountToPay, cache, 0, acs().cachedAddress);
+                    // _transferERC20Tokens(tokenOut, msg.sender, amountToPay);
+                    _borrow(tokenOut, amountToPay, cache);
                 } else if (cache < 8) {
                     // ids 3-7 are reserved
                     // withraw and send funds to the pool
-                    _transferERC20TokensFrom(aas().aTokens[tokenOut], acs().cachedAddress, address(this), amountToPay);
-                    _lendingPool.withdraw(tokenOut, amountToPay, msg.sender);
+                    // _transferERC20TokensFrom(aas().aTokens[tokenOut], acs().cachedAddress, address(this), amountToPay);
+                    // _lendingPool.withdraw(tokenOut, amountToPay, msg.sender);
+                    _withdraw(tokenOut, amountToPay);
                 } else {
                     // otherwise, just transfer it from cached address
-                    pay(tokenOut, acs().cachedAddress, amountToPay);
+                    pay(tokenOut, amountToPay);
                 }
                 // cache amount
-                ncs().amount = amountToPay;
+                gcs().cache = bytes32(amountToPay);
             }
             return;
         }
@@ -404,16 +408,16 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
                 }
                 // slice out the end flag
                 _data = _data[(cache - 1):cache];
-                // cache amount
-                ncs().amount = amountToSwap;
-                address user = acs().cachedAddress;
+                // address user = acs().cachedAddress;
                 // 6 is mint / deposit
                 if (tradeId == 6) {
-                    _lendingPool.deposit(tokenOut, amountToSwap, user, 0);
+                    // _lendingPool.deposit(tokenOut, amountToSwap, user, 0);
+                    _deposit(tokenOut, amountToSwap);
                 } else {
                     // tradeId minus 6 yields the interest rate mode
                     tradeId -= 6;
-                    _lendingPool.repay(tokenOut, amountToSwap, tradeId, user);
+                    // _lendingPool.repay(tokenOut, amountToSwap, tradeId, user);
+                    _repay(tokenOut, amountToSwap, tradeId);
                 }
 
                 // fetch the flag for closing the trade
@@ -422,26 +426,31 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
                 // 1,2 are is borrow
                 if (cache < 3) {
                     // the interest mode matches the cache in this case
-                    _lendingPool.borrow(tokenIn, amountToRepayToPool, cache, 0, user);
-                    _transferERC20Tokens(tokenIn, msg.sender, amountToRepayToPool);
+                    // _lendingPool.borrow(tokenIn, amountToRepayToPool, cache, 0, user);
+                    // _transferERC20Tokens(tokenIn, msg.sender, amountToRepayToPool);
+                    _borrow(tokenIn, amountToRepayToPool, cache);
                 } else {
                     // withraw and send funds to the pool
-                    _transferERC20TokensFrom(aas().aTokens[tokenIn], user, address(this), amountToRepayToPool);
-                    _lendingPool.withdraw(tokenIn, amountToRepayToPool, msg.sender);
+                    // _transferERC20TokensFrom(aas().aTokens[tokenIn], user, address(this), amountToRepayToPool);
+                    // _lendingPool.withdraw(tokenIn, amountToRepayToPool, msg.sender);
+                    _withdraw(tokenIn, amountToRepayToPool);
                 }
+                // cache amount
+                gcs().cache = bytes32(amountToSwap);
             } else {
                 // exact out
                 (uint256 amountInLastPool, uint256 amountToSupply) = amount0Delta > 0
                     ? (uint256(amount0Delta), uint256(-amount1Delta))
                     : (uint256(amount1Delta), uint256(-amount0Delta));
-                address user = acs().cachedAddress;
                 // 3 is deposit
                 if (tradeId == 3) {
-                    _lendingPool.deposit(tokenIn, amountToSupply, user, 0);
+                    // _lendingPool.deposit(tokenIn, amountToSupply, user, 0);
+                     _deposit(tokenIn, amountToSupply);
                 } else {
                     // 4, 5 are repay - subtracting 3 yields the interest rate mode
                     tradeId -= 3;
-                    _lendingPool.repay(tokenIn, amountToSupply, tradeId, user);
+                    // _lendingPool.repay(tokenIn, amountToSupply, tradeId, user);
+                    _repay(tokenIn, amountToSupply, tradeId);
                 }
                 uint256 cache = _data.length;
                 // multihop if required
@@ -450,19 +459,23 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
                     flashSwapExactOutInternal(amountInLastPool, msg.sender, _data);
                 } else {
                     // cache amount
-                    ncs().amount = amountInLastPool;
+                    // ncs().amount = amountInLastPool;
                     // fetch the flag for closing the trade
                     _data = _data[(cache - 1):cache];
                     // assign end flag to cache
                     cache = uint8(bytes1(_data));
                     // borrow to pay pool
                     if (cache < 3) {
-                        _lendingPool.borrow(tokenOut, amountInLastPool, cache, 0, user);
-                        _transferERC20Tokens(tokenOut, msg.sender, amountInLastPool);
+                        // _lendingPool.borrow(tokenOut, amountInLastPool, cache, 0, user);
+                        // _transferERC20Tokens(tokenOut, msg.sender, amountInLastPool);
+                         _borrow(tokenOut, amountInLastPool, cache);
                     } else {
-                        _transferERC20TokensFrom(aas().aTokens[tokenOut], user, address(this), amountInLastPool);
-                        _lendingPool.withdraw(tokenOut, amountInLastPool, msg.sender);
+                        // _transferERC20TokensFrom(aas().aTokens[tokenOut], user, address(this), amountInLastPool);
+                        // _lendingPool.withdraw(tokenOut, amountInLastPool, msg.sender);
+                        _withdraw(tokenOut, amountInLastPool);
                     }
+                    // cache amount
+                    gcs().cache = bytes32(amountInLastPool);
                 }
             }
             return;
@@ -631,19 +644,21 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
 
                 if (cache < 3) {
                     // borrow and repay pool
-                    _lendingPool.borrow(tokenOut, referenceAmount, cache, 0, acs().cachedAddress);
-                    _transferERC20Tokens(tokenOut, msg.sender, referenceAmount);
+                    // _lendingPool.borrow(tokenOut, referenceAmount, cache, 0, acs().cachedAddress);
+                    // _transferERC20Tokens(tokenOut, msg.sender, referenceAmount);
+                    _borrow(tokenOut, referenceAmount, cache);
                 } else if (cache < 8) {
                     // ids 3-7 are reserved
                     // withraw and send funds to the pool
-                    _transferERC20TokensFrom(aas().aTokens[tokenOut], acs().cachedAddress, address(this), referenceAmount);
-                    _lendingPool.withdraw(tokenOut, referenceAmount, msg.sender);
+                    // _transferERC20TokensFrom(aas().aTokens[tokenOut], acs().cachedAddress, address(this), referenceAmount);
+                    // _lendingPool.withdraw(tokenOut, referenceAmount, msg.sender);
+                    _withdraw(tokenOut, referenceAmount);
                 } else {
                     // otherwise, just transfer it from cached address
-                    pay(tokenOut, acs().cachedAddress, referenceAmount);
+                    pay(tokenOut, referenceAmount);
                 }
                 // cache amount
-                ncs().amount = referenceAmount;
+                gcs().cache = bytes32(referenceAmount);
             }
             return;
         }
@@ -651,8 +666,9 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
             uint256 cache = data.length;
             // the swap amount is expected to be the nonzero output amount
             // since v2 does not send the input amount as parameter, we have to fetch
-            // the other amount manually through the cache
+            // the other amount manually through a separate number cache
             (uint256 amountToSwap, uint256 amountToBorrow) = zeroForOne ? (amount1, ncs().amount) : (amount0, ncs().amount);
+            ncs().amount = 0x0;
             if (cache > 46) {
                 // we need to swap to the token that we want to supply
                 // the router returns the amount that we can finally supply to the protocol
@@ -665,40 +681,48 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
             // slice out the end flag
             data = data[(cache - 1):cache];
             // cache amount
-            ncs().amount = amountToSwap;
-            address user = acs().cachedAddress;
+            // ncs().amount = amountToSwap;
+            // address user = acs().cachedAddress;
             // 6 is mint / deposit
             if (tradeId == 6) {
                 // deposit funds for id == 6
-                _lendingPool.deposit(tokenOut, amountToSwap, user, 0);
+                // _lendingPool.deposit(tokenOut, amountToSwap, user, 0);
+                _deposit(tokenOut, amountToSwap);
             } else {
                 // repay - tradeId is irMode plus 6
                 tradeId -= 6;
-                _lendingPool.repay(tokenOut, amountToSwap, tradeId, user);
+                // _lendingPool.repay(tokenOut, amountToSwap, tradeId, user);
+                _repay(tokenOut, amountToSwap, tradeId);
             }
 
             // assign end flag to tradeId
             tradeId = uint8(bytes1(data));
             // 1,2 are is borrow
             if (tradeId < 3) {
-                _lendingPool.borrow(tokenIn, amountToBorrow, tradeId, 0, user);
-                _transferERC20Tokens(tokenIn, msg.sender, amountToBorrow);
+                // _lendingPool.borrow(tokenIn, amountToBorrow, tradeId, 0, user);
+                // _transferERC20Tokens(tokenIn, msg.sender, amountToBorrow);
+                _borrow(tokenIn, amountToBorrow, tradeId);
             } else {
                 // withraw and send funds to the pool
-                _transferERC20TokensFrom(aas().aTokens[tokenIn], user, address(this), amountToBorrow);
-                _lendingPool.withdraw(tokenIn, amountToBorrow, msg.sender);
+                // _transferERC20TokensFrom(aas().aTokens[tokenIn], user, address(this), amountToBorrow);
+                // _lendingPool.withdraw(tokenIn, amountToBorrow, msg.sender);
+                 _withdraw(tokenIn, amountToBorrow);
             }
+            // cache amount
+            gcs().cache = bytes32(amountToSwap);
         } else {
             // fetch amountOut
             uint256 referenceAmount = zeroForOne ? amount0 : amount1;
-            address user = acs().cachedAddress;
+            // address user = acs().cachedAddress;
             // 3 is deposit
             if (tradeId == 3) {
-                _lendingPool.deposit(tokenIn, referenceAmount, user, 0);
+                // _lendingPool.deposit(tokenIn, referenceAmount, user, 0);
+                _deposit(tokenIn, referenceAmount);
             } else {
                 // 4, 5 are repay, subtracting 3 yields the interest rate mode
                 tradeId -= 3;
-                _lendingPool.repay(tokenIn, referenceAmount, tradeId, user);
+                // _lendingPool.repay(tokenIn, referenceAmount, tradeId, user);
+                _repay(tokenIn, referenceAmount, tradeId);
             }
             // calculate amountIn (note that tokenIn/out are read inverted at the top)
             referenceAmount = getV2AmountInDirect(pool, tokenOut, tokenIn, referenceAmount, identifier);
@@ -708,20 +732,25 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
                 data = data[25:];
                 flashSwapExactOutInternal(referenceAmount, msg.sender, data);
             } else {
-                // cache amount
-                ncs().amount = referenceAmount;
+                // // cache amount
+                // ncs().amount = referenceAmount;
                 // slice out the end flag
                 data = data[(cache - 1):cache];
                 // assign end flag to cache
                 cache = uint8(bytes1(data));
                 // borrow to pay pool
                 if (cache < 3) {
-                    _lendingPool.borrow(tokenOut, referenceAmount, cache, 0, user);
-                    _transferERC20Tokens(tokenOut, msg.sender, referenceAmount);
+                    // _lendingPool.borrow(tokenOut, referenceAmount, cache, 0, user);
+                    // _transferERC20Tokens(tokenOut, msg.sender, referenceAmount);
+                     _borrow(tokenOut, referenceAmount, cache);
                 } else {
-                    _transferERC20TokensFrom(aas().aTokens[tokenOut], user, address(this), referenceAmount);
-                    _lendingPool.withdraw(tokenOut, referenceAmount, msg.sender);
+                    // _transferERC20TokensFrom(aas().aTokens[tokenOut], user, address(this), referenceAmount);
+                    // _lendingPool.withdraw(tokenOut, referenceAmount, msg.sender);
+                    _withdraw(tokenOut, referenceAmount);
                 }
+
+                // cache amount
+                gcs().cache = bytes32(referenceAmount);
             }
         }
     }
@@ -807,20 +836,143 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
         }
     }
 
+    /// @notice pay from cached address
     /// @param token The token to pay
-    /// @param payer The entity that must pay
     /// @param value The amount to pay
     function pay(
         address token,
-        address payer,
         uint256 value
-    ) internal {
-        if (payer == address(0)) {
-            // pay with tokens already in the contract (for the exact input multihop case)
-            _transferERC20Tokens(token, msg.sender, value);
-        } else {
-            // pull payment
-            _transferERC20TokensFrom(token, payer, msg.sender, value);
+    ) private {
+        bytes32 cache = gcs().cache;
+        assembly {
+            // read user and lender from cache
+            let payer := and(cache, ADDRESS_MASK_UPPER)
+            switch iszero(payer)
+            case 1 {
+                let ptr := mload(0x40) // free memory pointer
+
+                // selector for transfer(address,uint256)
+                mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+                mstore(add(ptr, 0x04), caller())
+                mstore(add(ptr, 0x24), value)
+
+                let success := call(gas(), token, 0, ptr, 0x44, ptr, 32)
+
+                let rdsize := returndatasize()
+
+                // Check for ERC20 success. ERC20 tokens should return a boolean,
+                // but some don't. We accept 0-length return data as success, or at
+                // least 32 bytes that starts with a 32-byte boolean true.
+                success := and(
+                    success, // call itself succeeded
+                    or(
+                        iszero(rdsize), // no return data, or
+                        and(
+                            iszero(lt(rdsize, 32)), // at least 32 bytes
+                            eq(mload(ptr), 1) // starts with uint256(1)
+                        )
+                    )
+                )
+
+                if iszero(success) {
+                    returndatacopy(ptr, 0, rdsize)
+                    revert(ptr, rdsize)
+                }
+            }
+            default {
+                let ptr := mload(0x40) // free memory pointer
+
+                // selector for transferFrom(address,address,uint256)
+                mstore(ptr, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
+                mstore(add(ptr, 0x04), payer)
+                mstore(add(ptr, 0x24), caller())
+                mstore(add(ptr, 0x44), value)
+
+                let success := call(gas(), token, 0, ptr, 0x64, ptr, 32)
+
+                let rdsize := returndatasize()
+
+                // Check for ERC20 success. ERC20 tokens should return a boolean,
+                // but some don't. We accept 0-length return data as success, or at
+                // least 32 bytes that starts with a 32-byte boolean true.
+                success := and(
+                    success, // call itself succeeded
+                    or(
+                        iszero(rdsize), // no return data, or
+                        and(
+                            iszero(lt(rdsize, 32)), // at least 32 bytes
+                            eq(mload(ptr), 1) // starts with uint256(1)
+                        )
+                    )
+                )
+
+                if iszero(success) {
+                    returndatacopy(ptr, 0, rdsize)
+                    revert(ptr, rdsize)
+                }
+            }
+        }
+    }
+
+    /** BALANCE FETCHERS FOR ALL IN / OUT */
+
+    function _callerCollateralBalance(address underlying, uint8 lenderId) internal view returns (uint256 callerBalance) {
+        mapping(bytes32 => address) storage collateralTokens = ls().collateralTokens;
+        assembly {
+            let ptr := mload(0x40) // free memory pointer
+            mstore(ptr, underlying)
+            mstore8(ptr, lenderId)
+            mstore(ptr, collateralTokens.slot)
+            let collateralToken := sload(keccak256(ptr, 0x40))
+            // selector for balanceOf(address)
+            mstore(ptr, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+            // add this address as parameter
+            mstore(add(ptr, 0x4), caller())
+
+            // call to collateralToken
+            pop(staticcall(gas(), collateralToken, ptr, 0x24, ptr, 0x20))
+
+            callerBalance := mload(ptr)
+        }
+    }
+
+    function _callerVariableDebtBalance(address underlying, uint8 lenderId) internal view returns (uint256 callerBalance) {
+        mapping(bytes32 => address) storage debtTokens = ls().debtTokens;
+        assembly {
+            let ptr := mload(0x40) // free memory pointer
+            mstore(ptr, underlying)
+            mstore8(ptr, lenderId)
+            mstore(ptr, debtTokens.slot)
+            let collateralToken := sload(keccak256(ptr, 0x40))
+            // selector for balanceOf(address)
+            mstore(ptr, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+            // add this address as parameter
+            mstore(add(ptr, 0x4), caller())
+
+            // call to collateralToken
+            pop(staticcall(gas(), collateralToken, ptr, 0x24, ptr, 0x20))
+
+            callerBalance := mload(ptr)
+        }
+    }
+
+    function _callerStableDebtBalance(address underlying, uint8 lenderId) internal view returns (uint256 callerBalance) {
+        mapping(bytes32 => address) storage stableDebtTokens = ls().stableDebtTokens;
+        assembly {
+            let ptr := mload(0x40) // free memory pointer
+            mstore(ptr, underlying)
+            mstore8(ptr, lenderId)
+            mstore(ptr, stableDebtTokens.slot)
+            let collateralToken := sload(keccak256(ptr, 0x40))
+            // selector for balanceOf(address)
+            mstore(ptr, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+            // add this address as parameter
+            mstore(add(ptr, 0x4), caller())
+
+            // call to collateralToken
+            pop(staticcall(gas(), collateralToken, ptr, 0x24, ptr, 0x20))
+
+            callerBalance := mload(ptr)
         }
     }
 }

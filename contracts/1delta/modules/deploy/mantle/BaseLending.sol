@@ -11,75 +11,119 @@ import {WithStorage} from "../../../storage/BrokerStorage.sol";
 // solhint-disable max-line-length
 
 /**
- * @title Any Uniswap Callback Base contract
- * @notice Contains main logic for uniswap callbacks
+ * @notice Lending base contract that wraps multiple Aave V2 types
  */
 abstract contract BaseLending is WithStorage {
     uint256 private constant ADDRESS_MASK_UPPER = 0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff;
     uint256 private constant UINT8_MASK_UPPER = 0xff00000000000000000000000000000000000000000000000000000000000000;
 
+    address internal constant AURELIUS_POOL = 0x7c9C6F5BEd9Cfe5B9070C7D3322CF39eAD2F9492;
+    address internal constant LENDLE_POOL = 0xCFa5aE7c2CE8Fadc6426C1ff872cA45378Fb7cF3;
+
     /// @notice Withdraw from lender given user address and lender Id from cache
-    function withdraw(address _underlying, address _to, uint256 _amount) internal {
-        mapping(bytes32 => address) storage collateralTokens = ls().collateralTokens;
-        bytes32 cache = gcs().cache;
+    function _withdraw(address _underlying, address _to, uint256 _lenderId) internal {
         assembly {
-            // read user and lender from cache
-            let user := and(cache, ADDRESS_MASK_UPPER)
-            let _lenderId := shr(248, and(UINT8_MASK_UPPER, cache))
-            // Slot for collateralTokens[target] is keccak256(target . collateralTokens.slot).
-            mstore(0x0, _underlying)
-            mstore8(0x0, _lenderId)
-            mstore(0x20, collateralTokens.slot)
-            let collateralToken := sload(keccak256(0x0, 0x40))
-
-            // selector for transferFrom(address,address,uint256)
-            mstore(0x0, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
-            mstore(0x04, user)
-            mstore(0x24, address())
-            mstore(0x44, _amount)
-
-            let success := call(gas(), collateralToken, 0, 0x0, 0x64, 0x0, 32)
-
-            let rdsize := returndatasize()
-
-            // Check for ERC20 success. ERC20 tokens should return a boolean,
-            // but some don't. We accept 0-length return data as success, or at
-            // least 32 bytes that starts with a 32-byte boolean true.
-            success := and(
-                success, // call itself succeeded
-                or(
-                    iszero(rdsize), // no return data, or
-                    and(
-                        iszero(lt(rdsize, 32)), // at least 32 bytes
-                        eq(mload(0x0), 1) // starts with uint256(1)
-                    )
-                )
-            )
-
-            if iszero(success) {
-                returndatacopy(0x0, 0, rdsize)
-                revert(0x0, rdsize)
-            }
             // selector withdraw(address,uint256,address)
-            mstore(0x0, 0x5b88eb3100000000000000000000000000000000000000000000000000000000)
-            mstore(0x4, _underlying)
-            mstore(0x24, _amount)
-            mstore(0x44, _to)
+            mstore(0xB00, 0x5b88eb3100000000000000000000000000000000000000000000000000000000)
+            mstore(0xB04, _underlying)
+            mstore(0xB24, 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff) // withdraw always all
+            mstore(0xB44, _to)
             let pool
             // assign lending pool
             switch _lenderId
             case 0 {
-                pool := 0x0
+                pool := LENDLE_POOL
             }
             default {
-                pool := 0x0
+                pool := AURELIUS_POOL
             }
             // call pool
-            success := call(gas(), pool, 0, 0x0, 0x64, 0x0, 0x0)
-            if iszero(success) {
-                rdsize := returndatasize()
+            if iszero(call(gas(), pool, 0, 0xB00, 0x64, 0xB00, 0x0)) {
+                let rdsize := returndatasize()
                 returndatacopy(0x0, 0, rdsize)
                 revert(0x0, rdsize)
+            }
+        }
+    }
+
+    /// @notice Withdraw from lender given user address and lender Id from cache
+    function _borrow(address _underlying, address _from, uint256 _amount, uint256 _mode, uint256 _lenderId) internal {
+        assembly {
+            // selector borrow(address,uint256,uint256,uint16,address)
+            mstore(0xB00, 0xa415bcad00000000000000000000000000000000000000000000000000000000)
+            mstore(0xB04, _underlying)
+            mstore(0xB24, _amount)
+            mstore(0xB44, _mode)
+            mstore(0xB64, 0)
+            mstore(0xB84, _from)
+            let pool
+            // assign lending pool
+            switch _lenderId
+            case 0 {
+                pool := LENDLE_POOL
+            }
+            default {
+                pool := AURELIUS_POOL
+            }
+            // call pool
+            if iszero(call(gas(), pool, 0, 0xB00, 0xA4, 0xB00, 0x0)) {
+                let rdsize := returndatasize()
+                returndatacopy(0xB00, 0, rdsize)
+                revert(0xB00, rdsize)
+            }
+        }
+    }
+
+    /// @notice Withdraw from lender given user address and lender Id from cache
+    function _deposit(address _underlying, uint256 _amount, address _user, uint256 _lenderId) internal {
+        assembly {
+            // selector deposit(address,uint256,uint256,address,uint16)
+            mstore(0xB00, 0xe8eda9df00000000000000000000000000000000000000000000000000000000)
+            mstore(0xB04, _underlying)
+            mstore(0xB24, _amount)
+            mstore(0xB44, _user)
+            mstore(0xB64, 0x0)
+            let pool
+            // assign lending pool
+            switch _lenderId
+            case 0 {
+                pool := LENDLE_POOL
+            }
+            default {
+                pool := AURELIUS_POOL
+            }
+            // call pool
+            if iszero(call(gas(), pool, 0x0, 0xB00, 0x84, 0xB00, 0x0)) {
+                let rdsize := returndatasize()
+                returndatacopy(0xB00, 0x0, rdsize)
+                revert(0xB00, rdsize)
+            }
+        }
+    }
+
+    /// @notice Withdraw from lender given user address and lender Id from cache
+    function _repay(address _underlying, address recipient, uint256 _amount, uint256 mode, uint256 _lenderId) internal {
+        assembly {
+            // selector deposit(address,uint256,uint256,address)
+            mstore(0xB00, 0x573ade8100000000000000000000000000000000000000000000000000000000)
+            mstore(0xB04, _underlying)
+            mstore(0xB24, _amount)
+            mstore(0xB44, mode)
+            mstore(0xB64, recipient)
+            let pool
+            // assign lending pool
+            switch _lenderId
+            case 0 {
+                pool := LENDLE_POOL
+            }
+            default {
+                pool := AURELIUS_POOL
+            }
+            // call pool
+            if iszero(call(gas(), pool, 0, 0xB00, 0x84, 0xB00, 0x0)) {
+                let rdsize := returndatasize()
+                returndatacopy(0xB00, 0, rdsize)
+                revert(0xB00, rdsize)
             }
         }
     }

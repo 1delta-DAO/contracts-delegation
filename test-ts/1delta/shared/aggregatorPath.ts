@@ -5,12 +5,12 @@ import { InterestRateMode } from "./aaveFixture"
 // token address, poolFee, poolId, tradeType
 const typeSliceAggregator = ['address', 'uint24', 'uint8', 'uint8',]
 
-export function encodeAggregatorPathEthers(path: string[], fees: number[], flags: number[], pIds: number[], flag = -1): string {
+export function encodeAggregatorPathEthers(path: string[], fees: number[], flags: number[], pIds: number[], flag = -1, lender = 0): string {
   if (path.length != fees.length + 1) {
     throw new Error('path/fee lengths do not match')
   }
-  let types: string[] = []
-  let data: string[] = []
+  let types: string[] = ['uint8']
+  let data: string[] = [String(lender)]
   for (let i = 0; i < fees.length; i++) {
     const p = path[i]
     types = [...types, ...typeSliceAggregator]

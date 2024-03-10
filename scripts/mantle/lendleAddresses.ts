@@ -1,6 +1,8 @@
 
 // ALL ADDRESSES ARE ADDRESSES ON MANTLE
 
+export const LENDLE_POOL = '0xCFa5aE7c2CE8Fadc6426C1ff872cA45378Fb7cF3';
+
 export const addressesTokensMantle: { [key: string]: string } = {
     USDT: '0x201EBa5CC46D216Ce6DC03F6a759e8E766e956aE',
     USDC: '0x09Bc4E0D864854c6aFB6eB9A9cdF58aC190D0dF9',

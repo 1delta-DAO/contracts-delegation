@@ -88,10 +88,10 @@ library LibStorage {
         }
     }
 
-    function lenderStorage() internal pure returns (GeneralLenderStorage storage aas) {
+    function lenderStorage() internal pure returns (GeneralLenderStorage storage ls) {
         bytes32 position = LENDER_STORAGE;
         assembly {
-            aas.slot := position
+            ls.slot := position
         }
     }
 
@@ -230,17 +230,18 @@ contract WithStorage {
 
     /** CACHING */
 
-    function _cacheContext(address user, uint8 _lenderId) internal {
+    function _cacheContext(uint8 _lenderId) internal {
         bytes32 encoded;
         assembly {
-            mstore(0x0, user)
+            mstore(0x0, caller())
             mstore8(0x0, _lenderId)
             encoded := mload(0x0)
         }
         gcs().cache = encoded;
     }
 
-    function _clearCache() internal {
+    function _getAndClearCache() internal returns (uint256 value) {
+        value = uint256(gcs().cache);
         gcs().cache = 0x0;
     }
 }

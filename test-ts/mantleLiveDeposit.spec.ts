@@ -1,6 +1,6 @@
 import { impersonateAccount, mine, setCode } from "@nomicfoundation/hardhat-network-helpers";
 import { parseUnits } from "ethers/lib/utils";
-import { DeltaBrokerProxy, DeltaBrokerProxy__factory, DeltaFlashAggregatorMantle__factory } from "../types";
+import { DeltaBrokerProxy, DeltaBrokerProxy__factory, DeltaFlashAggregatorMantle__factory, DeltaLendingInterfaceMantle__factory } from "../types";
 import { lendleBrokerAddresses } from "../deploy/mantle_addresses";
 import { DeltaFlashAggregatorMantleInterface } from "../types/DeltaFlashAggregatorMantle";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
@@ -23,7 +23,8 @@ const usdt = "0x201EBa5CC46D216Ce6DC03F6a759e8E766e956aE"
 const adjustForSlippage = (s: string, slippageBp: number) => BigNumber.from(s).mul(10000 + slippageBp).div(10000)
 
 let multicaller: DeltaBrokerProxy
-let flashAggregatorInterface: DeltaFlashAggregatorMantleInterface
+let flashAggregatorInterface = DeltaFlashAggregatorMantle__factory.createInterface()
+let lendingInterfaceInterface = DeltaLendingInterfaceMantle__factory.createInterface()
 let user: SignerWithAddress
 let trader: SignerWithAddress
 before(async function () {
@@ -31,7 +32,6 @@ before(async function () {
     user = signer
     console.log("get aggregator")
     multicaller = await new DeltaBrokerProxy__factory(user).attach(lendleBrokerAddresses.BrokerProxy[MANTLE_CHAIN_ID])
-    flashAggregatorInterface = DeltaFlashAggregatorMantle__factory.createInterface()
 
     console.log("deploy new aggregator")
     const newflashAggregator = await new DeltaFlashAggregatorMantle__factory(signer).deploy()
@@ -59,7 +59,7 @@ it("Test deposit", async function () {
 
     const amount = parseUnits('10.0', 18)
     const tokenIn = addressesTokensMantle.WMNT
-    const callWrap = flashAggregatorInterface.encodeFunctionData('wrap',)
+    const callWrap = lendingInterfaceInterface.encodeFunctionData('wrap',)
     const callDeposit = flashAggregatorInterface.encodeFunctionData('deposit' as any, [tokenIn, user.address])
 
     // same slippage for all swaps

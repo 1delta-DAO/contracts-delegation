@@ -39,7 +39,13 @@ contract ManagementModule is WithStorage {
         aas().aTokens[asset] = _aToken;
     }
 
-    function addGeneralLenderTokens(address _underlying, address _aToken, address _vToken, address _sToken, uint8 _lenderId) external onlyManagement {
+    function addGeneralLenderTokens(
+        address _underlying,
+        address _aToken,
+        address _vToken,
+        address _sToken,
+        uint8 _lenderId //
+    ) external onlyManagement {
         bytes32 key = _getLenderTokenKey(_underlying, _lenderId);
         ls().debtTokens[key] = _vToken;
         ls().stableDebtTokens[key] = _sToken;

@@ -6,25 +6,20 @@ pragma solidity ^0.8.24;
 * Author: Achthar | 1delta 
 /******************************************************************************/
 
-import {IERC20Balance} from "../../../interfaces/IERC20Balance.sol";
 import {MarginTrading} from "./MarginTrading.sol";
 
 // solhint-disable max-line-length
 
 /**
  * @title FlashAggregator
- * @notice Adds money market and default transfer functions to margin trading
+ * @notice Adds spot trading functions to general margin trading
  */
 contract DeltaFlashAggregatorMantle is MarginTrading {
-    // constants
-    uint256 private constant DEFAULT_AMOUNT_CACHED = type(uint256).max;
-    address private constant DEFAULT_ADDRESS_CACHED = address(0);
 
-    constructor() {}
+    constructor() MarginTrading() {}
 
     /**
-     * @notice This flash swap allows either a direct withdrawal or borrow, or can just be paid by the user
-     * Has to be batch-called togehter with a sweep, deposit or repay function.
+     * @notice Has to be batch-called togehter with a sweep, deposit or repay function.
      * The flash swap will pull the funds directly from the user
      */
     function swapExactOutSpot(
@@ -32,11 +27,12 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
         uint256 maximumAmountIn,
         bytes calldata path
     ) external payable {
-        acs().cachedAddress = msg.sender;
+        // we cache the address as bytes32
+        gcs().cache = bytes32(bytes20(msg.sender));
         flashSwapExactOutInternal(amountOut, address(this), path);
-        if (maximumAmountIn < ncs().amount) revert Slippage();
-        ncs().amount = DEFAULT_AMOUNT_CACHED;
-        acs().cachedAddress = DEFAULT_ADDRESS_CACHED;
+        // retrieve cached amount and check slippage
+        if (maximumAmountIn < uint256(gcs().cache)) revert Slippage();
+        gcs().cache = 0x0;
     }
 
     /**
@@ -47,9 +43,11 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
         uint256 maximumAmountIn,
         bytes calldata path
     ) external payable {
+        // we do not need to cache anything in this case
         flashSwapExactOutInternal(amountOut, address(this), path);
-        if (maximumAmountIn < ncs().amount) revert Slippage();
-        ncs().amount = DEFAULT_AMOUNT_CACHED;
+        // retrieve cached amount and check slippage
+        if (maximumAmountIn < uint256(gcs().cache)) revert Slippage();
+        gcs().cache = 0x0;
     }
 
     /**
@@ -72,24 +70,25 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
      */
     function swapAllOutSpot(
         uint256 maximumAmountIn,
+        uint8 lenderId,
         uint256 interestRateMode,
         bytes calldata path
     ) external payable {
-        acs().cachedAddress = msg.sender;
+        // we cache the address as bytes32
+        gcs().cache = bytes32(bytes20(msg.sender));
         uint256 _debtBalance;
         uint256 _interestRateMode = interestRateMode;
         address tokenOut;
         assembly {
             tokenOut := shr(96, calldataload(path.offset))
         }
-        if (_interestRateMode == 2) _debtBalance = IERC20Balance(aas().vTokens[tokenOut]).balanceOf(msg.sender);
-        else _debtBalance = IERC20Balance(aas().sTokens[tokenOut]).balanceOf(msg.sender);
+        if (_interestRateMode == 2) _debtBalance = _callerVariableDebtBalance(tokenOut, lenderId);
+        else _debtBalance = _callerStableDebtBalance(tokenOut, lenderId);
         if (_debtBalance == 0) revert NoBalance(); // revert if amount is zero
 
         flashSwapExactOutInternal(_debtBalance, address(this), path);
-        if (maximumAmountIn < ncs().amount) revert Slippage();
-        ncs().amount = DEFAULT_AMOUNT_CACHED;
-        acs().cachedAddress = DEFAULT_ADDRESS_CACHED;
+        if (maximumAmountIn < uint256(gcs().cache)) revert Slippage();
+        gcs().cache = 0x0;
     }
 
     /**
@@ -97,6 +96,7 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
      */
     function swapAllOutSpotSelf(
         uint256 maximumAmountIn,
+        uint8 lenderId,
         uint256 interestRateMode,
         bytes calldata path
     ) external payable {
@@ -106,13 +106,13 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
         assembly {
             tokenOut := shr(96, calldataload(path.offset))
         }
-        if (_interestRateMode == 2) _debtBalance = IERC20Balance(aas().vTokens[tokenOut]).balanceOf(msg.sender);
-        else _debtBalance = IERC20Balance(aas().sTokens[tokenOut]).balanceOf(msg.sender);
+        if (_interestRateMode == 2) _debtBalance = _callerVariableDebtBalance(tokenOut, lenderId);
+        else _debtBalance = _callerStableDebtBalance(tokenOut, lenderId);
         if (_debtBalance == 0) revert NoBalance(); // revert if amount is zero
 
         flashSwapExactOutInternal(_debtBalance, address(this), path);
-        if (maximumAmountIn < ncs().amount) revert Slippage();
-        ncs().amount = DEFAULT_AMOUNT_CACHED;
+        if (maximumAmountIn < uint256(gcs().cache)) revert Slippage();
+        gcs().cache = 0x0;
     }
 
     /**
@@ -124,9 +124,25 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
         assembly {
             tokenIn := shr(96, calldataload(path.offset))
         }
-        uint256 amountIn = IERC20Balance(tokenIn).balanceOf(address(this));
+        uint256 amountIn = _balanceOfThis(tokenIn);
         if (amountIn == 0) revert NoBalance(); // revert if amount is zero
         uint256 amountOut = swapExactIn(amountIn, path);
         if (minimumAmountOut > amountOut) revert Slippage();
+    }
+
+    function _balanceOfThis(address underlying) private view returns (uint256 callerBalance) {
+        assembly {
+            let ptr := mload(0x40) // free memory pointer
+            let collateralToken := sload(keccak256(ptr, 0x40))
+            // selector for balanceOf(address)
+            mstore(ptr, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+            // add this address as parameter
+            mstore(add(ptr, 0x4), address())
+
+            // call to underlying
+            pop(staticcall(gas(), underlying, ptr, 0x24, ptr, 0x20))
+
+            callerBalance := mload(ptr)
+        }
     }
 }
