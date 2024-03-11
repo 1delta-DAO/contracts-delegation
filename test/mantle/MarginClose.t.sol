@@ -182,4 +182,111 @@ contract MarginCloseTest is DeltaSetup {
         // deviations through rouding expected, accuracy for 10 decimals
         assertApproxEqAbs(amountOut, borrowBalance, 1);
     }
+
+    function test_margin_mantle_close_all_in() external /** address user, uint8 lenderId */ {
+        address user = testUser;
+        uint8 lenderId = 1;
+        vm.assume(user != address(0) && lenderId < 2);
+        address asset = USDC;
+        address collateralAsset = collateralTokens[asset][lenderId];
+
+        address borrowAsset = WMNT;
+        address debtAsset = debtTokens[borrowAsset][lenderId];
+        uint256 amountIn = 15.0e6;
+        {
+            uint256 amountToDeposit = 10.0e6;
+            uint256 amountToLeverage = 30.0e18;
+            _deposit(asset, user, amountIn, lenderId);
+            openSimple(user, USDT, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
+        }
+
+        bytes[] memory calls = new bytes[](1);
+
+        bytes memory swapPath = getCloseExactInSingle(asset, borrowAsset, lenderId);
+
+        uint256 minimumOut = 12.0e18;
+        calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapAllIn.selector, minimumOut, swapPath);
+
+        vm.prank(user);
+        IERC20All(collateralAsset).approve(brokerProxyAddress, (amountIn * 101) / 100);
+
+        uint256 borrowBalance = IERC20All(debtAsset).balanceOf(user);
+        uint256 balance = IERC20All(collateralAsset).balanceOf(user);
+
+        vm.prank(user);
+        brokerProxy.multicall(calls);
+
+        // debt as to be zero now
+        uint256 finalbalance = IERC20All(collateralAsset).balanceOf(user);
+        assertApproxEqAbs(finalbalance, 0, 0);
+
+        balance = balance - finalbalance;
+        borrowBalance = borrowBalance - IERC20All(debtAsset).balanceOf(user);
+
+        // deposit 10, recieve 32.1... makes 42.1...
+        assertApproxEqAbs(amountIn, balance, 1);
+        // deviations through rouding expected, accuracy for 10 decimals
+        assertApproxEqAbs(13899780205587954235, borrowBalance, 1);
+    }
+
+    function test_margin_mantle_close_all_out() external /** address user, uint8 lenderId */ {
+        address user = testUser;
+        uint8 lenderId = 1;
+        vm.assume(user != address(0) && lenderId < 2);
+        address asset = USDC;
+        address collateralAsset = collateralTokens[asset][lenderId];
+
+        address borrowAsset = WMNT;
+        address debtAsset = debtTokens[borrowAsset][lenderId];
+        uint256 amountToLeverage = 30.0e18;
+
+        {
+            uint256 amountToDeposit = 10.0e6;
+            openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
+        }
+
+        bytes[] memory calls = new bytes[](1);
+
+        bytes memory swapPath = getCloseExactOutSingle(asset, borrowAsset, lenderId);
+        uint256 amountInMaximum = 35.0e6;
+        calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapAllOut.selector, amountInMaximum, swapPath);
+
+        vm.prank(user);
+        IERC20All(collateralAsset).approve(brokerProxyAddress, amountInMaximum);
+
+        uint256 borrowBalance = IERC20All(debtAsset).balanceOf(user);
+        uint256 balance = IERC20All(collateralAsset).balanceOf(user);
+
+        vm.prank(user);
+        brokerProxy.multicall(calls);
+
+        balance = balance - IERC20All(collateralAsset).balanceOf(user);
+        // expect zero debt left
+        uint256 borrowBalanceFinal = IERC20All(debtAsset).balanceOf(user);
+        assertApproxEqAbs(0, borrowBalanceFinal, 1);
+
+        // compute delta
+        borrowBalance = borrowBalance - borrowBalanceFinal;
+
+        // deposit 10, recieve 32.1... makes 42.1...
+        assertApproxEqAbs(32196203, balance, 1);
+        // deviations through rouding expected, accuracy for 10 decimals
+        assertApproxEqAbs(amountToLeverage, borrowBalance, 1);
+    }
+
+    /** HELPER FOR ALL IN */
+
+    function _deposit(address asset, address user, uint256 amount, uint8 lenderId) internal {
+        deal(asset, user, amount);
+
+        vm.prank(user);
+        IERC20All(asset).approve(brokerProxyAddress, amount);
+        // create calls for open
+        bytes[] memory calls = new bytes[](2);
+        calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, asset, amount);
+        calls[1] = abi.encodeWithSelector(ILending.deposit.selector, asset, user, lenderId);
+
+        vm.prank(user);
+        brokerProxy.multicall(calls);
+    }
 }

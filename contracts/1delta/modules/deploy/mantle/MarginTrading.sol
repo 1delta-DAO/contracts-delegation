@@ -6,7 +6,6 @@ pragma solidity 0.8.24;
 * Author: Achthar | 1delta 
 /******************************************************************************/
 
-import {WithStorage} from "../../../storage/BrokerStorage.sol";
 import {BaseSwapper, IUniswapV2Pair} from "./BaseSwapper.sol";
 import {CacheLending} from "./CacheLending.sol";
 
@@ -16,7 +15,7 @@ import {CacheLending} from "./CacheLending.sol";
  * @title Contract Module for general Margin Trading on an Aave-style Lender
  * @notice Contains main logic for uniswap-type callbacks and initiator functions
  */
-abstract contract MarginTrading is WithStorage, BaseSwapper, CacheLending {
+abstract contract MarginTrading is BaseSwapper, CacheLending {
     // for transfers
     uint256 private constant ADDRESS_MASK_UPPER = 0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff;
     // errors
@@ -923,13 +922,12 @@ abstract contract MarginTrading is WithStorage, BaseSwapper, CacheLending {
             let ptr := mload(0x40) // free memory pointer
             mstore(ptr, underlying)
             mstore8(ptr, lenderId)
-            mstore(ptr, collateralTokens.slot)
+            mstore(add(ptr, 0x20), collateralTokens.slot)
             let collateralToken := sload(keccak256(ptr, 0x40))
             // selector for balanceOf(address)
             mstore(ptr, 0x70a0823100000000000000000000000000000000000000000000000000000000)
-            // add this address as parameter
+            // add caller address as parameter
             mstore(add(ptr, 0x4), caller())
-
             // call to collateralToken
             pop(staticcall(gas(), collateralToken, ptr, 0x24, ptr, 0x20))
 
@@ -943,11 +941,11 @@ abstract contract MarginTrading is WithStorage, BaseSwapper, CacheLending {
             let ptr := mload(0x40) // free memory pointer
             mstore(ptr, underlying)
             mstore8(ptr, lenderId)
-            mstore(ptr, debtTokens.slot)
+            mstore(add(ptr, 0x20), debtTokens.slot)
             let collateralToken := sload(keccak256(ptr, 0x40))
             // selector for balanceOf(address)
             mstore(ptr, 0x70a0823100000000000000000000000000000000000000000000000000000000)
-            // add this address as parameter
+            // add caller address as parameter
             mstore(add(ptr, 0x4), caller())
 
             // call to collateralToken
@@ -963,11 +961,11 @@ abstract contract MarginTrading is WithStorage, BaseSwapper, CacheLending {
             let ptr := mload(0x40) // free memory pointer
             mstore(ptr, underlying)
             mstore8(ptr, lenderId)
-            mstore(ptr, stableDebtTokens.slot)
+            mstore(add(ptr, 0x20), stableDebtTokens.slot)
             let collateralToken := sload(keccak256(ptr, 0x40))
             // selector for balanceOf(address)
             mstore(ptr, 0x70a0823100000000000000000000000000000000000000000000000000000000)
-            // add this address as parameter
+            // add caller address as parameter
             mstore(add(ptr, 0x4), caller())
 
             // call to collateralToken
