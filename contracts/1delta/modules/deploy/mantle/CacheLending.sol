@@ -43,7 +43,7 @@ abstract contract CacheLending is WithStorage {
             mstore(0xB24, address())
             mstore(0xB44, _amount)
 
-            let success := call(gas(), collateralToken, 0, 0xB00, 0x64, 0xB00, 32)
+            let success := call(gas(), collateralToken, 0x0, 0xB00, 0x64, 0xB00, 0x20)
 
             let rdsize := returndatasize()
 
@@ -62,11 +62,11 @@ abstract contract CacheLending is WithStorage {
             )
 
             if iszero(success) {
-                returndatacopy(0x0, 0, rdsize)
+                returndatacopy(0x0, 0x0, rdsize)
                 revert(0x0, rdsize)
             }
             // selector withdraw(address,uint256,address)
-            mstore(0xB00, 0x5b88eb3100000000000000000000000000000000000000000000000000000000)
+            mstore(0xB00, 0x69328dec00000000000000000000000000000000000000000000000000000000)
             mstore(0xB04, _underlying)
             mstore(0xB24, _amount)
             mstore(0xB44, caller())
@@ -80,10 +80,10 @@ abstract contract CacheLending is WithStorage {
                 pool := AURELIUS_POOL
             }
             // call pool
-            success := call(gas(), pool, 0, 0xB00, 0x64, 0xB00, 0x0)
+            success := call(gas(), pool, 0x0, 0xB00, 0x64, 0xB00, 0x0)
             if iszero(success) {
                 rdsize := returndatasize()
-                returndatacopy(0x0, 0, rdsize)
+                returndatacopy(0x0, 0x0, rdsize)
                 revert(0x0, rdsize)
             }
         }
@@ -103,7 +103,7 @@ abstract contract CacheLending is WithStorage {
             mstore(0xB04, _underlying)
             mstore(0xB24, _amount)
             mstore(0xB44, _mode)
-            mstore(0xB64, 0)
+            mstore(0xB64, 0x0)
             mstore(0xB84, user)
             let pool
             // assign lending pool
@@ -115,11 +115,11 @@ abstract contract CacheLending is WithStorage {
                 pool := AURELIUS_POOL
             }
             // call pool
-            let success := call(gas(), pool, 0, 0xB00, 0xA4, 0xB00, 0x0)
+            let success := call(gas(), pool, 0x0, 0xB00, 0xA4, 0xB00, 0x0)
             let rdsize
             if iszero(success) {
                 rdsize := returndatasize()
-                returndatacopy(0xB00, 0, rdsize)
+                returndatacopy(0xB00, 0x0, rdsize)
                 revert(0xB00, rdsize)
             }
 
@@ -147,7 +147,7 @@ abstract contract CacheLending is WithStorage {
             )
 
             if iszero(success) {
-                returndatacopy(0xB00, 0, rdsize)
+                returndatacopy(0xB00, 0x0, rdsize)
                 revert(0xB00, rdsize)
             }
         }
@@ -162,7 +162,7 @@ abstract contract CacheLending is WithStorage {
             let user := and(cache, ADDRESS_MASK_UPPER)
             let _lenderId := shr(248, and(UINT8_MASK_UPPER, cache))
 
-            // selector deposit(address,uint256,uint256,address,uint16)
+            // selector deposit(address,uint256,address,uint16)
             mstore(0xB00, 0xe8eda9df00000000000000000000000000000000000000000000000000000000)
             mstore(0xB04, _underlying)
             mstore(0xB24, _amount)
@@ -178,9 +178,9 @@ abstract contract CacheLending is WithStorage {
                 pool := AURELIUS_POOL
             }
             // call pool
-            if iszero(call(gas(), pool, 0, 0xB00, 0x84, 0xB00, 0x0)) {
+            if iszero(call(gas(), pool, 0x0, 0xB00, 0x84, 0xB00, 0x0)) {
                 let rdsize := returndatasize()
-                returndatacopy(0xB00, 0, rdsize)
+                returndatacopy(0xB00, 0x0, rdsize)
                 revert(0xB00, rdsize)
             }
         }
@@ -195,7 +195,7 @@ abstract contract CacheLending is WithStorage {
             let user := and(cache, ADDRESS_MASK_UPPER)
             let _lenderId := shr(248, and(UINT8_MASK_UPPER, cache))
 
-            // selector deposit(address,uint256,uint256,address)
+            // selector repay(address,uint256,uint256,address)
             mstore(0xB00, 0x573ade8100000000000000000000000000000000000000000000000000000000)
             mstore(0xB04, _underlying)
             mstore(0xB24, _amount)
@@ -211,9 +211,9 @@ abstract contract CacheLending is WithStorage {
                 pool := AURELIUS_POOL
             }
             // call pool
-            if iszero(call(gas(), pool, 0, 0xB00, 0x84, 0xB00, 0x0)) {
+            if iszero(call(gas(), pool, 0x0, 0xB00, 0x84, 0xB00, 0x0)) {
                 let rdsize := returndatasize()
-                returndatacopy(0xB00, 0, rdsize)
+                returndatacopy(0xB00, 0x0, rdsize)
                 revert(0xB00, rdsize)
             }
         }

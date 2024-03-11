@@ -9,6 +9,7 @@ pragma solidity 0.8.24;
 import {WithStorage} from "../../../storage/BrokerStorage.sol";
 import {BaseSwapper, IUniswapV2Pair} from "./BaseSwapper.sol";
 import {CacheLending} from "./CacheLending.sol";
+
 // solhint-disable max-line-length
 
 /**
@@ -468,7 +469,7 @@ abstract contract MarginTrading is WithStorage, BaseSwapper, CacheLending {
                     if (cache < 3) {
                         // _lendingPool.borrow(tokenOut, amountInLastPool, cache, 0, user);
                         // _transferERC20Tokens(tokenOut, msg.sender, amountInLastPool);
-                         _borrow(tokenOut, amountInLastPool, cache);
+                        _borrow(tokenOut, amountInLastPool, cache);
                     } else {
                         // _transferERC20TokensFrom(aas().aTokens[tokenOut], user, address(this), amountInLastPool);
                         // _lendingPool.withdraw(tokenOut, amountInLastPool, msg.sender);

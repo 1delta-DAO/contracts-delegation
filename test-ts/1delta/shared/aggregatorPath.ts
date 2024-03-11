@@ -5,7 +5,7 @@ import { InterestRateMode } from "./aaveFixture"
 // token address, poolFee, poolId, tradeType
 const typeSliceAggregator = ['address', 'uint24', 'uint8', 'uint8',]
 
-export function encodeAggregatorPathEthers(path: string[], fees: number[], flags: number[], pIds: number[], flag = -1, lender = 0): string {
+export function encodeAggregatorPathEthersMargin(path: string[], fees: number[], flags: number[], pIds: number[], flag = -1, lender = 0): string {
   if (path.length != fees.length + 1) {
     throw new Error('path/fee lengths do not match')
   }
@@ -30,6 +30,35 @@ export function encodeAggregatorPathEthers(path: string[], fees: number[], flags
 
   return ethers.utils.solidityPack(types, data)
 }
+
+export function encodeAggregatorPathEthers(path: string[], fees: number[], flags: number[], pIds: number[], flag = -1): string {
+  if (path.length != fees.length + 1) {
+    throw new Error('path/fee lengths do not match')
+  }
+  let types: string[] = []
+  let data: string[] = []
+  for (let i = 0; i < fees.length; i++) {
+    const p = path[i]
+    types = [...types, ...typeSliceAggregator]
+    data = [...data, p, String(fees[i]), String(pIds[i]), String(flags[i])]
+  }
+  // add last address and flag
+  types.push('address')
+  types.push('uint8')
+
+  data.push(path[path.length - 1])
+
+  if (flag >= 0)
+    data.push(String(flag))
+
+  // console.log(data)
+  // console.log(types)
+
+  return ethers.utils.solidityPack(types, data)
+}
+
+
+
 
 
 export enum TradeOperation {
