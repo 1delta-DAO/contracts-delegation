@@ -2,9 +2,8 @@
 pragma solidity ^0.8.19;
 
 import "./DeltaSetup.f.sol";
-import {DexConfigMantle} from "./DexConfig.f.sol";
 
-contract MarginOpenTest is DeltaSetup, DexConfigMantle {
+contract MarginOpenTest is DeltaSetup {
     address testUser = 0xcccccda06B44bcc94618620297Dc252EcfB56d85;
 
     uint256 DEFAULT_IR_MODE = 2; // variable
@@ -182,41 +181,5 @@ contract MarginOpenTest is DeltaSetup, DexConfigMantle {
         assertApproxEqAbs(27887230366621675330, borrowBalance, 1);
         // deposit 10, recieve 30 makes 40
         assertApproxEqAbs(balance, amountToDeposit + amountToReceive, 0);
-    }
-
-    /** HELPER FUNCTIONS */
-
-    function getOpenExactInSingle(address tokenIn, address tokenOut, uint8 lenderId) private view returns (bytes memory data) {
-        uint24 fee = DEX_FEE_LOW;
-        uint8 poolId = AGNI;
-        (uint8 actionId, , uint8 endId) = getOpenExactInFlags();
-        return abi.encodePacked(lenderId, tokenIn, fee, poolId, actionId, tokenOut, endId);
-    }
-
-    function getOpenExactOutSingle(address tokenIn, address tokenOut, uint8 lenderId) private view returns (bytes memory data) {
-        uint24 fee = DEX_FEE_LOW;
-        uint8 poolId = AGNI;
-        (uint8 actionId, , uint8 endId) = getOpenExactOutFlags();
-        return abi.encodePacked(lenderId, tokenOut, fee, poolId, actionId, tokenIn, endId);
-    }
-
-    function getOpenExactInMulti(address tokenIn, address tokenOut, uint8 lenderId) private view returns (bytes memory data) {
-        uint24 fee = DEX_FEE_LOW;
-        (uint8 actionId, uint8 midId, uint8 endId) = getOpenExactInFlags();
-        uint8 poolId = IZUMI;
-        bytes memory firstPart = abi.encodePacked(lenderId, tokenIn, fee, poolId, actionId, USDT);
-        fee = DEX_FEE_STABLES;
-        poolId = FUSION_X;
-        return abi.encodePacked(firstPart, fee, poolId, midId, tokenOut, endId);
-    }
-
-    function getOpenExactOutMulti(address tokenIn, address tokenOut, uint8 lenderId) private view returns (bytes memory data) {
-        uint24 fee = DEX_FEE_STABLES;
-        (uint8 actionId, uint8 midId, uint8 endId) = getOpenExactOutFlags();
-        uint8 poolId = FUSION_X;
-        bytes memory firstPart = abi.encodePacked(lenderId, tokenOut, fee, poolId, actionId, USDT);
-        fee = DEX_FEE_LOW;
-        poolId = IZUMI;
-        return abi.encodePacked(firstPart, fee, poolId, midId, tokenIn, endId);
     }
 }

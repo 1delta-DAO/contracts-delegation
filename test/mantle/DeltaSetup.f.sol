@@ -39,6 +39,8 @@ contract DeltaSetup is AddressesMantle, Script, Test {
     mapping(address => mapping(uint8 => address)) internal collateralTokens;
     mapping(address => mapping(uint8 => address)) internal debtTokens;
 
+    /** SELECTOR GETTERS */
+
     function managementSelectors() internal pure returns (bytes4[] memory selectors) {
         selectors = new bytes4[](11);
         // setters
@@ -120,6 +122,8 @@ contract DeltaSetup is AddressesMantle, Script, Test {
         return selectors;
     }
 
+    /** DEPLOY PROZY AND MODULES */
+
     function deployDelta() internal virtual {
         ConfigModule _config = new ConfigModule();
         brokerProxyAddress = address(new DeltaBrokerProxy(address(this), address(_config)));
@@ -146,6 +150,8 @@ contract DeltaSetup is AddressesMantle, Script, Test {
         management = IManagement(brokerProxyAddress);
         MarginTraderInit(brokerProxyAddress).initMarginTrader(address(0));
     }
+
+    /** ADD AND APPROVE LENDER TOKENS */
 
     function initializeDelta() internal virtual {
         // lendle
@@ -195,5 +201,28 @@ contract DeltaSetup is AddressesMantle, Script, Test {
         assets[4] = USDT;
         management.approveAddress(assets, LENDLE_POOL);
         management.approveAddress(assets, AURELIUS_POOL);
+    }
+
+    /** DEPOSIT AND OPEN TO SPIN UP POSITIONS */
+
+    function openSimple(address user, address asset, address borrowAsset, uint256 depositAmount, uint256 borrowAmount, uint8 lenderId) internal {
+        address debtAsset = debtTokens[borrowAsset][lenderId];
+        deal(asset, user, depositAmount);
+
+        bytes[] memory calls = new bytes[](3);
+        calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, asset, depositAmount);
+        calls[1] = abi.encodeWithSelector(ILending.deposit.selector, asset, user, lenderId);
+
+        bytes memory swapPath = getOpenExactInSingle(borrowAsset, asset, lenderId);
+        uint256 minimumOut = 0; // we do not care about slippage in that regard
+        calls[2] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactIn.selector, borrowAmount, minimumOut, swapPath);
+
+        vm.prank(user);
+        IERC20All(asset).approve(brokerProxyAddress, depositAmount);
+        vm.prank(user);
+        IERC20All(debtAsset).approveDelegation(brokerProxyAddress, borrowAmount);
+
+        vm.prank(user);
+        brokerProxy.multicall(calls);
     }
 }
