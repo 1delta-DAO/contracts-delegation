@@ -257,7 +257,7 @@ contract AddressesMantle {
     }
 
     function getDebtSwapExactOutSingle(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint24 fee = DEX_FEE_LOW;
+        uint24 fee = DEX_FEE_LOW_MEDIUM;
         uint8 poolId = AGNI;
         (uint8 actionId, , uint8 endId) = getDebtSwapExactOutFlags();
         return abi.encodePacked(lenderId, tokenOut, fee, poolId, actionId, tokenIn, endId);
@@ -274,12 +274,12 @@ contract AddressesMantle {
     }
 
     function getDebtSwapExactOutMulti(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint24 fee = DEX_FEE_LOW_MEDIUM;
+        uint24 fee = DEX_FEE_LOW;
         (uint8 actionId, uint8 midId, uint8 endId) = getDebtSwapExactOutFlags();
-        uint8 poolId = AGNI;
-        bytes memory firstPart = abi.encodePacked(lenderId, tokenOut, fee, poolId, actionId, WETH);
+        uint8 poolId = BUTTER;
+        bytes memory firstPart = abi.encodePacked(lenderId, tokenOut, fee, poolId, actionId, USDT);
         fee = DEX_FEE_LOW;
-        poolId = FUSION_X;
+        poolId = BUTTER;
         return abi.encodePacked(firstPart, fee, poolId, midId, tokenIn, endId);
     }
 }

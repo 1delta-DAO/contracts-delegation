@@ -98,4 +98,88 @@ contract MarginDebtSwapTest is DeltaSetup {
         assertApproxEqAbs(amountIn, balanceFrom, 1);
         assertApproxEqAbs(3741566099564202243, balance, 1);
     }
+
+    function test_margin_mantle_collateral_exact_out() external /** address user, uint8 lenderId */ {
+        address user = testUser;
+        uint8 lenderId = 1;
+        vm.assume(user != address(0) && lenderId < 2);
+        address borrowAsset = WMNT;
+        address debtAsset = debtTokens[borrowAsset][lenderId];
+
+        {
+            address asset = USDC;
+            uint256 amountToDeposit = 10.0e6;
+            uint256 amountToLeverage = 30.0e18;
+
+            openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
+        }
+
+        address assetFrom = WETH;
+        address debtAssetFrom = debtTokens[assetFrom][lenderId];
+
+        bytes[] memory calls = new bytes[](1);
+
+        bytes memory swapPath = getDebtSwapExactOutSingle(assetFrom, borrowAsset, lenderId);
+        uint256 amountOut = 3.7e18;
+        uint256 maxIn = 0.002e18;
+        calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactOut.selector, amountOut, maxIn, swapPath);
+
+        vm.prank(user);
+        IERC20All(debtAssetFrom).approveDelegation(brokerProxyAddress, maxIn);
+
+        uint256 balanceFrom = IERC20All(debtAssetFrom).balanceOf(user);
+        uint256 balance = IERC20All(debtAsset).balanceOf(user);
+
+        vm.prank(user);
+        brokerProxy.multicall(calls);
+
+        balance = balance - IERC20All(debtAsset).balanceOf(user);
+        balanceFrom = IERC20All(debtAssetFrom).balanceOf(user) - balanceFrom;
+
+        //  swap 15 for approx 15
+        assertApproxEqAbs(985153928191580, balanceFrom, 1);
+        assertApproxEqAbs(amountOut, balance, 1);
+    }
+
+    function test_margin_mantle_collateral_exact_out_multi() external /** address user, uint8 lenderId */ {
+        address user = testUser;
+        uint8 lenderId = 1;
+        vm.assume(user != address(0) && lenderId < 2);
+        address borrowAsset = WMNT;
+        address debtAsset = debtTokens[borrowAsset][lenderId];
+
+        {
+            address asset = USDC;
+            uint256 amountToDeposit = 10.0e6;
+            uint256 amountToLeverage = 30.0e18;
+
+            openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
+        }
+
+        address assetFrom = WETH;
+        address debtAssetFrom = debtTokens[assetFrom][lenderId];
+
+        bytes[] memory calls = new bytes[](1);
+
+        bytes memory swapPath = getDebtSwapExactOutMulti(assetFrom, borrowAsset, lenderId);
+        uint256 amountOut = 3.7e18;
+        uint256 maxIn = 0.004e18;
+        calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactOut.selector, amountOut, maxIn, swapPath);
+
+        vm.prank(user);
+        IERC20All(debtAssetFrom).approveDelegation(brokerProxyAddress, maxIn);
+
+        uint256 balanceFrom = IERC20All(debtAssetFrom).balanceOf(user);
+        uint256 balance = IERC20All(debtAsset).balanceOf(user);
+
+        vm.prank(user);
+        brokerProxy.multicall(calls);
+
+        balance = balance - IERC20All(debtAsset).balanceOf(user);
+        balanceFrom = IERC20All(debtAssetFrom).balanceOf(user) - balanceFrom;
+
+        //  swap 15 for approx 15
+        assertApproxEqAbs(988890229117376, balanceFrom, 1);
+        assertApproxEqAbs(amountOut, balance, 1);
+    }
 }
