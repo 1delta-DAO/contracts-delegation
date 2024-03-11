@@ -16,7 +16,7 @@ contract MarginTest is DeltaSetup, DexConfigMantle {
         initializeDelta();
     }
 
-    function test_margin_mantle_open() external /** address user, uint8 lenderId */ {
+    function test_margin_mantle_open_exact_in() external /** address user, uint8 lenderId */ {
         address user = testUser;
         uint8 lenderId = 1;
         vm.assume(user != address(0) && lenderId < 2);
@@ -52,15 +52,67 @@ contract MarginTest is DeltaSetup, DexConfigMantle {
         balance = IERC20All(collateralAsset).balanceOf(user) - balance;
         borrowBalance = IERC20All(debtAsset).balanceOf(user) - borrowBalance;
 
-        assert(amountToLeverage / 1e12 + amountToDeposit >= balance * 90 / 100);
+        // deposit 10, recieve 32.1... makes 42.1... 
+        assertApproxEqAbs(42163948, balance, 1);
+        // deviations through rouding expected, accuracy for 10 decimals
         assertApproxEqAbs(borrowBalance, amountToDeposit + amountToLeverage, 1.0e8);
     }
+
+    function test_margin_mantle_open_exact_out() external /** address user, uint8 lenderId */ {
+        address user = testUser;
+        uint8 lenderId = 1;
+        vm.assume(user != address(0) && lenderId < 2);
+        address asset = USDC;
+        address collateralAsset = collateralTokens[USDC][lenderId];
+
+        address borrowAsset = WMNT;
+        address debtAsset = debtTokens[WMNT][lenderId];
+        deal(asset, user, 1e20);
+
+        uint256 amountToDeposit = 10.0e6;
+
+        bytes[] memory calls = new bytes[](3);
+        calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, asset, amountToDeposit);
+        calls[1] = abi.encodeWithSelector(ILending.deposit.selector, asset, user, lenderId);
+
+        uint256 amountToReceive = 30.0e6;
+        bytes memory swapPath = getOpenExactOutSingle(borrowAsset, asset, lenderId);
+        uint256 maximumIn = 29.0e18;
+        calls[2] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactOut.selector, amountToReceive, maximumIn, swapPath);
+
+        vm.prank(user);
+        IERC20All(asset).approve(brokerProxyAddress, amountToDeposit);
+        vm.prank(user);
+        IERC20All(debtAsset).approveDelegation(brokerProxyAddress, maximumIn);
+
+        uint256 borrowBalance = IERC20All(debtAsset).balanceOf(user);
+        uint256 balance = IERC20All(collateralAsset).balanceOf(user);
+
+        vm.prank(user);
+        brokerProxy.multicall(calls);
+
+        balance = IERC20All(collateralAsset).balanceOf(user) - balance;
+        borrowBalance = IERC20All(debtAsset).balanceOf(user) - borrowBalance;
+
+        // deviations through rouding expected, accuracy for 10 decimals
+        assertApproxEqAbs(27974519438603103636, borrowBalance, 1);
+        // deposit 10, recieve 30 makes 40 
+        assertApproxEqAbs(balance, amountToDeposit + amountToReceive, 0);
+    }
+
 
     function getOpenExactInSingle(address tokenIn, address tokenOut, uint8 lenderId) private view returns (bytes memory data) {
         uint24 fee = DEX_FEE_LOW;
         uint8 poolId = AGNI;
         (uint8 actionId, , uint8 endId) = getOpenExactInFlags();
         return abi.encodePacked(lenderId, tokenIn, fee, poolId, actionId, tokenOut, endId);
+    }
+
+    function getOpenExactOutSingle(address tokenIn, address tokenOut, uint8 lenderId) private view returns (bytes memory data) {
+        uint24 fee = DEX_FEE_LOW;
+        uint8 poolId = AGNI;
+        (uint8 actionId, , uint8 endId) = getOpenExactOutFlags();
+        return abi.encodePacked(lenderId, tokenOut, fee, poolId, actionId, tokenIn, endId);
     }
 
     function _deposit(address asset, address user, uint256 amount, uint8 lenderId) internal {
