@@ -36,6 +36,9 @@ contract DeltaSetup is AddressesMantle, Script, Test {
     IModuleConfig internal deltaConfig;
     IManagement internal management;
 
+    mapping(address => mapping(uint8 => address)) internal collateralTokens;
+    mapping(address => mapping(uint8 => address)) internal debtTokens;
+
     function managementSelectors() internal pure returns (bytes4[] memory selectors) {
         selectors = new bytes4[](11);
         // setters
@@ -141,12 +144,37 @@ contract DeltaSetup is AddressesMantle, Script, Test {
         management.addGeneralLenderTokens(WBTC, LENDLE_A_WBTC, LENDLE_V_WBTC, LENDLE_S_WBTC, 0);
         management.addGeneralLenderTokens(WETH, LENDLE_A_WETH, LENDLE_V_WETH, LENDLE_S_WETH, 0);
         management.addGeneralLenderTokens(WMNT, LENDLE_A_WMNT, LENDLE_V_WMNT, LENDLE_S_WMNT, 0);
+
+        collateralTokens[USDC][0] = LENDLE_A_USDC;
+        collateralTokens[USDT][0] = LENDLE_A_USDT;
+        collateralTokens[WBTC][0] = LENDLE_A_WBTC;
+        collateralTokens[WETH][0] = LENDLE_A_WETH;
+        collateralTokens[WMNT][0] = LENDLE_A_WMNT;
+
+        debtTokens[USDC][0] = LENDLE_V_USDC;
+        debtTokens[USDT][0] = LENDLE_V_USDT;
+        debtTokens[WBTC][0] = LENDLE_V_WBTC;
+        debtTokens[WETH][0] = LENDLE_V_WETH;
+        debtTokens[WMNT][0] = LENDLE_V_WMNT;
+
         // aurelius
         management.addGeneralLenderTokens(USDC, AURELIUS_A_USDC, AURELIUS_V_USDC, AURELIUS_S_USDC, 1);
         management.addGeneralLenderTokens(USDT, AURELIUS_A_USDT, AURELIUS_V_USDT, AURELIUS_S_USDT, 1);
         management.addGeneralLenderTokens(WBTC, AURELIUS_A_WBTC, AURELIUS_V_WBTC, AURELIUS_S_WBTC, 1);
         management.addGeneralLenderTokens(WETH, AURELIUS_A_WETH, AURELIUS_V_WETH, AURELIUS_S_WETH, 1);
         management.addGeneralLenderTokens(WMNT, AURELIUS_A_WMNT, AURELIUS_V_WMNT, AURELIUS_S_WMNT, 1);
+
+        collateralTokens[USDC][1] = AURELIUS_A_USDC;
+        collateralTokens[USDT][1] = AURELIUS_A_USDT;
+        collateralTokens[WBTC][1] = AURELIUS_A_WBTC;
+        collateralTokens[WETH][1] = AURELIUS_A_WETH;
+        collateralTokens[WMNT][1] = AURELIUS_A_WMNT;
+
+        debtTokens[USDC][1] = AURELIUS_V_USDC;
+        debtTokens[USDT][1] = AURELIUS_V_USDT;
+        debtTokens[WBTC][1] = AURELIUS_V_WBTC;
+        debtTokens[WETH][1] = AURELIUS_V_WETH;
+        debtTokens[WMNT][1] = AURELIUS_V_WMNT;
 
         // approve pools
         address[] memory assets = new address[](5);

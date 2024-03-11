@@ -3,7 +3,7 @@ pragma solidity ^0.8.19;
 
 import "./DeltaSetup.f.sol";
 
-contract LendingTest is DeltaSetup {
+contract MarginTest is DeltaSetup {
     address testUser = 0xcccccda06B44bcc94618620297Dc252EcfB56d85;
 
     uint256 DEFAULT_IR_MODE = 2; // variable
@@ -15,7 +15,7 @@ contract LendingTest is DeltaSetup {
         initializeDelta();
     }
 
-    function test_lending_mantle_deposit() external /** address user, uint8 lenderId */ {
+    function test_margin_mantle_open() external /** address user, uint8 lenderId */ {
         address user = testUser;
         uint8 lenderId = 1;
         vm.assume(user != address(0) && lenderId < 2);
@@ -33,78 +33,6 @@ contract LendingTest is DeltaSetup {
         assertApproxEqAbs(balance - balanceBefore, amountToDeposit, 0);
     }
 
-    function test_lending_mantle_withdraw() external /** address user, uint8 lenderId */ {
-        address user = testUser;
-        uint8 lenderId = 1;
-        vm.assume(user != address(0) && lenderId < 2);
-        address asset = USDC;
-        address collateralAsset = collateralTokens[USDC][lenderId];
-
-        deal(asset, user, 1e20);
-
-        uint256 amountToDeposit = 10.0e6;
-
-        _deposit(asset, user, amountToDeposit, lenderId);
-
-        uint256 amountWithdraw = 5.0e6;
-        uint256 balanceBefore = IERC20All(collateralAsset).balanceOf(user);
-        _withdraw(asset, collateralAsset, user, amountWithdraw, lenderId);
-
-        uint256 balance = IERC20All(collateralAsset).balanceOf(user);
-        assertApproxEqAbs(balanceBefore - balance, amountWithdraw, 1);
-    }
-
-    function test_lending_mantle_borrow() external /** address user, uint8 lenderId */ {
-        address user = testUser;
-        uint8 lenderId = 1;
-        vm.assume(user != address(0) && lenderId < 2);
-        address depositAsset = USDT;
-
-        address asset = USDC;
-        address debtAsset = AURELIUS_V_USDC;
-
-        deal(depositAsset, user, 1e20);
-
-        uint256 amountToDeposit = 10.0e6;
-
-        _deposit(depositAsset, user, amountToDeposit, lenderId);
-
-        uint256 balanceBefore = IERC20All(asset).balanceOf(user);
-        uint256 amountToBorrow = 5.0e6;
-        _borrow(asset, debtAsset, user, amountToBorrow, lenderId);
-
-        uint256 balance = IERC20All(asset).balanceOf(user);
-        assertApproxEqAbs(balance - balanceBefore, amountToBorrow, 0);
-    }
-
-    function test_lending_mantle_repay() external /** address user, uint8 lenderId */ {
-        address user = testUser;
-        uint8 lenderId = 1;
-        vm.assume(user != address(0) && lenderId < 2);
-        address depositAsset = USDT;
-
-        address asset = USDC;
-        address debtAsset = AURELIUS_V_USDC;
-
-        deal(depositAsset, user, 1e20);
-
-        uint256 amountToDeposit = 10.0e6;
-
-        _deposit(depositAsset, user, amountToDeposit, lenderId);
-
-        uint256 amountToBorrow = 5.0e6;
-        _borrow(asset, debtAsset, user, amountToBorrow, lenderId);
-
-        uint256 balanceBefore = IERC20All(asset).balanceOf(user);
-
-        uint256 amountToRepay = 2.0e6;
-        _borrow(asset, debtAsset, user, amountToRepay, lenderId);
-        uint256 balance = IERC20All(asset).balanceOf(user);
-
-        assertApproxEqAbs(balance - balanceBefore, amountToRepay, 1);
-    }
-
-    /** LENDING WRAPPERS */
 
     function _deposit(address asset, address user, uint256 amount, uint8 lenderId) internal {
         vm.prank(user);
