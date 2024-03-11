@@ -52,12 +52,10 @@ contract MarginCollateralSwapTest is DeltaSetup {
         balance = IERC20All(collateralAssetTo).balanceOf(user) - balance;
         balanceFrom = balanceFrom - IERC20All(collateralAsset).balanceOf(user);
 
-        // deposit 10, recieve 32.1... makes 42.1...
+        //  swap 15 for approx 15
         assertApproxEqAbs(amountIn, balanceFrom, 1);
-        // deviations through rouding expected, accuracy for 10 decimals
         assertApproxEqAbs(14979803, balance, 1);
     }
-
 
     function test_margin_mantle_collateral_exact_in_multi() external /** address user, uint8 lenderId */ {
         address user = testUser;
@@ -96,9 +94,92 @@ contract MarginCollateralSwapTest is DeltaSetup {
         balance = IERC20All(collateralAssetTo).balanceOf(user) - balance;
         balanceFrom = balanceFrom - IERC20All(collateralAsset).balanceOf(user);
 
-        // deposit 10, recieve 32.1... makes 42.1...
+        //  swap 15 for approx 15
         assertApproxEqAbs(amountIn, balanceFrom, 1);
-        // deviations through rouding expected, accuracy for 10 decimals
         assertApproxEqAbs(14936349, balance, 1);
+    }
+
+    function test_margin_mantle_collateral_exact_out() external /** address user, uint8 lenderId */ {
+        address user = testUser;
+        uint8 lenderId = 1;
+        vm.assume(user != address(0) && lenderId < 2);
+        address asset = USDC;
+        address collateralAsset = collateralTokens[asset][lenderId];
+
+        {
+            address borrowAsset = WMNT;
+            uint256 amountToDeposit = 10.0e6;
+            uint256 amountToLeverage = 30.0e18;
+
+            openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
+        }
+
+        address assetTo = USDT;
+        address collateralAssetTo = collateralTokens[assetTo][lenderId];
+
+        bytes[] memory calls = new bytes[](1);
+
+        bytes memory swapPath = getCollateralSwapExactOutSingle(asset, assetTo, lenderId);
+        uint256 amountOut = 15.0e6;
+        uint256 maximumIn = 15.05e6;
+        calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactOut.selector, amountOut, maximumIn, swapPath);
+
+        vm.prank(user);
+        IERC20All(collateralAsset).approve(brokerProxyAddress, maximumIn);
+
+        uint256 balanceFrom = IERC20All(collateralAsset).balanceOf(user);
+        uint256 balance = IERC20All(collateralAssetTo).balanceOf(user);
+
+        vm.prank(user);
+        brokerProxy.multicall(calls);
+
+        balance = IERC20All(collateralAssetTo).balanceOf(user) - balance;
+        balanceFrom = balanceFrom - IERC20All(collateralAsset).balanceOf(user);
+
+        //  swap 15 for approx 15
+        assertApproxEqAbs(15020225, balanceFrom, 1);
+        assertApproxEqAbs(amountOut, balance, 1);
+    }
+
+    function test_margin_mantle_collateral_exact_out_multi() external /** address user, uint8 lenderId */ {
+        address user = testUser;
+        uint8 lenderId = 1;
+        vm.assume(user != address(0) && lenderId < 2);
+        address asset = USDC;
+        address collateralAsset = collateralTokens[asset][lenderId];
+
+        {
+            address borrowAsset = WMNT;
+            uint256 amountToDeposit = 10.0e6;
+            uint256 amountToLeverage = 30.0e18;
+
+            openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
+        }
+
+        address assetTo = USDT;
+        address collateralAssetTo = collateralTokens[assetTo][lenderId];
+
+        bytes[] memory calls = new bytes[](1);
+
+        bytes memory swapPath = getCollateralSwapExactOutMulti(asset, assetTo, lenderId);
+        uint256 amountOut = 15.0e6;
+        uint256 maximumIn = 15.05e6;
+        calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactOut.selector, amountOut, maximumIn, swapPath);
+
+        vm.prank(user);
+        IERC20All(collateralAsset).approve(brokerProxyAddress, maximumIn);
+
+        uint256 balanceFrom = IERC20All(collateralAsset).balanceOf(user);
+        uint256 balance = IERC20All(collateralAssetTo).balanceOf(user);
+
+        vm.prank(user);
+        brokerProxy.multicall(calls);
+
+        balance = IERC20All(collateralAssetTo).balanceOf(user) - balance;
+        balanceFrom = balanceFrom - IERC20All(collateralAsset).balanceOf(user);
+
+        //  swap 15 for approx 15
+        assertApproxEqAbs(15032989, balanceFrom, 1);
+        assertApproxEqAbs(amountOut, balance, 1);
     }
 }
