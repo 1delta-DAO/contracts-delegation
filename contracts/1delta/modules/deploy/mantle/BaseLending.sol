@@ -11,7 +11,7 @@ import {WithStorage} from "../../../storage/BrokerStorage.sol";
 // solhint-disable max-line-length
 
 /**
- * @notice Lending base contract that wraps multiple Aave V2 types
+ * @notice Lending base contract that wraps multiple lender types.
  */
 abstract contract BaseLending is WithStorage {
     uint256 private constant ADDRESS_MASK_UPPER = 0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff;

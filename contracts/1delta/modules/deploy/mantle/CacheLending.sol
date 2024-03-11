@@ -11,7 +11,11 @@ import {WithStorage} from "../../../storage/BrokerStorage.sol";
 // solhint-disable max-line-length
 
 /**
- * @notice Lending base contract that wraps multiple Aave V2 types and reads user address and lenderId from cache
+ * @notice Lending base contract that wraps multiple lender types
+ *         Reads user address and lenderId from cache
+ *         --- ONLY TO BE USED IN CALLBACKS WHERE THE CALLER RECEIVES THE FUNDS ---
+ *         For Aave type protocols, we need a transferFrom on the collateral token 
+ *         before a withdrawal and a regular transfer after a borrow
  */
 abstract contract CacheLending is WithStorage {
     // helpers to read out cache
@@ -37,6 +41,8 @@ abstract contract CacheLending is WithStorage {
             mstore(0xB20, collateralTokens.slot)
             let collateralToken := sload(keccak256(0xB00, 0x40))
 
+            /** PREPARE TRANSFER_FROM USER */
+
             // selector for transferFrom(address,address,uint256)
             mstore(0xB00, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
             mstore(0xB04, user)
@@ -47,9 +53,6 @@ abstract contract CacheLending is WithStorage {
 
             let rdsize := returndatasize()
 
-            // Check for ERC20 success. ERC20 tokens should return a boolean,
-            // but some don't. We accept 0-length return data as success, or at
-            // least 32 bytes that starts with a 32-byte boolean true.
             success := and(
                 success, // call itself succeeded
                 or(
@@ -65,11 +68,14 @@ abstract contract CacheLending is WithStorage {
                 returndatacopy(0x0, 0x0, rdsize)
                 revert(0x0, rdsize)
             }
+
+            /** PREPARE WITHDRAW */
+
             // selector withdraw(address,uint256,address)
             mstore(0xB00, 0x69328dec00000000000000000000000000000000000000000000000000000000)
             mstore(0xB04, _underlying)
             mstore(0xB24, _amount)
-            mstore(0xB44, caller())
+            mstore(0xB44, caller()) // send to caller
             let pool
             // assign lending pool
             switch _lenderId
@@ -98,6 +104,8 @@ abstract contract CacheLending is WithStorage {
             let user := and(cache, ADDRESS_MASK_UPPER)
             let _lenderId := shr(248, and(UINT8_MASK_UPPER, cache))
 
+            /** PREPARE BORROW */
+
             // selector borrow(address,uint256,uint256,uint16,address)
             mstore(0xB00, 0xa415bcad00000000000000000000000000000000000000000000000000000000)
             mstore(0xB04, _underlying)
@@ -123,18 +131,17 @@ abstract contract CacheLending is WithStorage {
                 revert(0xB00, rdsize)
             }
 
+            /** PREPARE TRANSFER */
+
             // selector for transfer(address,uint256)
             mstore(0xB00, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
-            mstore(0xB04, caller())
+            mstore(0xB04, caller()) // send to caller
             mstore(0xB24, _amount)
 
-            success := call(gas(), _underlying, 0, 0xB00, 0x44, 0xB00, 32)
+            success := call(gas(), _underlying, 0x0, 0xB00, 0x44, 0xB00, 32)
 
             rdsize := returndatasize()
 
-            // Check for ERC20 success. ERC20 tokens should return a boolean,
-            // but some don't. We accept 0-length return data as success, or at
-            // least 32 bytes that starts with a 32-byte boolean true.
             success := and(
                 success, // call itself succeeded
                 or(
@@ -161,6 +168,8 @@ abstract contract CacheLending is WithStorage {
             // read user and lender from cache
             let user := and(cache, ADDRESS_MASK_UPPER)
             let _lenderId := shr(248, and(UINT8_MASK_UPPER, cache))
+
+            /** PREPARE DEPOSIT */
 
             // selector deposit(address,uint256,address,uint16)
             mstore(0xB00, 0xe8eda9df00000000000000000000000000000000000000000000000000000000)
@@ -194,6 +203,8 @@ abstract contract CacheLending is WithStorage {
             // read user and lender from cache
             let user := and(cache, ADDRESS_MASK_UPPER)
             let _lenderId := shr(248, and(UINT8_MASK_UPPER, cache))
+
+            /** PREPARE REPAY */
 
             // selector repay(address,uint256,uint256,address)
             mstore(0xB00, 0x573ade8100000000000000000000000000000000000000000000000000000000)

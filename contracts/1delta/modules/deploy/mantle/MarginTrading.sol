@@ -12,7 +12,7 @@ import {CacheLending} from "./CacheLending.sol";
 // solhint-disable max-line-length
 
 /**
- * @title Contract Module for general Margin Trading on an Aave-style Lender
+ * @title Contract Module for general Margin Trading on an borrow delegation compatible Lender
  * @notice Contains main logic for uniswap-type callbacks and initiator functions
  */
 abstract contract MarginTrading is BaseSwapper, CacheLending {
@@ -354,7 +354,7 @@ abstract contract MarginTrading is BaseSwapper, CacheLending {
             tradeId = amount0Delta > 0 ? uint256(amount0Delta) : uint256(amount1Delta);
             _transferERC20Tokens(tokenIn, msg.sender, tradeId);
         }
-        // EXACT OUT - WITHDRAW or BORROW
+        // EXACT OUT - WITHDRAW, BORROW OR PAY
         else if (tradeId == 1) {
             // fetch amount that has to be paid to the pool
             uint256 amountToPay = amount0Delta > 0 ? uint256(amount0Delta) : uint256(amount1Delta);
@@ -371,14 +371,10 @@ abstract contract MarginTrading is BaseSwapper, CacheLending {
 
                 if (cache < 3) {
                     // borrow and repay pool - tradeId matches interest rate mode (reverts within Aave when 0 is selected)
-                    // _lendingPool.borrow(tokenOut, amountToPay, cache, 0, acs().cachedAddress);
-                    // _transferERC20Tokens(tokenOut, msg.sender, amountToPay);
                     _borrow(tokenOut, amountToPay, cache);
                 } else if (cache < 8) {
                     // ids 3-7 are reserved
                     // withraw and send funds to the pool
-                    // _transferERC20TokensFrom(aas().aTokens[tokenOut], acs().cachedAddress, address(this), amountToPay);
-                    // _lendingPool.withdraw(tokenOut, amountToPay, msg.sender);
                     _withdraw(tokenOut, amountToPay);
                 } else {
                     // otherwise, just transfer it from cached address
@@ -408,15 +404,13 @@ abstract contract MarginTrading is BaseSwapper, CacheLending {
                 }
                 // slice out the end flag
                 _data = _data[(cache - 1):cache];
-                // address user = acs().cachedAddress;
+
                 // 6 is mint / deposit
                 if (tradeId == 6) {
-                    // _lendingPool.deposit(tokenOut, amountToSwap, user, 0);
                     _deposit(tokenOut, amountToSwap);
                 } else {
                     // tradeId minus 6 yields the interest rate mode
                     tradeId -= 6;
-                    // _lendingPool.repay(tokenOut, amountToSwap, tradeId, user);
                     _repay(tokenOut, amountToSwap, tradeId);
                 }
 
@@ -426,13 +420,9 @@ abstract contract MarginTrading is BaseSwapper, CacheLending {
                 // 1,2 are is borrow
                 if (cache < 3) {
                     // the interest mode matches the cache in this case
-                    // _lendingPool.borrow(tokenIn, amountToRepayToPool, cache, 0, user);
-                    // _transferERC20Tokens(tokenIn, msg.sender, amountToRepayToPool);
                     _borrow(tokenIn, amountToRepayToPool, cache);
                 } else {
                     // withraw and send funds to the pool
-                    // _transferERC20TokensFrom(aas().aTokens[tokenIn], user, address(this), amountToRepayToPool);
-                    // _lendingPool.withdraw(tokenIn, amountToRepayToPool, msg.sender);
                     _withdraw(tokenIn, amountToRepayToPool);
                 }
                 // cache amount
@@ -444,12 +434,10 @@ abstract contract MarginTrading is BaseSwapper, CacheLending {
                     : (uint256(amount1Delta), uint256(-amount0Delta));
                 // 3 is deposit
                 if (tradeId == 3) {
-                    // _lendingPool.deposit(tokenIn, amountToSupply, user, 0);
                      _deposit(tokenIn, amountToSupply);
                 } else {
                     // 4, 5 are repay - subtracting 3 yields the interest rate mode
                     tradeId -= 3;
-                    // _lendingPool.repay(tokenIn, amountToSupply, tradeId, user);
                     _repay(tokenIn, amountToSupply, tradeId);
                 }
                 uint256 cache = _data.length;
@@ -458,20 +446,14 @@ abstract contract MarginTrading is BaseSwapper, CacheLending {
                     _data = _data[25:];
                     flashSwapExactOutInternal(amountInLastPool, msg.sender, _data);
                 } else {
-                    // cache amount
-                    // ncs().amount = amountInLastPool;
                     // fetch the flag for closing the trade
                     _data = _data[(cache - 1):cache];
                     // assign end flag to cache
                     cache = uint8(bytes1(_data));
                     // borrow to pay pool
                     if (cache < 3) {
-                        // _lendingPool.borrow(tokenOut, amountInLastPool, cache, 0, user);
-                        // _transferERC20Tokens(tokenOut, msg.sender, amountInLastPool);
                         _borrow(tokenOut, amountInLastPool, cache);
                     } else {
-                        // _transferERC20TokensFrom(aas().aTokens[tokenOut], user, address(this), amountInLastPool);
-                        // _lendingPool.withdraw(tokenOut, amountInLastPool, msg.sender);
                         _withdraw(tokenOut, amountInLastPool);
                     }
                     // cache amount
@@ -836,7 +818,7 @@ abstract contract MarginTrading is BaseSwapper, CacheLending {
         }
     }
 
-    /// @notice pay from cached address
+    /// @notice pay from cached address or this if the address is zero
     /// @param token The token to pay
     /// @param value The amount to pay
     function pay(
@@ -942,14 +924,14 @@ abstract contract MarginTrading is BaseSwapper, CacheLending {
             mstore(ptr, underlying)
             mstore8(ptr, lenderId)
             mstore(add(ptr, 0x20), debtTokens.slot)
-            let collateralToken := sload(keccak256(ptr, 0x40))
+            let debtTOken := sload(keccak256(ptr, 0x40))
             // selector for balanceOf(address)
             mstore(ptr, 0x70a0823100000000000000000000000000000000000000000000000000000000)
             // add caller address as parameter
             mstore(add(ptr, 0x4), caller())
 
-            // call to collateralToken
-            pop(staticcall(gas(), collateralToken, ptr, 0x24, ptr, 0x20))
+            // call to debtTOken
+            pop(staticcall(gas(), debtTOken, ptr, 0x24, ptr, 0x20))
 
             callerBalance := mload(ptr)
         }
@@ -962,14 +944,14 @@ abstract contract MarginTrading is BaseSwapper, CacheLending {
             mstore(ptr, underlying)
             mstore8(ptr, lenderId)
             mstore(add(ptr, 0x20), stableDebtTokens.slot)
-            let collateralToken := sload(keccak256(ptr, 0x40))
+            let stableDebtToken := sload(keccak256(ptr, 0x40))
             // selector for balanceOf(address)
             mstore(ptr, 0x70a0823100000000000000000000000000000000000000000000000000000000)
             // add caller address as parameter
             mstore(add(ptr, 0x4), caller())
 
-            // call to collateralToken
-            pop(staticcall(gas(), collateralToken, ptr, 0x24, ptr, 0x20))
+            // call to stableDebtToken
+            pop(staticcall(gas(), stableDebtToken, ptr, 0x24, ptr, 0x20))
 
             callerBalance := mload(ptr)
         }
