@@ -4,7 +4,7 @@ pragma solidity ^0.8.19;
 import "./DeltaSetup.f.sol";
 import {DexConfigMantle} from "./DexConfig.f.sol";
 
-contract MarginTest is DeltaSetup, DexConfigMantle {
+contract MarginOpenTest is DeltaSetup, DexConfigMantle {
     address testUser = 0xcccccda06B44bcc94618620297Dc252EcfB56d85;
 
     uint256 DEFAULT_IR_MODE = 2; // variable
@@ -21,10 +21,10 @@ contract MarginTest is DeltaSetup, DexConfigMantle {
         uint8 lenderId = 1;
         vm.assume(user != address(0) && lenderId < 2);
         address asset = USDC;
-        address collateralAsset = collateralTokens[USDC][lenderId];
+        address collateralAsset = collateralTokens[asset][lenderId];
 
         address borrowAsset = WMNT;
-        address debtAsset = debtTokens[WMNT][lenderId];
+        address debtAsset = debtTokens[borrowAsset][lenderId];
         deal(asset, user, 1e20);
 
         uint256 amountToDeposit = 10.0e6;
@@ -63,10 +63,10 @@ contract MarginTest is DeltaSetup, DexConfigMantle {
         uint8 lenderId = 1;
         vm.assume(user != address(0) && lenderId < 2);
         address asset = USDC;
-        address collateralAsset = collateralTokens[USDC][lenderId];
+        address collateralAsset = collateralTokens[asset][lenderId];
 
         address borrowAsset = WMNT;
-        address debtAsset = debtTokens[WMNT][lenderId];
+        address debtAsset = debtTokens[borrowAsset][lenderId];
         deal(asset, user, 1e20);
 
         uint256 amountToDeposit = 10.0e6;
@@ -105,10 +105,10 @@ contract MarginTest is DeltaSetup, DexConfigMantle {
         uint8 lenderId = 1;
         vm.assume(user != address(0) && lenderId < 2);
         address asset = USDC;
-        address collateralAsset = collateralTokens[USDC][lenderId];
+        address collateralAsset = collateralTokens[asset][lenderId];
 
         address borrowAsset = WMNT;
-        address debtAsset = debtTokens[WMNT][lenderId];
+        address debtAsset = debtTokens[borrowAsset][lenderId];
         deal(asset, user, 1e20);
 
         uint256 amountToDeposit = 10.0e6;
@@ -147,10 +147,10 @@ contract MarginTest is DeltaSetup, DexConfigMantle {
         uint8 lenderId = 1;
         vm.assume(user != address(0) && lenderId < 2);
         address asset = USDC;
-        address collateralAsset = collateralTokens[USDC][lenderId];
+        address collateralAsset = collateralTokens[asset][lenderId];
 
         address borrowAsset = WMNT;
-        address debtAsset = debtTokens[WMNT][lenderId];
+        address debtAsset = debtTokens[borrowAsset][lenderId];
         deal(asset, user, 1e20);
 
         uint256 amountToDeposit = 10.0e6;
@@ -183,6 +183,8 @@ contract MarginTest is DeltaSetup, DexConfigMantle {
         // deposit 10, recieve 30 makes 40
         assertApproxEqAbs(balance, amountToDeposit + amountToReceive, 0);
     }
+
+    /** HELPER FUNCTIONS */
 
     function getOpenExactInSingle(address tokenIn, address tokenOut, uint8 lenderId) private view returns (bytes memory data) {
         uint24 fee = DEX_FEE_LOW;
