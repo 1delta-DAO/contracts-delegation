@@ -2,13 +2,11 @@ import { impersonateAccount } from "@nomicfoundation/hardhat-network-helpers";
 import { parseUnits } from "ethers/lib/utils";
 import { AToken__factory, ConfigModule__factory, DeltaBrokerProxy, DeltaBrokerProxy__factory, DeltaFlashAggregatorMantle__factory, DeltaLendingInterfaceMantle__factory, LensModule__factory, ManagementModule__factory, StableDebtToken__factory, } from "../types";
 import { lendleBrokerAddresses } from "../deploy/mantle_addresses";
-import { DeltaFlashAggregatorMantleInterface } from "../types/DeltaFlashAggregatorMantle";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { addressesLendleATokens, addressesLendleVTokens, addressesTokensMantle } from "../scripts/mantle/lendleAddresses";
+import {  addressesTokensMantle } from "../scripts/mantle/lendleAddresses";
 import { encodeAggregatorPathEthersMargin } from "./1delta/shared/aggregatorPath";
 import { FeeAmount, MaxUint128 } from "./uniswap-v3/periphery/shared/constants";
 import { ModuleConfigAction, getSelectors } from "./libraries/diamond";
-import { DeltaLendingInterfaceMantleInterface } from "../types/DeltaLendingInterfaceMantle";
 import { addressesAureliusATokens, addressesAureliusVTokens } from "../scripts/mantle/aureliusAddresses";
 import { addMantleLenderTokens } from "./utils/addTokens";
 const { ethers } = require("hardhat");
@@ -122,8 +120,6 @@ it("Opens exact in", async function () {
     ])
 
 })
-
-
 
 it("Opens exact out", async function () {
     const amount = parseUnits('1.0', 6)

@@ -77,6 +77,8 @@ contract ManagementModule is WithStorage {
 
     // VIEW FUNCTIONS
 
+    /** DEPRECATED */
+
     function getLendingPool() external view returns (address pool) {
         pool = aas().lendingPool;
     }
@@ -93,6 +95,22 @@ contract ManagementModule is WithStorage {
         return aas().vTokens[_underlying];
     }
 
+    /** NEW GETTERS */
+
+    function getCollateralToken(address _underlying, uint8 _lenderId) external view returns (address) {
+        return ls().collateralTokens[_getLenderTokenKey(_underlying, _lenderId)];
+    }
+
+    function getStableDebtToken(address _underlying, uint8 _lenderId) external view returns (address) {
+        return ls().stableDebtTokens[_getLenderTokenKey(_underlying, _lenderId)];
+    }
+
+    function getDebtToken(address _underlying, uint8 _lenderId) external view returns (address) {
+        return ls().debtTokens[_getLenderTokenKey(_underlying, _lenderId)];
+    }
+
+    /** TARGET FOR SWAPPING */
+    
     function getIsValidTarget(address _target) external view returns (bool) {
         return gs().isValidTarget[_target];
     }
