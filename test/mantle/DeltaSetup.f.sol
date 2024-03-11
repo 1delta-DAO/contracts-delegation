@@ -64,8 +64,8 @@ contract DeltaSetup is AddressesMantle, Script, Test {
         return selectors;
     }
 
-    function aggSelectors() internal pure returns (bytes4[] memory selectors) {
-        selectors = new bytes4[](10);
+    function flashAggregatorSelectors() internal pure returns (bytes4[] memory selectors) {
+        selectors = new bytes4[](18);
         /** margin */
         selectors[0] = IFlashAggregator.flashSwapExactIn.selector;
         selectors[1] = IFlashAggregator.flashSwapExactOut.selector;
@@ -78,7 +78,15 @@ contract DeltaSetup is AddressesMantle, Script, Test {
         selectors[7] = IFlashAggregator.swapAllOutSpot.selector;
         selectors[8] = IFlashAggregator.swapAllOutSpotSelf.selector;
         selectors[9] = IFlashAggregator.swapAllInSpot.selector;
-
+        /** callbacks */
+        selectors[10] = IFlashAggregator.fusionXV3SwapCallback.selector;
+        selectors[11] = IFlashAggregator.agniSwapCallback.selector;
+        selectors[12] = IFlashAggregator.algebraSwapCallback.selector;
+        selectors[13] = IFlashAggregator.butterSwapCallback.selector;
+        selectors[14] = IFlashAggregator.ramsesV2SwapCallback.selector;
+        selectors[15] = IFlashAggregator.FusionXCall.selector;
+        selectors[16] = IFlashAggregator.hook.selector;
+        selectors[17] = IFlashAggregator.moeCall.selector;
         return selectors;
     }
 
@@ -127,7 +135,7 @@ contract DeltaSetup is AddressesMantle, Script, Test {
         // define configs to add to proxy
         IModuleConfig.ModuleConfig[] memory _moduleConfig = new IModuleConfig.ModuleConfig[](4);
         _moduleConfig[0] = IModuleConfig.ModuleConfig(address(_management), IModuleConfig.ModuleConfigAction.Add, managementSelectors());
-        _moduleConfig[1] = IModuleConfig.ModuleConfig(address(_aggregator), IModuleConfig.ModuleConfigAction.Add, aggSelectors());
+        _moduleConfig[1] = IModuleConfig.ModuleConfig(address(_aggregator), IModuleConfig.ModuleConfigAction.Add, flashAggregatorSelectors());
         _moduleConfig[2] = IModuleConfig.ModuleConfig(address(init), IModuleConfig.ModuleConfigAction.Add, initializeSelectors());
         _moduleConfig[3] = IModuleConfig.ModuleConfig(address(_lending), IModuleConfig.ModuleConfigAction.Add, lendingSelectors());
         // add all modules

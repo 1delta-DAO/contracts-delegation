@@ -2,8 +2,9 @@
 pragma solidity ^0.8.19;
 
 import "./DeltaSetup.f.sol";
+import {DexConfigMantle} from "./DexConfig.f.sol";
 
-contract MarginTest is DeltaSetup {
+contract MarginTest is DeltaSetup, DexConfigMantle {
     address testUser = 0xcccccda06B44bcc94618620297Dc252EcfB56d85;
 
     uint256 DEFAULT_IR_MODE = 2; // variable
@@ -22,17 +23,45 @@ contract MarginTest is DeltaSetup {
         address asset = USDC;
         address collateralAsset = collateralTokens[USDC][lenderId];
 
+        address borrowAsset = WMNT;
+        address debtAsset = debtTokens[WMNT][lenderId];
         deal(asset, user, 1e20);
 
         uint256 amountToDeposit = 10.0e6;
 
-        uint256 balanceBefore = IERC20All(collateralAsset).balanceOf(user);
-        _deposit(asset, user, amountToDeposit, lenderId);
+        bytes[] memory calls = new bytes[](3);
+        calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, asset, amountToDeposit);
+        calls[1] = abi.encodeWithSelector(ILending.deposit.selector, asset, user, lenderId);
 
+        uint256 amountToLeverage = 30.0e18;
+        bytes memory swapPath = getOpenExactInSingle(borrowAsset, asset, lenderId);
+        uint256 minimumOut = 30.0e6;
+        calls[2] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactIn.selector, amountToLeverage, minimumOut, swapPath);
+
+        vm.prank(user);
+        IERC20All(asset).approve(brokerProxyAddress, amountToDeposit);
+        vm.prank(user);
+        IERC20All(debtAsset).approveDelegation(brokerProxyAddress, amountToLeverage);
+
+        uint256 borrowBalance = IERC20All(debtAsset).balanceOf(user);
         uint256 balance = IERC20All(collateralAsset).balanceOf(user);
-        assertApproxEqAbs(balance - balanceBefore, amountToDeposit, 0);
+
+        vm.prank(user);
+        brokerProxy.multicall(calls);
+
+        balance = IERC20All(collateralAsset).balanceOf(user) - balance;
+        borrowBalance = IERC20All(debtAsset).balanceOf(user) - borrowBalance;
+
+        assert(amountToLeverage / 1e12 + amountToDeposit >= balance * 90 / 100);
+        assertApproxEqAbs(borrowBalance, amountToDeposit + amountToLeverage, 1.0e8);
     }
 
+    function getOpenExactInSingle(address tokenIn, address tokenOut, uint8 lenderId) private view returns (bytes memory data) {
+        uint24 fee = DEX_FEE_LOW;
+        uint8 poolId = AGNI;
+        (uint8 actionId, , uint8 endId) = getOpenExactInFlags();
+        return abi.encodePacked(lenderId, tokenIn, fee, poolId, actionId, tokenOut, endId);
+    }
 
     function _deposit(address asset, address user, uint256 amount, uint8 lenderId) internal {
         vm.prank(user);
