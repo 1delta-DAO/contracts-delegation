@@ -2,6 +2,8 @@
 pragma solidity ^0.8.19;
 
 contract AddressesMantle {
+    // assets
+
     address internal WETH = 0xdEAddEaDdeadDEadDEADDEAddEADDEAddead1111;
     address internal WBTC = 0xCAbAE6f6Ea1ecaB08Ad02fE02ce9A44F09aebfA2;
     address internal WMNT = 0x78c1b0C915c4FAA5FffA6CAbf0219DA63d7f4cb8;
@@ -14,6 +16,9 @@ contract AddressesMantle {
     address internal axlUSDC = 0xEB466342C4d449BC9f53A865D5Cb90586f405215;
     address internal USDY = address(0);
     address internal mUSD = address(0);
+
+    // users
+    address internal testUser = 0xaaaa4a3F69b6DB76889bDfa4edBe1c0BB57BAA5c;
 
     address internal CLEO_WMNT_POOL = 0x762B916297235dc920a8c684419e41Ab0099A242;
 
@@ -82,6 +87,10 @@ contract AddressesMantle {
     uint256 internal constant ADDRESS_MASK_UPPER = 0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff;
     /// @dev Mask of lower 3 bytes.
     uint256 internal constant UINT24_MASK = 0xffffff;
+
+    /** DEFAULTS */
+
+    uint8 DEFAULT_LENDER = 1;
 
     /** DEX CONFIG */
 

@@ -12,6 +12,8 @@ import {IBrokerProxy} from "./interfaces/IBrokerProxy.sol";
 import {IModuleConfig} from "../../contracts/1delta/proxy/interfaces/IModuleConfig.sol";
 // universal erc20
 import {IERC20All} from "./interfaces/IERC20All.sol";
+// lending pool for debugging
+import {ILendingPool} from "../../contracts/1delta/modules/deploy/mantle/ILendingPool.sol";
 
 // proxy and management
 import {ConfigModule} from "../../contracts/1delta/proxy/modules/ConfigModule.sol";
@@ -201,6 +203,14 @@ contract DeltaSetup is AddressesMantle, Script, Test {
         assets[4] = USDT;
         management.approveAddress(assets, LENDLE_POOL);
         management.approveAddress(assets, AURELIUS_POOL);
+    }
+
+
+    function setUp() public virtual {
+        vm.createSelectFork({blockNumber: 60500956, urlOrAlias: "https://mantle-mainnet.public.blastapi.io"});
+
+        deployDelta();
+        initializeDelta();
     }
 
     /** DEPOSIT AND OPEN TO SPIN UP POSITIONS */

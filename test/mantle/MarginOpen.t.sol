@@ -4,20 +4,11 @@ pragma solidity ^0.8.19;
 import "./DeltaSetup.f.sol";
 
 contract MarginOpenTest is DeltaSetup {
-    address testUser = 0xcccccda06B44bcc94618620297Dc252EcfB56d85;
-
     uint256 DEFAULT_IR_MODE = 2; // variable
-
-    function setUp() public virtual {
-        vm.createSelectFork({blockNumber: 60500956, urlOrAlias: "https://rpc.ankr.com/mantle"});
-
-        deployDelta();
-        initializeDelta();
-    }
 
     function test_margin_mantle_open_exact_in() external /** address user, uint8 lenderId */ {
         address user = testUser;
-        uint8 lenderId = 1;
+        uint8 lenderId = DEFAULT_LENDER;
         vm.assume(user != address(0) && lenderId < 2);
         address asset = USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
@@ -59,7 +50,7 @@ contract MarginOpenTest is DeltaSetup {
 
     function test_margin_mantle_open_exact_in_multi() external /** address user, uint8 lenderId */ {
         address user = testUser;
-        uint8 lenderId = 1;
+        uint8 lenderId = DEFAULT_LENDER;
         vm.assume(user != address(0) && lenderId < 2);
         address asset = USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
@@ -101,7 +92,7 @@ contract MarginOpenTest is DeltaSetup {
 
     function test_margin_mantle_open_exact_out() external /** address user, uint8 lenderId */ {
         address user = testUser;
-        uint8 lenderId = 1;
+        uint8 lenderId = DEFAULT_LENDER;
         vm.assume(user != address(0) && lenderId < 2);
         address asset = USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
@@ -143,7 +134,7 @@ contract MarginOpenTest is DeltaSetup {
 
     function test_margin_mantle_open_exact_out_multi() external /** address user, uint8 lenderId */ {
         address user = testUser;
-        uint8 lenderId = 1;
+        uint8 lenderId = DEFAULT_LENDER;
         vm.assume(user != address(0) && lenderId < 2);
         address asset = USDC;
         address collateralAsset = collateralTokens[asset][lenderId];

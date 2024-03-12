@@ -4,20 +4,11 @@ pragma solidity ^0.8.19;
 import "./DeltaSetup.f.sol";
 
 contract LendingTest is DeltaSetup {
-    address testUser = 0xcccccda06B44bcc94618620297Dc252EcfB56d85;
-
     uint256 DEFAULT_IR_MODE = 2; // variable
-
-    function setUp() public virtual {
-        vm.createSelectFork({blockNumber: 60500956, urlOrAlias: "https://rpc.ankr.com/mantle"});
-
-        deployDelta();
-        initializeDelta();
-    }
 
     function test_lending_mantle_deposit() external /** address user, uint8 lenderId */ {
         address user = testUser;
-        uint8 lenderId = 1;
+        uint8 lenderId = DEFAULT_LENDER;
         vm.assume(user != address(0) && lenderId < 2);
         address asset = USDC;
         address collateralAsset = collateralTokens[USDC][lenderId];
@@ -35,7 +26,7 @@ contract LendingTest is DeltaSetup {
 
     function test_lending_mantle_withdraw() external /** address user, uint8 lenderId */ {
         address user = testUser;
-        uint8 lenderId = 1;
+        uint8 lenderId = DEFAULT_LENDER;
         vm.assume(user != address(0) && lenderId < 2);
         address asset = USDC;
         address collateralAsset = collateralTokens[USDC][lenderId];
@@ -56,12 +47,12 @@ contract LendingTest is DeltaSetup {
 
     function test_lending_mantle_borrow() external /** address user, uint8 lenderId */ {
         address user = testUser;
-        uint8 lenderId = 1;
+        uint8 lenderId = DEFAULT_LENDER;
         vm.assume(user != address(0) && lenderId < 2);
         address depositAsset = USDT;
 
         address asset = USDC;
-        address debtAsset = AURELIUS_V_USDC;
+        address debtAsset = debtTokens[asset][lenderId];
 
         deal(depositAsset, user, 1e20);
 
@@ -79,12 +70,12 @@ contract LendingTest is DeltaSetup {
 
     function test_lending_mantle_repay() external /** address user, uint8 lenderId */ {
         address user = testUser;
-        uint8 lenderId = 1;
+        uint8 lenderId = DEFAULT_LENDER;
         vm.assume(user != address(0) && lenderId < 2);
         address depositAsset = USDT;
 
         address asset = USDC;
-        address debtAsset = AURELIUS_V_USDC;
+        address debtAsset = debtTokens[asset][lenderId];
 
         deal(depositAsset, user, 1e20);
 
