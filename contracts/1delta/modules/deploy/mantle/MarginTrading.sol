@@ -374,7 +374,7 @@ abstract contract MarginTrading is BaseSwapper, CacheLending {
                     _borrow(tokenOut, amountToPay, cache);
                 } else if (cache < 8) {
                     // ids 3-7 are reserved
-                    // withraw and send funds to the pool
+                    // withdraw and send funds to the pool
                     _withdraw(tokenOut, amountToPay);
                 } else {
                     // otherwise, just transfer it from cached address
@@ -415,14 +415,13 @@ abstract contract MarginTrading is BaseSwapper, CacheLending {
                 }
 
                 // fetch the flag for closing the trade
-
                 cache = uint8(bytes1(_data));
                 // 1,2 are is borrow
                 if (cache < 3) {
                     // the interest mode matches the cache in this case
                     _borrow(tokenIn, amountToRepayToPool, cache);
                 } else {
-                    // withraw and send funds to the pool
+                    // withdraw and send funds to the pool
                     _withdraw(tokenIn, amountToRepayToPool);
                 }
                 // cache amount
@@ -626,14 +625,10 @@ abstract contract MarginTrading is BaseSwapper, CacheLending {
 
                 if (cache < 3) {
                     // borrow and repay pool
-                    // _lendingPool.borrow(tokenOut, referenceAmount, cache, 0, acs().cachedAddress);
-                    // _transferERC20Tokens(tokenOut, msg.sender, referenceAmount);
                     _borrow(tokenOut, referenceAmount, cache);
                 } else if (cache < 8) {
                     // ids 3-7 are reserved
-                    // withraw and send funds to the pool
-                    // _transferERC20TokensFrom(aas().aTokens[tokenOut], acs().cachedAddress, address(this), referenceAmount);
-                    // _lendingPool.withdraw(tokenOut, referenceAmount, msg.sender);
+                    // withdraw and send funds to the pool
                     _withdraw(tokenOut, referenceAmount);
                 } else {
                     // otherwise, just transfer it from cached address
@@ -663,17 +658,13 @@ abstract contract MarginTrading is BaseSwapper, CacheLending {
             // slice out the end flag
             data = data[(cache - 1):cache];
             // cache amount
-            // ncs().amount = amountToSwap;
-            // address user = acs().cachedAddress;
             // 6 is mint / deposit
             if (tradeId == 6) {
                 // deposit funds for id == 6
-                // _lendingPool.deposit(tokenOut, amountToSwap, user, 0);
                 _deposit(tokenOut, amountToSwap);
             } else {
                 // repay - tradeId is irMode plus 6
                 tradeId -= 6;
-                // _lendingPool.repay(tokenOut, amountToSwap, tradeId, user);
                 _repay(tokenOut, amountToSwap, tradeId);
             }
 
@@ -681,13 +672,9 @@ abstract contract MarginTrading is BaseSwapper, CacheLending {
             tradeId = uint8(bytes1(data));
             // 1,2 are is borrow
             if (tradeId < 3) {
-                // _lendingPool.borrow(tokenIn, amountToBorrow, tradeId, 0, user);
-                // _transferERC20Tokens(tokenIn, msg.sender, amountToBorrow);
                 _borrow(tokenIn, amountToBorrow, tradeId);
             } else {
-                // withraw and send funds to the pool
-                // _transferERC20TokensFrom(aas().aTokens[tokenIn], user, address(this), amountToBorrow);
-                // _lendingPool.withdraw(tokenIn, amountToBorrow, msg.sender);
+                // withdraw and send funds to the pool
                  _withdraw(tokenIn, amountToBorrow);
             }
             // cache amount
@@ -695,15 +682,12 @@ abstract contract MarginTrading is BaseSwapper, CacheLending {
         } else {
             // fetch amountOut
             uint256 referenceAmount = zeroForOne ? amount0 : amount1;
-            // address user = acs().cachedAddress;
             // 3 is deposit
             if (tradeId == 3) {
-                // _lendingPool.deposit(tokenIn, referenceAmount, user, 0);
                 _deposit(tokenIn, referenceAmount);
             } else {
                 // 4, 5 are repay, subtracting 3 yields the interest rate mode
                 tradeId -= 3;
-                // _lendingPool.repay(tokenIn, referenceAmount, tradeId, user);
                 _repay(tokenIn, referenceAmount, tradeId);
             }
             // calculate amountIn (note that tokenIn/out are read inverted at the top)
@@ -714,20 +698,14 @@ abstract contract MarginTrading is BaseSwapper, CacheLending {
                 data = data[25:];
                 flashSwapExactOutInternal(referenceAmount, msg.sender, data);
             } else {
-                // // cache amount
-                // ncs().amount = referenceAmount;
                 // slice out the end flag
                 data = data[(cache - 1):cache];
                 // assign end flag to cache
                 cache = uint8(bytes1(data));
                 // borrow to pay pool
                 if (cache < 3) {
-                    // _lendingPool.borrow(tokenOut, referenceAmount, cache, 0, user);
-                    // _transferERC20Tokens(tokenOut, msg.sender, referenceAmount);
                      _borrow(tokenOut, referenceAmount, cache);
                 } else {
-                    // _transferERC20TokensFrom(aas().aTokens[tokenOut], user, address(this), referenceAmount);
-                    // _lendingPool.withdraw(tokenOut, referenceAmount, msg.sender);
                     _withdraw(tokenOut, referenceAmount);
                 }
 
