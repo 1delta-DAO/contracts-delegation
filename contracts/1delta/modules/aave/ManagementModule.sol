@@ -9,8 +9,7 @@ import {WithStorage} from "../../storage/BrokerStorage.sol";
 
 /**
  * @title Management/Data Viewer contract
- * @notice Allows the management of to insert token and protocol data
- * @author Achthar
+ * @notice Allows the management to insert token and protocol data
  */
 contract ManagementModule is WithStorage {
     modifier onlyManagement() {
@@ -19,6 +18,8 @@ contract ManagementModule is WithStorage {
     }
 
     // STATE CHANGING FUNCTION
+
+    /** DEPRECATED SINGLE_LENDER FUNCTIONS */
 
     function addAToken(address _underlying, address _aToken) external onlyManagement {
         aas().aTokens[_underlying] = _aToken;
@@ -39,6 +40,8 @@ contract ManagementModule is WithStorage {
         aas().aTokens[asset] = _aToken;
     }
 
+    /** ADD TOKEN SET FOR A LENDER */
+
     function addGeneralLenderTokens(
         address _underlying,
         address _aToken,
@@ -50,13 +53,6 @@ contract ManagementModule is WithStorage {
         ls().debtTokens[key] = _vToken;
         ls().stableDebtTokens[key] = _sToken;
         ls().collateralTokens[key] = _aToken;
-    }
-
-    function approveLendingPool(address[] memory assets) external onlyManagement {
-        address lendingPool = aas().lendingPool;
-        for (uint256 i = 0; i < assets.length; i++) {
-            IERC20(assets[i]).approve(lendingPool, type(uint256).max);
-        }
     }
 
     function setValidTarget(address target, bool value) external onlyManagement {
@@ -110,7 +106,7 @@ contract ManagementModule is WithStorage {
     }
 
     /** TARGET FOR SWAPPING */
-    
+
     function getIsValidTarget(address _target) external view returns (bool) {
         return gs().isValidTarget[_target];
     }
