@@ -6,9 +6,8 @@ import "./DeltaSetup.f.sol";
 contract LendingTest is DeltaSetup {
     uint256 DEFAULT_IR_MODE = 2; // variable
 
-    function test_lending_mantle_deposit() external /** address user, uint8 lenderId */ {
+    function test_lending_mantle_deposit(uint8 lenderId) external /** address user, uint8 lenderId */ {
         address user = testUser;
-        uint8 lenderId = DEFAULT_LENDER;
         vm.assume(user != address(0) && lenderId < 2);
         address asset = USDC;
         address collateralAsset = collateralTokens[USDC][lenderId];
@@ -24,9 +23,8 @@ contract LendingTest is DeltaSetup {
         assertApproxEqAbs(balance - balanceBefore, amountToDeposit, 0);
     }
 
-    function test_lending_mantle_withdraw() external /** address user, uint8 lenderId */ {
+    function test_lending_mantle_withdraw(uint8 lenderId) external /** address user, uint8 lenderId */ {
         address user = testUser;
-        uint8 lenderId = DEFAULT_LENDER;
         vm.assume(user != address(0) && lenderId < 2);
         address asset = USDC;
         address collateralAsset = collateralTokens[USDC][lenderId];
@@ -45,9 +43,8 @@ contract LendingTest is DeltaSetup {
         assertApproxEqAbs(balanceBefore - balance, amountWithdraw, 1);
     }
 
-    function test_lending_mantle_borrow() external /** address user, uint8 lenderId */ {
+    function test_lending_mantle_borrow(uint8 lenderId) external /** address user, uint8 lenderId */ {
         address user = testUser;
-        uint8 lenderId = DEFAULT_LENDER;
         vm.assume(user != address(0) && lenderId < 2);
         address depositAsset = USDT;
 
@@ -68,9 +65,8 @@ contract LendingTest is DeltaSetup {
         assertApproxEqAbs(balance - balanceBefore, amountToBorrow, 0);
     }
 
-    function test_lending_mantle_repay() external /** address user, uint8 lenderId */ {
+    function test_lending_mantle_repay(uint8 lenderId) external /** address user, uint8 lenderId */ {
         address user = testUser;
-        uint8 lenderId = DEFAULT_LENDER;
         vm.assume(user != address(0) && lenderId < 2);
         address depositAsset = USDT;
 

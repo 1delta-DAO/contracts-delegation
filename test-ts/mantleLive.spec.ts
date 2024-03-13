@@ -88,7 +88,7 @@ it("Test repay", async function () {
     const amount = parseUnits('1.0', 18)
     const callWrap = lendingInterfaceInterface.encodeFunctionData('wrap',)
     const callUnwrap = lendingInterfaceInterface.encodeFunctionData('unwrap',)
-    const callRepay = lendingInterfaceInterface.encodeFunctionData('repay', [wbtc, trader.address, 2])
+    const callRepay = lendingInterfaceInterface.encodeFunctionData('repay', [wbtc, trader.address, 2, 0])
 
     const path0 = encodeAggregatorPathEthers(
         [wbtc, wmnt],
@@ -116,7 +116,7 @@ it("Test repay", async function () {
     const value ='988552721525158395'// '988552721525158395'
     // const amount2 = '99018003124066296'
     const swap0 = flashAggregatorInterface.encodeFunctionData('swapExactOutSpotSelf', [amount0, MaxUint128, path0])
-    const swap1 = flashAggregatorInterface.encodeFunctionData('swapAllOutSpotSelf', [MaxUint128, '2', path1])
+    const swap1 = flashAggregatorInterface.encodeFunctionData('swapAllOutSpotSelf', [MaxUint128, 0, '2', path1])
     // const swap2 = flashAggregatorInterface.encodeFunctionData('swapAllOutSpotSelf', [MaxUint128, '2', path2])
    const calls = [
         callWrap,
