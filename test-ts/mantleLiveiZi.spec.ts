@@ -2,7 +2,6 @@ import { impersonateAccount } from "@nomicfoundation/hardhat-network-helpers";
 import { parseUnits } from "ethers/lib/utils";
 import { AToken__factory, ConfigModule__factory, DeltaBrokerProxy, DeltaBrokerProxy__factory, DeltaFlashAggregatorMantle__factory, DeltaLendingInterfaceMantle__factory, LensModule__factory, ManagementModule__factory, StableDebtToken__factory, } from "../types";
 import { lendleBrokerAddresses } from "../deploy/mantle_addresses";
-import { DeltaFlashAggregatorMantleInterface } from "../types/DeltaFlashAggregatorMantle";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { addressesLendleATokens, addressesLendleVTokens, addressesTokensMantle } from "../scripts/mantle/lendleAddresses";
 import { encodeAggregatorPathEthersMargin } from "./1delta/shared/aggregatorPath";
@@ -13,11 +12,9 @@ const { ethers } = require("hardhat");
 
 // block: 20240225
 const MANTLE_CHAIN_ID = 5000;
-const trader0 = '0xaffe73AA5EBd0CD95D89ab9fa2512Fc9e2d3289b'
 const admin = '0x999999833d965c275A2C102a4Ebf222ca938546f'
 
 const weth = "0xdEAddEaDdeadDEadDEADDEAddEADDEAddead1111"
-const usdc = "0x09Bc4E0D864854c6aFB6eB9A9cdF58aC190D0dF9"
 const wmnt = "0x78c1b0c915c4faa5fffa6cabf0219da63d7f4cb8"
 const usdt = "0x201EBa5CC46D216Ce6DC03F6a759e8E766e956aE"
 
@@ -29,7 +26,6 @@ let multicaller: DeltaBrokerProxy
 let flashAggregatorInterface = DeltaFlashAggregatorMantle__factory.createInterface()
 let lendingInterfaceInterface = DeltaLendingInterfaceMantle__factory.createInterface()
 let user: SignerWithAddress
-let trader: SignerWithAddress
 before(async function () {
     const [signer] = await ethers.getSigners();
     user = signer
@@ -54,36 +50,37 @@ before(async function () {
     const selectorsLending = await lens.moduleFunctionSelectors(lendingModule)
     const selectorsManagement = await lens.moduleFunctionSelectors(managementModule)
 
-    await config.configureModules([{
-        moduleAddress: ethers.constants.AddressZero,
-        action: ModuleConfigAction.Remove,
-        functionSelectors: selectors
-    },
-    {
-        moduleAddress: ethers.constants.AddressZero,
-        action: ModuleConfigAction.Remove,
-        functionSelectors: selectorsLending
-    },
-    {
-        moduleAddress: ethers.constants.AddressZero,
-        action: ModuleConfigAction.Remove,
-        functionSelectors: selectorsManagement
-    },
-    {
-        moduleAddress: newFlashAggregator.address,
-        action: ModuleConfigAction.Add,
-        functionSelectors: getSelectors(newFlashAggregator)
-    },
-    {
-        moduleAddress: newLendingInterface.address,
-        action: ModuleConfigAction.Add,
-        functionSelectors: getSelectors(newLendingInterface)
-    },
-    {
-        moduleAddress: newManager.address,
-        action: ModuleConfigAction.Add,
-        functionSelectors: getSelectors(newManager)
-    },
+    await config.configureModules([
+        {
+            moduleAddress: ethers.constants.AddressZero,
+            action: ModuleConfigAction.Remove,
+            functionSelectors: selectors
+        },
+        {
+            moduleAddress: ethers.constants.AddressZero,
+            action: ModuleConfigAction.Remove,
+            functionSelectors: selectorsLending
+        },
+        {
+            moduleAddress: ethers.constants.AddressZero,
+            action: ModuleConfigAction.Remove,
+            functionSelectors: selectorsManagement
+        },
+        {
+            moduleAddress: newFlashAggregator.address,
+            action: ModuleConfigAction.Add,
+            functionSelectors: getSelectors(newFlashAggregator)
+        },
+        {
+            moduleAddress: newLendingInterface.address,
+            action: ModuleConfigAction.Add,
+            functionSelectors: getSelectors(newLendingInterface)
+        },
+        {
+            moduleAddress: newManager.address,
+            action: ModuleConfigAction.Add,
+            functionSelectors: getSelectors(newManager)
+        },
     ]
     )
 

@@ -1,14 +1,12 @@
 import { impersonateAccount } from "@nomicfoundation/hardhat-network-helpers";
 import { parseUnits } from "ethers/lib/utils";
-import { AToken__factory, ConfigModule__factory, DeltaBrokerProxy, DeltaBrokerProxy__factory, DeltaFlashAggregatorMantle__factory, DeltaLendingInterfaceMantle__factory, LensModule__factory, StableDebtToken__factory, } from "../types";
+import { ConfigModule__factory, DeltaBrokerProxy, DeltaBrokerProxy__factory, DeltaFlashAggregatorMantle__factory, DeltaLendingInterfaceMantle__factory, LensModule__factory, StableDebtToken__factory, } from "../types";
 import { lendleBrokerAddresses } from "../deploy/mantle_addresses";
-import { DeltaFlashAggregatorMantleInterface } from "../types/DeltaFlashAggregatorMantle";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { addressesLendleATokens, addressesLendleVTokens, addressesTokensMantle } from "../scripts/mantle/lendleAddresses";
-import { encodeAggregatorPathEthers } from "./1delta/shared/aggregatorPath";
+import { addressesLendleVTokens, addressesTokensMantle } from "../scripts/mantle/lendleAddresses";
+import { encodeAggregatorPathEthersMargin } from "./1delta/shared/aggregatorPath";
 import { FeeAmount, MaxUint128 } from "./uniswap-v3/periphery/shared/constants";
 import { ModuleConfigAction, getSelectors } from "./libraries/diamond";
-import { DeltaLendingInterfaceMantleInterface } from "../types/DeltaLendingInterfaceMantle";
 const { ethers } = require("hardhat");
 
 
@@ -77,7 +75,7 @@ before(async function () {
 it("Deposit", async function () {
     const amount = parseUnits('5000.0', 18)
     const callWrap = lendingInterfaceInterface.encodeFunctionData('wrap',)
-    const callDeposit = lendingInterfaceInterface.encodeFunctionData('deposit' as any, [wmnt, user.address])
+    const callDeposit = lendingInterfaceInterface.encodeFunctionData('deposit', [wmnt, user.address, 0])
 
     await multicaller.connect(user).multicall([
         callWrap,
@@ -91,7 +89,7 @@ it("Opens exact in", async function () {
     const borrowToken = await new StableDebtToken__factory(user).attach(addressesLendleVTokens.USDT)
     await borrowToken.approveDelegation(multicaller.address, MaxUint128)
     // v3 single
-    const path1 = encodeAggregatorPathEthers(
+    const path1 = encodeAggregatorPathEthersMargin(
         [usdt, usdc],
         [0],
         [6],
@@ -115,7 +113,7 @@ it("Opens exact out", async function () {
     const borrowToken = await new StableDebtToken__factory(user).attach(addressesLendleVTokens.USDT)
     await borrowToken.approveDelegation(multicaller.address, MaxUint128)
     // v3 single
-    const path1 = encodeAggregatorPathEthers(
+    const path1 = encodeAggregatorPathEthersMargin(
         [usdc, usdt],
         [FeeAmount.MEDIUM],
         [3],
@@ -138,7 +136,7 @@ it("Opens exact in multi", async function () {
     const borrowToken = await new StableDebtToken__factory(user).attach(addressesLendleVTokens.USDC)
     await borrowToken.approveDelegation(multicaller.address, MaxUint128)
     // v3 single
-    const path1 = encodeAggregatorPathEthers(
+    const path1 = encodeAggregatorPathEthersMargin(
         [usdc, weth, wmnt],
         [0, FeeAmount.LOW],
         [6, 0],
@@ -160,7 +158,7 @@ it("Opens exact out multi", async function () {
     const borrowToken = await new StableDebtToken__factory(user).attach(addressesLendleVTokens.USDT)
     await borrowToken.approveDelegation(multicaller.address, MaxUint128)
     // v3 single
-    const path1 = encodeAggregatorPathEthers(
+    const path1 = encodeAggregatorPathEthersMargin(
         [wmnt, weth, usdc],
         [FeeAmount.LOW, FeeAmount.LOW],
         [3, 1],
@@ -188,7 +186,7 @@ it("Opens exact out multi", async function () {
 //     await collateralToken.approve(multicaller.address, MaxUint128)
 
 //     // v3 single
-//     const path1 = encodeAggregatorPathEthers(
+//     const path1 = encodeAggregatorPathEthersMargin(
 //         [usdt, weth, wmnt],
 //         [FeeAmount.LOW, FeeAmount.MEDIUM],
 //         [5, 1],
@@ -218,7 +216,7 @@ it("Opens exact out multi", async function () {
 //     await collateralToken.approve(multicaller.address, MaxUint128)
 
 //     // v3 single
-//     const path1 = encodeAggregatorPathEthers(
+//     const path1 = encodeAggregatorPathEthersMargin(
 //         [wmnt, weth, usdt],
 //         [FeeAmount.MEDIUM, FeeAmount.LOW],
 //         [6, 0],
@@ -250,7 +248,7 @@ it("Opens exact out multi", async function () {
 //     const borrowToken = await new StableDebtToken__factory(user).attach(addressesLendleVTokens.WMNT)
 //     await borrowToken.approveDelegation(multicaller.address, MaxUint128)
 //     // v3 single
-//     const path1 = encodeAggregatorPathEthers(
+//     const path1 = encodeAggregatorPathEthersMargin(
 //         [wmnt, weth, usdt],
 //         [FeeAmount.MEDIUM, FeeAmount.LOW],
 //         [6, 0],
@@ -278,7 +276,7 @@ it("Opens exact out multi", async function () {
 //     await collateralToken.approve(multicaller.address, MaxUint128)
 
 //     // v3 single
-//     const path1 = encodeAggregatorPathEthers(
+//     const path1 = encodeAggregatorPathEthersMargin(
 //         [wmnt, weth, usdt],
 //         [FeeAmount.MEDIUM, FeeAmount.LOW],
 //         [5, 1],

@@ -13,7 +13,7 @@ const { ethers } = require("hardhat");
 
 const MANTLE_CHAIN_ID = 5000;
 const trader0 = '0xaffe73AA5EBd0CD95D89ab9fa2512Fc9e2d3289b'
-const admin = ''
+const admin = '0x999999833d965c275A2C102a4Ebf222ca938546f'
 
 const weth = "0xdEAddEaDdeadDEadDEADDEAddEADDEAddead1111"
 const usdc = "0x09Bc4E0D864854c6aFB6eB9A9cdF58aC190D0dF9"
