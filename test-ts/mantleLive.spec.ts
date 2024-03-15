@@ -113,12 +113,12 @@ it("Test repay", async function () {
     )
     const amount0 = '1238'
     // const amount1 = '309'
-    const value ='988552721525158395'// '988552721525158395'
+    const value = '988552721525158395'// '988552721525158395'
     // const amount2 = '99018003124066296'
     const swap0 = flashAggregatorInterface.encodeFunctionData('swapExactOutSpotSelf', [amount0, MaxUint128, path0])
-    const swap1 = flashAggregatorInterface.encodeFunctionData('swapAllOutSpotSelf', [MaxUint128, 0, '2', path1])
-    // const swap2 = flashAggregatorInterface.encodeFunctionData('swapAllOutSpotSelf', [MaxUint128, '2', path2])
-   const calls = [
+    const swap1 = flashAggregatorInterface.encodeFunctionData('swapAllOutSpotSelf', [MaxUint128, '2', 0, path1])
+    // const swap2 = flashAggregatorInterface.encodeFunctionData('swapAllOutSpotSelf', [MaxUint128, '2', 0,  path2])
+    const calls = [
         callWrap,
         swap0,
         // swap1,
@@ -127,7 +127,7 @@ it("Test repay", async function () {
         callRepay,
         callUnwrap
     ]
-    
+
     await multicaller.connect(trader).multicall(
         calls
         , { value }

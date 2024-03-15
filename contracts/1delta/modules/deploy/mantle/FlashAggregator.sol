@@ -70,8 +70,8 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
      */
     function swapAllOutSpot(
         uint256 maximumAmountIn,
-        uint8 lenderId,
         uint256 interestRateMode,
+        uint8 lenderId,
         bytes calldata path
     ) external payable {
         // we cache the address as bytes32
@@ -96,8 +96,8 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
      */
     function swapAllOutSpotSelf(
         uint256 maximumAmountIn,
-        uint8 lenderId,
         uint256 interestRateMode,
+        uint8 lenderId,
         bytes calldata path
     ) external payable {
         uint256 _debtBalance;
