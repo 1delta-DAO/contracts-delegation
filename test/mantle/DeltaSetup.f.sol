@@ -97,7 +97,7 @@ contract DeltaSetup is AddressesMantle, Script, Test {
     }
 
     function lendingSelectors() internal pure returns (bytes4[] memory selectors) {
-        selectors = new bytes4[](17);
+        selectors = new bytes4[](18);
         // baseline
         selectors[0] = ILending.deposit.selector;
         selectors[1] = ILending.withdraw.selector;
@@ -115,11 +115,12 @@ contract DeltaSetup is AddressesMantle, Script, Test {
         selectors[10] = ILending.wrap.selector;
         selectors[11] = ILending.unwrap.selector;
         selectors[12] = ILending.unwrapTo.selector;
-        selectors[13] = ILending.validateAndUnwrap.selector;
+        selectors[13] = ILending.refundNativeTo.selector;
         // transfers
         selectors[14] = ILending.sweep.selector;
         selectors[15] = ILending.sweepTo.selector;
         selectors[16] = ILending.refundNative.selector;
+        selectors[17] = ILending.wrapTo.selector;
 
         return selectors;
     }

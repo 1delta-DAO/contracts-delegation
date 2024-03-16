@@ -9,8 +9,6 @@ pragma solidity 0.8.24;
 import {BaseSwapper, IUniswapV2Pair} from "./BaseSwapper.sol";
 import {CacheLending} from "./CacheLending.sol";
 
-// solhint-disable max-line-length
-
 /**
  * @title Contract Module for general Margin Trading on an borrow delegation compatible Lender
  * @notice Contains main logic for uniswap-type callbacks and initiator functions

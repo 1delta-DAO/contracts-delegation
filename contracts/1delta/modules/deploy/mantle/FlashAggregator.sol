@@ -8,8 +8,6 @@ pragma solidity ^0.8.24;
 
 import {MarginTrading} from "./MarginTrading.sol";
 
-// solhint-disable max-line-length
-
 /**
  * @title FlashAggregator
  * @notice Adds spot trading functions to general margin trading

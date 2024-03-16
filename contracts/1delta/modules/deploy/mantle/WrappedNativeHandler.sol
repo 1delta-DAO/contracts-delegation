@@ -7,53 +7,44 @@ pragma solidity ^0.8.24;
 /******************************************************************************/
 
 import {INativeWrapper} from "../../../interfaces/INativeWrapper.sol";
-import {TokenTransfer} from "../../../libraries/TokenTransfer.sol";
-
-// solhint-disable max-line-length
+import {TokenTransfer} from "./TokenTransfer.sol";
 
 /**
  * @title WrappedNativeHandler
- * @notice Handles wrap, unwrap and validations
+ * @notice Handles wraps and unwraps
  */
 abstract contract WrappedNativeHandler is TokenTransfer {
-    address private constant wrappedNative = 0x78c1b0C915c4FAA5FffA6CAbf0219DA63d7f4cb8;
-
     constructor() {}
 
     /** WRAPPED NATIVE FUNCTIONS  */
 
     // deposit native and wrap
     function wrap() external payable {
-        uint256 providedNative = msg.value;
-        INativeWrapper _weth = INativeWrapper(wrappedNative);
-        _weth.deposit{value: providedNative}();
+        _depositNative();
+    }
+
+    // deposit native and wrap
+    function wrapTo(address receiver) external payable {
+        _depositNativeTo(receiver);
     }
 
     // unwrap wrappd native and send funds to sender
     function unwrap() external payable {
-        INativeWrapper _weth = INativeWrapper(wrappedNative);
-        uint256 balance = _weth.balanceOf(address(this));
-        _weth.withdraw(balance);
-        // transfer eth to sender
-        _transferEth(msg.sender, balance);
+        _withdrawWrappedNativeTo(payable(msg.sender));
     }
 
     // unwrap wrappd native and send funds to a receiver
     function unwrapTo(address payable receiver) external payable {
-        INativeWrapper _weth = INativeWrapper(wrappedNative);
-        uint256 balance = _weth.balanceOf(address(this));
-        _weth.withdraw(balance);
-        // transfer eth to receiver
-        _transferEth(receiver, balance);
+        _withdrawWrappedNativeTo(receiver);
     }
 
-    // unwrap wrappd native, validate balance and send to sender
-    function validateAndUnwrap(uint256 amountMin) external payable {
-        INativeWrapper _weth = INativeWrapper(wrappedNative);
-        uint256 balance = _weth.balanceOf(address(this));
-        require(balance >= amountMin, "Insufficient Sweep");
-        _weth.withdraw(balance);
-        // transfer eth to sender
-        _transferEth(msg.sender, balance);
+    // send nativen from this to caller
+    function refundNative() external payable {
+        _transferEth();
+    }
+
+    // send nativen from this to receiver
+    function refundNativeTo(address payable receiver) external payable {
+        _transferEthTo(receiver);
     }
 }

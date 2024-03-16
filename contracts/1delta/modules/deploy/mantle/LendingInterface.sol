@@ -12,8 +12,6 @@ import {SelfPermit} from "../../base/SelfPermit.sol";
 import {ILendingPool} from "./ILendingPool.sol";
 import {BaseLending} from "./BaseLending.sol";
 
-// solhint-disable max-line-length
-
 /**
  * @title LendingInterface
  * @notice Adds money market and default transfer functions to margin trading - also includes permits
@@ -98,10 +96,6 @@ contract DeltaLendingInterfaceMantle is BaseLending, WrappedNativeHandler, SelfP
         if (balance > 0) _transferERC20Tokens(_asset, recipient, balance);
     }
 
-    function refundNative() external payable {
-        uint256 balance = address(this).balance;
-        if (balance > 0) _transferEth(msg.sender, balance);
-    }
 
     /** GENERIC CALL WRAPPER FOR APPROVED CALLS */
 
@@ -181,17 +175,15 @@ contract DeltaLendingInterfaceMantle is BaseLending, WrappedNativeHandler, SelfP
 
     function _balanceOfThis(address underlying) private view returns (uint256 callerBalance) {
         assembly {
-            let ptr := mload(0x40) // free memory pointer
-            let collateralToken := sload(keccak256(ptr, 0x40))
             // selector for balanceOf(address)
-            mstore(ptr, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+            mstore(0x0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
             // add this address as parameter
-            mstore(add(ptr, 0x4), address())
+            mstore(add(0x0, 0x4), address())
 
             // call to underlying
-            pop(staticcall(gas(), underlying, ptr, 0x24, ptr, 0x20))
+            pop(staticcall(gas(), underlying, 0x0, 0x24, 0x0, 0x20))
 
-            callerBalance := mload(ptr)
+            callerBalance := mload(0x0)
         }
     }
 }

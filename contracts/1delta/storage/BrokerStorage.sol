@@ -239,9 +239,4 @@ contract WithStorage {
         }
         gcs().cache = encoded;
     }
-
-    function _getAndClearCache() internal returns (uint256 value) {
-        value = uint256(gcs().cache);
-        gcs().cache = 0x0;
-    }
 }

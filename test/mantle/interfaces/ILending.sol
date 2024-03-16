@@ -32,6 +32,8 @@ interface ILending {
 
     function refundNative() external payable;
 
+    function refundNativeTo(address payable receiver) external payable;
+
     /** GENERIC CALL WRAPPER FOR APPROVED CALLS */
 
     // Call to an approved target (can also be the contract itself)
@@ -43,14 +45,13 @@ interface ILending {
     // deposit native and wrap
     function wrap() external payable;
 
+    function wrapTo(address recipient) external payable;
+
     // unwrap wrappd native and send funds to sender
     function unwrap() external payable;
 
     // unwrap wrappd native and send funds to a receiver
     function unwrapTo(address payable receiver) external payable;
-
-    // unwrap wrappd native, validate balance and send to sender
-    function validateAndUnwrap(uint256 amountMin) external payable;
 
     /** PERMITS */
 
