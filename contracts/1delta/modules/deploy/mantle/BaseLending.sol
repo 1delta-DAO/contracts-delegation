@@ -46,7 +46,7 @@ abstract contract BaseLending is WithStorage {
         }
     }
 
-    /// @notice Withdraw from lender given user address and lender Id from cache
+    /// @notice Borrow from lender given user address and lender Id from cache
     function _borrow(address _underlying, address _from, uint256 _amount, uint256 _mode, uint256 _lenderId) internal {
         assembly {
             // selector borrow(address,uint256,uint256,uint16,address)
@@ -74,7 +74,7 @@ abstract contract BaseLending is WithStorage {
         }
     }
 
-    /// @notice Withdraw from lender given user address and lender Id from cache
+    /// @notice Deposit to lender given user address and lender Id from cache
     function _deposit(address _underlying, uint256 _amount, address _user, uint256 _lenderId) internal {
         assembly {
             // selector deposit(address,uint256,address,uint16)
@@ -101,7 +101,7 @@ abstract contract BaseLending is WithStorage {
         }
     }
 
-    /// @notice Withdraw from lender given user address and lender Id from cache
+    /// @notice Repay to lender given user address and lender Id from cache
     function _repay(address _underlying, address recipient, uint256 _amount, uint256 mode, uint256 _lenderId) internal {
         assembly {
             // selector repay(address,uint256,uint256,address)
