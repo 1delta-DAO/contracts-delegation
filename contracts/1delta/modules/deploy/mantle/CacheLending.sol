@@ -14,7 +14,7 @@ import {WithStorage} from "../../../storage/BrokerStorage.sol";
  * @notice Lending base contract that wraps multiple lender types
  *         Reads user address and lenderId from cache
  *         --- ONLY TO BE USED IN CALLBACKS WHERE THE CALLER RECEIVES THE FUNDS ---
- *         For Aave type protocols, we need a transferFrom on the collateral token 
+ *         For Aave type protocols, we need a transferFrom on the collateral token
  *         before a withdrawal and a regular transfer after a borrow
  */
 abstract contract CacheLending is WithStorage {
@@ -25,6 +25,7 @@ abstract contract CacheLending is WithStorage {
     // lender pool constants
     address internal constant AURELIUS_POOL = 0x7c9C6F5BEd9Cfe5B9070C7D3322CF39eAD2F9492;
     address internal constant LENDLE_POOL = 0xCFa5aE7c2CE8Fadc6426C1ff872cA45378Fb7cF3;
+    address internal constant REAX_POOL = 0x4bbea708F4e48eB0BB15E0041611d27c3c8638Cf;
 
     /// @notice Withdraw from lender by transferFrom collateral tokens from user to this and call withdraw on pool
     ///         user address and lenderId are provided by cache
@@ -81,12 +82,20 @@ abstract contract CacheLending is WithStorage {
             switch _lenderId
             case 0 {
                 pool := LENDLE_POOL
+                // call pool
+                success := call(gas(), pool, 0x0, 0xB00, 0x64, 0xB00, 0x0)
+            }
+            case 1 {
+                pool := AURELIUS_POOL
+                // call pool
+                success := call(gas(), pool, 0x0, 0xB00, 0x64, 0xB00, 0x0)
             }
             default {
-                pool := AURELIUS_POOL
+                mstore(0xB64, 0x0)
+                pool := REAX_POOL
+                // call pool
+                success := call(gas(), pool, 0x0, 0xB00, 0x64, 0xB00, 0x0)
             }
-            // call pool
-            success := call(gas(), pool, 0x0, 0xB00, 0x64, 0xB00, 0x0)
             if iszero(success) {
                 rdsize := returndatasize()
                 returndatacopy(0x0, 0x0, rdsize)
@@ -114,16 +123,23 @@ abstract contract CacheLending is WithStorage {
             mstore(0xB64, 0x0)
             mstore(0xB84, user)
             let pool
+            let success
             // assign lending pool
             switch _lenderId
             case 0 {
                 pool := LENDLE_POOL
+                success := call(gas(), pool, 0x0, 0xB00, 0xA4, 0xB00, 0x0)
+            }
+            case 1 {
+                pool := AURELIUS_POOL
+                success := call(gas(), pool, 0x0, 0xB00, 0xA4, 0xB00, 0x0)
             }
             default {
-                pool := AURELIUS_POOL
+                pool := REAX_POOL
+                mstore(0xBA4, 0x0)
+                success := call(gas(), pool, 0x0, 0xB00, 0xC4, 0xB00, 0x0)
             }
             // call pool
-            let success := call(gas(), pool, 0x0, 0xB00, 0xA4, 0xB00, 0x0)
             let rdsize
             if iszero(success) {
                 rdsize := returndatasize()
@@ -171,21 +187,28 @@ abstract contract CacheLending is WithStorage {
 
             /** PREPARE DEPOSIT */
 
-            // selector deposit(address,uint256,address,uint16)
-            mstore(0xB00, 0xe8eda9df00000000000000000000000000000000000000000000000000000000)
-            mstore(0xB04, _underlying)
-            mstore(0xB24, _amount)
-            mstore(0xB44, user)
-            mstore(0xB64, 0x0)
             let pool
             // assign lending pool
             switch _lenderId
             case 0 {
+                // selector deposit(address,uint256,address,uint16)
+                mstore(0xB00, 0xe8eda9df00000000000000000000000000000000000000000000000000000000)
                 pool := LENDLE_POOL
             }
-            default {
+            case 1 {
+                // selector deposit(address,uint256,address,uint16)
+                mstore(0xB00, 0xe8eda9df00000000000000000000000000000000000000000000000000000000)
                 pool := AURELIUS_POOL
             }
+            default {
+                // selector supply(address,uint256,address,uint16)
+                mstore(0xB00, 0x617ba03700000000000000000000000000000000000000000000000000000000)
+                pool := REAX_POOL
+            }
+            mstore(0xB04, _underlying)
+            mstore(0xB24, _amount)
+            mstore(0xB44, user)
+            mstore(0xB64, 0x0)
             // call pool
             if iszero(call(gas(), pool, 0x0, 0xB00, 0x84, 0xB00, 0x0)) {
                 let rdsize := returndatasize()
@@ -218,8 +241,11 @@ abstract contract CacheLending is WithStorage {
             case 0 {
                 pool := LENDLE_POOL
             }
-            default {
+            case 1 {
                 pool := AURELIUS_POOL
+            }
+            default {
+                pool := REAX_POOL
             }
             // call pool
             if iszero(call(gas(), pool, 0x0, 0xB00, 0x84, 0xB00, 0x0)) {

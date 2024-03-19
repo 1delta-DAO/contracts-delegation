@@ -195,15 +195,36 @@ contract DeltaSetup is AddressesMantle, Script, Test {
         debtTokens[WETH][1] = AURELIUS_V_WETH;
         debtTokens[WMNT][1] = AURELIUS_V_WMNT;
 
+        // reax
+        management.addGeneralLenderTokens(USDC, REAX_A_USDC, REAX_V_USDC, REAX_S_USDC, 2);
+        management.addGeneralLenderTokens(USDT, REAX_A_USDT, REAX_V_USDT, REAX_S_USDT, 2);
+        management.addGeneralLenderTokens(WBTC, REAX_A_WBTC, REAX_V_WBTC, REAX_S_WBTC, 2);
+        management.addGeneralLenderTokens(WETH, REAX_A_WETH, REAX_V_WETH, REAX_S_WETH, 2);
+        management.addGeneralLenderTokens(WMNT, REAX_A_WMNT, REAX_V_WMNT, REAX_S_WMNT, 2);
+
+        collateralTokens[USDC][2] = REAX_A_USDC;
+        collateralTokens[USDT][2] = REAX_A_USDT;
+        collateralTokens[WBTC][2] = REAX_A_WBTC;
+        collateralTokens[WETH][2] = REAX_A_WETH;
+        collateralTokens[WMNT][2] = REAX_A_WMNT;
+
+        debtTokens[USDC][2] = REAX_V_USDC;
+        debtTokens[USDT][2] = REAX_V_USDT;
+        debtTokens[WBTC][2] = REAX_V_WBTC;
+        debtTokens[WETH][2] = REAX_V_WETH;
+        debtTokens[WMNT][2] = REAX_V_WMNT;
+
         // approve pools
-        address[] memory assets = new address[](5);
+        address[] memory assets = new address[](6);
         assets[0] = USDC;
         assets[1] = WBTC;
         assets[2] = WETH;
         assets[3] = WMNT;
         assets[4] = USDT;
+        assets[5] = METH;
         management.approveAddress(assets, LENDLE_POOL);
         management.approveAddress(assets, AURELIUS_POOL);
+        management.approveAddress(assets, REAX_POOL);
     }
 
 

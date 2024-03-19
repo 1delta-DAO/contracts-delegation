@@ -38,6 +38,7 @@ contract AddressesMantle {
 
     address internal constant AURELIUS_POOL = 0x7c9C6F5BEd9Cfe5B9070C7D3322CF39eAD2F9492;
     address internal constant LENDLE_POOL = 0xCFa5aE7c2CE8Fadc6426C1ff872cA45378Fb7cF3;
+    address internal constant REAX_POOL = 0x4bbea708F4e48eB0BB15E0041611d27c3c8638Cf;
 
     address internal constant AURELIUS_A_USDT = 0x893DA3225a2FCF13cCA674d1A1bb5a2eA1F3DD14;
     address internal constant AURELIUS_A_USDC = 0x833b5C0379A597351c6Cd3eFE246534bf3aE5f9F;
@@ -59,6 +60,24 @@ contract AddressesMantle {
     address internal constant AURELIUS_S_WMNT = 0x6110868e963F8Badf4D79Bc79C8Ac1e13cd59735;
     address internal constant AURELIUS_S_WBTC = 0xBc9B223D335c624f55C8b3a70f883FfEFB890A0E;
     address internal constant AURELIUS_S_METH = 0x2D422c5EaD5fA3c26aeC97D070343353e2086A1d;
+
+    address internal constant REAX_A_USDT = 0x6479859AB0A777F5E22E5935EdCc4CFfaE199315;
+    address internal constant REAX_A_USDC = 0x782Ed01Afc948965AEb3F6af6a9d9142240Df06F;
+    address internal constant REAX_A_WETH = 0x0B22e3e85E28bdeaeAABEc982F0F82f699f97b71;
+    address internal constant REAX_A_WMNT = 0x7e1E95800e621430912dc829FC6607fBA4704326;
+    address internal constant REAX_A_WBTC = 0xbC9309BD5f69B649E88DacaF53c711C6863711Be;
+
+    address internal constant REAX_V_USDT = 0x9AB2578f9e757b5e0FD624e64A172bB82A5E6Ee8;
+    address internal constant REAX_V_USDC = 0x28500c2C0B321F83227871a794957ac9f229C6BE;
+    address internal constant REAX_V_WETH = 0x936933D6C86E9B6A72B1D2B3F527324C71242BBb;
+    address internal constant REAX_V_WMNT = 0xCaC6E62e98e54aBFe2b965c71e90C1798914e7C3;
+    address internal constant REAX_V_WBTC = 0x596736f7Aa39BA1881149F1346d7DE0cf9bF5373;
+
+    address internal constant REAX_S_USDT = 0xf9b76D5595Bd86874dADfb1a6539c29e5E099615;
+    address internal constant REAX_S_USDC = 0x88CeFFF8Eb4bec32387AAD058C4eb3b26b8Ec890;
+    address internal constant REAX_S_WETH = 0x06325278D58cb1D5B819bE6d222aa608a996B182;
+    address internal constant REAX_S_WMNT = 0xD77b3f3215998e6f1B818Ae25A8198C2A2c713e5;
+    address internal constant REAX_S_WBTC = 0xD6C6f5227003E4D728a6b96d32D45403EAf8e153;
 
     address internal constant LENDLE_A_USDT = 0xE71cbaaa6B093FcE66211E6f218780685077D8B5;
     address internal constant LENDLE_A_USDC = 0xF36AFb467D1f05541d998BBBcd5F7167D67bd8fC;
@@ -296,7 +315,7 @@ contract AddressesMantle {
         return abi.encodePacked(firstPart, fee, poolId, midId, tokenIn, endId);
     }
 
-       /** OPEN */
+    /** OPEN */
 
     function getOpenExactInSingleV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
         uint24 fee = DEX_FEE_NONE;
