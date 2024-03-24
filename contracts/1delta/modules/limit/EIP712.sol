@@ -25,7 +25,7 @@ abstract contract EIP712 {
                         "address verifyingContract"
                         ")" // standard EIP712
                     ),
-                    keccak256("ZeroEx"),
+                    keccak256("1delta"),
                     keccak256("1.0.0"),
                     chainId,
                     proxyAddress

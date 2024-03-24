@@ -11,9 +11,9 @@ import "./INativeOrdersEvents.sol";
 
 /// @dev Feature for cancelling limit and RFQ orders.
 abstract contract NativeOrdersCancellation is NativeOrdersInfo, INativeOrdersEvents {
-    error invalidSigner();
-    error onlyOrderMakerAllowed();
-    error cancelSaltTooLowError();
+    error invalidSigner(address maker, address sender);
+    error onlyOrderMakerAllowed(bytes32 hash, address sender, address maker);
+    error cancelSaltTooLowError(uint256 minValidSalt, uint256 oldMinValidSalt);
 
     /// @dev Highest bit of a uint256, used to flag cancelled orders.
     uint256 private constant HIGH_BIT = 1 << 255;
@@ -26,7 +26,7 @@ abstract contract NativeOrdersCancellation is NativeOrdersInfo, INativeOrdersEve
     function cancelLimitOrder(LibNativeOrder.LimitOrder memory order) public {
         bytes32 orderHash = getLimitOrderHash(order);
         if (msg.sender != order.maker && !isValidOrderSigner(order.maker, msg.sender)) {
-            revert onlyOrderMakerAllowed();
+            revert onlyOrderMakerAllowed(orderHash, msg.sender, order.maker);
         }
         _cancelOrderHash(orderHash, order.maker);
     }
@@ -37,7 +37,7 @@ abstract contract NativeOrdersCancellation is NativeOrdersInfo, INativeOrdersEve
     function cancelRfqOrder(LibNativeOrder.RfqOrder memory order) public {
         bytes32 orderHash = getRfqOrderHash(order);
         if (msg.sender != order.maker && !isValidOrderSigner(order.maker, msg.sender)) {
-            revert onlyOrderMakerAllowed();
+            revert onlyOrderMakerAllowed(orderHash, msg.sender, order.maker);
         }
         _cancelOrderHash(orderHash, order.maker);
     }
@@ -91,7 +91,7 @@ abstract contract NativeOrdersCancellation is NativeOrdersInfo, INativeOrdersEve
     ) public {
         // verify that the signer is authorized for the maker
         if (!isValidOrderSigner(maker, msg.sender)) {
-            revert invalidSigner();
+            revert invalidSigner(maker, msg.sender);
         }
 
         _cancelPairLimitOrders(maker, makerToken, takerToken, minValidSalt);
@@ -139,7 +139,7 @@ abstract contract NativeOrdersCancellation is NativeOrdersInfo, INativeOrdersEve
         );
 
         if (!isValidOrderSigner(maker, msg.sender)) {
-            revert invalidSigner();
+            revert invalidSigner(maker, msg.sender);
         }
 
         for (uint256 i = 0; i < makerTokens.length; ++i) {
@@ -177,7 +177,7 @@ abstract contract NativeOrdersCancellation is NativeOrdersInfo, INativeOrdersEve
         uint256 minValidSalt
     ) public {
         if (!isValidOrderSigner(maker, msg.sender)) {
-            revert invalidSigner();
+            revert invalidSigner(maker, msg.sender);
         }
 
         _cancelPairRfqOrders(maker, makerToken, takerToken, minValidSalt);
@@ -225,7 +225,7 @@ abstract contract NativeOrdersCancellation is NativeOrdersInfo, INativeOrdersEve
         );
 
         if (!isValidOrderSigner(maker, msg.sender)) {
-            revert invalidSigner();
+            revert invalidSigner(maker, msg.sender);
         }
 
         for (uint256 i = 0; i < makerTokens.length; ++i) {
@@ -263,7 +263,7 @@ abstract contract NativeOrdersCancellation is NativeOrdersInfo, INativeOrdersEve
 
         // New min salt must >= the old one.
         if (oldMinValidSalt > minValidSalt) {
-            revert cancelSaltTooLowError();
+            revert cancelSaltTooLowError(minValidSalt, oldMinValidSalt);
         }
 
         stor.rfqOrdersMakerToMakerTokenToTakerTokenToMinValidOrderSalt[maker][address(makerToken)][address(takerToken)] = minValidSalt;
@@ -289,7 +289,7 @@ abstract contract NativeOrdersCancellation is NativeOrdersInfo, INativeOrdersEve
 
         // New min salt must >= the old one.
         if (oldMinValidSalt > minValidSalt) {
-            revert cancelSaltTooLowError();
+            revert cancelSaltTooLowError(minValidSalt, oldMinValidSalt);
         }
 
         stor.limitOrdersMakerToMakerTokenToTakerTokenToMinValidOrderSalt[maker][makerToken][takerToken] = minValidSalt;

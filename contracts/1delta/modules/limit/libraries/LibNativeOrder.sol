@@ -16,7 +16,7 @@ pragma solidity ^0.8.0;
 
 /// @dev A library for common native order operations.
 library LibNativeOrder {
-    error refundFailed();
+    error refundFailed(address sender, uint256 refundAmount);
 
     enum OrderStatus {
         INVALID,
@@ -277,7 +277,7 @@ library LibNativeOrder {
         if (msg.value > ethProtocolFeePaid && msg.sender != address(this)) {
             uint256 refundAmount = msg.value - ethProtocolFeePaid;
             (bool success, ) = msg.sender.call{value: refundAmount}("");
-            if (!success) revert refundFailed();
+            if (!success) revert refundFailed(msg.sender, refundAmount);
         }
     }
 }

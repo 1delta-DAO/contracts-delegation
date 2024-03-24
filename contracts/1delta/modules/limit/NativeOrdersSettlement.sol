@@ -13,12 +13,12 @@ abstract contract NativeOrdersSettlement is
     NativeOrdersCancellation
 {
     error onlyCallableBySelf();
-    error fillOrKillFailedError();
-    error orderNotFillableError();
-    error orderNotFillableByTakerError();
-    error orderNotFillableBySenderError();
-    error orderNotSignedByMakerError();
-    error orderNotFillableByOriginError();
+    error fillOrKillFailedError(bytes32 hash, uint128 takerTokenFilledAmount, uint128 takerTokenFillAmount);
+    error orderNotFillableError(bytes32 hash, uint8 status);
+    error orderNotFillableByTakerError(bytes32 hash, address taker, address orderTaker);
+    error orderNotFillableBySenderError(bytes32 hash, address sender, address orderSender);
+    error orderNotSignedByMakerError(bytes32 hash, address signer, address maker);
+    error orderNotFillableByOriginError(bytes32 hash, address origin, address orderOrigin);
 
     /// @dev Params for `_settleOrder()`.
     struct SettleOrderInfo {
@@ -177,7 +177,11 @@ abstract contract NativeOrdersSettlement is
         );
         // Must have filled exactly the amount requested.
         if (results.takerTokenFilledAmount < takerTokenFillAmount) {
-            revert fillOrKillFailedError();
+            revert fillOrKillFailedError(
+                    getLimitOrderHash(order),
+                    results.takerTokenFilledAmount,
+                    takerTokenFillAmount
+                );
         }
         LibNativeOrder.refundExcessProtocolFeeToSender(results.ethProtocolFeePaid);
         makerTokenFilledAmount = results.makerTokenFilledAmount;
@@ -208,7 +212,11 @@ abstract contract NativeOrdersSettlement is
         );
         // Must have filled exactly the amount requested.
         if (results.takerTokenFilledAmount < takerTokenFillAmount) {
-            revert fillOrKillFailedError();
+            revert fillOrKillFailedError(
+                getRfqOrderHash(order),
+                results.takerTokenFilledAmount,
+                takerTokenFillAmount
+            );
         }
         makerTokenFilledAmount = results.makerTokenFilledAmount;
     }
@@ -291,24 +299,39 @@ abstract contract NativeOrdersSettlement is
 
         // Must be fillable.
         if (orderInfo.status != LibNativeOrder.OrderStatus.FILLABLE) {
-            revert orderNotFillableError();
+            revert orderNotFillableError(
+                orderInfo.orderHash, 
+                uint8(orderInfo.status)
+            );
         }
 
         // Must be fillable by the taker.
         if (params.order.taker != address(0) && params.order.taker != params.taker) {
-            revert orderNotFillableByTakerError();
+            revert orderNotFillableByTakerError(
+                orderInfo.orderHash,
+                params.taker,
+                params.order.taker
+            );
         }
 
         // Must be fillable by the sender.
         if (params.order.sender != address(0) && params.order.sender != params.sender) {
-            revert orderNotFillableBySenderError();
+            revert orderNotFillableBySenderError(
+                orderInfo.orderHash,
+                params.sender,
+                params.order.sender
+            );
         }
 
         // Signature must be valid for the order.
         {
             address signer = LibSignature.getSignerOfHash(orderInfo.orderHash, params.signature);
             if (signer != params.order.maker && !isValidOrderSigner(params.order.maker, signer)) {
-                revert orderNotSignedByMakerError();
+                revert orderNotSignedByMakerError(
+                    orderInfo.orderHash,
+                    signer,
+                    params.order.maker
+                );
             }
         }
 
@@ -370,7 +393,10 @@ abstract contract NativeOrdersSettlement is
 
         // Must be fillable.
         if (orderInfo.status != LibNativeOrder.OrderStatus.FILLABLE) {
-            revert orderNotFillableError();
+            revert orderNotFillableError(
+                orderInfo.orderHash,
+                uint8(orderInfo.status)
+            );
         }
 
         {
@@ -378,20 +404,32 @@ abstract contract NativeOrdersSettlement is
 
             // Must be fillable by the tx.origin.
             if (params.order.txOrigin != tx.origin && !stor.originRegistry[params.order.txOrigin][tx.origin]) {
-                revert orderNotFillableByOriginError();
+                revert orderNotFillableByOriginError(
+                    orderInfo.orderHash,
+                    tx.origin,
+                    params.order.txOrigin
+                );
             }
         }
 
         // Must be fillable by the taker.
         if (params.order.taker != address(0) && params.order.taker != params.taker) {
-            revert orderNotFillableByTakerError();
+            revert orderNotFillableByTakerError(
+                orderInfo.orderHash,
+                params.taker,
+                params.order.taker
+            );
         }
 
         // Signature must be valid for the order.
         {
             address signer = LibSignature.getSignerOfHash(orderInfo.orderHash, params.signature);
             if (signer != params.order.maker && !isValidOrderSigner(params.order.maker, signer)) {
-                revert orderNotSignedByMakerError();
+                revert orderNotSignedByMakerError(
+                    orderInfo.orderHash,
+                    signer,
+                    params.order.maker
+                );
             }
         }
 

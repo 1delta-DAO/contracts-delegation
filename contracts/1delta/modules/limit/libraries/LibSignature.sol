@@ -4,10 +4,10 @@ pragma solidity ^0.8.0;
 
 /// @dev A library for validating signatures.
 library LibSignature {
-    error badSignatureData();
-    error illegal();
-    error alwaysInvalid();
-    error unsupported();
+    error badSignatureData(bytes32 hash);
+    error illegal(bytes32 hash);
+    error alwaysInvalid(bytes32 hash);
+    error unsupported(bytes32 hash);
 
     // '\x19Ethereum Signed Message:\n32\x00\x00\x00\x00' in a word.
     uint256 private constant ETH_SIGN_HASH_PREFIX = 0x19457468657265756d205369676e6564204d6573736167653a0a333200000000;
@@ -46,7 +46,7 @@ library LibSignature {
     /// @return recovered The recovered signer address.
     function getSignerOfHash(bytes32 hash, Signature memory signature) internal pure returns (address recovered) {
         // Ensure this is a signature type that can be validated against a hash.
-        _validateHashCompatibleSignature(signature);
+        _validateHashCompatibleSignature(hash, signature);
 
         if (signature.signatureType == SignatureType.EIP712) {
             // Signed using EIP712
@@ -65,31 +65,31 @@ library LibSignature {
             recovered = ecrecover(ethSignHash, signature.v, signature.r, signature.s);
         }
         // `recovered` can be null if the signature values are out of range.
-        if (recovered == address(0)) revert badSignatureData();
+        if (recovered == address(0)) revert badSignatureData(hash);
     }
 
     /// @dev Validates that a signature is compatible with a hash signee.
     /// @param signature The signature.
-    function _validateHashCompatibleSignature(Signature memory signature) private pure {
+    function _validateHashCompatibleSignature(bytes32 hash, Signature memory signature) private pure {
         // Ensure the r and s are within malleability limits.
         if (uint256(signature.r) >= ECDSA_SIGNATURE_R_LIMIT || uint256(signature.s) >= ECDSA_SIGNATURE_S_LIMIT) {
-            revert badSignatureData();
+            revert badSignatureData(hash);
         }
 
         // Always illegal signature.
         if (signature.signatureType == SignatureType.ILLEGAL) {
-            revert illegal();
+            revert illegal(hash);
         }
 
         // Always invalid.
         if (signature.signatureType == SignatureType.INVALID) {
-            revert alwaysInvalid();
+            revert alwaysInvalid(hash);
         }
 
         // If a feature supports pre-signing, it wouldn't use
         // `getSignerOfHash` on a pre-signed order.
         if (signature.signatureType == SignatureType.PRESIGNED) {
-            revert unsupported();
+            revert unsupported(hash);
         }
 
         // Solidity should check that the signature type is within enum range for us
