@@ -406,10 +406,10 @@ const verifyLogs = (logs: TxLog[], expected: Object[], id: string) => {
     for (const log of logs) {
         const { data } = log
         const decoded = ordersInterface.decodeEventLog(id, data)
-        const keys = Object.keys(decoded).filter(x=> isNaN(Number(x)))
+        const keys = Object.keys(decoded).filter(x => isNaN(Number(x)))
         let included = false
         for (const ex of expected) {
-            if (keys.every(k => (ex as any)[k] === decoded[k])) included = true;
+            if (keys.every(k => (ex as any)[k]?.toString() === decoded[k].toString())) included = true;
         }
         expect(included).to.equal(true, "Not found:" + JSON.stringify(decoded))
     }
@@ -488,13 +488,10 @@ describe('cancelLimitOrder()', async () => {
 
     it("cannot cancel someone else's order", async () => {
         const order = getTestLimitOrder();
-        // const tx = ;
-        await expect(zeroEx.connect(notMaker).cancelLimitOrder(order)).to.be.reverted
-        // With(
-        //     // new RevertErrors.NativeOrders.OnlyOrderMakerAllowed(order.getHash(), notMaker.address, order.maker),
-        //     `OnlyOrderMakerAllowed(${order.getHash()},${notMaker.address},${order.maker})`,
+        await expect(zeroEx.connect(notMaker).cancelLimitOrder(order)).to.be.revertedWith(
+            "OnlyOrderMakerAllowed"
+        ).withArgs([order.getHash(), notMaker.address, order.maker])
 
-        // )
     });
 });
 // @ts-ignore
@@ -570,218 +567,216 @@ describe('cancelRfqOrder()', async () => {
 
     it("cannot cancel someone else's order", async () => {
         const order = getTestRfqOrder();
-        await expect(zeroEx.cancelRfqOrder(order)).to.reverted
-        // With(
-        //     new RevertErrors.NativeOrders.OnlyOrderMakerAllowed(order.getHash(), notMaker.address, order.maker),
-        // );
+        await expect(zeroEx.connect(notMaker).cancelRfqOrder(order)).to.revertedWith(
+            "OnlyOrderMakerAllowed",
+        ).withArgs([order.getHash(), notMaker.address, order.maker]);
     });
 });
+// @ts-ignore
+describe('batchCancelLimitOrders()', async () => {
+    it('can cancel multiple orders', async () => {
+        const orders = [...new Array(3)].map(() => getTestLimitOrder());
+        const tx = await zeroEx.connect(maker).batchCancelLimitOrders(orders);
+        const receipt = await tx.wait()
+        verifyLogs(
+            receipt.logs,
+            orders.map(o => ({ maker: o.maker, orderHash: o.getHash() })),
+            IZeroExEvents.OrderCancelled,
+        );
+        const infos = await Promise.all(orders.map(o => zeroEx.getLimitOrderInfo(o)));
+        expect(infos.map(i => i.status)).to.deep.eq(infos.map(() => OrderStatus.Cancelled));
+    });
 
-// describe('batchCancelLimitOrders()', async () => {
-//     it('can cancel multiple orders', async () => {
-//         const orders = [...new Array(3)].map(() => getTestLimitOrder());
-//         const receipt = await zeroEx.batchCancelLimitOrders(orders).awaitTransactionSuccessAsync({ from: maker });
-//         verifyEventsFromLogs(
-//             receipt.logs,
-//             orders.map(o => ({ maker: o.maker, orderHash: o.getHash() })),
-//             IZeroExEvents.OrderCancelled,
-//         );
-//         const infos = await Promise.all(orders.map(o => zeroEx.getLimitOrderInfo(o).callAsync()));
-//         expect(infos.map(i => i.status)).to.deep.eq(infos.map(() => OrderStatus.Cancelled));
-//     });
+    it("cannot cancel someone else's orders", async () => {
+        const orders = [...new Array(3)].map(() => getTestLimitOrder());
+        await expect(zeroEx.connect(notMaker).batchCancelLimitOrders(orders)).to.be.revertedWith(
+            "OnlyOrderMakerAllowed"
+        ).withArgs([orders[0].getHash(), notMaker.address, orders[0].maker])
+    });
+});
+// @ts-ignore
+describe('batchCancelRfqOrders()', async () => {
+    it('can cancel multiple orders', async () => {
+        const orders = [...new Array(3)].map(() => getTestRfqOrder());
+        const tx = await zeroEx.connect(maker).batchCancelRfqOrders(orders);
+        const receipt = await tx.wait()
+        verifyLogs(
+            receipt.logs,
+            orders.map(o => ({ maker: o.maker, orderHash: o.getHash() })),
+            IZeroExEvents.OrderCancelled,
+        );
+        const infos = await Promise.all(orders.map(o => zeroEx.getRfqOrderInfo(o)));
+        expect(infos.map(i => i.status)).to.deep.eq(infos.map(() => OrderStatus.Cancelled));
+    });
 
-//     it("cannot cancel someone else's orders", async () => {
-//         const orders = [...new Array(3)].map(() => getTestLimitOrder());
-//         const tx = zeroEx.batchCancelLimitOrders(orders).awaitTransactionSuccessAsync({ from: notMaker });
-//         return expect(tx).to.revertWith(
-//             new RevertErrors.NativeOrders.OnlyOrderMakerAllowed(orders[0].getHash(), notMaker, orders[0].maker),
-//         );
-//     });
-// });
+    it("cannot cancel someone else's orders", async () => {
+        const orders = [...new Array(3)].map(() => getTestRfqOrder());
+        return expect(zeroEx.connect(notMaker).batchCancelRfqOrders(orders)).to.be.revertedWith(
+            "OnlyOrderMakerAllowed"
+        ).withArgs([orders[0].getHash(), notMaker.address, orders[0].maker])
+    });
+});
+// @ts-ignore
+describe('cancelPairOrders()', async () => {
+    it('can cancel multiple limit orders of the same pair with salt < minValidSalt', async () => {
+        const orders = [...new Array(3)].map((_v, i) => getTestLimitOrder().clone({ salt: BigNumber.from(i) }));
+        // Cancel the first two orders.
+        const minValidSalt = orders[2].salt;
+        const tx = await zeroEx.connect(maker)
+            .cancelPairLimitOrders(makerToken.address, takerToken.address, minValidSalt);
+        const receipt = await tx.wait()
+        verifyLogs(
+            receipt.logs,
+            [
+                {
+                    maker: maker.address,
+                    makerToken: makerToken.address,
+                    takerToken: takerToken.address,
+                    minValidSalt,
+                },
+            ],
+            IZeroExEvents.PairCancelledLimitOrders,
+        );
+        const statuses = (await Promise.all(orders.map(o => zeroEx.getLimitOrderInfo(o)))).map(
+            oi => oi.status,
+        );
+        expect(statuses).to.deep.eq([OrderStatus.Cancelled, OrderStatus.Cancelled, OrderStatus.Fillable]);
+    });
 
-// describe('batchCancelRfqOrders()', async () => {
-//     it('can cancel multiple orders', async () => {
-//         const orders = [...new Array(3)].map(() => getTestRfqOrder());
-//         const receipt = await zeroEx.batchCancelRfqOrders(orders).awaitTransactionSuccessAsync({ from: maker });
-//         verifyEventsFromLogs(
-//             receipt.logs,
-//             orders.map(o => ({ maker: o.maker, orderHash: o.getHash() })),
-//             IZeroExEvents.OrderCancelled,
-//         );
-//         const infos = await Promise.all(orders.map(o => zeroEx.getRfqOrderInfo(o).callAsync()));
-//         expect(infos.map(i => i.status)).to.deep.eq(infos.map(() => OrderStatus.Cancelled));
-//     });
+    it('does not cancel limit orders of a different pair', async () => {
+        const order = getRandomLimitOrder({ salt: BigNumber.from(1) });
+        // Cancel salts <= the order's, but flip the tokens to be a different
+        // pair.
+        const minValidSalt = order.salt.add(1);
+        await zeroEx.connect(maker)
+            .cancelPairLimitOrders(takerToken.address, makerToken.address, minValidSalt);
+        const { status } = await zeroEx.getLimitOrderInfo(order);
+        expect(status).to.eq(OrderStatus.Fillable);
+    });
 
-//     it("cannot cancel someone else's orders", async () => {
-//         const orders = [...new Array(3)].map(() => getTestRfqOrder());
-//         const tx = zeroEx.batchCancelRfqOrders(orders).awaitTransactionSuccessAsync({ from: notMaker });
-//         return expect(tx).to.revertWith(
-//             new RevertErrors.NativeOrders.OnlyOrderMakerAllowed(orders[0].getHash(), notMaker, orders[0].maker),
-//         );
-//     });
-// });
+    it('can cancel multiple RFQ orders of the same pair with salt < minValidSalt', async () => {
+        const orders = [...new Array(3)].map((_v, i) => getTestRfqOrder().clone({ salt: BigNumber.from(i) }));
+        // Cancel the first two orders.
+        const minValidSalt = orders[2].salt;
+        const tx = await zeroEx.connect(maker)
+            .cancelPairRfqOrders(makerToken.address, takerToken.address, minValidSalt);
+        const receipt = await tx.wait()
+        verifyLogs(
+            receipt.logs,
+            [
+                {
+                    maker: maker.address,
+                    makerToken: makerToken.address,
+                    takerToken: takerToken.address,
+                    minValidSalt,
+                },
+            ],
+            IZeroExEvents.PairCancelledRfqOrders,
+        );
+        const statuses = (await Promise.all(orders.map(o => zeroEx.getRfqOrderInfo(o)))).map(
+            oi => oi.status,
+        );
+        expect(statuses).to.deep.eq([OrderStatus.Cancelled, OrderStatus.Cancelled, OrderStatus.Fillable]);
+    });
 
-// describe('cancelPairOrders()', async () => {
-//     it('can cancel multiple limit orders of the same pair with salt < minValidSalt', async () => {
-//         const orders = [...new Array(3)].map((_v, i) => getTestLimitOrder().clone({ salt: new BigNumber(i) }));
-//         // Cancel the first two orders.
-//         const minValidSalt = orders[2].salt;
-//         const receipt = await zeroEx
-//             .cancelPairLimitOrders(makerToken.address, takerToken.address, minValidSalt)
-//             .awaitTransactionSuccessAsync({ from: maker });
-//         verifyEventsFromLogs(
-//             receipt.logs,
-//             [
-//                 {
-//                     maker,
-//                     makerToken: makerToken.address,
-//                     takerToken: takerToken.address,
-//                     minValidSalt,
-//                 },
-//             ],
-//             IZeroExEvents.PairCancelledLimitOrders,
-//         );
-//         const statuses = (await Promise.all(orders.map(o => zeroEx.getLimitOrderInfo(o).callAsync()))).map(
-//             oi => oi.status,
-//         );
-//         expect(statuses).to.deep.eq([OrderStatus.Cancelled, OrderStatus.Cancelled, OrderStatus.Fillable]);
-//     });
+    it('does not cancel RFQ orders of a different pair', async () => {
+        const order = getRandomRfqOrder({ salt: BigNumber.from(1) });
+        // Cancel salts <= the order's, but flip the tokens to be a different
+        // pair.
+        const minValidSalt = order.salt.add(1);
+        await zeroEx.connect(maker)
+            .cancelPairRfqOrders(takerToken.address, makerToken.address, minValidSalt);
 
-//     it('does not cancel limit orders of a different pair', async () => {
-//         const order = getRandomLimitOrder({ salt: new BigNumber(1) });
-//         // Cancel salts <= the order's, but flip the tokens to be a different
-//         // pair.
-//         const minValidSalt = order.salt.plus(1);
-//         await zeroEx
-//             .cancelPairLimitOrders(takerToken.address, makerToken.address, minValidSalt)
-//             .awaitTransactionSuccessAsync({ from: maker });
-//         const { status } = await zeroEx.getLimitOrderInfo(order).callAsync();
-//         expect(status).to.eq(OrderStatus.Fillable);
-//     });
+        const { status } = await zeroEx.getRfqOrderInfo(order);
+        expect(status).to.eq(OrderStatus.Fillable);
+    });
+});
+// @ts-ignore
+describe('batchCancelPairOrders()', async () => {
+    it('can cancel multiple limit order pairs', async () => {
+        const orders = [
+            getTestLimitOrder({ salt: BigNumber.from(1) }),
+            // Flip the tokens for the other order.
+            getTestLimitOrder({
+                makerToken: takerToken.address,
+                takerToken: makerToken.address,
+                salt: BigNumber.from(1),
+            }),
+        ];
+        const minValidSalt = BigNumber.from(2);
+        const tx = await zeroEx.connect(maker)
+            .batchCancelPairLimitOrders(
+                [makerToken.address, takerToken.address],
+                [takerToken.address, makerToken.address],
+                [minValidSalt, minValidSalt],
+            );
+        const receipt = await tx.wait()
+        verifyLogs(
+            receipt.logs,
+            [
+                {
+                    maker: maker.address,
+                    makerToken: makerToken.address,
+                    takerToken: takerToken.address,
+                    minValidSalt,
+                },
+                {
+                    maker: maker.address,
+                    makerToken: takerToken.address,
+                    takerToken: makerToken.address,
+                    minValidSalt,
+                },
+            ],
+            IZeroExEvents.PairCancelledLimitOrders,
+        );
+        const statuses = (await Promise.all(orders.map(o => zeroEx.getLimitOrderInfo(o)))).map(
+            oi => oi.status,
+        );
+        expect(statuses).to.deep.eq([OrderStatus.Cancelled, OrderStatus.Cancelled]);
+    });
 
-//     it('can cancel multiple RFQ orders of the same pair with salt < minValidSalt', async () => {
-//         const orders = [...new Array(3)].map((_v, i) => getTestRfqOrder().clone({ salt: new BigNumber(i) }));
-//         // Cancel the first two orders.
-//         const minValidSalt = orders[2].salt;
-//         const receipt = await zeroEx
-//             .cancelPairRfqOrders(makerToken.address, takerToken.address, minValidSalt)
-//             .awaitTransactionSuccessAsync({ from: maker });
-//         verifyEventsFromLogs(
-//             receipt.logs,
-//             [
-//                 {
-//                     maker,
-//                     makerToken: makerToken.address,
-//                     takerToken: takerToken.address,
-//                     minValidSalt,
-//                 },
-//             ],
-//             IZeroExEvents.PairCancelledRfqOrders,
-//         );
-//         const statuses = (await Promise.all(orders.map(o => zeroEx.getRfqOrderInfo(o).callAsync()))).map(
-//             oi => oi.status,
-//         );
-//         expect(statuses).to.deep.eq([OrderStatus.Cancelled, OrderStatus.Cancelled, OrderStatus.Fillable]);
-//     });
-
-//     it('does not cancel RFQ orders of a different pair', async () => {
-//         const order = getRandomRfqOrder({ salt: new BigNumber(1) });
-//         // Cancel salts <= the order's, but flip the tokens to be a different
-//         // pair.
-//         const minValidSalt = order.salt.plus(1);
-//         await zeroEx
-//             .cancelPairRfqOrders(takerToken.address, makerToken.address, minValidSalt)
-//             .awaitTransactionSuccessAsync({ from: maker });
-//         const { status } = await zeroEx.getRfqOrderInfo(order).callAsync();
-//         expect(status).to.eq(OrderStatus.Fillable);
-//     });
-// });
-
-// describe('batchCancelPairOrders()', async () => {
-//     it('can cancel multiple limit order pairs', async () => {
-//         const orders = [
-//             getTestLimitOrder({ salt: new BigNumber(1) }),
-//             // Flip the tokens for the other order.
-//             getTestLimitOrder({
-//                 makerToken: takerToken.address,
-//                 takerToken: makerToken.address,
-//                 salt: new BigNumber(1),
-//             }),
-//         ];
-//         const minValidSalt = new BigNumber(2);
-//         const receipt = await zeroEx
-//             .batchCancelPairLimitOrders(
-//                 [makerToken.address, takerToken.address],
-//                 [takerToken.address, makerToken.address],
-//                 [minValidSalt, minValidSalt],
-//             )
-//             .awaitTransactionSuccessAsync({ from: maker });
-//         verifyEventsFromLogs(
-//             receipt.logs,
-//             [
-//                 {
-//                     maker,
-//                     makerToken: makerToken.address,
-//                     takerToken: takerToken.address,
-//                     minValidSalt,
-//                 },
-//                 {
-//                     maker,
-//                     makerToken: takerToken.address,
-//                     takerToken: makerToken.address,
-//                     minValidSalt,
-//                 },
-//             ],
-//             IZeroExEvents.PairCancelledLimitOrders,
-//         );
-//         const statuses = (await Promise.all(orders.map(o => zeroEx.getLimitOrderInfo(o).callAsync()))).map(
-//             oi => oi.status,
-//         );
-//         expect(statuses).to.deep.eq([OrderStatus.Cancelled, OrderStatus.Cancelled]);
-//     });
-
-//     it('can cancel multiple RFQ order pairs', async () => {
-//         const orders = [
-//             getTestRfqOrder({ salt: new BigNumber(1) }),
-//             // Flip the tokens for the other order.
-//             getTestRfqOrder({
-//                 makerToken: takerToken.address,
-//                 takerToken: makerToken.address,
-//                 salt: new BigNumber(1),
-//             }),
-//         ];
-//         const minValidSalt = new BigNumber(2);
-//         const receipt = await zeroEx
-//             .batchCancelPairRfqOrders(
-//                 [makerToken.address, takerToken.address],
-//                 [takerToken.address, makerToken.address],
-//                 [minValidSalt, minValidSalt],
-//             )
-//             .awaitTransactionSuccessAsync({ from: maker });
-//         verifyEventsFromLogs(
-//             receipt.logs,
-//             [
-//                 {
-//                     maker,
-//                     makerToken: makerToken.address,
-//                     takerToken: takerToken.address,
-//                     minValidSalt,
-//                 },
-//                 {
-//                     maker,
-//                     makerToken: takerToken.address,
-//                     takerToken: makerToken.address,
-//                     minValidSalt,
-//                 },
-//             ],
-//             IZeroExEvents.PairCancelledRfqOrders,
-//         );
-//         const statuses = (await Promise.all(orders.map(o => zeroEx.getRfqOrderInfo(o).callAsync()))).map(
-//             oi => oi.status,
-//         );
-//         expect(statuses).to.deep.eq([OrderStatus.Cancelled, OrderStatus.Cancelled]);
-//     });
-// });
+    it('can cancel multiple RFQ order pairs', async () => {
+        const orders = [
+            getTestRfqOrder({ salt: BigNumber.from(1) }),
+            // Flip the tokens for the other order.
+            getTestRfqOrder({
+                makerToken: takerToken.address,
+                takerToken: makerToken.address,
+                salt: BigNumber.from(1),
+            }),
+        ];
+        const minValidSalt = BigNumber.from(2);
+        const tx = await zeroEx.connect(maker)
+            .batchCancelPairRfqOrders(
+                [makerToken.address, takerToken.address],
+                [takerToken.address, makerToken.address],
+                [minValidSalt, minValidSalt],
+            );
+        const receipt = await tx.wait()
+        verifyLogs(
+            receipt.logs,
+            [
+                {
+                    maker: maker.address,
+                    makerToken: makerToken.address,
+                    takerToken: takerToken.address,
+                    minValidSalt,
+                },
+                {
+                    maker: maker.address,
+                    makerToken: takerToken.address,
+                    takerToken: makerToken.address,
+                    minValidSalt,
+                },
+            ],
+            IZeroExEvents.PairCancelledRfqOrders,
+        );
+        const statuses = (await Promise.all(orders.map(o => zeroEx.getRfqOrderInfo(o)))).map(
+            oi => oi.status,
+        );
+        expect(statuses).to.deep.eq([OrderStatus.Cancelled, OrderStatus.Cancelled]);
+    });
+});
 
 // async function assertExpectedFinalBalancesFromLimitOrderFillAsync(
 //     order: LimitOrder,
@@ -1824,7 +1819,7 @@ describe('cancelRfqOrder()', async () => {
 //     });
 
 //     it(`allows a signer to cancel pair RFQ orders`, async () => {
-//         const order = getTestRfqOrder({ maker: contractWallet.address, salt: new BigNumber(1) });
+//         const order = getTestRfqOrder({ maker: contractWallet.address, salt: BigNumber.from(1) });
 
 //         await contractWallet
 //             .registerAllowedOrderSigner(contractWalletSigner, true)
@@ -1864,7 +1859,7 @@ describe('cancelRfqOrder()', async () => {
 //     });
 
 //     it(`doesn't allow an unapproved signer to cancel pair RFQ orders`, async () => {
-//         const minValidSalt = new BigNumber(2);
+//         const minValidSalt = BigNumber.from(2);
 
 //         const tx = zeroEx
 //             .cancelPairRfqOrdersWithSigner(
@@ -1881,7 +1876,7 @@ describe('cancelRfqOrder()', async () => {
 //     });
 
 //     it(`allows a signer to cancel pair limit orders`, async () => {
-//         const order = getTestLimitOrder({ maker: contractWallet.address, salt: new BigNumber(1) });
+//         const order = getTestLimitOrder({ maker: contractWallet.address, salt: BigNumber.from(1) });
 
 //         await contractWallet
 //             .registerAllowedOrderSigner(contractWalletSigner, true)
@@ -1921,7 +1916,7 @@ describe('cancelRfqOrder()', async () => {
 //     });
 
 //     it(`doesn't allow an unapproved signer to cancel pair limit orders`, async () => {
-//         const minValidSalt = new BigNumber(2);
+//         const minValidSalt = BigNumber.from(2);
 
 //         const tx = zeroEx
 //             .cancelPairLimitOrdersWithSigner(
@@ -1939,13 +1934,13 @@ describe('cancelRfqOrder()', async () => {
 
 //     it(`allows a signer to cancel multiple RFQ order pairs`, async () => {
 //         const orders = [
-//             getTestRfqOrder({ maker: contractWallet.address, salt: new BigNumber(1) }),
+//             getTestRfqOrder({ maker: contractWallet.address, salt: BigNumber.from(1) }),
 //             // Flip the tokens for the other order.
 //             getTestRfqOrder({
 //                 makerToken: takerToken.address,
 //                 takerToken: makerToken.address,
 //                 maker: contractWallet.address,
-//                 salt: new BigNumber(1),
+//                 salt: BigNumber.from(1),
 //             }),
 //         ];
 
@@ -1953,7 +1948,7 @@ describe('cancelRfqOrder()', async () => {
 //             .registerAllowedOrderSigner(contractWalletSigner, true)
 //             .awaitTransactionSuccessAsync({ from: contractWalletOwner });
 
-//         const minValidSalt = new BigNumber(2);
+//         const minValidSalt = BigNumber.from(2);
 //         const receipt = await zeroEx
 //             .batchCancelPairRfqOrdersWithSigner(
 //                 contractWallet.address,
@@ -1987,7 +1982,7 @@ describe('cancelRfqOrder()', async () => {
 //     });
 
 //     it(`doesn't allow an unapproved signer to batch cancel pair rfq orders`, async () => {
-//         const minValidSalt = new BigNumber(2);
+//         const minValidSalt = BigNumber.from(2);
 
 //         const tx = zeroEx
 //             .batchCancelPairRfqOrdersWithSigner(
@@ -2005,13 +2000,13 @@ describe('cancelRfqOrder()', async () => {
 
 //     it(`allows a signer to cancel multiple limit order pairs`, async () => {
 //         const orders = [
-//             getTestLimitOrder({ maker: contractWallet.address, salt: new BigNumber(1) }),
+//             getTestLimitOrder({ maker: contractWallet.address, salt: BigNumber.from(1) }),
 //             // Flip the tokens for the other order.
 //             getTestLimitOrder({
 //                 makerToken: takerToken.address,
 //                 takerToken: makerToken.address,
 //                 maker: contractWallet.address,
-//                 salt: new BigNumber(1),
+//                 salt: BigNumber.from(1),
 //             }),
 //         ];
 
@@ -2019,7 +2014,7 @@ describe('cancelRfqOrder()', async () => {
 //             .registerAllowedOrderSigner(contractWalletSigner, true)
 //             .awaitTransactionSuccessAsync({ from: contractWalletOwner });
 
-//         const minValidSalt = new BigNumber(2);
+//         const minValidSalt = BigNumber.from(2);
 //         const receipt = await zeroEx
 //             .batchCancelPairLimitOrdersWithSigner(
 //                 contractWallet.address,
@@ -2053,7 +2048,7 @@ describe('cancelRfqOrder()', async () => {
 //     });
 
 //     it(`doesn't allow an unapproved signer to batch cancel pair limit orders`, async () => {
-//         const minValidSalt = new BigNumber(2);
+//         const minValidSalt = BigNumber.from(2);
 
 //         const tx = zeroEx
 //             .batchCancelPairLimitOrdersWithSigner(
