@@ -1,7 +1,6 @@
 import { getContractAddressesForChainOrThrow } from '@0x/contract-addresses';
-import { SupportedProvider } from 'ethereum-types';
 import { EIP712TypedData } from '@0x/types';
-import { BigNumber, hexUtils, NULL_ADDRESS } from '@0x/utils';
+import { hexUtils, NULL_ADDRESS } from '@0x/utils';
 
 import {
     createExchangeProxyEIP712Domain,
@@ -17,11 +16,38 @@ import {
     Signature,
     SignatureType,
 } from './signature_utils';
+import { BigNumber } from 'ethers';
+import { toInteger } from 'lodash';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 
 export const ETH_TOKEN_ADDRESS = '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
-export const ZERO = new BigNumber(0);
+export const ZERO = BigNumber.from(0);
 
+export enum IZeroExEvents {
+    ERC1155OrderCancelled = 'ERC1155OrderCancelled',
+    ERC1155OrderFilled = 'ERC1155OrderFilled',
+    ERC1155OrderPreSigned = 'ERC1155OrderPreSigned',
+    ERC721OrderCancelled = 'ERC721OrderCancelled',
+    ERC721OrderFilled = 'ERC721OrderFilled',
+    ERC721OrderPreSigned = 'ERC721OrderPreSigned',
+    LimitOrderFilled = 'LimitOrderFilled',
+    LiquidityProviderSwap = 'LiquidityProviderSwap',
+    MetaTransactionExecuted = 'MetaTransactionExecuted',
+    Migrated = 'Migrated',
+    OrderCancelled = 'OrderCancelled',
+    OrderSignerRegistered = 'OrderSignerRegistered',
+    OtcOrderFilled = 'OtcOrderFilled',
+    OwnershipTransferred = 'OwnershipTransferred',
+    PairCancelledLimitOrders = 'PairCancelledLimitOrders',
+    PairCancelledRfqOrders = 'PairCancelledRfqOrders',
+    ProxyFunctionUpdated = 'ProxyFunctionUpdated',
+    QuoteSignerUpdated = 'QuoteSignerUpdated',
+    RfqOrderFilled = 'RfqOrderFilled',
+    RfqOrderOriginsAllowed = 'RfqOrderOriginsAllowed',
+    TransformedERC20 = 'TransformedERC20',
+    TransformerDeployerUpdated = 'TransformerDeployerUpdated',
+}
 
 const COMMON_ORDER_DEFAULT_VALUES = {
     makerToken: NULL_ADDRESS,
@@ -119,15 +145,14 @@ export abstract class OrderBase {
     }
 
     public async getSignatureWithProviderAsync(
-        provider: SupportedProvider,
+        signer: SignerWithAddress,
         type: SignatureType = SignatureType.EthSign,
-        signer: string = this.maker,
     ): Promise<Signature> {
         switch (type) {
             case SignatureType.EIP712:
-                return eip712SignTypedDataWithProviderAsync(this.getEIP712TypedData(), signer, provider);
+                return eip712SignTypedDataWithProviderAsync(this.getEIP712TypedData(), signer);
             case SignatureType.EthSign:
-                return ethSignHashWithProviderAsync(this.getHash(), signer, provider);
+                return ethSignHashWithProviderAsync(this.getHash(), signer);
             default:
                 throw new Error(`Cannot sign with signature type: ${type}`);
         }
@@ -207,16 +232,16 @@ export class LimitOrder extends OrderBase {
                 hexUtils.leftPad(LimitOrder.TYPE_HASH),
                 hexUtils.leftPad(this.makerToken),
                 hexUtils.leftPad(this.takerToken),
-                hexUtils.leftPad(this.makerAmount),
-                hexUtils.leftPad(this.takerAmount),
-                hexUtils.leftPad(this.takerTokenFeeAmount),
+                hexUtils.leftPad(this.makerAmount.toString()),
+                hexUtils.leftPad(this.takerAmount.toString()),
+                hexUtils.leftPad(this.takerTokenFeeAmount.toString()),
                 hexUtils.leftPad(this.maker),
                 hexUtils.leftPad(this.taker),
                 hexUtils.leftPad(this.sender),
                 hexUtils.leftPad(this.feeRecipient),
                 hexUtils.leftPad(this.pool),
-                hexUtils.leftPad(this.expiry),
-                hexUtils.leftPad(this.salt),
+                hexUtils.leftPad(this.expiry.toString()),
+                hexUtils.leftPad(this.salt.toString()),
             ),
         );
     }
@@ -232,24 +257,24 @@ export class LimitOrder extends OrderBase {
             message: {
                 makerToken: this.makerToken,
                 takerToken: this.takerToken,
-                makerAmount: this.makerAmount.toString(10),
-                takerAmount: this.takerAmount.toString(10),
-                takerTokenFeeAmount: this.takerTokenFeeAmount.toString(10),
+                makerAmount: this.makerAmount.toString(),
+                takerAmount: this.takerAmount.toString(),
+                takerTokenFeeAmount: this.takerTokenFeeAmount.toString(),
                 maker: this.maker,
                 taker: this.taker,
                 sender: this.sender,
                 feeRecipient: this.feeRecipient,
                 pool: this.pool,
-                expiry: this.expiry.toString(10),
-                salt: this.salt.toString(10),
+                expiry: this.expiry.toString(),
+                salt: this.salt.toString(),
             },
         };
     }
 
     public willExpire(secondsFromNow = 0): boolean {
         const millisecondsInSecond = 1000;
-        const currentUnixTimestampSec = new BigNumber(Date.now() / millisecondsInSecond).integerValue();
-        return this.expiry.isLessThan(currentUnixTimestampSec.plus(secondsFromNow));
+        const currentUnixTimestampSec = BigNumber.from(toInteger(Date.now() / millisecondsInSecond));
+        return this.expiry.lt(currentUnixTimestampSec.add(secondsFromNow));
     }
 }
 
@@ -307,14 +332,14 @@ export class RfqOrder extends OrderBase {
                 hexUtils.leftPad(RfqOrder.TYPE_HASH),
                 hexUtils.leftPad(this.makerToken),
                 hexUtils.leftPad(this.takerToken),
-                hexUtils.leftPad(this.makerAmount),
-                hexUtils.leftPad(this.takerAmount),
+                hexUtils.leftPad(this.makerAmount.toString()),
+                hexUtils.leftPad(this.takerAmount.toString()),
                 hexUtils.leftPad(this.maker),
                 hexUtils.leftPad(this.taker),
                 hexUtils.leftPad(this.txOrigin),
                 hexUtils.leftPad(this.pool),
-                hexUtils.leftPad(this.expiry),
-                hexUtils.leftPad(this.salt),
+                hexUtils.leftPad(this.expiry.toString()),
+                hexUtils.leftPad(this.salt.toString()),
             ),
         );
     }
@@ -330,22 +355,22 @@ export class RfqOrder extends OrderBase {
             message: {
                 makerToken: this.makerToken,
                 takerToken: this.takerToken,
-                makerAmount: this.makerAmount.toString(10),
-                takerAmount: this.takerAmount.toString(10),
+                makerAmount: this.makerAmount.toString(),
+                takerAmount: this.takerAmount.toString(),
                 maker: this.maker,
                 taker: this.taker,
                 txOrigin: this.txOrigin,
                 pool: this.pool,
-                expiry: this.expiry.toString(10),
-                salt: this.salt.toString(10),
+                expiry: this.expiry.toString(),
+                salt: this.salt.toString(),
             },
         };
     }
 
     public willExpire(secondsFromNow = 0): boolean {
         const millisecondsInSecond = 1000;
-        const currentUnixTimestampSec = new BigNumber(Date.now() / millisecondsInSecond).integerValue();
-        return this.expiry.isLessThan(currentUnixTimestampSec.plus(secondsFromNow));
+        const currentUnixTimestampSec = BigNumber.from(toInteger(Date.now() / millisecondsInSecond));
+        return this.expiry.lt(currentUnixTimestampSec.add(secondsFromNow));
     }
 }
 
@@ -362,9 +387,9 @@ export class OtcOrder extends OrderBase {
         { type: 'uint256', name: 'expiryAndNonce' },
     ];
     public static readonly TYPE_HASH = getTypeHash(OtcOrder.STRUCT_NAME, OtcOrder.STRUCT_ABI);
-    public static readonly MAX_EXPIRY = new BigNumber(2).pow(64).minus(1);
-    public static readonly MAX_NONCE_BUCKET = new BigNumber(2).pow(64).minus(1);
-    public static readonly MAX_NONCE_VALUE = new BigNumber(2).pow(128).minus(1);
+    public static readonly MAX_EXPIRY = BigNumber.from(2).pow(64).sub(1);
+    public static readonly MAX_NONCE_BUCKET = BigNumber.from(2).pow(64).sub(1);
+    public static readonly MAX_NONCE_VALUE = BigNumber.from(2).pow(128).sub(1);
 
     public txOrigin: string;
     public expiryAndNonce: BigNumber;
@@ -377,10 +402,10 @@ export class OtcOrder extends OrderBase {
         nonceBucket: BigNumber;
         nonce: BigNumber;
     } {
-        const expiryAndNonceHex = hexUtils.leftPad(expiryAndNonce);
-        const expiry = new BigNumber(hexUtils.slice(expiryAndNonceHex, 0, 8).substr(2), 16);
-        const nonceBucket = new BigNumber(hexUtils.slice(expiryAndNonceHex, 8, 16).substr(2), 16);
-        const nonce = new BigNumber(hexUtils.slice(expiryAndNonceHex, 16, 32).substr(2), 16);
+        const expiryAndNonceHex = hexUtils.leftPad(expiryAndNonce.toString());
+        const expiry = BigNumber.from(hexUtils.slice(expiryAndNonceHex, 0, 8).substr(2));
+        const nonceBucket = BigNumber.from(hexUtils.slice(expiryAndNonceHex, 8, 16).substr(2));
+        const nonce = BigNumber.from(hexUtils.slice(expiryAndNonceHex, 16, 32).substr(2));
         return {
             expiry,
             nonceBucket,
@@ -389,20 +414,24 @@ export class OtcOrder extends OrderBase {
     }
 
     public static encodeExpiryAndNonce(expiry: BigNumber, nonceBucket: BigNumber, nonce: BigNumber): BigNumber {
-        if (expiry.isLessThan(0) || expiry.isGreaterThan(this.MAX_EXPIRY)) {
+        if (expiry.lt(0) || expiry.gt(this.MAX_EXPIRY)) {
             throw new Error('Expiry out of range');
         }
-        if (nonceBucket.isLessThan(0) || nonceBucket.isGreaterThan(this.MAX_NONCE_BUCKET)) {
+        if (nonceBucket.lt(0) || nonceBucket.gt(this.MAX_NONCE_BUCKET)) {
             throw new Error('Nonce bucket out of range');
         }
-        if (nonce.isLessThan(0) || nonce.isGreaterThan(this.MAX_NONCE_VALUE)) {
+        if (nonce.lt(0) || nonce.gt(this.MAX_NONCE_VALUE)) {
             throw new Error('Nonce out of range');
         }
-        return new BigNumber(
+        return BigNumber.from(
             hexUtils
-                .concat(hexUtils.leftPad(expiry, 8), hexUtils.leftPad(nonceBucket, 8), hexUtils.leftPad(nonce, 16))
+                .concat(
+                    hexUtils.leftPad(expiry.toString(), 8),
+                    hexUtils.leftPad(nonceBucket.toString(), 8),
+                    hexUtils.leftPad(nonce.toString(), 16)
+                )
                 .substr(2),
-            16,
+
         );
     }
 
@@ -439,12 +468,12 @@ export class OtcOrder extends OrderBase {
                 hexUtils.leftPad(OtcOrder.TYPE_HASH),
                 hexUtils.leftPad(this.makerToken),
                 hexUtils.leftPad(this.takerToken),
-                hexUtils.leftPad(this.makerAmount),
-                hexUtils.leftPad(this.takerAmount),
+                hexUtils.leftPad(this.makerAmount.toString()),
+                hexUtils.leftPad(this.takerAmount.toString()),
                 hexUtils.leftPad(this.maker),
                 hexUtils.leftPad(this.taker),
                 hexUtils.leftPad(this.txOrigin),
-                hexUtils.leftPad(this.expiryAndNonce),
+                hexUtils.leftPad(this.expiryAndNonce.toString()),
             ),
         );
     }
@@ -460,21 +489,21 @@ export class OtcOrder extends OrderBase {
             message: {
                 makerToken: this.makerToken,
                 takerToken: this.takerToken,
-                makerAmount: this.makerAmount.toString(10),
-                takerAmount: this.takerAmount.toString(10),
+                makerAmount: this.makerAmount.toString(),
+                takerAmount: this.takerAmount.toString(),
                 maker: this.maker,
                 taker: this.taker,
                 txOrigin: this.txOrigin,
-                expiryAndNonce: this.expiryAndNonce.toString(10),
+                expiryAndNonce: this.expiryAndNonce.toString(),
             },
         };
     }
 
     public willExpire(secondsFromNow = 0): boolean {
         const millisecondsInSecond = 1000;
-        const currentUnixTimestampSec = new BigNumber(Date.now() / millisecondsInSecond).integerValue();
-        const expiryRightShift = new BigNumber(2).pow(192);
-        const expiry = this.expiryAndNonce.dividedToIntegerBy(expiryRightShift);
-        return expiry.isLessThan(currentUnixTimestampSec.plus(secondsFromNow));
+        const currentUnixTimestampSec = BigNumber.from(toInteger(Date.now() / millisecondsInSecond));
+        const expiryRightShift = BigNumber.from(2).pow(192);
+        const expiry = this.expiryAndNonce.div(expiryRightShift);
+        return expiry.lt(currentUnixTimestampSec.add(secondsFromNow));
     }
 }

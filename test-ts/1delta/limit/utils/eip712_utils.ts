@@ -19,7 +19,7 @@ export const EIP712_DOMAIN_PARAMETERS = [
 const EXCHANGE_PROXY_EIP712_DOMAIN_DEFAULT = {
     chainId: 1,
     verifyingContract: NULL_ADDRESS,
-    name: 'ZeroEx',
+    name: '1delta',
     version: '1.0.0',
 };
 

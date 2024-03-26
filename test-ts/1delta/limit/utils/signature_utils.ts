@@ -1,8 +1,8 @@
-import { SupportedProvider } from 'ethereum-types';
 import { EIP712TypedData } from '@0x/types';
-import { hexUtils, providerUtils, signTypedDataUtils } from '@0x/utils';
-import { Web3Wrapper } from '@0x/web3-wrapper';
+import { hexUtils, signTypedDataUtils } from '@0x/utils';
 import * as ethjs from 'ethereumjs-util';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { arrayify } from 'ethers/lib/utils';
 
 /**
  * Valid signature types on the Exchange Proxy.
@@ -46,11 +46,9 @@ export const SIGNATURE_ABI = [
  */
 export async function ethSignHashWithProviderAsync(
     hash: string,
-    signer: string,
-    provider: SupportedProvider,
+    signer: SignerWithAddress,
 ): Promise<Signature> {
-    const w3w = new Web3Wrapper(providerUtils.standardizeOrThrow(provider));
-    const rpcSig = await w3w.signMessageAsync(signer, hash);
+    const rpcSig = await signer.signMessage(arrayify( hash));
     return {
         ...parseRpcSignature(rpcSig),
         signatureType: SignatureType.EthSign,
@@ -75,13 +73,11 @@ export function ethSignHashWithKey(hash: string, key: string): Signature {
  */
 export async function eip712SignTypedDataWithProviderAsync(
     data: EIP712TypedData,
-    signer: string,
-    provider: SupportedProvider,
+    signer: SignerWithAddress,
 ): Promise<Signature> {
-    const w3w = new Web3Wrapper(providerUtils.standardizeOrThrow(provider));
-    const rpcSig = await w3w.signTypedDataAsync(signer, data);
+    const rpcSig = await signer._signTypedData(data.domain, data.types, data.message);
     return {
-        ...parseRpcSignature(rpcSig),
+        ...parseRpcSignature(rpcSig), // splitSignature(rpcSig)
         signatureType: SignatureType.EIP712,
     };
 }

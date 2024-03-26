@@ -6,6 +6,7 @@ import "./INativeOrdersEvents.sol";
 import "./libraries/LibSignature.sol";
 import "./libraries/LibNativeOrder.sol";
 import "./NativeOrdersCancellation.sol";
+import "hardhat/console.sol";
 
 /// @dev Mixin for settling limit and RFQ orders.
 abstract contract NativeOrdersSettlement is
@@ -13,6 +14,7 @@ abstract contract NativeOrdersSettlement is
     NativeOrdersCancellation
 {
     error onlyCallableBySelf();
+    error roundingError(uint256 numerator, uint256 denominator, uint256 target);
     error fillOrKillFailedError(bytes32 hash, uint128 takerTokenFilledAmount, uint128 takerTokenFillAmount);
     error orderNotFillableError(bytes32 hash, uint8 status);
     error orderNotFillableByTakerError(bytes32 hash, address taker, address orderTaker);
@@ -90,8 +92,7 @@ abstract contract NativeOrdersSettlement is
 
     constructor(
         address proxyAddress,
-        address weth,
-        uint32 protocolFeeMultiplier
+        address weth
     ) NativeOrdersCancellation(proxyAddress)
     {}
 
@@ -342,8 +343,8 @@ abstract contract NativeOrdersSettlement is
                 maker: params.order.maker,
                 payer: params.taker,
                 recipient: params.taker,
-                makerToken: address(params.order.makerToken),
-                takerToken: address(params.order.takerToken),
+                makerToken: params.order.makerToken,
+                takerToken: params.order.takerToken,
                 makerAmount: params.order.makerAmount,
                 takerAmount: params.order.takerAmount,
                 takerTokenFillAmount: params.takerTokenFillAmount,
@@ -354,11 +355,9 @@ abstract contract NativeOrdersSettlement is
         // Pay the fee recipient.
         if (params.order.takerTokenFeeAmount > 0) {
             results.takerTokenFeeFilledAmount = uint128(
-                (
                     results.takerTokenFilledAmount *
-                    params.order.takerAmount) /
-                    params.order.takerTokenFeeAmount
-                
+                    params.order.takerTokenFeeAmount /
+                    params.order.takerAmount
             );
             _transferERC20TokensFrom(
                 params.order.takerToken,
@@ -440,8 +439,8 @@ abstract contract NativeOrdersSettlement is
                 maker: params.order.maker,
                 payer: params.useSelfBalance ? address(this) : params.taker,
                 recipient: params.recipient,
-                makerToken: address(params.order.makerToken),
-                takerToken: address(params.order.takerToken),
+                makerToken: params.order.makerToken,
+                takerToken: params.order.takerToken,
                 makerAmount: params.order.makerAmount,
                 takerAmount: params.order.takerAmount,
                 takerTokenFillAmount: params.takerTokenFillAmount,
@@ -453,8 +452,8 @@ abstract contract NativeOrdersSettlement is
             orderInfo.orderHash,
             params.order.maker,
             params.taker,
-            address(params.order.makerToken),
-            address(params.order.takerToken),
+            params.order.makerToken,
+            params.order.takerToken,
             results.takerTokenFilledAmount,
             results.makerTokenFilledAmount,
             params.order.pool
@@ -477,11 +476,11 @@ abstract contract NativeOrdersSettlement is
         // This should never overflow because the values are all clamped to
         // (2^128-1).
         makerTokenFilledAmount = uint128(
-            (uint256(takerTokenFilledAmount) * 
-                uint256(settleInfo.takerAmount)) /
-                uint256(settleInfo.makerAmount)
-            
+            uint256(takerTokenFilledAmount) *
+            uint256(settleInfo.makerAmount) / 
+            uint256(settleInfo.takerAmount)
         );
+
 
         if (takerTokenFilledAmount == 0 || makerTokenFilledAmount == 0) {
             // Nothing to do.
@@ -518,11 +517,11 @@ abstract contract NativeOrdersSettlement is
         emit OrderSignerRegistered(msg.sender, signer, allowed);
     }
 
-        function min128(uint128 a, uint128 b) internal pure returns (uint128) {
+    function min128(uint128 a, uint128 b) internal pure returns (uint128) {
         return a < b ? a : b;
     }
 
-        function safeAdd128(uint128 a, uint128 b) internal pure returns (uint128) {
+    function safeAdd128(uint128 a, uint128 b) internal pure returns (uint128) {
         uint128 c = a + b;
         if (c < a) revert uint128Overflow();
         return c;
