@@ -37,8 +37,8 @@ abstract contract NativeOrdersInfo is EIP712, WithStorage, TokenTransfer {
         // Recover maker and compute order hash.
         orderInfo.orderHash = getLimitOrderHash(order);
         uint256 minValidSalt = os()
-            .limitOrdersMakerToMakerTokenToTakerTokenToMinValidOrderSalt[order.maker][address(order.makerToken)][
-                address(order.takerToken)
+            .limitOrdersMakerToMakerTokenToTakerTokenToMinValidOrderSalt[order.maker][order.makerToken][
+                order.takerToken
             ];
         _populateCommonOrderInfoFields(orderInfo, order.takerAmount, order.expiry, order.salt, minValidSalt);
     }
@@ -52,8 +52,8 @@ abstract contract NativeOrdersInfo is EIP712, WithStorage, TokenTransfer {
         // Recover maker and compute order hash.
         orderInfo.orderHash = getRfqOrderHash(order);
         uint256 minValidSalt = os()
-            .rfqOrdersMakerToMakerTokenToTakerTokenToMinValidOrderSalt[order.maker][address(order.makerToken)][
-                address(order.takerToken)
+            .rfqOrdersMakerToMakerTokenToTakerTokenToMinValidOrderSalt[order.maker][order.makerToken][
+                order.takerToken
             ];
         _populateCommonOrderInfoFields(orderInfo, order.takerAmount, order.expiry, order.salt, minValidSalt);
 
