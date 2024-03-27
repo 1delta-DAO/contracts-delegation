@@ -447,5 +447,6 @@ export function getActualFillableTakerTokenAmount(
     const fillableMakerTokenAmount = getFillableMakerTokenAmount(order, takerTokenFilledAmount);
     return minBn([fillableMakerTokenAmount, makerBalance, makerAllowance])
         .mul(order.takerAmount)
-        .div(order.makerAmount);
+        .div(order.makerAmount)
+        .add(1);
 }

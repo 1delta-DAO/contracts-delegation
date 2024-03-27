@@ -1,6 +1,6 @@
 import {
     constants,
-    verifyEventsFromLogs,
+    getRandomPortion as _getRandomPortion,
 } from '@0x/contracts-test-utils';
 
 
@@ -15,9 +15,6 @@ import {
     getRandomRfqOrder,
     NativeOrdersTestEnvironment,
 } from './utils/orders';
-
-import { RevertErrors } from './utils/revert-errors';
-import { SignatureType } from './utils/signature_utils';
 import { ethers, waffle } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import {
@@ -39,6 +36,8 @@ import { BigNumber, ContractReceipt } from 'ethers';
 import { MockProvider } from 'ethereum-waffle';
 import { time } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from '../shared/expect'
+
+const getRandomPortion = (n: BigNumber) => BigNumber.from(_getRandomPortion(n.toString()).toString())
 
 const { NULL_ADDRESS, MAX_UINT256, NULL_BYTES32, } = constants;
 const ZERO_AMOUNT = BigNumber.from(0)
@@ -1435,134 +1434,133 @@ describe('fillOrKillRfqOrder()', () => {
     });
 });
 
-// async function fundOrderMakerAsync(
-//     order: LimitOrder | RfqOrder,
-//     balance: BigNumber = order.makerAmount,
-//     allowance: BigNumber = order.makerAmount,
-// ): Promise<void> {
-//     await makerToken.burn(maker, await makerToken.balanceOf(maker).callAsync()).awaitTransactionSuccessAsync();
-//     await makerToken.mint(maker, balance).awaitTransactionSuccessAsync();
-//     await makerToken.approve(zeroEx.address, allowance).awaitTransactionSuccessAsync({ from: maker });
-// }
+async function fundOrderMakerAsync(
+    order: LimitOrder | RfqOrder,
+    balance: BigNumber = order.makerAmount,
+    allowance: BigNumber = order.makerAmount,
+): Promise<void> {
+    await makerToken.burn(maker.address, await makerToken.balanceOf(maker.address));
+    await makerToken.mint(maker.address, balance);
+    await makerToken.connect(maker).approve(zeroEx.address, allowance);
+}
 
-// describe('getLimitOrderRelevantState()', () => {
-//     it('works with an empty order', async () => {
-//         const order = getTestLimitOrder({
-//             takerAmount: ZERO_AMOUNT,
-//         });
-//         await fundOrderMakerAsync(order);
-//         const [orderInfo, fillableTakerAmount, isSignatureValid] = await zeroEx
-//             .getLimitOrderRelevantState(order, await order.getSignatureWithProviderAsync(env.provider))
-//             .callAsync();
-//         expect(orderInfo).to.deep.eq({
-//             orderHash: order.getHash(),
-//             status: OrderStatus.Filled,
-//             takerTokenFilledAmount: ZERO_AMOUNT,
-//         });
-//         expect(fillableTakerAmount).to.bignumber.eq(0);
-//         expect(isSignatureValid).to.eq(true);
-//     });
 
-//     it('works with cancelled order', async () => {
-//         const order = getTestLimitOrder();
-//         await fundOrderMakerAsync(order);
-//         await zeroEx.cancelLimitOrder(order).awaitTransactionSuccessAsync({ from: maker });
-//         const [orderInfo, fillableTakerAmount, isSignatureValid] = await zeroEx
-//             .getLimitOrderRelevantState(order, await order.getSignatureWithProviderAsync(env.provider))
-//             .callAsync();
-//         expect(orderInfo).to.deep.eq({
-//             orderHash: order.getHash(),
-//             status: OrderStatus.Cancelled,
-//             takerTokenFilledAmount: ZERO_AMOUNT,
-//         });
-//         expect(fillableTakerAmount).to.bignumber.eq(0);
-//         expect(isSignatureValid).to.eq(true);
-//     });
+function infoEqals(order: any, expected: { orderHash: string, status: number, takerTokenFilledAmount: BigNumber }) {
+    Object.keys(expected).map(
+        key => expect(order[key].toString()).to.equal((expected as any)[key].toString(), key)
+    )
+}
 
-//     it('works with a bad signature', async () => {
-//         const order = getTestLimitOrder();
-//         await fundOrderMakerAsync(order);
-//         const [orderInfo, fillableTakerAmount, isSignatureValid] = await zeroEx
-//             .getLimitOrderRelevantState(
-//                 order,
-//                 await order.clone({ maker: notMaker }).getSignatureWithProviderAsync(env.provider),
-//             )
-//             .callAsync();
-//         expect(orderInfo).to.deep.eq({
-//             orderHash: order.getHash(),
-//             status: OrderStatus.Fillable,
-//             takerTokenFilledAmount: ZERO_AMOUNT,
-//         });
-//         expect(fillableTakerAmount).to.bignumber.eq(order.takerAmount);
-//         expect(isSignatureValid).to.eq(false);
-//     });
+describe('getLimitOrderRelevantState()', () => {
+    it('works with an empty order', async () => {
+        const order = getTestLimitOrder({
+            takerAmount: ZERO_AMOUNT,
+        });
+        await fundOrderMakerAsync(order);
+        const [orderInfo, fillableTakerAmount, isSignatureValid] = await zeroEx
+            .getLimitOrderRelevantState(order, await order.getSignatureWithProviderAsync(maker));
+        infoEqals(orderInfo, {
+            orderHash: order.getHash(),
+            status: OrderStatus.Filled,
+            takerTokenFilledAmount: ZERO_AMOUNT,
+        });
+        expect(fillableTakerAmount.toString()).to.eq('0');
+        expect(isSignatureValid).to.eq(true);
+    });
 
-//     it('works with an unfilled order', async () => {
-//         const order = getTestLimitOrder();
-//         await fundOrderMakerAsync(order);
-//         const [orderInfo, fillableTakerAmount, isSignatureValid] = await zeroEx
-//             .getLimitOrderRelevantState(order, await order.getSignatureWithProviderAsync(env.provider))
-//             .callAsync();
-//         expect(orderInfo).to.deep.eq({
-//             orderHash: order.getHash(),
-//             status: OrderStatus.Fillable,
-//             takerTokenFilledAmount: ZERO_AMOUNT,
-//         });
-//         expect(fillableTakerAmount).to.bignumber.eq(order.takerAmount);
-//         expect(isSignatureValid).to.eq(true);
-//     });
+    it('works with cancelled order', async () => {
+        const order = getTestLimitOrder();
+        await fundOrderMakerAsync(order);
+        await zeroEx.connect(maker).cancelLimitOrder(order);
+        const [orderInfo, fillableTakerAmount, isSignatureValid] = await zeroEx
+            .getLimitOrderRelevantState(order, await order.getSignatureWithProviderAsync(maker));
+        infoEqals(orderInfo, {
+            orderHash: order.getHash(),
+            status: OrderStatus.Cancelled,
+            takerTokenFilledAmount: ZERO_AMOUNT,
+        });
+        expect(fillableTakerAmount.toString()).to.eq('0');
+        expect(isSignatureValid).to.eq(true);
+    });
 
-//     it('works with a fully filled order', async () => {
-//         const order = getTestLimitOrder();
-//         // Fully Fund maker and taker.
-//         await fundOrderMakerAsync(order);
-//         await takerToken
-//             .mint(taker, order.takerAmount.plus(order.takerTokenFeeAmount))
-//             .awaitTransactionSuccessAsync();
-//         await testUtils.fillLimitOrderAsync(order);
-//         // Partially fill the order.
-//         const [orderInfo, fillableTakerAmount, isSignatureValid] = await zeroEx
-//             .getLimitOrderRelevantState(order, await order.getSignatureWithProviderAsync(env.provider))
-//             .callAsync();
-//         expect(orderInfo).to.deep.eq({
-//             orderHash: order.getHash(),
-//             status: OrderStatus.Filled,
-//             takerTokenFilledAmount: order.takerAmount,
-//         });
-//         expect(fillableTakerAmount).to.bignumber.eq(0);
-//         expect(isSignatureValid).to.eq(true);
-//     });
+    it('works with a bad signature', async () => {
+        const order = getTestLimitOrder();
+        await fundOrderMakerAsync(order);
+        const [orderInfo, fillableTakerAmount, isSignatureValid] = await zeroEx
+            .getLimitOrderRelevantState(
+                order,
+                await order.clone({ maker: notMaker.address }).getSignatureWithProviderAsync(notMaker),
+            );
+        infoEqals(orderInfo, {
+            orderHash: order.getHash(),
+            status: OrderStatus.Fillable,
+            takerTokenFilledAmount: ZERO_AMOUNT,
+        });
+        expect(fillableTakerAmount.toString()).to.eq(order.takerAmount.toString());
+        expect(isSignatureValid).to.eq(false);
+    });
 
-//     it('works with an under-funded, partially-filled order', async () => {
-//         const order = getTestLimitOrder();
-//         // Fully Fund maker and taker.
-//         await fundOrderMakerAsync(order);
-//         await takerToken
-//             .mint(taker, order.takerAmount.plus(order.takerTokenFeeAmount))
-//             .awaitTransactionSuccessAsync();
-//         // Partially fill the order.
-//         const fillAmount = getRandomPortion(order.takerAmount);
-//         await testUtils.fillLimitOrderAsync(order, { fillAmount });
-//         // Reduce maker funds to be < remaining.
-//         const remainingMakerAmount = getFillableMakerTokenAmount(order, fillAmount);
-//         const balance = getRandomPortion(remainingMakerAmount);
-//         const allowance = getRandomPortion(remainingMakerAmount);
-//         await fundOrderMakerAsync(order, balance, allowance);
-//         // Get order state.
-//         const [orderInfo, fillableTakerAmount, isSignatureValid] = await zeroEx
-//             .getLimitOrderRelevantState(order, await order.getSignatureWithProviderAsync(env.provider))
-//             .callAsync();
-//         expect(orderInfo).to.deep.eq({
-//             orderHash: order.getHash(),
-//             status: OrderStatus.Fillable,
-//             takerTokenFilledAmount: fillAmount,
-//         });
-//         expect(fillableTakerAmount).to.bignumber.eq(
-//             getActualFillableTakerTokenAmount(order, balance, allowance, fillAmount),
-//         );
-//         expect(isSignatureValid).to.eq(true);
-//     });
-// });
+    it('works with an unfilled order', async () => {
+        const order = getTestLimitOrder();
+        await fundOrderMakerAsync(order);
+        const [orderInfo, fillableTakerAmount, isSignatureValid] = await zeroEx
+            .getLimitOrderRelevantState(order, await order.getSignatureWithProviderAsync(maker));
+        infoEqals(orderInfo, {
+            orderHash: order.getHash(),
+            status: OrderStatus.Fillable,
+            takerTokenFilledAmount: ZERO_AMOUNT,
+        });
+        expect(fillableTakerAmount.toString()).to.eq(order.takerAmount.toString());
+        expect(isSignatureValid).to.eq(true);
+    });
+
+    it('works with a fully filled order', async () => {
+        const order = getTestLimitOrder();
+        // Fully Fund maker and taker.
+        await fundOrderMakerAsync(order);
+        await takerToken
+            .mint(taker.address, order.takerAmount.add(order.takerTokenFeeAmount));
+        await testUtils.fillLimitOrderAsync(order);
+        // Partially fill the order.
+        const [orderInfo, fillableTakerAmount, isSignatureValid] = await zeroEx
+            .getLimitOrderRelevantState(order, await order.getSignatureWithProviderAsync(maker));
+        infoEqals(orderInfo, {
+            orderHash: order.getHash(),
+            status: OrderStatus.Filled,
+            takerTokenFilledAmount: order.takerAmount,
+        });
+        expect(fillableTakerAmount.toString()).to.eq('0');
+        expect(isSignatureValid).to.eq(true);
+    });
+
+    it('works with an under-funded, partially-filled order', async () => {
+        const order = getTestLimitOrder();
+        // Fully Fund maker and taker.
+        await fundOrderMakerAsync(order);
+        await takerToken
+            .mint(taker.address, order.takerAmount.add(order.takerTokenFeeAmount));
+        // Partially fill the order.
+        const fillAmount = getRandomPortion(order.takerAmount);
+        await testUtils.fillLimitOrderAsync(order, { fillAmount });
+        // Reduce maker funds to be < remaining.
+        const remainingMakerAmount = getFillableMakerTokenAmount(order, fillAmount);
+        const balance = getRandomPortion(remainingMakerAmount);
+        const allowance = getRandomPortion(remainingMakerAmount);
+        await fundOrderMakerAsync(order, balance, allowance);
+        // Get order state.
+        const [orderInfo, fillableTakerAmount, isSignatureValid] = await zeroEx
+            .getLimitOrderRelevantState(order, await order.getSignatureWithProviderAsync(maker));
+        infoEqals(orderInfo, {
+            orderHash: order.getHash(),
+            status: OrderStatus.Fillable,
+            takerTokenFilledAmount: fillAmount,
+        });
+        expect(fillableTakerAmount.toString()).to.eq(
+            getActualFillableTakerTokenAmount(order, balance, allowance, fillAmount).toString(),
+        );
+        expect(isSignatureValid).to.eq(true);
+    });
+});
 
 // describe('getRfqOrderRelevantState()', () => {
 //     it('works with an empty order', async () => {

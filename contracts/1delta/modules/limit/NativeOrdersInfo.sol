@@ -286,8 +286,8 @@ abstract contract NativeOrdersInfo is EIP712, WithStorage, TokenTransfer {
         // previously filled amount
         uint256 fillableMakerTokenAmount = 
             uint256(params.orderTakerAmount - params.orderInfo.takerTokenFilledAmount) *
-            uint256(params.orderTakerAmount) /
-            uint256(params.orderMakerAmount)
+            uint256(params.orderMakerAmount) /
+            uint256(params.orderTakerAmount)
         ;
         // Clamp it to the amount of maker tokens we can spend on behalf of the
         // maker.
@@ -297,11 +297,12 @@ abstract contract NativeOrdersInfo is EIP712, WithStorage, TokenTransfer {
         );
         // Convert to taker token amount.
         return safeDowncastToUint128(
-                    (fillableMakerTokenAmount
-                     * (uint256(params.orderMakerAmount) - 1)) /
-                    uint256(params.orderTakerAmount)
-
-                );
+            getPartialAmountCeil(
+                fillableMakerTokenAmount,
+                params.orderMakerAmount,
+                params.orderTakerAmount
+             )
+        );
     }
 
     /// @dev checks if a given address is registered to sign on behalf of a maker address
@@ -317,6 +318,22 @@ abstract contract NativeOrdersInfo is EIP712, WithStorage, TokenTransfer {
             revert uint128Overflow();
         }
         return uint128(a);
+    }
+
+    /// @dev Calculates partial value given a numerator and denominator rounded down.
+    /// @param numerator Numerator.
+    /// @param denominator Denominator.
+    /// @param target Value to calculate partial of.
+    /// @return partialAmount Partial value of target rounded up.
+    function getPartialAmountCeil(
+        uint256 numerator,
+        uint256 denominator,
+        uint256 target
+    ) internal pure returns (uint256) {
+        // safeDiv computes `floor(a / b)`. We use the identity (a, b integer):
+        //       ceil(a / b) = floor((a + b - 1) / b)
+        // To implement `ceil(a / b)` using safeDiv.
+        return (numerator * target + (denominator - 1)) / denominator;
     }
 
 }
