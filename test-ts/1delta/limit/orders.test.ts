@@ -38,6 +38,7 @@ import { MockProvider } from 'ethereum-waffle';
 import { time } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from '../shared/expect'
 import { sumBn } from './utils/utils';
+import { SignatureType } from './utils/signature_utils';
 
 const getRandomPortion = (n: BigNumber) => BigNumber.from(_getRandomPortion(n.toString()).toString())
 
@@ -1751,431 +1752,414 @@ describe('batchGetRfqOrderRelevantStates()', () => {
     });
 });
 
-// describe('registerAllowedSigner()', () => {
-//     it('fires appropriate events', async () => {
-//         const receiptAllow = await contractWallet
-//             .registerAllowedOrderSigner(contractWalletSigner, true)
-//             .awaitTransactionSuccessAsync({ from: contractWalletOwner });
+describe('registerAllowedSigner()', () => {
+    it('fires appropriate events', async () => {
+        const txAllow = await contractWallet.connect(contractWalletOwner)
+            .registerAllowedOrderSigner(contractWalletSigner.address, true);
+        const receiptAllow = await txAllow.wait()
+        verifyLogs(
+            receiptAllow.logs,
+            [
+                {
+                    maker: contractWallet.address,
+                    signer: contractWalletSigner.address,
+                    allowed: true,
+                },
+            ],
+            IZeroExEvents.OrderSignerRegistered,
+        );
 
-//         verifyEventsFromLogs(
-//             receiptAllow.logs,
-//             [
-//                 {
-//                     maker: contractWallet.address,
-//                     signer: contractWalletSigner,
-//                     allowed: true,
-//                 },
-//             ],
-//             IZeroExEvents.OrderSignerRegistered,
-//         );
+        // then disallow signer
+        const txDisallow = await contractWallet.connect(contractWalletOwner)
+            .registerAllowedOrderSigner(contractWalletSigner.address, false);
+        const receiptDisallow = await txDisallow.wait()
+        verifyLogs(
+            receiptDisallow.logs,
+            [
+                {
+                    maker: contractWallet.address,
+                    signer: contractWalletSigner.address,
+                    allowed: false,
+                },
+            ],
+            IZeroExEvents.OrderSignerRegistered,
+        );
+    });
 
-//         // then disallow signer
-//         const receiptDisallow = await contractWallet
-//             .registerAllowedOrderSigner(contractWalletSigner, false)
-//             .awaitTransactionSuccessAsync({ from: contractWalletOwner });
+    it('allows for fills on orders signed by a approved signer', async () => {
+        const order = getTestRfqOrder({ maker: contractWallet.address });
+        const sig = await order.getSignatureWithProviderAsync(
+            contractWalletSigner,
+            SignatureType.EthSign,
+        );
 
-//         verifyEventsFromLogs(
-//             receiptDisallow.logs,
-//             [
-//                 {
-//                     maker: contractWallet.address,
-//                     signer: contractWalletSigner,
-//                     allowed: false,
-//                 },
-//             ],
-//             IZeroExEvents.OrderSignerRegistered,
-//         );
-//     });
+        // covers taker
+        await testUtils.prepareBalancesForOrdersAsync([order]);
+        // need to provide contract wallet with a balance
+        await makerToken.mint(contractWallet.address, order.makerAmount);
 
-//     it('allows for fills on orders signed by a approved signer', async () => {
-//         const order = getTestRfqOrder({ maker: contractWallet.address });
-//         const sig = await order.getSignatureWithProviderAsync(
-//             env.provider,
-//             SignatureType.EthSign,
-//             contractWalletSigner,
-//         );
+        await contractWallet.connect(contractWalletOwner)
+            .registerAllowedOrderSigner(contractWalletSigner.address, true);
 
-//         // covers taker
-//         await testUtils.prepareBalancesForOrdersAsync([order]);
-//         // need to provide contract wallet with a balance
-//         await makerToken.mint(contractWallet.address, order.makerAmount).awaitTransactionSuccessAsync();
+        await zeroEx.connect(taker).fillRfqOrder(order, sig, order.takerAmount);
 
-//         await contractWallet
-//             .registerAllowedOrderSigner(contractWalletSigner, true)
-//             .awaitTransactionSuccessAsync({ from: contractWalletOwner });
+        const info = await zeroEx.getRfqOrderInfo(order);
+        assertOrderInfoEquals(info, {
+            status: OrderStatus.Filled,
+            orderHash: order.getHash(),
+            takerTokenFilledAmount: order.takerAmount,
+        });
+    });
 
-//         await zeroEx.fillRfqOrder(order, sig, order.takerAmount).awaitTransactionSuccessAsync({ from: taker });
+    it('disallows fills if the signer is revoked', async () => {
+        const order = getTestRfqOrder({ maker: contractWallet.address });
+        const sig = await order.getSignatureWithProviderAsync(
+            contractWalletSigner,
+            SignatureType.EthSign,
+        );
 
-//         const info = await zeroEx.getRfqOrderInfo(order).callAsync();
-//         assertOrderInfoEquals(info, {
-//             status: OrderStatus.Filled,
-//             orderHash: order.getHash(),
-//             takerTokenFilledAmount: order.takerAmount,
-//         });
-//     });
+        // covers taker
+        await testUtils.prepareBalancesForOrdersAsync([order]);
+        // need to provide contract wallet with a balance
+        await makerToken.mint(contractWallet.address, order.makerAmount);
 
-//     it('disallows fills if the signer is revoked', async () => {
-//         const order = getTestRfqOrder({ maker: contractWallet.address });
-//         const sig = await order.getSignatureWithProviderAsync(
-//             env.provider,
-//             SignatureType.EthSign,
-//             contractWalletSigner,
-//         );
+        // first allow signer
+        await contractWallet.connect(contractWalletOwner)
+            .registerAllowedOrderSigner(contractWalletSigner.address, true);
 
-//         // covers taker
-//         await testUtils.prepareBalancesForOrdersAsync([order]);
-//         // need to provide contract wallet with a balance
-//         await makerToken.mint(contractWallet.address, order.makerAmount).awaitTransactionSuccessAsync();
+        // then disallow signer
+        await contractWallet.connect(contractWalletOwner)
+            .registerAllowedOrderSigner(contractWalletSigner.address, false);
 
-//         // first allow signer
-//         await contractWallet
-//             .registerAllowedOrderSigner(contractWalletSigner, true)
-//             .awaitTransactionSuccessAsync({ from: contractWalletOwner });
+        const tx = zeroEx.connect(taker).fillRfqOrder(order, sig, order.takerAmount);
+        return expect(tx).to.be.revertedWith(
+            "orderNotSignedByMakerError"
+        ).withArgs(
+            order.getHash(),
+            contractWalletSigner,
+            order.maker,
+        )
+    });
 
-//         // then disallow signer
-//         await contractWallet
-//             .registerAllowedOrderSigner(contractWalletSigner, false)
-//             .awaitTransactionSuccessAsync({ from: contractWalletOwner });
+    it(`doesn't allow fills with an unapproved signer`, async () => {
+        const order = getTestRfqOrder({ maker: contractWallet.address });
+        const sig = await order.getSignatureWithProviderAsync(maker, SignatureType.EthSign);
 
-//         const tx = zeroEx.fillRfqOrder(order, sig, order.takerAmount).awaitTransactionSuccessAsync({ from: taker });
-//         return expect(tx).to.be.revertedWith(
-//             new RevertErrors.NativeOrders.orderNotSignedByMakerError(
-//                 order.getHash(),
-//                 contractWalletSigner,
-//                 order.maker,
-//             ),
-//         );
-//     });
+        // covers taker
+        await testUtils.prepareBalancesForOrdersAsync([order]);
+        // need to provide contract wallet with a balance
+        await makerToken.mint(contractWallet.address, order.makerAmount);
 
-//     it(`doesn't allow fills with an unapproved signer`, async () => {
-//         const order = getTestRfqOrder({ maker: contractWallet.address });
-//         const sig = await order.getSignatureWithProviderAsync(env.provider, SignatureType.EthSign, maker);
+        const tx = zeroEx.connect(taker).fillRfqOrder(order, sig, order.takerAmount);
+        return expect(tx).to.be.revertedWith(
+            "orderNotSignedByMakerError"
+        ).withArgs(order.getHash(), maker, order.maker)
+    });
 
-//         // covers taker
-//         await testUtils.prepareBalancesForOrdersAsync([order]);
-//         // need to provide contract wallet with a balance
-//         await makerToken.mint(contractWallet.address, order.makerAmount).awaitTransactionSuccessAsync();
+    it(`allows an approved signer to cancel an RFQ order`, async () => {
+        const order = getTestRfqOrder({ maker: contractWallet.address });
 
-//         const tx = zeroEx.fillRfqOrder(order, sig, order.takerAmount).awaitTransactionSuccessAsync({ from: taker });
-//         return expect(tx).to.be.revertedWith(
-//             new RevertErrors.NativeOrders.orderNotSignedByMakerError(order.getHash(), maker, order.maker),
-//         );
-//     });
+        await contractWallet.connect(contractWalletOwner)
+            .registerAllowedOrderSigner(contractWalletSigner.address, true);
 
-//     it(`allows an approved signer to cancel an RFQ order`, async () => {
-//         const order = getTestRfqOrder({ maker: contractWallet.address });
+        const tx = await zeroEx.connect(contractWalletSigner)
+            .cancelRfqOrder(order);
+        const receipt = await tx.wait()
+        verifyLogs(
+            receipt.logs,
+            [{ maker: contractWallet.address, orderHash: order.getHash() }],
+            IZeroExEvents.OrderCancelled,
+        );
 
-//         await contractWallet
-//             .registerAllowedOrderSigner(contractWalletSigner, true)
-//             .awaitTransactionSuccessAsync({ from: contractWalletOwner });
+        const info = await zeroEx.getRfqOrderInfo(order);
+        assertOrderInfoEquals(info, {
+            status: OrderStatus.Cancelled,
+            orderHash: order.getHash(),
+            takerTokenFilledAmount: BigNumber.from(0),
+        });
+    });
 
-//         const receipt = await zeroEx
-//             .cancelRfqOrder(order)
-//             .awaitTransactionSuccessAsync({ from: contractWalletSigner });
+    it(`allows an approved signer to cancel a limit order`, async () => {
+        const order = getTestLimitOrder({ maker: contractWallet.address });
 
-//         verifyEventsFromLogs(
-//             receipt.logs,
-//             [{ maker: contractWallet.address, orderHash: order.getHash() }],
-//             IZeroExEvents.OrderCancelled,
-//         );
+        await contractWallet.connect(contractWalletOwner)
+            .registerAllowedOrderSigner(contractWalletSigner.address, true);
 
-//         const info = await zeroEx.getRfqOrderInfo(order).callAsync();
-//         assertOrderInfoEquals(info, {
-//             status: OrderStatus.Cancelled,
-//             orderHash: order.getHash(),
-//             takerTokenFilledAmount: new BigNumber(0),
-//         });
-//     });
+        const tx = await zeroEx.connect(contractWalletSigner)
+            .cancelLimitOrder(order);
+        const receipt = await tx.wait()
+        verifyLogs(
+            receipt.logs,
+            [{ maker: contractWallet.address, orderHash: order.getHash() }],
+            IZeroExEvents.OrderCancelled,
+        );
 
-//     it(`allows an approved signer to cancel a limit order`, async () => {
-//         const order = getTestLimitOrder({ maker: contractWallet.address });
+        const info = await zeroEx.getLimitOrderInfo(order);
+        assertOrderInfoEquals(info, {
+            status: OrderStatus.Cancelled,
+            orderHash: order.getHash(),
+            takerTokenFilledAmount: BigNumber.from(0),
+        });
+    });
 
-//         await contractWallet
-//             .registerAllowedOrderSigner(contractWalletSigner, true)
-//             .awaitTransactionSuccessAsync({ from: contractWalletOwner });
+    it(`doesn't allow an unapproved signer to cancel an RFQ order`, async () => {
+        const order = getTestRfqOrder({ maker: contractWallet.address });
 
-//         const receipt = await zeroEx
-//             .cancelLimitOrder(order)
-//             .awaitTransactionSuccessAsync({ from: contractWalletSigner });
+        const tx = zeroEx.connect(maker).cancelRfqOrder(order);
 
-//         verifyEventsFromLogs(
-//             receipt.logs,
-//             [{ maker: contractWallet.address, orderHash: order.getHash() }],
-//             IZeroExEvents.OrderCancelled,
-//         );
+        return expect(tx).to.be.revertedWith(
+            "onlyOrderMakerAllowed"
+        ).withArgs(order.getHash(), maker, order.maker)
+    });
 
-//         const info = await zeroEx.getLimitOrderInfo(order).callAsync();
-//         assertOrderInfoEquals(info, {
-//             status: OrderStatus.Cancelled,
-//             orderHash: order.getHash(),
-//             takerTokenFilledAmount: new BigNumber(0),
-//         });
-//     });
+    it(`doesn't allow an unapproved signer to cancel a limit order`, async () => {
+        const order = getTestLimitOrder({ maker: contractWallet.address });
 
-//     it(`doesn't allow an unapproved signer to cancel an RFQ order`, async () => {
-//         const order = getTestRfqOrder({ maker: contractWallet.address });
+        const tx = zeroEx.connect(maker).cancelLimitOrder(order);
 
-//         const tx = zeroEx.cancelRfqOrder(order).awaitTransactionSuccessAsync({ from: maker });
+        return expect(tx).to.be.revertedWith(
+            "onlyOrderMakerAllowed"
+        ).withArgs(order.getHash(), maker, order.maker)
+    });
 
-//         return expect(tx).to.be.revertedWith(
-//             new RevertErrors.NativeOrders.onlyOrderMakerAllowed(order.getHash(), maker, order.maker),
-//         );
-//     });
+    it(`allows a signer to cancel pair RFQ orders`, async () => {
+        const order = getTestRfqOrder({ maker: contractWallet.address, salt: BigNumber.from(1) });
 
-//     it(`doesn't allow an unapproved signer to cancel a limit order`, async () => {
-//         const order = getTestLimitOrder({ maker: contractWallet.address });
+        await contractWallet.connect(contractWalletOwner)
+            .registerAllowedOrderSigner(contractWalletSigner.address, true);
 
-//         const tx = zeroEx.cancelLimitOrder(order).awaitTransactionSuccessAsync({ from: maker });
+        // Cancel salts <= the order's
+        const minValidSalt = order.salt.add(1);
 
-//         return expect(tx).to.be.revertedWith(
-//             new RevertErrors.NativeOrders.onlyOrderMakerAllowed(order.getHash(), maker, order.maker),
-//         );
-//     });
+        const tx = await zeroEx.connect(contractWalletSigner)
+            .cancelPairRfqOrdersWithSigner(
+                contractWallet.address,
+                makerToken.address,
+                takerToken.address,
+                minValidSalt,
+            );
+        const receipt = await tx.wait()
+        verifyLogs(
+            receipt.logs,
+            [
+                {
+                    maker: contractWallet.address,
+                    makerToken: makerToken.address,
+                    takerToken: takerToken.address,
+                    minValidSalt,
+                },
+            ],
+            IZeroExEvents.PairCancelledRfqOrders,
+        );
 
-//     it(`allows a signer to cancel pair RFQ orders`, async () => {
-//         const order = getTestRfqOrder({ maker: contractWallet.address, salt: BigNumber.from(1) });
+        const info = await zeroEx.getRfqOrderInfo(order);
 
-//         await contractWallet
-//             .registerAllowedOrderSigner(contractWalletSigner, true)
-//             .awaitTransactionSuccessAsync({ from: contractWalletOwner });
+        assertOrderInfoEquals(info, {
+            status: OrderStatus.Cancelled,
+            orderHash: order.getHash(),
+            takerTokenFilledAmount: BigNumber.from(0),
+        });
+    });
 
-//         // Cancel salts <= the order's
-//         const minValidSalt = order.salt.plus(1);
+    it(`doesn't allow an unapproved signer to cancel pair RFQ orders`, async () => {
+        const minValidSalt = BigNumber.from(2);
 
-//         const receipt = await zeroEx
-//             .cancelPairRfqOrdersWithSigner(
-//                 contractWallet.address,
-//                 makerToken.address,
-//                 takerToken.address,
-//                 minValidSalt,
-//             )
-//             .awaitTransactionSuccessAsync({ from: contractWalletSigner });
-//         verifyEventsFromLogs(
-//             receipt.logs,
-//             [
-//                 {
-//                     maker: contractWallet.address,
-//                     makerToken: makerToken.address,
-//                     takerToken: takerToken.address,
-//                     minValidSalt,
-//                 },
-//             ],
-//             IZeroExEvents.PairCancelledRfqOrders,
-//         );
+        const tx = zeroEx.connect(maker)
+            .cancelPairRfqOrdersWithSigner(
+                contractWallet.address,
+                makerToken.address,
+                takerToken.address,
+                minValidSalt,
+            );
 
-//         const info = await zeroEx.getRfqOrderInfo(order).callAsync();
+        return expect(tx).to.be.revertedWith(
+            "invalidSignerError"
+        ).withArgs(
+            contractWallet.address, maker
+        )
+    });
 
-//         assertOrderInfoEquals(info, {
-//             status: OrderStatus.Cancelled,
-//             orderHash: order.getHash(),
-//             takerTokenFilledAmount: new BigNumber(0),
-//         });
-//     });
+    it(`allows a signer to cancel pair limit orders`, async () => {
+        const order = getTestLimitOrder({ maker: contractWallet.address, salt: BigNumber.from(1) });
 
-//     it(`doesn't allow an unapproved signer to cancel pair RFQ orders`, async () => {
-//         const minValidSalt = BigNumber.from(2);
+        await contractWallet.connect(contractWalletOwner)
+            .registerAllowedOrderSigner(contractWalletSigner.address, true);
 
-//         const tx = zeroEx
-//             .cancelPairRfqOrdersWithSigner(
-//                 contractWallet.address,
-//                 makerToken.address,
-//                 takerToken.address,
-//                 minValidSalt,
-//             )
-//             .awaitTransactionSuccessAsync({ from: maker });
+        // Cancel salts <= the order's
+        const minValidSalt = order.salt.add(1);
 
-//         return expect(tx).to.be.revertedWith(
-//             new RevertErrors.NativeOrders.InvalidSignerError(contractWallet.address, maker),
-//         );
-//     });
+        const tx = await zeroEx.connect(contractWalletSigner)
+            .cancelPairLimitOrdersWithSigner(
+                contractWallet.address,
+                makerToken.address,
+                takerToken.address,
+                minValidSalt,
+            )
+        const receipt = await tx.wait();
+        verifyLogs(
+            receipt.logs,
+            [
+                {
+                    maker: contractWallet.address,
+                    makerToken: makerToken.address,
+                    takerToken: takerToken.address,
+                    minValidSalt,
+                },
+            ],
+            IZeroExEvents.PairCancelledLimitOrders,
+        );
 
-//     it(`allows a signer to cancel pair limit orders`, async () => {
-//         const order = getTestLimitOrder({ maker: contractWallet.address, salt: BigNumber.from(1) });
+        const info = await zeroEx.getLimitOrderInfo(order);
 
-//         await contractWallet
-//             .registerAllowedOrderSigner(contractWalletSigner, true)
-//             .awaitTransactionSuccessAsync({ from: contractWalletOwner });
+        assertOrderInfoEquals(info, {
+            status: OrderStatus.Cancelled,
+            orderHash: order.getHash(),
+            takerTokenFilledAmount: BigNumber.from(0),
+        });
+    });
 
-//         // Cancel salts <= the order's
-//         const minValidSalt = order.salt.plus(1);
+    it(`doesn't allow an unapproved signer to cancel pair limit orders`, async () => {
+        const minValidSalt = BigNumber.from(2);
 
-//         const receipt = await zeroEx
-//             .cancelPairLimitOrdersWithSigner(
-//                 contractWallet.address,
-//                 makerToken.address,
-//                 takerToken.address,
-//                 minValidSalt,
-//             )
-//             .awaitTransactionSuccessAsync({ from: contractWalletSigner });
-//         verifyEventsFromLogs(
-//             receipt.logs,
-//             [
-//                 {
-//                     maker: contractWallet.address,
-//                     makerToken: makerToken.address,
-//                     takerToken: takerToken.address,
-//                     minValidSalt,
-//                 },
-//             ],
-//             IZeroExEvents.PairCancelledLimitOrders,
-//         );
+        const tx = zeroEx.connect(maker)
+            .cancelPairLimitOrdersWithSigner(
+                contractWallet.address,
+                makerToken.address,
+                takerToken.address,
+                minValidSalt,
+            );
 
-//         const info = await zeroEx.getLimitOrderInfo(order).callAsync();
+        return expect(tx).to.be.revertedWith(
+            "invalidSignerError"
+        ).withArgs(contractWallet.address, maker)
+    });
 
-//         assertOrderInfoEquals(info, {
-//             status: OrderStatus.Cancelled,
-//             orderHash: order.getHash(),
-//             takerTokenFilledAmount: new BigNumber(0),
-//         });
-//     });
+    it(`allows a signer to cancel multiple RFQ order pairs`, async () => {
+        const orders = [
+            getTestRfqOrder({ maker: contractWallet.address, salt: BigNumber.from(1) }),
+            // Flip the tokens for the other order.
+            getTestRfqOrder({
+                makerToken: takerToken.address,
+                takerToken: makerToken.address,
+                maker: contractWallet.address,
+                salt: BigNumber.from(1),
+            }),
+        ];
 
-//     it(`doesn't allow an unapproved signer to cancel pair limit orders`, async () => {
-//         const minValidSalt = BigNumber.from(2);
+        await contractWallet.connect(contractWalletOwner)
+            .registerAllowedOrderSigner(contractWalletSigner.address, true);
 
-//         const tx = zeroEx
-//             .cancelPairLimitOrdersWithSigner(
-//                 contractWallet.address,
-//                 makerToken.address,
-//                 takerToken.address,
-//                 minValidSalt,
-//             )
-//             .awaitTransactionSuccessAsync({ from: maker });
+        const minValidSalt = BigNumber.from(2);
+        const tx = await zeroEx.connect(contractWalletSigner)
+            .batchCancelPairRfqOrdersWithSigner(
+                contractWallet.address,
+                [makerToken.address, takerToken.address],
+                [takerToken.address, makerToken.address],
+                [minValidSalt, minValidSalt],
+            );
+        const receipt = await tx.wait();
+        verifyLogs(
+            receipt.logs,
+            [
+                {
+                    maker: contractWallet.address,
+                    makerToken: makerToken.address,
+                    takerToken: takerToken.address,
+                    minValidSalt,
+                },
+                {
+                    maker: contractWallet.address,
+                    makerToken: takerToken.address,
+                    takerToken: makerToken.address,
+                    minValidSalt,
+                },
+            ],
+            IZeroExEvents.PairCancelledRfqOrders,
+        );
+        const statuses = (await Promise.all(orders.map(o => zeroEx.getRfqOrderInfo(o)))).map(
+            oi => oi.status,
+        );
+        expect(statuses).to.deep.eq([OrderStatus.Cancelled, OrderStatus.Cancelled]);
+    });
 
-//         return expect(tx).to.be.revertedWith(
-//             new RevertErrors.NativeOrders.InvalidSignerError(contractWallet.address, maker),
-//         );
-//     });
+    it(`doesn't allow an unapproved signer to batch cancel pair rfq orders`, async () => {
+        const minValidSalt = BigNumber.from(2);
 
-//     it(`allows a signer to cancel multiple RFQ order pairs`, async () => {
-//         const orders = [
-//             getTestRfqOrder({ maker: contractWallet.address, salt: BigNumber.from(1) }),
-//             // Flip the tokens for the other order.
-//             getTestRfqOrder({
-//                 makerToken: takerToken.address,
-//                 takerToken: makerToken.address,
-//                 maker: contractWallet.address,
-//                 salt: BigNumber.from(1),
-//             }),
-//         ];
+        const tx = zeroEx.connect(maker)
+            .batchCancelPairRfqOrdersWithSigner(
+                contractWallet.address,
+                [makerToken.address, takerToken.address],
+                [takerToken.address, makerToken.address],
+                [minValidSalt, minValidSalt],
+            );
 
-//         await contractWallet
-//             .registerAllowedOrderSigner(contractWalletSigner, true)
-//             .awaitTransactionSuccessAsync({ from: contractWalletOwner });
+        return expect(tx).to.be.revertedWith(
+            "invalidSignerError"
+        ).withArgs(contractWallet.address, maker)
+    });
 
-//         const minValidSalt = BigNumber.from(2);
-//         const receipt = await zeroEx
-//             .batchCancelPairRfqOrdersWithSigner(
-//                 contractWallet.address,
-//                 [makerToken.address, takerToken.address],
-//                 [takerToken.address, makerToken.address],
-//                 [minValidSalt, minValidSalt],
-//             )
-//             .awaitTransactionSuccessAsync({ from: contractWalletSigner });
-//         verifyEventsFromLogs(
-//             receipt.logs,
-//             [
-//                 {
-//                     maker: contractWallet.address,
-//                     makerToken: makerToken.address,
-//                     takerToken: takerToken.address,
-//                     minValidSalt,
-//                 },
-//                 {
-//                     maker: contractWallet.address,
-//                     makerToken: takerToken.address,
-//                     takerToken: makerToken.address,
-//                     minValidSalt,
-//                 },
-//             ],
-//             IZeroExEvents.PairCancelledRfqOrders,
-//         );
-//         const statuses = (await Promise.all(orders.map(o => zeroEx.getRfqOrderInfo(o).callAsync()))).map(
-//             oi => oi.status,
-//         );
-//         expect(statuses).to.deep.eq([OrderStatus.Cancelled, OrderStatus.Cancelled]);
-//     });
+    it(`allows a signer to cancel multiple limit order pairs`, async () => {
+        const orders = [
+            getTestLimitOrder({ maker: contractWallet.address, salt: BigNumber.from(1) }),
+            // Flip the tokens for the other order.
+            getTestLimitOrder({
+                makerToken: takerToken.address,
+                takerToken: makerToken.address,
+                maker: contractWallet.address,
+                salt: BigNumber.from(1),
+            }),
+        ];
 
-//     it(`doesn't allow an unapproved signer to batch cancel pair rfq orders`, async () => {
-//         const minValidSalt = BigNumber.from(2);
+        await contractWallet.connect(contractWalletOwner)
+            .registerAllowedOrderSigner(contractWalletSigner.address, true);
 
-//         const tx = zeroEx
-//             .batchCancelPairRfqOrdersWithSigner(
-//                 contractWallet.address,
-//                 [makerToken.address, takerToken.address],
-//                 [takerToken.address, makerToken.address],
-//                 [minValidSalt, minValidSalt],
-//             )
-//             .awaitTransactionSuccessAsync({ from: maker });
+        const minValidSalt = BigNumber.from(2);
+        const tx = await zeroEx.connect(contractWalletSigner)
+            .batchCancelPairLimitOrdersWithSigner(
+                contractWallet.address,
+                [makerToken.address, takerToken.address],
+                [takerToken.address, makerToken.address],
+                [minValidSalt, minValidSalt],
+            );
+        const receipt = await tx.wait();
+        verifyLogs(
+            receipt.logs,
+            [
+                {
+                    maker: contractWallet.address,
+                    makerToken: makerToken.address,
+                    takerToken: takerToken.address,
+                    minValidSalt,
+                },
+                {
+                    maker: contractWallet.address,
+                    makerToken: takerToken.address,
+                    takerToken: makerToken.address,
+                    minValidSalt,
+                },
+            ],
+            IZeroExEvents.PairCancelledLimitOrders,
+        );
+        const statuses = (await Promise.all(orders.map(o => zeroEx.getLimitOrderInfo(o)))).map(
+            oi => oi.status,
+        );
+        expect(statuses).to.deep.eq([OrderStatus.Cancelled, OrderStatus.Cancelled]);
+    });
 
-//         return expect(tx).to.be.revertedWith(
-//             new RevertErrors.NativeOrders.InvalidSignerError(contractWallet.address, maker),
-//         );
-//     });
+    it(`doesn't allow an unapproved signer to batch cancel pair limit orders`, async () => {
+        const minValidSalt = BigNumber.from(2);
 
-//     it(`allows a signer to cancel multiple limit order pairs`, async () => {
-//         const orders = [
-//             getTestLimitOrder({ maker: contractWallet.address, salt: BigNumber.from(1) }),
-//             // Flip the tokens for the other order.
-//             getTestLimitOrder({
-//                 makerToken: takerToken.address,
-//                 takerToken: makerToken.address,
-//                 maker: contractWallet.address,
-//                 salt: BigNumber.from(1),
-//             }),
-//         ];
+        const tx = zeroEx.connect(maker)
+            .batchCancelPairLimitOrdersWithSigner(
+                contractWallet.address,
+                [makerToken.address, takerToken.address],
+                [takerToken.address, makerToken.address],
+                [minValidSalt, minValidSalt],
+            );
 
-//         await contractWallet
-//             .registerAllowedOrderSigner(contractWalletSigner, true)
-//             .awaitTransactionSuccessAsync({ from: contractWalletOwner });
-
-//         const minValidSalt = BigNumber.from(2);
-//         const receipt = await zeroEx
-//             .batchCancelPairLimitOrdersWithSigner(
-//                 contractWallet.address,
-//                 [makerToken.address, takerToken.address],
-//                 [takerToken.address, makerToken.address],
-//                 [minValidSalt, minValidSalt],
-//             )
-//             .awaitTransactionSuccessAsync({ from: contractWalletSigner });
-//         verifyEventsFromLogs(
-//             receipt.logs,
-//             [
-//                 {
-//                     maker: contractWallet.address,
-//                     makerToken: makerToken.address,
-//                     takerToken: takerToken.address,
-//                     minValidSalt,
-//                 },
-//                 {
-//                     maker: contractWallet.address,
-//                     makerToken: takerToken.address,
-//                     takerToken: makerToken.address,
-//                     minValidSalt,
-//                 },
-//             ],
-//             IZeroExEvents.PairCancelledLimitOrders,
-//         );
-//         const statuses = (await Promise.all(orders.map(o => zeroEx.getLimitOrderInfo(o).callAsync()))).map(
-//             oi => oi.status,
-//         );
-//         expect(statuses).to.deep.eq([OrderStatus.Cancelled, OrderStatus.Cancelled]);
-//     });
-
-//     it(`doesn't allow an unapproved signer to batch cancel pair limit orders`, async () => {
-//         const minValidSalt = BigNumber.from(2);
-
-//         const tx = zeroEx
-//             .batchCancelPairLimitOrdersWithSigner(
-//                 contractWallet.address,
-//                 [makerToken.address, takerToken.address],
-//                 [takerToken.address, makerToken.address],
-//                 [minValidSalt, minValidSalt],
-//             )
-//             .awaitTransactionSuccessAsync({ from: maker });
-
-//         return expect(tx).to.be.revertedWith(
-//             new RevertErrors.NativeOrders.InvalidSignerError(contractWallet.address, maker),
-//         );
-//     });
-// });
+        return expect(tx).to.be.revertedWith(
+            "invalidSignerError"
+        ).withArgs(contractWallet.address, maker)
+    });
+});
 
