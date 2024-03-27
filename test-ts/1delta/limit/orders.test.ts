@@ -1342,81 +1342,98 @@ describe('fillRfqOrder()', () => {
     });
 });
 
-// describe('fillOrKillLimitOrder()', () => {
-//     it('can fully fill an order', async () => {
-//         const order = getTestLimitOrder();
-//         await testUtils.prepareBalancesForOrdersAsync([order]);
-//         const receipt = await zeroEx
-//             .fillOrKillLimitOrder(order, await order.getSignatureWithProviderAsync(env.provider), order.takerAmount)
-//             .awaitTransactionSuccessAsync({ from: taker, value: SINGLE_PROTOCOL_FEE });
-//         verifyEventsFromLogs(
-//             receipt.logs,
-//             [testUtils.createLimitOrderFilledEventArgs(order)],
-//             IZeroExEvents.LimitOrderFilled,
-//         );
-//     });
+describe('fillOrKillLimitOrder()', () => {
+    it('can fully fill an order', async () => {
+        const order = getTestLimitOrder();
+        await testUtils.prepareBalancesForOrdersAsync([order]);
+        const tx = await zeroEx.connect(taker)
+            .fillOrKillLimitOrder(
+                order,
+                await order.getSignatureWithProviderAsync(maker),
+                order.takerAmount,
+                { value: SINGLE_PROTOCOL_FEE, gasPrice: GAS_PRICE }
+            );
+        const receipt = await tx.wait()
+        verifyLogs(
+            receipt.logs,
+            [testUtils.createLimitOrderFilledEventArgs(order)],
+            IZeroExEvents.LimitOrderFilled,
+        );
+    });
 
-//     it('reverts if cannot fill the exact amount', async () => {
-//         const order = getTestLimitOrder();
-//         await testUtils.prepareBalancesForOrdersAsync([order]);
-//         const fillAmount = order.takerAmount.plus(1);
-//         const tx = zeroEx
-//             .fillOrKillLimitOrder(order, await order.getSignatureWithProviderAsync(env.provider), fillAmount)
-//             .awaitTransactionSuccessAsync({ from: taker, value: SINGLE_PROTOCOL_FEE });
-//         return expect(tx).to.be.revertedWith(
-//             new RevertErrors.NativeOrders.FillOrKillFailedError(order.getHash(), order.takerAmount, fillAmount),
-//         );
-//     });
+    it('reverts if cannot fill the exact amount', async () => {
+        const order = getTestLimitOrder();
+        await testUtils.prepareBalancesForOrdersAsync([order]);
+        const fillAmount = order.takerAmount.add(1);
+        await expect(zeroEx.connect(taker)
+            .fillOrKillLimitOrder(
+                order,
+                await order.getSignatureWithProviderAsync(maker),
+                fillAmount,
+                { value: SINGLE_PROTOCOL_FEE }
+            )).to.be.revertedWith(
+                "fillOrKillFailedError"
+            ).withArgs(order.getHash(), order.takerAmount, fillAmount);
+    });
 
-//     it('refunds excess protocol fee', async () => {
-//         const order = getTestLimitOrder();
-//         await testUtils.prepareBalancesForOrdersAsync([order]);
-//         const takerBalanceBefore = await env.web3Wrapper.getBalanceInWeiAsync(taker);
-//         const receipt = await zeroEx
-//             .fillOrKillLimitOrder(order, await order.getSignatureWithProviderAsync(env.provider), order.takerAmount)
-//             .awaitTransactionSuccessAsync({ from: taker, value: SINGLE_PROTOCOL_FEE.plus(1) });
-//         const takerBalanceAfter = await env.web3Wrapper.getBalanceInWeiAsync(taker);
-//         const totalCost = GAS_PRICE.times(receipt.gasUsed).plus(SINGLE_PROTOCOL_FEE);
-//         expect(takerBalanceBefore.minus(totalCost)).to.bignumber.eq(takerBalanceAfter);
-//     });
-// });
+    it('refunds excess protocol fee', async () => {
+        const order = getTestLimitOrder();
+        await testUtils.prepareBalancesForOrdersAsync([order]);
+        const takerBalanceBefore = await provider.getBalance(taker.address);
+        const tx = await zeroEx.connect(taker)
+            .fillOrKillLimitOrder(
+                order,
+                await order.getSignatureWithProviderAsync(maker),
+                order.takerAmount,
+                { value: SINGLE_PROTOCOL_FEE.add(1), gasPrice: GAS_PRICE }
+            );
+        const receipt = await tx.wait()
+        const takerBalanceAfter = await provider.getBalance(taker.address);
+        const totalCost = GAS_PRICE.mul(receipt.gasUsed).add(SINGLE_PROTOCOL_FEE);
+        expect(takerBalanceBefore.sub(totalCost).toString()).to.eq(takerBalanceAfter.toString());
+    });
+});
 
-// describe('fillOrKillRfqOrder()', () => {
-//     it('can fully fill an order', async () => {
-//         const order = getTestRfqOrder();
-//         await testUtils.prepareBalancesForOrdersAsync([order]);
-//         const receipt = await zeroEx
-//             .fillOrKillRfqOrder(order, await order.getSignatureWithProviderAsync(env.provider), order.takerAmount)
-//             .awaitTransactionSuccessAsync({ from: taker });
-//         verifyEventsFromLogs(
-//             receipt.logs,
-//             [testUtils.createRfqOrderFilledEventArgs(order)],
-//             IZeroExEvents.RfqOrderFilled,
-//         );
-//     });
+describe('fillOrKillRfqOrder()', () => {
+    it('can fully fill an order', async () => {
+        const order = getTestRfqOrder();
+        await testUtils.prepareBalancesForOrdersAsync([order]);
+        const tx = await zeroEx.connect(taker)
+            .fillOrKillRfqOrder(order, await order.getSignatureWithProviderAsync(maker), order.takerAmount);
+        const receipt = await tx.wait()
+        verifyLogs(
+            receipt.logs,
+            [testUtils.createRfqOrderFilledEventArgs(order)],
+            IZeroExEvents.RfqOrderFilled,
+        );
+    });
 
-//     it('reverts if cannot fill the exact amount', async () => {
-//         const order = getTestRfqOrder();
-//         await testUtils.prepareBalancesForOrdersAsync([order]);
-//         const fillAmount = order.takerAmount.plus(1);
-//         const tx = zeroEx
-//             .fillOrKillRfqOrder(order, await order.getSignatureWithProviderAsync(env.provider), fillAmount)
-//             .awaitTransactionSuccessAsync({ from: taker });
-//         return expect(tx).to.be.revertedWith(
-//             new RevertErrors.NativeOrders.FillOrKillFailedError(order.getHash(), order.takerAmount, fillAmount),
-//         );
-//     });
+    it('reverts if cannot fill the exact amount', async () => {
+        const order = getTestRfqOrder();
+        await testUtils.prepareBalancesForOrdersAsync([order]);
+        const fillAmount = order.takerAmount.add(1);
+        const tx = zeroEx.connect(taker)
+            .fillOrKillRfqOrder(order, await order.getSignatureWithProviderAsync(maker), fillAmount);
+        await expect(tx).to.be.revertedWith(
+            "fillOrKillFailedError"
+        ).withArgs(order.getHash(), order.takerAmount, fillAmount);
 
-//     it('fails if ETH is attached', async () => {
-//         const order = getTestRfqOrder();
-//         await testUtils.prepareBalancesForOrdersAsync([order]);
-//         const tx = zeroEx
-//             .fillOrKillRfqOrder(order, await order.getSignatureWithProviderAsync(env.provider), order.takerAmount)
-//             .awaitTransactionSuccessAsync({ from: taker, value: 1 });
-//         // This will revert at the language level because the fill function is not payable.
-//         return expect(tx).to.be.rejectedWith('revert');
-//     });
-// });
+    });
+
+    it('fails if ETH is attached', async () => {
+        const order = getTestRfqOrder();
+        await testUtils.prepareBalancesForOrdersAsync([order]);
+        const tx = zeroEx.connect(taker)
+            .fillOrKillRfqOrder(
+                order,
+                await order.getSignatureWithProviderAsync(maker),
+                order.takerAmount,
+                { value: 1 } as any
+            );
+        // This will revert at the language level because the fill function is not payable.
+        return expect(tx).to.be.reverted // ('revert');
+    });
+});
 
 // async function fundOrderMakerAsync(
 //     order: LimitOrder | RfqOrder,
