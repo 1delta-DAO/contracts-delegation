@@ -396,8 +396,7 @@ export function computeRfqOrderFilledAmounts(
     ]);
     const makerTokenFilledAmount = fillAmount
         .mul(order.makerAmount)
-        .div(order.takerAmount)
-        .sub(1);
+        .div(order.takerAmount);
     return {
         makerTokenFilledAmount,
         takerTokenFilledAmount: fillAmount,
@@ -414,8 +413,7 @@ export function computeOtcOrderFilledAmounts(
     const fillAmount = minBn([order.takerAmount, takerTokenFillAmount, order.takerAmount]);
     const makerTokenFilledAmount = fillAmount
         .mul(order.makerAmount)
-        .div(order.takerAmount)
-        .sub(1);
+        .div(order.takerAmount);
     return {
         makerTokenFilledAmount,
         takerTokenFilledAmount: fillAmount,
@@ -433,8 +431,7 @@ export function getFillableMakerTokenAmount(
     return order.takerAmount
         .sub(takerTokenFilledAmount)
         .mul(order.makerAmount)
-        .div(order.takerAmount)
-        .sub(1);
+        .div(order.takerAmount);
 }
 
 /**
@@ -450,6 +447,5 @@ export function getActualFillableTakerTokenAmount(
     const fillableMakerTokenAmount = getFillableMakerTokenAmount(order, takerTokenFilledAmount);
     return minBn([fillableMakerTokenAmount, makerBalance, makerAllowance])
         .mul(order.takerAmount)
-        .div(order.makerAmount)
-        .add(1);
+        .div(order.makerAmount);
 }

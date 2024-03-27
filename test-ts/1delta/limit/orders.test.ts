@@ -1,21 +1,7 @@
 import {
-    blockchainTests,
     constants,
-    describe,
-    // expect,
-    getRandomPortion,
-    randomAddress,
     verifyEventsFromLogs,
 } from '@0x/contracts-test-utils';
-// import {
-//     LimitOrder,
-//     LimitOrderFields,
-//     OrderStatus,
-//     RfqOrder,
-//     RfqOrderFields,
-// } from './utils/order_types';
-import { AnyRevertError } from '@0x/utils';
-import { TransactionReceiptWithDecodedLogs } from 'ethereum-types';
 
 
 import {
@@ -159,7 +145,7 @@ function getTestRfqOrder(fields: Partial<RfqOrderFields> = {}): RfqOrder {
 //     });
 // });
 
-// @ts-ignore
+
 describe('getLimitOrderHash()', () => {
     it('returns the correct hash', async () => {
         const order = getTestLimitOrder();
@@ -167,7 +153,7 @@ describe('getLimitOrderHash()', () => {
         expect(hash).to.eq(order.getHash());
     });
 });
-// @ts-ignore
+
 describe('getRfqOrderHash()', () => {
     it('returns the correct hash', async () => {
         const order = getTestRfqOrder();
@@ -175,7 +161,7 @@ describe('getRfqOrderHash()', () => {
         expect(hash).to.eq(order.getHash());
     });
 });
-// @ts-ignore
+
 describe('getLimitOrderInfo()', () => {
     it('unfilled order', async () => {
         const order = getTestLimitOrder();
@@ -278,7 +264,7 @@ describe('getLimitOrderInfo()', () => {
         });
     });
 });
-// @ts-ignore
+
 describe('getRfqOrderInfo()', () => {
     it('unfilled order', async () => {
         const order = getTestRfqOrder();
@@ -418,14 +404,15 @@ const verifyLogs = (logs: TxLog[], expected: Object[], id: string) => {
         let included = false
         for (const ex of expected) {
             if (keys.every(
-                k => (ex as any)[k]?.toString().toLowerCase() === decoded[k].toString().toLowerCase())
+                k => (ex as any)[k] === undefined ? true : // this allws us to skip params if the expected one is undefined
+                    (ex as any)[k]?.toString().toLowerCase() === decoded[k].toString().toLowerCase())
             ) included = true;
         }
         expect(included).to.equal(true, "Not found:" + JSON.stringify(decoded))
     }
 }
 
-// @ts-ignore
+
 describe('cancelLimitOrder()', async () => {
     it('can cancel an unfilled order', async () => {
         const order = getTestLimitOrder();
@@ -499,12 +486,12 @@ describe('cancelLimitOrder()', async () => {
     it("cannot cancel someone else's order", async () => {
         const order = getTestLimitOrder();
         await expect(zeroEx.connect(notMaker).cancelLimitOrder(order)).to.be.revertedWith(
-            "OnlyOrderMakerAllowed"
-        ).withArgs([order.getHash(), notMaker.address, order.maker])
+            "onlyOrderMakerAllowed"
+        ).withArgs(order.getHash(), notMaker.address, order.maker)
 
     });
 });
-// @ts-ignore
+
 describe('cancelRfqOrder()', async () => {
     it('can cancel an unfilled order', async () => {
         const order = getTestRfqOrder();
@@ -578,11 +565,11 @@ describe('cancelRfqOrder()', async () => {
     it("cannot cancel someone else's order", async () => {
         const order = getTestRfqOrder();
         await expect(zeroEx.connect(notMaker).cancelRfqOrder(order)).to.revertedWith(
-            "OnlyOrderMakerAllowed",
-        ).withArgs([order.getHash(), notMaker.address, order.maker]);
+            "onlyOrderMakerAllowed",
+        ).withArgs(order.getHash(), notMaker.address, order.maker);
     });
 });
-// @ts-ignore
+
 describe('batchCancelLimitOrders()', async () => {
     it('can cancel multiple orders', async () => {
         const orders = [...new Array(3)].map(() => getTestLimitOrder());
@@ -600,11 +587,11 @@ describe('batchCancelLimitOrders()', async () => {
     it("cannot cancel someone else's orders", async () => {
         const orders = [...new Array(3)].map(() => getTestLimitOrder());
         await expect(zeroEx.connect(notMaker).batchCancelLimitOrders(orders)).to.be.revertedWith(
-            "OnlyOrderMakerAllowed"
-        ).withArgs([orders[0].getHash(), notMaker.address, orders[0].maker])
+            "onlyOrderMakerAllowed"
+        ).withArgs(orders[0].getHash(), notMaker.address, orders[0].maker)
     });
 });
-// @ts-ignore
+
 describe('batchCancelRfqOrders()', async () => {
     it('can cancel multiple orders', async () => {
         const orders = [...new Array(3)].map(() => getTestRfqOrder());
@@ -622,11 +609,11 @@ describe('batchCancelRfqOrders()', async () => {
     it("cannot cancel someone else's orders", async () => {
         const orders = [...new Array(3)].map(() => getTestRfqOrder());
         return expect(zeroEx.connect(notMaker).batchCancelRfqOrders(orders)).to.be.revertedWith(
-            "OnlyOrderMakerAllowed"
-        ).withArgs([orders[0].getHash(), notMaker.address, orders[0].maker])
+            "onlyOrderMakerAllowed"
+        ).withArgs(orders[0].getHash(), notMaker.address, orders[0].maker)
     });
 });
-// @ts-ignore
+
 describe('cancelPairOrders()', async () => {
     it('can cancel multiple limit orders of the same pair with salt < minValidSalt', async () => {
         const orders = [...new Array(3)].map((_v, i) => getTestLimitOrder().clone({ salt: BigNumber.from(i) }));
@@ -701,7 +688,7 @@ describe('cancelPairOrders()', async () => {
         expect(status).to.eq(OrderStatus.Fillable);
     });
 });
-// @ts-ignore
+
 describe('batchCancelPairOrders()', async () => {
     it('can cancel multiple limit order pairs', async () => {
         const orders = [
@@ -828,7 +815,7 @@ async function assertExpectedFinalBalancesFromLimitOrderFillAsync(
         expect(balanceOfTakerBefore.sub(totalCost).toString()).to.eq(balanceOfTakerNow.toString());
     }
 }
-// @ts-ignore
+
 describe('fillLimitOrder()', () => {
     it('can fully fill an order', async () => {
         const order = getTestLimitOrder();
@@ -974,8 +961,8 @@ describe('fillLimitOrder()', () => {
     it('cannot fill an expired order', async () => {
         const order = getTestLimitOrder({ expiry: createExpiry(-60) });
         await expect(testUtils.fillLimitOrderAsync(order)).to.be.revertedWith(
-            "OrderNotFillableError",
-        ).withArgs([order.getHash(), OrderStatus.Expired]);
+            "orderNotFillableError",
+        ).withArgs(order.getHash(), OrderStatus.Expired);
     });
 
     it('cannot fill a cancelled order', async () => {
@@ -984,7 +971,7 @@ describe('fillLimitOrder()', () => {
         await expect(
             testUtils.fillLimitOrderAsync(order)
         ).to.be.revertedWith(
-            "OrderNotFillableError",
+            "orderNotFillableError",
         ).withArgs(order.getHash(), OrderStatus.Cancelled);
     });
 
@@ -993,7 +980,7 @@ describe('fillLimitOrder()', () => {
         await zeroEx.connect(maker)
             .cancelPairLimitOrders(makerToken.address, takerToken.address, order.salt.add(1));
         await expect(testUtils.fillLimitOrderAsync(order)).to.be.revertedWith(
-            "OrderNotFillableError",
+            "orderNotFillableError",
         ).withArgs(order.getHash(), OrderStatus.Cancelled);
     });
 
@@ -1002,8 +989,8 @@ describe('fillLimitOrder()', () => {
         await expect(
             testUtils.fillLimitOrderAsync(order, { fillAmount: order.takerAmount, taker: notTaker })
         ).to.be.revertedWith(
-            "OrderNotFillableByTakerError",
-        ).withArgs((order.getHash(), notTaker.address, order.taker));
+            "orderNotFillableByTakerError",
+        ).withArgs(order.getHash(), notTaker.address, order.taker);
     });
 
     it('non-sender cannot fill order', async () => {
@@ -1011,8 +998,8 @@ describe('fillLimitOrder()', () => {
         await expect(
             testUtils.fillLimitOrderAsync(order, { fillAmount: order.takerAmount, taker: notTaker })
         ).to.be.revertedWith(
-            "OrderNotFillableBySenderError",
-        ).withArgs((order.getHash(), notTaker.address, order.sender));
+            "orderNotFillableBySenderError",
+        ).withArgs(order.getHash(), notTaker.address, order.sender);
     });
 
     it('cannot fill order with bad signature', async () => {
@@ -1022,7 +1009,7 @@ describe('fillLimitOrder()', () => {
         await expect(
             testUtils.fillLimitOrderAsync(order.clone({ chainId: 1234 }))
         ).to.be.revertedWith(
-            "OrderNotSignedByMakerError",
+            "orderNotSignedByMakerError",
         ).withArgs(order.getHash(), undefined, order.maker);
     });
 
@@ -1067,247 +1054,293 @@ describe('fillLimitOrder()', () => {
     });
 });
 
-// describe('registerAllowedRfqOrigins()', () => {
-//     it('cannot register through a contract', async () => {
-//         const tx = testRfqOriginRegistration
-//             .registerAllowedRfqOrigins(zeroEx.address, [], true)
-//             .awaitTransactionSuccessAsync();
-//         expect(tx).to.revertWith('NativeOrdersFeature/NO_CONTRACT_ORIGINS');
-//     });
-// });
+describe('registerAllowedRfqOrigins()', () => {
+    it('cannot register through a contract', async () => {
 
-// async function assertExpectedFinalBalancesFromRfqOrderFillAsync(
-//     order: RfqOrder,
-//     takerTokenFillAmount: BigNumber = order.takerAmount,
-//     takerTokenAlreadyFilledAmount: BigNumber = ZERO_AMOUNT,
-// ): Promise<void> {
-//     const { makerTokenFilledAmount, takerTokenFilledAmount } = computeRfqOrderFilledAmounts(
-//         order,
-//         takerTokenFillAmount,
-//         takerTokenAlreadyFilledAmount,
-//     );
-//     const makerBalance = await takerToken.balanceOf(maker).callAsync();
-//     const takerBalance = await makerToken.balanceOf(taker).callAsync();
-//     expect(makerBalance).to.bignumber.eq(takerTokenFilledAmount);
-//     expect(takerBalance).to.bignumber.eq(makerTokenFilledAmount);
-// }
+        await expect(testRfqOriginRegistration
+            .registerAllowedRfqOrigins(zeroEx.address, [], true)).to.be.revertedWith(
+                'NativeOrdersFeature/NO_CONTRACT_ORIGINS'
+            );
+    });
+});
 
-// describe('fillRfqOrder()', () => {
-//     it('can fully fill an order', async () => {
-//         const order = getTestRfqOrder();
-//         const receipt = await testUtils.fillRfqOrderAsync(order);
-//         verifyEventsFromLogs(
-//             receipt.logs,
-//             [testUtils.createRfqOrderFilledEventArgs(order)],
-//             IZeroExEvents.RfqOrderFilled,
-//         );
-//         assertOrderInfoEquals(await zeroEx.getRfqOrderInfo(order).callAsync(), {
-//             orderHash: order.getHash(),
-//             status: OrderStatus.Filled,
-//             takerTokenFilledAmount: order.takerAmount,
-//         });
-//         await assertExpectedFinalBalancesFromRfqOrderFillAsync(order);
-//     });
 
-//     it('can partially fill an order', async () => {
-//         const order = getTestRfqOrder();
-//         const fillAmount = order.takerAmount.minus(1);
-//         const receipt = await testUtils.fillRfqOrderAsync(order, fillAmount);
-//         verifyEventsFromLogs(
-//             receipt.logs,
-//             [testUtils.createRfqOrderFilledEventArgs(order, fillAmount)],
-//             IZeroExEvents.RfqOrderFilled,
-//         );
-//         assertOrderInfoEquals(await zeroEx.getRfqOrderInfo(order).callAsync(), {
-//             orderHash: order.getHash(),
-//             status: OrderStatus.Fillable,
-//             takerTokenFilledAmount: fillAmount,
-//         });
-//         await assertExpectedFinalBalancesFromRfqOrderFillAsync(order, fillAmount);
-//     });
+async function getMakerTakerBalancesSingle() {
+    const makerBalance = await takerToken.balanceOf(maker.address);
+    const takerBalance = await makerToken.balanceOf(taker.address);
+    return [makerBalance, takerBalance]
+}
 
-//     it('can fully fill an order in two steps', async () => {
-//         const order = getTestRfqOrder();
-//         let fillAmount = order.takerAmount.dividedToIntegerBy(2);
-//         let receipt = await testUtils.fillRfqOrderAsync(order, fillAmount);
-//         verifyEventsFromLogs(
-//             receipt.logs,
-//             [testUtils.createRfqOrderFilledEventArgs(order, fillAmount)],
-//             IZeroExEvents.RfqOrderFilled,
-//         );
-//         const alreadyFilledAmount = fillAmount;
-//         fillAmount = order.takerAmount.minus(fillAmount);
-//         receipt = await testUtils.fillRfqOrderAsync(order, fillAmount);
-//         verifyEventsFromLogs(
-//             receipt.logs,
-//             [testUtils.createRfqOrderFilledEventArgs(order, fillAmount, alreadyFilledAmount)],
-//             IZeroExEvents.RfqOrderFilled,
-//         );
-//         assertOrderInfoEquals(await zeroEx.getRfqOrderInfo(order).callAsync(), {
-//             orderHash: order.getHash(),
-//             status: OrderStatus.Filled,
-//             takerTokenFilledAmount: order.takerAmount,
-//         });
-//     });
+async function assertExpectedFinalBalancesFromRfqOrderFillAsync(
+    makerBalanceBefore: BigNumber,
+    takerBalanceBefore: BigNumber,
+    order: RfqOrder,
+    takerTokenFillAmount: BigNumber = order.takerAmount,
+    takerTokenAlreadyFilledAmount: BigNumber = ZERO_AMOUNT,
+): Promise<void> {
+    const { makerTokenFilledAmount, takerTokenFilledAmount } = computeRfqOrderFilledAmounts(
+        order,
+        takerTokenFillAmount,
+        takerTokenAlreadyFilledAmount,
+    );
+    const makerBalance = await takerToken.balanceOf(maker.address);
+    const takerBalance = await makerToken.balanceOf(taker.address);
+    expect(makerBalance.sub(makerBalanceBefore).toString()).to.eq(takerTokenFilledAmount.toString());
+    expect(takerBalance.sub(takerBalanceBefore).toString()).to.eq(makerTokenFilledAmount.toString());
+}
 
-//     it('clamps fill amount to remaining available', async () => {
-//         const order = getTestRfqOrder();
-//         const fillAmount = order.takerAmount.plus(1);
-//         const receipt = await testUtils.fillRfqOrderAsync(order, fillAmount);
-//         verifyEventsFromLogs(
-//             receipt.logs,
-//             [testUtils.createRfqOrderFilledEventArgs(order, fillAmount)],
-//             IZeroExEvents.RfqOrderFilled,
-//         );
-//         assertOrderInfoEquals(await zeroEx.getRfqOrderInfo(order).callAsync(), {
-//             orderHash: order.getHash(),
-//             status: OrderStatus.Filled,
-//             takerTokenFilledAmount: order.takerAmount,
-//         });
-//         await assertExpectedFinalBalancesFromRfqOrderFillAsync(order, fillAmount);
-//     });
+describe('fillRfqOrder()', () => {
+    it('can fully fill an order', async () => {
+        const order = getTestRfqOrder();
+        const [
+            makerBalanceBefore,
+            takerBalanceBefore,
+        ] = await getMakerTakerBalancesSingle()
 
-//     it('clamps fill amount to remaining available in partial filled order', async () => {
-//         const order = getTestRfqOrder();
-//         let fillAmount = order.takerAmount.dividedToIntegerBy(2);
-//         let receipt = await testUtils.fillRfqOrderAsync(order, fillAmount);
-//         verifyEventsFromLogs(
-//             receipt.logs,
-//             [testUtils.createRfqOrderFilledEventArgs(order, fillAmount)],
-//             IZeroExEvents.RfqOrderFilled,
-//         );
-//         const alreadyFilledAmount = fillAmount;
-//         fillAmount = order.takerAmount.minus(fillAmount).plus(1);
-//         receipt = await testUtils.fillRfqOrderAsync(order, fillAmount);
-//         verifyEventsFromLogs(
-//             receipt.logs,
-//             [testUtils.createRfqOrderFilledEventArgs(order, fillAmount, alreadyFilledAmount)],
-//             IZeroExEvents.RfqOrderFilled,
-//         );
-//         assertOrderInfoEquals(await zeroEx.getRfqOrderInfo(order).callAsync(), {
-//             orderHash: order.getHash(),
-//             status: OrderStatus.Filled,
-//             takerTokenFilledAmount: order.takerAmount,
-//         });
-//     });
 
-//     it('cannot fill an order with wrong tx.origin', async () => {
-//         const order = getTestRfqOrder();
-//         const tx = testUtils.fillRfqOrderAsync(order, order.takerAmount, notTaker);
-//         return expect(tx).to.revertWith(
-//             new RevertErrors.NativeOrders.OrderNotFillableByOriginError(order.getHash(), notTaker, taker),
-//         );
-//     });
+        const tx = await testUtils.fillRfqOrderAsync(order);
+        const receipt = await tx.wait()
+        verifyLogs(
+            receipt.logs,
+            [testUtils.createRfqOrderFilledEventArgs(order)],
+            IZeroExEvents.RfqOrderFilled,
+        );
+        assertOrderInfoEquals(await zeroEx.getRfqOrderInfo(order), {
+            orderHash: order.getHash(),
+            status: OrderStatus.Filled,
+            takerTokenFilledAmount: order.takerAmount,
+        });
+        await assertExpectedFinalBalancesFromRfqOrderFillAsync(
+            makerBalanceBefore,
+            takerBalanceBefore,
+            order
+        );
+    });
 
-//     it('can fill an order from a different tx.origin if registered', async () => {
-//         const order = getTestRfqOrder();
+    it('can partially fill an order', async () => {
+        const order = getTestRfqOrder();
+        const [
+            makerBalanceBefore,
+            takerBalanceBefore,
+        ] = await getMakerTakerBalancesSingle()
 
-//         const receipt = await zeroEx
-//             .registerAllowedRfqOrigins([notTaker], true)
-//             .awaitTransactionSuccessAsync({ from: taker });
-//         verifyEventsFromLogs(
-//             receipt.logs,
-//             [
-//                 {
-//                     origin: taker,
-//                     addrs: [notTaker],
-//                     allowed: true,
-//                 },
-//             ],
-//             IZeroExEvents.RfqOrderOriginsAllowed,
-//         );
-//         return testUtils.fillRfqOrderAsync(order, order.takerAmount, notTaker);
-//     });
+        const fillAmount = order.takerAmount.sub(1);
+        const tx = await testUtils.fillRfqOrderAsync(order, fillAmount);
+        const receipt = await tx.wait()
+        verifyLogs(
+            receipt.logs,
+            [testUtils.createRfqOrderFilledEventArgs(order, fillAmount)],
+            IZeroExEvents.RfqOrderFilled,
+        );
+        assertOrderInfoEquals(await zeroEx.getRfqOrderInfo(order), {
+            orderHash: order.getHash(),
+            status: OrderStatus.Fillable,
+            takerTokenFilledAmount: fillAmount,
+        });
+        await assertExpectedFinalBalancesFromRfqOrderFillAsync(
+            makerBalanceBefore,
+            takerBalanceBefore,
+            order,
+            fillAmount
+        );
+    });
 
-//     it('cannot fill an order with registered then unregistered tx.origin', async () => {
-//         const order = getTestRfqOrder();
+    it('can fully fill an order in two steps', async () => {
+        const order = getTestRfqOrder();
+        let fillAmount = order.takerAmount.div(2);
+        let tx = await testUtils.fillRfqOrderAsync(order, fillAmount);
+        let receipt = await tx.wait()
+        verifyLogs(
+            receipt.logs,
+            [testUtils.createRfqOrderFilledEventArgs(order, fillAmount)],
+            IZeroExEvents.RfqOrderFilled,
+        );
+        const alreadyFilledAmount = fillAmount;
+        fillAmount = order.takerAmount.sub(fillAmount);
+        tx = await testUtils.fillRfqOrderAsync(order, fillAmount);
+        receipt = await tx.wait()
+        verifyLogs(
+            receipt.logs,
+            [testUtils.createRfqOrderFilledEventArgs(order, fillAmount, alreadyFilledAmount)],
+            IZeroExEvents.RfqOrderFilled,
+        );
+        assertOrderInfoEquals(await zeroEx.getRfqOrderInfo(order), {
+            orderHash: order.getHash(),
+            status: OrderStatus.Filled,
+            takerTokenFilledAmount: order.takerAmount,
+        });
+    });
 
-//         await zeroEx.registerAllowedRfqOrigins([notTaker], true).awaitTransactionSuccessAsync({ from: taker });
-//         const receipt = await zeroEx
-//             .registerAllowedRfqOrigins([notTaker], false)
-//             .awaitTransactionSuccessAsync({ from: taker });
-//         verifyEventsFromLogs(
-//             receipt.logs,
-//             [
-//                 {
-//                     origin: taker,
-//                     addrs: [notTaker],
-//                     allowed: false,
-//                 },
-//             ],
-//             IZeroExEvents.RfqOrderOriginsAllowed,
-//         );
+    it('clamps fill amount to remaining available', async () => {
+        const order = getTestRfqOrder();
+        const fillAmount = order.takerAmount.add(1);
+        const [
+            makerBalanceBefore,
+            takerBalanceBefore,
+        ] = await getMakerTakerBalancesSingle()
 
-//         const tx = testUtils.fillRfqOrderAsync(order, order.takerAmount, notTaker);
-//         return expect(tx).to.revertWith(
-//             new RevertErrors.NativeOrders.OrderNotFillableByOriginError(order.getHash(), notTaker, taker),
-//         );
-//     });
+        const tx = await testUtils.fillRfqOrderAsync(order, fillAmount);
+        const receipt = await tx.wait()
+        verifyLogs(
+            receipt.logs,
+            [testUtils.createRfqOrderFilledEventArgs(order, fillAmount)],
+            IZeroExEvents.RfqOrderFilled,
+        );
+        assertOrderInfoEquals(await zeroEx.getRfqOrderInfo(order), {
+            orderHash: order.getHash(),
+            status: OrderStatus.Filled,
+            takerTokenFilledAmount: order.takerAmount,
+        });
+        await assertExpectedFinalBalancesFromRfqOrderFillAsync(
+            makerBalanceBefore,
+            takerBalanceBefore,
+            order,
+            fillAmount
+        );
+    });
 
-//     it('cannot fill an order with a zero tx.origin', async () => {
-//         const order = getTestRfqOrder({ txOrigin: NULL_ADDRESS });
-//         const tx = testUtils.fillRfqOrderAsync(order, order.takerAmount, notTaker);
-//         return expect(tx).to.revertWith(
-//             new RevertErrors.NativeOrders.OrderNotFillableError(order.getHash(), OrderStatus.Invalid),
-//         );
-//     });
+    it('clamps fill amount to remaining available in partial filled order', async () => {
+        const order = getTestRfqOrder();
+        let fillAmount = order.takerAmount.div(2);
+        let tx = await testUtils.fillRfqOrderAsync(order, fillAmount);
+        let receipt = await tx.wait()
+        verifyLogs(
+            receipt.logs,
+            [testUtils.createRfqOrderFilledEventArgs(order, fillAmount)],
+            IZeroExEvents.RfqOrderFilled,
+        );
+        const alreadyFilledAmount = fillAmount;
+        fillAmount = order.takerAmount.sub(fillAmount).add(1);
+        tx = await testUtils.fillRfqOrderAsync(order, fillAmount);
+        receipt = await tx.wait()
+        verifyLogs(
+            receipt.logs,
+            [testUtils.createRfqOrderFilledEventArgs(order, fillAmount, alreadyFilledAmount)],
+            IZeroExEvents.RfqOrderFilled,
+        );
+        assertOrderInfoEquals(await zeroEx.getRfqOrderInfo(order), {
+            orderHash: order.getHash(),
+            status: OrderStatus.Filled,
+            takerTokenFilledAmount: order.takerAmount,
+        });
+    });
 
-//     it('non-taker cannot fill order', async () => {
-//         const order = getTestRfqOrder({ taker, txOrigin: notTaker });
-//         const tx = testUtils.fillRfqOrderAsync(order, order.takerAmount, notTaker);
-//         return expect(tx).to.revertWith(
-//             new RevertErrors.NativeOrders.OrderNotFillableByTakerError(order.getHash(), notTaker, order.taker),
-//         );
-//     });
+    it('cannot fill an order with wrong tx.origin', async () => {
+        const order = getTestRfqOrder();
+        const tx = testUtils.fillRfqOrderAsync(order, order.takerAmount, notTaker);
+        return expect(tx).to.be.revertedWith(
+            "orderNotFillableByOriginError",
+        ).withArgs(order.getHash(), notTaker.address, taker.address);
+    });
 
-//     it('cannot fill an expired order', async () => {
-//         const order = getTestRfqOrder({ expiry: createExpiry(-60) });
-//         const tx = testUtils.fillRfqOrderAsync(order);
-//         return expect(tx).to.revertWith(
-//             new RevertErrors.NativeOrders.OrderNotFillableError(order.getHash(), OrderStatus.Expired),
-//         );
-//     });
+    it('can fill an order from a different tx.origin if registered', async () => {
+        const order = getTestRfqOrder();
 
-//     it('cannot fill a cancelled order', async () => {
-//         const order = getTestRfqOrder();
-//         await zeroEx.cancelRfqOrder(order).awaitTransactionSuccessAsync({ from: maker });
-//         const tx = testUtils.fillRfqOrderAsync(order);
-//         return expect(tx).to.revertWith(
-//             new RevertErrors.NativeOrders.OrderNotFillableError(order.getHash(), OrderStatus.Cancelled),
-//         );
-//     });
+        const tx = await zeroEx.connect(taker)
+            .registerAllowedRfqOrigins([notTaker.address], true);
+        const receipt = await tx.wait()
+        verifyLogs(
+            receipt.logs,
+            [
+                {
+                    origin: taker.address,
+                    addrs: [notTaker.address],
+                    allowed: true,
+                },
+            ],
+            IZeroExEvents.RfqOrderOriginsAllowed,
+        );
+        return testUtils.fillRfqOrderAsync(order, order.takerAmount, notTaker);
+    });
 
-//     it('cannot fill a salt/pair cancelled order', async () => {
-//         const order = getTestRfqOrder();
-//         await zeroEx
-//             .cancelPairRfqOrders(makerToken.address, takerToken.address, order.salt.plus(1))
-//             .awaitTransactionSuccessAsync({ from: maker });
-//         const tx = testUtils.fillRfqOrderAsync(order);
-//         return expect(tx).to.revertWith(
-//             new RevertErrors.NativeOrders.OrderNotFillableError(order.getHash(), OrderStatus.Cancelled),
-//         );
-//     });
+    it('cannot fill an order with registered then unregistered tx.origin', async () => {
+        const order = getTestRfqOrder();
 
-//     it('cannot fill order with bad signature', async () => {
-//         const order = getTestRfqOrder();
-//         // Overwrite chainId to result in a different hash and therefore different
-//         // signature.
-//         const tx = testUtils.fillRfqOrderAsync(order.clone({ chainId: 1234 }));
-//         return expect(tx).to.revertWith(
-//             new RevertErrors.NativeOrders.OrderNotSignedByMakerError(order.getHash(), undefined, order.maker),
-//         );
-//     });
+        await zeroEx.connect(taker).registerAllowedRfqOrigins([notTaker.address], true);
+        const tx = await zeroEx.connect(taker)
+            .registerAllowedRfqOrigins([notTaker.address], false);
+        const receipt = await tx.wait()
+        verifyLogs(
+            receipt.logs,
+            [
+                {
+                    origin: taker.address,
+                    addrs: [notTaker.address],
+                    allowed: false,
+                },
+            ],
+            IZeroExEvents.RfqOrderOriginsAllowed,
+        );
 
-//     it('fails if ETH is attached', async () => {
-//         const order = getTestRfqOrder();
-//         await testUtils.prepareBalancesForOrdersAsync([order], taker);
-//         const tx = zeroEx
-//             .fillRfqOrder(order, await order.getSignatureWithProviderAsync(env.provider), order.takerAmount)
-//             .awaitTransactionSuccessAsync({ from: taker, value: 1 });
-//         // This will revert at the language level because the fill function is not payable.
-//         return expect(tx).to.be.rejectedWith('revert');
-//     });
-// });
+
+        await expect(testUtils.fillRfqOrderAsync(order, order.takerAmount, notTaker)).to.be.revertedWith(
+            "orderNotFillableByOriginError",
+        ).withArgs(order.getHash(), notTaker.address, taker.address);
+    });
+
+    it('cannot fill an order with a zero tx.origin', async () => {
+        const order = getTestRfqOrder({ txOrigin: NULL_ADDRESS });
+        const tx = testUtils.fillRfqOrderAsync(order, order.takerAmount, notTaker);
+        return expect(tx).to.be.revertedWith(
+            "orderNotFillableError",
+        ).withArgs(order.getHash(), OrderStatus.Invalid);
+    });
+
+    it('non-taker cannot fill order', async () => {
+        const order = getTestRfqOrder({ taker: taker.address, txOrigin: notTaker.address });
+        await expect(testUtils.fillRfqOrderAsync(order, order.takerAmount, notTaker)).to.be.revertedWith(
+            "orderNotFillableByTakerError",
+        ).withArgs(order.getHash(), notTaker.address, order.taker);
+    });
+
+    it('cannot fill an expired order', async () => {
+        const order = getTestRfqOrder({ expiry: createExpiry(-60) });
+        const tx = testUtils.fillRfqOrderAsync(order);
+        await expect(tx).to.be.revertedWith(
+            "orderNotFillableError",
+        ).withArgs(order.getHash(), OrderStatus.Expired);
+    });
+
+    it('cannot fill a cancelled order', async () => {
+        const order = getTestRfqOrder();
+        await zeroEx.connect(maker).cancelRfqOrder(order);
+        await expect(testUtils.fillRfqOrderAsync(order)).to.be.revertedWith(
+            "orderNotFillableError",
+        ).withArgs(order.getHash(), OrderStatus.Cancelled);
+    });
+
+    it('cannot fill a salt/pair cancelled order', async () => {
+        const order = getTestRfqOrder();
+        await zeroEx.connect(maker)
+            .cancelPairRfqOrders(makerToken.address, takerToken.address, order.salt.add(1));
+        await expect(testUtils.fillRfqOrderAsync(order)).to.be.revertedWith(
+            "orderNotFillableError",
+        ).withArgs(order.getHash(), OrderStatus.Cancelled);
+    });
+
+    // @TODO we have to see how we can validate signle revert parameters
+    it('cannot fill order with bad signature', async () => {
+        const order = getTestRfqOrder();
+        // Overwrite chainId to result in a different hash and therefore different
+        // signature.
+        await expect(testUtils.fillRfqOrderAsync(order.clone({ chainId: 1234 }))).to.be.revertedWith(
+            "orderNotSignedByMakerError",
+        ) // .withArgs(order.getHash(), undefined, order.maker);
+    });
+
+    it('fails if ETH is attached', async () => {
+        const order = getTestRfqOrder();
+        await testUtils.prepareBalancesForOrdersAsync([order], taker);
+        // This will revert at the language level because the fill function is not payable.
+        await expect(zeroEx.connect(taker)
+            .fillRfqOrder(
+                order,
+                await order.getSignatureWithProviderAsync(taker),
+                order.takerAmount,
+                { value: 1 } as any
+            )).to.be.reverted;
+    });
+});
 
 // describe('fillOrKillLimitOrder()', () => {
 //     it('can fully fill an order', async () => {
@@ -1330,7 +1363,7 @@ describe('fillLimitOrder()', () => {
 //         const tx = zeroEx
 //             .fillOrKillLimitOrder(order, await order.getSignatureWithProviderAsync(env.provider), fillAmount)
 //             .awaitTransactionSuccessAsync({ from: taker, value: SINGLE_PROTOCOL_FEE });
-//         return expect(tx).to.revertWith(
+//         return expect(tx).to.be.revertedWith(
 //             new RevertErrors.NativeOrders.FillOrKillFailedError(order.getHash(), order.takerAmount, fillAmount),
 //         );
 //     });
@@ -1369,7 +1402,7 @@ describe('fillLimitOrder()', () => {
 //         const tx = zeroEx
 //             .fillOrKillRfqOrder(order, await order.getSignatureWithProviderAsync(env.provider), fillAmount)
 //             .awaitTransactionSuccessAsync({ from: taker });
-//         return expect(tx).to.revertWith(
+//         return expect(tx).to.be.revertedWith(
 //             new RevertErrors.NativeOrders.FillOrKillFailedError(order.getHash(), order.takerAmount, fillAmount),
 //         );
 //     });
@@ -1797,8 +1830,8 @@ describe('fillLimitOrder()', () => {
 //             .awaitTransactionSuccessAsync({ from: contractWalletOwner });
 
 //         const tx = zeroEx.fillRfqOrder(order, sig, order.takerAmount).awaitTransactionSuccessAsync({ from: taker });
-//         return expect(tx).to.revertWith(
-//             new RevertErrors.NativeOrders.OrderNotSignedByMakerError(
+//         return expect(tx).to.be.revertedWith(
+//             new RevertErrors.NativeOrders.orderNotSignedByMakerError(
 //                 order.getHash(),
 //                 contractWalletSigner,
 //                 order.maker,
@@ -1816,8 +1849,8 @@ describe('fillLimitOrder()', () => {
 //         await makerToken.mint(contractWallet.address, order.makerAmount).awaitTransactionSuccessAsync();
 
 //         const tx = zeroEx.fillRfqOrder(order, sig, order.takerAmount).awaitTransactionSuccessAsync({ from: taker });
-//         return expect(tx).to.revertWith(
-//             new RevertErrors.NativeOrders.OrderNotSignedByMakerError(order.getHash(), maker, order.maker),
+//         return expect(tx).to.be.revertedWith(
+//             new RevertErrors.NativeOrders.orderNotSignedByMakerError(order.getHash(), maker, order.maker),
 //         );
 //     });
 
@@ -1876,8 +1909,8 @@ describe('fillLimitOrder()', () => {
 
 //         const tx = zeroEx.cancelRfqOrder(order).awaitTransactionSuccessAsync({ from: maker });
 
-//         return expect(tx).to.revertWith(
-//             new RevertErrors.NativeOrders.OnlyOrderMakerAllowed(order.getHash(), maker, order.maker),
+//         return expect(tx).to.be.revertedWith(
+//             new RevertErrors.NativeOrders.onlyOrderMakerAllowed(order.getHash(), maker, order.maker),
 //         );
 //     });
 
@@ -1886,8 +1919,8 @@ describe('fillLimitOrder()', () => {
 
 //         const tx = zeroEx.cancelLimitOrder(order).awaitTransactionSuccessAsync({ from: maker });
 
-//         return expect(tx).to.revertWith(
-//             new RevertErrors.NativeOrders.OnlyOrderMakerAllowed(order.getHash(), maker, order.maker),
+//         return expect(tx).to.be.revertedWith(
+//             new RevertErrors.NativeOrders.onlyOrderMakerAllowed(order.getHash(), maker, order.maker),
 //         );
 //     });
 
@@ -1943,7 +1976,7 @@ describe('fillLimitOrder()', () => {
 //             )
 //             .awaitTransactionSuccessAsync({ from: maker });
 
-//         return expect(tx).to.revertWith(
+//         return expect(tx).to.be.revertedWith(
 //             new RevertErrors.NativeOrders.InvalidSignerError(contractWallet.address, maker),
 //         );
 //     });
@@ -2000,7 +2033,7 @@ describe('fillLimitOrder()', () => {
 //             )
 //             .awaitTransactionSuccessAsync({ from: maker });
 
-//         return expect(tx).to.revertWith(
+//         return expect(tx).to.be.revertedWith(
 //             new RevertErrors.NativeOrders.InvalidSignerError(contractWallet.address, maker),
 //         );
 //     });
@@ -2066,7 +2099,7 @@ describe('fillLimitOrder()', () => {
 //             )
 //             .awaitTransactionSuccessAsync({ from: maker });
 
-//         return expect(tx).to.revertWith(
+//         return expect(tx).to.be.revertedWith(
 //             new RevertErrors.NativeOrders.InvalidSignerError(contractWallet.address, maker),
 //         );
 //     });
@@ -2132,7 +2165,7 @@ describe('fillLimitOrder()', () => {
 //             )
 //             .awaitTransactionSuccessAsync({ from: maker });
 
-//         return expect(tx).to.revertWith(
+//         return expect(tx).to.be.revertedWith(
 //             new RevertErrors.NativeOrders.InvalidSignerError(contractWallet.address, maker),
 //         );
 //     });
