@@ -90,11 +90,21 @@ abstract contract NativeOrdersSettlement is
         _;
     }
 
+
+    /// @dev The protocol fee multiplier.
+    uint32 public immutable PROTOCOL_FEE_MULTIPLIER;
+    /// @dev The protocol collector address.
+    address public immutable PROTOCOL_FEE_COLLECTOR;
+
     constructor(
         address proxyAddress,
-        address weth
+        address protocolFeeCollector,
+        uint32 protocolFeeMultiplier
     ) NativeOrdersCancellation(proxyAddress)
-    {}
+    {
+        PROTOCOL_FEE_MULTIPLIER = protocolFeeMultiplier;
+        PROTOCOL_FEE_COLLECTOR = protocolFeeCollector;
+    }
 
     /// @dev Fill a limit order. The taker and sender will be the caller.
     /// @param order The limit order. ETH protocol fees can be
@@ -352,6 +362,9 @@ abstract contract NativeOrdersSettlement is
             })
         );
 
+        // Pay the protocol fee.
+        results.ethProtocolFeePaid = _collectProtocolFee();
+
         // Pay the fee recipient.
         if (params.order.takerTokenFeeAmount > 0) {
             results.takerTokenFeeFilledAmount = uint128(
@@ -526,4 +539,19 @@ abstract contract NativeOrdersSettlement is
         if (c < a) revert uint128Overflow();
         return c;
     }
+
+
+    /// @dev   Collect the specified protocol fee in ETH.
+    ///        The fee is stored in a per-pool fee collector contract.
+    /// @return ethProtocolFeePaid How much protocol fee was collected in ETH.
+    function _collectProtocolFee() internal returns (uint256 ethProtocolFeePaid) {
+        uint256 protocolFeePaid = uint256(PROTOCOL_FEE_MULTIPLIER) * tx.gasprice;
+        if (protocolFeePaid == 0) {
+            // Nothing to do.
+            return 0;
+        }
+        _transferEth(PROTOCOL_FEE_COLLECTOR, protocolFeePaid);
+        return protocolFeePaid;
+    }
+
 }

@@ -13,6 +13,7 @@ contract NativeOrders is NativeOrdersSettlement {
 
     constructor(
         address proxyAddress,
-        address weth
-    ) NativeOrdersSettlement(proxyAddress, weth) {}
+        address protocolFeeCollector,
+        uint32 protocolFeeMultiplier
+    ) NativeOrdersSettlement(proxyAddress, protocolFeeCollector, protocolFeeMultiplier) {}
 }

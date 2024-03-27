@@ -48,7 +48,7 @@ export async function ethSignHashWithProviderAsync(
     hash: string,
     signer: SignerWithAddress,
 ): Promise<Signature> {
-    const rpcSig = await signer.signMessage(arrayify( hash));
+    const rpcSig = await signer.signMessage(arrayify(hash));
     return {
         ...parseRpcSignature(rpcSig),
         signatureType: SignatureType.EthSign,

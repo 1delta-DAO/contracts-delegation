@@ -21,7 +21,7 @@ import { MockERC20, MockERC20__factory, NativeOrders } from '../../../../types';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { MaxUint128 } from '../../../uniswap-v3/periphery/shared/constants';
 import { minBn, sumBn } from './utils';
-import { BigNumber } from 'ethers';
+import { BigNumber, ContractTransaction } from 'ethers';
 import { ethers, waffle } from 'hardhat';
 import { createNativeOrder } from '../orderFixture';
 
@@ -56,14 +56,14 @@ export class NativeOrdersTestEnvironment {
         owner: SignerWithAddress,
         maker: SignerWithAddress,
         taker: SignerWithAddress,
-        weth: string,
+        zeroEx: NativeOrders,
         gasPrice: BigNumber = BigNumber.from(123e9),
         protocolFeeMultiplier = 70e3,
     ): Promise<NativeOrdersTestEnvironment> {
         const makerToken = await new MockERC20__factory(owner).deploy('TokenA', 'A', 18)
         const takerToken = await new MockERC20__factory(owner).deploy('TokenB', 'A', 6)
 
-        const zeroEx = await createNativeOrder(owner, weth);
+        // const zeroEx = await createNativeOrder(owner, weth);
         await makerToken.connect(maker).approve(zeroEx.address, MaxUint128);
         await takerToken.connect(taker).approve(zeroEx.address, MaxUint128);
         return new NativeOrdersTestEnvironment(
@@ -112,7 +112,7 @@ export class NativeOrdersTestEnvironment {
             maker: SignerWithAddress;
             protocolFee: BigNumber | number;
         }> = {},
-    ): Promise<any> {
+    ): Promise<ContractTransaction> {
         const { fillAmount, taker, protocolFee } = {
             taker: this.taker,
             fillAmount: order.takerAmount,
@@ -126,7 +126,7 @@ export class NativeOrdersTestEnvironment {
                 order,
                 await order.getSignatureWithProviderAsync(maker),
                 BigNumber.from(fillAmount),
-                { value }
+                { value, gasPrice: this.gasPrice }
             );
     }
 
@@ -225,7 +225,7 @@ export class NativeOrdersTestEnvironment {
             takerTokenFeeFilledAmount,
             orderHash: order.getHash(),
             maker: order.maker,
-            taker: this.taker,
+            taker: this.taker.address,
             feeRecipient: order.feeRecipient,
             makerToken: order.makerToken,
             takerToken: order.takerToken,
@@ -249,7 +249,7 @@ export class NativeOrdersTestEnvironment {
             makerTokenFilledAmount,
             orderHash: order.getHash(),
             maker: order.maker,
-            taker: this.taker,
+            taker: this.taker.address,
             makerToken: order.makerToken,
             takerToken: order.takerToken,
             pool: order.pool,
@@ -370,12 +370,10 @@ export function computeLimitOrderFilledAmounts(
     ]);
     const makerTokenFilledAmount = fillAmount
         .mul(order.makerAmount)
-        .div(order.takerAmount)
-        .sub(1);
+        .div(order.takerAmount);
     const takerTokenFeeFilledAmount = fillAmount
         .mul(order.takerTokenFeeAmount)
-        .div(order.takerAmount)
-        .sub(1);
+        .div(order.takerAmount);
     return {
         makerTokenFilledAmount,
         takerTokenFilledAmount: fillAmount,

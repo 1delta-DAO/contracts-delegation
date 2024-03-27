@@ -111,7 +111,7 @@ abstract contract NativeOrdersCancellation is NativeOrdersInfo, INativeOrdersEve
     ) public {
         require(
             makerTokens.length == takerTokens.length && makerTokens.length == minValidSalts.length,
-            "NativeOrdersFeature/MISMATCHED_PAIR_ORDERS_ARRAY_LENGTHS"
+            "NativeOrders/MISMATCHED_PAIR_ORDERS_ARRAY_LENGTHS"
         );
 
         for (uint256 i = 0; i < makerTokens.length; ++i) {
@@ -135,7 +135,7 @@ abstract contract NativeOrdersCancellation is NativeOrdersInfo, INativeOrdersEve
     ) public {
         require(
             makerTokens.length == takerTokens.length && makerTokens.length == minValidSalts.length,
-            "NativeOrdersFeature/MISMATCHED_PAIR_ORDERS_ARRAY_LENGTHS"
+            "NativeOrders/MISMATCHED_PAIR_ORDERS_ARRAY_LENGTHS"
         );
 
         if (!isValidOrderSigner(maker, msg.sender)) {
@@ -197,7 +197,7 @@ abstract contract NativeOrdersCancellation is NativeOrdersInfo, INativeOrdersEve
     ) public {
         require(
             makerTokens.length == takerTokens.length && makerTokens.length == minValidSalts.length,
-            "NativeOrdersFeature/MISMATCHED_PAIR_ORDERS_ARRAY_LENGTHS"
+            "NativeOrders/MISMATCHED_PAIR_ORDERS_ARRAY_LENGTHS"
         );
 
         for (uint256 i = 0; i < makerTokens.length; ++i) {
@@ -221,7 +221,7 @@ abstract contract NativeOrdersCancellation is NativeOrdersInfo, INativeOrdersEve
     ) public {
         require(
             makerTokens.length == takerTokens.length && makerTokens.length == minValidSalts.length,
-            "NativeOrdersFeature/MISMATCHED_PAIR_ORDERS_ARRAY_LENGTHS"
+            "NativeOrders/MISMATCHED_PAIR_ORDERS_ARRAY_LENGTHS"
         );
 
         if (!isValidOrderSigner(maker, msg.sender)) {
