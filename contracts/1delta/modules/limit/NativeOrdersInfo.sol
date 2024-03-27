@@ -7,7 +7,6 @@ import "./EIP712.sol";
 import {WithStorage, OrderStorage} from"../../storage/BrokerStorage.sol";
 import "./libraries/LibSignature.sol";
 import "./libraries/LibNativeOrder.sol";
-import {IERC20} from "../../../interfaces/IERC20.sol";
 import {TokenTransfer} from "../../libraries/TokenTransfer.sol";
 
 /// @dev Feature for getting info about limit and RFQ orders.

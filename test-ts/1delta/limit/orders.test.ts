@@ -1,6 +1,7 @@
 import {
     constants,
     getRandomPortion as _getRandomPortion,
+    randomAddress,
 } from '@0x/contracts-test-utils';
 
 
@@ -36,6 +37,7 @@ import { BigNumber, ContractReceipt } from 'ethers';
 import { MockProvider } from 'ethereum-waffle';
 import { time } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from '../shared/expect'
+import { sumBn } from './utils/utils';
 
 const getRandomPortion = (n: BigNumber) => BigNumber.from(_getRandomPortion(n.toString()).toString())
 
@@ -1671,86 +1673,83 @@ describe('getRfqOrderRelevantState()', () => {
     });
 });
 
-// async function batchFundOrderMakerAsync(orders: Array<LimitOrder | RfqOrder>): Promise<void> {
-//     await makerToken.burn(maker, await makerToken.balanceOf(maker).callAsync()).awaitTransactionSuccessAsync();
-//     const balance = BigNumber.sum(...orders.map(o => o.makerAmount));
-//     await makerToken.mint(maker, balance).awaitTransactionSuccessAsync();
-//     await makerToken.approve(zeroEx.address, balance).awaitTransactionSuccessAsync({ from: maker });
-// }
+async function batchFundOrderMakerAsync(orders: Array<LimitOrder | RfqOrder>): Promise<void> {
+    await makerToken.burn(maker.address, await makerToken.balanceOf(maker.address));
+    const balance = sumBn(orders.map(o => o.makerAmount));
+    await makerToken.mint(maker.address, balance);
+    await makerToken.connect(maker).approve(zeroEx.address, balance);
+}
 
-// describe('batchGetLimitOrderRelevantStates()', () => {
-//     it('works with multiple orders', async () => {
-//         const orders = new Array(3).fill(0).map(() => getTestLimitOrder());
-//         await batchFundOrderMakerAsync(orders);
-//         const [orderInfos, fillableTakerAmounts, isSignatureValids] = await zeroEx
-//             .batchGetLimitOrderRelevantStates(
-//                 orders,
-//                 await Promise.all(orders.map(async o => o.getSignatureWithProviderAsync(env.provider))),
-//             )
-//             .callAsync();
-//         expect(orderInfos).to.be.length(orders.length);
-//         expect(fillableTakerAmounts).to.be.length(orders.length);
-//         expect(isSignatureValids).to.be.length(orders.length);
-//         for (let i = 0; i < orders.length; ++i) {
-//             expect(orderInfos[i]).to.deep.eq({
-//                 orderHash: orders[i].getHash(),
-//                 status: OrderStatus.Fillable,
-//                 takerTokenFilledAmount: ZERO_AMOUNT,
-//             });
-//             expect(fillableTakerAmounts[i]).to.bignumber.eq(orders[i].takerAmount);
-//             expect(isSignatureValids[i]).to.eq(true);
-//         }
-//     });
-//     it('swallows reverts', async () => {
-//         const orders = new Array(3).fill(0).map(() => getTestLimitOrder());
-//         // The second order will revert because its maker token is not valid.
-//         orders[1].makerToken = randomAddress();
-//         await batchFundOrderMakerAsync(orders);
-//         const [orderInfos, fillableTakerAmounts, isSignatureValids] = await zeroEx
-//             .batchGetLimitOrderRelevantStates(
-//                 orders,
-//                 await Promise.all(orders.map(async o => o.getSignatureWithProviderAsync(env.provider))),
-//             )
-//             .callAsync();
-//         expect(orderInfos).to.be.length(orders.length);
-//         expect(fillableTakerAmounts).to.be.length(orders.length);
-//         expect(isSignatureValids).to.be.length(orders.length);
-//         for (let i = 0; i < orders.length; ++i) {
-//             expect(orderInfos[i]).to.deep.eq({
-//                 orderHash: i === 1 ? NULL_BYTES32 : orders[i].getHash(),
-//                 status: i === 1 ? OrderStatus.Invalid : OrderStatus.Fillable,
-//                 takerTokenFilledAmount: ZERO_AMOUNT,
-//             });
-//             expect(fillableTakerAmounts[i]).to.bignumber.eq(i === 1 ? ZERO_AMOUNT : orders[i].takerAmount);
-//             expect(isSignatureValids[i]).to.eq(i !== 1);
-//         }
-//     });
-// });
+describe('batchGetLimitOrderRelevantStates()', () => {
+    it('works with multiple orders', async () => {
+        const orders = new Array(3).fill(0).map(() => getTestLimitOrder());
+        await batchFundOrderMakerAsync(orders);
+        const [orderInfos, fillableTakerAmounts, isSignatureValids] = await zeroEx
+            .batchGetLimitOrderRelevantStates(
+                orders,
+                await Promise.all(orders.map(async o => o.getSignatureWithProviderAsync(await ethers.getSigner(o.maker)))),
+            );
+        expect(orderInfos).to.be.length(orders.length);
+        expect(fillableTakerAmounts).to.be.length(orders.length);
+        expect(isSignatureValids).to.be.length(orders.length);
+        for (let i = 0; i < orders.length; ++i) {
+            infoEqals(orderInfos[i], {
+                orderHash: orders[i].getHash(),
+                status: OrderStatus.Fillable,
+                takerTokenFilledAmount: ZERO_AMOUNT,
+            });
+            expect(fillableTakerAmounts[i].toString()).to.eq(orders[i].takerAmount.toString());
+            expect(isSignatureValids[i]).to.eq(true);
+        }
+    });
+    it('swallows reverts', async () => {
+        const orders = new Array(3).fill(0).map(() => getTestLimitOrder());
+        // The second order will revert because its maker token is not valid.
+        orders[1].makerToken = randomAddress();
+        await batchFundOrderMakerAsync(orders);
+        const [orderInfos, fillableTakerAmounts, isSignatureValids] = await zeroEx
+            .batchGetLimitOrderRelevantStates(
+                orders,
+                await Promise.all(orders.map(async o => o.getSignatureWithProviderAsync(await ethers.getSigner(o.maker)))),
+            );
+        expect(orderInfos).to.be.length(orders.length);
+        expect(fillableTakerAmounts).to.be.length(orders.length);
+        expect(isSignatureValids).to.be.length(orders.length);
+        for (let i = 0; i < orders.length; ++i) {
+            infoEqals(orderInfos[i], {
+                orderHash: i === 1 ? NULL_BYTES32 : orders[i].getHash(),
+                status: i === 1 ? OrderStatus.Invalid : OrderStatus.Fillable,
+                takerTokenFilledAmount: ZERO_AMOUNT,
+            });
+            expect(fillableTakerAmounts[i].toString()).to.eq(i === 1 ? '0' : orders[i].takerAmount.toString());
+            expect(isSignatureValids[i]).to.eq(i !== 1);
+        }
+    });
+});
 
-// describe('batchGetRfqOrderRelevantStates()', () => {
-//     it('works with multiple orders', async () => {
-//         const orders = new Array(3).fill(0).map(() => getTestRfqOrder());
-//         await batchFundOrderMakerAsync(orders);
-//         const [orderInfos, fillableTakerAmounts, isSignatureValids] = await zeroEx
-//             .batchGetRfqOrderRelevantStates(
-//                 orders,
-//                 await Promise.all(orders.map(async o => o.getSignatureWithProviderAsync(env.provider))),
-//             )
-//             .callAsync();
-//         expect(orderInfos).to.be.length(orders.length);
-//         expect(fillableTakerAmounts).to.be.length(orders.length);
-//         expect(isSignatureValids).to.be.length(orders.length);
-//         for (let i = 0; i < orders.length; ++i) {
-//             expect(orderInfos[i]).to.deep.eq({
-//                 orderHash: orders[i].getHash(),
-//                 status: OrderStatus.Fillable,
-//                 takerTokenFilledAmount: ZERO_AMOUNT,
-//             });
-//             expect(fillableTakerAmounts[i]).to.bignumber.eq(orders[i].takerAmount);
-//             expect(isSignatureValids[i]).to.eq(true);
-//         }
-//     });
-// });
+describe('batchGetRfqOrderRelevantStates()', () => {
+    it('works with multiple orders', async () => {
+        const orders = new Array(3).fill(0).map(() => getTestRfqOrder());
+        await batchFundOrderMakerAsync(orders);
+        const [orderInfos, fillableTakerAmounts, isSignatureValids] = await zeroEx
+            .batchGetRfqOrderRelevantStates(
+                orders,
+                await Promise.all(orders.map(async o => o.getSignatureWithProviderAsync(await ethers.getSigner(o.maker)))),
+            );
+        expect(orderInfos).to.be.length(orders.length);
+        expect(fillableTakerAmounts).to.be.length(orders.length);
+        expect(isSignatureValids).to.be.length(orders.length);
+        for (let i = 0; i < orders.length; ++i) {
+            infoEqals(orderInfos[i], {
+                orderHash: orders[i].getHash(),
+                status: OrderStatus.Fillable,
+                takerTokenFilledAmount: ZERO_AMOUNT,
+            });
+            expect(fillableTakerAmounts[i].toString()).to.eq(orders[i].takerAmount.toString());
+            expect(isSignatureValids[i]).to.eq(true);
+        }
+    });
+});
 
 // describe('registerAllowedSigner()', () => {
 //     it('fires appropriate events', async () => {
