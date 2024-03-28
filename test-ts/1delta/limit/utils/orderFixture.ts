@@ -1,6 +1,6 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { ConfigModule__factory, DeltaBrokerProxy__factory, NativeOrders__factory } from "../../../types"
-import { ModuleConfigAction, getSelectors } from "../../libraries/diamond"
+import { ConfigModule__factory, DeltaBrokerProxy__factory, NativeOrders__factory } from "../../../../types"
+import { ModuleConfigAction, getSelectors } from "../../../libraries/diamond"
 import { BigNumber } from "ethers"
 
 export const createNativeOrder = async (owner: SignerWithAddress, collector: string, feeMultiplier: BigNumber) => {

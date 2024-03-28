@@ -2,6 +2,7 @@ import {
     constants,
     expect,
     randomAddress,
+    getRandomInteger as _getRandomInteger
 } from '@0x/contracts-test-utils';
 import {
     LimitOrder,
@@ -13,25 +14,22 @@ import {
     RfqOrderFields,
 } from './constants';
 import { hexUtils } from '@0x/utils';
-import { TransactionReceiptWithDecodedLogs } from 'ethereum-types';
 
-
-import { SignatureType } from './signature_utils';
 import { MockERC20, MockERC20__factory, NativeOrders } from '../../../../types';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { MaxUint128 } from '../../../uniswap-v3/periphery/shared/constants';
 import { minBn, sumBn } from './utils';
 import { BigNumber, ContractTransaction } from 'ethers';
-import { ethers, waffle } from 'hardhat';
-import { createNativeOrder } from '../orderFixture';
+import { ethers } from 'hardhat';
 
-const { ZERO_AMOUNT, NULL_ADDRESS } = constants;
+const { NULL_ADDRESS } = constants;
 
+const DEFAULT_EXPIRY = 60 * 60
 
-const getRandomInteger = (min: number, max: number, decs = 18) => {
-    const randNum = Math.round((Math.random() * (max - min) + min) * 1e6) / 1e6;
-    return ethers.utils.parseUnits(randNum.toString(), decs);
+const getRandomInteger = (min: string, max: string) => {
+    return BigNumber.from(_getRandomInteger(min, max).toString());
 }
+
 const ZERO = BigNumber.from(0)
 interface RfqOrderFilledAmounts {
     makerTokenFilledAmount: BigNumber;
@@ -113,14 +111,14 @@ export class NativeOrdersTestEnvironment {
             protocolFee: BigNumber | number;
         }> = {},
     ): Promise<ContractTransaction> {
-        const { fillAmount, taker, protocolFee } = {
+        const { fillAmount, taker, maker, protocolFee } = {
             taker: this.taker,
+            maker: this.maker,
             fillAmount: order.takerAmount,
             ...opts,
         };
         await this.prepareBalancesForOrdersAsync([order], taker);
         const value = protocolFee === undefined ? this.protocolFee : protocolFee;
-        const maker = await ethers.getSigner(order.maker)
         return this.zeroEx.connect(taker)
             .fillLimitOrder(
                 order,
@@ -283,15 +281,15 @@ export function getRandomLimitOrder(fields: Partial<LimitOrderFields> = {}): Lim
     return new LimitOrder({
         makerToken: randomAddress(),
         takerToken: randomAddress(),
-        makerAmount: getRandomInteger(1, 100, 18),
-        takerAmount: getRandomInteger(1, 100, 6),
-        takerTokenFeeAmount: getRandomInteger(0.01, 1, 18),
+        makerAmount: getRandomInteger('1e18', '100e18'),
+        takerAmount: getRandomInteger('1e6', '100e6'),
+        takerTokenFeeAmount: getRandomInteger('0.01e18', '1e18'),
         maker: randomAddress(),
         taker: randomAddress(),
         sender: randomAddress(),
         feeRecipient: randomAddress(),
         pool: hexUtils.random(),
-        expiry: createExpiry(60 * 60),
+        expiry: createExpiry(DEFAULT_EXPIRY),
         salt: BigNumber.from(hexUtils.random()),
         ...fields,
     });
@@ -304,12 +302,12 @@ export function getRandomRfqOrder(fields: Partial<RfqOrderFields> = {}): RfqOrde
     return new RfqOrder({
         makerToken: randomAddress(),
         takerToken: randomAddress(),
-        makerAmount: getRandomInteger(1, 100, 18),
-        takerAmount: getRandomInteger(1, 100, 6),
+        makerAmount: getRandomInteger('1e18', '100e18'),
+        takerAmount: getRandomInteger('1e6', '100e6'),
         maker: randomAddress(),
         txOrigin: randomAddress(),
         pool: hexUtils.random(),
-        expiry: createExpiry(60 * 60),
+        expiry: createExpiry(DEFAULT_EXPIRY),
         salt: BigNumber.from(hexUtils.random()),
         ...fields,
     });
@@ -322,15 +320,15 @@ export function getRandomOtcOrder(fields: Partial<OtcOrder> = {}): OtcOrder {
     return new OtcOrder({
         makerToken: randomAddress(),
         takerToken: randomAddress(),
-        makerAmount: getRandomInteger(1, 100, 18),
-        takerAmount: getRandomInteger(1, 100, 6),
+        makerAmount: getRandomInteger('1e18', '100e18'),
+        takerAmount: getRandomInteger('1e6', '100e6'),
         maker: randomAddress(),
         taker: randomAddress(),
         txOrigin: randomAddress(),
         expiryAndNonce: OtcOrder.encodeExpiryAndNonce(
-            fields.expiry ?? createExpiry(60 * 60), // expiry
-            fields.nonceBucket ?? getRandomInteger(0, OtcOrder.MAX_NONCE_BUCKET.toNumber(), 0), // nonceBucket
-            fields.nonce ?? getRandomInteger(0, OtcOrder.MAX_NONCE_VALUE.toNumber(), 0), // nonce
+            fields.expiry ?? createExpiry(DEFAULT_EXPIRY), // expiry
+            fields.nonceBucket ?? getRandomInteger('0', OtcOrder.MAX_NONCE_BUCKET.toString()), // nonceBucket
+            fields.nonce ?? getRandomInteger('0', OtcOrder.MAX_NONCE_VALUE.toString()), // nonce
         ),
         ...fields,
     });
