@@ -79,7 +79,7 @@ it("Mint USDC", async function () {
     const vWETHContract = await ethers.getContractAt("VariableDebtToken", vWETHAddress) as VariableDebtToken
 
     await vWETHContract.connect(signer).approveDelegation(balancerModule.address, constants.MaxUint256)
-    await broker.manager.connect(signer).approveLendingPool([usdcAddress])
+    await broker.manager.connect(signer).approveAddress([usdcAddress], aavePoolContract.address)
     const swapAmount = expandToDecimals(2, 18)
 
     const fromToken = wethAddress

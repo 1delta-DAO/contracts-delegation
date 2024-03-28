@@ -7,7 +7,7 @@ import {
 } from '../../../types';
 import { FeeAmount } from '../../uniswap-v3/periphery/shared/constants';
 import { expandTo18Decimals } from '../../uniswap-v3/periphery/shared/expandTo18Decimals';
-import {  AaveBrokerFixtureInclV2, aaveBrokerFixtureInclV2, initAaveBroker } from '../shared/aaveBrokerFixture';
+import { AaveBrokerFixtureInclV2, aaveBrokerFixtureInclV2, initAaveBroker } from '../shared/aaveBrokerFixture';
 import { expect } from '../shared/expect'
 import { initializeMakeSuite, InterestRateMode, AAVEFixture } from '../shared/aaveFixture';
 import { addLiquidity, addLiquidityV2, uniswapFixtureNoTokens, UniswapFixtureNoTokens } from '../shared/uniswapFixture';
@@ -80,7 +80,7 @@ describe('AAVE Brokered Collateral Swap operations', async () => {
         }
 
 
-        await broker.manager.connect(deployer).approveLendingPool(tokens.map(t => t.address))
+        await broker.manager.connect(deployer).approveAddress(tokens.map(t => t.address), aaveTest.pool.address)
 
         await addLiquidity(
             deployer,

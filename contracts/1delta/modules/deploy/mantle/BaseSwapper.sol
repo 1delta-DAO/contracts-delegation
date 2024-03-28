@@ -13,8 +13,7 @@ import {TokenTransfer} from "../../../libraries/TokenTransfer.sol";
 // solhint-disable max-line-length
 
 /**
- * @title Any Uniswap Callback Base contract
- * @notice Contains main logic for uniswap callbacks
+ * @title Swapping contract for exact ins and pool/pair identification
  */
 abstract contract BaseSwapper is TokenTransfer {
     /// @dev Mask of lower 20 bytes.

@@ -113,7 +113,7 @@ describe('AAVE Flash loans for AAVE', async () => {
 
         }
 
-        await broker.manager.connect(deployer).approveLendingPool(tokens.map(t => t.address))
+        await broker.manager.connect(deployer).approveAddress(tokens.map(t => t.address), aaveTest.pool.address)
         await broker.manager.connect(deployer).approveAddress(tokens.map(t => t.address), mockRouter.address)
     })
 

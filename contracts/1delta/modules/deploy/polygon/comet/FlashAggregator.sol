@@ -101,8 +101,7 @@ contract CometFlashAggregatorPolygon is CometMarginTrading, WrappedNativeHandler
     }
 
     function refundNative() external payable {
-        uint256 balance = address(this).balance;
-        if (balance > 0) _transferEth(msg.sender, balance);
+        _transferEth();
     }
 
     /** GENERIC CALL WRAPPER FOR APPROVED CALLS */

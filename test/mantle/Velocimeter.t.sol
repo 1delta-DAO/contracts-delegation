@@ -72,7 +72,7 @@ contract VelocimeterTest is AddressesMantle, Script, StdCheats {
         IAll(pair).swap(tokenOut == token0 ? amountOut : 0, tokenOut == token1 ? amountOut : 0, address(this), "0x");
     }
 
-    function test_velo_swap_exact_in_vari(uint amountIn) external {
+    function test_velo_swap_exact_in_vari(uint amountIn) external view {
         amountIn = amountIn < 100 ? 100 : amountIn > 1e10 ? 1e10 : amountIn;
         console.log("Am in", amountIn);
         address pair = pairAddress(USDC, USDT, 53);
@@ -402,7 +402,7 @@ contract VelocimeterTest is AddressesMantle, Script, StdCheats {
         }
     }
 
-    function new_getX(uint y0, uint xy, uint x) internal view returns (uint) {
+    function new_getX(uint y0, uint xy, uint x) internal pure returns (uint) {
         for (uint i = 0; i < 255; i++) {
             uint x_prev = x;
             uint k = _f(y0, x);
@@ -438,7 +438,7 @@ contract VelocimeterTest is AddressesMantle, Script, StdCheats {
         return (3 * y0 * ((x * x) / 1e18)) / 1e18 + ((((y0 * y0) / 1e18) * y0) / 1e18);
     }
 
-    function _get_y(uint x0, uint xy, uint y) internal view returns (uint) {
+    function _get_y(uint x0, uint xy, uint y) internal pure returns (uint) {
         for (uint i = 0; i < 255; i++) {
             uint y_prev = y;
             uint k = _f(x0, y);
@@ -489,16 +489,7 @@ contract VelocimeterTest is AddressesMantle, Script, StdCheats {
         return _getAmountIn(amountOut, tokenIn == token0, _reserve0, _reserve1, _decimals0, _decimals1, pair);
     }
 
-    function getAmountIn(
-        uint amountOut,
-        address tokenIn,
-        address token0,
-        uint _reserve0,
-        uint _reserve1,
-        uint _decimals0,
-        uint _decimals1,
-        address pair
-    ) internal view returns (uint) {
+    function getAmountIn(uint amountOut, address tokenIn, address token0, uint, uint, uint, uint, address pair) internal view returns (uint) {
         return _getAmountIn_assembly(amountOut, tokenIn, token0, pair);
     }
 
@@ -510,7 +501,7 @@ contract VelocimeterTest is AddressesMantle, Script, StdCheats {
         uint _reserve1,
         uint _decimals0,
         uint _decimals1
-    ) internal view returns (uint) {
+    ) internal pure returns (uint) {
         _reserve0 = (_reserve0 * 1e18) / _decimals0;
         _reserve1 = (_reserve1 * 1e18) / _decimals1;
         uint xy = _k(_reserve0, _reserve1);
@@ -668,13 +659,13 @@ contract VelocimeterTest is AddressesMantle, Script, StdCheats {
         }
     }
 
-    function _k(uint x, uint y) internal view returns (uint) {
+    function _k(uint x, uint y) internal pure returns (uint) {
         uint _a = (x * y) / 1e18;
         uint _b = ((x * x) / 1e18 + (y * y) / 1e18);
         return (_a * _b) / 1e18; // x3y+y3x >= k
     }
 
-    function _k_a(uint x, uint y, uint _decimals0, uint _decimals1) internal view returns (uint k) {
+    function _k_a(uint x, uint y, uint _decimals0, uint _decimals1) internal pure returns (uint k) {
         assembly {
             let _x := div(mul(x, 1000000000000000000), _decimals0)
             let _y := div(mul(y, 1000000000000000000), _decimals1)
@@ -702,7 +693,7 @@ contract VelocimeterTest is AddressesMantle, Script, StdCheats {
         }
     }
 
-    function new_getX_a(uint y0, uint xy, uint x) internal view returns (uint result) {
+    function new_getX_a(uint y0, uint xy, uint x) internal pure returns (uint result) {
         assembly {
             let i := 0
             function _f(_x, _y) -> f {

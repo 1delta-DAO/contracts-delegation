@@ -1,10 +1,10 @@
 import { impersonateAccount } from "@nomicfoundation/hardhat-network-helpers";
 import { parseUnits } from "ethers/lib/utils";
-import { AToken__factory, ConfigModule__factory, DeltaBrokerProxy, DeltaBrokerProxy__factory, DeltaFlashAggregatorMantle__factory, LensModule__factory, StableDebtToken__factory, } from "../types";
+import { ConfigModule__factory, DeltaBrokerProxy, DeltaBrokerProxy__factory, DeltaFlashAggregatorMantle__factory, DeltaLendingInterfaceMantle__factory, LensModule__factory, ManagementModule__factory, StableDebtToken__factory, } from "../types";
 import { lendleBrokerAddresses } from "../deploy/mantle_addresses";
 import { DeltaFlashAggregatorMantleInterface } from "../types/DeltaFlashAggregatorMantle";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { addressesLendleATokens, addressesLendleVTokens, addressesTokensMantle } from "../scripts/mantle/lendleAddresses";
+import { addressesLendleVTokens, addressesTokensMantle } from "../scripts/mantle/lendleAddresses";
 import { encodeAggregatorPathEthers } from "./1delta/shared/aggregatorPath";
 import { FeeAmount, MaxUint128 } from "./uniswap-v3/periphery/shared/constants";
 import { ModuleConfigAction, getSelectors } from "./libraries/diamond";
@@ -23,8 +23,11 @@ const usdt = "0x201EBa5CC46D216Ce6DC03F6a759e8E766e956aE"
 
 const brokerProxy = lendleBrokerAddresses.BrokerProxy[MANTLE_CHAIN_ID]
 const traderModule = lendleBrokerAddresses.MarginTraderModule[MANTLE_CHAIN_ID]
+const lendingModule = lendleBrokerAddresses.LendingInterface[MANTLE_CHAIN_ID]
+const managementModule = lendleBrokerAddresses.ManagementModule[MANTLE_CHAIN_ID]
 let multicaller: DeltaBrokerProxy
-let flashAggregatorInterface: DeltaFlashAggregatorMantleInterface
+const lendingInterface = DeltaLendingInterfaceMantle__factory.createInterface()
+const flashAggregatorInterface = DeltaFlashAggregatorMantle__factory.createInterface()
 let user: SignerWithAddress
 let trader: SignerWithAddress
 before(async function () {
@@ -32,10 +35,12 @@ before(async function () {
     user = signer
     console.log("get aggregator")
     multicaller = await new DeltaBrokerProxy__factory(user).attach(brokerProxy)
-    flashAggregatorInterface = DeltaFlashAggregatorMantle__factory.createInterface()
 
     console.log("deploy new aggregator")
-    const newflashAggregator = await new DeltaFlashAggregatorMantle__factory(signer).deploy()
+    const newFlashAggregator = await new DeltaFlashAggregatorMantle__factory(signer).deploy()
+    const newLendingInterface = await new DeltaLendingInterfaceMantle__factory(signer).deploy()
+    const newManager = await new ManagementModule__factory(signer).deploy()
+
     await impersonateAccount(admin)
     const impersonatedSigner = await ethers.getSigner(admin);
     console.log(impersonatedSigner.address)
@@ -43,25 +48,49 @@ before(async function () {
     const config = await new ConfigModule__factory(impersonatedSigner).attach(brokerProxy)
     const lens = await new LensModule__factory(impersonatedSigner).attach(brokerProxy)
 
+    const selectorsLending = await lens.moduleFunctionSelectors(lendingModule)
+    const selectorsManagement = await lens.moduleFunctionSelectors(managementModule)
     const selectors = await lens.moduleFunctionSelectors(traderModule)
-    await config.configureModules([{
-        moduleAddress: ethers.constants.AddressZero,
-        action: ModuleConfigAction.Remove,
-        functionSelectors: selectors
-    }])
-
-    await config.configureModules([{
-        moduleAddress: newflashAggregator.address,
-        action: ModuleConfigAction.Add,
-        functionSelectors: getSelectors(newflashAggregator)
-    }])
+    await config.configureModules([
+        {
+            moduleAddress: ethers.constants.AddressZero,
+            action: ModuleConfigAction.Remove,
+            functionSelectors: selectors
+        },
+        {
+            moduleAddress: ethers.constants.AddressZero,
+            action: ModuleConfigAction.Remove,
+            functionSelectors: selectorsLending
+        },
+        {
+            moduleAddress: ethers.constants.AddressZero,
+            action: ModuleConfigAction.Remove,
+            functionSelectors: selectorsManagement
+        },
+        {
+            moduleAddress: newFlashAggregator.address,
+            action: ModuleConfigAction.Add,
+            functionSelectors: getSelectors(newFlashAggregator)
+        },
+        {
+            moduleAddress: newLendingInterface.address,
+            action: ModuleConfigAction.Add,
+            functionSelectors: getSelectors(newLendingInterface)
+        },
+        {
+            moduleAddress: newManager.address,
+            action: ModuleConfigAction.Add,
+            functionSelectors: getSelectors(newManager)
+        },
+    ]
+    )
 
 })
 
 it("Deposit", async function () {
     const amount = parseUnits('5000.0', 18)
-    const callWrap = flashAggregatorInterface.encodeFunctionData('wrap',)
-    const callDeposit = flashAggregatorInterface.encodeFunctionData('deposit' as any, [wmnt, user.address])
+    const callWrap = lendingInterface.encodeFunctionData('wrap',)
+    const callDeposit = lendingInterface.encodeFunctionData('deposit', [wmnt, user.address, 0])
 
     await multicaller.connect(user).multicall([
         callWrap,

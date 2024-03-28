@@ -312,11 +312,24 @@ abstract contract NativeOrdersInfo is EIP712, WithStorage, TokenTransfer {
         return os().orderSignerRegistry[maker][signer];
     }
 
-  function safeDowncastToUint128(uint256 a) internal pure returns (uint128) {
+    function safeDowncastToUint128(uint256 a) internal pure returns (uint128) {
         if (a > type(uint128).max) {
             revert uint128Overflow();
         }
         return uint128(a);
+    }
+
+    /// @dev Gets the maximum amount of an ERC20 token `token` that can be
+    ///      pulled from `owner` by this address.
+    /// @param token The token to spend.
+    /// @param owner The owner of the tokens.
+    /// @return amount The amount of tokens that can be pulled.
+    function _getSpendableERC20BalanceOf(address token, address owner) private view returns (uint256) {
+        return min256(IERC20(token).allowance(owner, address(this)), IERC20(token).balanceOf(owner));
+    }
+
+    function min256(uint256 a, uint256 b) private pure returns (uint256) {
+        return a < b ? a : b;
     }
 
 }

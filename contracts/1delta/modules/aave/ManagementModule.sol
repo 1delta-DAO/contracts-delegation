@@ -9,8 +9,7 @@ import {WithStorage} from "../../storage/BrokerStorage.sol";
 
 /**
  * @title Management/Data Viewer contract
- * @notice Allows the management of to insert token and protocol data
- * @author Achthar
+ * @notice Allows the management to insert token and protocol data
  */
 contract ManagementModule is WithStorage {
     modifier onlyManagement() {
@@ -19,6 +18,8 @@ contract ManagementModule is WithStorage {
     }
 
     // STATE CHANGING FUNCTION
+
+    /** DEPRECATED SINGLE_LENDER FUNCTIONS */
 
     function addAToken(address _underlying, address _aToken) external onlyManagement {
         aas().aTokens[_underlying] = _aToken;
@@ -39,11 +40,19 @@ contract ManagementModule is WithStorage {
         aas().aTokens[asset] = _aToken;
     }
 
-    function approveLendingPool(address[] memory assets) external onlyManagement {
-        address lendingPool = aas().lendingPool;
-        for (uint256 i = 0; i < assets.length; i++) {
-            IERC20(assets[i]).approve(lendingPool, type(uint256).max);
-        }
+    /** ADD TOKEN SET FOR A LENDER */
+
+    function addGeneralLenderTokens(
+        address _underlying,
+        address _aToken,
+        address _vToken,
+        address _sToken,
+        uint8 _lenderId //
+    ) external onlyManagement {
+        bytes32 key = _getLenderTokenKey(_underlying, _lenderId);
+        ls().debtTokens[key] = _vToken;
+        ls().stableDebtTokens[key] = _sToken;
+        ls().collateralTokens[key] = _aToken;
     }
 
     function setValidTarget(address target, bool value) external onlyManagement {
@@ -64,6 +73,8 @@ contract ManagementModule is WithStorage {
 
     // VIEW FUNCTIONS
 
+    /** DEPRECATED */
+
     function getLendingPool() external view returns (address pool) {
         pool = aas().lendingPool;
     }
@@ -79,6 +90,22 @@ contract ManagementModule is WithStorage {
     function getVToken(address _underlying) external view returns (address) {
         return aas().vTokens[_underlying];
     }
+
+    /** NEW GETTERS */
+
+    function getCollateralToken(address _underlying, uint8 _lenderId) external view returns (address) {
+        return ls().collateralTokens[_getLenderTokenKey(_underlying, _lenderId)];
+    }
+
+    function getStableDebtToken(address _underlying, uint8 _lenderId) external view returns (address) {
+        return ls().stableDebtTokens[_getLenderTokenKey(_underlying, _lenderId)];
+    }
+
+    function getDebtToken(address _underlying, uint8 _lenderId) external view returns (address) {
+        return ls().debtTokens[_getLenderTokenKey(_underlying, _lenderId)];
+    }
+
+    /** TARGET FOR SWAPPING */
 
     function getIsValidTarget(address _target) external view returns (bool) {
         return gs().isValidTarget[_target];
