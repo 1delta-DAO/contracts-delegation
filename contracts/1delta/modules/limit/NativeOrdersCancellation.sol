@@ -109,10 +109,9 @@ abstract contract NativeOrdersCancellation is NativeOrdersInfo, INativeOrdersEve
         address[] memory takerTokens,
         uint256[] memory minValidSalts
     ) public {
-        require(
-            makerTokens.length == takerTokens.length && makerTokens.length == minValidSalts.length,
-            "NativeOrders/MISMATCHED_PAIR_ORDERS_ARRAY_LENGTHS"
-        );
+        if(
+            makerTokens.length != takerTokens.length || makerTokens.length != minValidSalts.length
+            ) revert mismatchedArrayLengths();
 
         for (uint256 i = 0; i < makerTokens.length; ++i) {
             _cancelPairLimitOrders(msg.sender, makerTokens[i], takerTokens[i], minValidSalts[i]);
@@ -133,10 +132,9 @@ abstract contract NativeOrdersCancellation is NativeOrdersInfo, INativeOrdersEve
         address[] memory takerTokens,
         uint256[] memory minValidSalts
     ) public {
-        require(
-            makerTokens.length == takerTokens.length && makerTokens.length == minValidSalts.length,
-            "NativeOrders/MISMATCHED_PAIR_ORDERS_ARRAY_LENGTHS"
-        );
+        if(
+            makerTokens.length != takerTokens.length || makerTokens.length != minValidSalts.length
+            ) revert mismatchedArrayLengths();
 
         if (!isValidOrderSigner(maker, msg.sender)) {
             revert invalidSigner(maker, msg.sender);
@@ -195,10 +193,9 @@ abstract contract NativeOrdersCancellation is NativeOrdersInfo, INativeOrdersEve
         address[] memory takerTokens,
         uint256[] memory minValidSalts
     ) public {
-        require(
-            makerTokens.length == takerTokens.length && makerTokens.length == minValidSalts.length,
-            "NativeOrders/MISMATCHED_PAIR_ORDERS_ARRAY_LENGTHS"
-        );
+        if(
+            makerTokens.length != takerTokens.length || makerTokens.length != minValidSalts.length
+            ) revert mismatchedArrayLengths();
 
         for (uint256 i = 0; i < makerTokens.length; ++i) {
             _cancelPairRfqOrders(msg.sender, makerTokens[i], takerTokens[i], minValidSalts[i]);
@@ -219,10 +216,9 @@ abstract contract NativeOrdersCancellation is NativeOrdersInfo, INativeOrdersEve
         address[] memory takerTokens,
         uint256[] memory minValidSalts
     ) public {
-        require(
-            makerTokens.length == takerTokens.length && makerTokens.length == minValidSalts.length,
-            "NativeOrders/MISMATCHED_PAIR_ORDERS_ARRAY_LENGTHS"
-        );
+        if(
+            makerTokens.length != takerTokens.length || makerTokens.length != minValidSalts.length
+            ) revert mismatchedArrayLengths();
 
         if (!isValidOrderSigner(maker, msg.sender)) {
             revert invalidSigner(maker, msg.sender);

@@ -5,10 +5,8 @@ import {
 import {
     assertOrderInfoEquals,
     computeLimitOrderFilledAmounts,
-    computeRfqOrderFilledAmounts,
     createExpiry,
     getRandomLimitOrder,
-    getRandomRfqOrder,
     NativeOrdersTestEnvironment,
 } from './utils/orders';
 import { ethers, waffle } from 'hardhat';
@@ -17,16 +15,12 @@ import {
     MockERC20,
     MockERC20__factory,
     NativeOrders,
-    TestOrderSignerRegistryWithContractWallet,
-    TestOrderSignerRegistryWithContractWallet__factory,
-    TestRfqOriginRegistration,
-    TestRfqOriginRegistration__factory,
     WETH9,
     WETH9__factory
 } from '../../../types';
 import { MaxUint128 } from '../../uniswap-v3/periphery/shared/constants';
 import { createNativeOrder } from './utils/orderFixture';
-import { IZeroExEvents, LimitOrder, LimitOrderFields, OrderStatus, RfqOrder, RfqOrderFields } from './utils/constants';
+import { IZeroExEvents, LimitOrder, LimitOrderFields, OrderStatus } from './utils/constants';
 import { BigNumber, ContractReceipt } from 'ethers';
 import { MockProvider } from 'ethereum-waffle';
 import { expect } from '../shared/expect'
@@ -42,21 +36,17 @@ let taker: SignerWithAddress;
 let notMaker: SignerWithAddress;
 let notTaker: SignerWithAddress;
 let collector: SignerWithAddress;
-let contractWalletOwner: SignerWithAddress;
-let contractWalletSigner: SignerWithAddress;
 let zeroEx: NativeOrders;
 let verifyingContract: string;
 let makerToken: MockERC20;
 let takerToken: MockERC20;
 let wethToken: WETH9;
-let testRfqOriginRegistration: TestRfqOriginRegistration;
-let contractWallet: TestOrderSignerRegistryWithContractWallet;
 let testUtils: NativeOrdersTestEnvironment;
 let provider: MockProvider;
 let chainId: number
 before(async () => {
     let owner;
-    [owner, maker, taker, notMaker, notTaker, contractWalletOwner, contractWalletSigner, collector] =
+    [owner, maker, taker, notMaker, notTaker, collector] =
         await ethers.getSigners();
     makerToken = await new MockERC20__factory(owner).deploy("Maker", 'M', 18)
     takerToken = await new MockERC20__factory(owner).deploy("Taker", "T", 6)
@@ -66,7 +56,6 @@ before(async () => {
     chainId = await maker.getChainId()
     console.log("ChainId", chainId, 'maker', maker.address, "taker", taker.address)
     console.log('makerToken', makerToken.address, "takerToken", takerToken.address)
-    testRfqOriginRegistration = await new TestRfqOriginRegistration__factory(owner).deploy()
 
     zeroEx = await createNativeOrder(
         owner,
@@ -85,12 +74,7 @@ before(async () => {
             takerToken.connect(a).approve(zeroEx.address, MaxUint128),
         ),
     );
-    testRfqOriginRegistration = await new TestRfqOriginRegistration__factory(owner).deploy()
-    // contract wallet for signer delegation
-    contractWallet = await new TestOrderSignerRegistryWithContractWallet__factory(contractWalletOwner).deploy(zeroEx.address)
 
-    await contractWallet.connect(contractWalletOwner)
-        .approveERC20(makerToken.address, zeroEx.address, MaxUint128)
     GAS_PRICE = await provider.getGasPrice()
     SINGLE_PROTOCOL_FEE = GAS_PRICE.mul(PROTOCOL_FEE_MULTIPLIER);
     testUtils = new NativeOrdersTestEnvironment(

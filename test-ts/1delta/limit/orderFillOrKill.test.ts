@@ -15,10 +15,6 @@ import {
     MockERC20,
     MockERC20__factory,
     NativeOrders,
-    TestOrderSignerRegistryWithContractWallet,
-    TestOrderSignerRegistryWithContractWallet__factory,
-    TestRfqOriginRegistration,
-    TestRfqOriginRegistration__factory,
     WETH9,
     WETH9__factory
 } from '../../../types';
@@ -46,8 +42,6 @@ let verifyingContract: string;
 let makerToken: MockERC20;
 let takerToken: MockERC20;
 let wethToken: WETH9;
-let testRfqOriginRegistration: TestRfqOriginRegistration;
-let contractWallet: TestOrderSignerRegistryWithContractWallet;
 let testUtils: NativeOrdersTestEnvironment;
 let provider: MockProvider;
 let chainId: number
@@ -63,7 +57,6 @@ before(async () => {
     chainId = await maker.getChainId()
     console.log("ChainId", chainId, 'maker', maker.address, "taker", taker.address)
     console.log('makerToken', makerToken.address, "takerToken", takerToken.address)
-    testRfqOriginRegistration = await new TestRfqOriginRegistration__factory(owner).deploy()
 
     zeroEx = await createNativeOrder(
         owner,
@@ -82,12 +75,7 @@ before(async () => {
             takerToken.connect(a).approve(zeroEx.address, MaxUint128),
         ),
     );
-    testRfqOriginRegistration = await new TestRfqOriginRegistration__factory(owner).deploy()
-    // contract wallet for signer delegation
-    contractWallet = await new TestOrderSignerRegistryWithContractWallet__factory(contractWalletOwner).deploy(zeroEx.address)
 
-    await contractWallet.connect(contractWalletOwner)
-        .approveERC20(makerToken.address, zeroEx.address, MaxUint128)
     GAS_PRICE = await provider.getGasPrice()
     SINGLE_PROTOCOL_FEE = GAS_PRICE.mul(PROTOCOL_FEE_MULTIPLIER);
     testUtils = new NativeOrdersTestEnvironment(

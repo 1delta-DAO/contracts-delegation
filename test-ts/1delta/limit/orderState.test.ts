@@ -7,9 +7,6 @@ import {
 
 import {
     assertOrderInfoEquals,
-    computeLimitOrderFilledAmounts,
-    computeRfqOrderFilledAmounts,
-    createExpiry,
     getActualFillableTakerTokenAmount,
     getFillableMakerTokenAmount,
     getRandomLimitOrder,
@@ -22,11 +19,8 @@ import {
     MockERC20,
     MockERC20__factory,
     NativeOrders,
-    NativeOrders__factory,
     TestOrderSignerRegistryWithContractWallet,
     TestOrderSignerRegistryWithContractWallet__factory,
-    TestRfqOriginRegistration,
-    TestRfqOriginRegistration__factory,
     WETH9,
     WETH9__factory
 } from '../../../types';
@@ -35,19 +29,17 @@ import { createNativeOrder } from './utils/orderFixture';
 import { IZeroExEvents, LimitOrder, LimitOrderFields, OrderStatus, RfqOrder, RfqOrderFields } from './utils/constants';
 import { BigNumber, ContractReceipt } from 'ethers';
 import { MockProvider } from 'ethereum-waffle';
-import { time } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from '../shared/expect'
 import { infoEqals, sumBn, verifyLogs } from './utils/utils';
 import { SignatureType } from './utils/signature_utils';
 
 const getRandomPortion = (n: BigNumber) => BigNumber.from(_getRandomPortion(n.toString()).toString())
 
-const { NULL_ADDRESS, MAX_UINT256, NULL_BYTES32, } = constants;
+const { NULL_ADDRESS, NULL_BYTES32, } = constants;
 const ZERO_AMOUNT = BigNumber.from(0)
 let GAS_PRICE: BigNumber
 const PROTOCOL_FEE_MULTIPLIER = 1337e3;
 let SINGLE_PROTOCOL_FEE: BigNumber;
-const ordersInterface = NativeOrders__factory.createInterface()
 let maker: SignerWithAddress;
 let taker: SignerWithAddress;
 let notMaker: SignerWithAddress;
@@ -60,7 +52,6 @@ let verifyingContract: string;
 let makerToken: MockERC20;
 let takerToken: MockERC20;
 let wethToken: WETH9;
-let testRfqOriginRegistration: TestRfqOriginRegistration;
 let contractWallet: TestOrderSignerRegistryWithContractWallet;
 let testUtils: NativeOrdersTestEnvironment;
 let provider: MockProvider;
@@ -77,7 +68,6 @@ before(async () => {
     chainId = await maker.getChainId()
     console.log("ChainId", chainId, 'maker', maker.address, "taker", taker.address)
     console.log('makerToken', makerToken.address, "takerToken", takerToken.address)
-    testRfqOriginRegistration = await new TestRfqOriginRegistration__factory(owner).deploy()
 
     zeroEx = await createNativeOrder(
         owner,
@@ -96,7 +86,6 @@ before(async () => {
             takerToken.connect(a).approve(zeroEx.address, MaxUint128),
         ),
     );
-    testRfqOriginRegistration = await new TestRfqOriginRegistration__factory(owner).deploy()
     // contract wallet for signer delegation
     contractWallet = await new TestOrderSignerRegistryWithContractWallet__factory(contractWalletOwner).deploy(zeroEx.address)
 

@@ -21,6 +21,7 @@ import { MaxUint128 } from '../../../uniswap-v3/periphery/shared/constants';
 import { minBn, sumBn } from './utils';
 import { BigNumber, ContractTransaction } from 'ethers';
 import { ethers } from 'hardhat';
+import { MockProvider } from 'ethereum-waffle';
 
 const { NULL_ADDRESS } = constants;
 
@@ -346,11 +347,21 @@ export function assertOrderInfoEquals(actual: OrderInfo, expected: OrderInfo): v
 }
 
 /**
- * Creates an order expiry field.
+ * Creates a simple order expiry field.
  */
 export function createExpiry(deltaSeconds = 60): BigNumber {
     return BigNumber.from(Math.floor(Date.now() / 1000) + deltaSeconds);
 }
+
+
+/**
+ * Creates an accurate order expiry field based on the current block timestamp.
+ */
+export async function createCleanExpiry(provider: MockProvider, deltaSeconds = 60): Promise<BigNumber> {
+    return BigNumber.from((await provider.getBlock(await provider.getBlockNumber())).timestamp + deltaSeconds);
+}
+
+
 
 /**
  * Computes the maker, taker, and taker token fee amounts filled for

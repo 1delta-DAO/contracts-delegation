@@ -5,22 +5,19 @@ pragma solidity ^0.8.0;
 import "./INativeOrdersEvents.sol";
 import "./libraries/LibSignature.sol";
 import "./libraries/LibNativeOrder.sol";
+import "./libraries/LibNativeErrors.sol";
+import "./libraries/Reverter.sol";
 import "./NativeOrdersCancellation.sol";
-import "hardhat/console.sol";
 
 /// @dev Mixin for settling limit and RFQ orders.
+///      Uses custom internal error handling to pass through revert reasons
 abstract contract NativeOrdersSettlement is
     INativeOrdersEvents,
     NativeOrdersCancellation
 {
-    error onlyCallableBySelf();
+    error noContractOrigins();
     error roundingError(uint256 numerator, uint256 denominator, uint256 target);
     error fillOrKillFailedError(bytes32 hash, uint128 takerTokenFilledAmount, uint128 takerTokenFillAmount);
-    error orderNotFillableError(bytes32 hash, uint8 status);
-    error orderNotFillableByTakerError(bytes32 hash, address taker, address orderTaker);
-    error orderNotFillableBySenderError(bytes32 hash, address sender, address orderSender);
-    error orderNotSignedByMakerError(bytes32 hash, address signer, address maker);
-    error orderNotFillableByOriginError(bytes32 hash, address origin, address orderOrigin);
 
     /// @dev Params for `_settleOrder()`.
     struct SettleOrderInfo {
@@ -85,12 +82,6 @@ abstract contract NativeOrdersSettlement is
         uint128 takerTokenFeeFilledAmount;
     }
 
-    modifier onlySelf() virtual {
-        if (msg.sender != address(this)) revert onlyCallableBySelf();
-        _;
-    }
-
-
     /// @dev The protocol fee multiplier.
     uint32 public immutable PROTOCOL_FEE_MULTIPLIER;
     /// @dev The protocol collector address.
@@ -119,7 +110,7 @@ abstract contract NativeOrdersSettlement is
         LibSignature.Signature memory signature,
         uint128 takerTokenFillAmount
     ) public payable returns (uint128 takerTokenFilledAmount, uint128 makerTokenFilledAmount) {
-        FillNativeOrderResults memory results = _fillLimitOrderPrivate(
+        (FillNativeOrderResults memory results, bytes memory errorData) = _fillLimitOrderPrivate(
             FillLimitOrderPrivateParams({
                 order: order,
                 signature: signature,
@@ -128,6 +119,7 @@ abstract contract NativeOrdersSettlement is
                 sender: msg.sender
             })
         );
+        if(errorData.length > 0) Reverter.revertWithData(errorData);
         LibNativeOrder.refundExcessProtocolFeeToSender(results.ethProtocolFeePaid);
         (takerTokenFilledAmount, makerTokenFilledAmount) = (
             results.takerTokenFilledAmount,
@@ -148,7 +140,7 @@ abstract contract NativeOrdersSettlement is
         LibSignature.Signature memory signature,
         uint128 takerTokenFillAmount
     ) public returns (uint128 takerTokenFilledAmount, uint128 makerTokenFilledAmount) {
-        FillNativeOrderResults memory results = _fillRfqOrderPrivate(
+        (FillNativeOrderResults memory results, bytes memory errorData) = _fillRfqOrderPrivate(
             FillRfqOrderPrivateParams({
                 order: order,
                 signature: signature,
@@ -158,6 +150,7 @@ abstract contract NativeOrdersSettlement is
                 recipient: msg.sender
             })
         );
+        if(errorData.length > 0) Reverter.revertWithData(errorData);
         (takerTokenFilledAmount, makerTokenFilledAmount) = (
             results.takerTokenFilledAmount,
             results.makerTokenFilledAmount
@@ -177,7 +170,7 @@ abstract contract NativeOrdersSettlement is
         LibSignature.Signature memory signature,
         uint128 takerTokenFillAmount
     ) public payable returns (uint128 makerTokenFilledAmount) {
-        FillNativeOrderResults memory results = _fillLimitOrderPrivate(
+        (FillNativeOrderResults memory results, bytes memory errorData) = _fillLimitOrderPrivate(
             FillLimitOrderPrivateParams({
                 order: order,
                 signature: signature,
@@ -186,6 +179,7 @@ abstract contract NativeOrdersSettlement is
                 sender: msg.sender
             })
         );
+        if(errorData.length > 0) Reverter.revertWithData(errorData);
         // Must have filled exactly the amount requested.
         if (results.takerTokenFilledAmount < takerTokenFillAmount) {
             revert fillOrKillFailedError(
@@ -211,7 +205,7 @@ abstract contract NativeOrdersSettlement is
         LibSignature.Signature memory signature,
         uint128 takerTokenFillAmount
     ) public returns (uint128 makerTokenFilledAmount) {
-        FillNativeOrderResults memory results = _fillRfqOrderPrivate(
+        (FillNativeOrderResults memory results, bytes memory errorData) = _fillRfqOrderPrivate(
             FillRfqOrderPrivateParams({
                 order: order,
                 signature: signature,
@@ -221,6 +215,7 @@ abstract contract NativeOrdersSettlement is
                 recipient: msg.sender
             })
         );
+        if(errorData.length > 0) Reverter.revertWithData(errorData);
         // Must have filled exactly the amount requested.
         if (results.takerTokenFilledAmount < takerTokenFillAmount) {
             revert fillOrKillFailedError(
@@ -232,64 +227,12 @@ abstract contract NativeOrdersSettlement is
         makerTokenFilledAmount = results.makerTokenFilledAmount;
     }
 
-    /// @dev Fill a limit order. Internal variant. ETH protocol fees can be
-    ///      attached to this call.
-    /// @param order The limit order.
-    /// @param signature The order signature.
-    /// @param takerTokenFillAmount Maximum taker token to fill this order with.
-    /// @param taker The order taker.
-    /// @param sender The order sender.
-    /// @return takerTokenFilledAmount How much maker token was filled.
-    /// @return makerTokenFilledAmount How much maker token was filled.
-    function _fillLimitOrder(
-        LibNativeOrder.LimitOrder memory order,
-        LibSignature.Signature memory signature,
-        uint128 takerTokenFillAmount,
-        address taker,
-        address sender
-    ) public payable virtual onlySelf returns (uint128 takerTokenFilledAmount, uint128 makerTokenFilledAmount) {
-        FillNativeOrderResults memory results = _fillLimitOrderPrivate(
-            FillLimitOrderPrivateParams(order, signature, takerTokenFillAmount, taker, sender)
-        );
-        (takerTokenFilledAmount, makerTokenFilledAmount) = (
-            results.takerTokenFilledAmount,
-            results.makerTokenFilledAmount
-        );
-    }
-
-    /// @dev Fill an RFQ order. Internal variant.
-    /// @param order The RFQ order.
-    /// @param signature The order signature.
-    /// @param takerTokenFillAmount Maximum taker token to fill this order with.
-    /// @param taker The order taker.
-    /// @param useSelfBalance Whether to use the ExchangeProxy's transient
-    ///        balance of taker tokens to fill the order.
-    /// @param recipient The recipient of the maker tokens.
-    /// @return takerTokenFilledAmount How much maker token was filled.
-    /// @return makerTokenFilledAmount How much maker token was filled.
-    function _fillRfqOrder(
-        LibNativeOrder.RfqOrder memory order,
-        LibSignature.Signature memory signature,
-        uint128 takerTokenFillAmount,
-        address taker,
-        bool useSelfBalance,
-        address recipient
-    ) public virtual onlySelf returns (uint128 takerTokenFilledAmount, uint128 makerTokenFilledAmount) {
-        FillNativeOrderResults memory results = _fillRfqOrderPrivate(
-            FillRfqOrderPrivateParams(order, signature, takerTokenFillAmount, taker, useSelfBalance, recipient)
-        );
-        (takerTokenFilledAmount, makerTokenFilledAmount) = (
-            results.takerTokenFilledAmount,
-            results.makerTokenFilledAmount
-        );
-    }
-
     /// @dev Mark what tx.origin addresses are allowed to fill an order that
     ///      specifies the message sender as its txOrigin.
     /// @param origins An array of origin addresses to update.
     /// @param allowed True to register, false to unregister.
     function registerAllowedRfqOrigins(address[] memory origins, bool allowed) external {
-        require(msg.sender == tx.origin, "NativeOrdersFeature/NO_CONTRACT_ORIGINS");
+        if(msg.sender != tx.origin) revert noContractOrigins();
 
         OrderStorage storage stor = os();
 
@@ -300,49 +243,56 @@ abstract contract NativeOrdersSettlement is
         emit RfqOrderOriginsAllowed(msg.sender, origins, allowed);
     }
 
-    /// @dev Fill a limit order. Private variant. Does not refund protocol fees.
+    /// @dev Fill a limit order. Private variant.
+    ///      Does not refund protocol fees.
+    ///      Does not revert on erros.
     /// @param params Function params.
     /// @return results Results of the fill.
+    /// @return errorData Encoded error if any.
     function _fillLimitOrderPrivate(
         FillLimitOrderPrivateParams memory params
-    ) private returns (FillNativeOrderResults memory results) {
+    ) internal returns (FillNativeOrderResults memory results, bytes memory errorData) {
         LibNativeOrder.OrderInfo memory orderInfo = getLimitOrderInfo(params.order);
 
         // Must be fillable.
         if (orderInfo.status != LibNativeOrder.OrderStatus.FILLABLE) {
-            revert orderNotFillableError(
+            errorData =  LibNativeErrors.orderNotFillableError(
                 orderInfo.orderHash, 
                 uint8(orderInfo.status)
             );
+            return (results, errorData);
         }
 
         // Must be fillable by the taker.
         if (params.order.taker != address(0) && params.order.taker != params.taker) {
-            revert orderNotFillableByTakerError(
+            errorData =  LibNativeErrors.orderNotFillableByTakerError(
                 orderInfo.orderHash,
                 params.taker,
                 params.order.taker
             );
+            return (results, errorData);
         }
 
         // Must be fillable by the sender.
         if (params.order.sender != address(0) && params.order.sender != params.sender) {
-            revert orderNotFillableBySenderError(
+            errorData =  LibNativeErrors.orderNotFillableBySenderError(
                 orderInfo.orderHash,
                 params.sender,
                 params.order.sender
             );
+            return (results, errorData);
         }
 
         // Signature must be valid for the order.
         {
             address signer = LibSignature.getSignerOfHash(orderInfo.orderHash, params.signature);
             if (signer != params.order.maker && !isValidOrderSigner(params.order.maker, signer)) {
-                revert orderNotSignedByMakerError(
+                errorData =  LibNativeErrors.orderNotSignedByMakerError(
                     orderInfo.orderHash,
                     signer,
                     params.order.maker
                 );
+                return (results, errorData);
             }
         }
 
@@ -385,8 +335,8 @@ abstract contract NativeOrdersSettlement is
             params.order.maker,
             params.taker,
             params.order.feeRecipient,
-            address(params.order.makerToken),
-            address(params.order.takerToken),
+            params.order.makerToken,
+            params.order.takerToken,
             results.takerTokenFilledAmount,
             results.makerTokenFilledAmount,
             results.takerTokenFeeFilledAmount,
@@ -396,19 +346,22 @@ abstract contract NativeOrdersSettlement is
     }
 
     /// @dev Fill an RFQ order. Private variant.
+    ///      Does not revert on erros.
     /// @param params Function params.
     /// @return results Results of the fill.
+    /// @return errorData Encoded error if any.
     function _fillRfqOrderPrivate(
         FillRfqOrderPrivateParams memory params
-    ) private returns (FillNativeOrderResults memory results) {
+    ) internal returns (FillNativeOrderResults memory results, bytes memory errorData) {
         LibNativeOrder.OrderInfo memory orderInfo = getRfqOrderInfo(params.order);
 
         // Must be fillable.
         if (orderInfo.status != LibNativeOrder.OrderStatus.FILLABLE) {
-            revert orderNotFillableError(
+            errorData =  LibNativeErrors.orderNotFillableError(
                 orderInfo.orderHash,
                 uint8(orderInfo.status)
             );
+            return (results, errorData);
         }
 
         {
@@ -416,32 +369,35 @@ abstract contract NativeOrdersSettlement is
 
             // Must be fillable by the tx.origin.
             if (params.order.txOrigin != tx.origin && !stor.originRegistry[params.order.txOrigin][tx.origin]) {
-                revert orderNotFillableByOriginError(
+                errorData = LibNativeErrors.orderNotFillableByOriginError(
                     orderInfo.orderHash,
                     tx.origin,
                     params.order.txOrigin
                 );
+                return (results, errorData);
             }
         }
 
         // Must be fillable by the taker.
         if (params.order.taker != address(0) && params.order.taker != params.taker) {
-            revert orderNotFillableByTakerError(
+            errorData = LibNativeErrors.orderNotFillableByTakerError(
                 orderInfo.orderHash,
                 params.taker,
                 params.order.taker
             );
+            return (results, errorData);
         }
 
         // Signature must be valid for the order.
         {
             address signer = LibSignature.getSignerOfHash(orderInfo.orderHash, params.signature);
             if (signer != params.order.maker && !isValidOrderSigner(params.order.maker, signer)) {
-                revert orderNotSignedByMakerError(
+                errorData = LibNativeErrors.orderNotSignedByMakerError(
                     orderInfo.orderHash,
                     signer,
                     params.order.maker
                 );
+                return (results, errorData);
             }
         }
 

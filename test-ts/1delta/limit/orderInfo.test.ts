@@ -1,17 +1,11 @@
 import {
     constants,
     getRandomPortion as _getRandomPortion,
-    randomAddress,
 } from '@0x/contracts-test-utils';
-
 
 import {
     assertOrderInfoEquals,
-    computeLimitOrderFilledAmounts,
-    computeRfqOrderFilledAmounts,
-    createExpiry,
-    getActualFillableTakerTokenAmount,
-    getFillableMakerTokenAmount,
+    createCleanExpiry,
     getRandomLimitOrder,
     getRandomRfqOrder,
     NativeOrdersTestEnvironment,
@@ -22,62 +16,42 @@ import {
     MockERC20,
     MockERC20__factory,
     NativeOrders,
-    NativeOrders__factory,
-    TestOrderSignerRegistryWithContractWallet,
-    TestOrderSignerRegistryWithContractWallet__factory,
-    TestRfqOriginRegistration,
-    TestRfqOriginRegistration__factory,
-    WETH9,
-    WETH9__factory
 } from '../../../types';
 import { MaxUint128 } from '../../uniswap-v3/periphery/shared/constants';
 import { createNativeOrder } from './utils/orderFixture';
-import { IZeroExEvents, LimitOrder, LimitOrderFields, OrderStatus, RfqOrder, RfqOrderFields } from './utils/constants';
-import { BigNumber, ContractReceipt } from 'ethers';
+import { LimitOrder, LimitOrderFields, OrderStatus, RfqOrder, RfqOrderFields } from './utils/constants';
+import { BigNumber } from 'ethers';
 import { MockProvider } from 'ethereum-waffle';
 import { time } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from '../shared/expect'
-import { sumBn } from './utils/utils';
-import { SignatureType } from './utils/signature_utils';
 
-const getRandomPortion = (n: BigNumber) => BigNumber.from(_getRandomPortion(n.toString()).toString())
-
-const { NULL_ADDRESS, MAX_UINT256, NULL_BYTES32, } = constants;
+const { NULL_ADDRESS,  } = constants;
 const ZERO_AMOUNT = BigNumber.from(0)
 let GAS_PRICE: BigNumber
 const PROTOCOL_FEE_MULTIPLIER = 1337e3;
 let SINGLE_PROTOCOL_FEE: BigNumber;
-const ordersInterface = NativeOrders__factory.createInterface()
 let maker: SignerWithAddress;
 let taker: SignerWithAddress;
 let notMaker: SignerWithAddress;
 let notTaker: SignerWithAddress;
 let collector: SignerWithAddress;
-let contractWalletOwner: SignerWithAddress;
-let contractWalletSigner: SignerWithAddress;
 let zeroEx: NativeOrders;
 let verifyingContract: string;
 let makerToken: MockERC20;
 let takerToken: MockERC20;
-let wethToken: WETH9;
-let testRfqOriginRegistration: TestRfqOriginRegistration;
-let contractWallet: TestOrderSignerRegistryWithContractWallet;
 let testUtils: NativeOrdersTestEnvironment;
 let provider: MockProvider;
 let chainId: number
 before(async () => {
     let owner;
-    [owner, maker, taker, notMaker, notTaker, contractWalletOwner, contractWalletSigner, collector] =
+    [owner, maker, taker, notMaker, notTaker,  collector] =
         await ethers.getSigners();
     makerToken = await new MockERC20__factory(owner).deploy("Maker", 'M', 18)
     takerToken = await new MockERC20__factory(owner).deploy("Taker", "T", 6)
-    wethToken = await new WETH9__factory(owner).deploy()
-
     provider = waffle.provider
     chainId = await maker.getChainId()
     console.log("ChainId", chainId, 'maker', maker.address, "taker", taker.address)
     console.log('makerToken', makerToken.address, "takerToken", takerToken.address)
-    testRfqOriginRegistration = await new TestRfqOriginRegistration__factory(owner).deploy()
 
     zeroEx = await createNativeOrder(
         owner,
@@ -96,12 +70,7 @@ before(async () => {
             takerToken.connect(a).approve(zeroEx.address, MaxUint128),
         ),
     );
-    testRfqOriginRegistration = await new TestRfqOriginRegistration__factory(owner).deploy()
-    // contract wallet for signer delegation
-    contractWallet = await new TestOrderSignerRegistryWithContractWallet__factory(contractWalletOwner).deploy(zeroEx.address)
 
-    await contractWallet.connect(contractWalletOwner)
-        .approveERC20(makerToken.address, zeroEx.address, MaxUint128)
     GAS_PRICE = await provider.getGasPrice()
     SINGLE_PROTOCOL_FEE = GAS_PRICE.mul(PROTOCOL_FEE_MULTIPLIER);
     testUtils = new NativeOrdersTestEnvironment(
@@ -187,7 +156,7 @@ describe('getLimitOrderInfo()', () => {
     });
 
     it('unfilled expired order', async () => {
-        const order = getTestLimitOrder({ expiry: createExpiry(-60) });
+        const order = getTestLimitOrder({ expiry: await createCleanExpiry(provider, -1) });
         const info = await zeroEx.getLimitOrderInfo(order);
         assertOrderInfoEquals(info, {
             status: OrderStatus.Expired,
@@ -197,7 +166,7 @@ describe('getLimitOrderInfo()', () => {
     });
 
     it('filled then expired order', async () => {
-        const expiry = createExpiry(60);
+        const expiry = await createCleanExpiry(provider, 60);
         const order = getTestLimitOrder({ expiry });
 
         // Fill the order first.
@@ -290,7 +259,7 @@ describe('getRfqOrderInfo()', () => {
     });
 
     it('unfilled expired order', async () => {
-        const expiry = createExpiry(-60);
+        const expiry = await createCleanExpiry(provider, -1);
         const order = getTestRfqOrder({ expiry });
         const info = await zeroEx.getRfqOrderInfo(order);
         assertOrderInfoEquals(info, {
@@ -301,7 +270,7 @@ describe('getRfqOrderInfo()', () => {
     });
 
     it('filled then expired order', async () => {
-        const expiry = createExpiry(120);
+        const expiry = await createCleanExpiry(provider, 120);
         const order = getTestRfqOrder({ expiry });
         await testUtils.prepareBalancesForOrdersAsync([order]);
         const sig = await order.getSignatureWithProviderAsync(maker);

@@ -6,7 +6,7 @@ import {
     assertOrderInfoEquals,
     computeLimitOrderFilledAmounts,
     computeRfqOrderFilledAmounts,
-    createExpiry,
+    createCleanExpiry,
     getRandomLimitOrder,
     getRandomRfqOrder,
     NativeOrdersTestEnvironment,
@@ -176,7 +176,7 @@ describe('registerAllowedRfqOrigins()', () => {
 
         await expect(testRfqOriginRegistration
             .registerAllowedRfqOrigins(zeroEx.address, [], true)).to.be.revertedWith(
-                'NativeOrdersFeature/NO_CONTRACT_ORIGINS'
+                'noContractOrigins'
             );
     });
 });
@@ -411,7 +411,7 @@ describe('fillRfqOrder()', () => {
     });
 
     it('cannot fill an expired order', async () => {
-        const order = getTestRfqOrder({ expiry: createExpiry(-60) });
+        const order = getTestRfqOrder({ expiry: await createCleanExpiry(provider, -1) });
         const tx = testUtils.fillRfqOrderAsync(order);
         await expect(tx).to.be.revertedWith(
             "orderNotFillableError",

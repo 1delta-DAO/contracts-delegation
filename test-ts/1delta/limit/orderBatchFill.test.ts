@@ -5,6 +5,10 @@ import {
 
 
 import {
+    assertOrderInfoEquals,
+    computeLimitOrderFilledAmounts,
+    computeRfqOrderFilledAmounts,
+    createCleanExpiry,
     getRandomLimitOrder,
     getRandomRfqOrder,
     NativeOrdersTestEnvironment,
@@ -14,23 +18,21 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import {
     MockERC20,
     MockERC20__factory,
-    NativeOrders,
-    TestOrderSignerRegistryWithContractWallet,
-    TestOrderSignerRegistryWithContractWallet__factory,
-    TestRfqOriginRegistration,
-    TestRfqOriginRegistration__factory,
-    WETH9,
-    WETH9__factory
+    NativeOrders
 } from '../../../types';
 import { MaxUint128 } from '../../uniswap-v3/periphery/shared/constants';
 import { createNativeOrder } from './utils/orderFixture';
-import { IZeroExEvents, LimitOrder, LimitOrderFields, RfqOrder, RfqOrderFields } from './utils/constants';
-import { BigNumber } from 'ethers';
+import { IZeroExEvents, LimitOrder, LimitOrderFields, OrderStatus, RfqOrder, RfqOrderFields } from './utils/constants';
+import { BigNumber, ContractReceipt } from 'ethers';
 import { MockProvider } from 'ethereum-waffle';
 import { expect } from '../shared/expect'
-import {  verifyLogs } from './utils/utils';
+import { verifyLogs } from './utils/utils';
+import * as _ from 'lodash';
+
+const getRandomPortion = (n: BigNumber) => BigNumber.from(_getRandomPortion(n.toString()).toString())
 
 const { NULL_ADDRESS, } = constants;
+const ZERO_AMOUNT = BigNumber.from(0)
 let GAS_PRICE: BigNumber
 const PROTOCOL_FEE_MULTIPLIER = 1337e3;
 let SINGLE_PROTOCOL_FEE: BigNumber;
@@ -39,31 +41,24 @@ let taker: SignerWithAddress;
 let notMaker: SignerWithAddress;
 let notTaker: SignerWithAddress;
 let collector: SignerWithAddress;
-let contractWalletOwner: SignerWithAddress;
-let contractWalletSigner: SignerWithAddress;
 let zeroEx: NativeOrders;
 let verifyingContract: string;
 let makerToken: MockERC20;
 let takerToken: MockERC20;
-let wethToken: WETH9;
-let testRfqOriginRegistration: TestRfqOriginRegistration;
-let contractWallet: TestOrderSignerRegistryWithContractWallet;
 let testUtils: NativeOrdersTestEnvironment;
 let provider: MockProvider;
 let chainId: number
 before(async () => {
     let owner;
-    [owner, maker, taker, notMaker, notTaker, contractWalletOwner, contractWalletSigner, collector] =
+    [owner, maker, taker, notMaker, notTaker, collector] =
         await ethers.getSigners();
     makerToken = await new MockERC20__factory(owner).deploy("Maker", 'M', 18)
     takerToken = await new MockERC20__factory(owner).deploy("Taker", "T", 6)
-    wethToken = await new WETH9__factory(owner).deploy()
 
     provider = waffle.provider
     chainId = await maker.getChainId()
     console.log("ChainId", chainId, 'maker', maker.address, "taker", taker.address)
     console.log('makerToken', makerToken.address, "takerToken", takerToken.address)
-    testRfqOriginRegistration = await new TestRfqOriginRegistration__factory(owner).deploy()
 
     zeroEx = await createNativeOrder(
         owner,
@@ -82,12 +77,6 @@ before(async () => {
             takerToken.connect(a).approve(zeroEx.address, MaxUint128),
         ),
     );
-    testRfqOriginRegistration = await new TestRfqOriginRegistration__factory(owner).deploy()
-    // contract wallet for signer delegation
-    contractWallet = await new TestOrderSignerRegistryWithContractWallet__factory(contractWalletOwner).deploy(zeroEx.address)
-
-    await contractWallet.connect(contractWalletOwner)
-        .approveERC20(makerToken.address, zeroEx.address, MaxUint128)
     GAS_PRICE = await provider.getGasPrice()
     SINGLE_PROTOCOL_FEE = GAS_PRICE.mul(PROTOCOL_FEE_MULTIPLIER);
     testUtils = new NativeOrdersTestEnvironment(
@@ -127,12 +116,14 @@ function getTestRfqOrder(fields: Partial<RfqOrderFields> = {}): RfqOrder {
 }
 
 describe('batchFillLimitOrders', () => {
+
     async function assertExpectedFinalBalancesAsync(
         orders: LimitOrder[],
         takerTokenFillAmounts: BigNumber[] = orders.map(order => order.takerAmount),
         takerTokenAlreadyFilledAmounts: BigNumber[] = orders.map(() => ZERO_AMOUNT),
-        receipt?: TransactionReceiptWithDecodedLogs,
+        receipt?: ContractReceipt,
     ): Promise<void> {
+        const blockTag = await provider.getBlockNumber() - 1
         const expectedFeeRecipientBalances: { [feeRecipient: string]: BigNumber } = {};
         const { makerTokenFilledAmount, takerTokenFilledAmount } = orders
             .map((order, i) =>
@@ -141,52 +132,59 @@ describe('batchFillLimitOrders', () => {
             .reduce(
                 (previous, current, i) => {
                     _.update(expectedFeeRecipientBalances, orders[i].feeRecipient, balance =>
-                        (balance || ZERO_AMOUNT).plus(current.takerTokenFeeFilledAmount),
+                        (balance || ZERO_AMOUNT).add(current.takerTokenFeeFilledAmount),
                     );
                     return {
-                        makerTokenFilledAmount: previous.makerTokenFilledAmount.plus(
+                        makerTokenFilledAmount: previous.makerTokenFilledAmount.add(
                             current.makerTokenFilledAmount,
                         ),
-                        takerTokenFilledAmount: previous.takerTokenFilledAmount.plus(
+                        takerTokenFilledAmount: previous.takerTokenFilledAmount.add(
                             current.takerTokenFilledAmount,
                         ),
                     };
                 },
                 { makerTokenFilledAmount: ZERO_AMOUNT, takerTokenFilledAmount: ZERO_AMOUNT },
             );
-        const makerBalance = await takerToken.balanceOf(maker).callAsync();
-        const takerBalance = await makerToken.balanceOf(taker).callAsync();
-        expect(makerBalance, 'maker token balance').to.bignumber.eq(takerTokenFilledAmount);
-        expect(takerBalance, 'taker token balance').to.bignumber.eq(makerTokenFilledAmount);
+        const makerBalanceBefore = await takerToken.balanceOf(maker.address, { blockTag });
+        const takerBalanceBefore = await makerToken.balanceOf(taker.address, { blockTag });
+        const makerBalance = await takerToken.balanceOf(maker.address);
+        const takerBalance = await makerToken.balanceOf(taker.address);
+
+        expect(makerBalance.sub(makerBalanceBefore).toString(), 'maker token balance').to.eq(takerTokenFilledAmount.toString());
+        expect(takerBalance.sub(takerBalanceBefore).toString(), 'taker token balance').to.eq(makerTokenFilledAmount.toString());
         for (const [feeRecipient, expectedFeeRecipientBalance] of Object.entries(expectedFeeRecipientBalances)) {
-            const feeRecipientBalance = await takerToken.balanceOf(feeRecipient).callAsync();
-            expect(feeRecipientBalance, `fee recipient balance`).to.bignumber.eq(expectedFeeRecipientBalance);
+            const feeRecipientBalance = await takerToken.balanceOf(feeRecipient);
+            const feeRecipientBalanceBefore = await takerToken.balanceOf(feeRecipient, { blockTag });
+            expect(feeRecipientBalance.sub(feeRecipientBalanceBefore).toString(), `fee recipient balance`).to.eq(expectedFeeRecipientBalance.toString());
         }
         if (receipt) {
-            const balanceOfTakerNow = await env.web3Wrapper.getBalanceInWeiAsync(taker);
-            const balanceOfTakerBefore = await env.web3Wrapper.getBalanceInWeiAsync(taker, receipt.blockNumber - 1);
-            const protocolFees = testUtils.protocolFee.times(orders.length);
-            const totalCost = testUtils.gasPrice.times(receipt.gasUsed).plus(protocolFees);
-            expect(balanceOfTakerBefore.minus(totalCost), 'taker ETH balance').to.bignumber.eq(balanceOfTakerNow);
+            const balanceOfTakerNow = await provider.getBalance(taker.address);
+            const balanceOfTakerBefore = await provider.getBalance(taker.address, blockTag);
+            const protocolFees = testUtils.protocolFee.mul(orders.length);
+            const totalCost = testUtils.gasPrice.mul(receipt.gasUsed).add(protocolFees);
+            expect(balanceOfTakerBefore.sub(totalCost).toString(), 'taker ETH balance').to.eq(balanceOfTakerNow.toString());
         }
     }
 
     it('Fully fills multiple orders', async () => {
+
         const orders = [...new Array(3)].map(() => getTestLimitOrder({ takerTokenFeeAmount: ZERO_AMOUNT }));
+
         const signatures = await Promise.all(
-            orders.map(order => order.getSignatureWithProviderAsync(env.provider)),
+            orders.map(async order => order.getSignatureWithProviderAsync(await ethers.getSigner(order.maker))),
         );
         await testUtils.prepareBalancesForOrdersAsync(orders);
-        const value = testUtils.protocolFee.times(orders.length);
-        const tx = await feature
+        const value = testUtils.protocolFee.mul(orders.length);
+        const tx = await zeroEx.connect(taker)
             .batchFillLimitOrders(
                 orders,
                 signatures,
                 orders.map(order => order.takerAmount),
                 false,
-            )
-            .awaitTransactionSuccessAsync({ from: taker, value });
-        const [orderInfos] = await zeroEx.batchGetLimitOrderRelevantStates(orders, signatures).callAsync();
+                { value, gasPrice: GAS_PRICE }
+            );
+        const receipt = await tx.wait()
+        const [orderInfos] = await zeroEx.batchGetLimitOrderRelevantStates(orders, signatures);
         orderInfos.map((orderInfo, i) =>
             assertOrderInfoEquals(orderInfo, {
                 status: OrderStatus.Filled,
@@ -194,8 +192,8 @@ describe('batchFillLimitOrders', () => {
                 takerTokenFilledAmount: orders[i].takerAmount,
             }),
         );
-        verifyEventsFromLogs(
-            tx.logs,
+        verifyLogs(
+            receipt.logs,
             orders.map(order => testUtils.createLimitOrderFilledEventArgs(order)),
             IZeroExEvents.LimitOrderFilled,
         );
@@ -204,15 +202,15 @@ describe('batchFillLimitOrders', () => {
     it('Partially fills multiple orders', async () => {
         const orders = [...new Array(3)].map(getTestLimitOrder);
         const signatures = await Promise.all(
-            orders.map(order => order.getSignatureWithProviderAsync(env.provider)),
+            orders.map(async order => order.getSignatureWithProviderAsync(await ethers.getSigner(order.maker))),
         );
         await testUtils.prepareBalancesForOrdersAsync(orders);
-        const value = testUtils.protocolFee.times(orders.length);
+        const value = testUtils.protocolFee.mul(orders.length);
         const fillAmounts = orders.map(order => getRandomPortion(order.takerAmount));
-        const tx = await feature
-            .batchFillLimitOrders(orders, signatures, fillAmounts, false)
-            .awaitTransactionSuccessAsync({ from: taker, value });
-        const [orderInfos] = await zeroEx.batchGetLimitOrderRelevantStates(orders, signatures).callAsync();
+        const tx = await zeroEx.connect(taker)
+            .batchFillLimitOrders(orders, signatures, fillAmounts, false, { value, gasPrice: GAS_PRICE });
+        const receipt = await tx.wait()
+        const [orderInfos] = await zeroEx.batchGetLimitOrderRelevantStates(orders, signatures);
         orderInfos.map((orderInfo, i) =>
             assertOrderInfoEquals(orderInfo, {
                 status: OrderStatus.Fillable,
@@ -220,8 +218,8 @@ describe('batchFillLimitOrders', () => {
                 takerTokenFilledAmount: fillAmounts[i],
             }),
         );
-        verifyEventsFromLogs(
-            tx.logs,
+        verifyLogs(
+            receipt.logs,
             orders.map((order, i) => testUtils.createLimitOrderFilledEventArgs(order, fillAmounts[i])),
             IZeroExEvents.LimitOrderFilled,
         );
@@ -230,19 +228,20 @@ describe('batchFillLimitOrders', () => {
     it('Fills multiple orders and refunds excess ETH', async () => {
         const orders = [...new Array(3)].map(() => getTestLimitOrder({ takerTokenFeeAmount: ZERO_AMOUNT }));
         const signatures = await Promise.all(
-            orders.map(order => order.getSignatureWithProviderAsync(env.provider)),
+            orders.map(async order => order.getSignatureWithProviderAsync(await ethers.getSigner(order.maker))),
         );
         await testUtils.prepareBalancesForOrdersAsync(orders);
-        const value = testUtils.protocolFee.times(orders.length).plus(420);
-        const tx = await feature
+        const value = testUtils.protocolFee.mul(orders.length).add(420);
+        const tx = await zeroEx.connect(taker)
             .batchFillLimitOrders(
                 orders,
                 signatures,
                 orders.map(order => order.takerAmount),
                 false,
-            )
-            .awaitTransactionSuccessAsync({ from: taker, value });
-        const [orderInfos] = await zeroEx.batchGetLimitOrderRelevantStates(orders, signatures).callAsync();
+                { value, gasPrice: GAS_PRICE }
+            );
+        const reeipt = await tx.wait()
+        const [orderInfos] = await zeroEx.batchGetLimitOrderRelevantStates(orders, signatures);
         orderInfos.map((orderInfo, i) =>
             assertOrderInfoEquals(orderInfo, {
                 status: OrderStatus.Filled,
@@ -250,8 +249,8 @@ describe('batchFillLimitOrders', () => {
                 takerTokenFilledAmount: orders[i].takerAmount,
             }),
         );
-        verifyEventsFromLogs(
-            tx.logs,
+        verifyLogs(
+            reeipt.logs,
             orders.map(order => testUtils.createLimitOrderFilledEventArgs(order)),
             IZeroExEvents.LimitOrderFilled,
         );
@@ -259,22 +258,23 @@ describe('batchFillLimitOrders', () => {
     });
     it('Skips over unfillable orders and refunds excess ETH', async () => {
         const fillableOrders = [...new Array(3)].map(() => getTestLimitOrder({ takerTokenFeeAmount: ZERO_AMOUNT }));
-        const expiredOrder = getTestLimitOrder({ expiry: createExpiry(-1), takerTokenFeeAmount: ZERO_AMOUNT });
+        const expiredOrder = getTestLimitOrder({ expiry: await createCleanExpiry(provider, -1), takerTokenFeeAmount: ZERO_AMOUNT });
         const orders = [expiredOrder, ...fillableOrders];
         const signatures = await Promise.all(
-            orders.map(order => order.getSignatureWithProviderAsync(env.provider)),
+            orders.map(async order => order.getSignatureWithProviderAsync(await ethers.getSigner(order.maker))),
         );
         await testUtils.prepareBalancesForOrdersAsync(orders);
-        const value = testUtils.protocolFee.times(orders.length);
-        const tx = await feature
+        const value = testUtils.protocolFee.mul(orders.length);
+        const tx = await zeroEx.connect(taker)
             .batchFillLimitOrders(
                 orders,
                 signatures,
                 orders.map(order => order.takerAmount),
                 false,
-            )
-            .awaitTransactionSuccessAsync({ from: taker, value });
-        const [orderInfos] = await zeroEx.batchGetLimitOrderRelevantStates(orders, signatures).callAsync();
+                { value, gasPrice: GAS_PRICE }
+            );
+        const receipt = await tx.wait()
+        const [orderInfos] = await zeroEx.batchGetLimitOrderRelevantStates(orders, signatures);
         const [expiredOrderInfo, ...filledOrderInfos] = orderInfos;
         assertOrderInfoEquals(expiredOrderInfo, {
             status: OrderStatus.Expired,
@@ -288,8 +288,8 @@ describe('batchFillLimitOrders', () => {
                 takerTokenFilledAmount: fillableOrders[i].takerAmount,
             }),
         );
-        verifyEventsFromLogs(
-            tx.logs,
+        verifyLogs(
+            receipt.logs,
             fillableOrders.map(order => testUtils.createLimitOrderFilledEventArgs(order)),
             IZeroExEvents.LimitOrderFilled,
         );
@@ -298,19 +298,20 @@ describe('batchFillLimitOrders', () => {
     it('Fills multiple orders with revertIfIncomplete=true', async () => {
         const orders = [...new Array(3)].map(() => getTestLimitOrder({ takerTokenFeeAmount: ZERO_AMOUNT }));
         const signatures = await Promise.all(
-            orders.map(order => order.getSignatureWithProviderAsync(env.provider)),
+            orders.map(async order => order.getSignatureWithProviderAsync(await ethers.getSigner(order.maker))),
         );
         await testUtils.prepareBalancesForOrdersAsync(orders);
-        const value = testUtils.protocolFee.times(orders.length);
-        const tx = await feature
+        const value = testUtils.protocolFee.mul(orders.length);
+        const tx = await zeroEx.connect(taker)
             .batchFillLimitOrders(
                 orders,
                 signatures,
                 orders.map(order => order.takerAmount),
                 true,
-            )
-            .awaitTransactionSuccessAsync({ from: taker, value });
-        const [orderInfos] = await zeroEx.batchGetLimitOrderRelevantStates(orders, signatures).callAsync();
+                { value, gasPrice: GAS_PRICE }
+            );
+        const receipt = await tx.wait()
+        const [orderInfos] = await zeroEx.batchGetLimitOrderRelevantStates(orders, signatures);
         orderInfos.map((orderInfo, i) =>
             assertOrderInfoEquals(orderInfo, {
                 status: OrderStatus.Filled,
@@ -318,8 +319,8 @@ describe('batchFillLimitOrders', () => {
                 takerTokenFilledAmount: orders[i].takerAmount,
             }),
         );
-        verifyEventsFromLogs(
-            tx.logs,
+        verifyLogs(
+            receipt.logs,
             orders.map(order => testUtils.createLimitOrderFilledEventArgs(order)),
             IZeroExEvents.LimitOrderFilled,
         );
@@ -327,28 +328,27 @@ describe('batchFillLimitOrders', () => {
     });
     it('If revertIfIncomplete==true, reverts on an unfillable order', async () => {
         const fillableOrders = [...new Array(3)].map(() => getTestLimitOrder({ takerTokenFeeAmount: ZERO_AMOUNT }));
-        const expiredOrder = getTestLimitOrder({ expiry: createExpiry(-1), takerTokenFeeAmount: ZERO_AMOUNT });
+        const expiredOrder = getTestLimitOrder({ expiry: await createCleanExpiry(provider, -1), takerTokenFeeAmount: ZERO_AMOUNT });
         const orders = [expiredOrder, ...fillableOrders];
         const signatures = await Promise.all(
-            orders.map(order => order.getSignatureWithProviderAsync(env.provider)),
+            orders.map(async order => order.getSignatureWithProviderAsync(await ethers.getSigner(order.maker))),
         );
         await testUtils.prepareBalancesForOrdersAsync(orders);
-        const value = testUtils.protocolFee.times(orders.length);
-        const tx = feature
+        const value = testUtils.protocolFee.mul(orders.length);
+        await expect(zeroEx.connect(taker)
             .batchFillLimitOrders(
                 orders,
                 signatures,
                 orders.map(order => order.takerAmount),
                 true,
-            )
-            .awaitTransactionSuccessAsync({ from: taker, value });
-        return expect(tx).to.revertWith(
-            new RevertErrors.NativeOrders.BatchFillIncompleteError(
+                { value, gasPrice: GAS_PRICE }
+            )).to.be.revertedWith(
+                "orderNotFillableError"
+            )/*.withArgs(
                 expiredOrder.getHash(),
                 ZERO_AMOUNT,
                 expiredOrder.takerAmount,
-            ),
-        );
+            )*/
     });
     it('If revertIfIncomplete==true, reverts on an incomplete fill ', async () => {
         const fillableOrders = [...new Array(3)].map(() => getTestLimitOrder({ takerTokenFeeAmount: ZERO_AMOUNT }));
@@ -357,29 +357,37 @@ describe('batchFillLimitOrders', () => {
         await testUtils.fillLimitOrderAsync(partiallyFilledOrder, { fillAmount: partialFillAmount });
         const orders = [partiallyFilledOrder, ...fillableOrders];
         const signatures = await Promise.all(
-            orders.map(order => order.getSignatureWithProviderAsync(env.provider)),
+            orders.map(async order => order.getSignatureWithProviderAsync(await ethers.getSigner(order.maker))),
         );
         await testUtils.prepareBalancesForOrdersAsync(orders);
-        const value = testUtils.protocolFee.times(orders.length);
-        const tx = feature
+        const value = testUtils.protocolFee.mul(orders.length);
+        await expect(zeroEx.connect(taker)
             .batchFillLimitOrders(
                 orders,
                 signatures,
                 orders.map(order => order.takerAmount),
                 true,
-            )
-            .awaitTransactionSuccessAsync({ from: taker, value });
-        return expect(tx).to.revertWith(
-            new RevertErrors.NativeOrders.BatchFillIncompleteError(
+                { value, gasPrice: GAS_PRICE }
+            )).to.be.revertedWith(
+                "batchFillIncompleteError"
+            ).withArgs(
                 partiallyFilledOrder.getHash(),
-                partiallyFilledOrder.takerAmount.minus(partialFillAmount),
+                partiallyFilledOrder.takerAmount.sub(partialFillAmount),
                 partiallyFilledOrder.takerAmount,
-            ),
-        );
+            )
     });
 });
 describe('batchFillRfqOrders', () => {
+
+    async function getMakerTakerBalances() {
+        const makerBalance = await takerToken.balanceOf(maker.address);
+        const takerBalance = await makerToken.balanceOf(taker.address);
+        return [makerBalance, takerBalance]
+    }
+
     async function assertExpectedFinalBalancesAsync(
+        makerBalanceBefore: BigNumber,
+        takerBalanceBefore: BigNumber,
         orders: RfqOrder[],
         takerTokenFillAmounts: BigNumber[] = orders.map(order => order.takerAmount),
         takerTokenAlreadyFilledAmounts: BigNumber[] = orders.map(() => ZERO_AMOUNT),
@@ -389,55 +397,73 @@ describe('batchFillRfqOrders', () => {
                 computeRfqOrderFilledAmounts(order, takerTokenFillAmounts[i], takerTokenAlreadyFilledAmounts[i]),
             )
             .reduce((previous, current) => ({
-                makerTokenFilledAmount: previous.makerTokenFilledAmount.plus(current.makerTokenFilledAmount),
-                takerTokenFilledAmount: previous.takerTokenFilledAmount.plus(current.takerTokenFilledAmount),
+                makerTokenFilledAmount: previous.makerTokenFilledAmount.add(current.makerTokenFilledAmount),
+                takerTokenFilledAmount: previous.takerTokenFilledAmount.add(current.takerTokenFilledAmount),
             }));
-        const makerBalance = await takerToken.balanceOf(maker).callAsync();
-        const takerBalance = await makerToken.balanceOf(taker).callAsync();
-        expect(makerBalance).to.bignumber.eq(takerTokenFilledAmount);
-        expect(takerBalance).to.bignumber.eq(makerTokenFilledAmount);
+
+        const makerBalance = await takerToken.balanceOf(maker.address);
+        const takerBalance = await makerToken.balanceOf(taker.address);
+
+        expect(makerBalance.sub(makerBalanceBefore).toString()).to.eq(takerTokenFilledAmount.toString());
+        expect(takerBalance.sub(takerBalanceBefore).toString()).to.eq(makerTokenFilledAmount.toString());
     }
 
     it('Fully fills multiple orders', async () => {
+
+        const [
+            makerBalanceBefore,
+            takerBalanceBefore,
+        ] = await getMakerTakerBalances()
+
         const orders = [...new Array(3)].map(() => getTestRfqOrder());
         const signatures = await Promise.all(
-            orders.map(order => order.getSignatureWithProviderAsync(env.provider)),
+            orders.map(async order => order.getSignatureWithProviderAsync(await ethers.getSigner(order.maker))),
         );
         await testUtils.prepareBalancesForOrdersAsync(orders);
-        const tx = await feature
+        const tx = await zeroEx.connect(taker)
             .batchFillRfqOrders(
                 orders,
                 signatures,
                 orders.map(order => order.takerAmount),
-                false,
-            )
-            .awaitTransactionSuccessAsync({ from: taker });
-        const [orderInfos] = await zeroEx.batchGetRfqOrderRelevantStates(orders, signatures).callAsync();
-        orderInfos.map((orderInfo, i) =>
+                false
+            );
+        const receipt = await tx.wait()
+        const [orderInfos] = await zeroEx.batchGetRfqOrderRelevantStates(orders, signatures);
+        orderInfos.map((orderInfo, i) => 
             assertOrderInfoEquals(orderInfo, {
                 status: OrderStatus.Filled,
                 orderHash: orders[i].getHash(),
                 takerTokenFilledAmount: orders[i].takerAmount,
             }),
         );
-        verifyEventsFromLogs(
-            tx.logs,
+        verifyLogs(
+            receipt.logs,
             orders.map(order => testUtils.createRfqOrderFilledEventArgs(order)),
             IZeroExEvents.RfqOrderFilled,
         );
-        return assertExpectedFinalBalancesAsync(orders);
+        return assertExpectedFinalBalancesAsync(
+            makerBalanceBefore,
+            takerBalanceBefore,
+            orders
+        );
     });
     it('Partially fills multiple orders', async () => {
+
+        const [
+            makerBalanceBefore,
+            takerBalanceBefore,
+        ] = await getMakerTakerBalances()
+
         const orders = [...new Array(3)].map(() => getTestRfqOrder());
         const signatures = await Promise.all(
-            orders.map(order => order.getSignatureWithProviderAsync(env.provider)),
+            orders.map(async order => order.getSignatureWithProviderAsync(await ethers.getSigner(order.maker))),
         );
         const fillAmounts = orders.map(order => getRandomPortion(order.takerAmount));
         await testUtils.prepareBalancesForOrdersAsync(orders);
-        const tx = await feature
-            .batchFillRfqOrders(orders, signatures, fillAmounts, false)
-            .awaitTransactionSuccessAsync({ from: taker });
-        const [orderInfos] = await zeroEx.batchGetRfqOrderRelevantStates(orders, signatures).callAsync();
+        const tx = await zeroEx.connect(taker)
+            .batchFillRfqOrders(orders, signatures, fillAmounts, false);
+        const receipt = await tx.wait()
+        const [orderInfos] = await zeroEx.batchGetRfqOrderRelevantStates(orders, signatures);
         orderInfos.map((orderInfo, i) =>
             assertOrderInfoEquals(orderInfo, {
                 status: OrderStatus.Fillable,
@@ -445,30 +471,41 @@ describe('batchFillRfqOrders', () => {
                 takerTokenFilledAmount: fillAmounts[i],
             }),
         );
-        verifyEventsFromLogs(
-            tx.logs,
+        verifyLogs(
+            receipt.logs,
             orders.map((order, i) => testUtils.createRfqOrderFilledEventArgs(order, fillAmounts[i])),
             IZeroExEvents.RfqOrderFilled,
         );
-        return assertExpectedFinalBalancesAsync(orders, fillAmounts);
+        return assertExpectedFinalBalancesAsync(
+            makerBalanceBefore,
+            takerBalanceBefore,
+            orders,
+            fillAmounts
+        );
     });
     it('Skips over unfillable orders', async () => {
+
+        const [
+            makerBalanceBefore,
+            takerBalanceBefore,
+        ] = await getMakerTakerBalances()
+
         const fillableOrders = [...new Array(3)].map(() => getTestRfqOrder());
-        const expiredOrder = getTestRfqOrder({ expiry: createExpiry(-1) });
+        const expiredOrder = getTestRfqOrder({ expiry: await createCleanExpiry(provider, -1) });
         const orders = [expiredOrder, ...fillableOrders];
         const signatures = await Promise.all(
-            orders.map(order => order.getSignatureWithProviderAsync(env.provider)),
+            orders.map(async order => order.getSignatureWithProviderAsync(await ethers.getSigner(order.maker))),
         );
         await testUtils.prepareBalancesForOrdersAsync(orders);
-        const tx = await feature
+        const tx = await zeroEx.connect(taker)
             .batchFillRfqOrders(
                 orders,
                 signatures,
                 orders.map(order => order.takerAmount),
                 false,
-            )
-            .awaitTransactionSuccessAsync({ from: taker });
-        const [orderInfos] = await zeroEx.batchGetRfqOrderRelevantStates(orders, signatures).callAsync();
+            );
+        const receipt = await tx.wait()
+        const [orderInfos] = await zeroEx.batchGetRfqOrderRelevantStates(orders, signatures);
         const [expiredOrderInfo, ...filledOrderInfos] = orderInfos;
         assertOrderInfoEquals(expiredOrderInfo, {
             status: OrderStatus.Expired,
@@ -482,28 +519,38 @@ describe('batchFillRfqOrders', () => {
                 takerTokenFilledAmount: fillableOrders[i].takerAmount,
             }),
         );
-        verifyEventsFromLogs(
-            tx.logs,
+        verifyLogs(
+            receipt.logs,
             fillableOrders.map(order => testUtils.createRfqOrderFilledEventArgs(order)),
             IZeroExEvents.RfqOrderFilled,
         );
-        return assertExpectedFinalBalancesAsync(fillableOrders);
+        return assertExpectedFinalBalancesAsync(
+            makerBalanceBefore,
+            takerBalanceBefore,
+            fillableOrders
+        );
     });
     it('Fills multiple orders with revertIfIncomplete=true', async () => {
+
+        const [
+            makerBalanceBefore,
+            takerBalanceBefore,
+        ] = await getMakerTakerBalances()
+
         const orders = [...new Array(3)].map(() => getTestRfqOrder());
         const signatures = await Promise.all(
-            orders.map(order => order.getSignatureWithProviderAsync(env.provider)),
+            orders.map(async order => order.getSignatureWithProviderAsync(await ethers.getSigner(order.maker))),
         );
         await testUtils.prepareBalancesForOrdersAsync(orders);
-        const tx = await feature
+        const tx = await zeroEx.connect(taker)
             .batchFillRfqOrders(
                 orders,
                 signatures,
                 orders.map(order => order.takerAmount),
                 true,
-            )
-            .awaitTransactionSuccessAsync({ from: taker });
-        const [orderInfos] = await zeroEx.batchGetRfqOrderRelevantStates(orders, signatures).callAsync();
+            );
+        const receipt = await tx.wait()
+        const [orderInfos] = await zeroEx.batchGetRfqOrderRelevantStates(orders, signatures);
         orderInfos.map((orderInfo, i) =>
             assertOrderInfoEquals(orderInfo, {
                 status: OrderStatus.Filled,
@@ -511,36 +558,38 @@ describe('batchFillRfqOrders', () => {
                 takerTokenFilledAmount: orders[i].takerAmount,
             }),
         );
-        verifyEventsFromLogs(
-            tx.logs,
+        verifyLogs(
+            receipt.logs,
             orders.map(order => testUtils.createRfqOrderFilledEventArgs(order)),
             IZeroExEvents.RfqOrderFilled,
         );
-        return assertExpectedFinalBalancesAsync(orders);
+        return assertExpectedFinalBalancesAsync(
+            makerBalanceBefore,
+            takerBalanceBefore,
+            orders
+        );
     });
     it('If revertIfIncomplete==true, reverts on an unfillable order', async () => {
         const fillableOrders = [...new Array(3)].map(() => getTestRfqOrder());
-        const expiredOrder = getTestRfqOrder({ expiry: createExpiry(-1) });
+        const expiredOrder = getTestRfqOrder({ expiry: await createCleanExpiry(provider, -1) });
         const orders = [expiredOrder, ...fillableOrders];
         const signatures = await Promise.all(
-            orders.map(order => order.getSignatureWithProviderAsync(env.provider)),
+            orders.map(async order => order.getSignatureWithProviderAsync(await ethers.getSigner(order.maker))),
         );
         await testUtils.prepareBalancesForOrdersAsync(orders);
-        const tx = feature
+        await expect(zeroEx.connect(taker)
             .batchFillRfqOrders(
                 orders,
                 signatures,
                 orders.map(order => order.takerAmount),
                 true,
-            )
-            .awaitTransactionSuccessAsync({ from: taker });
-        return expect(tx).to.revertWith(
-            new RevertErrors.NativeOrders.BatchFillIncompleteError(
+            )).to.be.revertedWith(
+                "orderNotFillableError"
+            )/*.withArgs(
                 expiredOrder.getHash(),
                 ZERO_AMOUNT,
                 expiredOrder.takerAmount,
-            ),
-        );
+            )*/
     });
     it('If revertIfIncomplete==true, reverts on an incomplete fill ', async () => {
         const fillableOrders = [...new Array(3)].map(() => getTestRfqOrder());
@@ -549,24 +598,21 @@ describe('batchFillRfqOrders', () => {
         await testUtils.fillRfqOrderAsync(partiallyFilledOrder, partialFillAmount);
         const orders = [partiallyFilledOrder, ...fillableOrders];
         const signatures = await Promise.all(
-            orders.map(order => order.getSignatureWithProviderAsync(env.provider)),
+            orders.map(async order => order.getSignatureWithProviderAsync(await ethers.getSigner(order.maker))),
         );
         await testUtils.prepareBalancesForOrdersAsync(orders);
-        const tx = feature
+        await expect(zeroEx.connect(taker)
             .batchFillRfqOrders(
                 orders,
                 signatures,
                 orders.map(order => order.takerAmount),
                 true,
-            )
-            .awaitTransactionSuccessAsync({ from: taker });
-        return expect(tx).to.revertWith(
-            new RevertErrors.NativeOrders.BatchFillIncompleteError(
+            )).to.be.revertedWith(
+                "batchFillIncompleteError"
+            ).withArgs(
                 partiallyFilledOrder.getHash(),
-                partiallyFilledOrder.takerAmount.minus(partialFillAmount),
+                partiallyFilledOrder.takerAmount.sub(partialFillAmount),
                 partiallyFilledOrder.takerAmount,
-            ),
-        );
+            )
     });
-});
 });

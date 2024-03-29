@@ -11,6 +11,7 @@ import {TokenTransfer} from "../../libraries/TokenTransfer.sol";
 
 /// @dev Feature for getting info about limit and RFQ orders.
 abstract contract NativeOrdersInfo is EIP712, WithStorage, TokenTransfer {
+    error mismatchedArrayLengths();
     error uint128Overflow();
     
     // @dev Params for `_getActualFillableTakerTokenAmount()`.
@@ -165,7 +166,7 @@ abstract contract NativeOrdersInfo is EIP712, WithStorage, TokenTransfer {
             bool[] memory isSignatureValids
         )
     {
-        require(orders.length == signatures.length, "NativeOrdersFeature/MISMATCHED_ARRAY_LENGTHS");
+        if(orders.length != signatures.length) revert mismatchedArrayLengths();
         orderInfos = new LibNativeOrder.OrderInfo[](orders.length);
         actualFillableTakerTokenAmounts = new uint128[](orders.length);
         isSignatureValids = new bool[](orders.length);
@@ -203,7 +204,7 @@ abstract contract NativeOrdersInfo is EIP712, WithStorage, TokenTransfer {
             bool[] memory isSignatureValids
         )
     {
-        require(orders.length == signatures.length, "NativeOrdersFeature/MISMATCHED_ARRAY_LENGTHS");
+        if(orders.length != signatures.length) revert mismatchedArrayLengths();
         orderInfos = new LibNativeOrder.OrderInfo[](orders.length);
         actualFillableTakerTokenAmounts = new uint128[](orders.length);
         isSignatureValids = new bool[](orders.length);

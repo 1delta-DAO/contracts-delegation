@@ -2,10 +2,10 @@
 
 pragma solidity ^0.8.24;
 
-import "./NativeOrdersSettlement.sol";
+import "./BatchFillNativeOrders.sol";
 
 /// @dev Feature for interacting with limit and RFQ orders.
-contract NativeOrders is NativeOrdersSettlement {
+contract NativeOrders is BatchFillNativeOrders {
     /// @dev Name of this feature.
     string public constant FEATURE_NAME = "LimitOrders";
     /// @dev Version of this feature.
@@ -15,5 +15,5 @@ contract NativeOrders is NativeOrdersSettlement {
         address proxyAddress,
         address protocolFeeCollector,
         uint32 protocolFeeMultiplier
-    ) NativeOrdersSettlement(proxyAddress, protocolFeeCollector, protocolFeeMultiplier) {}
+    ) BatchFillNativeOrders(proxyAddress, protocolFeeCollector, protocolFeeMultiplier) {}
 }

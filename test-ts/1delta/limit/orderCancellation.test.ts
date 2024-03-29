@@ -1,17 +1,10 @@
 import {
     constants,
     getRandomPortion as _getRandomPortion,
-    randomAddress,
 } from '@0x/contracts-test-utils';
 
-
 import {
-    assertOrderInfoEquals,
-    computeLimitOrderFilledAmounts,
-    computeRfqOrderFilledAmounts,
-    createExpiry,
-    getActualFillableTakerTokenAmount,
-    getFillableMakerTokenAmount,
+    createCleanExpiry,
     getRandomLimitOrder,
     getRandomRfqOrder,
     NativeOrdersTestEnvironment,
@@ -22,7 +15,6 @@ import {
     MockERC20,
     MockERC20__factory,
     NativeOrders,
-    NativeOrders__factory,
     TestOrderSignerRegistryWithContractWallet,
     TestOrderSignerRegistryWithContractWallet__factory,
     TestRfqOriginRegistration,
@@ -33,21 +25,17 @@ import {
 import { MaxUint128 } from '../../uniswap-v3/periphery/shared/constants';
 import { createNativeOrder } from './utils/orderFixture';
 import { IZeroExEvents, LimitOrder, LimitOrderFields, OrderStatus, RfqOrder, RfqOrderFields } from './utils/constants';
-import { BigNumber, ContractReceipt } from 'ethers';
+import { BigNumber } from 'ethers';
 import { MockProvider } from 'ethereum-waffle';
-import { time } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from '../shared/expect'
-import { sumBn, verifyLogs } from './utils/utils';
-import { SignatureType } from './utils/signature_utils';
+import { verifyLogs } from './utils/utils';
 
-const getRandomPortion = (n: BigNumber) => BigNumber.from(_getRandomPortion(n.toString()).toString())
 
-const { NULL_ADDRESS, MAX_UINT256, NULL_BYTES32, } = constants;
-const ZERO_AMOUNT = BigNumber.from(0)
+const { NULL_ADDRESS } = constants;
+
 let GAS_PRICE: BigNumber
 const PROTOCOL_FEE_MULTIPLIER = 1337e3;
 let SINGLE_PROTOCOL_FEE: BigNumber;
-const ordersInterface = NativeOrders__factory.createInterface()
 let maker: SignerWithAddress;
 let taker: SignerWithAddress;
 let notMaker: SignerWithAddress;
@@ -185,7 +173,7 @@ describe('cancelLimitOrder()', async () => {
     });
 
     it('can cancel an expired order', async () => {
-        const expiry = createExpiry(-60);
+        const expiry = await createCleanExpiry(provider, -1);
         const order = getTestLimitOrder({ expiry });
         const tx = await zeroEx.connect(maker).cancelLimitOrder(order);
         const receipt = await tx.wait()
@@ -264,7 +252,7 @@ describe('cancelRfqOrder()', async () => {
     });
 
     it('can cancel an expired order', async () => {
-        const expiry = createExpiry(-60);
+        const expiry = await createCleanExpiry(provider, -1);
         const order = getTestRfqOrder({ expiry });
         const tx = await zeroEx.connect(maker).cancelRfqOrder(order);
         const receipt = await tx.wait()
