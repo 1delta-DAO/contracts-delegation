@@ -233,7 +233,7 @@ abstract contract NativeOrdersCancellation is NativeOrdersInfo, INativeOrdersEve
     /// @param orderHash The order's order hash.
     /// @param maker The order's maker.
     function _cancelOrderHash(bytes32 orderHash, address maker) private {
-        OrderStorage storage stor =os();
+        OrderStorage storage stor = os();
         // Set the high bit on the raw taker token fill amount to indicate
         // a cancel. It's OK to cancel twice.
         stor.orderHashToTakerTokenFilledAmount[orderHash] |= HIGH_BIT;
