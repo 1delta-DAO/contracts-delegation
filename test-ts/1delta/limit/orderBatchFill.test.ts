@@ -18,7 +18,9 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import {
     MockERC20,
     MockERC20__factory,
-    NativeOrders
+    NativeOrders,
+    OrderLens,
+    OrderLens__factory
 } from '../../../types';
 import { MaxUint128 } from '../../uniswap-v3/periphery/shared/constants';
 import { createNativeOrder } from './utils/orderFixture';
@@ -48,6 +50,7 @@ let takerToken: MockERC20;
 let testUtils: NativeOrdersTestEnvironment;
 let provider: MockProvider;
 let chainId: number
+let orderLens: OrderLens
 before(async () => {
     let owner;
     [owner, maker, taker, notMaker, notTaker, collector] =
@@ -65,6 +68,7 @@ before(async () => {
         collector.address,
         BigNumber.from(PROTOCOL_FEE_MULTIPLIER)
     );
+    orderLens = await new OrderLens__factory(owner).deploy(zeroEx.address)
 
     verifyingContract = zeroEx.address;
     await Promise.all(
@@ -184,7 +188,7 @@ describe('batchFillLimitOrders', () => {
                 { value, gasPrice: GAS_PRICE }
             );
         const receipt = await tx.wait()
-        const [orderInfos] = await zeroEx.batchGetLimitOrderRelevantStates(orders, signatures);
+        const [orderInfos] = await orderLens.batchGetLimitOrderRelevantStates(orders, signatures);
         orderInfos.map((orderInfo, i) =>
             assertOrderInfoEquals(orderInfo, {
                 status: OrderStatus.Filled,
@@ -210,7 +214,7 @@ describe('batchFillLimitOrders', () => {
         const tx = await zeroEx.connect(taker)
             .batchFillLimitOrders(orders, signatures, fillAmounts, false, { value, gasPrice: GAS_PRICE });
         const receipt = await tx.wait()
-        const [orderInfos] = await zeroEx.batchGetLimitOrderRelevantStates(orders, signatures);
+        const [orderInfos] = await orderLens.batchGetLimitOrderRelevantStates(orders, signatures);
         orderInfos.map((orderInfo, i) =>
             assertOrderInfoEquals(orderInfo, {
                 status: OrderStatus.Fillable,
@@ -241,7 +245,7 @@ describe('batchFillLimitOrders', () => {
                 { value, gasPrice: GAS_PRICE }
             );
         const reeipt = await tx.wait()
-        const [orderInfos] = await zeroEx.batchGetLimitOrderRelevantStates(orders, signatures);
+        const [orderInfos] = await orderLens.batchGetLimitOrderRelevantStates(orders, signatures);
         orderInfos.map((orderInfo, i) =>
             assertOrderInfoEquals(orderInfo, {
                 status: OrderStatus.Filled,
@@ -274,7 +278,7 @@ describe('batchFillLimitOrders', () => {
                 { value, gasPrice: GAS_PRICE }
             );
         const receipt = await tx.wait()
-        const [orderInfos] = await zeroEx.batchGetLimitOrderRelevantStates(orders, signatures);
+        const [orderInfos] = await orderLens.batchGetLimitOrderRelevantStates(orders, signatures);
         const [expiredOrderInfo, ...filledOrderInfos] = orderInfos;
         assertOrderInfoEquals(expiredOrderInfo, {
             status: OrderStatus.Expired,
@@ -311,7 +315,7 @@ describe('batchFillLimitOrders', () => {
                 { value, gasPrice: GAS_PRICE }
             );
         const receipt = await tx.wait()
-        const [orderInfos] = await zeroEx.batchGetLimitOrderRelevantStates(orders, signatures);
+        const [orderInfos] = await orderLens.batchGetLimitOrderRelevantStates(orders, signatures);
         orderInfos.map((orderInfo, i) =>
             assertOrderInfoEquals(orderInfo, {
                 status: OrderStatus.Filled,
@@ -430,7 +434,7 @@ describe('batchFillRfqOrders', () => {
                 false
             );
         const receipt = await tx.wait()
-        const [orderInfos] = await zeroEx.batchGetRfqOrderRelevantStates(orders, signatures);
+        const [orderInfos] = await orderLens.batchGetRfqOrderRelevantStates(orders, signatures);
         orderInfos.map((orderInfo, i) =>
             assertOrderInfoEquals(orderInfo, {
                 status: OrderStatus.Filled,
@@ -465,7 +469,7 @@ describe('batchFillRfqOrders', () => {
         const tx = await zeroEx.connect(taker)
             .batchFillRfqOrders(orders, signatures, fillAmounts, false);
         const receipt = await tx.wait()
-        const [orderInfos] = await zeroEx.batchGetRfqOrderRelevantStates(orders, signatures);
+        const [orderInfos] = await orderLens.batchGetRfqOrderRelevantStates(orders, signatures);
         orderInfos.map((orderInfo, i) =>
             assertOrderInfoEquals(orderInfo, {
                 status: OrderStatus.Fillable,
@@ -507,7 +511,7 @@ describe('batchFillRfqOrders', () => {
                 false,
             );
         const receipt = await tx.wait()
-        const [orderInfos] = await zeroEx.batchGetRfqOrderRelevantStates(orders, signatures);
+        const [orderInfos] = await orderLens.batchGetRfqOrderRelevantStates(orders, signatures);
         const [expiredOrderInfo, ...filledOrderInfos] = orderInfos;
         assertOrderInfoEquals(expiredOrderInfo, {
             status: OrderStatus.Expired,
@@ -552,7 +556,7 @@ describe('batchFillRfqOrders', () => {
                 true,
             );
         const receipt = await tx.wait()
-        const [orderInfos] = await zeroEx.batchGetRfqOrderRelevantStates(orders, signatures);
+        const [orderInfos] = await orderLens.batchGetRfqOrderRelevantStates(orders, signatures);
         orderInfos.map((orderInfo, i) =>
             assertOrderInfoEquals(orderInfo, {
                 status: OrderStatus.Filled,

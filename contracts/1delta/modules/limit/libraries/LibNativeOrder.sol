@@ -23,7 +23,6 @@ library LibNativeOrder {
         address taker;
         address sender;
         address feeRecipient;
-        bytes32 pool;
         uint64 expiry;
         uint256 salt;
     }
@@ -37,7 +36,6 @@ library LibNativeOrder {
         address maker;
         address taker;
         address txOrigin;
-        bytes32 pool;
         uint64 expiry;
         uint256 salt;
     }
@@ -83,12 +81,11 @@ library LibNativeOrder {
     //       "address taker,",
     //       "address sender,",
     //       "address feeRecipient,",
-    //       "bytes32 pool,",
     //       "uint64 expiry,",
     //       "uint256 salt"
     //     ")"
     // ))
-    uint256 private constant _LIMIT_ORDER_TYPEHASH = 0xce918627cb55462ddbb85e73de69a8b322f2bc88f4507c52fcad6d4c33c29d49;
+    uint256 private constant _LIMIT_ORDER_TYPEHASH = 0x4914a26e75fb0516940a99a5a7dbdf4e213c834828ea78c5e1caea535ecaa4ef;
 
     // The type hash for RFQ orders, which is:
     // keccak256(abi.encodePacked(
@@ -100,12 +97,11 @@ library LibNativeOrder {
     //       "address maker,",
     //       "address taker,",
     //       "address txOrigin,",
-    //       "bytes32 pool,",
     //       "uint64 expiry,",
     //       "uint256 salt"
     //     ")"
     // ))
-    uint256 private constant _RFQ_ORDER_TYPEHASH = 0xe593d3fdfa8b60e5e17a1b2204662ecbe15c23f2084b9ad5bae40359540a7da9;
+    uint256 private constant _RFQ_ORDER_TYPEHASH = 0x06a920af5a896fdca5e07a3e9e831b450faac28e5a340de3889c3d2b9abd6967;
 
     // The type hash for OTC orders, which is:
     // keccak256(abi.encodePacked(
@@ -138,7 +134,6 @@ library LibNativeOrder {
         //   order.taker,
         //   order.sender,
         //   order.feeRecipient,
-        //   order.pool,
         //   order.expiry,
         //   order.salt,
         // ))
@@ -163,13 +158,11 @@ library LibNativeOrder {
             mstore(add(mem, 0x100), and(ADDRESS_MASK, mload(add(order, 0xE0))))
             // order.feeRecipient;
             mstore(add(mem, 0x120), and(ADDRESS_MASK, mload(add(order, 0x100))))
-            // order.pool;
-            mstore(add(mem, 0x140), mload(add(order, 0x120)))
             // order.expiry;
-            mstore(add(mem, 0x160), and(UINT_64_MASK, mload(add(order, 0x140))))
+            mstore(add(mem, 0x140), and(UINT_64_MASK, mload(add(order, 0x120))))
             // order.salt;
-            mstore(add(mem, 0x180), mload(add(order, 0x160)))
-            structHash := keccak256(mem, 0x1A0)
+            mstore(add(mem, 0x160), mload(add(order, 0x140)))
+            structHash := keccak256(mem, 0x180)
         }
     }
 
@@ -187,7 +180,6 @@ library LibNativeOrder {
         //   order.maker,
         //   order.taker,
         //   order.txOrigin,
-        //   order.pool,
         //   order.expiry,
         //   order.salt,
         // ))
@@ -208,13 +200,11 @@ library LibNativeOrder {
             mstore(add(mem, 0xC0), and(ADDRESS_MASK, mload(add(order, 0xA0))))
             // order.txOrigin;
             mstore(add(mem, 0xE0), and(ADDRESS_MASK, mload(add(order, 0xC0))))
-            // order.pool;
-            mstore(add(mem, 0x100), mload(add(order, 0xE0)))
             // order.expiry;
-            mstore(add(mem, 0x120), and(UINT_64_MASK, mload(add(order, 0x100))))
+            mstore(add(mem, 0x100), and(UINT_64_MASK, mload(add(order, 0xE0))))
             // order.salt;
-            mstore(add(mem, 0x140), mload(add(order, 0x120)))
-            structHash := keccak256(mem, 0x160)
+            mstore(add(mem, 0x120), mload(add(order, 0x100)))
+            structHash := keccak256(mem, 0x140)
         }
     }
 

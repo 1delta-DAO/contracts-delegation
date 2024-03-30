@@ -182,7 +182,6 @@ export class LimitOrder extends OrderBase {
         { type: 'address', name: 'taker' },
         { type: 'address', name: 'sender' },
         { type: 'address', name: 'feeRecipient' },
-        { type: 'bytes32', name: 'pool' },
         { type: 'uint64', name: 'expiry' },
         { type: 'uint256', name: 'salt' },
     ];
@@ -239,7 +238,6 @@ export class LimitOrder extends OrderBase {
                 hexUtils.leftPad(this.taker),
                 hexUtils.leftPad(this.sender),
                 hexUtils.leftPad(this.feeRecipient),
-                hexUtils.leftPad(this.pool),
                 hexUtils.leftPad(this.expiry.toString()),
                 hexUtils.leftPad(this.salt.toString()),
             ),
@@ -288,7 +286,6 @@ export class RfqOrder extends OrderBase {
         { type: 'address', name: 'maker' },
         { type: 'address', name: 'taker' },
         { type: 'address', name: 'txOrigin' },
-        { type: 'bytes32', name: 'pool' },
         { type: 'uint64', name: 'expiry' },
         { type: 'uint256', name: 'salt' },
     ];
@@ -337,7 +334,6 @@ export class RfqOrder extends OrderBase {
                 hexUtils.leftPad(this.maker),
                 hexUtils.leftPad(this.taker),
                 hexUtils.leftPad(this.txOrigin),
-                hexUtils.leftPad(this.pool),
                 hexUtils.leftPad(this.expiry.toString()),
                 hexUtils.leftPad(this.salt.toString()),
             ),

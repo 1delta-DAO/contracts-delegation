@@ -229,7 +229,6 @@ export class NativeOrdersTestEnvironment {
             makerToken: order.makerToken,
             takerToken: order.takerToken,
             protocolFeePaid: protocolFee,
-            pool: order.pool,
         };
     }
 
@@ -251,7 +250,6 @@ export class NativeOrdersTestEnvironment {
             taker: this.taker.address,
             makerToken: order.makerToken,
             takerToken: order.takerToken,
-            pool: order.pool,
         };
     }
 

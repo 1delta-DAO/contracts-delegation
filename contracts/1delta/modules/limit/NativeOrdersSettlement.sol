@@ -336,8 +336,7 @@ abstract contract NativeOrdersSettlement is
             results.takerTokenFilledAmount,
             results.makerTokenFilledAmount,
             results.takerTokenFeeFilledAmount,
-            results.ethProtocolFeePaid,
-            params.order.pool
+            results.ethProtocolFeePaid
         );
     }
 
@@ -418,8 +417,7 @@ abstract contract NativeOrdersSettlement is
             params.order.makerToken,
             params.order.takerToken,
             results.takerTokenFilledAmount,
-            results.makerTokenFilledAmount,
-            params.order.pool
+            results.makerTokenFilledAmount
         );
     }
 

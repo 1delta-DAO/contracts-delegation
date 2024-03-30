@@ -12,7 +12,6 @@ interface INativeOrdersEvents {
     /// @param takerTokenFilledAmount How much taker token was filled.
     /// @param makerTokenFilledAmount How much maker token was filled.
     /// @param protocolFeePaid How much protocol fee was paid.
-    /// @param pool The fee pool associated with this order.
     event LimitOrderFilled(
         bytes32 orderHash,
         address maker,
@@ -23,8 +22,7 @@ interface INativeOrdersEvents {
         uint128 takerTokenFilledAmount,
         uint128 makerTokenFilledAmount,
         uint128 takerTokenFeeFilledAmount,
-        uint256 protocolFeePaid,
-        bytes32 pool
+        uint256 protocolFeePaid
     );
 
     /// @dev Emitted whenever an `RfqOrder` is filled.
@@ -33,7 +31,6 @@ interface INativeOrdersEvents {
     /// @param taker The taker of the order.
     /// @param takerTokenFilledAmount How much taker token was filled.
     /// @param makerTokenFilledAmount How much maker token was filled.
-    /// @param pool The fee pool associated with this order.
     event RfqOrderFilled(
         bytes32 orderHash,
         address maker,
@@ -41,8 +38,7 @@ interface INativeOrdersEvents {
         address makerToken,
         address takerToken,
         uint128 takerTokenFilledAmount,
-        uint128 makerTokenFilledAmount,
-        bytes32 pool
+        uint128 makerTokenFilledAmount
     );
 
     /// @dev Emitted whenever a limit or RFQ order is cancelled.
