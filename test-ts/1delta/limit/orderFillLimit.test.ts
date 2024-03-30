@@ -24,9 +24,9 @@ import { IZeroExEvents, LimitOrder, LimitOrderFields, OrderStatus } from './util
 import { BigNumber, ContractReceipt } from 'ethers';
 import { MockProvider } from 'ethereum-waffle';
 import { expect } from '../shared/expect'
-import { verifyLogs } from './utils/utils';
+import { validateError, verifyLogs } from './utils/utils';
 
-const { NULL_ADDRESS,  } = constants;
+const { NULL_ADDRESS, } = constants;
 const ZERO_AMOUNT = BigNumber.from(0)
 let GAS_PRICE: BigNumber
 const PROTOCOL_FEE_MULTIPLIER = 1337e3;
@@ -286,57 +286,61 @@ describe('fillLimitOrder()', () => {
 
     it('cannot fill an expired order', async () => {
         const order = getTestLimitOrder({ expiry: createExpiry(-60 * 60) });
-        await expect(testUtils.fillLimitOrderAsync(order)).to.be.revertedWith(
+        await validateError(
+            testUtils.fillLimitOrderAsync(order),
             "orderNotFillableError",
-        ).withArgs(order.getHash(), OrderStatus.Expired);
+            [order.getHash(), OrderStatus.Expired]
+        );
     });
 
     it('cannot fill a cancelled order', async () => {
         const order = getTestLimitOrder();
         await zeroEx.connect(maker).cancelLimitOrder(order);
-        await expect(
-            testUtils.fillLimitOrderAsync(order)
-        ).to.be.revertedWith(
+        await validateError(
+            testUtils.fillLimitOrderAsync(order),
             "orderNotFillableError",
-        ).withArgs(order.getHash(), OrderStatus.Cancelled);
+            [order.getHash(), OrderStatus.Cancelled]
+        );
     });
 
     it('cannot fill a salt/pair cancelled order', async () => {
         const order = getTestLimitOrder();
         await zeroEx.connect(maker)
             .cancelPairLimitOrders(makerToken.address, takerToken.address, order.salt.add(1));
-        await expect(testUtils.fillLimitOrderAsync(order)).to.be.revertedWith(
+        await validateError(
+            testUtils.fillLimitOrderAsync(order),
             "orderNotFillableError",
-        ).withArgs(order.getHash(), OrderStatus.Cancelled);
+            [order.getHash(), OrderStatus.Cancelled]
+        );
     });
 
     it('non-taker cannot fill order', async () => {
         const order = getTestLimitOrder({ taker: taker.address });
-        await expect(
-            testUtils.fillLimitOrderAsync(order, { fillAmount: order.takerAmount, taker: notTaker })
-        ).to.be.revertedWith(
+        await validateError(
+            testUtils.fillLimitOrderAsync(order, { fillAmount: order.takerAmount, taker: notTaker }),
             "orderNotFillableByTakerError",
-        ).withArgs(order.getHash(), notTaker.address, order.taker);
+            [order.getHash(), notTaker.address, order.taker]
+        );
     });
 
     it('non-sender cannot fill order', async () => {
         const order = getTestLimitOrder({ sender: taker.address });
-        await expect(
-            testUtils.fillLimitOrderAsync(order, { fillAmount: order.takerAmount, taker: notTaker })
-        ).to.be.revertedWith(
+        await validateError(
+            testUtils.fillLimitOrderAsync(order, { fillAmount: order.takerAmount, taker: notTaker }),
             "orderNotFillableBySenderError",
-        ).withArgs(order.getHash(), notTaker.address, order.sender);
+            [order.getHash(), notTaker.address, order.sender]
+        );
     });
 
     it('cannot fill order with bad signature', async () => {
         const order = getTestLimitOrder();
         // Overwrite chainId to result in a different hash and therefore different
         // signature.
-        await expect(
-            testUtils.fillLimitOrderAsync(order.clone({ chainId: 1234 }))
-        ).to.be.revertedWith(
+        await validateError(
+            testUtils.fillLimitOrderAsync(order.clone({ chainId: 1234 })),
             "orderNotSignedByMakerError",
-        ) // .withArgs(order.getHash(), undefined, order.maker);
+            [order.getHash(), undefined, order.maker]
+        );
     });
 
     // TODO: dekz Ganache gasPrice opcode is returning 0, cannot influence it up to test this case

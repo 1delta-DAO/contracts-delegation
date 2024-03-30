@@ -15,22 +15,22 @@ library LibNativeErrors {
 
     function orderNotFillableByOriginError(
         bytes32 orderHash,
-        address txOrigin,
         address orderTxOrigin
-    ) internal pure returns (bytes memory data) {
+    ) internal view returns (bytes memory data) {
         // return
-        //     abi.encodeWithSelector(
+        // abi.encodeWithSelector(
         //         0xb5620cf4, // bytes4(keccak256("orderNotFillableByOriginError(bytes32,address,address)")),
         //         orderHash,
         //         txOrigin,
         //         orderTxOrigin
         //     );
         assembly {
+            data := mload(0x40)
             mstore(data, 0x64)                      // data length (100) @ 0
             mstore(add(data, 0x20), 0xb5620cf400000000000000000000000000000000000000000000000000000000)     // selector @ 32
             mstore(add(data, 0x24), orderHash)      // data @ 32 + 4
-            mstore(add(data, 0x44), txOrigin)       // data @ 32 + 4 + 32 
-            mstore(add(data, 0x44), orderTxOrigin)  // data @ 32 + 4 + 32 + 32
+            mstore(add(data, 0x44), origin())       // data @ 32 + 4 + 32 
+            mstore(add(data, 0x64), orderTxOrigin)  // data @ 32 + 4 + 32 + 32
             mstore(0x40, add(data, 0x84))           // update free memory pointer
         }
         return data;
@@ -44,6 +44,7 @@ library LibNativeErrors {
         //         orderStatus
         //     );
         assembly {
+            data := mload(0x40)
             mstore(data, 0x44)                      // data length (68) @ 0
             mstore(add(data, 0x20), 0xcf6bb54800000000000000000000000000000000000000000000000000000000)     // selector @ 32
             mstore(add(data, 0x24), orderHash)      // data @ 32 + 4
@@ -66,19 +67,16 @@ library LibNativeErrors {
         //         maker
         //     );
         assembly {
+            data := mload(0x40)
             mstore(data, 0x64)                      // data length (100) @ 0
             mstore(add(data, 0x20), 0xb9ae9aa300000000000000000000000000000000000000000000000000000000)     // selector @ 32
             mstore(add(data, 0x24), orderHash)      // data @ 32 + 4
             mstore(add(data, 0x44), signer)         // data @ 32 + 4 + 32 
-            mstore(add(data, 0x44), maker)          // data @ 32 + 4 + 32 + 32
+            mstore(add(data, 0x64), maker)          // data @ 32 + 4 + 32 + 32
             mstore(0x40, add(data, 0x84))           // update free memory pointer
         }
         return data;
     }
-
-    // function invalidSignerError(address maker, address signer) internal pure returns (bytes memory) {
-
-    // }
 
     function invalidSignerError(address maker, address signer) internal pure returns (bytes memory data) {
         //     return abi.encodeWithSelector(
@@ -87,6 +85,7 @@ library LibNativeErrors {
         //         signer
         //     );
         assembly {
+            data := mload(0x40)
             mstore(data, 0x44)                      // data length (68) @ 0
             mstore(add(data, 0x20), 0xee01de3700000000000000000000000000000000000000000000000000000000)     // selector @ 32
             mstore(add(data, 0x24), maker)          // data @ 32 + 4
@@ -109,6 +108,7 @@ library LibNativeErrors {
         //         orderSender
         //     );
         assembly {
+            data := mload(0x40)
             mstore(data, 0x64)                      // data length (100) @ 0
             mstore(add(data, 0x20), 0x3b718d6500000000000000000000000000000000000000000000000000000000)     // selector @ 32
             mstore(add(data, 0x24), orderHash)      // data @ 32 + 4
@@ -132,6 +132,7 @@ library LibNativeErrors {
         //         orderTaker
         //     );
         assembly {
+            data := mload(0x40)
             mstore(data, 0x64)                      // data length (100) @ 0
             mstore(add(data, 0x20), 0x5ad1544f00000000000000000000000000000000000000000000000000000000)     // selector @ 32
             mstore(add(data, 0x24), orderHash)      // data @ 32 + 4
@@ -178,11 +179,12 @@ library LibNativeErrors {
         //         maker
         //     );
         assembly {
+            data := mload(0x40)
             mstore(data, 0x64)                      // data length (100) @ 0
             mstore(add(data, 0x20), 0x105b08f300000000000000000000000000000000000000000000000000000000)     // selector @ 32
             mstore(add(data, 0x24), orderHash)      // data @ 32 + 4
             mstore(add(data, 0x44), sender)         // data @ 32 + 4 + 32 
-            mstore(add(data, 0x44), maker)          // data @ 32 + 4 + 32 + 32
+            mstore(add(data, 0x64), maker)          // data @ 32 + 4 + 32 + 32
             mstore(0x40, add(data, 0x84))           // update free memory pointer
         }
         return data;

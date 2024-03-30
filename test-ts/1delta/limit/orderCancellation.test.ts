@@ -28,7 +28,7 @@ import { IZeroExEvents, LimitOrder, LimitOrderFields, OrderStatus, RfqOrder, Rfq
 import { BigNumber } from 'ethers';
 import { MockProvider } from 'ethereum-waffle';
 import { expect } from '../shared/expect'
-import { verifyLogs } from './utils/utils';
+import { validateError, verifyLogs } from './utils/utils';
 
 
 const { NULL_ADDRESS } = constants;
@@ -202,9 +202,11 @@ describe('cancelLimitOrder()', async () => {
 
     it("cannot cancel someone else's order", async () => {
         const order = getTestLimitOrder();
-        await expect(zeroEx.connect(notMaker).cancelLimitOrder(order)).to.be.revertedWith(
-            "onlyOrderMakerAllowed"
-        ).withArgs(order.getHash(), notMaker.address, order.maker)
+        await validateError(
+            zeroEx.connect(notMaker).cancelLimitOrder(order),
+            "onlyOrderMakerAllowed",
+            [order.getHash(), notMaker.address, order.maker]
+        )
 
     });
 });
@@ -281,9 +283,10 @@ describe('cancelRfqOrder()', async () => {
 
     it("cannot cancel someone else's order", async () => {
         const order = getTestRfqOrder();
-        await expect(zeroEx.connect(notMaker).cancelRfqOrder(order)).to.revertedWith(
+        await validateError(
+            zeroEx.connect(notMaker).cancelRfqOrder(order),
             "onlyOrderMakerAllowed",
-        ).withArgs(order.getHash(), notMaker.address, order.maker);
+            [order.getHash(), notMaker.address, order.maker]);
     });
 });
 
@@ -303,9 +306,11 @@ describe('batchCancelLimitOrders()', async () => {
 
     it("cannot cancel someone else's orders", async () => {
         const orders = [...new Array(3)].map(() => getTestLimitOrder());
-        await expect(zeroEx.connect(notMaker).batchCancelLimitOrders(orders)).to.be.revertedWith(
-            "onlyOrderMakerAllowed"
-        ).withArgs(orders[0].getHash(), notMaker.address, orders[0].maker)
+        await validateError(
+            zeroEx.connect(notMaker).batchCancelLimitOrders(orders),
+            "onlyOrderMakerAllowed",
+            [orders[0].getHash(), notMaker.address, orders[0].maker]
+        )
     });
 });
 
@@ -325,9 +330,11 @@ describe('batchCancelRfqOrders()', async () => {
 
     it("cannot cancel someone else's orders", async () => {
         const orders = [...new Array(3)].map(() => getTestRfqOrder());
-        return expect(zeroEx.connect(notMaker).batchCancelRfqOrders(orders)).to.be.revertedWith(
-            "onlyOrderMakerAllowed"
-        ).withArgs(orders[0].getHash(), notMaker.address, orders[0].maker)
+        await validateError(
+            zeroEx.connect(notMaker).batchCancelRfqOrders(orders),
+            "onlyOrderMakerAllowed",
+            [orders[0].getHash(), notMaker.address, orders[0].maker]
+        )
     });
 });
 

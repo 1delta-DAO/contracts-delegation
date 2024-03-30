@@ -87,10 +87,9 @@ abstract contract NativeOrdersSettlement is
     address public immutable PROTOCOL_FEE_COLLECTOR;
 
     constructor(
-        address proxyAddress,
         address protocolFeeCollector,
         uint32 protocolFeeMultiplier
-    ) NativeOrdersCancellation(proxyAddress)
+    ) NativeOrdersCancellation()
     {
         PROTOCOL_FEE_MULTIPLIER = protocolFeeMultiplier;
         PROTOCOL_FEE_COLLECTOR = protocolFeeCollector;
@@ -165,8 +164,8 @@ abstract contract NativeOrdersSettlement is
     /// @param takerTokenFillAmount How much taker token to fill this order with.
     /// @return makerTokenFilledAmount How much maker token was filled.
     function fillOrKillLimitOrder(
-        LibNativeOrder.LimitOrder memory order,
-        LibSignature.Signature memory signature,
+        LibNativeOrder.LimitOrder calldata order,
+        LibSignature.Signature calldata signature,
         uint128 takerTokenFillAmount
     ) public payable returns (uint128 makerTokenFilledAmount) {
         (FillNativeOrderResults memory results, bytes memory errorData) = _fillLimitOrderPrivate(
@@ -200,8 +199,8 @@ abstract contract NativeOrdersSettlement is
     /// @param takerTokenFillAmount How much taker token to fill this order with.
     /// @return makerTokenFilledAmount How much maker token was filled.
     function fillOrKillRfqOrder(
-        LibNativeOrder.RfqOrder memory order,
-        LibSignature.Signature memory signature,
+        LibNativeOrder.RfqOrder calldata order,
+        LibSignature.Signature calldata signature,
         uint128 takerTokenFillAmount
     ) public returns (uint128 makerTokenFilledAmount) {
         (FillNativeOrderResults memory results, bytes memory errorData) = _fillRfqOrderPrivate(
@@ -233,10 +232,8 @@ abstract contract NativeOrdersSettlement is
     function registerAllowedRfqOrigins(address[] memory origins, bool allowed) external {
         if(msg.sender != tx.origin) revert noContractOrigins();
 
-        OrderStorage storage stor = os();
-
         for (uint256 i = 0; i < origins.length; i++) {
-            stor.originRegistry[msg.sender][origins[i]] = allowed;
+            originRegistry[msg.sender][origins[i]] = allowed;
         }
 
         emit RfqOrderOriginsAllowed(msg.sender, origins, allowed);
@@ -364,13 +361,11 @@ abstract contract NativeOrdersSettlement is
         }
 
         {
-            OrderStorage storage stor = os();
 
             // Must be fillable by the tx.origin.
-            if (params.order.txOrigin != tx.origin && !stor.originRegistry[params.order.txOrigin][tx.origin]) {
+            if (params.order.txOrigin != tx.origin && !originRegistry[params.order.txOrigin][tx.origin]) {
                 errorData = LibNativeErrors.orderNotFillableByOriginError(
                     orderInfo.orderHash,
-                    tx.origin,
                     params.order.txOrigin
                 );
                 return (results, errorData);
@@ -457,7 +452,7 @@ abstract contract NativeOrdersSettlement is
 
         // Update filled state for the order.
         // solhint-disable-next-line max-line-length
-        os().orderHashToTakerTokenFilledAmount[settleInfo.orderHash] = safeAdd128(
+        orderHashToTakerTokenFilledAmount[settleInfo.orderHash] = safeAdd128(
             settleInfo // function if the order is cancelled. // OK to overwrite the whole word because we shouldn't get to this
             .takerTokenFilledAmount,
              takerTokenFilledAmount);
@@ -478,9 +473,8 @@ abstract contract NativeOrdersSettlement is
     /// @param signer The address from which you plan to generate signatures
     /// @param allowed True to register, false to unregister.
     function registerAllowedOrderSigner(address signer, bool allowed) external {
-        OrderStorage storage stor = os();
 
-        stor.orderSignerRegistry[msg.sender][signer] = allowed;
+        orderSignerRegistry[msg.sender][signer] = allowed;
 
         emit OrderSignerRegistered(msg.sender, signer, allowed);
     }

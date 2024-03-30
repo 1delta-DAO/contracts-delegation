@@ -27,10 +27,10 @@ import {
 import { MaxUint128 } from '../../uniswap-v3/periphery/shared/constants';
 import { createNativeOrder } from './utils/orderFixture';
 import { IZeroExEvents, LimitOrder, LimitOrderFields, OrderStatus, RfqOrder, RfqOrderFields } from './utils/constants';
-import { BigNumber, ContractReceipt } from 'ethers';
+import { BigNumber } from 'ethers';
 import { MockProvider } from 'ethereum-waffle';
 import { expect } from '../shared/expect'
-import { infoEqals, sumBn, verifyLogs } from './utils/utils';
+import { infoEqals, sumBn, validateError, verifyLogs } from './utils/utils';
 import { SignatureType } from './utils/signature_utils';
 
 const getRandomPortion = (n: BigNumber) => BigNumber.from(_getRandomPortion(n.toString()).toString())
@@ -517,12 +517,13 @@ describe('registerAllowedSigner()', () => {
             .registerAllowedOrderSigner(contractWalletSigner.address, false);
 
         const tx = zeroEx.connect(taker).fillRfqOrder(order, sig, order.takerAmount);
-        return expect(tx).to.be.revertedWith(
-            "orderNotSignedByMakerError"
-        ).withArgs(
-            order.getHash(),
-            contractWalletSigner.address,
-            order.maker,
+        await validateError(tx,
+            "orderNotSignedByMakerError",
+            [
+                order.getHash(),
+                contractWalletSigner.address,
+                order.maker,
+            ]
         )
     });
 
@@ -536,9 +537,9 @@ describe('registerAllowedSigner()', () => {
         await makerToken.mint(contractWallet.address, order.makerAmount);
 
         const tx = zeroEx.connect(taker).fillRfqOrder(order, sig, order.takerAmount);
-        return expect(tx).to.be.revertedWith(
-            "orderNotSignedByMakerError"
-        ).withArgs(order.getHash(), maker.address, order.maker)
+        await validateError(tx,
+            "orderNotSignedByMakerError",
+            [order.getHash(), maker.address, order.maker])
     });
 
     it(`allows an approved signer to cancel an RFQ order`, async () => {
@@ -592,9 +593,9 @@ describe('registerAllowedSigner()', () => {
 
         const tx = zeroEx.connect(maker).cancelRfqOrder(order);
 
-        return expect(tx).to.be.revertedWith(
-            "onlyOrderMakerAllowed"
-        ).withArgs(order.getHash(), maker.address, order.maker)
+        await validateError(tx,
+            "onlyOrderMakerAllowed",
+            [order.getHash(), maker.address, order.maker])
     });
 
     it(`doesn't allow an unapproved signer to cancel a limit order`, async () => {
@@ -602,9 +603,9 @@ describe('registerAllowedSigner()', () => {
 
         const tx = zeroEx.connect(maker).cancelLimitOrder(order);
 
-        return expect(tx).to.be.revertedWith(
-            "onlyOrderMakerAllowed"
-        ).withArgs(order.getHash(), maker.address, order.maker)
+        await validateError(tx,
+            "onlyOrderMakerAllowed",
+            [order.getHash(), maker.address, order.maker])
     });
 
     it(`allows a signer to cancel pair RFQ orders`, async () => {
@@ -657,10 +658,9 @@ describe('registerAllowedSigner()', () => {
                 minValidSalt,
             );
 
-        return expect(tx).to.be.revertedWith(
-            "invalidSigner"
-        ).withArgs(
-            contractWallet.address, maker.address
+        await validateError(tx,
+            "invalidSigner",
+            [contractWallet.address, maker.address]
         )
     });
 
@@ -714,9 +714,9 @@ describe('registerAllowedSigner()', () => {
                 minValidSalt,
             );
 
-        return expect(tx).to.be.revertedWith(
-            "invalidSigner"
-        ).withArgs(contractWallet.address, maker.address)
+        await validateError(tx,
+            "invalidSigner",
+            [contractWallet.address, maker.address])
     });
 
     it(`allows a signer to cancel multiple RFQ order pairs`, async () => {
@@ -778,9 +778,10 @@ describe('registerAllowedSigner()', () => {
                 [minValidSalt, minValidSalt],
             );
 
-        return expect(tx).to.be.revertedWith(
-            "invalidSigner"
-        ).withArgs(contractWallet.address, maker.address)
+        await validateError(tx,
+            "invalidSigner",
+            [contractWallet.address, maker.address]
+        )
     });
 
     it(`allows a signer to cancel multiple limit order pairs`, async () => {
@@ -842,9 +843,10 @@ describe('registerAllowedSigner()', () => {
                 [minValidSalt, minValidSalt],
             );
 
-        return expect(tx).to.be.revertedWith(
-            "invalidSigner"
-        ).withArgs(contractWallet.address, maker.address)
+        await validateError(tx,
+            "invalidSigner",
+            [contractWallet.address, maker.address]
+        )
     });
 });
 

@@ -1,18 +1,36 @@
 // SPDX-License-Identifier: BUSL 1.1
 
-pragma solidity ^0.8.0;
-
+pragma solidity ^0.8.24;
 
 import "./EIP712.sol";
-import {WithStorage, OrderStorage} from"../../storage/BrokerStorage.sol";
 import "./libraries/LibSignature.sol";
 import "./libraries/LibNativeOrder.sol";
 import {TokenTransfer} from "../../libraries/TokenTransfer.sol";
 
 /// @dev Feature for getting info about limit and RFQ orders.
-abstract contract NativeOrdersInfo is EIP712, WithStorage, TokenTransfer {
+abstract contract NativeOrdersInfo is EIP712, TokenTransfer {
     error mismatchedArrayLengths();
     error uint128Overflow();
+
+    // How much taker token has been filled in order.
+    // The lower `uint128` is the taker token fill amount.
+    // The high bit will be `1` if the order was directly cancelled.
+    mapping(bytes32 => uint256) orderHashToTakerTokenFilledAmount;
+    // The minimum valid order salt for a given maker and order pair (maker, taker) for limit orders.
+    // solhint-disable-next-line max-line-length
+    mapping(address => mapping(address => mapping(address => uint256))) limitOrdersMakerToMakerTokenToTakerTokenToMinValidOrderSalt;
+    // The minimum valid order salt for a given maker and order pair (maker, taker) for RFQ orders.
+    // solhint-disable-next-line max-line-length
+    mapping(address => mapping(address => mapping(address => uint256))) rfqOrdersMakerToMakerTokenToTakerTokenToMinValidOrderSalt;
+    // For a given order origin, which tx.origin addresses are allowed to fill the order.
+    mapping(address => mapping(address => bool)) originRegistry;
+    // For a given maker address, which addresses are allowed to
+    // sign on its behalf.
+    mapping(address => mapping(address => bool)) orderSignerRegistry;
+
+    // tx origin => nonce buckets => min nonce
+    mapping(address => mapping(uint64 => uint128)) txOriginNonces;
+
     
     // @dev Params for `_getActualFillableTakerTokenAmount()`.
     struct GetActualFillableTakerTokenAmountParams {
@@ -26,7 +44,7 @@ abstract contract NativeOrdersInfo is EIP712, WithStorage, TokenTransfer {
     /// @dev Highest bit of a uint256, used to flag cancelled orders.
     uint256 private constant HIGH_BIT = 1 << 255;
 
-    constructor(address proxyAddress)  EIP712(proxyAddress) {}
+    constructor()  EIP712() {}
 
     /// @dev Get the order info for a limit order.
     /// @param order The limit order.
@@ -36,8 +54,7 @@ abstract contract NativeOrdersInfo is EIP712, WithStorage, TokenTransfer {
     ) public view returns (LibNativeOrder.OrderInfo memory orderInfo) {
         // Recover maker and compute order hash.
         orderInfo.orderHash = getLimitOrderHash(order);
-        uint256 minValidSalt = os()
-            .limitOrdersMakerToMakerTokenToTakerTokenToMinValidOrderSalt[order.maker][order.makerToken][
+        uint256 minValidSalt = limitOrdersMakerToMakerTokenToTakerTokenToMinValidOrderSalt[order.maker][order.makerToken][
                 order.takerToken
             ];
         _populateCommonOrderInfoFields(orderInfo, order.takerAmount, order.expiry, order.salt, minValidSalt);
@@ -51,8 +68,7 @@ abstract contract NativeOrdersInfo is EIP712, WithStorage, TokenTransfer {
     ) public view returns (LibNativeOrder.OrderInfo memory orderInfo) {
         // Recover maker and compute order hash.
         orderInfo.orderHash = getRfqOrderHash(order);
-        uint256 minValidSalt = os()
-            .rfqOrdersMakerToMakerTokenToTakerTokenToMinValidOrderSalt[order.maker][order.makerToken][
+        uint256 minValidSalt = rfqOrdersMakerToMakerTokenToTakerTokenToMinValidOrderSalt[order.maker][order.makerToken][
                 order.takerToken
             ];
         _populateCommonOrderInfoFields(orderInfo, order.takerAmount, order.expiry, order.salt, minValidSalt);
@@ -86,7 +102,7 @@ abstract contract NativeOrdersInfo is EIP712, WithStorage, TokenTransfer {
     ///         based on maker funds, in taker tokens.
     /// @return isSignatureValid Whether the signature is valid.
     function getLimitOrderRelevantState(
-        LibNativeOrder.LimitOrder memory order,
+        LibNativeOrder.LimitOrder calldata order,
         LibSignature.Signature calldata signature
     )
         public
@@ -120,7 +136,7 @@ abstract contract NativeOrdersInfo is EIP712, WithStorage, TokenTransfer {
     ///         based on maker funds, in taker tokens.
     /// @return isSignatureValid Whether the signature is valid.
     function getRfqOrderRelevantState(
-        LibNativeOrder.RfqOrder memory order,
+        LibNativeOrder.RfqOrder calldata order,
         LibSignature.Signature calldata signature
     )
         public
@@ -236,13 +252,12 @@ abstract contract NativeOrdersInfo is EIP712, WithStorage, TokenTransfer {
         uint256 salt,
         uint256 minValidSalt
     ) private view {
-        OrderStorage storage stor = os();
 
         // Get the filled and direct cancel state.
         {
             // The high bit of the raw taker token filled amount will be set
             // if the order was cancelled.
-            uint256 rawTakerTokenFilledAmount = stor.orderHashToTakerTokenFilledAmount[orderInfo.orderHash];
+            uint256 rawTakerTokenFilledAmount = orderHashToTakerTokenFilledAmount[orderInfo.orderHash];
             orderInfo.takerTokenFilledAmount = uint128(rawTakerTokenFilledAmount);
             if (orderInfo.takerTokenFilledAmount >= takerAmount) {
                 orderInfo.status = LibNativeOrder.OrderStatus.FILLED;
@@ -310,7 +325,7 @@ abstract contract NativeOrdersInfo is EIP712, WithStorage, TokenTransfer {
     /// @param signer The address that is providing a signature
     function isValidOrderSigner(address maker, address signer) public view returns (bool isValid) {
         // returns false if it the mapping doesn't exist
-        return os().orderSignerRegistry[maker][signer];
+        return orderSignerRegistry[maker][signer];
     }
 
   function safeDowncastToUint128(uint256 a) internal pure returns (uint128) {

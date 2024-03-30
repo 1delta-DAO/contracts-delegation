@@ -18,12 +18,12 @@ abstract contract NativeOrdersCancellation is NativeOrdersInfo, INativeOrdersEve
     /// @dev Highest bit of a uint256, used to flag cancelled orders.
     uint256 private constant HIGH_BIT = 1 << 255;
 
-    constructor(address proxyAddress)  NativeOrdersInfo(proxyAddress) {}
+    constructor() NativeOrdersInfo() {}
 
     /// @dev Cancel a single limit order. The caller must be the maker or a valid order signer.
     ///      Silently succeeds if the order has already been cancelled.
     /// @param order The limit order.
-    function cancelLimitOrder(LibNativeOrder.LimitOrder memory order) public {
+    function cancelLimitOrder(LibNativeOrder.LimitOrder calldata order) public {
         bytes32 orderHash = getLimitOrderHash(order);
         if (msg.sender != order.maker && !isValidOrderSigner(order.maker, msg.sender)) {
             revert onlyOrderMakerAllowed(orderHash, msg.sender, order.maker);
@@ -34,7 +34,7 @@ abstract contract NativeOrdersCancellation is NativeOrdersInfo, INativeOrdersEve
     /// @dev Cancel a single RFQ order. The caller must be the maker or a valid order signer.
     ///      Silently succeeds if the order has already been cancelled.
     /// @param order The RFQ order.
-    function cancelRfqOrder(LibNativeOrder.RfqOrder memory order) public {
+    function cancelRfqOrder(LibNativeOrder.RfqOrder calldata order) public {
         bytes32 orderHash = getRfqOrderHash(order);
         if (msg.sender != order.maker && !isValidOrderSigner(order.maker, msg.sender)) {
             revert onlyOrderMakerAllowed(orderHash, msg.sender, order.maker);
@@ -45,7 +45,7 @@ abstract contract NativeOrdersCancellation is NativeOrdersInfo, INativeOrdersEve
     /// @dev Cancel multiple limit orders. The caller must be the maker or a valid order signer.
     ///      Silently succeeds if the order has already been cancelled.
     /// @param orders The limit orders.
-    function batchCancelLimitOrders(LibNativeOrder.LimitOrder[] memory orders) public {
+    function batchCancelLimitOrders(LibNativeOrder.LimitOrder[] calldata orders) public {
         for (uint256 i; i < orders.length; ++i) {
             cancelLimitOrder(orders[i]);
         }
@@ -54,7 +54,7 @@ abstract contract NativeOrdersCancellation is NativeOrdersInfo, INativeOrdersEve
     /// @dev Cancel multiple RFQ orders. The caller must be the maker or a valid order signer.
     ///      Silently succeeds if the order has already been cancelled.
     /// @param orders The RFQ orders.
-    function batchCancelRfqOrders(LibNativeOrder.RfqOrder[] memory orders) public {
+    function batchCancelRfqOrders(LibNativeOrder.RfqOrder[] calldata orders) public {
         for (uint256 i; i < orders.length; ++i) {
             cancelRfqOrder(orders[i]);
         }
@@ -105,9 +105,9 @@ abstract contract NativeOrdersCancellation is NativeOrdersInfo, INativeOrdersEve
     /// @param takerTokens The taker tokens.
     /// @param minValidSalts The new minimum valid salts.
     function batchCancelPairLimitOrders(
-        address[] memory makerTokens,
-        address[] memory takerTokens,
-        uint256[] memory minValidSalts
+        address[] calldata makerTokens,
+        address[] calldata takerTokens,
+        uint256[] calldata minValidSalts
     ) public {
         if(
             makerTokens.length != takerTokens.length || makerTokens.length != minValidSalts.length
@@ -128,9 +128,9 @@ abstract contract NativeOrdersCancellation is NativeOrdersInfo, INativeOrdersEve
     /// @param minValidSalts The new minimum valid salts.
     function batchCancelPairLimitOrdersWithSigner(
         address maker,
-        address[] memory makerTokens,
-        address[] memory takerTokens,
-        uint256[] memory minValidSalts
+        address[] calldata makerTokens,
+        address[] calldata takerTokens,
+        uint256[] calldata minValidSalts
     ) public {
         if(
             makerTokens.length != takerTokens.length || makerTokens.length != minValidSalts.length
@@ -189,9 +189,9 @@ abstract contract NativeOrdersCancellation is NativeOrdersInfo, INativeOrdersEve
     /// @param takerTokens The taker tokens.
     /// @param minValidSalts The new minimum valid salts.
     function batchCancelPairRfqOrders(
-        address[] memory makerTokens,
-        address[] memory takerTokens,
-        uint256[] memory minValidSalts
+        address[] calldata makerTokens,
+        address[] calldata takerTokens,
+        uint256[] calldata minValidSalts
     ) public {
         if(
             makerTokens.length != takerTokens.length || makerTokens.length != minValidSalts.length
@@ -212,9 +212,9 @@ abstract contract NativeOrdersCancellation is NativeOrdersInfo, INativeOrdersEve
     /// @param minValidSalts The new minimum valid salts.
     function batchCancelPairRfqOrdersWithSigner(
         address maker,
-        address[] memory makerTokens,
-        address[] memory takerTokens,
-        uint256[] memory minValidSalts
+        address[] calldata makerTokens,
+        address[] calldata takerTokens,
+        uint256[] calldata minValidSalts
     ) public {
         if(
             makerTokens.length != takerTokens.length || makerTokens.length != minValidSalts.length
@@ -233,10 +233,9 @@ abstract contract NativeOrdersCancellation is NativeOrdersInfo, INativeOrdersEve
     /// @param orderHash The order's order hash.
     /// @param maker The order's maker.
     function _cancelOrderHash(bytes32 orderHash, address maker) private {
-        OrderStorage storage stor = os();
         // Set the high bit on the raw taker token fill amount to indicate
         // a cancel. It's OK to cancel twice.
-        stor.orderHashToTakerTokenFilledAmount[orderHash] |= HIGH_BIT;
+        orderHashToTakerTokenFilledAmount[orderHash] |= HIGH_BIT;
 
         emit OrderCancelled(orderHash, maker);
     }
@@ -253,16 +252,15 @@ abstract contract NativeOrdersCancellation is NativeOrdersInfo, INativeOrdersEve
         address takerToken,
         uint256 minValidSalt
     ) private {
-        OrderStorage storage stor =os();
 
-        uint256 oldMinValidSalt = stor.rfqOrdersMakerToMakerTokenToTakerTokenToMinValidOrderSalt[maker][makerToken][takerToken];
+        uint256 oldMinValidSalt = rfqOrdersMakerToMakerTokenToTakerTokenToMinValidOrderSalt[maker][makerToken][takerToken];
 
         // New min salt must >= the old one.
         if (oldMinValidSalt > minValidSalt) {
             revert cancelSaltTooLowError(minValidSalt, oldMinValidSalt);
         }
 
-        stor.rfqOrdersMakerToMakerTokenToTakerTokenToMinValidOrderSalt[maker][address(makerToken)][address(takerToken)] = minValidSalt;
+        rfqOrdersMakerToMakerTokenToTakerTokenToMinValidOrderSalt[maker][address(makerToken)][address(takerToken)] = minValidSalt;
 
         emit PairCancelledRfqOrders(maker, address(makerToken), address(takerToken), minValidSalt);
     }
@@ -279,16 +277,15 @@ abstract contract NativeOrdersCancellation is NativeOrdersInfo, INativeOrdersEve
         address takerToken,
         uint256 minValidSalt
     ) private {
-        OrderStorage storage stor =os();
 
-        uint256 oldMinValidSalt = stor.limitOrdersMakerToMakerTokenToTakerTokenToMinValidOrderSalt[maker][makerToken][takerToken];
+        uint256 oldMinValidSalt = limitOrdersMakerToMakerTokenToTakerTokenToMinValidOrderSalt[maker][makerToken][takerToken];
 
         // New min salt must >= the old one.
         if (oldMinValidSalt > minValidSalt) {
             revert cancelSaltTooLowError(minValidSalt, oldMinValidSalt);
         }
 
-        stor.limitOrdersMakerToMakerTokenToTakerTokenToMinValidOrderSalt[maker][makerToken][takerToken] = minValidSalt;
+        limitOrdersMakerToMakerTokenToTakerTokenToMinValidOrderSalt[maker][makerToken][takerToken] = minValidSalt;
 
         emit PairCancelledLimitOrders(maker, makerToken, takerToken, minValidSalt);
     }

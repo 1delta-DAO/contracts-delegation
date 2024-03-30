@@ -26,7 +26,7 @@ import { IZeroExEvents, LimitOrder, LimitOrderFields, OrderStatus, RfqOrder, Rfq
 import { BigNumber, ContractReceipt } from 'ethers';
 import { MockProvider } from 'ethereum-waffle';
 import { expect } from '../shared/expect'
-import { verifyLogs } from './utils/utils';
+import { validateError, verifyLogs } from './utils/utils';
 import * as _ from 'lodash';
 
 const getRandomPortion = (n: BigNumber) => BigNumber.from(_getRandomPortion(n.toString()).toString())
@@ -335,20 +335,20 @@ describe('batchFillLimitOrders', () => {
         );
         await testUtils.prepareBalancesForOrdersAsync(orders);
         const value = testUtils.protocolFee.mul(orders.length);
-        await expect(zeroEx.connect(taker)
-            .batchFillLimitOrders(
-                orders,
-                signatures,
-                orders.map(order => order.takerAmount),
-                true,
-                { value, gasPrice: GAS_PRICE }
-            )).to.be.revertedWith(
-                "orderNotFillableError"
-            )/*.withArgs(
+        await validateError(
+            zeroEx.connect(taker)
+                .batchFillLimitOrders(
+                    orders,
+                    signatures,
+                    orders.map(order => order.takerAmount),
+                    true,
+                    { value, gasPrice: GAS_PRICE }
+                ),
+            "orderNotFillableError",
+            [
                 expiredOrder.getHash(),
-                ZERO_AMOUNT,
-                expiredOrder.takerAmount,
-            )*/
+                OrderStatus.Expired,
+            ])
     });
     it('If revertIfIncomplete==true, reverts on an incomplete fill ', async () => {
         const fillableOrders = [...new Array(3)].map(() => getTestLimitOrder({ takerTokenFeeAmount: ZERO_AMOUNT }));
@@ -361,20 +361,22 @@ describe('batchFillLimitOrders', () => {
         );
         await testUtils.prepareBalancesForOrdersAsync(orders);
         const value = testUtils.protocolFee.mul(orders.length);
-        await expect(zeroEx.connect(taker)
-            .batchFillLimitOrders(
-                orders,
-                signatures,
-                orders.map(order => order.takerAmount),
-                true,
-                { value, gasPrice: GAS_PRICE }
-            )).to.be.revertedWith(
-                "batchFillIncompleteError"
-            ).withArgs(
+        await validateError(
+            zeroEx.connect(taker)
+                .batchFillLimitOrders(
+                    orders,
+                    signatures,
+                    orders.map(order => order.takerAmount),
+                    true,
+                    { value, gasPrice: GAS_PRICE }
+                ),
+            "batchFillIncompleteError",
+            [
                 partiallyFilledOrder.getHash(),
                 partiallyFilledOrder.takerAmount.sub(partialFillAmount),
                 partiallyFilledOrder.takerAmount,
-            )
+            ]
+        )
     });
 });
 describe('batchFillRfqOrders', () => {
@@ -429,7 +431,7 @@ describe('batchFillRfqOrders', () => {
             );
         const receipt = await tx.wait()
         const [orderInfos] = await zeroEx.batchGetRfqOrderRelevantStates(orders, signatures);
-        orderInfos.map((orderInfo, i) => 
+        orderInfos.map((orderInfo, i) =>
             assertOrderInfoEquals(orderInfo, {
                 status: OrderStatus.Filled,
                 orderHash: orders[i].getHash(),
@@ -577,19 +579,17 @@ describe('batchFillRfqOrders', () => {
             orders.map(async order => order.getSignatureWithProviderAsync(await ethers.getSigner(order.maker))),
         );
         await testUtils.prepareBalancesForOrdersAsync(orders);
-        await expect(zeroEx.connect(taker)
-            .batchFillRfqOrders(
-                orders,
-                signatures,
-                orders.map(order => order.takerAmount),
-                true,
-            )).to.be.revertedWith(
-                "orderNotFillableError"
-            )/*.withArgs(
-                expiredOrder.getHash(),
-                ZERO_AMOUNT,
-                expiredOrder.takerAmount,
-            )*/
+        await validateError(
+            zeroEx.connect(taker)
+                .batchFillRfqOrders(
+                    orders,
+                    signatures,
+                    orders.map(order => order.takerAmount),
+                    true,
+                ),
+            "orderNotFillableError",
+            [expiredOrder.getHash(), OrderStatus.Expired,]
+        )
     });
     it('If revertIfIncomplete==true, reverts on an incomplete fill ', async () => {
         const fillableOrders = [...new Array(3)].map(() => getTestRfqOrder());
@@ -601,18 +601,19 @@ describe('batchFillRfqOrders', () => {
             orders.map(async order => order.getSignatureWithProviderAsync(await ethers.getSigner(order.maker))),
         );
         await testUtils.prepareBalancesForOrdersAsync(orders);
-        await expect(zeroEx.connect(taker)
-            .batchFillRfqOrders(
-                orders,
-                signatures,
-                orders.map(order => order.takerAmount),
-                true,
-            )).to.be.revertedWith(
-                "batchFillIncompleteError"
-            ).withArgs(
-                partiallyFilledOrder.getHash(),
-                partiallyFilledOrder.takerAmount.sub(partialFillAmount),
-                partiallyFilledOrder.takerAmount,
-            )
+        await validateError(
+            zeroEx.connect(taker)
+                .batchFillRfqOrders(
+                    orders,
+                    signatures,
+                    orders.map(order => order.takerAmount),
+                    true,
+                ),
+            "batchFillIncompleteError", [
+            partiallyFilledOrder.getHash(),
+            partiallyFilledOrder.takerAmount.sub(partialFillAmount),
+            partiallyFilledOrder.takerAmount,
+        ]
+        )
     });
 });

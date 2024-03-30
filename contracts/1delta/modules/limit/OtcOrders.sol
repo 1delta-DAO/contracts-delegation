@@ -16,10 +16,9 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
 
     constructor(
         address weth,
-        address proxyAddress,
         address protocolFeeCollector,
         uint32 protocolFeeMultiplier
-        ) BatchFillNativeOrders(proxyAddress, protocolFeeCollector, protocolFeeMultiplier) {
+        ) BatchFillNativeOrders(protocolFeeCollector, protocolFeeMultiplier) {
         WETH = weth;
     }
 
@@ -32,8 +31,8 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
     /// @return takerTokenFilledAmount How much taker token was filled.
     /// @return makerTokenFilledAmount How much maker token was filled.
     function fillOtcOrder(
-        LibNativeOrder.OtcOrder memory order,
-        LibSignature.Signature memory makerSignature,
+        LibNativeOrder.OtcOrder calldata order,
+        LibSignature.Signature calldata makerSignature,
         uint128 takerTokenFillAmount
     ) public override returns (uint128 takerTokenFilledAmount, uint128 makerTokenFilledAmount) {
         LibNativeOrder.OtcOrderInfo memory orderInfo = getOtcOrderInfo(order);
@@ -66,8 +65,8 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
     /// @return takerTokenFilledAmount How much taker token was filled.
     /// @return makerTokenFilledAmount How much maker token was filled.
     function fillOtcOrderForEth(
-        LibNativeOrder.OtcOrder memory order,
-        LibSignature.Signature memory makerSignature,
+        LibNativeOrder.OtcOrder calldata order,
+        LibSignature.Signature calldata makerSignature,
         uint128 takerTokenFillAmount
     ) public override returns (uint128 takerTokenFilledAmount, uint128 makerTokenFilledAmount) {
         if(order.makerToken != WETH) revert makerTokenNotWeth();
@@ -102,8 +101,8 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
     /// @return takerTokenFilledAmount How much taker token was filled.
     /// @return makerTokenFilledAmount How much maker token was filled.
     function fillOtcOrderWithEth(
-        LibNativeOrder.OtcOrder memory order,
-        LibSignature.Signature memory makerSignature
+        LibNativeOrder.OtcOrder calldata order,
+        LibSignature.Signature calldata makerSignature
     ) public payable override returns (uint128 takerTokenFilledAmount, uint128 makerTokenFilledAmount) {
         if (order.takerToken == WETH) {
             // Wrap ETH
@@ -149,9 +148,9 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
     /// @param makerSignature The order signature from the maker.
     /// @param takerSignature The order signature from the taker.
     function fillTakerSignedOtcOrder(
-        LibNativeOrder.OtcOrder memory order,
-        LibSignature.Signature memory makerSignature,
-        LibSignature.Signature memory takerSignature
+        LibNativeOrder.OtcOrder calldata order,
+        LibSignature.Signature calldata makerSignature,
+        LibSignature.Signature calldata takerSignature
     ) public override {
         LibNativeOrder.OtcOrderInfo memory orderInfo = getOtcOrderInfo(order);
         address taker = LibSignature.getSignerOfHash(orderInfo.orderHash, takerSignature);
@@ -178,9 +177,9 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
     /// @param makerSignature The order signature from the maker.
     /// @param takerSignature The order signature from the taker.
     function fillTakerSignedOtcOrderForEth(
-        LibNativeOrder.OtcOrder memory order,
-        LibSignature.Signature memory makerSignature,
-        LibSignature.Signature memory takerSignature
+        LibNativeOrder.OtcOrder calldata order,
+        LibSignature.Signature calldata makerSignature,
+        LibSignature.Signature calldata takerSignature
     ) public override {
         if(order.makerToken != WETH) revert makerTokenNotWeth();
         LibNativeOrder.OtcOrderInfo memory orderInfo = getOtcOrderInfo(order);
@@ -214,9 +213,9 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
     /// @return successes Array of booleans representing whether or not
     ///         each order in `orders` was filled successfully.
     function batchFillTakerSignedOtcOrders(
-        LibNativeOrder.OtcOrder[] memory orders,
-        LibSignature.Signature[] memory makerSignatures,
-        LibSignature.Signature[] memory takerSignatures,
+        LibNativeOrder.OtcOrder[] calldata orders,
+        LibSignature.Signature[] calldata makerSignatures,
+        LibSignature.Signature[] calldata takerSignatures,
         bool[] memory unwrapWeth
     ) public override returns (bool[] memory successes) {
         if(
@@ -244,9 +243,9 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
     /// @param makerSignature The order signature from the maker.
     /// @param taker The order taker.
     function _validateOtcOrder(
-        LibNativeOrder.OtcOrder memory order,
+        LibNativeOrder.OtcOrder calldata order,
         LibNativeOrder.OtcOrderInfo memory orderInfo,
-        LibSignature.Signature memory makerSignature,
+        LibSignature.Signature calldata makerSignature,
         address taker
     ) private view {
         // Must be fillable.
@@ -259,17 +258,16 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
             LibNativeErrors.orderNotFillableByTakerError(orderInfo.orderHash, taker, order.taker);
         }
 
-        OrderStorage storage stor = os();
 
         // Must be fillable by the tx.origin.
-        if (order.txOrigin != tx.origin && !stor.originRegistry[order.txOrigin][tx.origin]) {
+        if (order.txOrigin != tx.origin && !originRegistry[order.txOrigin][tx.origin]) {
             LibNativeErrors
-                .orderNotFillableByOriginError(orderInfo.orderHash, tx.origin, order.txOrigin);
+                .orderNotFillableByOriginError(orderInfo.orderHash, order.txOrigin);
         }
 
         // Maker signature must be valid for the order.
         address makerSigner = LibSignature.getSignerOfHash(orderInfo.orderHash, makerSignature);
-        if (makerSigner != order.maker && !stor.orderSignerRegistry[order.maker][makerSigner]) {
+        if (makerSigner != order.maker && !orderSignerRegistry[order.maker][makerSigner]) {
             LibNativeErrors
                 .orderNotSignedByMakerError(orderInfo.orderHash, makerSigner, order.maker);
         }
@@ -294,7 +292,7 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
             uint64 nonceBucket = uint64(order.expiryAndNonce >> 128);
             uint128 nonce = uint128(order.expiryAndNonce);
             // Update tx origin nonce for the order
-            os().txOriginNonces[order.txOrigin][nonceBucket] = nonce;
+            txOriginNonces[order.txOrigin][nonceBucket] = nonce;
         }
 
         if (takerTokenFillAmount == order.takerAmount) {
@@ -338,7 +336,6 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
         // compute order hash.
         orderInfo.orderHash = getOtcOrderHash(order);
 
-        OrderStorage storage stor = os();
 
         // Unpack expiry and nonce fields
         uint64 expiry = uint64(order.expiryAndNonce >> 192);
@@ -346,7 +343,7 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
         uint128 nonce = uint128(order.expiryAndNonce);
 
         // check tx origin nonce
-        uint128 lastNonce = stor.txOriginNonces[order.txOrigin][nonceBucket];
+        uint128 lastNonce = txOriginNonces[order.txOrigin][nonceBucket];
         if (nonce <= lastNonce) {
             orderInfo.status = LibNativeOrder.OrderStatus.INVALID;
             return orderInfo;
@@ -378,6 +375,6 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
         address txOrigin,
         uint64 nonceBucket
     ) public view override returns (uint128 lastNonce) {
-        return os().txOriginNonces[txOrigin][nonceBucket];
+        return txOriginNonces[txOrigin][nonceBucket];
     }
 }

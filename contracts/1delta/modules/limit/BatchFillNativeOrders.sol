@@ -9,11 +9,9 @@ contract BatchFillNativeOrders is NativeOrdersSettlement {
     error batchFillIncompleteError(bytes32 hash, uint128 takerTokenFilledAmounts, uint128 takerTokenFillAmounts);
 
     constructor(
-        address proxyAddress,
         address protocolFeeCollector,
         uint32 protocolFeeMultiplier
-    ) NativeOrdersSettlement(proxyAddress,protocolFeeCollector, protocolFeeMultiplier) {}
-
+    ) NativeOrdersSettlement(protocolFeeCollector, protocolFeeMultiplier) {}
 
     /// @dev Fills multiple limit orders.
     /// @param orders Array of limit orders.

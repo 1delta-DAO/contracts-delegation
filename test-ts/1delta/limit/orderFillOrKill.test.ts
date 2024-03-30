@@ -24,7 +24,7 @@ import { IZeroExEvents, LimitOrder, LimitOrderFields, RfqOrder, RfqOrderFields }
 import { BigNumber } from 'ethers';
 import { MockProvider } from 'ethereum-waffle';
 import { expect } from '../shared/expect'
-import {  verifyLogs } from './utils/utils';
+import { validateError, verifyLogs } from './utils/utils';
 
 const { NULL_ADDRESS, } = constants;
 let GAS_PRICE: BigNumber
@@ -137,15 +137,17 @@ describe('fillOrKillLimitOrder()', () => {
         const order = getTestLimitOrder();
         await testUtils.prepareBalancesForOrdersAsync([order]);
         const fillAmount = order.takerAmount.add(1);
-        await expect(zeroEx.connect(taker)
-            .fillOrKillLimitOrder(
-                order,
-                await order.getSignatureWithProviderAsync(maker),
-                fillAmount,
-                { value: SINGLE_PROTOCOL_FEE }
-            )).to.be.revertedWith(
-                "fillOrKillFailedError"
-            ).withArgs(order.getHash(), order.takerAmount, fillAmount);
+        await validateError(
+            zeroEx.connect(taker)
+                .fillOrKillLimitOrder(
+                    order,
+                    await order.getSignatureWithProviderAsync(maker),
+                    fillAmount,
+                    { value: SINGLE_PROTOCOL_FEE }
+                ),
+            "fillOrKillFailedError",
+            [order.getHash(), order.takerAmount, fillAmount]
+        );
     });
 
     it('refunds excess protocol fee', async () => {
@@ -186,9 +188,11 @@ describe('fillOrKillRfqOrder()', () => {
         const fillAmount = order.takerAmount.add(1);
         const tx = zeroEx.connect(taker)
             .fillOrKillRfqOrder(order, await order.getSignatureWithProviderAsync(maker), fillAmount);
-        await expect(tx).to.be.revertedWith(
-            "fillOrKillFailedError"
-        ).withArgs(order.getHash(), order.takerAmount, fillAmount);
+        await validateError(
+            tx,
+            "fillOrKillFailedError",
+            [order.getHash(), order.takerAmount, fillAmount]
+        );
 
     });
 

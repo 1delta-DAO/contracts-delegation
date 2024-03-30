@@ -8,7 +8,7 @@ abstract contract EIP712 {
     /// @dev The domain hash separator for the entire exchange proxy.
     bytes32 public immutable EIP712_DOMAIN_SEPARATOR;
 
-    constructor(address proxyAddress)  {
+    constructor()  {
         // Compute `EIP712_DOMAIN_SEPARATOR`
         {
             uint256 chainId;
@@ -28,7 +28,7 @@ abstract contract EIP712 {
                     keccak256("1delta"),
                     keccak256("1.0.0"),
                     chainId,
-                    proxyAddress
+                    address(this)
                 )
             );
         }
