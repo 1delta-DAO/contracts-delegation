@@ -16,8 +16,6 @@ pragma solidity ^0.8.0;
 
 /// @dev A library for common native order operations.
 library LibNativeOrder {
-    error refundFailed(address sender, uint256 refundAmount);
-
     enum OrderStatus {
         INVALID,
         FILLABLE,
@@ -268,16 +266,6 @@ library LibNativeOrder {
             // order.expiryAndNonce;
             mstore(add(mem, 0x100), mload(add(order, 0xE0)))
             structHash := keccak256(mem, 0x120)
-        }
-    }
-
-    /// @dev Refund any leftover protocol fees in `msg.value` to `msg.sender`.
-    /// @param ethProtocolFeePaid How much ETH was paid in protocol fees.
-    function refundExcessProtocolFeeToSender(uint256 ethProtocolFeePaid) internal {
-        if (msg.value > ethProtocolFeePaid && msg.sender != address(this)) {
-            uint256 refundAmount = msg.value - ethProtocolFeePaid;
-            (bool success, ) = msg.sender.call{value: refundAmount}("");
-            if (!success) revert refundFailed(msg.sender, refundAmount);
         }
     }
 }

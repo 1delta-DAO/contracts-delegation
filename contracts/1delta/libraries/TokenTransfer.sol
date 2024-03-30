@@ -2,24 +2,14 @@
 
 pragma solidity ^0.8.24;
 
-import "../../interfaces/IERC20.sol";
-
 /// @dev Helpers for moving tokens around.
 abstract contract TokenTransfer {
-    // Mask of the lower 20 bytes of a bytes32.
-    uint256 private constant ADDRESS_MASK = 0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff;
-
     /// @dev Transfers ERC20 tokens from `owner` to `to`.
     /// @param token The token to spend.
     /// @param owner The owner of the tokens.
     /// @param to The recipient of the tokens.
     /// @param amount The amount of `token` to transfer.
-    function _transferERC20TokensFrom(
-        address token,
-        address owner,
-        address to,
-        uint256 amount
-    ) internal {
+    function _transferERC20TokensFrom(address token, address owner, address to, uint256 amount) internal {
         assembly {
             let ptr := mload(0x40) // free memory pointer
 
@@ -58,11 +48,7 @@ abstract contract TokenTransfer {
     /// @param token The token to spend.
     /// @param to The recipient of the tokens.
     /// @param amount The amount of `token` to transfer.
-    function _transferERC20Tokens(
-        address token,
-        address to,
-        uint256 amount
-    ) internal {
+    function _transferERC20Tokens(address token, address to, uint256 amount) internal {
         assembly {
             let ptr := mload(0x40) // free memory pointer
 
@@ -135,11 +121,28 @@ abstract contract TokenTransfer {
         }
     }
 
-    function _approve(
-        address token,
-        address to,
-        uint256 value
-    ) internal {
+    function _withdrawNative(address weth, uint256 amount) internal {
+        assembly {
+            // selector for withdraw(uint256)
+            mstore(0x0, 0x2e1a7d4d00000000000000000000000000000000000000000000000000000000)
+            mstore(0x4, amount)
+            if iszero(
+                call(
+                    gas(),
+                    weth,
+                    0x0, // no ETH
+                    0x0, // seletor for deposit()
+                    0x24, // input size = selector plus amount
+                    0x0, // output = empty
+                    0x0 // output size = zero
+                )
+            ) {
+                revert(0, 0) // revert when native transfer fails
+            }
+        }
+    }
+
+    function _approve(address token, address to, uint256 value) internal {
         assembly {
             let ptr := mload(0x40) // free memory pointer
 
@@ -156,9 +159,39 @@ abstract contract TokenTransfer {
     ///      pulled from `owner` by this address.
     /// @param token The token to spend.
     /// @param owner The owner of the tokens.
-    /// @return amount The amount of tokens that can be pulled.
-    function _getSpendableERC20BalanceOf(address token, address owner) internal view returns (uint256) {
-        return min256(IERC20(token).allowance(owner, address(this)), IERC20(token).balanceOf(owner));
+    /// @return spendableBalance The amount of tokens that can be pulled.
+    function _getSpendableERC20BalanceOf(address token, address owner) internal view returns (uint256 spendableBalance) {
+        assembly {
+            let ptr := mload(0x40)
+            // balanceOf
+            mstore(ptr, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+            mstore(add(ptr, 0x20), owner)
+            // call to token
+            let success := staticcall(gas(), token, ptr, 0x24, ptr, 0x20)
+            if iszero(success) {
+                revert(0, 0)
+            }
+            // load balance
+            let tokenBalance := mload(ptr)
+            // allowance
+            mstore(ptr, 0xdd62ed3e00000000000000000000000000000000000000000000000000000000)
+            mstore(add(ptr, 0x20), owner)
+            mstore(add(ptr, 0x40), address())
+            // call to token
+            success := staticcall(gas(), token, ptr, 0x44, ptr, 0x20)
+            if iszero(success) {
+                revert(0, 0)
+            }
+            // load allowance
+            let allowed := mload(ptr)
+            switch lt(tokenBalance, allowed)
+            case 0 {
+                spendableBalance := tokenBalance
+            }
+            default {
+                spendableBalance := allowed
+            }
+        }
     }
 
     function min256(uint256 a, uint256 b) internal pure returns (uint256) {
