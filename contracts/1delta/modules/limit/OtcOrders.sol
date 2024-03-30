@@ -6,9 +6,8 @@ import "./BatchFillNativeOrders.sol";
 import "./IOtcOrdersFeature.sol";
 
 /// @dev Feature for interacting with OTC orders.
-contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
-    error makerTokenNotWeth();
-    error takerTokenNotEth();
+contract OtcOrdersFeature is IOtcOrdersFeature, BatchFillNativeOrders {
+
     /// @dev ETH pseudo-token address.
     address private constant ETH_TOKEN_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     /// @dev The WETH token contract.
@@ -70,7 +69,7 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
         LibSignature.Signature memory makerSignature,
         uint128 takerTokenFillAmount
     ) public override returns (uint128 takerTokenFilledAmount, uint128 makerTokenFilledAmount) {
-        if(order.makerToken != WETH) revert makerTokenNotWeth();
+        require(order.makerToken == WETH, "OtcOrdersFeature::fillOtcOrderForEth/MAKER_TOKEN_NOT_WETH");
         LibNativeOrder.OtcOrderInfo memory orderInfo = getOtcOrderInfo(order);
         _validateOtcOrder(order, orderInfo, makerSignature, msg.sender);
         (takerTokenFilledAmount, makerTokenFilledAmount) = _settleOtcOrder(
@@ -80,7 +79,7 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
             address(this)
         );
         // Unwrap WETH
-        _withdrawNative(WETH, makerTokenFilledAmount);
+        WETH.withdraw(makerTokenFilledAmount);
         // Transfer ETH to taker
         _transferEth(msg.sender, makerTokenFilledAmount);
 
@@ -107,11 +106,12 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
     ) public payable override returns (uint128 takerTokenFilledAmount, uint128 makerTokenFilledAmount) {
         if (order.takerToken == WETH) {
             // Wrap ETH
-            _depositNative(WETH, msg.value);
+            WETH.deposit{value: msg.value}();
         } else {
-            if(
-                address(order.takerToken) != ETH_TOKEN_ADDRESS
-            ) revert takerTokenNotEth();
+            require(
+                address(order.takerToken) == ETH_TOKEN_ADDRESS,
+                "OtcOrdersFeature::fillOtcOrderWithEth/INVALID_TAKER_TOKEN"
+            );
         }
 
         LibNativeOrder.OtcOrderInfo memory orderInfo = getOtcOrderInfo(order);
@@ -119,14 +119,14 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
 
         (takerTokenFilledAmount, makerTokenFilledAmount) = _settleOtcOrder(
             order,
-            uint128(msg.value),
+            msg.value.safeDowncastToUint128(),
             address(this),
             msg.sender
         );
         if (takerTokenFilledAmount < msg.value) {
             uint256 refundAmount = msg.value - uint256(takerTokenFilledAmount);
             if (order.takerToken == WETH) {
-                _withdrawNative(WETH, refundAmount);
+                WETH.withdraw(refundAmount);
             }
             // Refund unused ETH
             _transferEth(msg.sender, refundAmount);
@@ -136,8 +136,8 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
             orderInfo.orderHash,
             order.maker,
             msg.sender,
-            order.makerToken,
-            order.takerToken,
+            address(order.makerToken),
+            address(order.takerToken),
             makerTokenFilledAmount,
             takerTokenFilledAmount
         );
@@ -163,8 +163,8 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
             orderInfo.orderHash,
             order.maker,
             taker,
-            order.makerToken,
-            order.takerToken,
+            address(order.makerToken),
+            address(order.takerToken),
             order.makerAmount,
             order.takerAmount
         );
@@ -182,14 +182,14 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
         LibSignature.Signature memory makerSignature,
         LibSignature.Signature memory takerSignature
     ) public override {
-        if(order.makerToken != WETH) revert makerTokenNotWeth();
+        require(order.makerToken == WETH, "OtcOrdersFeature::fillTakerSignedOtcOrder/MAKER_TOKEN_NOT_WETH");
         LibNativeOrder.OtcOrderInfo memory orderInfo = getOtcOrderInfo(order);
         address taker = LibSignature.getSignerOfHash(orderInfo.orderHash, takerSignature);
 
         _validateOtcOrder(order, orderInfo, makerSignature, taker);
         _settleOtcOrder(order, order.takerAmount, taker, address(this));
         // Unwrap WETH
-        _withdrawNative(WETH, order.makerAmount);
+        WETH.withdraw(order.makerAmount);
         // Transfer ETH to taker
         _transferEth(payable(taker), order.makerAmount);
 
@@ -197,8 +197,8 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
             orderInfo.orderHash,
             order.maker,
             taker,
-            order.makerToken,
-            order.takerToken,
+            address(order.makerToken),
+            address(order.takerToken),
             order.makerAmount,
             order.takerAmount
         );
@@ -219,14 +219,14 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
         LibSignature.Signature[] memory takerSignatures,
         bool[] memory unwrapWeth
     ) public override returns (bool[] memory successes) {
-        if(
-            orders.length != makerSignatures.length ||
-                orders.length != takerSignatures.length ||
-                orders.length != unwrapWeth.length
-                ) revert mismatchedArrayLengths();
-    
+        require(
+            orders.length == makerSignatures.length &&
+                orders.length == takerSignatures.length &&
+                orders.length == unwrapWeth.length,
+            "OtcOrdersFeature::batchFillTakerSignedOtcOrders/MISMATCHED_ARRAY_LENGTHS"
+        );
         successes = new bool[](orders.length);
-        for (uint256 i; i != orders.length; i++) {
+        for (uint256 i = 0; i != orders.length; i++) {
             bytes4 fnSelector = unwrapWeth[i]
                 ? this.fillTakerSignedOtcOrderForEth.selector
                 : this.fillTakerSignedOtcOrder.selector;
@@ -251,12 +251,12 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
     ) private view {
         // Must be fillable.
         if (orderInfo.status != LibNativeOrder.OrderStatus.FILLABLE) {
-            LibNativeErrors.orderNotFillableError(orderInfo.orderHash, uint8(orderInfo.status));
+            LibNativeErrors.OrderNotFillableError(orderInfo.orderHash, uint8(orderInfo.status)).rrevert();
         }
 
         // Must be a valid taker for the order.
         if (order.taker != address(0) && order.taker != taker) {
-            LibNativeErrors.orderNotFillableByTakerError(orderInfo.orderHash, taker, order.taker);
+            LibNativeErrors.OrderNotFillableByTakerError(orderInfo.orderHash, taker, order.taker).rrevert();
         }
 
         OrderStorage storage stor = os();
@@ -264,14 +264,16 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
         // Must be fillable by the tx.origin.
         if (order.txOrigin != tx.origin && !stor.originRegistry[order.txOrigin][tx.origin]) {
             LibNativeErrors
-                .orderNotFillableByOriginError(orderInfo.orderHash, tx.origin, order.txOrigin);
+                .OrderNotFillableByOriginError(orderInfo.orderHash, tx.origin, order.txOrigin)
+                .rrevert();
         }
 
         // Maker signature must be valid for the order.
         address makerSigner = LibSignature.getSignerOfHash(orderInfo.orderHash, makerSignature);
         if (makerSigner != order.maker && !stor.orderSignerRegistry[order.maker][makerSigner]) {
             LibNativeErrors
-                .orderNotSignedByMakerError(orderInfo.orderHash, makerSigner, order.maker);
+                .OrderNotSignedByMakerError(orderInfo.orderHash, makerSigner, order.maker)
+                .rrevert();
         }
     }
 
@@ -314,7 +316,7 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
         }
 
         if (payer == address(this)) {
-            if (order.takerToken == ETH_TOKEN_ADDRESS) {
+            if (address(order.takerToken) == ETH_TOKEN_ADDRESS) {
                 // Transfer ETH to the maker.
                 payable(order.maker).transfer(takerTokenFilledAmount);
             } else {

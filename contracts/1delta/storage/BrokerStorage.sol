@@ -51,9 +51,6 @@ struct OrderStorage {
     // For a given maker address, which addresses are allowed to
     // sign on its behalf.
     mapping(address => mapping(address => bool)) orderSignerRegistry;
-
-    // tx origin => nonce buckets => min nonce
-    mapping(address => mapping(uint64 => uint128)) txOriginNonces;
 }
 
 library LibStorage {

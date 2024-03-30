@@ -46,7 +46,7 @@ abstract contract NativeOrdersCancellation is NativeOrdersInfo, INativeOrdersEve
     ///      Silently succeeds if the order has already been cancelled.
     /// @param orders The limit orders.
     function batchCancelLimitOrders(LibNativeOrder.LimitOrder[] memory orders) public {
-        for (uint256 i; i < orders.length; ++i) {
+        for (uint256 i = 0; i < orders.length; ++i) {
             cancelLimitOrder(orders[i]);
         }
     }
@@ -55,7 +55,7 @@ abstract contract NativeOrdersCancellation is NativeOrdersInfo, INativeOrdersEve
     ///      Silently succeeds if the order has already been cancelled.
     /// @param orders The RFQ orders.
     function batchCancelRfqOrders(LibNativeOrder.RfqOrder[] memory orders) public {
-        for (uint256 i; i < orders.length; ++i) {
+        for (uint256 i = 0; i < orders.length; ++i) {
             cancelRfqOrder(orders[i]);
         }
     }
@@ -113,7 +113,7 @@ abstract contract NativeOrdersCancellation is NativeOrdersInfo, INativeOrdersEve
             makerTokens.length != takerTokens.length || makerTokens.length != minValidSalts.length
             ) revert mismatchedArrayLengths();
 
-        for (uint256 i; i < makerTokens.length; ++i) {
+        for (uint256 i = 0; i < makerTokens.length; ++i) {
             _cancelPairLimitOrders(msg.sender, makerTokens[i], takerTokens[i], minValidSalts[i]);
         }
     }
@@ -140,7 +140,7 @@ abstract contract NativeOrdersCancellation is NativeOrdersInfo, INativeOrdersEve
             revert invalidSigner(maker, msg.sender);
         }
 
-        for (uint256 i; i < makerTokens.length; ++i) {
+        for (uint256 i = 0; i < makerTokens.length; ++i) {
             _cancelPairLimitOrders(maker, makerTokens[i], takerTokens[i], minValidSalts[i]);
         }
     }
@@ -197,7 +197,7 @@ abstract contract NativeOrdersCancellation is NativeOrdersInfo, INativeOrdersEve
             makerTokens.length != takerTokens.length || makerTokens.length != minValidSalts.length
             ) revert mismatchedArrayLengths();
 
-        for (uint256 i; i < makerTokens.length; ++i) {
+        for (uint256 i = 0; i < makerTokens.length; ++i) {
             _cancelPairRfqOrders(msg.sender, makerTokens[i], takerTokens[i], minValidSalts[i]);
         }
     }
@@ -224,7 +224,7 @@ abstract contract NativeOrdersCancellation is NativeOrdersInfo, INativeOrdersEve
             revert invalidSigner(maker, msg.sender);
         }
 
-        for (uint256 i; i < makerTokens.length; ++i) {
+        for (uint256 i = 0; i < makerTokens.length; ++i) {
             _cancelPairRfqOrders(maker, makerTokens[i], takerTokens[i], minValidSalts[i]);
         }
     }

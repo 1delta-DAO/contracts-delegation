@@ -170,7 +170,7 @@ abstract contract NativeOrdersInfo is EIP712, WithStorage, TokenTransfer {
         orderInfos = new LibNativeOrder.OrderInfo[](orders.length);
         actualFillableTakerTokenAmounts = new uint128[](orders.length);
         isSignatureValids = new bool[](orders.length);
-        for (uint256 i; i != orders.length; ++i) {
+        for (uint256 i = 0; i < orders.length; ++i) {
             try this.getLimitOrderRelevantState(orders[i], signatures[i]) returns (
                 LibNativeOrder.OrderInfo memory orderInfo,
                 uint128 actualFillableTakerTokenAmount,
@@ -208,7 +208,7 @@ abstract contract NativeOrdersInfo is EIP712, WithStorage, TokenTransfer {
         orderInfos = new LibNativeOrder.OrderInfo[](orders.length);
         actualFillableTakerTokenAmounts = new uint128[](orders.length);
         isSignatureValids = new bool[](orders.length);
-        for (uint256 i; i != orders.length; ++i) {
+        for (uint256 i = 0; i < orders.length; ++i) {
             try this.getRfqOrderRelevantState(orders[i], signatures[i]) returns (
                 LibNativeOrder.OrderInfo memory orderInfo,
                 uint128 actualFillableTakerTokenAmount,
