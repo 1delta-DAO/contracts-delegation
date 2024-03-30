@@ -15,21 +15,21 @@ abstract contract NativeOrdersInfo is EIP712, TokenTransfer {
     // How much taker token has been filled in order.
     // The lower `uint128` is the taker token fill amount.
     // The high bit will be `1` if the order was directly cancelled.
-    mapping(bytes32 => uint256) orderHashToTakerTokenFilledAmount;
+    mapping(bytes32 => uint256) internal orderHashToTakerTokenFilledAmount;
     // The minimum valid order salt for a given maker and order pair (maker, taker) for limit orders.
     // solhint-disable-next-line max-line-length
-    mapping(address => mapping(address => mapping(address => uint256))) limitOrdersMakerToMakerTokenToTakerTokenToMinValidOrderSalt;
+    mapping(address => mapping(address => mapping(address => uint256))) internal limitOrdersMakerToMakerTokenToTakerTokenToMinValidOrderSalt;
     // The minimum valid order salt for a given maker and order pair (maker, taker) for RFQ orders.
     // solhint-disable-next-line max-line-length
-    mapping(address => mapping(address => mapping(address => uint256))) rfqOrdersMakerToMakerTokenToTakerTokenToMinValidOrderSalt;
+    mapping(address => mapping(address => mapping(address => uint256))) internal rfqOrdersMakerToMakerTokenToTakerTokenToMinValidOrderSalt;
     // For a given order origin, which tx.origin addresses are allowed to fill the order.
-    mapping(address => mapping(address => bool)) originRegistry;
+    mapping(address => mapping(address => bool)) internal originRegistry;
     // For a given maker address, which addresses are allowed to
     // sign on its behalf.
-    mapping(address => mapping(address => bool)) orderSignerRegistry;
+    mapping(address => mapping(address => bool)) internal orderSignerRegistry;
 
     // tx origin => nonce buckets => min nonce
-    mapping(address => mapping(uint64 => uint128)) txOriginNonces;
+    mapping(address => mapping(uint64 => uint128)) internal txOriginNonces;
 
     
     // @dev Params for `_getActualFillableTakerTokenAmount()`.
@@ -44,7 +44,7 @@ abstract contract NativeOrdersInfo is EIP712, TokenTransfer {
     /// @dev Highest bit of a uint256, used to flag cancelled orders.
     uint256 private constant HIGH_BIT = 1 << 255;
 
-    constructor()  EIP712() {}
+    constructor() EIP712() {}
 
     /// @dev Get the order info for a limit order.
     /// @param order The limit order.
@@ -161,82 +161,6 @@ abstract contract NativeOrdersInfo is EIP712, TokenTransfer {
         isSignatureValid = (order.maker == signerOfHash) || isValidOrderSigner(order.maker, signerOfHash);
     }
 
-    /// @dev Batch version of `getLimitOrderRelevantState()`, without reverting.
-    ///      Orders that would normally cause `getLimitOrderRelevantState()`
-    ///      to revert will have empty results.
-    /// @param orders The limit orders.
-    /// @param signatures The order signatures.
-    /// @return orderInfos Info about the orders.
-    /// @return actualFillableTakerTokenAmounts How much of each order is fillable
-    ///         based on maker funds, in taker tokens.
-    /// @return isSignatureValids Whether each signature is valid for the order.
-    function batchGetLimitOrderRelevantStates(
-        LibNativeOrder.LimitOrder[] calldata orders,
-        LibSignature.Signature[] calldata signatures
-    )
-        external
-        view
-        returns (
-            LibNativeOrder.OrderInfo[] memory orderInfos,
-            uint128[] memory actualFillableTakerTokenAmounts,
-            bool[] memory isSignatureValids
-        )
-    {
-        if(orders.length != signatures.length) revert mismatchedArrayLengths();
-        orderInfos = new LibNativeOrder.OrderInfo[](orders.length);
-        actualFillableTakerTokenAmounts = new uint128[](orders.length);
-        isSignatureValids = new bool[](orders.length);
-        for (uint256 i; i != orders.length; ++i) {
-            try this.getLimitOrderRelevantState(orders[i], signatures[i]) returns (
-                LibNativeOrder.OrderInfo memory orderInfo,
-                uint128 actualFillableTakerTokenAmount,
-                bool isSignatureValid
-            ) {
-                orderInfos[i] = orderInfo;
-                actualFillableTakerTokenAmounts[i] = actualFillableTakerTokenAmount;
-                isSignatureValids[i] = isSignatureValid;
-            } catch {}
-        }
-    }
-
-    /// @dev Batch version of `getRfqOrderRelevantState()`, without reverting.
-    ///      Orders that would normally cause `getRfqOrderRelevantState()`
-    ///      to revert will have empty results.
-    /// @param orders The RFQ orders.
-    /// @param signatures The order signatures.
-    /// @return orderInfos Info about the orders.
-    /// @return actualFillableTakerTokenAmounts How much of each order is fillable
-    ///         based on maker funds, in taker tokens.
-    /// @return isSignatureValids Whether each signature is valid for the order.
-    function batchGetRfqOrderRelevantStates(
-        LibNativeOrder.RfqOrder[] calldata orders,
-        LibSignature.Signature[] calldata signatures
-    )
-        external
-        view
-        returns (
-            LibNativeOrder.OrderInfo[] memory orderInfos,
-            uint128[] memory actualFillableTakerTokenAmounts,
-            bool[] memory isSignatureValids
-        )
-    {
-        if(orders.length != signatures.length) revert mismatchedArrayLengths();
-        orderInfos = new LibNativeOrder.OrderInfo[](orders.length);
-        actualFillableTakerTokenAmounts = new uint128[](orders.length);
-        isSignatureValids = new bool[](orders.length);
-        for (uint256 i; i != orders.length; ++i) {
-            try this.getRfqOrderRelevantState(orders[i], signatures[i]) returns (
-                LibNativeOrder.OrderInfo memory orderInfo,
-                uint128 actualFillableTakerTokenAmount,
-                bool isSignatureValid
-            ) {
-                orderInfos[i] = orderInfo;
-                actualFillableTakerTokenAmounts[i] = actualFillableTakerTokenAmount;
-                isSignatureValids[i] = isSignatureValid;
-            } catch {}
-        }
-    }
-
     /// @dev Populate `status` and `takerTokenFilledAmount` fields in
     ///      `orderInfo`, which use the same code path for both limit and
     ///      RFQ orders.
@@ -328,7 +252,7 @@ abstract contract NativeOrdersInfo is EIP712, TokenTransfer {
         return orderSignerRegistry[maker][signer];
     }
 
-  function safeDowncastToUint128(uint256 a) internal pure returns (uint128) {
+    function safeDowncastToUint128(uint256 a) internal pure returns (uint128) {
         if (a > type(uint128).max) {
             revert uint128Overflow();
         }

@@ -36,7 +36,8 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
         uint128 takerTokenFillAmount
     ) public override returns (uint128 takerTokenFilledAmount, uint128 makerTokenFilledAmount) {
         LibNativeOrder.OtcOrderInfo memory orderInfo = getOtcOrderInfo(order);
-        _validateOtcOrder(order, orderInfo, makerSignature, msg.sender);
+        (bytes memory errorData, bool hasError) = _validateOtcOrder(order, orderInfo, makerSignature, msg.sender);
+        if(hasError) Reverter.revertWithData(errorData);
         (takerTokenFilledAmount, makerTokenFilledAmount) = _settleOtcOrder(
             order,
             takerTokenFillAmount,
@@ -71,7 +72,8 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
     ) public override returns (uint128 takerTokenFilledAmount, uint128 makerTokenFilledAmount) {
         if(order.makerToken != WETH) revert makerTokenNotWeth();
         LibNativeOrder.OtcOrderInfo memory orderInfo = getOtcOrderInfo(order);
-        _validateOtcOrder(order, orderInfo, makerSignature, msg.sender);
+        (bytes memory errorData, bool hasError) = _validateOtcOrder(order, orderInfo, makerSignature, msg.sender);
+        if(hasError) Reverter.revertWithData(errorData);
         (takerTokenFilledAmount, makerTokenFilledAmount) = _settleOtcOrder(
             order,
             takerTokenFillAmount,
@@ -114,8 +116,8 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
         }
 
         LibNativeOrder.OtcOrderInfo memory orderInfo = getOtcOrderInfo(order);
-        _validateOtcOrder(order, orderInfo, makerSignature, msg.sender);
-
+        (bytes memory errorData, bool hasError) = _validateOtcOrder(order, orderInfo, makerSignature, msg.sender);
+        if(hasError) Reverter.revertWithData(errorData);
         (takerTokenFilledAmount, makerTokenFilledAmount) = _settleOtcOrder(
             order,
             uint128(msg.value),
@@ -152,21 +154,37 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
         LibSignature.Signature calldata makerSignature,
         LibSignature.Signature calldata takerSignature
     ) public override {
+        (bytes memory errorData, bool hasError) = _fillTakerSignedOtcOrderInternal(order, makerSignature, takerSignature);
+        if(hasError) Reverter.revertWithData(errorData);
+    }
+
+
+    /// @dev Fully fill an OTC order.
+    /// @param order The OTC order.
+    /// @param makerSignature The order signature from the maker.
+    /// @param takerSignature The order signature from the taker.
+    function _fillTakerSignedOtcOrderInternal(
+        LibNativeOrder.OtcOrder calldata order,
+        LibSignature.Signature calldata makerSignature,
+        LibSignature.Signature calldata takerSignature
+    ) private returns (bytes memory errorData, bool hasError) {
         LibNativeOrder.OtcOrderInfo memory orderInfo = getOtcOrderInfo(order);
         address taker = LibSignature.getSignerOfHash(orderInfo.orderHash, takerSignature);
+        
+        (errorData, hasError) = _validateOtcOrder(order, orderInfo, makerSignature, taker);
+        if(!hasError){
+            _settleOtcOrder(order, order.takerAmount, taker, taker);
 
-        _validateOtcOrder(order, orderInfo, makerSignature, taker);
-        _settleOtcOrder(order, order.takerAmount, taker, taker);
-
-        emit OtcOrderFilled(
-            orderInfo.orderHash,
-            order.maker,
-            taker,
-            order.makerToken,
-            order.takerToken,
-            order.makerAmount,
-            order.takerAmount
-        );
+            emit OtcOrderFilled(
+                orderInfo.orderHash,
+                order.maker,
+                taker,
+                order.makerToken,
+                order.takerToken,
+                order.makerAmount,
+                order.takerAmount
+            );
+        }
     }
 
     /// @dev Fully fill an OTC order. "Meta-transaction" variant,
@@ -181,26 +199,42 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
         LibSignature.Signature calldata makerSignature,
         LibSignature.Signature calldata takerSignature
     ) public override {
+        (bytes memory errorData, bool hasError) = _fillTakerSignedOtcOrderForEthInternal(order, makerSignature, takerSignature);
+        if(hasError) Reverter.revertWithData(errorData);
+    }
+
+
+    /// @dev Internal filler for an OTC order
+    /// @param order The OTC order.
+    /// @param makerSignature The order signature from the maker.
+    /// @param takerSignature The order signature from the taker.
+    function _fillTakerSignedOtcOrderForEthInternal(
+        LibNativeOrder.OtcOrder calldata order,
+        LibSignature.Signature calldata makerSignature,
+        LibSignature.Signature calldata takerSignature
+    ) private returns (bytes memory errorData, bool hasError) {
         if(order.makerToken != WETH) revert makerTokenNotWeth();
         LibNativeOrder.OtcOrderInfo memory orderInfo = getOtcOrderInfo(order);
         address taker = LibSignature.getSignerOfHash(orderInfo.orderHash, takerSignature);
 
-        _validateOtcOrder(order, orderInfo, makerSignature, taker);
-        _settleOtcOrder(order, order.takerAmount, taker, address(this));
-        // Unwrap WETH
-        _withdrawNative(WETH, order.makerAmount);
-        // Transfer ETH to taker
-        _transferEth(payable(taker), order.makerAmount);
+        (errorData, hasError) = _validateOtcOrder(order, orderInfo, makerSignature, taker);
+        if(!hasError){
+            _settleOtcOrder(order, order.takerAmount, taker, address(this));
+            // Unwrap WETH
+            _withdrawNative(WETH, order.makerAmount);
+            // Transfer ETH to taker
+            _transferEth(taker, order.makerAmount);
 
-        emit OtcOrderFilled(
-            orderInfo.orderHash,
-            order.maker,
-            taker,
-            order.makerToken,
-            order.takerToken,
-            order.makerAmount,
-            order.takerAmount
-        );
+            emit OtcOrderFilled(
+                orderInfo.orderHash,
+                order.maker,
+                taker,
+                order.makerToken,
+                order.takerToken,
+                order.makerAmount,
+                order.takerAmount
+            );
+        }
     }
 
     /// @dev Fills multiple taker-signed OTC orders.
@@ -226,13 +260,11 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
     
         successes = new bool[](orders.length);
         for (uint256 i; i != orders.length; i++) {
-            bytes4 fnSelector = unwrapWeth[i]
-                ? this.fillTakerSignedOtcOrderForEth.selector
-                : this.fillTakerSignedOtcOrder.selector;
-            // Swallow reverts
-            (successes[i], ) = address(this).delegatecall(
-                abi.encodeWithSelector(fnSelector, orders[i], makerSignatures[i], takerSignatures[i])
-            );
+            if(unwrapWeth[i]){
+                (, successes[i]) = _fillTakerSignedOtcOrderInternal(orders[i], makerSignatures[i], takerSignatures[i]);
+            } else {
+                (, successes[i]) = _fillTakerSignedOtcOrderForEthInternal(orders[i], makerSignatures[i], takerSignatures[i]);
+            }
         }
     }
 
@@ -247,29 +279,41 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
         LibNativeOrder.OtcOrderInfo memory orderInfo,
         LibSignature.Signature calldata makerSignature,
         address taker
-    ) private view {
+    ) private view returns(bytes memory errorData, bool hasError) {
         // Must be fillable.
         if (orderInfo.status != LibNativeOrder.OrderStatus.FILLABLE) {
-            LibNativeErrors.orderNotFillableError(orderInfo.orderHash, uint8(orderInfo.status));
+            return (
+                LibNativeErrors.orderNotFillableError(orderInfo.orderHash, uint8(orderInfo.status)),
+                true
+                );
         }
 
         // Must be a valid taker for the order.
         if (order.taker != address(0) && order.taker != taker) {
-            LibNativeErrors.orderNotFillableByTakerError(orderInfo.orderHash, taker, order.taker);
+            return (
+                LibNativeErrors.orderNotFillableByTakerError(orderInfo.orderHash, taker, order.taker),
+                true
+                );
         }
 
 
         // Must be fillable by the tx.origin.
         if (order.txOrigin != tx.origin && !originRegistry[order.txOrigin][tx.origin]) {
-            LibNativeErrors
-                .orderNotFillableByOriginError(orderInfo.orderHash, order.txOrigin);
+            return (
+                LibNativeErrors
+                .orderNotFillableByOriginError(orderInfo.orderHash, order.txOrigin),
+                true
+                );
         }
 
         // Maker signature must be valid for the order.
         address makerSigner = LibSignature.getSignerOfHash(orderInfo.orderHash, makerSignature);
         if (makerSigner != order.maker && !orderSignerRegistry[order.maker][makerSigner]) {
-            LibNativeErrors
-                .orderNotSignedByMakerError(orderInfo.orderHash, makerSigner, order.maker);
+            return (
+                LibNativeErrors
+                .orderNotSignedByMakerError(orderInfo.orderHash, makerSigner, order.maker),
+                true
+                );
         }
     }
 
@@ -282,7 +326,7 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
     /// @return takerTokenFilledAmount How much taker token was filled.
     /// @return makerTokenFilledAmount How much maker token was filled.
     function _settleOtcOrder(
-        LibNativeOrder.OtcOrder memory order,
+        LibNativeOrder.OtcOrder calldata order,
         uint128 takerTokenFillAmount,
         address payer,
         address recipient
@@ -314,7 +358,7 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
         if (payer == address(this)) {
             if (order.takerToken == ETH_TOKEN_ADDRESS) {
                 // Transfer ETH to the maker.
-                payable(order.maker).transfer(takerTokenFilledAmount);
+                _transferEth(order.maker, takerTokenFilledAmount);
             } else {
                 // Transfer this -> maker.
                 _transferERC20Tokens(order.takerToken, order.maker, takerTokenFilledAmount);
@@ -331,11 +375,10 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
     /// @param order The OTC order.
     /// @return orderInfo Info about the order.
     function getOtcOrderInfo(
-        LibNativeOrder.OtcOrder memory order
+        LibNativeOrder.OtcOrder calldata order
     ) public view override returns (LibNativeOrder.OtcOrderInfo memory orderInfo) {
         // compute order hash.
         orderInfo.orderHash = getOtcOrderHash(order);
-
 
         // Unpack expiry and nonce fields
         uint64 expiry = uint64(order.expiryAndNonce >> 192);
@@ -362,7 +405,7 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
     /// @dev Get the canonical hash of an OTC order.
     /// @param order The OTC order.
     /// @return orderHash The order hash.
-    function getOtcOrderHash(LibNativeOrder.OtcOrder memory order) public view override returns (bytes32 orderHash) {
+    function getOtcOrderHash(LibNativeOrder.OtcOrder calldata order) public view override returns (bytes32 orderHash) {
         return _getEIP712Hash(LibNativeOrder.getOtcOrderStructHash(order));
     }
 

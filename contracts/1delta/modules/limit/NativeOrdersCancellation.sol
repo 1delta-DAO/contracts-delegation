@@ -260,9 +260,9 @@ abstract contract NativeOrdersCancellation is NativeOrdersInfo, INativeOrdersEve
             revert cancelSaltTooLowError(minValidSalt, oldMinValidSalt);
         }
 
-        rfqOrdersMakerToMakerTokenToTakerTokenToMinValidOrderSalt[maker][address(makerToken)][address(takerToken)] = minValidSalt;
+        rfqOrdersMakerToMakerTokenToTakerTokenToMinValidOrderSalt[maker][makerToken][takerToken] = minValidSalt;
 
-        emit PairCancelledRfqOrders(maker, address(makerToken), address(takerToken), minValidSalt);
+        emit PairCancelledRfqOrders(maker, makerToken, takerToken, minValidSalt);
     }
 
     /// @dev Cancel all limit orders for a given maker and pair with a salt less

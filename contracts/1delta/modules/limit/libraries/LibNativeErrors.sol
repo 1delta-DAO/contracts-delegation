@@ -168,9 +168,8 @@ library LibNativeErrors {
 
     function onlyOrderMakerAllowed(
         bytes32 orderHash,
-        address sender,
         address maker
-    ) internal pure returns (bytes memory data) {
+    ) internal view returns (bytes memory data) {
         // return
         //     abi.encodeWithSelector(
         //         0x105b08f3, // bytes4(keccak256("onlyOrderMakerAllowed(bytes32,address,address)")),
@@ -183,7 +182,7 @@ library LibNativeErrors {
             mstore(data, 0x64)                      // data length (100) @ 0
             mstore(add(data, 0x20), 0x105b08f300000000000000000000000000000000000000000000000000000000)     // selector @ 32
             mstore(add(data, 0x24), orderHash)      // data @ 32 + 4
-            mstore(add(data, 0x44), sender)         // data @ 32 + 4 + 32 
+            mstore(add(data, 0x44), caller())         // data @ 32 + 4 + 32 
             mstore(add(data, 0x64), maker)          // data @ 32 + 4 + 32 + 32
             mstore(0x40, add(data, 0x84))           // update free memory pointer
         }
