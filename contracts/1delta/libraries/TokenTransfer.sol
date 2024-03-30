@@ -9,7 +9,12 @@ abstract contract TokenTransfer {
     /// @param owner The owner of the tokens.
     /// @param to The recipient of the tokens.
     /// @param amount The amount of `token` to transfer.
-    function _transferERC20TokensFrom(address token, address owner, address to, uint256 amount) internal {
+    function _transferERC20TokensFrom(
+        address token,
+        address owner,
+        address to,
+        uint256 amount
+    ) internal {
         assembly {
             let ptr := mload(0x40) // free memory pointer
 
@@ -48,7 +53,11 @@ abstract contract TokenTransfer {
     /// @param token The token to spend.
     /// @param to The recipient of the tokens.
     /// @param amount The amount of `token` to transfer.
-    function _transferERC20Tokens(address token, address to, uint256 amount) internal {
+    function _transferERC20Tokens(
+        address token,
+        address to,
+        uint256 amount
+    ) internal {
         assembly {
             let ptr := mload(0x40) // free memory pointer
 
@@ -161,30 +170,33 @@ abstract contract TokenTransfer {
     /// @param owner The owner of the tokens.
     /// @return spendableBalance The amount of tokens that can be pulled.
     function _getSpendableERC20BalanceOf(address token, address owner) internal view returns (uint256 spendableBalance) {
+        // return min256(IERC20(token).allowance(owner, address(this)), IERC20(token).balanceOf(owner));
         assembly {
             let ptr := mload(0x40)
             // balanceOf
             mstore(ptr, 0x70a0823100000000000000000000000000000000000000000000000000000000)
-            mstore(add(ptr, 0x20), owner)
+            mstore(add(ptr, 0x4), owner)
             // call to token
             let success := staticcall(gas(), token, ptr, 0x24, ptr, 0x20)
-            if iszero(success) {
+            // success is false or return data not provided
+            if or(iszero(success), lt(returndatasize(), 0x20)) {
                 revert(0, 0)
             }
             // load balance
             let tokenBalance := mload(ptr)
             // allowance
             mstore(ptr, 0xdd62ed3e00000000000000000000000000000000000000000000000000000000)
-            mstore(add(ptr, 0x20), owner)
-            mstore(add(ptr, 0x40), address())
+            mstore(add(ptr, 0x4), owner)
+            mstore(add(ptr, 0x24), address())
             // call to token
             success := staticcall(gas(), token, ptr, 0x44, ptr, 0x20)
-            if iszero(success) {
+            // success is false or return data not provided
+            if or(iszero(success), lt(returndatasize(), 0x20)) {
                 revert(0, 0)
             }
             // load allowance
             let allowed := mload(ptr)
-            switch lt(tokenBalance, allowed)
+            switch gt(tokenBalance, allowed)
             case 0 {
                 spendableBalance := tokenBalance
             }
