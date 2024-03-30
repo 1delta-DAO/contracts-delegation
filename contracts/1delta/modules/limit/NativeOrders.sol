@@ -2,18 +2,14 @@
 
 pragma solidity ^0.8.24;
 
-import "./BatchFillNativeOrders.sol";
+import "./OtcOrders.sol";
 
-/// @dev Feature for interacting with limit and RFQ orders.
-contract NativeOrders is BatchFillNativeOrders {
-    /// @dev Name of this feature.
-    string public constant FEATURE_NAME = "LimitOrders";
-    /// @dev Version of this feature.
-    uint256 public immutable FEATURE_VERSION = 1;
-
+/// @dev Feature for interacting with limit, OTC and RFQ orders.
+contract NativeOrders is OtcOrders {
     constructor(
+        address weth,
         address proxyAddress,
         address protocolFeeCollector,
         uint32 protocolFeeMultiplier
-    ) BatchFillNativeOrders(proxyAddress, protocolFeeCollector, protocolFeeMultiplier) {}
+    ) OtcOrders(weth, proxyAddress, protocolFeeCollector, protocolFeeMultiplier) {}
 }

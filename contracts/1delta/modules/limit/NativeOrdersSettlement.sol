@@ -16,7 +16,6 @@ abstract contract NativeOrdersSettlement is
     NativeOrdersCancellation
 {
     error noContractOrigins();
-    error roundingError(uint256 numerator, uint256 denominator, uint256 target);
     error fillOrKillFailedError(bytes32 hash, uint128 takerTokenFilledAmount, uint128 takerTokenFillAmount);
 
     /// @dev Params for `_settleOrder()`.
@@ -120,7 +119,7 @@ abstract contract NativeOrdersSettlement is
             })
         );
         if(errorData.length > 0) Reverter.revertWithData(errorData);
-        LibNativeOrder.refundExcessProtocolFeeToSender(results.ethProtocolFeePaid);
+        refundExcessProtocolFeeToSender(results.ethProtocolFeePaid);
         (takerTokenFilledAmount, makerTokenFilledAmount) = (
             results.takerTokenFilledAmount,
             results.makerTokenFilledAmount
@@ -188,7 +187,7 @@ abstract contract NativeOrdersSettlement is
                     takerTokenFillAmount
                 );
         }
-        LibNativeOrder.refundExcessProtocolFeeToSender(results.ethProtocolFeePaid);
+        refundExcessProtocolFeeToSender(results.ethProtocolFeePaid);
         makerTokenFilledAmount = results.makerTokenFilledAmount;
     }
 
@@ -247,7 +246,7 @@ abstract contract NativeOrdersSettlement is
     ///      Does not refund protocol fees.
     ///      Does not revert on erros.
     /// @param params Function params.
-    /// @return results Results of the fill.
+    /// @return results Results of the fill, everything is zeroed on.
     /// @return errorData Encoded error if any.
     function _fillLimitOrderPrivate(
         FillLimitOrderPrivateParams memory params
@@ -510,4 +509,13 @@ abstract contract NativeOrdersSettlement is
         return protocolFeePaid;
     }
 
+
+    /// @dev Refund any leftover protocol fees in `msg.value` to `msg.sender`.
+    /// @param ethProtocolFeePaid How much ETH was paid in protocol fees.
+    function refundExcessProtocolFeeToSender(uint256 ethProtocolFeePaid) internal {
+        if (msg.value > ethProtocolFeePaid && msg.sender != address(this)) {
+            uint256 refundAmount = msg.value - ethProtocolFeePaid;
+            _transferEth(msg.sender, refundAmount);
+        }
+    }
 }

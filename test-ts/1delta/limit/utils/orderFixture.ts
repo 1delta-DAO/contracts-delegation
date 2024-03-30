@@ -8,7 +8,7 @@ export const createNativeOrder = async (owner: SignerWithAddress, collector: str
     const config = await new ConfigModule__factory(owner).deploy()
     const proxy = await new DeltaBrokerProxy__factory(owner).deploy(owner.address, config.address)
 
-    const limitModule = await new NativeOrders__factory(owner).deploy(proxy.address, collector, feeMultiplier)
+    const limitModule = await new NativeOrders__factory(owner).deploy(proxy.address, proxy.address, collector, feeMultiplier)
 
     const cfg = await new ConfigModule__factory(owner).attach(proxy.address)
 

@@ -71,7 +71,7 @@ contract BatchFillNativeOrders is NativeOrdersSettlement {
                 }
             }
         }
-        LibNativeOrder.refundExcessProtocolFeeToSender(ethProtocolFeePaid);
+        refundExcessProtocolFeeToSender(ethProtocolFeePaid);
     }
 
     /// @dev Fills multiple RFQ orders.
