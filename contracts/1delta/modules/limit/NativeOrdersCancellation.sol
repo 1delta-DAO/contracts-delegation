@@ -25,7 +25,7 @@ abstract contract NativeOrdersCancellation is NativeOrdersInfo, INativeOrdersEve
     /// @param order The limit order.
     function cancelLimitOrder(LibNativeOrder.LimitOrder calldata order) public {
         bytes32 orderHash = getLimitOrderHash(order);
-        if (msg.sender != order.maker && !isValidOrderSigner(order.maker, msg.sender)) {
+        if (msg.sender != order.maker && !_isValidOrderSignerInternal(order.maker, msg.sender)) {
             revert onlyOrderMakerAllowed(orderHash, msg.sender, order.maker);
         }
         _cancelOrderHash(orderHash, order.maker);
@@ -36,7 +36,7 @@ abstract contract NativeOrdersCancellation is NativeOrdersInfo, INativeOrdersEve
     /// @param order The RFQ order.
     function cancelRfqOrder(LibNativeOrder.RfqOrder calldata order) public {
         bytes32 orderHash = getRfqOrderHash(order);
-        if (msg.sender != order.maker && !isValidOrderSigner(order.maker, msg.sender)) {
+        if (msg.sender != order.maker && !_isValidOrderSignerInternal(order.maker, msg.sender)) {
             revert onlyOrderMakerAllowed(orderHash, msg.sender, order.maker);
         }
         _cancelOrderHash(orderHash, order.maker);
@@ -90,7 +90,7 @@ abstract contract NativeOrdersCancellation is NativeOrdersInfo, INativeOrdersEve
         uint256 minValidSalt
     ) public {
         // verify that the signer is authorized for the maker
-        if (!isValidOrderSigner(maker, msg.sender)) {
+        if (!_isValidOrderSignerInternal(maker, msg.sender)) {
             revert invalidSigner(maker, msg.sender);
         }
 
@@ -136,7 +136,7 @@ abstract contract NativeOrdersCancellation is NativeOrdersInfo, INativeOrdersEve
             makerTokens.length != takerTokens.length || makerTokens.length != minValidSalts.length
             ) revert mismatchedArrayLengths();
 
-        if (!isValidOrderSigner(maker, msg.sender)) {
+        if (!_isValidOrderSignerInternal(maker, msg.sender)) {
             revert invalidSigner(maker, msg.sender);
         }
 
@@ -174,7 +174,7 @@ abstract contract NativeOrdersCancellation is NativeOrdersInfo, INativeOrdersEve
         address takerToken,
         uint256 minValidSalt
     ) public {
-        if (!isValidOrderSigner(maker, msg.sender)) {
+        if (!_isValidOrderSignerInternal(maker, msg.sender)) {
             revert invalidSigner(maker, msg.sender);
         }
 
@@ -220,7 +220,7 @@ abstract contract NativeOrdersCancellation is NativeOrdersInfo, INativeOrdersEve
             makerTokens.length != takerTokens.length || makerTokens.length != minValidSalts.length
             ) revert mismatchedArrayLengths();
 
-        if (!isValidOrderSigner(maker, msg.sender)) {
+        if (!_isValidOrderSignerInternal(maker, msg.sender)) {
             revert invalidSigner(maker, msg.sender);
         }
 

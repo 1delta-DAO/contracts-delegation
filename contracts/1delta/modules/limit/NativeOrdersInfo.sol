@@ -105,7 +105,7 @@ abstract contract NativeOrdersInfo is EIP712, TokenTransfer {
         LibNativeOrder.LimitOrder calldata order,
         LibSignature.Signature calldata signature
     )
-        public
+        external
         view
         returns (
             LibNativeOrder.OrderInfo memory orderInfo,
@@ -124,7 +124,7 @@ abstract contract NativeOrdersInfo is EIP712, TokenTransfer {
             })
         );
         address signerOfHash = LibSignature.getSignerOfHash(orderInfo.orderHash, signature);
-        isSignatureValid = (order.maker == signerOfHash) || isValidOrderSigner(order.maker, signerOfHash);
+        isSignatureValid = (order.maker == signerOfHash) || _isValidOrderSignerInternal(order.maker, signerOfHash);
     }
 
     /// @dev Get order info, fillable amount, and signature validity for an RFQ order.
@@ -139,7 +139,7 @@ abstract contract NativeOrdersInfo is EIP712, TokenTransfer {
         LibNativeOrder.RfqOrder calldata order,
         LibSignature.Signature calldata signature
     )
-        public
+        external
         view
         returns (
             LibNativeOrder.OrderInfo memory orderInfo,
@@ -158,7 +158,7 @@ abstract contract NativeOrdersInfo is EIP712, TokenTransfer {
             })
         );
         address signerOfHash = LibSignature.getSignerOfHash(orderInfo.orderHash, signature);
-        isSignatureValid = (order.maker == signerOfHash) || isValidOrderSigner(order.maker, signerOfHash);
+        isSignatureValid = (order.maker == signerOfHash) || _isValidOrderSignerInternal(order.maker, signerOfHash);
     }
 
     /// @dev Populate `status` and `takerTokenFilledAmount` fields in
@@ -235,28 +235,28 @@ abstract contract NativeOrdersInfo is EIP712, TokenTransfer {
             _getSpendableERC20BalanceOf(params.makerToken, params.maker)
         );
         // Convert to taker token amount.
-        return safeDowncastToUint128(
-            getPartialAmountCeil(
+        return getPartialAmountCeil(
                 fillableMakerTokenAmount,
                 params.orderMakerAmount,
                 params.orderTakerAmount
-             )
         );
     }
 
     /// @dev checks if a given address is registered to sign on behalf of a maker address
     /// @param maker The maker address encoded in an order (can be a contract)
     /// @param signer The address that is providing a signature
-    function isValidOrderSigner(address maker, address signer) public view returns (bool isValid) {
+    function isValidOrderSigner(address maker, address signer) external view returns (bool isValid) {
         // returns false if it the mapping doesn't exist
-        return orderSignerRegistry[maker][signer];
+        return _isValidOrderSignerInternal(maker, signer);
     }
 
-    function safeDowncastToUint128(uint256 a) internal pure returns (uint128) {
-        if (a > type(uint128).max) {
-            revert uint128Overflow();
-        }
-        return uint128(a);
+    
+    // @dev checks if a given address is registered to sign on behalf of a maker address
+    /// @param maker The maker address encoded in an order (can be a contract)
+    /// @param signer The address that is providing a signature
+    function _isValidOrderSignerInternal(address maker, address signer) internal view returns (bool isValid) {
+        // returns false if it the mapping doesn't exist
+        return orderSignerRegistry[maker][signer];
     }
 
     /// @dev Calculates partial value given a numerator and denominator rounded down.
@@ -268,11 +268,16 @@ abstract contract NativeOrdersInfo is EIP712, TokenTransfer {
         uint256 numerator,
         uint256 denominator,
         uint256 target
-    ) internal pure returns (uint256) {
+    ) internal pure returns (uint128 partialAmount) {
         // safeDiv computes `floor(a / b)`. We use the identity (a, b integer):
         //       ceil(a / b) = floor((a + b - 1) / b)
         // To implement `ceil(a / b)` using safeDiv.
-        return (numerator * target + (denominator - 1)) / denominator;
+        uint256 _partialAmount = (numerator * target + (denominator - 1)) / denominator;
+
+        if (_partialAmount > type(uint128).max) {
+            revert uint128Overflow();
+        }
+        return uint128(_partialAmount);
     }
 
 }

@@ -34,7 +34,7 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
         LibNativeOrder.OtcOrder calldata order,
         LibSignature.Signature calldata makerSignature,
         uint128 takerTokenFillAmount
-    ) public override returns (uint128 takerTokenFilledAmount, uint128 makerTokenFilledAmount) {
+    ) external override returns (uint128 takerTokenFilledAmount, uint128 makerTokenFilledAmount) {
         LibNativeOrder.OtcOrderInfo memory orderInfo = getOtcOrderInfo(order);
         (bytes memory errorData, bool hasError) = _validateOtcOrder(order, orderInfo, makerSignature, msg.sender);
         if(hasError) Reverter.revertWithData(errorData);
@@ -49,8 +49,8 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
             orderInfo.orderHash,
             order.maker,
             msg.sender,
-            address(order.makerToken),
-            address(order.takerToken),
+            order.makerToken,
+            order.takerToken,
             makerTokenFilledAmount,
             takerTokenFilledAmount
         );
@@ -69,7 +69,7 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
         LibNativeOrder.OtcOrder calldata order,
         LibSignature.Signature calldata makerSignature,
         uint128 takerTokenFillAmount
-    ) public override returns (uint128 takerTokenFilledAmount, uint128 makerTokenFilledAmount) {
+    ) external override returns (uint128 takerTokenFilledAmount, uint128 makerTokenFilledAmount) {
         if(order.makerToken != WETH) revert makerTokenNotWeth();
         LibNativeOrder.OtcOrderInfo memory orderInfo = getOtcOrderInfo(order);
         (bytes memory errorData, bool hasError) = _validateOtcOrder(order, orderInfo, makerSignature, msg.sender);
@@ -89,8 +89,8 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
             orderInfo.orderHash,
             order.maker,
             msg.sender,
-            address(order.makerToken),
-            address(order.takerToken),
+            order.makerToken,
+            order.takerToken,
             makerTokenFilledAmount,
             takerTokenFilledAmount
         );
@@ -153,7 +153,7 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
         LibNativeOrder.OtcOrder calldata order,
         LibSignature.Signature calldata makerSignature,
         LibSignature.Signature calldata takerSignature
-    ) public override {
+    ) external override {
         (bytes memory errorData, bool hasError) = _fillTakerSignedOtcOrderInternal(order, makerSignature, takerSignature);
         if(hasError) Reverter.revertWithData(errorData);
     }
@@ -198,7 +198,7 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
         LibNativeOrder.OtcOrder calldata order,
         LibSignature.Signature calldata makerSignature,
         LibSignature.Signature calldata takerSignature
-    ) public override {
+    ) external override {
         (bytes memory errorData, bool hasError) = _fillTakerSignedOtcOrderForEthInternal(order, makerSignature, takerSignature);
         if(hasError) Reverter.revertWithData(errorData);
     }
@@ -251,7 +251,7 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
         LibSignature.Signature[] calldata makerSignatures,
         LibSignature.Signature[] calldata takerSignatures,
         bool[] memory unwrapWeth
-    ) public override returns (bool[] memory successes) {
+    ) external override returns (bool[] memory successes) {
         if(
             orders.length != makerSignatures.length ||
                 orders.length != takerSignatures.length ||
@@ -285,7 +285,7 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
             return (
                 LibNativeErrors.orderNotFillableError(orderInfo.orderHash, uint8(orderInfo.status)),
                 true
-                );
+            );
         }
 
         // Must be a valid taker for the order.
@@ -293,7 +293,7 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
             return (
                 LibNativeErrors.orderNotFillableByTakerError(orderInfo.orderHash, taker, order.taker),
                 true
-                );
+            );
         }
 
 
@@ -303,7 +303,7 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
                 LibNativeErrors
                 .orderNotFillableByOriginError(orderInfo.orderHash, order.txOrigin),
                 true
-                );
+            );
         }
 
         // Maker signature must be valid for the order.
@@ -313,7 +313,7 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
                 LibNativeErrors
                 .orderNotSignedByMakerError(orderInfo.orderHash, makerSigner, order.maker),
                 true
-                );
+            );
         }
     }
 

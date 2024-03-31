@@ -14,9 +14,9 @@ interface IOtcOrdersFeature {
     /// @param makerTokenFilledAmount How much maker token was filled.
     /// @param takerTokenFilledAmount How much taker token was filled.
     event OtcOrderFilled(
-        bytes32 orderHash,
-        address maker,
-        address taker,
+        bytes32 indexed orderHash,
+        address indexed maker,
+        address indexed taker,
         address makerToken,
         address takerToken,
         uint128 makerTokenFilledAmount,

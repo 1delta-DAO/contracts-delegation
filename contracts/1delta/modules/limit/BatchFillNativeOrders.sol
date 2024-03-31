@@ -29,7 +29,6 @@ contract BatchFillNativeOrders is NativeOrdersSettlement {
     )
         external
         payable
-
         returns (uint128[] memory takerTokenFilledAmounts, uint128[] memory makerTokenFilledAmounts)
     {
         if(

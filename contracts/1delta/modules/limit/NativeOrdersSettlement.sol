@@ -282,7 +282,7 @@ abstract contract NativeOrdersSettlement is
         // Signature must be valid for the order.
         {
             address signer = LibSignature.getSignerOfHash(orderInfo.orderHash, params.signature);
-            if (signer != params.order.maker && !isValidOrderSigner(params.order.maker, signer)) {
+            if (signer != params.order.maker && !_isValidOrderSignerInternal(params.order.maker, signer)) {
                 errorData =  LibNativeErrors.orderNotSignedByMakerError(
                     orderInfo.orderHash,
                     signer,
@@ -384,7 +384,7 @@ abstract contract NativeOrdersSettlement is
         // Signature must be valid for the order.
         {
             address signer = LibSignature.getSignerOfHash(orderInfo.orderHash, params.signature);
-            if (signer != params.order.maker && !isValidOrderSigner(params.order.maker, signer)) {
+            if (signer != params.order.maker && !_isValidOrderSignerInternal(params.order.maker, signer)) {
                 errorData = LibNativeErrors.orderNotSignedByMakerError(
                     orderInfo.orderHash,
                     signer,
