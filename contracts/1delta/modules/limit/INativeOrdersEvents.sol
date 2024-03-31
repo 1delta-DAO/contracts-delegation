@@ -67,7 +67,7 @@ interface INativeOrdersEvents {
     /// @param origin The address doing the allowing.
     /// @param addrs The address being allowed/disallowed.
     /// @param allowed Indicates whether the address should be allowed.
-    event RfqOrderOriginsAllowed(address indexed origin, address[] indexed addrs, bool allowed);
+    event RfqOrderOriginsAllowed(address indexed origin, address[] addrs, bool allowed);
 
     /// @dev Emitted when new order signers are registered
     /// @param maker The maker address that is registering a designated signer.

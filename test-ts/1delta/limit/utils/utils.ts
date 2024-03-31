@@ -1,6 +1,7 @@
 import { BigNumber, ContractTransaction } from "ethers";
 import { ErrorParser__factory, NativeOrders__factory } from "../../../../types";
 import { expect } from "chai";
+import { isAddress } from "ethers/lib/utils";
 
 
 export const sumBn = (ns: BigNumber[]): BigNumber => {
@@ -26,24 +27,44 @@ interface TxLog {
 
 }
 
+const addressPrefix = '0x000000000000000000000000'
+
 export const verifyLogs = (logs: TxLog[], expected: Object[], id: string) => {
     for (const log of logs) {
-        const { data } = log
+        const { data, topics, transactionHash } = log
         let decoded: any
         try {
             decoded = ordersInterface.decodeEventLog(id, data)
         } catch (e: any) {
             continue;
         }
-        const keys = Object.keys(decoded).filter(x => isNaN(Number(x)))
+        let keys = Object.keys(decoded).filter(x => isNaN(Number(x)))
         let included = false
+        let hasIndexedEvents = false
+        let indexedsIncluded = false
         for (const ex of expected) {
+            const indexeds = (ex as any).indexed as string[]
+            if (indexeds && indexeds.length > 0) {
+                const types = (ex as any).indexedTypes as string[]
+                keys = keys.filter(k => !indexeds.includes(k))
+                hasIndexedEvents = true
+                if (topics.every((topic, i) => {
+                    if (i == 0) return true
+                    let expectedEntry = (ex as any)[indexeds[i - 1]]
+                    let expectedType = types[i - 1]
+                    let addressParse = expectedType === 'address' && isAddress('0x' + topic.slice(26, topic.length))
+                    if (addressParse) topic = '0x' + topic.slice(26, topic.length)
+                    if (expectedEntry.toLowerCase() === topic.toLowerCase()) return true
+                    else return false
+                })) indexedsIncluded = true
+            }
             if (keys.every(
                 k => (ex as any)[k] === undefined ? true : // this allws us to skip params if the expected one is undefined
                     (ex as any)[k]?.toString().toLowerCase() === decoded[k].toString().toLowerCase())
             ) included = true;
         }
         expect(included).to.equal(true, "Not found:" + JSON.stringify(decoded))
+        if (hasIndexedEvents) expect(indexedsIncluded).to.equal(true, "Not found:" + JSON.stringify(decoded))
     }
 }
 

@@ -4,7 +4,7 @@ import { BigNumber } from "ethers"
 
 export const createNativeOrder = async (owner: SignerWithAddress, collector: string, feeMultiplier: BigNumber) => {
 
-    const limitModule = await new NativeOrders__factory(owner).deploy(collector, feeMultiplier)
+    const limitModule = await new NativeOrders__factory(owner).deploy(collector, collector, feeMultiplier)
 
     return limitModule
 }

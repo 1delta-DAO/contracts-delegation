@@ -111,6 +111,7 @@ export class NativeOrdersTestEnvironment {
             maker: SignerWithAddress;
             protocolFee: BigNumber | number;
         }> = {},
+        fillOrKill = false
     ): Promise<ContractTransaction> {
         const { fillAmount, taker, maker, protocolFee } = {
             taker: this.taker,
@@ -125,6 +126,7 @@ export class NativeOrdersTestEnvironment {
                 order,
                 await order.getSignatureWithProviderAsync(maker),
                 BigNumber.from(fillAmount),
+                fillOrKill,
                 { value, gasPrice: this.gasPrice }
             );
     }
@@ -133,6 +135,7 @@ export class NativeOrdersTestEnvironment {
         order: RfqOrder,
         fillAmount: BigNumber | number = order.takerAmount,
         taker: SignerWithAddress = this.taker,
+        fillOrKill = false
     ): Promise<any> {
         await this.prepareBalancesForOrdersAsync([order], taker);
         const maker = await ethers.getSigner(order.maker)
@@ -141,6 +144,7 @@ export class NativeOrdersTestEnvironment {
                 order,
                 await order.getSignatureWithProviderAsync(maker),
                 BigNumber.from(fillAmount),
+                fillOrKill
             );
     }
 
@@ -229,6 +233,8 @@ export class NativeOrdersTestEnvironment {
             makerToken: order.makerToken,
             takerToken: order.takerToken,
             protocolFeePaid: protocolFee,
+            indexed: ['orderHash', 'maker', 'taker'],
+            indexedTypes: ['bytes32', 'address', 'address']
         };
     }
 
@@ -250,6 +256,8 @@ export class NativeOrdersTestEnvironment {
             taker: this.taker.address,
             makerToken: order.makerToken,
             takerToken: order.takerToken,
+            indexed: ['orderHash', 'maker', 'taker'],
+            indexedTypes: ['bytes32', 'address', 'address']
         };
     }
 
@@ -269,6 +277,8 @@ export class NativeOrdersTestEnvironment {
             taker: order.taker !== NULL_ADDRESS ? order.taker : this.taker,
             makerToken: order.makerToken,
             takerToken: order.takerToken,
+            indexed: ['orderHash', 'maker', 'taker'],
+            indexedTypes: ['bytes32', 'address', 'address']
         };
     }
 }

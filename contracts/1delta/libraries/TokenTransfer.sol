@@ -206,7 +206,7 @@ abstract contract TokenTransfer {
         }
     }
 
-    function min256(uint256 a, uint256 b) internal pure returns (uint256) {
+    function min256(uint256 a, uint256 b) internal pure returns (uint256 minimum) {
         return a < b ? a : b;
     }
 }

@@ -378,6 +378,8 @@ describe('registerAllowedSigner()', () => {
                     maker: contractWallet.address,
                     signer: contractWalletSigner.address,
                     allowed: true,
+                    indexed: ['maker', 'signer'],
+                    indexedTypes: ['address', 'address'],
                 },
             ],
             IZeroExEvents.OrderSignerRegistered,
@@ -394,6 +396,8 @@ describe('registerAllowedSigner()', () => {
                     maker: contractWallet.address,
                     signer: contractWalletSigner.address,
                     allowed: false,
+                    indexed: ['maker', 'signer'],
+                    indexedTypes: ['address', 'address'],
                 },
             ],
             IZeroExEvents.OrderSignerRegistered,
@@ -415,7 +419,7 @@ describe('registerAllowedSigner()', () => {
         await contractWallet.connect(contractWalletOwner)
             .registerAllowedOrderSigner(contractWalletSigner.address, true);
 
-        await zeroEx.connect(taker).fillRfqOrder(order, sig, order.takerAmount);
+        await zeroEx.connect(taker).fillRfqOrder(order, sig, order.takerAmount, false);
 
         const info = await zeroEx.getRfqOrderInfo(order);
         assertOrderInfoEquals(info, {
@@ -445,7 +449,7 @@ describe('registerAllowedSigner()', () => {
         await contractWallet.connect(contractWalletOwner)
             .registerAllowedOrderSigner(contractWalletSigner.address, false);
 
-        const tx = zeroEx.connect(taker).fillRfqOrder(order, sig, order.takerAmount);
+        const tx = zeroEx.connect(taker).fillRfqOrder(order, sig, order.takerAmount, false);
         await validateError(tx,
             "orderNotSignedByMakerError",
             [
@@ -465,7 +469,7 @@ describe('registerAllowedSigner()', () => {
         // need to provide contract wallet with a balance
         await makerToken.mint(contractWallet.address, order.makerAmount);
 
-        const tx = zeroEx.connect(taker).fillRfqOrder(order, sig, order.takerAmount);
+        const tx = zeroEx.connect(taker).fillRfqOrder(order, sig, order.takerAmount, false);
         await validateError(tx,
             "orderNotSignedByMakerError",
             [order.getHash(), maker.address, order.maker])
@@ -482,7 +486,12 @@ describe('registerAllowedSigner()', () => {
         const receipt = await tx.wait()
         verifyLogs(
             receipt.logs,
-            [{ maker: contractWallet.address, orderHash: order.getHash() }],
+            [{
+                maker: contractWallet.address,
+                orderHash: order.getHash(),
+                indexed: ['orderHash', 'maker'],
+                indexedTypes: ['bytes32', 'address'],
+            }],
             IZeroExEvents.OrderCancelled,
         );
 
@@ -505,7 +514,12 @@ describe('registerAllowedSigner()', () => {
         const receipt = await tx.wait()
         verifyLogs(
             receipt.logs,
-            [{ maker: contractWallet.address, orderHash: order.getHash() }],
+            [{
+                maker: contractWallet.address,
+                orderHash: order.getHash(),
+                indexed: ['orderHash', 'maker'],
+                indexedTypes: ['bytes32', 'address'],
+            }],
             IZeroExEvents.OrderCancelled,
         );
 
@@ -562,6 +576,8 @@ describe('registerAllowedSigner()', () => {
                     makerToken: makerToken.address,
                     takerToken: takerToken.address,
                     minValidSalt,
+                    indexed: ['maker', 'makerToken', 'takerToken'],
+                    indexedTypes: ['address', 'address', 'address'],
                 },
             ],
             IZeroExEvents.PairCancelledRfqOrders,
@@ -618,6 +634,8 @@ describe('registerAllowedSigner()', () => {
                     makerToken: makerToken.address,
                     takerToken: takerToken.address,
                     minValidSalt,
+                    indexed: ['maker', 'makerToken', 'takerToken'],
+                    indexedTypes: ['address', 'address', 'address'],
                 },
             ],
             IZeroExEvents.PairCancelledLimitOrders,
@@ -680,12 +698,16 @@ describe('registerAllowedSigner()', () => {
                     makerToken: makerToken.address,
                     takerToken: takerToken.address,
                     minValidSalt,
+                    indexed: ['maker', 'makerToken', 'takerToken'],
+                    indexedTypes: ['address', 'address', 'address'],
                 },
                 {
                     maker: contractWallet.address,
                     makerToken: takerToken.address,
                     takerToken: makerToken.address,
                     minValidSalt,
+                    indexed: ['maker', 'makerToken', 'takerToken'],
+                    indexedTypes: ['address', 'address', 'address'],
                 },
             ],
             IZeroExEvents.PairCancelledRfqOrders,
@@ -745,12 +767,16 @@ describe('registerAllowedSigner()', () => {
                     makerToken: makerToken.address,
                     takerToken: takerToken.address,
                     minValidSalt,
+                    indexed: ['maker', 'makerToken', 'takerToken'],
+                    indexedTypes: ['address', 'address', 'address'],
                 },
                 {
                     maker: contractWallet.address,
                     makerToken: takerToken.address,
                     takerToken: makerToken.address,
                     minValidSalt,
+                    indexed: ['maker', 'makerToken', 'takerToken'],
+                    indexedTypes: ['address', 'address', 'address'],
                 },
             ],
             IZeroExEvents.PairCancelledLimitOrders,

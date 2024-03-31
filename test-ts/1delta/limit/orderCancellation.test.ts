@@ -137,7 +137,12 @@ describe('cancelLimitOrder()', async () => {
         const receipt = await tx.wait()
         verifyLogs(
             receipt.logs,
-            [{ maker: order.maker, orderHash: order.getHash() }],
+            [{
+                maker: order.maker,
+                orderHash: order.getHash(),
+                indexed: ['orderHash', 'maker'],
+                indexedTypes: ['bytes32', 'address']
+            }],
             IZeroExEvents.OrderCancelled,
         );
         const { status } = await zeroEx.getLimitOrderInfo(order);
@@ -151,7 +156,12 @@ describe('cancelLimitOrder()', async () => {
         const receipt = await tx.wait()
         verifyLogs(
             receipt.logs,
-            [{ maker: order.maker, orderHash: order.getHash() }],
+            [{
+                maker: order.maker,
+                orderHash: order.getHash(),
+                indexed: ['orderHash', 'maker'],
+                indexedTypes: ['bytes32', 'address']
+            }],
             IZeroExEvents.OrderCancelled,
         );
         const { status } = await zeroEx.getLimitOrderInfo(order);
@@ -165,7 +175,12 @@ describe('cancelLimitOrder()', async () => {
         const receipt = await tx.wait()
         verifyLogs(
             receipt.logs,
-            [{ maker: order.maker, orderHash: order.getHash() }],
+            [{
+                maker: order.maker,
+                orderHash: order.getHash(),
+                indexed: ['orderHash', 'maker'],
+                indexedTypes: ['bytes32', 'address']
+            }],
             IZeroExEvents.OrderCancelled,
         );
         const { status } = await zeroEx.getLimitOrderInfo(order);
@@ -179,7 +194,12 @@ describe('cancelLimitOrder()', async () => {
         const receipt = await tx.wait()
         verifyLogs(
             receipt.logs,
-            [{ maker: order.maker, orderHash: order.getHash() }],
+            [{
+                maker: order.maker,
+                orderHash: order.getHash(),
+                indexed: ['orderHash', 'maker'],
+                indexedTypes: ['bytes32', 'address']
+            }],
             IZeroExEvents.OrderCancelled,
         );
         const { status } = await zeroEx.getLimitOrderInfo(order);
@@ -193,7 +213,12 @@ describe('cancelLimitOrder()', async () => {
         const receipt = await tx.wait()
         verifyLogs(
             receipt.logs,
-            [{ maker: order.maker, orderHash: order.getHash() }],
+            [{
+                maker: order.maker,
+                orderHash: order.getHash(),
+                indexed: ['orderHash', 'maker'],
+                indexedTypes: ['bytes32', 'address']
+            }],
             IZeroExEvents.OrderCancelled,
         );
         const { status } = await zeroEx.getLimitOrderInfo(order);
@@ -218,7 +243,12 @@ describe('cancelRfqOrder()', async () => {
         const receipt = await tx.wait()
         verifyLogs(
             receipt.logs,
-            [{ maker: order.maker, orderHash: order.getHash() }],
+            [{
+                maker: order.maker,
+                orderHash: order.getHash(),
+                indexed: ['orderHash', 'maker'],
+                indexedTypes: ['bytes32', 'address']
+            }],
             IZeroExEvents.OrderCancelled,
         );
         const { status } = await zeroEx.getRfqOrderInfo(order);
@@ -232,7 +262,12 @@ describe('cancelRfqOrder()', async () => {
         const receipt = await tx.wait()
         verifyLogs(
             receipt.logs,
-            [{ maker: order.maker, orderHash: order.getHash() }],
+            [{
+                maker: order.maker,
+                orderHash: order.getHash(),
+                indexed: ['orderHash', 'maker'],
+                indexedTypes: ['bytes32', 'address']
+            }],
             IZeroExEvents.OrderCancelled,
         );
         const { status } = await zeroEx.getRfqOrderInfo(order);
@@ -246,7 +281,12 @@ describe('cancelRfqOrder()', async () => {
         const receipt = await tx.wait()
         verifyLogs(
             receipt.logs,
-            [{ maker: order.maker, orderHash: order.getHash() }],
+            [{
+                maker: order.maker,
+                orderHash: order.getHash(),
+                indexed: ['orderHash', 'maker'],
+                indexedTypes: ['bytes32', 'address']
+            }],
             IZeroExEvents.OrderCancelled,
         );
         const { status } = await zeroEx.getRfqOrderInfo(order);
@@ -260,7 +300,12 @@ describe('cancelRfqOrder()', async () => {
         const receipt = await tx.wait()
         verifyLogs(
             receipt.logs,
-            [{ maker: order.maker, orderHash: order.getHash() }],
+            [{
+                maker: order.maker,
+                orderHash: order.getHash(),
+                indexed: ['orderHash', 'maker'],
+                indexedTypes: ['bytes32', 'address']
+            }],
             IZeroExEvents.OrderCancelled,
         );
         const { status } = await zeroEx.getRfqOrderInfo(order);
@@ -274,7 +319,12 @@ describe('cancelRfqOrder()', async () => {
         const receipt = await tx.wait()
         verifyLogs(
             receipt.logs,
-            [{ maker: order.maker, orderHash: order.getHash() }],
+            [{
+                maker: order.maker,
+                orderHash: order.getHash(),
+                indexed: ['orderHash', 'maker'],
+                indexedTypes: ['bytes32', 'address']
+            }],
             IZeroExEvents.OrderCancelled,
         );
         const { status } = await zeroEx.getRfqOrderInfo(order);
@@ -297,7 +347,12 @@ describe('batchCancelLimitOrders()', async () => {
         const receipt = await tx.wait()
         verifyLogs(
             receipt.logs,
-            orders.map(o => ({ maker: o.maker, orderHash: o.getHash() })),
+            orders.map(o => ({
+                maker: o.maker,
+                orderHash: o.getHash(),
+                indexed: ['orderHash', 'maker'],
+                indexedTypes: ['bytes32', 'address']
+            })),
             IZeroExEvents.OrderCancelled,
         );
         const infos = await Promise.all(orders.map(o => zeroEx.getLimitOrderInfo(o)));
@@ -321,7 +376,12 @@ describe('batchCancelRfqOrders()', async () => {
         const receipt = await tx.wait()
         verifyLogs(
             receipt.logs,
-            orders.map(o => ({ maker: o.maker, orderHash: o.getHash() })),
+            orders.map(o => ({
+                maker: o.maker,
+                orderHash: o.getHash(),
+                indexed: ['orderHash', 'maker'],
+                indexedTypes: ['bytes32', 'address']
+            })),
             IZeroExEvents.OrderCancelled,
         );
         const infos = await Promise.all(orders.map(o => zeroEx.getRfqOrderInfo(o)));
@@ -354,6 +414,8 @@ describe('cancelPairOrders()', async () => {
                     makerToken: makerToken.address,
                     takerToken: takerToken.address,
                     minValidSalt,
+                    indexed: ['maker', 'makerToken', 'takerToken'],
+                    indexedTypes: ['address', 'address', 'address']
                 },
             ],
             IZeroExEvents.PairCancelledLimitOrders,
@@ -390,6 +452,8 @@ describe('cancelPairOrders()', async () => {
                     makerToken: makerToken.address,
                     takerToken: takerToken.address,
                     minValidSalt,
+                    indexed: ['maker', 'makerToken', 'takerToken'],
+                    indexedTypes: ['address', 'address', 'address']
                 },
             ],
             IZeroExEvents.PairCancelledRfqOrders,
@@ -440,12 +504,16 @@ describe('batchCancelPairOrders()', async () => {
                     makerToken: makerToken.address,
                     takerToken: takerToken.address,
                     minValidSalt,
+                    indexed: ['maker', 'makerToken', 'takerToken'],
+                    indexedTypes: ['address', 'address', 'address']
                 },
                 {
                     maker: maker.address,
                     makerToken: takerToken.address,
                     takerToken: makerToken.address,
                     minValidSalt,
+                    indexed: ['maker', 'makerToken', 'takerToken'],
+                    indexedTypes: ['address', 'address', 'address']
                 },
             ],
             IZeroExEvents.PairCancelledLimitOrders,
@@ -482,12 +550,16 @@ describe('batchCancelPairOrders()', async () => {
                     makerToken: makerToken.address,
                     takerToken: takerToken.address,
                     minValidSalt,
+                    indexed: ['maker', 'makerToken', 'takerToken'],
+                    indexedTypes: ['address', 'address', 'address']
                 },
                 {
                     maker: maker.address,
                     makerToken: takerToken.address,
                     takerToken: makerToken.address,
                     minValidSalt,
+                    indexed: ['maker', 'makerToken', 'takerToken'],
+                    indexedTypes: ['address', 'address', 'address']
                 },
             ],
             IZeroExEvents.PairCancelledRfqOrders,

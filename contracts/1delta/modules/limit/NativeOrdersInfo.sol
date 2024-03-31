@@ -194,7 +194,7 @@ abstract contract NativeOrdersInfo is EIP712, TokenTransfer {
         }
 
         // Check for expiration.
-        if (expiry <= uint64(block.timestamp)) {
+        if (expiry <= block.timestamp) {
             orderInfo.status = LibNativeOrder.OrderStatus.EXPIRED;
             return;
         }
@@ -251,7 +251,7 @@ abstract contract NativeOrdersInfo is EIP712, TokenTransfer {
     }
 
     
-    // @dev checks if a given address is registered to sign on behalf of a maker address
+    // @dev internnal version of isValidOrderSigner
     /// @param maker The maker address encoded in an order (can be a contract)
     /// @param signer The address that is providing a signature
     function _isValidOrderSignerInternal(address maker, address signer) internal view returns (bool isValid) {

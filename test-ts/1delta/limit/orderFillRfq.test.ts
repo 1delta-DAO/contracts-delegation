@@ -160,7 +160,6 @@ describe('fillRfqOrder()', () => {
             takerBalanceBefore,
         ] = await getMakerTakerBalancesSingle()
 
-
         const tx = await testUtils.fillRfqOrderAsync(order);
         const receipt = await tx.wait()
         verifyLogs(
@@ -311,6 +310,8 @@ describe('fillRfqOrder()', () => {
                     origin: taker.address,
                     addrs: [notTaker.address],
                     allowed: true,
+                    indexed: ['origin'],
+                    indexedTypes: ['address']
                 },
             ],
             IZeroExEvents.RfqOrderOriginsAllowed,
@@ -332,6 +333,8 @@ describe('fillRfqOrder()', () => {
                     origin: taker.address,
                     addrs: [notTaker.address],
                     allowed: false,
+                    indexed: ['origin'],
+                    indexedTypes: ['address']
                 },
             ],
             IZeroExEvents.RfqOrderOriginsAllowed,

@@ -275,7 +275,7 @@ describe('getRfqOrderInfo()', () => {
         await testUtils.prepareBalancesForOrdersAsync([order]);
         const sig = await order.getSignatureWithProviderAsync(maker);
         // Fill the order first.
-        await zeroEx.connect(taker).fillRfqOrder(order, sig, order.takerAmount);
+        await zeroEx.connect(taker).fillRfqOrder(order, sig, order.takerAmount,false);
         // Advance time to expire the order.
         // await env.web3Wrapper.increaseTimeAsync(61);
         await time.increase(121)

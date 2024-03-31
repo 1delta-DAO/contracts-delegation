@@ -119,10 +119,11 @@ describe('fillOrKillLimitOrder()', () => {
         const order = getTestLimitOrder();
         await testUtils.prepareBalancesForOrdersAsync([order]);
         const tx = await zeroEx.connect(taker)
-            .fillOrKillLimitOrder(
+            .fillLimitOrder(
                 order,
                 await order.getSignatureWithProviderAsync(maker),
                 order.takerAmount,
+                true,
                 { value: SINGLE_PROTOCOL_FEE, gasPrice: GAS_PRICE }
             );
         const receipt = await tx.wait()
@@ -139,10 +140,11 @@ describe('fillOrKillLimitOrder()', () => {
         const fillAmount = order.takerAmount.add(1);
         await validateError(
             zeroEx.connect(taker)
-                .fillOrKillLimitOrder(
+                .fillLimitOrder(
                     order,
                     await order.getSignatureWithProviderAsync(maker),
                     fillAmount,
+                    true,
                     { value: SINGLE_PROTOCOL_FEE }
                 ),
             "fillOrKillFailedError",
@@ -155,10 +157,11 @@ describe('fillOrKillLimitOrder()', () => {
         await testUtils.prepareBalancesForOrdersAsync([order]);
         const takerBalanceBefore = await provider.getBalance(taker.address);
         const tx = await zeroEx.connect(taker)
-            .fillOrKillLimitOrder(
+            .fillLimitOrder(
                 order,
                 await order.getSignatureWithProviderAsync(maker),
                 order.takerAmount,
+                true,
                 { value: SINGLE_PROTOCOL_FEE.add(1), gasPrice: GAS_PRICE }
             );
         const receipt = await tx.wait()
@@ -173,7 +176,12 @@ describe('fillOrKillRfqOrder()', () => {
         const order = getTestRfqOrder();
         await testUtils.prepareBalancesForOrdersAsync([order]);
         const tx = await zeroEx.connect(taker)
-            .fillOrKillRfqOrder(order, await order.getSignatureWithProviderAsync(maker), order.takerAmount);
+            .fillRfqOrder(
+                order,
+                await order.getSignatureWithProviderAsync(maker),
+                order.takerAmount,
+                true
+            );
         const receipt = await tx.wait()
         verifyLogs(
             receipt.logs,
@@ -187,7 +195,12 @@ describe('fillOrKillRfqOrder()', () => {
         await testUtils.prepareBalancesForOrdersAsync([order]);
         const fillAmount = order.takerAmount.add(1);
         const tx = zeroEx.connect(taker)
-            .fillOrKillRfqOrder(order, await order.getSignatureWithProviderAsync(maker), fillAmount);
+            .fillRfqOrder(
+                order,
+                await order.getSignatureWithProviderAsync(maker),
+                fillAmount,
+                true
+            );
         await validateError(
             tx,
             "fillOrKillFailedError",
@@ -200,10 +213,11 @@ describe('fillOrKillRfqOrder()', () => {
         const order = getTestRfqOrder();
         await testUtils.prepareBalancesForOrdersAsync([order]);
         const tx = zeroEx.connect(taker)
-            .fillOrKillRfqOrder(
+            .fillRfqOrder(
                 order,
                 await order.getSignatureWithProviderAsync(maker),
                 order.takerAmount,
+                true,
                 { value: 1 } as any
             );
         // This will revert at the language level because the fill function is not payable.

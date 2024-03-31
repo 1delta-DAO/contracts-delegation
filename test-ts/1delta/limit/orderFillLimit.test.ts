@@ -352,6 +352,7 @@ describe('fillLimitOrder()', () => {
                 order,
                 await order.getSignatureWithProviderAsync(maker),
                 BigNumber.from(order.takerAmount),
+                false,
                 {
                     value: ZERO_AMOUNT
                 }

@@ -101,12 +101,14 @@ abstract contract NativeOrdersSettlement is
     ///      the caller.
     /// @param signature The order signature.
     /// @param takerTokenFillAmount Maximum taker token amount to fill this order with.
+    /// @param fillOrKill If true, the function reverts for partial fills.
     /// @return takerTokenFilledAmount How much maker token was filled.
     /// @return makerTokenFilledAmount How much maker token was filled.
     function fillLimitOrder(
         LibNativeOrder.LimitOrder memory order,
         LibSignature.Signature memory signature,
-        uint128 takerTokenFillAmount
+        uint128 takerTokenFillAmount,
+        bool fillOrKill
     ) public payable returns (uint128 takerTokenFilledAmount, uint128 makerTokenFilledAmount) {
         (FillNativeOrderResults memory results, bytes memory errorData) = _fillLimitOrderPrivate(
             FillLimitOrderPrivateParams({
@@ -118,6 +120,16 @@ abstract contract NativeOrdersSettlement is
             })
         );
         if(errorData.length > 0) Reverter.revertWithData(errorData);
+        if(fillOrKill) {
+            // Must have filled exactly the amount requested.
+            if (results.takerTokenFilledAmount < takerTokenFillAmount) {
+                revert fillOrKillFailedError(
+                        getLimitOrderHash(order),
+                        results.takerTokenFilledAmount,
+                        takerTokenFillAmount
+                    );
+            }
+        }
         refundExcessProtocolFeeToSender(results.ethProtocolFeePaid);
         (takerTokenFilledAmount, makerTokenFilledAmount) = (
             results.takerTokenFilledAmount,
@@ -131,12 +143,14 @@ abstract contract NativeOrdersSettlement is
     /// @param order The RFQ order.
     /// @param signature The order signature.
     /// @param takerTokenFillAmount Maximum taker token amount to fill this order with.
+    /// @param fillOrKill If true, the function reverts for partial fills.
     /// @return takerTokenFilledAmount How much maker token was filled.
     /// @return makerTokenFilledAmount How much maker token was filled.
     function fillRfqOrder(
         LibNativeOrder.RfqOrder memory order,
         LibSignature.Signature memory signature,
-        uint128 takerTokenFillAmount
+        uint128 takerTokenFillAmount,
+        bool fillOrKill
     ) public returns (uint128 takerTokenFilledAmount, uint128 makerTokenFilledAmount) {
         (FillNativeOrderResults memory results, bytes memory errorData) = _fillRfqOrderPrivate(
             FillRfqOrderPrivateParams({
@@ -149,80 +163,20 @@ abstract contract NativeOrdersSettlement is
             })
         );
         if(errorData.length > 0) Reverter.revertWithData(errorData);
+        if(fillOrKill){
+            // Must have filled exactly the amount requested.
+            if (results.takerTokenFilledAmount < takerTokenFillAmount) {
+                revert fillOrKillFailedError(
+                    getRfqOrderHash(order),
+                    results.takerTokenFilledAmount,
+                    takerTokenFillAmount
+                );
+            }
+        }
         (takerTokenFilledAmount, makerTokenFilledAmount) = (
             results.takerTokenFilledAmount,
             results.makerTokenFilledAmount
         );
-    }
-
-    /// @dev Fill an RFQ order for exactly `takerTokenFillAmount` taker tokens.
-    ///      The taker will be the caller. ETH protocol fees can be
-    ///      attached to this call. Any unspent ETH will be refunded to
-    ///      the caller.
-    /// @param order The limit order.
-    /// @param signature The order signature.
-    /// @param takerTokenFillAmount How much taker token to fill this order with.
-    /// @return makerTokenFilledAmount How much maker token was filled.
-    function fillOrKillLimitOrder(
-        LibNativeOrder.LimitOrder calldata order,
-        LibSignature.Signature calldata signature,
-        uint128 takerTokenFillAmount
-    ) public payable returns (uint128 makerTokenFilledAmount) {
-        (FillNativeOrderResults memory results, bytes memory errorData) = _fillLimitOrderPrivate(
-            FillLimitOrderPrivateParams({
-                order: order,
-                signature: signature,
-                takerTokenFillAmount: takerTokenFillAmount,
-                taker: msg.sender,
-                sender: msg.sender
-            })
-        );
-        if(errorData.length > 0) Reverter.revertWithData(errorData);
-        // Must have filled exactly the amount requested.
-        if (results.takerTokenFilledAmount < takerTokenFillAmount) {
-            revert fillOrKillFailedError(
-                    getLimitOrderHash(order),
-                    results.takerTokenFilledAmount,
-                    takerTokenFillAmount
-                );
-        }
-        refundExcessProtocolFeeToSender(results.ethProtocolFeePaid);
-        makerTokenFilledAmount = results.makerTokenFilledAmount;
-    }
-
-    /// @dev Fill an RFQ order for exactly `takerTokenFillAmount` taker tokens.
-    ///      The taker will be the caller. ETH protocol fees can be
-    ///      attached to this call. Any unspent ETH will be refunded to
-    ///      the caller.
-    /// @param order The RFQ order.
-    /// @param signature The order signature.
-    /// @param takerTokenFillAmount How much taker token to fill this order with.
-    /// @return makerTokenFilledAmount How much maker token was filled.
-    function fillOrKillRfqOrder(
-        LibNativeOrder.RfqOrder calldata order,
-        LibSignature.Signature calldata signature,
-        uint128 takerTokenFillAmount
-    ) public returns (uint128 makerTokenFilledAmount) {
-        (FillNativeOrderResults memory results, bytes memory errorData) = _fillRfqOrderPrivate(
-            FillRfqOrderPrivateParams({
-                order: order,
-                signature: signature,
-                takerTokenFillAmount: takerTokenFillAmount,
-                taker: msg.sender,
-                useSelfBalance: false,
-                recipient: msg.sender
-            })
-        );
-        if(errorData.length > 0) Reverter.revertWithData(errorData);
-        // Must have filled exactly the amount requested.
-        if (results.takerTokenFilledAmount < takerTokenFillAmount) {
-            revert fillOrKillFailedError(
-                getRfqOrderHash(order),
-                results.takerTokenFilledAmount,
-                takerTokenFillAmount
-            );
-        }
-        makerTokenFilledAmount = results.makerTokenFilledAmount;
     }
 
     /// @dev Mark what tx.origin addresses are allowed to fill an order that
@@ -489,7 +443,7 @@ abstract contract NativeOrdersSettlement is
 
 
     /// @dev   Collect the specified protocol fee in ETH.
-    ///        The fee is stored in a per-pool fee collector contract.
+    ///        The fee is stored in a fee collector contract.
     /// @return ethProtocolFeePaid How much protocol fee was collected in ETH.
     function _collectProtocolFee() internal returns (uint256 ethProtocolFeePaid) {
         uint256 protocolFeePaid = uint256(PROTOCOL_FEE_MULTIPLIER) * tx.gasprice;

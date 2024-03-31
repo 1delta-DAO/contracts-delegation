@@ -393,7 +393,7 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
         }
 
         // Check for expiration.
-        if (expiry <= uint64(block.timestamp)) {
+        if (expiry <= block.timestamp) {
             orderInfo.status = LibNativeOrder.OrderStatus.EXPIRED;
             return orderInfo;
         }
