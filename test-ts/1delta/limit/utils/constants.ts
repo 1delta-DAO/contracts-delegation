@@ -262,7 +262,6 @@ export class LimitOrder extends OrderBase {
                 taker: this.taker,
                 sender: this.sender,
                 feeRecipient: this.feeRecipient,
-                pool: this.pool,
                 expiry: this.expiry.toString(),
                 salt: this.salt.toString(),
             },
@@ -399,9 +398,9 @@ export class OtcOrder extends OrderBase {
         nonce: BigNumber;
     } {
         const expiryAndNonceHex = hexUtils.leftPad(expiryAndNonce.toString());
-        const expiry = BigNumber.from(hexUtils.slice(expiryAndNonceHex, 0, 8).substr(2));
-        const nonceBucket = BigNumber.from(hexUtils.slice(expiryAndNonceHex, 8, 16).substr(2));
-        const nonce = BigNumber.from(hexUtils.slice(expiryAndNonceHex, 16, 32).substr(2));
+        const expiry = BigNumber.from('0x' + hexUtils.slice(expiryAndNonceHex, 0, 8).substr(2));
+        const nonceBucket = BigNumber.from('0x' + hexUtils.slice(expiryAndNonceHex, 8, 16).substr(2));
+        const nonce = BigNumber.from('0x' + hexUtils.slice(expiryAndNonceHex, 16, 32).substr(2));
         return {
             expiry,
             nonceBucket,
@@ -419,7 +418,7 @@ export class OtcOrder extends OrderBase {
         if (nonce.lt(0) || nonce.gt(this.MAX_NONCE_VALUE)) {
             throw new Error('Nonce out of range');
         }
-        return BigNumber.from(
+        return BigNumber.from( '0x' +
             hexUtils
                 .concat(
                     hexUtils.leftPad(expiry.toString(), 8),

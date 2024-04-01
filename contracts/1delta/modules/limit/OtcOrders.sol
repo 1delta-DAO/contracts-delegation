@@ -22,6 +22,8 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
         WETH = weth;
     }
 
+    /// @dev reveive function is needed for unwrapping wrapped native
+    receive() external payable {}
 
     /// @dev Fill an OTC order for up to `takerTokenFillAmount` taker tokens.
     /// @param order The OTC order.
@@ -108,7 +110,7 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
     ) public payable override returns (uint128 takerTokenFilledAmount, uint128 makerTokenFilledAmount) {
         if (order.takerToken == WETH) {
             // Wrap ETH
-            _depositNative(WETH, msg.value);
+            _depositNative(WETH);
         } else {
             if(
                 address(order.takerToken) != ETH_TOKEN_ADDRESS
@@ -250,7 +252,7 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
         LibNativeOrder.OtcOrder[] calldata orders,
         LibSignature.Signature[] calldata makerSignatures,
         LibSignature.Signature[] calldata takerSignatures,
-        bool[] memory unwrapWeth
+        bool[] calldata unwrapWeth
     ) external override returns (bool[] memory successes) {
         if(
             orders.length != makerSignatures.length ||
@@ -417,7 +419,7 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
     function lastOtcTxOriginNonce(
         address txOrigin,
         uint64 nonceBucket
-    ) public view override returns (uint128 lastNonce) {
+    ) external view override returns (uint128 lastNonce) {
         return txOriginNonces[txOrigin][nonceBucket];
     }
 }

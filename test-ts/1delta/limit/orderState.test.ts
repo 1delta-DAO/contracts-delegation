@@ -1,7 +1,6 @@
 import {
     constants,
     getRandomPortion as _getRandomPortion,
-    randomAddress,
 } from '@0x/contracts-test-utils';
 
 

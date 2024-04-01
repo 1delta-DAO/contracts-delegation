@@ -10,6 +10,7 @@ import {
     OrderBase,
     OrderInfo,
     OtcOrder,
+    OtcOrderInfo,
     RfqOrder,
     RfqOrderFields,
 } from './constants';
@@ -22,6 +23,7 @@ import { minBn, sumBn } from './utils';
 import { BigNumber, ContractTransaction } from 'ethers';
 import { ethers } from 'hardhat';
 import { MockProvider } from 'ethereum-waffle';
+import { SignatureType } from './signature_utils';
 
 const { NULL_ADDRESS } = constants;
 
@@ -136,7 +138,7 @@ export class NativeOrdersTestEnvironment {
         fillAmount: BigNumber | number = order.takerAmount,
         taker: SignerWithAddress = this.taker,
         fillOrKill = false
-    ): Promise<any> {
+    ): Promise<ContractTransaction> {
         await this.prepareBalancesForOrdersAsync([order], taker);
         const maker = await ethers.getSigner(order.maker)
         return this.zeroEx.connect(taker)
@@ -148,71 +150,75 @@ export class NativeOrdersTestEnvironment {
             );
     }
 
-    // public async fillOtcOrderAsync(
-    //     order: OtcOrder,
-    //     fillAmount: BigNumber | number = order.takerAmount,
-    //     taker: SignerWithAddress,
-    //     unwrapWeth = false,
-    // ): Promise<TransactionReceiptWithDecodedLogs> {
-    //     await this.prepareBalancesForOrdersAsync([order], taker);
-    //     const maker = await ethers.getSigner(order.maker)
-    //     if (unwrapWeth) {
-    //         return this.zeroEx.connect(taker)
-    //             .fillOtcOrderForEth(
-    //                 order,
-    //                 await order.getSignatureWithProviderAsync(maker),
-    //                 BigNumber.from(fillAmount),
-    //             );
-    //     } else {
-    //         return this.zeroEx.connect(taker)
-    //             .fillOtcOrder(
-    //                 order,
-    //                 await order.getSignatureWithProviderAsync(maker),
-    //                 BigNumber.from(fillAmount),
-    //             );
-    //     }
-    // }
+    public async fillOtcOrderAsync(
+        order: OtcOrder,
+        fillAmount: BigNumber | number = order.takerAmount,
+        taker: SignerWithAddress = this.taker,
+        unwrapWeth = false,
+    ): Promise<ContractTransaction> {
+        await this.prepareBalancesForOrdersAsync([order], taker);
+        const maker = await ethers.getSigner(order.maker)
+        if (unwrapWeth) {
+            return this.zeroEx.connect(taker)
+                .fillOtcOrderForEth(
+                    order,
+                    await order.getSignatureWithProviderAsync(maker),
+                    BigNumber.from(fillAmount),
+                    { gasPrice: this.gasPrice }
+                );
+        } else {
+            return this.zeroEx.connect(taker)
+                .fillOtcOrder(
+                    order,
+                    await order.getSignatureWithProviderAsync(maker),
+                    BigNumber.from(fillAmount),
+                    { gasPrice: this.gasPrice }
+                );
+        }
+    }
 
-    // public async fillTakerSignedOtcOrderAsync(
-    //     order: OtcOrder,
-    //     origin: string = order.txOrigin,
-    //     taker: SignerWithAddress,
-    //     unwrapWeth = false,
-    // ): Promise<TransactionReceiptWithDecodedLogs> {
-    //     const originSigner = await ethers.getSigner(origin)
-    //     const maker = await ethers.getSigner(order.maker)
-    //     await this.prepareBalancesForOrdersAsync([order], taker);
-    //     if (unwrapWeth) {
-    //         return this.zeroEx.connect(originSigner)
-    //             .fillTakerSignedOtcOrderForEth(
-    //                 order,
-    //                 await order.getSignatureWithProviderAsync(maker),
-    //                 await order.getSignatureWithProviderAsync(taker, SignatureType.EthSign),
-    //             );
-    //     } else {
-    //         return this.zeroEx.connect(originSigner)
-    //             .fillTakerSignedOtcOrder(
-    //                 order,
-    //                 await order.getSignatureWithProviderAsync(maker),
-    //                 await order.getSignatureWithProviderAsync(taker, SignatureType.EthSign),
-    //             );
-    //     }
-    // }
+    public async fillTakerSignedOtcOrderAsync(
+        order: OtcOrder,
+        origin: string = order.txOrigin,
+        taker: SignerWithAddress,
+        unwrapWeth = false,
+    ): Promise<ContractTransaction> {
+        const originSigner = await ethers.getSigner(origin)
+        const maker = await ethers.getSigner(order.maker)
+        await this.prepareBalancesForOrdersAsync([order], taker);
+        if (unwrapWeth) {
+            return this.zeroEx.connect(originSigner)
+                .fillTakerSignedOtcOrderForEth(
+                    order,
+                    await order.getSignatureWithProviderAsync(maker),
+                    await order.getSignatureWithProviderAsync(taker, SignatureType.EthSign),
+                    { gasPrice: this.gasPrice }
+                );
+        } else {
+            return this.zeroEx.connect(originSigner)
+                .fillTakerSignedOtcOrder(
+                    order,
+                    await order.getSignatureWithProviderAsync(maker),
+                    await order.getSignatureWithProviderAsync(taker, SignatureType.EthSign),
+                    { gasPrice: this.gasPrice }
+                );
+        }
+    }
 
-    // public async fillOtcOrderWithEthAsync(
-    //     order: OtcOrder,
-    //     fillAmount: BigNumber | number = order.takerAmount,
-    //     taker: SignerWithAddress = this.taker,
-    // ): Promise<TransactionReceiptWithDecodedLogs> {
-    //     await this.prepareBalancesForOrdersAsync([order], taker);
-    //     const maker = await ethers.getSigner(order.maker)
-    //     return this.zeroEx.connect(taker)
-    //         .fillOtcOrderWithEth(
-    //             order,
-    //             await order.getSignatureWithProviderAsync(maker),
-    //             { value: fillAmount }
-    //         );
-    // }
+    public async fillOtcOrderWithEthAsync(
+        order: OtcOrder,
+        fillAmount: BigNumber | number = order.takerAmount,
+        taker: SignerWithAddress = this.taker,
+    ): Promise<ContractTransaction> {
+        await this.prepareBalancesForOrdersAsync([order], taker);
+        const maker = await ethers.getSigner(order.maker)
+        return this.zeroEx.connect(taker)
+            .fillOtcOrderWithEth(
+                order,
+                await order.getSignatureWithProviderAsync(maker),
+                { value: fillAmount }
+            );
+    }
 
     public createLimitOrderFilledEventArgs(
         order: LimitOrder,
@@ -274,7 +280,7 @@ export class NativeOrdersTestEnvironment {
             makerTokenFilledAmount,
             orderHash: order.getHash(),
             maker: order.maker,
-            taker: order.taker !== NULL_ADDRESS ? order.taker : this.taker,
+            taker: order.taker !== NULL_ADDRESS ? order.taker : this.taker.address,
             makerToken: order.makerToken,
             takerToken: order.takerToken,
             indexed: ['orderHash', 'maker', 'taker'],
@@ -352,6 +358,15 @@ export function assertOrderInfoEquals(actual: OrderInfo, expected: OrderInfo): v
     expect(actual.takerTokenFilledAmount.toString(), 'Order takerTokenFilledAmount').to.eq(
         expected.takerTokenFilledAmount.toString(),
     );
+}
+
+
+/**
+ * Asserts the fields of an OtcOrderInfo object.
+ */
+export function assertOtcOrderInfoEquals(actual: OtcOrderInfo, expected: OtcOrderInfo): void {
+    expect(actual.status, 'Order status').to.eq(expected.status);
+    expect(actual.orderHash, 'Order hash').to.eq(expected.orderHash);
 }
 
 /**

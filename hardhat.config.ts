@@ -198,7 +198,7 @@ const config: HardhatUserConfig = {
         // auto: false,
         // interval: 0
       },
-      // allowUnlimitedContractSize: true,
+      allowUnlimitedContractSize: true,
 
       // forking: {
       //   blockNumber: 53244031,
