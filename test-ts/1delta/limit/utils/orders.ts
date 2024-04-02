@@ -215,7 +215,7 @@ export class NativeOrdersTestEnvironment {
             .fillOtcOrderWithEth(
                 order,
                 await order.getSignatureWithProviderAsync(maker),
-                { value: fillAmount, gasPrice: this.gasPrice  }
+                { value: fillAmount, gasPrice: this.gasPrice }
             );
     }
 
@@ -288,10 +288,18 @@ export class NativeOrdersTestEnvironment {
     }
 }
 
+let lastSaltMaxLimit = BigNumber.from(1)
+
 /**
  * Generate a random limit order.
  */
 export function getRandomLimitOrder(fields: Partial<LimitOrderFields> = {}): LimitOrder {
+
+    const salt = getRandomInteger(
+        lastSaltMaxLimit.toString(),
+        lastSaltMaxLimit.add(getRandomInteger('0.01e18', '1e20')).toString()
+    )
+    lastSaltMaxLimit = salt
     return new LimitOrder({
         makerToken: randomAddress(),
         takerToken: randomAddress(),
@@ -303,15 +311,22 @@ export function getRandomLimitOrder(fields: Partial<LimitOrderFields> = {}): Lim
         sender: randomAddress(),
         feeRecipient: randomAddress(),
         expiry: createExpiry(DEFAULT_EXPIRY),
-        salt: BigNumber.from(hexUtils.random()),
+        salt,
         ...fields,
     });
 }
+
+let lastSaltMaxRfq = BigNumber.from(1)
 
 /**
  * Generate a random RFQ order.
  */
 export function getRandomRfqOrder(fields: Partial<RfqOrderFields> = {}): RfqOrder {
+    const salt = getRandomInteger(
+        lastSaltMaxRfq.toString(),
+        lastSaltMaxRfq.add(getRandomInteger('0.01e18', '1e20')).toString()
+    )
+    lastSaltMaxRfq = salt
     return new RfqOrder({
         makerToken: randomAddress(),
         takerToken: randomAddress(),
@@ -320,7 +335,7 @@ export function getRandomRfqOrder(fields: Partial<RfqOrderFields> = {}): RfqOrde
         maker: randomAddress(),
         txOrigin: randomAddress(),
         expiry: createExpiry(DEFAULT_EXPIRY),
-        salt: BigNumber.from(hexUtils.random()),
+        salt,
         ...fields,
     });
 }
@@ -377,7 +392,7 @@ export function createExpiry(deltaSeconds = 60): BigNumber {
 /**
  * Creates an accurate order expiry field based on the current block timestamp.
  */
-export async function createCleanExpiry(provider: MockProvider, deltaSeconds = 60): Promise<BigNumber> {
+export async function createCleanExpiry(provider: MockProvider, deltaSeconds = DEFAULT_EXPIRY): Promise<BigNumber> {
     return BigNumber.from((await provider.getBlock(await provider.getBlockNumber())).timestamp + deltaSeconds);
 }
 
