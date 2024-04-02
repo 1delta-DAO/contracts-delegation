@@ -14,9 +14,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import {
     MockERC20,
     MockERC20__factory,
-    NativeOrders,
-    WETH9,
-    WETH9__factory
+    NativeOrders
 } from '../../../types';
 import { MaxUint128 } from '../../uniswap-v3/periphery/shared/constants';
 import { createNativeOrder } from './utils/orderFixture';
@@ -36,21 +34,19 @@ let taker: SignerWithAddress;
 let notMaker: SignerWithAddress;
 let notTaker: SignerWithAddress;
 let collector: SignerWithAddress;
+let owner: SignerWithAddress;
 let oneDeltaOrders: NativeOrders;
 let verifyingContract: string;
 let makerToken: MockERC20;
 let takerToken: MockERC20;
-let wethToken: WETH9;
 let testUtils: NativeOrdersTestEnvironment;
 let provider: MockProvider;
 let chainId: number
 before(async () => {
-    let owner;
     [owner, maker, taker, notMaker, notTaker, collector] =
         await ethers.getSigners();
     makerToken = await new MockERC20__factory(owner).deploy("Maker", 'M', 18)
     takerToken = await new MockERC20__factory(owner).deploy("Taker", "T", 6)
-    wethToken = await new WETH9__factory(owner).deploy()
 
     provider = waffle.provider
     chainId = await maker.getChainId()

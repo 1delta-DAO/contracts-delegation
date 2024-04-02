@@ -198,7 +198,7 @@ const config: HardhatUserConfig = {
         // auto: false,
         // interval: 0
       },
-      allowUnlimitedContractSize: true,
+      // allowUnlimitedContractSize: true,
 
       // forking: {
       //   blockNumber: 53244031,
@@ -216,28 +216,6 @@ const config: HardhatUserConfig = {
       //   blockNumber: 35180036,
       //   url: `https://rpc.ankr.com/bsc`,
       // },
-    },
-    rinkeby: {
-      url: `https://rinkeby.infura.io/v3/${process.env.INFURA_API_KEY}`,
-      accounts,
-      chainId: 4,
-      live: true,
-      saveDeployments: true,
-      tags: ['staging'],
-      gasPrice: 5000000000,
-      gasMultiplier: 2,
-    },
-    goerli: {
-      url: 'https://rpc.ankr.com/eth_goerli',
-      // url: "https://goerli.blockpi.network/v1/rpc/public", //
-      // url: `https://goerli.infura.io/v3/${process.env.INFURA_API_KEY}`,
-      accounts: [pk2],
-      chainId: 5,
-      // live: true,
-      // saveDeployments: true,
-      // tags: ['staging'],
-      // gasPrice: 5000000000,
-      // gasMultiplier: 2,
     },
     moonbase: {
       url: 'https://rpc.testnet.moonbeam.network',
@@ -430,7 +408,7 @@ const config: HardhatUserConfig = {
     deployments: 'deployments',
     imports: 'imports',
     sources: 'contracts',
-    tests: 'test/1delta',
+    tests: 'test-ts/1delta',
   },
   preprocess: {
     eachLine: removeConsoleLog(
