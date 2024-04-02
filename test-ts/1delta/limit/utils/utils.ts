@@ -3,11 +3,9 @@ import { ErrorParser__factory, NativeOrders__factory } from "../../../../types";
 import { expect } from "chai";
 import { isAddress } from "ethers/lib/utils";
 
-
 export const sumBn = (ns: BigNumber[]): BigNumber => {
     return ns.reduce((a, b) => a.add(b))
 }
-
 
 export const minBn = (ns: BigNumber[]): BigNumber => {
     return ns.sort((a, b) => a.lt(b) ? -1 : 1)[0]
@@ -26,8 +24,6 @@ interface TxLog {
     blockHash: string
 
 }
-
-const addressPrefix = '0x000000000000000000000000'
 
 export const verifyLogs = (logs: TxLog[], expected: Object[], id: string) => {
     for (const log of logs) {

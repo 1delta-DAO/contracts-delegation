@@ -23,7 +23,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { MockProvider } from 'ethereum-waffle';
 import { createNativeOrder } from './utils/orderFixture';
 import { BigNumber } from 'ethers';
-import { expect } from '../shared/expect'
+import { expect } from './utils/expect'
 import { time } from '@nomicfoundation/hardhat-network-helpers';
 import { validateError, verifyLogs } from './utils/utils';
 import { SignatureType } from './utils/signature_utils';

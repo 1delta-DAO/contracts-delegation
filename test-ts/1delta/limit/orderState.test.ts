@@ -25,7 +25,7 @@ import { createNativeOrder } from './utils/orderFixture';
 import { OrderEvents, LimitOrder, LimitOrderFields, OrderStatus, RfqOrder, RfqOrderFields, MAX_UINT256 } from './utils/constants';
 import { BigNumber } from 'ethers';
 import { MockProvider } from 'ethereum-waffle';
-import { expect } from '../shared/expect'
+import { expect } from './utils/expect'
 import { infoEqals, sumBn, validateError, verifyLogs } from './utils/utils';
 import { SignatureType } from './utils/signature_utils';
 

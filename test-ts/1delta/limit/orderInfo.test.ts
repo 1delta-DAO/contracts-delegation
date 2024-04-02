@@ -21,7 +21,7 @@ import { LimitOrder, LimitOrderFields, OrderStatus, RfqOrder, RfqOrderFields, MA
 import { BigNumber } from 'ethers';
 import { MockProvider } from 'ethereum-waffle';
 import { time } from '@nomicfoundation/hardhat-network-helpers';
-import { expect } from '../shared/expect'
+import { expect } from './utils/expect'
 
 const { NULL_ADDRESS, } = constants;
 const ZERO_AMOUNT = BigNumber.from(0)
