@@ -2,7 +2,6 @@ import {
     constants,
     getRandomPortion as _getRandomPortion,
 } from '@0x/contracts-test-utils';
-
 import {
     assertOrderInfoEquals,
     createCleanExpiry,
@@ -17,15 +16,14 @@ import {
     MockERC20__factory,
     NativeOrders,
 } from '../../../types';
-import { MaxUint128 } from '../../uniswap-v3/periphery/shared/constants';
 import { createNativeOrder } from './utils/orderFixture';
-import { LimitOrder, LimitOrderFields, OrderStatus, RfqOrder, RfqOrderFields } from './utils/constants';
+import { LimitOrder, LimitOrderFields, OrderStatus, RfqOrder, RfqOrderFields, MAX_UINT256 } from './utils/constants';
 import { BigNumber } from 'ethers';
 import { MockProvider } from 'ethereum-waffle';
 import { time } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from '../shared/expect'
 
-const { NULL_ADDRESS,  } = constants;
+const { NULL_ADDRESS, } = constants;
 const ZERO_AMOUNT = BigNumber.from(0)
 let GAS_PRICE: BigNumber
 const PROTOCOL_FEE_MULTIPLIER = 1337e3;
@@ -44,7 +42,7 @@ let provider: MockProvider;
 let chainId: number
 before(async () => {
     let owner;
-    [owner, maker, taker, notMaker, notTaker,  collector] =
+    [owner, maker, taker, notMaker, notTaker, collector] =
         await ethers.getSigners();
     makerToken = await new MockERC20__factory(owner).deploy("Maker", 'M', 18)
     takerToken = await new MockERC20__factory(owner).deploy("Taker", "T", 6)
@@ -62,12 +60,12 @@ before(async () => {
     verifyingContract = oneDeltaOrders.address;
     await Promise.all(
         [maker, notMaker].map(a =>
-            makerToken.connect(a).approve(oneDeltaOrders.address, MaxUint128),
+            makerToken.connect(a).approve(oneDeltaOrders.address, MAX_UINT256),
         ),
     );
     await Promise.all(
         [taker, notTaker].map(a =>
-            takerToken.connect(a).approve(oneDeltaOrders.address, MaxUint128),
+            takerToken.connect(a).approve(oneDeltaOrders.address, MAX_UINT256),
         ),
     );
 
@@ -275,7 +273,7 @@ describe('getRfqOrderInfo()', () => {
         await testUtils.prepareBalancesForOrdersAsync([order]);
         const sig = await order.getSignatureWithProviderAsync(maker);
         // Fill the order first.
-        await oneDeltaOrders.connect(taker).fillRfqOrder(order, sig, order.takerAmount,false);
+        await oneDeltaOrders.connect(taker).fillRfqOrder(order, sig, order.takerAmount, false);
         // Advance time to expire the order.
         // await env.web3Wrapper.increaseTimeAsync(61);
         await time.increase(121)

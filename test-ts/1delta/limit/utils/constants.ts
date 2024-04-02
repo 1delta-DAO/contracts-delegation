@@ -1,7 +1,6 @@
 import { getContractAddressesForChainOrThrow } from '@0x/contract-addresses';
 import { EIP712TypedData } from '@0x/types';
 import { hexUtils, NULL_ADDRESS } from '@0x/utils';
-
 import {
     createExchangeProxyEIP712Domain,
     EIP712_DOMAIN_PARAMETERS,
@@ -16,11 +15,11 @@ import {
     Signature,
     SignatureType,
 } from './signature_utils';
-import { BigNumber } from 'ethers';
+import { BigNumber, constants } from 'ethers';
 import { toInteger } from 'lodash';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
-
+export const MAX_UINT256 = constants.MaxUint256
 export const ETH_TOKEN_ADDRESS = '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
 export const ZERO = BigNumber.from(0);
 

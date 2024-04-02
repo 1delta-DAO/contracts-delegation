@@ -7,6 +7,7 @@ import {
 import {
     LimitOrder,
     LimitOrderFields,
+    MAX_UINT256,
     OrderBase,
     OrderInfo,
     OtcOrder,
@@ -14,11 +15,8 @@ import {
     RfqOrder,
     RfqOrderFields,
 } from './constants';
-import { hexUtils } from '@0x/utils';
-
 import { MockERC20, MockERC20__factory, NativeOrders } from '../../../../types';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { MaxUint128 } from '../../../uniswap-v3/periphery/shared/constants';
 import { minBn, sumBn } from './utils';
 import { BigNumber, ContractTransaction } from 'ethers';
 import { ethers } from 'hardhat';
@@ -64,8 +62,8 @@ export class NativeOrdersTestEnvironment {
         const makerToken = await new MockERC20__factory(owner).deploy('TokenA', 'A', 18)
         const takerToken = await new MockERC20__factory(owner).deploy('TokenB', 'A', 6)
 
-        await makerToken.connect(maker).approve(oneDeltaOrders.address, MaxUint128);
-        await takerToken.connect(taker).approve(oneDeltaOrders.address, MaxUint128);
+        await makerToken.connect(maker).approve(oneDeltaOrders.address, MAX_UINT256);
+        await takerToken.connect(taker).approve(oneDeltaOrders.address, MAX_UINT256);
         return new NativeOrdersTestEnvironment(
             maker,
             taker,

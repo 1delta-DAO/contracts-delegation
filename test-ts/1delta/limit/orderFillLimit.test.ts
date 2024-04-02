@@ -16,9 +16,8 @@ import {
     MockERC20__factory,
     NativeOrders
 } from '../../../types';
-import { MaxUint128 } from '../../uniswap-v3/periphery/shared/constants';
 import { createNativeOrder } from './utils/orderFixture';
-import { OrderEvents, LimitOrder, LimitOrderFields, OrderStatus } from './utils/constants';
+import { OrderEvents, LimitOrder, LimitOrderFields, OrderStatus, MAX_UINT256 } from './utils/constants';
 import { BigNumber, ContractReceipt } from 'ethers';
 import { MockProvider } from 'ethereum-waffle';
 import { expect } from '../shared/expect'
@@ -62,12 +61,12 @@ before(async () => {
     verifyingContract = oneDeltaOrders.address;
     await Promise.all(
         [maker, notMaker].map(a =>
-            makerToken.connect(a).approve(oneDeltaOrders.address, MaxUint128),
+            makerToken.connect(a).approve(oneDeltaOrders.address, MAX_UINT256),
         ),
     );
     await Promise.all(
         [taker, notTaker].map(a =>
-            takerToken.connect(a).approve(oneDeltaOrders.address, MaxUint128),
+            takerToken.connect(a).approve(oneDeltaOrders.address, MAX_UINT256),
         ),
     );
 

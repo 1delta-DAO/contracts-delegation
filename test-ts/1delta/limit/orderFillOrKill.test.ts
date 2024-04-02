@@ -2,8 +2,6 @@ import {
     constants,
     getRandomPortion as _getRandomPortion,
 } from '@0x/contracts-test-utils';
-
-
 import {
     getRandomLimitOrder,
     getRandomRfqOrder,
@@ -15,12 +13,9 @@ import {
     MockERC20,
     MockERC20__factory,
     NativeOrders,
-    WETH9,
-    WETH9__factory
 } from '../../../types';
-import { MaxUint128 } from '../../uniswap-v3/periphery/shared/constants';
 import { createNativeOrder } from './utils/orderFixture';
-import { OrderEvents, LimitOrder, LimitOrderFields, RfqOrder, RfqOrderFields } from './utils/constants';
+import { OrderEvents, LimitOrder, LimitOrderFields, RfqOrder, RfqOrderFields, MAX_UINT256 } from './utils/constants';
 import { BigNumber } from 'ethers';
 import { MockProvider } from 'ethereum-waffle';
 import { expect } from '../shared/expect'
@@ -35,23 +30,19 @@ let taker: SignerWithAddress;
 let notMaker: SignerWithAddress;
 let notTaker: SignerWithAddress;
 let collector: SignerWithAddress;
-let contractWalletOwner: SignerWithAddress;
-let contractWalletSigner: SignerWithAddress;
 let oneDeltaOrders: NativeOrders;
 let verifyingContract: string;
 let makerToken: MockERC20;
 let takerToken: MockERC20;
-let wethToken: WETH9;
 let testUtils: NativeOrdersTestEnvironment;
 let provider: MockProvider;
 let chainId: number
 before(async () => {
     let owner;
-    [owner, maker, taker, notMaker, notTaker, contractWalletOwner, contractWalletSigner, collector] =
+    [owner, maker, taker, notMaker, notTaker, collector] =
         await ethers.getSigners();
     makerToken = await new MockERC20__factory(owner).deploy("Maker", 'M', 18)
     takerToken = await new MockERC20__factory(owner).deploy("Taker", "T", 6)
-    wethToken = await new WETH9__factory(owner).deploy()
 
     provider = waffle.provider
     chainId = await maker.getChainId()
@@ -67,12 +58,12 @@ before(async () => {
     verifyingContract = oneDeltaOrders.address;
     await Promise.all(
         [maker, notMaker].map(a =>
-            makerToken.connect(a).approve(oneDeltaOrders.address, MaxUint128),
+            makerToken.connect(a).approve(oneDeltaOrders.address, MAX_UINT256),
         ),
     );
     await Promise.all(
         [taker, notTaker].map(a =>
-            takerToken.connect(a).approve(oneDeltaOrders.address, MaxUint128),
+            takerToken.connect(a).approve(oneDeltaOrders.address, MAX_UINT256),
         ),
     );
 

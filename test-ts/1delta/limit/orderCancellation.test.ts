@@ -2,7 +2,6 @@ import {
     constants,
     getRandomPortion as _getRandomPortion,
 } from '@0x/contracts-test-utils';
-
 import {
     createCleanExpiry,
     getRandomLimitOrder,
@@ -22,9 +21,8 @@ import {
     WETH9,
     WETH9__factory
 } from '../../../types';
-import { MaxUint128 } from '../../uniswap-v3/periphery/shared/constants';
 import { createNativeOrder } from './utils/orderFixture';
-import { OrderEvents, LimitOrder, LimitOrderFields, OrderStatus, RfqOrder, RfqOrderFields } from './utils/constants';
+import { OrderEvents, LimitOrder, LimitOrderFields, OrderStatus, RfqOrder, RfqOrderFields, MAX_UINT256 } from './utils/constants';
 import { BigNumber } from 'ethers';
 import { MockProvider } from 'ethereum-waffle';
 import { expect } from '../shared/expect'
@@ -76,12 +74,12 @@ before(async () => {
     verifyingContract = oneDeltaOrders.address;
     await Promise.all(
         [maker, notMaker].map(a =>
-            makerToken.connect(a).approve(oneDeltaOrders.address, MaxUint128),
+            makerToken.connect(a).approve(oneDeltaOrders.address, MAX_UINT256),
         ),
     );
     await Promise.all(
         [taker, notTaker].map(a =>
-            takerToken.connect(a).approve(oneDeltaOrders.address, MaxUint128),
+            takerToken.connect(a).approve(oneDeltaOrders.address, MAX_UINT256),
         ),
     );
     testRfqOriginRegistration = await new TestRfqOriginRegistration__factory(owner).deploy()
@@ -89,7 +87,7 @@ before(async () => {
     contractWallet = await new TestOrderSignerRegistryWithContractWallet__factory(contractWalletOwner).deploy(oneDeltaOrders.address)
 
     await contractWallet.connect(contractWalletOwner)
-        .approveERC20(makerToken.address, oneDeltaOrders.address, MaxUint128)
+        .approveERC20(makerToken.address, oneDeltaOrders.address, MAX_UINT256)
     GAS_PRICE = await provider.getGasPrice()
     SINGLE_PROTOCOL_FEE = GAS_PRICE.mul(PROTOCOL_FEE_MULTIPLIER);
     testUtils = new NativeOrdersTestEnvironment(

@@ -1,6 +1,5 @@
 import { constants } from '@0x/contracts-test-utils';
-import { OrderEvents, OrderStatus, OtcOrder } from './utils/constants';
-
+import { MAX_UINT256, OrderEvents, OrderStatus, OtcOrder } from './utils/constants';
 import {
     assertOtcOrderInfoEquals,
     computeOtcOrderFilledAmounts,
@@ -9,7 +8,6 @@ import {
     getRandomOtcOrder,
     NativeOrdersTestEnvironment,
 } from './utils/orders';
-
 import {
     ERC20Mock__factory,
     MockERC20,
@@ -25,7 +23,6 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { MockProvider } from 'ethereum-waffle';
 import { createNativeOrder } from './utils/orderFixture';
 import { BigNumber } from 'ethers';
-import { MaxUint128 } from '../../uniswap-v3/periphery/shared/constants';
 import { expect } from '../shared/expect'
 import { time } from '@nomicfoundation/hardhat-network-helpers';
 import { validateError, verifyLogs } from './utils/utils';
@@ -76,23 +73,23 @@ before(async () => {
     console.log('makerToken', makerToken.address, "takerToken", takerToken.address)
 
     await Promise.all([
-        makerToken.connect(maker).approve(oneDeltaOrders.address, MaxUint128),
-        makerToken.connect(notMaker).approve(oneDeltaOrders.address, MaxUint128),
-        takerToken.connect(taker).approve(oneDeltaOrders.address, MaxUint128),
-        takerToken.connect(notTaker).approve(oneDeltaOrders.address, MaxUint128),
-        wethToken.connect(maker).approve(oneDeltaOrders.address, MaxUint128),
-        wethToken.connect(notMaker).approve(oneDeltaOrders.address, MaxUint128),
-        wethToken.connect(taker).approve(oneDeltaOrders.address, MaxUint128),
-        wethToken.connect(notTaker).approve(oneDeltaOrders.address, MaxUint128),
+        makerToken.connect(maker).approve(oneDeltaOrders.address, MAX_UINT256),
+        makerToken.connect(notMaker).approve(oneDeltaOrders.address, MAX_UINT256),
+        takerToken.connect(taker).approve(oneDeltaOrders.address, MAX_UINT256),
+        takerToken.connect(notTaker).approve(oneDeltaOrders.address, MAX_UINT256),
+        wethToken.connect(maker).approve(oneDeltaOrders.address, MAX_UINT256),
+        wethToken.connect(notMaker).approve(oneDeltaOrders.address, MAX_UINT256),
+        wethToken.connect(taker).approve(oneDeltaOrders.address, MAX_UINT256),
+        wethToken.connect(notTaker).approve(oneDeltaOrders.address, MAX_UINT256),
     ]);
 
     // contract wallet for signer delegation
     contractWallet = await new TestOrderSignerRegistryWithContractWallet__factory(contractWalletOwner).deploy(oneDeltaOrders.address)
 
     await contractWallet.connect(contractWalletOwner)
-        .approveERC20(makerToken.address, oneDeltaOrders.address, MaxUint128);
+        .approveERC20(makerToken.address, oneDeltaOrders.address, MAX_UINT256);
     await contractWallet.connect(contractWalletOwner)
-        .approveERC20(takerToken.address, oneDeltaOrders.address, MaxUint128);
+        .approveERC20(takerToken.address, oneDeltaOrders.address, MAX_UINT256);
 
     GAS_PRICE = await provider.getGasPrice()
     testUtils = new NativeOrdersTestEnvironment(maker, taker, makerToken, takerToken, oneDeltaOrders, GAS_PRICE, ZERO);
