@@ -180,7 +180,7 @@ export class NativeOrdersTestEnvironment {
     public async fillTakerSignedOtcOrderAsync(
         order: OtcOrder,
         origin: string = order.txOrigin,
-        taker: SignerWithAddress,
+        taker: SignerWithAddress = this.taker,
         unwrapWeth = false,
     ): Promise<ContractTransaction> {
         const originSigner = await ethers.getSigner(origin)
@@ -216,7 +216,7 @@ export class NativeOrdersTestEnvironment {
             .fillOtcOrderWithEth(
                 order,
                 await order.getSignatureWithProviderAsync(maker),
-                { value: fillAmount }
+                { value: fillAmount, gasPrice: this.gasPrice  }
             );
     }
 
@@ -303,7 +303,6 @@ export function getRandomLimitOrder(fields: Partial<LimitOrderFields> = {}): Lim
         taker: randomAddress(),
         sender: randomAddress(),
         feeRecipient: randomAddress(),
-        pool: hexUtils.random(),
         expiry: createExpiry(DEFAULT_EXPIRY),
         salt: BigNumber.from(hexUtils.random()),
         ...fields,
@@ -321,7 +320,6 @@ export function getRandomRfqOrder(fields: Partial<RfqOrderFields> = {}): RfqOrde
         takerAmount: getRandomInteger('1e6', '100e6'),
         maker: randomAddress(),
         txOrigin: randomAddress(),
-        pool: hexUtils.random(),
         expiry: createExpiry(DEFAULT_EXPIRY),
         salt: BigNumber.from(hexUtils.random()),
         ...fields,
