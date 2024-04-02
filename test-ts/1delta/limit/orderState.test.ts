@@ -25,7 +25,7 @@ import {
 } from '../../../types';
 import { MaxUint128 } from '../../uniswap-v3/periphery/shared/constants';
 import { createNativeOrder } from './utils/orderFixture';
-import { IZeroExEvents, LimitOrder, LimitOrderFields, OrderStatus, RfqOrder, RfqOrderFields } from './utils/constants';
+import { OrderEvents, LimitOrder, LimitOrderFields, OrderStatus, RfqOrder, RfqOrderFields } from './utils/constants';
 import { BigNumber } from 'ethers';
 import { MockProvider } from 'ethereum-waffle';
 import { expect } from '../shared/expect'
@@ -46,7 +46,7 @@ let notTaker: SignerWithAddress;
 let collector: SignerWithAddress;
 let contractWalletOwner: SignerWithAddress;
 let contractWalletSigner: SignerWithAddress;
-let zeroEx: NativeOrders;
+let oneDeltaOrders: NativeOrders;
 let verifyingContract: string;
 let makerToken: MockERC20;
 let takerToken: MockERC20;
@@ -68,28 +68,28 @@ before(async () => {
     console.log("ChainId", chainId, 'maker', maker.address, "taker", taker.address)
     console.log('makerToken', makerToken.address, "takerToken", takerToken.address)
 
-    zeroEx = await createNativeOrder(
+    oneDeltaOrders = await createNativeOrder(
         owner,
         collector.address,
         BigNumber.from(PROTOCOL_FEE_MULTIPLIER)
     );
 
-    verifyingContract = zeroEx.address;
+    verifyingContract = oneDeltaOrders.address;
     await Promise.all(
         [maker, notMaker].map(a =>
-            makerToken.connect(a).approve(zeroEx.address, MaxUint128),
+            makerToken.connect(a).approve(oneDeltaOrders.address, MaxUint128),
         ),
     );
     await Promise.all(
         [taker, notTaker].map(a =>
-            takerToken.connect(a).approve(zeroEx.address, MaxUint128),
+            takerToken.connect(a).approve(oneDeltaOrders.address, MaxUint128),
         ),
     );
     // contract wallet for signer delegation
-    contractWallet = await new TestOrderSignerRegistryWithContractWallet__factory(contractWalletOwner).deploy(zeroEx.address)
+    contractWallet = await new TestOrderSignerRegistryWithContractWallet__factory(contractWalletOwner).deploy(oneDeltaOrders.address)
 
     await contractWallet.connect(contractWalletOwner)
-        .approveERC20(makerToken.address, zeroEx.address, MaxUint128)
+        .approveERC20(makerToken.address, oneDeltaOrders.address, MaxUint128)
     GAS_PRICE = await provider.getGasPrice()
     SINGLE_PROTOCOL_FEE = GAS_PRICE.mul(PROTOCOL_FEE_MULTIPLIER);
     testUtils = new NativeOrdersTestEnvironment(
@@ -97,7 +97,7 @@ before(async () => {
         taker,
         makerToken,
         takerToken,
-        zeroEx,
+        oneDeltaOrders,
         GAS_PRICE,
         SINGLE_PROTOCOL_FEE,
     );
@@ -135,7 +135,7 @@ async function fundOrderMakerAsync(
 ): Promise<void> {
     await makerToken.burn(maker.address, await makerToken.balanceOf(maker.address));
     await makerToken.mint(maker.address, balance);
-    await makerToken.connect(maker).approve(zeroEx.address, allowance);
+    await makerToken.connect(maker).approve(oneDeltaOrders.address, allowance);
 }
 
 describe('getLimitOrderRelevantState()', () => {
@@ -144,7 +144,7 @@ describe('getLimitOrderRelevantState()', () => {
             takerAmount: ZERO_AMOUNT,
         });
         await fundOrderMakerAsync(order);
-        const [orderInfo, fillableTakerAmount, isSignatureValid] = await zeroEx
+        const [orderInfo, fillableTakerAmount, isSignatureValid] = await oneDeltaOrders
             .getLimitOrderRelevantState(order, await order.getSignatureWithProviderAsync(maker));
         infoEqals(orderInfo, {
             orderHash: order.getHash(),
@@ -158,8 +158,8 @@ describe('getLimitOrderRelevantState()', () => {
     it('works with cancelled order', async () => {
         const order = getTestLimitOrder();
         await fundOrderMakerAsync(order);
-        await zeroEx.connect(maker).cancelLimitOrder(order);
-        const [orderInfo, fillableTakerAmount, isSignatureValid] = await zeroEx
+        await oneDeltaOrders.connect(maker).cancelLimitOrder(order);
+        const [orderInfo, fillableTakerAmount, isSignatureValid] = await oneDeltaOrders
             .getLimitOrderRelevantState(order, await order.getSignatureWithProviderAsync(maker));
         infoEqals(orderInfo, {
             orderHash: order.getHash(),
@@ -173,7 +173,7 @@ describe('getLimitOrderRelevantState()', () => {
     it('works with a bad signature', async () => {
         const order = getTestLimitOrder();
         await fundOrderMakerAsync(order);
-        const [orderInfo, fillableTakerAmount, isSignatureValid] = await zeroEx
+        const [orderInfo, fillableTakerAmount, isSignatureValid] = await oneDeltaOrders
             .getLimitOrderRelevantState(
                 order,
                 await order.clone({ maker: notMaker.address }).getSignatureWithProviderAsync(notMaker),
@@ -190,7 +190,7 @@ describe('getLimitOrderRelevantState()', () => {
     it('works with an unfilled order', async () => {
         const order = getTestLimitOrder();
         await fundOrderMakerAsync(order);
-        const [orderInfo, fillableTakerAmount, isSignatureValid] = await zeroEx
+        const [orderInfo, fillableTakerAmount, isSignatureValid] = await oneDeltaOrders
             .getLimitOrderRelevantState(order, await order.getSignatureWithProviderAsync(maker));
         infoEqals(orderInfo, {
             orderHash: order.getHash(),
@@ -209,7 +209,7 @@ describe('getLimitOrderRelevantState()', () => {
             .mint(taker.address, order.takerAmount.add(order.takerTokenFeeAmount));
         await testUtils.fillLimitOrderAsync(order);
         // Partially fill the order.
-        const [orderInfo, fillableTakerAmount, isSignatureValid] = await zeroEx
+        const [orderInfo, fillableTakerAmount, isSignatureValid] = await oneDeltaOrders
             .getLimitOrderRelevantState(order, await order.getSignatureWithProviderAsync(maker));
         infoEqals(orderInfo, {
             orderHash: order.getHash(),
@@ -235,7 +235,7 @@ describe('getLimitOrderRelevantState()', () => {
         const allowance = getRandomPortion(remainingMakerAmount);
         await fundOrderMakerAsync(order, balance, allowance);
         // Get order state.
-        const [orderInfo, fillableTakerAmount, isSignatureValid] = await zeroEx
+        const [orderInfo, fillableTakerAmount, isSignatureValid] = await oneDeltaOrders
             .getLimitOrderRelevantState(order, await order.getSignatureWithProviderAsync(maker));
         infoEqals(orderInfo, {
             orderHash: order.getHash(),
@@ -255,7 +255,7 @@ describe('getRfqOrderRelevantState()', () => {
             takerAmount: ZERO_AMOUNT,
         });
         await fundOrderMakerAsync(order);
-        const [orderInfo, fillableTakerAmount, isSignatureValid] = await zeroEx
+        const [orderInfo, fillableTakerAmount, isSignatureValid] = await oneDeltaOrders
             .getRfqOrderRelevantState(order, await order.getSignatureWithProviderAsync(maker));
         infoEqals(orderInfo, {
             orderHash: order.getHash(),
@@ -269,8 +269,8 @@ describe('getRfqOrderRelevantState()', () => {
     it('works with cancelled order', async () => {
         const order = getTestRfqOrder();
         await fundOrderMakerAsync(order);
-        await zeroEx.connect(maker).cancelRfqOrder(order);
-        const [orderInfo, fillableTakerAmount, isSignatureValid] = await zeroEx
+        await oneDeltaOrders.connect(maker).cancelRfqOrder(order);
+        const [orderInfo, fillableTakerAmount, isSignatureValid] = await oneDeltaOrders
             .getRfqOrderRelevantState(order, await order.getSignatureWithProviderAsync(maker));
         infoEqals(orderInfo, {
             orderHash: order.getHash(),
@@ -284,7 +284,7 @@ describe('getRfqOrderRelevantState()', () => {
     it('works with a bad signature', async () => {
         const order = getTestRfqOrder();
         await fundOrderMakerAsync(order);
-        const [orderInfo, fillableTakerAmount, isSignatureValid] = await zeroEx
+        const [orderInfo, fillableTakerAmount, isSignatureValid] = await oneDeltaOrders
             .getRfqOrderRelevantState(
                 order,
                 await order.clone({ maker: notMaker.address }).getSignatureWithProviderAsync(notMaker),
@@ -301,7 +301,7 @@ describe('getRfqOrderRelevantState()', () => {
     it('works with an unfilled order', async () => {
         const order = getTestRfqOrder();
         await fundOrderMakerAsync(order);
-        const [orderInfo, fillableTakerAmount, isSignatureValid] = await zeroEx
+        const [orderInfo, fillableTakerAmount, isSignatureValid] = await oneDeltaOrders
             .getRfqOrderRelevantState(order, await order.getSignatureWithProviderAsync(maker));
         infoEqals(orderInfo, {
             orderHash: order.getHash(),
@@ -319,7 +319,7 @@ describe('getRfqOrderRelevantState()', () => {
         await takerToken.mint(taker.address, order.takerAmount);
         await testUtils.fillRfqOrderAsync(order);
         // Partially fill the order.
-        const [orderInfo, fillableTakerAmount, isSignatureValid] = await zeroEx
+        const [orderInfo, fillableTakerAmount, isSignatureValid] = await oneDeltaOrders
             .getRfqOrderRelevantState(order, await order.getSignatureWithProviderAsync(maker));
         infoEqals(orderInfo, {
             orderHash: order.getHash(),
@@ -344,7 +344,7 @@ describe('getRfqOrderRelevantState()', () => {
         const allowance = getRandomPortion(remainingMakerAmount);
         await fundOrderMakerAsync(order, balance, allowance);
         // Get order state.
-        const [orderInfo, fillableTakerAmount, isSignatureValid] = await zeroEx
+        const [orderInfo, fillableTakerAmount, isSignatureValid] = await oneDeltaOrders
             .getRfqOrderRelevantState(order, await order.getSignatureWithProviderAsync(maker));
         infoEqals(orderInfo, {
             orderHash: order.getHash(),
@@ -362,7 +362,7 @@ async function batchFundOrderMakerAsync(orders: Array<LimitOrder | RfqOrder>): P
     await makerToken.burn(maker.address, await makerToken.balanceOf(maker.address));
     const balance = sumBn(orders.map(o => o.makerAmount));
     await makerToken.mint(maker.address, balance);
-    await makerToken.connect(maker).approve(zeroEx.address, balance);
+    await makerToken.connect(maker).approve(oneDeltaOrders.address, balance);
 }
 
 describe('registerAllowedSigner()', () => {
@@ -381,7 +381,7 @@ describe('registerAllowedSigner()', () => {
                     indexedTypes: ['address', 'address'],
                 },
             ],
-            IZeroExEvents.OrderSignerRegistered,
+            OrderEvents.OrderSignerRegistered,
         );
 
         // then disallow signer
@@ -399,7 +399,7 @@ describe('registerAllowedSigner()', () => {
                     indexedTypes: ['address', 'address'],
                 },
             ],
-            IZeroExEvents.OrderSignerRegistered,
+            OrderEvents.OrderSignerRegistered,
         );
     });
 
@@ -418,9 +418,9 @@ describe('registerAllowedSigner()', () => {
         await contractWallet.connect(contractWalletOwner)
             .registerAllowedOrderSigner(contractWalletSigner.address, true);
 
-        await zeroEx.connect(taker).fillRfqOrder(order, sig, order.takerAmount, false);
+        await oneDeltaOrders.connect(taker).fillRfqOrder(order, sig, order.takerAmount, false);
 
-        const info = await zeroEx.getRfqOrderInfo(order);
+        const info = await oneDeltaOrders.getRfqOrderInfo(order);
         assertOrderInfoEquals(info, {
             status: OrderStatus.Filled,
             orderHash: order.getHash(),
@@ -448,7 +448,7 @@ describe('registerAllowedSigner()', () => {
         await contractWallet.connect(contractWalletOwner)
             .registerAllowedOrderSigner(contractWalletSigner.address, false);
 
-        const tx = zeroEx.connect(taker).fillRfqOrder(order, sig, order.takerAmount, false);
+        const tx = oneDeltaOrders.connect(taker).fillRfqOrder(order, sig, order.takerAmount, false);
         await validateError(tx,
             "orderNotSignedByMakerError",
             [
@@ -468,7 +468,7 @@ describe('registerAllowedSigner()', () => {
         // need to provide contract wallet with a balance
         await makerToken.mint(contractWallet.address, order.makerAmount);
 
-        const tx = zeroEx.connect(taker).fillRfqOrder(order, sig, order.takerAmount, false);
+        const tx = oneDeltaOrders.connect(taker).fillRfqOrder(order, sig, order.takerAmount, false);
         await validateError(tx,
             "orderNotSignedByMakerError",
             [order.getHash(), maker.address, order.maker])
@@ -480,7 +480,7 @@ describe('registerAllowedSigner()', () => {
         await contractWallet.connect(contractWalletOwner)
             .registerAllowedOrderSigner(contractWalletSigner.address, true);
 
-        const tx = await zeroEx.connect(contractWalletSigner)
+        const tx = await oneDeltaOrders.connect(contractWalletSigner)
             .cancelRfqOrder(order);
         const receipt = await tx.wait()
         verifyLogs(
@@ -491,10 +491,10 @@ describe('registerAllowedSigner()', () => {
                 indexed: ['orderHash', 'maker'],
                 indexedTypes: ['bytes32', 'address'],
             }],
-            IZeroExEvents.OrderCancelled,
+            OrderEvents.OrderCancelled,
         );
 
-        const info = await zeroEx.getRfqOrderInfo(order);
+        const info = await oneDeltaOrders.getRfqOrderInfo(order);
         assertOrderInfoEquals(info, {
             status: OrderStatus.Cancelled,
             orderHash: order.getHash(),
@@ -508,7 +508,7 @@ describe('registerAllowedSigner()', () => {
         await contractWallet.connect(contractWalletOwner)
             .registerAllowedOrderSigner(contractWalletSigner.address, true);
 
-        const tx = await zeroEx.connect(contractWalletSigner)
+        const tx = await oneDeltaOrders.connect(contractWalletSigner)
             .cancelLimitOrder(order);
         const receipt = await tx.wait()
         verifyLogs(
@@ -519,10 +519,10 @@ describe('registerAllowedSigner()', () => {
                 indexed: ['orderHash', 'maker'],
                 indexedTypes: ['bytes32', 'address'],
             }],
-            IZeroExEvents.OrderCancelled,
+            OrderEvents.OrderCancelled,
         );
 
-        const info = await zeroEx.getLimitOrderInfo(order);
+        const info = await oneDeltaOrders.getLimitOrderInfo(order);
         assertOrderInfoEquals(info, {
             status: OrderStatus.Cancelled,
             orderHash: order.getHash(),
@@ -533,7 +533,7 @@ describe('registerAllowedSigner()', () => {
     it(`doesn't allow an unapproved signer to cancel an RFQ order`, async () => {
         const order = getTestRfqOrder({ maker: contractWallet.address });
 
-        const tx = zeroEx.connect(maker).cancelRfqOrder(order);
+        const tx = oneDeltaOrders.connect(maker).cancelRfqOrder(order);
 
         await validateError(tx,
             "onlyOrderMakerAllowed",
@@ -543,7 +543,7 @@ describe('registerAllowedSigner()', () => {
     it(`doesn't allow an unapproved signer to cancel a limit order`, async () => {
         const order = getTestLimitOrder({ maker: contractWallet.address });
 
-        const tx = zeroEx.connect(maker).cancelLimitOrder(order);
+        const tx = oneDeltaOrders.connect(maker).cancelLimitOrder(order);
 
         await validateError(tx,
             "onlyOrderMakerAllowed",
@@ -559,7 +559,7 @@ describe('registerAllowedSigner()', () => {
         // Cancel salts <= the order's
         const minValidSalt = order.salt.add(1);
 
-        const tx = await zeroEx.connect(contractWalletSigner)
+        const tx = await oneDeltaOrders.connect(contractWalletSigner)
             .cancelPairRfqOrdersWithSigner(
                 contractWallet.address,
                 makerToken.address,
@@ -579,10 +579,10 @@ describe('registerAllowedSigner()', () => {
                     indexedTypes: ['address', 'address', 'address'],
                 },
             ],
-            IZeroExEvents.PairCancelledRfqOrders,
+            OrderEvents.PairCancelledRfqOrders,
         );
 
-        const info = await zeroEx.getRfqOrderInfo(order);
+        const info = await oneDeltaOrders.getRfqOrderInfo(order);
 
         assertOrderInfoEquals(info, {
             status: OrderStatus.Cancelled,
@@ -594,7 +594,7 @@ describe('registerAllowedSigner()', () => {
     it(`doesn't allow an unapproved signer to cancel pair RFQ orders`, async () => {
         const minValidSalt = BigNumber.from(2);
 
-        const tx = zeroEx.connect(maker)
+        const tx = oneDeltaOrders.connect(maker)
             .cancelPairRfqOrdersWithSigner(
                 contractWallet.address,
                 makerToken.address,
@@ -617,7 +617,7 @@ describe('registerAllowedSigner()', () => {
         // Cancel salts <= the order's
         const minValidSalt = order.salt.add(1);
 
-        const tx = await zeroEx.connect(contractWalletSigner)
+        const tx = await oneDeltaOrders.connect(contractWalletSigner)
             .cancelPairLimitOrdersWithSigner(
                 contractWallet.address,
                 makerToken.address,
@@ -637,10 +637,10 @@ describe('registerAllowedSigner()', () => {
                     indexedTypes: ['address', 'address', 'address'],
                 },
             ],
-            IZeroExEvents.PairCancelledLimitOrders,
+            OrderEvents.PairCancelledLimitOrders,
         );
 
-        const info = await zeroEx.getLimitOrderInfo(order);
+        const info = await oneDeltaOrders.getLimitOrderInfo(order);
 
         assertOrderInfoEquals(info, {
             status: OrderStatus.Cancelled,
@@ -652,7 +652,7 @@ describe('registerAllowedSigner()', () => {
     it(`doesn't allow an unapproved signer to cancel pair limit orders`, async () => {
         const minValidSalt = BigNumber.from(2);
 
-        const tx = zeroEx.connect(maker)
+        const tx = oneDeltaOrders.connect(maker)
             .cancelPairLimitOrdersWithSigner(
                 contractWallet.address,
                 makerToken.address,
@@ -681,7 +681,7 @@ describe('registerAllowedSigner()', () => {
             .registerAllowedOrderSigner(contractWalletSigner.address, true);
 
         const minValidSalt = BigNumber.from(2);
-        const tx = await zeroEx.connect(contractWalletSigner)
+        const tx = await oneDeltaOrders.connect(contractWalletSigner)
             .batchCancelPairRfqOrdersWithSigner(
                 contractWallet.address,
                 [makerToken.address, takerToken.address],
@@ -709,9 +709,9 @@ describe('registerAllowedSigner()', () => {
                     indexedTypes: ['address', 'address', 'address'],
                 },
             ],
-            IZeroExEvents.PairCancelledRfqOrders,
+            OrderEvents.PairCancelledRfqOrders,
         );
-        const statuses = (await Promise.all(orders.map(o => zeroEx.getRfqOrderInfo(o)))).map(
+        const statuses = (await Promise.all(orders.map(o => oneDeltaOrders.getRfqOrderInfo(o)))).map(
             oi => oi.status,
         );
         expect(statuses).to.deep.eq([OrderStatus.Cancelled, OrderStatus.Cancelled]);
@@ -720,7 +720,7 @@ describe('registerAllowedSigner()', () => {
     it(`doesn't allow an unapproved signer to batch cancel pair rfq orders`, async () => {
         const minValidSalt = BigNumber.from(2);
 
-        const tx = zeroEx.connect(maker)
+        const tx = oneDeltaOrders.connect(maker)
             .batchCancelPairRfqOrdersWithSigner(
                 contractWallet.address,
                 [makerToken.address, takerToken.address],
@@ -750,7 +750,7 @@ describe('registerAllowedSigner()', () => {
             .registerAllowedOrderSigner(contractWalletSigner.address, true);
 
         const minValidSalt = BigNumber.from(2);
-        const tx = await zeroEx.connect(contractWalletSigner)
+        const tx = await oneDeltaOrders.connect(contractWalletSigner)
             .batchCancelPairLimitOrdersWithSigner(
                 contractWallet.address,
                 [makerToken.address, takerToken.address],
@@ -778,9 +778,9 @@ describe('registerAllowedSigner()', () => {
                     indexedTypes: ['address', 'address', 'address'],
                 },
             ],
-            IZeroExEvents.PairCancelledLimitOrders,
+            OrderEvents.PairCancelledLimitOrders,
         );
-        const statuses = (await Promise.all(orders.map(o => zeroEx.getLimitOrderInfo(o)))).map(
+        const statuses = (await Promise.all(orders.map(o => oneDeltaOrders.getLimitOrderInfo(o)))).map(
             oi => oi.status,
         );
         expect(statuses).to.deep.eq([OrderStatus.Cancelled, OrderStatus.Cancelled]);
@@ -789,7 +789,7 @@ describe('registerAllowedSigner()', () => {
     it(`doesn't allow an unapproved signer to batch cancel pair limit orders`, async () => {
         const minValidSalt = BigNumber.from(2);
 
-        const tx = zeroEx.connect(maker)
+        const tx = oneDeltaOrders.connect(maker)
             .batchCancelPairLimitOrdersWithSigner(
                 contractWallet.address,
                 [makerToken.address, takerToken.address],

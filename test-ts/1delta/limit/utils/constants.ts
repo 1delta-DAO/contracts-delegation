@@ -24,7 +24,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 export const ETH_TOKEN_ADDRESS = '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
 export const ZERO = BigNumber.from(0);
 
-export enum IZeroExEvents {
+export enum OrderEvents {
     ERC1155OrderCancelled = 'ERC1155OrderCancelled',
     ERC1155OrderFilled = 'ERC1155OrderFilled',
     ERC1155OrderPreSigned = 'ERC1155OrderPreSigned',

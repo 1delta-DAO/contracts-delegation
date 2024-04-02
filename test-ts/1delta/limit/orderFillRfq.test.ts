@@ -4,10 +4,8 @@ import {
 } from '@0x/contracts-test-utils';
 import {
     assertOrderInfoEquals,
-    computeLimitOrderFilledAmounts,
     computeRfqOrderFilledAmounts,
     createCleanExpiry,
-    getRandomLimitOrder,
     getRandomRfqOrder,
     NativeOrdersTestEnvironment,
 } from './utils/orders';
@@ -26,8 +24,8 @@ import {
 } from '../../../types';
 import { MaxUint128 } from '../../uniswap-v3/periphery/shared/constants';
 import { createNativeOrder } from './utils/orderFixture';
-import { IZeroExEvents, LimitOrder, LimitOrderFields, OrderStatus, RfqOrder, RfqOrderFields } from './utils/constants';
-import { BigNumber, ContractReceipt } from 'ethers';
+import { OrderEvents, OrderStatus, RfqOrder, RfqOrderFields } from './utils/constants';
+import { BigNumber } from 'ethers';
 import { MockProvider } from 'ethereum-waffle';
 import { expect } from '../shared/expect'
 import { validateError, verifyLogs } from './utils/utils';
@@ -44,7 +42,7 @@ let notTaker: SignerWithAddress;
 let collector: SignerWithAddress;
 let contractWalletOwner: SignerWithAddress;
 let contractWalletSigner: SignerWithAddress;
-let zeroEx: NativeOrders;
+let oneDeltaOrders: NativeOrders;
 let verifyingContract: string;
 let makerToken: MockERC20;
 let takerToken: MockERC20;
@@ -68,29 +66,29 @@ before(async () => {
     console.log('makerToken', makerToken.address, "takerToken", takerToken.address)
     testRfqOriginRegistration = await new TestRfqOriginRegistration__factory(owner).deploy()
 
-    zeroEx = await createNativeOrder(
+    oneDeltaOrders = await createNativeOrder(
         owner,
         collector.address,
         BigNumber.from(PROTOCOL_FEE_MULTIPLIER)
     );
 
-    verifyingContract = zeroEx.address;
+    verifyingContract = oneDeltaOrders.address;
     await Promise.all(
         [maker, notMaker].map(a =>
-            makerToken.connect(a).approve(zeroEx.address, MaxUint128),
+            makerToken.connect(a).approve(oneDeltaOrders.address, MaxUint128),
         ),
     );
     await Promise.all(
         [taker, notTaker].map(a =>
-            takerToken.connect(a).approve(zeroEx.address, MaxUint128),
+            takerToken.connect(a).approve(oneDeltaOrders.address, MaxUint128),
         ),
     );
     testRfqOriginRegistration = await new TestRfqOriginRegistration__factory(owner).deploy()
     // contract wallet for signer delegation
-    contractWallet = await new TestOrderSignerRegistryWithContractWallet__factory(contractWalletOwner).deploy(zeroEx.address)
+    contractWallet = await new TestOrderSignerRegistryWithContractWallet__factory(contractWalletOwner).deploy(oneDeltaOrders.address)
 
     await contractWallet.connect(contractWalletOwner)
-        .approveERC20(makerToken.address, zeroEx.address, MaxUint128)
+        .approveERC20(makerToken.address, oneDeltaOrders.address, MaxUint128)
     GAS_PRICE = await provider.getGasPrice()
     SINGLE_PROTOCOL_FEE = GAS_PRICE.mul(PROTOCOL_FEE_MULTIPLIER);
     testUtils = new NativeOrdersTestEnvironment(
@@ -98,7 +96,7 @@ before(async () => {
         taker,
         makerToken,
         takerToken,
-        zeroEx,
+        oneDeltaOrders,
         GAS_PRICE,
         SINGLE_PROTOCOL_FEE,
     );
@@ -120,7 +118,7 @@ describe('registerAllowedRfqOrigins()', () => {
     it('cannot register through a contract', async () => {
         await validateError(
             testRfqOriginRegistration
-                .registerAllowedRfqOrigins(zeroEx.address, [], true),
+                .registerAllowedRfqOrigins(oneDeltaOrders.address, [], true),
             'noContractOrigins',
             []
         )
@@ -165,9 +163,9 @@ describe('fillRfqOrder()', () => {
         verifyLogs(
             receipt.logs,
             [testUtils.createRfqOrderFilledEventArgs(order)],
-            IZeroExEvents.RfqOrderFilled,
+            OrderEvents.RfqOrderFilled,
         );
-        assertOrderInfoEquals(await zeroEx.getRfqOrderInfo(order), {
+        assertOrderInfoEquals(await oneDeltaOrders.getRfqOrderInfo(order), {
             orderHash: order.getHash(),
             status: OrderStatus.Filled,
             takerTokenFilledAmount: order.takerAmount,
@@ -192,9 +190,9 @@ describe('fillRfqOrder()', () => {
         verifyLogs(
             receipt.logs,
             [testUtils.createRfqOrderFilledEventArgs(order, fillAmount)],
-            IZeroExEvents.RfqOrderFilled,
+            OrderEvents.RfqOrderFilled,
         );
-        assertOrderInfoEquals(await zeroEx.getRfqOrderInfo(order), {
+        assertOrderInfoEquals(await oneDeltaOrders.getRfqOrderInfo(order), {
             orderHash: order.getHash(),
             status: OrderStatus.Fillable,
             takerTokenFilledAmount: fillAmount,
@@ -215,7 +213,7 @@ describe('fillRfqOrder()', () => {
         verifyLogs(
             receipt.logs,
             [testUtils.createRfqOrderFilledEventArgs(order, fillAmount)],
-            IZeroExEvents.RfqOrderFilled,
+            OrderEvents.RfqOrderFilled,
         );
         const alreadyFilledAmount = fillAmount;
         fillAmount = order.takerAmount.sub(fillAmount);
@@ -224,9 +222,9 @@ describe('fillRfqOrder()', () => {
         verifyLogs(
             receipt.logs,
             [testUtils.createRfqOrderFilledEventArgs(order, fillAmount, alreadyFilledAmount)],
-            IZeroExEvents.RfqOrderFilled,
+            OrderEvents.RfqOrderFilled,
         );
-        assertOrderInfoEquals(await zeroEx.getRfqOrderInfo(order), {
+        assertOrderInfoEquals(await oneDeltaOrders.getRfqOrderInfo(order), {
             orderHash: order.getHash(),
             status: OrderStatus.Filled,
             takerTokenFilledAmount: order.takerAmount,
@@ -246,9 +244,9 @@ describe('fillRfqOrder()', () => {
         verifyLogs(
             receipt.logs,
             [testUtils.createRfqOrderFilledEventArgs(order, fillAmount)],
-            IZeroExEvents.RfqOrderFilled,
+            OrderEvents.RfqOrderFilled,
         );
-        assertOrderInfoEquals(await zeroEx.getRfqOrderInfo(order), {
+        assertOrderInfoEquals(await oneDeltaOrders.getRfqOrderInfo(order), {
             orderHash: order.getHash(),
             status: OrderStatus.Filled,
             takerTokenFilledAmount: order.takerAmount,
@@ -269,7 +267,7 @@ describe('fillRfqOrder()', () => {
         verifyLogs(
             receipt.logs,
             [testUtils.createRfqOrderFilledEventArgs(order, fillAmount)],
-            IZeroExEvents.RfqOrderFilled,
+            OrderEvents.RfqOrderFilled,
         );
         const alreadyFilledAmount = fillAmount;
         fillAmount = order.takerAmount.sub(fillAmount).add(1);
@@ -278,9 +276,9 @@ describe('fillRfqOrder()', () => {
         verifyLogs(
             receipt.logs,
             [testUtils.createRfqOrderFilledEventArgs(order, fillAmount, alreadyFilledAmount)],
-            IZeroExEvents.RfqOrderFilled,
+            OrderEvents.RfqOrderFilled,
         );
-        assertOrderInfoEquals(await zeroEx.getRfqOrderInfo(order), {
+        assertOrderInfoEquals(await oneDeltaOrders.getRfqOrderInfo(order), {
             orderHash: order.getHash(),
             status: OrderStatus.Filled,
             takerTokenFilledAmount: order.takerAmount,
@@ -300,7 +298,7 @@ describe('fillRfqOrder()', () => {
     it('can fill an order from a different tx.origin if registered', async () => {
         const order = getTestRfqOrder();
 
-        const tx = await zeroEx.connect(taker)
+        const tx = await oneDeltaOrders.connect(taker)
             .registerAllowedRfqOrigins([notTaker.address], true);
         const receipt = await tx.wait()
         verifyLogs(
@@ -314,7 +312,7 @@ describe('fillRfqOrder()', () => {
                     indexedTypes: ['address']
                 },
             ],
-            IZeroExEvents.RfqOrderOriginsAllowed,
+            OrderEvents.RfqOrderOriginsAllowed,
         );
         return testUtils.fillRfqOrderAsync(order, order.takerAmount, notTaker);
     });
@@ -322,8 +320,8 @@ describe('fillRfqOrder()', () => {
     it('cannot fill an order with registered then unregistered tx.origin', async () => {
         const order = getTestRfqOrder();
 
-        await zeroEx.connect(taker).registerAllowedRfqOrigins([notTaker.address], true);
-        const tx = await zeroEx.connect(taker)
+        await oneDeltaOrders.connect(taker).registerAllowedRfqOrigins([notTaker.address], true);
+        const tx = await oneDeltaOrders.connect(taker)
             .registerAllowedRfqOrigins([notTaker.address], false);
         const receipt = await tx.wait()
         verifyLogs(
@@ -337,7 +335,7 @@ describe('fillRfqOrder()', () => {
                     indexedTypes: ['address']
                 },
             ],
-            IZeroExEvents.RfqOrderOriginsAllowed,
+            OrderEvents.RfqOrderOriginsAllowed,
         );
 
 
@@ -378,7 +376,7 @@ describe('fillRfqOrder()', () => {
 
     it('cannot fill a cancelled order', async () => {
         const order = getTestRfqOrder();
-        await zeroEx.connect(maker).cancelRfqOrder(order);
+        await oneDeltaOrders.connect(maker).cancelRfqOrder(order);
         await validateError(testUtils.fillRfqOrderAsync(order),
             "orderNotFillableError",
             [order.getHash(), OrderStatus.Cancelled]
@@ -387,7 +385,7 @@ describe('fillRfqOrder()', () => {
 
     it('cannot fill a salt/pair cancelled order', async () => {
         const order = getTestRfqOrder();
-        await zeroEx.connect(maker)
+        await oneDeltaOrders.connect(maker)
             .cancelPairRfqOrders(makerToken.address, takerToken.address, order.salt.add(1));
         await validateError(testUtils.fillRfqOrderAsync(order),
             "orderNotFillableError",
@@ -412,7 +410,7 @@ describe('fillRfqOrder()', () => {
         const order = getTestRfqOrder();
         await testUtils.prepareBalancesForOrdersAsync([order], taker);
         // This will revert at the language level because the fill function is not payable.
-        await expect(zeroEx.connect(taker)
+        await expect(oneDeltaOrders.connect(taker)
             .fillRfqOrder(
                 order,
                 await order.getSignatureWithProviderAsync(taker),

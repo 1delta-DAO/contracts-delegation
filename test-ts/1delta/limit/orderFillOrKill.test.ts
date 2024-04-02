@@ -20,7 +20,7 @@ import {
 } from '../../../types';
 import { MaxUint128 } from '../../uniswap-v3/periphery/shared/constants';
 import { createNativeOrder } from './utils/orderFixture';
-import { IZeroExEvents, LimitOrder, LimitOrderFields, RfqOrder, RfqOrderFields } from './utils/constants';
+import { OrderEvents, LimitOrder, LimitOrderFields, RfqOrder, RfqOrderFields } from './utils/constants';
 import { BigNumber } from 'ethers';
 import { MockProvider } from 'ethereum-waffle';
 import { expect } from '../shared/expect'
@@ -37,7 +37,7 @@ let notTaker: SignerWithAddress;
 let collector: SignerWithAddress;
 let contractWalletOwner: SignerWithAddress;
 let contractWalletSigner: SignerWithAddress;
-let zeroEx: NativeOrders;
+let oneDeltaOrders: NativeOrders;
 let verifyingContract: string;
 let makerToken: MockERC20;
 let takerToken: MockERC20;
@@ -58,21 +58,21 @@ before(async () => {
     console.log("ChainId", chainId, 'maker', maker.address, "taker", taker.address)
     console.log('makerToken', makerToken.address, "takerToken", takerToken.address)
 
-    zeroEx = await createNativeOrder(
+    oneDeltaOrders = await createNativeOrder(
         owner,
         collector.address,
         BigNumber.from(PROTOCOL_FEE_MULTIPLIER)
     );
 
-    verifyingContract = zeroEx.address;
+    verifyingContract = oneDeltaOrders.address;
     await Promise.all(
         [maker, notMaker].map(a =>
-            makerToken.connect(a).approve(zeroEx.address, MaxUint128),
+            makerToken.connect(a).approve(oneDeltaOrders.address, MaxUint128),
         ),
     );
     await Promise.all(
         [taker, notTaker].map(a =>
-            takerToken.connect(a).approve(zeroEx.address, MaxUint128),
+            takerToken.connect(a).approve(oneDeltaOrders.address, MaxUint128),
         ),
     );
 
@@ -83,7 +83,7 @@ before(async () => {
         taker,
         makerToken,
         takerToken,
-        zeroEx,
+        oneDeltaOrders,
         GAS_PRICE,
         SINGLE_PROTOCOL_FEE,
     );
@@ -118,7 +118,7 @@ describe('fillOrKillLimitOrder()', () => {
     it('can fully fill an order', async () => {
         const order = getTestLimitOrder();
         await testUtils.prepareBalancesForOrdersAsync([order]);
-        const tx = await zeroEx.connect(taker)
+        const tx = await oneDeltaOrders.connect(taker)
             .fillLimitOrder(
                 order,
                 await order.getSignatureWithProviderAsync(maker),
@@ -130,7 +130,7 @@ describe('fillOrKillLimitOrder()', () => {
         verifyLogs(
             receipt.logs,
             [testUtils.createLimitOrderFilledEventArgs(order)],
-            IZeroExEvents.LimitOrderFilled,
+            OrderEvents.LimitOrderFilled,
         );
     });
 
@@ -139,7 +139,7 @@ describe('fillOrKillLimitOrder()', () => {
         await testUtils.prepareBalancesForOrdersAsync([order]);
         const fillAmount = order.takerAmount.add(1);
         await validateError(
-            zeroEx.connect(taker)
+            oneDeltaOrders.connect(taker)
                 .fillLimitOrder(
                     order,
                     await order.getSignatureWithProviderAsync(maker),
@@ -156,7 +156,7 @@ describe('fillOrKillLimitOrder()', () => {
         const order = getTestLimitOrder();
         await testUtils.prepareBalancesForOrdersAsync([order]);
         const takerBalanceBefore = await provider.getBalance(taker.address);
-        const tx = await zeroEx.connect(taker)
+        const tx = await oneDeltaOrders.connect(taker)
             .fillLimitOrder(
                 order,
                 await order.getSignatureWithProviderAsync(maker),
@@ -175,7 +175,7 @@ describe('fillOrKillRfqOrder()', () => {
     it('can fully fill an order', async () => {
         const order = getTestRfqOrder();
         await testUtils.prepareBalancesForOrdersAsync([order]);
-        const tx = await zeroEx.connect(taker)
+        const tx = await oneDeltaOrders.connect(taker)
             .fillRfqOrder(
                 order,
                 await order.getSignatureWithProviderAsync(maker),
@@ -186,7 +186,7 @@ describe('fillOrKillRfqOrder()', () => {
         verifyLogs(
             receipt.logs,
             [testUtils.createRfqOrderFilledEventArgs(order)],
-            IZeroExEvents.RfqOrderFilled,
+            OrderEvents.RfqOrderFilled,
         );
     });
 
@@ -194,7 +194,7 @@ describe('fillOrKillRfqOrder()', () => {
         const order = getTestRfqOrder();
         await testUtils.prepareBalancesForOrdersAsync([order]);
         const fillAmount = order.takerAmount.add(1);
-        const tx = zeroEx.connect(taker)
+        const tx = oneDeltaOrders.connect(taker)
             .fillRfqOrder(
                 order,
                 await order.getSignatureWithProviderAsync(maker),
@@ -212,7 +212,7 @@ describe('fillOrKillRfqOrder()', () => {
     it('fails if ETH is attached', async () => {
         const order = getTestRfqOrder();
         await testUtils.prepareBalancesForOrdersAsync([order]);
-        const tx = zeroEx.connect(taker)
+        const tx = oneDeltaOrders.connect(taker)
             .fillRfqOrder(
                 order,
                 await order.getSignatureWithProviderAsync(maker),

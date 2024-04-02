@@ -57,22 +57,21 @@ export class NativeOrdersTestEnvironment {
         owner: SignerWithAddress,
         maker: SignerWithAddress,
         taker: SignerWithAddress,
-        zeroEx: NativeOrders,
+        oneDeltaOrders: NativeOrders,
         gasPrice: BigNumber = BigNumber.from(123e9),
         protocolFeeMultiplier = 70e3,
     ): Promise<NativeOrdersTestEnvironment> {
         const makerToken = await new MockERC20__factory(owner).deploy('TokenA', 'A', 18)
         const takerToken = await new MockERC20__factory(owner).deploy('TokenB', 'A', 6)
 
-        // const zeroEx = await createNativeOrder(owner, weth);
-        await makerToken.connect(maker).approve(zeroEx.address, MaxUint128);
-        await takerToken.connect(taker).approve(zeroEx.address, MaxUint128);
+        await makerToken.connect(maker).approve(oneDeltaOrders.address, MaxUint128);
+        await takerToken.connect(taker).approve(oneDeltaOrders.address, MaxUint128);
         return new NativeOrdersTestEnvironment(
             maker,
             taker,
             makerToken,
             takerToken,
-            zeroEx,
+            oneDeltaOrders,
             gasPrice,
             gasPrice.mul(protocolFeeMultiplier),
         );
@@ -83,7 +82,7 @@ export class NativeOrdersTestEnvironment {
         public readonly taker: SignerWithAddress,
         public readonly makerToken: MockERC20,
         public readonly takerToken: MockERC20,
-        public readonly zeroEx: NativeOrders,
+        public readonly oneDeltaOrders: NativeOrders,
         public readonly gasPrice: BigNumber,
         public readonly protocolFee: BigNumber,
     ) { }
@@ -123,7 +122,7 @@ export class NativeOrdersTestEnvironment {
         };
         await this.prepareBalancesForOrdersAsync([order], taker);
         const value = protocolFee === undefined ? this.protocolFee : protocolFee;
-        return this.zeroEx.connect(taker)
+        return this.oneDeltaOrders.connect(taker)
             .fillLimitOrder(
                 order,
                 await order.getSignatureWithProviderAsync(maker),
@@ -141,7 +140,7 @@ export class NativeOrdersTestEnvironment {
     ): Promise<ContractTransaction> {
         await this.prepareBalancesForOrdersAsync([order], taker);
         const maker = await ethers.getSigner(order.maker)
-        return this.zeroEx.connect(taker)
+        return this.oneDeltaOrders.connect(taker)
             .fillRfqOrder(
                 order,
                 await order.getSignatureWithProviderAsync(maker),
@@ -159,7 +158,7 @@ export class NativeOrdersTestEnvironment {
         await this.prepareBalancesForOrdersAsync([order], taker);
         const maker = await ethers.getSigner(order.maker)
         if (unwrapWeth) {
-            return this.zeroEx.connect(taker)
+            return this.oneDeltaOrders.connect(taker)
                 .fillOtcOrderForEth(
                     order,
                     await order.getSignatureWithProviderAsync(maker),
@@ -167,7 +166,7 @@ export class NativeOrdersTestEnvironment {
                     { gasPrice: this.gasPrice }
                 );
         } else {
-            return this.zeroEx.connect(taker)
+            return this.oneDeltaOrders.connect(taker)
                 .fillOtcOrder(
                     order,
                     await order.getSignatureWithProviderAsync(maker),
@@ -187,7 +186,7 @@ export class NativeOrdersTestEnvironment {
         const maker = await ethers.getSigner(order.maker)
         await this.prepareBalancesForOrdersAsync([order], taker);
         if (unwrapWeth) {
-            return this.zeroEx.connect(originSigner)
+            return this.oneDeltaOrders.connect(originSigner)
                 .fillTakerSignedOtcOrderForEth(
                     order,
                     await order.getSignatureWithProviderAsync(maker),
@@ -195,7 +194,7 @@ export class NativeOrdersTestEnvironment {
                     { gasPrice: this.gasPrice }
                 );
         } else {
-            return this.zeroEx.connect(originSigner)
+            return this.oneDeltaOrders.connect(originSigner)
                 .fillTakerSignedOtcOrder(
                     order,
                     await order.getSignatureWithProviderAsync(maker),
@@ -212,7 +211,7 @@ export class NativeOrdersTestEnvironment {
     ): Promise<ContractTransaction> {
         await this.prepareBalancesForOrdersAsync([order], taker);
         const maker = await ethers.getSigner(order.maker)
-        return this.zeroEx.connect(taker)
+        return this.oneDeltaOrders.connect(taker)
             .fillOtcOrderWithEth(
                 order,
                 await order.getSignatureWithProviderAsync(maker),

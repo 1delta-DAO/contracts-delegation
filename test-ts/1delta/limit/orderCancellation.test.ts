@@ -24,7 +24,7 @@ import {
 } from '../../../types';
 import { MaxUint128 } from '../../uniswap-v3/periphery/shared/constants';
 import { createNativeOrder } from './utils/orderFixture';
-import { IZeroExEvents, LimitOrder, LimitOrderFields, OrderStatus, RfqOrder, RfqOrderFields } from './utils/constants';
+import { OrderEvents, LimitOrder, LimitOrderFields, OrderStatus, RfqOrder, RfqOrderFields } from './utils/constants';
 import { BigNumber } from 'ethers';
 import { MockProvider } from 'ethereum-waffle';
 import { expect } from '../shared/expect'
@@ -43,7 +43,7 @@ let notTaker: SignerWithAddress;
 let collector: SignerWithAddress;
 let contractWalletOwner: SignerWithAddress;
 let contractWalletSigner: SignerWithAddress;
-let zeroEx: NativeOrders;
+let oneDeltaOrders: NativeOrders;
 let verifyingContract: string;
 let makerToken: MockERC20;
 let takerToken: MockERC20;
@@ -67,29 +67,29 @@ before(async () => {
     console.log('makerToken', makerToken.address, "takerToken", takerToken.address)
     testRfqOriginRegistration = await new TestRfqOriginRegistration__factory(owner).deploy()
 
-    zeroEx = await createNativeOrder(
+    oneDeltaOrders = await createNativeOrder(
         owner,
         collector.address,
         BigNumber.from(PROTOCOL_FEE_MULTIPLIER)
     );
 
-    verifyingContract = zeroEx.address;
+    verifyingContract = oneDeltaOrders.address;
     await Promise.all(
         [maker, notMaker].map(a =>
-            makerToken.connect(a).approve(zeroEx.address, MaxUint128),
+            makerToken.connect(a).approve(oneDeltaOrders.address, MaxUint128),
         ),
     );
     await Promise.all(
         [taker, notTaker].map(a =>
-            takerToken.connect(a).approve(zeroEx.address, MaxUint128),
+            takerToken.connect(a).approve(oneDeltaOrders.address, MaxUint128),
         ),
     );
     testRfqOriginRegistration = await new TestRfqOriginRegistration__factory(owner).deploy()
     // contract wallet for signer delegation
-    contractWallet = await new TestOrderSignerRegistryWithContractWallet__factory(contractWalletOwner).deploy(zeroEx.address)
+    contractWallet = await new TestOrderSignerRegistryWithContractWallet__factory(contractWalletOwner).deploy(oneDeltaOrders.address)
 
     await contractWallet.connect(contractWalletOwner)
-        .approveERC20(makerToken.address, zeroEx.address, MaxUint128)
+        .approveERC20(makerToken.address, oneDeltaOrders.address, MaxUint128)
     GAS_PRICE = await provider.getGasPrice()
     SINGLE_PROTOCOL_FEE = GAS_PRICE.mul(PROTOCOL_FEE_MULTIPLIER);
     testUtils = new NativeOrdersTestEnvironment(
@@ -97,7 +97,7 @@ before(async () => {
         taker,
         makerToken,
         takerToken,
-        zeroEx,
+        oneDeltaOrders,
         GAS_PRICE,
         SINGLE_PROTOCOL_FEE,
     );
@@ -133,7 +133,7 @@ function getTestRfqOrder(fields: Partial<RfqOrderFields> = {}): RfqOrder {
 describe('cancelLimitOrder()', async () => {
     it('can cancel an unfilled order', async () => {
         const order = getTestLimitOrder();
-        const tx = await zeroEx.connect(maker).cancelLimitOrder(order);
+        const tx = await oneDeltaOrders.connect(maker).cancelLimitOrder(order);
         const receipt = await tx.wait()
         verifyLogs(
             receipt.logs,
@@ -143,16 +143,16 @@ describe('cancelLimitOrder()', async () => {
                 indexed: ['orderHash', 'maker'],
                 indexedTypes: ['bytes32', 'address']
             }],
-            IZeroExEvents.OrderCancelled,
+            OrderEvents.OrderCancelled,
         );
-        const { status } = await zeroEx.getLimitOrderInfo(order);
+        const { status } = await oneDeltaOrders.getLimitOrderInfo(order);
         expect(status).to.eq(OrderStatus.Cancelled);
     });
 
     it('can cancel a fully filled order', async () => {
         const order = getTestLimitOrder();
         await testUtils.fillLimitOrderAsync(order);
-        const tx = await zeroEx.connect(maker).cancelLimitOrder(order);
+        const tx = await oneDeltaOrders.connect(maker).cancelLimitOrder(order);
         const receipt = await tx.wait()
         verifyLogs(
             receipt.logs,
@@ -162,16 +162,16 @@ describe('cancelLimitOrder()', async () => {
                 indexed: ['orderHash', 'maker'],
                 indexedTypes: ['bytes32', 'address']
             }],
-            IZeroExEvents.OrderCancelled,
+            OrderEvents.OrderCancelled,
         );
-        const { status } = await zeroEx.getLimitOrderInfo(order);
+        const { status } = await oneDeltaOrders.getLimitOrderInfo(order);
         expect(status).to.eq(OrderStatus.Filled); // Still reports filled.
     });
 
     it('can cancel a partially filled order', async () => {
         const order = getTestLimitOrder();
         await testUtils.fillLimitOrderAsync(order, { fillAmount: order.takerAmount.sub(1) });
-        const tx = await zeroEx.connect(maker).cancelLimitOrder(order);
+        const tx = await oneDeltaOrders.connect(maker).cancelLimitOrder(order);
         const receipt = await tx.wait()
         verifyLogs(
             receipt.logs,
@@ -181,16 +181,16 @@ describe('cancelLimitOrder()', async () => {
                 indexed: ['orderHash', 'maker'],
                 indexedTypes: ['bytes32', 'address']
             }],
-            IZeroExEvents.OrderCancelled,
+            OrderEvents.OrderCancelled,
         );
-        const { status } = await zeroEx.getLimitOrderInfo(order);
+        const { status } = await oneDeltaOrders.getLimitOrderInfo(order);
         expect(status).to.eq(OrderStatus.Cancelled);
     });
 
     it('can cancel an expired order', async () => {
         const expiry = await createCleanExpiry(provider, -1);
         const order = getTestLimitOrder({ expiry });
-        const tx = await zeroEx.connect(maker).cancelLimitOrder(order);
+        const tx = await oneDeltaOrders.connect(maker).cancelLimitOrder(order);
         const receipt = await tx.wait()
         verifyLogs(
             receipt.logs,
@@ -200,16 +200,16 @@ describe('cancelLimitOrder()', async () => {
                 indexed: ['orderHash', 'maker'],
                 indexedTypes: ['bytes32', 'address']
             }],
-            IZeroExEvents.OrderCancelled,
+            OrderEvents.OrderCancelled,
         );
-        const { status } = await zeroEx.getLimitOrderInfo(order);
+        const { status } = await oneDeltaOrders.getLimitOrderInfo(order);
         expect(status).to.eq(OrderStatus.Cancelled);
     });
 
     it('can cancel a cancelled order', async () => {
         const order = getTestLimitOrder();
-        await zeroEx.connect(maker).cancelLimitOrder(order);
-        const tx = await zeroEx.connect(maker).cancelLimitOrder(order);
+        await oneDeltaOrders.connect(maker).cancelLimitOrder(order);
+        const tx = await oneDeltaOrders.connect(maker).cancelLimitOrder(order);
         const receipt = await tx.wait()
         verifyLogs(
             receipt.logs,
@@ -219,16 +219,16 @@ describe('cancelLimitOrder()', async () => {
                 indexed: ['orderHash', 'maker'],
                 indexedTypes: ['bytes32', 'address']
             }],
-            IZeroExEvents.OrderCancelled,
+            OrderEvents.OrderCancelled,
         );
-        const { status } = await zeroEx.getLimitOrderInfo(order);
+        const { status } = await oneDeltaOrders.getLimitOrderInfo(order);
         expect(status).to.eq(OrderStatus.Cancelled);
     });
 
     it("cannot cancel someone else's order", async () => {
         const order = getTestLimitOrder();
         await validateError(
-            zeroEx.connect(notMaker).cancelLimitOrder(order),
+            oneDeltaOrders.connect(notMaker).cancelLimitOrder(order),
             "onlyOrderMakerAllowed",
             [order.getHash(), notMaker.address, order.maker]
         )
@@ -239,7 +239,7 @@ describe('cancelLimitOrder()', async () => {
 describe('cancelRfqOrder()', async () => {
     it('can cancel an unfilled order', async () => {
         const order = getTestRfqOrder();
-        const tx = await zeroEx.connect(maker).cancelRfqOrder(order);
+        const tx = await oneDeltaOrders.connect(maker).cancelRfqOrder(order);
         const receipt = await tx.wait()
         verifyLogs(
             receipt.logs,
@@ -249,16 +249,16 @@ describe('cancelRfqOrder()', async () => {
                 indexed: ['orderHash', 'maker'],
                 indexedTypes: ['bytes32', 'address']
             }],
-            IZeroExEvents.OrderCancelled,
+            OrderEvents.OrderCancelled,
         );
-        const { status } = await zeroEx.getRfqOrderInfo(order);
+        const { status } = await oneDeltaOrders.getRfqOrderInfo(order);
         expect(status).to.eq(OrderStatus.Cancelled);
     });
 
     it('can cancel a fully filled order', async () => {
         const order = getTestRfqOrder();
         await testUtils.fillRfqOrderAsync(order);
-        const tx = await zeroEx.connect(maker).cancelRfqOrder(order);
+        const tx = await oneDeltaOrders.connect(maker).cancelRfqOrder(order);
         const receipt = await tx.wait()
         verifyLogs(
             receipt.logs,
@@ -268,16 +268,16 @@ describe('cancelRfqOrder()', async () => {
                 indexed: ['orderHash', 'maker'],
                 indexedTypes: ['bytes32', 'address']
             }],
-            IZeroExEvents.OrderCancelled,
+            OrderEvents.OrderCancelled,
         );
-        const { status } = await zeroEx.getRfqOrderInfo(order);
+        const { status } = await oneDeltaOrders.getRfqOrderInfo(order);
         expect(status).to.eq(OrderStatus.Filled); // Still reports filled.
     });
 
     it('can cancel a partially filled order', async () => {
         const order = getTestRfqOrder();
         await testUtils.fillRfqOrderAsync(order, order.takerAmount.sub(1));
-        const tx = await zeroEx.connect(maker).cancelRfqOrder(order);
+        const tx = await oneDeltaOrders.connect(maker).cancelRfqOrder(order);
         const receipt = await tx.wait()
         verifyLogs(
             receipt.logs,
@@ -287,16 +287,16 @@ describe('cancelRfqOrder()', async () => {
                 indexed: ['orderHash', 'maker'],
                 indexedTypes: ['bytes32', 'address']
             }],
-            IZeroExEvents.OrderCancelled,
+            OrderEvents.OrderCancelled,
         );
-        const { status } = await zeroEx.getRfqOrderInfo(order);
+        const { status } = await oneDeltaOrders.getRfqOrderInfo(order);
         expect(status).to.eq(OrderStatus.Cancelled); // Still reports filled.
     });
 
     it('can cancel an expired order', async () => {
         const expiry = await createCleanExpiry(provider, -1);
         const order = getTestRfqOrder({ expiry });
-        const tx = await zeroEx.connect(maker).cancelRfqOrder(order);
+        const tx = await oneDeltaOrders.connect(maker).cancelRfqOrder(order);
         const receipt = await tx.wait()
         verifyLogs(
             receipt.logs,
@@ -306,16 +306,16 @@ describe('cancelRfqOrder()', async () => {
                 indexed: ['orderHash', 'maker'],
                 indexedTypes: ['bytes32', 'address']
             }],
-            IZeroExEvents.OrderCancelled,
+            OrderEvents.OrderCancelled,
         );
-        const { status } = await zeroEx.getRfqOrderInfo(order);
+        const { status } = await oneDeltaOrders.getRfqOrderInfo(order);
         expect(status).to.eq(OrderStatus.Cancelled);
     });
 
     it('can cancel a cancelled order', async () => {
         const order = getTestRfqOrder();
-        await zeroEx.connect(maker).cancelRfqOrder(order);
-        const tx = await zeroEx.connect(maker).cancelRfqOrder(order);
+        await oneDeltaOrders.connect(maker).cancelRfqOrder(order);
+        const tx = await oneDeltaOrders.connect(maker).cancelRfqOrder(order);
         const receipt = await tx.wait()
         verifyLogs(
             receipt.logs,
@@ -325,16 +325,16 @@ describe('cancelRfqOrder()', async () => {
                 indexed: ['orderHash', 'maker'],
                 indexedTypes: ['bytes32', 'address']
             }],
-            IZeroExEvents.OrderCancelled,
+            OrderEvents.OrderCancelled,
         );
-        const { status } = await zeroEx.getRfqOrderInfo(order);
+        const { status } = await oneDeltaOrders.getRfqOrderInfo(order);
         expect(status).to.eq(OrderStatus.Cancelled);
     });
 
     it("cannot cancel someone else's order", async () => {
         const order = getTestRfqOrder();
         await validateError(
-            zeroEx.connect(notMaker).cancelRfqOrder(order),
+            oneDeltaOrders.connect(notMaker).cancelRfqOrder(order),
             "onlyOrderMakerAllowed",
             [order.getHash(), notMaker.address, order.maker]);
     });
@@ -343,7 +343,7 @@ describe('cancelRfqOrder()', async () => {
 describe('batchCancelLimitOrders()', async () => {
     it('can cancel multiple orders', async () => {
         const orders = [...new Array(3)].map(() => getTestLimitOrder());
-        const tx = await zeroEx.connect(maker).batchCancelLimitOrders(orders);
+        const tx = await oneDeltaOrders.connect(maker).batchCancelLimitOrders(orders);
         const receipt = await tx.wait()
         verifyLogs(
             receipt.logs,
@@ -353,16 +353,16 @@ describe('batchCancelLimitOrders()', async () => {
                 indexed: ['orderHash', 'maker'],
                 indexedTypes: ['bytes32', 'address']
             })),
-            IZeroExEvents.OrderCancelled,
+            OrderEvents.OrderCancelled,
         );
-        const infos = await Promise.all(orders.map(o => zeroEx.getLimitOrderInfo(o)));
+        const infos = await Promise.all(orders.map(o => oneDeltaOrders.getLimitOrderInfo(o)));
         expect(infos.map(i => i.status)).to.deep.eq(infos.map(() => OrderStatus.Cancelled));
     });
 
     it("cannot cancel someone else's orders", async () => {
         const orders = [...new Array(3)].map(() => getTestLimitOrder());
         await validateError(
-            zeroEx.connect(notMaker).batchCancelLimitOrders(orders),
+            oneDeltaOrders.connect(notMaker).batchCancelLimitOrders(orders),
             "onlyOrderMakerAllowed",
             [orders[0].getHash(), notMaker.address, orders[0].maker]
         )
@@ -372,7 +372,7 @@ describe('batchCancelLimitOrders()', async () => {
 describe('batchCancelRfqOrders()', async () => {
     it('can cancel multiple orders', async () => {
         const orders = [...new Array(3)].map(() => getTestRfqOrder());
-        const tx = await zeroEx.connect(maker).batchCancelRfqOrders(orders);
+        const tx = await oneDeltaOrders.connect(maker).batchCancelRfqOrders(orders);
         const receipt = await tx.wait()
         verifyLogs(
             receipt.logs,
@@ -382,16 +382,16 @@ describe('batchCancelRfqOrders()', async () => {
                 indexed: ['orderHash', 'maker'],
                 indexedTypes: ['bytes32', 'address']
             })),
-            IZeroExEvents.OrderCancelled,
+            OrderEvents.OrderCancelled,
         );
-        const infos = await Promise.all(orders.map(o => zeroEx.getRfqOrderInfo(o)));
+        const infos = await Promise.all(orders.map(o => oneDeltaOrders.getRfqOrderInfo(o)));
         expect(infos.map(i => i.status)).to.deep.eq(infos.map(() => OrderStatus.Cancelled));
     });
 
     it("cannot cancel someone else's orders", async () => {
         const orders = [...new Array(3)].map(() => getTestRfqOrder());
         await validateError(
-            zeroEx.connect(notMaker).batchCancelRfqOrders(orders),
+            oneDeltaOrders.connect(notMaker).batchCancelRfqOrders(orders),
             "onlyOrderMakerAllowed",
             [orders[0].getHash(), notMaker.address, orders[0].maker]
         )
@@ -403,7 +403,7 @@ describe('cancelPairOrders()', async () => {
         const orders = [...new Array(3)].map((_v, i) => getTestLimitOrder().clone({ salt: BigNumber.from(i) }));
         // Cancel the first two orders.
         const minValidSalt = orders[2].salt;
-        const tx = await zeroEx.connect(maker)
+        const tx = await oneDeltaOrders.connect(maker)
             .cancelPairLimitOrders(makerToken.address, takerToken.address, minValidSalt);
         const receipt = await tx.wait()
         verifyLogs(
@@ -418,9 +418,9 @@ describe('cancelPairOrders()', async () => {
                     indexedTypes: ['address', 'address', 'address']
                 },
             ],
-            IZeroExEvents.PairCancelledLimitOrders,
+            OrderEvents.PairCancelledLimitOrders,
         );
-        const statuses = (await Promise.all(orders.map(o => zeroEx.getLimitOrderInfo(o)))).map(
+        const statuses = (await Promise.all(orders.map(o => oneDeltaOrders.getLimitOrderInfo(o)))).map(
             oi => oi.status,
         );
         expect(statuses).to.deep.eq([OrderStatus.Cancelled, OrderStatus.Cancelled, OrderStatus.Fillable]);
@@ -431,9 +431,9 @@ describe('cancelPairOrders()', async () => {
         // Cancel salts <= the order's, but flip the tokens to be a different
         // pair.
         const minValidSalt = order.salt.add(1);
-        await zeroEx.connect(maker)
+        await oneDeltaOrders.connect(maker)
             .cancelPairLimitOrders(takerToken.address, makerToken.address, minValidSalt);
-        const { status } = await zeroEx.getLimitOrderInfo(order);
+        const { status } = await oneDeltaOrders.getLimitOrderInfo(order);
         expect(status).to.eq(OrderStatus.Fillable);
     });
 
@@ -441,7 +441,7 @@ describe('cancelPairOrders()', async () => {
         const orders = [...new Array(3)].map((_v, i) => getTestRfqOrder().clone({ salt: BigNumber.from(i) }));
         // Cancel the first two orders.
         const minValidSalt = orders[2].salt;
-        const tx = await zeroEx.connect(maker)
+        const tx = await oneDeltaOrders.connect(maker)
             .cancelPairRfqOrders(makerToken.address, takerToken.address, minValidSalt);
         const receipt = await tx.wait()
         verifyLogs(
@@ -456,9 +456,9 @@ describe('cancelPairOrders()', async () => {
                     indexedTypes: ['address', 'address', 'address']
                 },
             ],
-            IZeroExEvents.PairCancelledRfqOrders,
+            OrderEvents.PairCancelledRfqOrders,
         );
-        const statuses = (await Promise.all(orders.map(o => zeroEx.getRfqOrderInfo(o)))).map(
+        const statuses = (await Promise.all(orders.map(o => oneDeltaOrders.getRfqOrderInfo(o)))).map(
             oi => oi.status,
         );
         expect(statuses).to.deep.eq([OrderStatus.Cancelled, OrderStatus.Cancelled, OrderStatus.Fillable]);
@@ -469,10 +469,10 @@ describe('cancelPairOrders()', async () => {
         // Cancel salts <= the order's, but flip the tokens to be a different
         // pair.
         const minValidSalt = order.salt.add(1);
-        await zeroEx.connect(maker)
+        await oneDeltaOrders.connect(maker)
             .cancelPairRfqOrders(takerToken.address, makerToken.address, minValidSalt);
 
-        const { status } = await zeroEx.getRfqOrderInfo(order);
+        const { status } = await oneDeltaOrders.getRfqOrderInfo(order);
         expect(status).to.eq(OrderStatus.Fillable);
     });
 });
@@ -489,7 +489,7 @@ describe('batchCancelPairOrders()', async () => {
             }),
         ];
         const minValidSalt = BigNumber.from(2);
-        const tx = await zeroEx.connect(maker)
+        const tx = await oneDeltaOrders.connect(maker)
             .batchCancelPairLimitOrders(
                 [makerToken.address, takerToken.address],
                 [takerToken.address, makerToken.address],
@@ -516,9 +516,9 @@ describe('batchCancelPairOrders()', async () => {
                     indexedTypes: ['address', 'address', 'address']
                 },
             ],
-            IZeroExEvents.PairCancelledLimitOrders,
+            OrderEvents.PairCancelledLimitOrders,
         );
-        const statuses = (await Promise.all(orders.map(o => zeroEx.getLimitOrderInfo(o)))).map(
+        const statuses = (await Promise.all(orders.map(o => oneDeltaOrders.getLimitOrderInfo(o)))).map(
             oi => oi.status,
         );
         expect(statuses).to.deep.eq([OrderStatus.Cancelled, OrderStatus.Cancelled]);
@@ -535,7 +535,7 @@ describe('batchCancelPairOrders()', async () => {
             }),
         ];
         const minValidSalt = BigNumber.from(2);
-        const tx = await zeroEx.connect(maker)
+        const tx = await oneDeltaOrders.connect(maker)
             .batchCancelPairRfqOrders(
                 [makerToken.address, takerToken.address],
                 [takerToken.address, makerToken.address],
@@ -562,9 +562,9 @@ describe('batchCancelPairOrders()', async () => {
                     indexedTypes: ['address', 'address', 'address']
                 },
             ],
-            IZeroExEvents.PairCancelledRfqOrders,
+            OrderEvents.PairCancelledRfqOrders,
         );
-        const statuses = (await Promise.all(orders.map(o => zeroEx.getRfqOrderInfo(o)))).map(
+        const statuses = (await Promise.all(orders.map(o => oneDeltaOrders.getRfqOrderInfo(o)))).map(
             oi => oi.status,
         );
         expect(statuses).to.deep.eq([OrderStatus.Cancelled, OrderStatus.Cancelled]);

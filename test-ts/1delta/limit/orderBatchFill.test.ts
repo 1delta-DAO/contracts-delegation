@@ -24,7 +24,7 @@ import {
 } from '../../../types';
 import { MaxUint128 } from '../../uniswap-v3/periphery/shared/constants';
 import { createNativeOrder } from './utils/orderFixture';
-import { IZeroExEvents, LimitOrder, LimitOrderFields, OrderStatus, RfqOrder, RfqOrderFields } from './utils/constants';
+import { OrderEvents, LimitOrder, LimitOrderFields, OrderStatus, RfqOrder, RfqOrderFields } from './utils/constants';
 import { BigNumber, ContractReceipt } from 'ethers';
 import { MockProvider } from 'ethereum-waffle';
 import { expect } from '../shared/expect'
@@ -43,7 +43,7 @@ let taker: SignerWithAddress;
 let notMaker: SignerWithAddress;
 let notTaker: SignerWithAddress;
 let collector: SignerWithAddress;
-let zeroEx: NativeOrders;
+let oneDeltaOrders: NativeOrders;
 let verifyingContract: string;
 let makerToken: MockERC20;
 let takerToken: MockERC20;
@@ -63,22 +63,22 @@ before(async () => {
     console.log("ChainId", chainId, 'maker', maker.address, "taker", taker.address)
     console.log('makerToken', makerToken.address, "takerToken", takerToken.address)
 
-    zeroEx = await createNativeOrder(
+    oneDeltaOrders = await createNativeOrder(
         owner,
         collector.address,
         BigNumber.from(PROTOCOL_FEE_MULTIPLIER)
     );
-    orderLens = await new OrderLens__factory(owner).deploy(zeroEx.address)
+    orderLens = await new OrderLens__factory(owner).deploy(oneDeltaOrders.address)
 
-    verifyingContract = zeroEx.address;
+    verifyingContract = oneDeltaOrders.address;
     await Promise.all(
         [maker, notMaker].map(a =>
-            makerToken.connect(a).approve(zeroEx.address, MaxUint128),
+            makerToken.connect(a).approve(oneDeltaOrders.address, MaxUint128),
         ),
     );
     await Promise.all(
         [taker, notTaker].map(a =>
-            takerToken.connect(a).approve(zeroEx.address, MaxUint128),
+            takerToken.connect(a).approve(oneDeltaOrders.address, MaxUint128),
         ),
     );
     GAS_PRICE = await provider.getGasPrice()
@@ -88,7 +88,7 @@ before(async () => {
         taker,
         makerToken,
         takerToken,
-        zeroEx,
+        oneDeltaOrders,
         GAS_PRICE,
         SINGLE_PROTOCOL_FEE,
     );
@@ -179,7 +179,7 @@ describe('batchFillLimitOrders', () => {
         );
         await testUtils.prepareBalancesForOrdersAsync(orders);
         const value = testUtils.protocolFee.mul(orders.length);
-        const tx = await zeroEx.connect(taker)
+        const tx = await oneDeltaOrders.connect(taker)
             .batchFillLimitOrders(
                 orders,
                 signatures,
@@ -199,7 +199,7 @@ describe('batchFillLimitOrders', () => {
         verifyLogs(
             receipt.logs,
             orders.map(order => testUtils.createLimitOrderFilledEventArgs(order)),
-            IZeroExEvents.LimitOrderFilled,
+            OrderEvents.LimitOrderFilled,
         );
         return assertExpectedFinalBalancesAsync(orders);
     });
@@ -211,7 +211,7 @@ describe('batchFillLimitOrders', () => {
         await testUtils.prepareBalancesForOrdersAsync(orders);
         const value = testUtils.protocolFee.mul(orders.length);
         const fillAmounts = orders.map(order => getRandomPortion(order.takerAmount));
-        const tx = await zeroEx.connect(taker)
+        const tx = await oneDeltaOrders.connect(taker)
             .batchFillLimitOrders(orders, signatures, fillAmounts, false, { value, gasPrice: GAS_PRICE });
         const receipt = await tx.wait()
         const [orderInfos] = await orderLens.batchGetLimitOrderRelevantStates(orders, signatures);
@@ -225,7 +225,7 @@ describe('batchFillLimitOrders', () => {
         verifyLogs(
             receipt.logs,
             orders.map((order, i) => testUtils.createLimitOrderFilledEventArgs(order, fillAmounts[i])),
-            IZeroExEvents.LimitOrderFilled,
+            OrderEvents.LimitOrderFilled,
         );
         return assertExpectedFinalBalancesAsync(orders, fillAmounts);
     });
@@ -236,7 +236,7 @@ describe('batchFillLimitOrders', () => {
         );
         await testUtils.prepareBalancesForOrdersAsync(orders);
         const value = testUtils.protocolFee.mul(orders.length).add(420);
-        const tx = await zeroEx.connect(taker)
+        const tx = await oneDeltaOrders.connect(taker)
             .batchFillLimitOrders(
                 orders,
                 signatures,
@@ -256,7 +256,7 @@ describe('batchFillLimitOrders', () => {
         verifyLogs(
             reeipt.logs,
             orders.map(order => testUtils.createLimitOrderFilledEventArgs(order)),
-            IZeroExEvents.LimitOrderFilled,
+            OrderEvents.LimitOrderFilled,
         );
         return assertExpectedFinalBalancesAsync(orders);
     });
@@ -269,7 +269,7 @@ describe('batchFillLimitOrders', () => {
         );
         await testUtils.prepareBalancesForOrdersAsync(orders);
         const value = testUtils.protocolFee.mul(orders.length);
-        const tx = await zeroEx.connect(taker)
+        const tx = await oneDeltaOrders.connect(taker)
             .batchFillLimitOrders(
                 orders,
                 signatures,
@@ -295,7 +295,7 @@ describe('batchFillLimitOrders', () => {
         verifyLogs(
             receipt.logs,
             fillableOrders.map(order => testUtils.createLimitOrderFilledEventArgs(order)),
-            IZeroExEvents.LimitOrderFilled,
+            OrderEvents.LimitOrderFilled,
         );
         return assertExpectedFinalBalancesAsync(fillableOrders);
     });
@@ -306,7 +306,7 @@ describe('batchFillLimitOrders', () => {
         );
         await testUtils.prepareBalancesForOrdersAsync(orders);
         const value = testUtils.protocolFee.mul(orders.length);
-        const tx = await zeroEx.connect(taker)
+        const tx = await oneDeltaOrders.connect(taker)
             .batchFillLimitOrders(
                 orders,
                 signatures,
@@ -326,7 +326,7 @@ describe('batchFillLimitOrders', () => {
         verifyLogs(
             receipt.logs,
             orders.map(order => testUtils.createLimitOrderFilledEventArgs(order)),
-            IZeroExEvents.LimitOrderFilled,
+            OrderEvents.LimitOrderFilled,
         );
         return assertExpectedFinalBalancesAsync(orders);
     });
@@ -340,7 +340,7 @@ describe('batchFillLimitOrders', () => {
         await testUtils.prepareBalancesForOrdersAsync(orders);
         const value = testUtils.protocolFee.mul(orders.length);
         await validateError(
-            zeroEx.connect(taker)
+            oneDeltaOrders.connect(taker)
                 .batchFillLimitOrders(
                     orders,
                     signatures,
@@ -366,7 +366,7 @@ describe('batchFillLimitOrders', () => {
         await testUtils.prepareBalancesForOrdersAsync(orders);
         const value = testUtils.protocolFee.mul(orders.length);
         await validateError(
-            zeroEx.connect(taker)
+            oneDeltaOrders.connect(taker)
                 .batchFillLimitOrders(
                     orders,
                     signatures,
@@ -426,7 +426,7 @@ describe('batchFillRfqOrders', () => {
             orders.map(async order => order.getSignatureWithProviderAsync(await ethers.getSigner(order.maker))),
         );
         await testUtils.prepareBalancesForOrdersAsync(orders);
-        const tx = await zeroEx.connect(taker)
+        const tx = await oneDeltaOrders.connect(taker)
             .batchFillRfqOrders(
                 orders,
                 signatures,
@@ -445,7 +445,7 @@ describe('batchFillRfqOrders', () => {
         verifyLogs(
             receipt.logs,
             orders.map(order => testUtils.createRfqOrderFilledEventArgs(order)),
-            IZeroExEvents.RfqOrderFilled,
+            OrderEvents.RfqOrderFilled,
         );
         return assertExpectedFinalBalancesAsync(
             makerBalanceBefore,
@@ -466,7 +466,7 @@ describe('batchFillRfqOrders', () => {
         );
         const fillAmounts = orders.map(order => getRandomPortion(order.takerAmount));
         await testUtils.prepareBalancesForOrdersAsync(orders);
-        const tx = await zeroEx.connect(taker)
+        const tx = await oneDeltaOrders.connect(taker)
             .batchFillRfqOrders(orders, signatures, fillAmounts, false);
         const receipt = await tx.wait()
         const [orderInfos] = await orderLens.batchGetRfqOrderRelevantStates(orders, signatures);
@@ -480,7 +480,7 @@ describe('batchFillRfqOrders', () => {
         verifyLogs(
             receipt.logs,
             orders.map((order, i) => testUtils.createRfqOrderFilledEventArgs(order, fillAmounts[i])),
-            IZeroExEvents.RfqOrderFilled,
+            OrderEvents.RfqOrderFilled,
         );
         return assertExpectedFinalBalancesAsync(
             makerBalanceBefore,
@@ -503,7 +503,7 @@ describe('batchFillRfqOrders', () => {
             orders.map(async order => order.getSignatureWithProviderAsync(await ethers.getSigner(order.maker))),
         );
         await testUtils.prepareBalancesForOrdersAsync(orders);
-        const tx = await zeroEx.connect(taker)
+        const tx = await oneDeltaOrders.connect(taker)
             .batchFillRfqOrders(
                 orders,
                 signatures,
@@ -528,7 +528,7 @@ describe('batchFillRfqOrders', () => {
         verifyLogs(
             receipt.logs,
             fillableOrders.map(order => testUtils.createRfqOrderFilledEventArgs(order)),
-            IZeroExEvents.RfqOrderFilled,
+            OrderEvents.RfqOrderFilled,
         );
         return assertExpectedFinalBalancesAsync(
             makerBalanceBefore,
@@ -548,7 +548,7 @@ describe('batchFillRfqOrders', () => {
             orders.map(async order => order.getSignatureWithProviderAsync(await ethers.getSigner(order.maker))),
         );
         await testUtils.prepareBalancesForOrdersAsync(orders);
-        const tx = await zeroEx.connect(taker)
+        const tx = await oneDeltaOrders.connect(taker)
             .batchFillRfqOrders(
                 orders,
                 signatures,
@@ -567,7 +567,7 @@ describe('batchFillRfqOrders', () => {
         verifyLogs(
             receipt.logs,
             orders.map(order => testUtils.createRfqOrderFilledEventArgs(order)),
-            IZeroExEvents.RfqOrderFilled,
+            OrderEvents.RfqOrderFilled,
         );
         return assertExpectedFinalBalancesAsync(
             makerBalanceBefore,
@@ -584,7 +584,7 @@ describe('batchFillRfqOrders', () => {
         );
         await testUtils.prepareBalancesForOrdersAsync(orders);
         await validateError(
-            zeroEx.connect(taker)
+            oneDeltaOrders.connect(taker)
                 .batchFillRfqOrders(
                     orders,
                     signatures,
@@ -606,7 +606,7 @@ describe('batchFillRfqOrders', () => {
         );
         await testUtils.prepareBalancesForOrdersAsync(orders);
         await validateError(
-            zeroEx.connect(taker)
+            oneDeltaOrders.connect(taker)
                 .batchFillRfqOrders(
                     orders,
                     signatures,

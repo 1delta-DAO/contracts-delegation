@@ -20,7 +20,7 @@ import {
 } from '../../../types';
 import { MaxUint128 } from '../../uniswap-v3/periphery/shared/constants';
 import { createNativeOrder } from './utils/orderFixture';
-import { IZeroExEvents, LimitOrder, LimitOrderFields, OrderStatus } from './utils/constants';
+import { OrderEvents, LimitOrder, LimitOrderFields, OrderStatus } from './utils/constants';
 import { BigNumber, ContractReceipt } from 'ethers';
 import { MockProvider } from 'ethereum-waffle';
 import { expect } from '../shared/expect'
@@ -36,7 +36,7 @@ let taker: SignerWithAddress;
 let notMaker: SignerWithAddress;
 let notTaker: SignerWithAddress;
 let collector: SignerWithAddress;
-let zeroEx: NativeOrders;
+let oneDeltaOrders: NativeOrders;
 let verifyingContract: string;
 let makerToken: MockERC20;
 let takerToken: MockERC20;
@@ -57,21 +57,21 @@ before(async () => {
     console.log("ChainId", chainId, 'maker', maker.address, "taker", taker.address)
     console.log('makerToken', makerToken.address, "takerToken", takerToken.address)
 
-    zeroEx = await createNativeOrder(
+    oneDeltaOrders = await createNativeOrder(
         owner,
         collector.address,
         BigNumber.from(PROTOCOL_FEE_MULTIPLIER)
     );
 
-    verifyingContract = zeroEx.address;
+    verifyingContract = oneDeltaOrders.address;
     await Promise.all(
         [maker, notMaker].map(a =>
-            makerToken.connect(a).approve(zeroEx.address, MaxUint128),
+            makerToken.connect(a).approve(oneDeltaOrders.address, MaxUint128),
         ),
     );
     await Promise.all(
         [taker, notTaker].map(a =>
-            takerToken.connect(a).approve(zeroEx.address, MaxUint128),
+            takerToken.connect(a).approve(oneDeltaOrders.address, MaxUint128),
         ),
     );
 
@@ -82,7 +82,7 @@ before(async () => {
         taker,
         makerToken,
         takerToken,
-        zeroEx,
+        oneDeltaOrders,
         GAS_PRICE,
         SINGLE_PROTOCOL_FEE,
     );
@@ -155,9 +155,9 @@ describe('fillLimitOrder()', () => {
         verifyLogs(
             receipt.logs,
             [testUtils.createLimitOrderFilledEventArgs(order)],
-            IZeroExEvents.LimitOrderFilled,
+            OrderEvents.LimitOrderFilled,
         );
-        assertOrderInfoEquals(await zeroEx.getLimitOrderInfo(order), {
+        assertOrderInfoEquals(await oneDeltaOrders.getLimitOrderInfo(order), {
             orderHash: order.getHash(),
             status: OrderStatus.Filled,
             takerTokenFilledAmount: order.takerAmount,
@@ -184,9 +184,9 @@ describe('fillLimitOrder()', () => {
         verifyLogs(
             receipt.logs,
             [testUtils.createLimitOrderFilledEventArgs(order, fillAmount)],
-            IZeroExEvents.LimitOrderFilled,
+            OrderEvents.LimitOrderFilled,
         );
-        assertOrderInfoEquals(await zeroEx.getLimitOrderInfo(order), {
+        assertOrderInfoEquals(await oneDeltaOrders.getLimitOrderInfo(order), {
             orderHash: order.getHash(),
             status: OrderStatus.Fillable,
             takerTokenFilledAmount: fillAmount,
@@ -208,7 +208,7 @@ describe('fillLimitOrder()', () => {
         verifyLogs(
             receipt.logs,
             [testUtils.createLimitOrderFilledEventArgs(order, fillAmount)],
-            IZeroExEvents.LimitOrderFilled,
+            OrderEvents.LimitOrderFilled,
         );
         const alreadyFilledAmount = fillAmount;
         fillAmount = order.takerAmount.sub(fillAmount);
@@ -217,9 +217,9 @@ describe('fillLimitOrder()', () => {
         verifyLogs(
             receipt.logs,
             [testUtils.createLimitOrderFilledEventArgs(order, fillAmount, alreadyFilledAmount)],
-            IZeroExEvents.LimitOrderFilled,
+            OrderEvents.LimitOrderFilled,
         );
-        assertOrderInfoEquals(await zeroEx.getLimitOrderInfo(order), {
+        assertOrderInfoEquals(await oneDeltaOrders.getLimitOrderInfo(order), {
             orderHash: order.getHash(),
             status: OrderStatus.Filled,
             takerTokenFilledAmount: order.takerAmount,
@@ -242,9 +242,9 @@ describe('fillLimitOrder()', () => {
         verifyLogs(
             receipt.logs,
             [testUtils.createLimitOrderFilledEventArgs(order, fillAmount)],
-            IZeroExEvents.LimitOrderFilled,
+            OrderEvents.LimitOrderFilled,
         );
-        assertOrderInfoEquals(await zeroEx.getLimitOrderInfo(order), {
+        assertOrderInfoEquals(await oneDeltaOrders.getLimitOrderInfo(order), {
             orderHash: order.getHash(),
             status: OrderStatus.Filled,
             takerTokenFilledAmount: order.takerAmount,
@@ -266,7 +266,7 @@ describe('fillLimitOrder()', () => {
         verifyLogs(
             receipt.logs,
             [testUtils.createLimitOrderFilledEventArgs(order, fillAmount)],
-            IZeroExEvents.LimitOrderFilled,
+            OrderEvents.LimitOrderFilled,
         );
         const alreadyFilledAmount = fillAmount;
         fillAmount = order.takerAmount.sub(fillAmount).add(1);
@@ -275,9 +275,9 @@ describe('fillLimitOrder()', () => {
         verifyLogs(
             receipt.logs,
             [testUtils.createLimitOrderFilledEventArgs(order, fillAmount, alreadyFilledAmount)],
-            IZeroExEvents.LimitOrderFilled,
+            OrderEvents.LimitOrderFilled,
         );
-        assertOrderInfoEquals(await zeroEx.getLimitOrderInfo(order), {
+        assertOrderInfoEquals(await oneDeltaOrders.getLimitOrderInfo(order), {
             orderHash: order.getHash(),
             status: OrderStatus.Filled,
             takerTokenFilledAmount: order.takerAmount,
@@ -295,7 +295,7 @@ describe('fillLimitOrder()', () => {
 
     it('cannot fill a cancelled order', async () => {
         const order = getTestLimitOrder();
-        await zeroEx.connect(maker).cancelLimitOrder(order);
+        await oneDeltaOrders.connect(maker).cancelLimitOrder(order);
         await validateError(
             testUtils.fillLimitOrderAsync(order),
             "orderNotFillableError",
@@ -305,7 +305,7 @@ describe('fillLimitOrder()', () => {
 
     it('cannot fill a salt/pair cancelled order', async () => {
         const order = getTestLimitOrder();
-        await zeroEx.connect(maker)
+        await oneDeltaOrders.connect(maker)
             .cancelPairLimitOrders(makerToken.address, takerToken.address, order.salt.add(1));
         await validateError(
             testUtils.fillLimitOrderAsync(order),
@@ -347,7 +347,7 @@ describe('fillLimitOrder()', () => {
     it('fails if no protocol fee attached', async () => {
         const order = getTestLimitOrder();
         await testUtils.prepareBalancesForOrdersAsync([order]);
-        const tx = zeroEx.connect(taker)
+        const tx = oneDeltaOrders.connect(taker)
             .fillLimitOrder(
                 order,
                 await order.getSignatureWithProviderAsync(maker),
@@ -375,7 +375,7 @@ describe('fillLimitOrder()', () => {
         verifyLogs(
             receipt.logs,
             [testUtils.createLimitOrderFilledEventArgs(order)],
-            IZeroExEvents.LimitOrderFilled,
+            OrderEvents.LimitOrderFilled,
         );
         await assertExpectedFinalBalancesFromLimitOrderFillAsync(
             makerBalanceBefore,

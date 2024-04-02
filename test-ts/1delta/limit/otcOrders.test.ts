@@ -1,5 +1,5 @@
 import { constants } from '@0x/contracts-test-utils';
-import { IZeroExEvents, OrderStatus, OtcOrder } from './utils/constants';
+import { OrderEvents, OrderStatus, OtcOrder } from './utils/constants';
 
 import {
     assertOtcOrderInfoEquals,
@@ -46,7 +46,7 @@ let contractWalletSigner: SignerWithAddress;
 let txOrigin: SignerWithAddress;
 let owner: SignerWithAddress;
 let notTxOrigin: SignerWithAddress;
-let zeroEx: NativeOrders;
+let oneDeltaOrders: NativeOrders;
 let verifyingContract: string;
 let makerToken: MockERC20;
 let takerToken: MockERC20;
@@ -63,39 +63,39 @@ before(async () => {
     takerToken = await new MockERC20__factory(owner).deploy("Taker", "T", 6)
     wethToken = await new WETH9__factory(owner).deploy()
 
-    zeroEx = await createNativeOrder(
+    oneDeltaOrders = await createNativeOrder(
         owner,
         collector.address,
         BigNumber.from(PROTOCOL_FEE_MULTIPLIER),
         wethToken.address
     );
-    verifyingContract = zeroEx.address;
+    verifyingContract = oneDeltaOrders.address;
     provider = waffle.provider
     chainId = await maker.getChainId()
     console.log("ChainId", chainId, 'maker', maker.address, "taker", taker.address)
     console.log('makerToken', makerToken.address, "takerToken", takerToken.address)
 
     await Promise.all([
-        makerToken.connect(maker).approve(zeroEx.address, MaxUint128),
-        makerToken.connect(notMaker).approve(zeroEx.address, MaxUint128),
-        takerToken.connect(taker).approve(zeroEx.address, MaxUint128),
-        takerToken.connect(notTaker).approve(zeroEx.address, MaxUint128),
-        wethToken.connect(maker).approve(zeroEx.address, MaxUint128),
-        wethToken.connect(notMaker).approve(zeroEx.address, MaxUint128),
-        wethToken.connect(taker).approve(zeroEx.address, MaxUint128),
-        wethToken.connect(notTaker).approve(zeroEx.address, MaxUint128),
+        makerToken.connect(maker).approve(oneDeltaOrders.address, MaxUint128),
+        makerToken.connect(notMaker).approve(oneDeltaOrders.address, MaxUint128),
+        takerToken.connect(taker).approve(oneDeltaOrders.address, MaxUint128),
+        takerToken.connect(notTaker).approve(oneDeltaOrders.address, MaxUint128),
+        wethToken.connect(maker).approve(oneDeltaOrders.address, MaxUint128),
+        wethToken.connect(notMaker).approve(oneDeltaOrders.address, MaxUint128),
+        wethToken.connect(taker).approve(oneDeltaOrders.address, MaxUint128),
+        wethToken.connect(notTaker).approve(oneDeltaOrders.address, MaxUint128),
     ]);
 
     // contract wallet for signer delegation
-    contractWallet = await new TestOrderSignerRegistryWithContractWallet__factory(contractWalletOwner).deploy(zeroEx.address)
+    contractWallet = await new TestOrderSignerRegistryWithContractWallet__factory(contractWalletOwner).deploy(oneDeltaOrders.address)
 
     await contractWallet.connect(contractWalletOwner)
-        .approveERC20(makerToken.address, zeroEx.address, MaxUint128);
+        .approveERC20(makerToken.address, oneDeltaOrders.address, MaxUint128);
     await contractWallet.connect(contractWalletOwner)
-        .approveERC20(takerToken.address, zeroEx.address, MaxUint128);
+        .approveERC20(takerToken.address, oneDeltaOrders.address, MaxUint128);
 
     GAS_PRICE = await provider.getGasPrice()
-    testUtils = new NativeOrdersTestEnvironment(maker, taker, makerToken, takerToken, zeroEx, GAS_PRICE, ZERO);
+    testUtils = new NativeOrdersTestEnvironment(maker, taker, makerToken, takerToken, oneDeltaOrders, GAS_PRICE, ZERO);
 });
 
 function getTestOtcOrder(fields: Partial<OtcOrder> = {}): OtcOrder {
@@ -114,20 +114,20 @@ function getTestOtcOrder(fields: Partial<OtcOrder> = {}): OtcOrder {
 describe('getOtcOrderHash()', () => {
     it('returns the correct hash', async () => {
         const order = getTestOtcOrder();
-        const hash = await zeroEx.getOtcOrderHash(order);
+        const hash = await oneDeltaOrders.getOtcOrderHash(order);
         expect(hash).to.eq(order.getHash());
     });
 });
 
 describe('lastOtcTxOriginNonce()', () => {
     it('returns 0 if bucket is unused', async () => {
-        const nonce = await zeroEx.lastOtcTxOriginNonce(taker.address, ZERO);
+        const nonce = await oneDeltaOrders.lastOtcTxOriginNonce(taker.address, ZERO);
         expect(nonce.toString()).to.eq('0');
     });
     it('returns the last nonce used in a bucket', async () => {
         const order = getTestOtcOrder();
         await testUtils.fillOtcOrderAsync(order);
-        const nonce = await zeroEx.lastOtcTxOriginNonce(taker.address, order.nonceBucket);
+        const nonce = await oneDeltaOrders.lastOtcTxOriginNonce(taker.address, order.nonceBucket);
         expect(nonce.toString()).to.eq(order.nonce.toString());
     });
 });
@@ -135,7 +135,7 @@ describe('lastOtcTxOriginNonce()', () => {
 describe('getOtcOrderInfo()', () => {
     it('unfilled order', async () => {
         const order = getTestOtcOrder();
-        const info = await zeroEx.getOtcOrderInfo(order);
+        const info = await oneDeltaOrders.getOtcOrderInfo(order);
         assertOtcOrderInfoEquals(info, {
             status: OrderStatus.Fillable,
             orderHash: order.getHash(),
@@ -145,7 +145,7 @@ describe('getOtcOrderInfo()', () => {
     it('unfilled expired order', async () => {
         const expiry = await createCleanExpiry(provider, -60);
         const order = getTestOtcOrder({ expiry });
-        const info = await zeroEx.getOtcOrderInfo(order);
+        const info = await oneDeltaOrders.getOtcOrderInfo(order);
         assertOtcOrderInfoEquals(info, {
             status: OrderStatus.Expired,
             orderHash: order.getHash(),
@@ -159,7 +159,7 @@ describe('getOtcOrderInfo()', () => {
         // Advance time to expire the order.
         // await env.web3Wrapper.increaseTimeAsync(61);
         await time.increase(61)
-        const info = await zeroEx.getOtcOrderInfo(order);
+        const info = await oneDeltaOrders.getOtcOrderInfo(order);
         assertOtcOrderInfoEquals(info, {
             status: OrderStatus.Invalid,
             orderHash: order.getHash(),
@@ -170,7 +170,7 @@ describe('getOtcOrderInfo()', () => {
         const order = getTestOtcOrder();
         // Fill the order first.
         await testUtils.fillOtcOrderAsync(order);
-        const info = await zeroEx.getOtcOrderInfo(order);
+        const info = await oneDeltaOrders.getOtcOrderInfo(order);
         assertOtcOrderInfoEquals(info, {
             status: OrderStatus.Invalid,
             orderHash: order.getHash(),
@@ -224,7 +224,7 @@ describe('fillOtcOrder()', () => {
         verifyLogs(
             receipt.logs,
             [testUtils.createOtcOrderFilledEventArgs(order)],
-            IZeroExEvents.OtcOrderFilled,
+            OrderEvents.OtcOrderFilled,
         );
         const [makerBalance, takerBalance] = await getMakerTakerBalances(order);
 
@@ -246,7 +246,7 @@ describe('fillOtcOrder()', () => {
         verifyLogs(
             receipt.logs,
             [testUtils.createOtcOrderFilledEventArgs(order, fillAmount)],
-            IZeroExEvents.OtcOrderFilled,
+            OrderEvents.OtcOrderFilled,
         );
 
         const [makerBalance, takerBalance] = await getMakerTakerBalances(order);
@@ -269,7 +269,7 @@ describe('fillOtcOrder()', () => {
         verifyLogs(
             receipt.logs,
             [testUtils.createOtcOrderFilledEventArgs(order, fillAmount)],
-            IZeroExEvents.OtcOrderFilled,
+            OrderEvents.OtcOrderFilled,
         );
         const [makerBalance, takerBalance] = await getMakerTakerBalances(order);
         validateMakerTakerBalances(
@@ -303,14 +303,14 @@ describe('fillOtcOrder()', () => {
 
     it('can fill an order from a different tx.origin if registered', async () => {
         const order = getTestOtcOrder();
-        await zeroEx.connect(taker).registerAllowedRfqOrigins([notTaker.address], true);
+        await oneDeltaOrders.connect(taker).registerAllowedRfqOrigins([notTaker.address], true);
         return testUtils.fillOtcOrderAsync(order, order.takerAmount, notTaker);
     });
 
     it('cannot fill an order with registered then unregistered tx.origin', async () => {
         const order = getTestOtcOrder();
-        await zeroEx.connect(taker).registerAllowedRfqOrigins([notTaker.address], true);
-        await zeroEx.connect(taker).registerAllowedRfqOrigins([notTaker.address], false);
+        await oneDeltaOrders.connect(taker).registerAllowedRfqOrigins([notTaker.address], true);
+        await oneDeltaOrders.connect(taker).registerAllowedRfqOrigins([notTaker.address], false);
         const tx = testUtils.fillOtcOrderAsync(order, order.takerAmount, notTaker);
         await validateError(
             tx,
@@ -354,7 +354,7 @@ describe('fillOtcOrder()', () => {
     it('fails if ETH is attached', async () => {
         const order = getTestOtcOrder();
         await testUtils.prepareBalancesForOrdersAsync([order], taker);
-        const tx = zeroEx.connect(taker)
+        const tx = oneDeltaOrders.connect(taker)
             .fillOtcOrder(
                 order,
                 await order.getSignatureWithProviderAsync(maker),
@@ -407,7 +407,7 @@ describe('fillOtcOrder()', () => {
         verifyLogs(
             receipt1.logs,
             [testUtils.createOtcOrderFilledEventArgs(order1)],
-            IZeroExEvents.OtcOrderFilled,
+            OrderEvents.OtcOrderFilled,
         );
         const order2 = getTestOtcOrder({ nonceBucket: order1.nonceBucket, nonce: order1.nonce.add(1) });
         const tx2 = await testUtils.fillOtcOrderAsync(order2);
@@ -415,7 +415,7 @@ describe('fillOtcOrder()', () => {
         verifyLogs(
             receipt2.logs,
             [testUtils.createOtcOrderFilledEventArgs(order2)],
-            IZeroExEvents.OtcOrderFilled,
+            OrderEvents.OtcOrderFilled,
         );
     });
 
@@ -426,7 +426,7 @@ describe('fillOtcOrder()', () => {
         verifyLogs(
             receipt1.logs,
             [testUtils.createOtcOrderFilledEventArgs(order1)],
-            IZeroExEvents.OtcOrderFilled,
+            OrderEvents.OtcOrderFilled,
         );
         const order2 = getTestOtcOrder({ nonce: order1.nonce });
         const tx2 = await testUtils.fillOtcOrderAsync(order2);
@@ -434,7 +434,7 @@ describe('fillOtcOrder()', () => {
         verifyLogs(
             receipt2.logs,
             [testUtils.createOtcOrderFilledEventArgs(order2)],
-            IZeroExEvents.OtcOrderFilled,
+            OrderEvents.OtcOrderFilled,
         );
     });
 
@@ -448,7 +448,7 @@ describe('fillOtcOrder()', () => {
         verifyLogs(
             receipt.logs,
             [testUtils.createOtcOrderFilledEventArgs(order)],
-            IZeroExEvents.OtcOrderFilled,
+            OrderEvents.OtcOrderFilled,
         );
         const takerEthBalanceAfter = await provider.getBalance(taker.address);
         expect(takerEthBalanceAfter.add(totalCost).sub(takerEthBalanceBefore).toString()).to.equal(order.makerAmount.toString());
@@ -477,13 +477,13 @@ describe('fillOtcOrder()', () => {
         await contractWallet.connect(contractWalletOwner)
             .registerAllowedOrderSigner(contractWalletSigner.address, true);
         // fill should succeed
-        const tx = await zeroEx.connect(taker)
+        const tx = await oneDeltaOrders.connect(taker)
             .fillOtcOrder(order, sig, order.takerAmount);
         const receipt = await tx.wait()
         verifyLogs(
             receipt.logs,
             [testUtils.createOtcOrderFilledEventArgs(order)],
-            IZeroExEvents.OtcOrderFilled,
+            OrderEvents.OtcOrderFilled,
         );
         const [makerBalance, takerBalance] = await getMakerTakerBalances(order);
         validateMakerTakerBalances(
@@ -512,7 +512,7 @@ describe('fillOtcOrder()', () => {
         await contractWallet.connect(contractWalletOwner)
             .registerAllowedOrderSigner(contractWalletSigner.address, false);
         // fill should revert
-        const tx = zeroEx.connect(taker)
+        const tx = oneDeltaOrders.connect(taker)
             .fillOtcOrder(order, sig, order.takerAmount);
 
         await validateError(
@@ -533,7 +533,7 @@ describe('fillOtcOrder()', () => {
         // need to provide contract wallet with a balance
         await makerToken.mint(contractWallet.address, order.makerAmount);
         // fill should revert
-        const tx = zeroEx.connect(taker).fillOtcOrder(order, sig, order.takerAmount);
+        const tx = oneDeltaOrders.connect(taker).fillOtcOrder(order, sig, order.takerAmount);
         await validateError(
             tx,
             'orderNotSignedByMakerError',
@@ -555,7 +555,7 @@ describe('fillOtcOrderWithEth()', () => {
         verifyLogs(
             receipt.logs,
             [testUtils.createOtcOrderFilledEventArgs(order)],
-            IZeroExEvents.OtcOrderFilled,
+            OrderEvents.OtcOrderFilled,
         );
 
         const [makerBalance, takerBalance] = await getMakerTakerBalances(order);
@@ -577,7 +577,7 @@ describe('fillOtcOrderWithEth()', () => {
         verifyLogs(
             receipt.logs,
             [testUtils.createOtcOrderFilledEventArgs(order)],
-            IZeroExEvents.OtcOrderFilled,
+            OrderEvents.OtcOrderFilled,
         );
         const takerBalance = await getTokenBalance(order.makerToken, taker.address);
         expect(takerBalance.sub(takerBalanceBefore).toString(), 'taker balance').to.eq(order.makerAmount.toString());
@@ -600,7 +600,7 @@ describe('fillOtcOrderWithEth()', () => {
         verifyLogs(
             receipt.logs,
             [testUtils.createOtcOrderFilledEventArgs(order, fillAmount)],
-            IZeroExEvents.OtcOrderFilled,
+            OrderEvents.OtcOrderFilled,
         );
 
         const [makerBalance, takerBalance] = await getMakerTakerBalances(order);
@@ -625,7 +625,7 @@ describe('fillOtcOrderWithEth()', () => {
         verifyLogs(
             receipt.logs,
             [testUtils.createOtcOrderFilledEventArgs(order, fillAmount)],
-            IZeroExEvents.OtcOrderFilled,
+            OrderEvents.OtcOrderFilled,
         );
         const { makerTokenFilledAmount, takerTokenFilledAmount } = computeOtcOrderFilledAmounts(order, fillAmount);
         const takerBalance = await getTokenBalance(order.makerToken, taker.address);
@@ -647,7 +647,7 @@ describe('fillOtcOrderWithEth()', () => {
         verifyLogs(
             receipt.logs,
             [testUtils.createOtcOrderFilledEventArgs(order)],
-            IZeroExEvents.OtcOrderFilled,
+            OrderEvents.OtcOrderFilled,
         );
         const totalCost = GAS_PRICE.mul(receipt.gasUsed);
         const takerEthBalanceAfter = await provider.getBalance(taker.address);
@@ -674,7 +674,7 @@ describe('fillOtcOrderWithEth()', () => {
         verifyLogs(
             receipt.logs,
             [testUtils.createOtcOrderFilledEventArgs(order)],
-            IZeroExEvents.OtcOrderFilled,
+            OrderEvents.OtcOrderFilled,
         );
         const takerEthBalanceAfter = await provider.getBalance(taker.address);
         const totalCost = GAS_PRICE.mul(receipt.gasUsed);
@@ -705,7 +705,7 @@ describe('fillTakerSignedOtcOrder()', () => {
         verifyLogs(
             receipt.logs,
             [testUtils.createOtcOrderFilledEventArgs(order)],
-            IZeroExEvents.OtcOrderFilled,
+            OrderEvents.OtcOrderFilled,
         );
 
         const [makerBalance, takerBalance] = await getMakerTakerBalances(order);
@@ -729,16 +729,16 @@ describe('fillTakerSignedOtcOrder()', () => {
 
     it('can fill an order from a different tx.origin if registered', async () => {
         const order = getTestOtcOrder({ taker: taker.address, txOrigin: txOrigin.address });
-        await zeroEx.connect(txOrigin)
+        await oneDeltaOrders.connect(txOrigin)
             .registerAllowedRfqOrigins([notTxOrigin.address], true);
         return testUtils.fillTakerSignedOtcOrderAsync(order, notTxOrigin.address, taker);
     });
 
     it('cannot fill an order with registered then unregistered tx.origin', async () => {
         const order = getTestOtcOrder({ taker: taker.address, txOrigin: txOrigin.address });
-        await zeroEx.connect(txOrigin)
+        await oneDeltaOrders.connect(txOrigin)
             .registerAllowedRfqOrigins([notTxOrigin.address], true);
-        await zeroEx.connect(txOrigin)
+        await oneDeltaOrders.connect(txOrigin)
             .registerAllowedRfqOrigins([notTxOrigin.address], false);
         const tx = testUtils.fillTakerSignedOtcOrderAsync(order, notTxOrigin.address, taker);
         await validateError(tx,
@@ -782,7 +782,7 @@ describe('fillTakerSignedOtcOrder()', () => {
         const order = getTestOtcOrder({ taker: taker.address, txOrigin: txOrigin.address });
         const anotherOrder = getTestOtcOrder({ taker: taker.address, txOrigin: txOrigin.address });
         await testUtils.prepareBalancesForOrdersAsync([order], taker);
-        const tx = zeroEx.connect(txOrigin)
+        const tx = oneDeltaOrders.connect(txOrigin)
             .fillTakerSignedOtcOrder(
                 order,
                 await anotherOrder.getSignatureWithProviderAsync(await ethers.getSigner(anotherOrder.maker)),
@@ -798,7 +798,7 @@ describe('fillTakerSignedOtcOrder()', () => {
     it('fails if ETH is attached', async () => {
         const order = getTestOtcOrder({ taker: taker.address, txOrigin: txOrigin.address });
         await testUtils.prepareBalancesForOrdersAsync([order], taker);
-        const tx = zeroEx.connect(txOrigin)
+        const tx = oneDeltaOrders.connect(txOrigin)
             .fillTakerSignedOtcOrder(
                 order,
                 await order.getSignatureWithProviderAsync(await ethers.getSigner(order.maker)),
@@ -861,7 +861,7 @@ describe('fillTakerSignedOtcOrder()', () => {
         verifyLogs(
             receipt1.logs,
             [testUtils.createOtcOrderFilledEventArgs(order1)],
-            IZeroExEvents.OtcOrderFilled,
+            OrderEvents.OtcOrderFilled,
         );
         const order2 = getTestOtcOrder({
             taker: taker.address,
@@ -874,7 +874,7 @@ describe('fillTakerSignedOtcOrder()', () => {
         verifyLogs(
             receipt2.logs,
             [testUtils.createOtcOrderFilledEventArgs(order2)],
-            IZeroExEvents.OtcOrderFilled,
+            OrderEvents.OtcOrderFilled,
         );
     });
 
@@ -885,7 +885,7 @@ describe('fillTakerSignedOtcOrder()', () => {
         verifyLogs(
             receipt1.logs,
             [testUtils.createOtcOrderFilledEventArgs(order1)],
-            IZeroExEvents.OtcOrderFilled,
+            OrderEvents.OtcOrderFilled,
         );
         const order2 = getTestOtcOrder({
             taker: taker.address,
@@ -897,7 +897,7 @@ describe('fillTakerSignedOtcOrder()', () => {
         verifyLogs(
             receipt2.logs,
             [testUtils.createOtcOrderFilledEventArgs(order2)],
-            IZeroExEvents.OtcOrderFilled,
+            OrderEvents.OtcOrderFilled,
         );
     });
 
@@ -915,7 +915,7 @@ describe('fillTakerSignedOtcOrder()', () => {
         verifyLogs(
             receipt.logs,
             [testUtils.createOtcOrderFilledEventArgs(order)],
-            IZeroExEvents.OtcOrderFilled,
+            OrderEvents.OtcOrderFilled,
         );
         const takerEthBalanceAfter = await provider.getBalance(taker.address);
         expect(takerEthBalanceAfter.sub(takerEthBalanceBefore).toString()).to.equal(order.makerAmount.toString());
@@ -939,7 +939,7 @@ describe('batchFillTakerSignedOtcOrders()', () => {
         });
         await testUtils.prepareBalancesForOrdersAsync([order1], taker);
         await testUtils.prepareBalancesForOrdersAsync([order2], notTaker);
-        const tx = await zeroEx.connect(txOrigin)
+        const tx = await oneDeltaOrders.connect(txOrigin)
             .batchFillTakerSignedOtcOrders(
                 [order1, order2],
                 [
@@ -957,7 +957,7 @@ describe('batchFillTakerSignedOtcOrders()', () => {
         verifyLogs(
             receipt.logs,
             [testUtils.createOtcOrderFilledEventArgs(order1), testUtils.createOtcOrderFilledEventArgs(order2)],
-            IZeroExEvents.OtcOrderFilled,
+            OrderEvents.OtcOrderFilled,
         );
     });
     it('Fills multiple orders and unwraps WETH', async () => {
@@ -973,7 +973,7 @@ describe('batchFillTakerSignedOtcOrders()', () => {
         await testUtils.prepareBalancesForOrdersAsync([order1], taker);
         await testUtils.prepareBalancesForOrdersAsync([order2], notTaker);
         await wethToken.connect(maker).deposit({ value: order2.makerAmount });
-        const tx = await zeroEx.connect(txOrigin)
+        const tx = await oneDeltaOrders.connect(txOrigin)
             .batchFillTakerSignedOtcOrders(
                 [order1, order2],
                 [
@@ -990,7 +990,7 @@ describe('batchFillTakerSignedOtcOrders()', () => {
         verifyLogs(
             receipt.logs,
             [testUtils.createOtcOrderFilledEventArgs(order1), testUtils.createOtcOrderFilledEventArgs(order2)],
-            IZeroExEvents.OtcOrderFilled,
+            OrderEvents.OtcOrderFilled,
         );
     });
     it('Skips over unfillable orders', async () => {
@@ -1003,7 +1003,7 @@ describe('batchFillTakerSignedOtcOrders()', () => {
         });
         await testUtils.prepareBalancesForOrdersAsync([order1], taker);
         await testUtils.prepareBalancesForOrdersAsync([order2], notTaker);
-        const tx = await zeroEx.connect(txOrigin)
+        const tx = await oneDeltaOrders.connect(txOrigin)
             .batchFillTakerSignedOtcOrders(
                 [order1, order2],
                 [
@@ -1020,7 +1020,7 @@ describe('batchFillTakerSignedOtcOrders()', () => {
         verifyLogs(
             receipt.logs,
             [testUtils.createOtcOrderFilledEventArgs(order1)],
-            IZeroExEvents.OtcOrderFilled,
+            OrderEvents.OtcOrderFilled,
         );
     });
 });
