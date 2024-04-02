@@ -263,9 +263,9 @@ contract OtcOrders is IOtcOrdersFeature, BatchFillNativeOrders {
         successes = new bool[](orders.length);
         for (uint256 i; i != orders.length; i++) {
             if(unwrapWeth[i]){
-                (, successes[i]) = _fillTakerSignedOtcOrderInternal(orders[i], makerSignatures[i], takerSignatures[i]);
-            } else {
                 (, successes[i]) = _fillTakerSignedOtcOrderForEthInternal(orders[i], makerSignatures[i], takerSignatures[i]);
+            } else {
+                (, successes[i]) = _fillTakerSignedOtcOrderInternal(orders[i], makerSignatures[i], takerSignatures[i]);
             }
         }
     }

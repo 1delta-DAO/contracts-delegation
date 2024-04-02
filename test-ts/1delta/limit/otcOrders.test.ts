@@ -201,12 +201,12 @@ const getMakerTakerBalances = async (order: OtcOrder) => {
 }
 
 const validateMakerTakerBalances = (
-    order: OtcOrder, 
+    order: OtcOrder,
     makerBalanceBefore: BigNumber,
     takerBalanceBefore: BigNumber,
     makerBalance: BigNumber,
     takerBalance: BigNumber,
-    takerTokenFillAmount?:BigNumber) => {
+    takerTokenFillAmount?: BigNumber) => {
     const { makerTokenFilledAmount, takerTokenFilledAmount } = computeOtcOrderFilledAmounts(
         order,
         takerTokenFillAmount,
@@ -279,7 +279,8 @@ describe('fillOtcOrder()', () => {
             makerBalance,
             takerBalance,
             fillAmount
-        )    });
+        )
+    });
 
     it('cannot fill an order with wrong tx.origin', async () => {
         const order = getTestOtcOrder();
@@ -601,7 +602,7 @@ describe('fillOtcOrderWithEth()', () => {
             [testUtils.createOtcOrderFilledEventArgs(order, fillAmount)],
             IZeroExEvents.OtcOrderFilled,
         );
-        
+
         const [makerBalance, takerBalance] = await getMakerTakerBalances(order);
 
         validateMakerTakerBalances(
@@ -927,98 +928,99 @@ describe('fillTakerSignedOtcOrder()', () => {
     });
 });
 
-// describe('batchFillTakerSignedOtcOrders()', () => {
-//     it('Fills multiple orders', async () => {
-//         const order1 = getTestOtcOrder({ taker: taker.address, txOrigin: txOrigin.address });
-//         const order2 = getTestOtcOrder({
-//             taker: notTaker,
-//             txOrigin,
-//             nonceBucket: order1.nonceBucket,
-//             nonce: order1.nonce.plus(1),
-//         });
-//         await testUtils.prepareBalancesForOrdersAsync([order1], taker);
-//         await testUtils.prepareBalancesForOrdersAsync([order2], notTaker);
-//         const tx = await zeroEx
-//             .batchFillTakerSignedOtcOrders(
-//                 [order1, order2],
-//                 [
-//                     await order1.getSignatureWithProviderAsync(env.provider),
-//                     await order2.getSignatureWithProviderAsync(env.provider),
-//                 ],
-//                 [
-//                     await order1.getSignatureWithProviderAsync(env.provider, SignatureType.EthSign, taker),
-//                     await order2.getSignatureWithProviderAsync(env.provider, SignatureType.EthSign, notTaker),
-//                 ],
-//                 [false, false],
-//             )
-//             .awaitTransactionSuccessAsync({ from: txOrigin });
-//         verifyLogs(
-//             tx.logs,
-//             [testUtils.createOtcOrderFilledEventArgs(order1), testUtils.createOtcOrderFilledEventArgs(order2)],
-//             IZeroExEvents.OtcOrderFilled,
-//         );
-//     });
-//     it('Fills multiple orders and unwraps WETH', async () => {
-//         const order1 = getTestOtcOrder({ taker: taker.address, txOrigin: txOrigin.address });
-//         const order2 = getTestOtcOrder({
-//             taker: notTaker,
-//             txOrigin,
-//             nonceBucket: order1.nonceBucket,
-//             nonce: order1.nonce.plus(1),
-//             makerToken: wethToken.address,
-//             makerAmount: new BigNumber('1e18'),
-//         });
-//         await testUtils.prepareBalancesForOrdersAsync([order1], taker);
-//         await testUtils.prepareBalancesForOrdersAsync([order2], notTaker);
-//         await wethToken.deposit().awaitTransactionSuccessAsync({ from: maker, value: order2.makerAmount });
-//         const tx = await zeroEx
-//             .batchFillTakerSignedOtcOrders(
-//                 [order1, order2],
-//                 [
-//                     await order1.getSignatureWithProviderAsync(env.provider),
-//                     await order2.getSignatureWithProviderAsync(env.provider),
-//                 ],
-//                 [
-//                     await order1.getSignatureWithProviderAsync(env.provider, SignatureType.EthSign, taker),
-//                     await order2.getSignatureWithProviderAsync(env.provider, SignatureType.EthSign, notTaker),
-//                 ],
-//                 [false, true],
-//             )
-//             .awaitTransactionSuccessAsync({ from: txOrigin });
-//         verifyLogs(
-//             tx.logs,
-//             [testUtils.createOtcOrderFilledEventArgs(order1), testUtils.createOtcOrderFilledEventArgs(order2)],
-//             IZeroExEvents.OtcOrderFilled,
-//         );
-//     });
-//     it('Skips over unfillable orders', async () => {
-//         const order1 = getTestOtcOrder({ taker: taker.address, txOrigin: txOrigin.address });
-//         const order2 = getTestOtcOrder({
-//             taker: notTaker,
-//             txOrigin,
-//             nonceBucket: order1.nonceBucket,
-//             nonce: order1.nonce.plus(1),
-//         });
-//         await testUtils.prepareBalancesForOrdersAsync([order1], taker);
-//         await testUtils.prepareBalancesForOrdersAsync([order2], notTaker);
-//         const tx = await zeroEx
-//             .batchFillTakerSignedOtcOrders(
-//                 [order1, order2],
-//                 [
-//                     await order1.getSignatureWithProviderAsync(env.provider),
-//                     await order2.getSignatureWithProviderAsync(env.provider),
-//                 ],
-//                 [
-//                     await order1.getSignatureWithProviderAsync(env.provider, SignatureType.EthSign, taker),
-//                     await order2.getSignatureWithProviderAsync(env.provider, SignatureType.EthSign, taker), // Invalid signature for order2
-//                 ],
-//                 [false, false],
-//             )
-//             .awaitTransactionSuccessAsync({ from: txOrigin });
-//         verifyLogs(
-//             tx.logs,
-//             [testUtils.createOtcOrderFilledEventArgs(order1)],
-//             IZeroExEvents.OtcOrderFilled,
-//         );
-//     });
-// });
+describe('batchFillTakerSignedOtcOrders()', () => {
+    it('Fills multiple orders', async () => {
+        const order1 = getTestOtcOrder({ taker: taker.address, txOrigin: txOrigin.address });
+        const order2 = getTestOtcOrder({
+            taker: notTaker.address,
+            txOrigin: txOrigin.address,
+            nonceBucket: order1.nonceBucket,
+            nonce: order1.nonce.add(1),
+        });
+        await testUtils.prepareBalancesForOrdersAsync([order1], taker);
+        await testUtils.prepareBalancesForOrdersAsync([order2], notTaker);
+        const tx = await zeroEx.connect(txOrigin)
+            .batchFillTakerSignedOtcOrders(
+                [order1, order2],
+                [
+                    await order1.getSignatureWithProviderAsync(await ethers.getSigner(order1.maker)),
+                    await order2.getSignatureWithProviderAsync(await ethers.getSigner(order2.maker)),
+                ],
+                [
+                    await order1.getSignatureWithProviderAsync(taker, SignatureType.EthSign),
+                    await order2.getSignatureWithProviderAsync(notTaker, SignatureType.EthSign),
+                ],
+                [false, false],
+            );
+
+        const receipt = await tx.wait()
+        verifyLogs(
+            receipt.logs,
+            [testUtils.createOtcOrderFilledEventArgs(order1), testUtils.createOtcOrderFilledEventArgs(order2)],
+            IZeroExEvents.OtcOrderFilled,
+        );
+    });
+    it('Fills multiple orders and unwraps WETH', async () => {
+        const order1 = getTestOtcOrder({ taker: taker.address, txOrigin: txOrigin.address });
+        const order2 = getTestOtcOrder({
+            taker: notTaker.address,
+            txOrigin: txOrigin.address,
+            nonceBucket: order1.nonceBucket,
+            nonce: order1.nonce.add(1),
+            makerToken: wethToken.address,
+            makerAmount: BigNumber.from(10).pow(18),
+        });
+        await testUtils.prepareBalancesForOrdersAsync([order1], taker);
+        await testUtils.prepareBalancesForOrdersAsync([order2], notTaker);
+        await wethToken.connect(maker).deposit({ value: order2.makerAmount });
+        const tx = await zeroEx.connect(txOrigin)
+            .batchFillTakerSignedOtcOrders(
+                [order1, order2],
+                [
+                    await order1.getSignatureWithProviderAsync(await ethers.getSigner(order1.maker)),
+                    await order2.getSignatureWithProviderAsync(await ethers.getSigner(order2.maker)),
+                ],
+                [
+                    await order1.getSignatureWithProviderAsync(taker, SignatureType.EthSign),
+                    await order2.getSignatureWithProviderAsync(notTaker, SignatureType.EthSign),
+                ],
+                [false, true],
+            );
+        const receipt = await tx.wait()
+        verifyLogs(
+            receipt.logs,
+            [testUtils.createOtcOrderFilledEventArgs(order1), testUtils.createOtcOrderFilledEventArgs(order2)],
+            IZeroExEvents.OtcOrderFilled,
+        );
+    });
+    it('Skips over unfillable orders', async () => {
+        const order1 = getTestOtcOrder({ taker: taker.address, txOrigin: txOrigin.address });
+        const order2 = getTestOtcOrder({
+            taker: notTaker.address,
+            txOrigin: txOrigin.address,
+            nonceBucket: order1.nonceBucket,
+            nonce: order1.nonce.add(1),
+        });
+        await testUtils.prepareBalancesForOrdersAsync([order1], taker);
+        await testUtils.prepareBalancesForOrdersAsync([order2], notTaker);
+        const tx = await zeroEx.connect(txOrigin)
+            .batchFillTakerSignedOtcOrders(
+                [order1, order2],
+                [
+                    await order1.getSignatureWithProviderAsync(await ethers.getSigner(order1.maker)),
+                    await order2.getSignatureWithProviderAsync(await ethers.getSigner(order2.maker)),
+                ],
+                [
+                    await order1.getSignatureWithProviderAsync(taker, SignatureType.EthSign),
+                    await order2.getSignatureWithProviderAsync(taker, SignatureType.EthSign), // Invalid signature for order2
+                ],
+                [false, false],
+            );
+        const receipt = await tx.wait()
+        verifyLogs(
+            receipt.logs,
+            [testUtils.createOtcOrderFilledEventArgs(order1)],
+            IZeroExEvents.OtcOrderFilled,
+        );
+    });
+});
