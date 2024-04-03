@@ -166,20 +166,23 @@ abstract contract TokenTransfer {
     }
 
     // balanceOf call in assembly for smaller contract size
-    function _balanceOf(address underlying, address entity) internal view returns (uint256 callerBalance) {
+    function _balanceOf(address underlying, address entity) internal view returns (uint256 entityBalance) {
         assembly {
-            let ptr := mload(0x40) // free memory pointer
+            ////////////////////////////////////////////////////
+            // get token balance in assembly usingn scrap space (64 bytes)
+            ////////////////////////////////////////////////////
+
             // selector for balanceOf(address)
-            mstore(ptr, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+            mstore(0x0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
             // add this address as parameter
-            mstore(add(ptr, 0x4), entity)
+            mstore(0x4, entity)
 
             // call to underlying
-            if iszero(staticcall(gas(), underlying, ptr, 0x24, ptr, 0x20)) {
+            if iszero(staticcall(gas(), underlying, 0x0, 0x24, 0x0, 0x20)) {
                 revert (0,0)
             }
             
-            callerBalance := mload(ptr)
+            entityBalance := mload(0x0)
         }
     }
 }

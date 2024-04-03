@@ -404,7 +404,7 @@ contract OneDeltaQuoterMantle {
             mstore(ptr, 0xe77366f800000000000000000000000000000000000000000000000000000000)
             mstore(add(ptr, 0x4), amountIn)
             mstore(add(ptr, 0x24), swapForY)
-            // call swap, revert if invalid/undefined pair
+            // call swap simulator, revert if invalid/undefined pair
             if iszero(staticcall(gas(), pair, ptr, 0x44, ptr, 0x40)) {
                 revert(0, 0)
             }
@@ -467,7 +467,7 @@ contract OneDeltaQuoterMantle {
             mstore(ptr, 0xabcd783000000000000000000000000000000000000000000000000000000000)
             mstore(add(ptr, 0x4), amountOut)
             mstore(add(ptr, 0x24), swapForY)
-            // call swap, revert if invalid/undefined pair
+            // call swap simulator, revert if invalid/undefined pair
             if iszero(staticcall(gas(), pair, ptr, 0x44, ptr, 0x40)) {
                 revert(0, 0)
             }

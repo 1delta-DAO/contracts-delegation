@@ -547,7 +547,7 @@ abstract contract BaseSwapper is TokenTransfer {
             )
             // get the pair
             let pair := and(
-                0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff, // mask address
+                ADDRESS_MASK_UPPER, // mask address
                 mload(add(ptr, 0x20)) // skip index
             )
             // pair must exist
@@ -609,6 +609,55 @@ abstract contract BaseSwapper is TokenTransfer {
                 )
             }
         }
+    }
+
+    function swapLBexactOut(
+        address pair,
+        bool swapForY, 
+        uint256 amountOut, 
+        address receiver
+    ) internal {
+        assembly {
+            let ptr := mload(0x40)
+
+            ////////////////////////////////////////////////////
+            // Execute swap function
+            ////////////////////////////////////////////////////
+
+            // swap(bool,address)
+            mstore(ptr, 0x53c059a000000000000000000000000000000000000000000000000000000000)
+            mstore(add(ptr, 0x4), swapForY)
+            mstore(add(ptr, 0x24), receiver)
+            // call swap, revert if invalid/undefined pair
+            if iszero(call(gas(), 0x0, pair, ptr, 0x44, ptr, 0x20)) {
+                revert(0, 0)
+            }
+
+            ////////////////////////////////////////////////////
+            // Validate amount received
+            ////////////////////////////////////////////////////
+
+            // we fetch the amount out we actually got
+            let amountOutReceived
+            // the swap call returns both amounts encoded into a single bytes32 as (amountX,amountY)
+            switch swapForY
+            case 1 {
+                amountOut := and(
+                    0x00000000000000000000000000000000ffffffffffffffffffffffffffffffff, // mask uint128
+                    mload(add(ptr, 0x20))
+                )
+            }
+            default {
+                amountOut := and(
+                    0x00000000000000000000000000000000ffffffffffffffffffffffffffffffff, // mask uint128
+                    mload(ptr)
+                )
+            }
+            // revert if we did not get enough
+            if lt(amountOutReceived, amountOut) {
+                revert (0, 0)
+            }
+        }    
     }
 
     function swapStratum3(address tokenIn, address tokenOut, uint256 amountIn) private returns (uint256 amountOut) {
@@ -1352,6 +1401,69 @@ abstract contract BaseSwapper is TokenTransfer {
                         1 // rounding up
                     )
                 }
+            }
+        }
+    }
+
+    function getLBAmountIn(
+        address tokenIn,
+        address tokenOut,
+        uint256 amountOut,
+        uint16 binStep // this param identifies the pair
+    ) internal view returns (uint256 amountIn, address pair, bool swapForY) {
+        assembly {
+            let ptr := mload(0x40)
+            // getLBPairInformation(address,address,uint256)
+            mstore(ptr, 0x704037bd00000000000000000000000000000000000000000000000000000000)
+            // this flag indicates whether tokenOut is tokenY
+            // the tokens in the pair are ordered, as such, we call lt
+            swapForY := gt(tokenIn, tokenOut)
+            // order tokens for call
+            switch swapForY
+            case 0 {
+                mstore(add(ptr, 0x4), tokenIn)
+                mstore(add(ptr, 0x24), tokenOut)
+            }
+            default {
+                mstore(add(ptr, 0x4), tokenOut)
+                mstore(add(ptr, 0x24), tokenIn)
+            }
+            mstore(add(ptr, 0x44), binStep)
+            pop(
+                // the call will always succeed due to immutable call target
+                staticcall(
+                    gas(),
+                    MERCHANT_MOE_LB_FACTORY,
+                    ptr,
+                    0x64,
+                    ptr,
+                    0x40 // we only need 64 bits of the output
+                )
+            )
+            // get the pair
+            pair := and(
+                ADDRESS_MASK_UPPER, // mask address
+                mload(add(ptr, 0x20)) // skip index
+            )
+            // pair must exist
+            if iszero(pair) {
+                revert(0, 0)
+            }
+            // getSwapIn(uint128,bool)
+            mstore(ptr, 0xabcd783000000000000000000000000000000000000000000000000000000000)
+            mstore(add(ptr, 0x4), amountOut)
+            mstore(add(ptr, 0x24), swapForY)
+            // call swap simulator, revert if invalid/undefined pair
+            if iszero(staticcall(gas(), pair, ptr, 0x44, ptr, 0x40)) {
+                revert(0, 0)
+            }
+            amountIn := and(
+                0x00000000000000000000000000000000ffffffffffffffffffffffffffffffff, // mask uint128
+                mload(ptr)
+            )
+            // the second slot returns amount out left, if positive, we revert
+            if gt(0, mload(add(ptr, 0x20))) {
+                revert(0, 0)
             }
         }
     }

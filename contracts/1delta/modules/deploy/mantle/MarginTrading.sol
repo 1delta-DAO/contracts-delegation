@@ -20,6 +20,7 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
     // errors
     error Slippage();
     error NoBalance();
+    error ImpossibleConfig();
 
     // values to reset cache with
     uint256 private constant DEFAULT_AMOUNT_CACHED = type(uint256).max;
@@ -383,7 +384,7 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
                     _lendingPool.withdraw(tokenOut, amountToPay, msg.sender);
                 } else {
                     // otherwise, just transfer it from cached address
-                    pay(tokenOut, acs().cachedAddress, amountToPay);
+                    payTo(tokenOut, acs().cachedAddress, msg.sender, amountToPay);
                 }
                 // cache amount
                 ncs().amount = amountToPay;
@@ -645,7 +646,7 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
                     _lendingPool.withdraw(tokenOut, referenceAmount, msg.sender);
                 } else {
                     // otherwise, just transfer it from cached address
-                    pay(tokenOut, acs().cachedAddress, referenceAmount);
+                    payTo(tokenOut, acs().cachedAddress, msg.sender, referenceAmount);
                 }
                 // cache amount
                 ncs().amount = referenceAmount;
@@ -811,25 +812,52 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
                 );
         // special case: Moe LB can be the last pool for exact outs
         } else if (identifier == 103) {
-
+                uint24 bin;
+                assembly {
+                    bin := and(shr(72, calldataload(data.offset)), 0xffffff)
+                }
+                (uint256 amountIn, address pair, bool swapForY) = getLBAmountIn(tokenIn, tokenOut, amountOut, uint16(bin));
+                // re-assign identifier
+                uint256 cache = data.length;
+                data = data[(cache - 1):cache];
+                // assign end flag to cache
+                cache = uint8(bytes1(data));
+                if (cache < 3) {
+                    // borrow and repay pool - tradeId matches interest rate mode (reverts within Aave when 0 is selected)
+                    _lendingPool.borrow(tokenIn, amountIn, cache, 0, acs().cachedAddress);
+                    _transferERC20Tokens(tokenIn, pair, amountIn);
+                } else if (cache < 8) {
+                    // ids 3-7 are reserved
+                    // withraw and send funds to the pool
+                    _transferERC20TokensFrom(aas().aTokens[tokenIn], acs().cachedAddress, address(this), amountIn);
+                    _lendingPool.withdraw(tokenIn, amountIn, pair);
+                } else {
+                    // otherwise, just transfer it from cached address
+                    payTo(tokenOut, acs().cachedAddress, pair, amountIn);
+                }
+                swapLBexactOut(pair, swapForY, amountOut, receiver);
+                ncs().amount = amountIn;
         } else
             revert invalidDexId();
     }
 
+
+ 
     /// @param token The token to pay
     /// @param payer The entity that must pay
     /// @param value The amount to pay
-    function pay(
+    function payTo(
         address token,
         address payer,
+        address receiver,
         uint256 value
     ) internal {
         if (payer == address(0)) {
             // pay with tokens already in the contract (for the exact input multihop case)
-            _transferERC20Tokens(token, msg.sender, value);
+            _transferERC20Tokens(token, receiver, value);
         } else {
             // pull payment
-            _transferERC20TokensFrom(token, payer, msg.sender, value);
+            _transferERC20TokensFrom(token, payer, receiver, value);
         }
     }
 }
