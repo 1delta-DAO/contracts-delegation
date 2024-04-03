@@ -641,17 +641,11 @@ abstract contract BaseSwapper is TokenTransfer {
             let amountOutReceived
             // the swap call returns both amounts encoded into a single bytes32 as (amountX,amountY)
             switch swapForY
-            case 1 {
-                amountOut := and(
-                    0x00000000000000000000000000000000ffffffffffffffffffffffffffffffff, // mask uint128
-                    mload(add(ptr, 0x20))
-                )
+            case 0 {
+                amountOutReceived := and(mload(ptr), 0xffffffffffffffffffffffffffffffff)
             }
             default {
-                amountOut := and(
-                    0x00000000000000000000000000000000ffffffffffffffffffffffffffffffff, // mask uint128
-                    mload(ptr)
-                )
+                amountOutReceived := shr(128, mload(ptr))
             }
             // revert if we did not get enough
             if lt(amountOutReceived, amountOut) {

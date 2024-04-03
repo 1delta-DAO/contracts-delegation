@@ -9,7 +9,6 @@ pragma solidity 0.8.24;
 import {WithStorage} from "../../../storage/BrokerStorage.sol";
 import {BaseSwapper, IUniswapV2Pair} from "./BaseSwapper.sol";
 import {BaseLending} from "./BaseLending.sol";
-import {ILendingPool} from "./ILendingPool.sol";
 
 // solhint-disable max-line-length
 
@@ -810,31 +809,34 @@ abstract contract MarginTrading is WithStorage, BaseSwapper, BaseLending {
                 );
         // special case: Moe LB can be the last pool for exact outs
         } else if (identifier == 103) {
-                uint24 bin;
-                assembly {
-                    bin := and(shr(72, calldataload(data.offset)), 0xffffff)
-                }
-                (uint256 amountIn, address pair, bool swapForY) = getLBAmountIn(tokenIn, tokenOut, amountOut, uint16(bin));
-                // re-assign identifier
-                uint256 cache = data.length;
-                data = data[(cache - 1):cache];
-                // assign end flag to cache
-                cache = uint8(bytes1(data));
-                if (cache < 3) {
-                    // borrow and repay pool - tradeId matches interest rate mode (reverts within Aave when 0 is selected)
-                    _borrow(tokenIn, acs().cachedAddress, amountIn, cache);
-                    _transferERC20Tokens(tokenIn, pair, amountIn);
-                } else if (cache < 8) {
-                    // ids 3-7 are reserved
-                    // withraw and send funds to the pool
-                    _transferERC20TokensFrom(aas().aTokens[tokenIn], acs().cachedAddress, address(this), amountIn);
-                    _withdraw(tokenIn, pair);
-                } else {
-                    // otherwise, just transfer it from cached address
-                    payTo(tokenOut, acs().cachedAddress, pair, amountIn);
-                }
-                swapLBexactOut(pair, swapForY, amountOut, receiver);
-                ncs().amount = amountIn;
+            // we enforce here that merchant moe LB has to be the last pool in the series
+            if(data.length > 46) revert ImpossibleConfig();
+            uint24 bin;
+            assembly {
+                bin := and(shr(72, calldataload(data.offset)), 0xffffff)
+            }
+            // get amount in
+            (uint256 amountIn, address pair, bool swapForY) = getLBAmountIn(tokenIn, tokenOut, amountOut, uint16(bin));
+            // get length and last flag
+            uint256 cache = data.length;
+            data = data[(cache - 1):cache];
+            // assign end flag to cache
+            cache = uint8(bytes1(data));
+            if (cache < 3) {
+                // borrow and repay pool - tradeId matches interest rate mode (reverts within Aave when 0 is selected)
+                _borrow(tokenIn, acs().cachedAddress, amountIn, cache);
+                _transferERC20Tokens(tokenIn, pair, amountIn);
+            } else if (cache < 8) {
+                // ids 3-7 are reserved
+                // withraw and send funds to the pool
+                _transferERC20TokensFrom(aas().aTokens[tokenIn], acs().cachedAddress, address(this), amountIn);
+                _withdraw(tokenIn, pair);
+            } else {
+                // otherwise, just transfer it from cached address
+                payTo(tokenOut, acs().cachedAddress, pair, amountIn);
+            }
+            swapLBexactOut(pair, swapForY, amountOut, receiver);
+            ncs().amount = amountIn;
         } else
             revert invalidDexId();
     }
