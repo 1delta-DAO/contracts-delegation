@@ -93,7 +93,9 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
                     799999,
                     path
                 );
-        }
+        } else
+            revert invalidDexId();
+
         amountOut = ncs().amount;
         ncs().amount = DEFAULT_AMOUNT_CACHED;
         acs().cachedAddress = DEFAULT_ADDRESS_CACHED;
@@ -176,7 +178,9 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
                     799999,
                     path
                 );
-        }
+        } else
+            revert invalidDexId();
+
         amountOut = ncs().amount;
         ncs().amount = DEFAULT_AMOUNT_CACHED;
         acs().cachedAddress = DEFAULT_ADDRESS_CACHED;
@@ -249,7 +253,9 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
                     800001,
                     path
                 );
-        }
+        } else
+            revert invalidDexId();
+        
         amountIn = ncs().amount;
         ncs().amount = DEFAULT_AMOUNT_CACHED;
         acs().cachedAddress = DEFAULT_ADDRESS_CACHED;
@@ -804,7 +810,8 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
                     800001,
                     data
                 );
-        }
+        } else
+            revert invalidDexId();
     }
 
     /// @param token The token to pay

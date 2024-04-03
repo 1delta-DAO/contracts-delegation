@@ -17,6 +17,7 @@ import {TokenTransfer} from "../../../libraries/TokenTransfer.sol";
  * @notice Contains basic logic for swap executions with DEXs
  */
 abstract contract BaseSwapper is TokenTransfer {
+    error invalidDexId();
     /// @dev Mask of lower 20 bytes.
     uint256 private constant ADDRESS_MASK = 0x00ffffffffffffffffffffffffffffffffffffffff;
     /// @dev Mask of upper 20 bytes.
@@ -432,7 +433,9 @@ abstract contract BaseSwapper is TokenTransfer {
                     bin := and(shr(72, calldataload(path.offset)), 0xffffff)
                 }
                 amountIn = swapLBexactIn(tokenIn, tokenOut, amountIn, address(this), uint16(bin));
-            }
+            } else
+                revert invalidDexId();
+
             // decide whether to continue or terminate
             if (path.length > 46) {
                 path = path[25:];
