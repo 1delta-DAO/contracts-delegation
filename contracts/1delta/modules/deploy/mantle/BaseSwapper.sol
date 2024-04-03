@@ -13,8 +13,8 @@ import {TokenTransfer} from "../../../libraries/TokenTransfer.sol";
 // solhint-disable max-line-length
 
 /**
- * @title Any Uniswap Callback Base contract
- * @notice Contains main logic for uniswap callbacks
+ * @title Base swapper contract
+ * @notice Contains basic logic for swap executions with DEXs
  */
 abstract contract BaseSwapper is TokenTransfer {
     /// @dev Mask of lower 20 bytes.
@@ -50,6 +50,7 @@ abstract contract BaseSwapper is TokenTransfer {
     bytes32 private constant CLEO_POOL_INIT_CODE_HASH = 0x1565b129f2d1790f12d45301b9b084335626f0c92410bc43130763b69971135d;
 
     address private constant MERCHANT_MOE_FACTORY = 0x5bEf015CA9424A7C07B68490616a4C1F094BEdEc;
+    address private constant MERCHANT_MOE_LB_FACTORY = 0xa6630671775c4EA2743840F9A5016dCf2A104054;
 
     bytes32 internal constant VELO_FF_FACTORY = 0xff99F9a4A96549342546f9DAE5B2738EDDcD43Bf4C0000000000000000000000;
     bytes32 constant VELO_CODE_HASH = 0x0ccd005ee58d5fb11632ef5c2e0866256b240965c62c8e990c0f84a97f311879;
@@ -424,6 +425,14 @@ abstract contract BaseSwapper is TokenTransfer {
             else if (identifier == 102) {
                 amountIn = swapStratum3(tokenIn, tokenOut, amountIn);
             }
+            // Moe LB
+            else if (identifier == 103) {
+                uint24 bin;
+                assembly {
+                    bin := and(shr(72, calldataload(path.offset)), 0xffffff)
+                }
+                amountIn = swapLBexactIn(tokenIn, tokenOut, amountIn, address(this), uint16(bin));
+            }
             // decide whether to continue or terminate
             if (path.length > 46) {
                 path = path[25:];
@@ -493,13 +502,125 @@ abstract contract BaseSwapper is TokenTransfer {
         }
     }
 
+    function swapLBexactIn(
+        address tokenIn, 
+        address tokenOut, 
+        uint256 amountIn, 
+        address receiver, 
+        uint16 binStep // identifies pair
+    ) private returns (uint256 amountOut) {
+        assembly {
+            let ptr := mload(0x40)
+
+            ////////////////////////////////////////////////////
+            // Get the pair adress from the factory
+            ////////////////////////////////////////////////////
+
+            // getLBPairInformation(address,address,uint256)
+            mstore(ptr, 0x704037bd00000000000000000000000000000000000000000000000000000000)
+            // this flag indicates whether tokenOut is tokenY
+            // the tokens in the pair are ordered, as such, we call lt
+            let swapForY := gt(tokenIn, tokenOut)
+            // order tokens for call
+            switch swapForY
+            case 0 {
+                mstore(add(ptr, 0x4), tokenIn)
+                mstore(add(ptr, 0x24), tokenOut)
+            }
+            default {
+                mstore(add(ptr, 0x4), tokenOut)
+                mstore(add(ptr, 0x24), tokenIn)
+            }
+            mstore(add(ptr, 0x44), binStep)
+            pop( // the call will always succeed due to immutable call target
+                staticcall(
+                    gas(),
+                    MERCHANT_MOE_LB_FACTORY,
+                    ptr,
+                    0x64,
+                    ptr,
+                    0x40 // we only need 64 bits of the output
+                )
+            )
+            // get the pair
+            let pair := and(
+                0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff, // mask address
+                mload(add(ptr, 0x20)) // skip index
+            )
+            // pair must exist
+            if iszero(pair) {
+                revert(0, 0)
+            }
+
+            ////////////////////////////////////////////////////
+            // Transfer amountIn to pair
+            ////////////////////////////////////////////////////
+
+            // selector for transfer(address,uint256)
+            mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+            mstore(add(ptr, 0x04), pair)
+            mstore(add(ptr, 0x24), amountIn)
+
+            let success := call(gas(), tokenIn, 0, ptr, 0x44, ptr, 32)
+
+            let rdsize := returndatasize()
+
+            // Check for ERC20 success. ERC20 tokens should return a boolean,
+            // but some don't. We accept 0-length return data as success, or at
+            // least 32 bytes that starts with a 32-byte boolean true.
+            success := and(
+                success, // call itself succeeded
+                or(
+                    iszero(rdsize), // no return data, or
+                    and(
+                        iszero(lt(rdsize, 32)), // at least 32 bytes
+                        eq(mload(ptr), 1) // starts with uint256(1)
+                    )
+                )
+            )
+
+            ////////////////////////////////////////////////////
+            // Execute swap function
+            ////////////////////////////////////////////////////
+
+            // swap(bool,address)
+            mstore(ptr, 0x53c059a000000000000000000000000000000000000000000000000000000000)
+            mstore(add(ptr, 0x4), swapForY)
+            mstore(add(ptr, 0x24), receiver)
+            // call swap, revert if invalid/undefined pair
+            if iszero(call(gas(), 0x0, pair, ptr, 0x44, ptr, 0x20)) {
+                revert(0, 0)
+            }
+            // the swap call returns both amounts encoded into a single bytes32 as (amountX,amountY)
+            switch swapForY
+            case 1 {
+                amountOut := and(
+                    0x00000000000000000000000000000000ffffffffffffffffffffffffffffffff, // mask uint128
+                    mload(add(ptr, 0x20))
+                )
+            }
+            default {
+                amountOut := and(
+                    0x00000000000000000000000000000000ffffffffffffffffffffffffffffffff, // mask uint128
+                    mload(ptr)
+                )
+            }
+        }
+    }
+
     function swapStratum3(address tokenIn, address tokenOut, uint256 amountIn) private returns (uint256 amountOut) {
         assembly {
+            // curve forks work with indices, we determine these below
             let indexIn
             let indexOut
             switch tokenIn
             // USDY
             case 0x5bE26527e817998A7206475496fDE1E68957c5A6 {
+
+                ////////////////////////////////////////////////////
+                // Wrap USDY->mUSD before the swap
+                ////////////////////////////////////////////////////
+
                 // execute USDY->mUSD wrap
                 // selector for wrap(uint256)
                 mstore(0xB00, 0xea598cb000000000000000000000000000000000000000000000000000000000)
@@ -509,10 +630,16 @@ abstract contract BaseSwapper is TokenTransfer {
                     returndatacopy(0xB00, 0, rdsize)
                     revert(0xB00, rdsize)
                 }
+
+                ////////////////////////////////////////////////////
+                // Fetch mUSD balance of this contract 
+                ////////////////////////////////////////////////////
+
                 // selector for balanceOf(address)
                 mstore(0xB00, 0x70a0823100000000000000000000000000000000000000000000000000000000)
                 // add this address as parameter
                 mstore(0xB04, address())
+                
                 // call to token
                 pop(staticcall(gas(), MUSD, 0xB00, 0x24, 0xB00, 0x20))
 
@@ -556,6 +683,11 @@ abstract contract BaseSwapper is TokenTransfer {
             default {
                 revert(0, 0)
             }
+
+            ////////////////////////////////////////////////////
+            // Execute swap function 
+            ////////////////////////////////////////////////////
+
             // selector for swap(uint8,uint8,uint256,uint256,uint256)
             mstore(0xB00, 0x9169558600000000000000000000000000000000000000000000000000000000)
             mstore(0xB04, indexIn)
@@ -572,6 +704,11 @@ abstract contract BaseSwapper is TokenTransfer {
             amountOut := mload(0xB00)
 
             if eq(tokenOut, USDY) {
+
+                ////////////////////////////////////////////////////
+                // tokenOut is USDY, as such, we unwrap mUSD to SUDY
+                ////////////////////////////////////////////////////
+
                 // calculate mUSD->USDY unwrap
                 // selector for unwrap(uint256)
                 mstore(0xB00, 0xde0e9a3e00000000000000000000000000000000000000000000000000000000)

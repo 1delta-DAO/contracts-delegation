@@ -381,17 +381,16 @@ contract OneDeltaQuoterMantle {
                 mstore(add(ptr, 0x24), tokenIn)
             }
             mstore(add(ptr, 0x44), binStep)
-            let
-                success // the call will always succeed due to immutable call target
-            := staticcall(
-                gas(),
-                MERCHANT_MOE_LB_FACTORY,
-                ptr,
-                0x64,
-                ptr,
-                0x40 // we only need 64 bits of the output
+            pop( // the call will always succeed due to immutable call target
+                staticcall(
+                    gas(),
+                    MERCHANT_MOE_LB_FACTORY,
+                    ptr,
+                    0x64,
+                    ptr,
+                    0x40 // we only need 64 bits of the output
+                )
             )
-
             // get the pair
             let pair := and(
                 0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff, // mask address
