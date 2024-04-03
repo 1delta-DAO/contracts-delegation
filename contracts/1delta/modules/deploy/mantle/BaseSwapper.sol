@@ -526,7 +526,7 @@ abstract contract BaseSwapper is TokenTransfer {
             let swapForY := gt(tokenIn, tokenOut)
             // order tokens for call
             switch swapForY
-            case 0 {
+            case 1 {
                 mstore(add(ptr, 0x4), tokenIn)
                 mstore(add(ptr, 0x24), tokenOut)
             }
@@ -564,7 +564,7 @@ abstract contract BaseSwapper is TokenTransfer {
             mstore(add(ptr, 0x04), pair)
             mstore(add(ptr, 0x24), amountIn)
 
-            let success := call(gas(), tokenIn, 0, ptr, 0x44, ptr, 32)
+            let success := call(gas(), tokenIn, 0x0, ptr, 0x44, ptr, 32)
 
             let rdsize := returndatasize()
 
@@ -582,6 +582,11 @@ abstract contract BaseSwapper is TokenTransfer {
                 )
             )
 
+            if iszero(success) {
+                returndatacopy(ptr, 0, rdsize)
+                revert(ptr, rdsize)
+            }
+
             ////////////////////////////////////////////////////
             // Execute swap function
             ////////////////////////////////////////////////////
@@ -591,22 +596,17 @@ abstract contract BaseSwapper is TokenTransfer {
             mstore(add(ptr, 0x4), swapForY)
             mstore(add(ptr, 0x24), receiver)
             // call swap, revert if invalid/undefined pair
-            if iszero(call(gas(), 0x0, pair, ptr, 0x44, ptr, 0x20)) {
-                revert(0, 0)
+            if iszero(call(gas(), pair, 0x0, ptr, 0x44, ptr, 0x20)) {
+                rdsize := returndatasize()
+                revert(ptr, rdsize)
             }
             // the swap call returns both amounts encoded into a single bytes32 as (amountX,amountY)
             switch swapForY
-            case 1 {
-                amountOut := and(
-                    0x00000000000000000000000000000000ffffffffffffffffffffffffffffffff, // mask uint128
-                    mload(add(ptr, 0x20))
-                )
+            case 0 {
+                amountOut := and(mload(ptr), 0xffffffffffffffffffffffffffffffff)
             }
             default {
-                amountOut := and(
-                    0x00000000000000000000000000000000ffffffffffffffffffffffffffffffff, // mask uint128
-                    mload(ptr)
-                )
+                amountOut := shr(128, mload(ptr))
             }
         }
     }
@@ -629,8 +629,8 @@ abstract contract BaseSwapper is TokenTransfer {
             mstore(add(ptr, 0x4), swapForY)
             mstore(add(ptr, 0x24), receiver)
             // call swap, revert if invalid/undefined pair
-            if iszero(call(gas(), 0x0, pair, ptr, 0x44, ptr, 0x20)) {
-                revert(0, 0)
+            if iszero(call(gas(), pair, 0x0, ptr, 0x44, ptr, 0x20)) {
+                revert(ptr, returndatasize())
             }
 
             ////////////////////////////////////////////////////

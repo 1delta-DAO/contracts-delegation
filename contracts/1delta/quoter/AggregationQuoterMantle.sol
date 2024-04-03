@@ -358,8 +358,8 @@ contract OneDeltaQuoterMantle {
     }
 
     function getLBAmountOut(
-        address tokenIn,
         address tokenOut,
+        address tokenIn,
         uint256 amountIn,
         uint16 binStep // identifies the exact pair address
     ) private view returns (uint256 amountOut) {
@@ -369,10 +369,10 @@ contract OneDeltaQuoterMantle {
             mstore(ptr, 0x704037bd00000000000000000000000000000000000000000000000000000000)
             // this flag indicates whether tokenOut is tokenY
             // the tokens in the pair are ordered, as such, we call lt
-            let swapForY := gt(tokenIn, tokenOut)
+            let swapForY := lt(tokenIn, tokenOut)
             // order tokens for call
             switch swapForY
-            case 0 {
+            case 1 {
                 mstore(add(ptr, 0x4), tokenIn)
                 mstore(add(ptr, 0x24), tokenOut)
             }
