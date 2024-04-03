@@ -164,4 +164,22 @@ abstract contract TokenTransfer {
     function min256(uint256 a, uint256 b) internal pure returns (uint256) {
         return a < b ? a : b;
     }
+
+    // balanceOf call in assembly for smaller contract size
+    function _balanceOf(address underlying, address entity) internal view returns (uint256 callerBalance) {
+        assembly {
+            let ptr := mload(0x40) // free memory pointer
+            // selector for balanceOf(address)
+            mstore(ptr, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+            // add this address as parameter
+            mstore(add(ptr, 0x4), entity)
+
+            // call to underlying
+            if iszero(staticcall(gas(), underlying, ptr, 0x24, ptr, 0x20)) {
+                revert (0,0)
+            }
+            
+            callerBalance := mload(ptr)
+        }
+    }
 }

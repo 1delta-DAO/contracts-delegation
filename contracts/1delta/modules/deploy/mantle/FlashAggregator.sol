@@ -6,7 +6,6 @@ pragma solidity ^0.8.24;
 * Author: Achthar | 1delta 
 /******************************************************************************/
 
-import {IERC20Balance} from "../../../interfaces/IERC20Balance.sol";
 import {MarginTrading} from "./MarginTrading.sol";
 
 // solhint-disable max-line-length
@@ -82,8 +81,8 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
         assembly {
             tokenOut := shr(96, calldataload(path.offset))
         }
-        if (_interestRateMode == 2) _debtBalance = IERC20Balance(aas().vTokens[tokenOut]).balanceOf(msg.sender);
-        else _debtBalance = IERC20Balance(aas().sTokens[tokenOut]).balanceOf(msg.sender);
+        if (_interestRateMode == 2) _debtBalance = _balanceOf(aas().vTokens[tokenOut], msg.sender);
+        else _debtBalance = _balanceOf(aas().sTokens[tokenOut], msg.sender);
         if (_debtBalance == 0) revert NoBalance(); // revert if amount is zero
 
         flashSwapExactOutInternal(_debtBalance, address(this), path);
@@ -106,8 +105,8 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
         assembly {
             tokenOut := shr(96, calldataload(path.offset))
         }
-        if (_interestRateMode == 2) _debtBalance = IERC20Balance(aas().vTokens[tokenOut]).balanceOf(msg.sender);
-        else _debtBalance = IERC20Balance(aas().sTokens[tokenOut]).balanceOf(msg.sender);
+        if (_interestRateMode == 2) _debtBalance = _balanceOf(aas().vTokens[tokenOut], msg.sender);
+        else _debtBalance = _balanceOf(aas().sTokens[tokenOut], msg.sender);
         if (_debtBalance == 0) revert NoBalance(); // revert if amount is zero
 
         flashSwapExactOutInternal(_debtBalance, address(this), path);
@@ -124,7 +123,7 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
         assembly {
             tokenIn := shr(96, calldataload(path.offset))
         }
-        uint256 amountIn = IERC20Balance(tokenIn).balanceOf(address(this));
+        uint256 amountIn = _balanceOf(tokenIn, address(this));
         if (amountIn == 0) revert NoBalance(); // revert if amount is zero
         uint256 amountOut = swapExactIn(amountIn, path);
         if (minimumAmountOut > amountOut) revert Slippage();

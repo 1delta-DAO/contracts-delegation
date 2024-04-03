@@ -9,7 +9,6 @@ pragma solidity 0.8.24;
 import {WithStorage} from "../../../storage/BrokerStorage.sol";
 import {BaseSwapper, IUniswapV2Pair} from "./BaseSwapper.sol";
 import {ILendingPool} from "./ILendingPool.sol";
-import {IERC20Balance} from "../../../interfaces/IERC20Balance.sol";
 
 // solhint-disable max-line-length
 
@@ -132,7 +131,7 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
             zeroForOne := lt(tokenIn, tokenOut)
         }
         // fetch collateral balance
-        uint256 amountIn = IERC20Balance(aas().aTokens[tokenIn]).balanceOf(msg.sender);
+        uint256 amountIn = _balanceOf(aas().aTokens[tokenIn], msg.sender);
         if (amountIn == 0) revert NoBalance();
 
         // uniswapV3 style
@@ -204,8 +203,8 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
 
         // determine output amount as respective debt balance
         uint256 amountOut;
-        if (identifier == 5) amountOut = IERC20Balance(aas().vTokens[tokenOut]).balanceOf(msg.sender);
-        else amountOut = IERC20Balance(aas().sTokens[tokenOut]).balanceOf(msg.sender);
+        if (identifier == 5) amountOut = _balanceOf(aas().vTokens[tokenOut], msg.sender);
+        else amountOut = _balanceOf(aas().sTokens[tokenOut], msg.sender);
         if (amountOut == 0) revert NoBalance();
 
         // fetch poolId - store it in identifier
@@ -810,6 +809,9 @@ abstract contract MarginTrading is WithStorage, BaseSwapper {
                     800001,
                     data
                 );
+        // special case: Moe LB can be the last pool for exact outs
+        } else if (identifier == 103) {
+
         } else
             revert invalidDexId();
     }
