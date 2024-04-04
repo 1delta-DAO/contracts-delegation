@@ -822,16 +822,17 @@ abstract contract MarginTrading is WithStorage, BaseSwapper, BaseLending {
             // This is done by re-calling this same function after skimming the
             // data parameter by the leading token config 
             ////////////////////////////////////////////////////
-            if(data.length > 46)  {
+            if(data.length > 46) {
                 // remove the last token from the path
                 data = data[25:];
                 flashSwapExactOutInternal(amountIn, pair, data);
             } 
             ////////////////////////////////////////////////////
-            // Otherwise, we pay according to the parametrization
+            // Otherwise, we pay the funds to the pair
+            // according to the parametrization
             // at the end of the path
             ////////////////////////////////////////////////////
-            else{
+            else {
                 // get length and last flag
                 uint256 cache = data.length;
                 data = data[(cache - 1):cache];
@@ -850,9 +851,14 @@ abstract contract MarginTrading is WithStorage, BaseSwapper, BaseLending {
                     // otherwise, just transfer it from cached address
                     payTo(tokenIn, acs().cachedAddress, pair, amountIn);
                 }
+                // only cache the amount if this is the last pool
+                ncs().amount = amountIn;
             }
+            ////////////////////////////////////////////////////
+            // The swap is executed at the end and sends 
+            // the funds to the receiver addresss
+            ////////////////////////////////////////////////////
             swapLBexactOut(pair, swapForY, amountOut, receiver);
-            ncs().amount = amountIn;
         } else
             revert invalidDexId();
     }
