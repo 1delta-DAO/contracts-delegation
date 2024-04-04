@@ -28,6 +28,7 @@ abstract contract BaseSwapper is TokenTransfer {
     uint160 internal constant MIN_SQRT_RATIO = 4295128740;
     /// @dev MAX_SQRT_RATIO - 1 from Uniswap's TickMath
     uint160 internal constant MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970341;
+    uint256 private constant SCALE_18 = 1.0e18;
 
     bytes32 private constant FUSION_V3_FF_FACTORY = 0xff8790c2C3BA67223D83C8FCF2a5E3C650059987b40000000000000000000000;
     bytes32 private constant FUSION_POOL_INIT_CODE_HASH = 0x1bce652aaa6528355d7a339037433a20cd28410e3967635ba8d2ddb037440dbf;
@@ -1279,25 +1280,25 @@ abstract contract BaseSwapper is TokenTransfer {
                         let _reserveOutScaled
                         switch lt(tokenIn, tokenOut)
                         case 1 {
-                            _reserveInScaled := div(mul(mload(ptr), 1000000000000000000), _decimalsIn)
-                            _reserveOutScaled := div(mul(mload(add(ptr, 0x20)), 1000000000000000000), _decimalsOut_xy_fee)
+                            _reserveInScaled := div(mul(mload(ptr), SCALE_18), _decimalsIn)
+                            _reserveOutScaled := div(mul(mload(add(ptr, 0x20)), SCALE_18), _decimalsOut_xy_fee)
                         }
                         default {
-                            _reserveInScaled := div(mul(mload(add(ptr, 0x20)), 1000000000000000000), _decimalsIn)
-                            _reserveOutScaled := div(mul(mload(ptr), 1000000000000000000), _decimalsOut_xy_fee)
+                            _reserveInScaled := div(mul(mload(add(ptr, 0x20)), SCALE_18), _decimalsIn)
+                            _reserveOutScaled := div(mul(mload(ptr), SCALE_18), _decimalsOut_xy_fee)
                         }
-                        y0 := sub(_reserveOutScaled, div(mul(buyAmount, 1000000000000000000), _decimalsOut_xy_fee))
+                        y0 := sub(_reserveOutScaled, div(mul(buyAmount, SCALE_18), _decimalsOut_xy_fee))
                         x := _reserveInScaled
                         // get xy
                         _decimalsOut_xy_fee := div(
                             mul(
-                                div(mul(_reserveInScaled, _reserveOutScaled), 1000000000000000000),
+                                div(mul(_reserveInScaled, _reserveOutScaled), SCALE_18),
                                 add(
-                                    div(mul(_reserveInScaled, _reserveInScaled), 1000000000000000000),
-                                    div(mul(_reserveOutScaled, _reserveOutScaled), 1000000000000000000)
+                                    div(mul(_reserveInScaled, _reserveInScaled), SCALE_18),
+                                    div(mul(_reserveOutScaled, _reserveOutScaled), SCALE_18)
                                 )
                             ),
-                            1000000000000000000
+                            SCALE_18
                         )
                     }
                     // for-loop for approximation
@@ -1309,18 +1310,18 @@ abstract contract BaseSwapper is TokenTransfer {
                     } {
                         let x_prev := x
                         let k := add(
-                            div(mul(x, div(mul(div(mul(y0, y0), 1000000000000000000), y0), 1000000000000000000)), 1000000000000000000),
-                            div(mul(y0, div(mul(div(mul(x, x), 1000000000000000000), x), 1000000000000000000)), 1000000000000000000)
+                            div(mul(x, div(mul(div(mul(y0, y0), SCALE_18), y0), SCALE_18)), SCALE_18),
+                            div(mul(y0, div(mul(div(mul(x, x), SCALE_18), x), SCALE_18)), SCALE_18)
                         )
                         switch lt(k, _decimalsOut_xy_fee)
                         case 1 {
                             x := add(
                                 x,
                                 div(
-                                    mul(sub(_decimalsOut_xy_fee, k), 1000000000000000000),
+                                    mul(sub(_decimalsOut_xy_fee, k), SCALE_18),
                                     add(
-                                        div(mul(mul(3, y0), div(mul(x, x), 1000000000000000000)), 1000000000000000000),
-                                        div(mul(div(mul(y0, y0), 1000000000000000000), y0), 1000000000000000000)
+                                        div(mul(mul(3, y0), div(mul(x, x), SCALE_18)), SCALE_18),
+                                        div(mul(div(mul(y0, y0), SCALE_18), y0), SCALE_18)
                                     )
                                 )
                             )
@@ -1329,10 +1330,10 @@ abstract contract BaseSwapper is TokenTransfer {
                             x := sub(
                                 x,
                                 div(
-                                    mul(sub(k, _decimalsOut_xy_fee), 1000000000000000000),
+                                    mul(sub(k, _decimalsOut_xy_fee), SCALE_18),
                                     add(
-                                        div(mul(mul(3, y0), div(mul(x, x), 1000000000000000000)), 1000000000000000000),
-                                        div(mul(div(mul(y0, y0), 1000000000000000000), y0), 1000000000000000000)
+                                        div(mul(mul(3, y0), div(mul(x, x), SCALE_18)), SCALE_18),
+                                        div(mul(div(mul(y0, y0), SCALE_18), y0), SCALE_18)
                                     )
                                 )
                             )
@@ -1390,7 +1391,7 @@ abstract contract BaseSwapper is TokenTransfer {
                                 mul(mul(sub(x, _reserveInScaled), _decimalsIn), 10000),
                                 sub(10000, _decimalsOut_xy_fee) // 10000 - fee
                             ),
-                            1000000000000000000
+                            SCALE_18
                         ),
                         1 // rounding up
                     )
