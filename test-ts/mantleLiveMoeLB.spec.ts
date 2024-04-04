@@ -1,12 +1,12 @@
 import { impersonateAccount } from "@nomicfoundation/hardhat-network-helpers";
 import { parseUnits } from "ethers/lib/utils";
-import { AToken__factory, ConfigModule__factory, DEXErrors__factory, DeltaBrokerProxy, DeltaBrokerProxy__factory, DeltaFlashAggregatorMantle__factory, DeltaLendingInterfaceMantle__factory, LensModule__factory, StableDebtToken__factory, } from "../types";
+import { ConfigModule__factory, DeltaBrokerProxy, DeltaBrokerProxy__factory, DeltaFlashAggregatorMantle__factory, DeltaLendingInterfaceMantle__factory, LensModule__factory, StableDebtToken__factory, } from "../types";
 import { lendleBrokerAddresses } from "../deploy/mantle_addresses";
 import { DeltaFlashAggregatorMantleInterface } from "../types/DeltaFlashAggregatorMantle";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { addressesLendleATokens, addressesLendleVTokens, addressesTokensMantle } from "../scripts/mantle/lendleAddresses";
+import { addressesLendleVTokens, addressesTokensMantle } from "../scripts/mantle/lendleAddresses";
 import { encodeAggregatorPathEthers } from "./1delta/shared/aggregatorPath";
-import { FeeAmount, MaxUint128 } from "./uniswap-v3/periphery/shared/constants";
+import { MaxUint128 } from "./uniswap-v3/periphery/shared/constants";
 import { ModuleConfigAction, getSelectors } from "./libraries/diamond";
 import { DeltaLendingInterfaceMantleInterface } from "../types/DeltaLendingInterfaceMantle";
 const { ethers } = require("hardhat");
@@ -78,7 +78,7 @@ before(async function () {
 })
 
 it("Deposit", async function () {
-    const amount = parseUnits('5000.0', 18)
+    const amount = parseUnits('3.0', 18)
     const callWrap = lendingInterfaceInterface.encodeFunctionData('wrap',)
     const callDeposit = lendingInterfaceInterface.encodeFunctionData('deposit' as any, [wmnt, user.address])
 
@@ -101,23 +101,13 @@ it("Opens exact in, CLEO->LB", async function () {
         [4, 103], // Cleo, MoeLB
         2
     )
-    try {
-        const callSwap = flashAggregatorInterface.encodeFunctionData('flashSwapExactIn', [amount, 0, path1])
-        console.log("attempt swap")
-        await multicaller.connect(user).multicall([
-            callSwap
-        ])
-    } catch (e: any) {
-        const errs = DEXErrors__factory.createInterface()
-        errs.fragments.forEach(element => {
-            const name = element.name
-            console.log("try", name)
-            try {
-                console.log("ERROR ARGS DECODED", name, errs.decodeErrorResult(name,  e.error?.data))
-            } catch (e2) { }
-        });
-        console.log(e, e.error?.data)
-    }
+
+    const callSwap = flashAggregatorInterface.encodeFunctionData('flashSwapExactIn', [amount, 0, path1])
+    console.log("attempt swap")
+    await multicaller.connect(user).multicall([
+        callSwap
+    ])
+
 
 })
 
