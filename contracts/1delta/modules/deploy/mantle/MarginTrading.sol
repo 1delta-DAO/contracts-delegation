@@ -819,6 +819,7 @@ abstract contract MarginTrading is WithStorage, BaseSwapper, BaseLending {
 
             ////////////////////////////////////////////////////
             // If the path includes more pairs, we nest another exact out swap
+            // The funds of this exact out swap are sent to the LB pair
             // This is done by re-calling this same function after skimming the
             // data parameter by the leading token config 
             ////////////////////////////////////////////////////
