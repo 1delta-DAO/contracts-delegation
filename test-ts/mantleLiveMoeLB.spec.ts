@@ -1,15 +1,16 @@
 import { impersonateAccount } from "@nomicfoundation/hardhat-network-helpers";
-import { parseUnits } from "ethers/lib/utils";
-import { ConfigModule__factory, DeltaBrokerProxy, DeltaBrokerProxy__factory, DeltaFlashAggregatorMantle__factory, DeltaLendingInterfaceMantle__factory, LensModule__factory, StableDebtToken__factory, } from "../types";
+import { arrayify, formatEther, parseUnits } from "ethers/lib/utils";
+import { AdminUpgradeabilityProxy__factory, ConfigModule__factory, DeltaBrokerProxy, DeltaBrokerProxy__factory, DeltaFlashAggregatorMantle__factory, DeltaLendingInterfaceMantle__factory, FiatWithPermit__factory, LensModule__factory, MockERC20__factory, OneDeltaQuoterMantle, OneDeltaQuoterMantle__factory, StableDebtToken__factory, WETH9__factory, } from "../types";
 import { lendleBrokerAddresses } from "../deploy/mantle_addresses";
 import { DeltaFlashAggregatorMantleInterface } from "../types/DeltaFlashAggregatorMantle";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { addressesLendleVTokens, addressesTokensMantle } from "../scripts/mantle/lendleAddresses";
-import { encodeAggregatorPathEthers } from "./1delta/shared/aggregatorPath";
+import { encodeAggregatorPathEthers, encodeQuoterPathEthers } from "./1delta/shared/aggregatorPath";
 import { MaxUint128 } from "./uniswap-v3/periphery/shared/constants";
 import { ModuleConfigAction, getSelectors } from "./libraries/diamond";
 import { DeltaLendingInterfaceMantleInterface } from "../types/DeltaLendingInterfaceMantle";
-const { ethers } = require("hardhat");
+import { expect } from "chai";
+import { ethers } from "hardhat";
 
 
 // block: 20240225
@@ -31,10 +32,12 @@ let flashAggregatorInterface: DeltaFlashAggregatorMantleInterface
 let lendingInterfaceInterface: DeltaLendingInterfaceMantleInterface
 let user: SignerWithAddress
 let trader: SignerWithAddress
+let quoter: OneDeltaQuoterMantle
 before(async function () {
     const [signer] = await ethers.getSigners();
     user = signer
     console.log("get aggregator")
+    quoter = await new OneDeltaQuoterMantle__factory(signer).deploy()
     multicaller = await new DeltaBrokerProxy__factory(user).attach(brokerProxy)
     flashAggregatorInterface = DeltaFlashAggregatorMantle__factory.createInterface()
     lendingInterfaceInterface = DeltaLendingInterfaceMantle__factory.createInterface()
@@ -74,7 +77,6 @@ before(async function () {
         action: ModuleConfigAction.Add,
         functionSelectors: getSelectors(newLendingInterface)
     }])
-
 })
 
 it("Deposit", async function () {
@@ -135,27 +137,56 @@ it("Opens exact out", async function () {
 
 })
 
-// it("Opens exact in multi", async function () {
+it("Swap exact out Linear", async function () {
 
-//     const amount = parseUnits('1.0', 6)
-//     const tokenIn = addressesTokensMantle.WMNT
+    const amountOut = parseUnits('1.0', 18)
+    const amountDepo = parseUnits('100', 18)
+    const tokenIn = addressesTokensMantle.WMNT
 
-//     const borrowToken = await new StableDebtToken__factory(user).attach(addressesLendleVTokens.USDC)
-//     await borrowToken.approveDelegation(multicaller.address, MaxUint128)
-//     // v3 single
-//     const path1 = encodeAggregatorPathEthers(
-//         [usdc, weth, wmnt],
-//         [0, FeeAmount.LOW],
-//         [6, 0],
-//         [51, 0], // Moe, fusionX
-//         2
-//     )
-//     const callSwap = flashAggregatorInterface.encodeFunctionData('flashSwapExactIn', [amount, 0, path1])
-//     console.log("attempt swap")
-//     await multicaller.connect(user).multicall([
-//         callSwap
-//     ])
-// })
+    const wmntContract = await new WETH9__factory(user).attach(wmnt)
+    await wmntContract.deposit({ value: amountDepo })
+
+    await wmntContract.approve(multicaller.address, MaxUint128)
+
+    const usdeContract = await new MockERC20__factory(user).attach(usde)
+    const balanceInBefore = await wmntContract.balanceOf(user.address)
+    const balanceOutBefore = await usdeContract.balanceOf(user.address)
+    // v3 single
+    const path1 = encodeAggregatorPathEthers(
+        [usde, usdt, weth, wmnt],
+        [1, 0, 0],
+        [3, 1, 1],
+        [103, 51, 56], // Moe LB, Moe V1, Stratum
+        99
+    )
+
+    const pathQuoter = encodeQuoterPathEthers(
+        [usde, usdt, weth, wmnt],
+        [1, 0, 0],
+        [103, 51, 56], // Moe LB, Moe V1, Stratum
+    )
+    const quote = await quoter.callStatic.quoteExactOutput(
+        pathQuoter, amountOut
+    )
+
+    const callSwap = flashAggregatorInterface.encodeFunctionData('swapExactOutSpot', [amountOut, MaxUint128, path1])
+    const callSweep = lendingInterfaceInterface.encodeFunctionData('sweep', [usde])
+    console.log("attempt swap")
+    await multicaller.connect(user).multicall([
+        callSwap,
+        callSweep
+    ])
+    const balanceInAfter = await wmntContract.balanceOf(user.address)
+    const balanceOutAfter = await usdeContract.balanceOf(user.address)
+    // pulled the quoted amount
+    expect(quote.toString()).to.equal(balanceInBefore.sub(balanceInAfter))
+    const received = Number(formatEther(balanceOutAfter.sub(balanceOutBefore)))
+    const amountOutNumber = Number(formatEther(amountOut))
+    // received the expected amount or slightly more
+    expect(received).to.be.greaterThanOrEqual(received)
+    // also doe not deviate too much from the expected out amount
+    expect(amountOutNumber).to.approximately(received, 1e-6)
+})
 
 
 // it("Opens exact out multi", async function () {
