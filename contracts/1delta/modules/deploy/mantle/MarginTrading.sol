@@ -14,7 +14,7 @@ import {BaseLending} from "./BaseLending.sol";
 
 /**
  * @title Contract Module for general Margin Trading on an Aave-style Lender
- * @notice Contains main logic for uniswap-type callbacks and initiator functions
+ * @notice Contains main logic for flash swap callbacks and initiator functions
  */
 abstract contract MarginTrading is WithStorage, BaseSwapper, BaseLending {
     // errors
@@ -303,28 +303,34 @@ abstract contract MarginTrading is WithStorage, BaseSwapper, BaseLending {
         uniswapV3SwapCallbackInternal(amount0Delta, amount1Delta, path);
     }
 
-    // PATH IDENTIFICATION
-
-    // [between pools if more than one]
-    // 0: exact input swap
-    // 1: exact output swap - flavored by the id given at the end of the path
-
-    // [end flag]
-    // 1: borrow stable
-    // 2: borrow variable
-    // 3: withdraw
-    // 4: pay from cached address (spot)
-
-    // [start flag (>1)]
-    // 6: deposit exact in
-    // 7: repay exact in stable
-    // 8: repay exact in variable
-
-    // 3: deposit exact out
-    // 4: repay exact out stable
-    // 5: repay exact out variable
-
-    // The uniswapV3 style callback
+   /**
+    * The uniswapV3 style callback
+    * 
+    * PATH IDENTIFICATION
+    * 
+    * [between pools if more than one]
+    * 0: exact input swap
+    * 1: exact output swap - flavored by the id given at the end of the path
+    * 
+    * [end flag]
+    * 1: borrow stable
+    * 2: borrow variable
+    * 3: withdraw
+    * 4: pay from cached address (spot)
+    * 
+    * [start flag (>1)]
+    * 6: deposit exact in
+    * 7: repay exact in stable
+    * 8: repay exact in variable
+    * 
+    * 3: deposit exact out
+    * 4: repay exact out stable
+    * 5: repay exact out variable
+    * 
+    * @param amount0Delta delta of token0, if positive, we have to pay, if negative, we received
+    * @param amount1Delta delta of token1, if positive, we have to pay, if negative, we received
+    * @param _data path calldata
+    */
     function uniswapV3SwapCallbackInternal(
         int256 amount0Delta,
         int256 amount1Delta,
@@ -471,6 +477,15 @@ abstract contract MarginTrading is WithStorage, BaseSwapper, BaseLending {
         }
     }
 
+    /**
+     * Calculates the output amount for UniV2 and Solidly forks
+     * @param pair address
+     * @param tokenIn input
+     * @param zeroForOne true if token0 is swapped for token1
+     * @param sellAmount amount in
+     * @param _pId DEX identifier
+     * @return buyAmount amount out
+     */
     function getAmountOutUniV2(
         address pair,
         address tokenIn, // only used for velo
@@ -587,7 +602,12 @@ abstract contract MarginTrading is WithStorage, BaseSwapper, BaseLending {
         _uniswapV2StyleCallback(amount0, amount1, data);
     }
 
-    // The general uniswapV2 style callback
+    /**
+     * Flash swap callback for all UniV2 and Solidly type DEXs
+     * @param amount0 amount of token0 received
+     * @param amount1 amount of token1 received
+     * @param data path calldata
+     */
     function _uniswapV2StyleCallback(
         uint256 amount0,
         uint256 amount1,
@@ -748,7 +768,15 @@ abstract contract MarginTrading is WithStorage, BaseSwapper, BaseLending {
         );
     }
 
-    // a flash swap where the output is sent to msg.sender
+    /**
+     * (flash, whenever possible)-swaps exact output
+     * Funds are sent to receiver address
+     * Path is assumed to start from output token
+     * The input amount is cached and not directly returned by this function
+     * @param amountOut buy amount
+     * @param receiver address
+     * @param data path calldata
+     */
     function flashSwapExactOutInternal(uint256 amountOut, address receiver, bytes calldata data) internal {
         address tokenIn;
         address tokenOut;
