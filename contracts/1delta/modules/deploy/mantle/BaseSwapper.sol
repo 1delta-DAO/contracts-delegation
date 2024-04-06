@@ -75,13 +75,26 @@ abstract contract BaseSwapper is TokenTransfer {
 
     constructor() {}
 
+    /**
+     * Get the last token from path calldata
+     * @param data input data
+     * @return token address
+     */
     function getLastToken(bytes calldata data) internal pure returns (address token) {
         assembly {
             token := shr(96, calldataload(add(data.offset, sub(data.length, 21))))
         }
     }
 
-    /// @dev Returns the pool for the given token pair and fee. The pool contract may or may not exist.
+   /**
+    * Compute or fetch a UniV3 pair address
+    * Token sorting is done in this call
+    * @param tokenA first token
+    * @param tokenB second token
+    * @param fee fee parameter
+    * @param _pId Dex Id
+    * @return pool address
+    */
     function getUniswapV3Pool(address tokenA, address tokenB, uint24 fee, uint256 _pId) internal pure returns (IUniversalV3StyleSwap pool) {
         assembly {
             let s := mload(0x40)
@@ -209,7 +222,15 @@ abstract contract BaseSwapper is TokenTransfer {
         }
     }
 
-    /// @dev gets uniswapV2 (and fork) pair addresses
+   /**
+    * Compute or fetch a UniV2 or Solidly style pair address
+    * For Merchant Moe, we fetch the pair address from the factory
+    * Token sorting is done in this call
+    * @param tokenA first token
+    * @param tokenB second token
+    * @param _pId Dex Id
+    * @return pair address
+    */
     function pairAddress(address tokenA, address tokenB, uint256 _pId) internal view returns (address pair) {
         assembly {
             switch _pId
@@ -361,8 +382,12 @@ abstract contract BaseSwapper is TokenTransfer {
         }
     }
 
-    /// @dev swaps exact input through UniswapV3 or UniswapV2 style exactIn
-    /// only uniswapV3 executes flashSwaps
+    /**
+     * Swaps exact in internally using all implemented Dexs
+     * @param amountIn sell amount
+     * @param path path calldata
+     * @return amountOut buy amount
+     */
     function swapExactIn(uint256 amountIn, bytes calldata path) internal returns (uint256 amountOut) {
         while (true) {
             address tokenIn;
@@ -447,6 +472,13 @@ abstract contract BaseSwapper is TokenTransfer {
         }
     }
 
+    /**
+     * Swaps exact input on WOOFi DEX
+     * @param tokenIn input
+     * @param tokenOut output
+     * @param amountIn sell amount
+     * @return amountOut buy amount
+     */
     function swapWooFiExactIn(address tokenIn, address tokenOut, uint256 amountIn) private returns (uint256 amountOut) {
         assembly {
             // selector for transfer(address,uint256)
@@ -506,6 +538,16 @@ abstract contract BaseSwapper is TokenTransfer {
         }
     }
 
+    /**
+     * Executes a swap on merchant Moe's LB exact in
+     * The pair address is fetched from the factory
+     * @param tokenIn input
+     * @param tokenOut output
+     * @param amountIn sell amount
+     * @param receiver receiver address
+     * @param binStep bin indetifier
+     * @return amountOut buy amount
+     */
     function swapLBexactIn(
         address tokenIn, 
         address tokenOut, 
@@ -612,6 +654,13 @@ abstract contract BaseSwapper is TokenTransfer {
         }
     }
 
+    /**
+     * Swaps Merchant Moe's LB exact output internally
+     * @param pair address provided byt the factory
+     * @param swapForY flag for tokenY being the output token
+     * @param amountOut amountOut used to validate that we received enough
+     * @param receiver receiver address
+     */
     function swapLBexactOut(
         address pair,
         bool swapForY, 
@@ -655,6 +704,14 @@ abstract contract BaseSwapper is TokenTransfer {
         }    
     }
 
+    /**
+     * Swaps Stratums Curve fork exact in internally and handles wrapping/unwrapping of mUSD->USDY
+     * Note: the swapper uses uint8 indexes as inputs, this should be encoded later on
+     * @param tokenIn input
+     * @param tokenOut output
+     * @param amountIn sell amount
+     * @return amountOut buy amount
+     */
     function swapStratum3(address tokenIn, address tokenOut, uint256 amountIn) private returns (uint256 amountOut) {
         assembly {
             // curve forks work with indices, we determine these below
@@ -777,7 +834,14 @@ abstract contract BaseSwapper is TokenTransfer {
         }
     }
 
-    /// @dev simple exact input swap using uniswapV2 or fork
+    /**
+     * Executes an exact input swap internally across major UniV2 & Solidly style forks
+     * @param tokenIn input
+     * @param tokenOut output
+     * @param amountIn sell amount
+     * @param _pId DEX identifier
+     * @return buyAmount output amount
+     */
     function swapUniV2ExactIn(
         address tokenIn,
         address tokenOut,
@@ -1070,7 +1134,16 @@ abstract contract BaseSwapper is TokenTransfer {
         }
     }
 
-    /// @dev calculates the input amount for a UniswapV2 style swap
+    /**
+     * Calculates the input amount for a UniswapV2 and Solidly style swap
+     * Assumes that the pair address has been pre-calculated
+     * @param pair provided pair address
+     * @param tokenIn input
+     * @param tokenOut output
+     * @param buyAmount output amunt
+     * @param pId DEX identifier
+     * @return x input amount
+     */
     function getV2AmountInDirect(
         address pair,
         address tokenIn, // some DEXs are more efficiently queried directly
@@ -1400,6 +1473,16 @@ abstract contract BaseSwapper is TokenTransfer {
         }
     }
 
+    /**
+     * Calculates Merchant Moe's LB amount in
+     * @param tokenIn input
+     * @param tokenOut output
+     * @param amountOut buy amount
+     * @param binStep bin identifier
+     * @return amountIn buy amount
+     * @return pair pair address
+     * @return swapForY flag for tokenOut = tokenY
+     */
     function getLBAmountIn(
         address tokenIn,
         address tokenOut,
