@@ -158,7 +158,7 @@ it("Closes exact in, CLEO->LB->3USD->Agni", async function () {
 })
 
 it("Closes exact out, LB->CLEO", async function () {
-    const amount = parseUnits('0.70', 6)
+    const amount = parseUnits('0.7', 6)
 
     const collateralToken = await new AToken__factory(user).attach(addressesLendleATokens.USDT)
     await collateralToken.approve(multicaller.address, MaxUint128)
