@@ -1,10 +1,21 @@
 import { impersonateAccount } from "@nomicfoundation/hardhat-network-helpers";
-import { arrayify, formatEther, parseUnits } from "ethers/lib/utils";
-import { AdminUpgradeabilityProxy__factory, ConfigModule__factory, DeltaBrokerProxy, DeltaBrokerProxy__factory, DeltaFlashAggregatorMantle__factory, DeltaLendingInterfaceMantle__factory, FiatWithPermit__factory, LensModule__factory, MockERC20__factory, OneDeltaQuoterMantle, OneDeltaQuoterMantle__factory, StableDebtToken__factory, WETH9__factory, } from "../types";
+import { formatEther, parseUnits } from "ethers/lib/utils";
+import {
+    AToken__factory,
+    ConfigModule__factory,
+    DeltaBrokerProxy,
+    DeltaBrokerProxy__factory,
+    DeltaFlashAggregatorMantle__factory,
+    DeltaLendingInterfaceMantle__factory,
+    LensModule__factory,
+    MockERC20__factory,
+    OneDeltaQuoterMantle,
+    OneDeltaQuoterMantle__factory, StableDebtToken__factory, WETH9__factory,
+} from "../types";
 import { lendleBrokerAddresses } from "../deploy/mantle_addresses";
 import { DeltaFlashAggregatorMantleInterface } from "../types/DeltaFlashAggregatorMantle";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { addressesLendleVTokens, addressesTokensMantle } from "../scripts/mantle/lendleAddresses";
+import { addressesLendleVTokens, addressesTokensMantle, addressesLendleATokens } from '../scripts/mantle/lendleAddresses';
 import { encodeAggregatorPathEthers, encodeQuoterPathEthers } from "./1delta/shared/aggregatorPath";
 import { MaxUint128 } from "./uniswap-v3/periphery/shared/constants";
 import { ModuleConfigAction, getSelectors } from "./libraries/diamond";
@@ -12,10 +23,8 @@ import { DeltaLendingInterfaceMantleInterface } from "../types/DeltaLendingInter
 import { expect } from "chai";
 import { ethers } from "hardhat";
 
-
 // block: 20240225
 const MANTLE_CHAIN_ID = 5000;
-const trader0 = '0xaffe73AA5EBd0CD95D89ab9fa2512Fc9e2d3289b'
 const admin = '0x999999833d965c275A2C102a4Ebf222ca938546f'
 
 const weth = "0xdEAddEaDdeadDEadDEADDEAddEADDEAddead1111"
@@ -31,7 +40,6 @@ let multicaller: DeltaBrokerProxy
 let flashAggregatorInterface: DeltaFlashAggregatorMantleInterface
 let lendingInterfaceInterface: DeltaLendingInterfaceMantleInterface
 let user: SignerWithAddress
-let trader: SignerWithAddress
 let quoter: OneDeltaQuoterMantle
 before(async function () {
     const [signer] = await ethers.getSigners();
@@ -109,15 +117,73 @@ it("Opens exact in, CLEO->LB", async function () {
     await multicaller.connect(user).multicall([
         callSwap
     ])
-
-
 })
 
+it("Opens exact in, Agni->3USD->LB->CLEO", async function () {
+    const amount = parseUnits('2.0', 6)
 
+    const borrowToken = await new StableDebtToken__factory(user).attach(addressesLendleVTokens.USDT)
+    await borrowToken.approveDelegation(multicaller.address, MaxUint128)
+    // v3 single
+    const path1 = encodeAggregatorPathEthers(
+        [usdt, usdc, usdt, usde, usdc],
+        [100, 0, 1, 100],
+        [6, 0, 0, 0],
+        [1, 102, 103, 4], // Agni, Stratum3USD MoeLB Cleo
+        2
+    )
 
-it("Opens exact out", async function () {
+    const callSwap = flashAggregatorInterface.encodeFunctionData('flashSwapExactIn', [amount, 0, path1])
+    console.log("attempt swap")
+    await multicaller.connect(user).multicall([
+        callSwap
+    ])
+})
+
+it("Closes exact in, CLEO->LB->3USD->Agni", async function () {
     const amount = parseUnits('1.0', 6)
-    const tokenIn = addressesTokensMantle.WMNT
+
+    const collateralToken = await new AToken__factory(user).attach(addressesLendleATokens.USDC)
+    await collateralToken.approve(multicaller.address, MaxUint128)
+    // v3 single
+    const path1 = encodeAggregatorPathEthers(
+        [usdt, usdc, usdt, usde, usdc].reverse(),
+        [100, 0, 1, 100].reverse(),
+        [8, 0, 0, 0],
+        [1, 102, 103, 4].reverse(), // Agni, Stratum3USD MoeLB Cleo
+        5
+    )
+
+    const callSwap = flashAggregatorInterface.encodeFunctionData('flashSwapExactIn', [amount, 0, path1])
+    console.log("attempt swap")
+    await multicaller.connect(user).multicall([
+        callSwap
+    ])
+})
+
+it("Closes exact out, LB->CLEO", async function () {
+    const amount = parseUnits('0.70', 6)
+
+    const collateralToken = await new AToken__factory(user).attach(addressesLendleATokens.USDT)
+    await collateralToken.approve(multicaller.address, MaxUint128)
+    // v3 single
+    const path1 = encodeAggregatorPathEthers(
+        [usdc, usde, usdt],
+        [100, 1],
+        [5, 1],
+        [4, 103], // Cleo MoeLB
+        5
+    )
+    const callSwap = flashAggregatorInterface.encodeFunctionData('flashSwapExactOut', [amount, MaxUint128, path1])
+    console.log("attempt swap")
+    await multicaller.connect(user).multicall([
+        callSwap
+    ],
+    )
+})
+
+it("Opens exact out CLEO->LB", async function () {
+    const amount = parseUnits('1.0', 6)
 
     const borrowToken = await new StableDebtToken__factory(user).attach(addressesLendleVTokens.USDT)
     await borrowToken.approveDelegation(multicaller.address, MaxUint128)
@@ -134,7 +200,6 @@ it("Opens exact out", async function () {
     await multicaller.connect(user).multicall([
         callSwap
     ])
-
 })
 
 it("Swap exact out Linear", async function () {
@@ -187,151 +252,3 @@ it("Swap exact out Linear", async function () {
     // also doe not deviate too much from the expected out amount
     expect(amountOutNumber).to.approximately(received, 1e-6)
 })
-
-
-// it("Opens exact out multi", async function () {
-
-//     const amount = parseUnits('1.0', 18)
-
-//     const borrowToken = await new StableDebtToken__factory(user).attach(addressesLendleVTokens.USDT)
-//     await borrowToken.approveDelegation(multicaller.address, MaxUint128)
-//     // v3 single
-//     const path1 = encodeAggregatorPathEthers(
-//         [wmnt, weth, usdc],
-//         [FeeAmount.LOW, FeeAmount.LOW],
-//         [3, 1],
-//         [3, 51], // butter, moe
-//         2
-//     )
-//     const callSwap = flashAggregatorInterface.encodeFunctionData('flashSwapExactOut', [amount, MaxUint128, path1])
-//     console.log("attempt swap")
-//     await multicaller.connect(user).multicall([
-//         callSwap
-//     ])
-
-// })
-
-// it("Closes all out multi", async function () {
-
-//     const collateralToken = await new AToken__factory(user).attach(addressesLendleATokens.WMNT)
-//     const borrowToken = await new StableDebtToken__factory(user).attach(addressesLendleVTokens.USDT)
-
-//     const balDebt = await borrowToken.balanceOf(user.address)
-//     const balCollateral = await collateralToken.balanceOf(user.address)
-
-//     console.log("Bal", balCollateral.toString(), balDebt.toString())
-//     // aprove withdrawal
-//     await collateralToken.approve(multicaller.address, MaxUint128)
-
-//     // v3 single
-//     const path1 = encodeAggregatorPathEthers(
-//         [usdt, weth, wmnt],
-//         [FeeAmount.LOW, FeeAmount.MEDIUM],
-//         [5, 1],
-//         [100, 100],
-//         3
-//     )
-//     const callSwap = flashAggregatorInterface.encodeFunctionData('flashSwapAllOut', [MaxUint128, path1])
-//     console.log("attempt swap")
-//     await multicaller.connect(user).multicall([
-//         callSwap
-//     ])
-
-//     const bal = await borrowToken.balanceOf(user.address)
-//     console.log(bal.toString())
-
-// })
-
-
-// it("Swaps collatera all in", async function () {
-
-//     const collateralToken = await new AToken__factory(user).attach(addressesLendleATokens.WMNT)
-
-//     const balCollateral = await collateralToken.balanceOf(user.address)
-
-//     console.log("Bal", balCollateral.toString())
-//     // aprove withdrawal
-//     await collateralToken.approve(multicaller.address, MaxUint128)
-
-//     // v3 single
-//     const path1 = encodeAggregatorPathEthers(
-//         [wmnt, weth, usdt],
-//         [FeeAmount.MEDIUM, FeeAmount.LOW],
-//         [6, 0],
-//         [100, 100],
-//         3
-//         // [wmnt, weth, usdt],
-//         // [FeeAmount.LOW, FeeAmount.LOW],
-//         // [6, 0],
-//         // [0, 100],
-//         // 3
-//     )
-//     const callSwap = flashAggregatorInterface.encodeFunctionData('flashSwapAllIn', [0, path1])
-//     console.log("attempt swap")
-//     await multicaller.connect(user).multicall([
-//         callSwap
-//     ])
-
-//     const bal = await collateralToken.balanceOf(user.address)
-//     console.log(bal.toString())
-
-// })
-
-
-
-// it("Opens exact in multi (WMNT-USDT)", async function () {
-//     const amount = parseUnits('5.0', 18)
-//     const tokenIn = addressesTokensMantle.WMNT
-
-//     const borrowToken = await new StableDebtToken__factory(user).attach(addressesLendleVTokens.WMNT)
-//     await borrowToken.approveDelegation(multicaller.address, MaxUint128)
-//     // v3 single
-//     const path1 = encodeAggregatorPathEthers(
-//         [wmnt, weth, usdt],
-//         [FeeAmount.MEDIUM, FeeAmount.LOW],
-//         [6, 0],
-//         [100, 0],
-//         2
-//     )
-//     const callSwap = flashAggregatorInterface.encodeFunctionData('flashSwapExactIn', [amount, 0, path1])
-//     console.log("attempt swap")
-//     await multicaller.connect(user).multicall([
-//         callSwap
-//     ])
-// })
-
-
-// it("Closes all out multi (USDT-WMNT)", async function () {
-
-//     const collateralToken = await new AToken__factory(user).attach(addressesLendleATokens.USDT)
-//     const borrowToken = await new StableDebtToken__factory(user).attach(addressesLendleVTokens.WMNT)
-
-//     const balDebt = await borrowToken.balanceOf(user.address)
-//     const balCollateral = await collateralToken.balanceOf(user.address)
-
-//     console.log("Bal", balCollateral.toString(), balDebt.toString())
-//     // aprove withdrawal
-//     await collateralToken.approve(multicaller.address, MaxUint128)
-
-//     // v3 single
-//     const path1 = encodeAggregatorPathEthers(
-//         [wmnt, weth, usdt],
-//         [FeeAmount.MEDIUM, FeeAmount.LOW],
-//         [5, 1],
-//         [100, 100],
-//         3
-//     )
-//     const callSwap = flashAggregatorInterface.encodeFunctionData('flashSwapAllOut', [MaxUint128, path1])
-//     console.log("attempt swap")
-//     await multicaller.connect(user).multicall([
-//         callSwap
-//     ])
-
-//     const bal = await borrowToken.balanceOf(user.address)
-//     console.log("left:", bal.toString())
-//     const wmntToken = await new AToken__factory(user).attach(wmnt)
-
-//     const dust = await wmntToken.balanceOf(multicaller.address)
-//     console.log("dust:", dust.toString())
-// })
-
