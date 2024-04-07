@@ -37,8 +37,8 @@ const brokerProxy = lendleBrokerAddresses.BrokerProxy[MANTLE_CHAIN_ID]
 const traderModule = lendleBrokerAddresses.MarginTraderModule[MANTLE_CHAIN_ID]
 const lendingModule = lendleBrokerAddresses.LendingInterface[MANTLE_CHAIN_ID]
 let multicaller: DeltaBrokerProxy
-let flashAggregatorInterface: DeltaFlashAggregatorMantleInterface
-let lendingInterfaceInterface: DeltaLendingInterfaceMantleInterface
+let flashAggregatorInterface = DeltaFlashAggregatorMantle__factory.createInterface()
+let lendingInterfaceInterface = DeltaLendingInterfaceMantle__factory.createInterface()
 let user: SignerWithAddress
 let quoter: OneDeltaQuoterMantle
 before(async function () {
@@ -47,8 +47,6 @@ before(async function () {
     console.log("get aggregator")
     quoter = await new OneDeltaQuoterMantle__factory(signer).deploy()
     multicaller = await new DeltaBrokerProxy__factory(user).attach(brokerProxy)
-    flashAggregatorInterface = DeltaFlashAggregatorMantle__factory.createInterface()
-    lendingInterfaceInterface = DeltaLendingInterfaceMantle__factory.createInterface()
 
     console.log("deploy new aggregator")
     const newflashAggregator = await new DeltaFlashAggregatorMantle__factory(signer).deploy()

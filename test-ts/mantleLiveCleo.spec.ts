@@ -1,15 +1,21 @@
 import { impersonateAccount } from "@nomicfoundation/hardhat-network-helpers";
 import { parseUnits } from "ethers/lib/utils";
-import { AToken__factory, ConfigModule__factory, DeltaBrokerProxy, DeltaBrokerProxy__factory, DeltaFlashAggregatorMantle__factory, LensModule__factory, StableDebtToken__factory, } from "../types";
+import {
+    ConfigModule__factory,
+    DeltaBrokerProxy,
+    DeltaBrokerProxy__factory,
+    DeltaFlashAggregatorMantle__factory,
+    DeltaLendingInterfaceMantle__factory,
+    LensModule__factory,
+    StableDebtToken__factory,
+} from "../types";
 import { lendleBrokerAddresses } from "../deploy/mantle_addresses";
-import { DeltaFlashAggregatorMantleInterface } from "../types/DeltaFlashAggregatorMantle";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { addressesLendleATokens, addressesLendleVTokens, addressesTokensMantle } from "../scripts/mantle/lendleAddresses";
+import { addressesLendleVTokens, addressesTokensMantle } from "../scripts/mantle/lendleAddresses";
 import { encodeAggregatorPathEthers } from "./1delta/shared/aggregatorPath";
 import { FeeAmount, MaxUint128 } from "./uniswap-v3/periphery/shared/constants";
 import { ModuleConfigAction, getSelectors } from "./libraries/diamond";
 const { ethers } = require("hardhat");
-
 
 // block: 20240225
 const MANTLE_CHAIN_ID = 5000;
@@ -24,7 +30,8 @@ const usdt = "0x201EBa5CC46D216Ce6DC03F6a759e8E766e956aE"
 const brokerProxy = lendleBrokerAddresses.BrokerProxy[MANTLE_CHAIN_ID]
 const traderModule = lendleBrokerAddresses.MarginTraderModule[MANTLE_CHAIN_ID]
 let multicaller: DeltaBrokerProxy
-let flashAggregatorInterface: DeltaFlashAggregatorMantleInterface
+let flashAggregatorInterface = DeltaFlashAggregatorMantle__factory.createInterface()
+let lendingInterfaceInterface = DeltaLendingInterfaceMantle__factory.createInterface()
 let user: SignerWithAddress
 let trader: SignerWithAddress
 before(async function () {
@@ -32,7 +39,6 @@ before(async function () {
     user = signer
     console.log("get aggregator")
     multicaller = await new DeltaBrokerProxy__factory(user).attach(brokerProxy)
-    flashAggregatorInterface = DeltaFlashAggregatorMantle__factory.createInterface()
 
     console.log("deploy new aggregator")
     const newflashAggregator = await new DeltaFlashAggregatorMantle__factory(signer).deploy()
@@ -60,8 +66,8 @@ before(async function () {
 
 it("Deposit", async function () {
     const amount = parseUnits('5000.0', 18)
-    const callWrap = flashAggregatorInterface.encodeFunctionData('wrap',)
-    const callDeposit = flashAggregatorInterface.encodeFunctionData('deposit' as any, [wmnt, user.address])
+    const callWrap = lendingInterfaceInterface.encodeFunctionData('wrap',)
+    const callDeposit = lendingInterfaceInterface.encodeFunctionData('deposit', [wmnt, user.address])
 
     await multicaller.connect(user).multicall([
         callWrap,
@@ -83,14 +89,10 @@ it("Opens exact in", async function () {
         2
     )
     const callSwap = flashAggregatorInterface.encodeFunctionData('flashSwapExactIn', [amount, 0, path1])
-    console.log("attempt swap")
     await multicaller.connect(user).multicall([
         callSwap
     ])
-
 })
-
-
 
 it("Opens exact out", async function () {
     const amount = parseUnits('1.0', 18)
@@ -107,11 +109,9 @@ it("Opens exact out", async function () {
         2
     )
     const callSwap = flashAggregatorInterface.encodeFunctionData('flashSwapExactOut', [amount, MaxUint128, path1])
-    console.log("attempt swap")
     await multicaller.connect(user).multicall([
         callSwap
     ])
-
 })
 
 it("Opens exact in multi", async function () {
@@ -130,12 +130,10 @@ it("Opens exact in multi", async function () {
         2
     )
     const callSwap = flashAggregatorInterface.encodeFunctionData('flashSwapExactIn', [amount, 0, path1])
-    console.log("attempt swap")
     await multicaller.connect(user).multicall([
         callSwap
     ])
 })
-
 
 it("Opens exact out multi", async function () {
 
@@ -152,11 +150,9 @@ it("Opens exact out multi", async function () {
         2
     )
     const callSwap = flashAggregatorInterface.encodeFunctionData('flashSwapExactOut', [amount, MaxUint128, path1])
-    console.log("attempt swap")
     await multicaller.connect(user).multicall([
         callSwap
     ])
-
 })
 
 // it("Closes all out multi", async function () {
