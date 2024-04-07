@@ -13,13 +13,11 @@ import {
     OneDeltaQuoterMantle__factory, StableDebtToken__factory, WETH9__factory,
 } from "../types";
 import { lendleBrokerAddresses } from "../deploy/mantle_addresses";
-import { DeltaFlashAggregatorMantleInterface } from "../types/DeltaFlashAggregatorMantle";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { addressesLendleVTokens, addressesTokensMantle, addressesLendleATokens } from '../scripts/mantle/lendleAddresses';
 import { encodeAggregatorPathEthers, encodeQuoterPathEthers } from "./1delta/shared/aggregatorPath";
 import { MaxUint128 } from "./uniswap-v3/periphery/shared/constants";
 import { ModuleConfigAction, getSelectors } from "./libraries/diamond";
-import { DeltaLendingInterfaceMantleInterface } from "../types/DeltaLendingInterfaceMantle";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 
