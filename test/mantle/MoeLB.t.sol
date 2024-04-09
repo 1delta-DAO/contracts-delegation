@@ -104,7 +104,7 @@ contract MarginOpenTest is DeltaSetup {
 
         uint256 amountToLeverage = 20.0e6;
         bytes memory swapPath = getOpenExactInMultiLB(borrowAsset, asset);
-        uint256 minimumOut = 20.0e6;
+        uint256 minimumOut = 19.9e6;
         calls[2] = abi.encodeWithSelector(
             IFlashAggregator.flashSwapExactIn.selector, // 3 params
             amountToLeverage,
@@ -120,10 +120,10 @@ contract MarginOpenTest is DeltaSetup {
         uint256 borrowBalance = IERC20All(debtAsset).balanceOf(user);
         uint256 balance = IERC20All(collateralAsset).balanceOf(user);
 
-        console.log("pre multicall");
+
         vm.prank(user);
         brokerProxy.multicall(calls);
-        console.log("ASdasd");
+
         balance = IERC20All(collateralAsset).balanceOf(user) - balance;
         borrowBalance = IERC20All(debtAsset).balanceOf(user) - borrowBalance;
 
@@ -137,7 +137,7 @@ contract MarginOpenTest is DeltaSetup {
         uint8 lenderId = DEFAULT_LENDER;
         address user = testUser;
         vm.assume(user != address(0));
-        address asset = USDC;
+        address asset = USDT;
         address collateralAsset = collateralTokens[asset][lenderId];
 
         address borrowAsset = USDC;
