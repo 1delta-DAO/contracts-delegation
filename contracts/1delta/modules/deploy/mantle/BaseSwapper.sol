@@ -566,7 +566,7 @@ abstract contract BaseSwapper is TokenTransfer {
             mstore(ptr, 0x704037bd00000000000000000000000000000000000000000000000000000000)
             // this flag indicates whether tokenOut is tokenY
             // the tokens in the pair are ordered, as such, we call lt
-            let swapForY := gt(tokenIn, tokenOut)
+            let swapForY := lt(tokenIn, tokenOut)
             // order tokens for call
             switch swapForY
             case 1 {
@@ -597,7 +597,20 @@ abstract contract BaseSwapper is TokenTransfer {
             if iszero(pair) {
                 revert(0, 0)
             }
-
+            // getTokenY()
+            mstore(ptr, 0xda10610c00000000000000000000000000000000000000000000000000000000)
+            pop(
+                // the call will always succeed due to the pair being nonzero
+                staticcall(
+                    gas(),
+                    pair,
+                    ptr,
+                    0x4,
+                    ptr,
+                    0x20
+                )
+            )
+            swapForY := eq(tokenOut, mload(ptr)) 
             ////////////////////////////////////////////////////
             // Transfer amountIn to pair
             ////////////////////////////////////////////////////
@@ -1495,10 +1508,10 @@ abstract contract BaseSwapper is TokenTransfer {
             mstore(ptr, 0x704037bd00000000000000000000000000000000000000000000000000000000)
             // this flag indicates whether tokenOut is tokenY
             // the tokens in the pair are ordered, as such, we call lt
-            swapForY := gt(tokenIn, tokenOut)
+            swapForY := lt(tokenIn, tokenOut)
             // order tokens for call
             switch swapForY
-            case 0 {
+            case 1 {
                 mstore(add(ptr, 0x4), tokenIn)
                 mstore(add(ptr, 0x24), tokenOut)
             }
@@ -1527,6 +1540,21 @@ abstract contract BaseSwapper is TokenTransfer {
             if iszero(pair) {
                 revert(0, 0)
             }
+            // getTokenY()
+            mstore(ptr, 0xda10610c00000000000000000000000000000000000000000000000000000000)
+            pop(
+                // the call will always succeed due to the pair being nonzero
+                staticcall(
+                    gas(),
+                    pair,
+                    ptr,
+                    0x4,
+                    ptr,
+                    0x20
+                )
+            )
+            // override swapForY
+            swapForY := eq(tokenOut, mload(ptr)) 
             // getSwapIn(uint128,bool)
             mstore(ptr, 0xabcd783000000000000000000000000000000000000000000000000000000000)
             mstore(add(ptr, 0x4), amountOut)

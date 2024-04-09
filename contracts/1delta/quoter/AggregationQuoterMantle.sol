@@ -358,8 +358,8 @@ contract OneDeltaQuoterMantle {
     }
 
     function getLBAmountOut(
-        address tokenOut,
         address tokenIn,
+        address tokenOut,
         uint256 amountIn,
         uint16 binStep // identifies the exact pair address
     ) private view returns (uint256 amountOut) {
@@ -400,6 +400,21 @@ contract OneDeltaQuoterMantle {
             if iszero(pair) {
                 revert(0, 0)
             }
+            // getTokenY()
+            mstore(ptr, 0xda10610c00000000000000000000000000000000000000000000000000000000)
+            pop(
+                // the call will always succeed due to the pair being nonzero
+                staticcall(
+                    gas(),
+                    pair,
+                    ptr,
+                    0x4,
+                    ptr,
+                    0x20
+                )
+            )
+            // override swapForY
+            swapForY := eq(tokenOut, mload(ptr)) 
             // getSwapOut(uint128,bool)
             mstore(ptr, 0xe77366f800000000000000000000000000000000000000000000000000000000)
             mstore(add(ptr, 0x4), amountIn)
@@ -463,6 +478,21 @@ contract OneDeltaQuoterMantle {
             if iszero(pair) {
                 revert(0, 0)
             }
+            // getTokenY()
+            mstore(ptr, 0xda10610c00000000000000000000000000000000000000000000000000000000)
+            pop(
+                // the call will always succeed due to the pair being nonzero
+                staticcall(
+                    gas(),
+                    pair,
+                    ptr,
+                    0x4,
+                    ptr,
+                    0x20
+                )
+            )
+            // override swapForY
+            swapForY := eq(tokenOut, mload(ptr)) 
             // getSwapIn(uint128,bool)
             mstore(ptr, 0xabcd783000000000000000000000000000000000000000000000000000000000)
             mstore(add(ptr, 0x4), amountOut)
