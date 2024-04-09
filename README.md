@@ -10,8 +10,34 @@ The directories in external-protocol contain contracts (everything from https://
 
 Install dependencies with `yarn install`.
 
+## Run hardhat tests
+
 Compile with `npx hardhat compile`.
 
 Run tests with `npx hardhat test test/1delta/...`.
 
 Do not chnage compiler settings - `external-protocols` relies on exact bytecode matches.
+
+## Run forge tests
+
+### Install foundry
+
+Foundry documentation can be found [here](https://book.getfoundry.sh/forge/index.html).
+
+Open your terminal and type in the following command:
+
+```
+curl -L https://foundry.paradigm.xyz | bash
+```
+
+This will download foundryup. Then install Foundry by running:
+
+```
+foundryup
+```
+
+### Execute tests
+
+Tests for Mantle: `forge test --match-test "mantle" -vv`
+
+Tests for LB: `forge test --match-test "mantle_lb" -vv`
