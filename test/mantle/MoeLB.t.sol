@@ -3,7 +3,17 @@ pragma solidity ^0.8.19;
 
 import "./DeltaSetup.f.sol";
 
-contract MarginOpenTest is DeltaSetup {
+/**
+ * Tests Merchant Moe's LB in all configs
+ * Exact out ath the beginning, end
+ * Exact in at the begginging, end
+ * Payment variations
+ *  - continue swap
+ *  - pay from user balance
+ *  - pay with credit line
+ *  - pay through withdrawal
+ */
+contract GeneralMoeLBTest is DeltaSetup {
     uint256 DEFAULT_IR_MODE = 2; // variable
 
     function setUp() public virtual override {
