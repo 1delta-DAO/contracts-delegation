@@ -14,8 +14,9 @@ contract AddressesMantle {
 
     address internal axlFRAX = 0x406Cde76a3fD20e48bc1E0F60651e60Ae204B040;
     address internal axlUSDC = 0xEB466342C4d449BC9f53A865D5Cb90586f405215;
-    address internal USDY = address(0);
-    address internal mUSD = address(0);
+    address internal USDY = 0x5bE26527e817998A7206475496fDE1E68957c5A6;
+    address internal mUSD = 0xab575258d37EaA5C8956EfABe71F4eE8F6397cF3;
+    address internal USDe = 0x5d3a1ff2b6bab83b63cd9ad0787074081a52ef34;
 
     // users
     address internal testUser = 0xaaaa4a3F69b6DB76889bDfa4edBe1c0BB57BAA5c;
@@ -107,6 +108,7 @@ contract AddressesMantle {
 
     uint8 internal FUSION_X_V2 = 50;
     uint8 internal MERCHANT_MOE = 51;
+    uint8 internal MERCHANT_MOE_LB = 103;
 
     /** TRADE TYPE FLAG GETTERS */
 
