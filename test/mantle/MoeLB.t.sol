@@ -6,6 +6,13 @@ import "./DeltaSetup.f.sol";
 contract MarginOpenTest is DeltaSetup {
     uint256 DEFAULT_IR_MODE = 2; // variable
 
+    function setUp() public virtual override {
+        vm.createSelectFork({blockNumber: 62267594, urlOrAlias: "https://mantle-mainnet.public.blastapi.io"});
+
+        deployDelta();
+        initializeDelta();
+    }
+
     function test_mantle_lb_spot_exact_in() external {
         address user = testUser;
         vm.assume(user != address(0));
@@ -42,7 +49,7 @@ contract MarginOpenTest is DeltaSetup {
         balanceIn = balanceIn - IERC20All(assetIn).balanceOf(user);
 
         // swap 10, receive approx 10, but in 18 decs
-        assertApproxEqAbs(9974008398430630650, balanceOut, 1);
+        assertApproxEqAbs(9973011097320898560, balanceOut, 1);
         assertApproxEqAbs(balanceIn, amountIn, 0);
     }
 
@@ -81,7 +88,7 @@ contract MarginOpenTest is DeltaSetup {
         balanceIn = balanceIn - IERC20All(assetIn).balanceOf(user);
 
         // swap 10, receive approx 10, but in 18 decs
-        assertApproxEqAbs(9977999198990258795, balanceIn, 1);
+        assertApproxEqAbs(9977001498840374757, balanceIn, 1);
         assertApproxEqAbs(balanceOut, amountOut, 0);
     }
 
@@ -94,18 +101,16 @@ contract MarginOpenTest is DeltaSetup {
 
         address borrowAsset = USDC;
         address debtAsset = debtTokens[borrowAsset][lenderId];
-        deal(asset, user, 1e20);
 
         uint256 amountToDeposit = 10.0e6;
 
-        bytes[] memory calls = new bytes[](3);
-        calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, asset, amountToDeposit);
-        calls[1] = abi.encodeWithSelector(ILending.deposit.selector, asset, user);
+        _deposit(user, asset, amountToDeposit);
 
-        uint256 amountToLeverage = 20.0e6;
+        bytes[] memory calls = new bytes[](1);
+        uint256 amountToLeverage = 2.0e6;
         bytes memory swapPath = getOpenExactInMultiLB(borrowAsset, asset);
-        uint256 minimumOut = 19.9e6;
-        calls[2] = abi.encodeWithSelector(
+        uint256 minimumOut = 1.95e6;
+        calls[0] = abi.encodeWithSelector(
             IFlashAggregator.flashSwapExactIn.selector, // 3 params
             amountToLeverage,
             minimumOut,
@@ -113,13 +118,10 @@ contract MarginOpenTest is DeltaSetup {
         );
 
         vm.prank(user);
-        IERC20All(asset).approve(brokerProxyAddress, amountToDeposit);
-        vm.prank(user);
         IERC20All(debtAsset).approveDelegation(brokerProxyAddress, amountToLeverage);
 
         uint256 borrowBalance = IERC20All(debtAsset).balanceOf(user);
         uint256 balance = IERC20All(collateralAsset).balanceOf(user);
-
 
         vm.prank(user);
         brokerProxy.multicall(calls);
@@ -128,35 +130,30 @@ contract MarginOpenTest is DeltaSetup {
         borrowBalance = IERC20All(debtAsset).balanceOf(user) - borrowBalance;
 
         // deposit 10, recieve 32.1... makes 42.1...
-        assertApproxEqAbs(38642840, balance, 1);
+        assertApproxEqAbs(1983226, balance, 1);
         // deviations through rouding expected, accuracy for 10 decimals
-        assertApproxEqAbs(borrowBalance, amountToDeposit + amountToLeverage, 1.0e8);
+        assertApproxEqAbs(borrowBalance, amountToLeverage, 0);
     }
 
     function test_margin_mantle_lb_open_exact_out_multi() external {
         uint8 lenderId = DEFAULT_LENDER;
         address user = testUser;
         vm.assume(user != address(0));
-        address asset = USDT;
+        address asset = USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
 
-        address borrowAsset = USDC;
+        address borrowAsset = USDT;
         address debtAsset = debtTokens[borrowAsset][lenderId];
-        deal(asset, user, 1e20);
-
         uint256 amountToDeposit = 10.0e6;
 
-        bytes[] memory calls = new bytes[](3);
-        calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, asset, amountToDeposit);
-        calls[1] = abi.encodeWithSelector(ILending.deposit.selector, asset, user);
+        _deposit(user, asset, amountToDeposit);
 
-        uint256 amountToReceive = 30.0e6;
+        bytes[] memory calls = new bytes[](1);
+        uint256 amountToReceive = 2.0e6;
         bytes memory swapPath = getOpenExactOutMultiLB(borrowAsset, asset);
-        uint256 maximumIn = 29.0e18;
-        calls[2] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactOut.selector, amountToReceive, maximumIn, swapPath);
+        uint256 maximumIn = 2.05e6;
+        calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactOut.selector, amountToReceive, maximumIn, swapPath);
 
-        vm.prank(user);
-        IERC20All(asset).approve(brokerProxyAddress, amountToDeposit);
         vm.prank(user);
         IERC20All(debtAsset).approveDelegation(brokerProxyAddress, maximumIn);
 
@@ -170,15 +167,15 @@ contract MarginOpenTest is DeltaSetup {
         borrowBalance = IERC20All(debtAsset).balanceOf(user) - borrowBalance;
 
         // deviations through rouding expected, accuracy for 10 decimals
-        assertApproxEqAbs(20980519129019992249, borrowBalance, 1);
+        assertApproxEqAbs(2022639, borrowBalance, 1);
         // deposit 10, recieve 30 makes 40
-        assertApproxEqAbs(balance, amountToDeposit + amountToReceive, 0);
+        assertApproxEqAbs(balance, amountToReceive, 0);
     }
 
     function getOpenExactInMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        uint24 fee = DEX_FEE_STABLES;
+        uint24 fee = DEX_FEE_NONE;
         (uint8 actionId, uint8 midId, uint8 endId) = getOpenExactInFlags();
-        uint8 poolId = CLEOPATRA_CL;
+        uint8 poolId = MERCHANT_MOE;
         bytes memory firstPart = abi.encodePacked(tokenIn, fee, poolId, actionId, USDe);
         fee = BIN_STEP_LOWEST;
         poolId = MERCHANT_MOE_LB;
@@ -208,12 +205,23 @@ contract MarginOpenTest is DeltaSetup {
     }
 
     function getOpenExactOutMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        uint24 fee = DEX_FEE_STABLES;
+        uint24 fee = DEX_FEE_NONE;
         (uint8 actionId, uint8 midId, uint8 endId) = getOpenExactOutFlags();
-        uint8 poolId = CLEOPATRA_CL;
+        uint8 poolId = MERCHANT_MOE;
         bytes memory firstPart = abi.encodePacked(tokenOut, fee, poolId, actionId, USDe);
         fee = BIN_STEP_LOWEST;
         poolId = MERCHANT_MOE_LB;
         return abi.encodePacked(firstPart, fee, poolId, midId, tokenIn, endId);
+    }
+
+    function _deposit(address user, address asset, uint256 amount) internal {
+        deal(asset, user, amount);
+        vm.prank(user);
+        IERC20All(asset).approve(brokerProxyAddress, amount);
+        bytes[] memory calls = new bytes[](2);
+        calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, asset, amount);
+        calls[1] = abi.encodeWithSelector(ILending.deposit.selector, asset, user);
+        vm.prank(user);
+        brokerProxy.multicall(calls);
     }
 }
