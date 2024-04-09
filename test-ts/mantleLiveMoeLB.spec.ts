@@ -86,7 +86,7 @@ before(async function () {
 it("Deposit", async function () {
     const amount = parseUnits('3.0', 18)
     const callWrap = lendingInterfaceInterface.encodeFunctionData('wrap',)
-    const callDeposit = lendingInterfaceInterface.encodeFunctionData('deposit' as any, [wmnt, user.address])
+    const callDeposit = lendingInterfaceInterface.encodeFunctionData('deposit', [wmnt, user.address])
 
     await multicaller.connect(user).multicall([
         callWrap,

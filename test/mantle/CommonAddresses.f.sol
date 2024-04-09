@@ -105,6 +105,7 @@ contract AddressesMantle {
     uint8 internal AGNI = 1;
     uint8 internal FUSION_X = 0;
     uint8 internal BUTTER = 3;
+    uint8 internal CLEOPATRA_CL = 4;
     uint8 internal IZUMI = 100;
 
     uint8 internal FUSION_X_V2 = 50;
