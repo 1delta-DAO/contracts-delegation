@@ -478,6 +478,21 @@ contract OneDeltaQuoterMantle {
             if iszero(pair) {
                 revert(0, 0)
             }
+
+            // selector for balanceOf(address)
+            mstore(0x0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+            // add this address as parameter
+            mstore(0x4, pair)
+
+            // call to underlying
+            if iszero(staticcall(gas(), tokenOut, 0x0, 0x24, 0x0, 0x20)) {
+                revert (0,0)
+            }
+            // pair must have enough liquidity
+            if lt(mload(0x0), amountOut) {
+                revert(0, 0)
+            }
+
             // getTokenY()
             mstore(ptr, 0xda10610c00000000000000000000000000000000000000000000000000000000)
             pop(
