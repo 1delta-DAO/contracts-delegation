@@ -92,6 +92,86 @@ contract MarginOpenTest is DeltaSetup {
         assertApproxEqAbs(balanceOut, amountOut, 0);
     }
 
+    function test_mantle_lb_spot_exact_out_multi() external {
+        address user = testUser;
+        vm.assume(user != address(0));
+        address assetOut = USDe;
+        address assetIn = USDC;
+
+        deal(assetIn, user, 1e30);
+
+        uint256 amountOut = 10.0e18;
+
+        bytes[] memory calls = new bytes[](2);
+
+        bytes memory swapPath = getSpotExactOutMultiLB(assetIn, assetOut);
+        uint256 maximumIn = 10.5e6;
+        calls[0] = abi.encodeWithSelector(
+            IFlashAggregator.swapExactOutSpot.selector, // 3 args
+            amountOut,
+            maximumIn,
+            swapPath
+        );
+
+        calls[1] = abi.encodeWithSelector(ILending.sweep.selector, assetOut);
+        vm.prank(user);
+        IERC20All(assetIn).approve(brokerProxyAddress, maximumIn);
+
+        uint256 balanceIn = IERC20All(assetIn).balanceOf(user);
+        uint256 balanceOut = IERC20All(assetOut).balanceOf(user);
+
+        vm.prank(user);
+        brokerProxy.multicall(calls);
+
+        balanceOut = IERC20All(assetOut).balanceOf(user) - balanceOut;
+        balanceIn = balanceIn - IERC20All(assetIn).balanceOf(user);
+
+        // swap 10, receive approx 10, but in 18 decs
+        assertApproxEqAbs(10091372, balanceIn, 1);
+        assertApproxEqAbs(balanceOut, amountOut, 1e12);
+    }
+
+
+    function test_mantle_lb_spot_exact_out_multi_end() external {
+        address user = testUser;
+        vm.assume(user != address(0));
+        address assetOut = USDC;
+        address assetIn = USDe;
+
+        deal(assetIn, user, 1e30);
+
+        uint256 amountOut = 10.0e6;
+
+        bytes[] memory calls = new bytes[](2);
+
+        bytes memory swapPath = getSpotExactOutMultiLBEnd(assetIn, assetOut);
+        uint256 maximumIn = 10.5e18;
+        calls[0] = abi.encodeWithSelector(
+            IFlashAggregator.swapExactOutSpot.selector, // 3 args
+            amountOut,
+            maximumIn,
+            swapPath
+        );
+
+        calls[1] = abi.encodeWithSelector(ILending.sweep.selector, assetOut);
+        vm.prank(user);
+        IERC20All(assetIn).approve(brokerProxyAddress, maximumIn);
+
+        uint256 balanceIn = IERC20All(assetIn).balanceOf(user);
+        uint256 balanceOut = IERC20All(assetOut).balanceOf(user);
+
+        vm.prank(user);
+        brokerProxy.multicall(calls);
+
+        balanceOut = IERC20All(assetOut).balanceOf(user) - balanceOut;
+        balanceIn = balanceIn - IERC20All(assetIn).balanceOf(user);
+
+        // swap 10, receive approx 10, but in 18 decs
+        assertApproxEqAbs(9973416762201841411, balanceIn, 1);
+        assertApproxEqAbs(balanceOut, amountOut, 1e12);
+    }
+
+
     function test_margin_mantle_lb_open_exact_in_multi() external {
         uint8 lenderId = DEFAULT_LENDER;
         address user = testUser;
@@ -275,6 +355,24 @@ contract MarginOpenTest is DeltaSetup {
         uint24 fee = BIN_STEP_LOWEST;
         uint8 poolId = MERCHANT_MOE_LB;
         return abi.encodePacked(tokenOut, fee, poolId, uint8(1), tokenIn, uint8(99));
+    }
+
+    function getSpotExactOutMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
+        uint24 fee = BIN_STEP_LOWEST;
+        uint8 poolId = MERCHANT_MOE_LB;
+        bytes memory firstPart = abi.encodePacked(tokenOut, fee, poolId, uint8(1), USDT);
+        fee = DEX_FEE_NONE;
+        poolId = MERCHANT_MOE;
+        return abi.encodePacked(firstPart, fee, poolId, uint8(1), tokenIn, uint8(99));
+    }
+
+    function getSpotExactOutMultiLBEnd(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
+        uint24 fee = DEX_FEE_NONE;
+        uint8 poolId = MERCHANT_MOE;
+        bytes memory firstPart = abi.encodePacked(tokenOut, fee, poolId, uint8(1), USDT);
+        fee = BIN_STEP_LOWEST;
+        poolId = MERCHANT_MOE_LB;
+        return abi.encodePacked(firstPart, fee, poolId, uint8(1), tokenIn, uint8(99));
     }
 
     function getSpotExactInMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
