@@ -62,7 +62,7 @@ main()
 
 
 const getRemoveCut = async (operator: SignerWithAddress, proxyAddress: string) => {
-    const marginTradingAddress = '0x9517fcf6124f372B4F38D4e6aEaEBEBDa54b0119' // lendleBrokerAddresses.MarginTraderModule[chainId]
+    const marginTradingAddress = '0xA96a9202DcBc31C06173f0A07102D8Ca92A6ea72' // lendleBrokerAddresses.MarginTraderModule[chainId]
     const cut: {
         moduleAddress: string,
         action: any,
