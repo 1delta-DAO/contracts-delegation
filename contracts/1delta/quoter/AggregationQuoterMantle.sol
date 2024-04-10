@@ -466,7 +466,7 @@ contract OneDeltaQuoterMantle {
                     ptr,
                     0x64,
                     ptr,
-                    0x40 // we only need 64 bits of the output
+                    0x40 // we only need 64 bytes of the output
                 )
             )
             // get the pair
