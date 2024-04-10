@@ -2,6 +2,11 @@ import '@nomiclabs/hardhat-ethers'
 import { ethers } from "hardhat";
 import { OneDeltaQuoterMantle__factory } from '../../types'
 
+const MANTLE_CONFIGS = {
+    maxFeePerGas: 0.02 * 1e9,
+    maxPriorityFeePerGas: 0.02 * 1e9
+}
+
 async function main() {
 
     const accounts = await ethers.getSigners()
@@ -16,7 +21,7 @@ async function main() {
     const estimatedGas = await ethers.provider.estimateGas({ data: deploymentData.data });
 
     console.log("EST GAS", estimatedGas.toString())
-    const quoter = await new OneDeltaQuoterMantle__factory(operator).deploy({ gasLimit: estimatedGas.mul(105).div(100) })
+    const quoter = await new OneDeltaQuoterMantle__factory(operator).deploy({ gasLimit: estimatedGas.mul(105).div(100), ...MANTLE_CONFIGS  })
     await quoter.deployed()
 
     console.log('quoter:', quoter.address) // 0xc814E4292E9865e0Dec933EF16a669C1Ba47227e

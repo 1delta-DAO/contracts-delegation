@@ -90,6 +90,7 @@ contract OneDeltaQuoterMantle {
     bytes32 private constant CLEO_POOL_INIT_CODE_HASH = 0x1565b129f2d1790f12d45301b9b084335626f0c92410bc43130763b69971135d;
 
     address private constant MERCHANT_MOE_FACTORY = 0x5bEf015CA9424A7C07B68490616a4C1F094BEdEc;
+    address private constant MERCHANT_MOE_LB_FACTORY = 0xa6630671775c4EA2743840F9A5016dCf2A104054;
 
     bytes32 internal constant VELO_FF_FACTORY = 0xff99F9a4A96549342546f9DAE5B2738EDDcD43Bf4C0000000000000000000000;
     bytes32 constant VELO_CODE_HASH = 0x0ccd005ee58d5fb11632ef5c2e0866256b240965c62c8e990c0f84a97f311879;
@@ -352,6 +353,176 @@ contract OneDeltaQuoterMantle {
                 )
             {} catch (bytes memory reason) {
                 return parseRevertReason(reason);
+            }
+        }
+    }
+
+    function getLBAmountOut(
+        address tokenIn,
+        address tokenOut,
+        uint256 amountIn,
+        uint16 binStep // identifies the exact pair address
+    ) private view returns (uint256 amountOut) {
+        assembly {
+            let ptr := mload(0x40)
+            // getLBPairInformation(address,address,uint256)
+            mstore(ptr, 0x704037bd00000000000000000000000000000000000000000000000000000000)
+            // this flag indicates whether tokenOut is tokenY
+            // the tokens in the pair are ordered, as such, we call lt
+            let swapForY := lt(tokenIn, tokenOut)
+            // order tokens for call
+            switch swapForY
+            case 1 {
+                mstore(add(ptr, 0x4), tokenIn)
+                mstore(add(ptr, 0x24), tokenOut)
+            }
+            default {
+                mstore(add(ptr, 0x4), tokenOut)
+                mstore(add(ptr, 0x24), tokenIn)
+            }
+            mstore(add(ptr, 0x44), binStep)
+            pop( // the call will always succeed due to immutable call target
+                staticcall(
+                    gas(),
+                    MERCHANT_MOE_LB_FACTORY,
+                    ptr,
+                    0x64,
+                    ptr,
+                    0x40 // we only need 64 bits of the output
+                )
+            )
+            // get the pair
+            let pair := and(
+                0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff, // mask address
+                mload(add(ptr, 0x20)) // skip index
+            )
+            // pair must exist
+            if iszero(pair) {
+                revert(0, 0)
+            }
+            // getTokenY()
+            mstore(ptr, 0xda10610c00000000000000000000000000000000000000000000000000000000)
+            pop(
+                // the call will always succeed due to the pair being nonzero
+                staticcall(
+                    gas(),
+                    pair,
+                    ptr,
+                    0x4,
+                    ptr,
+                    0x20
+                )
+            )
+            // override swapForY
+            swapForY := eq(tokenOut, mload(ptr)) 
+            // getSwapOut(uint128,bool)
+            mstore(ptr, 0xe77366f800000000000000000000000000000000000000000000000000000000)
+            mstore(add(ptr, 0x4), amountIn)
+            mstore(add(ptr, 0x24), swapForY)
+            // call swap simulator, revert if invalid/undefined pair
+            if iszero(staticcall(gas(), pair, ptr, 0x44, ptr, 0x40)) {
+                revert(0, 0)
+            }
+            amountOut := and(
+                0x00000000000000000000000000000000ffffffffffffffffffffffffffffffff, // mask uint128
+                mload(add(ptr, 0x20))
+            )
+            // the first slot returns amount in left, if positive, we revert
+            if gt(0, mload(ptr)) {
+                revert(0, 0)
+            }
+        }
+    }
+
+    function getLBAmountIn(
+        address tokenIn,
+        address tokenOut,
+        uint256 amountOut,
+        uint16 binStep // this param identifies the pair
+    ) private view returns (uint256 amountIn) {
+        assembly {
+            let ptr := mload(0x40)
+            // getLBPairInformation(address,address,uint256)
+            mstore(ptr, 0x704037bd00000000000000000000000000000000000000000000000000000000)
+            // this flag indicates whether tokenOut is tokenY
+            // the tokens in the pair are ordered, as such, we call lt
+            let swapForY := lt(tokenIn, tokenOut)
+            // order tokens for call
+            switch swapForY
+            case 1 {
+                mstore(add(ptr, 0x4), tokenIn)
+                mstore(add(ptr, 0x24), tokenOut)
+            }
+            default {
+                mstore(add(ptr, 0x4), tokenOut)
+                mstore(add(ptr, 0x24), tokenIn)
+            }
+            mstore(add(ptr, 0x44), binStep)
+            pop(
+                // the call will always succeed due to immutable call target
+                staticcall(
+                    gas(),
+                    MERCHANT_MOE_LB_FACTORY,
+                    ptr,
+                    0x64,
+                    ptr,
+                    0x40 // we only need 64 bytes of the output
+                )
+            )
+            // get the pair
+            let pair := and(
+                0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff, // mask address
+                mload(add(ptr, 0x20)) // skip index
+            )
+            // pair must exist
+            if iszero(pair) {
+                revert(0, 0)
+            }
+
+            // selector for balanceOf(address)
+            mstore(0x0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+            // add this address as parameter
+            mstore(0x4, pair)
+
+            // call to underlying
+            if iszero(staticcall(gas(), tokenOut, 0x0, 0x24, 0x0, 0x20)) {
+                revert (0,0)
+            }
+            // pair must have enough liquidity
+            if lt(mload(0x0), amountOut) {
+                revert(0, 0)
+            }
+
+            // getTokenY()
+            mstore(ptr, 0xda10610c00000000000000000000000000000000000000000000000000000000)
+            pop(
+                // the call will always succeed due to the pair being nonzero
+                staticcall(
+                    gas(),
+                    pair,
+                    ptr,
+                    0x4,
+                    ptr,
+                    0x20
+                )
+            )
+            // override swapForY
+            swapForY := eq(tokenOut, mload(ptr)) 
+            // getSwapIn(uint128,bool)
+            mstore(ptr, 0xabcd783000000000000000000000000000000000000000000000000000000000)
+            mstore(add(ptr, 0x4), amountOut)
+            mstore(add(ptr, 0x24), swapForY)
+            // call swap simulator, revert if invalid/undefined pair
+            if iszero(staticcall(gas(), pair, ptr, 0x44, ptr, 0x40)) {
+                revert(0, 0)
+            }
+            amountIn := and(
+                0x00000000000000000000000000000000ffffffffffffffffffffffffffffffff, // mask uint128
+                mload(ptr)
+            )
+            // the second slot returns amount out left, if positive, we revert
+            if gt(0, mload(add(ptr, 0x20))) {
+                revert(0, 0)
             }
         }
     }
@@ -663,7 +834,13 @@ contract OneDeltaQuoterMantle {
             if (poolId < 50) {
                 uint24 fee;
                 assembly {
-                    fee := and(shr(72, calldataload(path.offset)), 0xffffff)
+                    fee := and(
+                        shr(
+                            72, // 72 = 64 (= 256 - 192 (= address (160) + 32)) + 8 (equivalent of pId entry)
+                            calldataload(path.offset)
+                        ),
+                        0xffffff
+                    )
                 }
                 amountIn = quoteExactInputSingleV3(tokenIn, tokenOut, fee, poolId, amountIn);
             }
@@ -683,6 +860,18 @@ contract OneDeltaQuoterMantle {
                 amountIn = quoteWOO(tokenIn, tokenOut, amountIn);
             } else if (poolId == 102) {
                 amountIn = quoteStratum3(tokenIn, tokenOut, amountIn);
+            } else if (poolId == 103) {
+                uint24 bin;
+                assembly {
+                    bin := and(
+                        shr(
+                            72, // we just use the uint24 slot for the uint16 and convert after
+                            calldataload(path.offset)
+                        ),
+                        0xffffff
+                    )
+                }
+                amountIn = getLBAmountOut(tokenIn, tokenOut, amountIn, uint16(bin));
             } else {
                 revert invalidDexId();
             }
@@ -730,6 +919,18 @@ contract OneDeltaQuoterMantle {
                     fee := and(shr(72, calldataload(path.offset)), 0xffffff)
                 }
                 amountOut = quoteExactOutputSingle_iZi(tokenIn, tokenOut, fee, uint128(amountOut));
+            } else if (poolId == 103) {
+                uint24 bin;
+                assembly {
+                    bin := and(
+                        shr(
+                            72, // we just use the uint24 slot for the uint16 and convert after
+                            calldataload(path.offset)
+                        ),
+                        0xffffff
+                    )
+                }
+                amountOut = getLBAmountIn(tokenIn, tokenOut, amountOut, uint16(bin));
             } else {
                 revert invalidDexId();
             }
