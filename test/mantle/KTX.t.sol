@@ -70,7 +70,6 @@ contract GeneralMoeLBTest is DeltaSetup {
         assertApproxEqAbs(balanceIn, amountIn, 0);
     }
 
-    
     function test_mantle_ktx_spot_exact_in_stable_out() external {
         address user = testUser;
         vm.assume(user != address(0));
@@ -113,8 +112,6 @@ contract GeneralMoeLBTest is DeltaSetup {
         assertApproxEqAbs(quoted, balanceOut, 0);
         assertApproxEqAbs(balanceIn, amountIn, 0);
     }
-
-    
 
     function test_mantle_ktx_spot_exact_in_stable_in() external {
         address user = testUser;
@@ -187,6 +184,7 @@ contract GeneralMoeLBTest is DeltaSetup {
         uint256 balanceIn = IERC20All(assetIn).balanceOf(user);
         uint256 balanceOut = IERC20All(assetOut).balanceOf(user);
 
+        uint256 quoted = testQuoter._quoteKTXExactOut(assetIn, assetOut, amountOut);
         vm.prank(user);
         brokerProxy.multicall(calls);
 
@@ -195,11 +193,11 @@ contract GeneralMoeLBTest is DeltaSetup {
 
         // note that there is some lack of precision
         assertApproxEqAbs(20000200720000000000, balanceIn, 1);
+        assertApproxEqAbs(quoted, balanceIn, 0);
         assertApproxEqAbs(balanceOut, amountOut, 0.0015e6);
         // we expect to receive slightly more
         assert(balanceOut >= amountOut);
     }
-
 
     function test_mantle_ktx_spot_exact_out_stable_in() external {
         address user = testUser;
@@ -229,6 +227,8 @@ contract GeneralMoeLBTest is DeltaSetup {
         uint256 balanceIn = IERC20All(assetIn).balanceOf(user);
         uint256 balanceOut = IERC20All(assetOut).balanceOf(user);
 
+        uint256 quoted = testQuoter._quoteKTXExactOut(assetIn, assetOut, amountOut);
+
         vm.prank(user);
         brokerProxy.multicall(calls);
 
@@ -237,11 +237,11 @@ contract GeneralMoeLBTest is DeltaSetup {
 
         // note that there is some lack of precision
         assertApproxEqAbs(71262144559, balanceIn, 1);
+        assertApproxEqAbs(quoted, balanceIn, 0);
         assertApproxEqAbs(balanceOut, amountOut, 0.005e6);
         // we expect to receive slightly more
         assert(balanceOut >= amountOut);
     }
-
 
     function test_mantle_ktx_spot_exact_out_stable_out() external {
         address user = testUser;
@@ -271,6 +271,8 @@ contract GeneralMoeLBTest is DeltaSetup {
         uint256 balanceIn = IERC20All(assetIn).balanceOf(user);
         uint256 balanceOut = IERC20All(assetOut).balanceOf(user);
 
+        uint256 quoted = testQuoter._quoteKTXExactOut(assetIn, assetOut, amountOut);
+
         vm.prank(user);
         brokerProxy.multicall(calls);
 
@@ -279,11 +281,11 @@ contract GeneralMoeLBTest is DeltaSetup {
 
         // note that there is some lack of precision
         assertApproxEqAbs(111353400, balanceIn, 1);
+        assertApproxEqAbs(quoted, balanceIn, 0);
         assertApproxEqAbs(balanceOut, amountOut, 1.0e6); // we accept 1USDT deviation on 78k (<0.13bp)
         // we expect to receive slightly more
         assert(balanceOut >= amountOut);
     }
-
 
     function test_mantle_ktx_spot_exact_out_stable_out_2() external {
         address user = testUser;
@@ -313,6 +315,8 @@ contract GeneralMoeLBTest is DeltaSetup {
         uint256 balanceIn = IERC20All(assetIn).balanceOf(user);
         uint256 balanceOut = IERC20All(assetOut).balanceOf(user);
 
+        uint256 quoted = testQuoter._quoteKTXExactOut(assetIn, assetOut, amountOut);
+
         vm.prank(user);
         brokerProxy.multicall(calls);
 
@@ -321,11 +325,11 @@ contract GeneralMoeLBTest is DeltaSetup {
 
         // note that there is some lack of precision
         assertApproxEqAbs(21578800000000000000, balanceIn, 1);
+        assertApproxEqAbs(quoted, balanceIn, 0);
         assertApproxEqAbs(balanceOut, amountOut, 1.0e6); // we accept 1USDT deviation on 78k (<0.13bp)
         // we expect to receive slightly more
         assert(balanceOut >= amountOut);
     }
-
 
     /** KTX PATH BUILDERS */
 

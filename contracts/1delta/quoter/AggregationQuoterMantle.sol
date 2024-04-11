@@ -236,7 +236,7 @@ contract OneDeltaQuoterMantle {
     address internal constant USDY = 0x5bE26527e817998A7206475496fDE1E68957c5A6;
     address internal constant MUSD = 0xab575258d37EaA5C8956EfABe71F4eE8F6397cF3;    
 
-    function quoteKTXExactOut(address _tokenIn, address _tokenOut, uint256 amountOut) public view returns (uint256 amountIn) {
+    function quoteKTXExactOut(address _tokenIn, address _tokenOut, uint256 amountOut) internal view returns (uint256 amountIn) {
         assembly {
             let ptr := mload(0x40)
             let ptrPlus4 := add(ptr, 0x4)
@@ -294,7 +294,7 @@ contract OneDeltaQuoterMantle {
                 mul(
                     div( // this is the usdg dollar amount 
                         mul(amountOut, priceOut),
-                        PRICE_PRECISION
+                        1000000000000000000000000000000
                     ),
                     1000000000000000000
                 ),
@@ -1275,6 +1275,8 @@ contract OneDeltaQuoterMantle {
                     )
                 }
                 amountOut = getLBAmountIn(tokenIn, tokenOut, amountOut, uint16(bin));
+            } else if(poolId == 104){
+                amountOut = quoteKTXExactOut(tokenIn, tokenOut, amountOut);
             } else {
                 revert invalidDexId();
             }
