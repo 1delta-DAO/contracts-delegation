@@ -171,7 +171,7 @@ contract OneDeltaQuoterMantle {
 
 
             ////////////////////////////////////////////////////
-            // Step 3: get token decimals
+            // Step 3: get token decimals and adjust amountOut
             ////////////////////////////////////////////////////
             
             // selector for decimals()
@@ -180,7 +180,8 @@ contract OneDeltaQuoterMantle {
             let decsIn := exp(10, mload(ptrPlus4))
             pop(staticcall(gas(), _tokenOut, ptr, 0x4, ptrPlus4, 0x20))
             let decsOut := exp(10, mload(ptrPlus4))
-             amountOut :=div(mul(amountOut, decsOut), decsIn)
+            // adjust amountOut for correct decimals
+            amountOut := div(mul(amountOut, decsOut), decsIn)
 
             ////////////////////////////////////////////////////
             // Step 4: calculate fees
