@@ -2,8 +2,6 @@
 
 pragma solidity ^0.8.24;
 
-import "hardhat/console.sol";
-
 interface ISwapPool {
     function swap(
         address recipient,
@@ -118,96 +116,17 @@ contract OneDeltaQuoterMantle {
     address internal constant USDY = 0x5bE26527e817998A7206475496fDE1E68957c5A6;
     address internal constant MUSD = 0xab575258d37EaA5C8956EfABe71F4eE8F6397cF3;    
 
-    function getMinMaxPrice(
-        address _tokenIn,
-        address _tokenOut
-    ) internal view  returns (uint256 minPrice, uint256 maxPrice) {
-        assembly {
-            let ptr := mload(0x40)
-            // getPrice(address,bool,bool,bool)
-            mstore(ptr, 0x2fc3a70a00000000000000000000000000000000000000000000000000000000)
-            // get maxPrice
-            mstore(add(ptr, 0x4), _tokenOut)
-            mstore(add(ptr, 0x24), 0x1)
-            mstore(add(ptr, 0x44), 0x1)
-            mstore(add(ptr, 0x64), 0x1)
-            pop(
-                staticcall(
-                    gas(),
-                    KTX_VAULT_PRICE_FEED,
-                    ptr,
-                    0x84,
-                    add(ptr, 0x4),
-                    0x20
-                )
-            )
-            maxPrice := mload(add(ptr, 0x4))
-             // get minPrice
-            mstore(add(ptr, 0x4), _tokenIn)
-            mstore(add(ptr, 0x24), 0x0)
-            mstore(add(ptr, 0x44), 0x1)
-            mstore(add(ptr, 0x64), 0x1)
-            pop(
-                staticcall(
-                    gas(),
-                    KTX_VAULT_PRICE_FEED,
-                    ptr,
-                    0x84,
-                    ptr,
-                    0x20
-                )
-            )
-
-            minPrice := mload(ptr)
-        }
-    }
-
-    function getSwapFeeBasisPoints(
-            address _tokenIn,
-            address _tokenOut,
-            uint usdgAmount
-        ) internal view returns (uint256 feeAm) {
-            assembly {
-            let ptr := mload(0x40)
-            // getSwapFeeBasisPoints(address,address,uint256)
-            mstore(ptr, 0xda13381600000000000000000000000000000000000000000000000000000000)
-            mstore(add(ptr, 0x4), _tokenIn)
-            mstore(add(ptr, 0x24), _tokenOut)
-            mstore(add(ptr, 0x44), usdgAmount)
-            
-            let success :=
-                staticcall(
-                    gas(),
-                    KTX_VAULT_UTILS,
-                    ptr,
-                    0x64,
-                    add(ptr, 0x4),
-                    0x20
-                )
-            feeAm := mload(add(ptr, 0x4))
-            }
-    }
-
-    function getDecs(address tokenIn, address tokenOut) public view returns(uint dIn, uint dOut) {
-        assembly {
-            let ptr := mload(0x40) 
-            let ptrPlus4 := add(ptr, 0x4)
-            // selector for decimals()
-            mstore(ptr, 0x313ce56700000000000000000000000000000000000000000000000000000000)
-            pop(staticcall(gas(), tokenIn, ptr, 0x4, ptrPlus4, 0x20))
-            dIn := exp(10, mload(ptrPlus4))
-            pop(staticcall(gas(), tokenOut, ptr, 0x4, ptrPlus4, 0x20))
-            dOut := exp(10, mload(ptrPlus4))
-        }
-    }
-
     function quoteKTXExactIn(
         address _tokenIn,
         address _tokenOut,
         uint256 amountIn
-    ) public view returns (uint256 amountOut) {
+    ) private view returns (uint256 amountOut) {
         assembly {
             let ptr := mload(0x40)
+            ////////////////////////////////////////////////////
+            // Step 1: get prices
+            ////////////////////////////////////////////////////
+
             // getPrice(address,bool,bool,bool)
             mstore(ptr, 0x2fc3a70a00000000000000000000000000000000000000000000000000000000)
             // get maxPrice
@@ -218,10 +137,10 @@ contract OneDeltaQuoterMantle {
             pop(
                 staticcall(
                     gas(),
-                    KTX_VAULT_PRICE_FEED,
+                    KTX_VAULT_PRICE_FEED, // this goes to the oracle
                     ptr,
                     0x84,
-                    add(ptr, 0x4),
+                    add(ptr, 0x4), // do NOT override the selector
                     0x20
                 )
             )
@@ -229,22 +148,31 @@ contract OneDeltaQuoterMantle {
              // get minPrice
             mstore(add(ptr, 0x4), _tokenIn)
             mstore(add(ptr, 0x24), 0x0)
-            mstore(add(ptr, 0x44), 0x1)
-            mstore(add(ptr, 0x64), 0x1)
+            // the other vars are stored from the prior call
             pop(
                 staticcall(
                     gas(),
-                    KTX_VAULT_PRICE_FEED,
+                    KTX_VAULT_PRICE_FEED, // this goes to the oracle
                     ptr,
                     0x84,
                     ptr,
                     0x20
                 )
             )
-
             let priceIn := mload(ptr)
+
+            ////////////////////////////////////////////////////
+            // Step 2: get amountOut by prices
+            ////////////////////////////////////////////////////
+
+            // get gross amountOut unscaled
             amountOut := div(mul(amountIn, priceIn), priceOut)
             let ptrPlus4 := add(ptr, 0x4)
+
+            ////////////////////////////////////////////////////
+            // Step 3: get token decimals
+            ////////////////////////////////////////////////////
+            
             // selector for decimals()
             mstore(ptr, 0x313ce56700000000000000000000000000000000000000000000000000000000)
             pop(staticcall(gas(), _tokenIn, ptr, 0x4, ptrPlus4, 0x20))
@@ -252,15 +180,29 @@ contract OneDeltaQuoterMantle {
             pop(staticcall(gas(), _tokenOut, ptr, 0x4, ptrPlus4, 0x20))
             let decsOut := exp(10, mload(ptrPlus4))
              amountOut :=div(mul(amountOut, decsOut), decsIn)
-             let usdgAmount :=div(mul(div(mul(amountIn, priceIn), PRICE_PRECISION), 1000000000000000000),decsIn)
+
+            ////////////////////////////////////////////////////
+            // Step 4: calculate fees
+            //      4.1: get usdg amount
+            //      4.2: get getSwapFeeBasisPoints
+            ////////////////////////////////////////////////////
+            let usdgAmount :=div(
+                mul(
+                    div(
+                        mul(amountIn, priceIn), 
+                        PRICE_PRECISION
+                    ), 
+                    1000000000000000000
+                ),
+                decsIn
+            )
             // getSwapFeeBasisPoints(address,address,uint256)
             mstore(ptr, 0xda13381600000000000000000000000000000000000000000000000000000000)
             mstore(add(ptr, 0x4), _tokenIn)
             mstore(add(ptr, 0x24), _tokenOut)
             mstore(add(ptr, 0x44), usdgAmount)
             
-            let success :=
-                staticcall(
+            pop(staticcall(
                     gas(),
                     KTX_VAULT_UTILS,
                     ptr,
@@ -268,88 +210,19 @@ contract OneDeltaQuoterMantle {
                     ptr,
                     0x20
                 )
-          amountOut := div(mul(amountOut, //  * decsOut / decsIn
-            sub(10000, mload(ptr))),
-            10000 )
-
+            )
+            ////////////////////////////////////////////////////
+            // Step 5: get net return amount
+            ////////////////////////////////////////////////////
+            amountOut := div(
+                mul(
+                    amountOut, //  * decsOut / decsIn
+                    sub(10000, mload(ptr))
+                ),
+                10000
+            )
         }
-        // (uint256 priceIn, uint256 priceOut) = getMinMaxPrice(_tokenIn, _tokenOut);
-        // console.log("MINMAX", priceIn, priceOut);
-        // console.log("_tokenIn, _tokenOut", _tokenIn, _tokenOut);
-        // uint256 amountOut = amountIn * priceIn / priceOut;
-        //  (uint decsIn, uint decsOut) = getDecs(_tokenIn, _tokenOut);
-        // amountOut =amountOut * decsOut / decsIn; //  adjustForDecimals(amountOut, _tokenIn, _tokenOut);
-        // console.log("amountOut",amountOut);
-
-        // // adjust usdgAmounts by the same usdgAmount as debt is shifted between the assets
-        // uint256 usdgAmount = amountIn * priceIn / PRICE_PRECISION;
-
-        // usdgAmount =  usdgAmount * 1.0e18 / decsIn; // adjustForDecimals(usdgAmount, _tokenIn, USDG);
-        // console.log("usdgAmount",usdgAmount);
-
-        // uint256 feeBasisPoints = getSwapFeeBasisPoints(
-        //     _tokenIn,
-        //     _tokenOut,
-        //     usdgAmount
-        // );
-        // console.log("feeBasisPoints", feeBasisPoints);
-        // // uint256 amountOutAfterFees = _collectSwapFees(
-        // //     _tokenOut,
-        // //     amountOut,
-        // //     feeBasisPoints
-        // // );
-
-       
-        // console.log("decsIn, decsOut", decsIn, decsOut);
-        // uint256 amountOutAfterFees = amountOut //  * decsOut / decsIn
-        //     * (10000 - feeBasisPoints)
-        //     / 10000;
-
-        // return amountOutAfterFees;
     }
-
-
-    function _quoteKTXExactIn(
-        address _tokenIn,
-        address _tokenOut,
-        uint256 amountIn
-    ) public view returns (uint256) {
-        (uint256 priceIn, uint256 priceOut) = getMinMaxPrice(_tokenIn, _tokenOut);
-        console.log("MINMAX", priceIn, priceOut);
-        console.log("_tokenIn, _tokenOut", _tokenIn, _tokenOut);
-        uint256 amountOut = amountIn * priceIn / priceOut;
-         (uint decsIn, uint decsOut) = getDecs(_tokenIn, _tokenOut);
-        amountOut =amountOut * decsOut / decsIn; //  adjustForDecimals(amountOut, _tokenIn, _tokenOut);
-        console.log("amountOut",amountOut);
-
-        // adjust usdgAmounts by the same usdgAmount as debt is shifted between the assets
-        uint256 usdgAmount = amountIn * priceIn / PRICE_PRECISION;
-
-        usdgAmount =  usdgAmount * 1.0e18 / decsIn; // adjustForDecimals(usdgAmount, _tokenIn, USDG);
-        console.log("usdgAmount",usdgAmount);
-
-        uint256 feeBasisPoints = getSwapFeeBasisPoints(
-            _tokenIn,
-            _tokenOut,
-            usdgAmount
-        );
-        console.log("feeBasisPoints", feeBasisPoints);
-        // uint256 amountOutAfterFees = _collectSwapFees(
-        //     _tokenOut,
-        //     amountOut,
-        //     feeBasisPoints
-        // );
-
-       
-        console.log("decsIn, decsOut", decsIn, decsOut);
-        uint256 amountOutAfterFees = amountOut //  * decsOut / decsIn
-            * (10000 - feeBasisPoints)
-            / 10000;
-
-        return amountOutAfterFees;
-    }
-
-
 
     constructor() {}
 
