@@ -111,6 +111,7 @@ contract AddressesMantle {
     uint8 internal FUSION_X_V2 = 50;
     uint8 internal MERCHANT_MOE = 51;
     uint8 internal MERCHANT_MOE_LB = 103;
+    uint8 internal KTX = 104;
 
     /** TRADE TYPE FLAG GETTERS */
 

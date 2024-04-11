@@ -120,7 +120,7 @@ contract OneDeltaQuoterMantle {
         address _tokenIn,
         address _tokenOut,
         uint256 amountIn
-    ) private view returns (uint256 amountOut) {
+    ) internal view returns (uint256 amountOut) {
         assembly {
             let ptr := mload(0x40)
             let ptrPlus4 := add(ptr, 0x4)
@@ -229,7 +229,7 @@ contract OneDeltaQuoterMantle {
     constructor() {}
 
     // uniswap V3 type callback
-    function _v3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata path) private view {
+    function _v3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata path) internal view {
         // we do not validate the callback since it's just a view function
         // as such, we do not need to decode poolId and fee
         address tokenIn;
@@ -348,7 +348,7 @@ contract OneDeltaQuoterMantle {
     }
 
     /// @dev Parses a revert reason that should contain the numeric quote
-    function parseRevertReason(bytes memory reason) private pure returns (uint256) {
+    function parseRevertReason(bytes memory reason) internal pure returns (uint256) {
         if (reason.length != 32) {
             if (reason.length != 64) revert("Unexpected error");
             // iZi catches errors of length other than 64 internally
@@ -363,7 +363,7 @@ contract OneDeltaQuoterMantle {
         uint24 fee,
         uint8 pId, // pool identifier
         uint256 amountIn
-    ) private returns (uint256 amountOut) {
+    ) internal returns (uint256 amountOut) {
         bool zeroForOne = tokenIn < tokenOut;
 
         try
@@ -385,7 +385,7 @@ contract OneDeltaQuoterMantle {
         address tokenOut,
         uint24 fee,
         uint128 amount
-    ) private returns (uint256 amountOut) {
+    ) internal returns (uint256 amountOut) {
         if (tokenIn < tokenOut) {
             int24 boundaryPoint = -799999;
             try
@@ -419,7 +419,7 @@ contract OneDeltaQuoterMantle {
         uint24 fee,
         uint8 poolId,
         uint256 amountOut
-    ) private returns (uint256 amountIn) {
+    ) internal returns (uint256 amountIn) {
         bool zeroForOne = tokenIn < tokenOut;
 
         // if no price limit has been specified, cache the output amount for comparison in the swap callback
@@ -444,7 +444,7 @@ contract OneDeltaQuoterMantle {
         address tokenOut,
         uint24 fee,
         uint128 desire
-    ) private returns (uint256 amountIn) {
+    ) internal returns (uint256 amountIn) {
         amountOutCached = desire;
         if (tokenIn < tokenOut) {
             int24 boundaryPoint = -799999;
@@ -478,7 +478,7 @@ contract OneDeltaQuoterMantle {
         address tokenOut,
         uint256 amountIn,
         uint16 binStep // identifies the exact pair address
-    ) private view returns (uint256 amountOut) {
+    ) internal view returns (uint256 amountOut) {
         assembly {
             let ptr := mload(0x40)
             // getLBPairInformation(address,address,uint256)
@@ -555,7 +555,7 @@ contract OneDeltaQuoterMantle {
         address tokenOut,
         uint256 amountOut,
         uint16 binStep // this param identifies the pair
-    ) private view returns (uint256 amountIn) {
+    ) internal view returns (uint256 amountIn) {
         assembly {
             let ptr := mload(0x40)
             // getLBPairInformation(address,address,uint256)
@@ -645,7 +645,7 @@ contract OneDeltaQuoterMantle {
 
     /// @dev Returns the pool for the given token pair and fee.
     /// The pool contract may or may not exist.
-    function v3TypePool(address tokenA, address tokenB, uint24 fee, uint256 _pId) private pure returns (ISwapPool pool) {
+    function v3TypePool(address tokenA, address tokenB, uint24 fee, uint256 _pId) internal pure returns (ISwapPool pool) {
         assembly {
             let s := mload(0x40)
             let p := s
@@ -753,7 +753,7 @@ contract OneDeltaQuoterMantle {
     }
 
     /// @dev Returns the pool for the given token pair and fee. The pool contract may or may not exist.
-    function getiZiPool(address tokenA, address tokenB, uint24 fee) private pure returns (IiZiSwapPool pool) {
+    function getiZiPool(address tokenA, address tokenB, uint24 fee) internal pure returns (IiZiSwapPool pool) {
         assembly {
             let s := mload(0x40)
             let p := s
@@ -777,7 +777,7 @@ contract OneDeltaQuoterMantle {
     }
 
     /// @dev gets uniswapV2 (and fork) pair addresses
-    function v2TypePairAddress(address tokenA, address tokenB, uint256 _pId) private view returns (address pair) {
+    function v2TypePairAddress(address tokenA, address tokenB, uint256 _pId) internal view returns (address pair) {
         assembly {
             switch _pId
             // FusionX
@@ -1068,7 +1068,7 @@ contract OneDeltaQuoterMantle {
         address tokenOut,
         uint256 sellAmount,
         uint256 _pId // to identify the fee
-    ) private view returns (uint256 buyAmount) {
+    ) internal view returns (uint256 buyAmount) {
         assembly {
             // Compute the buy amount based on the pair reserves.
             {
@@ -1150,7 +1150,7 @@ contract OneDeltaQuoterMantle {
         }
     }
 
-    function quoteWOO(address tokenIn, address tokenOut, uint256 amountIn) private view returns (uint256 amountOut) {
+    function quoteWOO(address tokenIn, address tokenOut, uint256 amountIn) internal view returns (uint256 amountOut) {
         assembly {
             // selector for querySwap(address,address,uint256)
             mstore(0xB00, 0xe94803f400000000000000000000000000000000000000000000000000000000)
@@ -1165,7 +1165,7 @@ contract OneDeltaQuoterMantle {
         }
     }
 
-    function quoteStratum3(address tokenIn, address tokenOut, uint256 amountIn) private view returns (uint256 amountOut) {
+    function quoteStratum3(address tokenIn, address tokenOut, uint256 amountIn) internal view returns (uint256 amountOut) {
         assembly {
             let indexIn
             let indexOut
