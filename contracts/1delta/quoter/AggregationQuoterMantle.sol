@@ -48,6 +48,126 @@ interface IiZiSwapPool {
     ) external returns (uint256 amountX, uint256 amountY);
 }
 
+interface IVault {
+    function isInitialized() external view returns (bool);
+    function isSwapEnabled() external view returns (bool);
+    function isLeverageEnabled() external view returns (bool);
+
+    function setVaultUtils(address _vaultUtils) external;
+    function setError(uint256 _errorCode, string calldata _error) external;
+
+    function router() external view returns (address);
+    function usdg() external view returns (address);
+    function gov() external view returns (address);
+
+    function whitelistedTokenCount() external view returns (uint256);
+    function maxLeverage() external view returns (uint256);
+
+    function minProfitTime() external view returns (uint256);
+    function hasDynamicFees() external view returns (bool);
+    function fundingInterval() external view returns (uint256);
+    function totalTokenWeights() external view returns (uint256);
+    function getTargetUsdgAmount(address _token) external view returns (uint256);
+
+    function inManagerMode() external view returns (bool);
+    function inPrivateLiquidationMode() external view returns (bool);
+
+    function maxGasPrice() external view returns (uint256);
+
+    function approvedRouters(address _account, address _router) external view returns (bool);
+    function isLiquidator(address _account) external view returns (bool);
+    function isManager(address _account) external view returns (bool);
+
+    function minProfitBasisPoints(address _token) external view returns (uint256);
+    function tokenBalances(address _token) external view returns (uint256);
+    function lastFundingTimes(address _token) external view returns (uint256);
+
+    function setMaxLeverage(uint256 _maxLeverage) external;
+    function setInManagerMode(bool _inManagerMode) external;
+    function setManager(address _manager, bool _isManager) external;
+    function setIsSwapEnabled(bool _isSwapEnabled) external;
+    function setIsLeverageEnabled(bool _isLeverageEnabled) external;
+    function setMaxGasPrice(uint256 _maxGasPrice) external;
+    function setUsdgAmount(address _token, uint256 _amount) external;
+    function setBufferAmount(address _token, uint256 _amount) external;
+    function setMaxGlobalShortSize(address _token, uint256 _amount) external;
+    function setInPrivateLiquidationMode(bool _inPrivateLiquidationMode) external;
+    function setLiquidator(address _liquidator, bool _isActive) external;
+
+    function setFundingRate(uint256 _fundingInterval, uint256 _fundingRateFactor, uint256 _stableFundingRateFactor) external;
+
+    function setFees(
+        uint256 _taxBasisPoints,
+        uint256 _stableTaxBasisPoints,
+        uint256 _mintBurnFeeBasisPoints,
+        uint256 _swapFeeBasisPoints,
+        uint256 _stableSwapFeeBasisPoints,
+        uint256 _marginFeeBasisPoints,
+        uint256 _liquidationFeeUsd,
+        uint256 _minProfitTime,
+        bool _hasDynamicFees
+    ) external;
+
+    function setTokenConfig(
+        address _token,
+        uint256 _tokenDecimals,
+        uint256 _redemptionBps,
+        uint256 _minProfitBps,
+        uint256 _maxUsdgAmount,
+        bool _isStable,
+        bool _isShortable
+    ) external;
+
+    function setPriceFeed(address _priceFeed) external;
+    function withdrawFees(address _token, address _receiver) external returns (uint256);
+
+    function directPoolDeposit(address _token) external;
+    function buyUSDG(address _token, address _receiver) external returns (uint256);
+    function sellUSDG(address _token, address _receiver) external returns (uint256);
+    function swap(address _tokenIn, address _tokenOut, address _receiver) external returns (uint256);
+    function increasePosition(address _account, address _collateralToken, address _indexToken, uint256 _sizeDelta, bool _isLong) external;
+    function decreasePosition(address _account, address _collateralToken, address _indexToken, uint256 _collateralDelta, uint256 _sizeDelta, bool _isLong, address _receiver) external returns (uint256);
+    function tokenToUsdMin(address _token, uint256 _tokenAmount) external view returns (uint256);
+
+    function priceFeed() external view returns (address);
+    function fundingRateFactor() external view returns (uint256);
+    function stableFundingRateFactor() external view returns (uint256);
+    function cumulativeFundingRates(address _token) external view returns (uint256);
+    function getNextFundingRate(address _token) external view returns (uint256);
+    function getFeeBasisPoints(address _token, uint256 _usdgDelta, uint256 _feeBasisPoints, uint256 _taxBasisPoints, bool _increment) external view returns (uint256);
+
+    function liquidationFeeUsd() external view returns (uint256);
+    function taxBasisPoints() external view returns (uint256);
+    function stableTaxBasisPoints() external view returns (uint256);
+    function mintBurnFeeBasisPoints() external view returns (uint256);
+    function swapFeeBasisPoints() external view returns (uint256);
+    function stableSwapFeeBasisPoints() external view returns (uint256);
+    function marginFeeBasisPoints() external view returns (uint256);
+
+    function allWhitelistedTokensLength() external view returns (uint256);
+    function allWhitelistedTokens(uint256) external view returns (address);
+    function whitelistedTokens(address _token) external view returns (bool);
+    function stableTokens(address _token) external view returns (bool);
+    function shortableTokens(address _token) external view returns (bool);
+    function feeReserves(address _token) external view returns (uint256);
+    function globalShortSizes(address _token) external view returns (uint256);
+    function globalShortAveragePrices(address _token) external view returns (uint256);
+    function maxGlobalShortSizes(address _token) external view returns (uint256);
+    function tokenDecimals(address _token) external view returns (uint256);
+    function tokenWeights(address _token) external view returns (uint256);
+    function guaranteedUsd(address _token) external view returns (uint256);
+    function poolAmounts(address _token) external view returns (uint256);
+    function bufferAmounts(address _token) external view returns (uint256);
+    function reservedAmounts(address _token) external view returns (uint256);
+    function usdgAmounts(address _token) external view returns (uint256);
+    function maxUsdgAmounts(address _token) external view returns (uint256);
+    function getRedemptionAmount(address _token, uint256 _usdgAmount) external view returns (uint256);
+    function getMaxPrice(address _token) external view returns (uint256);
+    function getMinPrice(address _token) external view returns (uint256);
+
+    function getDelta(address _indexToken, uint256 _size, uint256 _averagePrice, bool _isLong, uint256 _lastIncreasedTime) external view returns (bool, uint256);
+    function getPosition(address _account, address _collateralToken, address _indexToken, bool _isLong) external view returns (uint256, uint256, uint256, uint256, uint256, uint256, bool, uint256);
+}
 /**
  * Quoter contract
  * Paths have to be encoded as follows: token0 (address) | param0 (uint24) | poolId (uint8) | token1 (address) |
@@ -115,6 +235,111 @@ contract OneDeltaQuoterMantle {
     address internal constant STRATUM_3POOL = 0xD6F312AA90Ad4C92224436a7A4a648d69482e47e;
     address internal constant USDY = 0x5bE26527e817998A7206475496fDE1E68957c5A6;
     address internal constant MUSD = 0xab575258d37EaA5C8956EfABe71F4eE8F6397cF3;    
+
+    function quoteKTXExactOut(address _tokenIn, address _tokenOut, uint256 amountOut) public view returns (uint256 amountIn) {
+        assembly {
+            let ptr := mload(0x40)
+            let ptrPlus4 := add(ptr, 0x4)
+            ////////////////////////////////////////////////////
+            // Step 1: get prices
+            ////////////////////////////////////////////////////
+
+            // getPrice(address,bool,bool,bool)
+            mstore(ptr, 0x2fc3a70a00000000000000000000000000000000000000000000000000000000)
+            // get maxPrice
+            mstore(ptrPlus4, _tokenOut)
+            mstore(add(ptr, 0x24), 0x1)
+            mstore(add(ptr, 0x44), 0x1)
+            mstore(add(ptr, 0x64), 0x1)
+            pop(
+                staticcall(
+                    gas(),
+                    KTX_VAULT_PRICE_FEED, // this goes to the oracle
+                    ptr,
+                    0x84,
+                    ptrPlus4, // do NOT override the selector
+                    0x20
+                )
+            )
+            let priceOut := mload(ptrPlus4)
+             // get minPrice
+            mstore(ptrPlus4, _tokenIn)
+            mstore(add(ptr, 0x24), 0x0)
+            // the other vars are stored from the prior call
+            pop(
+                staticcall(
+                    gas(),
+                    KTX_VAULT_PRICE_FEED, // this goes to the oracle
+                    ptr,
+                    0x84,
+                    ptr,
+                    0x20
+                )
+            )
+            let priceIn := mload(ptr)
+
+
+            ////////////////////////////////////////////////////
+            // Step 2: get token decimals and adjusted usdg amount
+            ////////////////////////////////////////////////////
+            
+            // selector for decimals()
+            mstore(ptr, 0x313ce56700000000000000000000000000000000000000000000000000000000)
+            pop(staticcall(gas(), _tokenIn, ptr, 0x4, ptrPlus4, 0x20))
+            let tokenInDecimals := exp(10, mload(ptrPlus4))
+            pop(staticcall(gas(), _tokenOut, ptr, 0x4, ptrPlus4, 0x20))
+            let tokenOutDecimals := exp(10, mload(ptrPlus4))
+
+            let hypotheticalUSDGAmount := div(
+                mul(
+                    div( // this is the usdg dollar amount 
+                        mul(amountOut, priceOut),
+                        PRICE_PRECISION
+                    ),
+                    1000000000000000000
+                ),
+                tokenOutDecimals
+            )
+            ////////////////////////////////////////////////////
+            // Step 3: get approximate fee amount
+            ////////////////////////////////////////////////////
+
+            // getSwapFeeBasisPoints(address,address,uint256)
+            mstore(ptr, 0xda13381600000000000000000000000000000000000000000000000000000000)
+            mstore(add(ptr, 0x4), _tokenIn)
+            mstore(add(ptr, 0x24), _tokenOut)
+            mstore(add(ptr, 0x44), hypotheticalUSDGAmount)
+            
+            pop(staticcall(
+                    gas(),
+                    KTX_VAULT_UTILS, // get fee from utils
+                    ptr,
+                    0x64,
+                    ptr,
+                    0x20
+                )
+            )
+            // we have to optimistically increase the fee
+            // the formula is not easily invertable, the increase shall 
+            // account for the fact (plus 1bp times 1.01)
+            let approxFee := div(mul(add(mload(ptr), 1), 101), 100)
+            amountIn := div(
+                mul(
+                    div(
+                        mul(
+                            div(
+                                mul(amountOut, add(approxFee, 10000)), // amount times one plus fee
+                                10000),
+                                priceOut // times priceOut yields the output in dollar
+                        ),
+                        priceIn // divided by price in yields the input in the pay currency
+                    ),
+                    tokenInDecimals // 1st part of decimal adjust
+                ),
+                tokenOutDecimals // 2nd part of decimal adjust
+            )
+        }
+    }
 
     function quoteKTXExactIn(
         address _tokenIn,

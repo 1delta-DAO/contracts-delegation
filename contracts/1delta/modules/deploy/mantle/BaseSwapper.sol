@@ -69,7 +69,10 @@ abstract contract BaseSwapper is TokenTransfer {
 
     address private constant WOO_POOL = 0x9D1A92e601db0901e69bd810029F2C14bCCA3128;
     address internal constant REBATE_RECIPIENT = 0xC95eED7F6E8334611765F84CEb8ED6270F08907E;
+
     address internal constant KTX_VAULT = 0x2e488D7ED78171793FA91fAd5352Be423A50Dae1;
+    address internal constant KTX_VAULT_UTILS = 0x25e71a6b45598213E95F9a718e3FE0523e9d9E34;
+    address internal constant KTX_VAULT_PRICE_FEED = 0xEdd1E8aACF7652aD8c015C4A403A9aE36F3Fe4B7;
 
     address internal constant STRATUM_3POOL = 0xD6F312AA90Ad4C92224436a7A4a648d69482e47e;
     address internal constant MUSD = 0xab575258d37EaA5C8956EfABe71F4eE8F6397cF3;
@@ -543,7 +546,7 @@ abstract contract BaseSwapper is TokenTransfer {
     }
 
     /**
-     * Swaps exact input on KTX tpot DEX
+     * Swaps exact input on KTX spot DEX
      * @param tokenIn input
      * @param tokenOut output
      * @param amountIn sell amount
@@ -602,6 +605,43 @@ abstract contract BaseSwapper is TokenTransfer {
             }
 
             amountOut := mload(0xB00)
+        }
+    }
+
+   /**
+     * Swaps exact outpur on KTX spot DEX
+     * @param tokenIn input
+     * @param tokenOut output
+     * @param amountOut sell amount
+     */
+    function swapKTXExactOut(address tokenIn, address tokenOut, uint256 amountOut, address receiver) internal {
+        assembly {
+            // selector for swap(address,address,address)
+            mstore(
+                0xB00, // 2816
+                0x9331621200000000000000000000000000000000000000000000000000000000
+            )
+            mstore(0xB04, tokenIn)
+            mstore(0xB24, tokenOut)
+            mstore(0xB44, receiver)
+            let success := call(
+                gas(),
+                KTX_VAULT,
+                0x0, // no native transfer
+                0xB00,
+                0x64, // input length 66 bytes
+                0xB00, // store output here
+                0x20 // output is just uint
+            )
+            if iszero(success) {
+                let rdsize := returndatasize()
+                returndatacopy(0xB00, 0, rdsize)
+                revert(0xB00, rdsize)
+            }
+            // revert if not enough received
+            if lt(mload(0xB00), amountOut) {
+                revert (0, 0)
+            }
         }
     }
 
@@ -1638,6 +1678,118 @@ abstract contract BaseSwapper is TokenTransfer {
             if gt(0, mload(add(ptr, 0x20))) {
                 revert(0, 0)
             }
+        }
+    }
+
+
+    function quoteKTXExactOut(address _tokenIn, address _tokenOut, uint256 amountOut) public view returns (uint256 amountIn) {
+        assembly {
+            let ptr := mload(0x40)
+            let ptrPlus4 := add(ptr, 0x4)
+            ////////////////////////////////////////////////////
+            // Step 1: get prices
+            ////////////////////////////////////////////////////
+
+            // getPrice(address,bool,bool,bool)
+            mstore(ptr, 0x2fc3a70a00000000000000000000000000000000000000000000000000000000)
+            // get maxPrice
+            mstore(ptrPlus4, _tokenOut)
+            mstore(add(ptr, 0x24), 0x1)
+            mstore(add(ptr, 0x44), 0x1)
+            mstore(add(ptr, 0x64), 0x1)
+            pop(
+                staticcall(
+                    gas(),
+                    KTX_VAULT_PRICE_FEED, // this goes to the oracle
+                    ptr,
+                    0x84,
+                    ptrPlus4, // do NOT override the selector
+                    0x20
+                )
+            )
+            let priceOut := mload(ptrPlus4)
+             // get minPrice
+            mstore(ptrPlus4, _tokenIn)
+            mstore(add(ptr, 0x24), 0x0)
+            // the other vars are stored from the prior call
+            pop(
+                staticcall(
+                    gas(),
+                    KTX_VAULT_PRICE_FEED, // this goes to the oracle
+                    ptr,
+                    0x84,
+                    ptr,
+                    0x20
+                )
+            )
+            let priceIn := mload(ptr)
+
+
+            ////////////////////////////////////////////////////
+            // Step 2: get token decimals and adjusted usdg amount
+            ////////////////////////////////////////////////////
+            
+            // selector for decimals()
+            mstore(ptr, 0x313ce56700000000000000000000000000000000000000000000000000000000)
+            pop(staticcall(gas(), _tokenIn, ptr, 0x4, ptrPlus4, 0x20))
+            let tokenInDecimals := exp(10, mload(ptrPlus4))
+            pop(staticcall(gas(), _tokenOut, ptr, 0x4, ptrPlus4, 0x20))
+            let tokenOutDecimals := exp(10, mload(ptrPlus4))
+
+            let hypotheticalUSDGAmount := div(
+                mul(
+                    div( // this is the usdg dollar amount 
+                        mul(amountOut, priceOut),
+                        1000000000000000000000000000000
+                    ),
+                    1000000000000000000
+                ),
+                tokenOutDecimals
+            )
+            ////////////////////////////////////////////////////
+            // Step 3: get approximate fee amount
+            ////////////////////////////////////////////////////
+
+            // getSwapFeeBasisPoints(address,address,uint256)
+            mstore(ptr, 0xda13381600000000000000000000000000000000000000000000000000000000)
+            mstore(add(ptr, 0x4), _tokenIn)
+            mstore(add(ptr, 0x24), _tokenOut)
+            mstore(add(ptr, 0x44), hypotheticalUSDGAmount)
+            
+            pop(staticcall(
+                    gas(),
+                    KTX_VAULT_UTILS, // get fee from utils
+                    ptr,
+                    0x64,
+                    ptr,
+                    0x20
+                )
+            )
+            // we have to optimistically increase the fee
+            // the formula is not easily invertable, the increase shall 
+            // account for the fact via adding 1bp increase of the fee
+            let approxFee := div(
+                mul(
+                    add(mload(ptr), 1), // add 1bp
+                    101 // adjust by 1% to account for rare rounding errors
+                ),
+                100
+            )
+            amountIn := div(
+                mul(
+                    div(
+                        mul(
+                            div(
+                                mul(amountOut, add(approxFee, 10000)), // amount times one plus fee
+                                10000),
+                                priceOut // times priceOut yields the output in dollar
+                        ),
+                        priceIn // divided by price in yields the input in the pay currency
+                    ),
+                    tokenInDecimals // 1st part of decimal adjust
+                ),
+                tokenOutDecimals // 2nd part of decimal adjust
+            )
         }
     }
 }

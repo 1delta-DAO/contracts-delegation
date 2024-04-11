@@ -853,6 +853,28 @@ abstract contract MarginTrading is WithStorage, BaseSwapper, BaseLending {
             // the funds to the receiver addresss
             ////////////////////////////////////////////////////
             swapLBexactOut(pair, swapForY, amountOut, receiver);
+        } else if (identifier == 104) {
+            ////////////////////////////////////////////////////
+            // approach is the same as for the LB
+            ////////////////////////////////////////////////////
+            uint256 amountIn = quoteKTXExactOut(tokenIn, tokenOut, amountOut);
+            if(data.length > 46) {
+                // remove the last token from the path
+                data = data[25:];
+                flashSwapExactOutInternal(amountIn, KTX_VAULT, data);
+            } 
+            else {
+                // get length and last flag
+                uint256 cache = data.length;
+                data = data[(cache - 1):cache];
+                // assign end flag to cache
+                cache = uint8(bytes1(data));
+                // pay the pool
+                handlePayment(tokenIn, acs().cachedAddress, KTX_VAULT, cache, amountIn);
+                // only cache the amount if this is the last pool
+                ncs().amount = amountIn;
+            }
+            swapKTXExactOut(tokenIn, tokenOut, amountOut, receiver);
         } else
             revert invalidDexId();
     }

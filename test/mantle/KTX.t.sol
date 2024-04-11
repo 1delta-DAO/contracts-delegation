@@ -35,7 +35,7 @@ contract GeneralMoeLBTest is DeltaSetup {
 
         deal(assetIn, user, 1e20);
 
-        uint256 amountIn = 1.0e18;
+        uint256 amountIn = 20.0e18;
 
         uint256 quoted = testQuoter._quoteKTXExactIn(assetIn, assetOut, amountIn);
 
@@ -65,115 +65,279 @@ contract GeneralMoeLBTest is DeltaSetup {
         balanceIn = balanceIn - IERC20All(assetIn).balanceOf(user);
 
         // swap 10, receive approx 10, but in 18 decs
-        assertApproxEqAbs(5109227, balanceOut, 1);
+        assertApproxEqAbs(102174291, balanceOut, 1);
         assertApproxEqAbs(quoted, balanceOut, 0);
         assertApproxEqAbs(balanceIn, amountIn, 0);
     }
 
+    
+    function test_mantle_ktx_spot_exact_in_stable_out() external {
+        address user = testUser;
+        vm.assume(user != address(0));
+        address assetIn = WBTC;
+        address assetOut = USDT;
 
-    /** MOE LB PATH BUILDERS */
+        deal(assetIn, user, 1e20);
 
-    function getOpenExactInMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        uint24 fee = DEX_FEE_NONE;
-        (uint8 actionId, uint8 midId, uint8 endId) = getOpenExactInFlags();
-        uint8 poolId = MERCHANT_MOE;
-        bytes memory firstPart = abi.encodePacked(tokenIn, fee, poolId, actionId, USDe);
-        fee = BIN_STEP_LOWEST;
-        poolId = MERCHANT_MOE_LB;
-        return abi.encodePacked(firstPart, fee, poolId, midId, tokenOut, endId);
+        uint256 amountIn = 1.0e8;
+
+        uint256 quoted = testQuoter._quoteKTXExactIn(assetIn, assetOut, amountIn);
+
+        bytes[] memory calls = new bytes[](3);
+        calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, assetIn, amountIn);
+
+        bytes memory swapPath = getSpotExactInSingleKTX(assetIn, assetOut);
+        uint256 minimumOut = 0.03e8;
+        calls[1] = abi.encodeWithSelector(
+            IFlashAggregator.swapExactInSpot.selector, // 3 args
+            amountIn,
+            minimumOut,
+            swapPath
+        );
+
+        calls[2] = abi.encodeWithSelector(ILending.sweep.selector, assetOut);
+        vm.prank(user);
+        IERC20All(assetIn).approve(brokerProxyAddress, amountIn);
+
+        uint256 balanceIn = IERC20All(assetIn).balanceOf(user);
+        uint256 balanceOut = IERC20All(assetOut).balanceOf(user);
+
+        vm.prank(user);
+        brokerProxy.multicall(calls);
+
+        balanceOut = IERC20All(assetOut).balanceOf(user) - balanceOut;
+        balanceIn = balanceIn - IERC20All(assetIn).balanceOf(user);
+
+        // swap 10, receive approx 10, but in 18 decs
+        assertApproxEqAbs(70047916290, balanceOut, 1);
+        assertApproxEqAbs(quoted, balanceOut, 0);
+        assertApproxEqAbs(balanceIn, amountIn, 0);
     }
 
+    
+
+    function test_mantle_ktx_spot_exact_in_stable_in() external {
+        address user = testUser;
+        vm.assume(user != address(0));
+        address assetIn = USDT;
+        address assetOut = WBTC;
+
+        deal(assetIn, user, 1e20);
+
+        uint256 amountIn = 10000.0e6;
+
+        uint256 quoted = testQuoter._quoteKTXExactIn(assetIn, assetOut, amountIn);
+
+        bytes[] memory calls = new bytes[](3);
+        calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, assetIn, amountIn);
+
+        bytes memory swapPath = getSpotExactInSingleKTX(assetIn, assetOut);
+        uint256 minimumOut = 0.03e8;
+        calls[1] = abi.encodeWithSelector(
+            IFlashAggregator.swapExactInSpot.selector, // 3 args
+            amountIn,
+            minimumOut,
+            swapPath
+        );
+
+        calls[2] = abi.encodeWithSelector(ILending.sweep.selector, assetOut);
+        vm.prank(user);
+        IERC20All(assetIn).approve(brokerProxyAddress, amountIn);
+
+        uint256 balanceIn = IERC20All(assetIn).balanceOf(user);
+        uint256 balanceOut = IERC20All(assetOut).balanceOf(user);
+
+        vm.prank(user);
+        brokerProxy.multicall(calls);
+
+        balanceOut = IERC20All(assetOut).balanceOf(user) - balanceOut;
+        balanceIn = balanceIn - IERC20All(assetIn).balanceOf(user);
+
+        // swap 10, receive approx 10, but in 18 decs
+        assertApproxEqAbs(14034168, balanceOut, 1);
+        assertApproxEqAbs(quoted, balanceOut, 0);
+        assertApproxEqAbs(balanceIn, amountIn, 0);
+    }
+
+    function test_mantle_ktx_spot_exact_out() external {
+        address user = testUser;
+        vm.assume(user != address(0));
+        address assetOut = WBTC;
+        address assetIn = WETH;
+
+        deal(assetIn, user, 1e30);
+
+        uint256 amountOut = 102174291;
+
+        bytes[] memory calls = new bytes[](2);
+
+        bytes memory swapPath = getSpotExactOutSingleKTX(assetIn, assetOut);
+        uint256 maximumIn = 22.0e18;
+        calls[0] = abi.encodeWithSelector(
+            IFlashAggregator.swapExactOutSpot.selector, // 3 args
+            amountOut,
+            maximumIn,
+            swapPath
+        );
+
+        calls[1] = abi.encodeWithSelector(ILending.sweep.selector, assetOut);
+        vm.prank(user);
+        IERC20All(assetIn).approve(brokerProxyAddress, maximumIn);
+
+        uint256 balanceIn = IERC20All(assetIn).balanceOf(user);
+        uint256 balanceOut = IERC20All(assetOut).balanceOf(user);
+
+        vm.prank(user);
+        brokerProxy.multicall(calls);
+
+        balanceOut = IERC20All(assetOut).balanceOf(user) - balanceOut;
+        balanceIn = balanceIn - IERC20All(assetIn).balanceOf(user);
+
+        // note that there is some lack of precision
+        assertApproxEqAbs(20001603880000000000, balanceIn, 1);
+        assertApproxEqAbs(balanceOut, amountOut, 10000);
+        // we expect to receive slightly more
+        assert(balanceOut >= amountOut);
+    }
+
+
+    function test_mantle_ktx_spot_exact_out_stable_in() external {
+        address user = testUser;
+        vm.assume(user != address(0));
+        address assetOut = WBTC;
+        address assetIn = USDT;
+
+        deal(assetIn, user, 1e30);
+
+        uint256 amountOut = 1.0e8;
+
+        bytes[] memory calls = new bytes[](2);
+
+        bytes memory swapPath = getSpotExactOutSingleKTX(assetIn, assetOut);
+        uint256 maximumIn = 79000.0e6;
+        calls[0] = abi.encodeWithSelector(
+            IFlashAggregator.swapExactOutSpot.selector, // 3 args
+            amountOut,
+            maximumIn,
+            swapPath
+        );
+
+        calls[1] = abi.encodeWithSelector(ILending.sweep.selector, assetOut);
+        vm.prank(user);
+        IERC20All(assetIn).approve(brokerProxyAddress, maximumIn);
+
+        uint256 balanceIn = IERC20All(assetIn).balanceOf(user);
+        uint256 balanceOut = IERC20All(assetOut).balanceOf(user);
+
+        vm.prank(user);
+        brokerProxy.multicall(calls);
+
+        balanceOut = IERC20All(assetOut).balanceOf(user) - balanceOut;
+        balanceIn = balanceIn - IERC20All(assetIn).balanceOf(user);
+
+        // note that there is some lack of precision
+        assertApproxEqAbs(71264910391, balanceIn, 1);
+        assertApproxEqAbs(balanceOut, amountOut, 0.05e6);
+        // we expect to receive slightly more
+        assert(balanceOut >= amountOut);
+    }
+
+
+    function test_mantle_ktx_spot_exact_out_stable_out() external {
+        address user = testUser;
+        vm.assume(user != address(0));
+        address assetOut = USDT;
+        address assetIn = WBTC;
+
+        deal(assetIn, user, 1e30);
+
+        uint256 amountOut = 78000.0e6;
+
+        bytes[] memory calls = new bytes[](2);
+
+        bytes memory swapPath = getSpotExactOutSingleKTX(assetIn, assetOut);
+        uint256 maximumIn = 1.15e8;
+        calls[0] = abi.encodeWithSelector(
+            IFlashAggregator.swapExactOutSpot.selector, // 3 args
+            amountOut,
+            maximumIn,
+            swapPath
+        );
+
+        calls[1] = abi.encodeWithSelector(ILending.sweep.selector, assetOut);
+        vm.prank(user);
+        IERC20All(assetIn).approve(brokerProxyAddress, maximumIn);
+
+        uint256 balanceIn = IERC20All(assetIn).balanceOf(user);
+        uint256 balanceOut = IERC20All(assetOut).balanceOf(user);
+
+        vm.prank(user);
+        brokerProxy.multicall(calls);
+
+        balanceOut = IERC20All(assetOut).balanceOf(user) - balanceOut;
+        balanceIn = balanceIn - IERC20All(assetIn).balanceOf(user);
+
+        // note that there is some lack of precision
+        assertApproxEqAbs(111363200, balanceIn, 1);
+        assertApproxEqAbs(balanceOut, amountOut, 10.0e6);
+        // we expect to receive slightly more
+        assert(balanceOut >= amountOut);
+    }
+
+
+    function test_mantle_ktx_spot_exact_out_stable_out_2() external {
+        address user = testUser;
+        vm.assume(user != address(0));
+        address assetOut = USDT;
+        address assetIn = WETH;
+
+        deal(assetIn, user, 1e30);
+
+        uint256 amountOut = 78000.0e6;
+
+        bytes[] memory calls = new bytes[](2);
+
+        bytes memory swapPath = getSpotExactOutSingleKTX(assetIn, assetOut);
+        uint256 maximumIn = 25.15e18;
+        calls[0] = abi.encodeWithSelector(
+            IFlashAggregator.swapExactOutSpot.selector, // 3 args
+            amountOut,
+            maximumIn,
+            swapPath
+        );
+
+        calls[1] = abi.encodeWithSelector(ILending.sweep.selector, assetOut);
+        vm.prank(user);
+        IERC20All(assetIn).approve(brokerProxyAddress, maximumIn);
+
+        uint256 balanceIn = IERC20All(assetIn).balanceOf(user);
+        uint256 balanceOut = IERC20All(assetOut).balanceOf(user);
+
+        vm.prank(user);
+        brokerProxy.multicall(calls);
+
+        balanceOut = IERC20All(assetOut).balanceOf(user) - balanceOut;
+        balanceIn = balanceIn - IERC20All(assetIn).balanceOf(user);
+
+        // note that there is some lack of precision
+        assertApproxEqAbs(21580314000000000000, balanceIn, 1);
+        assertApproxEqAbs(balanceOut, amountOut, 10.0e6);
+        // we expect to receive slightly more
+        assert(balanceOut >= amountOut);
+    }
+
+
+    /** KTX PATH BUILDERS */
+
     function getSpotExactInSingleKTX(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        uint24 fee = 0;
+        uint24 fee = DEX_FEE_NONE;
         uint8 poolId = KTX;
         return abi.encodePacked(tokenIn, fee, poolId, uint8(0), tokenOut, uint8(99));
     }
 
-    function getSpotExactOutSingleLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
+    function getSpotExactOutSingleKTX(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint24 fee = BIN_STEP_LOWEST;
-        uint8 poolId = MERCHANT_MOE_LB;
+        uint8 poolId = KTX;
         return abi.encodePacked(tokenOut, fee, poolId, uint8(1), tokenIn, uint8(99));
-    }
-
-    function getSpotExactOutMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        uint24 fee = BIN_STEP_LOWEST;
-        uint8 poolId = MERCHANT_MOE_LB;
-        bytes memory firstPart = abi.encodePacked(tokenOut, fee, poolId, uint8(1), USDT);
-        fee = DEX_FEE_NONE;
-        poolId = MERCHANT_MOE;
-        return abi.encodePacked(firstPart, fee, poolId, uint8(1), tokenIn, uint8(99));
-    }
-
-    function getSpotExactOutMultiLBEnd(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        uint24 fee = DEX_FEE_NONE;
-        uint8 poolId = MERCHANT_MOE;
-        bytes memory firstPart = abi.encodePacked(tokenOut, fee, poolId, uint8(1), USDT);
-        fee = BIN_STEP_LOWEST;
-        poolId = MERCHANT_MOE_LB;
-        return abi.encodePacked(firstPart, fee, poolId, uint8(1), tokenIn, uint8(99));
-    }
-
-    function getSpotExactInMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        uint24 fee = DEX_FEE_LOW;
-        (uint8 actionId, uint8 midId, uint8 endId) = getOpenExactInFlags();
-        uint8 poolId = AGNI;
-        bytes memory firstPart = abi.encodePacked(tokenIn, fee, poolId, actionId, USDT);
-        fee = BIN_STEP_LOWEST;
-        poolId = MERCHANT_MOE_LB;
-        return abi.encodePacked(firstPart, fee, poolId, midId, tokenOut, endId);
-    }
-
-    function getOpenExactOutMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        uint24 fee = DEX_FEE_NONE;
-        (uint8 actionId, uint8 midId, uint8 endId) = getOpenExactOutFlags();
-        uint8 poolId = MERCHANT_MOE;
-        bytes memory firstPart = abi.encodePacked(tokenOut, fee, poolId, actionId, USDe);
-        fee = BIN_STEP_LOWEST;
-        poolId = MERCHANT_MOE_LB;
-        return abi.encodePacked(firstPart, fee, poolId, midId, tokenIn, endId);
-    }
-
-    function getCloseExactOutMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        uint24 fee = DEX_FEE_NONE;
-        (uint8 actionId, uint8 midId, uint8 endId) = getCloseExactOutFlags();
-        uint8 poolId = MERCHANT_MOE;
-        bytes memory firstPart = abi.encodePacked(tokenOut, fee, poolId, actionId, USDe);
-        fee = BIN_STEP_LOWEST;
-        poolId = MERCHANT_MOE_LB;
-        return abi.encodePacked(firstPart, fee, poolId, midId, tokenIn, endId);
-    }
-
-    function getCloseExactInMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        uint24 fee = DEX_FEE_NONE;
-        (uint8 actionId, uint8 midId, uint8 endId) = getCloseExactInFlags();
-        uint8 poolId = MERCHANT_MOE;
-        bytes memory firstPart = abi.encodePacked(tokenIn, fee, poolId, actionId, USDe);
-        fee = BIN_STEP_LOWEST;
-        poolId = MERCHANT_MOE_LB;
-        return abi.encodePacked(firstPart, fee, poolId, midId, tokenOut, endId);
-    }
-
-    /** DEPO AND BORROW HELPER */
-
-    function _deposit(address user, address asset, uint256 amount) internal {
-        deal(asset, user, amount);
-        vm.prank(user);
-        IERC20All(asset).approve(brokerProxyAddress, amount);
-        bytes[] memory calls = new bytes[](2);
-        calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, asset, amount);
-        calls[1] = abi.encodeWithSelector(ILending.deposit.selector, asset, user);
-        vm.prank(user);
-        brokerProxy.multicall(calls);
-    }
-
-    function _borrow(address user, address asset, uint256 amount) internal {
-        address debtAsset = debtTokens[asset][DEFAULT_LENDER];
-        vm.prank(user);
-        IERC20All(debtAsset).approveDelegation(brokerProxyAddress, amount);
-        bytes[] memory calls = new bytes[](2);
-        calls[0] = abi.encodeWithSelector(ILending.borrow.selector, asset, amount, DEFAULT_IR_MODE);
-        calls[1] = abi.encodeWithSelector(ILending.sweep.selector, asset, user);
-        vm.prank(user);
-        brokerProxy.multicall(calls);
     }
 }
