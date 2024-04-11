@@ -1767,21 +1767,16 @@ abstract contract BaseSwapper is TokenTransfer {
             )
             // we have to optimistically increase the fee
             // the formula is not easily invertable, the increase shall 
-            // account for the fact via adding 1bp increase of the fee
-            let approxFee := div(
-                mul(
-                    add(mload(ptr), 1), // add 1bp
-                    101 // adjust by 1% to account for rare rounding errors
-                ),
-                100
-            )
+            // be done by adding an artificial precision
+            let approxFee := mul(mload(ptr), 10)
+
             amountIn := div(
                 mul(
                     div(
                         mul(
                             div(
-                                mul(amountOut, add(approxFee, 10000)), // amount times one plus fee
-                                10000),
+                                mul(amountOut, 100000), // times bp denminator * 10
+                                sub(99999, approxFee)), // denominator - approxFee - 0.1bp
                                 priceOut // times priceOut yields the output in dollar
                         ),
                         priceIn // divided by price in yields the input in the pay currency

@@ -167,7 +167,7 @@ contract GeneralMoeLBTest is DeltaSetup {
 
         deal(assetIn, user, 1e30);
 
-        uint256 amountOut = 102174291;
+        uint256 amountOut = 102174291; // > 1BTC
 
         bytes[] memory calls = new bytes[](2);
 
@@ -194,8 +194,8 @@ contract GeneralMoeLBTest is DeltaSetup {
         balanceIn = balanceIn - IERC20All(assetIn).balanceOf(user);
 
         // note that there is some lack of precision
-        assertApproxEqAbs(20001603880000000000, balanceIn, 1);
-        assertApproxEqAbs(balanceOut, amountOut, 10000);
+        assertApproxEqAbs(20000200720000000000, balanceIn, 1);
+        assertApproxEqAbs(balanceOut, amountOut, 0.0015e6);
         // we expect to receive slightly more
         assert(balanceOut >= amountOut);
     }
@@ -236,8 +236,8 @@ contract GeneralMoeLBTest is DeltaSetup {
         balanceIn = balanceIn - IERC20All(assetIn).balanceOf(user);
 
         // note that there is some lack of precision
-        assertApproxEqAbs(71264910391, balanceIn, 1);
-        assertApproxEqAbs(balanceOut, amountOut, 0.05e6);
+        assertApproxEqAbs(71262144559, balanceIn, 1);
+        assertApproxEqAbs(balanceOut, amountOut, 0.005e6);
         // we expect to receive slightly more
         assert(balanceOut >= amountOut);
     }
@@ -278,8 +278,8 @@ contract GeneralMoeLBTest is DeltaSetup {
         balanceIn = balanceIn - IERC20All(assetIn).balanceOf(user);
 
         // note that there is some lack of precision
-        assertApproxEqAbs(111363200, balanceIn, 1);
-        assertApproxEqAbs(balanceOut, amountOut, 10.0e6);
+        assertApproxEqAbs(111353400, balanceIn, 1);
+        assertApproxEqAbs(balanceOut, amountOut, 1.0e6); // we accept 1USDT deviation on 78k (<0.13bp)
         // we expect to receive slightly more
         assert(balanceOut >= amountOut);
     }
@@ -320,8 +320,8 @@ contract GeneralMoeLBTest is DeltaSetup {
         balanceIn = balanceIn - IERC20All(assetIn).balanceOf(user);
 
         // note that there is some lack of precision
-        assertApproxEqAbs(21580314000000000000, balanceIn, 1);
-        assertApproxEqAbs(balanceOut, amountOut, 10.0e6);
+        assertApproxEqAbs(21578800000000000000, balanceIn, 1);
+        assertApproxEqAbs(balanceOut, amountOut, 1.0e6); // we accept 1USDT deviation on 78k (<0.13bp)
         // we expect to receive slightly more
         assert(balanceOut >= amountOut);
     }
