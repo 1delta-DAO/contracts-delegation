@@ -123,6 +123,7 @@ contract OneDeltaQuoterMantle {
     ) private view returns (uint256 amountOut) {
         assembly {
             let ptr := mload(0x40)
+            let ptrPlus4 := add(ptr, 0x4)
             ////////////////////////////////////////////////////
             // Step 1: get prices
             ////////////////////////////////////////////////////
@@ -130,7 +131,7 @@ contract OneDeltaQuoterMantle {
             // getPrice(address,bool,bool,bool)
             mstore(ptr, 0x2fc3a70a00000000000000000000000000000000000000000000000000000000)
             // get maxPrice
-            mstore(add(ptr, 0x4), _tokenOut)
+            mstore(ptrPlus4, _tokenOut)
             mstore(add(ptr, 0x24), 0x1)
             mstore(add(ptr, 0x44), 0x1)
             mstore(add(ptr, 0x64), 0x1)
@@ -140,13 +141,13 @@ contract OneDeltaQuoterMantle {
                     KTX_VAULT_PRICE_FEED, // this goes to the oracle
                     ptr,
                     0x84,
-                    add(ptr, 0x4), // do NOT override the selector
+                    ptrPlus4, // do NOT override the selector
                     0x20
                 )
             )
-            let priceOut := mload(add(ptr, 0x4))
+            let priceOut := mload(ptrPlus4)
              // get minPrice
-            mstore(add(ptr, 0x4), _tokenIn)
+            mstore(ptrPlus4, _tokenIn)
             mstore(add(ptr, 0x24), 0x0)
             // the other vars are stored from the prior call
             pop(
@@ -167,7 +168,7 @@ contract OneDeltaQuoterMantle {
 
             // get gross amountOut unscaled
             amountOut := div(mul(amountIn, priceIn), priceOut)
-            let ptrPlus4 := add(ptr, 0x4)
+
 
             ////////////////////////////////////////////////////
             // Step 3: get token decimals
@@ -198,7 +199,7 @@ contract OneDeltaQuoterMantle {
             )
             // getSwapFeeBasisPoints(address,address,uint256)
             mstore(ptr, 0xda13381600000000000000000000000000000000000000000000000000000000)
-            mstore(add(ptr, 0x4), _tokenIn)
+            mstore(ptrPlus4, _tokenIn)
             mstore(add(ptr, 0x24), _tokenOut)
             mstore(add(ptr, 0x44), usdgAmount)
             
