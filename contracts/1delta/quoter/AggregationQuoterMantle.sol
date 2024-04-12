@@ -236,112 +236,6 @@ contract OneDeltaQuoterMantle {
     address internal constant USDY = 0x5bE26527e817998A7206475496fDE1E68957c5A6;
     address internal constant MUSD = 0xab575258d37EaA5C8956EfABe71F4eE8F6397cF3;    
 
-    function quoteKTXExactOut(address _tokenIn, address _tokenOut, uint256 amountOut) internal view returns (uint256 amountIn) {
-        assembly {
-            let ptr := mload(0x40)
-            let ptrPlus4 := add(ptr, 0x4)
-            ////////////////////////////////////////////////////
-            // Step 1: get prices
-            ////////////////////////////////////////////////////
-
-            // getPrice(address,bool,bool,bool)
-            mstore(ptr, 0x2fc3a70a00000000000000000000000000000000000000000000000000000000)
-            // get maxPrice
-            mstore(ptrPlus4, _tokenOut)
-            mstore(add(ptr, 0x24), 0x1)
-            mstore(add(ptr, 0x44), 0x1)
-            mstore(add(ptr, 0x64), 0x1)
-            pop(
-                staticcall(
-                    gas(),
-                    KTX_VAULT_PRICE_FEED, // this goes to the oracle
-                    ptr,
-                    0x84,
-                    ptrPlus4, // do NOT override the selector
-                    0x20
-                )
-            )
-            let priceOut := mload(ptrPlus4)
-             // get minPrice
-            mstore(ptrPlus4, _tokenIn)
-            mstore(add(ptr, 0x24), 0x0)
-            // the other vars are stored from the prior call
-            pop(
-                staticcall(
-                    gas(),
-                    KTX_VAULT_PRICE_FEED, // this goes to the oracle
-                    ptr,
-                    0x84,
-                    ptr,
-                    0x20
-                )
-            )
-            let priceIn := mload(ptr)
-
-
-            ////////////////////////////////////////////////////
-            // Step 2: get token decimals and adjusted usdg amount
-            ////////////////////////////////////////////////////
-            
-            // selector for decimals()
-            mstore(ptr, 0x313ce56700000000000000000000000000000000000000000000000000000000)
-            pop(staticcall(gas(), _tokenIn, ptr, 0x4, ptrPlus4, 0x20))
-            let tokenInDecimals := exp(10, mload(ptrPlus4))
-            pop(staticcall(gas(), _tokenOut, ptr, 0x4, ptrPlus4, 0x20))
-            let tokenOutDecimals := exp(10, mload(ptrPlus4))
-
-            let hypotheticalUSDGAmount := div(
-                mul(
-                    div( // this is the usdg dollar amount 
-                        mul(amountOut, priceOut),
-                        1000000000000000000000000000000
-                    ),
-                    1000000000000000000
-                ),
-                tokenOutDecimals
-            )
-            ////////////////////////////////////////////////////
-            // Step 3: get approximate fee amount
-            ////////////////////////////////////////////////////
-
-            // getSwapFeeBasisPoints(address,address,uint256)
-            mstore(ptr, 0xda13381600000000000000000000000000000000000000000000000000000000)
-            mstore(add(ptr, 0x4), _tokenIn)
-            mstore(add(ptr, 0x24), _tokenOut)
-            mstore(add(ptr, 0x44), hypotheticalUSDGAmount)
-            
-            pop(staticcall(
-                    gas(),
-                    KTX_VAULT_UTILS, // get fee from utils
-                    ptr,
-                    0x64,
-                    ptr,
-                    0x20
-                )
-            )
-            // we have to optimistically increase the fee
-            // the formula is not easily invertable, the increase shall 
-            // be done by adding an artificial precision
-            let approxFee := mul(mload(ptr), 10)
-
-            amountIn := div(
-                mul(
-                    div(
-                        mul(
-                            div(
-                                mul(amountOut, 100000), // times bp denminator * 10
-                                sub(99999, approxFee)), // denominator - approxFee - 0.1bp
-                                priceOut // times priceOut yields the output in dollar
-                        ),
-                        priceIn // divided by price in yields the input in the pay currency
-                    ),
-                    tokenInDecimals // 1st part of decimal adjust
-                ),
-                tokenOutDecimals // 2nd part of decimal adjust
-            )
-        }
-    }
-
     function quoteKTXExactIn(
         address _tokenIn,
         address _tokenOut,
@@ -1275,8 +1169,6 @@ contract OneDeltaQuoterMantle {
                     )
                 }
                 amountOut = getLBAmountIn(tokenIn, tokenOut, amountOut, uint16(bin));
-            } else if(poolId == 104){
-                amountOut = quoteKTXExactOut(tokenIn, tokenOut, amountOut);
             } else {
                 revert invalidDexId();
             }
