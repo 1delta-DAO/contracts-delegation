@@ -92,6 +92,9 @@ contract OneDeltaQuoterMantle {
     address private constant MERCHANT_MOE_FACTORY = 0x5bEf015CA9424A7C07B68490616a4C1F094BEdEc;
     address private constant MERCHANT_MOE_LB_FACTORY = 0xa6630671775c4EA2743840F9A5016dCf2A104054;
 
+    bytes32 private constant METHLAB_FF_FACTORY = 0xff8f140fc3e9211b8dc2fc1d7ee3292f6817c5dd5d0000000000000000000000;
+    bytes32 private constant METHLAB_INIT_CODE_HASH = 0xacd26fbb15704ae5e5fe7342ea8ebace020e4fa5ad4a03122ce1678278cf382b;
+
     bytes32 internal constant VELO_FF_FACTORY = 0xff99F9a4A96549342546f9DAE5B2738EDDcD43Bf4C0000000000000000000000;
     bytes32 constant VELO_CODE_HASH = 0x0ccd005ee58d5fb11632ef5c2e0866256b240965c62c8e990c0f84a97f311879;
     address internal constant VELO_FACTORY = 0x99F9a4A96549342546f9DAE5B2738EDDcD43Bf4C;
@@ -264,6 +267,11 @@ contract OneDeltaQuoterMantle {
 
     // fusionx v3
     function fusionXV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata path) external view {
+        _v3SwapCallback(amount0Delta, amount1Delta, path);
+    }
+
+    // methlab
+    function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata path) external view {
         _v3SwapCallback(amount0Delta, amount1Delta, path);
     }
 
@@ -730,7 +738,7 @@ contract OneDeltaQuoterMantle {
                 pool := and(ADDRESS_MASK, keccak256(s, 85))
             }
             // Cleo
-            default {
+            case 4 {
                 mstore(p, CLEO_FF_FACTORY)
                 p := add(p, 21)
                 // Compute the inner hash in-place
@@ -747,6 +755,26 @@ contract OneDeltaQuoterMantle {
                 mstore(p, keccak256(p, 96))
                 p := add(p, 32)
                 mstore(p, CLEO_POOL_INIT_CODE_HASH)
+                pool := and(ADDRESS_MASK, keccak256(s, 85))
+            }
+            // MethLab
+            default {
+                mstore(p, METHLAB_FF_FACTORY)
+                p := add(p, 21)
+                // Compute the inner hash in-place
+                switch lt(tokenA, tokenB)
+                case 0 {
+                    mstore(p, tokenB)
+                    mstore(add(p, 32), tokenA)
+                }
+                default {
+                    mstore(p, tokenA)
+                    mstore(add(p, 32), tokenB)
+                }
+                mstore(add(p, 64), and(UINT24_MASK, fee))
+                mstore(p, keccak256(p, 96))
+                p := add(p, 32)
+                mstore(p, METHLAB_INIT_CODE_HASH)
                 pool := and(ADDRESS_MASK, keccak256(s, 85))
             }
         }

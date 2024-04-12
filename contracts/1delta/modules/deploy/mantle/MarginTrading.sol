@@ -303,6 +303,15 @@ abstract contract MarginTrading is WithStorage, BaseSwapper, BaseLending {
         uniswapV3SwapCallbackInternal(amount0Delta, amount1Delta, path);
     }
 
+    // methlab
+    function uniswapV3SwapCallback(
+        int256 amount0Delta,
+        int256 amount1Delta,
+        bytes calldata path
+    ) external {
+        uniswapV3SwapCallbackInternal(amount0Delta, amount1Delta, path);
+    }
+
    /**
     * The uniswapV3 style callback
     * 

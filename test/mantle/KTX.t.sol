@@ -5,18 +5,9 @@ import "./DeltaSetup.f.sol";
 import "../../contracts/1delta/quoter/test/TestQuoterMantle.sol";
 
 /**
- * Tests Merchant Moe's LB in all configs
- * Exact out ath the beginning, end
- * Exact in at the begginging, end
- * Payment variations
- *  - continue swap
- *  - pay from user balance
- *  - pay with credit line
- *  - pay through withdrawal
+ * Tests KTX / GMX style DEXs exact in swaps
  */
 contract GeneralMoeLBTest is DeltaSetup {
-    uint256 DEFAULT_IR_MODE = 2; // variable
-
     TestQuoterMantle testQuoter;
 
     function setUp() public virtual override {

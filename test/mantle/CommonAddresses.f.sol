@@ -17,6 +17,7 @@ contract AddressesMantle {
     address internal USDY = 0x5bE26527e817998A7206475496fDE1E68957c5A6;
     address internal mUSD = 0xab575258d37EaA5C8956EfABe71F4eE8F6397cF3;
     address internal USDe = 0x5d3a1Ff2b6BAb83b63cd9AD0787074081a52ef34;
+    address internal PUFF = 0x26a6b0dcdCfb981362aFA56D581e4A7dBA3Be140;
 
     // users
     address internal testUser = 0xaaaa4a3F69b6DB76889bDfa4edBe1c0BB57BAA5c;
