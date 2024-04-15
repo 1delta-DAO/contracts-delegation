@@ -12,7 +12,11 @@ import { lendleBrokerAddresses } from "../../deploy/mantle_addresses";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 // options for deployment
-const opts = {}
+const MANTLE_CONFIGS = {
+    maxFeePerGas: 0.02 * 1e9,
+    maxPriorityFeePerGas: 0.02 * 1e9
+}
+
 
 async function main() {
 
@@ -42,7 +46,7 @@ async function main() {
     console.log("Attempt module adjustment - estimate gas")
     await broker.estimateGas.configureModules(cut)
     console.log("Estimate successful - configure!")
-    const tx = await broker.configureModules(cut, opts)
+    const tx = await broker.configureModules(cut, MANTLE_CONFIGS)
     console.log('Module adjustment tx: ', tx.hash)
     const receipt = await tx.wait()
     if (!receipt.status) {
@@ -62,7 +66,7 @@ main()
 
 
 const getRemoveCut = async (operator: SignerWithAddress, proxyAddress: string) => {
-    const marginTradingAddress = '0xA96a9202DcBc31C06173f0A07102D8Ca92A6ea72' // lendleBrokerAddresses.MarginTraderModule[chainId]
+    const marginTradingAddress = '0x4E92d37814285BeBA469B0D7c71946af19Fd4E59' // lendleBrokerAddresses.MarginTraderModule[chainId]
     const cut: {
         moduleAddress: string,
         action: any,
