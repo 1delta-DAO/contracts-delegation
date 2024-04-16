@@ -217,7 +217,7 @@ contract OneDeltaQuoterMantle {
                 )
             )
             ////////////////////////////////////////////////////
-            // Step 5: get net return amount
+            // Step 5: get net return amount and validate vs. vault balance
             ////////////////////////////////////////////////////
             amountOut := div(
                 mul(
@@ -226,6 +226,20 @@ contract OneDeltaQuoterMantle {
                 ),
                 10000
             )
+
+            // selector for balanceOf(address)
+            mstore(0x0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+            // add this address as parameter
+            mstore(0x4, KTX_VAULT)
+
+            // call to tokenOut to fetch balance
+            if iszero(staticcall(gas(), _tokenOut, 0x0, 0x24, 0x0, 0x20)) {
+                revert (0,0)
+            }
+            // vault must have enough liquidity
+            if lt(mload(0x0), amountOut) {
+                revert(0, 0)
+            }
         }
     }
 

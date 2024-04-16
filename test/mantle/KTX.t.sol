@@ -61,6 +61,21 @@ contract GeneralMoeLBTest is DeltaSetup {
         assertApproxEqAbs(balanceIn, amountIn, 0);
     }
 
+    // this one tests that the quoter reverts if hte output amount is higher than the vault balance
+    function test_mantle_ktx_spot_exact_in_low_balance() external {
+        address user = testUser;
+        vm.assume(user != address(0));
+        address assetIn = WETH;
+        address assetOut = METH;
+
+        deal(assetIn, user, 1e20);
+
+        uint256 amountIn = 20.0e18;
+
+        vm.expectRevert();
+        testQuoter._quoteKTXExactIn(assetIn, assetOut, amountIn);
+    }
+
     function test_mantle_ktx_spot_exact_in_stable_out() external {
         address user = testUser;
         vm.assume(user != address(0));
