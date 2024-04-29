@@ -176,12 +176,13 @@ abstract contract TokenTransfer {
             mstore(0x0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
             // add this address as parameter
             mstore(0x4, entity)
-
             // call to underlying
-            if iszero(staticcall(gas(), underlying, 0x0, 0x24, 0x0, 0x20)) {
-                revert (0,0)
+            let success := staticcall(gas(), underlying, 0x0, 0x24, 0x0, 0x20)
+            // revert if no success or returndatasize is less than 32 bytes
+            if or(iszero(success), lt(returndatasize(), 0x20)) {
+                revert(0, 0)
             }
-            
+            // load entity balance
             entityBalance := mload(0x0)
         }
     }

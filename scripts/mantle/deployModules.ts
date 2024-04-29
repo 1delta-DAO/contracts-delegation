@@ -5,6 +5,11 @@ import {
     DeltaLendingInterfaceMantle__factory,
 } from "../../types";
 
+const MANTLE_CONFIGS = {
+    maxFeePerGas: 0.02 * 1e9,
+    maxPriorityFeePerGas: 0.02 * 1e9
+}
+
 async function main() {
     const accounts = await ethers.getSigners()
     const operator = accounts[1]
@@ -13,7 +18,7 @@ async function main() {
     console.log("operator", operator.address, "on", chainId)
 
     // flash swapper
-    const flashBroker = await new DeltaFlashAggregatorMantle__factory(operator).deploy()
+    const flashBroker = await new DeltaFlashAggregatorMantle__factory(operator).deploy(MANTLE_CONFIGS)
     await flashBroker.deployed()
     console.log("flashBroker deployed")
 

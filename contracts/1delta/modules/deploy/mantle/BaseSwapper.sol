@@ -10,6 +10,7 @@ import {IUniversalV3StyleSwap} from "../../../dex-tools/interfaces/IUniversalSwa
 import {IUniswapV2Pair} from "../../../../external-protocols/uniswapV2/core/interfaces/IUniswapV2Pair.sol";
 import {TokenTransfer} from "../../../libraries/TokenTransfer.sol";
 
+
 // solhint-disable max-line-length
 
 /**
@@ -51,6 +52,9 @@ abstract contract BaseSwapper is TokenTransfer {
     bytes32 private constant CLEO_FF_FACTORY = 0xffAAA32926fcE6bE95ea2c51cB4Fcb60836D320C420000000000000000000000;
     bytes32 private constant CLEO_POOL_INIT_CODE_HASH = 0x1565b129f2d1790f12d45301b9b084335626f0c92410bc43130763b69971135d;
 
+    bytes32 private constant METHLAB_FF_FACTORY = 0xff8f140fc3e9211b8dc2fc1d7ee3292f6817c5dd5d0000000000000000000000;
+    bytes32 private constant METHLAB_INIT_CODE_HASH = 0xacd26fbb15704ae5e5fe7342ea8ebace020e4fa5ad4a03122ce1678278cf382b;
+
     address private constant MERCHANT_MOE_FACTORY = 0x5bEf015CA9424A7C07B68490616a4C1F094BEdEc;
     address private constant MERCHANT_MOE_LB_FACTORY = 0xa6630671775c4EA2743840F9A5016dCf2A104054;
 
@@ -68,6 +72,10 @@ abstract contract BaseSwapper is TokenTransfer {
 
     address private constant WOO_POOL = 0x9D1A92e601db0901e69bd810029F2C14bCCA3128;
     address internal constant REBATE_RECIPIENT = 0xC95eED7F6E8334611765F84CEb8ED6270F08907E;
+
+    address internal constant KTX_VAULT = 0x2e488D7ED78171793FA91fAd5352Be423A50Dae1;
+    address internal constant KTX_VAULT_UTILS = 0x25e71a6b45598213E95F9a718e3FE0523e9d9E34;
+    address internal constant KTX_VAULT_PRICE_FEED = 0xEdd1E8aACF7652aD8c015C4A403A9aE36F3Fe4B7;
 
     address internal constant STRATUM_3POOL = 0xD6F312AA90Ad4C92224436a7A4a648d69482e47e;
     address internal constant MUSD = 0xab575258d37EaA5C8956EfABe71F4eE8F6397cF3;
@@ -197,6 +205,26 @@ abstract contract BaseSwapper is TokenTransfer {
                 mstore(p, keccak256(p, 96))
                 p := add(p, 32)
                 mstore(p, CLEO_POOL_INIT_CODE_HASH)
+                pool := and(ADDRESS_MASK, keccak256(s, 85))
+            }
+            // MethLab
+            case 5 {
+                mstore(p, METHLAB_FF_FACTORY)
+                p := add(p, 21)
+                // Compute the inner hash in-place
+                switch lt(tokenA, tokenB)
+                case 0 {
+                    mstore(p, tokenB)
+                    mstore(add(p, 32), tokenA)
+                }
+                default {
+                    mstore(p, tokenA)
+                    mstore(add(p, 32), tokenB)
+                }
+                mstore(add(p, 64), and(UINT24_MASK, fee))
+                mstore(p, keccak256(p, 96))
+                p := add(p, 32)
+                mstore(p, METHLAB_INIT_CODE_HASH)
                 pool := and(ADDRESS_MASK, keccak256(s, 85))
             }
             // iZi
@@ -459,6 +487,8 @@ abstract contract BaseSwapper is TokenTransfer {
                     bin := and(shr(72, calldataload(path.offset)), 0xffffff)
                 }
                 amountIn = swapLBexactIn(tokenIn, tokenOut, amountIn, address(this), uint16(bin));
+            } else if(identifier == 104) {
+                amountIn = swapKTXExactIn(tokenIn, tokenOut, amountIn);
             } else
                 revert invalidDexId();
 
@@ -525,6 +555,69 @@ abstract contract BaseSwapper is TokenTransfer {
                 0x0, // no native transfer
                 0xB00,
                 0xC4, // input length 196
+                0xB00, // store output here
+                0x20 // output is just uint
+            )
+            if iszero(success) {
+                rdsize := returndatasize()
+                returndatacopy(0xB00, 0, rdsize)
+                revert(0xB00, rdsize)
+            }
+
+            amountOut := mload(0xB00)
+        }
+    }
+
+    /**
+     * Swaps exact input on KTX spot DEX
+     * @param tokenIn input
+     * @param tokenOut output
+     * @param amountIn sell amount
+     * @return amountOut buy amount
+     */
+    function swapKTXExactIn(address tokenIn, address tokenOut, uint256 amountIn) private returns (uint256 amountOut) {
+        assembly {
+            // selector for transfer(address,uint256)
+            mstore(0xB00, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+            mstore(add(0xB00, 0x04), KTX_VAULT)
+            mstore(add(0xB00, 0x24), amountIn)
+
+            let success := call(gas(), tokenIn, 0, 0xB00, 0x44, 0xB00, 32)
+
+            let rdsize := returndatasize()
+
+            // Check for ERC20 success. ERC20 tokens should return a boolean,
+            // but some don't. We accept 0-length return data as success, or at
+            // least 32 bytes that starts with a 32-byte boolean true.
+            success := and(
+                success, // call itself succeeded
+                or(
+                    iszero(rdsize), // no return data, or
+                    and(
+                        iszero(lt(rdsize, 32)), // at least 32 bytes
+                        eq(mload(0xB00), 1) // starts with uint256(1)
+                    )
+                )
+            )
+
+            if iszero(success) {
+                returndatacopy(0xB00, 0, rdsize)
+                revert(0xB00, rdsize)
+            }
+            // selector for swap(address,address,address)
+            mstore(
+                0xB00, // 2816
+                0x9331621200000000000000000000000000000000000000000000000000000000
+            )
+            mstore(0xB04, tokenIn)
+            mstore(0xB24, tokenOut)
+            mstore(0xB44, address())
+            success := call(
+                gas(),
+                KTX_VAULT,
+                0x0, // no native transfer
+                0xB00,
+                0x64, // input length 66 bytes
                 0xB00, // store output here
                 0x20 // output is just uint
             )

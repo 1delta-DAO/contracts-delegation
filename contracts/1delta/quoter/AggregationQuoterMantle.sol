@@ -92,6 +92,9 @@ contract OneDeltaQuoterMantle {
     address private constant MERCHANT_MOE_FACTORY = 0x5bEf015CA9424A7C07B68490616a4C1F094BEdEc;
     address private constant MERCHANT_MOE_LB_FACTORY = 0xa6630671775c4EA2743840F9A5016dCf2A104054;
 
+    bytes32 private constant METHLAB_FF_FACTORY = 0xff8f140fc3e9211b8dc2fc1d7ee3292f6817c5dd5d0000000000000000000000;
+    bytes32 private constant METHLAB_INIT_CODE_HASH = 0xacd26fbb15704ae5e5fe7342ea8ebace020e4fa5ad4a03122ce1678278cf382b;
+
     bytes32 internal constant VELO_FF_FACTORY = 0xff99F9a4A96549342546f9DAE5B2738EDDcD43Bf4C0000000000000000000000;
     bytes32 constant VELO_CODE_HASH = 0x0ccd005ee58d5fb11632ef5c2e0866256b240965c62c8e990c0f84a97f311879;
     address internal constant VELO_FACTORY = 0x99F9a4A96549342546f9DAE5B2738EDDcD43Bf4C;
@@ -106,14 +109,144 @@ contract OneDeltaQuoterMantle {
 
     address private constant WOO_ROUTER = 0xd14a997308F9e7514a8FEA835064D596CDCaa99E;
 
+    address internal constant KTX_VAULT = 0x2e488D7ED78171793FA91fAd5352Be423A50Dae1;
+    address internal constant KTX_VAULT_UTILS = 0x25e71a6b45598213E95F9a718e3FE0523e9d9E34;
+    address internal constant KTX_VAULT_PRICE_FEED = 0xEdd1E8aACF7652aD8c015C4A403A9aE36F3Fe4B7;
+    address internal constant USDG = 0x1Ca85898619cF01eDD8bE6ef7f8989da03D6B694;
+    uint256 internal constant PRICE_PRECISION = 10 ** 30;
+    
     address internal constant STRATUM_3POOL = 0xD6F312AA90Ad4C92224436a7A4a648d69482e47e;
     address internal constant USDY = 0x5bE26527e817998A7206475496fDE1E68957c5A6;
-    address internal constant MUSD = 0xab575258d37EaA5C8956EfABe71F4eE8F6397cF3;
+    address internal constant MUSD = 0xab575258d37EaA5C8956EfABe71F4eE8F6397cF3;    
+
+    function quoteKTXExactIn(
+        address _tokenIn,
+        address _tokenOut,
+        uint256 amountIn
+    ) internal view returns (uint256 amountOut) {
+        assembly {
+            let ptr := mload(0x40)
+            let ptrPlus4 := add(ptr, 0x4)
+            ////////////////////////////////////////////////////
+            // Step 1: get prices
+            ////////////////////////////////////////////////////
+
+            // getPrice(address,bool,bool,bool)
+            mstore(ptr, 0x2fc3a70a00000000000000000000000000000000000000000000000000000000)
+            // get maxPrice
+            mstore(ptrPlus4, _tokenOut)
+            mstore(add(ptr, 0x24), 0x1)
+            mstore(add(ptr, 0x44), 0x1)
+            mstore(add(ptr, 0x64), 0x1)
+            pop(
+                staticcall(
+                    gas(),
+                    KTX_VAULT_PRICE_FEED, // this goes to the oracle
+                    ptr,
+                    0x84,
+                    ptrPlus4, // do NOT override the selector
+                    0x20
+                )
+            )
+            let priceOut := mload(ptrPlus4)
+             // get minPrice
+            mstore(ptrPlus4, _tokenIn)
+            mstore(add(ptr, 0x24), 0x0)
+            // the other vars are stored from the prior call
+            pop(
+                staticcall(
+                    gas(),
+                    KTX_VAULT_PRICE_FEED, // this goes to the oracle
+                    ptr,
+                    0x84,
+                    ptr,
+                    0x20
+                )
+            )
+            let priceIn := mload(ptr)
+
+            ////////////////////////////////////////////////////
+            // Step 2: get amountOut by prices
+            ////////////////////////////////////////////////////
+
+            // get gross amountOut unscaled
+            amountOut := div(mul(amountIn, priceIn), priceOut)
+
+
+            ////////////////////////////////////////////////////
+            // Step 3: get token decimals and adjust amountOut
+            ////////////////////////////////////////////////////
+            
+            // selector for decimals()
+            mstore(ptr, 0x313ce56700000000000000000000000000000000000000000000000000000000)
+            pop(staticcall(gas(), _tokenIn, ptr, 0x4, ptrPlus4, 0x20))
+            let decsIn := exp(10, mload(ptrPlus4))
+            pop(staticcall(gas(), _tokenOut, ptr, 0x4, ptrPlus4, 0x20))
+            let decsOut := exp(10, mload(ptrPlus4))
+            // adjust amountOut for correct decimals
+            amountOut := div(mul(amountOut, decsOut), decsIn)
+
+            ////////////////////////////////////////////////////
+            // Step 4: calculate fees
+            //      4.1: get usdg amount
+            //      4.2: get getSwapFeeBasisPoints
+            ////////////////////////////////////////////////////
+            let usdgAmount :=div(
+                mul(
+                    div(
+                        mul(amountIn, priceIn), 
+                        PRICE_PRECISION
+                    ), 
+                    1000000000000000000
+                ),
+                decsIn
+            )
+            // getSwapFeeBasisPoints(address,address,uint256)
+            mstore(ptr, 0xda13381600000000000000000000000000000000000000000000000000000000)
+            mstore(ptrPlus4, _tokenIn)
+            mstore(add(ptr, 0x24), _tokenOut)
+            mstore(add(ptr, 0x44), usdgAmount)
+            
+            pop(staticcall(
+                    gas(),
+                    KTX_VAULT_UTILS,
+                    ptr,
+                    0x64,
+                    ptr,
+                    0x20
+                )
+            )
+            ////////////////////////////////////////////////////
+            // Step 5: get net return amount and validate vs. vault balance
+            ////////////////////////////////////////////////////
+            amountOut := div(
+                mul(
+                    amountOut, //  * decsOut / decsIn
+                    sub(10000, mload(ptr))
+                ),
+                10000
+            )
+
+            // selector for balanceOf(address)
+            mstore(0x0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+            // add this address as parameter
+            mstore(0x4, KTX_VAULT)
+
+            // call to tokenOut to fetch balance
+            if iszero(staticcall(gas(), _tokenOut, 0x0, 0x24, 0x0, 0x20)) {
+                revert (0,0)
+            }
+            // vault must have enough liquidity
+            if lt(mload(0x0), amountOut) {
+                revert(0, 0)
+            }
+        }
+    }
 
     constructor() {}
 
     // uniswap V3 type callback
-    function _v3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata path) private view {
+    function _v3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata path) internal view {
         // we do not validate the callback since it's just a view function
         // as such, we do not need to decode poolId and fee
         address tokenIn;
@@ -148,6 +281,11 @@ contract OneDeltaQuoterMantle {
 
     // fusionx v3
     function fusionXV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata path) external view {
+        _v3SwapCallback(amount0Delta, amount1Delta, path);
+    }
+
+    // methlab
+    function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata path) external view {
         _v3SwapCallback(amount0Delta, amount1Delta, path);
     }
 
@@ -232,7 +370,7 @@ contract OneDeltaQuoterMantle {
     }
 
     /// @dev Parses a revert reason that should contain the numeric quote
-    function parseRevertReason(bytes memory reason) private pure returns (uint256) {
+    function parseRevertReason(bytes memory reason) internal pure returns (uint256) {
         if (reason.length != 32) {
             if (reason.length != 64) revert("Unexpected error");
             // iZi catches errors of length other than 64 internally
@@ -247,7 +385,7 @@ contract OneDeltaQuoterMantle {
         uint24 fee,
         uint8 pId, // pool identifier
         uint256 amountIn
-    ) private returns (uint256 amountOut) {
+    ) internal returns (uint256 amountOut) {
         bool zeroForOne = tokenIn < tokenOut;
 
         try
@@ -269,7 +407,7 @@ contract OneDeltaQuoterMantle {
         address tokenOut,
         uint24 fee,
         uint128 amount
-    ) private returns (uint256 amountOut) {
+    ) internal returns (uint256 amountOut) {
         if (tokenIn < tokenOut) {
             int24 boundaryPoint = -799999;
             try
@@ -303,7 +441,7 @@ contract OneDeltaQuoterMantle {
         uint24 fee,
         uint8 poolId,
         uint256 amountOut
-    ) private returns (uint256 amountIn) {
+    ) internal returns (uint256 amountIn) {
         bool zeroForOne = tokenIn < tokenOut;
 
         // if no price limit has been specified, cache the output amount for comparison in the swap callback
@@ -328,7 +466,7 @@ contract OneDeltaQuoterMantle {
         address tokenOut,
         uint24 fee,
         uint128 desire
-    ) private returns (uint256 amountIn) {
+    ) internal returns (uint256 amountIn) {
         amountOutCached = desire;
         if (tokenIn < tokenOut) {
             int24 boundaryPoint = -799999;
@@ -362,7 +500,7 @@ contract OneDeltaQuoterMantle {
         address tokenOut,
         uint256 amountIn,
         uint16 binStep // identifies the exact pair address
-    ) private view returns (uint256 amountOut) {
+    ) internal view returns (uint256 amountOut) {
         assembly {
             let ptr := mload(0x40)
             // getLBPairInformation(address,address,uint256)
@@ -388,7 +526,7 @@ contract OneDeltaQuoterMantle {
                     ptr,
                     0x64,
                     ptr,
-                    0x40 // we only need 64 bits of the output
+                    0x40 // we only need 64 bytes of the output
                 )
             )
             // get the pair
@@ -428,7 +566,7 @@ contract OneDeltaQuoterMantle {
                 mload(add(ptr, 0x20))
             )
             // the first slot returns amount in left, if positive, we revert
-            if gt(0, mload(ptr)) {
+            if gt(mload(ptr), 0) {
                 revert(0, 0)
             }
         }
@@ -439,7 +577,7 @@ contract OneDeltaQuoterMantle {
         address tokenOut,
         uint256 amountOut,
         uint16 binStep // this param identifies the pair
-    ) private view returns (uint256 amountIn) {
+    ) internal view returns (uint256 amountIn) {
         assembly {
             let ptr := mload(0x40)
             // getLBPairInformation(address,address,uint256)
@@ -521,7 +659,7 @@ contract OneDeltaQuoterMantle {
                 mload(ptr)
             )
             // the second slot returns amount out left, if positive, we revert
-            if gt(0, mload(add(ptr, 0x20))) {
+            if gt(mload(add(ptr, 0x20)), 0) {
                 revert(0, 0)
             }
         }
@@ -529,7 +667,7 @@ contract OneDeltaQuoterMantle {
 
     /// @dev Returns the pool for the given token pair and fee.
     /// The pool contract may or may not exist.
-    function v3TypePool(address tokenA, address tokenB, uint24 fee, uint256 _pId) private pure returns (ISwapPool pool) {
+    function v3TypePool(address tokenA, address tokenB, uint24 fee, uint256 _pId) internal pure returns (ISwapPool pool) {
         assembly {
             let s := mload(0x40)
             let p := s
@@ -614,7 +752,7 @@ contract OneDeltaQuoterMantle {
                 pool := and(ADDRESS_MASK, keccak256(s, 85))
             }
             // Cleo
-            default {
+            case 4 {
                 mstore(p, CLEO_FF_FACTORY)
                 p := add(p, 21)
                 // Compute the inner hash in-place
@@ -633,11 +771,31 @@ contract OneDeltaQuoterMantle {
                 mstore(p, CLEO_POOL_INIT_CODE_HASH)
                 pool := and(ADDRESS_MASK, keccak256(s, 85))
             }
+            // MethLab
+            default {
+                mstore(p, METHLAB_FF_FACTORY)
+                p := add(p, 21)
+                // Compute the inner hash in-place
+                switch lt(tokenA, tokenB)
+                case 0 {
+                    mstore(p, tokenB)
+                    mstore(add(p, 32), tokenA)
+                }
+                default {
+                    mstore(p, tokenA)
+                    mstore(add(p, 32), tokenB)
+                }
+                mstore(add(p, 64), and(UINT24_MASK, fee))
+                mstore(p, keccak256(p, 96))
+                p := add(p, 32)
+                mstore(p, METHLAB_INIT_CODE_HASH)
+                pool := and(ADDRESS_MASK, keccak256(s, 85))
+            }
         }
     }
 
     /// @dev Returns the pool for the given token pair and fee. The pool contract may or may not exist.
-    function getiZiPool(address tokenA, address tokenB, uint24 fee) private pure returns (IiZiSwapPool pool) {
+    function getiZiPool(address tokenA, address tokenB, uint24 fee) internal pure returns (IiZiSwapPool pool) {
         assembly {
             let s := mload(0x40)
             let p := s
@@ -661,7 +819,7 @@ contract OneDeltaQuoterMantle {
     }
 
     /// @dev gets uniswapV2 (and fork) pair addresses
-    function v2TypePairAddress(address tokenA, address tokenB, uint256 _pId) private view returns (address pair) {
+    function v2TypePairAddress(address tokenA, address tokenB, uint256 _pId) internal view returns (address pair) {
         assembly {
             switch _pId
             // FusionX
@@ -872,6 +1030,8 @@ contract OneDeltaQuoterMantle {
                     )
                 }
                 amountIn = getLBAmountOut(tokenIn, tokenOut, amountIn, uint16(bin));
+            } else if (poolId == 104) {
+                amountIn = quoteKTXExactIn(tokenIn, tokenOut, amountIn);
             } else {
                 revert invalidDexId();
             }
@@ -950,7 +1110,7 @@ contract OneDeltaQuoterMantle {
         address tokenOut,
         uint256 sellAmount,
         uint256 _pId // to identify the fee
-    ) private view returns (uint256 buyAmount) {
+    ) internal view returns (uint256 buyAmount) {
         assembly {
             // Compute the buy amount based on the pair reserves.
             {
@@ -1032,7 +1192,7 @@ contract OneDeltaQuoterMantle {
         }
     }
 
-    function quoteWOO(address tokenIn, address tokenOut, uint256 amountIn) private view returns (uint256 amountOut) {
+    function quoteWOO(address tokenIn, address tokenOut, uint256 amountIn) internal view returns (uint256 amountOut) {
         assembly {
             // selector for querySwap(address,address,uint256)
             mstore(0xB00, 0xe94803f400000000000000000000000000000000000000000000000000000000)
@@ -1047,7 +1207,7 @@ contract OneDeltaQuoterMantle {
         }
     }
 
-    function quoteStratum3(address tokenIn, address tokenOut, uint256 amountIn) private view returns (uint256 amountOut) {
+    function quoteStratum3(address tokenIn, address tokenOut, uint256 amountIn) internal view returns (uint256 amountOut) {
         assembly {
             let indexIn
             let indexOut
