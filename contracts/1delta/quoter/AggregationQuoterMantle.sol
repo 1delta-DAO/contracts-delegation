@@ -566,7 +566,7 @@ contract OneDeltaQuoterMantle {
                 mload(add(ptr, 0x20))
             )
             // the first slot returns amount in left, if positive, we revert
-            if gt(0, mload(ptr)) {
+            if gt(mload(ptr), 0) {
                 revert(0, 0)
             }
         }
@@ -659,7 +659,7 @@ contract OneDeltaQuoterMantle {
                 mload(ptr)
             )
             // the second slot returns amount out left, if positive, we revert
-            if gt(0, mload(add(ptr, 0x20))) {
+            if gt(mload(add(ptr, 0x20)), 0) {
                 revert(0, 0)
             }
         }
