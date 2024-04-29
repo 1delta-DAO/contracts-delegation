@@ -17,7 +17,7 @@ contract IzumiQuotingTest is DeltaSetup {
 
         deployDelta();
         initializeDelta();
-        testQuoter = TestQuoterMantle(0xeFca505bF44315C9EfC180923f6d7Beba3ebde2d);
+        testQuoter = new TestQuoterMantle();
     }
 
     function test_mantle_izumi_quote_spot_exact_in_works() external {
