@@ -81,8 +81,8 @@ contract LendleFlashModuleTest is DeltaSetup {
 
         // deposit 10, recieve 20... makes 30...
         assertApproxEqAbs(29999989, balance, 1);
-        // deviations through rouding expected, accuracy for 10 decimals
-        assertApproxEqAbs(borrowBalance, amountToDeposit + amountToLeverage, 1.0e8);
+        // deviations through rouding expected, accuracy for 0.00002
+        assertApproxEqAbs(borrowBalance, amountToFlashRepay, 20);
     }
 
     function test_lendle_flash_close() external {
