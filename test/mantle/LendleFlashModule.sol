@@ -85,6 +85,72 @@ contract LendleFlashModuleTest is DeltaSetup {
         assertApproxEqAbs(borrowBalance, amountToDeposit + amountToLeverage, 1.0e8);
     }
 
+    function test_lendle_flash_close() external {
+        uint8 lenderId = DEFAULT_LENDER;
+        address user = testUser;
+        vm.assume(user != address(0) && lenderId < 2);
+        address asset = USDC;
+        address collateralAsset = collateralTokens[asset][lenderId];
+
+        address borrowAsset = USDT;
+
+        deal(asset, address(router), 1e20);
+        deal(borrowAsset, address(router), 1e20);
+
+        address debtAsset = debtTokens[borrowAsset][lenderId];
+
+        {
+            uint256 amountToDeposit = 10.0e6;
+            uint256 amountToLeverage = 20.0e6;
+
+            openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage);
+        }
+
+        bytes[] memory calls = new bytes[](1);
+
+        uint256 amountIn = 15.0e6;
+
+        uint256 premi = ILendingPool(LENDLE_POOL).FLASHLOAN_PREMIUM_TOTAL();
+        uint256 amountToFlashWithdraw = (amountIn * 10000) / (10000 - premi);
+        IFlashLoanReceiver.DeltaParams memory deltaParams = IFlashLoanReceiver.DeltaParams({
+            baseAsset: borrowAsset, // the asset paired with the flash loan
+            target: address(router), // the swap target
+            marginTradeType: 1,
+            // 0 = Margin open
+            // 1 = margin close
+            // 2 = collateral / open
+            // 3 = debt / close
+            interestRateModeIn: 0, // aave interest mode
+            interestRateModeOut: uint8(DEFAULT_IR_MODE), // aave interest mode
+            withdrawMax: false
+        });
+
+        calls[0] = abi.encodeWithSelector(
+            IFlashLoanReceiver.executeOnLendle.selector,
+            asset,
+            amountToFlashWithdraw,
+            deltaParams,
+            getOpenMock(asset, borrowAsset, amountIn)
+        );
+
+        vm.prank(user);
+        IERC20All(collateralAsset).approve(brokerProxyAddress, amountToFlashWithdraw);
+
+        uint256 borrowBalance = IERC20All(debtAsset).balanceOf(user);
+        uint256 balance = IERC20All(collateralAsset).balanceOf(user);
+
+        vm.prank(user);
+        brokerProxy.multicall(calls);
+
+        balance = balance - IERC20All(collateralAsset).balanceOf(user);
+        borrowBalance = borrowBalance - IERC20All(debtAsset).balanceOf(user);
+
+        // deposit 10, recieve 32.1... makes 42.1...
+        assertApproxEqAbs(amountToFlashWithdraw, balance, 1);
+        // deviations through rouding expected, accuracy for 10 decimals
+        assertApproxEqAbs(14999988, borrowBalance, 1);
+    }
+
     function getOpenMock(address tokenIn, address tokenOut, uint256 amountIn) internal pure returns (bytes memory data) {
         return abi.encodeWithSelector(MockRouter.swapExactIn.selector, tokenIn, tokenOut, amountIn);
     }
