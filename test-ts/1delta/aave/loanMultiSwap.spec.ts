@@ -4,8 +4,6 @@ import { ethers, network } from 'hardhat'
 import {
     MintableERC20,
     WETH9,
-    PathTesterBroker,
-    PathTesterBroker__factory
 } from '../../../types';
 import { FeeAmount } from '../../uniswap-v3/periphery/shared/constants';
 import { expandTo18Decimals } from '../../uniswap-v3/periphery/shared/expandTo18Decimals';
@@ -34,7 +32,6 @@ describe('AAVE Brokered Loan Multi Swap operations', async () => {
     let aaveTest: AAVEFixture;
     let broker: AaveBrokerFixtureInclV2;
     let tokens: (MintableERC20 | WETH9)[];
-    let pathTester: PathTesterBroker
     let uniswapV2: V2Fixture
 
     before('Deploy Account, Trader, Uniswap and AAVE', async () => {
@@ -46,7 +43,6 @@ describe('AAVE Brokered Loan Multi Swap operations', async () => {
         uniswapV2 = await uniV2Fixture(deployer, aaveTest.tokens["WETH"].address)
         broker = await aaveBrokerFixtureInclV2(deployer, uniswap.factory.address, aaveTest.pool.address, uniswapV2.factoryV2.address, aaveTest.tokens["WETH"].address)
 
-        pathTester = await new PathTesterBroker__factory(deployer).deploy()
         await initAaveBroker(deployer, broker as any, aaveTest.pool.address)
         // approve & fund wallets
         let keys = Object.keys(aaveTest.tokens)

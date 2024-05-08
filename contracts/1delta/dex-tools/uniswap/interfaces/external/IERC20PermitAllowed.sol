@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.24;
+pragma solidity 0.8.25;
 
 /// @title Interface for permit
 /// @notice Interface used by DAI/CHAI for permit

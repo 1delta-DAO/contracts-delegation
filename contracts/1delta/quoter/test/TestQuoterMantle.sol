@@ -2,7 +2,7 @@
 
 import "../AggregationQuoterMantle.sol";
 
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.25;
 
 /**
  * Test quoter contract - exposes all internal functions

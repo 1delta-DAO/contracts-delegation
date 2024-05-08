@@ -5,13 +5,16 @@ import {AddressesMantle} from "./CommonAddresses.f.sol";
 
 // interfaces
 import {IFlashAggregator} from "./interfaces/IFlashAggregator.sol";
+import {IFlashLoanReceiver} from "../../contracts/1delta/modules/deploy/mantle/IFlashLoanReceiver.sol";
 import {IManagement} from "./interfaces/IManagement.sol";
 import {ILending} from "./interfaces/ILending.sol";
 import {IInitialize} from "./interfaces/IInitialize.sol";
 import {IBrokerProxy} from "./interfaces/IBrokerProxy.sol";
 import {IModuleConfig} from "../../contracts/1delta/proxy/interfaces/IModuleConfig.sol";
+
 // universal erc20
 import {IERC20All} from "./interfaces/IERC20All.sol";
+
 // lending pool for debugging
 import {ILendingPool} from "../../contracts/1delta/modules/deploy/mantle/ILendingPool.sol";
 
@@ -25,6 +28,7 @@ import {MarginTraderInit} from "../../contracts/1delta/initializers/MarginTrader
 // core modules
 import {ManagementModule} from "../../contracts/1delta/modules/aave/ManagementModule.sol";
 import {DeltaFlashAggregatorMantle} from "../../contracts/1delta/modules/deploy/mantle/FlashAggregator.sol";
+import {LendleFlashModule} from "../../contracts/1delta/modules/deploy/mantle/LendleFlashModule.sol";
 import {DeltaLendingInterfaceMantle} from "../../contracts/1delta/modules/deploy/mantle/LendingInterface.sol";
 
 // forge
@@ -97,6 +101,16 @@ contract DeltaSetup is AddressesMantle, Script, Test {
         return selectors;
     }
 
+    function lendleFlashModuleSelectors() internal pure returns (bytes4[] memory selectors) {
+        selectors = new bytes4[](4);
+        /** margin */
+        selectors[0] = IFlashLoanReceiver.executeOperation.selector;
+        selectors[1] = IFlashLoanReceiver.ADDRESSES_PROVIDER.selector;
+        selectors[2] = IFlashLoanReceiver.LENDING_POOL.selector;
+        selectors[3] = IFlashLoanReceiver.executeOnLendle.selector;
+        return selectors;
+    }
+
     function lendingSelectors() internal pure returns (bytes4[] memory selectors) {
         selectors = new bytes4[](18);
         // baseline
@@ -138,16 +152,19 @@ contract DeltaSetup is AddressesMantle, Script, Test {
         DeltaFlashAggregatorMantle _aggregator = new DeltaFlashAggregatorMantle();
         DeltaLendingInterfaceMantle _lending = new DeltaLendingInterfaceMantle();
         MarginTraderInit init = new MarginTraderInit();
+        LendleFlashModule lendleFlashModule = new LendleFlashModule();
 
         management = IManagement(brokerProxyAddress);
         deltaConfig = IModuleConfig(brokerProxyAddress);
 
         // define configs to add to proxy
-        IModuleConfig.ModuleConfig[] memory _moduleConfig = new IModuleConfig.ModuleConfig[](4);
+        IModuleConfig.ModuleConfig[] memory _moduleConfig = new IModuleConfig.ModuleConfig[](5);
         _moduleConfig[0] = IModuleConfig.ModuleConfig(address(_management), IModuleConfig.ModuleConfigAction.Add, managementSelectors());
         _moduleConfig[1] = IModuleConfig.ModuleConfig(address(_aggregator), IModuleConfig.ModuleConfigAction.Add, flashAggregatorSelectors());
         _moduleConfig[2] = IModuleConfig.ModuleConfig(address(init), IModuleConfig.ModuleConfigAction.Add, initializeSelectors());
         _moduleConfig[3] = IModuleConfig.ModuleConfig(address(_lending), IModuleConfig.ModuleConfigAction.Add, lendingSelectors());
+        _moduleConfig[4] = IModuleConfig.ModuleConfig(address(lendleFlashModule), IModuleConfig.ModuleConfigAction.Add, lendleFlashModuleSelectors());
+
         // add all modules
         deltaConfig.configureModules(_moduleConfig);
 
@@ -158,8 +175,7 @@ contract DeltaSetup is AddressesMantle, Script, Test {
     /** ADD AND APPROVE LENDER TOKENS */
 
     function initializeDelta() internal virtual {
-
-       // lendle
+        // lendle
         management.addLenderTokens(USDC, LENDLE_A_USDC, LENDLE_V_USDC, LENDLE_S_USDC);
         management.addLenderTokens(USDT, LENDLE_A_USDT, LENDLE_V_USDT, LENDLE_S_USDT);
         management.addLenderTokens(WBTC, LENDLE_A_WBTC, LENDLE_V_WBTC, LENDLE_S_WBTC);
@@ -215,6 +231,14 @@ contract DeltaSetup is AddressesMantle, Script, Test {
         management.approveAddress(assets, AURELIUS_POOL);
     }
 
+    function getAssets() internal view returns (address[] memory assetList) {
+        assetList = new address[](5);
+        assetList[0] = USDC;
+        assetList[1] = WBTC;
+        assetList[2] = WETH;
+        assetList[3] = WMNT;
+        assetList[4] = USDT;
+    }
 
     function setUp() public virtual {
         vm.createSelectFork({blockNumber: 62219594, urlOrAlias: "https://mantle-mainnet.public.blastapi.io"});
