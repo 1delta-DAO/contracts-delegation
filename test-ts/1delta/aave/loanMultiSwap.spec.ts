@@ -12,7 +12,6 @@ import { expect } from '../shared/expect'
 import { initializeMakeSuite, InterestRateMode, AAVEFixture } from '../shared/aaveFixture';
 import { addLiquidity, addLiquidityV2, uniswapMinimalFixtureNoTokens, UniswapMinimalFixtureNoTokens } from '../shared/uniswapFixture';
 import { formatEther } from 'ethers/lib/utils';
-import { MockProvider } from 'ethereum-waffle';
 import { uniV2Fixture, V2Fixture } from '../shared/uniV2Fixture';
 import { encodeAggregatorPathEthers } from '../shared/aggregatorPath';
 
@@ -25,7 +24,6 @@ describe('AAVE Brokered Loan Multi Swap operations', async () => {
     let bob: SignerWithAddress;
     let carol: SignerWithAddress;
     let gabi: SignerWithAddress;
-    let test: SignerWithAddress;
     let test0: SignerWithAddress;
     let test1: SignerWithAddress;
     let uniswap: UniswapMinimalFixtureNoTokens;
@@ -35,7 +33,7 @@ describe('AAVE Brokered Loan Multi Swap operations', async () => {
     let uniswapV2: V2Fixture
 
     before('Deploy Account, Trader, Uniswap and AAVE', async () => {
-        [deployer, alice, bob, carol, gabi, test, test0, test1] = await ethers.getSigners();
+        [deployer, alice, bob, carol, gabi, test0, test1] = await ethers.getSigners();
 
         aaveTest = await initializeMakeSuite(deployer)
         tokens = Object.values(aaveTest.tokens)

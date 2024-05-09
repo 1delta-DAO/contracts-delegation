@@ -26,4 +26,7 @@ export const lendleBrokerAddresses = {
     LendingInterface: {
         5000: '0xd3E55dd0BabB618f73240d283bBd38A551c48c7b'
     },
+    LendleFlashModule: {
+        5000: '0xa58d5f9397fE1C65EfE72f5fBC95C1A957418F58'
+    }
 }

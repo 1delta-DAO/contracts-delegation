@@ -21,14 +21,6 @@ contract LendleFlashModule is WithStorage, BaseLending, TokenTransfer, IFlashLoa
 
     constructor() {}
 
-    function ADDRESSES_PROVIDER() external pure returns (address) {
-        return 0xAb94Bedd21ae3411eB2698945dfCab1D5C19C3d4;
-    }
-
-    function LENDING_POOL() external pure returns (address) {
-        return address(LENDLE_POOL);
-    }
-
     /**
      * Excutes flash loan
      * @param asset the aset to draw the flash loan

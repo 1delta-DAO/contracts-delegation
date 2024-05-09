@@ -16,10 +16,6 @@ interface IFlashLoanReceiver {
         bytes calldata params
     ) external returns (bool);
 
-    function ADDRESSES_PROVIDER() external view returns (address);
-
-    function LENDING_POOL() external view returns (address);
-
     struct DeltaParams {
         address baseAsset; // the asset paired with the flash loan
         address target; // the swap target

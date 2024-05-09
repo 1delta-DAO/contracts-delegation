@@ -102,12 +102,10 @@ contract DeltaSetup is AddressesMantle, Script, Test {
     }
 
     function lendleFlashModuleSelectors() internal pure returns (bytes4[] memory selectors) {
-        selectors = new bytes4[](4);
+        selectors = new bytes4[](2);
         /** margin */
         selectors[0] = IFlashLoanReceiver.executeOperation.selector;
-        selectors[1] = IFlashLoanReceiver.ADDRESSES_PROVIDER.selector;
-        selectors[2] = IFlashLoanReceiver.LENDING_POOL.selector;
-        selectors[3] = IFlashLoanReceiver.executeOnLendle.selector;
+        selectors[1] = IFlashLoanReceiver.executeOnLendle.selector;
         return selectors;
     }
 
