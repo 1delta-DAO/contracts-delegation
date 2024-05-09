@@ -4,11 +4,7 @@ import { lendleBrokerAddresses } from "../../deploy/mantle_addresses";
 import { DeltaBrokerProxy__factory, ManagementModule__factory } from "../../types";
 import { addressesTokensMantle } from "./lendleAddresses";
 
-const underlyings = [
-    addressesTokensMantle.USDC,
-    addressesTokensMantle.USDT,
-    '0xab575258d37EaA5C8956EfABe71F4eE8F6397cF3' // mUSD
-]
+const underlyings = Object.values(addressesTokensMantle)
 
 const aggregatorsTargets = [
     '0xD9F4e85489aDCD0bAF0Cd63b4231c6af58c26745', // ODOS
