@@ -78,6 +78,8 @@ abstract contract BaseSwapper is TokenTransfer {
     address internal constant KTX_VAULT_PRICE_FEED = 0xEdd1E8aACF7652aD8c015C4A403A9aE36F3Fe4B7;
 
     address internal constant STRATUM_3POOL = 0xD6F312AA90Ad4C92224436a7A4a648d69482e47e;
+    address internal constant STRATUM_ETH_POOL = 0xe8792eD86872FD6D8b74d0668E383454cbA15AFc;
+
     address internal constant MUSD = 0xab575258d37EaA5C8956EfABe71F4eE8F6397cF3;
     address internal constant USDY = 0x5bE26527e817998A7206475496fDE1E68957c5A6;
 
@@ -489,6 +491,10 @@ abstract contract BaseSwapper is TokenTransfer {
                 amountIn = swapLBexactIn(tokenIn, tokenOut, amountIn, address(this), uint16(bin));
             } else if(identifier == 104) {
                 amountIn = swapKTXExactIn(tokenIn, tokenOut, amountIn);
+            } 
+            // Stratum ETH
+            else if (identifier == 105) {
+                amountIn = swapStratumEth(tokenIn, tokenOut, amountIn);
             } else
                 revert invalidDexId();
 
@@ -937,6 +943,54 @@ abstract contract BaseSwapper is TokenTransfer {
                 // load the retrieved balance
                 amountOut := mload(0xB00)
             }
+        }
+    }
+
+
+    /**
+     * Swaps Stratums Curve fork exact in internally
+     * @param tokenIn input
+     * @param amountIn sell amount
+     * @return amountOut buy amount
+     */
+    function swapStratumEth(address tokenIn, address, uint256 amountIn) private returns (uint256 amountOut) {
+        assembly {
+            // curve forks work with indices, we determine these below
+            let indexIn
+            let indexOut
+            switch tokenIn
+            // ETH
+            case 0xdeaddeaddeaddeaddeaddeaddeaddeaddead1111 {
+                indexIn := 0
+                indexOut := 1
+            } 
+            // METH
+            case 0xcda86a272531e8640cd7f1a92c01839911b90bb0 {
+                indexIn := 1
+                indexOut := 0
+            }
+            default {
+                revert(0, 0)
+            }
+
+            ////////////////////////////////////////////////////
+            // Execute swap function 
+            ////////////////////////////////////////////////////
+
+            // selector for swap(uint8,uint8,uint256,uint256,uint256)
+            mstore(0xB00, 0x9169558600000000000000000000000000000000000000000000000000000000)
+            mstore(0xB04, indexIn)
+            mstore(0xB24, indexOut)
+            mstore(0xB44, amountIn)
+            mstore(0xB64, 0) // min out is zero, we validate slippage at the end
+            mstore(0xB84, 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff) // no deadline
+            if iszero(call(gas(), STRATUM_ETH_POOL, 0x0, 0xB00, 0xA4, 0xB00, 0x20)) {
+                let rdsize := returndatasize()
+                returndatacopy(0xB00, 0, rdsize)
+                revert(0xB00, rdsize)
+            }
+
+            amountOut := mload(0xB00)
         }
     }
 

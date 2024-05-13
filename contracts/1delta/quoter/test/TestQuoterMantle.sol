@@ -12,6 +12,10 @@ contract TestQuoterMantle is OneDeltaQuoterMantle {
         return super.quoteKTXExactIn(_tokenIn, _tokenOut, amountIn);
     }
 
+    function _quoteStratumEth(address _tokenIn, address _tokenOut, uint256 amountIn) public view returns (uint256 amountOut) {
+        return super.quoteStratumEth(_tokenIn, _tokenOut, amountIn);
+    }
+
     function _quoteExactInputSingleV3(
         address tokenIn,
         address tokenOut,
