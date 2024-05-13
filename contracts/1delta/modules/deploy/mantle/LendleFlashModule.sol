@@ -34,16 +34,13 @@ contract LendleFlashModule is WithStorage, BaseLending, TokenTransfer, IFlashLoa
     ) external payable override {
         address[] memory tokens = new address[](1);
         uint256[] memory amounts = new uint256[](1);
-        uint256[] memory modes = new uint256[](1);
         tokens[0] = asset;
         amounts[0] = amount;
-        modes[0] = 0;
-        // ILendingPool(0x13e9761c037f382472cE765556c3dA2aF29d9EC7)
         ILendingPool(LENDLE_POOL).flashLoan(
             address(this),
             tokens,
             amounts,
-            modes,
+            new uint256[](1),
             address(this),
             abi.encode(DeltaFlashParams({deltaParams: deltaParams, encodedSwapCall: swapCalldata, user: msg.sender})),
             0

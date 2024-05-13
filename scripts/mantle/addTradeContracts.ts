@@ -9,8 +9,6 @@ import { validateAddresses } from "../../utils/types";
 import { getContractSelectors, ModuleConfigAction } from "../../test-ts/libraries/diamond";
 import { lendleBrokerAddresses } from "../../deploy/mantle_addresses";
 
-
-
 const MANTLE_CONFIGS = {
     maxFeePerGas: 0.02 * 1e9,
     maxPriorityFeePerGas: 0.02 * 1e9

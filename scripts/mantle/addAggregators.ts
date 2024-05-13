@@ -4,6 +4,11 @@ import { lendleBrokerAddresses } from "../../deploy/mantle_addresses";
 import { DeltaBrokerProxy__factory, ManagementModule__factory } from "../../types";
 import { addressesTokensMantle } from "./lendleAddresses";
 
+const MANTLE_CONFIGS = {
+    maxFeePerGas: 0.02 * 1e9,
+    maxPriorityFeePerGas: 0.02 * 1e9
+}
+
 const underlyings = Object.values(addressesTokensMantle)
 
 const aggregatorsTargets = [
@@ -38,7 +43,7 @@ async function main() {
     await multicaller.estimateGas.multicall([...approves, ...addAsValid])
     console.log("success")
     console.log("Enable Aggregators")
-    tx = await multicaller.multicall([...approves, ...addAsValid])
+    tx = await multicaller.multicall([...approves, ...addAsValid], MANTLE_CONFIGS)
     await tx.wait()
 }
 
