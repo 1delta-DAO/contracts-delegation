@@ -503,7 +503,7 @@ const config: HardhatUserConfig = {
       },
       // 1delta
       {
-        version: '0.8.24',
+        version: '0.8.25',
         settings: {
           optimizer: {
             enabled: true,
