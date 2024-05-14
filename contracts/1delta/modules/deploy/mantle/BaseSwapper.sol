@@ -829,7 +829,9 @@ abstract contract BaseSwapper is TokenTransfer {
 
     /**
      * Swaps Stratums Curve fork exact in internally and handles wrapping/unwrapping of mUSD->USDY
-     * Note: the swapper uses uint8 indexes as inputs, this should be encoded later on
+     * This one has a dedicated implementation as this pool has a rebasing asset which can be unwrapped
+     * The rebasing asset is rarely ever used in other types of swap pools, as such,w e auto wrap / unwrap in case we 
+     * use the unwrapped asset as input or output 
      * @param tokenIn input
      * @param tokenOut output
      * @param amountIn sell amount
@@ -994,6 +996,9 @@ abstract contract BaseSwapper is TokenTransfer {
 
     /**
      * Executes an exact input swap internally across major UniV2 & Solidly style forks
+     * Note that this will NOT trigger callbacks and therefore is not executing flash swaps
+     * Due to the nature of the V2 impleemntation, the callback is not triggered if no calldata is provided
+     * As such, we never enter the callback implementation when using this function
      * @param tokenIn input
      * @param tokenOut output
      * @param amountIn sell amount
