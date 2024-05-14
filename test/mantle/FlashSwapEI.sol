@@ -62,7 +62,7 @@ contract FlashSwapExacInTest is DeltaSetup {
     }
 
     ////////////////////////////////////////////////////
-    // Flash swap, V2 - Curve (with loss)
+    // Flash swap, V2 - Curve (with loss, we inject the residual amount)
     ////////////////////////////////////////////////////
 
     function test_mantle_stratum_arb_exact_in_v2() external {
@@ -109,7 +109,7 @@ contract FlashSwapExacInTest is DeltaSetup {
     }
 
     ////////////////////////////////////////////////////
-    // Flash swap, V3 - Curve - V2 (with loss)
+    // Flash swap, V3 - Curve - V2 (with loss, we inject the residual amount)
     ////////////////////////////////////////////////////
 
     function test_mantle_stratum_arb_exact_in_v2_3_pools() external {
@@ -146,15 +146,13 @@ contract FlashSwapExacInTest is DeltaSetup {
         vm.prank(user);
         brokerProxy.multicall(calls);
 
-        // This amount should be positive if there is a loss
         assetBalance = IERC20All(assetOut).balanceOf(user) - assetBalance;
 
-        // swap 5, receive approx 4.9, but in 18 decs
         assertApproxEqAbs(quoted, assetBalance, 0);
     }
 
     ////////////////////////////////////////////////////
-    // Flash swap, V2 - Curve - V3 (with loss)
+    // Flash swap, V2 - Curve - V3 (with loss, we inject the residual amount)
     ////////////////////////////////////////////////////
 
     function test_mantle_stratum_arb_exact_in_v2_3_pools_V3Last() external {
@@ -191,10 +189,8 @@ contract FlashSwapExacInTest is DeltaSetup {
         vm.prank(user);
         brokerProxy.multicall(calls);
 
-        // This amount should be positive if there is a loss
         assetBalance = IERC20All(assetOut).balanceOf(user) - assetBalance;
 
-        // swap 5, receive approx 4.9, but in 18 decs
         assertApproxEqAbs(quoted, assetBalance, 0);
     }
 
@@ -237,10 +233,8 @@ contract FlashSwapExacInTest is DeltaSetup {
         vm.prank(user);
         brokerProxy.multicall(calls);
 
-        // This amount should be positive if there is a loss
         assetBalance = IERC20All(assetOut).balanceOf(user) - assetBalance;
 
-        // swap 5, receive approx 4.9, but in 18 decs
         assertApproxEqAbs(quoted, assetBalance, 0);
     }
 
@@ -278,10 +272,8 @@ contract FlashSwapExacInTest is DeltaSetup {
         vm.prank(user);
         brokerProxy.multicall(calls);
 
-        // This amount should be positive if there is a loss
         assetBalance = IERC20All(assetOut).balanceOf(user) - assetBalance;
 
-        // swap 5, receive approx 4.9, but in 18 decs
         assertApproxEqAbs(quoted, assetBalance, 0);
     }
 
