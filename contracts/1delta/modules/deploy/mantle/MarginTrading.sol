@@ -376,7 +376,8 @@ abstract contract MarginTrading is WithStorage, BaseSwapper, BaseLending {
                 // we need to swap to the token that we want to supply
                 // the router returns the amount that we can finally supply to the protocol
                 _data = _data[25:];
-                swapExactIn(amountOut, _data);
+                // we have to cache the amountOut in this case
+                ncs().amount = swapExactIn(amountOut, _data);
             }
             _transferERC20Tokens(tokenIn, msg.sender, tradeId);
             return;
@@ -652,7 +653,8 @@ abstract contract MarginTrading is WithStorage, BaseSwapper, BaseLending {
                 // we need to swap to the token that we want to supply
                 // the router returns the amount that we can finally supply to the protocol
                 data = data[25:];
-                swapExactIn(amountToSwap, data);
+                // store the output amount
+                ncs().amount = swapExactIn(amountToSwap, data);
             }
             _transferERC20Tokens(tokenIn, msg.sender, amountToPay);
             return;
