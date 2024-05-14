@@ -229,13 +229,15 @@ contract DeltaSetup is AddressesMantle, Script, Test {
         management.approveAddress(assets, AURELIUS_POOL);
 
 
-        address[] memory stratumAssets = new address[](5);
+        address[] memory stratumAssets = new address[](6);
         stratumAssets[0] = USDC;
         stratumAssets[1] = USDT;
         stratumAssets[2] = WETH;
         stratumAssets[3] = METH;
         stratumAssets[4] = mUSD;
+        stratumAssets[5] = USDY;
         management.approveAddress(stratumAssets, STRATUM_3POOL);
+        management.approveAddress(stratumAssets, STRATUM_3POOL_2);
         management.approveAddress(stratumAssets, STRATUM_ETH_POOL);
 
         address[] memory usdyAssets = new address[](1);

@@ -366,8 +366,20 @@ abstract contract MarginTrading is WithStorage, BaseSwapper, BaseLending {
         tradeId = identifier;
         // EXACT IN BASE SWAP
         if (tradeId == 0) {
-            tradeId = amount0Delta > 0 ? uint256(amount0Delta) : uint256(amount1Delta);
+            uint256 amountOut;
+            // assign the amount to pay to the local stack
+            (tradeId, amountOut) = amount0Delta > 0 ? 
+                (uint256(amount0Delta), uint256(-amount1Delta)): 
+                (uint256(amount1Delta), uint256(-amount0Delta));
+            // of additional data is provided, we execute the swap nested
+            if (_data.length > 46) {
+                // we need to swap to the token that we want to supply
+                // the router returns the amount that we can finally supply to the protocol
+                _data = _data[25:];
+                swapExactIn(amountOut, _data);
+            }
             _transferERC20Tokens(tokenIn, msg.sender, tradeId);
+            return;
         }
         // EXACT OUT - WITHDRAW or BORROW
         else if (tradeId == 1) {
@@ -631,8 +643,20 @@ abstract contract MarginTrading is WithStorage, BaseSwapper, BaseLending {
             require(msg.sender == pool);
         }
         // exact in is handled outside a callback
-        if (tradeId == 0) return;
-        else if (tradeId == 1) {
+        if (tradeId == 0) {
+            // the swap amount is expected to be the nonzero output amount
+            // since v2 does not send the input amount as parameter, we have to fetch
+            // the other amount manually through the cache
+            (uint256 amountToSwap, uint256 amountToPay) = zeroForOne ? (amount1, ncs().amount) : (amount0, ncs().amount);
+            if (data.length > 46) {
+                // we need to swap to the token that we want to supply
+                // the router returns the amount that we can finally supply to the protocol
+                data = data[25:];
+                swapExactIn(amountToSwap, data);
+            }
+            _transferERC20Tokens(tokenIn, msg.sender, amountToPay);
+            return;
+        } else if (tradeId == 1) {
             // fetch amountOut
             uint256 referenceAmount = zeroForOne ? amount0 : amount1;
             // calculte amountIn (note that tokenIn/out are read inverted at the top)

@@ -84,6 +84,7 @@ contract AddressesMantle {
     address internal constant LENDLE_S_METH = 0x614110493CEAe1171532eB635242E4ca71CcBBa2;
 
     address internal constant STRATUM_3POOL = 0xD6F312AA90Ad4C92224436a7A4a648d69482e47e;
+    address internal constant STRATUM_3POOL_2 = 0x7d3621aCA02B711F5f738C9f21C1bFE294df094d;
     address internal constant STRATUM_ETH_POOL = 0xe8792eD86872FD6D8b74d0668E383454cbA15AFc;
 
     /// @dev Mask of lower 20 bytes.
@@ -117,7 +118,7 @@ contract AddressesMantle {
     uint8 internal MERCHANT_MOE = 51;
     uint8 internal MERCHANT_MOE_LB = 103;
     uint8 internal KTX = 104;
-    uint8 internal STRATUM_ETH = 105;
+    uint8 internal STRATUM_CURVE = 105;
     uint8 internal STRATUM_USD = 102;
 
     /** TRADE TYPE FLAG GETTERS */

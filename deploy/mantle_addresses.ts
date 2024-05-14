@@ -21,7 +21,7 @@ export const lendleBrokerAddresses = {
         5000: '0x6Bc6aCB905c1216B0119C87Bf9E178ce298310FA'
     },
     MarginTraderModule: {
-        5000: '0xf9b36A3FAFa4AD006b360b3CDdb7DAA72F299180',
+        5000: '0xFA2cac1CacAaE741BCA20B5FAFd6E84A65Ad4C6D',
     },
     LendingInterface: {
         5000: '0xd3E55dd0BabB618f73240d283bBd38A551c48c7b'

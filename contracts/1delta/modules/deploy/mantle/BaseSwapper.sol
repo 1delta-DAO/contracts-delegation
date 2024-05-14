@@ -78,6 +78,7 @@ abstract contract BaseSwapper is TokenTransfer {
     address internal constant KTX_VAULT_PRICE_FEED = 0xEdd1E8aACF7652aD8c015C4A403A9aE36F3Fe4B7;
 
     address internal constant STRATUM_3POOL = 0xD6F312AA90Ad4C92224436a7A4a648d69482e47e;
+    address internal constant STRATUM_3POOL_2 = 0x7d3621aCA02B711F5f738C9f21C1bFE294df094d;
     address internal constant STRATUM_ETH_POOL = 0xe8792eD86872FD6D8b74d0668E383454cbA15AFc;
 
     address internal constant MUSD = 0xab575258d37EaA5C8956EfABe71F4eE8F6397cF3;
@@ -414,6 +415,7 @@ abstract contract BaseSwapper is TokenTransfer {
 
     /**
      * Swaps exact in internally using all implemented Dexs
+     * Will NOT use a flash swap
      * @param amountIn sell amount
      * @param path path calldata
      * @return amountOut buy amount
@@ -464,21 +466,21 @@ abstract contract BaseSwapper is TokenTransfer {
                         address(this),
                         uint128(amountIn),
                         -799999, // low tick
-                        path
+                        path[:45]
                     );
                 else
                     (amountIn, ) = getUniswapV3Pool(tokenIn, tokenOut, fee, identifier).swapY2X(
                         address(this),
                         uint128(amountIn),
                         799999, // high tick
-                        path
+                        path[:45]
                     );
             }
             // WOO Fi
             else if (identifier == 101) {
                 amountIn = swapWooFiExactIn(tokenIn, tokenOut, amountIn);
             }
-            // Stratum 3USD
+            // Stratum 3USD with wrapper
             else if (identifier == 102) {
                 amountIn = swapStratum3(tokenIn, tokenOut, amountIn);
             }
@@ -492,9 +494,18 @@ abstract contract BaseSwapper is TokenTransfer {
             } else if(identifier == 104) {
                 amountIn = swapKTXExactIn(tokenIn, tokenOut, amountIn);
             } 
-            // Stratum ETH
+            // Curve stable general
             else if (identifier == 105) {
-                amountIn = swapStratumEth(tokenIn, tokenOut, amountIn);
+                uint8 indexIn;
+                uint8 indexOut;
+                uint8 subGroup;
+                assembly {
+                    let indexData := and(shr(72, calldataload(path.offset)), 0xffffff)
+                    indexIn := and(shr(16, indexData), 0xff)
+                    indexOut := and(shr(8, indexData), 0xff)
+                    subGroup := and(indexData, 0xff)
+                }
+                amountIn = swapStratumCurveGeneral(indexIn, indexOut, subGroup, amountIn);
             } else
                 revert invalidDexId();
 
@@ -946,33 +957,8 @@ abstract contract BaseSwapper is TokenTransfer {
         }
     }
 
-
-    /**
-     * Swaps Stratums Curve fork exact in internally
-     * @param tokenIn input
-     * @param amountIn sell amount
-     * @return amountOut buy amount
-     */
-    function swapStratumEth(address tokenIn, address, uint256 amountIn) private returns (uint256 amountOut) {
+    function swapStratumCurveGeneral(uint256 indexIn, uint256 indexOut, uint256 subGroup, uint256 amountIn) private returns (uint256 amountOut) {
         assembly {
-            // curve forks work with indices, we determine these below
-            let indexIn
-            let indexOut
-            switch tokenIn
-            // ETH
-            case 0xdeaddeaddeaddeaddeaddeaddeaddeaddead1111 {
-                indexIn := 0
-                indexOut := 1
-            } 
-            // METH
-            case 0xcda86a272531e8640cd7f1a92c01839911b90bb0 {
-                indexIn := 1
-                indexOut := 0
-            }
-            default {
-                revert(0, 0)
-            }
-
             ////////////////////////////////////////////////////
             // Execute swap function 
             ////////////////////////////////////////////////////
@@ -984,7 +970,18 @@ abstract contract BaseSwapper is TokenTransfer {
             mstore(0xB44, amountIn)
             mstore(0xB64, 0) // min out is zero, we validate slippage at the end
             mstore(0xB84, 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff) // no deadline
-            if iszero(call(gas(), STRATUM_ETH_POOL, 0x0, 0xB00, 0xA4, 0xB00, 0x20)) {
+            let pool
+            switch subGroup
+            case 0 {
+                pool := STRATUM_ETH_POOL
+            }
+            case 1 {
+                pool := STRATUM_3POOL_2
+            }
+            default {
+                revert (0, 0)
+            }
+            if iszero(call(gas(), pool, 0x0, 0xB00, 0xA4, 0xB00, 0x20)) {
                 let rdsize := returndatasize()
                 returndatacopy(0xB00, 0, rdsize)
                 revert(0xB00, rdsize)
@@ -993,6 +990,7 @@ abstract contract BaseSwapper is TokenTransfer {
             amountOut := mload(0xB00)
         }
     }
+
 
     /**
      * Executes an exact input swap internally across major UniV2 & Solidly style forks
