@@ -5,7 +5,9 @@ import "./DeltaSetup.f.sol";
 import "../../contracts/1delta/quoter/test/TestQuoterMantle.sol";
 
 /**
- * Tests Curve style DEXs exact in swaps
+ * We test flash swap executions using exact in trade types (given that the first pool supports flash swaps)
+ * These are always applied on margin, however, we make sure that we always get
+ * The expected amounts. Exact out swaps always execute flash swaps whenever possible.
  */
 contract FlashSwapExacInTest is DeltaSetup {
     TestQuoterMantle testQuoter;
@@ -17,6 +19,10 @@ contract FlashSwapExacInTest is DeltaSetup {
         initializeDelta();
         testQuoter = new TestQuoterMantle();
     }
+
+    ////////////////////////////////////////////////////
+    // Flash swap, V4 - Curve (with gain)
+    ////////////////////////////////////////////////////
 
     function test_mantle_stratum_arb_exact_in() external {
         address user = testUser;
@@ -54,6 +60,10 @@ contract FlashSwapExacInTest is DeltaSetup {
         // swap 5, receive approx 4.9, but in 18 decs
         assertApproxEqAbs(quoted - amountIn, assetBalance, 0);
     }
+
+    ////////////////////////////////////////////////////
+    // Flash swap, V2 - Curve (with loss)
+    ////////////////////////////////////////////////////
 
     function test_mantle_stratum_arb_exact_in_v2() external {
         address user = testUser;
@@ -96,6 +106,183 @@ contract FlashSwapExacInTest is DeltaSetup {
 
         // swap 5, receive approx 4.9, but in 18 decs
         assertApproxEqAbs(quoted, amountIn - assetBalance, 0);
+    }
+
+    ////////////////////////////////////////////////////
+    // Flash swap, V3 - Curve - V2 (with loss)
+    ////////////////////////////////////////////////////
+
+    function test_mantle_stratum_arb_exact_in_v2_3_pools() external {
+        address user = testUser;
+        vm.assume(user != address(0));
+        address asset = WETH;
+        address assetOut = METH;
+
+        uint256 amountIn = 1.0e18;
+
+        uint256 quoted = testQuoter.quoteExactInput(getSpotExactInDoubleStratumMETHQuoterWithV2_3Pools(WETH), amountIn);
+
+        bytes[] memory calls = new bytes[](3);
+
+        bytes memory swapPath = getSpotExactInDoubleStratumMETHV2_3Pool(asset);
+
+        deal(asset, user, amountIn);
+
+        uint256 minimumOut = quoted;
+        calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, asset, amountIn);
+        calls[1] = abi.encodeWithSelector(
+            IFlashAggregator.flashSwapExactIn.selector, // 3 args
+            amountIn,
+            minimumOut,
+            swapPath
+        );
+
+        calls[2] = abi.encodeWithSelector(ILending.sweep.selector, assetOut);
+        vm.prank(user);
+        IERC20All(asset).approve(brokerProxyAddress, amountIn);
+
+        uint256 assetBalance = IERC20All(assetOut).balanceOf(user);
+
+        vm.prank(user);
+        brokerProxy.multicall(calls);
+
+        // This amount should be positive if there is a loss
+        assetBalance = IERC20All(assetOut).balanceOf(user) - assetBalance;
+
+        // swap 5, receive approx 4.9, but in 18 decs
+        assertApproxEqAbs(quoted, assetBalance, 0);
+    }
+
+    ////////////////////////////////////////////////////
+    // Flash swap, V2 - Curve - V3 (with loss)
+    ////////////////////////////////////////////////////
+
+    function test_mantle_stratum_arb_exact_in_v2_3_pools_V3Last() external {
+        address user = testUser;
+        vm.assume(user != address(0));
+        address asset = WETH;
+        address assetOut = METH;
+
+        uint256 amountIn = 1.0e18;
+
+        uint256 quoted = testQuoter.quoteExactInput(getSpotExactInDoubleStratumMETHQuoterWithV2_3Pools_V3Last(WETH), amountIn);
+
+        bytes[] memory calls = new bytes[](3);
+
+        bytes memory swapPath = getSpotExactInDoubleStratumMETHV2_3Pool_V3Last(asset);
+
+        deal(asset, user, amountIn);
+
+        uint256 minimumOut = quoted;
+        calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, asset, amountIn);
+        calls[1] = abi.encodeWithSelector(
+            IFlashAggregator.flashSwapExactIn.selector, // 3 args
+            amountIn,
+            minimumOut,
+            swapPath
+        );
+
+        calls[2] = abi.encodeWithSelector(ILending.sweep.selector, assetOut);
+        vm.prank(user);
+        IERC20All(asset).approve(brokerProxyAddress, amountIn);
+
+        uint256 assetBalance = IERC20All(assetOut).balanceOf(user);
+
+        vm.prank(user);
+        brokerProxy.multicall(calls);
+
+        // This amount should be positive if there is a loss
+        assetBalance = IERC20All(assetOut).balanceOf(user) - assetBalance;
+
+        // swap 5, receive approx 4.9, but in 18 decs
+        assertApproxEqAbs(quoted, assetBalance, 0);
+    }
+
+    ////////////////////////////////////////////////////
+    // Same as the two last ones above, the swap is
+    // triggered with the spot varaint
+    ////////////////////////////////////////////////////
+
+    function test_mantle_stratum_arb_exact_in_v2_3_pools_spot() external {
+        address user = testUser;
+        vm.assume(user != address(0));
+        address asset = WETH;
+        address assetOut = METH;
+
+        uint256 amountIn = 1.0e18;
+
+        uint256 quoted = testQuoter.quoteExactInput(getSpotExactInDoubleStratumMETHQuoterWithV2_3Pools(WETH), amountIn);
+
+        bytes[] memory calls = new bytes[](3);
+
+        bytes memory swapPath = getSpotExactInDoubleStratumMETHV2_3Pool(asset);
+
+        deal(asset, user, amountIn);
+
+        uint256 minimumOut = quoted;
+        calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, asset, amountIn);
+        calls[1] = abi.encodeWithSelector(
+            IFlashAggregator.swapExactInSpot.selector, // 3 args
+            amountIn,
+            minimumOut,
+            swapPath
+        );
+
+        calls[2] = abi.encodeWithSelector(ILending.sweep.selector, assetOut);
+        vm.prank(user);
+        IERC20All(asset).approve(brokerProxyAddress, amountIn);
+
+        uint256 assetBalance = IERC20All(assetOut).balanceOf(user);
+
+        vm.prank(user);
+        brokerProxy.multicall(calls);
+
+        // This amount should be positive if there is a loss
+        assetBalance = IERC20All(assetOut).balanceOf(user) - assetBalance;
+
+        // swap 5, receive approx 4.9, but in 18 decs
+        assertApproxEqAbs(quoted, assetBalance, 0);
+    }
+
+    function test_mantle_stratum_arb_exact_in_v2_3_pools_V3Last_spot() external {
+        address user = testUser;
+        vm.assume(user != address(0));
+        address asset = WETH;
+        address assetOut = METH;
+
+        uint256 amountIn = 1.0e18;
+
+        uint256 quoted = testQuoter.quoteExactInput(getSpotExactInDoubleStratumMETHQuoterWithV2_3Pools_V3Last(WETH), amountIn);
+
+        bytes[] memory calls = new bytes[](3);
+
+        bytes memory swapPath = getSpotExactInDoubleStratumMETHV2_3Pool_V3Last(asset);
+
+        deal(asset, user, amountIn);
+
+        uint256 minimumOut = quoted;
+        calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, asset, amountIn);
+        calls[1] = abi.encodeWithSelector(
+            IFlashAggregator.swapExactInSpot.selector, // 3 args
+            amountIn,
+            minimumOut,
+            swapPath
+        );
+
+        calls[2] = abi.encodeWithSelector(ILending.sweep.selector, assetOut);
+        vm.prank(user);
+        IERC20All(asset).approve(brokerProxyAddress, amountIn);
+
+        uint256 assetBalance = IERC20All(assetOut).balanceOf(user);
+
+        vm.prank(user);
+        brokerProxy.multicall(calls);
+
+        // This amount should be positive if there is a loss
+        assetBalance = IERC20All(assetOut).balanceOf(user) - assetBalance;
+
+        // swap 5, receive approx 4.9, but in 18 decs
+        assertApproxEqAbs(quoted, assetBalance, 0);
     }
 
     /** PATH BUILDERS */
@@ -144,13 +331,39 @@ contract FlashSwapExacInTest is DeltaSetup {
             );
     }
 
-    function getSpotExactInDoubleStratumMETHV2(address token) internal view returns (bytes memory data) {
-        uint8 poolId = STRATUM_CURVE;
+    function getSpotExactInDoubleStratumMETHV2_3Pool(address token) internal view returns (bytes memory data) {
+        return
+            abi.encodePacked(
+                getSpotExactInAgni(token, METH),
+                abi.encodePacked(getTokenIdEth(METH), getTokenIdEth(token), uint8(0)),
+                STRATUM_CURVE,
+                uint8(0),
+                token,
+                moe(),
+                uint8(0),
+                METH,
+                uint8(99)
+            );
+    }
+
+    function getSpotExactInDoubleStratumMETHV2_3Pool_V3Last(address token) internal view returns (bytes memory data) {
         return
             abi.encodePacked(
                 getSpotExactInMoe(token, METH),
                 abi.encodePacked(getTokenIdEth(METH), getTokenIdEth(token), uint8(0)),
-                poolId,
+                STRATUM_CURVE,
+                uint8(0),
+                getSpotExactInAgni(token, METH),
+                uint8(99)
+            );
+    }
+
+    function getSpotExactInDoubleStratumMETHV2(address token) internal view returns (bytes memory data) {
+        return
+            abi.encodePacked(
+                getSpotExactInMoe(token, METH),
+                abi.encodePacked(getTokenIdEth(METH), getTokenIdEth(token), uint8(0)),
+                STRATUM_CURVE,
                 uint8(0),
                 token,
                 uint8(99)
@@ -158,18 +371,42 @@ contract FlashSwapExacInTest is DeltaSetup {
     }
 
     function getSpotExactInMoe(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        uint8 poolId = MERCHANT_MOE;
-        return abi.encodePacked(tokenIn, DEX_FEE_NONE, poolId, uint8(0), tokenOut);
+        return abi.encodePacked(tokenIn, moe(), uint8(0), tokenOut);
+    }
+
+    function moe() internal view returns (bytes memory) {
+        return abi.encodePacked(DEX_FEE_NONE, MERCHANT_MOE);
     }
 
     function getSpotExactInDoubleStratumMETHQuoterWithV2(address token) internal view returns (bytes memory data) {
-        uint8 poolId = STRATUM_CURVE;
         return
             abi.encodePacked(
                 getSpotExactInMoeQuoter(token, METH),
                 abi.encodePacked(getTokenIdEth(METH), getTokenIdEth(token), uint8(0)),
-                poolId,
+                STRATUM_CURVE,
                 token
+            );
+    }
+
+    function getSpotExactInDoubleStratumMETHQuoterWithV2_3Pools(address token) internal view returns (bytes memory data) {
+        return
+            abi.encodePacked(
+                getSpotExactInAgniQuoter(token, METH),
+                abi.encodePacked(getTokenIdEth(METH), getTokenIdEth(token), uint8(0)),
+                STRATUM_CURVE,
+                token,
+                moe(),
+                METH
+            );
+    }
+
+    function getSpotExactInDoubleStratumMETHQuoterWithV2_3Pools_V3Last(address token) internal view returns (bytes memory data) {
+        return
+            abi.encodePacked(
+                getSpotExactInMoeQuoter(token, METH),
+                abi.encodePacked(getTokenIdEth(METH), getTokenIdEth(token), uint8(0)),
+                STRATUM_CURVE,
+                getSpotExactInAgniQuoter(token, METH)
             );
     }
 }
