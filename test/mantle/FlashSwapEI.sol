@@ -48,6 +48,7 @@ contract FlashSwapExacInTest is DeltaSetup {
         vm.prank(user);
         brokerProxy.multicall(calls);
 
+        // This amount should be positive if there is extractable arbitrage
         assetBalance = IERC20All(asset).balanceOf(user) - assetBalance;
 
         // swap 5, receive approx 4.9, but in 18 decs
