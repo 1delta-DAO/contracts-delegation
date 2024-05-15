@@ -30,9 +30,9 @@ async function main() {
     const quoter = await new OneDeltaQuoterMantle__factory(operator).attach(QUOTER)
     const proxyAddress = lendleBrokerAddresses.BrokerProxy[chainId]
 
-    const pathTokens = [WETH, mETH, WETH]
-    const fees = [100, solidityPack(['uint8', 'uint8', 'uint8'], [indexes[mETH], indexes[WETH], 0])]
-    const pids = [4, 105]
+    const pathTokens = [mETH, WETH, mETH]
+    const fees = [100, 2]
+    const pids = [4, 103]
     const flags = [0, 0]
     const path = encodeQuoterPathEthers(pathTokens, fees, pids)
 

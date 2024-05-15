@@ -8,6 +8,10 @@ import { formatEther, parseUnits, solidityPack } from "ethers/lib/utils";
 
 const WETH = addressesTokensMantle.WETH
 const mETH = addressesTokensMantle.METH
+const WMNT = addressesTokensMantle.WMNT
+const USDT = addressesTokensMantle.USDT
+const USDC = addressesTokensMantle.USDC
+const USDY = "0x5bE26527e817998A7206475496fDE1E68957c5A6"
 const interf = DeltaFlashAggregatorMantle__factory.createInterface()
 const interfLender = DeltaLendingInterfaceMantle__factory.createInterface()
 const QUOTER = "0x4cA44D7B1e4310959CFCb4b22228237FF65915f1"
@@ -24,19 +28,19 @@ async function main() {
     const operator = accounts[0]
 
     const chainId = await operator.getChainId();
-    console.log("op", operator.address)
+
     if (chainId !== 5000) throw new Error("invalid chainId")
 
     const quoter = await new OneDeltaQuoterMantle__factory(operator).attach(QUOTER)
     const proxyAddress = lendleBrokerAddresses.BrokerProxy[chainId]
 
-    const pathTokens = [WETH, mETH, WETH]
-    const fees = [100, solidityPack(['uint8', 'uint8', 'uint8'], [indexes[mETH], indexes[WETH], 0])]
-    const pids = [4, 105]
+    const pathTokens = [USDT, USDC, USDT]
+    const fees = [100, 100]
+    const pids = [4, 1]
     const flags = [0, 0]
     const path = encodeQuoterPathEthers(pathTokens, fees, pids)
 
-    const amount = parseUnits('0.1', 18)
+    const amount = parseUnits('100', 6)
     const quote = await quoter.callStatic.quoteExactInput(path, amount)
 
     console.log(formatEther(quote))
@@ -54,10 +58,10 @@ async function main() {
 
     // const sweep = interfLender.encodeFunctionData(
     //     "sweep", [
-    //     WETH,
+    //     USDY,
     // ])
 
-    // if (quote.gt(100000)) {
+    // if (quote.sub(amount).gt(100000)) {
     //     await multicaller.connect(operator).multicall([
     //         swap,
     //         sweep
