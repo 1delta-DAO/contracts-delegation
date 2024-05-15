@@ -138,7 +138,7 @@ export const encodeTradePathMargin = (
 // token address, poolFee, poolId
 const typeSliceQuoter = ['address', 'uint24', 'uint8']
 
-export function encodeQuoterPathEthers(path: string[], fees: number[], pIds: number[]): string {
+export function encodeQuoterPathEthers(path: string[], fees: (string | number)[], pIds: number[]): string {
   if (path.length != fees.length + 1) {
     throw new Error('path/fee lengths do not match')
   }

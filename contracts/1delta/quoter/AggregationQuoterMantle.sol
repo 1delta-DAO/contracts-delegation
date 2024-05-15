@@ -116,6 +116,9 @@ contract OneDeltaQuoterMantle {
     uint256 internal constant PRICE_PRECISION = 10 ** 30;
     
     address internal constant STRATUM_3POOL = 0xD6F312AA90Ad4C92224436a7A4a648d69482e47e;
+    address internal constant STRATUM_3POOL_2 = 0x7d3621aCA02B711F5f738C9f21C1bFE294df094d;
+    address internal constant STRATUM_ETH_POOL = 0xe8792eD86872FD6D8b74d0668E383454cbA15AFc;
+
     address internal constant USDY = 0x5bE26527e817998A7206475496fDE1E68957c5A6;
     address internal constant MUSD = 0xab575258d37EaA5C8956EfABe71F4eE8F6397cF3;    
 
@@ -1032,6 +1035,17 @@ contract OneDeltaQuoterMantle {
                 amountIn = getLBAmountOut(tokenIn, tokenOut, amountIn, uint16(bin));
             } else if (poolId == 104) {
                 amountIn = quoteKTXExactIn(tokenIn, tokenOut, amountIn);
+            } else if (poolId == 105) {
+                uint8 indexIn;
+                uint8 indexOut;
+                uint8 subGroup;
+                assembly {
+                    let indexData := and(shr(72, calldataload(path.offset)), 0xffffff)
+                    indexIn := and(shr(16, indexData), 0xff)
+                    indexOut := and(shr(8, indexData), 0xff)
+                    subGroup := and(indexData, 0xff)
+                }
+                amountIn = quoteStratumGeneral(indexIn, indexOut, subGroup, amountIn);
             } else {
                 revert invalidDexId();
             }
@@ -1282,6 +1296,32 @@ contract OneDeltaQuoterMantle {
                 }
                 amountOut := div(mload(0xB00), 10000)
             }
+        }
+    }
+
+    function quoteStratumGeneral(uint256 indexIn, uint256 indexOut, uint256 subGroup, uint256 amountIn) internal view returns (uint256 amountOut) {
+        assembly {
+            // selector for calculateSwap(uint8,uint8,uint256)
+            mstore(0xB00, 0xa95b089f00000000000000000000000000000000000000000000000000000000)
+            mstore(0xB04, indexIn)
+            mstore(0xB24, indexOut)
+            mstore(0xB44, amountIn)
+            let pool
+            switch subGroup
+            case 0 {
+                pool := STRATUM_ETH_POOL
+            }
+            case 1 {
+                pool := STRATUM_3POOL_2
+            }
+            default {
+                revert (0, 0)
+            }
+            if iszero(staticcall(gas(), pool, 0xB00, 0x64, 0xB00, 0x20)) {
+                revert(0, 0)
+            }
+
+            amountOut := mload(0xB00)
         }
     }
 
