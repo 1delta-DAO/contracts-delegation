@@ -18,7 +18,6 @@ import {BaseLending} from "./BaseLending.sol";
  */
 contract DeltaLendingInterfaceMantle is BaseLending, WrappedNativeHandler, SelfPermit {
     // constant pool
-    // ILendingPool internal constant _lendingPool = ILendingPool(0xCFa5aE7c2CE8Fadc6426C1ff872cA45378Fb7cF3);
 
     constructor() {}
 
@@ -29,7 +28,7 @@ contract DeltaLendingInterfaceMantle is BaseLending, WrappedNativeHandler, SelfP
         address _asset = asset;
         uint256 balance = _balanceOfThis(_asset);
         // _lendingPool.deposit(_asset, balance, recipient, 0);
-        _deposit(_asset, balance, recipient, lenderId);
+        _deposit(_asset, recipient, balance, lenderId);
     }
 
     // borrow on sender's behalf
@@ -59,8 +58,7 @@ contract DeltaLendingInterfaceMantle is BaseLending, WrappedNativeHandler, SelfP
 
     // wraps the withdraw
     function withdraw(address asset, address recipient, uint8 lenderId) external payable {
-        // _lendingPool.withdraw(asset, type(uint256).max, recipient);
-        _withdraw(asset, recipient, lenderId);
+        _withdraw(asset, recipient, type(uint256).max, lenderId);
     }
 
     /** TRANSFER FUNCTIONS */

@@ -96,7 +96,7 @@ contract LendleFlashModule is WithStorage, BaseLending, TokenTransfer, IFlashLoa
             uint256 amountSwapped = _balanceOf(baseAsset, address(this));
 
             // supply the received amount
-            _deposit(baseAsset, user, amountSwapped);
+            _deposit(baseAsset, user, amountSwapped, 0);
 
             // adjust amount for flash loan fee
             amountReceived += premiums[0];
@@ -169,7 +169,7 @@ contract LendleFlashModule is WithStorage, BaseLending, TokenTransfer, IFlashLoa
             uint256 amountSwapped = _balanceOf(baseAsset, address(this));
 
             // supply the received amount
-            _deposit(flashParams.deltaParams.baseAsset, user, amountSwapped);
+            _deposit(flashParams.deltaParams.baseAsset, user, amountSwapped, 0);
 
             // adjust amount for flash loan fee
             amountReceived += premiums[0];

@@ -218,7 +218,7 @@ contract FlashSwapExacInTest is DeltaSetup {
         uint256 minimumOut = quoted;
         calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, asset, amountIn);
         calls[1] = abi.encodeWithSelector(
-            IFlashAggregator.swapExactInSpot.selector, // 3 args
+            IFlashAggregator.flashSwapExactIn.selector, // 3 args
             amountIn,
             minimumOut,
             swapPath
@@ -257,7 +257,7 @@ contract FlashSwapExacInTest is DeltaSetup {
         uint256 minimumOut = quoted;
         calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, asset, amountIn);
         calls[1] = abi.encodeWithSelector(
-            IFlashAggregator.swapExactInSpot.selector, // 3 args
+            IFlashAggregator.flashSwapExactIn.selector, // 3 args
             amountIn,
             minimumOut,
             swapPath
@@ -292,7 +292,7 @@ contract FlashSwapExacInTest is DeltaSetup {
     function getSpotExactInSingleStratumMETH(address token) internal view returns (bytes memory data) {
         uint8 poolId = STRATUM_CURVE;
         return
-            abi.encodePacked(
+            abi.encodePacked(DEFAULT_LENDER,
                 getSpotExactInAgni(token, METH),
                 abi.encodePacked(getTokenIdEth(METH), getTokenIdEth(token), uint8(0)),
                 poolId,
@@ -325,7 +325,7 @@ contract FlashSwapExacInTest is DeltaSetup {
 
     function getSpotExactInDoubleStratumMETHV2_3Pool(address token) internal view returns (bytes memory data) {
         return
-            abi.encodePacked(
+            abi.encodePacked(DEFAULT_LENDER,
                 getSpotExactInAgni(token, METH),
                 abi.encodePacked(getTokenIdEth(METH), getTokenIdEth(token), uint8(0)),
                 STRATUM_CURVE,
@@ -340,7 +340,7 @@ contract FlashSwapExacInTest is DeltaSetup {
 
     function getSpotExactInDoubleStratumMETHV2_3Pool_V3Last(address token) internal view returns (bytes memory data) {
         return
-            abi.encodePacked(
+            abi.encodePacked(DEFAULT_LENDER,
                 getSpotExactInMoe(token, METH),
                 abi.encodePacked(getTokenIdEth(METH), getTokenIdEth(token), uint8(0)),
                 STRATUM_CURVE,
@@ -352,7 +352,7 @@ contract FlashSwapExacInTest is DeltaSetup {
 
     function getSpotExactInDoubleStratumMETHV2(address token) internal view returns (bytes memory data) {
         return
-            abi.encodePacked(
+            abi.encodePacked(DEFAULT_LENDER,
                 getSpotExactInMoe(token, METH),
                 abi.encodePacked(getTokenIdEth(METH), getTokenIdEth(token), uint8(0)),
                 STRATUM_CURVE,

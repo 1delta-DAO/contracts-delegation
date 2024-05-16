@@ -26,7 +26,7 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
         bytes calldata path
     ) external payable {
         // we cache the address as bytes32
-        gcs().cache = bytes32(bytes20(msg.sender));
+        _cacheCaller();
         flashSwapExactOutInternal(amountOut, address(this), path);
         // retrieve cached amount and check slippage
         if (maximumAmountIn < uint256(gcs().cache)) revert Slippage();
@@ -73,7 +73,7 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
         bytes calldata path
     ) external payable {
         // we cache the address as bytes32
-        gcs().cache = bytes32(bytes20(msg.sender));
+        _cacheCaller();
         uint256 _debtBalance;
         uint256 _interestRateMode = interestRateMode;
         address tokenOut;

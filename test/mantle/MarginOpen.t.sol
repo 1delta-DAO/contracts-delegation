@@ -20,7 +20,7 @@ contract MarginOpenTest is DeltaSetup {
 
         bytes[] memory calls = new bytes[](3);
         calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, asset, amountToDeposit);
-        calls[1] = abi.encodeWithSelector(ILending.deposit.selector, asset, user);
+        calls[1] = abi.encodeWithSelector(ILending.deposit.selector, asset, user, lenderId);
 
         uint256 amountToLeverage = 20.0e18;
         bytes memory swapPath = getOpenExactInSingle(borrowAsset, asset, lenderId);
@@ -61,7 +61,7 @@ contract MarginOpenTest is DeltaSetup {
 
         bytes[] memory calls = new bytes[](3);
         calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, asset, amountToDeposit);
-        calls[1] = abi.encodeWithSelector(ILending.deposit.selector, asset, user);
+        calls[1] = abi.encodeWithSelector(ILending.deposit.selector, asset, user, lenderId);
 
         uint256 amountToLeverage = 20.0e18;
         bytes memory swapPath = getOpenExactInMulti(borrowAsset, asset, lenderId);
@@ -90,7 +90,7 @@ contract MarginOpenTest is DeltaSetup {
 
     function test_margin_mantle_open_exact_out(uint8 lenderId) external {
         address user = testUser;
-        vm.assume(user != address(0));
+        vm.assume(user != address(0) && lenderId < 2);
         address asset = USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
 
@@ -139,6 +139,7 @@ contract MarginOpenTest is DeltaSetup {
         address debtAsset = debtTokens[borrowAsset][lenderId];
         deal(asset, user, 1e20);
 
+        console.log("TEST THE TEST");
         uint256 amountToDeposit = 10.0e6;
 
         bytes[] memory calls = new bytes[](3);
@@ -157,7 +158,7 @@ contract MarginOpenTest is DeltaSetup {
 
         uint256 borrowBalance = IERC20All(debtAsset).balanceOf(user);
         uint256 balance = IERC20All(collateralAsset).balanceOf(user);
-
+        console.log("TEST THE TEST");
         vm.prank(user);
         brokerProxy.multicall(calls);
 
@@ -294,6 +295,7 @@ contract MarginOpenTest is DeltaSetup {
         // deposit 10, recieve 30 makes 40
         assertApproxEqAbs(balance, amountToDeposit + amountToReceive, 0);
     }
+
 
     function test_margin_mantle_open_exact_out_multi_v2(uint8 lenderId) external /** address user, uint8 lenderId */ {
         address user = testUser;

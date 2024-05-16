@@ -48,7 +48,6 @@ contract MarginDebtSwapTest is DeltaSetup {
     }
 
     function test_margin_mantle_debt_exact_in_multi(uint8 lenderId) external {
-        uint8 lenderId = DEFAULT_LENDER;
         address user = testUser;
         vm.assume(user != address(0) && lenderId < 2);
         address borrowAsset = WMNT;
@@ -131,7 +130,6 @@ contract MarginDebtSwapTest is DeltaSetup {
     }
 
     function test_margin_mantle_debt_exact_out_multi(uint8 lenderId) external {
-        uint8 lenderId = DEFAULT_LENDER;
         address user = testUser;
         vm.assume(user != address(0) && lenderId < 2);
         address borrowAsset = WMNT;
@@ -173,7 +171,6 @@ contract MarginDebtSwapTest is DeltaSetup {
     }
 
     function test_margin_mantle_debt_all_out(uint8 lenderId) external {
-        uint8 lenderId = DEFAULT_LENDER;
         address user = testUser;
         vm.assume(user != address(0) && lenderId < 2);
         address borrowAsset = WMNT;
@@ -341,7 +338,6 @@ contract MarginDebtSwapTest is DeltaSetup {
     }
 
     function test_margin_mantle_debt_exact_out_multi_v2(uint8 lenderId) external {
-        uint8 lenderId = DEFAULT_LENDER;
         address user = testUser;
         vm.assume(user != address(0) && lenderId < 2);
         address borrowAsset = WMNT;

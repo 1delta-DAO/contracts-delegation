@@ -239,4 +239,14 @@ contract WithStorage {
         }
         gcs().cache = encoded;
     }
+
+
+    function _cacheCaller() internal {
+        bytes32 encoded;
+        assembly {
+            mstore(0x0, caller())
+            encoded := mload(0x0)
+        }
+        gcs().cache = encoded;
+    }
 }

@@ -352,7 +352,7 @@ contract GeneralMoeLBTest is DeltaSetup {
         bytes memory firstPart = abi.encodePacked(tokenIn, fee, poolId, actionId, USDe);
         fee = BIN_STEP_LOWEST;
         poolId = MERCHANT_MOE_LB;
-        return abi.encodePacked(firstPart, fee, poolId, midId, tokenOut, endId);
+        return abi.encodePacked(DEFAULT_LENDER, firstPart, fee, poolId, midId, tokenOut, endId);
     }
 
     function getSpotExactInSingleLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
@@ -402,7 +402,7 @@ contract GeneralMoeLBTest is DeltaSetup {
         bytes memory firstPart = abi.encodePacked(tokenOut, fee, poolId, actionId, USDe);
         fee = BIN_STEP_LOWEST;
         poolId = MERCHANT_MOE_LB;
-        return abi.encodePacked(firstPart, fee, poolId, midId, tokenIn, endId);
+        return abi.encodePacked(DEFAULT_LENDER, firstPart, fee, poolId, midId, tokenIn, endId);
     }
 
     function getCloseExactOutMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
@@ -412,7 +412,7 @@ contract GeneralMoeLBTest is DeltaSetup {
         bytes memory firstPart = abi.encodePacked(tokenOut, fee, poolId, actionId, USDe);
         fee = BIN_STEP_LOWEST;
         poolId = MERCHANT_MOE_LB;
-        return abi.encodePacked(firstPart, fee, poolId, midId, tokenIn, endId);
+        return abi.encodePacked(DEFAULT_LENDER, firstPart, fee, poolId, midId, tokenIn, endId);
     }
 
     function getCloseExactInMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
@@ -422,7 +422,7 @@ contract GeneralMoeLBTest is DeltaSetup {
         bytes memory firstPart = abi.encodePacked(tokenIn, fee, poolId, actionId, USDe);
         fee = BIN_STEP_LOWEST;
         poolId = MERCHANT_MOE_LB;
-        return abi.encodePacked(firstPart, fee, poolId, midId, tokenOut, endId);
+        return abi.encodePacked(DEFAULT_LENDER, firstPart, fee, poolId, midId, tokenOut, endId);
     }
 
     /** DEPO AND BORROW HELPER */
@@ -433,9 +433,10 @@ contract GeneralMoeLBTest is DeltaSetup {
         IERC20All(asset).approve(brokerProxyAddress, amount);
         bytes[] memory calls = new bytes[](2);
         calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, asset, amount);
-        calls[1] = abi.encodeWithSelector(ILending.deposit.selector, asset, user);
+        calls[1] = abi.encodeWithSelector(ILending.deposit.selector, asset, user, DEFAULT_LENDER);
         vm.prank(user);
         brokerProxy.multicall(calls);
+
     }
 
     function _borrow(address user, address asset, uint256 amount) internal {
@@ -443,7 +444,7 @@ contract GeneralMoeLBTest is DeltaSetup {
         vm.prank(user);
         IERC20All(debtAsset).approveDelegation(brokerProxyAddress, amount);
         bytes[] memory calls = new bytes[](2);
-        calls[0] = abi.encodeWithSelector(ILending.borrow.selector, asset, amount, DEFAULT_IR_MODE);
+        calls[0] = abi.encodeWithSelector(ILending.borrow.selector, asset, amount, DEFAULT_IR_MODE, DEFAULT_LENDER);
         calls[1] = abi.encodeWithSelector(ILending.sweep.selector, asset, user);
         vm.prank(user);
         brokerProxy.multicall(calls);

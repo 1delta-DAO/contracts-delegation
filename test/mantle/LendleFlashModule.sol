@@ -103,7 +103,7 @@ contract LendleFlashModuleTest is DeltaSetup {
             uint256 amountToDeposit = 10.0e6;
             uint256 amountToLeverage = 20.0e6;
 
-            openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage);
+            openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, 0);
         }
 
         bytes[] memory calls = new bytes[](1);

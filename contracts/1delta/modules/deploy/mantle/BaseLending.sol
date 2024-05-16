@@ -6,12 +6,14 @@ pragma solidity ^0.8.25;
 * Author: Achthar | 1delta 
 /******************************************************************************/
 
+import {WithStorage} from "../../../storage/BrokerStorage.sol";
+
 // solhint-disable max-line-length
 
 /**
  * @notice Lending base contract that wraps multiple lender types.
  */
-abstract contract BaseLending {
+abstract contract BaseLending is WithStorage {
     uint256 private constant ADDRESS_MASK_UPPER = 0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff;
     uint256 private constant UINT8_MASK_UPPER = 0xff00000000000000000000000000000000000000000000000000000000000000;
 
@@ -19,12 +21,12 @@ abstract contract BaseLending {
     address internal constant LENDLE_POOL = 0xCFa5aE7c2CE8Fadc6426C1ff872cA45378Fb7cF3;
 
     /// @notice Withdraw from lender given user address and lender Id from cache
-    function _withdraw(address _underlying, address _to, uint256 _lenderId) internal {
+    function _withdraw(address _underlying, address _to, uint256 amount, uint256 _lenderId) internal {
         assembly {
             // selector withdraw(address,uint256,address)
             mstore(0xB00, 0x69328dec00000000000000000000000000000000000000000000000000000000)
             mstore(0xB04, _underlying)
-            mstore(0xB24, 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff) // withdraw always all
+            mstore(0xB24, amount)
             mstore(0xB44, _to)
             let pool
             // assign lending pool
@@ -73,7 +75,7 @@ abstract contract BaseLending {
     }
 
     /// @notice Deposit to lender given user address and lender Id from cache
-    function _deposit(address _underlying, uint256 _amount, address _user, uint256 _lenderId) internal {
+    function _deposit(address _underlying, address _user, uint256 _amount, uint256 _lenderId) internal {
         assembly {
             // selector deposit(address,uint256,address,uint16)
             mstore(0xB00, 0xe8eda9df00000000000000000000000000000000000000000000000000000000)
@@ -123,6 +125,63 @@ abstract contract BaseLending {
                 returndatacopy(0xB00, 0x0, rdsize)
                 revert(0xB00, rdsize)
             }
+        }
+    }
+
+    /// @notice Withdraw from lender by transferFrom collateral tokens from user to this and call withdraw on pool
+    ///         user address and lenderId are provided by cache
+    function _preWithdraw(address _underlying, address user, uint256 _amount, uint256 lenderId) internal {
+        mapping(bytes32 => address) storage collateralTokens = ls().collateralTokens;
+        assembly {
+            // Slot for collateralTokens[target] is keccak256(target . collateralTokens.slot).
+            mstore(0xB00, _underlying)
+            mstore8(0xB00, lenderId)
+            mstore(0xB20, collateralTokens.slot)
+            let collateralToken := sload(keccak256(0xB00, 0x40))
+
+            /** PREPARE TRANSFER_FROM USER */
+
+            // selector for transferFrom(address,address,uint256)
+            mstore(0xB00, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
+            mstore(0xB04, user)
+            mstore(0xB24, address())
+            mstore(0xB44, _amount)
+
+            let success := call(gas(), collateralToken, 0x0, 0xB00, 0x64, 0xB00, 0x20)
+
+            let rdsize := returndatasize()
+
+            success := and(
+                success, // call itself succeeded
+                or(
+                    iszero(rdsize), // no return data, or
+                    and(
+                        iszero(lt(rdsize, 32)), // at least 32 bytes
+                        eq(mload(0xB00), 1) // starts with uint256(1)
+                    )
+                )
+            )
+
+            if iszero(success) {
+                returndatacopy(0x0, 0x0, rdsize)
+                revert(0x0, rdsize)
+            }
+        }
+    }
+
+    function getCacheContext() internal view returns (address user, uint8 lenderId) {
+        bytes32 cache = gcs().cache;
+        assembly {
+            // read user and lender from cache
+            user := and(cache, ADDRESS_MASK_UPPER)
+            lenderId := shr(248, and(UINT8_MASK_UPPER, cache))
+        }
+    }
+
+    function getCachedAddress() internal view returns (address cachedAddress) {
+        bytes32 cache = gcs().cache;
+        assembly {
+            cachedAddress := and(cache, ADDRESS_MASK_UPPER)
         }
     }
 }
