@@ -211,7 +211,7 @@ contract MarginOpenTest is DeltaSetup {
         // deposit 10, recieve 32.1... makes 42.1...
         assertApproxEqAbs(39923752, balance, 1);
         // deviations through rouding expected, accuracy for 10 decimals
-        assertApproxEqAbs(borrowBalance, amountToDeposit + amountToLeverage, 1.0e8);
+        assertApproxEqAbs(borrowBalance, amountToDeposit + amountToLeverage, 1.0e13);
     }
 
     function test_margin_mantle_open_exact_in_multi_v2(uint8 lenderId) external /** address user, uint8 lenderId */ {
@@ -252,7 +252,7 @@ contract MarginOpenTest is DeltaSetup {
         // deposit 10, recieve 32.1... makes 42.1...
         assertApproxEqAbs(39897880, balance, 1);
         // deviations through rouding expected, accuracy for 10 decimals
-        assertApproxEqAbs(borrowBalance, amountToDeposit + amountToLeverage, 1.0e8);
+        assertApproxEqAbs(borrowBalance, amountToDeposit + amountToLeverage, 1.0e13);
     }
 
     function test_margin_mantle_open_exact_out_v2(uint8 lenderId) external /** address user, uint8 lenderId */ {

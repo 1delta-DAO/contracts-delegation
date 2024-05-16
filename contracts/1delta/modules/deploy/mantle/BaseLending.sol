@@ -184,4 +184,79 @@ abstract contract BaseLending is WithStorage {
             cachedAddress := and(cache, ADDRESS_MASK_UPPER)
         }
     }
+
+    /** BALANCE FETCHERS FOR ALL IN / OUT */
+
+    function _variableDebtBalance(address underlying, address user, uint8 lenderId) internal view returns (uint256 callerBalance) {
+        mapping(bytes32 => address) storage debtTokens = ls().debtTokens;
+        assembly {
+            let ptr := mload(0x40) // free memory pointer
+            mstore(ptr, underlying)
+            mstore8(ptr, lenderId)
+            mstore(add(ptr, 0x20), debtTokens.slot)
+            let debtToken := sload(keccak256(ptr, 0x40))
+            // selector for balanceOf(address)
+            mstore(ptr, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+            // add this address as parameter
+            mstore(add(ptr, 0x4), user)
+
+            // call to debtToken
+            pop(staticcall(gas(), debtToken, ptr, 0x24, ptr, 0x20))
+
+            callerBalance := mload(ptr)
+        }
+    }
+
+    function _stableDebtBalance(address underlying, address user, uint8 lenderId) internal view returns (uint256 callerBalance) {
+        mapping(bytes32 => address) storage stableDebtTokens = ls().stableDebtTokens;
+        assembly {
+            let ptr := mload(0x40) // free memory pointer
+            mstore(ptr, underlying)
+            mstore8(ptr, lenderId)
+            mstore(add(ptr, 0x20), stableDebtTokens.slot)
+            let debtToken := sload(keccak256(ptr, 0x40))
+            // selector for balanceOf(address)
+            mstore(ptr, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+            // add this address as parameter
+            mstore(add(ptr, 0x4), user)
+
+            // call to debtToken
+            pop(staticcall(gas(), debtToken, ptr, 0x24, ptr, 0x20))
+
+            callerBalance := mload(ptr)
+        }
+    }
+
+    function _callerCollateralBalance(address underlying, uint8 lenderId) internal view returns (uint256 callerBalance) {
+        mapping(bytes32 => address) storage collateralTokens = ls().collateralTokens;
+        assembly {
+            let ptr := mload(0x40) // free memory pointer
+            mstore(ptr, underlying)
+            mstore8(ptr, lenderId)
+            mstore(add(ptr, 0x20), collateralTokens.slot)
+            let collateralToken := sload(keccak256(ptr, 0x40))
+            // selector for balanceOf(address)
+            mstore(ptr, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+            // add caller address as parameter
+            mstore(add(ptr, 0x4), caller())
+            // call to collateralToken
+            pop(staticcall(gas(), collateralToken, ptr, 0x24, ptr, 0x20))
+
+            callerBalance := mload(ptr)
+        }
+    }
+
+    function _balanceOfThis(address underlying) internal view returns (uint256 callerBalance) {
+        assembly {
+            // selector for balanceOf(address)
+            mstore(0x0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+            // add this address as parameter
+            mstore(0x4, address())
+
+            // call to underlying
+            pop(staticcall(gas(), underlying, 0x0, 0x24, 0x0, 0x20))
+
+            callerBalance := mload(0x0)
+        }
+    }
 }

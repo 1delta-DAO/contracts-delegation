@@ -43,8 +43,8 @@ contract DeltaLendingInterfaceMantle is BaseLending, WrappedNativeHandler, SelfP
         uint256 _balance = _balanceOfThis(_asset);
         uint256 _debtBalance;
         uint256 _interestRateMode = interestRateMode;
-        if (_interestRateMode == 2) _debtBalance = _callerVariableDebtBalance(_asset, lenderId);
-        else _debtBalance = _callerStableDebtBalance(_asset, lenderId);
+        if (_interestRateMode == 2) _debtBalance = _variableDebtBalance(_asset, msg.sender, lenderId);
+        else _debtBalance = _stableDebtBalance(_asset, msg.sender, lenderId);
         // if the amount lower higher than the balance, repay the amount
         if (_debtBalance >= _balance) {
             // _lendingPool.repay(_asset, _balance, _interestRateMode, recipient);
@@ -115,46 +115,6 @@ contract DeltaLendingInterfaceMantle is BaseLending, WrappedNativeHandler, SelfP
 
     /** BALANCE FETCHERS */
 
-    function _callerVariableDebtBalance(address underlying, uint8 lenderId) private view returns (uint256 callerBalance) {
-        mapping(bytes32 => address) storage debtTokens = ls().debtTokens;
-        assembly {
-            let ptr := mload(0x40) // free memory pointer
-            mstore(ptr, underlying)
-            mstore8(ptr, lenderId)
-            mstore(ptr, debtTokens.slot)
-            let collateralToken := sload(keccak256(ptr, 0x40))
-            // selector for balanceOf(address)
-            mstore(ptr, 0x70a0823100000000000000000000000000000000000000000000000000000000)
-            // add this address as parameter
-            mstore(add(ptr, 0x4), caller())
-
-            // call to collateralToken
-            pop(staticcall(gas(), collateralToken, ptr, 0x24, ptr, 0x20))
-
-            callerBalance := mload(ptr)
-        }
-    }
-
-    function _callerStableDebtBalance(address underlying, uint8 lenderId) private view returns (uint256 callerBalance) {
-        mapping(bytes32 => address) storage stableDebtTokens = ls().stableDebtTokens;
-        assembly {
-            let ptr := mload(0x40) // free memory pointer
-            mstore(ptr, underlying)
-            mstore8(ptr, lenderId)
-            mstore(ptr, stableDebtTokens.slot)
-            let collateralToken := sload(keccak256(ptr, 0x40))
-            // selector for balanceOf(address)
-            mstore(ptr, 0x70a0823100000000000000000000000000000000000000000000000000000000)
-            // add this address as parameter
-            mstore(add(ptr, 0x4), caller())
-
-            // call to collateralToken
-            pop(staticcall(gas(), collateralToken, ptr, 0x24, ptr, 0x20))
-
-            callerBalance := mload(ptr)
-        }
-    }
-
     function _balanceOfCaller(address underlying) private view returns (uint256 callerBalance) {
         assembly {
             let ptr := mload(0x40) // free memory pointer
@@ -168,20 +128,6 @@ contract DeltaLendingInterfaceMantle is BaseLending, WrappedNativeHandler, SelfP
             pop(staticcall(gas(), underlying, ptr, 0x24, ptr, 0x20))
 
             callerBalance := mload(ptr)
-        }
-    }
-
-    function _balanceOfThis(address underlying) private view returns (uint256 callerBalance) {
-        assembly {
-            // selector for balanceOf(address)
-            mstore(0x0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
-            // add this address as parameter
-            mstore(add(0x0, 0x4), address())
-
-            // call to underlying
-            pop(staticcall(gas(), underlying, 0x0, 0x24, 0x0, 0x20))
-
-            callerBalance := mload(0x0)
         }
     }
 }

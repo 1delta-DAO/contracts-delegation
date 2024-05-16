@@ -21,8 +21,8 @@ contract LendleFlashModuleTest is DeltaSetup {
         management.setValidTarget(address(router), true);
     }
 
-    function test_lendle_flash_open() external {
-        uint8 lenderId = DEFAULT_LENDER;
+    function test_mantle_lendle_flash_open() external {
+        uint8 lenderId = 0;
         address user = testUser;
         vm.assume(user != address(0));
         address asset = USDC;
@@ -38,7 +38,7 @@ contract LendleFlashModuleTest is DeltaSetup {
 
         bytes[] memory calls = new bytes[](3);
         calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, asset, amountToDeposit);
-        calls[1] = abi.encodeWithSelector(ILending.deposit.selector, asset, user);
+        calls[1] = abi.encodeWithSelector(ILending.deposit.selector, asset, user, lenderId);
 
         uint256 amountToLeverage = 20.0e6;
 
@@ -85,8 +85,8 @@ contract LendleFlashModuleTest is DeltaSetup {
         assertApproxEqAbs(borrowBalance, amountToFlashRepay, 20);
     }
 
-    function test_lendle_flash_close() external {
-        uint8 lenderId = DEFAULT_LENDER;
+    function test_mantle_lendle_flash_close() external {
+        uint8 lenderId = 0;
         address user = testUser;
         vm.assume(user != address(0) && lenderId < 2);
         address asset = USDC;

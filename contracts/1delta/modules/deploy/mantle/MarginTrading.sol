@@ -34,17 +34,20 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         address tokenIn;
         address tokenOut;
         bool zeroForOne;
-        uint8 identifier = uint8(bytes1(path[0:1]));
-        _cacheContext(identifier);
-        path = path[1:];
-        assembly {
-            let firstWord := calldataload(path.offset)
-            tokenIn := shr(96, firstWord)
-            identifier := shr(64, firstWord)
-            tokenOut := shr(96, calldataload(add(path.offset, 25)))
-            zeroForOne := lt(tokenIn, tokenOut)
+        uint256 identifier;
+        {
+            uint8 _identifier = uint8(bytes1(path[0:1]));
+            _cacheContext(_identifier);
+            path = path[1:];
+            assembly {
+                let firstWord := calldataload(path.offset)
+                tokenIn := shr(96, firstWord)
+                _identifier := shr(64, firstWord)
+                tokenOut := shr(96, calldataload(add(path.offset, 25)))
+                zeroForOne := lt(tokenIn, tokenOut)
+            }
+            identifier = _identifier;
         }
-
         // uniswapV3 types
         if (identifier < 50) {
             uint24 fee;
@@ -61,7 +64,6 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         }
         // uniswapV2 types
         else if (identifier < 100) {
-            ncs().amount = amountIn;
             tokenOut = pairAddress(tokenIn, tokenOut, identifier);
             (uint256 amount0Out, uint256 amount1Out) = zeroForOne
                 ? (uint256(0), getAmountOutUniV2(tokenOut, tokenIn, zeroForOne, amountIn, identifier))
@@ -116,24 +118,28 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         address tokenIn;
         address tokenOut;
         bool zeroForOne;
-        uint8 identifier = uint8(bytes1(path[0:1]));
-        _cacheContext(identifier);
-        path = path[1:];
-        // we need tokenIn together with lender id for he balance fetch
-        assembly {
-            tokenIn := shr(96, calldataload(path.offset))
+        uint256 amountIn;
+        uint256 identifier;
+        {
+            uint8 _identifier = uint8(bytes1(path[0:1]));
+            _cacheContext(_identifier);
+            path = path[1:];
+
+            assembly {
+                tokenIn := shr(96, calldataload(path.offset))
+                tokenOut := shr(96, calldataload(add(path.offset, 25)))
+                zeroForOne := lt(tokenIn, tokenOut)
+            }
+
+            // fetch collateral balance
+            amountIn = _callerCollateralBalance(tokenIn, _identifier);
+            if (amountIn == 0) revert NoBalance();
+
+            assembly {
+                _identifier := shr(64, calldataload(path.offset))
+            }
+            identifier = _identifier;
         }
-
-        // fetch collateral balance
-        uint256 amountIn = _callerCollateralBalance(tokenIn, identifier);
-        if (amountIn == 0) revert NoBalance();
-
-        assembly {
-            identifier := shr(64, calldataload(path.offset))
-            tokenOut := shr(96, calldataload(add(path.offset, 25)))
-            zeroForOne := lt(tokenIn, tokenOut)
-        }
-
         // uniswapV3 style
         if (identifier < 50) {
             uint24 fee;
@@ -150,7 +156,6 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         }
         // unsiwapV2 types
         else if (identifier < 100) {
-            ncs().amount = amountIn;
             tokenOut = pairAddress(tokenIn, tokenOut, identifier);
             (uint256 amount0Out, uint256 amount1Out) = zeroForOne
                 ? (uint256(0), getAmountOutUniV2(tokenOut, tokenIn, zeroForOne, amountIn, identifier))
@@ -189,30 +194,33 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         address tokenIn;
         address tokenOut;
         bool zeroForOne;
-        uint8 lenderId = uint8(bytes1(path));
-        uint8 identifier;
-        _cacheContext(lenderId);
-        path = path[1:];
-        // we need tokenIn together with lender id for he balance fetch
-        assembly {
-            let firstWord := calldataload(path.offset)
-            tokenOut := shr(96, firstWord)
-            identifier := shr(56, firstWord)
-            tokenIn := shr(96, calldataload(add(path.offset, 25)))
-            zeroForOne := lt(tokenIn, tokenOut)
-        }   
-        // determine output amount as respective debt balance
+        uint256 identifier;
         uint256 amountOut;
+        {
+            uint8 lenderId = uint8(bytes1(path));
+            uint8 _identifier;
+            _cacheContext(lenderId);
+            path = path[1:];
+            // we need tokenIn together with lender id for he balance fetch
+            assembly {
+                let firstWord := calldataload(path.offset)
+                tokenOut := shr(96, firstWord)
+                _identifier := shr(56, firstWord)
+                tokenIn := shr(96, calldataload(add(path.offset, 25)))
+                zeroForOne := lt(tokenIn, tokenOut)
+            }   
 
-        if (identifier == 5) amountOut = _callerVariableDebtBalance(tokenOut, lenderId);
-        else amountOut = _callerStableDebtBalance(tokenOut, lenderId);
-        if (amountOut == 0) revert NoBalance();
-
-        // fetch poolId - store it in identifier
-        assembly {
-            identifier := shr(64, calldataload(path.offset))
+            // determine output amount as respective debt balance
+            if (_identifier == 5) amountOut = _variableDebtBalance(tokenOut, msg.sender, lenderId);
+            else amountOut = _stableDebtBalance(tokenOut, msg.sender, lenderId);
+            if (amountOut == 0) revert NoBalance();
+        
+            // fetch poolId - store it in _identifier
+            assembly {
+                _identifier := shr(64, calldataload(path.offset))
+            }
+            identifier = _identifier;
         }
-
         // uniswapV3 types
         if (identifier < 50) {
             uint24 fee;
@@ -641,8 +649,8 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             zeroForOne := lt(tokenIn, tokenOut)
         }
         // calculate pool address
-        address pool = pairAddress(tokenIn, tokenOut, identifier);
         {
+            address pool = pairAddress(tokenIn, tokenOut, identifier);
             // validate sender
             require(msg.sender == pool);
         }
@@ -651,21 +659,21 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // the swap amount is expected to be the nonzero output amount
             // since v2 does not send the input amount as parameter, we have to fetch
             // the other amount manually through the cache
-            (uint256 amountToSwap, uint256 amountToPay) = zeroForOne ? (amount1, ncs().amount) : (amount0, ncs().amount);
+            uint256 amountToSwap = zeroForOne ? amount1 : amount0;
             if (data.length > 46) {
                 // we need to swap to the token that we want to supply
                 // the router returns the amount that we can finally supply to the protocol
                 data = data[25:];
                 // store the output amount
-                ncs().amount = swapExactIn(amountToSwap, data);
+                gcs().cache = bytes32(swapExactIn(amountToSwap, data));
             }
-            _transferERC20Tokens(tokenIn, msg.sender, amountToPay);
+            _transferERC20Tokens(tokenIn, msg.sender, getV2AmountInDirect(msg.sender, tokenIn, tokenOut, amountToSwap, identifier));
             return;
         } else if (tradeId == 1) {
             // fetch amountOut
             uint256 referenceAmount = zeroForOne ? amount0 : amount1;
             // calculte amountIn (note that tokenIn/out are read inverted at the top)
-            referenceAmount = getV2AmountInDirect(pool, tokenOut, tokenIn, referenceAmount, identifier);
+            referenceAmount = getV2AmountInDirect(msg.sender, tokenOut, tokenIn, referenceAmount, identifier);
             uint256 cache = data.length;
             // either initiate the next swap or pay
             if (cache > 46) {
@@ -688,8 +696,8 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // the swap amount is expected to be the nonzero output amount
             // since v2 does not send the input amount as parameter, we have to fetch
             // the other amount manually through a separate number cache
-            (uint256 amountToSwap, uint256 amountToBorrow) = zeroForOne ? (amount1, ncs().amount) : (amount0, ncs().amount);
-            ncs().amount = 0x0;
+            uint256 amountToSwap = zeroForOne ? amount1 : amount0;
+            uint256 amountToBorrow = getV2AmountInDirect(msg.sender, tokenIn, tokenOut, amountToSwap, identifier);
             if (cache > 46) {
                 // we need to swap to the token that we want to supply
                 // the router returns the amount that we can finally supply to the protocol
@@ -741,7 +749,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 _repay(tokenIn, user, referenceAmount, tradeId, lenderId);
             }
             // calculate amountIn (note that tokenIn/out are read inverted at the top)
-            referenceAmount = getV2AmountInDirect(pool, tokenOut, tokenIn, referenceAmount, identifier);
+            referenceAmount = getV2AmountInDirect(msg.sender, tokenOut, tokenIn, referenceAmount, identifier);
             uint256 cache = data.length;
             // constinue swapping if more data is provided
             if (cache > 46) {
@@ -978,66 +986,6 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         }
     }
 
-    /** BALANCE FETCHERS FOR ALL IN / OUT */
-
-    function _callerCollateralBalance(address underlying, uint8 lenderId) internal view returns (uint256 callerBalance) {
-        mapping(bytes32 => address) storage collateralTokens = ls().collateralTokens;
-        assembly {
-            let ptr := mload(0x40) // free memory pointer
-            mstore(ptr, underlying)
-            mstore8(ptr, lenderId)
-            mstore(add(ptr, 0x20), collateralTokens.slot)
-            let collateralToken := sload(keccak256(ptr, 0x40))
-            // selector for balanceOf(address)
-            mstore(ptr, 0x70a0823100000000000000000000000000000000000000000000000000000000)
-            // add caller address as parameter
-            mstore(add(ptr, 0x4), caller())
-            // call to collateralToken
-            pop(staticcall(gas(), collateralToken, ptr, 0x24, ptr, 0x20))
-
-            callerBalance := mload(ptr)
-        }
-    }
-
-    function _callerVariableDebtBalance(address underlying, uint8 lenderId) internal view returns (uint256 callerBalance) {
-        mapping(bytes32 => address) storage debtTokens = ls().debtTokens;
-        assembly {
-            let ptr := mload(0x40) // free memory pointer
-            mstore(ptr, underlying)
-            mstore8(ptr, lenderId)
-            mstore(add(ptr, 0x20), debtTokens.slot)
-            let debtTOken := sload(keccak256(ptr, 0x40))
-            // selector for balanceOf(address)
-            mstore(ptr, 0x70a0823100000000000000000000000000000000000000000000000000000000)
-            // add caller address as parameter
-            mstore(add(ptr, 0x4), caller())
-
-            // call to debtTOken
-            pop(staticcall(gas(), debtTOken, ptr, 0x24, ptr, 0x20))
-
-            callerBalance := mload(ptr)
-        }
-    }
-
-    function _callerStableDebtBalance(address underlying, uint8 lenderId) internal view returns (uint256 callerBalance) {
-        mapping(bytes32 => address) storage stableDebtTokens = ls().stableDebtTokens;
-        assembly {
-            let ptr := mload(0x40) // free memory pointer
-            mstore(ptr, underlying)
-            mstore8(ptr, lenderId)
-            mstore(add(ptr, 0x20), stableDebtTokens.slot)
-            let stableDebtToken := sload(keccak256(ptr, 0x40))
-            // selector for balanceOf(address)
-            mstore(ptr, 0x70a0823100000000000000000000000000000000000000000000000000000000)
-            // add caller address as parameter
-            mstore(add(ptr, 0x4), caller())
-
-            // call to stableDebtToken
-            pop(staticcall(gas(), stableDebtToken, ptr, 0x24, ptr, 0x20))
-
-            callerBalance := mload(ptr)
-        }
-    }
 
     /**
      * Handle a payment from payer to receiver via different channels

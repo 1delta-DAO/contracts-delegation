@@ -93,25 +93,23 @@ contract LendleFlashModule is WithStorage, BaseLending, TokenTransfer, IFlashLoa
         //margin open [expected to flash borrow amount]
         if (marginType == 0) {
             address baseAsset = flashParams.deltaParams.baseAsset;
-            uint256 amountSwapped = _balanceOf(baseAsset, address(this));
-
+            uint256 amountSwapped = _balanceOfThis(baseAsset);
             // supply the received amount
             _deposit(baseAsset, user, amountSwapped, 0);
 
             // adjust amount for flash loan fee
             amountReceived += premiums[0];
             // in case the input of the swap was too low, we subtract the balance pre-borrow
-            amountReceived -= _balanceOf(token, address(this));
-
+            amountReceived -= _balanceOfThis(token);
             // borrow amounts plus fee and send them back to the pool
             lenderPool.borrow(token, amountReceived, flashParams.deltaParams.interestRateModeIn, 0, user);
         }
         // margin close [expected to flash withdrawal amount]
         else if (marginType == 1) {
             address baseAsset = flashParams.deltaParams.baseAsset;
-            uint256 amountSwapped = _balanceOf(baseAsset, address(this));
+            uint256 amountSwapped = _balanceOfThis(baseAsset);
             marginType = flashParams.deltaParams.interestRateModeOut;
-            uint256 borrowBalance = getDebtBalance(baseAsset, marginType, user);
+            uint256 borrowBalance = getDebtBalance(baseAsset, marginType, user, 0);
             if (borrowBalance <= amountSwapped) {
                 // repay the amount out - will fail if insufficiently swapped
                 lenderPool.repay(
@@ -134,7 +132,7 @@ contract LendleFlashModule is WithStorage, BaseLending, TokenTransfer, IFlashLoa
             }
             // adjust amount for flash loan fee
             amountReceived += premiums[0];
-            baseAsset = aas().aTokens[token];
+            baseAsset = _getCollateralToken(token, 0);
             if (flashParams.deltaParams.withdrawMax) {
                 // fetch user balance
                 amountSwapped = _balanceOf(baseAsset, user);
@@ -152,7 +150,7 @@ contract LendleFlashModule is WithStorage, BaseLending, TokenTransfer, IFlashLoa
                 if (amountReceived != 0) _transferERC20Tokens(token, user, amountReceived);
             } else {
                 // calculate amount to withdraw
-                amountSwapped = amountReceived - _balanceOf(token, address(this));
+                amountSwapped = amountReceived - _balanceOfThis(token);
                 // transfer aTokens from user
                 _transferERC20TokensFrom(baseAsset, user, address(this), amountSwapped);
                 // withdraw required funds
@@ -166,14 +164,14 @@ contract LendleFlashModule is WithStorage, BaseLending, TokenTransfer, IFlashLoa
         //  collateral swap
         else if (marginType == 2) {
             address baseAsset = flashParams.deltaParams.baseAsset;
-            uint256 amountSwapped = _balanceOf(baseAsset, address(this));
+            uint256 amountSwapped = _balanceOfThis(baseAsset);
 
             // supply the received amount
             _deposit(flashParams.deltaParams.baseAsset, user, amountSwapped, 0);
 
             // adjust amount for flash loan fee
             amountReceived += premiums[0];
-            baseAsset = aas().aTokens[token];
+            baseAsset = _getCollateralToken(token, 0);
             if (flashParams.deltaParams.withdrawMax) {
                 // fetch user balance
                 amountSwapped = _balanceOf(baseAsset, user);
@@ -191,7 +189,7 @@ contract LendleFlashModule is WithStorage, BaseLending, TokenTransfer, IFlashLoa
                 if (amountReceived != 0) _transferERC20Tokens(token, user, amountReceived);
             } else {
                 // calculate amount to withdraw
-                amountSwapped = amountReceived - _balanceOf(token, address(this));
+                amountSwapped = amountReceived - _balanceOfThis(token);
                 // transfer aTokens from user
                 _transferERC20TokensFrom(baseAsset, user, address(this), amountSwapped);
                 // withdraw required funds
@@ -205,12 +203,12 @@ contract LendleFlashModule is WithStorage, BaseLending, TokenTransfer, IFlashLoa
         // debt swap
         else {
             // fetch amountIn
-            amountReceived -= _balanceOf(token, address(this));
+            amountReceived -= _balanceOfThis(token);
 
             address baseAsset = flashParams.deltaParams.baseAsset;
-            uint256 received = _balanceOf(baseAsset, address(this));
+            uint256 received = _balanceOfThis(baseAsset);
             marginType = flashParams.deltaParams.interestRateModeOut;
-            uint256 borrowBalance = getDebtBalance(baseAsset, marginType, user);
+            uint256 borrowBalance = getDebtBalance(baseAsset, marginType, user, 0);
             if (borrowBalance <= received) {
                 // repay the amount out - will fail if insufficiently swapped
                 lenderPool.repay(
@@ -240,8 +238,8 @@ contract LendleFlashModule is WithStorage, BaseLending, TokenTransfer, IFlashLoa
         return true;
     }
 
-    function getDebtBalance(address token, uint256 interestRateMode, address user) private view returns (uint256) {
-        if (interestRateMode == 2) return _balanceOf(aas().vTokens[token], user);
-        else return _balanceOf(aas().sTokens[token], user);
+    function getDebtBalance(address token, uint256 interestRateMode, address user, uint256 lenderId) private view returns (uint256) {
+        if (interestRateMode == 2) return _variableDebtBalance(token, user, uint8(lenderId));
+        else return _stableDebtBalance(token, user, uint8(lenderId));
     }
 }

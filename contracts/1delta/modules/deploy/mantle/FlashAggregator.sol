@@ -80,8 +80,8 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
         assembly {
             tokenOut := shr(96, calldataload(path.offset))
         }
-        if (_interestRateMode == 2) _debtBalance = _callerVariableDebtBalance(tokenOut, lenderId);
-        else _debtBalance = _callerStableDebtBalance(tokenOut, lenderId);
+        if (_interestRateMode == 2) _debtBalance = _variableDebtBalance(tokenOut, msg.sender, lenderId);
+        else _debtBalance = _stableDebtBalance(tokenOut, msg.sender, lenderId);
         if (_debtBalance == 0) revert NoBalance(); // revert if amount is zero
 
         flashSwapExactOutInternal(_debtBalance, address(this), path);
@@ -104,8 +104,8 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
         assembly {
             tokenOut := shr(96, calldataload(path.offset))
         }
-        if (_interestRateMode == 2) _debtBalance = _callerVariableDebtBalance(tokenOut, lenderId);
-        else _debtBalance = _callerStableDebtBalance(tokenOut, lenderId);
+        if (_interestRateMode == 2) _debtBalance = _variableDebtBalance(tokenOut, msg.sender, lenderId);
+        else _debtBalance = _stableDebtBalance(tokenOut, msg.sender, lenderId);
         if (_debtBalance == 0) revert NoBalance(); // revert if amount is zero
 
         flashSwapExactOutInternal(_debtBalance, address(this), path);
@@ -126,21 +126,5 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
         if (amountIn == 0) revert NoBalance(); // revert if amount is zero
         uint256 amountOut = swapExactIn(amountIn, path);
         if (minimumAmountOut > amountOut) revert Slippage();
-    }
-
-    function _balanceOfThis(address underlying) private view returns (uint256 callerBalance) {
-        assembly {
-            let ptr := mload(0x40) // free memory pointer
-            let collateralToken := sload(keccak256(ptr, 0x40))
-            // selector for balanceOf(address)
-            mstore(ptr, 0x70a0823100000000000000000000000000000000000000000000000000000000)
-            // add this address as parameter
-            mstore(add(ptr, 0x4), address())
-
-            // call to underlying
-            pop(staticcall(gas(), underlying, ptr, 0x24, ptr, 0x20))
-
-            callerBalance := mload(ptr)
-        }
     }
 }
