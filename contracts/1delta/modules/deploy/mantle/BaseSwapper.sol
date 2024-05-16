@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity 0.8.24;
+pragma solidity 0.8.25;
 
 /******************************************************************************\
 * Author: Achthar | 1delta 
@@ -10,12 +10,15 @@ import {IUniversalV3StyleSwap} from "../../../dex-tools/interfaces/IUniversalSwa
 import {IUniswapV2Pair} from "../../../../external-protocols/uniswapV2/core/interfaces/IUniswapV2Pair.sol";
 import {TokenTransfer} from "../../../libraries/TokenTransfer.sol";
 
+
 // solhint-disable max-line-length
 
 /**
- * @title Swapping contract for exact ins and pool/pair identification
+ * @title Base swapper contract
+ * @notice Contains basic logic for swap executions with DEXs
  */
 abstract contract BaseSwapper is TokenTransfer {
+    error invalidDexId();
     /// @dev Mask of lower 20 bytes.
     uint256 private constant ADDRESS_MASK = 0x00ffffffffffffffffffffffffffffffffffffffff;
     /// @dev Mask of upper 20 bytes.
@@ -26,6 +29,7 @@ abstract contract BaseSwapper is TokenTransfer {
     uint160 internal constant MIN_SQRT_RATIO = 4295128740;
     /// @dev MAX_SQRT_RATIO - 1 from Uniswap's TickMath
     uint160 internal constant MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970341;
+    uint256 private constant SCALE_18 = 1.0e18;
 
     bytes32 private constant FUSION_V3_FF_FACTORY = 0xff8790c2C3BA67223D83C8FCF2a5E3C650059987b40000000000000000000000;
     bytes32 private constant FUSION_POOL_INIT_CODE_HASH = 0x1bce652aaa6528355d7a339037433a20cd28410e3967635ba8d2ddb037440dbf;
@@ -48,7 +52,11 @@ abstract contract BaseSwapper is TokenTransfer {
     bytes32 private constant CLEO_FF_FACTORY = 0xffAAA32926fcE6bE95ea2c51cB4Fcb60836D320C420000000000000000000000;
     bytes32 private constant CLEO_POOL_INIT_CODE_HASH = 0x1565b129f2d1790f12d45301b9b084335626f0c92410bc43130763b69971135d;
 
+    bytes32 private constant METHLAB_FF_FACTORY = 0xff8f140fc3e9211b8dc2fc1d7ee3292f6817c5dd5d0000000000000000000000;
+    bytes32 private constant METHLAB_INIT_CODE_HASH = 0xacd26fbb15704ae5e5fe7342ea8ebace020e4fa5ad4a03122ce1678278cf382b;
+
     address private constant MERCHANT_MOE_FACTORY = 0x5bEf015CA9424A7C07B68490616a4C1F094BEdEc;
+    address private constant MERCHANT_MOE_LB_FACTORY = 0xa6630671775c4EA2743840F9A5016dCf2A104054;
 
     bytes32 internal constant VELO_FF_FACTORY = 0xff99F9a4A96549342546f9DAE5B2738EDDcD43Bf4C0000000000000000000000;
     bytes32 constant VELO_CODE_HASH = 0x0ccd005ee58d5fb11632ef5c2e0866256b240965c62c8e990c0f84a97f311879;
@@ -65,19 +73,39 @@ abstract contract BaseSwapper is TokenTransfer {
     address private constant WOO_POOL = 0x9D1A92e601db0901e69bd810029F2C14bCCA3128;
     address internal constant REBATE_RECIPIENT = 0xC95eED7F6E8334611765F84CEb8ED6270F08907E;
 
+    address internal constant KTX_VAULT = 0x2e488D7ED78171793FA91fAd5352Be423A50Dae1;
+    address internal constant KTX_VAULT_UTILS = 0x25e71a6b45598213E95F9a718e3FE0523e9d9E34;
+    address internal constant KTX_VAULT_PRICE_FEED = 0xEdd1E8aACF7652aD8c015C4A403A9aE36F3Fe4B7;
+
     address internal constant STRATUM_3POOL = 0xD6F312AA90Ad4C92224436a7A4a648d69482e47e;
+    address internal constant STRATUM_3POOL_2 = 0x7d3621aCA02B711F5f738C9f21C1bFE294df094d;
+    address internal constant STRATUM_ETH_POOL = 0xe8792eD86872FD6D8b74d0668E383454cbA15AFc;
+
     address internal constant MUSD = 0xab575258d37EaA5C8956EfABe71F4eE8F6397cF3;
     address internal constant USDY = 0x5bE26527e817998A7206475496fDE1E68957c5A6;
 
     constructor() {}
 
+    /**
+     * Get the last token from path calldata
+     * @param data input data
+     * @return token address
+     */
     function getLastToken(bytes calldata data) internal pure returns (address token) {
         assembly {
             token := shr(96, calldataload(add(data.offset, sub(data.length, 21))))
         }
     }
 
-    /// @dev Returns the pool for the given token pair and fee. The pool contract may or may not exist.
+   /**
+    * Compute or fetch a UniV3 pair address
+    * Token sorting is done in this call
+    * @param tokenA first token
+    * @param tokenB second token
+    * @param fee fee parameter
+    * @param _pId Dex Id
+    * @return pool address
+    */
     function getUniswapV3Pool(address tokenA, address tokenB, uint24 fee, uint256 _pId) internal pure returns (IUniversalV3StyleSwap pool) {
         assembly {
             let s := mload(0x40)
@@ -182,6 +210,26 @@ abstract contract BaseSwapper is TokenTransfer {
                 mstore(p, CLEO_POOL_INIT_CODE_HASH)
                 pool := and(ADDRESS_MASK, keccak256(s, 85))
             }
+            // MethLab
+            case 5 {
+                mstore(p, METHLAB_FF_FACTORY)
+                p := add(p, 21)
+                // Compute the inner hash in-place
+                switch lt(tokenA, tokenB)
+                case 0 {
+                    mstore(p, tokenB)
+                    mstore(add(p, 32), tokenA)
+                }
+                default {
+                    mstore(p, tokenA)
+                    mstore(add(p, 32), tokenB)
+                }
+                mstore(add(p, 64), and(UINT24_MASK, fee))
+                mstore(p, keccak256(p, 96))
+                p := add(p, 32)
+                mstore(p, METHLAB_INIT_CODE_HASH)
+                pool := and(ADDRESS_MASK, keccak256(s, 85))
+            }
             // iZi
             default {
                 mstore(p, IZI_FF_FACTORY)
@@ -205,7 +253,15 @@ abstract contract BaseSwapper is TokenTransfer {
         }
     }
 
-    /// @dev gets uniswapV2 (and fork) pair addresses
+   /**
+    * Compute or fetch a UniV2 or Solidly style pair address
+    * For Merchant Moe, we fetch the pair address from the factory
+    * Token sorting is done in this call
+    * @param tokenA first token
+    * @param tokenB second token
+    * @param _pId Dex Id
+    * @return pair address
+    */
     function pairAddress(address tokenA, address tokenB, uint256 _pId) internal view returns (address pair) {
         assembly {
             switch _pId
@@ -357,8 +413,13 @@ abstract contract BaseSwapper is TokenTransfer {
         }
     }
 
-    /// @dev swaps exact input through UniswapV3 or UniswapV2 style exactIn
-    /// only uniswapV3 executes flashSwaps
+    /**
+     * Swaps exact in internally using all implemented Dexs
+     * Will NOT use a flash swap
+     * @param amountIn sell amount
+     * @param path path calldata
+     * @return amountOut buy amount
+     */
     function swapExactIn(uint256 amountIn, bytes calldata path) internal returns (uint256 amountOut) {
         while (true) {
             address tokenIn;
@@ -405,24 +466,49 @@ abstract contract BaseSwapper is TokenTransfer {
                         address(this),
                         uint128(amountIn),
                         -799999, // low tick
-                        path
+                        path[:45]
                     );
                 else
                     (amountIn, ) = getUniswapV3Pool(tokenIn, tokenOut, fee, identifier).swapY2X(
                         address(this),
                         uint128(amountIn),
                         799999, // high tick
-                        path
+                        path[:45]
                     );
             }
             // WOO Fi
             else if (identifier == 101) {
                 amountIn = swapWooFiExactIn(tokenIn, tokenOut, amountIn);
             }
-            // Stratum 3USD
+            // Stratum 3USD with wrapper
             else if (identifier == 102) {
                 amountIn = swapStratum3(tokenIn, tokenOut, amountIn);
             }
+            // Moe LB
+            else if (identifier == 103) {
+                uint24 bin;
+                assembly {
+                    bin := and(shr(72, calldataload(path.offset)), 0xffffff)
+                }
+                amountIn = swapLBexactIn(tokenIn, tokenOut, amountIn, address(this), uint16(bin));
+            } else if(identifier == 104) {
+                amountIn = swapKTXExactIn(tokenIn, tokenOut, amountIn);
+            } 
+            // Curve stable general
+            else if (identifier == 105) {
+                uint8 indexIn;
+                uint8 indexOut;
+                uint8 subGroup;
+                assembly {
+                    let indexData := and(shr(72, calldataload(path.offset)), 0xffffff)
+                    indexIn := and(shr(16, indexData), 0xff)
+                    indexOut := and(shr(8, indexData), 0xff)
+                    subGroup := and(indexData, 0xff)
+                }
+                amountIn = swapStratumCurveGeneral(indexIn, indexOut, subGroup, amountIn);
+            } else
+                revert invalidDexId();
+
             // decide whether to continue or terminate
             if (path.length > 46) {
                 path = path[25:];
@@ -433,6 +519,13 @@ abstract contract BaseSwapper is TokenTransfer {
         }
     }
 
+    /**
+     * Swaps exact input on WOOFi DEX
+     * @param tokenIn input
+     * @param tokenOut output
+     * @param amountIn sell amount
+     * @return amountOut buy amount
+     */
     function swapWooFiExactIn(address tokenIn, address tokenOut, uint256 amountIn) private returns (uint256 amountOut) {
         assembly {
             // selector for transfer(address,uint256)
@@ -492,13 +585,271 @@ abstract contract BaseSwapper is TokenTransfer {
         }
     }
 
+    /**
+     * Swaps exact input on KTX spot DEX
+     * @param tokenIn input
+     * @param tokenOut output
+     * @param amountIn sell amount
+     * @return amountOut buy amount
+     */
+    function swapKTXExactIn(address tokenIn, address tokenOut, uint256 amountIn) private returns (uint256 amountOut) {
+        assembly {
+            // selector for transfer(address,uint256)
+            mstore(0xB00, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+            mstore(add(0xB00, 0x04), KTX_VAULT)
+            mstore(add(0xB00, 0x24), amountIn)
+
+            let success := call(gas(), tokenIn, 0, 0xB00, 0x44, 0xB00, 32)
+
+            let rdsize := returndatasize()
+
+            // Check for ERC20 success. ERC20 tokens should return a boolean,
+            // but some don't. We accept 0-length return data as success, or at
+            // least 32 bytes that starts with a 32-byte boolean true.
+            success := and(
+                success, // call itself succeeded
+                or(
+                    iszero(rdsize), // no return data, or
+                    and(
+                        iszero(lt(rdsize, 32)), // at least 32 bytes
+                        eq(mload(0xB00), 1) // starts with uint256(1)
+                    )
+                )
+            )
+
+            if iszero(success) {
+                returndatacopy(0xB00, 0, rdsize)
+                revert(0xB00, rdsize)
+            }
+            // selector for swap(address,address,address)
+            mstore(
+                0xB00, // 2816
+                0x9331621200000000000000000000000000000000000000000000000000000000
+            )
+            mstore(0xB04, tokenIn)
+            mstore(0xB24, tokenOut)
+            mstore(0xB44, address())
+            success := call(
+                gas(),
+                KTX_VAULT,
+                0x0, // no native transfer
+                0xB00,
+                0x64, // input length 66 bytes
+                0xB00, // store output here
+                0x20 // output is just uint
+            )
+            if iszero(success) {
+                rdsize := returndatasize()
+                returndatacopy(0xB00, 0, rdsize)
+                revert(0xB00, rdsize)
+            }
+
+            amountOut := mload(0xB00)
+        }
+    }
+
+    /**
+     * Executes a swap on merchant Moe's LB exact in
+     * The pair address is fetched from the factory
+     * @param tokenIn input
+     * @param tokenOut output
+     * @param amountIn sell amount
+     * @param receiver receiver address
+     * @param binStep bin indetifier
+     * @return amountOut buy amount
+     */
+    function swapLBexactIn(
+        address tokenIn, 
+        address tokenOut, 
+        uint256 amountIn, 
+        address receiver, 
+        uint16 binStep // identifies pair
+    ) private returns (uint256 amountOut) {
+        assembly {
+            let ptr := mload(0x40)
+
+            ////////////////////////////////////////////////////
+            // Get the pair adress from the factory
+            ////////////////////////////////////////////////////
+
+            // getLBPairInformation(address,address,uint256)
+            mstore(ptr, 0x704037bd00000000000000000000000000000000000000000000000000000000)
+            // this flag indicates whether tokenOut is tokenY
+            // the tokens in the pair are ordered, as such, we call lt
+            let swapForY := lt(tokenIn, tokenOut)
+            // order tokens for call
+            switch swapForY
+            case 1 {
+                mstore(add(ptr, 0x4), tokenIn)
+                mstore(add(ptr, 0x24), tokenOut)
+            }
+            default {
+                mstore(add(ptr, 0x4), tokenOut)
+                mstore(add(ptr, 0x24), tokenIn)
+            }
+            mstore(add(ptr, 0x44), binStep)
+            pop( // the call will always succeed due to immutable call target
+                staticcall(
+                    gas(),
+                    MERCHANT_MOE_LB_FACTORY,
+                    ptr,
+                    0x64,
+                    ptr,
+                    0x40 // we only need 64 bits of the output
+                )
+            )
+            // get the pair
+            let pair := and(
+                ADDRESS_MASK_UPPER, // mask address
+                mload(add(ptr, 0x20)) // skip index
+            )
+            // pair must exist
+            if iszero(pair) {
+                revert(0, 0)
+            }
+            // getTokenY()
+            mstore(ptr, 0xda10610c00000000000000000000000000000000000000000000000000000000)
+            pop(
+                // the call will always succeed due to the pair being nonzero
+                staticcall(
+                    gas(),
+                    pair,
+                    ptr,
+                    0x4,
+                    ptr,
+                    0x20
+                )
+            )
+            swapForY := eq(tokenOut, mload(ptr)) 
+            ////////////////////////////////////////////////////
+            // Transfer amountIn to pair
+            ////////////////////////////////////////////////////
+
+            // selector for transfer(address,uint256)
+            mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+            mstore(add(ptr, 0x04), pair)
+            mstore(add(ptr, 0x24), amountIn)
+
+            let success := call(gas(), tokenIn, 0x0, ptr, 0x44, ptr, 32)
+
+            let rdsize := returndatasize()
+
+            // Check for ERC20 success. ERC20 tokens should return a boolean,
+            // but some don't. We accept 0-length return data as success, or at
+            // least 32 bytes that starts with a 32-byte boolean true.
+            success := and(
+                success, // call itself succeeded
+                or(
+                    iszero(rdsize), // no return data, or
+                    and(
+                        iszero(lt(rdsize, 32)), // at least 32 bytes
+                        eq(mload(ptr), 1) // starts with uint256(1)
+                    )
+                )
+            )
+
+            if iszero(success) {
+                returndatacopy(ptr, 0, rdsize)
+                revert(ptr, rdsize)
+            }
+
+            ////////////////////////////////////////////////////
+            // Execute swap function
+            ////////////////////////////////////////////////////
+
+            // swap(bool,address)
+            mstore(ptr, 0x53c059a000000000000000000000000000000000000000000000000000000000)
+            mstore(add(ptr, 0x4), swapForY)
+            mstore(add(ptr, 0x24), receiver)
+            // call swap, revert if invalid/undefined pair
+            if iszero(call(gas(), pair, 0x0, ptr, 0x44, ptr, 0x20)) {
+                rdsize := returndatasize()
+                revert(ptr, rdsize)
+            }
+            // the swap call returns both amounts encoded into a single bytes32 as (amountX,amountY)
+            switch swapForY
+            case 0 {
+                amountOut := and(mload(ptr), 0xffffffffffffffffffffffffffffffff)
+            }
+            default {
+                amountOut := shr(128, mload(ptr))
+            }
+        }
+    }
+
+    /**
+     * Swaps Merchant Moe's LB exact output internally
+     * @param pair address provided byt the factory
+     * @param swapForY flag for tokenY being the output token
+     * @param amountOut amountOut used to validate that we received enough
+     * @param receiver receiver address
+     */
+    function swapLBexactOut(
+        address pair,
+        bool swapForY, 
+        uint256 amountOut, 
+        address receiver
+    ) internal {
+        assembly {
+            let ptr := mload(0x40)
+
+            ////////////////////////////////////////////////////
+            // Execute swap function
+            ////////////////////////////////////////////////////
+
+            // swap(bool,address)
+            mstore(ptr, 0x53c059a000000000000000000000000000000000000000000000000000000000)
+            mstore(add(ptr, 0x4), swapForY)
+            mstore(add(ptr, 0x24), receiver)
+            // call swap, revert if invalid/undefined pair
+            if iszero(call(gas(), pair, 0x0, ptr, 0x44, ptr, 0x20)) {
+                revert(ptr, returndatasize())
+            }
+
+            ////////////////////////////////////////////////////
+            // Validate amount received
+            ////////////////////////////////////////////////////
+
+            // we fetch the amount out we actually got
+            let amountOutReceived
+            // the swap call returns both amounts encoded into a single bytes32 as (amountX,amountY)
+            switch swapForY
+            case 0 {
+                amountOutReceived := and(mload(ptr), 0xffffffffffffffffffffffffffffffff)
+            }
+            default {
+                amountOutReceived := shr(128, mload(ptr))
+            }
+            // revert if we did not get enough
+            if lt(amountOutReceived, amountOut) {
+                revert (0, 0)
+            }
+        }    
+    }
+
+    /**
+     * Swaps Stratums Curve fork exact in internally and handles wrapping/unwrapping of mUSD->USDY
+     * This one has a dedicated implementation as this pool has a rebasing asset which can be unwrapped
+     * The rebasing asset is rarely ever used in other types of swap pools, as such,w e auto wrap / unwrap in case we 
+     * use the unwrapped asset as input or output 
+     * @param tokenIn input
+     * @param tokenOut output
+     * @param amountIn sell amount
+     * @return amountOut buy amount
+     */
     function swapStratum3(address tokenIn, address tokenOut, uint256 amountIn) private returns (uint256 amountOut) {
         assembly {
+            // curve forks work with indices, we determine these below
             let indexIn
             let indexOut
             switch tokenIn
             // USDY
             case 0x5bE26527e817998A7206475496fDE1E68957c5A6 {
+
+                ////////////////////////////////////////////////////
+                // Wrap USDY->mUSD before the swap
+                ////////////////////////////////////////////////////
+
                 // execute USDY->mUSD wrap
                 // selector for wrap(uint256)
                 mstore(0xB00, 0xea598cb000000000000000000000000000000000000000000000000000000000)
@@ -508,10 +859,16 @@ abstract contract BaseSwapper is TokenTransfer {
                     returndatacopy(0xB00, 0, rdsize)
                     revert(0xB00, rdsize)
                 }
+
+                ////////////////////////////////////////////////////
+                // Fetch mUSD balance of this contract 
+                ////////////////////////////////////////////////////
+
                 // selector for balanceOf(address)
                 mstore(0xB00, 0x70a0823100000000000000000000000000000000000000000000000000000000)
                 // add this address as parameter
                 mstore(0xB04, address())
+                
                 // call to token
                 pop(staticcall(gas(), MUSD, 0xB00, 0x24, 0xB00, 0x20))
 
@@ -555,6 +912,11 @@ abstract contract BaseSwapper is TokenTransfer {
             default {
                 revert(0, 0)
             }
+
+            ////////////////////////////////////////////////////
+            // Execute swap function 
+            ////////////////////////////////////////////////////
+
             // selector for swap(uint8,uint8,uint256,uint256,uint256)
             mstore(0xB00, 0x9169558600000000000000000000000000000000000000000000000000000000)
             mstore(0xB04, indexIn)
@@ -571,6 +933,11 @@ abstract contract BaseSwapper is TokenTransfer {
             amountOut := mload(0xB00)
 
             if eq(tokenOut, USDY) {
+
+                ////////////////////////////////////////////////////
+                // tokenOut is USDY, as such, we unwrap mUSD to SUDY
+                ////////////////////////////////////////////////////
+
                 // calculate mUSD->USDY unwrap
                 // selector for unwrap(uint256)
                 mstore(0xB00, 0xde0e9a3e00000000000000000000000000000000000000000000000000000000)
@@ -592,7 +959,52 @@ abstract contract BaseSwapper is TokenTransfer {
         }
     }
 
-    /// @dev simple exact input swap using uniswapV2 or fork
+    function swapStratumCurveGeneral(uint256 indexIn, uint256 indexOut, uint256 subGroup, uint256 amountIn) private returns (uint256 amountOut) {
+        assembly {
+            ////////////////////////////////////////////////////
+            // Execute swap function 
+            ////////////////////////////////////////////////////
+
+            // selector for swap(uint8,uint8,uint256,uint256,uint256)
+            mstore(0xB00, 0x9169558600000000000000000000000000000000000000000000000000000000)
+            mstore(0xB04, indexIn)
+            mstore(0xB24, indexOut)
+            mstore(0xB44, amountIn)
+            mstore(0xB64, 0) // min out is zero, we validate slippage at the end
+            mstore(0xB84, 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff) // no deadline
+            let pool
+            switch subGroup
+            case 0 {
+                pool := STRATUM_ETH_POOL
+            }
+            case 1 {
+                pool := STRATUM_3POOL_2
+            }
+            default {
+                revert (0, 0)
+            }
+            if iszero(call(gas(), pool, 0x0, 0xB00, 0xA4, 0xB00, 0x20)) {
+                let rdsize := returndatasize()
+                returndatacopy(0xB00, 0, rdsize)
+                revert(0xB00, rdsize)
+            }
+
+            amountOut := mload(0xB00)
+        }
+    }
+
+
+    /**
+     * Executes an exact input swap internally across major UniV2 & Solidly style forks
+     * Note that this will NOT trigger callbacks and therefore is not executing flash swaps
+     * Due to the nature of the V2 impleemntation, the callback is not triggered if no calldata is provided
+     * As such, we never enter the callback implementation when using this function
+     * @param tokenIn input
+     * @param tokenOut output
+     * @param amountIn sell amount
+     * @param _pId DEX identifier
+     * @return buyAmount output amount
+     */
     function swapUniV2ExactIn(
         address tokenIn,
         address tokenOut,
@@ -885,7 +1297,16 @@ abstract contract BaseSwapper is TokenTransfer {
         }
     }
 
-    /// @dev calculates the input amount for a UniswapV2 style swap
+    /**
+     * Calculates the input amount for a UniswapV2 and Solidly style swap
+     * Assumes that the pair address has been pre-calculated
+     * @param pair provided pair address
+     * @param tokenIn input
+     * @param tokenOut output
+     * @param buyAmount output amunt
+     * @param pId DEX identifier
+     * @return x input amount
+     */
     function getV2AmountInDirect(
         address pair,
         address tokenIn, // some DEXs are more efficiently queried directly
@@ -1095,25 +1516,25 @@ abstract contract BaseSwapper is TokenTransfer {
                         let _reserveOutScaled
                         switch lt(tokenIn, tokenOut)
                         case 1 {
-                            _reserveInScaled := div(mul(mload(ptr), 1000000000000000000), _decimalsIn)
-                            _reserveOutScaled := div(mul(mload(add(ptr, 0x20)), 1000000000000000000), _decimalsOut_xy_fee)
+                            _reserveInScaled := div(mul(mload(ptr), SCALE_18), _decimalsIn)
+                            _reserveOutScaled := div(mul(mload(add(ptr, 0x20)), SCALE_18), _decimalsOut_xy_fee)
                         }
                         default {
-                            _reserveInScaled := div(mul(mload(add(ptr, 0x20)), 1000000000000000000), _decimalsIn)
-                            _reserveOutScaled := div(mul(mload(ptr), 1000000000000000000), _decimalsOut_xy_fee)
+                            _reserveInScaled := div(mul(mload(add(ptr, 0x20)), SCALE_18), _decimalsIn)
+                            _reserveOutScaled := div(mul(mload(ptr), SCALE_18), _decimalsOut_xy_fee)
                         }
-                        y0 := sub(_reserveOutScaled, div(mul(buyAmount, 1000000000000000000), _decimalsOut_xy_fee))
+                        y0 := sub(_reserveOutScaled, div(mul(buyAmount, SCALE_18), _decimalsOut_xy_fee))
                         x := _reserveInScaled
                         // get xy
                         _decimalsOut_xy_fee := div(
                             mul(
-                                div(mul(_reserveInScaled, _reserveOutScaled), 1000000000000000000),
+                                div(mul(_reserveInScaled, _reserveOutScaled), SCALE_18),
                                 add(
-                                    div(mul(_reserveInScaled, _reserveInScaled), 1000000000000000000),
-                                    div(mul(_reserveOutScaled, _reserveOutScaled), 1000000000000000000)
+                                    div(mul(_reserveInScaled, _reserveInScaled), SCALE_18),
+                                    div(mul(_reserveOutScaled, _reserveOutScaled), SCALE_18)
                                 )
                             ),
-                            1000000000000000000
+                            SCALE_18
                         )
                     }
                     // for-loop for approximation
@@ -1125,18 +1546,18 @@ abstract contract BaseSwapper is TokenTransfer {
                     } {
                         let x_prev := x
                         let k := add(
-                            div(mul(x, div(mul(div(mul(y0, y0), 1000000000000000000), y0), 1000000000000000000)), 1000000000000000000),
-                            div(mul(y0, div(mul(div(mul(x, x), 1000000000000000000), x), 1000000000000000000)), 1000000000000000000)
+                            div(mul(x, div(mul(div(mul(y0, y0), SCALE_18), y0), SCALE_18)), SCALE_18),
+                            div(mul(y0, div(mul(div(mul(x, x), SCALE_18), x), SCALE_18)), SCALE_18)
                         )
                         switch lt(k, _decimalsOut_xy_fee)
                         case 1 {
                             x := add(
                                 x,
                                 div(
-                                    mul(sub(_decimalsOut_xy_fee, k), 1000000000000000000),
+                                    mul(sub(_decimalsOut_xy_fee, k), SCALE_18),
                                     add(
-                                        div(mul(mul(3, y0), div(mul(x, x), 1000000000000000000)), 1000000000000000000),
-                                        div(mul(div(mul(y0, y0), 1000000000000000000), y0), 1000000000000000000)
+                                        div(mul(mul(3, y0), div(mul(x, x), SCALE_18)), SCALE_18),
+                                        div(mul(div(mul(y0, y0), SCALE_18), y0), SCALE_18)
                                     )
                                 )
                             )
@@ -1145,10 +1566,10 @@ abstract contract BaseSwapper is TokenTransfer {
                             x := sub(
                                 x,
                                 div(
-                                    mul(sub(k, _decimalsOut_xy_fee), 1000000000000000000),
+                                    mul(sub(k, _decimalsOut_xy_fee), SCALE_18),
                                     add(
-                                        div(mul(mul(3, y0), div(mul(x, x), 1000000000000000000)), 1000000000000000000),
-                                        div(mul(div(mul(y0, y0), 1000000000000000000), y0), 1000000000000000000)
+                                        div(mul(mul(3, y0), div(mul(x, x), SCALE_18)), SCALE_18),
+                                        div(mul(div(mul(y0, y0), SCALE_18), y0), SCALE_18)
                                     )
                                 )
                             )
@@ -1206,11 +1627,99 @@ abstract contract BaseSwapper is TokenTransfer {
                                 mul(mul(sub(x, _reserveInScaled), _decimalsIn), 10000),
                                 sub(10000, _decimalsOut_xy_fee) // 10000 - fee
                             ),
-                            1000000000000000000
+                            SCALE_18
                         ),
                         1 // rounding up
                     )
                 }
+            }
+        }
+    }
+
+    /**
+     * Calculates Merchant Moe's LB amount in
+     * @param tokenIn input
+     * @param tokenOut output
+     * @param amountOut buy amount
+     * @param binStep bin identifier
+     * @return amountIn buy amount
+     * @return pair pair address
+     * @return swapForY flag for tokenOut = tokenY
+     */
+    function getLBAmountIn(
+        address tokenIn,
+        address tokenOut,
+        uint256 amountOut,
+        uint16 binStep // this param identifies the pair
+    ) internal view returns (uint256 amountIn, address pair, bool swapForY) {
+        assembly {
+            let ptr := mload(0x40)
+            // getLBPairInformation(address,address,uint256)
+            mstore(ptr, 0x704037bd00000000000000000000000000000000000000000000000000000000)
+            // this flag indicates whether tokenOut is tokenY
+            // the tokens in the pair are ordered, as such, we call lt
+            swapForY := lt(tokenIn, tokenOut)
+            // order tokens for call
+            switch swapForY
+            case 1 {
+                mstore(add(ptr, 0x4), tokenIn)
+                mstore(add(ptr, 0x24), tokenOut)
+            }
+            default {
+                mstore(add(ptr, 0x4), tokenOut)
+                mstore(add(ptr, 0x24), tokenIn)
+            }
+            mstore(add(ptr, 0x44), binStep)
+            pop(
+                // the call will always succeed due to immutable call target
+                staticcall(
+                    gas(),
+                    MERCHANT_MOE_LB_FACTORY,
+                    ptr,
+                    0x64,
+                    ptr,
+                    0x40 // we only need 64 bits of the output
+                )
+            )
+            // get the pair
+            pair := and(
+                ADDRESS_MASK_UPPER, // mask address
+                mload(add(ptr, 0x20)) // skip index
+            )
+            // pair must exist
+            if iszero(pair) {
+                revert(0, 0)
+            }
+            // getTokenY()
+            mstore(ptr, 0xda10610c00000000000000000000000000000000000000000000000000000000)
+            pop(
+                // the call will always succeed due to the pair being nonzero
+                staticcall(
+                    gas(),
+                    pair,
+                    ptr,
+                    0x4,
+                    ptr,
+                    0x20
+                )
+            )
+            // override swapForY
+            swapForY := eq(tokenOut, mload(ptr)) 
+            // getSwapIn(uint128,bool)
+            mstore(ptr, 0xabcd783000000000000000000000000000000000000000000000000000000000)
+            mstore(add(ptr, 0x4), amountOut)
+            mstore(add(ptr, 0x24), swapForY)
+            // call swap simulator, revert if invalid/undefined pair
+            if iszero(staticcall(gas(), pair, ptr, 0x44, ptr, 0x40)) {
+                revert(0, 0)
+            }
+            amountIn := and(
+                0x00000000000000000000000000000000ffffffffffffffffffffffffffffffff, // mask uint128
+                mload(ptr)
+            )
+            // the second slot returns amount out left, if positive, we revert
+            if gt(0, mload(add(ptr, 0x20))) {
+                revert(0, 0)
             }
         }
     }

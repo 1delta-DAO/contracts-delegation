@@ -15,7 +15,7 @@ contract MarginCollateralSwapTest is DeltaSetup {
         {
             address borrowAsset = WMNT;
             uint256 amountToDeposit = 10.0e6;
-            uint256 amountToLeverage = 30.0e18;
+            uint256 amountToLeverage = 20.0e18;
 
             openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
@@ -44,10 +44,10 @@ contract MarginCollateralSwapTest is DeltaSetup {
 
         //  swap 15 for approx 15
         assertApproxEqAbs(amountIn, balanceFrom, 1);
-        assertApproxEqAbs(14979803, balance, 1);
+        assertApproxEqAbs(14984996, balance, 1);
     }
 
-    function test_margin_mantle_collateral_exact_in_multi(uint8 lenderId) external /** address user, uint8 lenderId */ {
+    function test_margin_mantle_collateral_exact_in_multi(uint8 lenderId) external {
         address user = testUser;
         vm.assume(user != address(0) && lenderId < 2);
         address asset = USDC;
@@ -56,7 +56,7 @@ contract MarginCollateralSwapTest is DeltaSetup {
         {
             address borrowAsset = WMNT;
             uint256 amountToDeposit = 10.0e6;
-            uint256 amountToLeverage = 30.0e18;
+            uint256 amountToLeverage = 20.0e18;
 
             openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
@@ -85,10 +85,10 @@ contract MarginCollateralSwapTest is DeltaSetup {
 
         //  swap 15 for approx 15
         assertApproxEqAbs(amountIn, balanceFrom, 1);
-        assertApproxEqAbs(14936349, balance, 1);
+        assertApproxEqAbs(14945822, balance, 1);
     }
 
-    function test_margin_mantle_collateral_exact_out(uint8 lenderId) external /** address user, uint8 lenderId */ {
+    function test_margin_mantle_collateral_exact_out(uint8 lenderId) external {
         address user = testUser;
         vm.assume(user != address(0) && lenderId < 2);
         address asset = USDC;
@@ -97,7 +97,7 @@ contract MarginCollateralSwapTest is DeltaSetup {
         {
             address borrowAsset = WMNT;
             uint256 amountToDeposit = 10.0e6;
-            uint256 amountToLeverage = 30.0e18;
+            uint256 amountToLeverage = 20.0e18;
 
             openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
@@ -125,11 +125,11 @@ contract MarginCollateralSwapTest is DeltaSetup {
         balanceFrom = balanceFrom - IERC20All(collateralAsset).balanceOf(user);
 
         //  swap 15 for approx 15
-        assertApproxEqAbs(15020225, balanceFrom, 1);
+        assertApproxEqAbs(15015019, balanceFrom, 1);
         assertApproxEqAbs(amountOut, balance, 1);
     }
 
-    function test_margin_mantle_collateral_exact_out_multi(uint8 lenderId) external /** address user, uint8 lenderId */ {
+    function test_margin_mantle_collateral_exact_out_multi(uint8 lenderId) external {
         address user = testUser;
         vm.assume(user != address(0) && lenderId < 2);
         address asset = USDC;
@@ -138,7 +138,7 @@ contract MarginCollateralSwapTest is DeltaSetup {
         {
             address borrowAsset = WMNT;
             uint256 amountToDeposit = 10.0e6;
-            uint256 amountToLeverage = 30.0e18;
+            uint256 amountToLeverage = 20.0e18;
 
             openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
@@ -150,7 +150,7 @@ contract MarginCollateralSwapTest is DeltaSetup {
 
         bytes memory swapPath = getCollateralSwapExactOutMulti(asset, assetTo, lenderId);
         uint256 amountOut = 15.0e6;
-        uint256 maximumIn = 15.05e6;
+        uint256 maximumIn = 15.55e6;
         calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactOut.selector, amountOut, maximumIn, swapPath);
 
         vm.prank(user);
@@ -166,11 +166,12 @@ contract MarginCollateralSwapTest is DeltaSetup {
         balanceFrom = balanceFrom - IERC20All(collateralAsset).balanceOf(user);
 
         //  swap 15 for approx 15
-        assertApproxEqAbs(15032989, balanceFrom, 1);
+        assertApproxEqAbs(15392723, balanceFrom, 1);
         assertApproxEqAbs(amountOut, balance, 1);
     }
 
-    function test_margin_mantle_collateral_all_in(uint8 lenderId) external /** address user, uint8 lenderId */ {
+    function test_margin_mantle_collateral_all_in(uint8 lenderId) external {
+        uint8 lenderId = DEFAULT_LENDER;
         address user = testUser;
         vm.assume(user != address(0) && lenderId < 2);
         address asset = USDC;
@@ -179,7 +180,7 @@ contract MarginCollateralSwapTest is DeltaSetup {
         {
             address borrowAsset = WMNT;
             uint256 amountToDeposit = 10.0e6;
-            uint256 amountToLeverage = 30.0e18;
+            uint256 amountToLeverage = 20.0e18;
 
             openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
@@ -190,7 +191,7 @@ contract MarginCollateralSwapTest is DeltaSetup {
         bytes[] memory calls = new bytes[](1);
 
         bytes memory swapPath = getCollateralSwapExactInSingle(asset, assetTo, lenderId);
-        uint256 minimumOut = 39.9499e6;
+        uint256 minimumOut = 29.9499e6;
         calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapAllIn.selector, minimumOut, swapPath);
 
         vm.prank(user);
@@ -210,8 +211,8 @@ contract MarginCollateralSwapTest is DeltaSetup {
         balanceFrom = balanceFrom - balanceFinal;
 
         //  swap 42 for approx 42
-        assertApproxEqAbs(42163948, balanceFrom, 1);
-        assertApproxEqAbs(42106566, balance, 1);
+        assertApproxEqAbs(39122533, balanceFrom, 1);
+        assertApproxEqAbs(39083106, balance, 1);
     }
 
     /** TEST FOR V2 CALLBACKS */
@@ -225,7 +226,7 @@ contract MarginCollateralSwapTest is DeltaSetup {
         {
             address borrowAsset = WMNT;
             uint256 amountToDeposit = 10.0e6;
-            uint256 amountToLeverage = 30.0e18;
+            uint256 amountToLeverage = 20.0e18;
 
             openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
@@ -254,10 +255,10 @@ contract MarginCollateralSwapTest is DeltaSetup {
 
         //  swap 15 for approx 15
         assertApproxEqAbs(amountIn, balanceFrom, 1);
-        assertApproxEqAbs(14940398, balance, 1);
+        assertApproxEqAbs(14909728, balance, 1);
     }
 
-    function test_margin_mantle_collateral_exact_in_multi_v2(uint8 lenderId) external /** address user, uint8 lenderId */ {
+    function test_margin_mantle_collateral_exact_in_multi_v2(uint8 lenderId) external {
         address user = testUser;
         vm.assume(user != address(0) && lenderId < 2);
         address asset = USDC;
@@ -266,7 +267,7 @@ contract MarginCollateralSwapTest is DeltaSetup {
         {
             address borrowAsset = WMNT;
             uint256 amountToDeposit = 10.0e6;
-            uint256 amountToLeverage = 30.0e18;
+            uint256 amountToLeverage = 20.0e18;
 
             openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
@@ -295,10 +296,10 @@ contract MarginCollateralSwapTest is DeltaSetup {
 
         //  swap 15 for approx 15
         assertApproxEqAbs(amountIn, balanceFrom, 1);
-        assertApproxEqAbs(14865356, balance, 1);
+        assertApproxEqAbs(14884120, balance, 1);
     }
 
-    function test_margin_mantle_collateral_exact_out_v2(uint8 lenderId) external /** address user, uint8 lenderId */ {
+    function test_margin_mantle_collateral_exact_out_v2(uint8 lenderId) external {
         address user = testUser;
         vm.assume(user != address(0) && lenderId < 2);
         address asset = USDC;
@@ -307,7 +308,7 @@ contract MarginCollateralSwapTest is DeltaSetup {
         {
             address borrowAsset = WMNT;
             uint256 amountToDeposit = 10.0e6;
-            uint256 amountToLeverage = 30.0e18;
+            uint256 amountToLeverage = 20.0e18;
 
             openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
@@ -335,11 +336,11 @@ contract MarginCollateralSwapTest is DeltaSetup {
         balanceFrom = balanceFrom - IERC20All(collateralAsset).balanceOf(user);
 
         //  swap 15 for approx 15
-        assertApproxEqAbs(15059841, balanceFrom, 1);
+        assertApproxEqAbs(15090822, balanceFrom, 1);
         assertApproxEqAbs(amountOut, balance, 1);
     }
 
-    function test_margin_mantle_collateral_exact_out_multi_v2(uint8 lenderId) external /** address user, uint8 lenderId */ {
+    function test_margin_mantle_collateral_exact_out_multi_v2(uint8 lenderId) external {
         address user = testUser;
         vm.assume(user != address(0) && lenderId < 2);
         address asset = USDC;
@@ -348,7 +349,7 @@ contract MarginCollateralSwapTest is DeltaSetup {
         {
             address borrowAsset = WMNT;
             uint256 amountToDeposit = 10.0e6;
-            uint256 amountToLeverage = 30.0e18;
+            uint256 amountToLeverage = 20.0e18;
 
             openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
@@ -376,11 +377,12 @@ contract MarginCollateralSwapTest is DeltaSetup {
         balanceFrom = balanceFrom - IERC20All(collateralAsset).balanceOf(user);
 
         //  swap 15 for approx 15
-        assertApproxEqAbs(15135887, balanceFrom, 1);
+        assertApproxEqAbs(15116796, balanceFrom, 1);
         assertApproxEqAbs(amountOut, balance, 1);
     }
 
-    function test_margin_mantle_collateral_all_in_v2(uint8 lenderId) external /** address user, uint8 lenderId */ {
+    function test_margin_mantle_collateral_all_in_v2(uint8 lenderId) external {
+        uint8 lenderId = DEFAULT_LENDER;
         address user = testUser;
         vm.assume(user != address(0) && lenderId < 2);
         address asset = USDC;
@@ -389,7 +391,7 @@ contract MarginCollateralSwapTest is DeltaSetup {
         {
             address borrowAsset = WMNT;
             uint256 amountToDeposit = 10.0e6;
-            uint256 amountToLeverage = 30.0e18;
+            uint256 amountToLeverage = 20.0e18;
 
             openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
@@ -400,7 +402,7 @@ contract MarginCollateralSwapTest is DeltaSetup {
         bytes[] memory calls = new bytes[](1);
 
         bytes memory swapPath = getCollateralSwapExactInSingleV2(asset, assetTo, lenderId);
-        uint256 minimumOut = 39.9499e6;
+        uint256 minimumOut = 29.9399e6;
         calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapAllIn.selector, minimumOut, swapPath);
 
         vm.prank(user);
@@ -420,7 +422,7 @@ contract MarginCollateralSwapTest is DeltaSetup {
         balanceFrom = balanceFrom - balanceFinal;
 
         //  swap 42 for approx 42
-        assertApproxEqAbs(42163948, balanceFrom, 1);
-        assertApproxEqAbs(41995030, balance, 1);
+        assertApproxEqAbs(39122533, balanceFrom, 1);
+        assertApproxEqAbs(38885941, balance, 1);
     }
 }

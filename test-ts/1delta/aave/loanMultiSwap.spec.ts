@@ -4,8 +4,6 @@ import { ethers, network } from 'hardhat'
 import {
     MintableERC20,
     WETH9,
-    PathTesterBroker,
-    PathTesterBroker__factory
 } from '../../../types';
 import { FeeAmount } from '../../uniswap-v3/periphery/shared/constants';
 import { expandTo18Decimals } from '../../uniswap-v3/periphery/shared/expandTo18Decimals';
@@ -14,7 +12,6 @@ import { expect } from '../shared/expect'
 import { initializeMakeSuite, InterestRateMode, AAVEFixture } from '../shared/aaveFixture';
 import { addLiquidity, addLiquidityV2, uniswapMinimalFixtureNoTokens, UniswapMinimalFixtureNoTokens } from '../shared/uniswapFixture';
 import { formatEther } from 'ethers/lib/utils';
-import { MockProvider } from 'ethereum-waffle';
 import { uniV2Fixture, V2Fixture } from '../shared/uniV2Fixture';
 import { encodeAggregatorPathEthers } from '../shared/aggregatorPath';
 
@@ -27,18 +24,16 @@ describe('AAVE Brokered Loan Multi Swap operations', async () => {
     let bob: SignerWithAddress;
     let carol: SignerWithAddress;
     let gabi: SignerWithAddress;
-    let test: SignerWithAddress;
     let test0: SignerWithAddress;
     let test1: SignerWithAddress;
     let uniswap: UniswapMinimalFixtureNoTokens;
     let aaveTest: AAVEFixture;
     let broker: AaveBrokerFixtureInclV2;
     let tokens: (MintableERC20 | WETH9)[];
-    let pathTester: PathTesterBroker
     let uniswapV2: V2Fixture
 
     before('Deploy Account, Trader, Uniswap and AAVE', async () => {
-        [deployer, alice, bob, carol, gabi, test, test0, test1] = await ethers.getSigners();
+        [deployer, alice, bob, carol, gabi, test0, test1] = await ethers.getSigners();
 
         aaveTest = await initializeMakeSuite(deployer)
         tokens = Object.values(aaveTest.tokens)
@@ -46,7 +41,6 @@ describe('AAVE Brokered Loan Multi Swap operations', async () => {
         uniswapV2 = await uniV2Fixture(deployer, aaveTest.tokens["WETH"].address)
         broker = await aaveBrokerFixtureInclV2(deployer, uniswap.factory.address, aaveTest.pool.address, uniswapV2.factoryV2.address, aaveTest.tokens["WETH"].address)
 
-        pathTester = await new PathTesterBroker__factory(deployer).deploy()
         await initAaveBroker(deployer, broker as any, aaveTest.pool.address)
         // approve & fund wallets
         let keys = Object.keys(aaveTest.tokens)

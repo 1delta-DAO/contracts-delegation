@@ -17,10 +17,6 @@ interface IERC20All {
 
     function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
 
-    event Transfer(address indexed from, address indexed to, uint256 value);
-
-    event Approval(address indexed owner, address indexed spender, uint256 value);
-
     // credit delegation
 
     function approveDelegation(address delegatee, uint256 amount) external;

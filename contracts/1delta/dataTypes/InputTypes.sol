@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.25;
 
 // instead of an enum, we use uint8 to pack the trade type together with user and interestRateMode for a single slot
 // the tradeType maps according to the following struct

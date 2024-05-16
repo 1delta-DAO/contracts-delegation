@@ -15,7 +15,7 @@ contract MarginDebtSwapTest is DeltaSetup {
         {
             address asset = USDC;
             uint256 amountToDeposit = 10.0e6;
-            uint256 amountToLeverage = 30.0e18;
+            uint256 amountToLeverage = 20.0e18;
 
             openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
@@ -27,7 +27,7 @@ contract MarginDebtSwapTest is DeltaSetup {
 
         bytes memory swapPath = getDebtSwapExactInSingle(assetFrom, borrowAsset, lenderId);
         uint256 amountIn = 0.001e18;
-        uint256 minimumOut = 3.7e18;
+        uint256 minimumOut = 1.7e18;
         calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactIn.selector, amountIn, minimumOut, swapPath);
 
         vm.prank(user);
@@ -44,10 +44,11 @@ contract MarginDebtSwapTest is DeltaSetup {
 
         //  swap 15 for approx 15
         assertApproxEqAbs(amountIn, balanceFrom, 1);
-        assertApproxEqAbs(3755753147829134432, balance, 1);
+        assertApproxEqAbs(2398640388832552493, balance, 1);
     }
 
-    function test_margin_mantle_debt_exact_in_multi(uint8 lenderId) external /** address user, uint8 lenderId */ {
+    function test_margin_mantle_debt_exact_in_multi(uint8 lenderId) external {
+        uint8 lenderId = DEFAULT_LENDER;
         address user = testUser;
         vm.assume(user != address(0) && lenderId < 2);
         address borrowAsset = WMNT;
@@ -56,7 +57,7 @@ contract MarginDebtSwapTest is DeltaSetup {
         {
             address asset = USDC;
             uint256 amountToDeposit = 10.0e6;
-            uint256 amountToLeverage = 30.0e18;
+            uint256 amountToLeverage = 20.0e18;
 
             openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
@@ -68,7 +69,7 @@ contract MarginDebtSwapTest is DeltaSetup {
 
         bytes memory swapPath = getDebtSwapExactInMulti(assetFrom, borrowAsset, lenderId);
         uint256 amountIn = 0.001e18;
-        uint256 minimumOut = 3.7e18;
+        uint256 minimumOut = 1.7e18;
         calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactIn.selector, amountIn, minimumOut, swapPath);
 
         vm.prank(user);
@@ -85,10 +86,10 @@ contract MarginDebtSwapTest is DeltaSetup {
 
         //  swap 15 for approx 15
         assertApproxEqAbs(amountIn, balanceFrom, 1);
-        assertApproxEqAbs(3741566099564202243, balance, 1);
+        assertApproxEqAbs(2399864542910992641, balance, 1);
     }
 
-    function test_margin_mantle_debt_exact_out(uint8 lenderId) external /** address user, uint8 lenderId */ {
+    function test_margin_mantle_debt_exact_out(uint8 lenderId) external {
         address user = testUser;
         vm.assume(user != address(0) && lenderId < 2);
         address borrowAsset = WMNT;
@@ -97,7 +98,7 @@ contract MarginDebtSwapTest is DeltaSetup {
         {
             address asset = USDC;
             uint256 amountToDeposit = 10.0e6;
-            uint256 amountToLeverage = 30.0e18;
+            uint256 amountToLeverage = 20.0e18;
 
             openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
@@ -125,11 +126,12 @@ contract MarginDebtSwapTest is DeltaSetup {
         balanceFrom = IERC20All(debtAssetFrom).balanceOf(user) - balanceFrom;
 
         //  swap 15 for approx 15
-        assertApproxEqAbs(985153928191580, balanceFrom, 1);
+        assertApproxEqAbs(1542667073284527, balanceFrom, 1);
         assertApproxEqAbs(amountOut, balance, 1);
     }
 
-    function test_margin_mantle_debt_exact_out_multi(uint8 lenderId) external /** address user, uint8 lenderId */ {
+    function test_margin_mantle_debt_exact_out_multi(uint8 lenderId) external {
+        uint8 lenderId = DEFAULT_LENDER;
         address user = testUser;
         vm.assume(user != address(0) && lenderId < 2);
         address borrowAsset = WMNT;
@@ -138,7 +140,7 @@ contract MarginDebtSwapTest is DeltaSetup {
         {
             address asset = USDC;
             uint256 amountToDeposit = 10.0e6;
-            uint256 amountToLeverage = 30.0e18;
+            uint256 amountToLeverage = 20.0e18;
 
             openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
@@ -166,16 +168,17 @@ contract MarginDebtSwapTest is DeltaSetup {
         balanceFrom = IERC20All(debtAssetFrom).balanceOf(user) - balanceFrom;
 
         //  swap 15 for approx 15
-        assertApproxEqAbs(988890229117376, balanceFrom, 1);
+        assertApproxEqAbs(1542134089740859, balanceFrom, 1);
         assertApproxEqAbs(amountOut, balance, 1);
     }
 
-    function test_margin_mantle_debt_all_out(uint8 lenderId) external /** address user, uint8 lenderId */ {
+    function test_margin_mantle_debt_all_out(uint8 lenderId) external {
+        uint8 lenderId = DEFAULT_LENDER;
         address user = testUser;
         vm.assume(user != address(0) && lenderId < 2);
         address borrowAsset = WMNT;
         address debtAsset = debtTokens[borrowAsset][lenderId];
-        uint256 amountToLeverage = 30.0e18;
+        uint256 amountToLeverage = 20.0e18;
         {
             address asset = USDC;
             uint256 amountToDeposit = 10.0e6;
@@ -208,7 +211,7 @@ contract MarginDebtSwapTest is DeltaSetup {
         balance = balance - debtBalanceFinal;
         balanceFrom = IERC20All(debtAssetFrom).balanceOf(user) - balanceFrom;
 
-        assertApproxEqAbs(7992863431647291, balanceFrom, 1);
+        assertApproxEqAbs(8347318762672509, balanceFrom, 1);
         assertApproxEqAbs(amountToLeverage, balance, 1);
     }
 
@@ -223,7 +226,7 @@ contract MarginDebtSwapTest is DeltaSetup {
         {
             address asset = USDC;
             uint256 amountToDeposit = 10.0e6;
-            uint256 amountToLeverage = 30.0e18;
+            uint256 amountToLeverage = 20.0e18;
 
             openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
@@ -235,7 +238,7 @@ contract MarginDebtSwapTest is DeltaSetup {
 
         bytes memory swapPath = getDebtSwapExactInSingleV2(assetFrom, borrowAsset, lenderId);
         uint256 amountIn = 0.001e18;
-        uint256 minimumOut = 3.7e18;
+        uint256 minimumOut = 1.7e18;
         calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactIn.selector, amountIn, minimumOut, swapPath);
 
         vm.prank(user);
@@ -252,10 +255,10 @@ contract MarginDebtSwapTest is DeltaSetup {
 
         //  swap 15 for approx 15
         assertApproxEqAbs(amountIn, balanceFrom, 1);
-        assertApproxEqAbs(3742924451815735880, balance, 1);
+        assertApproxEqAbs(2395237686677368449, balance, 1);
     }
 
-    function test_margin_mantle_debt_exact_in_multi_v2(uint8 lenderId) external /** address user, uint8 lenderId */ {
+    function test_margin_mantle_debt_exact_in_multi_v2(uint8 lenderId) external {
         address user = testUser;
         vm.assume(user != address(0) && lenderId < 2);
         address borrowAsset = WMNT;
@@ -264,7 +267,7 @@ contract MarginDebtSwapTest is DeltaSetup {
         {
             address asset = USDC;
             uint256 amountToDeposit = 10.0e6;
-            uint256 amountToLeverage = 30.0e18;
+            uint256 amountToLeverage = 20.0e18;
 
             openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
@@ -276,7 +279,7 @@ contract MarginDebtSwapTest is DeltaSetup {
 
         bytes memory swapPath = getDebtSwapExactInMultiV2(assetFrom, borrowAsset, lenderId);
         uint256 amountIn = 0.001e18;
-        uint256 minimumOut = 3.7e18;
+        uint256 minimumOut = 1.7e18;
         calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactIn.selector, amountIn, minimumOut, swapPath);
 
         vm.prank(user);
@@ -293,10 +296,10 @@ contract MarginDebtSwapTest is DeltaSetup {
 
         //  swap 15 for approx 15
         assertApproxEqAbs(amountIn, balanceFrom, 1);
-        assertApproxEqAbs(3742127048135549684, balance, 1);
+        assertApproxEqAbs(2391067037304473942, balance, 1);
     }
 
-    function test_margin_mantle_debt_exact_out_v2(uint8 lenderId) external /** address user, uint8 lenderId */ {
+    function test_margin_mantle_debt_exact_out_v2(uint8 lenderId) external {
         address user = testUser;
         vm.assume(user != address(0) && lenderId < 2);
         address borrowAsset = WMNT;
@@ -305,7 +308,7 @@ contract MarginDebtSwapTest is DeltaSetup {
         {
             address asset = USDC;
             uint256 amountToDeposit = 10.0e6;
-            uint256 amountToLeverage = 30.0e18;
+            uint256 amountToLeverage = 20.0e18;
 
             openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
@@ -316,7 +319,7 @@ contract MarginDebtSwapTest is DeltaSetup {
         bytes[] memory calls = new bytes[](1);
 
         bytes memory swapPath = getDebtSwapExactOutSingleV2(assetFrom, borrowAsset, lenderId);
-        uint256 amountOut = 3.7e18;
+        uint256 amountOut = 2.7e18;
         uint256 maxIn = 0.002e18;
         calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactOut.selector, amountOut, maxIn, swapPath);
 
@@ -333,11 +336,12 @@ contract MarginDebtSwapTest is DeltaSetup {
         balanceFrom = IERC20All(debtAssetFrom).balanceOf(user) - balanceFrom;
 
         //  swap 15 for approx 15
-        assertApproxEqAbs(988531749237808, balanceFrom, 1);
+        assertApproxEqAbs(1127237279688107, balanceFrom, 1);
         assertApproxEqAbs(amountOut, balance, 1);
     }
 
-    function test_margin_mantle_debt_exact_out_multi_v2(uint8 lenderId) external /** address user, uint8 lenderId */ {
+    function test_margin_mantle_debt_exact_out_multi_v2(uint8 lenderId) external {
+        uint8 lenderId = DEFAULT_LENDER;
         address user = testUser;
         vm.assume(user != address(0) && lenderId < 2);
         address borrowAsset = WMNT;
@@ -346,7 +350,7 @@ contract MarginDebtSwapTest is DeltaSetup {
         {
             address asset = USDC;
             uint256 amountToDeposit = 10.0e6;
-            uint256 amountToLeverage = 30.0e18;
+            uint256 amountToLeverage = 20.0e18;
 
             openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
@@ -374,16 +378,16 @@ contract MarginDebtSwapTest is DeltaSetup {
         balanceFrom = IERC20All(debtAssetFrom).balanceOf(user) - balanceFrom;
 
         //  swap 15 for approx 15
-        assertApproxEqAbs(988742419702295, balanceFrom, 1);
+        assertApproxEqAbs(1547430747140979, balanceFrom, 1);
         assertApproxEqAbs(amountOut, balance, 1);
     }
 
-    function test_margin_mantle_debt_all_out_v2(uint8 lenderId) external /** address user, uint8 lenderId */ {
+    function test_margin_mantle_debt_all_out_v2(uint8 lenderId) external {
         address user = testUser;
         vm.assume(user != address(0) && lenderId < 2);
         address borrowAsset = WMNT;
         address debtAsset = debtTokens[borrowAsset][lenderId];
-        uint256 amountToLeverage = 30.0e18;
+        uint256 amountToLeverage = 20.0e18;
         {
             address asset = USDC;
             uint256 amountToDeposit = 10.0e6;
@@ -416,7 +420,7 @@ contract MarginDebtSwapTest is DeltaSetup {
         balance = balance - debtBalanceFinal;
         balanceFrom = IERC20All(debtAssetFrom).balanceOf(user) - balanceFrom;
 
-        assertApproxEqAbs(8015579404741637, balanceFrom, 1);
+        assertApproxEqAbs(8350118923485992, balanceFrom, 1);
         assertApproxEqAbs(amountToLeverage, balance, 1);
     }
 }

@@ -292,4 +292,6 @@ interface ILendingPool {
             uint256 ltv,
             uint256 healthFactor
         );
+
+    function FLASHLOAN_PREMIUM_TOTAL() external view returns (uint128);
 }

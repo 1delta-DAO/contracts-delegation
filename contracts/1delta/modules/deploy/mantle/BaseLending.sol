@@ -1,19 +1,17 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity 0.8.24;
+pragma solidity ^0.8.25;
 
 /******************************************************************************\
 * Author: Achthar | 1delta 
 /******************************************************************************/
-
-import {WithStorage} from "../../../storage/BrokerStorage.sol";
 
 // solhint-disable max-line-length
 
 /**
  * @notice Lending base contract that wraps multiple lender types.
  */
-abstract contract BaseLending is WithStorage {
+abstract contract BaseLending {
     uint256 private constant ADDRESS_MASK_UPPER = 0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff;
     uint256 private constant UINT8_MASK_UPPER = 0xff00000000000000000000000000000000000000000000000000000000000000;
 

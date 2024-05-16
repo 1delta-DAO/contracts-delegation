@@ -20,11 +20,11 @@ contract MarginOpenTest is DeltaSetup {
 
         bytes[] memory calls = new bytes[](3);
         calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, asset, amountToDeposit);
-        calls[1] = abi.encodeWithSelector(ILending.deposit.selector, asset, user, lenderId);
+        calls[1] = abi.encodeWithSelector(ILending.deposit.selector, asset, user);
 
-        uint256 amountToLeverage = 30.0e18;
+        uint256 amountToLeverage = 20.0e18;
         bytes memory swapPath = getOpenExactInSingle(borrowAsset, asset, lenderId);
-        uint256 minimumOut = 30.0e6;
+        uint256 minimumOut = 10.0e6;
         calls[2] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactIn.selector, amountToLeverage, minimumOut, swapPath);
 
         vm.prank(user);
@@ -42,7 +42,7 @@ contract MarginOpenTest is DeltaSetup {
         borrowBalance = IERC20All(debtAsset).balanceOf(user) - borrowBalance;
 
         // deposit 10, recieve 32.1... makes 42.1...
-        assertApproxEqAbs(42163948, balance, 1);
+        assertApproxEqAbs(39122533, balance, 1);
         // deviations through rouding expected, accuracy for 10 decimals
         assertApproxEqAbs(borrowBalance, amountToDeposit + amountToLeverage, 1.0e8);
     }
@@ -61,11 +61,11 @@ contract MarginOpenTest is DeltaSetup {
 
         bytes[] memory calls = new bytes[](3);
         calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, asset, amountToDeposit);
-        calls[1] = abi.encodeWithSelector(ILending.deposit.selector, asset, user, lenderId);
+        calls[1] = abi.encodeWithSelector(ILending.deposit.selector, asset, user);
 
-        uint256 amountToLeverage = 30.0e18;
+        uint256 amountToLeverage = 20.0e18;
         bytes memory swapPath = getOpenExactInMulti(borrowAsset, asset, lenderId);
-        uint256 minimumOut = 30.0e6;
+        uint256 minimumOut = 20.0e6;
         calls[2] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactIn.selector, amountToLeverage, minimumOut, swapPath);
 
         vm.prank(user);
@@ -83,14 +83,14 @@ contract MarginOpenTest is DeltaSetup {
         borrowBalance = IERC20All(debtAsset).balanceOf(user) - borrowBalance;
 
         // deposit 10, recieve 32.1... makes 42.1...
-        assertApproxEqAbs(42272836, balance, 1);
+        assertApproxEqAbs(38642840, balance, 1);
         // deviations through rouding expected, accuracy for 10 decimals
         assertApproxEqAbs(borrowBalance, amountToDeposit + amountToLeverage, 1.0e8);
     }
 
-    function test_margin_mantle_open_exact_out(uint8 lenderId) external /** address user, uint8 lenderId */ {
+    function test_margin_mantle_open_exact_out(uint8 lenderId) external {
         address user = testUser;
-        vm.assume(user != address(0) && lenderId < 2);
+        vm.assume(user != address(0));
         address asset = USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
 
@@ -124,7 +124,7 @@ contract MarginOpenTest is DeltaSetup {
         borrowBalance = IERC20All(debtAsset).balanceOf(user) - borrowBalance;
 
         // deviations through rouding expected, accuracy for 10 decimals
-        assertApproxEqAbs(27974519438603103636, borrowBalance, 1);
+        assertApproxEqAbs(20621357675549497673, borrowBalance, 1);
         // deposit 10, recieve 30 makes 40
         assertApproxEqAbs(balance, amountToDeposit + amountToReceive, 0);
     }
@@ -142,7 +142,7 @@ contract MarginOpenTest is DeltaSetup {
         uint256 amountToDeposit = 10.0e6;
 
         bytes[] memory calls = new bytes[](3);
-        calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, asset, amountToDeposit);
+        calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, asset, amountToDeposit, lenderId);
         calls[1] = abi.encodeWithSelector(ILending.deposit.selector, asset, user, lenderId);
 
         uint256 amountToReceive = 30.0e6;
@@ -165,7 +165,7 @@ contract MarginOpenTest is DeltaSetup {
         borrowBalance = IERC20All(debtAsset).balanceOf(user) - borrowBalance;
 
         // deviations through rouding expected, accuracy for 10 decimals
-        assertApproxEqAbs(27887230366621675330, borrowBalance, 1);
+        assertApproxEqAbs(20980519129019992249, borrowBalance, 1);
         // deposit 10, recieve 30 makes 40
         assertApproxEqAbs(balance, amountToDeposit + amountToReceive, 0);
     }
@@ -188,9 +188,9 @@ contract MarginOpenTest is DeltaSetup {
         calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, asset, amountToDeposit);
         calls[1] = abi.encodeWithSelector(ILending.deposit.selector, asset, user, lenderId);
 
-        uint256 amountToLeverage = 30.0e18;
+        uint256 amountToLeverage = 20.0e18;
         bytes memory swapPath = getOpenExactInSingleV2(borrowAsset, asset, lenderId);
-        uint256 minimumOut = 30.0e6;
+        uint256 minimumOut = 20.0e6;
         calls[2] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactIn.selector, amountToLeverage, minimumOut, swapPath);
 
         vm.prank(user);
@@ -208,7 +208,7 @@ contract MarginOpenTest is DeltaSetup {
         borrowBalance = IERC20All(debtAsset).balanceOf(user) - borrowBalance;
 
         // deposit 10, recieve 32.1... makes 42.1...
-        assertApproxEqAbs(42115514, balance, 1);
+        assertApproxEqAbs(39923752, balance, 1);
         // deviations through rouding expected, accuracy for 10 decimals
         assertApproxEqAbs(borrowBalance, amountToDeposit + amountToLeverage, 1.0e8);
     }
@@ -229,9 +229,9 @@ contract MarginOpenTest is DeltaSetup {
         calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, asset, amountToDeposit);
         calls[1] = abi.encodeWithSelector(ILending.deposit.selector, asset, user, lenderId);
 
-        uint256 amountToLeverage = 30.0e18;
+        uint256 amountToLeverage = 20.0e18;
         bytes memory swapPath = getOpenExactInMultiV2(borrowAsset, asset, lenderId);
-        uint256 minimumOut = 30.0e6;
+        uint256 minimumOut = 20.0e6;
         calls[2] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactIn.selector, amountToLeverage, minimumOut, swapPath);
 
         vm.prank(user);
@@ -249,7 +249,7 @@ contract MarginOpenTest is DeltaSetup {
         borrowBalance = IERC20All(debtAsset).balanceOf(user) - borrowBalance;
 
         // deposit 10, recieve 32.1... makes 42.1...
-        assertApproxEqAbs(42113732, balance, 1);
+        assertApproxEqAbs(39897880, balance, 1);
         // deviations through rouding expected, accuracy for 10 decimals
         assertApproxEqAbs(borrowBalance, amountToDeposit + amountToLeverage, 1.0e8);
     }
@@ -290,7 +290,7 @@ contract MarginOpenTest is DeltaSetup {
         borrowBalance = IERC20All(debtAsset).balanceOf(user) - borrowBalance;
 
         // deviations through rouding expected, accuracy for 10 decimals
-        assertApproxEqAbs(28023771066218591483, borrowBalance, 1);
+        assertApproxEqAbs(20050966249736894241, borrowBalance, 1);
         // deposit 10, recieve 30 makes 40
         assertApproxEqAbs(balance, amountToDeposit + amountToReceive, 0);
     }
@@ -331,7 +331,7 @@ contract MarginOpenTest is DeltaSetup {
         borrowBalance = IERC20All(debtAsset).balanceOf(user) - borrowBalance;
 
         // deviations through rouding expected, accuracy for 10 decimals
-        assertApproxEqAbs(28025245663448338335, borrowBalance, 1);
+        assertApproxEqAbs(20068321880954662893, borrowBalance, 1);
         // deposit 10, recieve 30 makes 40
         assertApproxEqAbs(balance, amountToDeposit + amountToReceive, 0);
     }

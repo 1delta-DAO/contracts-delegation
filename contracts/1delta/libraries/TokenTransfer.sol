@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL 1.1
 
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.25;
 
 import "../../interfaces/IERC20.sol";
 
@@ -181,6 +181,28 @@ abstract contract TokenTransfer {
             mstore(add(ptr, 0x24), value)
 
             pop(call(gas(), token, 0, ptr, 0x44, ptr, 32))
+        }
+    }
+
+    // balanceOf call in assembly for smaller contract size
+    function _balanceOf(address underlying, address entity) internal view returns (uint256 entityBalance) {
+        assembly {
+            ////////////////////////////////////////////////////
+            // get token balance in assembly usingn scrap space (64 bytes)
+            ////////////////////////////////////////////////////
+
+            // selector for balanceOf(address)
+            mstore(0x0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+            // add this address as parameter
+            mstore(0x4, entity)
+            // call to underlying
+            let success := staticcall(gas(), underlying, 0x0, 0x24, 0x0, 0x20)
+            // revert if no success or returndatasize is less than 32 bytes
+            if or(iszero(success), lt(returndatasize(), 0x20)) {
+                revert(0, 0)
+            }
+            // load entity balance
+            entityBalance := mload(0x0)
         }
     }
 }

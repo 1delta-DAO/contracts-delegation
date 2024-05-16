@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity 0.8.24;
+pragma solidity 0.8.25;
 
 /******************************************************************************\
 * Author: Achthar | 1delta 
@@ -177,6 +177,7 @@ abstract contract MarginTrading is BaseSwapper, CacheLending {
                     path
                 );
         } else revert InvalidDexId();
+
         amountOut = uint256(gcs().cache);
         gcs().cache = 0x0;
         if (amountOutMinimum > amountOut) revert Slippage();
@@ -201,6 +202,7 @@ abstract contract MarginTrading is BaseSwapper, CacheLending {
         }   
         // determine output amount as respective debt balance
         uint256 amountOut;
+
         if (identifier == 5) amountOut = _callerVariableDebtBalance(tokenOut, lenderId);
         else amountOut = _callerStableDebtBalance(tokenOut, lenderId);
         if (amountOut == 0) revert NoBalance();
@@ -251,6 +253,7 @@ abstract contract MarginTrading is BaseSwapper, CacheLending {
                     path
                 );
         } else revert InvalidDexId();
+
         amountIn = uint256(gcs().cache);
         gcs().cache = 0x0;
         if (amountInMaximum < amountIn) revert Slippage();
@@ -301,28 +304,43 @@ abstract contract MarginTrading is BaseSwapper, CacheLending {
         uniswapV3SwapCallbackInternal(amount0Delta, amount1Delta, path);
     }
 
-    // PATH IDENTIFICATION
+    // methlab
+    function uniswapV3SwapCallback(
+        int256 amount0Delta,
+        int256 amount1Delta,
+        bytes calldata path
+    ) external {
+        uniswapV3SwapCallbackInternal(amount0Delta, amount1Delta, path);
+    }
 
-    // [between pools if more than one]
-    // 0: exact input swap
-    // 1: exact output swap - flavored by the id given at the end of the path
-
-    // [end flag]
-    // 1: borrow stable
-    // 2: borrow variable
-    // 3: withdraw
-    // 4: pay from cached address (spot)
-
-    // [start flag (>1)]
-    // 6: deposit exact in
-    // 7: repay exact in stable
-    // 8: repay exact in variable
-
-    // 3: deposit exact out
-    // 4: repay exact out stable
-    // 5: repay exact out variable
-
-    // The uniswapV3 style callback
+   /**
+    * The uniswapV3 style callback
+    * 
+    * PATH IDENTIFICATION
+    * 
+    * [between pools if more than one]
+    * 0: exact input swap
+    * 1: exact output swap - flavored by the id given at the end of the path
+    * 
+    * [end flag]
+    * 1: borrow stable
+    * 2: borrow variable
+    * 3: withdraw
+    * 4: pay from cached address (spot)
+    * 
+    * [start flag (>1)]
+    * 6: deposit exact in
+    * 7: repay exact in stable
+    * 8: repay exact in variable
+    * 
+    * 3: deposit exact out
+    * 4: repay exact out stable
+    * 5: repay exact out variable
+    * 
+    * @param amount0Delta delta of token0, if positive, we have to pay, if negative, we received
+    * @param amount1Delta delta of token1, if positive, we have to pay, if negative, we received
+    * @param _data path calldata
+    */
     function uniswapV3SwapCallbackInternal(
         int256 amount0Delta,
         int256 amount1Delta,
@@ -349,8 +367,21 @@ abstract contract MarginTrading is BaseSwapper, CacheLending {
         tradeId = identifier;
         // EXACT IN BASE SWAP
         if (tradeId == 0) {
-            tradeId = amount0Delta > 0 ? uint256(amount0Delta) : uint256(amount1Delta);
+            uint256 amountOut;
+            // assign the amount to pay to the local stack
+            (tradeId, amountOut) = amount0Delta > 0 ? 
+                (uint256(amount0Delta), uint256(-amount1Delta)): 
+                (uint256(amount1Delta), uint256(-amount0Delta));
+            // of additional data is provided, we execute the swap nested
+            if (_data.length > 46) {
+                // we need to swap to the token that we want to supply
+                // the router returns the amount that we can finally supply to the protocol
+                _data = _data[25:];
+                // we have to cache the amountOut in this case
+                ncs().amount = swapExactIn(amountOut, _data);
+            }
             _transferERC20Tokens(tokenIn, msg.sender, tradeId);
+            return;
         }
         // EXACT OUT - WITHDRAW, BORROW OR PAY
         else if (tradeId == 1) {
@@ -366,18 +397,8 @@ abstract contract MarginTrading is BaseSwapper, CacheLending {
                 _data = _data[(cache - 1):cache];
                 // assign end flag to cache
                 cache = uint8(bytes1(_data));
-
-                if (cache < 3) {
-                    // borrow and repay pool - tradeId matches interest rate mode (reverts within Aave when 0 is selected)
-                    _borrow(tokenOut, amountToPay, cache);
-                } else if (cache < 8) {
-                    // ids 3-7 are reserved
-                    // withdraw and send funds to the pool
-                    _withdraw(tokenOut, amountToPay);
-                } else {
-                    // otherwise, just transfer it from cached address
-                    pay(tokenOut, amountToPay);
-                }
+                // pay the pool
+                handlePayment(tokenOut, acs().cachedAddress, msg.sender, cache, amountToPay);
                 // cache amount
                 gcs().cache = bytes32(amountToPay);
             }
@@ -461,6 +482,15 @@ abstract contract MarginTrading is BaseSwapper, CacheLending {
         }
     }
 
+    /**
+     * Calculates the output amount for UniV2 and Solidly forks
+     * @param pair address
+     * @param tokenIn input
+     * @param zeroForOne true if token0 is swapped for token1
+     * @param sellAmount amount in
+     * @param _pId DEX identifier
+     * @return buyAmount amount out
+     */
     function getAmountOutUniV2(
         address pair,
         address tokenIn, // only used for velo
@@ -577,7 +607,12 @@ abstract contract MarginTrading is BaseSwapper, CacheLending {
         _uniswapV2StyleCallback(amount0, amount1, data);
     }
 
-    // The general uniswapV2 style callback
+    /**
+     * Flash swap callback for all UniV2 and Solidly type DEXs
+     * @param amount0 amount of token0 received
+     * @param amount1 amount of token1 received
+     * @param data path calldata
+     */
     function _uniswapV2StyleCallback(
         uint256 amount0,
         uint256 amount1,
@@ -604,8 +639,21 @@ abstract contract MarginTrading is BaseSwapper, CacheLending {
             require(msg.sender == pool);
         }
         // exact in is handled outside a callback
-        if (tradeId == 0) return;
-        else if (tradeId == 1) {
+        if (tradeId == 0) {
+            // the swap amount is expected to be the nonzero output amount
+            // since v2 does not send the input amount as parameter, we have to fetch
+            // the other amount manually through the cache
+            (uint256 amountToSwap, uint256 amountToPay) = zeroForOne ? (amount1, ncs().amount) : (amount0, ncs().amount);
+            if (data.length > 46) {
+                // we need to swap to the token that we want to supply
+                // the router returns the amount that we can finally supply to the protocol
+                data = data[25:];
+                // store the output amount
+                ncs().amount = swapExactIn(amountToSwap, data);
+            }
+            _transferERC20Tokens(tokenIn, msg.sender, amountToPay);
+            return;
+        } else if (tradeId == 1) {
             // fetch amountOut
             uint256 referenceAmount = zeroForOne ? amount0 : amount1;
             // calculte amountIn (note that tokenIn/out are read inverted at the top)
@@ -620,18 +668,8 @@ abstract contract MarginTrading is BaseSwapper, CacheLending {
                 data = data[(cache - 1):cache];
                 // assign end flag to cache
                 cache = uint8(bytes1(data));
-
-                if (cache < 3) {
-                    // borrow and repay pool
-                    _borrow(tokenOut, referenceAmount, cache);
-                } else if (cache < 8) {
-                    // ids 3-7 are reserved
-                    // withdraw and send funds to the pool
-                    _withdraw(tokenOut, referenceAmount);
-                } else {
-                    // otherwise, just transfer it from cached address
-                    pay(tokenOut, referenceAmount);
-                }
+                // pay the pool
+                handlePayment(tokenOut, acs().cachedAddress, msg.sender, cache, referenceAmount);
                 // cache amount
                 gcs().cache = bytes32(referenceAmount);
             }
@@ -733,7 +771,15 @@ abstract contract MarginTrading is BaseSwapper, CacheLending {
         );
     }
 
-    // a flash swap where the output is sent to msg.sender
+    /**
+     * (flash, whenever possible)-swaps exact output
+     * Funds are sent to receiver address
+     * Path is assumed to start from output token
+     * The input amount is cached and not directly returned by this function
+     * @param amountOut buy amount
+     * @param receiver address
+     * @param data path calldata
+     */
     function flashSwapExactOutInternal(uint256 amountOut, address receiver, bytes calldata data) internal {
         address tokenIn;
         address tokenOut;
@@ -791,7 +837,51 @@ abstract contract MarginTrading is BaseSwapper, CacheLending {
                     800001,
                     data
                 );
-        }
+        // special case: Moe LB, no flash swaps, recursive nesting is applied
+        } else if (identifier == 103) {
+            uint24 bin;
+            assembly {
+                bin := and(shr(72, calldataload(data.offset)), 0xffffff)
+            }
+            ////////////////////////////////////////////////////
+            // We calculate the required amount for the next swap
+            ////////////////////////////////////////////////////
+            (uint256 amountIn, address pair, bool swapForY) = getLBAmountIn(tokenIn, tokenOut, amountOut, uint16(bin));
+
+            ////////////////////////////////////////////////////
+            // If the path includes more pairs, we nest another exact out swap
+            // The funds of this exact out swap are sent to the LB pair
+            // This is done by re-calling this same function after skimming the
+            // data parameter by the leading token config 
+            ////////////////////////////////////////////////////
+            if(data.length > 46) {
+                // remove the last token from the path
+                data = data[25:];
+                flashSwapExactOutInternal(amountIn, pair, data);
+            } 
+            ////////////////////////////////////////////////////
+            // Otherwise, we pay the funds to the pair
+            // according to the parametrization
+            // at the end of the path
+            ////////////////////////////////////////////////////
+            else {
+                // get length and last flag
+                uint256 cache = data.length;
+                data = data[(cache - 1):cache];
+                // assign end flag to cache
+                cache = uint8(bytes1(data));
+                // pay the pool
+                handlePayment(tokenIn, acs().cachedAddress, pair, cache, amountIn);
+                // only cache the amount if this is the last pool
+                ncs().amount = amountIn;
+            }
+            ////////////////////////////////////////////////////
+            // The swap is executed at the end and sends 
+            // the funds to the receiver addresss
+            ////////////////////////////////////////////////////
+            swapLBexactOut(pair, swapForY, amountOut, receiver);
+        } else
+            revert invalidDexId();
     }
 
     /// @notice pay from cached address or this if the address is zero
@@ -930,6 +1020,43 @@ abstract contract MarginTrading is BaseSwapper, CacheLending {
             pop(staticcall(gas(), stableDebtToken, ptr, 0x24, ptr, 0x20))
 
             callerBalance := mload(ptr)
+    /**
+     * Handle a payment from payer to receiver via different channels
+     * @param token The token to pay
+     * @param payer The entity that must pay
+     * @param receiver receiver address
+     * @param paymentType payment identifier
+     *                    1:    borrow stable
+     *                    2:    borrow variable
+     *                    3-7:  withdraw from lender
+     *                    >7:   pay from wallet
+     * @param value The amount to pay
+     */
+    function handlePayment(
+        address token,
+        address payer,
+        address receiver,
+        uint256 paymentType,
+        uint256 value
+    ) internal {
+        if (paymentType < 3) {
+            // borrow and repay pool - tradeId matches interest rate mode (reverts within Aave when 0 is selected)
+            _borrow(token, payer, value, paymentType);
+            _transferERC20Tokens(token, receiver, value);
+        } else if (paymentType < 8) {
+            // ids 3-7 are reserved
+            // withraw and send funds to the pool
+            _transferERC20TokensFrom(aas().aTokens[token], payer, address(this), value);
+            _withdraw(token, receiver);
+        } else {
+            // otherwise, just transfer it from cached address
+            if (payer == address(0)) {
+                // pay with tokens already in the contract (for the exact input multihop case)
+                _transferERC20Tokens(token, receiver, value);
+            } else {
+                // pull payment
+                _transferERC20TokensFrom(token, payer, receiver, value);
+            }
         }
     }
 }

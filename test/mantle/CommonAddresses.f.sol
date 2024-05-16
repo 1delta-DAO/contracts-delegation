@@ -14,8 +14,10 @@ contract AddressesMantle {
 
     address internal axlFRAX = 0x406Cde76a3fD20e48bc1E0F60651e60Ae204B040;
     address internal axlUSDC = 0xEB466342C4d449BC9f53A865D5Cb90586f405215;
-    address internal USDY = address(0);
-    address internal mUSD = address(0);
+    address internal USDY = 0x5bE26527e817998A7206475496fDE1E68957c5A6;
+    address internal mUSD = 0xab575258d37EaA5C8956EfABe71F4eE8F6397cF3;
+    address internal USDe = 0x5d3a1Ff2b6BAb83b63cd9AD0787074081a52ef34;
+    address internal PUFF = 0x26a6b0dcdCfb981362aFA56D581e4A7dBA3Be140;
 
     // users
     address internal testUser = 0xaaaa4a3F69b6DB76889bDfa4edBe1c0BB57BAA5c;
@@ -81,6 +83,10 @@ contract AddressesMantle {
     address internal constant LENDLE_S_WBTC = 0x1817Cde5CD6423C3b87039e1CB000BB2aC4E05c7;
     address internal constant LENDLE_S_METH = 0x614110493CEAe1171532eB635242E4ca71CcBBa2;
 
+    address internal constant STRATUM_3POOL = 0xD6F312AA90Ad4C92224436a7A4a648d69482e47e;
+    address internal constant STRATUM_3POOL_2 = 0x7d3621aCA02B711F5f738C9f21C1bFE294df094d;
+    address internal constant STRATUM_ETH_POOL = 0xe8792eD86872FD6D8b74d0668E383454cbA15AFc;
+
     /// @dev Mask of lower 20 bytes.
     uint256 internal constant ADDRESS_MASK = 0x00ffffffffffffffffffffffffffffffffffffffff;
     /// @dev Mask of upper 20 bytes.
@@ -99,14 +105,21 @@ contract AddressesMantle {
     uint24 internal DEX_FEE_LOW_HIGH = 3000;
     uint24 internal DEX_FEE_LOW = 500;
     uint24 internal DEX_FEE_NONE = 0;
+    uint24 internal BIN_STEP_LOWEST = 1;
+    uint24 internal BIN_STEP_LOW = 10;
 
     uint8 internal AGNI = 1;
     uint8 internal FUSION_X = 0;
     uint8 internal BUTTER = 3;
+    uint8 internal CLEOPATRA_CL = 4;
     uint8 internal IZUMI = 100;
 
     uint8 internal FUSION_X_V2 = 50;
     uint8 internal MERCHANT_MOE = 51;
+    uint8 internal MERCHANT_MOE_LB = 103;
+    uint8 internal KTX = 104;
+    uint8 internal STRATUM_CURVE = 105;
+    uint8 internal STRATUM_USD = 102;
 
     /** TRADE TYPE FLAG GETTERS */
 

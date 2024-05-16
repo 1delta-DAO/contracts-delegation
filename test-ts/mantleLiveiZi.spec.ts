@@ -31,7 +31,6 @@ before(async function () {
     user = signer
     console.log("get aggregator")
     multicaller = await new DeltaBrokerProxy__factory(user).attach(brokerProxy)
-    flashAggregatorInterface = DeltaFlashAggregatorMantle__factory.createInterface()
 
     console.log("deploy new aggregator")
     const newFlashAggregator = await new DeltaFlashAggregatorMantle__factory(signer).deploy()
@@ -111,7 +110,6 @@ it("Deposit", async function () {
 
 it("Opens exact in", async function () {
     const amount = parseUnits('2.0', 6)
-    const tokenIn = addressesTokensMantle.WMNT
 
     const borrowToken = await new StableDebtToken__factory(user).attach(addressesLendleVTokens.USDT)
     await borrowToken.approveDelegation(multicaller.address, MaxUint128)
@@ -131,11 +129,8 @@ it("Opens exact in", async function () {
 
 })
 
-
-
 it("Opens exact out", async function () {
     const amount = parseUnits('3.0', 18)
-    const tokenIn = addressesTokensMantle.WMNT
 
     const borrowToken = await new StableDebtToken__factory(user).attach(addressesLendleVTokens.USDT)
     await borrowToken.approveDelegation(multicaller.address, MaxUint128)
@@ -158,7 +153,6 @@ it("Opens exact out", async function () {
 it("Opens exact in multi", async function () {
 
     const amount = parseUnits('1.0', 6)
-    const tokenIn = addressesTokensMantle.WMNT
 
     const borrowToken = await new StableDebtToken__factory(user).attach(addressesLendleVTokens.USDT)
     await borrowToken.approveDelegation(multicaller.address, MaxUint128)
@@ -189,7 +183,7 @@ it("Opens exact out multi", async function () {
         [wmnt, weth, usdt],
         [FeeAmount.LOW, FeeAmount.LOW],
         [3, 1],
-        [3, 0],
+        [100, 100],
         2
     )
     const callSwap = flashAggregatorInterface.encodeFunctionData('flashSwapExactOut', [amount, MaxUint128, path1])
@@ -249,11 +243,6 @@ it("Swaps collatera all in", async function () {
         [6, 0],
         [100, 100],
         3
-        // [wmnt, weth, usdt],
-        // [FeeAmount.LOW, FeeAmount.LOW],
-        // [6, 0],
-        // [0, 100],
-        // 3
     )
     const callSwap = flashAggregatorInterface.encodeFunctionData('flashSwapAllIn', [0, path1])
     console.log("attempt swap")
@@ -270,7 +259,6 @@ it("Swaps collatera all in", async function () {
 
 it("Opens exact in multi (WMNT-USDT)", async function () {
     const amount = parseUnits('5.0', 18)
-    const tokenIn = addressesTokensMantle.WMNT
 
     const borrowToken = await new StableDebtToken__factory(user).attach(addressesLendleVTokens.WMNT)
     await borrowToken.approveDelegation(multicaller.address, MaxUint128)

@@ -209,7 +209,7 @@ const config: HardhatUserConfig = {
       //   url: 'https://rpc.ankr.com/eth'
       // },
       forking: {
-        blockNumber: 58398594,
+        blockNumber: 62219594,
         url: `https://rpc.ankr.com/mantle`,
       },
       // forking: {
@@ -503,7 +503,7 @@ const config: HardhatUserConfig = {
       },
       // 1delta
       {
-        version: '0.8.24',
+        version: '0.8.25',
         settings: {
           optimizer: {
             enabled: true,

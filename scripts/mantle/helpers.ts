@@ -11,11 +11,11 @@ export async function addTokens(chainId: number, signer: SignerWithAddress, delt
     // get management module
     const management = await new ManagementModule__factory(signer).attach(deltaProxy)
 
-    const aTokenKeys = Object.keys(addressesLendleATokens).filter(k => Boolean(addressesLendleATokens[k]))
+    const lendleLTokenKeys = ["USDE"] //Object.keys(addressesLendleATokens).filter(k => Boolean(addressesLendleATokens[k]))
 
-    console.log("Assets", aTokenKeys)
+    console.log("Assets", lendleLTokenKeys)
     console.log("add lendle tokens")
-    for (let k of aTokenKeys) {
+    for (let k of lendleLTokenKeys) {
         console.log("add lendle tokens a", k)
         const token = addressesTokensMantle[k]
         tx = await management.addLenderTokens(
@@ -37,8 +37,8 @@ export async function approveSpending(chainId: number, signer: SignerWithAddress
     // get management module
     const management = await new ManagementModule__factory(signer).attach(deltaProxy)
 
-    const aTokenKeys = Object.keys(addressesLendleATokens).filter(k => Boolean(addressesLendleATokens[k]))
-    const underlyingAddresses = aTokenKeys.map(k => addressesTokensMantle[k])
+    const lendleLTokenKeys = ["USDE"] // Object.keys(addressesLendleATokens).filter(k => Boolean(addressesLendleATokens[k]))
+    const underlyingAddresses = lendleLTokenKeys.map(k => addressesTokensMantle[k])
     console.log("Assets", underlyingAddresses)
     console.log("approve lendle pool")
     tx = await management.approveLendingPool(underlyingAddresses, opts)
