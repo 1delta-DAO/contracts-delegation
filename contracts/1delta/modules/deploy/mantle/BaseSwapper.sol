@@ -413,6 +413,89 @@ abstract contract BaseSwapper is TokenTransfer {
         }
     }
 
+   
+    /*//////////////////////////////////////////////////////////////
+                               INTERNAL
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev Loops through pools and performs swaps
+    function _callUniswapV3PoolsSwapExactAmountIn(
+        bool zeroForOne,
+        address pair,
+        address receiver,
+        int256 fromAmount,
+        bytes calldata path
+    )
+        internal
+        returns (uint256 receivedAmount)
+    {
+        // solhint-disable-next-line no-inline-assembly
+        assembly {
+            let ptr := mload(0x40)
+            // Return amount0 or amount1 depending on direction
+            switch zeroForOne
+            case 0 {
+                // Prepare external call data
+                // Store swap selector (0x128acb08)
+                mstore(ptr, 0x128acb0800000000000000000000000000000000000000000000000000000000)
+                // Store toAddress
+                mstore(add(ptr, 4), receiver)
+                // Store direction
+                mstore(add(ptr, 36), 0)
+                // Store fromAmount
+                mstore(add(ptr, 68), fromAmount)
+                // Store sqrtPriceLimitX96
+                mstore(add(ptr, 100), MAX_SQRT_RATIO)
+                // Store data offset
+                mstore(add(ptr, 132), path.offset)
+                /// Store data length
+                mstore(add(ptr, 164), path.length)
+                // Store path
+                calldatacopy(add(ptr, 196), path.offset, path.length)
+                // Perform the external 'swap' call
+                if iszero(call(gas(), pair, 0, ptr, add(228, path.length), ptr, 32)) {
+                    // store return value directly to free memory pointer
+                    // The call failed; we retrieve the exact error message and revert with it
+                    returndatacopy(0, 0, returndatasize()) // Copy the error message to the start of memory
+                    revert(0, returndatasize()) // Revert with the error message
+                }
+                // If direction is 0, return amount0
+                fromAmount := mload(ptr)
+            }
+            default {
+                // Prepare external call data
+                // Store swap selector (0x128acb08)
+                mstore(ptr, 0x128acb0800000000000000000000000000000000000000000000000000000000)
+                // Store toAddress
+                mstore(add(ptr, 4), receiver)
+                // Store direction
+                mstore(add(ptr, 36), 1)
+                // Store fromAmount
+                mstore(add(ptr, 68), fromAmount)
+                // Store sqrtPriceLimitX96
+                mstore(add(ptr, 100), MIN_SQRT_RATIO)
+                // Store data offset
+                mstore(add(ptr, 132), path.offset)
+                /// Store data length
+                mstore(add(ptr, 164), path.length)
+                // Store path
+                calldatacopy(add(ptr, 196), path.offset, path.length)
+                // Perform the external 'swap' call
+                if iszero(call(gas(), pair, 0, ptr, add(228, path.length), ptr, 64)) {
+                    // store return value directly to free memory pointer
+                    // The call failed; we retrieve the exact error message and revert with it
+                    returndatacopy(0, 0, returndatasize()) // Copy the error message to the start of memory
+                    revert(0, returndatasize()) // Revert with the error message
+                }
+
+                // If direction is 1, return amount1
+                fromAmount := mload(add(ptr, 32))
+            }
+            // fromAmount = -fromAmount
+            receivedAmount := sub(0, fromAmount)
+        }
+    }
+
     /**
      * Swaps exact in internally using all implemented Dexs
      * Will NOT use a flash swap

@@ -31,69 +31,12 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         uint256 amountOutMinimum,
         bytes calldata path
     ) external payable returns (uint256 amountOut) {
-        address tokenIn;
-        address tokenOut;
-        bool zeroForOne;
-        uint256 identifier;
         {
             uint8 _identifier = uint8(bytes1(path[0:1]));
             _cacheContext(_identifier);
             path = path[1:];
-            assembly {
-                let firstWord := calldataload(path.offset)
-                tokenIn := shr(96, firstWord)
-                _identifier := shr(64, firstWord)
-                tokenOut := shr(96, calldataload(add(path.offset, 25)))
-                zeroForOne := lt(tokenIn, tokenOut)
-            }
-            identifier = _identifier;
         }
-        // uniswapV3 types
-        if (identifier < 50) {
-            uint24 fee;
-            assembly {
-                fee := and(shr(72, calldataload(path.offset)), 0xffffff)
-            }
-            getUniswapV3Pool(tokenIn, tokenOut, fee, identifier).swap(
-                address(this),
-                zeroForOne,
-                int256(amountIn),
-                zeroForOne ? MIN_SQRT_RATIO : MAX_SQRT_RATIO,
-                path
-            );
-        }
-        // uniswapV2 types
-        else if (identifier < 100) {
-            tokenOut = pairAddress(tokenIn, tokenOut, identifier);
-            (uint256 amount0Out, uint256 amount1Out) = zeroForOne
-                ? (uint256(0), getAmountOutUniV2(tokenOut, tokenIn, zeroForOne, amountIn, identifier))
-                : (getAmountOutUniV2(tokenOut, tokenIn, zeroForOne, amountIn, identifier), uint256(0));
-            IUniswapV2Pair(tokenOut).swap(amount0Out, amount1Out, address(this), path);
-        }
-        // iZi
-        else if (identifier == 100) {
-            uint24 fee;
-            assembly {
-                fee := and(shr(72, calldataload(path.offset)), 0xffffff)
-            }
-            if (zeroForOne)
-                getUniswapV3Pool(tokenIn, tokenOut, fee, identifier).swapX2Y(
-                    address(this),
-                    uint128(amountIn),
-                    -799999,
-                    path
-                );
-            else
-                getUniswapV3Pool(tokenIn, tokenOut, fee, identifier).swapY2X(
-                    address(this),
-                    uint128(amountIn),
-                    799999,
-                    path
-                );
-        } else revert InvalidDexId();
-
-        amountOut = uint256(gcs().cache);
-        gcs().cache = 0x0;
+        amountOut = flashSwapExactInInternal(amountIn, path);
         if (amountOutMinimum > amountOut) revert Slippage();
     }
 
@@ -115,88 +58,28 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
     // Exact Input Swap where the entire collateral amount is withdrawn - The path parameters determine the lending actions
     // if the collateral balance is zerp. the tx reverts
     function flashSwapAllIn(uint256 amountOutMinimum, bytes calldata path) external payable returns (uint256 amountOut) {
-        address tokenIn;
-        address tokenOut;
-        bool zeroForOne;
         uint256 amountIn;
-        uint256 identifier;
         {
+            address tokenIn;
             uint8 _identifier = uint8(bytes1(path[0:1]));
             _cacheContext(_identifier);
             path = path[1:];
-
             assembly {
                 tokenIn := shr(96, calldataload(path.offset))
-                tokenOut := shr(96, calldataload(add(path.offset, 25)))
-                zeroForOne := lt(tokenIn, tokenOut)
             }
-
             // fetch collateral balance
             amountIn = _callerCollateralBalance(tokenIn, _identifier);
             if (amountIn == 0) revert NoBalance();
-
-            assembly {
-                _identifier := shr(64, calldataload(path.offset))
-            }
-            identifier = _identifier;
         }
-        // uniswapV3 style
-        if (identifier < 50) {
-            uint24 fee;
-            assembly {
-                fee := and(shr(72, calldataload(path.offset)), 0xffffff)
-            }
-            getUniswapV3Pool(tokenIn, tokenOut, fee, identifier).swap(
-                address(this),
-                zeroForOne,
-                int256(amountIn),
-                zeroForOne ? MIN_SQRT_RATIO : MAX_SQRT_RATIO,
-                path
-            );
-        }
-        // unsiwapV2 types
-        else if (identifier < 100) {
-            tokenOut = pairAddress(tokenIn, tokenOut, identifier);
-            (uint256 amount0Out, uint256 amount1Out) = zeroForOne
-                ? (uint256(0), getAmountOutUniV2(tokenOut, tokenIn, zeroForOne, amountIn, identifier))
-                : (getAmountOutUniV2(tokenOut, tokenIn, zeroForOne, amountIn, identifier), uint256(0));
-            IUniswapV2Pair(tokenOut).swap(amount0Out, amount1Out, address(this), path);
-        }
-        // iZi
-        else if (identifier == 100) {
-            uint24 fee;
-            assembly {
-                fee := and(shr(72, calldataload(path.offset)), 0xffffff)
-            }
-            if (zeroForOne)
-                getUniswapV3Pool(tokenIn, tokenOut, fee, identifier).swapX2Y(
-                    address(this),
-                    uint128(amountIn),
-                    -799999,
-                    path
-                );
-            else
-                getUniswapV3Pool(tokenIn, tokenOut, fee, identifier).swapY2X(
-                    address(this),
-                    uint128(amountIn),
-                    799999,
-                    path
-                );
-        } else revert InvalidDexId();
-
-        amountOut = uint256(gcs().cache);
-        gcs().cache = 0x0;
+        amountOut = flashSwapExactInInternal(amountIn, path);
         if (amountOutMinimum > amountOut) revert Slippage();
     }
 
     // Exact Output Swap where the entire debt balacne is repaid - The path parameters determine the lending actions
     function flashSwapAllOut(uint256 amountInMaximum, bytes calldata path) external payable returns (uint256 amountIn) {
-        address tokenIn;
-        address tokenOut;
-        bool zeroForOne;
-        uint256 identifier;
         uint256 amountOut;
         {
+            address tokenOut;
             uint8 lenderId = uint8(bytes1(path));
             uint8 _identifier;
             _cacheContext(lenderId);
@@ -206,8 +89,6 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 let firstWord := calldataload(path.offset)
                 tokenOut := shr(96, firstWord)
                 _identifier := shr(56, firstWord)
-                tokenIn := shr(96, calldataload(add(path.offset, 25)))
-                zeroForOne := lt(tokenIn, tokenOut)
             }   
 
             // determine output amount as respective debt balance
@@ -219,50 +100,9 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             assembly {
                 _identifier := shr(64, calldataload(path.offset))
             }
-            identifier = _identifier;
         }
-        // uniswapV3 types
-        if (identifier < 50) {
-            uint24 fee;
-            assembly {
-                fee := and(shr(72, calldataload(path.offset)), 0xffffff)
-            }
-            getUniswapV3Pool(tokenIn, tokenOut, fee, identifier).swap(
-                address(this),
-                zeroForOne,
-                -int256(amountOut),
-                zeroForOne ? MIN_SQRT_RATIO : MAX_SQRT_RATIO,
-                path
-            );
-        }
-        // uniswapV2 types
-        else if (identifier < 100) {
-            tokenIn = pairAddress(tokenIn, tokenOut, identifier);
-            (uint256 amount0Out, uint256 amount1Out) = zeroForOne ? (uint256(0), amountOut) : (amountOut, uint256(0));
-            IUniswapV2Pair(tokenIn).swap(amount0Out, amount1Out, address(this), path);
-        }
-        // iZi
-        else if (identifier == 100) {
-            uint24 fee;
-            assembly {
-                fee := and(shr(72, calldataload(path.offset)), 0xffffff)
-            }
-            if (zeroForOne)
-                getUniswapV3Pool(tokenIn, tokenOut, fee, identifier).swapX2YDesireY(
-                    address(this),
-                    uint128(amountOut),
-                    -800001,
-                    path
-                );
-            else
-                getUniswapV3Pool(tokenIn, tokenOut, fee, identifier).swapY2XDesireX(
-                    address(this),
-                    uint128(amountOut),
-                    800001,
-                    path
-                );
-        } else revert InvalidDexId();
 
+        flashSwapExactOutInternal(amountOut, address(this), path);
         amountIn = uint256(gcs().cache);
         gcs().cache = 0x0;
         if (amountInMaximum < amountIn) revert Slippage();
@@ -907,6 +747,75 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         } else
             revert invalidDexId();
     }
+
+    // Exact Input Flash Swap - The path parameters determine the lending actions
+    function flashSwapExactInInternal(
+        uint256 amountIn,
+        bytes calldata path
+    ) internal returns (uint256 amountOut) {
+        address tokenIn;
+        address tokenOut;
+        bool zeroForOne;
+        uint256 identifier;
+        {
+            uint8 _identifier;
+            assembly {
+                let firstWord := calldataload(path.offset)
+                tokenIn := shr(96, firstWord)
+                _identifier := shr(64, firstWord)
+                tokenOut := shr(96, calldataload(add(path.offset, 25)))
+                zeroForOne := lt(tokenIn, tokenOut)
+            }
+            identifier = _identifier;
+        }
+        // uniswapV3 types
+        if (identifier < 50) {
+            uint24 fee;
+            assembly {
+                fee := and(shr(72, calldataload(path.offset)), 0xffffff)
+            }
+            getUniswapV3Pool(tokenIn, tokenOut, fee, identifier).swap(
+                address(this),
+                zeroForOne,
+                int256(amountIn),
+                zeroForOne ? MIN_SQRT_RATIO : MAX_SQRT_RATIO,
+                path
+            );
+        }
+        // uniswapV2 types
+        else if (identifier < 100) {
+            tokenOut = pairAddress(tokenIn, tokenOut, identifier);
+            (uint256 amount0Out, uint256 amount1Out) = zeroForOne
+                ? (uint256(0), getAmountOutUniV2(tokenOut, tokenIn, zeroForOne, amountIn, identifier))
+                : (getAmountOutUniV2(tokenOut, tokenIn, zeroForOne, amountIn, identifier), uint256(0));
+            IUniswapV2Pair(tokenOut).swap(amount0Out, amount1Out, address(this), path);
+        }
+        // iZi
+        else if (identifier == 100) {
+            uint24 fee;
+            assembly {
+                fee := and(shr(72, calldataload(path.offset)), 0xffffff)
+            }
+            if (zeroForOne)
+                getUniswapV3Pool(tokenIn, tokenOut, fee, identifier).swapX2Y(
+                    address(this),
+                    uint128(amountIn),
+                    -799999,
+                    path
+                );
+            else
+                getUniswapV3Pool(tokenIn, tokenOut, fee, identifier).swapY2X(
+                    address(this),
+                    uint128(amountIn),
+                    799999,
+                    path
+                );
+        } else revert InvalidDexId();
+
+        amountOut = uint256(gcs().cache);
+        gcs().cache = 0x0;
+    }
+
 
     /// @notice pay from cached address or this if the address is zero
     /// @param token The token to pay

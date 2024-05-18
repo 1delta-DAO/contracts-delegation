@@ -171,7 +171,6 @@ contract MarginCollateralSwapTest is DeltaSetup {
     }
 
     function test_margin_mantle_collateral_all_in(uint8 lenderId) external {
-        uint8 lenderId = DEFAULT_LENDER;
         address user = testUser;
         vm.assume(user != address(0) && lenderId < 2);
         address asset = USDC;
@@ -382,7 +381,6 @@ contract MarginCollateralSwapTest is DeltaSetup {
     }
 
     function test_margin_mantle_collateral_all_in_v2(uint8 lenderId) external {
-        uint8 lenderId = DEFAULT_LENDER;
         address user = testUser;
         vm.assume(user != address(0) && lenderId < 2);
         address asset = USDC;
