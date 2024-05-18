@@ -195,7 +195,6 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         int256 amount1Delta,
         bytes calldata _data
     ) private {
-        uint8 identifier;
         address tokenIn;
         uint24 fee;
         address tokenOut;
@@ -203,18 +202,19 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         assembly {
             let firstWord := calldataload(_data.offset)
             tokenIn := shr(96, firstWord)
-            fee := and(shr(72, firstWord), 0xffffff) // uniswapV3 type fee
-            identifier := shr(64, firstWord) // poolId
+            fee := and(shr(72, firstWord), UINT24_MASK) // uniswapV3 type fee
+            tradeId := and(shr(64, firstWord), UINT8_MASK) // poolId
             tokenOut := shr(96, calldataload(add(_data.offset, 25)))
         }
         
         // validate callback
-        validateUniV3TypePool(tokenIn, tokenOut, fee, identifier);
+        validateUniV3TypePool(tokenIn, tokenOut, fee, tradeId);
 
         assembly {
-            identifier := shr(56, calldataload(_data.offset)) // identifier for tradeType
+            // get the trade type from the path
+            tradeId := and(shr(56, calldataload(_data.offset)) , UINT8_MASK)
         }
-        tradeId = identifier;
+
         // EXACT IN BASE SWAP
         if (tradeId == 0) {
             uint256 amountOut;
@@ -339,101 +339,6 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         }
     }
 
-    /**
-     * Calculates the output amount for UniV2 and Solidly forks
-     * @param pair address
-     * @param tokenIn input
-     * @param zeroForOne true if token0 is swapped for token1
-     * @param sellAmount amount in
-     * @param _pId DEX identifier
-     * @return buyAmount amount out
-     */
-    function getAmountOutUniV2(
-        address pair,
-        address tokenIn, // only used for velo
-        bool zeroForOne,
-        uint256 sellAmount,
-        uint256 _pId // to identify the fee
-    ) private view returns (uint256 buyAmount) {
-        assembly {
-            // Compute the buy amount based on the pair reserves.
-            {
-                // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
-                // buyAmount = (pairSellAmount * feeAm * buyReserve) /
-                //     (pairSellAmount * feeAm + sellReserve * 1000);
-                switch _pId
-                case 50 {
-                    // Call pair.getReserves(), store the results at `0xC00`
-                    mstore(0xB00, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
-                    if iszero(staticcall(gas(), pair, 0xB00, 0x4, 0xC00, 0x40)) {
-                        returndatacopy(0, 0, returndatasize())
-                        revert(0, returndatasize())
-                    }
-                    // Revert if the pair contract does not return at least two words.
-                    if lt(returndatasize(), 0x40) {
-                        revert(0, 0)
-                    }
-
-                    let sellReserve
-                    let buyReserve
-                    switch iszero(zeroForOne)
-                    case 0 {
-                        // Transpose if pair order is different.
-                        sellReserve := mload(0xC00)
-                        buyReserve := mload(0xC20)
-                    }
-                    default {
-                        sellReserve := mload(0xC20)
-                        buyReserve := mload(0xC00)
-                    }
-                    // fusionX v2 feeAm: 998
-                    let sellAmountWithFee := mul(sellAmount, 998)
-                    buyAmount := div(mul(sellAmountWithFee, buyReserve), add(sellAmountWithFee, mul(sellReserve, 1000)))
-                }
-                case 51 {
-                    // Call pair.getReserves(), store the results at `0xC00`
-                    mstore(0xB00, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
-                    if iszero(staticcall(gas(), pair, 0xB00, 0x4, 0xC00, 0x40)) {
-                        returndatacopy(0, 0, returndatasize())
-                        revert(0, returndatasize())
-                    }
-                    // Revert if the pair contract does not return at least two words.
-                    if lt(returndatasize(), 0x40) {
-                        revert(0, 0)
-                    }
-
-                    let sellReserve
-                    let buyReserve
-                    switch iszero(zeroForOne)
-                    case 0 {
-                        // Transpose if pair order is different.
-                        sellReserve := mload(0xC00)
-                        buyReserve := mload(0xC20)
-                    }
-                    default {
-                        sellReserve := mload(0xC20)
-                        buyReserve := mload(0xC00)
-                    }
-                    // merchant moe feeAm: 997
-                    let sellAmountWithFee := mul(sellAmount, 997)
-                    buyAmount := div(mul(sellAmountWithFee, buyReserve), add(sellAmountWithFee, mul(sellReserve, 1000)))
-                }
-                default {
-                    // selector for getAmountOut(uint256,address)
-                    mstore(0xB00, 0xf140a35a00000000000000000000000000000000000000000000000000000000)
-                    mstore(0xB04, sellAmount)
-                    mstore(0xB24, tokenIn)
-                    if iszero(staticcall(gas(), pair, 0xB00, 0x44, 0xB00, 0x20)) {
-                        returndatacopy(0, 0, returndatasize())
-                        revert(0, returndatasize())
-                    }
-
-                    buyAmount := mload(0xB00)
-                }
-            }
-        }
-    }
-
     // The uniswapV2 style callback for fusionX
     function FusionXCall(
         address,
@@ -475,7 +380,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         uint256 amount1,
         bytes calldata data
     ) private {
-        uint8 tradeId;
+        uint256 tradeId;
         address tokenIn;
         address tokenOut;
         bool zeroForOne;
@@ -485,16 +390,13 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             let firstWord := calldataload(data.offset)
             tokenIn := shr(96, firstWord)
             identifier := shr(64, firstWord) // swap pool identifier
-            tradeId := shr(56, firstWord) // interaction identifier
+            tradeId := and(shr(56, firstWord), UINT8_MASK) // interaction identifier
             tokenOut := shr(96, calldataload(add(data.offset, 25)))
             zeroForOne := lt(tokenIn, tokenOut)
         }
-        // calculate pool address
-        {
-            address pool = pairAddress(tokenIn, tokenOut, identifier);
-            // validate sender
-            require(msg.sender == pool);
-        }
+        // verify that the caller is a v2 type pool
+        validateV2PairAddress(tokenIn, tokenOut, identifier);
+
         // exact in is handled outside a callback
         if (tradeId == 0) {
             // the swap amount is expected to be the nonzero output amount
@@ -646,16 +548,10 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
      * @param data path calldata
      */
     function flashSwapExactOutInternal(uint256 amountOut, address receiver, bytes calldata data) internal {
-        address tokenIn;
-        address tokenOut;
-        uint8 identifier;
-        bool zeroForOne;
+        // fetch the pool identifier from the path
+        uint256 identifier;
         assembly {
-            let firstWord := calldataload(data.offset)
-            tokenOut := shr(96, firstWord)
-            identifier := shr(64, firstWord)
-            tokenIn := shr(96, calldataload(add(data.offset, 25)))
-            zeroForOne := lt(tokenIn, tokenOut)
+            identifier := and(shr(64, calldataload(data.offset)), UINT8_MASK)
         }
 
         // uniswapV3 style
@@ -668,13 +564,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         }
         // uniswapV2 style
         else if (identifier < 100) {
-            // get next pool
-            tokenIn = pairAddress(tokenIn, tokenOut, identifier);
-            // amountOut0, cache
-            (uint256 amountOut0, uint256 amountOut1) = zeroForOne ? (uint256(0), amountOut) : (amountOut, uint256(0));
-            _swapV2StyleGeneric(tokenIn, address(this), amountOut0, amountOut1, data);
-            tokenIn = receiver;
-            if (tokenIn != address(this)) _transferERC20Tokens(tokenOut, tokenIn, amountOut);
+            _swapV2StyleExactOut(amountOut, receiver, data);
         }
         // iZi
         else if (identifier == 100) {
@@ -686,8 +576,13 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         // special case: Moe LB, no flash swaps, recursive nesting is applied
         } else if (identifier == 103) {
             uint24 bin;
+            address tokenIn;
+            address tokenOut;
             assembly {
-                bin := and(shr(72, calldataload(data.offset)), 0xffffff)
+                let firstWord := calldataload(data.offset)
+                tokenOut := shr(96, firstWord)
+                bin := and(shr(72, firstWord), UINT24_MASK)
+                tokenIn := shr(96, calldataload(add(data.offset, 25)))
             }
             ////////////////////////////////////////////////////
             // We calculate the required amount for the next swap
@@ -735,21 +630,12 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         uint256 amountIn,
         bytes calldata path
     ) internal returns (uint256 amountOut) {
-        address tokenIn;
-        address tokenOut;
-        bool zeroForOne;
+        // fetch the pool identifier from the path
         uint256 identifier;
-        {
-            uint8 _identifier;
-            assembly {
-                let firstWord := calldataload(path.offset)
-                tokenIn := shr(96, firstWord)
-                _identifier := shr(64, firstWord)
-                tokenOut := shr(96, calldataload(add(path.offset, 25)))
-                zeroForOne := lt(tokenIn, tokenOut)
-            }
-            identifier = _identifier;
+        assembly {
+            identifier := and(shr(64, calldataload(path.offset)), UINT8_MASK)
         }
+
         // uniswapV3 types
         if (identifier < 50) {
             _swapUniswapV3PoolExactIn(
@@ -760,11 +646,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         }
         // uniswapV2 types
         else if (identifier < 100) {
-            tokenOut = pairAddress(tokenIn, tokenOut, identifier);
-            (uint256 amount0Out, uint256 amount1Out) = zeroForOne
-                ? (uint256(0), getAmountOutUniV2(tokenOut, tokenIn, zeroForOne, amountIn, identifier))
-                : (getAmountOutUniV2(tokenOut, tokenIn, zeroForOne, amountIn, identifier), uint256(0));
-            _swapV2StyleGeneric(tokenOut, address(this), amount0Out, amount1Out, path);
+            swapUniV2ExactInComplete(amountIn, true, path);
         }
         // iZi
         else if (identifier == 100) {
@@ -775,6 +657,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             );
         } else revert InvalidDexId();
 
+        // get the output and reset the cache
         amountOut = uint256(gcs().cache);
         gcs().cache = 0x0;
     }

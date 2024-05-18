@@ -21,7 +21,9 @@ abstract contract BaseSwapper is TokenTransfer {
     /// @dev Mask of upper 20 bytes.
     uint256 private constant ADDRESS_MASK_UPPER = 0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff;
     /// @dev Mask of lower 3 bytes.
-    uint256 private constant UINT24_MASK = 0xffffff;
+    uint256 internal constant UINT24_MASK = 0xffffff;   
+    /// @dev Mask of lower 1 byte.
+    uint256 internal constant UINT8_MASK = 0xff;
     /// @dev MIN_SQRT_RATIO + 1 from Uniswap's TickMath
     uint160 internal constant MIN_SQRT_RATIO = 4295128740;
     /// @dev MAX_SQRT_RATIO - 1 from Uniswap's TickMath
@@ -254,10 +256,10 @@ abstract contract BaseSwapper is TokenTransfer {
     * @param tokenA first token
     * @param tokenB second token
     * @param _pId Dex Id
-    * @return pair address
     */
-    function pairAddress(address tokenA, address tokenB, uint256 _pId) internal view returns (address pair) {
+    function validateV2PairAddress(address tokenA, address tokenB, uint256 _pId) internal view {
         assembly {
+            let pair
             switch _pId
             // FusionX
             case 50 {
@@ -404,6 +406,10 @@ abstract contract BaseSwapper is TokenTransfer {
 
                 pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
             }
+
+            if iszero(eq(pair, caller())) {
+                revert (0, 0)
+            }
         }
     }
 
@@ -420,13 +426,13 @@ abstract contract BaseSwapper is TokenTransfer {
         assembly {
             let ptr := mload(0x40)
             let firstWord := calldataload(path.offset)
-            let poolId := shr(64, firstWord)
             let tokenA := shr(96, firstWord)
             let tokenB := shr(96, calldataload(add(path.offset, 25)))
             let zeroForOne := lt(tokenA, tokenB)
             let pool
             let p := ptr
-            switch and(shr(64, firstWord), 0xff)
+            // switch-case through pool ids
+            switch and(shr(64, firstWord), UINT8_MASK)
             // Fusion
             case 0 {
                 mstore(p, FUSION_V3_FF_FACTORY)
@@ -441,7 +447,7 @@ abstract contract BaseSwapper is TokenTransfer {
                     mstore(p, tokenA)
                     mstore(add(p, 32), tokenB)
                 }
-                mstore(add(p, 64), and(UINT24_MASK, and(shr(72, firstWord), 0xffffff)))
+                mstore(add(p, 64), and(shr(72, firstWord), UINT24_MASK))
                 mstore(p, keccak256(p, 96))
                 p := add(p, 32)
                 mstore(p, FUSION_POOL_INIT_CODE_HASH)
@@ -461,7 +467,7 @@ abstract contract BaseSwapper is TokenTransfer {
                     mstore(p, tokenA)
                     mstore(add(p, 32), tokenB)
                 }
-                mstore(add(p, 64), and(UINT24_MASK, and(shr(72, firstWord), 0xffffff)))
+                mstore(add(p, 64), and(shr(72, firstWord), UINT24_MASK))
                 mstore(p, keccak256(p, 96))
                 p := add(p, 32)
                 mstore(p, AGNI_POOL_INIT_CODE_HASH)
@@ -500,7 +506,7 @@ abstract contract BaseSwapper is TokenTransfer {
                     mstore(p, tokenA)
                     mstore(add(p, 32), tokenB)
                 }
-                mstore(add(p, 64), and(UINT24_MASK, and(shr(72, firstWord), 0xffffff)))
+                mstore(add(p, 64), and(shr(72, firstWord), UINT24_MASK))
                 mstore(p, keccak256(p, 96))
                 p := add(p, 32)
                 mstore(p, BUTTER_POOL_INIT_CODE_HASH)
@@ -520,7 +526,7 @@ abstract contract BaseSwapper is TokenTransfer {
                     mstore(p, tokenA)
                     mstore(add(p, 32), tokenB)
                 }
-                mstore(add(p, 64), and(UINT24_MASK, and(shr(72, firstWord), 0xffffff)))
+                mstore(add(p, 64), and(shr(72, firstWord), UINT24_MASK))
                 mstore(p, keccak256(p, 96))
                 p := add(p, 32)
                 mstore(p, CLEO_POOL_INIT_CODE_HASH)
@@ -540,7 +546,7 @@ abstract contract BaseSwapper is TokenTransfer {
                     mstore(p, tokenA)
                     mstore(add(p, 32), tokenB)
                 }
-                mstore(add(p, 64), and(UINT24_MASK, and(shr(72, firstWord), 0xffffff)))
+                mstore(add(p, 64), and(shr(72, firstWord), UINT24_MASK))
                 mstore(p, keccak256(p, 96))
                 p := add(p, 32)
                 mstore(p, METHLAB_INIT_CODE_HASH)
@@ -627,7 +633,6 @@ abstract contract BaseSwapper is TokenTransfer {
         assembly {
             let ptr := mload(0x40)
             let firstWord := calldataload(path.offset)
-            let poolId := shr(64, firstWord)
             let tokenA := shr(96, firstWord)
             let tokenB := shr(96, calldataload(add(path.offset, 25)))
             let zeroForOne := lt(tokenA, tokenB)
@@ -646,7 +651,7 @@ abstract contract BaseSwapper is TokenTransfer {
                 mstore(p, tokenA)
                 mstore(add(p, 32), tokenB)
             }
-            mstore(add(p, 64), and(UINT24_MASK, and(shr(72, firstWord), 0xffffff)))
+            mstore(add(p, 64), and(shr(72, firstWord), UINT24_MASK))
             mstore(p, keccak256(p, 96))
             p := add(p, 32)
             mstore(p, IZI_POOL_INIT_CODE_HASH)
@@ -709,14 +714,10 @@ abstract contract BaseSwapper is TokenTransfer {
         }
     }
 
-
-
-    /// @dev Swap generic via v2
-    function _swapV2StyleGeneric(
-        address pair,
+    /// @dev Swap exact out via v2 type pool
+    function _swapV2StyleExactOut(
+        uint256 amountOut,
         address receiver,
-        uint256 amount0Out,
-        uint256 amount1Out,
         bytes calldata path
     )
         internal
@@ -724,15 +725,175 @@ abstract contract BaseSwapper is TokenTransfer {
         // solhint-disable-next-line no-inline-assembly
         assembly {
             let ptr := mload(0x40)
-            // Prepare external call data
+            let pair
+            let firstWord := calldataload(path.offset)
+            let tokenB := shr(96, firstWord)
+            let _pId := and(shr(64, firstWord), UINT8_MASK)
+            let tokenA := shr(96, calldataload(add(path.offset, 25)))
+            let zeroForOne := lt(tokenA, tokenB)
+            switch _pId
+            // FusionX
+            case 50 {
+                switch zeroForOne
+                case 0 {
+                    mstore(0xB14, tokenA)
+                    mstore(0xB00, tokenB)
+                }
+                default {
+                    mstore(0xB14, tokenB)
+                    mstore(0xB00, tokenA)
+                }
+                let salt := keccak256(0xB0C, 0x28)
+                mstore(0xB00, FUSION_V2_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, CODE_HASH_FUSION_V2)
+
+                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+            }
+            // 51: Merchant Moe
+            case 51 {
+                // selector for getPair(address,address)
+                mstore(0xB00, 0xe6a4390500000000000000000000000000000000000000000000000000000000)
+                mstore(add(0xB00, 0x4), tokenA)
+                mstore(add(0xB00, 0x24), tokenB)
+
+                // call to collateralToken
+                pop(staticcall(gas(), MERCHANT_MOE_FACTORY, 0xB00, 0x48, 0xB00, 0x20))
+
+                // load the retrieved protocol share
+                pair := and(ADDRESS_MASK, mload(0xB00))
+            }
+            // Velo Volatile
+            case 52 {
+                switch zeroForOne
+                case 0 {
+                    mstore(0xB14, tokenA)
+                    mstore(0xB00, tokenB)
+                }
+                default {
+                    mstore(0xB14, tokenB)
+                    mstore(0xB00, tokenA)
+                }
+                mstore8(0xB34, 0)
+                let salt := keccak256(0xB0C, 0x29)
+                mstore(0xB00, VELO_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, VELO_CODE_HASH)
+
+                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+            }
+            // Velo Stable
+            case 53 {
+                switch zeroForOne
+                case 0 {
+                    mstore(0xB14, tokenA)
+                    mstore(0xB00, tokenB)
+                }
+                default {
+                    mstore(0xB14, tokenB)
+                    mstore(0xB00, tokenA)
+                }
+                mstore8(0xB34, 1)
+                let salt := keccak256(0xB0C, 0x29)
+                mstore(0xB00, VELO_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, VELO_CODE_HASH)
+
+                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+            }
+            // Cleo V1 Volatile
+            case 54 {
+                switch zeroForOne
+                case 0 {
+                    mstore(0xB14, tokenA)
+                    mstore(0xB00, tokenB)
+                }
+                default {
+                    mstore(0xB14, tokenB)
+                    mstore(0xB00, tokenA)
+                }
+                mstore8(0xB34, 0)
+                let salt := keccak256(0xB0C, 0x29)
+                mstore(0xB00, CLEO_V1_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, CLEO_V1_CODE_HASH)
+
+                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+            }
+            // Cleo V1 Stable
+            case 55 {
+                switch zeroForOne
+                case 0 {
+                    mstore(0xB14, tokenA)
+                    mstore(0xB00, tokenB)
+                }
+                default {
+                    mstore(0xB14, tokenB)
+                    mstore(0xB00, tokenA)
+                }
+                mstore8(0xB34, 1)
+                let salt := keccak256(0xB0C, 0x29)
+                mstore(0xB00, CLEO_V1_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, CLEO_V1_CODE_HASH)
+
+                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+            }
+            // Stratum Volatile
+            case 56 {
+                switch zeroForOne
+                case 0 {
+                    mstore(0xB14, tokenA)
+                    mstore(0xB00, tokenB)
+                }
+                default {
+                    mstore(0xB14, tokenB)
+                    mstore(0xB00, tokenA)
+                }
+                mstore8(0xB34, 0)
+                let salt := keccak256(0xB0C, 0x29)
+                mstore(0xB00, STRATUM_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, STRATUM_CODE_HASH)
+
+                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+            }
+            // 57: Stratum Stable
+            default {
+                switch zeroForOne
+                case 0 {
+                    mstore(0xB14, tokenA)
+                    mstore(0xB00, tokenB)
+                }
+                default {
+                    mstore(0xB14, tokenB)
+                    mstore(0xB00, tokenA)
+                }
+                mstore8(0xB34, 1)
+                let salt := keccak256(0xB0C, 0x29)
+                mstore(0xB00, STRATUM_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, STRATUM_CODE_HASH)
+
+                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+            }
+
             // selector for swap(...)
             mstore(ptr, 0x022c0d9f00000000000000000000000000000000000000000000000000000000)
-            // Store toAddress
-            mstore(add(ptr, 4), amount0Out)
-            // Store fromAmount
-            mstore(add(ptr, 36), amount1Out)
+
+            switch zeroForOne
+            case 1 {
+                mstore(add(ptr, 4), 0x0)
+                mstore(add(ptr, 36), amountOut)
+            }
+            default {
+                mstore(add(ptr, 4), amountOut)
+                mstore(add(ptr, 36), 0x0)
+            }
+            // Prepare external call data
+
             // Store sqrtPriceLimitX96
-            mstore(add(ptr, 68), receiver)
+            mstore(add(ptr, 68), address())
             // Store data offset
             mstore(add(ptr, 100), sub(0xa0, 0x20))
             /// Store data length
@@ -745,6 +906,43 @@ abstract contract BaseSwapper is TokenTransfer {
                 // The call failed; we retrieve the exact error message and revert with it
                 returndatacopy(0, 0, returndatasize()) // Copy the error message to the start of memory
                 revert(0, returndatasize()) // Revert with the error message
+            }
+
+            ////////////////////////////////////////////////////
+            // We chain the transfer to the receiver, given tha
+            // it is not this address
+            ////////////////////////////////////////////////////
+            if iszero(eq(address(), receiver)) {
+                ////////////////////////////////////////////////////
+                // Populate tx for transfer to receiver
+                ////////////////////////////////////////////////////
+                // selector for transfer(address,uint256)
+                mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+                mstore(add(ptr, 0x04), and(receiver, ADDRESS_MASK_UPPER))
+                mstore(add(ptr, 0x24), amountOut)
+
+                let success := call(gas(), and(tokenB, ADDRESS_MASK_UPPER), 0, ptr, 0x44, ptr, 32)
+
+                let rdsize := returndatasize()
+
+                // Check for ERC20 success. ERC20 tokens should return a boolean,
+                // but some don't. We accept 0-length return data as success, or at
+                // least 32 bytes that starts with a 32-byte boolean true.
+                success := and(
+                    success, // call itself succeeded
+                    or(
+                        iszero(rdsize), // no return data, or
+                        and(
+                            iszero(lt(rdsize, 32)), // at least 32 bytes
+                            eq(mload(ptr), 1) // starts with uint256(1)
+                        )
+                    )
+                )
+
+                if iszero(success) {
+                    returndatacopy(0x0, 0, rdsize)
+                    revert(0x0, rdsize)
+                }
             }
         }
     }
@@ -763,7 +961,6 @@ abstract contract BaseSwapper is TokenTransfer {
         assembly {
             let ptr := mload(0x40)
             let firstWord := calldataload(path.offset)
-            let poolId := shr(64, firstWord)
             let tokenA := shr(96, calldataload(add(path.offset, 25)))
             let tokenB := shr(96, firstWord)
             let zeroForOne := lt(tokenA, tokenB)
@@ -782,7 +979,7 @@ abstract contract BaseSwapper is TokenTransfer {
                 mstore(p, tokenA)
                 mstore(add(p, 32), tokenB)
             }
-            mstore(add(p, 64), and(UINT24_MASK, and(shr(72, firstWord), 0xffffff)))
+            mstore(add(p, 64), and(shr(72, firstWord), UINT24_MASK))
             mstore(p, keccak256(p, 96))
             p := add(p, 32)
             mstore(p, IZI_POOL_INIT_CODE_HASH)
@@ -864,7 +1061,7 @@ abstract contract BaseSwapper is TokenTransfer {
             let zeroForOne := lt(tokenA, tokenB)
             let pool
             let p := ptr
-            switch and(shr(64, firstWord), 0xff)
+            switch and(shr(64, firstWord), UINT8_MASK)
             // Fusion
             case 0 {
                 mstore(p, FUSION_V3_FF_FACTORY)
@@ -879,7 +1076,7 @@ abstract contract BaseSwapper is TokenTransfer {
                     mstore(p, tokenA)
                     mstore(add(p, 32), tokenB)
                 }
-                mstore(add(p, 64), and(UINT24_MASK, and(shr(72, firstWord), 0xffffff)))
+                mstore(add(p, 64), and(shr(72, firstWord), UINT24_MASK))
                 mstore(p, keccak256(p, 96))
                 p := add(p, 32)
                 mstore(p, FUSION_POOL_INIT_CODE_HASH)
@@ -899,7 +1096,7 @@ abstract contract BaseSwapper is TokenTransfer {
                     mstore(p, tokenA)
                     mstore(add(p, 32), tokenB)
                 }
-                mstore(add(p, 64), and(UINT24_MASK, and(shr(72, firstWord), 0xffffff)))
+                mstore(add(p, 64), and(shr(72, firstWord), UINT24_MASK))
                 mstore(p, keccak256(p, 96))
                 p := add(p, 32)
                 mstore(p, AGNI_POOL_INIT_CODE_HASH)
@@ -938,7 +1135,7 @@ abstract contract BaseSwapper is TokenTransfer {
                     mstore(p, tokenA)
                     mstore(add(p, 32), tokenB)
                 }
-                mstore(add(p, 64), and(UINT24_MASK, and(shr(72, firstWord), 0xffffff)))
+                mstore(add(p, 64), and(shr(72, firstWord), UINT24_MASK))
                 mstore(p, keccak256(p, 96))
                 p := add(p, 32)
                 mstore(p, BUTTER_POOL_INIT_CODE_HASH)
@@ -958,7 +1155,7 @@ abstract contract BaseSwapper is TokenTransfer {
                     mstore(p, tokenA)
                     mstore(add(p, 32), tokenB)
                 }
-                mstore(add(p, 64), and(UINT24_MASK, and(shr(72, firstWord), 0xffffff)))
+                mstore(add(p, 64), and(shr(72, firstWord), UINT24_MASK))
                 mstore(p, keccak256(p, 96))
                 p := add(p, 32)
                 mstore(p, CLEO_POOL_INIT_CODE_HASH)
@@ -978,7 +1175,7 @@ abstract contract BaseSwapper is TokenTransfer {
                     mstore(p, tokenA)
                     mstore(add(p, 32), tokenB)
                 }
-                mstore(add(p, 64), and(UINT24_MASK, and(shr(72, firstWord), 0xffffff)))
+                mstore(add(p, 64), and(shr(72, firstWord), UINT24_MASK))
                 mstore(p, keccak256(p, 96))
                 p := add(p, 32)
                 mstore(p, METHLAB_INIT_CODE_HASH)
@@ -1063,11 +1260,11 @@ abstract contract BaseSwapper is TokenTransfer {
         while (true) {
             address tokenIn;
             address tokenOut;
-            uint8 identifier;
+            uint256 identifier;
             assembly {
                 let firstWord := calldataload(path.offset)
                 tokenIn := shr(96, firstWord)
-                identifier := shr(64, firstWord)
+                identifier := and(shr(64, firstWord), UINT8_MASK)
                 tokenOut := shr(96, calldataload(add(path.offset, 25)))
             }
             // uniswapV3 style
@@ -1080,7 +1277,7 @@ abstract contract BaseSwapper is TokenTransfer {
             }
             // uniswapV2 style
             else if (identifier < 100) {
-                amountIn = swapUniV2ExactIn(tokenIn, tokenOut, amountIn, identifier);
+                amountIn = swapUniV2ExactInComplete(amountIn, false, path);
             }
             // iZi
             else if (identifier == 100) {
@@ -1102,7 +1299,7 @@ abstract contract BaseSwapper is TokenTransfer {
             else if (identifier == 103) {
                 uint24 bin;
                 assembly {
-                    bin := and(shr(72, calldataload(path.offset)), 0xffffff)
+                    bin := and(shr(72, calldataload(path.offset)), UINT24_MASK)
                 }
                 amountIn = swapLBexactIn(tokenIn, tokenOut, amountIn, address(this), uint16(bin));
             } else if(identifier == 104) {
@@ -1114,10 +1311,10 @@ abstract contract BaseSwapper is TokenTransfer {
                 uint8 indexOut;
                 uint8 subGroup;
                 assembly {
-                    let indexData := and(shr(72, calldataload(path.offset)), 0xffffff)
-                    indexIn := and(shr(16, indexData), 0xff)
-                    indexOut := and(shr(8, indexData), 0xff)
-                    subGroup := and(indexData, 0xff)
+                    let indexData := and(shr(72, calldataload(path.offset)), UINT24_MASK)
+                    indexIn := and(shr(16, indexData), UINT8_MASK)
+                    indexOut := and(shr(8, indexData), UINT8_MASK)
+                    subGroup := and(indexData, UINT8_MASK)
                 }
                 amountIn = swapStratumCurveGeneral(indexIn, indexOut, subGroup, amountIn);
             } else
@@ -1607,27 +1804,37 @@ abstract contract BaseSwapper is TokenTransfer {
         }
     }
 
-
     /**
      * Executes an exact input swap internally across major UniV2 & Solidly style forks
-     * Note that this will NOT trigger callbacks and therefore is not executing flash swaps
      * Due to the nature of the V2 impleemntation, the callback is not triggered if no calldata is provided
      * As such, we never enter the callback implementation when using this function
-     * @param tokenIn input
-     * @param tokenOut output
      * @param amountIn sell amount
-     * @param _pId DEX identifier
+     * @param useFlashSwap if set to true, the amount in will not be transferred and a
+     *                     payback is expected to be done in the callback
      * @return buyAmount output amount
      */
-    function swapUniV2ExactIn(
-        address tokenIn,
-        address tokenOut,
+    function swapUniV2ExactInComplete(
         uint256 amountIn,
-        uint256 _pId // we need to know the DEX for the fee
-    ) private returns (uint256 buyAmount) {
+        bool useFlashSwap,
+        bytes calldata path
+    ) internal returns (uint256 buyAmount) {
         assembly {
+            let ptr := mload(0x40) // free memory pointer
+            ////////////////////////////////////////////////////
+            // We extract all relevant data from the path bytes blob
+            ////////////////////////////////////////////////////
+            let pair
+            let success
+            let firstWord := calldataload(path.offset)
+            let tokenIn := shr(96, firstWord)
+            let tokenOut := shr(96, calldataload(add(path.offset, 25)))
             let zeroForOne := lt(tokenIn, tokenOut)
-            let pair := mload(0x40) // use free memo for pair
+        
+            ////////////////////////////////////////////////////
+            // We get the poolIdentifier as _pId
+            // we extract the correct pool address from that info
+            ////////////////////////////////////////////////////
+            let _pId := and(shr(64, firstWord), 0xff)
             switch _pId
             case 50 {
                 // fusionX
@@ -1773,37 +1980,6 @@ abstract contract BaseSwapper is TokenTransfer {
 
                 pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
             }
-            // EXECUTE TRANSFER TO PAIR
-            let ptr := mload(0x40) // free memory pointer
-            // selector for transfer(address,uint256)
-            mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
-            mstore(add(ptr, 0x04), and(pair, ADDRESS_MASK_UPPER))
-            mstore(add(ptr, 0x24), amountIn)
-
-            let success := call(gas(), and(tokenIn, ADDRESS_MASK_UPPER), 0, ptr, 0x44, ptr, 32)
-
-            let rdsize := returndatasize()
-
-            // Check for ERC20 success. ERC20 tokens should return a boolean,
-            // but some don't. We accept 0-length return data as success, or at
-            // least 32 bytes that starts with a 32-byte boolean true.
-            success := and(
-                success, // call itself succeeded
-                or(
-                    iszero(rdsize), // no return data, or
-                    and(
-                        iszero(lt(rdsize, 32)), // at least 32 bytes
-                        eq(mload(ptr), 1) // starts with uint256(1)
-                    )
-                )
-            )
-
-            if iszero(success) {
-                returndatacopy(ptr, 0, rdsize)
-                revert(ptr, rdsize)
-            }
-            // TRANSFER COMPLETE
-
             // Compute the buy amount based on the pair reserves.
             {
                 // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
@@ -1877,6 +2053,11 @@ abstract contract BaseSwapper is TokenTransfer {
 
                     buyAmount := mload(0xB00)
                 }
+
+                ////////////////////////////////////////////////////
+                // Prepare the swap tx
+                ////////////////////////////////////////////////////
+
                 // selector for swap(...)
                 mstore(0xB00, 0x022c0d9f00000000000000000000000000000000000000000000000000000000)
 
@@ -1890,18 +2071,77 @@ abstract contract BaseSwapper is TokenTransfer {
                     mstore(0xB24, buyAmount)
                 }
                 mstore(0xB44, address())
-                mstore(0xB64, 0x80) // bytes classifier
-                mstore(0xB84, 0) // bytesdata
+                mstore(0xB64, 0x80) // bytes offset
 
-                success := call(
-                    gas(),
-                    pair,
-                    0x0,
-                    0xB00, // input selector
-                    0xA4, // input size = 164 (selector (4bytes) plus 5*32bytes)
-                    0, // output = 0
-                    0 // output size = 0
-                )
+                ////////////////////////////////////////////////////
+                // In case of a flash swap, we copy the calldata to
+                // the execution parameters
+                ////////////////////////////////////////////////////
+                switch useFlashSwap
+                case 1 {
+                    mstore(0xB84, path.length) // bytes length
+                    calldatacopy(0xBA4, path.offset, path.length)
+                    success := call(
+                        gas(),
+                        pair,
+                        0x0,
+                        0xB00, // input selector
+                        add(0xA4, path.length), // input size = 164 (selector (4bytes) plus 5*32bytes)
+                        0x0, // output = 0
+                        0x0 // output size = 0
+                    )
+                }
+                ////////////////////////////////////////////////////
+                // Otherwise, we transfer before
+                ////////////////////////////////////////////////////
+                default {
+                    ////////////////////////////////////////////////////
+                    // Populate tx for transfer to pair
+                    ////////////////////////////////////////////////////
+                    // selector for transfer(address,uint256)
+                    mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+                    mstore(add(ptr, 0x04), and(pair, ADDRESS_MASK_UPPER))
+                    mstore(add(ptr, 0x24), amountIn)
+
+                    success := call(gas(), and(tokenIn, ADDRESS_MASK_UPPER), 0, ptr, 0x44, ptr, 32)
+
+                    let rdsize := returndatasize()
+
+                    // Check for ERC20 success. ERC20 tokens should return a boolean,
+                    // but some don't. We accept 0-length return data as success, or at
+                    // least 32 bytes that starts with a 32-byte boolean true.
+                    success := and(
+                        success, // call itself succeeded
+                        or(
+                            iszero(rdsize), // no return data, or
+                            and(
+                                iszero(lt(rdsize, 32)), // at least 32 bytes
+                                eq(mload(ptr), 1) // starts with uint256(1)
+                            )
+                        )
+                    )
+
+                    if iszero(success) {
+                        returndatacopy(0x0, 0, rdsize)
+                        revert(0x0, rdsize)
+                    }
+
+                    ////////////////////////////////////////////////////
+                    // We store the bytes length to zero (no callback)
+                    // and directly trigger the swap
+                    ////////////////////////////////////////////////////
+                    mstore(0xB84, 0) // bytes length
+                    success := call(
+                        gas(),
+                        pair,
+                        0x0,
+                        0xB00, // input selector
+                        0xA4, // input size = 164 (selector (4bytes) plus 5*32bytes)
+                        0, // output = 0
+                        0 // output size = 0
+                    )
+                }
+ 
                 if iszero(success) {
                     // Forward the error
                     returndatacopy(0, 0, returndatasize())
@@ -1910,6 +2150,7 @@ abstract contract BaseSwapper is TokenTransfer {
             }
         }
     }
+
 
     /**
      * Calculates the input amount for a UniswapV2 and Solidly style swap
