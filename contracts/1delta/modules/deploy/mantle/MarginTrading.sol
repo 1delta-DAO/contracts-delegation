@@ -207,9 +207,10 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             identifier := shr(64, firstWord) // poolId
             tokenOut := shr(96, calldataload(add(_data.offset, 25)))
         }
-        {
-            require(msg.sender == address(getUniswapV3Pool(tokenIn, tokenOut, fee, identifier)));
-        }
+        
+        // validate callback
+        validateUniV3TypePool(tokenIn, tokenOut, fee, identifier);
+
         assembly {
             identifier := shr(56, calldataload(_data.offset)) // identifier for tradeType
         }
@@ -677,24 +678,11 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         }
         // iZi
         else if (identifier == 100) {
-            uint24 fee;
-            assembly {
-                fee := and(shr(72, calldataload(data.offset)), 0xffffff)
-            }
-            if (zeroForOne)
-                getUniswapV3Pool(tokenIn, tokenOut, fee, identifier).swapX2YDesireY(
-                    receiver,
-                    uint128(amountOut),
-                    -800001,
-                    data
-                );
-            else
-                getUniswapV3Pool(tokenIn, tokenOut, fee, identifier).swapY2XDesireX(
-                    receiver,
-                    uint128(amountOut),
-                    800001,
-                    data
-                );
+            _swapIZIPoolExactOut(
+                receiver,
+                uint128(amountOut),
+                data
+            );
         // special case: Moe LB, no flash swaps, recursive nesting is applied
         } else if (identifier == 103) {
             uint24 bin;

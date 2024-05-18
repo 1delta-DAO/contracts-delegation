@@ -6,7 +6,6 @@ pragma solidity 0.8.25;
 * Author: Achthar | 1delta 
 /******************************************************************************/
 
-import {IUniversalV3StyleSwap} from "../../../dex-tools/interfaces/IUniversalSwap.sol";
 import {IUniswapV2Pair} from "../../../../external-protocols/uniswapV2/core/interfaces/IUniswapV2Pair.sol";
 import {TokenTransfer} from "../../../libraries/TokenTransfer.sol";
 
@@ -97,19 +96,12 @@ abstract contract BaseSwapper is TokenTransfer {
         }
     }
 
-   /**
-    * Compute or fetch a UniV3 pair address
-    * Token sorting is done in this call
-    * @param tokenA first token
-    * @param tokenB second token
-    * @param fee fee parameter
-    * @param _pId Dex Id
-    * @return pool address
-    */
-    function getUniswapV3Pool(address tokenA, address tokenB, uint24 fee, uint256 _pId) internal pure returns (IUniversalV3StyleSwap pool) {
+    /// @dev calculate the pool address for given tokens and revert if the caller does not math this address
+    function validateUniV3TypePool(address tokenA, address tokenB, uint24 fee, uint256 _pId) internal view {
         assembly {
             let s := mload(0x40)
             let p := s
+            let pool
             switch _pId
             // Fusion
             case 0 {
@@ -249,6 +241,10 @@ abstract contract BaseSwapper is TokenTransfer {
                 p := add(p, 32)
                 mstore(p, IZI_POOL_INIT_CODE_HASH)
                 pool := and(ADDRESS_MASK, keccak256(s, 85))
+            }
+
+            if iszero(eq(caller(), pool)) {
+                revert (0, 0)
             }
         }
     }
@@ -413,7 +409,7 @@ abstract contract BaseSwapper is TokenTransfer {
         }
     }
 
-    /// @dev Loops through pools and performs swaps
+    /// @dev Swap Uniswap V3 style exact in
     function _swapUniswapV3PoolExactIn(
         address receiver,
         int256 fromAmount,
@@ -620,7 +616,7 @@ abstract contract BaseSwapper is TokenTransfer {
         }
     }
 
-    /// @dev Loops through pools and performs swaps
+    /// @dev Swap exact input through izumi
     function _swapIZIPoolExactIn(
         address receiver,
         uint128 fromAmount,
@@ -717,7 +713,102 @@ abstract contract BaseSwapper is TokenTransfer {
     }
 
 
-    /// @dev Loops through pools and performs swaps
+    /// @dev Swap exact output through izumi
+    function _swapIZIPoolExactOut(
+        address receiver,
+        uint128 toAmount,
+        bytes calldata path
+    )
+        internal
+        returns (uint256 fromAmount)
+    {
+        // solhint-disable-next-line no-inline-assembly
+        assembly {
+            let ptr := mload(0x40)
+            let firstWord := calldataload(path.offset)
+            let poolId := shr(64, firstWord)
+            let tokenA := shr(96, calldataload(add(path.offset, 25)))
+            let tokenB := shr(96, firstWord)
+            let zeroForOne := lt(tokenA, tokenB)
+            let pool
+            let p := ptr
+            
+            mstore(p, IZI_FF_FACTORY)
+            p := add(p, 21)
+            // Compute the inner hash in-place
+            switch zeroForOne
+            case 0 {
+                mstore(p, tokenB)
+                mstore(add(p, 32), tokenA)
+            }
+            default {
+                mstore(p, tokenA)
+                mstore(add(p, 32), tokenB)
+            }
+            mstore(add(p, 64), and(UINT24_MASK, and(shr(72, firstWord), 0xffffff)))
+            mstore(p, keccak256(p, 96))
+            p := add(p, 32)
+            mstore(p, IZI_POOL_INIT_CODE_HASH)
+            pool := and(ADDRESS_MASK, keccak256(ptr, 85))
+
+            // Return amount0 or amount1 depending on direction
+            switch zeroForOne
+            case 0 {
+                // Prepare external call data
+                // Store swapY2XDesireX selector (0xf094685a)
+                mstore(ptr, 0xf094685a00000000000000000000000000000000000000000000000000000000)
+                // Store recipient
+                mstore(add(ptr, 4), receiver)
+                // Store toAmount
+                mstore(add(ptr, 36), toAmount)
+                // Store highPt
+                mstore(add(ptr, 68), 800001)
+                // Store data offset
+                mstore(add(ptr, 100), sub(0xa0, 0x20))
+                /// Store data length
+                mstore(add(ptr, 132), path.length)
+                // Store path
+                calldatacopy(add(ptr, 164), path.offset, path.length)
+                // Perform the external 'swap' call
+                if iszero(call(gas(), pool, 0, ptr, add(196, path.length), ptr, 64)) {
+                    // store return value directly to free memory pointer
+                    // The call failed; we retrieve the exact error message and revert with it
+                    returndatacopy(0, 0, returndatasize()) // Copy the error message to the start of memory
+                    revert(0, returndatasize()) // Revert with the error message
+                }
+                                // If direction is 1, return amount1
+                fromAmount := mload(add(ptr, 32))
+            }
+            default {
+                // Prepare external call data
+                // Store swapX2YDesireY selector (0x59dd1436)
+                mstore(ptr, 0x59dd143600000000000000000000000000000000000000000000000000000000)
+                // Store toAddress
+                mstore(add(ptr, 4), receiver)
+                // Store toAmount
+                mstore(add(ptr, 36), toAmount)
+                // Store sqrtPriceLimitX96
+                mstore(add(ptr, 68), sub(0, 800001))
+                // Store data offset
+                mstore(add(ptr, 100), sub(0xa0, 0x20))
+                /// Store data length
+                mstore(add(ptr, 132), path.length)
+                // Store path
+                calldatacopy(add(ptr, 164), path.offset, path.length)
+                // Perform the external 'swap' call
+                if iszero(call(gas(), pool, 0, ptr, add(196, path.length), ptr, 32)) {
+                    // store return value directly to free memory pointer
+                    // The call failed; we retrieve the exact error message and revert with it
+                    returndatacopy(0, 0, returndatasize()) // Copy the error message to the start of memory
+                    revert(0, returndatasize()) // Revert with the error message
+                }
+                // If direction is 0, return amount0
+                fromAmount := mload(ptr)
+            }
+        }
+    }
+
+    /// @dev swap uniswap V3 style exact out
     function _swapUniswapV3PoolExactOut(
         address receiver,
         int256 fromAmount,
