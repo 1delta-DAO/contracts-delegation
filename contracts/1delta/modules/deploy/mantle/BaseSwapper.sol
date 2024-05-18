@@ -6,9 +6,7 @@ pragma solidity 0.8.25;
 * Author: Achthar | 1delta 
 /******************************************************************************/
 
-import {IUniswapV2Pair} from "../../../../external-protocols/uniswapV2/core/interfaces/IUniswapV2Pair.sol";
 import {TokenTransfer} from "../../../libraries/TokenTransfer.sol";
-
 
 // solhint-disable max-line-length
 
@@ -707,7 +705,46 @@ abstract contract BaseSwapper is TokenTransfer {
                 }
                 // If direction is 1, return amount1
                 receivedAmount := mload(add(ptr, 32))
+            }
+        }
+    }
 
+
+
+    /// @dev Swap generic via v2
+    function _swapV2StyleGeneric(
+        address pair,
+        address receiver,
+        uint256 amount0Out,
+        uint256 amount1Out,
+        bytes calldata path
+    )
+        internal
+    {
+        // solhint-disable-next-line no-inline-assembly
+        assembly {
+            let ptr := mload(0x40)
+            // Prepare external call data
+            // selector for swap(...)
+            mstore(ptr, 0x022c0d9f00000000000000000000000000000000000000000000000000000000)
+            // Store toAddress
+            mstore(add(ptr, 4), amount0Out)
+            // Store fromAmount
+            mstore(add(ptr, 36), amount1Out)
+            // Store sqrtPriceLimitX96
+            mstore(add(ptr, 68), receiver)
+            // Store data offset
+            mstore(add(ptr, 100), sub(0xa0, 0x20))
+            /// Store data length
+            mstore(add(ptr, 132), path.length)
+            // Store path
+            calldatacopy(add(ptr, 164), path.offset, path.length)
+            // Perform the external 'swap' call
+            if iszero(call(gas(), pair, 0, ptr, add(196, path.length), ptr, 0x0)) {
+                // store return value directly to free memory pointer
+                // The call failed; we retrieve the exact error message and revert with it
+                returndatacopy(0, 0, returndatasize()) // Copy the error message to the start of memory
+                revert(0, returndatasize()) // Revert with the error message
             }
         }
     }

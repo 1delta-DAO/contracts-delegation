@@ -6,7 +6,7 @@ pragma solidity 0.8.25;
 * Author: Achthar | 1delta 
 /******************************************************************************/
 
-import {BaseSwapper, IUniswapV2Pair} from "./BaseSwapper.sol";
+import {BaseSwapper} from "./BaseSwapper.sol";
 import {BaseLending} from "./BaseLending.sol";
 
 /**
@@ -672,7 +672,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             tokenIn = pairAddress(tokenIn, tokenOut, identifier);
             // amountOut0, cache
             (uint256 amountOut0, uint256 amountOut1) = zeroForOne ? (uint256(0), amountOut) : (amountOut, uint256(0));
-            IUniswapV2Pair(tokenIn).swap(amountOut0, amountOut1, address(this), data); // cannot swap to sender due to flashSwap
+            _swapV2StyleGeneric(tokenIn, address(this), amountOut0, amountOut1, data);
             tokenIn = receiver;
             if (tokenIn != address(this)) _transferERC20Tokens(tokenOut, tokenIn, amountOut);
         }
@@ -764,7 +764,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             (uint256 amount0Out, uint256 amount1Out) = zeroForOne
                 ? (uint256(0), getAmountOutUniV2(tokenOut, tokenIn, zeroForOne, amountIn, identifier))
                 : (getAmountOutUniV2(tokenOut, tokenIn, zeroForOne, amountIn, identifier), uint256(0));
-            IUniswapV2Pair(tokenOut).swap(amount0Out, amount1Out, address(this), path);
+            _swapV2StyleGeneric(tokenOut, address(this), amount0Out, amount1Out, path);
         }
         // iZi
         else if (identifier == 100) {
