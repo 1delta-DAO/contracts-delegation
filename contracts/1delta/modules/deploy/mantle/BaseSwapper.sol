@@ -413,240 +413,8 @@ abstract contract BaseSwapper is TokenTransfer {
         }
     }
 
-   
-    /*//////////////////////////////////////////////////////////////
-                               INTERNAL
-    //////////////////////////////////////////////////////////////*/
-
-    // /// @dev Loops through pools and performs swaps
-    // function _callUniswapV3PoolsSwapExactAmountIn(
-    //     address receiver,
-    //     int256 fromAmount,
-    //     bytes calldata path
-    // )
-    //     internal
-    //     returns (uint256 receivedAmount)
-    // {
-    //     // solhint-disable-next-line no-inline-assembly
-    //     assembly {
-    //         let ptr := mload(0x40)
-    //         let firstWord := calldataload(path.offset)
-    //         let poolId := shr(64, firstWord)
-    //         let tokenIn := shr(96, firstWord)
-    //         let tokenOut := shr(96, calldataload(add(path.offset, 25)))
-    //         let zeroForOne := lt(tokenIn, tokenOut)
-    //         let fee := and(shr(72, calldataload(path.offset)), 0xffffff)
-    //         let p := ptr
-    //         let pair
-    //         switch poolId
-    //         // Fusion
-    //         case 0 {
-    //             mstore(p, FUSION_V3_FF_FACTORY)
-    //             p := add(p, 21)
-    //             // Compute the inner hash in-place
-    //             switch lt(tokenIn, tokenOut)
-    //             case 0 {
-    //                 mstore(p, tokenOut)
-    //                 mstore(add(p, 32), tokenIn)
-    //             }
-    //             default {
-    //                 mstore(p, tokenIn)
-    //                 mstore(add(p, 32), tokenOut)
-    //             }
-    //             mstore(add(p, 64), and(UINT24_MASK, fee))
-    //             mstore(p, keccak256(p, 96))
-    //             p := add(p, 32)
-    //             mstore(p, FUSION_POOL_INIT_CODE_HASH)
-    //             pair := and(ADDRESS_MASK, keccak256(ptr, 85))
-    //         }
-    //         // agni
-    //         case 1 {
-    //             mstore(p, AGNI_V3_FF_FACTORY)
-    //             p := add(p, 21)
-    //             // Compute the inner hash in-place
-    //             switch lt(tokenIn, tokenOut)
-    //             case 0 {
-    //                 mstore(p, tokenOut)
-    //                 mstore(add(p, 32), tokenIn)
-    //             }
-    //             default {
-    //                 mstore(p, tokenIn)
-    //                 mstore(add(p, 32), tokenOut)
-    //             }
-    //             mstore(add(p, 64), and(UINT24_MASK, fee))
-    //             mstore(p, keccak256(p, 96))
-    //             p := add(p, 32)
-    //             mstore(p, AGNI_POOL_INIT_CODE_HASH)
-    //             pair := and(ADDRESS_MASK, keccak256(ptr, 85))
-    //         }
-    //         // Algebra / Swapsicle
-    //         case 2 {
-    //             mstore(p, ALGEBRA_V3_FF_DEPLOYER)
-    //             p := add(p, 21)
-    //             // Compute the inner hash in-place
-    //             switch lt(tokenIn, tokenOut)
-    //             case 0 {
-    //                 mstore(p, tokenOut)
-    //                 mstore(add(p, 32), tokenIn)
-    //             }
-    //             default {
-    //                 mstore(p, tokenIn)
-    //                 mstore(add(p, 32), tokenOut)
-    //             }
-    //             mstore(p, keccak256(p, 64))
-    //             p := add(p, 32)
-    //             mstore(p, ALGEBRA_POOL_INIT_CODE_HASH)
-    //             pair := and(ADDRESS_MASK, keccak256(ptr, 85))
-    //         }
-    //         // Butter
-    //         case 3 {
-    //             mstore(p, BUTTER_FF_FACTORY)
-    //             p := add(p, 21)
-    //             // Compute the inner hash in-place
-    //             switch lt(tokenIn, tokenOut)
-    //             case 0 {
-    //                 mstore(p, tokenOut)
-    //                 mstore(add(p, 32), tokenIn)
-    //             }
-    //             default {
-    //                 mstore(p, tokenIn)
-    //                 mstore(add(p, 32), tokenOut)
-    //             }
-    //             mstore(add(p, 64), and(UINT24_MASK, fee))
-    //             mstore(p, keccak256(p, 96))
-    //             p := add(p, 32)
-    //             mstore(p, BUTTER_POOL_INIT_CODE_HASH)
-    //             pair := and(ADDRESS_MASK, keccak256(ptr, 85))
-    //         }
-    //         // Cleo
-    //         case 4 {
-    //             mstore(p, CLEO_FF_FACTORY)
-    //             p := add(p, 21)
-    //             // Compute the inner hash in-place
-    //             switch lt(tokenIn, tokenOut)
-    //             case 0 {
-    //                 mstore(p, tokenOut)
-    //                 mstore(add(p, 32), tokenIn)
-    //             }
-    //             default {
-    //                 mstore(p, tokenIn)
-    //                 mstore(add(p, 32), tokenOut)
-    //             }
-    //             mstore(add(p, 64), and(UINT24_MASK, fee))
-    //             mstore(p, keccak256(p, 96))
-    //             p := add(p, 32)
-    //             mstore(p, CLEO_POOL_INIT_CODE_HASH)
-    //             pair := and(ADDRESS_MASK, keccak256(ptr, 85))
-    //         }
-    //         // MethLab
-    //         case 5 {
-    //             mstore(p, METHLAB_FF_FACTORY)
-    //             p := add(p, 21)
-    //             // Compute the inner hash in-place
-    //             switch lt(tokenIn, tokenOut)
-    //             case 0 {
-    //                 mstore(p, tokenOut)
-    //                 mstore(add(p, 32), tokenIn)
-    //             }
-    //             default {
-    //                 mstore(p, tokenIn)
-    //                 mstore(add(p, 32), tokenOut)
-    //             }
-    //             mstore(add(p, 64), and(UINT24_MASK, fee))
-    //             mstore(p, keccak256(p, 96))
-    //             p := add(p, 32)
-    //             mstore(p, METHLAB_INIT_CODE_HASH)
-    //             pair := and(ADDRESS_MASK, keccak256(ptr, 85))
-    //         }
-    //         // iZi
-    //         default {
-    //             mstore(p, IZI_FF_FACTORY)
-    //             p := add(p, 21)
-    //             // Compute the inner hash in-place
-    //             switch lt(tokenIn, tokenOut)
-    //             case 0 {
-    //                 mstore(p, tokenOut)
-    //                 mstore(add(p, 32), tokenIn)
-    //             }
-    //             default {
-    //                 mstore(p, tokenIn)
-    //                 mstore(add(p, 32), tokenOut)
-    //             }
-    //             mstore(add(p, 64), and(UINT24_MASK, fee))
-    //             mstore(p, keccak256(p, 96))
-    //             p := add(p, 32)
-    //             mstore(p, IZI_POOL_INIT_CODE_HASH)
-    //             pair := and(ADDRESS_MASK, keccak256(ptr, 85))
-    //         }
-    //         // Return amount0 or amount1 depending on direction
-    //         switch zeroForOne
-    //         case 0 {
-    //             // Prepare external call data
-    //             // Store swap selector (0x128acb08)
-    //             mstore(ptr, 0x128acb0800000000000000000000000000000000000000000000000000000000)
-    //             // Store toAddress
-    //             mstore(add(ptr, 4), receiver)
-    //             // Store direction
-    //             mstore(add(ptr, 36), 0)
-    //             // Store fromAmount
-    //             mstore(add(ptr, 68), fromAmount)
-    //             // Store sqrtPriceLimitX96
-    //             mstore(add(ptr, 100), MAX_SQRT_RATIO)
-    //             // Store data offset
-    //             mstore(add(ptr, 132), 0xa0)
-    //             /// Store data length
-    //             mstore(add(ptr, 164), path.length)
-    //             // Store path
-    //             calldatacopy(add(ptr, 196), path.offset, path.length)
-    //             // Perform the external 'swap' call
-    //             if iszero(call(gas(), pair, 0, ptr, add(228, path.length), ptr, 32)) {
-    //                 // store return value directly to free memory pointer
-    //                 // The call failed; we retrieve the exact error message and revert with it
-    //                 returndatacopy(0, 0, returndatasize()) // Copy the error message to the start of memory
-    //                 revert(0, returndatasize()) // Revert with the error message
-    //             }
-    //             // If direction is 0, return amount0
-    //             fromAmount := mload(ptr)
-    //         }
-    //         default {
-    //             // Prepare external call data
-    //             // Store swap selector (0x128acb08)
-    //             mstore(ptr, 0x128acb0800000000000000000000000000000000000000000000000000000000)
-    //             // Store toAddress
-    //             mstore(add(ptr, 4), receiver)
-    //             // Store direction
-    //             mstore(add(ptr, 36), 1)
-    //             // Store fromAmount
-    //             mstore(add(ptr, 68), fromAmount)
-    //             // Store sqrtPriceLimitX96
-    //             mstore(add(ptr, 100), MIN_SQRT_RATIO)
-    //             // Store data offset
-    //             mstore(add(ptr, 132), 0xa0)
-    //             /// Store data length
-    //             mstore(add(ptr, 164), path.length)
-    //             // Store path
-    //             calldatacopy(add(ptr, 196), path.offset, path.length)
-    //             // Perform the external 'swap' call
-    //             if iszero(call(gas(), pair, 0, ptr, add(228, path.length), ptr, 64)) {
-    //                 // store return value directly to free memory pointer
-    //                 // The call failed; we retrieve the exact error message and revert with it
-    //                 returndatacopy(0, 0, returndatasize()) // Copy the error message to the start of memory
-    //                 revert(0, returndatasize()) // Revert with the error message
-    //             }
-
-    //             // If direction is 1, return amount1
-    //             fromAmount := mload(add(ptr, 32))
-    //         }
-    //         // fromAmount = -fromAmount
-    //         receivedAmount := sub(0, fromAmount)
-    //     }
-    // }
-
-
     /// @dev Loops through pools and performs swaps
     function _callUniswapV3PoolsSwapExactAmountIn(
-        bool zeroForOne,
-        address pair,
         address receiver,
         int256 fromAmount,
         bytes calldata path
@@ -657,154 +425,139 @@ abstract contract BaseSwapper is TokenTransfer {
         // solhint-disable-next-line no-inline-assembly
         assembly {
             let ptr := mload(0x40)
-            // let firstWord := calldataload(path.offset)
-            // let poolId := shr(64, firstWord)
-            // let tokenIn := shr(96, firstWord)
-            // let tokenOut := shr(96, calldataload(add(path.offset, 25)))
-            // let zeroForOne := lt(tokenIn, tokenOut)
-            // let fee := and(shr(72, calldataload(path.offset)), 0xffffff)
-            // let p := ptr
-            // let pair
-            // switch poolId
-            // // Fusion
-            // case 0 {
-            //     mstore(p, FUSION_V3_FF_FACTORY)
-            //     p := add(p, 21)
-            //     // Compute the inner hash in-place
-            //     switch lt(tokenIn, tokenOut)
-            //     case 0 {
-            //         mstore(p, tokenOut)
-            //         mstore(add(p, 32), tokenIn)
-            //     }
-            //     default {
-            //         mstore(p, tokenIn)
-            //         mstore(add(p, 32), tokenOut)
-            //     }
-            //     mstore(add(p, 64), and(UINT24_MASK, fee))
-            //     mstore(p, keccak256(p, 96))
-            //     p := add(p, 32)
-            //     mstore(p, FUSION_POOL_INIT_CODE_HASH)
-            //     pair := and(ADDRESS_MASK, keccak256(ptr, 85))
-            // }
-            // // agni
-            // case 1 {
-            //     mstore(p, AGNI_V3_FF_FACTORY)
-            //     p := add(p, 21)
-            //     // Compute the inner hash in-place
-            //     switch lt(tokenIn, tokenOut)
-            //     case 0 {
-            //         mstore(p, tokenOut)
-            //         mstore(add(p, 32), tokenIn)
-            //     }
-            //     default {
-            //         mstore(p, tokenIn)
-            //         mstore(add(p, 32), tokenOut)
-            //     }
-            //     mstore(add(p, 64), and(UINT24_MASK, fee))
-            //     mstore(p, keccak256(p, 96))
-            //     p := add(p, 32)
-            //     mstore(p, AGNI_POOL_INIT_CODE_HASH)
-            //     pair := and(ADDRESS_MASK, keccak256(ptr, 85))
-            // }
-            // // Algebra / Swapsicle
-            // case 2 {
-            //     mstore(p, ALGEBRA_V3_FF_DEPLOYER)
-            //     p := add(p, 21)
-            //     // Compute the inner hash in-place
-            //     switch lt(tokenIn, tokenOut)
-            //     case 0 {
-            //         mstore(p, tokenOut)
-            //         mstore(add(p, 32), tokenIn)
-            //     }
-            //     default {
-            //         mstore(p, tokenIn)
-            //         mstore(add(p, 32), tokenOut)
-            //     }
-            //     mstore(p, keccak256(p, 64))
-            //     p := add(p, 32)
-            //     mstore(p, ALGEBRA_POOL_INIT_CODE_HASH)
-            //     pair := and(ADDRESS_MASK, keccak256(ptr, 85))
-            // }
-            // // Butter
-            // case 3 {
-            //     mstore(p, BUTTER_FF_FACTORY)
-            //     p := add(p, 21)
-            //     // Compute the inner hash in-place
-            //     switch lt(tokenIn, tokenOut)
-            //     case 0 {
-            //         mstore(p, tokenOut)
-            //         mstore(add(p, 32), tokenIn)
-            //     }
-            //     default {
-            //         mstore(p, tokenIn)
-            //         mstore(add(p, 32), tokenOut)
-            //     }
-            //     mstore(add(p, 64), and(UINT24_MASK, fee))
-            //     mstore(p, keccak256(p, 96))
-            //     p := add(p, 32)
-            //     mstore(p, BUTTER_POOL_INIT_CODE_HASH)
-            //     pair := and(ADDRESS_MASK, keccak256(ptr, 85))
-            // }
-            // // Cleo
-            // case 4 {
-            //     mstore(p, CLEO_FF_FACTORY)
-            //     p := add(p, 21)
-            //     // Compute the inner hash in-place
-            //     switch lt(tokenIn, tokenOut)
-            //     case 0 {
-            //         mstore(p, tokenOut)
-            //         mstore(add(p, 32), tokenIn)
-            //     }
-            //     default {
-            //         mstore(p, tokenIn)
-            //         mstore(add(p, 32), tokenOut)
-            //     }
-            //     mstore(add(p, 64), and(UINT24_MASK, fee))
-            //     mstore(p, keccak256(p, 96))
-            //     p := add(p, 32)
-            //     mstore(p, CLEO_POOL_INIT_CODE_HASH)
-            //     pair := and(ADDRESS_MASK, keccak256(ptr, 85))
-            // }
-            // // MethLab
-            // case 5 {
-            //     mstore(p, METHLAB_FF_FACTORY)
-            //     p := add(p, 21)
-            //     // Compute the inner hash in-place
-            //     switch lt(tokenIn, tokenOut)
-            //     case 0 {
-            //         mstore(p, tokenOut)
-            //         mstore(add(p, 32), tokenIn)
-            //     }
-            //     default {
-            //         mstore(p, tokenIn)
-            //         mstore(add(p, 32), tokenOut)
-            //     }
-            //     mstore(add(p, 64), and(UINT24_MASK, fee))
-            //     mstore(p, keccak256(p, 96))
-            //     p := add(p, 32)
-            //     mstore(p, METHLAB_INIT_CODE_HASH)
-            //     pair := and(ADDRESS_MASK, keccak256(ptr, 85))
-            // }
-            // // iZi
-            // default {
-            //     mstore(p, IZI_FF_FACTORY)
-            //     p := add(p, 21)
-            //     // Compute the inner hash in-place
-            //     switch lt(tokenIn, tokenOut)
-            //     case 0 {
-            //         mstore(p, tokenOut)
-            //         mstore(add(p, 32), tokenIn)
-            //     }
-            //     default {
-            //         mstore(p, tokenIn)
-            //         mstore(add(p, 32), tokenOut)
-            //     }
-            //     mstore(add(p, 64), and(UINT24_MASK, fee))
-            //     mstore(p, keccak256(p, 96))
-            //     p := add(p, 32)
-            //     mstore(p, IZI_POOL_INIT_CODE_HASH)
-            //     pair := and(ADDRESS_MASK, keccak256(ptr, 85))
-            // }
+            let firstWord := calldataload(path.offset)
+            let poolId := shr(64, firstWord)
+            let tokenA := shr(96, firstWord)
+            let tokenB := shr(96, calldataload(add(path.offset, 25)))
+            let zeroForOne := lt(tokenA, tokenB)
+            let _pId := and(shr(64, firstWord), 0xff)
+            let pool
+            let p := ptr
+            switch _pId
+            // Fusion
+            case 0 {
+                mstore(p, FUSION_V3_FF_FACTORY)
+                p := add(p, 21)
+                // Compute the inner hash in-place
+                switch lt(tokenA, tokenB)
+                case 0 {
+                    mstore(p, tokenB)
+                    mstore(add(p, 32), tokenA)
+                }
+                default {
+                    mstore(p, tokenA)
+                    mstore(add(p, 32), tokenB)
+                }
+                mstore(add(p, 64), and(UINT24_MASK, and(shr(72, calldataload(path.offset)), 0xffffff)))
+                mstore(p, keccak256(p, 96))
+                p := add(p, 32)
+                mstore(p, FUSION_POOL_INIT_CODE_HASH)
+                pool := and(ADDRESS_MASK, keccak256(ptr, 85))
+            }
+            // agni
+            case 1 {
+                mstore(p, AGNI_V3_FF_FACTORY)
+                p := add(p, 21)
+                // Compute the inner hash in-place
+                switch lt(tokenA, tokenB)
+                case 0 {
+                    mstore(p, tokenB)
+                    mstore(add(p, 32), tokenA)
+                }
+                default {
+                    mstore(p, tokenA)
+                    mstore(add(p, 32), tokenB)
+                }
+                mstore(add(p, 64), and(UINT24_MASK, and(shr(72, calldataload(path.offset)), 0xffffff)))
+                mstore(p, keccak256(p, 96))
+                p := add(p, 32)
+                mstore(p, AGNI_POOL_INIT_CODE_HASH)
+                pool := and(ADDRESS_MASK, keccak256(ptr, 85))
+            }
+            // Algebra / Swapsicle
+            case 2 {
+                mstore(p, ALGEBRA_V3_FF_DEPLOYER)
+                p := add(p, 21)
+                // Compute the inner hash in-place
+                switch lt(tokenA, tokenB)
+                case 0 {
+                    mstore(p, tokenB)
+                    mstore(add(p, 32), tokenA)
+                }
+                default {
+                    mstore(p, tokenA)
+                    mstore(add(p, 32), tokenB)
+                }
+                mstore(p, keccak256(p, 64))
+                p := add(p, 32)
+                mstore(p, ALGEBRA_POOL_INIT_CODE_HASH)
+                pool := and(ADDRESS_MASK, keccak256(ptr, 85))
+            }
+            // Butter
+            case 3 {
+                mstore(p, BUTTER_FF_FACTORY)
+                p := add(p, 21)
+                // Compute the inner hash in-place
+                switch lt(tokenA, tokenB)
+                case 0 {
+                    mstore(p, tokenB)
+                    mstore(add(p, 32), tokenA)
+                }
+                default {
+                    mstore(p, tokenA)
+                    mstore(add(p, 32), tokenB)
+                }
+                mstore(add(p, 64), and(UINT24_MASK, and(shr(72, calldataload(path.offset)), 0xffffff)))
+                mstore(p, keccak256(p, 96))
+                p := add(p, 32)
+                mstore(p, BUTTER_POOL_INIT_CODE_HASH)
+                pool := and(ADDRESS_MASK, keccak256(ptr, 85))
+            }
+            // Cleo
+            case 4 {
+                mstore(p, CLEO_FF_FACTORY)
+                p := add(p, 21)
+                // Compute the inner hash in-place
+                switch lt(tokenA, tokenB)
+                case 0 {
+                    mstore(p, tokenB)
+                    mstore(add(p, 32), tokenA)
+                }
+                default {
+                    mstore(p, tokenA)
+                    mstore(add(p, 32), tokenB)
+                }
+                mstore(add(p, 64), and(UINT24_MASK, and(shr(72, calldataload(path.offset)), 0xffffff)))
+                mstore(p, keccak256(p, 96))
+                p := add(p, 32)
+                mstore(p, CLEO_POOL_INIT_CODE_HASH)
+                pool := and(ADDRESS_MASK, keccak256(ptr, 85))
+            }
+            // MethLab
+            case 5 {
+                mstore(p, METHLAB_FF_FACTORY)
+                p := add(p, 21)
+                // Compute the inner hash in-place
+                switch lt(tokenA, tokenB)
+                case 0 {
+                    mstore(p, tokenB)
+                    mstore(add(p, 32), tokenA)
+                }
+                default {
+                    mstore(p, tokenA)
+                    mstore(add(p, 32), tokenB)
+                }
+                mstore(add(p, 64), and(UINT24_MASK, and(shr(72, calldataload(path.offset)), 0xffffff)))
+                mstore(p, keccak256(p, 96))
+                p := add(p, 32)
+                mstore(p, METHLAB_INIT_CODE_HASH)
+                pool := and(ADDRESS_MASK, keccak256(ptr, 85))
+            }
+            // iZi
+            default {
+                revert (0, 0)
+            }
+
             // Return amount0 or amount1 depending on direction
             switch zeroForOne
             case 0 {
@@ -826,7 +579,7 @@ abstract contract BaseSwapper is TokenTransfer {
                 // Store path
                 calldatacopy(add(ptr, 196), path.offset, path.length)
                 // Perform the external 'swap' call
-                if iszero(call(gas(), pair, 0, ptr, add(228, path.length), ptr, 32)) {
+                if iszero(call(gas(), pool, 0, ptr, add(228, path.length), ptr, 32)) {
                     // store return value directly to free memory pointer
                     // The call failed; we retrieve the exact error message and revert with it
                     returndatacopy(0, 0, returndatasize()) // Copy the error message to the start of memory
@@ -854,7 +607,7 @@ abstract contract BaseSwapper is TokenTransfer {
                 // Store path
                 calldatacopy(add(ptr, 196), path.offset, path.length)
                 // Perform the external 'swap' call
-                if iszero(call(gas(), pair, 0, ptr, add(228, path.length), ptr, 64)) {
+                if iszero(call(gas(), pool, 0, ptr, add(228, path.length), ptr, 64)) {
                     // store return value directly to free memory pointer
                     // The call failed; we retrieve the exact error message and revert with it
                     returndatacopy(0, 0, returndatasize()) // Copy the error message to the start of memory
@@ -889,21 +642,11 @@ abstract contract BaseSwapper is TokenTransfer {
             }
             // uniswapV3 style
             if (identifier < 50) {
-                uint24 fee;
-                bool zeroForOne;
-                assembly {
-                    fee := and(shr(72, calldataload(path.offset)), 0xffffff)
-                    zeroForOne := lt(tokenIn, tokenOut)
-                }
-                (int256 amount0, int256 amount1) = getUniswapV3Pool(tokenIn, tokenOut, fee, identifier).swap(
+                amountIn = _callUniswapV3PoolsSwapExactAmountIn(
                     address(this),
-                    zeroForOne,
                     int256(amountIn),
-                    zeroForOne ? MIN_SQRT_RATIO : MAX_SQRT_RATIO,
-                    path[:45]
-                );
-
-                amountIn = uint256(-(zeroForOne ? amount1 : amount0));
+                    path
+            );
             }
             // uniswapV2 style
             else if (identifier < 100) {

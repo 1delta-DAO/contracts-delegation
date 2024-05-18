@@ -770,18 +770,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         }
         // uniswapV3 types
         if (identifier < 50) {
-            // _callUniswapV3PoolsSwapExactAmountIn(
-            //     address(this),
-            //     int256(amountIn),
-            //     path
-            // );
-          uint24 fee;
-            assembly {
-                fee := and(shr(72, calldataload(path.offset)), 0xffffff)
-            }
             _callUniswapV3PoolsSwapExactAmountIn(
-                zeroForOne,
-                address(getUniswapV3Pool(tokenIn, tokenOut, fee, identifier)),
                 address(this),
                 int256(amountIn),
                 path
