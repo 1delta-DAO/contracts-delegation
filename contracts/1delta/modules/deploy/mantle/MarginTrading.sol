@@ -14,10 +14,6 @@ import {BaseLending} from "./BaseLending.sol";
  * @notice Contains main logic for uniswap-type callbacks and initiator functions
  */
 abstract contract MarginTrading is BaseSwapper, BaseLending {
-    // for transfers
-    uint256 private constant ADDRESS_MASK_UPPER = 0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff;
-    uint256 private constant UINT8_MASK_UPPER = 0xff00000000000000000000000000000000000000000000000000000000000000;
-
     // errors
     error Slippage();
     error NoBalance();
@@ -25,7 +21,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
 
     constructor() BaseSwapper() BaseLending() {}
 
-    // Exact Input Swap - The path parameters determine the lending actions
+    /// @dev Exact Input Flash Swap - The path parameters determine the lending actions
     function flashSwapExactIn(
         uint256 amountIn,
         uint256 amountOutMinimum,

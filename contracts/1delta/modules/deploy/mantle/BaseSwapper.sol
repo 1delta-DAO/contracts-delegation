@@ -19,7 +19,7 @@ abstract contract BaseSwapper is TokenTransfer {
     /// @dev Mask of lower 20 bytes.
     uint256 private constant ADDRESS_MASK = 0x00ffffffffffffffffffffffffffffffffffffffff;
     /// @dev Mask of upper 20 bytes.
-    uint256 private constant ADDRESS_MASK_UPPER = 0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff;
+    uint256 internal constant ADDRESS_MASK_UPPER = 0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff;
     /// @dev Mask of lower 3 bytes.
     uint256 internal constant UINT24_MASK = 0xffffff;   
     /// @dev Mask of lower 1 byte.
@@ -28,6 +28,7 @@ abstract contract BaseSwapper is TokenTransfer {
     uint160 internal constant MIN_SQRT_RATIO = 4295128740;
     /// @dev MAX_SQRT_RATIO - 1 from Uniswap's TickMath
     uint160 internal constant MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970341;
+    /// @dev used for some of the denominators in solidly calculations
     uint256 private constant SCALE_18 = 1.0e18;
 
     bytes32 private constant FUSION_V3_FF_FACTORY = 0xff8790c2C3BA67223D83C8FCF2a5E3C650059987b40000000000000000000000;
@@ -249,14 +250,7 @@ abstract contract BaseSwapper is TokenTransfer {
         }
     }
 
-   /**
-    * Compute or fetch a UniV2 or Solidly style pair address
-    * For Merchant Moe, we fetch the pair address from the factory
-    * Token sorting is done in this call
-    * @param tokenA first token
-    * @param tokenB second token
-    * @param _pId Dex Id
-    */
+   /// @dev Compute or fetch a UniV2 or Solidly style pair address and validate that this is the caller
     function validateV2PairAddress(address tokenA, address tokenB, uint256 _pId) internal view {
         assembly {
             let pair
@@ -431,6 +425,10 @@ abstract contract BaseSwapper is TokenTransfer {
             let zeroForOne := lt(tokenA, tokenB)
             let pool
             let p := ptr
+            
+            ////////////////////////////////////////////////////
+            // Same code as for the other V3 pool address getters
+            ////////////////////////////////////////////////////
             // switch-case through pool ids
             switch and(shr(64, firstWord), UINT8_MASK)
             // Fusion
@@ -731,6 +729,10 @@ abstract contract BaseSwapper is TokenTransfer {
             let _pId := and(shr(64, firstWord), UINT8_MASK)
             let tokenA := shr(96, calldataload(add(path.offset, 25)))
             let zeroForOne := lt(tokenA, tokenB)
+
+            ////////////////////////////////////////////////////
+            // Same code as for the other V2 pool address getters
+            ////////////////////////////////////////////////////
             switch _pId
             // FusionX
             case 50 {
@@ -909,7 +911,7 @@ abstract contract BaseSwapper is TokenTransfer {
             }
 
             ////////////////////////////////////////////////////
-            // We chain the transfer to the receiver, given tha
+            // We chain the transfer to the receiver, given that
             // it is not this address
             ////////////////////////////////////////////////////
             if iszero(eq(address(), receiver)) {
@@ -918,10 +920,10 @@ abstract contract BaseSwapper is TokenTransfer {
                 ////////////////////////////////////////////////////
                 // selector for transfer(address,uint256)
                 mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
-                mstore(add(ptr, 0x04), and(receiver, ADDRESS_MASK_UPPER))
+                mstore(add(ptr, 0x04), receiver)
                 mstore(add(ptr, 0x24), amountOut)
 
-                let success := call(gas(), and(tokenB, ADDRESS_MASK_UPPER), 0, ptr, 0x44, ptr, 32)
+                let success := call(gas(), tokenB, 0, ptr, 0x44, ptr, 32)
 
                 let rdsize := returndatasize()
 
@@ -1061,6 +1063,9 @@ abstract contract BaseSwapper is TokenTransfer {
             let zeroForOne := lt(tokenA, tokenB)
             let pool
             let p := ptr
+            ////////////////////////////////////////////////////
+            // Same code as for the other V3 pool address getters
+            ////////////////////////////////////////////////////
             switch and(shr(64, firstWord), UINT8_MASK)
             // Fusion
             case 0 {
