@@ -139,7 +139,6 @@ contract MarginOpenTest is DeltaSetup {
         address debtAsset = debtTokens[borrowAsset][lenderId];
         deal(asset, user, 1e20);
 
-        console.log("TEST THE TEST");
         uint256 amountToDeposit = 10.0e6;
 
         bytes[] memory calls = new bytes[](3);
@@ -158,7 +157,6 @@ contract MarginOpenTest is DeltaSetup {
 
         uint256 borrowBalance = IERC20All(debtAsset).balanceOf(user);
         uint256 balance = IERC20All(collateralAsset).balanceOf(user);
-        console.log("TEST THE TEST");
         vm.prank(user);
         brokerProxy.multicall(calls);
 
