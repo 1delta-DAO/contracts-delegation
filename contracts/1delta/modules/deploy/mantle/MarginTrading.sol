@@ -780,24 +780,11 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         }
         // iZi
         else if (identifier == 100) {
-            uint24 fee;
-            assembly {
-                fee := and(shr(72, calldataload(path.offset)), 0xffffff)
-            }
-            if (zeroForOne)
-                getUniswapV3Pool(tokenIn, tokenOut, fee, identifier).swapX2Y(
-                    address(this),
-                    uint128(amountIn),
-                    -799999,
-                    path
-                );
-            else
-                getUniswapV3Pool(tokenIn, tokenOut, fee, identifier).swapY2X(
-                    address(this),
-                    uint128(amountIn),
-                    799999,
-                    path
-                );
+            _swapIZIPoolExactIn(
+                address(this),
+                uint128(amountIn),
+                path
+            );
         } else revert InvalidDexId();
 
         amountOut = uint256(gcs().cache);

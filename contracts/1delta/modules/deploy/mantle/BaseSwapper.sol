@@ -430,10 +430,9 @@ abstract contract BaseSwapper is TokenTransfer {
             let tokenA := shr(96, firstWord)
             let tokenB := shr(96, calldataload(add(path.offset, 25)))
             let zeroForOne := lt(tokenA, tokenB)
-            let _pId := and(shr(64, firstWord), 0xff)
             let pool
             let p := ptr
-            switch _pId
+            switch and(shr(64, firstWord), 0xff)
             // Fusion
             case 0 {
                 mstore(p, FUSION_V3_FF_FACTORY)
@@ -621,6 +620,102 @@ abstract contract BaseSwapper is TokenTransfer {
         }
     }
 
+    /// @dev Loops through pools and performs swaps
+    function _swapIZIPoolExactIn(
+        address receiver,
+        uint128 fromAmount,
+        bytes calldata path
+    )
+        internal
+        returns (uint256 receivedAmount)
+    {
+        // solhint-disable-next-line no-inline-assembly
+        assembly {
+            let ptr := mload(0x40)
+            let firstWord := calldataload(path.offset)
+            let poolId := shr(64, firstWord)
+            let tokenA := shr(96, firstWord)
+            let tokenB := shr(96, calldataload(add(path.offset, 25)))
+            let zeroForOne := lt(tokenA, tokenB)
+            let pool
+            let p := ptr
+            
+            mstore(p, IZI_FF_FACTORY)
+            p := add(p, 21)
+            // Compute the inner hash in-place
+            switch zeroForOne
+            case 0 {
+                mstore(p, tokenB)
+                mstore(add(p, 32), tokenA)
+            }
+            default {
+                mstore(p, tokenA)
+                mstore(add(p, 32), tokenB)
+            }
+            mstore(add(p, 64), and(UINT24_MASK, and(shr(72, firstWord), 0xffffff)))
+            mstore(p, keccak256(p, 96))
+            p := add(p, 32)
+            mstore(p, IZI_POOL_INIT_CODE_HASH)
+            pool := and(ADDRESS_MASK, keccak256(ptr, 85))
+
+            // Return amount0 or amount1 depending on direction
+            switch zeroForOne
+            case 0 {
+                // Prepare external call data
+                // Store swapY2X selector (0x2c481252)
+                mstore(ptr, 0x2c48125200000000000000000000000000000000000000000000000000000000)
+                // Store recipient
+                mstore(add(ptr, 4), receiver)
+                // Store fromAmount
+                mstore(add(ptr, 36), fromAmount)
+                // Store highPt
+                mstore(add(ptr, 68), 799999)
+                // Store data offset
+                mstore(add(ptr, 100), sub(0xa0, 0x20))
+                /// Store data length
+                mstore(add(ptr, 132), path.length)
+                // Store path
+                calldatacopy(add(ptr, 164), path.offset, path.length)
+                // Perform the external 'swap' call
+                if iszero(call(gas(), pool, 0, ptr, add(196, path.length), ptr, 32)) {
+                    // store return value directly to free memory pointer
+                    // The call failed; we retrieve the exact error message and revert with it
+                    returndatacopy(0, 0, returndatasize()) // Copy the error message to the start of memory
+                    revert(0, returndatasize()) // Revert with the error message
+                }
+                // If direction is 0, return amount0
+                receivedAmount := mload(ptr)
+            }
+            default {
+                // Prepare external call data
+                // Store swapX2Y selector (0x857f812f)
+                mstore(ptr, 0x857f812f00000000000000000000000000000000000000000000000000000000)
+                // Store toAddress
+                mstore(add(ptr, 4), receiver)
+                // Store fromAmount
+                mstore(add(ptr, 36), fromAmount)
+                // Store sqrtPriceLimitX96
+                mstore(add(ptr, 68), sub(0, 799999))
+                // Store data offset
+                mstore(add(ptr, 100), sub(0xa0, 0x20))
+                /// Store data length
+                mstore(add(ptr, 132), path.length)
+                // Store path
+                calldatacopy(add(ptr, 164), path.offset, path.length)
+                // Perform the external 'swap' call
+                if iszero(call(gas(), pool, 0, ptr, add(196, path.length), ptr, 64)) {
+                    // store return value directly to free memory pointer
+                    // The call failed; we retrieve the exact error message and revert with it
+                    returndatacopy(0, 0, returndatasize()) // Copy the error message to the start of memory
+                    revert(0, returndatasize()) // Revert with the error message
+                }
+                // If direction is 1, return amount1
+                receivedAmount := mload(add(ptr, 32))
+
+            }
+        }
+    }
+
 
     /// @dev Loops through pools and performs swaps
     function _swapUniswapV3PoolExactOut(
@@ -639,10 +734,9 @@ abstract contract BaseSwapper is TokenTransfer {
             let tokenA := shr(96, calldataload(add(path.offset, 25)))
             let tokenB := shr(96, firstWord)
             let zeroForOne := lt(tokenA, tokenB)
-            let _pId := and(shr(64, firstWord), 0xff)
             let pool
             let p := ptr
-            switch _pId
+            switch and(shr(64, firstWord), 0xff)
             // Fusion
             case 0 {
                 mstore(p, FUSION_V3_FF_FACTORY)
@@ -862,26 +956,11 @@ abstract contract BaseSwapper is TokenTransfer {
             }
             // iZi
             else if (identifier == 100) {
-                uint24 fee;
-                bool zeroForOne;
-                assembly {
-                    fee := and(shr(72, calldataload(path.offset)), 0xffffff)
-                    zeroForOne := lt(tokenIn, tokenOut)
-                }
-                if (zeroForOne)
-                    (, amountIn) = getUniswapV3Pool(tokenIn, tokenOut, fee, identifier).swapX2Y(
-                        address(this),
-                        uint128(amountIn),
-                        -799999, // low tick
-                        path[:45]
-                    );
-                else
-                    (amountIn, ) = getUniswapV3Pool(tokenIn, tokenOut, fee, identifier).swapY2X(
-                        address(this),
-                        uint128(amountIn),
-                        799999, // high tick
-                        path[:45]
-                    );
+                amountIn = _swapIZIPoolExactIn(
+                    address(this),
+                    uint128(amountIn),
+                    path[:45]
+                );
             }
             // WOO Fi
             else if (identifier == 101) {

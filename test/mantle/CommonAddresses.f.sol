@@ -174,6 +174,19 @@ contract AddressesMantle {
         return abi.encodePacked(lenderId, tokenIn, fee, poolId, actionId, tokenOut, endId);
     }
 
+    function getOpenExactInSingle_izi(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+        uint24 fee = DEX_FEE_LOW_HIGH;
+        uint8 poolId = IZUMI;
+        (uint8 actionId, , uint8 endId) = getOpenExactInFlags();
+        return abi.encodePacked(lenderId, tokenIn, fee, poolId, actionId, tokenOut, endId);
+    }
+
+    function getSpotExactInSingle_izi(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
+        uint24 fee = DEX_FEE_LOW_HIGH;
+        uint8 poolId = IZUMI;
+        return abi.encodePacked(tokenIn, fee, poolId, uint8(0), tokenOut, uint8(99));
+    }
+
     function getOpenExactOutSingle(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
         uint24 fee = DEX_FEE_LOW;
         uint8 poolId = AGNI;
@@ -309,7 +322,7 @@ contract AddressesMantle {
         return abi.encodePacked(firstPart, fee, poolId, midId, tokenIn, endId);
     }
 
-       /** OPEN */
+    /** OPEN */
 
     function getOpenExactInSingleV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
         uint24 fee = DEX_FEE_NONE;
