@@ -643,6 +643,8 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         gcs().cache = 0x0;
     }
 
+    /// @dev gets leder and pay config - the assumption is that the last byte is the payType
+    ///      and the second last is the lenderId
     function getPayConfig(bytes calldata data) internal pure returns(uint256 payType, uint8 lenderId){
         assembly {
             let lastWord := calldataload(
@@ -651,19 +653,22 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                     32
                 )
             )
-            payType := and(shr(8, lastWord), UINT8_MASK)
-            lenderId := and(lastWord, UINT8_MASK)
+            lenderId := and(shr(8, lastWord), UINT8_MASK)
+            payType := and(lastWord, UINT8_MASK)
         }
     }
 
     function getLender(bytes calldata data) internal pure returns(uint8 lenderId){
         assembly {
             lenderId := and(
-                calldataload(
-                sub(
-                    add(data.length, data.offset),
-                    32
-                )
+                shr(
+                    8,
+                    calldataload(
+                    sub(
+                        add(data.length, data.offset),
+                        32
+                    )
+                    )
                 ),
                 UINT8_MASK
              )

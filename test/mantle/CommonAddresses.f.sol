@@ -171,14 +171,14 @@ contract AddressesMantle {
         uint24 fee = DEX_FEE_LOW;
         uint8 poolId = AGNI;
         (uint8 actionId, , uint8 endId) = getOpenExactInFlags();
-        return abi.encodePacked(tokenIn, fee, poolId, actionId, tokenOut, endId, lenderId);
+        return abi.encodePacked(tokenIn, fee, poolId, actionId, tokenOut, lenderId, endId);
     }
 
     function getOpenExactInSingle_izi(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
         uint24 fee = DEX_FEE_LOW_HIGH;
         uint8 poolId = IZUMI;
         (uint8 actionId, , uint8 endId) = getOpenExactInFlags();
-        return abi.encodePacked(tokenIn, fee, poolId, actionId, tokenOut, endId, lenderId);
+        return abi.encodePacked(tokenIn, fee, poolId, actionId, tokenOut, lenderId, endId);
     }
 
     function getSpotExactInSingle_izi(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
@@ -197,7 +197,7 @@ contract AddressesMantle {
         uint24 fee = DEX_FEE_LOW;
         uint8 poolId = AGNI;
         (uint8 actionId, , uint8 endId) = getOpenExactOutFlags();
-        return abi.encodePacked(tokenOut, fee, poolId, actionId, tokenIn, endId, lenderId);
+        return abi.encodePacked(tokenOut, fee, poolId, actionId, tokenIn, lenderId, endId);
     }
 
     function getOpenExactInMulti(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
@@ -207,7 +207,7 @@ contract AddressesMantle {
         bytes memory firstPart = abi.encodePacked(tokenIn, fee, poolId, actionId, USDT);
         fee = DEX_FEE_STABLES;
         poolId = FUSION_X;
-        return abi.encodePacked(firstPart, fee, poolId, midId, tokenOut, endId, lenderId);
+        return abi.encodePacked(firstPart, fee, poolId, midId, tokenOut, lenderId, endId);
     }
 
     function getOpenExactOutMulti(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
@@ -217,7 +217,7 @@ contract AddressesMantle {
         bytes memory firstPart = abi.encodePacked(tokenOut, fee, poolId, actionId, USDT);
         fee = DEX_FEE_LOW;
         poolId = IZUMI;
-        return abi.encodePacked(firstPart, fee, poolId, midId, tokenIn, endId, lenderId);
+        return abi.encodePacked(firstPart, fee, poolId, midId, tokenIn, lenderId, endId);
     }
 
     /** CLOSE */
@@ -226,14 +226,14 @@ contract AddressesMantle {
         uint24 fee = DEX_FEE_LOW;
         uint8 poolId = AGNI;
         (uint8 actionId, , uint8 endId) = getCloseExactOutFlags();
-        return abi.encodePacked(tokenOut, fee, poolId, actionId, tokenIn, endId, lenderId);
+        return abi.encodePacked(tokenOut, fee, poolId, actionId, tokenIn, lenderId, endId);
     }
 
     function getCloseExactInSingle(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
         uint24 fee = DEX_FEE_LOW;
         uint8 poolId = AGNI;
         (uint8 actionId, , uint8 endId) = getCloseExactInFlags();
-        return abi.encodePacked(tokenIn, fee, poolId, actionId, tokenOut, endId, lenderId);
+        return abi.encodePacked(tokenIn, fee, poolId, actionId, tokenOut, lenderId, endId);
     }
 
     function getCloseExactInMulti(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
@@ -243,7 +243,7 @@ contract AddressesMantle {
         bytes memory firstPart = abi.encodePacked(tokenIn, fee, poolId, actionId, USDT);
         fee = DEX_FEE_STABLES;
         poolId = FUSION_X;
-        return abi.encodePacked(firstPart, fee, poolId, midId, tokenOut, endId, lenderId);
+        return abi.encodePacked(firstPart, fee, poolId, midId, tokenOut, lenderId, endId);
     }
 
     function getCloseExactOutMulti(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
@@ -253,7 +253,7 @@ contract AddressesMantle {
         bytes memory firstPart = abi.encodePacked(tokenOut, fee, poolId, actionId, USDT);
         fee = DEX_FEE_LOW;
         poolId = IZUMI;
-        return abi.encodePacked(firstPart, fee, poolId, midId, tokenIn, endId, lenderId);
+        return abi.encodePacked(firstPart, fee, poolId, midId, tokenIn, lenderId, endId);
     }
 
     /** COLLATERAL SWAP */
@@ -262,14 +262,14 @@ contract AddressesMantle {
         uint24 fee = DEX_FEE_LOW;
         uint8 poolId = AGNI;
         (uint8 actionId, , uint8 endId) = getCollateralSwapExactInFlags();
-        return abi.encodePacked(tokenIn, fee, poolId, actionId, tokenOut, endId, lenderId);
+        return abi.encodePacked(tokenIn, fee, poolId, actionId, tokenOut, lenderId, endId);
     }
 
     function getCollateralSwapExactOutSingle(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
         uint24 fee = DEX_FEE_LOW;
         uint8 poolId = AGNI;
         (uint8 actionId, , uint8 endId) = getCollateralSwapExactOutFlags();
-        return abi.encodePacked(tokenOut, fee, poolId, actionId, tokenIn, endId, lenderId);
+        return abi.encodePacked(tokenOut, fee, poolId, actionId, tokenIn, lenderId, endId);
     }
 
     function getCollateralSwapExactInMulti(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
@@ -279,7 +279,7 @@ contract AddressesMantle {
         bytes memory firstPart = abi.encodePacked(tokenIn, fee, poolId, actionId, WETH);
         fee = DEX_FEE_LOW;
         poolId = FUSION_X;
-        return abi.encodePacked(firstPart, fee, poolId, midId, tokenOut, endId, lenderId);
+        return abi.encodePacked(firstPart, fee, poolId, midId, tokenOut, lenderId, endId);
     }
 
     function getCollateralSwapExactOutMulti(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
@@ -289,7 +289,7 @@ contract AddressesMantle {
         bytes memory firstPart = abi.encodePacked(tokenOut, fee, poolId, actionId, WETH);
         fee = DEX_FEE_LOW;
         poolId = FUSION_X;
-        return abi.encodePacked(firstPart, fee, poolId, midId, tokenIn, endId, lenderId);
+        return abi.encodePacked(firstPart, fee, poolId, midId, tokenIn, lenderId, endId);
     }
 
     /** DEBT SWAP */
@@ -298,14 +298,14 @@ contract AddressesMantle {
         uint24 fee = DEX_FEE_LOW_MEDIUM;
         uint8 poolId = AGNI;
         (uint8 actionId, , uint8 endId) = getDebtSwapExactInFlags();
-        return abi.encodePacked(tokenIn, fee, poolId, actionId, tokenOut, endId, lenderId);
+        return abi.encodePacked(tokenIn, fee, poolId, actionId, tokenOut, lenderId, endId);
     }
 
     function getDebtSwapExactOutSingle(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
         uint24 fee = DEX_FEE_LOW_MEDIUM;
         uint8 poolId = AGNI;
         (uint8 actionId, , uint8 endId) = getDebtSwapExactOutFlags();
-        return abi.encodePacked(tokenOut, fee, poolId, actionId, tokenIn, endId, lenderId);
+        return abi.encodePacked(tokenOut, fee, poolId, actionId, tokenIn, lenderId, endId);
     }
 
     function getDebtSwapExactInMulti(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
@@ -315,7 +315,7 @@ contract AddressesMantle {
         bytes memory firstPart = abi.encodePacked(tokenIn, fee, poolId, actionId, USDT);
         fee = DEX_FEE_LOW;
         poolId = BUTTER;
-        return abi.encodePacked(firstPart, fee, poolId, midId, tokenOut, endId, lenderId);
+        return abi.encodePacked(firstPart, fee, poolId, midId, tokenOut, lenderId, endId);
     }
 
     function getDebtSwapExactOutMulti(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
@@ -325,7 +325,7 @@ contract AddressesMantle {
         bytes memory firstPart = abi.encodePacked(tokenOut, fee, poolId, actionId, USDT);
         fee = DEX_FEE_LOW;
         poolId = BUTTER;
-        return abi.encodePacked(firstPart, fee, poolId, midId, tokenIn, endId, lenderId);
+        return abi.encodePacked(firstPart, fee, poolId, midId, tokenIn, lenderId, endId);
     }
 
     /** OPEN */
@@ -334,14 +334,14 @@ contract AddressesMantle {
         uint24 fee = DEX_FEE_NONE;
         uint8 poolId = MERCHANT_MOE;
         (uint8 actionId, , uint8 endId) = getOpenExactInFlags();
-        return abi.encodePacked(tokenIn, fee, poolId, actionId, tokenOut, endId, lenderId);
+        return abi.encodePacked(tokenIn, fee, poolId, actionId, tokenOut, lenderId, endId);
     }
 
     function getOpenExactOutSingleV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
         uint24 fee = DEX_FEE_NONE;
         uint8 poolId = MERCHANT_MOE;
         (uint8 actionId, , uint8 endId) = getOpenExactOutFlags();
-        return abi.encodePacked(tokenOut, fee, poolId, actionId, tokenIn, endId, lenderId);
+        return abi.encodePacked(tokenOut, fee, poolId, actionId, tokenIn, lenderId, endId);
     }
 
     function getOpenExactInMultiV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
@@ -351,7 +351,7 @@ contract AddressesMantle {
         bytes memory firstPart = abi.encodePacked(tokenIn, fee, poolId, actionId, USDT);
         fee = DEX_FEE_NONE;
         poolId = MERCHANT_MOE;
-        return abi.encodePacked(firstPart, fee, poolId, midId, tokenOut, endId, lenderId);
+        return abi.encodePacked(firstPart, fee, poolId, midId, tokenOut, lenderId, endId);
     }
 
     function getOpenExactOutMultiV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
@@ -361,7 +361,7 @@ contract AddressesMantle {
         bytes memory firstPart = abi.encodePacked(tokenOut, fee, poolId, actionId, USDT);
         fee = DEX_FEE_NONE;
         poolId = MERCHANT_MOE;
-        return abi.encodePacked(firstPart, fee, poolId, midId, tokenIn, endId, lenderId);
+        return abi.encodePacked(firstPart, fee, poolId, midId, tokenIn, lenderId, endId);
     }
 
     /** CLOSE */
@@ -370,14 +370,14 @@ contract AddressesMantle {
         uint24 fee = DEX_FEE_NONE;
         uint8 poolId = MERCHANT_MOE;
         (uint8 actionId, , uint8 endId) = getCloseExactOutFlags();
-        return abi.encodePacked(tokenOut, fee, poolId, actionId, tokenIn, endId, lenderId);
+        return abi.encodePacked(tokenOut, fee, poolId, actionId, tokenIn, lenderId, endId);
     }
 
     function getCloseExactInSingleV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
         uint24 fee = DEX_FEE_NONE;
         uint8 poolId = MERCHANT_MOE;
         (uint8 actionId, , uint8 endId) = getCloseExactInFlags();
-        return abi.encodePacked(tokenIn, fee, poolId, actionId, tokenOut, endId, lenderId);
+        return abi.encodePacked(tokenIn, fee, poolId, actionId, tokenOut, lenderId, endId);
     }
 
     function getCloseExactInMultiV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
@@ -387,7 +387,7 @@ contract AddressesMantle {
         bytes memory firstPart = abi.encodePacked(tokenIn, fee, poolId, actionId, USDT);
         fee = DEX_FEE_STABLES;
         poolId = MERCHANT_MOE;
-        return abi.encodePacked(firstPart, fee, poolId, midId, tokenOut, endId, lenderId);
+        return abi.encodePacked(firstPart, fee, poolId, midId, tokenOut, lenderId, endId);
     }
 
     function getCloseExactOutMultiV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
@@ -397,7 +397,7 @@ contract AddressesMantle {
         bytes memory firstPart = abi.encodePacked(tokenOut, fee, poolId, actionId, USDT);
         fee = DEX_FEE_NONE;
         poolId = MERCHANT_MOE;
-        return abi.encodePacked(firstPart, fee, poolId, midId, tokenIn, endId, lenderId);
+        return abi.encodePacked(firstPart, fee, poolId, midId, tokenIn, lenderId, endId);
     }
 
     /** COLLATERAL SWAP */
@@ -406,14 +406,14 @@ contract AddressesMantle {
         uint24 fee = DEX_FEE_NONE;
         uint8 poolId = MERCHANT_MOE;
         (uint8 actionId, , uint8 endId) = getCollateralSwapExactInFlags();
-        return abi.encodePacked(tokenIn, fee, poolId, actionId, tokenOut, endId, lenderId);
+        return abi.encodePacked(tokenIn, fee, poolId, actionId, tokenOut, lenderId, endId);
     }
 
     function getCollateralSwapExactOutSingleV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
         uint24 fee = DEX_FEE_NONE;
         uint8 poolId = MERCHANT_MOE;
         (uint8 actionId, , uint8 endId) = getCollateralSwapExactOutFlags();
-        return abi.encodePacked(tokenOut, fee, poolId, actionId, tokenIn, endId, lenderId);
+        return abi.encodePacked(tokenOut, fee, poolId, actionId, tokenIn, lenderId, endId);
     }
 
     function getCollateralSwapExactInMultiV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
@@ -423,7 +423,7 @@ contract AddressesMantle {
         bytes memory firstPart = abi.encodePacked(tokenIn, fee, poolId, actionId, METH);
         fee = DEX_FEE_NONE;
         poolId = MERCHANT_MOE;
-        return abi.encodePacked(firstPart, fee, poolId, midId, tokenOut, endId, lenderId);
+        return abi.encodePacked(firstPart, fee, poolId, midId, tokenOut, lenderId, endId);
     }
 
     function getCollateralSwapExactOutMultiV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
@@ -433,7 +433,7 @@ contract AddressesMantle {
         bytes memory firstPart = abi.encodePacked(tokenOut, fee, poolId, actionId, METH);
         fee = DEX_FEE_NONE;
         poolId = MERCHANT_MOE;
-        return abi.encodePacked(firstPart, fee, poolId, midId, tokenIn, endId, lenderId);
+        return abi.encodePacked(firstPart, fee, poolId, midId, tokenIn, lenderId, endId);
     }
 
     /** DEBT SWAP */
@@ -442,14 +442,14 @@ contract AddressesMantle {
         uint24 fee = DEX_FEE_NONE;
         uint8 poolId = MERCHANT_MOE;
         (uint8 actionId, , uint8 endId) = getDebtSwapExactInFlags();
-        return abi.encodePacked(tokenIn, fee, poolId, actionId, tokenOut, endId, lenderId);
+        return abi.encodePacked(tokenIn, fee, poolId, actionId, tokenOut, lenderId, endId);
     }
 
     function getDebtSwapExactOutSingleV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
         uint24 fee = DEX_FEE_NONE;
         uint8 poolId = MERCHANT_MOE;
         (uint8 actionId, , uint8 endId) = getDebtSwapExactOutFlags();
-        return abi.encodePacked(tokenOut, fee, poolId, actionId, tokenIn, endId, lenderId);
+        return abi.encodePacked(tokenOut, fee, poolId, actionId, tokenIn, lenderId, endId);
     }
 
     function getDebtSwapExactInMultiV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
@@ -459,7 +459,7 @@ contract AddressesMantle {
         bytes memory firstPart = abi.encodePacked(tokenIn, fee, poolId, actionId, METH);
         fee = DEX_FEE_NONE;
         poolId = MERCHANT_MOE;
-        return abi.encodePacked(firstPart, fee, poolId, midId, tokenOut, endId, lenderId);
+        return abi.encodePacked(firstPart, fee, poolId, midId, tokenOut, lenderId, endId);
     }
 
     function getDebtSwapExactOutMultiV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
@@ -469,6 +469,6 @@ contract AddressesMantle {
         bytes memory firstPart = abi.encodePacked(tokenOut, fee, poolId, actionId, METH);
         fee = DEX_FEE_NONE;
         poolId = MERCHANT_MOE;
-        return abi.encodePacked(firstPart, fee, poolId, midId, tokenIn, endId, lenderId);
+        return abi.encodePacked(firstPart, fee, poolId, midId, tokenIn, lenderId, endId);
     }
 }
