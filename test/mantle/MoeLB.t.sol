@@ -352,7 +352,7 @@ contract GeneralMoeLBTest is DeltaSetup {
         bytes memory firstPart = abi.encodePacked(tokenIn, fee, poolId, actionId, USDe);
         fee = BIN_STEP_LOWEST;
         poolId = MERCHANT_MOE_LB;
-        return abi.encodePacked(DEFAULT_LENDER, firstPart, fee, poolId, midId, tokenOut, endId);
+        return abi.encodePacked(firstPart, fee, poolId, midId, tokenOut, endId, DEFAULT_LENDER);
     }
 
     function getSpotExactInSingleLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
@@ -402,7 +402,7 @@ contract GeneralMoeLBTest is DeltaSetup {
         bytes memory firstPart = abi.encodePacked(tokenOut, fee, poolId, actionId, USDe);
         fee = BIN_STEP_LOWEST;
         poolId = MERCHANT_MOE_LB;
-        return abi.encodePacked(DEFAULT_LENDER, firstPart, fee, poolId, midId, tokenIn, endId);
+        return abi.encodePacked( firstPart, fee, poolId, midId, tokenIn, endId, DEFAULT_LENDER);
     }
 
     function getCloseExactOutMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
@@ -412,7 +412,7 @@ contract GeneralMoeLBTest is DeltaSetup {
         bytes memory firstPart = abi.encodePacked(tokenOut, fee, poolId, actionId, USDe);
         fee = BIN_STEP_LOWEST;
         poolId = MERCHANT_MOE_LB;
-        return abi.encodePacked(DEFAULT_LENDER, firstPart, fee, poolId, midId, tokenIn, endId);
+        return abi.encodePacked( firstPart, fee, poolId, midId, tokenIn, endId, DEFAULT_LENDER);
     }
 
     function getCloseExactInMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
@@ -422,7 +422,7 @@ contract GeneralMoeLBTest is DeltaSetup {
         bytes memory firstPart = abi.encodePacked(tokenIn, fee, poolId, actionId, USDe);
         fee = BIN_STEP_LOWEST;
         poolId = MERCHANT_MOE_LB;
-        return abi.encodePacked(DEFAULT_LENDER, firstPart, fee, poolId, midId, tokenOut, endId);
+        return abi.encodePacked( firstPart, fee, poolId, midId, tokenOut, endId, DEFAULT_LENDER);
     }
 
     /** DEPO AND BORROW HELPER */

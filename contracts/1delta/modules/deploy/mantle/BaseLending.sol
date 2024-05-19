@@ -181,7 +181,7 @@ abstract contract BaseLending is WithStorage {
     function getCachedAddress() internal view returns (address cachedAddress) {
         bytes32 cache = gcs().cache;
         assembly {
-            cachedAddress := and(cache, ADDRESS_MASK_UPPER)
+            cachedAddress := cache // and(cache, ADDRESS_MASK_UPPER)
         }
     }
 

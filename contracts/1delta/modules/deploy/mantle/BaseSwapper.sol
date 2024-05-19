@@ -30,6 +30,8 @@ abstract contract BaseSwapper is TokenTransfer {
     uint160 internal constant MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970341;
     /// @dev used for some of the denominators in solidly calculations
     uint256 private constant SCALE_18 = 1.0e18;
+    /// @dev the minimum bytes length a full path can have 
+    uint256 internal constant MINIMUM_PATH_LENGTH = 47;
 
     bytes32 private constant FUSION_V3_FF_FACTORY = 0xff8790c2C3BA67223D83C8FCF2a5E3C650059987b40000000000000000000000;
     bytes32 private constant FUSION_POOL_INIT_CODE_HASH = 0x1bce652aaa6528355d7a339037433a20cd28410e3967635ba8d2ddb037440dbf;
@@ -93,7 +95,7 @@ abstract contract BaseSwapper is TokenTransfer {
      */
     function getLastToken(bytes calldata data) internal pure returns (address token) {
         assembly {
-            token := shr(96, calldataload(add(data.offset, sub(data.length, 21))))
+            token := shr(96, calldataload(add(data.offset, sub(data.length, 22))))
         }
     }
 
@@ -1326,7 +1328,7 @@ abstract contract BaseSwapper is TokenTransfer {
                 revert invalidDexId();
 
             // decide whether to continue or terminate
-            if (path.length > 46) {
+            if (path.length > MINIMUM_PATH_LENGTH) {
                 path = path[25:];
             } else {
                 amountOut = amountIn;
