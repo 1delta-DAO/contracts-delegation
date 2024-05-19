@@ -644,19 +644,16 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
     }
 
     function getPayConfig(bytes calldata data) internal pure returns(uint256 payType, uint8 lenderId){
-        // assembly {
-        //     let lastWord := calldataload(
-        //         sub(
-        //             add(data.length, data.offset),
-        //             32
-        //         )
-        //     )
-        //     payType := and(shr(lastWord, 8), UINT8_MASK)
-        //     lenderId := and(lastWord, UINT8_MASK)
-        // }
-        uint256 len = data.length;
-        payType = uint8(bytes1(data[(len - 2):(len - 1)]));
-        lenderId = uint8(bytes1(data[(len - 1):(len)]));
+        assembly {
+            let lastWord := calldataload(
+                sub(
+                    add(data.length, data.offset),
+                    32
+                )
+            )
+            payType := and(shr(8, lastWord), UINT8_MASK)
+            lenderId := and(lastWord, UINT8_MASK)
+        }
     }
 
     function getLender(bytes calldata data) internal pure returns(uint8 lenderId){
@@ -704,7 +701,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 _withdraw(token, receiver, value, lenderId);
             } 
         } else {
-                     // otherwise, just transfer it from cached address
+            // otherwise, just transfer it from cached address
             if (payer == address(0)) {
                 // pay with tokens already in the contract (for the exact input multihop case)
                 _transferERC20Tokens(token, receiver, value);
