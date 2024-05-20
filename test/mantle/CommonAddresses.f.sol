@@ -87,6 +87,8 @@ contract AddressesMantle {
     address internal constant STRATUM_3POOL_2 = 0x7d3621aCA02B711F5f738C9f21C1bFE294df094d;
     address internal constant STRATUM_ETH_POOL = 0xe8792eD86872FD6D8b74d0668E383454cbA15AFc;
 
+    address internal constant WOO_POOL = 0xEd9e3f98bBed560e66B89AaC922E29D4596A9642;
+
     /// @dev Mask of lower 20 bytes.
     uint256 internal constant ADDRESS_MASK = 0x00ffffffffffffffffffffffffffffffffffffffff;
     /// @dev Mask of upper 20 bytes.
@@ -117,6 +119,7 @@ contract AddressesMantle {
     uint8 internal FUSION_X_V2 = 50;
     uint8 internal MERCHANT_MOE = 51;
     uint8 internal MERCHANT_MOE_LB = 103;
+    uint8 internal WOO_FI = 101;
     uint8 internal KTX = 104;
     uint8 internal STRATUM_CURVE = 105;
     uint8 internal STRATUM_USD = 102;

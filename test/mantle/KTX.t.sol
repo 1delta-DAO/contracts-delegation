@@ -7,7 +7,7 @@ import "../../contracts/1delta/quoter/test/TestQuoterMantle.sol";
 /**
  * Tests KTX / GMX style DEXs exact in swaps
  */
-contract GeneralMoeLBTest is DeltaSetup {
+contract KTXTest is DeltaSetup {
     TestQuoterMantle testQuoter;
 
     function setUp() public virtual override {

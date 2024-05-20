@@ -72,7 +72,7 @@ abstract contract BaseSwapper is TokenTransfer {
     bytes32 constant STRATUM_CODE_HASH = 0xeb675862e19b0846fd47f7db0e8f2bf8f8da0dcd0c9aa75603248566f3faa805;
     address internal constant STRATUM_FACTORY = 0x061FFE84B0F9E1669A6bf24548E5390DBf1e03b2;
 
-    address private constant WOO_POOL = 0x9D1A92e601db0901e69bd810029F2C14bCCA3128;
+    address private constant WOO_POOL = 0xEd9e3f98bBed560e66B89AaC922E29D4596A9642;
     address internal constant REBATE_RECIPIENT = 0xC95eED7F6E8334611765F84CEb8ED6270F08907E;
 
     address internal constant KTX_VAULT = 0x2e488D7ED78171793FA91fAd5352Be423A50Dae1;
