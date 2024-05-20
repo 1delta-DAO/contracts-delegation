@@ -1265,14 +1265,9 @@ abstract contract BaseSwapper is TokenTransfer {
      */
     function swapExactIn(uint256 amountIn, bytes calldata path) internal returns (uint256 amountOut) {
         while (true) {
-            address tokenIn;
-            address tokenOut;
             uint256 identifier;
             assembly {
-                let firstWord := calldataload(path.offset)
-                tokenIn := shr(96, firstWord)
-                identifier := and(shr(64, firstWord), UINT8_MASK)
-                tokenOut := shr(96, calldataload(add(path.offset, 25)))
+                identifier := and(shr(64, calldataload(path.offset)), UINT8_MASK)
             }
             // uniswapV3 style
             if (identifier < 50) {
@@ -1296,20 +1291,46 @@ abstract contract BaseSwapper is TokenTransfer {
             }
             // WOO Fi
             else if (identifier == 101) {
+                address tokenIn;
+                address tokenOut;
+                assembly {
+                    let firstWord := calldataload(path.offset)
+                    tokenIn := shr(96, firstWord)
+                    tokenOut := shr(96, calldataload(add(path.offset, 25)))
+                }
                 amountIn = swapWooFiExactIn(tokenIn, tokenOut, amountIn);
             }
             // Stratum 3USD with wrapper
             else if (identifier == 102) {
+                address tokenIn;
+                address tokenOut;
+                assembly {
+                    let firstWord := calldataload(path.offset)
+                    tokenIn := shr(96, firstWord)
+                    tokenOut := shr(96, calldataload(add(path.offset, 25)))
+                }
                 amountIn = swapStratum3(tokenIn, tokenOut, amountIn);
             }
             // Moe LB
             else if (identifier == 103) {
+                address tokenIn;
+                address tokenOut;
                 uint24 bin;
                 assembly {
-                    bin := and(shr(72, calldataload(path.offset)), UINT24_MASK)
+                    let firstWord := calldataload(path.offset)
+                    tokenIn := shr(96, firstWord)
+                    tokenOut := shr(96, calldataload(add(path.offset, 25)))
+                    bin := and(shr(72, firstWord), UINT24_MASK)
                 }
                 amountIn = swapLBexactIn(tokenIn, tokenOut, amountIn, address(this), uint16(bin));
             } else if(identifier == 104) {
+                address tokenIn;
+                address tokenOut;
+                assembly {
+                    let firstWord := calldataload(path.offset)
+                    tokenIn := shr(96, firstWord)
+                    tokenOut := shr(96, calldataload(add(path.offset, 25)))
+                }
                 amountIn = swapKTXExactIn(tokenIn, tokenOut, amountIn);
             } 
             // Curve stable general

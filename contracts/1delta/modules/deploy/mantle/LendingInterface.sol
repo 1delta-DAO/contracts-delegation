@@ -27,13 +27,11 @@ contract DeltaLendingInterfaceMantle is BaseLending, WrappedNativeHandler, SelfP
     function deposit(address asset, address recipient, uint8 lenderId) external payable {
         address _asset = asset;
         uint256 balance = _balanceOfThis(_asset);
-        // _lendingPool.deposit(_asset, balance, recipient, 0);
         _deposit(_asset, recipient, balance, lenderId);
     }
 
     // borrow on sender's behalf
     function borrow(address asset, uint256 amount, uint256 interestRateMode, uint8 lenderId) external payable {
-        // _lendingPool.borrow(asset, amount, interestRateMode, 0, msg.sender);
         _borrow(asset, msg.sender, amount, interestRateMode, lenderId);
     }
 
@@ -47,11 +45,9 @@ contract DeltaLendingInterfaceMantle is BaseLending, WrappedNativeHandler, SelfP
         else _debtBalance = _stableDebtBalance(_asset, msg.sender, lenderId);
         // if the amount lower higher than the balance, repay the amount
         if (_debtBalance >= _balance) {
-            // _lendingPool.repay(_asset, _balance, _interestRateMode, recipient);
             _repay(_asset, recipient, _balance, interestRateMode, lenderId);
         } else {
             // otherwise, repay all - make sure to call sweep afterwards
-            // _lendingPool.repay(_asset, _debtBalance, _interestRateMode, recipient);
             _repay(_asset, recipient, _debtBalance, interestRateMode, lenderId);
         }
     }

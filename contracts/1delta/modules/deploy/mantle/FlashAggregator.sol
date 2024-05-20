@@ -69,7 +69,6 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
     function swapAllOutSpot(
         uint256 maximumAmountIn,
         uint256 interestRateMode,
-        uint8 lenderId,
         bytes calldata path
     ) external payable {
         // we cache the address as bytes32
@@ -80,8 +79,8 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
         assembly {
             tokenOut := shr(96, calldataload(path.offset))
         }
-        if (_interestRateMode == 2) _debtBalance = _variableDebtBalance(tokenOut, msg.sender, lenderId);
-        else _debtBalance = _stableDebtBalance(tokenOut, msg.sender, lenderId);
+        if (_interestRateMode == 2) _debtBalance = _variableDebtBalance(tokenOut, msg.sender, getLender(path));
+        else _debtBalance = _stableDebtBalance(tokenOut, msg.sender, getLender(path));
         if (_debtBalance == 0) revert NoBalance(); // revert if amount is zero
 
         flashSwapExactOutInternal(_debtBalance, address(this), path);
@@ -95,7 +94,6 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
     function swapAllOutSpotSelf(
         uint256 maximumAmountIn,
         uint256 interestRateMode,
-        uint8 lenderId,
         bytes calldata path
     ) external payable {
         uint256 _debtBalance;
@@ -104,8 +102,8 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
         assembly {
             tokenOut := shr(96, calldataload(path.offset))
         }
-        if (_interestRateMode == 2) _debtBalance = _variableDebtBalance(tokenOut, msg.sender, lenderId);
-        else _debtBalance = _stableDebtBalance(tokenOut, msg.sender, lenderId);
+        if (_interestRateMode == 2) _debtBalance = _variableDebtBalance(tokenOut, msg.sender, getLender(path));
+        else _debtBalance = _stableDebtBalance(tokenOut, msg.sender, getLender(path));
         if (_debtBalance == 0) revert NoBalance(); // revert if amount is zero
 
         flashSwapExactOutInternal(_debtBalance, address(this), path);
@@ -115,7 +113,9 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
 
     /**
      * @notice The same as swapExactInSpot, except that we swap the entire balance
-     * This function can be used after a withdrawal - to make sure that no dust is left
+     * This function can be used after a withdrawals and other operations that
+     * transfer into this contract
+     *  - to make sure that no dust is left
      */
     function swapAllInSpot(uint256 minimumAmountOut, bytes calldata path) external payable {
         address tokenIn;
