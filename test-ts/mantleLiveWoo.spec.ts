@@ -1,10 +1,10 @@
 import { impersonateAccount } from "@nomicfoundation/hardhat-network-helpers";
 import { parseUnits } from "ethers/lib/utils";
 import { ConfigModule__factory, DeltaBrokerProxy, DeltaBrokerProxy__factory, DeltaFlashAggregatorMantle__factory, DeltaLendingInterfaceMantle__factory, LensModule__factory, StableDebtToken__factory, } from "../types";
-import { lendleBrokerAddresses } from "../deploy/mantle_addresses";
+import { ONE_DELTA_ADDRESSES } from "../deploy/mantle_addresses";
 import { DeltaFlashAggregatorMantleInterface } from "../types/DeltaFlashAggregatorMantle";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { addressesLendleVTokens } from "../scripts/mantle/lendleAddresses";
+import { LENDLE_V_TOKENS } from "../scripts/mantle/addresses/lendleAddresses";
 import { encodeAggregatorPathEthers } from "./1delta/shared/aggregatorPath";
 import { MaxUint128 } from "./uniswap-v3/periphery/shared/constants";
 import { ModuleConfigAction, getSelectors } from "./libraries/diamond";
@@ -20,8 +20,8 @@ const weth = "0xdEAddEaDdeadDEadDEADDEAddEADDEAddead1111"
 const usdc = "0x09Bc4E0D864854c6aFB6eB9A9cdF58aC190D0dF9"
 const wmnt = "0x78c1b0c915c4faa5fffa6cabf0219da63d7f4cb8"
 
-const brokerProxy = lendleBrokerAddresses.BrokerProxy[MANTLE_CHAIN_ID]
-const traderModule = lendleBrokerAddresses.MarginTraderModule[MANTLE_CHAIN_ID]
+const brokerProxy = ONE_DELTA_ADDRESSES.BrokerProxy[MANTLE_CHAIN_ID]
+const traderModule = ONE_DELTA_ADDRESSES.MarginTraderModule[MANTLE_CHAIN_ID]
 let multicaller: DeltaBrokerProxy
 let flashAggregatorInterface: DeltaFlashAggregatorMantleInterface
 let lendingInterfaceInterface: DeltaLendingInterfaceMantleInterface
@@ -73,7 +73,7 @@ it("Deposit", async function () {
 it("Opens exact in, Woo last", async function () {
     const amount = parseUnits('2.0', 6)
 
-    const borrowToken = await new StableDebtToken__factory(user).attach(addressesLendleVTokens.USDC)
+    const borrowToken = await new StableDebtToken__factory(user).attach(LENDLE_V_TOKENS.USDC)
     await borrowToken.approveDelegation(multicaller.address, MaxUint128)
     // v3 single
     const path1 = encodeAggregatorPathEthers(

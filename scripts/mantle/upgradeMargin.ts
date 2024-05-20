@@ -3,20 +3,14 @@ import { ethers } from "hardhat";
 import {
     ConfigModule__factory,
     DeltaFlashAggregatorMantle__factory,
+    DeltaLendingInterfaceMantle__factory,
     LensModule__factory,
 } from "../../types";
 import { validateAddresses } from "../../utils/types";
-import { parseUnits } from "ethers/lib/utils";
 import { getContractSelectors, ModuleConfigAction } from "../../test-ts/libraries/diamond";
-import { lendleBrokerAddresses } from "../../deploy/mantle_addresses";
+import { ONE_DELTA_ADDRESSES } from "../../deploy/mantle_addresses";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-
-// options for deployment
-const MANTLE_CONFIGS = {
-    maxFeePerGas: 0.02 * 1e9,
-    maxPriorityFeePerGas: 0.02 * 1e9
-}
-
+import { MANTLE_CONFIGS } from "./utils";
 
 async function main() {
 
@@ -24,7 +18,7 @@ async function main() {
     const operator = accounts[1]
     const chainId = await operator.getChainId();
     if (chainId !== 5000) throw new Error("invalid chainId")
-    const proxyAddress = lendleBrokerAddresses.BrokerProxy[chainId]
+    const proxyAddress = ONE_DELTA_ADDRESSES.BrokerProxy[chainId]
 
     validateAddresses([proxyAddress])
     console.log("Operate on", chainId, "by", operator.address)
@@ -33,9 +27,13 @@ async function main() {
     const broker = await new ConfigModule__factory(operator).attach(proxyAddress)
 
     const removeCuts = await getRemoveCut(operator, proxyAddress)
+
     // add cuts
-    const marginTradingAddress = lendleBrokerAddresses.MarginTraderModule[chainId]
-    const addCuts = await getAddCuts(operator, marginTradingAddress)
+    const addCuts = await getAddCuts(
+        operator,
+        ONE_DELTA_ADDRESSES.MarginTraderModule[chainId],
+        ONE_DELTA_ADDRESSES.LendingInterface[chainId]
+    )
 
     const cut = [
         ...removeCuts,
@@ -67,6 +65,9 @@ main()
 
 const getRemoveCut = async (operator: SignerWithAddress, proxyAddress: string) => {
     const marginTradingAddress = '0xFA2cac1CacAaE741BCA20B5FAFd6E84A65Ad4C6D' // lendleBrokerAddresses.MarginTraderModule[chainId]
+    const moneyMarketAddress = '0xFA2cac1CacAaE741BCA20B5FAFd6E84A65Ad4C6D' // lendleBrokerAddresses.LendingInterface[chainId]
+    const initializerAddress =  ONE_DELTA_ADDRESSES.Init[5000]
+
     const cut: {
         moduleAddress: string,
         action: any,
@@ -75,12 +76,17 @@ const getRemoveCut = async (operator: SignerWithAddress, proxyAddress: string) =
 
     // get lens to fetch modules
     const lens = await new LensModule__factory(operator).attach(proxyAddress)
-    console.log(marginTradingAddress)
+
     const marginTradingSelectors = await lens.moduleFunctionSelectors(marginTradingAddress)
+    const moneyMarketSelectors = await lens.moduleFunctionSelectors(moneyMarketAddress)
+    const initSelectors = await lens.moduleFunctionSelectors(initializerAddress)
 
     const moduleSelectors = [
         marginTradingSelectors,
+        moneyMarketSelectors,
+        initSelectors
     ]
+
     console.log("Having", moduleSelectors.length, "removals")
     for (const selector of moduleSelectors) {
         cut.push({
@@ -95,11 +101,7 @@ const getRemoveCut = async (operator: SignerWithAddress, proxyAddress: string) =
 
 
 
-const getAddCuts = async (operator: SignerWithAddress, flashAggregatorAddress: string,) => {
-    const flashBroker = await new DeltaFlashAggregatorMantle__factory(operator).attach(flashAggregatorAddress)
-    console.log("flashBroker picked")
-
-    console.log("FlashBroker", flashBroker.address)
+const getAddCuts = async (operator: SignerWithAddress, flashAggregatorAddress: string, lendingInterface?: string) => {
 
     const cut: {
         moduleAddress: string,
@@ -108,9 +110,16 @@ const getAddCuts = async (operator: SignerWithAddress, flashAggregatorAddress: s
     }[] = []
 
 
-    const modules = [
-        flashBroker,
-    ]
+    const modules: any = []
+    if (flashAggregatorAddress) {
+        const flashBroker = await new DeltaFlashAggregatorMantle__factory(operator).attach(flashAggregatorAddress)
+        modules.push(flashBroker)
+    }
+    if (lendingInterface) {
+        const moneyMarket = await new DeltaLendingInterfaceMantle__factory(operator).attach(lendingInterface)
+        modules.push(moneyMarket)
+    }
+
     console.log("Having", modules.length, "additions")
 
     for (const module of modules) {

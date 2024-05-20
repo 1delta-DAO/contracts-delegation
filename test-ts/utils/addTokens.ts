@@ -1,7 +1,7 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { DeltaBrokerProxy__factory, ManagementModule__factory } from "../../types";
-import { LENDLE_POOL, addressesLendleATokens, addressesLendleSTokens, addressesLendleVTokens, addressesTokensMantle } from "../../scripts/mantle/lendleAddresses";
-import { AURELIUS_POOL, addressesAureliusATokens, addressesAureliusSTokens, addressesAureliusVTokens } from "../../scripts/mantle/aureliusAddresses";
+import { LENDLE_POOL, LENDLE_A_TOKENS, LENDLE_S_TOKENS, LENDLE_V_TOKENS, addressesTokensMantle } from "../../scripts/mantle/addresses/lendleAddresses";
+import { AURELIUS_POOL, AURELIUS_A_TOKENS, AURELIUS_S_TOKENS, AURELIUS_V_TOKENS } from "../../scripts/mantle/addresses/aureliusAddresses";
 
 
 export async function addMantleLenderTokens(signer: SignerWithAddress, broker: string) {
@@ -15,9 +15,9 @@ export async function addMantleLenderTokens(signer: SignerWithAddress, broker: s
         callsLendle.push(
             management.encodeFunctionData('addGeneralLenderTokens', [
                 addressesTokensMantle[key],
-                addressesLendleATokens[key],
-                addressesLendleVTokens[key],
-                addressesLendleSTokens[key],
+                LENDLE_A_TOKENS[key],
+                LENDLE_V_TOKENS[key],
+                LENDLE_S_TOKENS[key],
                 0
             ])
         )
@@ -28,9 +28,9 @@ export async function addMantleLenderTokens(signer: SignerWithAddress, broker: s
         callsAurelius.push(
             management.encodeFunctionData('addGeneralLenderTokens', [
                 addressesTokensMantle[key],
-                addressesAureliusATokens[key],
-                addressesAureliusVTokens[key],
-                addressesAureliusSTokens[key],
+                AURELIUS_A_TOKENS[key],
+                AURELIUS_V_TOKENS[key],
+                AURELIUS_S_TOKENS[key],
                 1
             ])
         )

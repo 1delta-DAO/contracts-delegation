@@ -12,7 +12,7 @@ import {
     OneDeltaQuoterMantle__factory,
     ManagementModule__factory,
 } from "../types";
-import { lendleBrokerAddresses } from "../deploy/mantle_addresses";
+import { ONE_DELTA_ADDRESSES } from "../deploy/mantle_addresses";
 import { DeltaFlashAggregatorMantleInterface } from "../types/DeltaFlashAggregatorMantle";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { encodeAggregatorPathEthers, encodeQuoterPathEthers } from "./1delta/shared/aggregatorPath";
@@ -35,9 +35,9 @@ const USDY = '0x5bE26527e817998A7206475496fDE1E68957c5A6';
 const MUSD = '0xab575258d37EaA5C8956EfABe71F4eE8F6397cF3';
 const STRATUM_3POOL = '0xD6F312AA90Ad4C92224436a7A4a648d69482e47e';
 
-const brokerProxy = lendleBrokerAddresses.BrokerProxy[MANTLE_CHAIN_ID]
-const traderModule = lendleBrokerAddresses.MarginTraderModule[MANTLE_CHAIN_ID]
-const lendingModule = lendleBrokerAddresses.LendingInterface[MANTLE_CHAIN_ID]
+const brokerProxy = ONE_DELTA_ADDRESSES.BrokerProxy[MANTLE_CHAIN_ID]
+const traderModule = ONE_DELTA_ADDRESSES.MarginTraderModule[MANTLE_CHAIN_ID]
+const lendingModule = ONE_DELTA_ADDRESSES.LendingInterface[MANTLE_CHAIN_ID]
 
 let multicaller: DeltaBrokerProxy
 let flashAggregatorInterface: DeltaFlashAggregatorMantleInterface

@@ -7,7 +7,7 @@ import {
     DeltaLendingInterfaceMantle__factory,
     ERC20Mock__factory
 } from "../types";
-import { lendleBrokerAddresses } from "../deploy/mantle_addresses";
+import { ONE_DELTA_ADDRESSES } from "../deploy/mantle_addresses";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { network } from "hardhat";
 import { encodeAggregatorPathEthers } from "./1delta/shared/aggregatorPath";
@@ -34,12 +34,12 @@ before(async function () {
     const [signer] = await ethers.getSigners();
     user = signer
     console.log("get aggregator")
-    multicaller = await new DeltaBrokerProxy__factory(user).attach(lendleBrokerAddresses.BrokerProxy[MANTLE_CHAIN_ID])
+    multicaller = await new DeltaBrokerProxy__factory(user).attach(ONE_DELTA_ADDRESSES.BrokerProxy[MANTLE_CHAIN_ID])
     flashAggregator = await new DeltaFlashAggregatorMantle__factory(signer).attach(multicaller.address)
     console.log("deploy new aggregator")
     const newflashAggregator = await new DeltaFlashAggregatorMantle__factory(signer).deploy()
 
-    const traderModule = lendleBrokerAddresses.MarginTraderModule[MANTLE_CHAIN_ID]
+    const traderModule = ONE_DELTA_ADDRESSES.MarginTraderModule[MANTLE_CHAIN_ID]
     console.log("get code")
     const newflashAggregatorCode = await network.provider.send("eth_getCode", [
         newflashAggregator.address,

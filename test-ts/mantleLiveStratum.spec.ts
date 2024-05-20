@@ -10,13 +10,13 @@ import {
     ManagementModule__factory,
     StableDebtToken__factory,
 } from "../types";
-import { lendleBrokerAddresses } from "../deploy/mantle_addresses";
+import { ONE_DELTA_ADDRESSES } from "../deploy/mantle_addresses";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import {  encodeAggregatorPathEthersMargin } from "./1delta/shared/aggregatorPath";
 import {  MaxUint128 } from "./uniswap-v3/periphery/shared/constants";
 import { ModuleConfigAction, getSelectors } from "./libraries/diamond";
 import { addMantleLenderTokens } from "./utils/addTokens";
-import { addressesAureliusVTokens } from "../scripts/mantle/aureliusAddresses";
+import { AURELIUS_V_TOKENS } from "../scripts/mantle/addresses/aureliusAddresses";
 const { ethers } = require("hardhat");
 
 
@@ -29,10 +29,10 @@ const usdc = "0x09Bc4E0D864854c6aFB6eB9A9cdF58aC190D0dF9"
 const wmnt = "0x78c1b0c915c4faa5fffa6cabf0219da63d7f4cb8"
 const usdt = "0x201EBa5CC46D216Ce6DC03F6a759e8E766e956aE"
 
-const brokerProxy = lendleBrokerAddresses.BrokerProxy[MANTLE_CHAIN_ID]
-const traderModule = lendleBrokerAddresses.MarginTraderModule[MANTLE_CHAIN_ID]
-const lendingModule = lendleBrokerAddresses.LendingInterface[MANTLE_CHAIN_ID]
-const managementModule = lendleBrokerAddresses.ManagementModule[MANTLE_CHAIN_ID]
+const brokerProxy = ONE_DELTA_ADDRESSES.BrokerProxy[MANTLE_CHAIN_ID]
+const traderModule = ONE_DELTA_ADDRESSES.MarginTraderModule[MANTLE_CHAIN_ID]
+const lendingModule = ONE_DELTA_ADDRESSES.LendingInterface[MANTLE_CHAIN_ID]
+const managementModule = ONE_DELTA_ADDRESSES.ManagementModule[MANTLE_CHAIN_ID]
 let multicaller: DeltaBrokerProxy
 const flashAggregatorInterface = DeltaFlashAggregatorMantle__factory.createInterface()
 const lendingInterfaceInterface = DeltaLendingInterfaceMantle__factory.createInterface()
@@ -113,7 +113,7 @@ it("Deposit", async function () {
 it("USDT->USDC exactIn (stratum_stable)", async function () {
     const amount = parseUnits('2.0', 6)
 
-    const borrowToken = await new StableDebtToken__factory(user).attach(addressesAureliusVTokens.USDT)
+    const borrowToken = await new StableDebtToken__factory(user).attach(AURELIUS_V_TOKENS.USDT)
     await borrowToken.approveDelegation(multicaller.address, MaxUint128)
     // v3 single
     const path1 = encodeAggregatorPathEthersMargin(
@@ -135,7 +135,7 @@ it("USDT->USDC exactIn (stratum_stable)", async function () {
 it("USDT->USDC exactOut (Stratum_stable)", async function () {
     const amount = parseUnits('1.0', 6)
 
-    const borrowToken = await new StableDebtToken__factory(user).attach(addressesAureliusVTokens.USDT)
+    const borrowToken = await new StableDebtToken__factory(user).attach(AURELIUS_V_TOKENS.USDT)
     await borrowToken.approveDelegation(multicaller.address, MaxUint128)
     // v3 single
     const path1 = encodeAggregatorPathEthersMargin(
@@ -157,7 +157,7 @@ it("USDC->WMNT->WETH exactIn (stratum_volatile, fusionx_v2)", async function () 
 
     const amount = parseUnits('1.0', 6)
 
-    const borrowToken = await new StableDebtToken__factory(user).attach(addressesAureliusVTokens.USDC)
+    const borrowToken = await new StableDebtToken__factory(user).attach(AURELIUS_V_TOKENS.USDC)
     await borrowToken.approveDelegation(multicaller.address, MaxUint128)
     // v3 single
     const path1 = encodeAggregatorPathEthersMargin(

@@ -1,15 +1,15 @@
 
 import { ethers } from "hardhat";
-import { lendleBrokerAddresses } from "../../deploy/mantle_addresses";
+import { ONE_DELTA_ADDRESSES } from "../../deploy/mantle_addresses";
 import { DeltaBrokerProxy__factory, ManagementModule__factory } from "../../types";
-import { addressesTokensMantle } from "./lendleAddresses";
+import { TOKENS_MANTLE } from "./addresses/tokens";
 
 const MANTLE_CONFIGS = {
     maxFeePerGas: 0.02 * 1e9,
     maxPriorityFeePerGas: 0.02 * 1e9
 }
 
-const underlyings = Object.values(addressesTokensMantle)
+const underlyings = Object.values(TOKENS_MANTLE)
 
 const aggregatorsTargets = [
     '0xD9F4e85489aDCD0bAF0Cd63b4231c6af58c26745', // ODOS
@@ -25,7 +25,7 @@ async function main() {
     const chainId = await operator.getChainId();
 
     if (chainId !== 5000) throw new Error("invalid chainId")
-    const proxyAddress = lendleBrokerAddresses.BrokerProxy[chainId]
+    const proxyAddress = ONE_DELTA_ADDRESSES.BrokerProxy[chainId]
 
     let tx;
 

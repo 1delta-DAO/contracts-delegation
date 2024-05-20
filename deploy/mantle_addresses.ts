@@ -1,7 +1,7 @@
 
 export const lendlePool = '0xCFa5aE7c2CE8Fadc6426C1ff872cA45378Fb7cF3'
 
-export const lendleBrokerAddresses = {
+export const ONE_DELTA_ADDRESSES = {
     Init: {
         5000: '0xA453ba397c61B0c292EA3959A858821145B2707F'
     },

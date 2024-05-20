@@ -1,10 +1,10 @@
 import { impersonateAccount, mine, setCode } from "@nomicfoundation/hardhat-network-helpers";
 import { parseUnits } from "ethers/lib/utils";
 import { DeltaBrokerProxy, DeltaBrokerProxy__factory, DeltaFlashAggregatorMantle__factory, DeltaLendingInterfaceMantle__factory } from "../types";
-import { lendleBrokerAddresses } from "../deploy/mantle_addresses";
+import { ONE_DELTA_ADDRESSES } from "../deploy/mantle_addresses";
 import { DeltaFlashAggregatorMantleInterface } from "../types/DeltaFlashAggregatorMantle";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { addressesTokensMantle } from "../scripts/mantle/lendleAddresses";
+import { addressesTokensMantle } from "../scripts/mantle/addresses/lendleAddresses";
 import { network } from "hardhat";
 import { encodeAggregatorPathEthers } from "./1delta/shared/aggregatorPath";
 import { FeeAmount } from "./uniswap-v3/periphery/shared/constants";
@@ -31,7 +31,7 @@ before(async function () {
     const [signer] = await ethers.getSigners();
     user = signer
     console.log("get aggregator")
-    multicaller = await new DeltaBrokerProxy__factory(user).attach(lendleBrokerAddresses.BrokerProxy[MANTLE_CHAIN_ID])
+    multicaller = await new DeltaBrokerProxy__factory(user).attach(ONE_DELTA_ADDRESSES.BrokerProxy[MANTLE_CHAIN_ID])
 
     console.log("deploy new aggregator")
     const newflashAggregator = await new DeltaFlashAggregatorMantle__factory(signer).deploy()
@@ -39,7 +39,7 @@ before(async function () {
     const impersonatedSigner = await ethers.getSigner(admin);
     console.log(impersonatedSigner.address)
 
-    const traderModule = lendleBrokerAddresses.MarginTraderModule[MANTLE_CHAIN_ID]
+    const traderModule = ONE_DELTA_ADDRESSES.MarginTraderModule[MANTLE_CHAIN_ID]
     console.log("get code")
     const newflashAggregatorCode = await network.provider.send("eth_getCode", [
         newflashAggregator.address,
