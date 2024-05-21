@@ -1274,12 +1274,16 @@ abstract contract BaseSwapper is TokenTransfer {
                 amountIn = _swapUniswapV3PoolExactIn(
                     address(this),
                     int256(amountIn),
-                    path
-            );
+                    path[:45]
+                );
             }
             // uniswapV2 style
             else if (identifier < 100) {
-                amountIn = swapUniV2ExactInComplete(amountIn, false, path);
+                amountIn = swapUniV2ExactInComplete(
+                    amountIn,
+                    false,
+                    path[:45]
+                );
             }
             // iZi
             else if (identifier == 100) {

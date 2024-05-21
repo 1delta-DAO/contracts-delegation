@@ -33,8 +33,8 @@ async function main() {
     const addCuts = await getAddCuts(
         operator,
         ONE_DELTA_ADDRESSES.MarginTraderModule[chainId],
-        ONE_DELTA_ADDRESSES.LendingInterface[chainId],
-        ONE_DELTA_ADDRESSES.ManagementModule[chainId],
+        // ONE_DELTA_ADDRESSES.LendingInterface[chainId],
+        // ONE_DELTA_ADDRESSES.ManagementModule[chainId],
     )
 
     const cut = [
@@ -66,10 +66,10 @@ main()
 
 
 const getRemoveCut = async (operator: SignerWithAddress, proxyAddress: string) => {
-    const marginTradingAddress = '0x1A12E12a9A4Ccd49B04d09Eb9975cfdd1a6A6233' // lendleBrokerAddresses.MarginTraderModule[chainId]
-    const moneyMarketAddress = '0xd3E55dd0BabB618f73240d283bBd38A551c48c7b' // lendleBrokerAddresses.LendingInterface[chainId]
-    const managementAddress = '0x6Bc6aCB905c1216B0119C87Bf9E178ce298310FA' // lendleBrokerAddresses.LendingInterface[chainId]
-    const initializerAddress = '0xA453ba397c61B0c292EA3959A858821145B2707F'
+    const marginTradingAddress = '0x73C6b2481EB21A89F533D8C494D963464b1181f3' // lendleBrokerAddresses.MarginTraderModule[chainId]
+    // const moneyMarketAddress = '0xd3E55dd0BabB618f73240d283bBd38A551c48c7b' // lendleBrokerAddresses.LendingInterface[chainId]
+    // const managementAddress = '0x6Bc6aCB905c1216B0119C87Bf9E178ce298310FA' // lendleBrokerAddresses.LendingInterface[chainId]
+    // const initializerAddress = '0xA453ba397c61B0c292EA3959A858821145B2707F'
 
     const cut: {
         moduleAddress: string,
@@ -81,15 +81,15 @@ const getRemoveCut = async (operator: SignerWithAddress, proxyAddress: string) =
     const lens = await new LensModule__factory(operator).attach(proxyAddress)
 
     const marginTradingSelectors = await lens.moduleFunctionSelectors(marginTradingAddress)
-    const moneyMarketSelectors = await lens.moduleFunctionSelectors(moneyMarketAddress)
-    const managementSelectors = await lens.moduleFunctionSelectors(managementAddress)
-    const initSelectors = await lens.moduleFunctionSelectors(initializerAddress)
+    // const moneyMarketSelectors = await lens.moduleFunctionSelectors(moneyMarketAddress)
+    // const managementSelectors = await lens.moduleFunctionSelectors(managementAddress)
+    // const initSelectors = await lens.moduleFunctionSelectors(initializerAddress)
 
     const moduleSelectors = [
         marginTradingSelectors,
-        moneyMarketSelectors,
-        managementSelectors,
-        initSelectors
+        // moneyMarketSelectors,
+        // managementSelectors,
+        // initSelectors
     ]
 
     console.log("Having", moduleSelectors.length, "removals")
