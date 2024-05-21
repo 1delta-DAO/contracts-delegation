@@ -1,10 +1,10 @@
 import { impersonateAccount, mine, setCode } from "@nomicfoundation/hardhat-network-helpers";
 import { parseUnits } from "ethers/lib/utils";
-import { DeltaBrokerProxy, DeltaBrokerProxy__factory, DeltaFlashAggregatorMantle__factory } from "../types";
-import { lendleBrokerAddresses } from "../deploy/mantle_addresses";
+import { DeltaBrokerProxy, DeltaBrokerProxy__factory, DeltaFlashAggregatorMantle__factory, DeltaLendingInterfaceMantle__factory } from "../types";
+import { ONE_DELTA_ADDRESSES } from "../deploy/mantle_addresses";
 import { DeltaFlashAggregatorMantleInterface } from "../types/DeltaFlashAggregatorMantle";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { addressesTokensMantle } from "../scripts/mantle/lendleAddresses";
+import { addressesTokensMantle } from "../scripts/mantle/addresses/lendleAddresses";
 import { network } from "hardhat";
 import { encodeAggregatorPathEthers } from "./1delta/shared/aggregatorPath";
 import { FeeAmount } from "./uniswap-v3/periphery/shared/constants";
@@ -13,7 +13,7 @@ const { ethers } = require("hardhat");
 
 const MANTLE_CHAIN_ID = 5000;
 const trader0 = '0xaffe73AA5EBd0CD95D89ab9fa2512Fc9e2d3289b'
-const admin = ''
+const admin = '0x999999833d965c275A2C102a4Ebf222ca938546f'
 
 const weth = "0xdEAddEaDdeadDEadDEADDEAddEADDEAddead1111"
 const usdc = "0x09Bc4E0D864854c6aFB6eB9A9cdF58aC190D0dF9"
@@ -23,15 +23,15 @@ const usdt = "0x201EBa5CC46D216Ce6DC03F6a759e8E766e956aE"
 const adjustForSlippage = (s: string, slippageBp: number) => BigNumber.from(s).mul(10000 + slippageBp).div(10000)
 
 let multicaller: DeltaBrokerProxy
-let flashAggregatorInterface: DeltaFlashAggregatorMantleInterface
+let flashAggregatorInterface = DeltaFlashAggregatorMantle__factory.createInterface()
+let lendingInterfaceInterface = DeltaLendingInterfaceMantle__factory.createInterface()
 let user: SignerWithAddress
 let trader: SignerWithAddress
 before(async function () {
     const [signer] = await ethers.getSigners();
     user = signer
     console.log("get aggregator")
-    multicaller = await new DeltaBrokerProxy__factory(user).attach(lendleBrokerAddresses.BrokerProxy[MANTLE_CHAIN_ID])
-    flashAggregatorInterface = DeltaFlashAggregatorMantle__factory.createInterface()
+    multicaller = await new DeltaBrokerProxy__factory(user).attach(ONE_DELTA_ADDRESSES.BrokerProxy[MANTLE_CHAIN_ID])
 
     console.log("deploy new aggregator")
     const newflashAggregator = await new DeltaFlashAggregatorMantle__factory(signer).deploy()
@@ -39,7 +39,7 @@ before(async function () {
     const impersonatedSigner = await ethers.getSigner(admin);
     console.log(impersonatedSigner.address)
 
-    const traderModule = lendleBrokerAddresses.MarginTraderModule[MANTLE_CHAIN_ID]
+    const traderModule = ONE_DELTA_ADDRESSES.MarginTraderModule[MANTLE_CHAIN_ID]
     console.log("get code")
     const newflashAggregatorCode = await network.provider.send("eth_getCode", [
         newflashAggregator.address,
@@ -59,7 +59,7 @@ it("Test deposit", async function () {
 
     const amount = parseUnits('10.0', 18)
     const tokenIn = addressesTokensMantle.WMNT
-    const callWrap = flashAggregatorInterface.encodeFunctionData('wrap',)
+    const callWrap = lendingInterfaceInterface.encodeFunctionData('wrap',)
     const callDeposit = flashAggregatorInterface.encodeFunctionData('deposit' as any, [tokenIn, user.address])
 
     // same slippage for all swaps

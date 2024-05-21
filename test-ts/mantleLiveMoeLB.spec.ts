@@ -12,9 +12,9 @@ import {
     OneDeltaQuoterMantle,
     OneDeltaQuoterMantle__factory, StableDebtToken__factory, WETH9__factory,
 } from "../types";
-import { lendleBrokerAddresses } from "../deploy/mantle_addresses";
+import { ONE_DELTA_ADDRESSES } from "../deploy/mantle_addresses";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { addressesLendleVTokens, addressesTokensMantle, addressesLendleATokens } from '../scripts/mantle/lendleAddresses';
+import { LENDLE_V_TOKENS, LENDLE_A_TOKENS } from '../scripts/mantle/addresses/lendleAddresses';
 import { encodeAggregatorPathEthers, encodeQuoterPathEthers } from "./1delta/shared/aggregatorPath";
 import { MaxUint128 } from "./uniswap-v3/periphery/shared/constants";
 import { ModuleConfigAction, getSelectors } from "./libraries/diamond";
@@ -31,9 +31,9 @@ const usde = '0x5d3a1ff2b6bab83b63cd9ad0787074081a52ef34'
 const wmnt = "0x78c1b0c915c4faa5fffa6cabf0219da63d7f4cb8"
 const usdt = "0x201EBa5CC46D216Ce6DC03F6a759e8E766e956aE"
 
-const brokerProxy = lendleBrokerAddresses.BrokerProxy[MANTLE_CHAIN_ID]
-const traderModule = lendleBrokerAddresses.MarginTraderModule[MANTLE_CHAIN_ID]
-const lendingModule = lendleBrokerAddresses.LendingInterface[MANTLE_CHAIN_ID]
+const brokerProxy = ONE_DELTA_ADDRESSES.BrokerProxy[MANTLE_CHAIN_ID]
+const traderModule = ONE_DELTA_ADDRESSES.MarginTraderModule[MANTLE_CHAIN_ID]
+const lendingModule = ONE_DELTA_ADDRESSES.LendingInterface[MANTLE_CHAIN_ID]
 let multicaller: DeltaBrokerProxy
 let flashAggregatorInterface = DeltaFlashAggregatorMantle__factory.createInterface()
 let lendingInterfaceInterface = DeltaLendingInterfaceMantle__factory.createInterface()
@@ -86,7 +86,7 @@ before(async function () {
 it("Deposit", async function () {
     const amount = parseUnits('3.0', 18)
     const callWrap = lendingInterfaceInterface.encodeFunctionData('wrap',)
-    const callDeposit = lendingInterfaceInterface.encodeFunctionData('deposit', [wmnt, user.address])
+    const callDeposit = lendingInterfaceInterface.encodeFunctionData('deposit', [wmnt, user.address, 0])
 
     await multicaller.connect(user).multicall([
         callWrap,
@@ -97,7 +97,7 @@ it("Deposit", async function () {
 it("Opens exact in, CLEO->LB", async function () {
     const amount = parseUnits('2.0', 6)
 
-    const borrowToken = await new StableDebtToken__factory(user).attach(addressesLendleVTokens.USDC)
+    const borrowToken = await new StableDebtToken__factory(user).attach(LENDLE_V_TOKENS.USDC)
     await borrowToken.approveDelegation(multicaller.address, MaxUint128)
     // v3 single
     const path1 = encodeAggregatorPathEthers(
@@ -118,7 +118,7 @@ it("Opens exact in, CLEO->LB", async function () {
 it("Opens exact in, Agni->3USD->LB->CLEO", async function () {
     const amount = parseUnits('2.0', 6)
 
-    const borrowToken = await new StableDebtToken__factory(user).attach(addressesLendleVTokens.USDT)
+    const borrowToken = await new StableDebtToken__factory(user).attach(LENDLE_V_TOKENS.USDT)
     await borrowToken.approveDelegation(multicaller.address, MaxUint128)
     // v3 single
     const path1 = encodeAggregatorPathEthers(
@@ -139,7 +139,7 @@ it("Opens exact in, Agni->3USD->LB->CLEO", async function () {
 it("Closes exact in, CLEO->LB->3USD->Agni", async function () {
     const amount = parseUnits('1.0', 6)
 
-    const collateralToken = await new AToken__factory(user).attach(addressesLendleATokens.USDC)
+    const collateralToken = await new AToken__factory(user).attach(LENDLE_A_TOKENS.USDC)
     await collateralToken.approve(multicaller.address, MaxUint128)
     // v3 single
     const path1 = encodeAggregatorPathEthers(
@@ -160,7 +160,7 @@ it("Closes exact in, CLEO->LB->3USD->Agni", async function () {
 it("Closes exact out, LB->CLEO", async function () {
     const amount = parseUnits('0.7', 6)
 
-    const collateralToken = await new AToken__factory(user).attach(addressesLendleATokens.USDT)
+    const collateralToken = await new AToken__factory(user).attach(LENDLE_A_TOKENS.USDT)
     await collateralToken.approve(multicaller.address, MaxUint128)
     // v3 single
     const path1 = encodeAggregatorPathEthers(
@@ -181,7 +181,7 @@ it("Closes exact out, LB->CLEO", async function () {
 it("Opens exact out CLEO->LB", async function () {
     const amount = parseUnits('1.0', 6)
 
-    const borrowToken = await new StableDebtToken__factory(user).attach(addressesLendleVTokens.USDT)
+    const borrowToken = await new StableDebtToken__factory(user).attach(LENDLE_V_TOKENS.USDT)
     await borrowToken.approveDelegation(multicaller.address, MaxUint128)
     // v3 single
     const path1 = encodeAggregatorPathEthers(
@@ -202,7 +202,6 @@ it("Swap exact out Linear", async function () {
 
     const amountOut = parseUnits('1.0', 18)
     const amountDepo = parseUnits('100', 18)
-    const tokenIn = addressesTokensMantle.WMNT
 
     const wmntContract = await new WETH9__factory(user).attach(wmnt)
     await wmntContract.deposit({ value: amountDepo })

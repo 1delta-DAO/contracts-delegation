@@ -3,20 +3,15 @@ import { ethers } from "hardhat";
 import {
     ConfigModule__factory,
     DeltaFlashAggregatorMantle__factory,
+    DeltaLendingInterfaceMantle__factory,
     LensModule__factory,
+    ManagementModule__factory,
 } from "../../types";
 import { validateAddresses } from "../../utils/types";
-import { parseUnits } from "ethers/lib/utils";
 import { getContractSelectors, ModuleConfigAction } from "../../test-ts/libraries/diamond";
-import { lendleBrokerAddresses } from "../../deploy/mantle_addresses";
+import { ONE_DELTA_ADDRESSES } from "../../deploy/mantle_addresses";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-
-// options for deployment
-const MANTLE_CONFIGS = {
-    maxFeePerGas: 0.02 * 1e9,
-    maxPriorityFeePerGas: 0.02 * 1e9
-}
-
+import { MANTLE_CONFIGS } from "./utils";
 
 async function main() {
 
@@ -24,7 +19,7 @@ async function main() {
     const operator = accounts[1]
     const chainId = await operator.getChainId();
     if (chainId !== 5000) throw new Error("invalid chainId")
-    const proxyAddress = lendleBrokerAddresses.BrokerProxy[chainId]
+    const proxyAddress = ONE_DELTA_ADDRESSES.BrokerProxy[chainId]
 
     validateAddresses([proxyAddress])
     console.log("Operate on", chainId, "by", operator.address)
@@ -33,9 +28,14 @@ async function main() {
     const broker = await new ConfigModule__factory(operator).attach(proxyAddress)
 
     const removeCuts = await getRemoveCut(operator, proxyAddress)
+
     // add cuts
-    const marginTradingAddress = lendleBrokerAddresses.MarginTraderModule[chainId]
-    const addCuts = await getAddCuts(operator, marginTradingAddress)
+    const addCuts = await getAddCuts(
+        operator,
+        ONE_DELTA_ADDRESSES.MarginTraderModule[chainId],
+        // ONE_DELTA_ADDRESSES.LendingInterface[chainId],
+        // ONE_DELTA_ADDRESSES.ManagementModule[chainId],
+    )
 
     const cut = [
         ...removeCuts,
@@ -66,7 +66,11 @@ main()
 
 
 const getRemoveCut = async (operator: SignerWithAddress, proxyAddress: string) => {
-    const marginTradingAddress = '0xFA2cac1CacAaE741BCA20B5FAFd6E84A65Ad4C6D' // lendleBrokerAddresses.MarginTraderModule[chainId]
+    const marginTradingAddress = '0x73C6b2481EB21A89F533D8C494D963464b1181f3' // lendleBrokerAddresses.MarginTraderModule[chainId]
+    // const moneyMarketAddress = '0xd3E55dd0BabB618f73240d283bBd38A551c48c7b' // lendleBrokerAddresses.LendingInterface[chainId]
+    // const managementAddress = '0x6Bc6aCB905c1216B0119C87Bf9E178ce298310FA' // lendleBrokerAddresses.LendingInterface[chainId]
+    // const initializerAddress = '0xA453ba397c61B0c292EA3959A858821145B2707F'
+
     const cut: {
         moduleAddress: string,
         action: any,
@@ -75,12 +79,19 @@ const getRemoveCut = async (operator: SignerWithAddress, proxyAddress: string) =
 
     // get lens to fetch modules
     const lens = await new LensModule__factory(operator).attach(proxyAddress)
-    console.log(marginTradingAddress)
+
     const marginTradingSelectors = await lens.moduleFunctionSelectors(marginTradingAddress)
+    // const moneyMarketSelectors = await lens.moduleFunctionSelectors(moneyMarketAddress)
+    // const managementSelectors = await lens.moduleFunctionSelectors(managementAddress)
+    // const initSelectors = await lens.moduleFunctionSelectors(initializerAddress)
 
     const moduleSelectors = [
         marginTradingSelectors,
+        // moneyMarketSelectors,
+        // managementSelectors,
+        // initSelectors
     ]
+
     console.log("Having", moduleSelectors.length, "removals")
     for (const selector of moduleSelectors) {
         cut.push({
@@ -95,11 +106,7 @@ const getRemoveCut = async (operator: SignerWithAddress, proxyAddress: string) =
 
 
 
-const getAddCuts = async (operator: SignerWithAddress, flashAggregatorAddress: string,) => {
-    const flashBroker = await new DeltaFlashAggregatorMantle__factory(operator).attach(flashAggregatorAddress)
-    console.log("flashBroker picked")
-
-    console.log("FlashBroker", flashBroker.address)
+const getAddCuts = async (operator: SignerWithAddress, flashAggregatorAddress: string, lendingInterface?: string, management?: string) => {
 
     const cut: {
         moduleAddress: string,
@@ -108,9 +115,22 @@ const getAddCuts = async (operator: SignerWithAddress, flashAggregatorAddress: s
     }[] = []
 
 
-    const modules = [
-        flashBroker,
-    ]
+    const modules: any = []
+    if (flashAggregatorAddress) {
+        const flashBroker = await new DeltaFlashAggregatorMantle__factory(operator).attach(flashAggregatorAddress)
+        modules.push(flashBroker)
+    }
+    if (lendingInterface) {
+        const moneyMarket = await new DeltaLendingInterfaceMantle__factory(operator).attach(lendingInterface)
+        modules.push(moneyMarket)
+    }
+
+    if (management) {
+        const managementModule = await new ManagementModule__factory(operator).attach(management)
+        modules.push(managementModule)
+    }
+
+
     console.log("Having", modules.length, "additions")
 
     for (const module of modules) {

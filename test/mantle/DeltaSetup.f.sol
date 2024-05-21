@@ -11,10 +11,8 @@ import {ILending} from "./interfaces/ILending.sol";
 import {IInitialize} from "./interfaces/IInitialize.sol";
 import {IBrokerProxy} from "./interfaces/IBrokerProxy.sol";
 import {IModuleConfig} from "../../contracts/1delta/proxy/interfaces/IModuleConfig.sol";
-
 // universal erc20
 import {IERC20All} from "./interfaces/IERC20All.sol";
-
 // lending pool for debugging
 import {ILendingPool} from "../../contracts/1delta/modules/deploy/mantle/ILendingPool.sol";
 
@@ -48,21 +46,21 @@ contract DeltaSetup is AddressesMantle, Script, Test {
     /** SELECTOR GETTERS */
 
     function managementSelectors() internal pure returns (bytes4[] memory selectors) {
-        selectors = new bytes4[](10);
+        selectors = new bytes4[](11);
         // setters
         selectors[0] = IManagement.addAToken.selector;
         selectors[1] = IManagement.setValidTarget.selector;
-        selectors[2] = IManagement.decreaseAllowance.selector;
-        selectors[3] = IManagement.addLenderTokens.selector;
+        selectors[3] = IManagement.decreaseAllowance.selector;
+        selectors[4] = IManagement.addLenderTokens.selector;
+        selectors[5] = IManagement.addGeneralLenderTokens.selector;
         // approve
-        selectors[4] = IManagement.approveLendingPool.selector;
-        selectors[5] = IManagement.approveAddress.selector;
+        selectors[6] = IManagement.approveLendingPool.selector;
+        selectors[2] = IManagement.approveAddress.selector;
         // getters
-        selectors[6] = IManagement.getIsValidTarget.selector;
-        selectors[7] = IManagement.getCollateralToken.selector;
-        selectors[8] = IManagement.getStableDebtToken.selector;
-        selectors[9] = IManagement.getDebtToken.selector;
-        // selectors[5] = IManagement.addGeneralLenderTokens.selector;
+        selectors[7] = IManagement.getIsValidTarget.selector;
+        selectors[8] = IManagement.getCollateralToken.selector;
+        selectors[9] = IManagement.getStableDebtToken.selector;
+        selectors[10] = IManagement.getDebtToken.selector;
         return selectors;
     }
 
@@ -174,18 +172,11 @@ contract DeltaSetup is AddressesMantle, Script, Test {
 
     function initializeDelta() internal virtual {
         // lendle
-        management.addLenderTokens(USDC, LENDLE_A_USDC, LENDLE_V_USDC, LENDLE_S_USDC);
-        management.addLenderTokens(USDT, LENDLE_A_USDT, LENDLE_V_USDT, LENDLE_S_USDT);
-        management.addLenderTokens(WBTC, LENDLE_A_WBTC, LENDLE_V_WBTC, LENDLE_S_WBTC);
-        management.addLenderTokens(WETH, LENDLE_A_WETH, LENDLE_V_WETH, LENDLE_S_WETH);
-        management.addLenderTokens(WMNT, LENDLE_A_WMNT, LENDLE_V_WMNT, LENDLE_S_WMNT);
-
-        // lendle
-        // management.addGeneralLenderTokens(USDC, LENDLE_A_USDC, LENDLE_V_USDC, LENDLE_S_USDC, 0);
-        // management.addGeneralLenderTokens(USDT, LENDLE_A_USDT, LENDLE_V_USDT, LENDLE_S_USDT, 0);
-        // management.addGeneralLenderTokens(WBTC, LENDLE_A_WBTC, LENDLE_V_WBTC, LENDLE_S_WBTC, 0);
-        // management.addGeneralLenderTokens(WETH, LENDLE_A_WETH, LENDLE_V_WETH, LENDLE_S_WETH, 0);
-        // management.addGeneralLenderTokens(WMNT, LENDLE_A_WMNT, LENDLE_V_WMNT, LENDLE_S_WMNT, 0);
+        management.addGeneralLenderTokens(USDC, LENDLE_A_USDC, LENDLE_V_USDC, LENDLE_S_USDC, 0);
+        management.addGeneralLenderTokens(USDT, LENDLE_A_USDT, LENDLE_V_USDT, LENDLE_S_USDT, 0);
+        management.addGeneralLenderTokens(WBTC, LENDLE_A_WBTC, LENDLE_V_WBTC, LENDLE_S_WBTC, 0);
+        management.addGeneralLenderTokens(WETH, LENDLE_A_WETH, LENDLE_V_WETH, LENDLE_S_WETH, 0);
+        management.addGeneralLenderTokens(WMNT, LENDLE_A_WMNT, LENDLE_V_WMNT, LENDLE_S_WMNT, 0);
 
         collateralTokens[USDC][0] = LENDLE_A_USDC;
         collateralTokens[USDT][0] = LENDLE_A_USDT;
@@ -200,11 +191,11 @@ contract DeltaSetup is AddressesMantle, Script, Test {
         debtTokens[WMNT][0] = LENDLE_V_WMNT;
 
         // aurelius
-        // management.addGeneralLenderTokens(USDC, AURELIUS_A_USDC, AURELIUS_V_USDC, AURELIUS_S_USDC, 1);
-        // management.addGeneralLenderTokens(USDT, AURELIUS_A_USDT, AURELIUS_V_USDT, AURELIUS_S_USDT, 1);
-        // management.addGeneralLenderTokens(WBTC, AURELIUS_A_WBTC, AURELIUS_V_WBTC, AURELIUS_S_WBTC, 1);
-        // management.addGeneralLenderTokens(WETH, AURELIUS_A_WETH, AURELIUS_V_WETH, AURELIUS_S_WETH, 1);
-        // management.addGeneralLenderTokens(WMNT, AURELIUS_A_WMNT, AURELIUS_V_WMNT, AURELIUS_S_WMNT, 1);
+        management.addGeneralLenderTokens(USDC, AURELIUS_A_USDC, AURELIUS_V_USDC, AURELIUS_S_USDC, 1);
+        management.addGeneralLenderTokens(USDT, AURELIUS_A_USDT, AURELIUS_V_USDT, AURELIUS_S_USDT, 1);
+        management.addGeneralLenderTokens(WBTC, AURELIUS_A_WBTC, AURELIUS_V_WBTC, AURELIUS_S_WBTC, 1);
+        management.addGeneralLenderTokens(WETH, AURELIUS_A_WETH, AURELIUS_V_WETH, AURELIUS_S_WETH, 1);
+        management.addGeneralLenderTokens(WMNT, AURELIUS_A_WMNT, AURELIUS_V_WMNT, AURELIUS_S_WMNT, 1);
 
         collateralTokens[USDC][1] = AURELIUS_A_USDC;
         collateralTokens[USDT][1] = AURELIUS_A_USDT;
@@ -239,6 +230,7 @@ contract DeltaSetup is AddressesMantle, Script, Test {
         management.approveAddress(stratumAssets, STRATUM_3POOL);
         management.approveAddress(stratumAssets, STRATUM_3POOL_2);
         management.approveAddress(stratumAssets, STRATUM_ETH_POOL);
+        management.approveAddress(stratumAssets, WOO_POOL);
 
         address[] memory usdyAssets = new address[](1);
         usdyAssets[0] = USDY;
@@ -263,15 +255,15 @@ contract DeltaSetup is AddressesMantle, Script, Test {
 
     /** DEPOSIT AND OPEN TO SPIN UP POSITIONS */
 
-    function openSimple(address user, address asset, address borrowAsset, uint256 depositAmount, uint256 borrowAmount) internal {
-        address debtAsset = debtTokens[borrowAsset][0];
+    function openSimple(address user, address asset, address borrowAsset, uint256 depositAmount, uint256 borrowAmount, uint8 lenderId) internal {
+        address debtAsset = debtTokens[borrowAsset][lenderId];
         deal(asset, user, depositAmount);
 
         bytes[] memory calls = new bytes[](3);
         calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, asset, depositAmount);
-        calls[1] = abi.encodeWithSelector(ILending.deposit.selector, asset, user);
+        calls[1] = abi.encodeWithSelector(ILending.deposit.selector, asset, user, lenderId);
 
-        bytes memory swapPath = getOpenExactInSingle(borrowAsset, asset);
+        bytes memory swapPath = getOpenExactInSingle(borrowAsset, asset, lenderId);
         uint256 minimumOut = 0; // we do not care about slippage in that regard
         calls[2] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactIn.selector, borrowAmount, minimumOut, swapPath);
 

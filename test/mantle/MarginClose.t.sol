@@ -6,9 +6,7 @@ import "./DeltaSetup.f.sol";
 contract MarginCloseTest is DeltaSetup {
     uint256 DEFAULT_IR_MODE = 2; // variable
 
-
-    function test_margin_mantle_close_exact_in() external {
-        uint8 lenderId = DEFAULT_LENDER;
+    function test_margin_mantle_close_exact_in(uint8 lenderId) external /** address user, uint8 lenderId */ {
         address user = testUser;
         vm.assume(user != address(0) && lenderId < 2);
         address asset = USDC;
@@ -21,12 +19,12 @@ contract MarginCloseTest is DeltaSetup {
             uint256 amountToDeposit = 10.0e6;
             uint256 amountToLeverage = 20.0e18;
 
-            openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage);
+            openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
 
         bytes[] memory calls = new bytes[](1);
 
-        bytes memory swapPath = getCloseExactInSingle(asset, borrowAsset);
+        bytes memory swapPath = getCloseExactInSingle(asset, borrowAsset, lenderId);
         uint256 amountIn = 15.0e6;
         uint256 minimumOut = 10.0e18;
         calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactIn.selector, amountIn, minimumOut, swapPath);
@@ -49,8 +47,7 @@ contract MarginCloseTest is DeltaSetup {
         assertApproxEqAbs(10439645077346007110, borrowBalance, 1);
     }
 
-    function test_margin_mantle_close_exact_in_multi() external {
-        uint8 lenderId = DEFAULT_LENDER;
+    function test_margin_mantle_close_exact_in_multi(uint8 lenderId) external {
         address user = testUser;
         vm.assume(user != address(0) && lenderId < 2);
         address asset = USDC;
@@ -63,12 +60,12 @@ contract MarginCloseTest is DeltaSetup {
             uint256 amountToDeposit = 1.0e6;
             uint256 amountToLeverage = 2.0e18;
 
-            openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage);
+            openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
 
         bytes[] memory calls = new bytes[](1);
 
-        bytes memory swapPath = getCloseExactInMulti(asset, borrowAsset);
+        bytes memory swapPath = getCloseExactInMulti(asset, borrowAsset, lenderId);
         uint256 amountIn = 1.5e6;
         uint256 minimumOut = 0.9e18; // this one provides a bad swap rate
         calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactIn.selector, amountIn, minimumOut, swapPath);
@@ -91,8 +88,7 @@ contract MarginCloseTest is DeltaSetup {
         assertApproxEqAbs(952522044675599421, borrowBalance, 1);
     }
 
-    function test_margin_mantle_close_exact_out() external {
-        uint8 lenderId = DEFAULT_LENDER;
+    function test_margin_mantle_close_exact_out(uint8 lenderId) external {
         address user = testUser;
         vm.assume(user != address(0) && lenderId < 2);
         address asset = USDC;
@@ -105,12 +101,12 @@ contract MarginCloseTest is DeltaSetup {
             uint256 amountToDeposit = 10.0e6;
             uint256 amountToLeverage = 20.0e18;
 
-            openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage);
+            openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
 
         bytes[] memory calls = new bytes[](1);
 
-        bytes memory swapPath = getCloseExactOutSingle(asset, borrowAsset);
+        bytes memory swapPath = getCloseExactOutSingle(asset, borrowAsset, lenderId);
         uint256 amountOut = 15.0e18;
         uint256 amountInMaximum = 25.0e6;
         calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactOut.selector, amountOut, amountInMaximum, swapPath);
@@ -133,8 +129,7 @@ contract MarginCloseTest is DeltaSetup {
         assertApproxEqAbs(amountOut, borrowBalance, 1);
     }
 
-    function test_margin_mantle_close_exact_out_multi() external {
-        uint8 lenderId = DEFAULT_LENDER;
+    function test_margin_mantle_close_exact_out_multi(uint8 lenderId) external /** address user, uint8 lenderId */ {
         address user = testUser;
         vm.assume(user != address(0) && lenderId < 2);
         address asset = USDC;
@@ -147,12 +142,12 @@ contract MarginCloseTest is DeltaSetup {
             uint256 amountToDeposit = 10.0e6;
             uint256 amountToLeverage = 20.0e18;
 
-            openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage);
+            openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
 
         bytes[] memory calls = new bytes[](1);
 
-        bytes memory swapPath = getCloseExactOutMulti(asset, borrowAsset);
+        bytes memory swapPath = getCloseExactOutMulti(asset, borrowAsset, lenderId);
         uint256 amountOut = 1.0e18;
         uint256 amountInMaximum = 20.0e6;
         calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactOut.selector, amountOut, amountInMaximum, swapPath);
@@ -175,8 +170,7 @@ contract MarginCloseTest is DeltaSetup {
         assertApproxEqAbs(amountOut, borrowBalance, 1);
     }
 
-    function test_margin_mantle_close_all_in() external {
-        uint8 lenderId = DEFAULT_LENDER;
+    function test_margin_mantle_close_all_in(uint8 lenderId) external /** address user, uint8 lenderId */ {
         address user = testUser;
         vm.assume(user != address(0) && lenderId < 2);
         address asset = USDC;
@@ -188,13 +182,13 @@ contract MarginCloseTest is DeltaSetup {
         {
             uint256 amountToDeposit = 10.0e6;
             uint256 amountToLeverage = 20.0e18;
-            _deposit(asset, user, amountIn);
-            openSimple(user, USDT, borrowAsset, amountToDeposit, amountToLeverage);
+            _deposit(asset, user, amountIn, lenderId);
+            openSimple(user, USDT, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
 
         bytes[] memory calls = new bytes[](1);
 
-        bytes memory swapPath = getCloseExactInSingle(asset, borrowAsset);
+        bytes memory swapPath = getCloseExactInSingle(asset, borrowAsset, lenderId);
 
         uint256 minimumOut = 8.0e18;
         calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapAllIn.selector, minimumOut, swapPath);
@@ -221,8 +215,7 @@ contract MarginCloseTest is DeltaSetup {
         assertApproxEqAbs(9839155325003132124, borrowBalance, 1);
     }
 
-    function test_margin_mantle_close_all_out() external {
-        uint8 lenderId = DEFAULT_LENDER;
+    function test_margin_mantle_close_all_out(uint8 lenderId) external {
         address user = testUser;
         vm.assume(user != address(0) && lenderId < 2);
         address asset = USDC;
@@ -234,12 +227,12 @@ contract MarginCloseTest is DeltaSetup {
 
         {
             uint256 amountToDeposit = 10.0e6;
-            openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage);
+            openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
 
         bytes[] memory calls = new bytes[](1);
 
-        bytes memory swapPath = getCloseExactOutSingle(asset, borrowAsset);
+        bytes memory swapPath = getCloseExactOutSingle(asset, borrowAsset, lenderId);
         uint256 amountInMaximum = 35.0e6;
         calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapAllOut.selector, amountInMaximum, swapPath);
 
@@ -268,8 +261,7 @@ contract MarginCloseTest is DeltaSetup {
 
     /** TESTS FOR THE V2 CALLBACKS */
 
-    function test_margin_mantle_close_exact_in_v2() external {
-        uint8 lenderId = DEFAULT_LENDER;
+    function test_margin_mantle_close_exact_in_v2(uint8 lenderId) external /** address user, uint8 lenderId */ {
         address user = testUser;
         vm.assume(user != address(0) && lenderId < 2);
         address asset = USDC;
@@ -282,12 +274,12 @@ contract MarginCloseTest is DeltaSetup {
             uint256 amountToDeposit = 10.0e6;
             uint256 amountToLeverage = 20.0e18;
 
-            openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage);
+            openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
 
         bytes[] memory calls = new bytes[](1);
 
-        bytes memory swapPath = getCloseExactInSingleV2(asset, borrowAsset);
+        bytes memory swapPath = getCloseExactInSingleV2(asset, borrowAsset, lenderId);
         uint256 amountIn = 15.0e6;
         uint256 minimumOut = 8.0e18;
         calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactIn.selector, amountIn, minimumOut, swapPath);
@@ -310,8 +302,7 @@ contract MarginCloseTest is DeltaSetup {
         assertApproxEqAbs(9963991004524402584, borrowBalance, 1);
     }
 
-    function test_margin_mantle_close_exact_in_multi_v2() external {
-        uint8 lenderId = DEFAULT_LENDER;
+    function test_margin_mantle_close_exact_in_multi_v2(uint8 lenderId) external {
         address user = testUser;
         vm.assume(user != address(0) && lenderId < 2);
         address asset = USDC;
@@ -324,12 +315,12 @@ contract MarginCloseTest is DeltaSetup {
             uint256 amountToDeposit = 10.0e6;
             uint256 amountToLeverage = 20.0e18;
 
-            openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage);
+            openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
 
         bytes[] memory calls = new bytes[](1);
 
-        bytes memory swapPath = getCloseExactInMultiV2(asset, borrowAsset);
+        bytes memory swapPath = getCloseExactInMultiV2(asset, borrowAsset, lenderId);
         uint256 amountIn = 15.0e6;
         uint256 minimumOut = 9.0e18; // this one provides a bad swap rate
         calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactIn.selector, amountIn, minimumOut, swapPath);
@@ -352,8 +343,7 @@ contract MarginCloseTest is DeltaSetup {
         assertApproxEqAbs(9912306024486705073, borrowBalance, 1);
     }
 
-    function test_margin_mantle_close_exact_out_v2() external {
-        uint8 lenderId = DEFAULT_LENDER;
+    function test_margin_mantle_close_exact_out_v2(uint8 lenderId) external {
         address user = testUser;
         vm.assume(user != address(0) && lenderId < 2);
         address asset = USDC;
@@ -366,12 +356,12 @@ contract MarginCloseTest is DeltaSetup {
             uint256 amountToDeposit = 10.0e6;
             uint256 amountToLeverage = 20.0e18;
 
-            openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage);
+            openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
 
         bytes[] memory calls = new bytes[](1);
 
-        bytes memory swapPath = getCloseExactOutSingleV2(asset, borrowAsset);
+        bytes memory swapPath = getCloseExactOutSingleV2(asset, borrowAsset, lenderId);
         uint256 amountOut = 15.0e18;
         uint256 amountInMaximum = 23.0e6;
         calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactOut.selector, amountOut, amountInMaximum, swapPath);
@@ -394,8 +384,7 @@ contract MarginCloseTest is DeltaSetup {
         assertApproxEqAbs(amountOut, borrowBalance, 1);
     }
 
-    function test_margin_mantle_close_all_out_v2() external {
-        uint8 lenderId = DEFAULT_LENDER;
+    function test_margin_mantle_close_all_out_v2(uint8 lenderId) external /** address user, uint8 lenderId */ {
         address user = testUser;
         vm.assume(user != address(0) && lenderId < 2);
         address asset = USDC;
@@ -407,12 +396,12 @@ contract MarginCloseTest is DeltaSetup {
 
         {
             uint256 amountToDeposit = 10.0e6;
-            openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage);
+            openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
 
         bytes[] memory calls = new bytes[](1);
 
-        bytes memory swapPath = getCloseExactOutSingleV2(asset, borrowAsset);
+        bytes memory swapPath = getCloseExactOutSingleV2(asset, borrowAsset, lenderId);
         uint256 amountInMaximum = 35.0e6;
         calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapAllOut.selector, amountInMaximum, swapPath);
 
@@ -441,7 +430,7 @@ contract MarginCloseTest is DeltaSetup {
 
     /** HELPER FOR ALL IN */
 
-    function _deposit(address asset, address user, uint256 amount) internal {
+    function _deposit(address asset, address user, uint256 amount, uint8 lenderId) internal {
         deal(asset, user, amount);
 
         vm.prank(user);
@@ -449,7 +438,7 @@ contract MarginCloseTest is DeltaSetup {
         // create calls for open
         bytes[] memory calls = new bytes[](2);
         calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, asset, amount);
-        calls[1] = abi.encodeWithSelector(ILending.deposit.selector, asset, user);
+        calls[1] = abi.encodeWithSelector(ILending.deposit.selector, asset, user, lenderId);
 
         vm.prank(user);
         brokerProxy.multicall(calls);

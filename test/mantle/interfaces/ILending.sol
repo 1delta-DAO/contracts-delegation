@@ -5,16 +5,16 @@ interface ILending {
     /** LENDING GENERAL */
 
     // deposit ERC20 to Aave types on behalf of recipient
-    function deposit(address asset, address recipient) external payable;
+    function deposit(address asset, address recipient, uint8 lenderId) external payable;
 
     // borrow on sender's behalf
-    function borrow(address asset, uint256 amount, uint256 interestRateMode) external payable;
+    function borrow(address asset, uint256 amount, uint256 interestRateMode, uint8 lenderId) external payable;
 
     // wraps the repay function
-    function repay(address asset, address recipient, uint256 interestRateMode) external payable;
+    function repay(address asset, address recipient, uint256 interestRateMode, uint8 lenderId) external payable;
 
     // wraps the withdraw
-    function withdraw(address asset, address recipient) external payable;
+    function withdraw(address asset, address recipient, uint8 lenderId) external payable;
 
     /** TRANSFER FUNCTIONS */
 

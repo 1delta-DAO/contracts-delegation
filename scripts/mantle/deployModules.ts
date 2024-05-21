@@ -4,12 +4,9 @@ import {
     DeltaFlashAggregatorMantle__factory,
     DeltaLendingInterfaceMantle__factory,
     LendleFlashModule__factory,
+    ManagementModule__factory,
 } from "../../types";
-
-const MANTLE_CONFIGS = {
-    maxFeePerGas: 0.02 * 1e9,
-    maxPriorityFeePerGas: 0.02 * 1e9
-}
+import { MANTLE_CONFIGS } from "./utils";
 
 async function main() {
     const accounts = await ethers.getSigners()
@@ -29,13 +26,21 @@ async function main() {
     // console.log("lendleFlashModule deployed")
 
 
-    // // lending interactions
-    // const lendingInterface = await new DeltaLendingInterfaceMantle__factory(operator).deploy()
+    // lending interactions
+    // const lendingInterface = await new DeltaLendingInterfaceMantle__factory(operator).deploy(MANTLE_CONFIGS)
     // await lendingInterface.deployed()
     // console.log("lendingInterface deployed")
 
+
+    // lending interactions
+    // const management = await new ManagementModule__factory(operator).deploy(MANTLE_CONFIGS)
+    // await management.deployed()
+    // console.log("management deployed")
+
+
     console.log("FlashBroker", flashBroker.address)
     // console.log("LendingInterface", lendingInterface.address)
+    // console.log("management", management.address)
     // console.log("lendleFlashModule", lendleFlashModule.address)
 
 }

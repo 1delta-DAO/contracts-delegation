@@ -12,6 +12,8 @@ import "../../contracts/1delta/quoter/test/TestQuoterMantle.sol";
 contract FlashSwapExacInTest is DeltaSetup {
     TestQuoterMantle testQuoter;
 
+    uint8 ZERO_8 = 0;
+
     function setUp() public virtual override {
         vm.createSelectFork({blockNumber: 63740637, urlOrAlias: "https://mantle-mainnet.public.blastapi.io"});
 
@@ -218,7 +220,7 @@ contract FlashSwapExacInTest is DeltaSetup {
         uint256 minimumOut = quoted;
         calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, asset, amountIn);
         calls[1] = abi.encodeWithSelector(
-            IFlashAggregator.swapExactInSpot.selector, // 3 args
+            IFlashAggregator.flashSwapExactIn.selector, // 3 args
             amountIn,
             minimumOut,
             swapPath
@@ -257,7 +259,7 @@ contract FlashSwapExacInTest is DeltaSetup {
         uint256 minimumOut = quoted;
         calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, asset, amountIn);
         calls[1] = abi.encodeWithSelector(
-            IFlashAggregator.swapExactInSpot.selector, // 3 args
+            IFlashAggregator.flashSwapExactIn.selector, // 3 args
             amountIn,
             minimumOut,
             swapPath
@@ -286,7 +288,7 @@ contract FlashSwapExacInTest is DeltaSetup {
 
     function getSpotExactInAgni(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint8 poolId = AGNI;
-        return abi.encodePacked(tokenIn, DEX_FEE_STABLES, poolId, uint8(0), tokenOut);
+        return abi.encodePacked(tokenIn, DEX_FEE_STABLES, poolId, ZERO_8, tokenOut);
     }
 
     function getSpotExactInSingleStratumMETH(address token) internal view returns (bytes memory data) {
@@ -294,9 +296,9 @@ contract FlashSwapExacInTest is DeltaSetup {
         return
             abi.encodePacked(
                 getSpotExactInAgni(token, METH),
-                abi.encodePacked(getTokenIdEth(METH), getTokenIdEth(token), uint8(0)),
+                abi.encodePacked(getTokenIdEth(METH), getTokenIdEth(token), ZERO_8),
                 poolId,
-                uint8(0),
+                ZERO_8,
                 token,
                 uint8(99)
             );
@@ -317,7 +319,7 @@ contract FlashSwapExacInTest is DeltaSetup {
         return
             abi.encodePacked(
                 getSpotExactInAgniQuoter(token, METH),
-                abi.encodePacked(getTokenIdEth(METH), getTokenIdEth(token), uint8(0)),
+                abi.encodePacked(getTokenIdEth(METH), getTokenIdEth(token), ZERO_8),
                 poolId,
                 token
             );
@@ -326,14 +328,16 @@ contract FlashSwapExacInTest is DeltaSetup {
     function getSpotExactInDoubleStratumMETHV2_3Pool(address token) internal view returns (bytes memory data) {
         return
             abi.encodePacked(
-                getSpotExactInAgni(token, METH),
-                abi.encodePacked(getTokenIdEth(METH), getTokenIdEth(token), uint8(0)),
-                STRATUM_CURVE,
-                uint8(0),
-                token,
-                moe(),
-                uint8(0),
-                METH,
+                abi.encodePacked(
+                    getSpotExactInAgni(token, METH),
+                    abi.encodePacked(getTokenIdEth(METH), getTokenIdEth(token), ZERO_8),
+                    STRATUM_CURVE,
+                    ZERO_8,
+                    token,
+                    moe(),
+                    ZERO_8,
+                    METH
+                ),
                 uint8(99)
             );
     }
@@ -342,9 +346,9 @@ contract FlashSwapExacInTest is DeltaSetup {
         return
             abi.encodePacked(
                 getSpotExactInMoe(token, METH),
-                abi.encodePacked(getTokenIdEth(METH), getTokenIdEth(token), uint8(0)),
+                abi.encodePacked(getTokenIdEth(METH), getTokenIdEth(token), ZERO_8),
                 STRATUM_CURVE,
-                uint8(0),
+                ZERO_8,
                 getSpotExactInAgni(token, METH),
                 uint8(99)
             );
@@ -354,16 +358,16 @@ contract FlashSwapExacInTest is DeltaSetup {
         return
             abi.encodePacked(
                 getSpotExactInMoe(token, METH),
-                abi.encodePacked(getTokenIdEth(METH), getTokenIdEth(token), uint8(0)),
+                abi.encodePacked(getTokenIdEth(METH), getTokenIdEth(token), ZERO_8),
                 STRATUM_CURVE,
-                uint8(0),
+                ZERO_8,
                 token,
                 uint8(99)
             );
     }
 
     function getSpotExactInMoe(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        return abi.encodePacked(tokenIn, moe(), uint8(0), tokenOut);
+        return abi.encodePacked(tokenIn, moe(), ZERO_8, tokenOut);
     }
 
     function moe() internal view returns (bytes memory) {
@@ -374,7 +378,7 @@ contract FlashSwapExacInTest is DeltaSetup {
         return
             abi.encodePacked(
                 getSpotExactInMoeQuoter(token, METH),
-                abi.encodePacked(getTokenIdEth(METH), getTokenIdEth(token), uint8(0)),
+                abi.encodePacked(getTokenIdEth(METH), getTokenIdEth(token), ZERO_8),
                 STRATUM_CURVE,
                 token
             );
@@ -384,7 +388,7 @@ contract FlashSwapExacInTest is DeltaSetup {
         return
             abi.encodePacked(
                 getSpotExactInAgniQuoter(token, METH),
-                abi.encodePacked(getTokenIdEth(METH), getTokenIdEth(token), uint8(0)),
+                abi.encodePacked(getTokenIdEth(METH), getTokenIdEth(token), ZERO_8),
                 STRATUM_CURVE,
                 token,
                 moe(),
@@ -396,7 +400,7 @@ contract FlashSwapExacInTest is DeltaSetup {
         return
             abi.encodePacked(
                 getSpotExactInMoeQuoter(token, METH),
-                abi.encodePacked(getTokenIdEth(METH), getTokenIdEth(token), uint8(0)),
+                abi.encodePacked(getTokenIdEth(METH), getTokenIdEth(token), ZERO_8),
                 STRATUM_CURVE,
                 getSpotExactInAgniQuoter(token, METH)
             );

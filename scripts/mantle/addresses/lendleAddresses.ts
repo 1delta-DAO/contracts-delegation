@@ -1,17 +1,9 @@
 
 // ALL ADDRESSES ARE ADDRESSES ON MANTLE
 
-export const addressesTokensMantle: { [key: string]: string } = {
-    USDT: '0x201EBa5CC46D216Ce6DC03F6a759e8E766e956aE',
-    USDC: '0x09Bc4E0D864854c6aFB6eB9A9cdF58aC190D0dF9',
-    WETH: '0xdEAddEaDdeadDEadDEADDEAddEADDEAddead1111',
-    WMNT: '0x78c1b0c915c4faa5fffa6cabf0219da63d7f4cb8',
-    WBTC: '0xCAbAE6f6Ea1ecaB08Ad02fE02ce9A44F09aebfA2',
-    METH: '0xcda86a272531e8640cd7f1a92c01839911b90bb0',
-    USDE: '0x5d3a1ff2b6bab83b63cd9ad0787074081a52ef34'
-}
+export const LENDLE_POOL = '0xCFa5aE7c2CE8Fadc6426C1ff872cA45378Fb7cF3';
 
-export const addressesLendleATokens: { [key: string]: string } = {
+export const LENDLE_A_TOKENS: { [key: string]: string } = {
     USDT: '0xe71cbaaa6b093fce66211e6f218780685077d8b5',
     USDC: '0xf36afb467d1f05541d998bbbcd5f7167d67bd8fc',
     WETH: '0x787cb0d29194f0faca73884c383cf4d2501bb874',
@@ -21,7 +13,7 @@ export const addressesLendleATokens: { [key: string]: string } = {
     USDE: '0x2cfa1e69c8a8083aa52cfcf22d8caff7521e1e7e'
 }
 
-export const addressesLendleVTokens: { [key: string]: string } = {
+export const LENDLE_V_TOKENS: { [key: string]: string } = {
     USDT: '0xac3c14071c80819113df501e1ab767be910d5e5a',
     USDC: '0x334a542b51212b8bcd6f96efd718d55a9b7d1c35',
     WETH: '0x5df9a4be4f9d717b2bfece9ec350dcf4cbcb91d8',
@@ -31,7 +23,7 @@ export const addressesLendleVTokens: { [key: string]: string } = {
     USDE: '0x08c830f79917205ff1605325fcfbb3efc0c16cb5'
 }
 
-export const addressesLendleSTokens: { [key: string]: string } = {
+export const LENDLE_S_TOKENS: { [key: string]: string } = {
     USDT: '0xea8bd20f6c5424ab4acf132c70b6c7355e11f62e',
     USDC: '0xee8d412a4ef6613c08889f9cd1fd7d4a065f9a8b',
     WETH: '0x0ca5e3cd5f3273b066422291edda3768451fbb68',

@@ -6,10 +6,7 @@ pragma solidity 0.8.25;
 * Author: Achthar | 1delta 
 /******************************************************************************/
 
-import {IUniversalV3StyleSwap} from "../../../dex-tools/interfaces/IUniversalSwap.sol";
-import {IUniswapV2Pair} from "../../../../external-protocols/uniswapV2/core/interfaces/IUniswapV2Pair.sol";
 import {TokenTransfer} from "../../../libraries/TokenTransfer.sol";
-
 
 // solhint-disable max-line-length
 
@@ -22,14 +19,19 @@ abstract contract BaseSwapper is TokenTransfer {
     /// @dev Mask of lower 20 bytes.
     uint256 private constant ADDRESS_MASK = 0x00ffffffffffffffffffffffffffffffffffffffff;
     /// @dev Mask of upper 20 bytes.
-    uint256 private constant ADDRESS_MASK_UPPER = 0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff;
+    uint256 internal constant ADDRESS_MASK_UPPER = 0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff;
     /// @dev Mask of lower 3 bytes.
-    uint256 private constant UINT24_MASK = 0xffffff;
+    uint256 internal constant UINT24_MASK = 0xffffff;   
+    /// @dev Mask of lower 1 byte.
+    uint256 internal constant UINT8_MASK = 0xff;
     /// @dev MIN_SQRT_RATIO + 1 from Uniswap's TickMath
     uint160 internal constant MIN_SQRT_RATIO = 4295128740;
     /// @dev MAX_SQRT_RATIO - 1 from Uniswap's TickMath
     uint160 internal constant MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970341;
+    /// @dev used for some of the denominators in solidly calculations
     uint256 private constant SCALE_18 = 1.0e18;
+    /// @dev the minimum bytes length a full path can have 
+    uint256 internal constant MINIMUM_PATH_LENGTH = 47;
 
     bytes32 private constant FUSION_V3_FF_FACTORY = 0xff8790c2C3BA67223D83C8FCF2a5E3C650059987b40000000000000000000000;
     bytes32 private constant FUSION_POOL_INIT_CODE_HASH = 0x1bce652aaa6528355d7a339037433a20cd28410e3967635ba8d2ddb037440dbf;
@@ -70,7 +72,7 @@ abstract contract BaseSwapper is TokenTransfer {
     bytes32 constant STRATUM_CODE_HASH = 0xeb675862e19b0846fd47f7db0e8f2bf8f8da0dcd0c9aa75603248566f3faa805;
     address internal constant STRATUM_FACTORY = 0x061FFE84B0F9E1669A6bf24548E5390DBf1e03b2;
 
-    address private constant WOO_POOL = 0x9D1A92e601db0901e69bd810029F2C14bCCA3128;
+    address private constant WOO_POOL = 0xEd9e3f98bBed560e66B89AaC922E29D4596A9642;
     address internal constant REBATE_RECIPIENT = 0xC95eED7F6E8334611765F84CEb8ED6270F08907E;
 
     address internal constant KTX_VAULT = 0x2e488D7ED78171793FA91fAd5352Be423A50Dae1;
@@ -93,23 +95,16 @@ abstract contract BaseSwapper is TokenTransfer {
      */
     function getLastToken(bytes calldata data) internal pure returns (address token) {
         assembly {
-            token := shr(96, calldataload(add(data.offset, sub(data.length, 21))))
+            token := shr(96, calldataload(add(data.offset, sub(data.length, 22))))
         }
     }
 
-   /**
-    * Compute or fetch a UniV3 pair address
-    * Token sorting is done in this call
-    * @param tokenA first token
-    * @param tokenB second token
-    * @param fee fee parameter
-    * @param _pId Dex Id
-    * @return pool address
-    */
-    function getUniswapV3Pool(address tokenA, address tokenB, uint24 fee, uint256 _pId) internal pure returns (IUniversalV3StyleSwap pool) {
+    /// @dev calculate the pool address for given tokens and revert if the caller does not math this address
+    function validateUniV3TypePool(address tokenA, address tokenB, uint24 fee, uint256 _pId) internal view {
         assembly {
             let s := mload(0x40)
             let p := s
+            let pool
             switch _pId
             // Fusion
             case 0 {
@@ -250,20 +245,17 @@ abstract contract BaseSwapper is TokenTransfer {
                 mstore(p, IZI_POOL_INIT_CODE_HASH)
                 pool := and(ADDRESS_MASK, keccak256(s, 85))
             }
+
+            if iszero(eq(caller(), pool)) {
+                revert (0, 0)
+            }
         }
     }
 
-   /**
-    * Compute or fetch a UniV2 or Solidly style pair address
-    * For Merchant Moe, we fetch the pair address from the factory
-    * Token sorting is done in this call
-    * @param tokenA first token
-    * @param tokenB second token
-    * @param _pId Dex Id
-    * @return pair address
-    */
-    function pairAddress(address tokenA, address tokenB, uint256 _pId) internal view returns (address pair) {
+   /// @dev Compute or fetch a UniV2 or Solidly style pair address and validate that this is the caller
+    function validateV2PairAddress(address tokenA, address tokenB, uint256 _pId) internal view {
         assembly {
+            let pair
             switch _pId
             // FusionX
             case 50 {
@@ -410,6 +402,857 @@ abstract contract BaseSwapper is TokenTransfer {
 
                 pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
             }
+
+            if iszero(eq(pair, caller())) {
+                revert (0, 0)
+            }
+        }
+    }
+
+    /// @dev Swap Uniswap V3 style exact in
+    function _swapUniswapV3PoolExactIn(
+        address receiver,
+        int256 fromAmount,
+        bytes calldata path
+    )
+        internal
+        returns (uint256 receivedAmount)
+    {
+        // solhint-disable-next-line no-inline-assembly
+        assembly {
+            let ptr := mload(0x40)
+            let firstWord := calldataload(path.offset)
+            let tokenA := shr(96, firstWord)
+            let tokenB := shr(96, calldataload(add(path.offset, 25)))
+            let zeroForOne := lt(tokenA, tokenB)
+            let pool
+            let p := ptr
+            
+            ////////////////////////////////////////////////////
+            // Same code as for the other V3 pool address getters
+            ////////////////////////////////////////////////////
+            // switch-case through pool ids
+            switch and(shr(64, firstWord), UINT8_MASK)
+            // Fusion
+            case 0 {
+                mstore(p, FUSION_V3_FF_FACTORY)
+                p := add(p, 21)
+                // Compute the inner hash in-place
+                switch zeroForOne
+                case 0 {
+                    mstore(p, tokenB)
+                    mstore(add(p, 32), tokenA)
+                }
+                default {
+                    mstore(p, tokenA)
+                    mstore(add(p, 32), tokenB)
+                }
+                mstore(add(p, 64), and(shr(72, firstWord), UINT24_MASK))
+                mstore(p, keccak256(p, 96))
+                p := add(p, 32)
+                mstore(p, FUSION_POOL_INIT_CODE_HASH)
+                pool := and(ADDRESS_MASK, keccak256(ptr, 85))
+            }
+            // agni
+            case 1 {
+                mstore(p, AGNI_V3_FF_FACTORY)
+                p := add(p, 21)
+                // Compute the inner hash in-place
+                switch zeroForOne
+                case 0 {
+                    mstore(p, tokenB)
+                    mstore(add(p, 32), tokenA)
+                }
+                default {
+                    mstore(p, tokenA)
+                    mstore(add(p, 32), tokenB)
+                }
+                mstore(add(p, 64), and(shr(72, firstWord), UINT24_MASK))
+                mstore(p, keccak256(p, 96))
+                p := add(p, 32)
+                mstore(p, AGNI_POOL_INIT_CODE_HASH)
+                pool := and(ADDRESS_MASK, keccak256(ptr, 85))
+            }
+            // Algebra / Swapsicle
+            case 2 {
+                mstore(p, ALGEBRA_V3_FF_DEPLOYER)
+                p := add(p, 21)
+                // Compute the inner hash in-place
+                switch zeroForOne
+                case 0 {
+                    mstore(p, tokenB)
+                    mstore(add(p, 32), tokenA)
+                }
+                default {
+                    mstore(p, tokenA)
+                    mstore(add(p, 32), tokenB)
+                }
+                mstore(p, keccak256(p, 64))
+                p := add(p, 32)
+                mstore(p, ALGEBRA_POOL_INIT_CODE_HASH)
+                pool := and(ADDRESS_MASK, keccak256(ptr, 85))
+            }
+            // Butter
+            case 3 {
+                mstore(p, BUTTER_FF_FACTORY)
+                p := add(p, 21)
+                // Compute the inner hash in-place
+                switch zeroForOne
+                case 0 {
+                    mstore(p, tokenB)
+                    mstore(add(p, 32), tokenA)
+                }
+                default {
+                    mstore(p, tokenA)
+                    mstore(add(p, 32), tokenB)
+                }
+                mstore(add(p, 64), and(shr(72, firstWord), UINT24_MASK))
+                mstore(p, keccak256(p, 96))
+                p := add(p, 32)
+                mstore(p, BUTTER_POOL_INIT_CODE_HASH)
+                pool := and(ADDRESS_MASK, keccak256(ptr, 85))
+            }
+            // Cleo
+            case 4 {
+                mstore(p, CLEO_FF_FACTORY)
+                p := add(p, 21)
+                // Compute the inner hash in-place
+                switch zeroForOne
+                case 0 {
+                    mstore(p, tokenB)
+                    mstore(add(p, 32), tokenA)
+                }
+                default {
+                    mstore(p, tokenA)
+                    mstore(add(p, 32), tokenB)
+                }
+                mstore(add(p, 64), and(shr(72, firstWord), UINT24_MASK))
+                mstore(p, keccak256(p, 96))
+                p := add(p, 32)
+                mstore(p, CLEO_POOL_INIT_CODE_HASH)
+                pool := and(ADDRESS_MASK, keccak256(ptr, 85))
+            }
+            // MethLab
+            case 5 {
+                mstore(p, METHLAB_FF_FACTORY)
+                p := add(p, 21)
+                // Compute the inner hash in-place
+                switch zeroForOne
+                case 0 {
+                    mstore(p, tokenB)
+                    mstore(add(p, 32), tokenA)
+                }
+                default {
+                    mstore(p, tokenA)
+                    mstore(add(p, 32), tokenB)
+                }
+                mstore(add(p, 64), and(shr(72, firstWord), UINT24_MASK))
+                mstore(p, keccak256(p, 96))
+                p := add(p, 32)
+                mstore(p, METHLAB_INIT_CODE_HASH)
+                pool := and(ADDRESS_MASK, keccak256(ptr, 85))
+            }
+            default {
+                revert (0, 0)
+            }
+
+            // Return amount0 or amount1 depending on direction
+            switch zeroForOne
+            case 0 {
+                // Prepare external call data
+                // Store swap selector (0x128acb08)
+                mstore(ptr, 0x128acb0800000000000000000000000000000000000000000000000000000000)
+                // Store toAddress
+                mstore(add(ptr, 4), receiver)
+                // Store direction
+                mstore(add(ptr, 36), 0)
+                // Store fromAmount
+                mstore(add(ptr, 68), fromAmount)
+                // Store sqrtPriceLimitX96
+                mstore(add(ptr, 100), MAX_SQRT_RATIO)
+                // Store data offset
+                mstore(add(ptr, 132), 0xa0)
+                /// Store data length
+                mstore(add(ptr, 164), path.length)
+                // Store path
+                calldatacopy(add(ptr, 196), path.offset, path.length)
+                // Perform the external 'swap' call
+                if iszero(call(gas(), pool, 0, ptr, add(228, path.length), ptr, 32)) {
+                    // store return value directly to free memory pointer
+                    // The call failed; we retrieve the exact error message and revert with it
+                    returndatacopy(0, 0, returndatasize()) // Copy the error message to the start of memory
+                    revert(0, returndatasize()) // Revert with the error message
+                }
+                // If direction is 0, return amount0
+                fromAmount := mload(ptr)
+            }
+            default {
+                // Prepare external call data
+                // Store swap selector (0x128acb08)
+                mstore(ptr, 0x128acb0800000000000000000000000000000000000000000000000000000000)
+                // Store toAddress
+                mstore(add(ptr, 4), receiver)
+                // Store direction
+                mstore(add(ptr, 36), 1)
+                // Store fromAmount
+                mstore(add(ptr, 68), fromAmount)
+                // Store sqrtPriceLimitX96
+                mstore(add(ptr, 100), MIN_SQRT_RATIO)
+                // Store data offset
+                mstore(add(ptr, 132), 0xa0)
+                /// Store data length
+                mstore(add(ptr, 164), path.length)
+                // Store path
+                calldatacopy(add(ptr, 196), path.offset, path.length)
+                // Perform the external 'swap' call
+                if iszero(call(gas(), pool, 0, ptr, add(228, path.length), ptr, 64)) {
+                    // store return value directly to free memory pointer
+                    // The call failed; we retrieve the exact error message and revert with it
+                    returndatacopy(0, 0, returndatasize()) // Copy the error message to the start of memory
+                    revert(0, returndatasize()) // Revert with the error message
+                }
+
+                // If direction is 1, return amount1
+                fromAmount := mload(add(ptr, 32))
+            }
+            // fromAmount = -fromAmount
+            receivedAmount := sub(0, fromAmount)
+        }
+    }
+
+    /// @dev Swap exact input through izumi
+    function _swapIZIPoolExactIn(
+        address receiver,
+        uint128 fromAmount,
+        bytes calldata path
+    )
+        internal
+        returns (uint256 receivedAmount)
+    {
+        // solhint-disable-next-line no-inline-assembly
+        assembly {
+            let ptr := mload(0x40)
+            let firstWord := calldataload(path.offset)
+            let tokenA := shr(96, firstWord)
+            let tokenB := shr(96, calldataload(add(path.offset, 25)))
+            let zeroForOne := lt(tokenA, tokenB)
+            let pool
+            let p := ptr
+            
+            mstore(p, IZI_FF_FACTORY)
+            p := add(p, 21)
+            // Compute the inner hash in-place
+            switch zeroForOne
+            case 0 {
+                mstore(p, tokenB)
+                mstore(add(p, 32), tokenA)
+            }
+            default {
+                mstore(p, tokenA)
+                mstore(add(p, 32), tokenB)
+            }
+            mstore(add(p, 64), and(shr(72, firstWord), UINT24_MASK))
+            mstore(p, keccak256(p, 96))
+            p := add(p, 32)
+            mstore(p, IZI_POOL_INIT_CODE_HASH)
+            pool := and(ADDRESS_MASK, keccak256(ptr, 85))
+
+            // Return amount0 or amount1 depending on direction
+            switch zeroForOne
+            case 0 {
+                // Prepare external call data
+                // Store swapY2X selector (0x2c481252)
+                mstore(ptr, 0x2c48125200000000000000000000000000000000000000000000000000000000)
+                // Store recipient
+                mstore(add(ptr, 4), receiver)
+                // Store fromAmount
+                mstore(add(ptr, 36), fromAmount)
+                // Store highPt
+                mstore(add(ptr, 68), 799999)
+                // Store data offset
+                mstore(add(ptr, 100), sub(0xa0, 0x20))
+                /// Store data length
+                mstore(add(ptr, 132), path.length)
+                // Store path
+                calldatacopy(add(ptr, 164), path.offset, path.length)
+                // Perform the external 'swap' call
+                if iszero(call(gas(), pool, 0, ptr, add(196, path.length), ptr, 32)) {
+                    // store return value directly to free memory pointer
+                    // The call failed; we retrieve the exact error message and revert with it
+                    returndatacopy(0, 0, returndatasize()) // Copy the error message to the start of memory
+                    revert(0, returndatasize()) // Revert with the error message
+                }
+                // If direction is 0, return amount0
+                receivedAmount := mload(ptr)
+            }
+            default {
+                // Prepare external call data
+                // Store swapX2Y selector (0x857f812f)
+                mstore(ptr, 0x857f812f00000000000000000000000000000000000000000000000000000000)
+                // Store toAddress
+                mstore(add(ptr, 4), receiver)
+                // Store fromAmount
+                mstore(add(ptr, 36), fromAmount)
+                // Store sqrtPriceLimitX96
+                mstore(add(ptr, 68), sub(0, 799999))
+                // Store data offset
+                mstore(add(ptr, 100), sub(0xa0, 0x20))
+                /// Store data length
+                mstore(add(ptr, 132), path.length)
+                // Store path
+                calldatacopy(add(ptr, 164), path.offset, path.length)
+                // Perform the external 'swap' call
+                if iszero(call(gas(), pool, 0, ptr, add(196, path.length), ptr, 64)) {
+                    // store return value directly to free memory pointer
+                    // The call failed; we retrieve the exact error message and revert with it
+                    returndatacopy(0, 0, returndatasize()) // Copy the error message to the start of memory
+                    revert(0, returndatasize()) // Revert with the error message
+                }
+                // If direction is 1, return amount1
+                receivedAmount := mload(add(ptr, 32))
+            }
+        }
+    }
+
+    /// @dev Swap exact out via v2 type pool
+    function _swapV2StyleExactOut(
+        uint256 amountOut,
+        address receiver,
+        bytes calldata path
+    )
+        internal
+    {
+        // solhint-disable-next-line no-inline-assembly
+        assembly {
+            let ptr := mload(0x40)
+            let pair
+            let firstWord := calldataload(path.offset)
+            let tokenB := shr(96, firstWord)
+            let _pId := and(shr(64, firstWord), UINT8_MASK)
+            let tokenA := shr(96, calldataload(add(path.offset, 25)))
+            let zeroForOne := lt(tokenA, tokenB)
+
+            ////////////////////////////////////////////////////
+            // Same code as for the other V2 pool address getters
+            ////////////////////////////////////////////////////
+            switch _pId
+            // FusionX
+            case 50 {
+                switch zeroForOne
+                case 0 {
+                    mstore(0xB14, tokenA)
+                    mstore(0xB00, tokenB)
+                }
+                default {
+                    mstore(0xB14, tokenB)
+                    mstore(0xB00, tokenA)
+                }
+                let salt := keccak256(0xB0C, 0x28)
+                mstore(0xB00, FUSION_V2_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, CODE_HASH_FUSION_V2)
+
+                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+            }
+            // 51: Merchant Moe
+            case 51 {
+                // selector for getPair(address,address)
+                mstore(0xB00, 0xe6a4390500000000000000000000000000000000000000000000000000000000)
+                mstore(add(0xB00, 0x4), tokenA)
+                mstore(add(0xB00, 0x24), tokenB)
+
+                // call to collateralToken
+                pop(staticcall(gas(), MERCHANT_MOE_FACTORY, 0xB00, 0x48, 0xB00, 0x20))
+
+                // load the retrieved protocol share
+                pair := and(ADDRESS_MASK, mload(0xB00))
+            }
+            // Velo Volatile
+            case 52 {
+                switch zeroForOne
+                case 0 {
+                    mstore(0xB14, tokenA)
+                    mstore(0xB00, tokenB)
+                }
+                default {
+                    mstore(0xB14, tokenB)
+                    mstore(0xB00, tokenA)
+                }
+                mstore8(0xB34, 0)
+                let salt := keccak256(0xB0C, 0x29)
+                mstore(0xB00, VELO_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, VELO_CODE_HASH)
+
+                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+            }
+            // Velo Stable
+            case 53 {
+                switch zeroForOne
+                case 0 {
+                    mstore(0xB14, tokenA)
+                    mstore(0xB00, tokenB)
+                }
+                default {
+                    mstore(0xB14, tokenB)
+                    mstore(0xB00, tokenA)
+                }
+                mstore8(0xB34, 1)
+                let salt := keccak256(0xB0C, 0x29)
+                mstore(0xB00, VELO_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, VELO_CODE_HASH)
+
+                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+            }
+            // Cleo V1 Volatile
+            case 54 {
+                switch zeroForOne
+                case 0 {
+                    mstore(0xB14, tokenA)
+                    mstore(0xB00, tokenB)
+                }
+                default {
+                    mstore(0xB14, tokenB)
+                    mstore(0xB00, tokenA)
+                }
+                mstore8(0xB34, 0)
+                let salt := keccak256(0xB0C, 0x29)
+                mstore(0xB00, CLEO_V1_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, CLEO_V1_CODE_HASH)
+
+                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+            }
+            // Cleo V1 Stable
+            case 55 {
+                switch zeroForOne
+                case 0 {
+                    mstore(0xB14, tokenA)
+                    mstore(0xB00, tokenB)
+                }
+                default {
+                    mstore(0xB14, tokenB)
+                    mstore(0xB00, tokenA)
+                }
+                mstore8(0xB34, 1)
+                let salt := keccak256(0xB0C, 0x29)
+                mstore(0xB00, CLEO_V1_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, CLEO_V1_CODE_HASH)
+
+                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+            }
+            // Stratum Volatile
+            case 56 {
+                switch zeroForOne
+                case 0 {
+                    mstore(0xB14, tokenA)
+                    mstore(0xB00, tokenB)
+                }
+                default {
+                    mstore(0xB14, tokenB)
+                    mstore(0xB00, tokenA)
+                }
+                mstore8(0xB34, 0)
+                let salt := keccak256(0xB0C, 0x29)
+                mstore(0xB00, STRATUM_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, STRATUM_CODE_HASH)
+
+                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+            }
+            // 57: Stratum Stable
+            default {
+                switch zeroForOne
+                case 0 {
+                    mstore(0xB14, tokenA)
+                    mstore(0xB00, tokenB)
+                }
+                default {
+                    mstore(0xB14, tokenB)
+                    mstore(0xB00, tokenA)
+                }
+                mstore8(0xB34, 1)
+                let salt := keccak256(0xB0C, 0x29)
+                mstore(0xB00, STRATUM_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, STRATUM_CODE_HASH)
+
+                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+            }
+
+            // selector for swap(...)
+            mstore(ptr, 0x022c0d9f00000000000000000000000000000000000000000000000000000000)
+
+            switch zeroForOne
+            case 1 {
+                mstore(add(ptr, 4), 0x0)
+                mstore(add(ptr, 36), amountOut)
+            }
+            default {
+                mstore(add(ptr, 4), amountOut)
+                mstore(add(ptr, 36), 0x0)
+            }
+            // Prepare external call data
+
+            // Store sqrtPriceLimitX96
+            mstore(add(ptr, 68), address())
+            // Store data offset
+            mstore(add(ptr, 100), sub(0xa0, 0x20))
+            /// Store data length
+            mstore(add(ptr, 132), path.length)
+            // Store path
+            calldatacopy(add(ptr, 164), path.offset, path.length)
+            // Perform the external 'swap' call
+            if iszero(call(gas(), pair, 0, ptr, add(196, path.length), ptr, 0x0)) {
+                // store return value directly to free memory pointer
+                // The call failed; we retrieve the exact error message and revert with it
+                returndatacopy(0, 0, returndatasize()) // Copy the error message to the start of memory
+                revert(0, returndatasize()) // Revert with the error message
+            }
+
+            ////////////////////////////////////////////////////
+            // We chain the transfer to the receiver, given that
+            // it is not this address
+            ////////////////////////////////////////////////////
+            if iszero(eq(address(), receiver)) {
+                ////////////////////////////////////////////////////
+                // Populate tx for transfer to receiver
+                ////////////////////////////////////////////////////
+                // selector for transfer(address,uint256)
+                mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+                mstore(add(ptr, 0x04), receiver)
+                mstore(add(ptr, 0x24), amountOut)
+
+                let success := call(gas(), tokenB, 0, ptr, 0x44, ptr, 32)
+
+                let rdsize := returndatasize()
+
+                // Check for ERC20 success. ERC20 tokens should return a boolean,
+                // but some don't. We accept 0-length return data as success, or at
+                // least 32 bytes that starts with a 32-byte boolean true.
+                success := and(
+                    success, // call itself succeeded
+                    or(
+                        iszero(rdsize), // no return data, or
+                        and(
+                            iszero(lt(rdsize, 32)), // at least 32 bytes
+                            eq(mload(ptr), 1) // starts with uint256(1)
+                        )
+                    )
+                )
+
+                if iszero(success) {
+                    returndatacopy(0x0, 0, rdsize)
+                    revert(0x0, rdsize)
+                }
+            }
+        }
+    }
+
+
+    /// @dev Swap exact output through izumi
+    function _swapIZIPoolExactOut(
+        address receiver,
+        uint128 toAmount,
+        bytes calldata path
+    )
+        internal
+        returns (uint256 fromAmount)
+    {
+        // solhint-disable-next-line no-inline-assembly
+        assembly {
+            let ptr := mload(0x40)
+            let firstWord := calldataload(path.offset)
+            let tokenA := shr(96, calldataload(add(path.offset, 25)))
+            let tokenB := shr(96, firstWord)
+            let zeroForOne := lt(tokenA, tokenB)
+            let pool
+            let p := ptr
+            
+            mstore(p, IZI_FF_FACTORY)
+            p := add(p, 21)
+            // Compute the inner hash in-place
+            switch zeroForOne
+            case 0 {
+                mstore(p, tokenB)
+                mstore(add(p, 32), tokenA)
+            }
+            default {
+                mstore(p, tokenA)
+                mstore(add(p, 32), tokenB)
+            }
+            mstore(add(p, 64), and(shr(72, firstWord), UINT24_MASK))
+            mstore(p, keccak256(p, 96))
+            p := add(p, 32)
+            mstore(p, IZI_POOL_INIT_CODE_HASH)
+            pool := and(ADDRESS_MASK, keccak256(ptr, 85))
+
+            // Return amount0 or amount1 depending on direction
+            switch zeroForOne
+            case 0 {
+                // Prepare external call data
+                // Store swapY2XDesireX selector (0xf094685a)
+                mstore(ptr, 0xf094685a00000000000000000000000000000000000000000000000000000000)
+                // Store recipient
+                mstore(add(ptr, 4), receiver)
+                // Store toAmount
+                mstore(add(ptr, 36), toAmount)
+                // Store highPt
+                mstore(add(ptr, 68), 800001)
+                // Store data offset
+                mstore(add(ptr, 100), sub(0xa0, 0x20))
+                /// Store data length
+                mstore(add(ptr, 132), path.length)
+                // Store path
+                calldatacopy(add(ptr, 164), path.offset, path.length)
+                // Perform the external 'swap' call
+                if iszero(call(gas(), pool, 0, ptr, add(196, path.length), ptr, 64)) {
+                    // store return value directly to free memory pointer
+                    // The call failed; we retrieve the exact error message and revert with it
+                    returndatacopy(0, 0, returndatasize()) // Copy the error message to the start of memory
+                    revert(0, returndatasize()) // Revert with the error message
+                }
+                                // If direction is 1, return amount1
+                fromAmount := mload(add(ptr, 32))
+            }
+            default {
+                // Prepare external call data
+                // Store swapX2YDesireY selector (0x59dd1436)
+                mstore(ptr, 0x59dd143600000000000000000000000000000000000000000000000000000000)
+                // Store toAddress
+                mstore(add(ptr, 4), receiver)
+                // Store toAmount
+                mstore(add(ptr, 36), toAmount)
+                // Store sqrtPriceLimitX96
+                mstore(add(ptr, 68), sub(0, 800001))
+                // Store data offset
+                mstore(add(ptr, 100), sub(0xa0, 0x20))
+                /// Store data length
+                mstore(add(ptr, 132), path.length)
+                // Store path
+                calldatacopy(add(ptr, 164), path.offset, path.length)
+                // Perform the external 'swap' call
+                if iszero(call(gas(), pool, 0, ptr, add(196, path.length), ptr, 32)) {
+                    // store return value directly to free memory pointer
+                    // The call failed; we retrieve the exact error message and revert with it
+                    returndatacopy(0, 0, returndatasize()) // Copy the error message to the start of memory
+                    revert(0, returndatasize()) // Revert with the error message
+                }
+                // If direction is 0, return amount0
+                fromAmount := mload(ptr)
+            }
+        }
+    }
+
+    /// @dev swap uniswap V3 style exact out
+    function _swapUniswapV3PoolExactOut(
+        address receiver,
+        int256 fromAmount,
+        bytes calldata path
+    )
+        internal
+        returns (uint256 receivedAmount)
+    {
+        // solhint-disable-next-line no-inline-assembly
+        assembly {
+            let ptr := mload(0x40)
+            let firstWord := calldataload(path.offset)
+            let poolId := shr(64, firstWord)
+            let tokenA := shr(96, calldataload(add(path.offset, 25)))
+            let tokenB := shr(96, firstWord)
+            let zeroForOne := lt(tokenA, tokenB)
+            let pool
+            let p := ptr
+            ////////////////////////////////////////////////////
+            // Same code as for the other V3 pool address getters
+            ////////////////////////////////////////////////////
+            switch and(shr(64, firstWord), UINT8_MASK)
+            // Fusion
+            case 0 {
+                mstore(p, FUSION_V3_FF_FACTORY)
+                p := add(p, 21)
+                // Compute the inner hash in-place
+                switch zeroForOne
+                case 0 {
+                    mstore(p, tokenB)
+                    mstore(add(p, 32), tokenA)
+                }
+                default {
+                    mstore(p, tokenA)
+                    mstore(add(p, 32), tokenB)
+                }
+                mstore(add(p, 64), and(shr(72, firstWord), UINT24_MASK))
+                mstore(p, keccak256(p, 96))
+                p := add(p, 32)
+                mstore(p, FUSION_POOL_INIT_CODE_HASH)
+                pool := and(ADDRESS_MASK, keccak256(ptr, 85))
+            }
+            // agni
+            case 1 {
+                mstore(p, AGNI_V3_FF_FACTORY)
+                p := add(p, 21)
+                // Compute the inner hash in-place
+                switch zeroForOne
+                case 0 {
+                    mstore(p, tokenB)
+                    mstore(add(p, 32), tokenA)
+                }
+                default {
+                    mstore(p, tokenA)
+                    mstore(add(p, 32), tokenB)
+                }
+                mstore(add(p, 64), and(shr(72, firstWord), UINT24_MASK))
+                mstore(p, keccak256(p, 96))
+                p := add(p, 32)
+                mstore(p, AGNI_POOL_INIT_CODE_HASH)
+                pool := and(ADDRESS_MASK, keccak256(ptr, 85))
+            }
+            // Algebra / Swapsicle
+            case 2 {
+                mstore(p, ALGEBRA_V3_FF_DEPLOYER)
+                p := add(p, 21)
+                // Compute the inner hash in-place
+                switch zeroForOne
+                case 0 {
+                    mstore(p, tokenB)
+                    mstore(add(p, 32), tokenA)
+                }
+                default {
+                    mstore(p, tokenA)
+                    mstore(add(p, 32), tokenB)
+                }
+                mstore(p, keccak256(p, 64))
+                p := add(p, 32)
+                mstore(p, ALGEBRA_POOL_INIT_CODE_HASH)
+                pool := and(ADDRESS_MASK, keccak256(ptr, 85))
+            }
+            // Butter
+            case 3 {
+                mstore(p, BUTTER_FF_FACTORY)
+                p := add(p, 21)
+                // Compute the inner hash in-place
+                switch zeroForOne
+                case 0 {
+                    mstore(p, tokenB)
+                    mstore(add(p, 32), tokenA)
+                }
+                default {
+                    mstore(p, tokenA)
+                    mstore(add(p, 32), tokenB)
+                }
+                mstore(add(p, 64), and(shr(72, firstWord), UINT24_MASK))
+                mstore(p, keccak256(p, 96))
+                p := add(p, 32)
+                mstore(p, BUTTER_POOL_INIT_CODE_HASH)
+                pool := and(ADDRESS_MASK, keccak256(ptr, 85))
+            }
+            // Cleo
+            case 4 {
+                mstore(p, CLEO_FF_FACTORY)
+                p := add(p, 21)
+                // Compute the inner hash in-place
+                switch zeroForOne
+                case 0 {
+                    mstore(p, tokenB)
+                    mstore(add(p, 32), tokenA)
+                }
+                default {
+                    mstore(p, tokenA)
+                    mstore(add(p, 32), tokenB)
+                }
+                mstore(add(p, 64), and(shr(72, firstWord), UINT24_MASK))
+                mstore(p, keccak256(p, 96))
+                p := add(p, 32)
+                mstore(p, CLEO_POOL_INIT_CODE_HASH)
+                pool := and(ADDRESS_MASK, keccak256(ptr, 85))
+            }
+            // MethLab
+            case 5 {
+                mstore(p, METHLAB_FF_FACTORY)
+                p := add(p, 21)
+                // Compute the inner hash in-place
+                switch zeroForOne
+                case 0 {
+                    mstore(p, tokenB)
+                    mstore(add(p, 32), tokenA)
+                }
+                default {
+                    mstore(p, tokenA)
+                    mstore(add(p, 32), tokenB)
+                }
+                mstore(add(p, 64), and(shr(72, firstWord), UINT24_MASK))
+                mstore(p, keccak256(p, 96))
+                p := add(p, 32)
+                mstore(p, METHLAB_INIT_CODE_HASH)
+                pool := and(ADDRESS_MASK, keccak256(ptr, 85))
+            }
+            default {
+                revert (0, 0)
+            }
+
+            // Return amount0 or amount1 depending on direction
+            switch zeroForOne
+            case 0 {
+                // Prepare external call data
+                // Store swap selector (0x128acb08)
+                mstore(ptr, 0x128acb0800000000000000000000000000000000000000000000000000000000)
+                // Store toAddress
+                mstore(add(ptr, 4), receiver)
+                // Store direction
+                mstore(add(ptr, 36), 0)
+                // Store fromAmount
+                mstore(add(ptr, 68), fromAmount)
+                // Store sqrtPriceLimitX96
+                mstore(add(ptr, 100), MAX_SQRT_RATIO)
+                // Store data offset
+                mstore(add(ptr, 132), 0xa0)
+                /// Store data length
+                mstore(add(ptr, 164), path.length)
+                // Store path
+                calldatacopy(add(ptr, 196), path.offset, path.length)
+                // Perform the external 'swap' call
+                if iszero(call(gas(), pool, 0, ptr, add(228, path.length), ptr, 32)) {
+                    // store return value directly to free memory pointer
+                    // The call failed; we retrieve the exact error message and revert with it
+                    returndatacopy(0, 0, returndatasize()) // Copy the error message to the start of memory
+                    revert(0, returndatasize()) // Revert with the error message
+                }
+                // If direction is 1, return amount1
+                fromAmount := mload(add(ptr, 32))
+            }
+            default {
+                // Prepare external call data
+                // Store swap selector (0x128acb08)
+                mstore(ptr, 0x128acb0800000000000000000000000000000000000000000000000000000000)
+                // Store toAddress
+                mstore(add(ptr, 4), receiver)
+                // Store direction
+                mstore(add(ptr, 36), 1)
+                // Store fromAmount
+                mstore(add(ptr, 68), fromAmount)
+                // Store sqrtPriceLimitX96
+                mstore(add(ptr, 100), MIN_SQRT_RATIO)
+                // Store data offset
+                mstore(add(ptr, 132), 0xa0)
+                /// Store data length
+                mstore(add(ptr, 164), path.length)
+                // Store path
+                calldatacopy(add(ptr, 196), path.offset, path.length)
+                // Perform the external 'swap' call
+                if iszero(call(gas(), pool, 0, ptr, add(228, path.length), ptr, 64)) {
+                    // store return value directly to free memory pointer
+                    // The call failed; we retrieve the exact error message and revert with it
+                    returndatacopy(0, 0, returndatasize()) // Copy the error message to the start of memory
+                    revert(0, returndatasize()) // Revert with the error message
+                }
+
+                // If direction is 0, return amount0
+                fromAmount := mload(ptr)
+            }
+            // fromAmount = -fromAmount
+            receivedAmount := fromAmount
         }
     }
 
@@ -422,76 +1265,76 @@ abstract contract BaseSwapper is TokenTransfer {
      */
     function swapExactIn(uint256 amountIn, bytes calldata path) internal returns (uint256 amountOut) {
         while (true) {
-            address tokenIn;
-            address tokenOut;
-            uint8 identifier;
+            uint256 identifier;
             assembly {
-                let firstWord := calldataload(path.offset)
-                tokenIn := shr(96, firstWord)
-                identifier := shr(64, firstWord)
-                tokenOut := shr(96, calldataload(add(path.offset, 25)))
+                identifier := and(shr(64, calldataload(path.offset)), UINT8_MASK)
             }
             // uniswapV3 style
             if (identifier < 50) {
-                uint24 fee;
-                bool zeroForOne;
-                assembly {
-                    fee := and(shr(72, calldataload(path.offset)), 0xffffff)
-                    zeroForOne := lt(tokenIn, tokenOut)
-                }
-                (int256 amount0, int256 amount1) = getUniswapV3Pool(tokenIn, tokenOut, fee, identifier).swap(
+                amountIn = _swapUniswapV3PoolExactIn(
                     address(this),
-                    zeroForOne,
                     int256(amountIn),
-                    zeroForOne ? MIN_SQRT_RATIO : MAX_SQRT_RATIO,
                     path[:45]
                 );
-
-                amountIn = uint256(-(zeroForOne ? amount1 : amount0));
             }
             // uniswapV2 style
             else if (identifier < 100) {
-                amountIn = swapUniV2ExactIn(tokenIn, tokenOut, amountIn, identifier);
+                amountIn = swapUniV2ExactInComplete(
+                    amountIn,
+                    false,
+                    path[:45]
+                );
             }
             // iZi
             else if (identifier == 100) {
-                uint24 fee;
-                bool zeroForOne;
-                assembly {
-                    fee := and(shr(72, calldataload(path.offset)), 0xffffff)
-                    zeroForOne := lt(tokenIn, tokenOut)
-                }
-                if (zeroForOne)
-                    (, amountIn) = getUniswapV3Pool(tokenIn, tokenOut, fee, identifier).swapX2Y(
-                        address(this),
-                        uint128(amountIn),
-                        -799999, // low tick
-                        path[:45]
-                    );
-                else
-                    (amountIn, ) = getUniswapV3Pool(tokenIn, tokenOut, fee, identifier).swapY2X(
-                        address(this),
-                        uint128(amountIn),
-                        799999, // high tick
-                        path[:45]
-                    );
+                amountIn = _swapIZIPoolExactIn(
+                    address(this),
+                    uint128(amountIn),
+                    path[:45]
+                );
             }
             // WOO Fi
             else if (identifier == 101) {
+                address tokenIn;
+                address tokenOut;
+                assembly {
+                    let firstWord := calldataload(path.offset)
+                    tokenIn := shr(96, firstWord)
+                    tokenOut := shr(96, calldataload(add(path.offset, 25)))
+                }
                 amountIn = swapWooFiExactIn(tokenIn, tokenOut, amountIn);
             }
             // Stratum 3USD with wrapper
             else if (identifier == 102) {
+                address tokenIn;
+                address tokenOut;
+                assembly {
+                    let firstWord := calldataload(path.offset)
+                    tokenIn := shr(96, firstWord)
+                    tokenOut := shr(96, calldataload(add(path.offset, 25)))
+                }
                 amountIn = swapStratum3(tokenIn, tokenOut, amountIn);
             }
             // Moe LB
             else if (identifier == 103) {
+                address tokenIn;
+                address tokenOut;
                 uint24 bin;
                 assembly {
-                    bin := and(shr(72, calldataload(path.offset)), 0xffffff)
+                    let firstWord := calldataload(path.offset)
+                    tokenIn := shr(96, firstWord)
+                    tokenOut := shr(96, calldataload(add(path.offset, 25)))
+                    bin := and(shr(72, firstWord), UINT24_MASK)
                 }
                 amountIn = swapLBexactIn(tokenIn, tokenOut, amountIn, address(this), uint16(bin));
             } else if(identifier == 104) {
+                address tokenIn;
+                address tokenOut;
+                assembly {
+                    let firstWord := calldataload(path.offset)
+                    tokenIn := shr(96, firstWord)
+                    tokenOut := shr(96, calldataload(add(path.offset, 25)))
+                }
                 amountIn = swapKTXExactIn(tokenIn, tokenOut, amountIn);
             } 
             // Curve stable general
@@ -500,17 +1343,17 @@ abstract contract BaseSwapper is TokenTransfer {
                 uint8 indexOut;
                 uint8 subGroup;
                 assembly {
-                    let indexData := and(shr(72, calldataload(path.offset)), 0xffffff)
-                    indexIn := and(shr(16, indexData), 0xff)
-                    indexOut := and(shr(8, indexData), 0xff)
-                    subGroup := and(indexData, 0xff)
+                    let indexData := and(shr(72, calldataload(path.offset)), UINT24_MASK)
+                    indexIn := and(shr(16, indexData), UINT8_MASK)
+                    indexOut := and(shr(8, indexData), UINT8_MASK)
+                    subGroup := and(indexData, UINT8_MASK)
                 }
                 amountIn = swapStratumCurveGeneral(indexIn, indexOut, subGroup, amountIn);
             } else
                 revert invalidDexId();
 
             // decide whether to continue or terminate
-            if (path.length > 46) {
+            if (path.length > MINIMUM_PATH_LENGTH) {
                 path = path[25:];
             } else {
                 amountOut = amountIn;
@@ -993,27 +1836,37 @@ abstract contract BaseSwapper is TokenTransfer {
         }
     }
 
-
     /**
      * Executes an exact input swap internally across major UniV2 & Solidly style forks
-     * Note that this will NOT trigger callbacks and therefore is not executing flash swaps
      * Due to the nature of the V2 impleemntation, the callback is not triggered if no calldata is provided
      * As such, we never enter the callback implementation when using this function
-     * @param tokenIn input
-     * @param tokenOut output
      * @param amountIn sell amount
-     * @param _pId DEX identifier
+     * @param useFlashSwap if set to true, the amount in will not be transferred and a
+     *                     payback is expected to be done in the callback
      * @return buyAmount output amount
      */
-    function swapUniV2ExactIn(
-        address tokenIn,
-        address tokenOut,
+    function swapUniV2ExactInComplete(
         uint256 amountIn,
-        uint256 _pId // we need to know the DEX for the fee
-    ) private returns (uint256 buyAmount) {
+        bool useFlashSwap,
+        bytes calldata path
+    ) internal returns (uint256 buyAmount) {
         assembly {
+            let ptr := mload(0x40) // free memory pointer
+            ////////////////////////////////////////////////////
+            // We extract all relevant data from the path bytes blob
+            ////////////////////////////////////////////////////
+            let pair
+            let success
+            let firstWord := calldataload(path.offset)
+            let tokenIn := shr(96, firstWord)
+            let tokenOut := shr(96, calldataload(add(path.offset, 25)))
             let zeroForOne := lt(tokenIn, tokenOut)
-            let pair := mload(0x40) // use free memo for pair
+        
+            ////////////////////////////////////////////////////
+            // We get the poolIdentifier as _pId
+            // we extract the correct pool address from that info
+            ////////////////////////////////////////////////////
+            let _pId := and(shr(64, firstWord), 0xff)
             switch _pId
             case 50 {
                 // fusionX
@@ -1159,37 +2012,6 @@ abstract contract BaseSwapper is TokenTransfer {
 
                 pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
             }
-            // EXECUTE TRANSFER TO PAIR
-            let ptr := mload(0x40) // free memory pointer
-            // selector for transfer(address,uint256)
-            mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
-            mstore(add(ptr, 0x04), and(pair, ADDRESS_MASK_UPPER))
-            mstore(add(ptr, 0x24), amountIn)
-
-            let success := call(gas(), and(tokenIn, ADDRESS_MASK_UPPER), 0, ptr, 0x44, ptr, 32)
-
-            let rdsize := returndatasize()
-
-            // Check for ERC20 success. ERC20 tokens should return a boolean,
-            // but some don't. We accept 0-length return data as success, or at
-            // least 32 bytes that starts with a 32-byte boolean true.
-            success := and(
-                success, // call itself succeeded
-                or(
-                    iszero(rdsize), // no return data, or
-                    and(
-                        iszero(lt(rdsize, 32)), // at least 32 bytes
-                        eq(mload(ptr), 1) // starts with uint256(1)
-                    )
-                )
-            )
-
-            if iszero(success) {
-                returndatacopy(ptr, 0, rdsize)
-                revert(ptr, rdsize)
-            }
-            // TRANSFER COMPLETE
-
             // Compute the buy amount based on the pair reserves.
             {
                 // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
@@ -1263,6 +2085,11 @@ abstract contract BaseSwapper is TokenTransfer {
 
                     buyAmount := mload(0xB00)
                 }
+
+                ////////////////////////////////////////////////////
+                // Prepare the swap tx
+                ////////////////////////////////////////////////////
+
                 // selector for swap(...)
                 mstore(0xB00, 0x022c0d9f00000000000000000000000000000000000000000000000000000000)
 
@@ -1276,18 +2103,77 @@ abstract contract BaseSwapper is TokenTransfer {
                     mstore(0xB24, buyAmount)
                 }
                 mstore(0xB44, address())
-                mstore(0xB64, 0x80) // bytes classifier
-                mstore(0xB84, 0) // bytesdata
+                mstore(0xB64, 0x80) // bytes offset
 
-                success := call(
-                    gas(),
-                    pair,
-                    0x0,
-                    0xB00, // input selector
-                    0xA4, // input size = 164 (selector (4bytes) plus 5*32bytes)
-                    0, // output = 0
-                    0 // output size = 0
-                )
+                ////////////////////////////////////////////////////
+                // In case of a flash swap, we copy the calldata to
+                // the execution parameters
+                ////////////////////////////////////////////////////
+                switch useFlashSwap
+                case 1 {
+                    mstore(0xB84, path.length) // bytes length
+                    calldatacopy(0xBA4, path.offset, path.length)
+                    success := call(
+                        gas(),
+                        pair,
+                        0x0,
+                        0xB00, // input selector
+                        add(0xA4, path.length), // input size = 164 (selector (4bytes) plus 5*32bytes)
+                        0x0, // output = 0
+                        0x0 // output size = 0
+                    )
+                }
+                ////////////////////////////////////////////////////
+                // Otherwise, we transfer before
+                ////////////////////////////////////////////////////
+                default {
+                    ////////////////////////////////////////////////////
+                    // Populate tx for transfer to pair
+                    ////////////////////////////////////////////////////
+                    // selector for transfer(address,uint256)
+                    mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+                    mstore(add(ptr, 0x04), and(pair, ADDRESS_MASK_UPPER))
+                    mstore(add(ptr, 0x24), amountIn)
+
+                    success := call(gas(), and(tokenIn, ADDRESS_MASK_UPPER), 0, ptr, 0x44, ptr, 32)
+
+                    let rdsize := returndatasize()
+
+                    // Check for ERC20 success. ERC20 tokens should return a boolean,
+                    // but some don't. We accept 0-length return data as success, or at
+                    // least 32 bytes that starts with a 32-byte boolean true.
+                    success := and(
+                        success, // call itself succeeded
+                        or(
+                            iszero(rdsize), // no return data, or
+                            and(
+                                iszero(lt(rdsize, 32)), // at least 32 bytes
+                                eq(mload(ptr), 1) // starts with uint256(1)
+                            )
+                        )
+                    )
+
+                    if iszero(success) {
+                        returndatacopy(0x0, 0, rdsize)
+                        revert(0x0, rdsize)
+                    }
+
+                    ////////////////////////////////////////////////////
+                    // We store the bytes length to zero (no callback)
+                    // and directly trigger the swap
+                    ////////////////////////////////////////////////////
+                    mstore(0xB84, 0) // bytes length
+                    success := call(
+                        gas(),
+                        pair,
+                        0x0,
+                        0xB00, // input selector
+                        0xA4, // input size = 164 (selector (4bytes) plus 5*32bytes)
+                        0, // output = 0
+                        0 // output size = 0
+                    )
+                }
+ 
                 if iszero(success) {
                     // Forward the error
                     returndatacopy(0, 0, returndatasize())
@@ -1296,6 +2182,7 @@ abstract contract BaseSwapper is TokenTransfer {
             }
         }
     }
+
 
     /**
      * Calculates the input amount for a UniswapV2 and Solidly style swap

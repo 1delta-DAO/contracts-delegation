@@ -1,10 +1,10 @@
 import { impersonateAccount, mine, setCode } from "@nomicfoundation/hardhat-network-helpers";
 import { parseUnits } from "ethers/lib/utils";
 import { ConfigModule__factory, DeltaBrokerProxy, DeltaBrokerProxy__factory, DeltaFlashAggregatorMantle__factory, DeltaLendingInterfaceMantle__factory, LensModule__factory } from "../types";
-import { lendleBrokerAddresses } from "../deploy/mantle_addresses";
+import { ONE_DELTA_ADDRESSES } from "../deploy/mantle_addresses";
 import { DeltaFlashAggregatorMantleInterface } from "../types/DeltaFlashAggregatorMantle";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { addressesTokensMantle } from "../scripts/mantle/lendleAddresses";
+import { addressesTokensMantle } from "../scripts/mantle/addresses/lendleAddresses";
 import { network } from "hardhat";
 import { DeltaLendingInterfaceMantleInterface } from "../types/DeltaLendingInterfaceMantle";
 import { ModuleConfigAction, getSelectors } from "./libraries/diamond";
@@ -24,9 +24,9 @@ const wmnt = "0x78c1b0c915c4faa5fffa6cabf0219da63d7f4cb8"
 const usdt = "0x201EBa5CC46D216Ce6DC03F6a759e8E766e956aE"
 
 
-const brokerProxy = lendleBrokerAddresses.BrokerProxy[MANTLE_CHAIN_ID]
-const traderModule = lendleBrokerAddresses.MarginTraderModule[MANTLE_CHAIN_ID]
-const lenderModule = lendleBrokerAddresses.LendingInterface[MANTLE_CHAIN_ID]
+const brokerProxy = ONE_DELTA_ADDRESSES.BrokerProxy[MANTLE_CHAIN_ID]
+const traderModule = ONE_DELTA_ADDRESSES.MarginTraderModule[MANTLE_CHAIN_ID]
+const lenderModule = ONE_DELTA_ADDRESSES.LendingInterface[MANTLE_CHAIN_ID]
 
 let multicaller: DeltaBrokerProxy
 let flashAggregatorInterface: DeltaFlashAggregatorMantleInterface
@@ -88,7 +88,7 @@ it("Test repay", async function () {
     const amount = parseUnits('1.0', 18)
     const callWrap = lendingInterfaceInterface.encodeFunctionData('wrap',)
     const callUnwrap = lendingInterfaceInterface.encodeFunctionData('unwrap',)
-    const callRepay = lendingInterfaceInterface.encodeFunctionData('repay', [wbtc, trader.address, 2])
+    const callRepay = lendingInterfaceInterface.encodeFunctionData('repay', [wbtc, trader.address, 2, 0])
 
     const path0 = encodeAggregatorPathEthers(
         [wbtc, wmnt],
@@ -113,12 +113,12 @@ it("Test repay", async function () {
     )
     const amount0 = '1238'
     // const amount1 = '309'
-    const value ='988552721525158395'// '988552721525158395'
+    const value = '988552721525158395'// '988552721525158395'
     // const amount2 = '99018003124066296'
     const swap0 = flashAggregatorInterface.encodeFunctionData('swapExactOutSpotSelf', [amount0, MaxUint128, path0])
-    const swap1 = flashAggregatorInterface.encodeFunctionData('swapAllOutSpotSelf', [MaxUint128, '2', path1])
-    // const swap2 = flashAggregatorInterface.encodeFunctionData('swapAllOutSpotSelf', [MaxUint128, '2', path2])
-   const calls = [
+    const swap1 = flashAggregatorInterface.encodeFunctionData('swapAllOutSpotSelf', [MaxUint128, '2', 0, path1])
+    // const swap2 = flashAggregatorInterface.encodeFunctionData('swapAllOutSpotSelf', [MaxUint128, '2', 0,  path2])
+    const calls = [
         callWrap,
         swap0,
         // swap1,
@@ -127,7 +127,7 @@ it("Test repay", async function () {
         callRepay,
         callUnwrap
     ]
-    
+
     await multicaller.connect(trader).multicall(
         calls
         , { value }

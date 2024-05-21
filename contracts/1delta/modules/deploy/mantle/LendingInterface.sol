@@ -10,54 +10,51 @@ import {IERC20Balance} from "../../../interfaces/IERC20Balance.sol";
 import {WrappedNativeHandler} from "./WrappedNativeHandler.sol";
 import {SelfPermit} from "../../base/SelfPermit.sol";
 import {ILendingPool} from "./ILendingPool.sol";
-import {WithStorage} from "../../../storage/BrokerStorage.sol";
-
-// solhint-disable max-line-length
+import {BaseLending} from "./BaseLending.sol";
 
 /**
  * @title LendingInterface
  * @notice Adds money market and default transfer functions to margin trading - also includes permits
  */
-contract DeltaLendingInterfaceMantle is WithStorage, WrappedNativeHandler, SelfPermit {
+contract DeltaLendingInterfaceMantle is BaseLending, WrappedNativeHandler, SelfPermit {
     // constant pool
-    ILendingPool internal constant _lendingPool = ILendingPool(0xCFa5aE7c2CE8Fadc6426C1ff872cA45378Fb7cF3);
 
     constructor() {}
 
     /** BASE LENDING FUNCTIONS */
 
-    // deposit ERC20 to Aave on behalf of recipient
-    function deposit(address asset, address recipient) external payable {
+    // deposit ERC20 to Aave types on behalf of recipient
+    function deposit(address asset, address recipient, uint8 lenderId) external payable {
         address _asset = asset;
-        uint256 balance = IERC20Balance(_asset).balanceOf(address(this));
-        _lendingPool.deposit(_asset, balance, recipient, 0);
+        uint256 balance = _balanceOfThis(_asset);
+        _deposit(_asset, recipient, balance, lenderId);
     }
 
     // borrow on sender's behalf
-    function borrow(address asset, uint256 amount, uint256 interestRateMode) external payable {
-        _lendingPool.borrow(asset, amount, interestRateMode, 0, msg.sender);
+    function borrow(address asset, uint256 amount, uint256 interestRateMode, uint8 lenderId) external payable {
+        _borrow(asset, msg.sender, amount, interestRateMode, lenderId);
     }
 
     // wraps the repay function
-    function repay(address asset, address recipient, uint256 interestRateMode) external payable {
+    function repay(address asset, address recipient, uint256 interestRateMode, uint8 lenderId) external payable {
         address _asset = asset;
-        uint256 _balance = IERC20Balance(_asset).balanceOf(address(this));
+        uint256 _balance = _balanceOfThis(_asset);
         uint256 _debtBalance;
         uint256 _interestRateMode = interestRateMode;
-        if (_interestRateMode == 2) _debtBalance = IERC20Balance(aas().vTokens[_asset]).balanceOf(msg.sender);
-        else _debtBalance = IERC20Balance(aas().sTokens[_asset]).balanceOf(msg.sender);
+        if (_interestRateMode == 2) _debtBalance = _variableDebtBalance(_asset, msg.sender, lenderId);
+        else _debtBalance = _stableDebtBalance(_asset, msg.sender, lenderId);
         // if the amount lower higher than the balance, repay the amount
         if (_debtBalance >= _balance) {
-            _lendingPool.repay(_asset, _balance, _interestRateMode, recipient);
+            _repay(_asset, recipient, _balance, interestRateMode, lenderId);
         } else {
             // otherwise, repay all - make sure to call sweep afterwards
-            _lendingPool.repay(_asset, _debtBalance, _interestRateMode, recipient);
+            _repay(_asset, recipient, _debtBalance, interestRateMode, lenderId);
         }
     }
 
     // wraps the withdraw
-    function withdraw(address asset, address recipient) external payable {
-        _lendingPool.withdraw(asset, type(uint256).max, recipient);
+    function withdraw(address asset, address recipient, uint8 lenderId) external payable {
+        _withdraw(asset, recipient, type(uint256).max, lenderId);
     }
 
     /** TRANSFER FUNCTIONS */
@@ -75,28 +72,24 @@ contract DeltaLendingInterfaceMantle is WithStorage, WrappedNativeHandler, SelfP
             _asset,
             msg.sender,
             address(this),
-            IERC20Balance(_asset).balanceOf(msg.sender) // transfer entire balance
+            _balanceOfCaller(_asset) // transfer entire balance
         );
     }
 
     /** @notice transfer an a balance to the sender */
     function sweep(address asset) external payable {
         address _asset = asset;
-        uint256 balance = IERC20Balance(_asset).balanceOf(address(this));
+        uint256 balance = _balanceOfThis(_asset);
         if (balance > 0) _transferERC20Tokens(_asset, msg.sender, balance);
     }
 
     /** @notice transfer an a balance to the recipient */
     function sweepTo(address asset, address recipient) external payable {
         address _asset = asset;
-        uint256 balance = IERC20Balance(_asset).balanceOf(address(this));
+        uint256 balance = _balanceOfThis(_asset);
         if (balance > 0) _transferERC20Tokens(_asset, recipient, balance);
     }
 
-    function refundNative() external payable {
-        uint256 balance = address(this).balance;
-        if (balance > 0) _transferEth(msg.sender, balance);
-    }
 
     /** GENERIC CALL WRAPPER FOR APPROVED CALLS */
 
@@ -113,6 +106,24 @@ contract DeltaLendingInterfaceMantle is WithStorage, WrappedNativeHandler, SelfP
                 data := add(data, 0x04)
             }
             revert(abi.decode(data, (string)));
+        }
+    }
+
+    /** BALANCE FETCHERS */
+
+    function _balanceOfCaller(address underlying) private view returns (uint256 callerBalance) {
+        assembly {
+            let ptr := mload(0x40) // free memory pointer
+            let collateralToken := sload(keccak256(ptr, 0x40))
+            // selector for balanceOf(address)
+            mstore(ptr, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+            // add this address as parameter
+            mstore(add(ptr, 0x4), caller())
+
+            // call to underlying
+            pop(staticcall(gas(), underlying, ptr, 0x24, ptr, 0x20))
+
+            callerBalance := mload(ptr)
         }
     }
 }

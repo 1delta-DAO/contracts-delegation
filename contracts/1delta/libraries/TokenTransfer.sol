@@ -96,14 +96,36 @@ abstract contract TokenTransfer {
         }
     }
 
-    function _transferEth(address recipient, uint256 amount) internal {
+    function _transferEth() internal {
+        assembly {
+            let bal := balance(address())
+            if not(iszero(bal)) {
+                if iszero(
+                    call(
+                        gas(),
+                        caller(),
+                        bal,
+                        0x0, // input = empty for fallback
+                        0x0, // input size = zero
+                        0x0, // output = empty
+                        0x0 // output size = zero
+                    )
+                ) {
+                    revert(0, 0) // revert when native transfer fails
+                }
+            }
+        }
+    }
+
+    // deposit native by just sending native to it
+    function _depositNative(address weth) internal {
         assembly {
             if iszero(
                 call(
                     gas(),
-                    recipient,
-                    amount,
-                    0x0, // input = empty for fallback
+                    weth,
+                    callvalue(), // ETH to deposit
+                    0x0, // no input
                     0x0, // input size = zero
                     0x0, // output = empty
                     0x0 // output size = zero
@@ -114,18 +136,28 @@ abstract contract TokenTransfer {
         }
     }
 
-    function _depositNative(address weth, uint256 amount) internal {
+    function _withdrawNative(address weth) internal {
         assembly {
-            let ptr := mload(0x40) // free memory pointer
-            // selector for deposit()
-            mstore(ptr, 0xd0e30db000000000000000000000000000000000000000000000000000000000)
+            // selector for balanceOf(address)
+            mstore(0x0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+            // add this address as parameter
+            mstore(add(0x0, 0x4), address())
+
+            // call to underlying
+            pop(staticcall(gas(), weth, 0x0, 0x24, 0x0, 0x20))
+
+            let thisBalance := mload(0x0)
+
+            // selector for withdraw(uint256)
+            mstore(0x0, 0x2e1a7d4d00000000000000000000000000000000000000000000000000000000)
+            mstore(0x4, thisBalance)
             if iszero(
                 call(
                     gas(),
                     weth,
-                    amount, // ETH to deposit
-                    ptr, // seletor for deposit()
-                    0x4, // input size = zero
+                    0x0, // no ETH
+                    0x0, // seletor for deposit()
+                    0x24, // input size = zero
                     0x0, // output = empty
                     0x0 // output size = zero
                 )
@@ -150,19 +182,6 @@ abstract contract TokenTransfer {
 
             pop(call(gas(), token, 0, ptr, 0x44, ptr, 32))
         }
-    }
-
-    /// @dev Gets the maximum amount of an ERC20 token `token` that can be
-    ///      pulled from `owner` by this address.
-    /// @param token The token to spend.
-    /// @param owner The owner of the tokens.
-    /// @return amount The amount of tokens that can be pulled.
-    function _getSpendableERC20BalanceOf(address token, address owner) internal view returns (uint256) {
-        return min256(IERC20(token).allowance(owner, address(this)), IERC20(token).balanceOf(owner));
-    }
-
-    function min256(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a < b ? a : b;
     }
 
     // balanceOf call in assembly for smaller contract size
