@@ -300,8 +300,7 @@ contract FlashSwapExacInTest is DeltaSetup {
                 poolId,
                 ZERO_8,
                 token,
-                uint8(99),
-                DEFAULT_LENDER
+                uint8(99)
             );
     }
 
@@ -339,8 +338,7 @@ contract FlashSwapExacInTest is DeltaSetup {
                     ZERO_8,
                     METH
                 ),
-                uint8(99),
-                DEFAULT_LENDER
+                uint8(99)
             );
     }
 
@@ -352,8 +350,7 @@ contract FlashSwapExacInTest is DeltaSetup {
                 STRATUM_CURVE,
                 ZERO_8,
                 getSpotExactInAgni(token, METH),
-                uint8(99),
-                DEFAULT_LENDER
+                uint8(99)
             );
     }
 
@@ -365,8 +362,7 @@ contract FlashSwapExacInTest is DeltaSetup {
                 STRATUM_CURVE,
                 ZERO_8,
                 token,
-                uint8(99),
-                DEFAULT_LENDER
+                uint8(99)
             );
     }
 

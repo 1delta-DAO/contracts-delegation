@@ -5,6 +5,7 @@ import { validateAddresses } from "../../utils/types";
 import { getAddAureliusTokens, getAddLendleTokens } from "./lenders/addLenderData";
 import { getAureliusApproves, getLendleApproves } from "./approvals/approveAddress";
 import { DeltaBrokerProxy__factory } from "../../types";
+import { MANTLE_CONFIGS } from "./utils";
 
 
 async function main() {
@@ -42,7 +43,9 @@ async function main() {
         ...lendleAdd,
         ...aureliusApproves,
         ...lendleApproves
-    ])
+    ],
+        MANTLE_CONFIGS
+    )
 
 }
 

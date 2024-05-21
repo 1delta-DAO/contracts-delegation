@@ -1,26 +1,9 @@
 
 import { ethers } from "hardhat";
 import { ONE_DELTA_ADDRESSES } from "../../deploy/mantle_addresses";
-import { ManagementModule__factory } from "../../types";
-import { TOKENS_MANTLE } from "./addresses/tokens";
-import { AURELIUS_POOL } from "./addresses/aureliusAddresses";
-
-const underlyings = [
-    TOKENS_MANTLE.USDC,
-    TOKENS_MANTLE.USDT,
-    '0xab575258d37EaA5C8956EfABe71F4eE8F6397cF3' // mUSD
-]
-
-const underlyingsEth = [
-    TOKENS_MANTLE.WETH,
-    TOKENS_MANTLE.METH,
-]
-
-const stratum3USD = '0xD6F312AA90Ad4C92224436a7A4a648d69482e47e'
-const stratumETH = '0xe8792eD86872FD6D8b74d0668E383454cbA15AFc'
-
-const addressesToApprove = Object.values(TOKENS_MANTLE)
-const targetToApprove = AURELIUS_POOL
+import { DeltaBrokerProxy__factory } from "../../types";
+import { getStratumApproves } from "./approvals/approveAddress";
+import { MANTLE_CONFIGS } from "./utils";
 
 async function main() {
 
@@ -29,17 +12,19 @@ async function main() {
     const chainId = await operator.getChainId();
 
     if (chainId !== 5000) throw new Error("invalid chainId")
+
+    const calls = getStratumApproves()
     const proxyAddress = ONE_DELTA_ADDRESSES.BrokerProxy[chainId]
 
     let tx;
     // get management module
-    const management = await new ManagementModule__factory(operator).attach(proxyAddress)
+    const management = await new DeltaBrokerProxy__factory(operator).attach(proxyAddress)
 
     console.log("est. gas")
-    await management.estimateGas.approveAddress(addressesToApprove, targetToApprove)
+    await management.estimateGas.multicall(calls)
     console.log("success")
     console.log("Approve targetToApprove")
-    tx = await management.approveAddress(addressesToApprove, targetToApprove)
+    tx = await management.multicall(calls, MANTLE_CONFIGS)
     await tx.wait()
 }
 

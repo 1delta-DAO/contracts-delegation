@@ -5,6 +5,7 @@ import {
     DeltaFlashAggregatorMantle__factory,
     DeltaLendingInterfaceMantle__factory,
     LensModule__factory,
+    ManagementModule__factory,
 } from "../../types";
 import { validateAddresses } from "../../utils/types";
 import { getContractSelectors, ModuleConfigAction } from "../../test-ts/libraries/diamond";
@@ -32,7 +33,8 @@ async function main() {
     const addCuts = await getAddCuts(
         operator,
         ONE_DELTA_ADDRESSES.MarginTraderModule[chainId],
-        ONE_DELTA_ADDRESSES.LendingInterface[chainId]
+        ONE_DELTA_ADDRESSES.LendingInterface[chainId],
+        ONE_DELTA_ADDRESSES.ManagementModule[chainId],
     )
 
     const cut = [
@@ -64,9 +66,10 @@ main()
 
 
 const getRemoveCut = async (operator: SignerWithAddress, proxyAddress: string) => {
-    const marginTradingAddress = '0xFA2cac1CacAaE741BCA20B5FAFd6E84A65Ad4C6D' // lendleBrokerAddresses.MarginTraderModule[chainId]
-    const moneyMarketAddress = '0xFA2cac1CacAaE741BCA20B5FAFd6E84A65Ad4C6D' // lendleBrokerAddresses.LendingInterface[chainId]
-    const initializerAddress =  ONE_DELTA_ADDRESSES.Init[5000]
+    const marginTradingAddress = '0x1A12E12a9A4Ccd49B04d09Eb9975cfdd1a6A6233' // lendleBrokerAddresses.MarginTraderModule[chainId]
+    const moneyMarketAddress = '0xd3E55dd0BabB618f73240d283bBd38A551c48c7b' // lendleBrokerAddresses.LendingInterface[chainId]
+    const managementAddress = '0x6Bc6aCB905c1216B0119C87Bf9E178ce298310FA' // lendleBrokerAddresses.LendingInterface[chainId]
+    const initializerAddress = '0xA453ba397c61B0c292EA3959A858821145B2707F'
 
     const cut: {
         moduleAddress: string,
@@ -79,11 +82,13 @@ const getRemoveCut = async (operator: SignerWithAddress, proxyAddress: string) =
 
     const marginTradingSelectors = await lens.moduleFunctionSelectors(marginTradingAddress)
     const moneyMarketSelectors = await lens.moduleFunctionSelectors(moneyMarketAddress)
+    const managementSelectors = await lens.moduleFunctionSelectors(managementAddress)
     const initSelectors = await lens.moduleFunctionSelectors(initializerAddress)
 
     const moduleSelectors = [
         marginTradingSelectors,
         moneyMarketSelectors,
+        managementSelectors,
         initSelectors
     ]
 
@@ -101,7 +106,7 @@ const getRemoveCut = async (operator: SignerWithAddress, proxyAddress: string) =
 
 
 
-const getAddCuts = async (operator: SignerWithAddress, flashAggregatorAddress: string, lendingInterface?: string) => {
+const getAddCuts = async (operator: SignerWithAddress, flashAggregatorAddress: string, lendingInterface?: string, management?: string) => {
 
     const cut: {
         moduleAddress: string,
@@ -119,6 +124,12 @@ const getAddCuts = async (operator: SignerWithAddress, flashAggregatorAddress: s
         const moneyMarket = await new DeltaLendingInterfaceMantle__factory(operator).attach(lendingInterface)
         modules.push(moneyMarket)
     }
+
+    if (management) {
+        const managementModule = await new ManagementModule__factory(operator).attach(management)
+        modules.push(managementModule)
+    }
+
 
     console.log("Having", modules.length, "additions")
 
