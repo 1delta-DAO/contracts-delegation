@@ -182,25 +182,177 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         bytes calldata _data
     ) private {
         address tokenIn;
-        uint24 fee;
         address tokenOut;
         uint256 tradeId;
         assembly {
             let firstWord := calldataload(_data.offset)
-            tokenIn := shr(96, firstWord)
-            fee := and(shr(72, firstWord), UINT24_MASK) // uniswapV3 type fee
-            tradeId := and(shr(64, firstWord), UINT8_MASK) // poolId
-            tokenOut := shr(96, calldataload(add(_data.offset, 25)))
+            
+            tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
+            tradeId := and(shr(80, firstWord), UINT8_MASK) // poolId
+            // second word
+            firstWord := calldataload(add(_data.offset, 22))
+            let fee := and(
+                    shr(240, firstWord), 
+                    UINT16_MASK
+            ) // uniswapV3 type fee
+            
+            tokenOut := and(ADDRESS_MASK, shr(80, firstWord))
+
+            ////////////////////////////////////////////////////
+            // Compute and validate pool address
+            ////////////////////////////////////////////////////
+            let s := mload(0x40)
+            let p := s
+            let pool
+            switch tradeId
+            // Fusion
+            case 0 {
+                mstore(p, FUSION_V3_FF_FACTORY)
+                p := add(p, 21)
+                // Compute the inner hash in-place
+                switch lt(tokenIn, tokenOut)
+                case 0 {
+                    mstore(p, tokenOut)
+                    mstore(add(p, 32), tokenIn)
+                }
+                default {
+                    mstore(p, tokenIn)
+                    mstore(add(p, 32), tokenOut)
+                }
+                mstore(add(p, 64), and(UINT24_MASK, fee))
+                mstore(p, keccak256(p, 96))
+                p := add(p, 32)
+                mstore(p, FUSION_POOL_INIT_CODE_HASH)
+                pool := and(ADDRESS_MASK, keccak256(s, 85))
+            }
+            // agni
+            case 1 {
+                mstore(p, AGNI_V3_FF_FACTORY)
+                p := add(p, 21)
+                // Compute the inner hash in-place
+                switch lt(tokenIn, tokenOut)
+                case 0 {
+                    mstore(p, tokenOut)
+                    mstore(add(p, 32), tokenIn)
+                }
+                default {
+                    mstore(p, tokenIn)
+                    mstore(add(p, 32), tokenOut)
+                }
+                mstore(add(p, 64), and(UINT24_MASK, fee))
+                mstore(p, keccak256(p, 96))
+                p := add(p, 32)
+                mstore(p, AGNI_POOL_INIT_CODE_HASH)
+                pool := and(ADDRESS_MASK, keccak256(s, 85))
+            }
+            // Algebra / Swapsicle
+            case 2 {
+                mstore(p, ALGEBRA_V3_FF_DEPLOYER)
+                p := add(p, 21)
+                // Compute the inner hash in-place
+                switch lt(tokenIn, tokenOut)
+                case 0 {
+                    mstore(p, tokenOut)
+                    mstore(add(p, 32), tokenIn)
+                }
+                default {
+                    mstore(p, tokenIn)
+                    mstore(add(p, 32), tokenOut)
+                }
+                mstore(p, keccak256(p, 64))
+                p := add(p, 32)
+                mstore(p, ALGEBRA_POOL_INIT_CODE_HASH)
+                pool := and(ADDRESS_MASK, keccak256(s, 85))
+            }
+            // Butter
+            case 3 {
+                mstore(p, BUTTER_FF_FACTORY)
+                p := add(p, 21)
+                // Compute the inner hash in-place
+                switch lt(tokenIn, tokenOut)
+                case 0 {
+                    mstore(p, tokenOut)
+                    mstore(add(p, 32), tokenIn)
+                }
+                default {
+                    mstore(p, tokenIn)
+                    mstore(add(p, 32), tokenOut)
+                }
+                mstore(add(p, 64), and(UINT24_MASK, fee))
+                mstore(p, keccak256(p, 96))
+                p := add(p, 32)
+                mstore(p, BUTTER_POOL_INIT_CODE_HASH)
+                pool := and(ADDRESS_MASK, keccak256(s, 85))
+            }
+            // Cleo
+            case 4 {
+                mstore(p, CLEO_FF_FACTORY)
+                p := add(p, 21)
+                // Compute the inner hash in-place
+                switch lt(tokenIn, tokenOut)
+                case 0 {
+                    mstore(p, tokenOut)
+                    mstore(add(p, 32), tokenIn)
+                }
+                default {
+                    mstore(p, tokenIn)
+                    mstore(add(p, 32), tokenOut)
+                }
+                mstore(add(p, 64), and(UINT24_MASK, fee))
+                mstore(p, keccak256(p, 96))
+                p := add(p, 32)
+                mstore(p, CLEO_POOL_INIT_CODE_HASH)
+                pool := and(ADDRESS_MASK, keccak256(s, 85))
+            }
+            // MethLab
+            case 5 {
+                mstore(p, METHLAB_FF_FACTORY)
+                p := add(p, 21)
+                // Compute the inner hash in-place
+                switch lt(tokenIn, tokenOut)
+                case 0 {
+                    mstore(p, tokenOut)
+                    mstore(add(p, 32), tokenIn)
+                }
+                default {
+                    mstore(p, tokenIn)
+                    mstore(add(p, 32), tokenOut)
+                }
+                mstore(add(p, 64), and(UINT24_MASK, fee))
+                mstore(p, keccak256(p, 96))
+                p := add(p, 32)
+                mstore(p, METHLAB_INIT_CODE_HASH)
+                pool := and(ADDRESS_MASK, keccak256(s, 85))
+            }
+            // iZi
+            default {
+                mstore(p, IZI_FF_FACTORY)
+                p := add(p, 21)
+                // Compute the inner hash in-place
+                switch lt(tokenIn, tokenOut)
+                case 0 {
+                    mstore(p, tokenOut)
+                    mstore(add(p, 32), tokenIn)
+                }
+                default {
+                    mstore(p, tokenIn)
+                    mstore(add(p, 32), tokenOut)
+                }
+                mstore(add(p, 64), and(UINT24_MASK, fee))
+                mstore(p, keccak256(p, 96))
+                p := add(p, 32)
+                mstore(p, IZI_POOL_INIT_CODE_HASH)
+                pool := and(ADDRESS_MASK, keccak256(s, 85))
+            }
+
+            // if the caller is not the calculated pool, we rever
+            if iszero(eq(caller(), pool)) {
+                revert (0, 0)
+            }
+            // use tradeId as tradetype
+            tradeId := and(shr(88, calldataload(_data.offset)) , UINT8_MASK)
         }
         
-        // validate callback
-        validateUniV3TypePool(tokenIn, tokenOut, fee, tradeId);
-
-        assembly {
-            // get the trade type from the path
-            tradeId := and(shr(56, calldataload(_data.offset)) , UINT8_MASK)
-        }
-
         // EXACT IN BASE SWAP
         if (tradeId == 0) {
             uint256 amountOut;
@@ -209,10 +361,10 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 (uint256(amount0Delta), uint256(-amount1Delta)): 
                 (uint256(amount1Delta), uint256(-amount0Delta));
             // of additional data is provided, we execute the swap nested
-            if (_data.length > MINIMUM_PATH_LENGTH) {
+            if (_data.length > 64) {
                 // we need to swap to the token that we want to supply
                 // the router returns the amount that we can finally supply to the protocol
-                _data = _data[25:];
+                _data = _data[44:];
                 // we have to cache the amountOut in this case
                 gcs().cache = bytes32(swapExactIn(amountOut, _data));
             }

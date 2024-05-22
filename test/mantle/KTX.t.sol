@@ -2,20 +2,17 @@
 pragma solidity ^0.8.19;
 
 import "./DeltaSetup.f.sol";
-import "../../contracts/1delta/quoter/test/TestQuoterMantle.sol";
 
 /**
  * Tests KTX / GMX style DEXs exact in swaps
  */
 contract KTXTest is DeltaSetup {
-    TestQuoterMantle testQuoter;
 
     function setUp() public virtual override {
         vm.createSelectFork({blockNumber: 62267594, urlOrAlias: "https://mantle-mainnet.public.blastapi.io"});
 
         deployDelta();
         initializeDelta();
-        testQuoter = new TestQuoterMantle();
     }
 
     function test_mantle_ktx_spot_exact_in() external {

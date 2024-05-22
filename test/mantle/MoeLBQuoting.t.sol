@@ -2,7 +2,6 @@
 pragma solidity ^0.8.19;
 
 import "./DeltaSetup.f.sol";
-import "../../contracts/1delta/quoter/test/TestQuoterMantle.sol";
 
 /**
  * Tests Merchant Moe's LB Quoting for exact out to make sure that incomplete swaps
@@ -10,14 +9,12 @@ import "../../contracts/1delta/quoter/test/TestQuoterMantle.sol";
  */
 contract MoeLBQuotingTest is DeltaSetup {
     uint256 DEFAULT_IR_MODE = 2; // variable
-    TestQuoterMantle testQuoter;
 
     function setUp() public virtual override {
         vm.createSelectFork({blockNumber: 63129000, urlOrAlias: "https://mantle-mainnet.public.blastapi.io"});
 
         deployDelta();
         initializeDelta();
-        testQuoter = new TestQuoterMantle();
     }
 
     function test_mantle_lb_quote_spot_exact_out_reverts() external {

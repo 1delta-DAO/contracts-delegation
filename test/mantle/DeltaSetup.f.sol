@@ -2,6 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {AddressesMantle} from "./CommonAddresses.f.sol";
+import "../../contracts/1delta/quoter/test/TestQuoterMantle.sol";
 
 // interfaces
 import {IFlashAggregator} from "./interfaces/IFlashAggregator.sol";
@@ -39,6 +40,7 @@ contract DeltaSetup is AddressesMantle, Script, Test {
     IBrokerProxy internal brokerProxy;
     IModuleConfig internal deltaConfig;
     IManagement internal management;
+    TestQuoterMantle testQuoter;
 
     mapping(address => mapping(uint8 => address)) internal collateralTokens;
     mapping(address => mapping(uint8 => address)) internal debtTokens;
@@ -171,6 +173,10 @@ contract DeltaSetup is AddressesMantle, Script, Test {
     /** ADD AND APPROVE LENDER TOKENS */
 
     function initializeDelta() internal virtual {
+        // quoter
+
+        testQuoter = new TestQuoterMantle();
+
         // lendle
         management.addGeneralLenderTokens(USDC, LENDLE_A_USDC, LENDLE_V_USDC, LENDLE_S_USDC, 0);
         management.addGeneralLenderTokens(USDT, LENDLE_A_USDT, LENDLE_V_USDT, LENDLE_S_USDT, 0);
@@ -218,7 +224,6 @@ contract DeltaSetup is AddressesMantle, Script, Test {
         assets[4] = USDT;
         management.approveAddress(assets, LENDLE_POOL);
         management.approveAddress(assets, AURELIUS_POOL);
-
 
         address[] memory stratumAssets = new address[](6);
         stratumAssets[0] = USDC;

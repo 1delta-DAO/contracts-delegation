@@ -2,7 +2,6 @@
 pragma solidity ^0.8.19;
 
 import "./DeltaSetup.f.sol";
-import "../../contracts/1delta/quoter/test/TestQuoterMantle.sol";
 
 /**
  * We test flash swap executions using exact in trade types (given that the first pool supports flash swaps)
@@ -10,7 +9,6 @@ import "../../contracts/1delta/quoter/test/TestQuoterMantle.sol";
  * The expected amounts. Exact out swaps always execute flash swaps whenever possible.
  */
 contract FlashSwapExacInTest is DeltaSetup {
-    TestQuoterMantle testQuoter;
 
     uint8 ZERO_8 = 0;
 
@@ -19,7 +17,6 @@ contract FlashSwapExacInTest is DeltaSetup {
 
         deployDelta();
         initializeDelta();
-        testQuoter = new TestQuoterMantle();
     }
 
     ////////////////////////////////////////////////////

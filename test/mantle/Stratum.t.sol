@@ -2,20 +2,16 @@
 pragma solidity ^0.8.19;
 
 import "./DeltaSetup.f.sol";
-import "../../contracts/1delta/quoter/test/TestQuoterMantle.sol";
 
 /**
  * Tests Curve style DEXs exact in swaps
  */
 contract StratumCurveTest is DeltaSetup {
-    TestQuoterMantle testQuoter;
 
     function setUp() public virtual override {
         vm.createSelectFork({blockNumber: 63740637, urlOrAlias: "https://mantle-mainnet.public.blastapi.io"});
-
         deployDelta();
         initializeDelta();
-        testQuoter = new TestQuoterMantle();
     }
 
     function test_mantle_stratum_spot_exact_in() external {

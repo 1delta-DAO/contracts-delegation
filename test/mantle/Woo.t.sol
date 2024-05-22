@@ -2,20 +2,17 @@
 pragma solidity ^0.8.19;
 
 import "./DeltaSetup.f.sol";
-import "../../contracts/1delta/quoter/test/TestQuoterMantle.sol";
 
 /**
  * Tests WooFi exact in swaps
  */
 contract WooFiTest is DeltaSetup {
-    TestQuoterMantle testQuoter;
 
     function setUp() public virtual override {
         vm.createSelectFork({blockNumber: 64033576, urlOrAlias: "https://mantle-mainnet.public.blastapi.io"});
 
         deployDelta();
         initializeDelta();
-        testQuoter = new TestQuoterMantle();
     }
 
     function test_mantle_woo_spot_exact_in() external {
