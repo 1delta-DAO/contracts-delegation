@@ -46,9 +46,11 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
         while (true) {
             uint256 identifier;
             assembly {
-                identifier := and(shr(88, calldataload(path.offset)), UINT8_MASK)
+                identifier := and(shr(80, calldataload(path.offset)), UINT8_MASK)
             }
-             if(path.length < MINIMUM_PATH_LENGTH + 10) currentReceiver = receiver;
+            // THIS HAS TO BE IMPROVED
+            if(path.length < MINIMUM_PATH_LENGTH + 10) currentReceiver = receiver;
+
             // uniswapV3 style
             if (identifier < 50) {
                 amountIn = _swapUniswapV3PoolExactIn(
@@ -56,7 +58,7 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
                     int256(amountIn),
                     path[:44] // we do not need end flags
                 );
-                path = path[44:];
+                path = path[23:];
             }
             // uniswapV2 style
             else if (identifier < 100) {
@@ -64,16 +66,18 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
                     amountIn,
                     currentReceiver,
                     false,
-                    path[:45]
+                    path[:41]
                 );
+                path = path[21:];
             }
             // iZi
             else if (identifier == 100) {
                 amountIn = _swapIZIPoolExactIn(
                     currentReceiver,
                     uint128(amountIn),
-                    path[:45]
+                    path[:44]
                 );
+                path = path[23:];
             }
             // WOO Fi
             else if (identifier == 101) {

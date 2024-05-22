@@ -793,13 +793,159 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
             // We extract all relevant data from the path bytes blob
             ////////////////////////////////////////////////////
             let pair
-            let success
             let firstWord := calldataload(path.offset)
-            let tokenIn := shr(96, firstWord)
-            let tokenOut := shr(96, calldataload(add(path.offset, UNI3_TOKEN_OUT_OFFSET)))
-            let zeroForOne := lt(tokenIn, tokenOut)
-            let pool := shr(96, calldataload(add(path.offset, UNI3_POOL_OFFSET)))
-            let _pId := and(shr(80, firstWord), UINT8_MASK) // poolId
+            let tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
+            let _pId := and(shr(80, firstWord), UINT8_MASK)
+            let zeroForOne
+            // narrow the scope
+            {
+                let tokenOut := and(ADDRESS_MASK, shr(96, calldataload(add(path.offset, 22))))
+                zeroForOne := lt(tokenIn, tokenOut)
+            
+                ////////////////////////////////////////////////////
+                // We get the poolIdentifier as _pId
+                // we extract the correct pool address from that info
+                ////////////////////////////////////////////////////
+        
+                switch _pId
+                case 50 {
+                    // fusionX
+                    switch zeroForOne
+                    case 0 {
+                        mstore(0xB14, tokenIn)
+                        mstore(0xB00, tokenOut)
+                    }
+                    default {
+                        mstore(0xB14, tokenOut)
+                        mstore(0xB00, tokenIn)
+                    }
+                    mstore(0xB00, FUSION_V2_FF_FACTORY)
+                    mstore(0xB15, keccak256(0xB0C, 0x28))
+                    mstore(0xB35, CODE_HASH_FUSION_V2)
+
+                    pair := and(ADDRESS_MASK_UPPER, keccak256(0xB00, 0x55))
+                }
+                case 51 {
+                    // merchant moe -> call to factory to identify pair address
+                    // selector for getPair(address,address)
+                    mstore(0xB00, 0xe6a4390500000000000000000000000000000000000000000000000000000000)
+                    mstore(add(0xB00, 0x4), tokenIn)
+                    mstore(add(0xB00, 0x24), tokenOut)
+
+                    // call to factory
+                    pop(staticcall(gas(), MERCHANT_MOE_FACTORY, 0xB00, 0x48, 0xB00, 0x20))
+                    // load the retrieved protocol share
+                    pair := and(ADDRESS_MASK, mload(0xB00))
+                }
+                // Velo Volatile
+                case 52 {
+                    switch zeroForOne
+                    case 0 {
+                        mstore(0xB14, tokenIn)
+                        mstore(0xB00, tokenOut)
+                    }
+                    default {
+                        mstore(0xB14, tokenOut)
+                        mstore(0xB00, tokenIn)
+                    }
+                    mstore8(0xB34, 0)
+                    mstore(0xB00, VELO_FF_FACTORY)
+                    mstore(0xB15, keccak256(0xB0C, 0x29))
+                    mstore(0xB35, VELO_CODE_HASH)
+
+                    pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+                }
+                // Velo Stable
+                case 53 {
+                    switch zeroForOne
+                    case 0 {
+                        mstore(0xB14, tokenIn)
+                        mstore(0xB00, tokenOut)
+                    }
+                    default {
+                        mstore(0xB14, tokenOut)
+                        mstore(0xB00, tokenIn)
+                    }
+                    mstore8(0xB34, 1)
+                    mstore(0xB00, VELO_FF_FACTORY)
+                    mstore(0xB15, keccak256(0xB0C, 0x29))
+                    mstore(0xB35, VELO_CODE_HASH)
+
+                    pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+                }
+                // Cleo V1 Volatile
+                case 54 {
+                    switch zeroForOne
+                    case 0 {
+                        mstore(0xB14, tokenIn)
+                        mstore(0xB00, tokenOut)
+                    }
+                    default {
+                        mstore(0xB14, tokenOut)
+                        mstore(0xB00, tokenIn)
+                    }
+                    mstore8(0xB34, 0)
+                    mstore(0xB00, CLEO_V1_FF_FACTORY)
+                    mstore(0xB15, keccak256(0xB0C, 0x29))
+                    mstore(0xB35, CLEO_V1_CODE_HASH)
+
+                    pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+                }
+                // Cleo V1 Stable
+                case 55 {
+                    switch zeroForOne
+                    case 0 {
+                        mstore(0xB14, tokenIn)
+                        mstore(0xB00, tokenOut)
+                    }
+                    default {
+                        mstore(0xB14, tokenOut)
+                        mstore(0xB00, tokenIn)
+                    }
+                    mstore8(0xB34, 1)
+                    mstore(0xB00, CLEO_V1_FF_FACTORY)
+                    mstore(0xB15, keccak256(0xB0C, 0x29))
+                    mstore(0xB35, CLEO_V1_CODE_HASH)
+
+                    pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+                }
+                // Stratum Volatile
+                case 56 {
+                    switch zeroForOne
+                    case 0 {
+                        mstore(0xB14, tokenIn)
+                        mstore(0xB00, tokenOut)
+                    }
+                    default {
+                        mstore(0xB14, tokenOut)
+                        mstore(0xB00, tokenIn)
+                    }
+                    mstore8(0xB34, 0)
+                    mstore(0xB00, STRATUM_FF_FACTORY)
+                    mstore(0xB15, keccak256(0xB0C, 0x29))
+                    mstore(0xB35, STRATUM_CODE_HASH)
+
+                    pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+                }
+                // 57: Stratum Stable
+                default {
+                    switch zeroForOne
+                    case 0 {
+                        mstore(0xB14, tokenIn)
+                        mstore(0xB00, tokenOut)
+                    }
+                    default {
+                        mstore(0xB14, tokenOut)
+                        mstore(0xB00, tokenIn)
+                    }
+                    mstore8(0xB34, 1)
+                    mstore(0xB00, STRATUM_FF_FACTORY)
+                    mstore(0xB15, keccak256(0xB0C, 0x29))
+                    mstore(0xB35, STRATUM_CODE_HASH)
+
+                    pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+                }
+            }
             // Compute the buy amount based on the pair reserves.
             {
                 // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
@@ -874,6 +1020,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                     buyAmount := mload(0xB00)
                 }
 
+                let success
                 ////////////////////////////////////////////////////
                 // Prepare the swap tx
                 ////////////////////////////////////////////////////
@@ -915,42 +1062,76 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                 // Otherwise, we transfer before
                 ////////////////////////////////////////////////////
                 default {
-
-                    ////////////////////////////////////////////////////
-                    // Check whether we pull from the cached address
-                    ////////////////////////////////////////////////////
-                    
                     ////////////////////////////////////////////////////
                     // Populate tx for transfer to pair
                     ////////////////////////////////////////////////////
-                    // selector for transfer(address,uint256)
-                    mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
-                    mstore(add(ptr, 0x04), and(pair, ADDRESS_MASK_UPPER))
-                    mstore(add(ptr, 0x24), amountIn)
+                    
+                    ////////////////////////////////////////////////////
+                    // We check whether we pull from the cached address 
+                    ////////////////////////////////////////////////////
+                    switch and(shr(88, firstWord), UINT8_MASK)
+                    case 10 {
+                        // selector for transferFrom(address,address,uint256)
+                        mstore(ptr, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
+                        mstore(add(ptr, 0x04), sload(CACHE_SLOT))
+                        mstore(add(ptr, 0x24), pair)
+                        mstore(add(ptr, 0x44), amountIn)
 
-                    success := call(gas(), and(tokenIn, ADDRESS_MASK_UPPER), 0, ptr, 0x44, ptr, 32)
+                        success := call(gas(), tokenIn, 0, ptr, 0x64, ptr, 32)
 
-                    let rdsize := returndatasize()
+                        let rdsize := returndatasize()
 
-                    // Check for ERC20 success. ERC20 tokens should return a boolean,
-                    // but some don't. We accept 0-length return data as success, or at
-                    // least 32 bytes that starts with a 32-byte boolean true.
-                    success := and(
-                        success, // call itself succeeded
-                        or(
-                            iszero(rdsize), // no return data, or
-                            and(
-                                iszero(lt(rdsize, 32)), // at least 32 bytes
-                                eq(mload(ptr), 1) // starts with uint256(1)
+                        // Check for ERC20 success. ERC20 tokens should return a boolean,
+                        // but some don't. We accept 0-length return data as success, or at
+                        // least 32 bytes that starts with a 32-byte boolean true.
+                        success := and(
+                            success, // call itself succeeded
+                            or(
+                                iszero(rdsize), // no return data, or
+                                and(
+                                    iszero(lt(rdsize, 32)), // at least 32 bytes
+                                    eq(mload(ptr), 1) // starts with uint256(1)
+                                )
                             )
                         )
-                    )
 
-                    if iszero(success) {
-                        returndatacopy(0x0, 0, rdsize)
-                        revert(0x0, rdsize)
+                        if iszero(success) {
+                            returndatacopy(ptr, 0, rdsize)
+                            revert(ptr, rdsize)
+                        }
+                    } 
+                    ////////////////////////////////////////////////////
+                    // If not, use this contract's balance and transfer()
+                    ////////////////////////////////////////////////////
+                    default {
+                        // selector for transfer(address,uint256)
+                        mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+                        mstore(add(ptr, 0x04), and(pair, ADDRESS_MASK_UPPER))
+                        mstore(add(ptr, 0x24), amountIn)
+
+                        success := call(gas(), and(tokenIn, ADDRESS_MASK_UPPER), 0, ptr, 0x44, ptr, 32)
+
+                        let rdsize := returndatasize()
+
+                        // Check for ERC20 success. ERC20 tokens should return a boolean,
+                        // but some don't. We accept 0-length return data as success, or at
+                        // least 32 bytes that starts with a 32-byte boolean true.
+                        success := and(
+                            success, // call itself succeeded
+                            or(
+                                iszero(rdsize), // no return data, or
+                                and(
+                                    iszero(lt(rdsize, 32)), // at least 32 bytes
+                                    eq(mload(ptr), 1) // starts with uint256(1)
+                                )
+                            )
+                        )
+
+                        if iszero(success) {
+                            returndatacopy(0x0, 0, rdsize)
+                            revert(0x0, rdsize)
+                        }
                     }
-
                     ////////////////////////////////////////////////////
                     // We store the bytes length to zero (no callback)
                     // and directly trigger the swap
@@ -975,6 +1156,4 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
             }
         }
     }
-
-
 }

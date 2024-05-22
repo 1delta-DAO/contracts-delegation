@@ -79,9 +79,9 @@ abstract contract V3TypeSwapper {
             let zeroForOne := lt(tokenA, tokenB)
             
             let fee := and(
-                    shr(240, firstWord), 
-                    UINT16_MASK
-            ) // uniswapV3 type fee
+                        shr(240, firstWord), 
+                        UINT16_MASK
+                    ) // uniswapV3 type fee
             // read the pool address
             let p := ptr
             let pool
