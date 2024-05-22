@@ -1,4 +1,5 @@
 [profile.default]
+solc-version = "0.8.26"
 src = "contracts/1delta"
 out = "out"
 libs = ["lib"]
