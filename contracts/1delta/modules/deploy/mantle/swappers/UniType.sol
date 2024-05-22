@@ -783,6 +783,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
      */
     function swapUniV2ExactInComplete(
         uint256 amountIn,
+        address receiver,
         bool useFlashSwap,
         bytes calldata path
     ) internal returns (uint256 buyAmount) {
@@ -889,7 +890,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                     mstore(0xB04, 0)
                     mstore(0xB24, buyAmount)
                 }
-                mstore(0xB44, address())
+                mstore(0xB44, receiver)
                 mstore(0xB64, 0x80) // bytes offset
 
                 ////////////////////////////////////////////////////
@@ -914,6 +915,11 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                 // Otherwise, we transfer before
                 ////////////////////////////////////////////////////
                 default {
+
+                    ////////////////////////////////////////////////////
+                    // Check whether we pull from the cached address
+                    ////////////////////////////////////////////////////
+                    
                     ////////////////////////////////////////////////////
                     // Populate tx for transfer to pair
                     ////////////////////////////////////////////////////

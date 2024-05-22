@@ -19,6 +19,8 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
     error NoBalance();
     error InvalidDexId();
 
+    bytes32 internal constant DEFAULT_CACHE = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
+
     constructor() BaseSwapper() BaseLending() {}
 
     /// @dev Exact Input Flash Swap - The path parameters determine the lending actions
@@ -41,7 +43,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         _cacheCaller();
         flashSwapExactOutInternal(amountOut, address(this), path);
         amountIn = uint256(gcs().cache);
-        gcs().cache = 0x0;
+        gcs().cache = DEFAULT_CACHE;
         if (amountInMaximum < amountIn) revert Slippage();
     }
 
@@ -90,7 +92,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
 
         flashSwapExactOutInternal(amountOut, address(this), path);
         amountIn = uint256(gcs().cache);
-        gcs().cache = 0x0;
+        gcs().cache = DEFAULT_CACHE;
         if (amountInMaximum < amountIn) revert Slippage();
     }
 
@@ -184,6 +186,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         address tokenIn;
         address tokenOut;
         uint256 tradeId;
+        bool payFromCache;
         assembly {
             let firstWord := calldataload(_data.offset)
             
@@ -351,6 +354,10 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             }
             // use tradeId as tradetype
             tradeId := and(shr(88, calldataload(_data.offset)) , UINT8_MASK)
+            if eq(tradeId, 10) {
+                payFromCache := 1
+                tradeId := 0
+            }
         }
         
         // EXACT IN BASE SWAP
@@ -366,9 +373,10 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 // the router returns the amount that we can finally supply to the protocol
                 _data = _data[44:];
                 // we have to cache the amountOut in this case
-                gcs().cache = bytes32(swapExactIn(amountOut, _data));
+                gcs().cache = bytes32(swapExactIn(amountOut, address(this), _data));
             }
-            _transferERC20Tokens(tokenIn, msg.sender, tradeId);
+            if(payFromCache) _transferERC20TokensFrom(tokenIn, getCachedAddress(), msg.sender, tradeId);
+            else _transferERC20Tokens(tokenIn, msg.sender, tradeId);
             return;
         }
         // EXACT OUT - WITHDRAW, BORROW OR PAY
@@ -407,7 +415,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                     // we need to swap to the token that we want to supply
                     // the router returns the amount that we can finally supply to the protocol
                     _data = _data[25:];
-                    amountToSwap = swapExactIn(amountToSwap, _data);
+                    amountToSwap = swapExactIn(amountToSwap, address(this), _data);
                     // re-assign tokenOut
                     tokenOut = getLastToken(_data);
                 }
@@ -542,7 +550,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 // the router returns the amount that we can finally supply to the protocol
                 data = data[25:];
                 // store the output amount
-                gcs().cache = bytes32(swapExactIn(amountToSwap, data));
+                gcs().cache = bytes32(swapExactIn(amountToSwap, address(this), data));
             }
             _transferERC20Tokens(tokenIn, msg.sender, getV2AmountInDirect(msg.sender, tokenIn, tokenOut, amountToSwap, identifier));
             return;
@@ -581,7 +589,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 // we need to swap to the token that we want to supply
                 // the router returns the amount that we can finally supply to the protocol
                 data = data[25:];
-                amountToSwap = swapExactIn(amountToSwap, data);
+                amountToSwap = swapExactIn(amountToSwap,address(this), data);
                 // supply directly
                 tokenOut = getLastToken(data);
             }
@@ -773,7 +781,12 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         }
         // uniswapV2 types
         else if (identifier < 100) {
-            swapUniV2ExactInComplete(amountIn, true, path);
+            swapUniV2ExactInComplete(
+                amountIn,
+                address(this),
+                true,
+                path
+            );
         }
         // iZi
         else if (identifier == 100) {
@@ -786,7 +799,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
 
         // get the output and reset the cache
         amountOut = uint256(gcs().cache);
-        gcs().cache = 0x0;
+        gcs().cache = DEFAULT_CACHE;
     }
 
     /// @dev gets leder and pay config - the assumption is that the last byte is the payType

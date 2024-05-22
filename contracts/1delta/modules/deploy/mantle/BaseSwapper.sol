@@ -20,6 +20,7 @@ import {ExoticSwapper} from "./swappers/Exotic.sol";
 abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, ExoticSwapper {
     error invalidDexId();
     uint256 internal constant MINIMUM_PATH_LENGTH = 47;
+
     constructor() {}
 
     /**
@@ -40,16 +41,18 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
      * @param path path calldata
      * @return amountOut buy amount
      */
-    function swapExactIn(uint256 amountIn, bytes calldata path) internal returns (uint256 amountOut) {
+    function swapExactIn(uint256 amountIn, address receiver, bytes calldata path) internal returns (uint256 amountOut) {
+        address currentReceiver = address(this);
         while (true) {
             uint256 identifier;
             assembly {
                 identifier := and(shr(88, calldataload(path.offset)), UINT8_MASK)
             }
+             if(path.length < MINIMUM_PATH_LENGTH + 10) currentReceiver = receiver;
             // uniswapV3 style
             if (identifier < 50) {
                 amountIn = _swapUniswapV3PoolExactIn(
-                    address(this),
+                    currentReceiver,
                     int256(amountIn),
                     path[:44] // we do not need end flags
                 );
@@ -59,6 +62,7 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
             else if (identifier < 100) {
                 amountIn = swapUniV2ExactInComplete(
                     amountIn,
+                    currentReceiver,
                     false,
                     path[:45]
                 );
@@ -66,7 +70,7 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
             // iZi
             else if (identifier == 100) {
                 amountIn = _swapIZIPoolExactIn(
-                    address(this),
+                    currentReceiver,
                     uint128(amountIn),
                     path[:45]
                 );
@@ -129,6 +133,7 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
                 amountIn = swapStratumCurveGeneral(indexIn, indexOut, subGroup, amountIn);
             } else
                 revert invalidDexId();
+            
             // decide whether to continue or terminate
             if (path.length > MINIMUM_PATH_LENGTH) {
                 // path = path[25:];

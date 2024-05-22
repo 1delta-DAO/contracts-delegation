@@ -2,6 +2,7 @@
 
 pragma solidity 0.8.26;
 
+
 /******************************************************************************\
 * Author: Achthar | 1delta 
 /******************************************************************************/
@@ -13,6 +14,8 @@ pragma solidity 0.8.26;
  * @notice Contains basic logic for swap executions with DEXs
  */
 abstract contract V3TypeSwapper {
+    // this is the slot for the cache
+    bytes32 internal constant CACHE_SLOT = 0x468881cf549dc8cc10a98ff7dab63b93cde29208fb93e08f19acee97cac5ba05;
 
     /// @dev Mask of lower 20 bytes.
     uint256 internal constant ADDRESS_MASK = 0x00ffffffffffffffffffffffffffffffffffffffff;
@@ -54,6 +57,8 @@ abstract contract V3TypeSwapper {
     uint256 internal constant UINT16_MASK = 0xffff;
 
     /// @dev Swap Uniswap V3 style exact in
+    /// the calldata arrives as
+    /// tokenIn | actionId | fee | tokenOut
     function _swapUniswapV3PoolExactIn(
         address receiver,
         int256 fromAmount,
@@ -181,7 +186,7 @@ abstract contract V3TypeSwapper {
                 pool := and(ADDRESS_MASK, keccak256(ptr, 85))
             }
             // MethLab
-            case 5 {
+            default {
                 mstore(p, METHLAB_FF_FACTORY)
                 p := add(p, 21)
                 // Compute the inner hash in-place
@@ -200,26 +205,7 @@ abstract contract V3TypeSwapper {
                 mstore(p, METHLAB_INIT_CODE_HASH)
                 pool := and(ADDRESS_MASK, keccak256(ptr, 85))
             }
-            // iZi
-            default {
-                mstore(p, IZI_FF_FACTORY)
-                p := add(p, 21)
-                // Compute the inner hash in-place
-                switch lt(tokenA, tokenB)
-                case 0 {
-                    mstore(p, tokenB)
-                    mstore(add(p, 32), tokenA)
-                }
-                default {
-                    mstore(p, tokenA)
-                    mstore(add(p, 32), tokenB)
-                }
-                mstore(add(p, 64), and(UINT24_MASK, fee))
-                mstore(p, keccak256(p, 96))
-                p := add(p, 32)
-                mstore(p, IZI_POOL_INIT_CODE_HASH)
-                pool := and(ADDRESS_MASK, keccak256(ptr, 85))
-            }
+            let pathLength := path.length
             // Return amount0 or amount1 depending on direction
             switch zeroForOne
             case 0 {
@@ -241,7 +227,7 @@ abstract contract V3TypeSwapper {
                 // Store path
                 calldatacopy(add(ptr, 196), path.offset, path.length)
                 // Perform the external 'swap' call
-                if iszero(call(gas(), pool, 0, ptr, add(228, path.length), ptr, 32)) {
+                if iszero(call(gas(), pool, 0, ptr, add(228, pathLength), ptr, 32)) {
                     // store return value directly to free memory pointer
                     // The call failed; we retrieve the exact error message and revert with it
                     returndatacopy(0, 0, returndatasize()) // Copy the error message to the start of memory

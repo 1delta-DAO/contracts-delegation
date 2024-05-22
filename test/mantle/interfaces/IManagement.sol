@@ -2,6 +2,8 @@
 pragma solidity ^0.8.0;
 
 interface IManagement {
+    function clearCache() external;
+
     function addAToken(address _underlying, address _aToken) external;
 
     function addSToken(address _underlying, address _sToken) external;

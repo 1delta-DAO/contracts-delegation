@@ -17,6 +17,10 @@ contract ManagementModule is WithStorage {
         _;
     }
 
+    function clearCache() external onlyManagement {
+        gcs().cache = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
+    }
+
     // STATE CHANGING FUNCTION
 
     /** DEPRECATED SINGLE_LENDER FUNCTIONS */

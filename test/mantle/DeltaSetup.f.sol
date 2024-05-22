@@ -48,7 +48,7 @@ contract DeltaSetup is AddressesMantle, Script, Test {
     /** SELECTOR GETTERS */
 
     function managementSelectors() internal pure returns (bytes4[] memory selectors) {
-        selectors = new bytes4[](11);
+        selectors = new bytes4[](12);
         // setters
         selectors[0] = IManagement.addAToken.selector;
         selectors[1] = IManagement.setValidTarget.selector;
@@ -63,6 +63,7 @@ contract DeltaSetup is AddressesMantle, Script, Test {
         selectors[8] = IManagement.getCollateralToken.selector;
         selectors[9] = IManagement.getStableDebtToken.selector;
         selectors[10] = IManagement.getDebtToken.selector;
+        selectors[11] = IManagement.clearCache.selector;
         return selectors;
     }
 
@@ -176,6 +177,8 @@ contract DeltaSetup is AddressesMantle, Script, Test {
         // quoter
 
         testQuoter = new TestQuoterMantle();
+
+        management.clearCache();
 
         // lendle
         management.addGeneralLenderTokens(USDC, LENDLE_A_USDC, LENDLE_V_USDC, LENDLE_S_USDC, 0);

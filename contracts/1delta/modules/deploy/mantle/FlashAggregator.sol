@@ -30,7 +30,7 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
         flashSwapExactOutInternal(amountOut, address(this), path);
         // retrieve cached amount and check slippage
         if (maximumAmountIn < uint256(gcs().cache)) revert Slippage();
-        gcs().cache = 0x0;
+        gcs().cache = DEFAULT_CACHE;
     }
 
     /**
@@ -45,7 +45,7 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
         flashSwapExactOutInternal(amountOut, address(this), path);
         // retrieve cached amount and check slippage
         if (maximumAmountIn < uint256(gcs().cache)) revert Slippage();
-        gcs().cache = 0x0;
+        gcs().cache = DEFAULT_CACHE;
     }
 
     /**
@@ -58,8 +58,10 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
         uint256 minimumAmountOut,
         bytes calldata path
     ) external payable {
-        uint256 amountOut = swapExactIn(amountIn, path);
+        _cacheCaller();
+        uint256 amountOut = swapExactIn(amountIn, msg.sender, path);
         if (minimumAmountOut > amountOut) revert Slippage();
+        gcs().cache = DEFAULT_CACHE;
     }
 
     /**
@@ -85,7 +87,7 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
 
         flashSwapExactOutInternal(_debtBalance, address(this), path);
         if (maximumAmountIn < uint256(gcs().cache)) revert Slippage();
-        gcs().cache = 0x0;
+        gcs().cache = DEFAULT_CACHE;
     }
 
     /**
@@ -108,7 +110,7 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
 
         flashSwapExactOutInternal(_debtBalance, address(this), path);
         if (maximumAmountIn < uint256(gcs().cache)) revert Slippage();
-        gcs().cache = 0x0;
+        gcs().cache = DEFAULT_CACHE;
     }
 
     /**
@@ -124,7 +126,7 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
         }
         uint256 amountIn = _balanceOfThis(tokenIn);
         if (amountIn == 0) revert NoBalance(); // revert if amount is zero
-        uint256 amountOut = swapExactIn(amountIn, path);
+        uint256 amountOut = swapExactIn(amountIn, msg.sender, path);
         if (minimumAmountOut > amountOut) revert Slippage();
     }
 }
