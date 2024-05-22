@@ -22,6 +22,8 @@ interface IFlashAggregator {
 
     function swapExactInSpot(uint256 amountIn, uint256 minimumAmountOut, bytes calldata path) external payable;
 
+    function swapExactInSpotSelf(uint256 amountIn, uint256 minimumAmountOut, bytes calldata path) external payable;
+
     function swapAllOutSpot(uint256 maximumAmountIn, uint8 lenderId, uint256 interestRateMode, bytes calldata path) external payable;
 
     function swapAllOutSpotSelf(uint256 maximumAmountIn, uint8 lenderId, uint256 interestRateMode, bytes calldata path) external payable;

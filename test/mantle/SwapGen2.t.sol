@@ -57,8 +57,6 @@ contract SwapGen2Test is DeltaSetup {
         uint256 balanceIn = IERC20All(assetFrom).balanceOf(user);
         uint256 balanceOut = IERC20All(assetTo).balanceOf(user);
         
-        console.log("WTST");
-
         vm.prank(user);
         uint256 gas = gasleft();
         IFlashAggregator(address(brokerProxy)).swapExactInSpot(amountToSwap, minimumOut, swapPath);

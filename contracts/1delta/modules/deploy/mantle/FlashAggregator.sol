@@ -49,9 +49,8 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
     }
 
     /**
-     * @notice A simple exact input spot swap using internal callbacks.
-     * Has to be batch-called with transfer in / sweep functions
-     * Requires that the funds already have been transferred to this contract
+     * @notice A simple exact input spot swap using internal callbacks. 
+     * Variant that can be called as is provided the path tradeId starts with 10
      */
     function swapExactInSpot(
         uint256 amountIn,
@@ -59,6 +58,21 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
         bytes calldata path
     ) external payable {
         _cacheCaller();
+        uint256 amountOut = swapExactIn(amountIn, msg.sender, path);
+        if (minimumAmountOut > amountOut) revert Slippage();
+        gcs().cache = DEFAULT_CACHE;
+    }
+
+    /**
+     * @notice A simple exact input spot swap using internal callbacks.
+     * Has to be batch-called with transfer in / sweep functions
+     * Requires that the funds already have been transferred to this contract
+     */
+    function swapExactInSpotSelf(
+        uint256 amountIn,
+        uint256 minimumAmountOut,
+        bytes calldata path
+    ) external payable {
         uint256 amountOut = swapExactIn(amountIn, msg.sender, path);
         if (minimumAmountOut > amountOut) revert Slippage();
         gcs().cache = DEFAULT_CACHE;

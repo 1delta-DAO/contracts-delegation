@@ -548,7 +548,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             if (data.length > MINIMUM_PATH_LENGTH) {
                 // we need to swap to the token that we want to supply
                 // the router returns the amount that we can finally supply to the protocol
-                data = data[25:];
+                data = data[23:];
                 // store the output amount
                 gcs().cache = bytes32(swapExactIn(amountToSwap, address(this), data));
             }

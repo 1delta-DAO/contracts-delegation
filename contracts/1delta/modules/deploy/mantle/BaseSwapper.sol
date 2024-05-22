@@ -48,11 +48,9 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
             assembly {
                 identifier := and(shr(80, calldataload(path.offset)), UINT8_MASK)
             }
-            // THIS HAS TO BE IMPROVED
-            if(path.length < MINIMUM_PATH_LENGTH + 10) currentReceiver = receiver;
-
             // uniswapV3 style
             if (identifier < 50) {
+                if(path.length < 45) currentReceiver = receiver;
                 amountIn = _swapUniswapV3PoolExactIn(
                     currentReceiver,
                     int256(amountIn),
@@ -62,16 +60,18 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
             }
             // uniswapV2 style
             else if (identifier < 100) {
+                if(path.length < 43) currentReceiver = receiver;
                 amountIn = swapUniV2ExactInComplete(
                     amountIn,
                     currentReceiver,
                     false,
                     path[:41]
                 );
-                path = path[21:];
+                path = path[22:];
             }
             // iZi
             else if (identifier == 100) {
+                if(path.length < 45) currentReceiver = receiver;
                 amountIn = _swapIZIPoolExactIn(
                     currentReceiver,
                     uint128(amountIn),

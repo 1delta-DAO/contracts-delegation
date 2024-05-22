@@ -74,7 +74,7 @@ contract DeltaSetup is AddressesMantle, Script, Test {
     }
 
     function flashAggregatorSelectors() internal pure returns (bytes4[] memory selectors) {
-        selectors = new bytes4[](21);
+        selectors = new bytes4[](22);
         /** margin */
         selectors[0] = IFlashAggregator.flashSwapExactIn.selector;
         selectors[1] = IFlashAggregator.flashSwapExactOut.selector;
@@ -99,6 +99,7 @@ contract DeltaSetup is AddressesMantle, Script, Test {
         selectors[18] = IFlashAggregator.swapY2XCallback.selector;
         selectors[19] = IFlashAggregator.swapX2YCallback.selector;
         selectors[20] = IFlashAggregator.uniswapV3SwapCallback.selector;
+        selectors[21] = IFlashAggregator.swapExactInSpotSelf.selector;
         return selectors;
     }
 
