@@ -62,7 +62,7 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
             }
             // uniswapV2 style
             else if (identifier < 100) {
-                if(path.length < 42) currentReceiver = receiver;
+                if(path.length < 43) currentReceiver = receiver;
                 amountIn = swapUniV2ExactInComplete(
                     amountIn,
                     currentReceiver,

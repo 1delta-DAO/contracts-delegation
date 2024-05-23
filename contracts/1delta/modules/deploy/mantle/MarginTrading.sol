@@ -354,6 +354,8 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             }
             // use tradeId as tradetype
             tradeId := and(shr(88, calldataload(_data.offset)) , UINT8_MASK)
+            // 10 means that we are paying from the cache in an exact input
+            // scenario
             if eq(tradeId, 10) {
                 payFromCache := 1
                 tradeId := 0
