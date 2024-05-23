@@ -19,12 +19,14 @@ import {ExoticSwapper} from "./swappers/Exotic.sol";
  */
 abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, ExoticSwapper {
     error invalidDexId();
-    uint256 internal constant MINIMUM_PATH_LENGTH = 47;
+    uint256 internal constant MINIMUM_PATH_LENGTH = 42;
 
     constructor() {}
 
     /**
-     * Get the last token from path calldata
+     * Get the last token from path calldata for the margin case
+     * As such, we assume that 2 flags (lender & payConfig) preceed
+     * The data.
      * @param data input data
      * @return token address
      */
@@ -56,11 +58,11 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
                     int256(amountIn),
                     path[:44] // we do not need end flags
                 );
-                path = path[23:];
+                path = path[24:];
             }
             // uniswapV2 style
             else if (identifier < 100) {
-                if(path.length < 43) currentReceiver = receiver;
+                if(path.length < 42) currentReceiver = receiver;
                 amountIn = swapUniV2ExactInComplete(
                     amountIn,
                     currentReceiver,
