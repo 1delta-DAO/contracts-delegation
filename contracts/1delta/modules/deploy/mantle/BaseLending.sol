@@ -14,9 +14,14 @@ import {WithStorage} from "../../../storage/BrokerStorage.sol";
  * @notice Lending base contract that wraps multiple lender types.
  */
 abstract contract BaseLending is WithStorage {
+    // this is the slot for the cache
+    bytes32 private constant CACHE_SLOT = 0x468881cf549dc8cc10a98ff7dab63b93cde29208fb93e08f19acee97cac5ba05;
+    
+    // masks
     uint256 private constant ADDRESS_MASK_UPPER = 0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff;
     uint256 private constant UINT8_MASK_UPPER = 0xff00000000000000000000000000000000000000000000000000000000000000;
 
+    // lender pool addresses
     address internal constant AURELIUS_POOL = 0x7c9C6F5BEd9Cfe5B9070C7D3322CF39eAD2F9492;
     address internal constant LENDLE_POOL = 0xCFa5aE7c2CE8Fadc6426C1ff872cA45378Fb7cF3;
 
@@ -179,9 +184,8 @@ abstract contract BaseLending is WithStorage {
     }
 
     function getCachedAddress() internal view returns (address cachedAddress) {
-        bytes32 cache = gcs().cache;
         assembly {
-            cachedAddress := cache // and(cache, ADDRESS_MASK_UPPER)
+            cachedAddress := and(sload(CACHE_SLOT), ADDRESS_MASK_UPPER)
         }
     }
 

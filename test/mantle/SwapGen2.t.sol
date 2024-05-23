@@ -16,7 +16,7 @@ contract SwapGen2Test is DeltaSetup {
 
         uint256 amountToSwap = 2000.0e6;
 
-        bytes memory swapPath = getOpenExactInSingleGen2(assetFrom, assetTo);
+        bytes memory swapPath = getSpotExactInSingleGen2(assetFrom, assetTo);
         uint256 minimumOut = 10.0e6;
         vm.prank(user);
         IERC20All(assetFrom).approve(brokerProxyAddress, amountToSwap);
@@ -110,7 +110,7 @@ contract SwapGen2Test is DeltaSetup {
 
         uint256 amountToSwap = 200.0e6;
 
-        bytes memory swapPath = getOpenExactInSingleGen2V2(assetFrom, assetTo);
+        bytes memory swapPath = getSpotExactInSingleGen2V2(assetFrom, assetTo);
         uint256 minimumOut = 10.0e6;
 
         vm.prank(user);
@@ -130,7 +130,7 @@ contract SwapGen2Test is DeltaSetup {
         assertApproxEqAbs(198751420, balanceOut, 1);
     }
 
-    function getOpenExactInSingleGen2(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
+    function getSpotExactInSingleGen2(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_STABLES);
         uint8 poolId = AGNI;
         return abi.encodePacked(tokenIn, uint8(10), poolId, fee, tokenOut);
@@ -180,7 +180,7 @@ contract SwapGen2Test is DeltaSetup {
         fees[2] = 500;
     }
 
-    function getOpenExactInSingleGen2Mixed(
+    function getSpotExactInSingleGen2Mixed(
         address[] memory tokens,
         uint8[] memory actions,
         uint8[] memory pIds,
@@ -199,7 +199,7 @@ contract SwapGen2Test is DeltaSetup {
         return (
             tokens[0],
             tokens[tokens.length - 1],
-            getOpenExactInSingleGen2Mixed(tokens, actions, pIds, fees) //
+            getSpotExactInSingleGen2Mixed(tokens, actions, pIds, fees) //
         );
     }
 
@@ -208,11 +208,11 @@ contract SwapGen2Test is DeltaSetup {
         return (
             tokens[0],
             tokens[tokens.length - 1],
-            getOpenExactInSingleGen2Mixed(tokens, actions, pIds, fees) //
+            getSpotExactInSingleGen2Mixed(tokens, actions, pIds, fees) //
         );
     }
 
-    function getOpenExactInSingleGen2V2(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
+    function getSpotExactInSingleGen2V2(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint8 poolId = MERCHANT_MOE;
         return abi.encodePacked(tokenIn, uint8(10), poolId, tokenOut);
     }

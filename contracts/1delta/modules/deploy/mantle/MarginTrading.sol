@@ -413,7 +413,11 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 (uint256 amountToRepayToPool, uint256 amountToSwap) = amount0Delta > 0
                     ? (uint256(amount0Delta), uint256(-amount1Delta))
                     : (uint256(amount1Delta), uint256(-amount0Delta)); 
-                if (_data.length > MINIMUM_PATH_LENGTH) {
+                ////////////////////////////////////////////////////
+                // If the path is longer than 2 addresses, uint16, 3 uint8s
+                // We try to continue to swap
+                ////////////////////////////////////////////////////
+                if (_data.length > 46) {
                     // we need to swap to the token that we want to supply
                     // the router returns the amount that we can finally supply to the protocol
                     _data = _data[25:];
@@ -770,9 +774,8 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         // fetch the pool identifier from the path
         uint256 identifier;
         assembly {
-            identifier := and(shr(64, calldataload(path.offset)), UINT8_MASK)
+            identifier := and(shr(80, calldataload(path.offset)), UINT8_MASK)
         }
-
         // uniswapV3 types
         if (identifier < 50) {
             _swapUniswapV3PoolExactIn(
