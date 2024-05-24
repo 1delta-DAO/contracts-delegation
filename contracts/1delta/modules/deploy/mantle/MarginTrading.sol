@@ -399,7 +399,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             if (_data.length > 64) {
                 // we need to swap to the token that we want to supply
                 // the router returns the amount that we can finally supply to the protocol
-                _data = _data[44:];
+                _data = _data[24:];
                 // we have to cache the amountOut in this case
                 amountOut = swapExactIn(amountOut, address(this), _data);
                 assembly {
@@ -416,7 +416,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             uint256 amountToPay = amount0Delta > 0 ? uint256(amount0Delta) : uint256(amount1Delta);
             // either initiate the next swap or pay
             if (_data.length > 64) {
-                _data = _data[25:];
+                _data = _data[24:];
                 flashSwapExactOutInternal(amountToPay, msg.sender, _data);
             } else {
                 // fetch payment config
@@ -500,7 +500,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
 
                 // multihop if required
                 if (_data.length > MINIMUM_PATH_LENGTH) {
-                    _data = _data[25:];
+                    _data = _data[24:];
                     flashSwapExactOutInternal(amountInLastPool, msg.sender, _data);
                 } else {
                     // pay the pool

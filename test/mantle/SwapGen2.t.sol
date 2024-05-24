@@ -66,13 +66,43 @@ contract SwapGen2Test is DeltaSetup {
         assertApproxEqAbs(amountToReceive, balanceOut, 1e6);
     }
 
+    function test_mantle_gen_2_spot_exact_out_multi() external /** address user, uint8 lenderId */ {
+        address user = testUser;
+        vm.assume(user != address(0));
+
+
+        uint256 amountToReceive = 1.0e6;
+
+        (address assetFrom, address assetTo, bytes memory swapPath) = getPathAndTokensV3ExactOut();
+
+        deal(assetFrom, user, 1e20);
+
+        uint256 maximumIn = 6.0e6;
+        vm.prank(user);
+        IERC20All(assetFrom).approve(brokerProxyAddress, maximumIn);
+
+        uint256 balanceIn = IERC20All(assetFrom).balanceOf(user);
+        uint256 balanceOut = IERC20All(assetTo).balanceOf(user);
+
+        vm.prank(user);
+        uint256 gas = gasleft();
+        IFlashAggregator(address(brokerProxy)).swapExactOutSpot(amountToReceive, maximumIn, user, swapPath);
+        gas = gas - gasleft();
+        console.log("gas", gas, 144771);
+
+        balanceOut = IERC20All(assetTo).balanceOf(user) - balanceOut;
+        balanceIn = balanceIn - IERC20All(assetFrom).balanceOf(user);
+        assertApproxEqAbs(balanceIn, 1090371, 0);
+        assertApproxEqAbs(amountToReceive, balanceOut, 1e6);
+    }
+
     function test_mantle_gen_2_spot_exact_in_multi() external /** address user, uint8 lenderId */ {
         address user = testUser;
         vm.assume(user != address(0));
 
         uint256 amountToSwap = 2.0e6;
 
-        (address assetFrom, address assetTo, bytes memory swapPath) = getPathAndTokensV3();
+        (address assetTo, address assetFrom, bytes memory swapPath) = getPathAndTokensV3();
 
         deal(assetFrom, user, 1e20);
 
@@ -172,7 +202,17 @@ contract SwapGen2Test is DeltaSetup {
         return abi.encodePacked(tokenIn, uint8(1), poolId, fee, tokenOut);
     }
 
-    function getPathDataV3() internal view returns (address[] memory tokens, uint8[] memory actions, uint8[] memory pIds, uint16[] memory fees) {
+    function getPathDataV3()
+        internal
+        view
+        returns (
+            //
+            address[] memory tokens,
+            uint8[] memory actions,
+            uint8[] memory pIds,
+            uint16[] memory fees
+        )
+    {
         uint256 length = 4;
         uint256 lengthDecreased = length - 1;
         tokens = new address[](length);
@@ -189,6 +229,32 @@ contract SwapGen2Test is DeltaSetup {
         actions[0] = 10;
         actions[1] = 0;
         actions[2] = 0;
+        fees[0] = 2500;
+        fees[1] = 500;
+        fees[2] = 500;
+    }
+
+    function getPathDataV3ExactOut()
+        internal
+        view
+        returns (address[] memory tokens, uint8[] memory actions, uint8[] memory pIds, uint16[] memory fees)
+    {
+        uint256 length = 4;
+        uint256 lengthDecreased = length - 1;
+        tokens = new address[](length);
+        actions = new uint8[](lengthDecreased);
+        pIds = new uint8[](lengthDecreased);
+        fees = new uint16[](lengthDecreased);
+        tokens[0] = USDC;
+        tokens[1] = WMNT;
+        tokens[2] = WETH;
+        tokens[3] = USDT;
+        pIds[0] = FUSION_X;
+        pIds[1] = AGNI;
+        pIds[2] = AGNI;
+        actions[0] = 1;
+        actions[1] = 1;
+        actions[2] = 1;
         fees[0] = 2500;
         fees[1] = 500;
         fees[2] = 500;
@@ -216,7 +282,7 @@ contract SwapGen2Test is DeltaSetup {
         fees[2] = 500;
     }
 
-    function getSpotExactInSingleGen2Mixed(
+    function getSpotSingleGen2Mixed(
         address[] memory tokens,
         uint8[] memory actions,
         uint8[] memory pIds,
@@ -235,7 +301,7 @@ contract SwapGen2Test is DeltaSetup {
         return (
             tokens[0],
             tokens[tokens.length - 1],
-            getSpotExactInSingleGen2Mixed(tokens, actions, pIds, fees) //
+            getSpotSingleGen2Mixed(tokens, actions, pIds, fees) //
         );
     }
 
@@ -244,7 +310,16 @@ contract SwapGen2Test is DeltaSetup {
         return (
             tokens[0],
             tokens[tokens.length - 1],
-            getSpotExactInSingleGen2Mixed(tokens, actions, pIds, fees) //
+            getSpotSingleGen2Mixed(tokens, actions, pIds, fees) //
+        );
+    }
+
+    function getPathAndTokensV3ExactOut() internal view returns (address tokenIn, address tokenOut, bytes memory path) {
+        (address[] memory tokens, uint8[] memory actions, uint8[] memory pIds, uint16[] memory fees) = getPathDataV3ExactOut();
+        return (
+            tokens[tokens.length - 1],
+            tokens[0],
+            getSpotSingleGen2Mixed(tokens, actions, pIds, fees) //
         );
     }
 
