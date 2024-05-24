@@ -78,10 +78,6 @@ abstract contract V3TypeSwapper {
             let tokenB := and(ADDRESS_MASK, shr(80, firstWord))
             let zeroForOne := lt(tokenA, tokenB)
             
-            let fee := and(
-                        shr(240, firstWord), 
-                        UINT16_MASK
-                    ) // uniswapV3 type fee
             // read the pool address
             let p := ptr
             let pool
@@ -100,7 +96,7 @@ abstract contract V3TypeSwapper {
                     mstore(p, tokenA)
                     mstore(add(p, 32), tokenB)
                 }
-                mstore(add(p, 64), and(UINT24_MASK, fee))
+                mstore(add(p, 64), and(shr(240, firstWord), UINT16_MASK))
                 mstore(p, keccak256(p, 96))
                 p := add(p, 32)
                 mstore(p, FUSION_POOL_INIT_CODE_HASH)
@@ -120,7 +116,7 @@ abstract contract V3TypeSwapper {
                     mstore(p, tokenA)
                     mstore(add(p, 32), tokenB)
                 }
-                mstore(add(p, 64), and(UINT24_MASK, fee))
+                mstore(add(p, 64), and(shr(240, firstWord), UINT16_MASK))
                 mstore(p, keccak256(p, 96))
                 p := add(p, 32)
                 mstore(p, AGNI_POOL_INIT_CODE_HASH)
@@ -159,7 +155,7 @@ abstract contract V3TypeSwapper {
                     mstore(p, tokenA)
                     mstore(add(p, 32), tokenB)
                 }
-                mstore(add(p, 64), and(UINT24_MASK, fee))
+                mstore(add(p, 64), and(shr(240, firstWord), UINT16_MASK))
                 mstore(p, keccak256(p, 96))
                 p := add(p, 32)
                 mstore(p, BUTTER_POOL_INIT_CODE_HASH)
@@ -179,7 +175,7 @@ abstract contract V3TypeSwapper {
                     mstore(p, tokenA)
                     mstore(add(p, 32), tokenB)
                 }
-                mstore(add(p, 64), and(UINT24_MASK, fee))
+                mstore(add(p, 64), and(shr(240, firstWord), UINT16_MASK))
                 mstore(p, keccak256(p, 96))
                 p := add(p, 32)
                 mstore(p, CLEO_POOL_INIT_CODE_HASH)
@@ -199,7 +195,7 @@ abstract contract V3TypeSwapper {
                     mstore(p, tokenA)
                     mstore(add(p, 32), tokenB)
                 }
-                mstore(add(p, 64), and(UINT24_MASK, fee))
+                mstore(add(p, 64), and(shr(240, firstWord), UINT16_MASK))
                 mstore(p, keccak256(p, 96))
                 p := add(p, 32)
                 mstore(p, METHLAB_INIT_CODE_HASH)
@@ -479,16 +475,18 @@ abstract contract V3TypeSwapper {
         assembly {
             let ptr := mload(0x40)
             let firstWord := calldataload(path.offset)
-            let poolId := shr(64, firstWord)
-            let tokenA := shr(96, calldataload(add(path.offset, 25)))
-            let tokenB := shr(96, firstWord)
+            let poolId := and(shr(80, firstWord), UINT8_MASK) // poolId
+            let tokenB := and(ADDRESS_MASK, shr(96, firstWord))
+            firstWord := calldataload(add(path.offset, 22))
+            let tokenA := and(ADDRESS_MASK, shr(80, firstWord))
+
             let zeroForOne := lt(tokenA, tokenB)
             let pool
             let p := ptr
             ////////////////////////////////////////////////////
             // Same code as for the other V3 pool address getters
             ////////////////////////////////////////////////////
-            switch and(shr(64, firstWord), UINT8_MASK)
+            switch poolId // poolId
             // Fusion
             case 0 {
                 mstore(p, FUSION_V3_FF_FACTORY)
@@ -503,7 +501,7 @@ abstract contract V3TypeSwapper {
                     mstore(p, tokenA)
                     mstore(add(p, 32), tokenB)
                 }
-                mstore(add(p, 64), and(shr(64, firstWord), UINT24_MASK))
+                mstore(add(p, 64), and(shr(240, firstWord), UINT16_MASK))
                 mstore(p, keccak256(p, 96))
                 p := add(p, 32)
                 mstore(p, FUSION_POOL_INIT_CODE_HASH)
@@ -523,7 +521,7 @@ abstract contract V3TypeSwapper {
                     mstore(p, tokenA)
                     mstore(add(p, 32), tokenB)
                 }
-                mstore(add(p, 64), and(shr(64, firstWord), UINT24_MASK))
+                mstore(add(p, 64), and(shr(240, firstWord), UINT16_MASK))
                 mstore(p, keccak256(p, 96))
                 p := add(p, 32)
                 mstore(p, AGNI_POOL_INIT_CODE_HASH)
@@ -562,7 +560,7 @@ abstract contract V3TypeSwapper {
                     mstore(p, tokenA)
                     mstore(add(p, 32), tokenB)
                 }
-                mstore(add(p, 64), and(shr(64, firstWord), UINT24_MASK))
+                mstore(add(p, 64), and(shr(240, firstWord), UINT16_MASK))
                 mstore(p, keccak256(p, 96))
                 p := add(p, 32)
                 mstore(p, BUTTER_POOL_INIT_CODE_HASH)
@@ -582,7 +580,7 @@ abstract contract V3TypeSwapper {
                     mstore(p, tokenA)
                     mstore(add(p, 32), tokenB)
                 }
-                mstore(add(p, 64), and(shr(64, firstWord), UINT24_MASK))
+                mstore(add(p, 64), and(shr(240, firstWord), UINT16_MASK))
                 mstore(p, keccak256(p, 96))
                 p := add(p, 32)
                 mstore(p, CLEO_POOL_INIT_CODE_HASH)
@@ -602,7 +600,7 @@ abstract contract V3TypeSwapper {
                     mstore(p, tokenA)
                     mstore(add(p, 32), tokenB)
                 }
-                mstore(add(p, 64), and(shr(64, firstWord), UINT24_MASK))
+                mstore(add(p, 64), and(shr(240, firstWord), UINT16_MASK))
                 mstore(p, keccak256(p, 96))
                 p := add(p, 32)
                 mstore(p, METHLAB_INIT_CODE_HASH)

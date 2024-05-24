@@ -23,14 +23,22 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
     function swapExactOutSpot(
         uint256 amountOut,
         uint256 maximumAmountIn,
+        address receiver,
         bytes calldata path
     ) external payable {
         // we cache the address as bytes32
         _cacheCaller();
-        flashSwapExactOutInternal(amountOut, address(this), path);
-        // retrieve cached amount and check slippage
-        if (maximumAmountIn < uint256(gcs().cache)) revert Slippage();
-        gcs().cache = DEFAULT_CACHE;
+        flashSwapExactOutInternal(amountOut, receiver, path);
+        // slippage check
+        assembly {
+            let amountIn := sload(CACHE_SLOT)
+            if gt(amountIn, maximumAmountIn) {
+                mstore(0, SLIPPAGE)
+                revert (0, 0x4)
+            }
+            // reset cache
+            sstore(CACHE_SLOT, DEFAULT_CACHE)
+        }
     }
 
     /**
@@ -43,9 +51,16 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
     ) external payable {
         // we do not need to cache anything in this case
         flashSwapExactOutInternal(amountOut, address(this), path);
-        // retrieve cached amount and check slippage
-        if (maximumAmountIn < uint256(gcs().cache)) revert Slippage();
-        gcs().cache = DEFAULT_CACHE;
+        // slippage check
+        assembly {
+            let amountIn := sload(CACHE_SLOT)
+            if gt(amountIn, maximumAmountIn) {
+                mstore(0, SLIPPAGE)
+                revert (0, 0x4)
+            }
+            // reset cache
+            sstore(CACHE_SLOT, DEFAULT_CACHE)
+        }
     }
 
     /**
@@ -55,12 +70,18 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
     function swapExactInSpot(
         uint256 amountIn,
         uint256 minimumAmountOut,
+        address receiver,
         bytes calldata path
     ) external payable {
         _cacheCaller();
-        uint256 amountOut = swapExactIn(amountIn, msg.sender, path);
-        if (minimumAmountOut > amountOut) revert Slippage();
-        gcs().cache = DEFAULT_CACHE;
+        uint256 amountOut = swapExactIn(amountIn, receiver, path);
+        // slippage check
+        assembly {
+            if lt(amountOut, minimumAmountOut) {
+                mstore(0, SLIPPAGE)
+                revert (0, 0x4)
+            }
+        }
     }
 
     /**
@@ -74,8 +95,13 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
         bytes calldata path
     ) external payable {
         uint256 amountOut = swapExactIn(amountIn, msg.sender, path);
-        if (minimumAmountOut > amountOut) revert Slippage();
-        gcs().cache = DEFAULT_CACHE;
+        // slippage check
+        assembly {
+            if lt(amountOut, minimumAmountOut) {
+                mstore(0, SLIPPAGE)
+                revert (0, 0x4)
+            }
+        }
     }
 
     /**
@@ -100,8 +126,16 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
         if (_debtBalance == 0) revert NoBalance(); // revert if amount is zero
 
         flashSwapExactOutInternal(_debtBalance, address(this), path);
-        if (maximumAmountIn < uint256(gcs().cache)) revert Slippage();
-        gcs().cache = DEFAULT_CACHE;
+        // slippage check
+        assembly {
+            let amountIn := sload(CACHE_SLOT)
+            if gt(amountIn, maximumAmountIn) {
+                mstore(0, SLIPPAGE)
+                revert (0, 0x4)
+            }
+            // reset cache
+            sstore(CACHE_SLOT, DEFAULT_CACHE)
+        }
     }
 
     /**
@@ -123,8 +157,16 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
         if (_debtBalance == 0) revert NoBalance(); // revert if amount is zero
 
         flashSwapExactOutInternal(_debtBalance, address(this), path);
-        if (maximumAmountIn < uint256(gcs().cache)) revert Slippage();
-        gcs().cache = DEFAULT_CACHE;
+        // slippage check
+        assembly {
+            let amountIn := sload(CACHE_SLOT)
+            if gt(amountIn, maximumAmountIn) {
+                mstore(0, SLIPPAGE)
+                revert (0, 0x4)
+            }
+            // reset cache
+            sstore(CACHE_SLOT, DEFAULT_CACHE)
+        }
     }
 
     /**
@@ -141,6 +183,12 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
         uint256 amountIn = _balanceOfThis(tokenIn);
         if (amountIn == 0) revert NoBalance(); // revert if amount is zero
         uint256 amountOut = swapExactIn(amountIn, msg.sender, path);
-        if (minimumAmountOut > amountOut) revert Slippage();
+        // slippage check
+        assembly {
+            if lt(amountOut, minimumAmountOut) {
+                mstore(0, SLIPPAGE)
+                revert (0, 0x4)
+            }
+        }
     }
 }

@@ -64,7 +64,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
             }
             // 51: Merchant Moe
             case 51 {
-                // selector for getPair(address,address
+                // selector for getPair(address,address)
                 mstore(0xB00, 0xe6a4390500000000000000000000000000000000000000000000000000000000)
                 mstore(add(0xB00, 0x4), tokenA)
                 mstore(add(0xB00, 0x24), tokenB)
@@ -209,9 +209,9 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
             let ptr := mload(0x40)
             let pair
             let firstWord := calldataload(path.offset)
-            let tokenB := shr(96, firstWord)
-            let _pId := and(shr(64, firstWord), UINT8_MASK)
-            let tokenA := shr(96, calldataload(add(path.offset, 25)))
+            let tokenB := and(ADDRESS_MASK, shr(96, firstWord))
+            let _pId := and(shr(80, firstWord), UINT8_MASK) // poolId
+            let tokenA := and(ADDRESS_MASK, shr(96, calldataload(add(path.offset, 22))))
             let zeroForOne := lt(tokenA, tokenB)
 
             ////////////////////////////////////////////////////
