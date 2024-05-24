@@ -46,10 +46,103 @@ contract SwapGen2Test is DeltaSetup {
         console.log("gas", gas, 144771);
 
         balanceDebt = IERC20All(debtToken).balanceOf(user) - balanceDebt;
-        balanceCollateral =  IERC20All(collateralToken).balanceOf(user) - balanceCollateral;
+        balanceCollateral = IERC20All(collateralToken).balanceOf(user) - balanceCollateral;
         assertApproxEqAbs(balanceCollateral, 3999669280, 0);
         assertApproxEqAbs(amountToSwap, balanceDebt, 1e6);
     }
+
+    function test_mantle_gen_2_open_exact_in_multi() external /** address user, uint8 lenderId */ {
+        address user = testUser;
+        uint8 lenderId = DEFAULT_LENDER;
+        vm.assume(user != address(0));
+
+        (address assetFrom, address assetTo, bytes memory swapPath) = getPathAndTokensV3(lenderId);
+
+        address debtToken = debtTokens[assetFrom][lenderId];
+        address collateralToken = collateralTokens[assetTo][lenderId];
+
+        uint256 amountToSwap = 1.0e6;
+        uint256 amountToDeposit = 1.0e6;
+
+        deal(assetTo, user, amountToDeposit);
+
+        uint256 minimumOut = 0.90e6;
+
+        uint256 balanceCollateral = IERC20All(collateralToken).balanceOf(user);
+        uint256 balanceDebt = IERC20All(debtToken).balanceOf(user);
+        {
+            bytes[] memory calls = new bytes[](2);
+            calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, assetTo, amountToDeposit);
+            calls[1] = abi.encodeWithSelector(ILending.deposit.selector, assetTo, user, lenderId);
+
+            vm.prank(user);
+            IERC20All(assetTo).approve(brokerProxyAddress, amountToDeposit);
+
+            vm.prank(user);
+            brokerProxy.multicall(calls);
+        }
+
+        vm.prank(user);
+        IERC20All(debtToken).approveDelegation(address(brokerProxy), amountToSwap);
+
+        vm.prank(user);
+        uint256 gas = gasleft();
+        IFlashAggregator(address(brokerProxy)).flashSwapExactIn(amountToSwap, minimumOut, swapPath);
+        gas = gas - gasleft();
+        console.log("gas", gas, 144771);
+
+        balanceDebt = IERC20All(debtToken).balanceOf(user) - balanceDebt;
+        balanceCollateral = IERC20All(collateralToken).balanceOf(user) - balanceCollateral;
+        assertApproxEqAbs(balanceCollateral, 1967753, 0);
+        assertApproxEqAbs(amountToSwap, balanceDebt, 1e6);
+    }
+
+    function test_mantle_gen_2_open_exact_in_multi_mixed() external /** address user, uint8 lenderId */ {
+        address user = testUser;
+        uint8 lenderId = DEFAULT_LENDER;
+        vm.assume(user != address(0));
+
+        (address assetFrom, address assetTo, bytes memory swapPath) = getPathAndTokensMixed(lenderId);
+
+        address debtToken = debtTokens[assetFrom][lenderId];
+        address collateralToken = collateralTokens[assetTo][lenderId];
+
+        uint256 amountToSwap = 100.0e6;
+        uint256 amountToDeposit = 100.0e6;
+
+        deal(assetTo, user, amountToDeposit);
+
+        uint256 minimumOut = 0.90e6;
+
+        uint256 balanceCollateral = IERC20All(collateralToken).balanceOf(user);
+        uint256 balanceDebt = IERC20All(debtToken).balanceOf(user);
+        {
+            bytes[] memory calls = new bytes[](2);
+            calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, assetTo, amountToDeposit);
+            calls[1] = abi.encodeWithSelector(ILending.deposit.selector, assetTo, user, lenderId);
+
+            vm.prank(user);
+            IERC20All(assetTo).approve(brokerProxyAddress, amountToDeposit);
+
+            vm.prank(user);
+            brokerProxy.multicall(calls);
+        }
+
+        vm.prank(user);
+        IERC20All(debtToken).approveDelegation(address(brokerProxy), amountToSwap);
+
+        vm.prank(user);
+        uint256 gas = gasleft();
+        IFlashAggregator(address(brokerProxy)).flashSwapExactIn(amountToSwap, minimumOut, swapPath);
+        gas = gas - gasleft();
+        console.log("gas", gas, 144771);
+
+        balanceDebt = IERC20All(debtToken).balanceOf(user) - balanceDebt;
+        balanceCollateral = IERC20All(collateralToken).balanceOf(user) - balanceCollateral;
+        assertApproxEqAbs(balanceCollateral, 199483421, 0);
+        assertApproxEqAbs(amountToSwap, balanceDebt, 1e6);
+    }
+
 
     // function test_mantle_gen_2_spot_exact_in_multi() external /** address user, uint8 lenderId */ {
     //     address user = testUser;
@@ -165,7 +258,7 @@ contract SwapGen2Test is DeltaSetup {
         pIds[0] = FUSION_X;
         pIds[1] = AGNI;
         pIds[2] = AGNI;
-        actions[0] = 10;
+        actions[0] = 6;
         actions[1] = 0;
         actions[2] = 0;
         fees[0] = 2500;
@@ -187,7 +280,7 @@ contract SwapGen2Test is DeltaSetup {
         pIds[0] = MERCHANT_MOE;
         pIds[1] = AGNI;
         pIds[2] = AGNI;
-        actions[0] = 10;
+        actions[0] = 6;
         actions[1] = 0;
         actions[2] = 0;
         fees[0] = 2500;
@@ -199,7 +292,9 @@ contract SwapGen2Test is DeltaSetup {
         address[] memory tokens,
         uint8[] memory actions,
         uint8[] memory pIds,
-        uint16[] memory fees
+        uint16[] memory fees,
+        uint8 lenderId,
+        uint8 endId
     ) internal pure returns (bytes memory path) {
         path = abi.encodePacked(tokens[0]);
         for (uint i = 1; i < tokens.length; i++) {
@@ -207,23 +302,24 @@ contract SwapGen2Test is DeltaSetup {
             if (pId < 50) path = abi.encodePacked(path, actions[i - 1], pIds[i - 1], fees[i - 1], tokens[i]);
             else path = abi.encodePacked(path, actions[i - 1], pIds[i - 1], tokens[i]);
         }
+        path = abi.encodePacked(path, lenderId, endId);
     }
 
-    function getPathAndTokensMixed() internal view returns (address tokenIn, address tokenOut, bytes memory path) {
+    function getPathAndTokensMixed(uint8 lenderId) internal view returns (address tokenIn, address tokenOut, bytes memory path) {
         (address[] memory tokens, uint8[] memory actions, uint8[] memory pIds, uint16[] memory fees) = getPathDataMixed();
         return (
             tokens[0],
             tokens[tokens.length - 1],
-            getOpenExactInSingleGen2Mixed(tokens, actions, pIds, fees) //
+            getOpenExactInSingleGen2Mixed(tokens, actions, pIds, fees, lenderId, uint8(2)) //
         );
     }
 
-    function getPathAndTokensV3() internal view returns (address tokenIn, address tokenOut, bytes memory path) {
+    function getPathAndTokensV3(uint8 lenderId) internal view returns (address tokenIn, address tokenOut, bytes memory path) {
         (address[] memory tokens, uint8[] memory actions, uint8[] memory pIds, uint16[] memory fees) = getPathDataV3();
         return (
             tokens[0],
             tokens[tokens.length - 1],
-            getOpenExactInSingleGen2Mixed(tokens, actions, pIds, fees) //
+            getOpenExactInSingleGen2Mixed(tokens, actions, pIds, fees, lenderId, uint8(2)) //
         );
     }
 

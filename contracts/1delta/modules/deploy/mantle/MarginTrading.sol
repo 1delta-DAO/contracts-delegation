@@ -361,7 +361,6 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 tradeId := 0
             }
         }
-        
         // EXACT IN BASE SWAP
         if (tradeId == 0) {
             uint256 amountOut;
@@ -420,7 +419,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 if (_data.length > 46) {
                     // we need to swap to the token that we want to supply
                     // the router returns the amount that we can finally supply to the protocol
-                    _data = _data[25:];
+                    _data = _data[24:];
                     amountToSwap = swapExactIn(amountToSwap, address(this), _data);
                     // re-assign tokenOut
                     tokenOut = getLastToken(_data);
@@ -536,15 +535,14 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         // the fee parameter in the path can be ignored for validating a V2 pool
         assembly {
             let firstWord := calldataload(data.offset)
-            tokenIn := shr(96, firstWord)
-            identifier := shr(64, firstWord) // swap pool identifier
-            tradeId := and(shr(56, firstWord), UINT8_MASK) // interaction identifier
-            tokenOut := shr(96, calldataload(add(data.offset, 25)))
+            tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
+            identifier := and(shr(80, firstWord), UINT8_MASK) // swap pool identifier
+            tradeId := and(shr(88, firstWord), UINT8_MASK) // interaction identifier
+            tokenOut := and(ADDRESS_MASK, shr(96, calldataload(add(data.offset, 22))))
             zeroForOne := lt(tokenIn, tokenOut)
         }
         // verify that the caller is a v2 type pool
         validateV2PairAddress(tokenIn, tokenOut, identifier);
-
         // exact in is handled outside a callback
         if (tradeId == 0) {
             // the swap amount is expected to be the nonzero output amount
@@ -554,7 +552,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             if (data.length > MINIMUM_PATH_LENGTH) {
                 // we need to swap to the token that we want to supply
                 // the router returns the amount that we can finally supply to the protocol
-                data = data[23:];
+                data = data[22:];
                 // store the output amount
                 gcs().cache = bytes32(swapExactIn(amountToSwap, address(this), data));
             }
@@ -567,7 +565,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             referenceAmount = getV2AmountInDirect(msg.sender, tokenOut, tokenIn, referenceAmount, identifier);
             // either initiate the next swap or pay
             if (data.length > MINIMUM_PATH_LENGTH) {
-                data = data[25:];
+                data = data[22:];
                 flashSwapExactOutInternal(referenceAmount, msg.sender, data);
             } else {
                 (uint256 payType, uint8 lenderId) = getPayConfig(data);
@@ -591,16 +589,15 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // the other amount manually through a separate number cache
             uint256 amountToSwap = zeroForOne ? amount1 : amount0;
             uint256 amountToBorrow = getV2AmountInDirect(msg.sender, tokenIn, tokenOut, amountToSwap, identifier);
-            if (data.length > MINIMUM_PATH_LENGTH) {
+            if (data.length > 43) {
                 // we need to swap to the token that we want to supply
                 // the router returns the amount that we can finally supply to the protocol
-                data = data[25:];
-                amountToSwap = swapExactIn(amountToSwap,address(this), data);
+                data = data[22:];
+                amountToSwap = swapExactIn(amountToSwap, address(this), data);
                 // supply directly
                 tokenOut = getLastToken(data);
             }
             // slice out the end flag
-            // data = data[(cache - 1):cache];
 
             (uint256 payType, uint8 lenderId) = getPayConfig(data);
             address user = getCachedAddress();

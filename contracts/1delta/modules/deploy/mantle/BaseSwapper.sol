@@ -79,7 +79,7 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
                     uint128(amountIn),
                     path[:44]
                 );
-                path = path[23:];
+                path = path[24:];
             }
             // WOO Fi
             else if (identifier == 101) {
@@ -91,6 +91,7 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
                     tokenOut := shr(96, calldataload(add(path.offset, 25)))
                 }
                 amountIn = swapWooFiExactIn(tokenIn, tokenOut, amountIn);
+                path = path[22:];
             }
             // Stratum 3USD with wrapper
             else if (identifier == 102) {
@@ -102,6 +103,7 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
                     tokenOut := shr(96, calldataload(add(path.offset, 25)))
                 }
                 amountIn = swapStratum3(tokenIn, tokenOut, amountIn);
+                path = path[43:];
             }
             // Moe LB
             else if (identifier == 103) {
@@ -115,6 +117,7 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
                     bin := and(shr(64, firstWord), UINT24_MASK)
                 }
                 amountIn = swapLBexactIn(tokenIn, tokenOut, amountIn, address(this), uint16(bin));
+                path = path[42:];
             } else if(identifier == 104) {
                 address tokenIn;
                 address tokenOut;
@@ -124,6 +127,7 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
                     tokenOut := shr(96, calldataload(add(path.offset, 25)))
                 }
                 amountIn = swapKTXExactIn(tokenIn, tokenOut, amountIn);
+                path = path[43:];
             } 
             // Curve stable general
             else if (identifier == 105) {
@@ -137,6 +141,7 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
                     subGroup := and(indexData, UINT8_MASK)
                 }
                 amountIn = swapStratumCurveGeneral(indexIn, indexOut, subGroup, amountIn);
+                path = path[43:];
             } else
                 revert invalidDexId();
             
