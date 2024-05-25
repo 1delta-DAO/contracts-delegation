@@ -19,7 +19,6 @@ abstract contract BaseLending is WithStorage {
     
     // masks
     uint256 private constant ADDRESS_MASK_UPPER = 0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff;
-    uint256 private constant UINT8_MASK_UPPER = 0xff00000000000000000000000000000000000000000000000000000000000000;
 
     // lender pool addresses
     address internal constant AURELIUS_POOL = 0x7c9C6F5BEd9Cfe5B9070C7D3322CF39eAD2F9492;
@@ -171,15 +170,6 @@ abstract contract BaseLending is WithStorage {
                 returndatacopy(0x0, 0x0, rdsize)
                 revert(0x0, rdsize)
             }
-        }
-    }
-
-    function getCacheContext() internal view returns (address user, uint8 lenderId) {
-        bytes32 cache = gcs().cache;
-        assembly {
-            // read user and lender from cache
-            user := and(cache, ADDRESS_MASK_UPPER)
-            lenderId := shr(248, and(UINT8_MASK_UPPER, cache))
         }
     }
 
