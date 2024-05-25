@@ -381,11 +381,15 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             }
             // use tradeId as tradetype
             tradeId := and(shr(88, calldataload(_data.offset)) , UINT8_MASK)
-            // 10 means that we are paying from the cache in an exact input
+            // 10 (11) means that we are paying from the cache in an exact input (output)
             // scenario
             if eq(tradeId, 10) {
                 payFromCache := 1
                 tradeId := 0
+            }        
+            if eq(tradeId, 11) {
+                payFromCache := 1
+                tradeId := 1
             }
         }
         // EXACT IN BASE SWAP
@@ -448,7 +452,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 // If the path is longer than 2 addresses, uint16, 3 uint8s
                 // We try to continue to swap
                 ////////////////////////////////////////////////////
-                if (_data.length > 46) {
+                if (_data.length > 46) { 
                     // we need to swap to the token that we want to supply
                     // the router returns the amount that we can finally supply to the protocol
                     _data = _data[24:];
@@ -567,6 +571,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         address tokenIn;
         address tokenOut;
         bool zeroForOne;
+        bool payFromCache;
         uint8 identifier;
         // the fee parameter in the path can be ignored for validating a V2 pool
         assembly {
@@ -576,9 +581,173 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             tradeId := and(shr(88, firstWord), UINT8_MASK) // interaction identifier
             tokenOut := and(ADDRESS_MASK, shr(96, calldataload(add(data.offset, 22))))
             zeroForOne := lt(tokenIn, tokenOut)
+            
+            let pair
+            switch identifier
+            // FusionX
+            case 50 {
+                switch zeroForOne
+                case 0 {
+                    mstore(0xB14, tokenIn)
+                    mstore(0xB00, tokenOut)
+                }
+                default {
+                    mstore(0xB14, tokenOut)
+                    mstore(0xB00, tokenIn)
+                }
+                let salt := keccak256(0xB0C, 0x28)
+                mstore(0xB00, FUSION_V2_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, CODE_HASH_FUSION_V2)
+
+                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+            }
+            // 51: Merchant Moe
+            case 51 {
+                // selector for getPair(address,address)
+                mstore(0xB00, 0xe6a4390500000000000000000000000000000000000000000000000000000000)
+                mstore(add(0xB00, 0x4), tokenIn)
+                mstore(add(0xB00, 0x24), tokenOut)
+
+                // call to collateralToken
+                pop(staticcall(gas(), MERCHANT_MOE_FACTORY, 0xB00, 0x48, 0xB00, 0x20))
+
+                // load the retrieved protocol share
+                pair := and(ADDRESS_MASK, mload(0xB00))
+            }
+            // Velo Volatile
+            case 52 {
+                switch zeroForOne
+                case 0 {
+                    mstore(0xB14, tokenIn)
+                    mstore(0xB00, tokenOut)
+                }
+                default {
+                    mstore(0xB14, tokenOut)
+                    mstore(0xB00, tokenIn)
+                }
+                mstore8(0xB34, 0)
+                let salt := keccak256(0xB0C, 0x29)
+                mstore(0xB00, VELO_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, VELO_CODE_HASH)
+
+                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+            }
+            // Velo Stable
+            case 53 {
+                switch zeroForOne
+                case 0 {
+                    mstore(0xB14, tokenIn)
+                    mstore(0xB00, tokenOut)
+                }
+                default {
+                    mstore(0xB14, tokenOut)
+                    mstore(0xB00, tokenIn)
+                }
+                mstore8(0xB34, 1)
+                let salt := keccak256(0xB0C, 0x29)
+                mstore(0xB00, VELO_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, VELO_CODE_HASH)
+
+                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+            }
+            // Cleo V1 Volatile
+            case 54 {
+                switch zeroForOne
+                case 0 {
+                    mstore(0xB14, tokenIn)
+                    mstore(0xB00, tokenOut)
+                }
+                default {
+                    mstore(0xB14, tokenOut)
+                    mstore(0xB00, tokenIn)
+                }
+                mstore8(0xB34, 0)
+                let salt := keccak256(0xB0C, 0x29)
+                mstore(0xB00, CLEO_V1_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, CLEO_V1_CODE_HASH)
+
+                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+            }
+            // Cleo V1 Stable
+            case 55 {
+                switch zeroForOne
+                case 0 {
+                    mstore(0xB14, tokenIn)
+                    mstore(0xB00, tokenOut)
+                }
+                default {
+                    mstore(0xB14, tokenOut)
+                    mstore(0xB00, tokenIn)
+                }
+                mstore8(0xB34, 1)
+                let salt := keccak256(0xB0C, 0x29)
+                mstore(0xB00, CLEO_V1_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, CLEO_V1_CODE_HASH)
+
+                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+            }
+            // Stratum Volatile
+            case 56 {
+                switch zeroForOne
+                case 0 {
+                    mstore(0xB14, tokenIn)
+                    mstore(0xB00, tokenOut)
+                }
+                default {
+                    mstore(0xB14, tokenOut)
+                    mstore(0xB00, tokenIn)
+                }
+                mstore8(0xB34, 0)
+                let salt := keccak256(0xB0C, 0x29)
+                mstore(0xB00, STRATUM_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, STRATUM_CODE_HASH)
+
+                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+            }
+            // 57: Stratum Stable
+            default {
+                switch zeroForOne
+                case 0 {
+                    mstore(0xB14, tokenIn)
+                    mstore(0xB00, tokenOut)
+                }
+                default {
+                    mstore(0xB14, tokenOut)
+                    mstore(0xB00, tokenIn)
+                }
+                mstore8(0xB34, 1)
+                let salt := keccak256(0xB0C, 0x29)
+                mstore(0xB00, STRATUM_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, STRATUM_CODE_HASH)
+
+                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+            }
+
+            // verify that the caller is a v2 type pool
+            if iszero(eq(pair, caller())) {
+                revert (0, 0)
+            }
+            // use tradeId as tradetype
+            tradeId := and(shr(88, firstWord) , UINT8_MASK)
+            // 10 (11) means that we are paying from the cache in an exact input (output)
+            // scenario
+            if eq(tradeId, 10) {
+                payFromCache := 1
+                tradeId := 0
+            }        
+            if eq(tradeId, 11) {
+                payFromCache := 1
+                tradeId := 1
+            }
         }
-        // verify that the caller is a v2 type pool
-        validateV2PairAddress(tokenIn, tokenOut, identifier);
+
         // exact in is handled outside a callback
         if (tradeId == 0) {
             // the swap amount is expected to be the nonzero output amount
@@ -595,7 +764,9 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                     sstore(CACHE_SLOT, tradeId)
                 }
             }
-            _transferERC20Tokens(tokenIn, msg.sender, getV2AmountInDirect(msg.sender, tokenIn, tokenOut, amountToSwap, identifier));
+            amountToSwap = getV2AmountInDirect(msg.sender, tokenIn, tokenOut, amountToSwap, identifier);
+            if(payFromCache) _transferERC20TokensFrom(getCachedAddress(), tokenIn, msg.sender, amountToSwap);
+            else _transferERC20Tokens(tokenIn, msg.sender, amountToSwap);
             return;
         } else if (tradeId == 1) {
             // fetch amountOut

@@ -102,7 +102,7 @@ contract SwapGen2Test is DeltaSetup {
 
         uint256 amountToSwap = 2.0e6;
 
-        (address assetTo, address assetFrom, bytes memory swapPath) = getPathAndTokensV3();
+        (address assetFrom, address assetTo, bytes memory swapPath) = getPathAndTokensV3();
 
         deal(assetFrom, user, 1e20);
 
