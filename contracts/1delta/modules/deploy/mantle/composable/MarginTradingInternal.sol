@@ -6,14 +6,14 @@ pragma solidity 0.8.26;
 * Author: Achthar | 1delta 
 /******************************************************************************/
 
-import {BaseSwapper} from "./BaseSwapper.sol";
-import {BaseLending} from "./BaseLending.sol";
+import {BaseSwapper} from "../BaseSwapper.sol";
+import {BaseLending} from "../BaseLending.sol";
 
 /**
  * @title Contract Module for general Margin Trading on an borrow delegation compatible Lender
  * @notice Contains main logic for uniswap-type callbacks and initiator functions
  */
-abstract contract MarginTrading is BaseSwapper, BaseLending {
+abstract contract MarginTradingInternal is BaseSwapper, BaseLending {
     // selectors for errors
     bytes4 internal constant SLIPPAGE = 0x7dd37f70;
     // errors
@@ -27,100 +27,16 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
 
     /// @dev Exact Input Flash Swap - The path parameters determine the lending actions
     function flashSwapExactIn(
-        uint256 amountIn,
-        uint256 amountOutMinimum,
         bytes calldata path
-    ) external payable {
-        _cacheCaller();
-        uint256 amountOut = flashSwapExactInInternal(amountIn, path);
-        // slippage check
-        assembly {
-            if lt(amountOut, amountOutMinimum) {
-                mstore(0, SLIPPAGE)
-                revert (0, 0x4)
-            }
-        }
+    ) internal {
+        uint256 amountOut = flashSwapExactInInternal(uint128(bytes16(path[0:16])), path);
     }
 
     // Exact Output Swap - The path parameters determine the lending actions
     function flashSwapExactOut(
-        uint256 amountOut,
-        uint256 amountInMaximum,
         bytes calldata path
-    ) external payable {
-        _cacheCaller();
-        flashSwapExactOutInternal(amountOut, address(this), path);
-        // slippage check
-        assembly {
-            let amountIn := sload(CACHE_SLOT)
-            if gt(amountIn, amountInMaximum) {
-                mstore(0, SLIPPAGE)
-                revert (0, 0x4)
-            }
-            // reset cache
-            sstore(CACHE_SLOT, DEFAULT_CACHE)
-        }
-    }
-
-    // Exact Input Swap where the entire collateral amount is withdrawn - The path parameters determine the lending actions
-    // if the collateral balance is zerp. the tx reverts
-    function flashSwapAllIn(uint256 amountOutMinimum, bytes calldata path) external payable {
-        _cacheCaller();
-        uint256 amountIn;
-        {
-            address tokenIn;    
-            assembly {
-                tokenIn := shr(96, calldataload(path.offset))
-            }
-            // fetch collateral balance
-            amountIn = _callerCollateralBalance(tokenIn, getLender(path));
-            if (amountIn == 0) revert NoBalance();
-        }
-        uint256 amountOut = flashSwapExactInInternal(amountIn, path);
-        assembly {
-            if lt(amountOut, amountOutMinimum) {
-                mstore(0, SLIPPAGE)
-                revert (0, 0x4)
-            }
-        }
-    }
-
-    // Exact Output Swap where the entire debt balacne is repaid - The path parameters determine the lending actions
-    function flashSwapAllOut(uint256 amountInMaximum, bytes calldata path) external payable {
-        _cacheCaller();
-        uint256 amountOut;
-        {
-            address tokenOut;
-            uint8 _identifier;
-            // we need tokenIn together with lender id for he balance fetch
-            assembly {
-                let firstWord := calldataload(path.offset)
-                tokenOut := shr(96, firstWord)
-                _identifier := shr(56, firstWord)
-            }   
-
-            // determine output amount as respective debt balance
-            if (_identifier == 5) amountOut = _variableDebtBalance(tokenOut, msg.sender, getLender(path));
-            else amountOut = _stableDebtBalance(tokenOut, msg.sender, getLender(path));
-            if (amountOut == 0) revert NoBalance();
-        
-            // fetch poolId - store it in _identifier
-            assembly {
-                _identifier := shr(64, calldataload(path.offset))
-            }
-        }
-
-        flashSwapExactOutInternal(amountOut, address(this), path);
-        // slippage check
-        assembly {
-            let amountIn := sload(CACHE_SLOT)
-            if gt(amountIn, amountInMaximum) {
-                mstore(0, SLIPPAGE)
-                revert (0, 0x4)
-            }
-            // reset cache
-            sstore(CACHE_SLOT, DEFAULT_CACHE)
-        }
+    ) internal {
+        flashSwapExactOutInternal(uint128(bytes16(path[0:16])), address(this), path);
     }
 
     // fusionx
@@ -503,7 +419,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 }
 
                 // multihop if required
-                if (_data.length > 46) {
+                if (_data.length > MINIMUM_PATH_LENGTH) {
                     _data = _data[24:];
                     flashSwapExactOutInternal(amountInLastPool, msg.sender, _data);
                 } else {
@@ -747,6 +663,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 tradeId := 1
             }
         }
+
         // exact in is handled outside a callback
         if (tradeId == 0) {
             // the swap amount is expected to be the nonzero output amount
@@ -854,8 +771,8 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // calculate amountIn (note that tokenIn/out are read inverted at the top)
             referenceAmount = getV2AmountInDirect(msg.sender, tokenOut, tokenIn, referenceAmount, identifier);
             // constinue swapping if more data is provided
-            if (data.length > 43) {
-                data = data[22:];
+            if (data.length > MINIMUM_PATH_LENGTH) {
+                data = data[25:];
                 flashSwapExactOutInternal(referenceAmount, msg.sender, data);
             } else {
                 // pay the pool
@@ -920,11 +837,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         }
         // uniswapV2 style
         else if (identifier < 100) {
-            _swapV2StyleExactOut(
-                amountOut,
-                receiver,
-                path
-            );
+            _swapV2StyleExactOut(amountOut, receiver, path);
         }
         // iZi
         else if (identifier == 100) {
@@ -935,19 +848,19 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             );
         // special case: Moe LB, no flash swaps, recursive nesting is applied
         } else if (identifier == 103) {
-            uint16 bin;
+            uint24 bin;
             address tokenIn;
             address tokenOut;
             assembly {
                 let firstWord := calldataload(path.offset)
                 tokenOut := and(ADDRESS_MASK, shr(96, firstWord))
-                bin := and(shr(64, firstWord), UINT16_MASK)
-                tokenIn := and(ADDRESS_MASK, shr(96, calldataload(add(path.offset, 24))))
+                bin := and(shr(80, firstWord), UINT24_MASK)
+                tokenIn := and(ADDRESS_MASK, shr(96, calldataload(add(path.offset, 22))))
             }
             ////////////////////////////////////////////////////
             // We calculate the required amount for the next swap
             ////////////////////////////////////////////////////
-            (uint256 amountIn, address pair, bool swapForY) = getLBAmountIn(tokenIn, tokenOut, amountOut, bin);
+            (uint256 amountIn, address pair, bool swapForY) = getLBAmountIn(tokenIn, tokenOut, amountOut, uint16(bin));
 
             ////////////////////////////////////////////////////
             // If the path includes more pairs, we nest another exact out swap
@@ -955,13 +868,13 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // This is done by re-calling this same function after skimming the
             // data parameter by the leading token config 
             ////////////////////////////////////////////////////
-            if(path.length > 46) {
+            if(path.length > MINIMUM_PATH_LENGTH) {
                 // remove the last token from the path
-                path = path[24:];
+                path = path[25:];
                 flashSwapExactOutInternal(amountIn, pair, path);
             } 
             ////////////////////////////////////////////////////
-            // Otherwise, we6 pay the funds to the pair
+            // Otherwise, we pay the funds to the pair
             // according to the parametrization
             // at the end of the path
             ////////////////////////////////////////////////////
@@ -970,9 +883,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 // pay the pool
                 handleTransferOut(tokenIn, getCachedAddress(), pair, payType, amountIn, lenderId);
                 // only cache the amount if this is the last pool
-                assembly {
-                    sstore(CACHE_SLOT, amountIn)
-                }
+                gcs().cache = bytes32(amountIn);
             }
             ////////////////////////////////////////////////////
             // The swap is executed at the end and sends 

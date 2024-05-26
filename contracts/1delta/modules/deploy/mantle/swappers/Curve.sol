@@ -157,7 +157,7 @@ abstract contract CurveSwapper {
         }
     }
 
-    function swapStratumCurveGeneral(uint256 indexIn, uint256 indexOut, uint256 subGroup, uint256 amountIn) internal returns (uint256 amountOut) {
+    function swapCurveGeneral(uint256 indexIn, uint256 indexOut, address pool, uint256 amountIn) internal returns (uint256 amountOut) {
         assembly {
             ////////////////////////////////////////////////////
             // Execute swap function 
@@ -170,17 +170,6 @@ abstract contract CurveSwapper {
             mstore(0xB44, amountIn)
             mstore(0xB64, 0) // min out is zero, we validate slippage at the end
             mstore(0xB84, 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff) // no deadline
-            let pool
-            switch subGroup
-            case 0 {
-                pool := STRATUM_ETH_POOL
-            }
-            case 1 {
-                pool := STRATUM_3POOL_2
-            }
-            default {
-                revert (0, 0)
-            }
             if iszero(call(gas(), pool, 0x0, 0xB00, 0xA4, 0xB00, 0x20)) {
                 let rdsize := returndatasize()
                 returndatacopy(0xB00, 0, rdsize)

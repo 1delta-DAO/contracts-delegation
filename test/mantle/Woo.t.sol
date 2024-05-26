@@ -7,7 +7,6 @@ import "./DeltaSetup.f.sol";
  * Tests WooFi exact in swaps
  */
 contract WooFiTest is DeltaSetup {
-
     function setUp() public virtual override {
         vm.createSelectFork({blockNumber: 64033576, urlOrAlias: "https://mantle-mainnet.public.blastapi.io"});
 
@@ -27,7 +26,7 @@ contract WooFiTest is DeltaSetup {
 
         uint256 quoted = testQuoter._quoteWooFiExactIn(assetIn, assetOut, amountIn);
 
-        bytes[] memory calls = new bytes[](3);
+        bytes[] memory calls = new bytes[](2);
         calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, assetIn, amountIn);
 
         bytes memory swapPath = getSpotExactInSingleWOO_FI(assetIn, assetOut);
@@ -36,16 +35,15 @@ contract WooFiTest is DeltaSetup {
             IFlashAggregator.swapExactInSpot.selector, // 3 args
             amountIn,
             minimumOut,
+            user,
             swapPath
         );
 
-        calls[2] = abi.encodeWithSelector(ILending.sweep.selector, assetOut);
         vm.prank(user);
         IERC20All(assetIn).approve(brokerProxyAddress, amountIn);
 
         uint256 balanceIn = IERC20All(assetIn).balanceOf(user);
         uint256 balanceOut = IERC20All(assetOut).balanceOf(user);
-
 
         vm.prank(user);
         brokerProxy.multicall(calls);
@@ -62,8 +60,7 @@ contract WooFiTest is DeltaSetup {
     /** WOO_FI PATH BUILDERS */
 
     function getSpotExactInSingleWOO_FI(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        uint24 fee = DEX_FEE_NONE;
         uint8 poolId = WOO_FI;
-        return abi.encodePacked(tokenIn, fee, poolId, uint8(0), tokenOut, uint8(99));
+        return abi.encodePacked(tokenIn, uint8(0), poolId, tokenOut);
     }
 }

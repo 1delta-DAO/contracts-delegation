@@ -7,7 +7,6 @@ import "./DeltaSetup.f.sol";
  * Tests Curve style DEXs exact in swaps
  */
 contract StratumCurveTest is DeltaSetup {
-
     function setUp() public virtual override {
         vm.createSelectFork({blockNumber: 63740637, urlOrAlias: "https://mantle-mainnet.public.blastapi.io"});
         deployDelta();
@@ -35,6 +34,7 @@ contract StratumCurveTest is DeltaSetup {
             IFlashAggregator.swapExactInSpot.selector, // 3 args
             amountIn,
             minimumOut,
+            user,
             swapPath
         );
 
@@ -56,7 +56,6 @@ contract StratumCurveTest is DeltaSetup {
         assertApproxEqAbs(quoted, balanceOut, 0);
         assertApproxEqAbs(balanceIn, amountIn, 0);
     }
-
 
     function test_mantle_stratum_spot_exact_in_usd() external pure {
         return; // the usd pol is paused
@@ -103,7 +102,6 @@ contract StratumCurveTest is DeltaSetup {
         // assertApproxEqAbs(balanceIn, amountIn, 0);
     }
 
-
     function test_mantle_stratum_spot_exact_in_reverse() external {
         address user = testUser;
         vm.assume(user != address(0));
@@ -125,6 +123,7 @@ contract StratumCurveTest is DeltaSetup {
             IFlashAggregator.swapExactInSpot.selector, // 3 args
             amountIn,
             minimumOut,
+            user,
             swapPath
         );
 
@@ -150,25 +149,38 @@ contract StratumCurveTest is DeltaSetup {
     /** STRATUM PATH BUILDERS */
 
     function getSpotExactInSingleStratumEth(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        uint8 poolId = STRATUM_CURVE;
-        return abi.encodePacked(tokenIn, abi.encodePacked(getTokenIdEth(tokenIn),getTokenIdEth(tokenOut), uint8(0)), poolId, uint8(0), tokenOut, uint8(99));
+        return
+            abi.encodePacked(
+                tokenIn,
+                uint8(0),
+                STRATUM_CURVE,
+                abi.encodePacked(getTokenIdEth(tokenIn), getTokenIdEth(tokenOut)),
+                STRATUM_ETH_POOL,
+                tokenOut
+            );
     }
 
-    function getTokenIdEth(address t) internal view returns(uint8) {
-        if(t == METH) return 1;
+    function getTokenIdEth(address t) internal view returns (uint8) {
+        if (t == METH) return 1;
         else return 0;
     }
 
-
     function getSpotExactInSingleStratumUsd(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint8 poolId = STRATUM_CURVE;
-        return abi.encodePacked(tokenIn, abi.encodePacked(getTokenIdUSD(tokenIn),getTokenIdUSD(tokenOut), uint8(1)), poolId, uint8(0), tokenOut, uint8(99));
+        return
+            abi.encodePacked(
+                tokenIn,
+                abi.encodePacked(getTokenIdUSD(tokenIn), getTokenIdUSD(tokenOut), uint8(1)),
+                poolId,
+                uint8(0),
+                tokenOut,
+                uint8(99)
+            );
     }
 
-
-    function getTokenIdUSD(address t) internal view returns(uint8) {
-        if(t == USDC) return 0;
-        if(t == USDT) return 1;
+    function getTokenIdUSD(address t) internal view returns (uint8) {
+        if (t == USDC) return 0;
+        if (t == USDT) return 1;
         else return 2;
     }
 }

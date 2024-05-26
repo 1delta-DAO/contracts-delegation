@@ -32,7 +32,7 @@ abstract contract ExoticSwapper {
      * @param amountIn sell amount
      * @return amountOut buy amount
      */
-    function swapWooFiExactIn(address tokenIn, address tokenOut, uint256 amountIn) internal returns (uint256 amountOut) {
+    function swapWooFiExactIn(address tokenIn, address tokenOut, uint256 amountIn, address receiver) internal returns (uint256 amountOut) {
         assembly {
             // selector for transfer(address,uint256)
             mstore(0xB00, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
@@ -70,7 +70,7 @@ abstract contract ExoticSwapper {
             mstore(0xB24, tokenOut)
             mstore(0xB44, amountIn)
             mstore(0xB64, 0x0) // amountOutMin unused
-            mstore(0xB84, address()) // recipient
+            mstore(0xB84, receiver) // recipient
             mstore(0xBA4, REBATE_RECIPIENT) // rebateTo
             success := call(
                 gas(),
@@ -98,7 +98,7 @@ abstract contract ExoticSwapper {
      * @param amountIn sell amount
      * @return amountOut buy amount
      */
-    function swapKTXExactIn(address tokenIn, address tokenOut, uint256 amountIn) internal returns (uint256 amountOut) {
+    function swapKTXExactIn(address tokenIn, address tokenOut, uint256 amountIn, address receiver) internal returns (uint256 amountOut) {
         assembly {
             // selector for transfer(address,uint256)
             mstore(0xB00, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
@@ -134,7 +134,7 @@ abstract contract ExoticSwapper {
             )
             mstore(0xB04, tokenIn)
             mstore(0xB24, tokenOut)
-            mstore(0xB44, address())
+            mstore(0xB44, receiver)
             success := call(
                 gas(),
                 KTX_VAULT,

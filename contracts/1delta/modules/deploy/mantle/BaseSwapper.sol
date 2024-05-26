@@ -83,15 +83,16 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
             }
             // WOO Fi
             else if (identifier == 101) {
+                if(path.length < 43) currentReceiver = receiver;
                 address tokenIn;
                 address tokenOut;
                 assembly {
                     let firstWord := calldataload(path.offset)
                     tokenIn := shr(96, firstWord)
-                    tokenOut := shr(96, calldataload(add(path.offset, 25)))
+                    tokenOut := shr(96, calldataload(add(path.offset, 22)))
                 }
-                amountIn = swapWooFiExactIn(tokenIn, tokenOut, amountIn);
-                path = path[22:];
+                amountIn = swapWooFiExactIn(tokenIn, tokenOut, amountIn, receiver);
+                path = path[21:];
             }
             // Stratum 3USD with wrapper
             else if (identifier == 102) {
@@ -107,40 +108,41 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
             }
             // Moe LB
             else if (identifier == 103) {
+                if(path.length < 45) currentReceiver = receiver;
                 address tokenIn;
                 address tokenOut;
-                uint24 bin;
+                uint16 bin;
                 assembly {
                     let firstWord := calldataload(path.offset)
                     tokenIn := shr(96, firstWord)
-                    tokenOut := shr(96, calldataload(add(path.offset, 25)))
-                    bin := and(shr(64, firstWord), UINT24_MASK)
+                    tokenOut := shr(96, calldataload(add(path.offset, 24)))
+                    bin := and(shr(64, firstWord), UINT16_MASK)
                 }
-                amountIn = swapLBexactIn(tokenIn, tokenOut, amountIn, address(this), uint16(bin));
-                path = path[42:];
+                amountIn = swapLBexactIn(tokenIn, tokenOut, amountIn, currentReceiver, bin);
+                path = path[24:];
             } else if(identifier == 104) {
+                if(path.length < 43) currentReceiver = receiver;
                 address tokenIn;
                 address tokenOut;
                 assembly {
-                    let firstWord := calldataload(path.offset)
-                    tokenIn := shr(96, firstWord)
-                    tokenOut := shr(96, calldataload(add(path.offset, 25)))
+                    tokenIn := shr(96, calldataload(path.offset))
+                    tokenOut := shr(96, calldataload(add(path.offset, 22)))
                 }
-                amountIn = swapKTXExactIn(tokenIn, tokenOut, amountIn);
-                path = path[43:];
+                amountIn = swapKTXExactIn(tokenIn, tokenOut, amountIn, receiver);
+                path = path[22:];
             } 
             // Curve stable general
             else if (identifier == 105) {
                 uint8 indexIn;
                 uint8 indexOut;
-                uint8 subGroup;
+                address pool;
                 assembly {
-                    let indexData := and(shr(72, calldataload(path.offset)), UINT24_MASK)
-                    indexIn := and(shr(16, indexData), UINT8_MASK)
-                    indexOut := and(shr(8, indexData), UINT8_MASK)
-                    subGroup := and(indexData, UINT8_MASK)
+                    let indexData := calldataload(add(path.offset, 21))
+                    indexIn := and(shr(240, indexData), UINT8_MASK)
+                    indexOut := and(shr(232, indexData), UINT8_MASK)
+                    pool := and(shr(72, indexData), ADDRESS_MASK)
                 }
-                amountIn = swapStratumCurveGeneral(indexIn, indexOut, subGroup, amountIn);
+                amountIn = swapCurveGeneral(indexIn, indexOut, pool, amountIn);
                 path = path[43:];
             } else
                 revert invalidDexId();

@@ -107,8 +107,9 @@ contract AddressesMantle {
     uint24 internal DEX_FEE_LOW_HIGH = 3000;
     uint24 internal DEX_FEE_LOW = 500;
     uint24 internal DEX_FEE_NONE = 0;
-    uint24 internal BIN_STEP_LOWEST = 1;
-    uint24 internal BIN_STEP_LOW = 10;
+
+    uint16 internal BIN_STEP_LOWEST = 1;
+    uint16 internal BIN_STEP_LOW = 10;
 
     uint8 internal AGNI = 1;
     uint8 internal FUSION_X = 0;

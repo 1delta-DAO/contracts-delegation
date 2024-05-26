@@ -42,6 +42,7 @@ contract GeneralMoeLBTest is DeltaSetup {
             IFlashAggregator.swapExactInSpot.selector, // 3 args
             amountIn,
             minimumOut,
+            user,
             swapPath
         );
 
@@ -81,6 +82,7 @@ contract GeneralMoeLBTest is DeltaSetup {
             IFlashAggregator.swapExactOutSpot.selector, // 3 args
             amountOut,
             maximumIn,
+            user,
             swapPath
         );
 
@@ -120,6 +122,7 @@ contract GeneralMoeLBTest is DeltaSetup {
             IFlashAggregator.swapExactOutSpot.selector, // 3 args
             amountOut,
             maximumIn,
+            user,
             swapPath
         );
 
@@ -141,7 +144,6 @@ contract GeneralMoeLBTest is DeltaSetup {
         assertApproxEqAbs(balanceOut, amountOut, 1e12);
     }
 
-
     function test_mantle_lb_spot_exact_out_multi_end() external {
         address user = testUser;
         vm.assume(user != address(0));
@@ -160,6 +162,7 @@ contract GeneralMoeLBTest is DeltaSetup {
             IFlashAggregator.swapExactOutSpot.selector, // 3 args
             amountOut,
             maximumIn,
+            user,
             swapPath
         );
 
@@ -180,7 +183,6 @@ contract GeneralMoeLBTest is DeltaSetup {
         assertApproxEqAbs(9973416762201841411, balanceIn, 1);
         assertApproxEqAbs(balanceOut, amountOut, 1e12);
     }
-
 
     function test_margin_mantle_lb_open_exact_in_multi() external {
         uint8 lenderId = DEFAULT_LENDER;
@@ -203,7 +205,7 @@ contract GeneralMoeLBTest is DeltaSetup {
         calls[0] = abi.encodeWithSelector(
             IFlashAggregator.flashSwapExactIn.selector, // 3 params
             amountToLeverage,
-            minimumOut,
+            minimumOut, //
             swapPath
         );
 
@@ -241,7 +243,12 @@ contract GeneralMoeLBTest is DeltaSetup {
         uint256 amountToReceive = 2.0e6;
         bytes memory swapPath = getOpenExactOutMultiLB(borrowAsset, asset);
         uint256 maximumIn = 2.05e6;
-        calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactOut.selector, amountToReceive, maximumIn, swapPath);
+        calls[0] = abi.encodeWithSelector(
+            IFlashAggregator.flashSwapExactOut.selector, //
+            amountToReceive,
+            maximumIn, //
+            swapPath
+        );
 
         vm.prank(user);
         IERC20All(debtAsset).approveDelegation(brokerProxyAddress, maximumIn);
@@ -283,7 +290,12 @@ contract GeneralMoeLBTest is DeltaSetup {
         bytes memory swapPath = getCloseExactInMultiLB(asset, borrowAsset);
         uint256 amountIn = 1.5e6;
         uint256 minimumOut = 1.48e6; // this one provides a bad swap rate
-        calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactIn.selector, amountIn, minimumOut, swapPath);
+        calls[0] = abi.encodeWithSelector(
+            IFlashAggregator.flashSwapExactIn.selector, //
+            amountIn,
+            minimumOut,
+            swapPath
+        );
 
         vm.prank(user);
         IERC20All(collateralAsset).approve(brokerProxyAddress, amountIn);
@@ -323,7 +335,12 @@ contract GeneralMoeLBTest is DeltaSetup {
         bytes memory swapPath = getCloseExactOutMultiLB(asset, borrowAsset);
         uint256 amountOut = 1.0e6;
         uint256 amountInMaximum = 1.20e6;
-        calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactOut.selector, amountOut, amountInMaximum, swapPath);
+        calls[0] = abi.encodeWithSelector(
+            IFlashAggregator.flashSwapExactOut.selector,
+            amountOut, //
+            amountInMaximum,
+            swapPath
+        );
 
         vm.prank(user);
         IERC20All(collateralAsset).approve(brokerProxyAddress, amountInMaximum);
@@ -346,83 +363,62 @@ contract GeneralMoeLBTest is DeltaSetup {
     /** MOE LB PATH BUILDERS */
 
     function getOpenExactInMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        uint24 fee = DEX_FEE_NONE;
         (uint8 actionId, uint8 midId, uint8 endId) = getOpenExactInFlags();
         uint8 poolId = MERCHANT_MOE;
-        bytes memory firstPart = abi.encodePacked(tokenIn, fee, poolId, actionId, USDe);
-        fee = BIN_STEP_LOWEST;
+        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, USDe);
         poolId = MERCHANT_MOE_LB;
-        return abi.encodePacked(firstPart, fee, poolId, midId, tokenOut, DEFAULT_LENDER, endId);
+        return abi.encodePacked(firstPart, midId, poolId, BIN_STEP_LOWEST, tokenOut, DEFAULT_LENDER, endId);
     }
 
     function getSpotExactInSingleLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        uint24 fee = BIN_STEP_LOWEST;
+        uint16 fee = BIN_STEP_LOWEST;
         uint8 poolId = MERCHANT_MOE_LB;
-        return abi.encodePacked(tokenIn, fee, poolId, uint8(0), tokenOut, uint8(99));
+        return abi.encodePacked(tokenIn, uint8(0), poolId, fee, tokenOut, uint8(99));
     }
 
     function getSpotExactOutSingleLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        uint24 fee = BIN_STEP_LOWEST;
         uint8 poolId = MERCHANT_MOE_LB;
-        return abi.encodePacked(tokenOut, fee, poolId, uint8(1), tokenIn, uint8(99));
+        return abi.encodePacked(tokenOut, uint8(1), poolId, BIN_STEP_LOWEST, tokenIn);
     }
 
     function getSpotExactOutMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        uint24 fee = BIN_STEP_LOWEST;
         uint8 poolId = MERCHANT_MOE_LB;
-        bytes memory firstPart = abi.encodePacked(tokenOut, fee, poolId, uint8(1), USDT);
-        fee = DEX_FEE_NONE;
+        bytes memory firstPart = abi.encodePacked(tokenOut, uint8(1), poolId, BIN_STEP_LOWEST, USDT);
         poolId = MERCHANT_MOE;
-        return abi.encodePacked(firstPart, fee, poolId, uint8(1), tokenIn, uint8(99));
+        return abi.encodePacked(firstPart, uint8(1), poolId, tokenIn);
     }
 
     function getSpotExactOutMultiLBEnd(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        uint24 fee = DEX_FEE_NONE;
         uint8 poolId = MERCHANT_MOE;
-        bytes memory firstPart = abi.encodePacked(tokenOut, fee, poolId, uint8(1), USDT);
-        fee = BIN_STEP_LOWEST;
+        bytes memory firstPart = abi.encodePacked(tokenOut, uint8(1), poolId, USDT);
         poolId = MERCHANT_MOE_LB;
-        return abi.encodePacked(firstPart, fee, poolId, uint8(1), tokenIn, uint8(99));
+        return abi.encodePacked(firstPart, uint8(1), poolId, BIN_STEP_LOWEST, tokenIn);
     }
 
     function getSpotExactInMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        uint24 fee = DEX_FEE_LOW;
         (uint8 actionId, uint8 midId, uint8 endId) = getOpenExactInFlags();
         uint8 poolId = AGNI;
-        bytes memory firstPart = abi.encodePacked(tokenIn, fee, poolId, actionId, USDT);
-        fee = BIN_STEP_LOWEST;
+        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, DEX_FEE_LOW, USDT);
         poolId = MERCHANT_MOE_LB;
-        return abi.encodePacked(firstPart, fee, poolId, midId, tokenOut, endId);
+        return abi.encodePacked(firstPart, midId, poolId, BIN_STEP_LOWEST, tokenOut, endId);
     }
 
     function getOpenExactOutMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        uint24 fee = DEX_FEE_NONE;
         (uint8 actionId, uint8 midId, uint8 endId) = getOpenExactOutFlags();
-        uint8 poolId = MERCHANT_MOE;
-        bytes memory firstPart = abi.encodePacked(tokenOut, fee, poolId, actionId, USDe);
-        fee = BIN_STEP_LOWEST;
-        poolId = MERCHANT_MOE_LB;
-        return abi.encodePacked( firstPart, fee, poolId, midId, tokenIn, DEFAULT_LENDER, endId);
+        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, MERCHANT_MOE, USDe);
+        return abi.encodePacked(firstPart, midId, MERCHANT_MOE_LB, BIN_STEP_LOWEST, tokenIn, DEFAULT_LENDER, endId);
     }
 
     function getCloseExactOutMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        uint24 fee = DEX_FEE_NONE;
         (uint8 actionId, uint8 midId, uint8 endId) = getCloseExactOutFlags();
-        uint8 poolId = MERCHANT_MOE;
-        bytes memory firstPart = abi.encodePacked(tokenOut, fee, poolId, actionId, USDe);
-        fee = BIN_STEP_LOWEST;
-        poolId = MERCHANT_MOE_LB;
-        return abi.encodePacked( firstPart, fee, poolId, midId, tokenIn, DEFAULT_LENDER, endId);
+        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, MERCHANT_MOE, USDe);
+        return abi.encodePacked(firstPart, midId, MERCHANT_MOE_LB, BIN_STEP_LOWEST, tokenIn, DEFAULT_LENDER, endId);
     }
 
     function getCloseExactInMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        uint24 fee = DEX_FEE_NONE;
         (uint8 actionId, uint8 midId, uint8 endId) = getCloseExactInFlags();
-        uint8 poolId = MERCHANT_MOE;
-        bytes memory firstPart = abi.encodePacked(tokenIn, fee, poolId, actionId, USDe);
-        fee = BIN_STEP_LOWEST;
-        poolId = MERCHANT_MOE_LB;
-        return abi.encodePacked( firstPart, fee, poolId, midId, tokenOut, DEFAULT_LENDER, endId);
+        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, MERCHANT_MOE, USDe);
+        return abi.encodePacked(firstPart, midId, MERCHANT_MOE_LB, BIN_STEP_LOWEST, tokenOut, DEFAULT_LENDER, endId);
     }
 
     /** DEPO AND BORROW HELPER */
@@ -436,7 +432,6 @@ contract GeneralMoeLBTest is DeltaSetup {
         calls[1] = abi.encodeWithSelector(ILending.deposit.selector, asset, user, DEFAULT_LENDER);
         vm.prank(user);
         brokerProxy.multicall(calls);
-
     }
 
     function _borrow(address user, address asset, uint256 amount) internal {

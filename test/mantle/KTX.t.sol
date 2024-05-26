@@ -27,7 +27,7 @@ contract KTXTest is DeltaSetup {
 
         uint256 quoted = testQuoter._quoteKTXExactIn(assetIn, assetOut, amountIn);
 
-        bytes[] memory calls = new bytes[](3);
+        bytes[] memory calls = new bytes[](2);
         calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, assetIn, amountIn);
 
         bytes memory swapPath = getSpotExactInSingleKTX(assetIn, assetOut);
@@ -36,10 +36,10 @@ contract KTXTest is DeltaSetup {
             IFlashAggregator.swapExactInSpot.selector, // 3 args
             amountIn,
             minimumOut,
+            user,
             swapPath
         );
 
-        calls[2] = abi.encodeWithSelector(ILending.sweep.selector, assetOut);
         vm.prank(user);
         IERC20All(assetIn).approve(brokerProxyAddress, amountIn);
 
@@ -85,7 +85,7 @@ contract KTXTest is DeltaSetup {
 
         uint256 quoted = testQuoter._quoteKTXExactIn(assetIn, assetOut, amountIn);
 
-        bytes[] memory calls = new bytes[](3);
+        bytes[] memory calls = new bytes[](2);
         calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, assetIn, amountIn);
 
         bytes memory swapPath = getSpotExactInSingleKTX(assetIn, assetOut);
@@ -94,10 +94,10 @@ contract KTXTest is DeltaSetup {
             IFlashAggregator.swapExactInSpot.selector, // 3 args
             amountIn,
             minimumOut,
+            user,
             swapPath
         );
 
-        calls[2] = abi.encodeWithSelector(ILending.sweep.selector, assetOut);
         vm.prank(user);
         IERC20All(assetIn).approve(brokerProxyAddress, amountIn);
 
@@ -128,7 +128,7 @@ contract KTXTest is DeltaSetup {
 
         uint256 quoted = testQuoter._quoteKTXExactIn(assetIn, assetOut, amountIn);
 
-        bytes[] memory calls = new bytes[](3);
+        bytes[] memory calls = new bytes[](2);
         calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, assetIn, amountIn);
 
         bytes memory swapPath = getSpotExactInSingleKTX(assetIn, assetOut);
@@ -137,10 +137,10 @@ contract KTXTest is DeltaSetup {
             IFlashAggregator.swapExactInSpot.selector, // 3 args
             amountIn,
             minimumOut,
+            user,
             swapPath
         );
 
-        calls[2] = abi.encodeWithSelector(ILending.sweep.selector, assetOut);
         vm.prank(user);
         IERC20All(assetIn).approve(brokerProxyAddress, amountIn);
 
@@ -162,8 +162,7 @@ contract KTXTest is DeltaSetup {
     /** KTX PATH BUILDERS */
 
     function getSpotExactInSingleKTX(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        uint24 fee = DEX_FEE_NONE;
         uint8 poolId = KTX;
-        return abi.encodePacked(tokenIn, fee, poolId, uint8(0), tokenOut, uint8(99));
+        return abi.encodePacked(tokenIn, uint8(0), poolId, tokenOut);
     }
 }
