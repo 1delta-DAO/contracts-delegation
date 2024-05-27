@@ -400,7 +400,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 (uint256(amount0Delta), uint256(-amount1Delta)): 
                 (uint256(amount1Delta), uint256(-amount0Delta));
             // of additional data is provided, we execute the swap nested
-            if (_data.length > 64) {
+            if (_data.length > 46) {
                 // we need to swap to the token that we want to supply
                 // the router returns the amount that we can finally supply to the protocol
                 _data = _data[24:];
@@ -419,7 +419,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // fetch amount that has to be paid to the pool
             uint256 amountToPay = amount0Delta > 0 ? uint256(amount0Delta) : uint256(amount1Delta);
             // either initiate the next swap or pay
-            if (_data.length > 64) {
+            if (_data.length > 46) {
                 _data = _data[24:];
                 flashSwapExactOutInternal(amountToPay, msg.sender, _data);
             } else {
@@ -800,7 +800,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // the other amount manually through a separate number cache
             uint256 amountToSwap = zeroForOne ? amount1 : amount0;
             uint256 amountToBorrow = getV2AmountInDirect(msg.sender, tokenIn, tokenOut, amountToSwap, identifier);
-            if (data.length > 43) {
+            if (data.length > 44) {
                 // we need to swap to the token that we want to supply
                 // the router returns the amount that we can finally supply to the protocol
                 data = data[22:];
@@ -854,7 +854,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // calculate amountIn (note that tokenIn/out are read inverted at the top)
             referenceAmount = getV2AmountInDirect(msg.sender, tokenOut, tokenIn, referenceAmount, identifier);
             // constinue swapping if more data is provided
-            if (data.length > 43) {
+            if (data.length > 44) {
                 data = data[22:];
                 flashSwapExactOutInternal(referenceAmount, msg.sender, data);
             } else {

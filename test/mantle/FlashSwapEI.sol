@@ -283,8 +283,7 @@ contract FlashSwapExacInTest is DeltaSetup {
     }
 
     function getSpotExactInAgni(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        uint8 poolId = AGNI;
-        return abi.encodePacked(tokenIn, ZERO_8, poolId, uint16(DEX_FEE_STABLES), tokenOut);
+        return abi.encodePacked(tokenIn, ZERO_8, AGNI, uint16(DEX_FEE_STABLES), tokenOut);
     }
 
     function getSpotExactInSingleStratumMETH(address token) internal view returns (bytes memory data) {
@@ -300,8 +299,7 @@ contract FlashSwapExacInTest is DeltaSetup {
     }
 
     function getSpotExactInAgniQuoter(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        uint8 poolId = AGNI;
-        return abi.encodePacked(tokenIn, uint24(DEX_FEE_STABLES), poolId, tokenOut);
+        return abi.encodePacked(tokenIn, uint24(DEX_FEE_STABLES), AGNI, tokenOut);
     }
 
     function getSpotExactInMoeQuoter(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
@@ -325,12 +323,12 @@ contract FlashSwapExacInTest is DeltaSetup {
             abi.encodePacked(
                 abi.encodePacked(
                     getSpotExactInAgni(token, METH),
+                    ZERO_8,
                     STRATUM_CURVE,
                     abi.encodePacked(getTokenIdEth(METH), getTokenIdEth(token)),
                     STRATUM_ETH_POOL,
                     token,
-                    moe(),
-                    METH
+                    abi.encodePacked(ZERO_8, MERCHANT_MOE, METH)
                 )
             );
     }
@@ -339,6 +337,7 @@ contract FlashSwapExacInTest is DeltaSetup {
         return
             abi.encodePacked(
                 getSpotExactInMoe(token, METH),
+                ZERO_8,
                 STRATUM_CURVE,
                 abi.encodePacked(getTokenIdEth(METH), getTokenIdEth(token)),
                 STRATUM_ETH_POOL,
@@ -350,16 +349,16 @@ contract FlashSwapExacInTest is DeltaSetup {
         return
             abi.encodePacked(
                 getSpotExactInMoe(token, METH),
-                abi.encodePacked(getTokenIdEth(METH), getTokenIdEth(token), ZERO_8),
-                STRATUM_CURVE,
                 ZERO_8,
-                token,
-                uint8(99)
+                STRATUM_CURVE,
+                abi.encodePacked(getTokenIdEth(METH), getTokenIdEth(token)),
+                STRATUM_ETH_POOL,
+                token
             );
     }
 
     function getSpotExactInMoe(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        return abi.encodePacked(tokenIn, moe(), ZERO_8, tokenOut);
+        return abi.encodePacked(tokenIn, ZERO_8, MERCHANT_MOE, tokenOut);
     }
 
     function moe() internal view returns (bytes memory) {
