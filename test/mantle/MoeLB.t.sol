@@ -33,7 +33,7 @@ contract GeneralMoeLBTest is DeltaSetup {
 
         uint256 amountIn = 10.0e6;
 
-        bytes[] memory calls = new bytes[](3);
+        bytes[] memory calls = new bytes[](2);
         calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, assetIn, amountIn);
 
         bytes memory swapPath = getSpotExactInSingleLB(assetIn, assetOut);
@@ -45,8 +45,6 @@ contract GeneralMoeLBTest is DeltaSetup {
             user,
             swapPath
         );
-
-        calls[2] = abi.encodeWithSelector(ILending.sweep.selector, assetOut);
         vm.prank(user);
         IERC20All(assetIn).approve(brokerProxyAddress, amountIn);
 

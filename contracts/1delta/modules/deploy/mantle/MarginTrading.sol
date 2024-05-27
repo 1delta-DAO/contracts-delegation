@@ -753,7 +753,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // since v2 does not send the input amount as parameter, we have to fetch
             // the other amount manually through the cache
             uint256 amountToSwap = zeroForOne ? amount1 : amount0;
-            if (data.length > MINIMUM_PATH_LENGTH) {
+            if (data.length > 44) {
                 // we need to swap to the token that we want to supply
                 // the router returns the amount that we can finally supply to the protocol
                 data = data[22:];
@@ -773,7 +773,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // calculte amountIn (note that tokenIn/out are read inverted at the top)
             referenceAmount = getV2AmountInDirect(msg.sender, tokenOut, tokenIn, referenceAmount, identifier);
             // either initiate the next swap or pay
-            if (data.length > MINIMUM_PATH_LENGTH) {
+            if (data.length > 44) {
                 data = data[22:];
                 flashSwapExactOutInternal(referenceAmount, msg.sender, data);
             } else {
