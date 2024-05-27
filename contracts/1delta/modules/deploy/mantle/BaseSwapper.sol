@@ -143,17 +143,12 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
                     pool := and(shr(72, indexData), ADDRESS_MASK)
                 }
                 amountIn = swapCurveGeneral(indexIn, indexOut, pool, amountIn);
-                // if(path.length < 63 && receiver != address(this)) _transferERC20Tokens(
-                //     tokenOut, receiver, amountIn
-                // );
                 path = path[44:];
             } else
                 revert invalidDexId();
             
             // decide whether to continue or terminate
-            if (path.length > MINIMUM_PATH_LENGTH) {
-                // path = path[25:];
-            } else {
+            if (path.length < 30) {
                 amountOut = amountIn;
                 break;
             }
