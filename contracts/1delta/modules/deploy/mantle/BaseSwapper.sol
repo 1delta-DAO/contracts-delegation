@@ -108,7 +108,7 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
             }
             // Moe LB
             else if (identifier == 103) {
-                if(path.length < 45) currentReceiver = receiver;
+                if(path.length < 46) currentReceiver = receiver;
                 address tokenIn;
                 address tokenOut;
                 uint16 bin;

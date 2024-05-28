@@ -36,6 +36,7 @@ contract GeneralMoeLBTest is DeltaSetup {
             IFlashAggregator.swapExactInSpot.selector, // 3 args
             amountIn,
             minimumOut,
+            user,
             swapPath
         );
 
@@ -61,9 +62,9 @@ contract GeneralMoeLBTest is DeltaSetup {
     /** KTX PATH BUILDERS */
 
     function getSpotExactInSinglePuff(address tokenIn, address tokenOut) internal pure returns (bytes memory data) {
-        uint24 fee = 3000;
+        uint16 fee = 3000;
         uint8 poolId = 5;
-        return abi.encodePacked(tokenIn, fee, poolId, uint8(0), tokenOut, uint8(99));
+        return abi.encodePacked(tokenIn, uint8(0), poolId , fee, tokenOut, uint8(99));
     }
 
     function getSpotQuoteExactInSinglePuff(address tokenIn, address tokenOut) internal pure returns (bytes memory data) {

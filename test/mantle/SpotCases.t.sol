@@ -22,7 +22,7 @@ contract MarginOpenTest is DeltaSetup {
 
         bytes memory swapPath = getSpotExactInSingle_izi(asset, assetOut);
         uint256 minimumOut = 13.0e18;
-        calls[1] = abi.encodeWithSelector(IFlashAggregator.swapExactInSpot.selector, amountToSwap, minimumOut, swapPath);
+        calls[1] = abi.encodeWithSelector(IFlashAggregator.swapExactInSpot.selector, amountToSwap, minimumOut, user, swapPath);
         calls[2] = abi.encodeWithSelector(ILending.sweep.selector, assetOut);
 
         vm.prank(user);
@@ -58,7 +58,7 @@ contract MarginOpenTest is DeltaSetup {
 
         bytes memory swapPath = getSpotExactOutSingle_izi(asset, assetOut);
         uint256 maximumIn = 30.0e6;
-        calls[0] = abi.encodeWithSelector(IFlashAggregator.swapExactOutSpot.selector, amountToSwap, maximumIn, swapPath);
+        calls[0] = abi.encodeWithSelector(IFlashAggregator.swapExactOutSpot.selector, amountToSwap, maximumIn, user, swapPath);
         calls[1] = abi.encodeWithSelector(ILending.sweep.selector, assetOut);
 
         vm.prank(user);
@@ -79,8 +79,7 @@ contract MarginOpenTest is DeltaSetup {
         assertApproxEqAbs(amountToSwap, balance, 1e7);
     }
 
-
-     function test_margin_mantle_spot_exact_in_izi_reverted() external /** address user, uint8 lenderId */ {
+    function test_margin_mantle_spot_exact_in_izi_reverted() external /** address user, uint8 lenderId */ {
         address user = testUser;
         vm.assume(user != address(0));
 
@@ -96,7 +95,7 @@ contract MarginOpenTest is DeltaSetup {
 
         bytes memory swapPath = getSpotExactInSingle_izi(asset, assetOut);
         uint256 minimumOut = 13.0e6;
-        calls[1] = abi.encodeWithSelector(IFlashAggregator.swapExactInSpot.selector, amountToSwap, minimumOut, swapPath);
+        calls[1] = abi.encodeWithSelector(IFlashAggregator.swapExactInSpot.selector, amountToSwap, minimumOut, user, swapPath);
         calls[2] = abi.encodeWithSelector(ILending.sweep.selector, assetOut);
 
         vm.prank(user);
@@ -132,7 +131,7 @@ contract MarginOpenTest is DeltaSetup {
 
         bytes memory swapPath = getSpotExactOutSingle_izi(asset, assetOut);
         uint256 maximumIn = 30.0e18;
-        calls[0] = abi.encodeWithSelector(IFlashAggregator.swapExactOutSpot.selector, amountToSwap, maximumIn, swapPath);
+        calls[0] = abi.encodeWithSelector(IFlashAggregator.swapExactOutSpot.selector, amountToSwap, maximumIn, user, swapPath);
         calls[1] = abi.encodeWithSelector(ILending.sweep.selector, assetOut);
 
         vm.prank(user);
