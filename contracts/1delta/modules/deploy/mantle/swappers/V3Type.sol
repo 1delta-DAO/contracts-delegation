@@ -16,6 +16,7 @@ pragma solidity 0.8.26;
 abstract contract V3TypeSwapper {
     // this is the slot for the cache
     bytes32 internal constant CACHE_SLOT = 0x468881cf549dc8cc10a98ff7dab63b93cde29208fb93e08f19acee97cac5ba05;
+    bytes32 internal constant NUMBER_CACHE_SLOT = 0xcff5bbd1b2d2801305f53eb2f94cba4428e797852af2f6b82f41fdca2c9a278a;
 
     /// @dev Mask of lower 20 bytes.
     uint256 internal constant ADDRESS_MASK = 0x00ffffffffffffffffffffffffffffffffffffffff;
