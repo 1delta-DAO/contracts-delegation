@@ -229,7 +229,7 @@ contract SwapGen2Test is DeltaSetup {
     function getSpotExactOutSingleGen2(address tokenOut, address tokenIn) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_STABLES);
         uint8 poolId = AGNI;
-        return abi.encodePacked(tokenIn, uint8(1), poolId, fee, tokenOut);
+        return abi.encodePacked(tokenIn, uint8(11), poolId, fee, tokenOut);
     }
 
     function getPathDataV3()
@@ -284,7 +284,7 @@ contract SwapGen2Test is DeltaSetup {
         pIds[2] = AGNI;
         actions[0] = 1;
         actions[1] = 1;
-        actions[2] = 1;
+        actions[2] = 11;
         fees[0] = 2500;
         fees[1] = 500;
         fees[2] = 500;
@@ -328,7 +328,7 @@ contract SwapGen2Test is DeltaSetup {
         pIds[2] = AGNI;
         actions[0] = 1;
         actions[1] = 1;
-        actions[2] = 1;
+        actions[2] = 11;
         fees[0] = 2500;
         fees[1] = 500;
         fees[2] = 500;

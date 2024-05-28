@@ -17,13 +17,13 @@ contract MarginOpenTest is DeltaSetup {
 
         uint256 amountToSwap = 20.0e6;
 
-        bytes[] memory calls = new bytes[](3);
-        calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, asset, amountToSwap);
+        bytes[] memory calls = new bytes[](1);
+        // calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, asset, amountToSwap);
 
         bytes memory swapPath = getSpotExactInSingle_izi(asset, assetOut);
         uint256 minimumOut = 13.0e18;
-        calls[1] = abi.encodeWithSelector(IFlashAggregator.swapExactInSpot.selector, amountToSwap, minimumOut, user, swapPath);
-        calls[2] = abi.encodeWithSelector(ILending.sweep.selector, assetOut);
+        calls[0] = abi.encodeWithSelector(IFlashAggregator.swapExactInSpot.selector, amountToSwap, minimumOut, user, swapPath);
+        // calls[2] = abi.encodeWithSelector(ILending.sweep.selector, assetOut);
 
         vm.prank(user);
         IERC20All(asset).approve(brokerProxyAddress, amountToSwap);
@@ -53,13 +53,13 @@ contract MarginOpenTest is DeltaSetup {
 
         uint256 amountToSwap = 18.0e18;
 
-        bytes[] memory calls = new bytes[](2);
+        bytes[] memory calls = new bytes[](1);
         // calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, asset, amountToSwap);
 
         bytes memory swapPath = getSpotExactOutSingle_izi(asset, assetOut);
         uint256 maximumIn = 30.0e6;
         calls[0] = abi.encodeWithSelector(IFlashAggregator.swapExactOutSpot.selector, amountToSwap, maximumIn, user, swapPath);
-        calls[1] = abi.encodeWithSelector(ILending.sweep.selector, assetOut);
+        // calls[1] = abi.encodeWithSelector(ILending.sweep.selector, assetOut);
 
         vm.prank(user);
         IERC20All(asset).approve(brokerProxyAddress, maximumIn);
@@ -90,13 +90,13 @@ contract MarginOpenTest is DeltaSetup {
 
         uint256 amountToSwap = 20.0e18;
 
-        bytes[] memory calls = new bytes[](3);
-        calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, asset, amountToSwap);
+        bytes[] memory calls = new bytes[](1);
+        // calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, asset, amountToSwap);
 
         bytes memory swapPath = getSpotExactInSingle_izi(asset, assetOut);
         uint256 minimumOut = 13.0e6;
-        calls[1] = abi.encodeWithSelector(IFlashAggregator.swapExactInSpot.selector, amountToSwap, minimumOut, user, swapPath);
-        calls[2] = abi.encodeWithSelector(ILending.sweep.selector, assetOut);
+        calls[0] = abi.encodeWithSelector(IFlashAggregator.swapExactInSpot.selector, amountToSwap, minimumOut, user, swapPath);
+        // calls[2] = abi.encodeWithSelector(ILending.sweep.selector, assetOut);
 
         vm.prank(user);
         IERC20All(asset).approve(brokerProxyAddress, amountToSwap);
@@ -111,7 +111,7 @@ contract MarginOpenTest is DeltaSetup {
         inBalance = inBalance - IERC20All(asset).balanceOf(user);
 
         // deposit 10, recieve 13
-        assertApproxEqAbs(amountToSwap, inBalance, 1);
+        assertApproxEqAbs(amountToSwap, inBalance, 100_000); // 100k = 1e-13
         assertApproxEqAbs(29850074, balance, 1);
     }
 

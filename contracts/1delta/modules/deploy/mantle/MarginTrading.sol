@@ -412,9 +412,6 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 _data = _data[24:];
                 // we have to cache the amountOut in this case
                 amountOut = swapExactIn(amountOut, address(this), _data);
-                assembly {
-                    sstore(CACHE_SLOT, amountOut)
-                }
             }
             if(payFromCache) _transferERC20TokensFrom(tokenIn, getCachedAddress(), msg.sender, tradeId);
             else _transferERC20Tokens(tokenIn, msg.sender, tradeId);
@@ -432,9 +429,9 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 // fetch payment config
                 (uint256 payType, uint8 lenderId) = getPayConfig(_data);
                 // pay the pool
-                handleTransferOut(
+                handlePayPool(
                     tokenOut,
-                    getCachedAddress(),
+                    payFromCache ? getCachedAddress() : address(this),
                     msg.sender,
                     payType,
                     amountToPay,
@@ -480,7 +477,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                     _repay(tokenOut, user, amountToSwap, tradeId, lenderId);
                 }
                 // pay the pool
-                handleTransferOut(
+                handlePayPool(
                     tokenIn,
                     user,
                     msg.sender,
@@ -514,7 +511,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                     flashSwapExactOutInternal(amountInLastPool, msg.sender, _data);
                 } else {
                     // pay the pool
-                    handleTransferOut(
+                    handlePayPool(
                         tokenOut,
                         user,
                         msg.sender,
@@ -785,7 +782,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             } else {
                 (uint256 payType, uint8 lenderId) = getPayConfig(data);
                 // pay the pool
-                handleTransferOut(
+                handlePayPool(
                     tokenOut,
                     getCachedAddress(),
                     msg.sender,
@@ -831,7 +828,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             }
 
             // pay the pool
-            handleTransferOut(
+            handlePayPool(
                 tokenIn,
                 user,
                 msg.sender,
@@ -865,7 +862,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 flashSwapExactOutInternal(referenceAmount, msg.sender, data);
             } else {
                 // pay the pool
-                handleTransferOut(
+                handlePayPool(
                     tokenOut,
                     user,
                     msg.sender,
@@ -974,7 +971,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             else {
                 (uint256 payType, uint8 lenderId) = getPayConfig(path);
                 // pay the pool
-                handleTransferOut(tokenIn, getCachedAddress(), pair, payType, amountIn, lenderId);
+                handlePayPool(tokenIn, getCachedAddress(), pair, payType, amountIn, lenderId);
                 // only cache the amount if this is the last pool
                 assembly {
                     sstore(CACHE_SLOT, amountIn)
@@ -1076,7 +1073,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
      *                    >7:   pay from wallet
      * @param value The amount to pay
      */
-    function handleTransferOut(
+    function handlePayPool(
         address token,
         address payer,
         address receiver,

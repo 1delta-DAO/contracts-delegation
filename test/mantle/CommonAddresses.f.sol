@@ -132,7 +132,7 @@ contract AddressesMantle {
     }
 
     function getOpenExactOutFlags() internal pure returns (uint8 flagStart, uint8 flagMiddle, uint8 flagEnd) {
-        return (3, 1, 2);
+        return (3, 11, 2);
     }
 
     function getCollateralSwapExactInFlags() internal pure returns (uint8 flagStart, uint8 flagMiddle, uint8 flagEnd) {
@@ -140,7 +140,7 @@ contract AddressesMantle {
     }
 
     function getCollateralSwapExactOutFlags() internal pure returns (uint8 flagStart, uint8 flagMiddle, uint8 flagEnd) {
-        return (3, 1, 3);
+        return (3, 11, 3);
     }
 
     function getCloseExactInFlags() internal pure returns (uint8 flagStart, uint8 flagMiddle, uint8 flagEnd) {
@@ -148,7 +148,7 @@ contract AddressesMantle {
     }
 
     function getCloseExactOutFlags() internal pure returns (uint8 flagStart, uint8 flagMiddle, uint8 flagEnd) {
-        return (5, 1, 3);
+        return (5, 11, 3);
     }
 
     function getDebtSwapExactInFlags() internal pure returns (uint8 flagStart, uint8 flagMiddle, uint8 flagEnd) {
@@ -156,7 +156,7 @@ contract AddressesMantle {
     }
 
     function getDebtSwapExactOutFlags() internal pure returns (uint8 flagStart, uint8 flagMiddle, uint8 flagEnd) {
-        return (5, 1, 2);
+        return (5, 11, 2);
     }
 
     /** we can use a pair struct to identify a functional path */
@@ -188,13 +188,13 @@ contract AddressesMantle {
     function getSpotExactInSingle_izi(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_LOW_HIGH);
         uint8 poolId = IZUMI;
-        return abi.encodePacked(tokenIn, uint8(0), poolId, fee, tokenOut);
+        return abi.encodePacked(tokenIn, uint8(10), poolId, fee, tokenOut);
     }
 
     function getSpotExactOutSingle_izi(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_LOW_HIGH);
         uint8 poolId = IZUMI;
-        return abi.encodePacked(tokenOut, uint8(1), poolId, fee, tokenIn);
+        return abi.encodePacked(tokenOut, uint8(11), poolId, fee, tokenIn);
     }
 
     function getOpenExactOutSingle(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
