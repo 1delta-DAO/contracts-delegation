@@ -6,8 +6,8 @@ pragma solidity 0.8.26;
 * Author: Achthar | 1delta 
 /******************************************************************************/
 
-import {BaseSwapper} from "../BaseSwapper.sol";
-import {BaseLending} from "../BaseLending.sol";
+import {BaseSwapper} from "./BaseSwapper.sol";
+import {BaseLending} from "./BaseLending.sol";
 
 /**
  * @title Contract Module for general Margin Trading on an borrow delegation compatible Lender
@@ -837,7 +837,11 @@ abstract contract MarginTradingInternal is BaseSwapper, BaseLending {
         }
         // uniswapV2 style
         else if (identifier < 100) {
-            _swapV2StyleExactOut(amountOut, receiver, path);
+            _swapV2StyleExactOut(
+                amountOut,
+                receiver,
+                path
+            );
         }
         // iZi
         else if (identifier == 100) {
@@ -848,19 +852,19 @@ abstract contract MarginTradingInternal is BaseSwapper, BaseLending {
             );
         // special case: Moe LB, no flash swaps, recursive nesting is applied
         } else if (identifier == 103) {
-            uint24 bin;
+            uint16 bin;
             address tokenIn;
             address tokenOut;
             assembly {
                 let firstWord := calldataload(path.offset)
                 tokenOut := and(ADDRESS_MASK, shr(96, firstWord))
-                bin := and(shr(80, firstWord), UINT24_MASK)
-                tokenIn := and(ADDRESS_MASK, shr(96, calldataload(add(path.offset, 22))))
+                bin := and(shr(64, firstWord), UINT16_MASK)
+                tokenIn := and(ADDRESS_MASK, shr(96, calldataload(add(path.offset, 24))))
             }
             ////////////////////////////////////////////////////
             // We calculate the required amount for the next swap
             ////////////////////////////////////////////////////
-            (uint256 amountIn, address pair, bool swapForY) = getLBAmountIn(tokenIn, tokenOut, amountOut, uint16(bin));
+            (uint256 amountIn, address pair, bool swapForY) = getLBAmountIn(tokenIn, tokenOut, amountOut, bin);
 
             ////////////////////////////////////////////////////
             // If the path includes more pairs, we nest another exact out swap
@@ -868,13 +872,13 @@ abstract contract MarginTradingInternal is BaseSwapper, BaseLending {
             // This is done by re-calling this same function after skimming the
             // data parameter by the leading token config 
             ////////////////////////////////////////////////////
-            if(path.length > MINIMUM_PATH_LENGTH) {
+            if(path.length > 46) {
                 // remove the last token from the path
-                path = path[25:];
+                path = path[24:];
                 flashSwapExactOutInternal(amountIn, pair, path);
             } 
             ////////////////////////////////////////////////////
-            // Otherwise, we pay the funds to the pair
+            // Otherwise, we6 pay the funds to the pair
             // according to the parametrization
             // at the end of the path
             ////////////////////////////////////////////////////
@@ -884,7 +888,7 @@ abstract contract MarginTradingInternal is BaseSwapper, BaseLending {
                 handleTransferOut(tokenIn, getCachedAddress(), pair, payType, amountIn, lenderId);
                 // only cache the amount if this is the last pool
                 assembly {
-                    sstore(CACHE_SLOT, DEFAULT_CACHE)
+                    sstore(CACHE_SLOT, amountIn)
                 }
             }
             ////////////////////////////////////////////////////
