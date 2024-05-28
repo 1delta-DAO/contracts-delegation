@@ -21,7 +21,7 @@ export const ONE_DELTA_ADDRESSES = {
         5000: '0x55487C6208a86a173c8eD22eda2a479929788066'
     },
     MarginTraderModule: {
-        5000: '0xC977656F90Aa682688e7B0550F2A32D0D6c3cA18',
+        5000: '0xa11460Eb02F827D1269e586c5f01dB992e8ab190',
     },
     LendingInterface: {
         5000: '0xD41DAb36B729C772CdDF2A3F240C93ccEdDaD70E'

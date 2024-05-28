@@ -19,6 +19,9 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
     error NoBalance();
     error InvalidDexId();
 
+    bytes32 internal constant DEFAULT_CACHE = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
+    uint256 internal constant DEFAULT_NUMBER_CACHE = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
+
     constructor() BaseSwapper() BaseLending() {}
 
     /// @dev Exact Input Flash Swap - The path parameters determine the lending actions
@@ -30,6 +33,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         _cacheCaller();
         amountOut = flashSwapExactInInternal(amountIn, path);
         if (amountOutMinimum > amountOut) revert Slippage();
+        gcs().cache = DEFAULT_CACHE;
     }
 
     // Exact Output Swap - The path parameters determine the lending actions
@@ -40,9 +44,10 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
     ) external payable returns (uint256 amountIn) {
         _cacheCaller();
         flashSwapExactOutInternal(amountOut, address(this), path);
-        amountIn = uint256(gcs().cache);
-        gcs().cache = 0x0;
+        amountIn = ncs().amount;
         if (amountInMaximum < amountIn) revert Slippage();
+        gcs().cache = DEFAULT_CACHE;
+        ncs().amount = DEFAULT_NUMBER_CACHE;
     }
 
     // Exact Input Swap where the entire collateral amount is withdrawn - The path parameters determine the lending actions
@@ -61,6 +66,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         }
         amountOut = flashSwapExactInInternal(amountIn, path);
         if (amountOutMinimum > amountOut) revert Slippage();
+        gcs().cache = DEFAULT_CACHE;
     }
 
     // Exact Output Swap where the entire debt balacne is repaid - The path parameters determine the lending actions
@@ -89,9 +95,10 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         }
 
         flashSwapExactOutInternal(amountOut, address(this), path);
-        amountIn = uint256(gcs().cache);
-        gcs().cache = 0x0;
+        amountIn = ncs().amount;
         if (amountInMaximum < amountIn) revert Slippage();
+        gcs().cache = DEFAULT_CACHE;
+        ncs().amount = DEFAULT_NUMBER_CACHE;
     }
 
     // fusionx
@@ -214,7 +221,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 // the router returns the amount that we can finally supply to the protocol
                 _data = _data[25:];
                 // we have to cache the amountOut in this case
-                gcs().cache = bytes32(swapExactIn(amountOut, _data));
+                ncs().amount = swapExactIn(amountOut, _data);
             }
             _transferERC20Tokens(tokenIn, msg.sender, tradeId);
             return;
@@ -240,7 +247,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                     lenderId
                 );
                 // cache amount
-                gcs().cache = bytes32(amountToPay);
+                ncs().amount = amountToPay;
             }
             return;
         }
@@ -282,7 +289,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                     lenderId
                 );
                 // cache amount
-                gcs().cache = bytes32(amountToSwap);
+                ncs().amount = amountToSwap;
             } else {
                 (uint256 payType, uint8 lenderId) = getPayConfig(_data);
                 address user = getCachedAddress();
@@ -314,7 +321,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                         lenderId
                     );
                     // cache amount
-                    gcs().cache = bytes32(amountInLastPool);
+                    ncs().amount = amountInLastPool;
                 }
             }
             return;
@@ -390,7 +397,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 // the router returns the amount that we can finally supply to the protocol
                 data = data[25:];
                 // store the output amount
-                gcs().cache = bytes32(swapExactIn(amountToSwap, data));
+                ncs().amount = swapExactIn(amountToSwap, data);
             }
             _transferERC20Tokens(tokenIn, msg.sender, getV2AmountInDirect(msg.sender, tokenIn, tokenOut, amountToSwap, identifier));
             return;
@@ -415,7 +422,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                     lenderId
                 );
                 // cache amount
-                gcs().cache = bytes32(referenceAmount);
+                ncs().amount = referenceAmount;
             }
             return;
         }
@@ -460,7 +467,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 lenderId
             );
             // cache amount
-            gcs().cache = bytes32(amountToSwap);
+            ncs().amount = amountToSwap;
         } else {
             // fetch amountOut
             uint256 referenceAmount = zeroForOne ? amount0 : amount1;
@@ -492,7 +499,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                     lenderId
                 );
                 // cache amount
-                gcs().cache = bytes32(referenceAmount);
+                ncs().amount = referenceAmount;
             }
         }
     }
@@ -589,7 +596,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 // pay the pool
                 handleTransferOut(tokenIn, getCachedAddress(), pair, payType, amountIn, lenderId);
                 // only cache the amount if this is the last pool
-                gcs().cache = bytes32(amountIn);
+                ncs().amount = amountIn;
             }
             ////////////////////////////////////////////////////
             // The swap is executed at the end and sends 
@@ -633,8 +640,8 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         } else revert InvalidDexId();
 
         // get the output and reset the cache
-        amountOut = uint256(gcs().cache);
-        gcs().cache = 0x0;
+        amountOut = ncs().amount;
+        ncs().amount = DEFAULT_NUMBER_CACHE;
     }
 
     /// @dev gets leder and pay config - the assumption is that the last byte is the payType

@@ -29,8 +29,9 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
         _cacheCaller();
         flashSwapExactOutInternal(amountOut, address(this), path);
         // retrieve cached amount and check slippage
-        if (maximumAmountIn < uint256(gcs().cache)) revert Slippage();
-        gcs().cache = 0x0;
+        if (maximumAmountIn < ncs().amount) revert Slippage();
+        gcs().cache = DEFAULT_CACHE;
+        ncs().amount = DEFAULT_NUMBER_CACHE;
     }
 
     /**
@@ -44,8 +45,9 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
         // we do not need to cache anything in this case
         flashSwapExactOutInternal(amountOut, address(this), path);
         // retrieve cached amount and check slippage
-        if (maximumAmountIn < uint256(gcs().cache)) revert Slippage();
-        gcs().cache = 0x0;
+        if (maximumAmountIn < ncs().amount) revert Slippage();
+        gcs().cache = DEFAULT_CACHE;
+        ncs().amount = DEFAULT_NUMBER_CACHE;
     }
 
     /**
@@ -84,8 +86,8 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
         if (_debtBalance == 0) revert NoBalance(); // revert if amount is zero
 
         flashSwapExactOutInternal(_debtBalance, address(this), path);
-        if (maximumAmountIn < uint256(gcs().cache)) revert Slippage();
-        gcs().cache = 0x0;
+        if (maximumAmountIn < ncs().amount) revert Slippage();
+        ncs().amount = DEFAULT_NUMBER_CACHE;
     }
 
     /**
@@ -107,8 +109,8 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
         if (_debtBalance == 0) revert NoBalance(); // revert if amount is zero
 
         flashSwapExactOutInternal(_debtBalance, address(this), path);
-        if (maximumAmountIn < uint256(gcs().cache)) revert Slippage();
-        gcs().cache = 0x0;
+        if (maximumAmountIn < ncs().amount) revert Slippage();
+        ncs().amount = DEFAULT_NUMBER_CACHE;
     }
 
     /**
