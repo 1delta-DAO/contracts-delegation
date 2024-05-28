@@ -279,7 +279,6 @@ abstract contract V3TypeSwapper {
         assembly {
             let ptr := mload(0x40)
             let firstWord := calldataload(path.offset)
-            let _pId := and(shr(80, firstWord), UINT8_MASK) // poolId
             // get tokens
             let tokenA := and(ADDRESS_MASK, shr(96, firstWord))
             firstWord := calldataload(add(path.offset, 22))

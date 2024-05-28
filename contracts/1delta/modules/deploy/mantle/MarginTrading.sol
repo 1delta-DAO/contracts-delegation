@@ -96,7 +96,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             assembly {
                 let firstWord := calldataload(path.offset)
                 tokenOut := shr(96, firstWord)
-                _identifier := shr(56, firstWord)
+                _identifier := shr(88, firstWord)
             }   
 
             // determine output amount as respective debt balance
