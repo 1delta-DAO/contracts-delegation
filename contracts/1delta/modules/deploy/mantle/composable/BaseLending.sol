@@ -14,10 +14,6 @@ pragma solidity ^0.8.26;
 abstract contract BaseLending {
     // this is the slot for the cache
     bytes32 private constant CACHE_SLOT = 0x468881cf549dc8cc10a98ff7dab63b93cde29208fb93e08f19acee97cac5ba05;
-    // lender token slots
-    bytes32 private constant COLLATERAL_TOKENS_SLOT = 0xff0471b67e4632a86905e3993f5377c608866007c59224eed7731408a9f3f8b3;
-    bytes32 private constant STABLE_DEBT_TOKENS_SLOT = 0xff0471b67e4632a86905e3993f5377c608866007c59224eed7731408a9f3f8b5;
-    bytes32 private constant VARIABLE_DEBT_TOKENS_SLOT = 0xff0471b67e4632a86905e3993f5377c608866007c59224eed7731408a9f3f8b4;
     
     // masks
     uint256 private constant ADDRESS_MASK_UPPER = 0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff;
@@ -141,7 +137,8 @@ abstract contract BaseLending {
             // Slot for collateralTokens[target] is keccak256(target . collateralTokens.slot).
             mstore(0xB00, _underlying)
             mstore8(0xB00, lenderId)
-            mstore(0xB20, COLLATERAL_TOKENS_SLOT)
+            // mstore(0xB20, collateralTokens.slot)
+            mstore(0xB20, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
             let collateralToken := sload(keccak256(0xB00, 0x40))
 
             /** PREPARE TRANSFER_FROM USER */
@@ -187,7 +184,8 @@ abstract contract BaseLending {
             let ptr := mload(0x40) // free memory pointer
             mstore(ptr, underlying)
             mstore8(ptr, lenderId)
-            mstore(add(ptr, 0x20), VARIABLE_DEBT_TOKENS_SLOT)
+            // mstore(add(ptr, 0x20), debtTokens.slot)
+            mstore(add(ptr, 0x20), 0x70a0823100000000000000000000000000000000000000000000000000000000)
             let debtToken := sload(keccak256(ptr, 0x40))
             // selector for balanceOf(address)
             mstore(ptr, 0x70a0823100000000000000000000000000000000000000000000000000000000)
@@ -206,7 +204,8 @@ abstract contract BaseLending {
             let ptr := mload(0x40) // free memory pointer
             mstore(ptr, underlying)
             mstore8(ptr, lenderId)
-            mstore(add(ptr, 0x20), STABLE_DEBT_TOKENS_SLOT)
+            // mstore(add(ptr, 0x20), stableDebtTokens.slot)
+            mstore(add(ptr, 0x20), 0x70a0823100000000000000000000000000000000000000000000000000000000)
             let debtToken := sload(keccak256(ptr, 0x40))
             // selector for balanceOf(address)
             mstore(ptr, 0x70a0823100000000000000000000000000000000000000000000000000000000)
@@ -225,7 +224,8 @@ abstract contract BaseLending {
             let ptr := mload(0x40) // free memory pointer
             mstore(ptr, underlying)
             mstore8(ptr, lenderId)
-            mstore(add(ptr, 0x20), COLLATERAL_TOKENS_SLOT)
+            // mstore(add(ptr, 0x20), collateralTokens.slot)
+            mstore(add(ptr, 0x20), 0x70a0823100000000000000000000000000000000000000000000000000000000)
             let collateralToken := sload(keccak256(ptr, 0x40))
             // selector for balanceOf(address)
             mstore(ptr, 0x70a0823100000000000000000000000000000000000000000000000000000000)

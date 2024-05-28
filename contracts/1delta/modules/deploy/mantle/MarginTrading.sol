@@ -22,7 +22,13 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
     error InvalidDexId();
 
     bytes32 internal constant DEFAULT_CACHE = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
-    
+
+    function _cacheCaller() internal {
+        assembly {
+            sstore(CACHE_SLOT, caller())
+        }
+    }
+
     constructor() BaseSwapper() BaseLending() {}
 
     /// @dev Exact Input Flash Swap - The path parameters determine the lending actions

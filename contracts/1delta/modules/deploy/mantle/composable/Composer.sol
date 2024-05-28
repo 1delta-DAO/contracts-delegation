@@ -3,8 +3,9 @@
 pragma solidity 0.8.26;
 
 import "./FlashAggregatorInternal.sol";
+import "./TokenTransfer.sol";
 
-contract Composer is DeltaFlashAggregatorMantleInternal {
+contract Composer is DeltaFlashAggregatorMantleInternal, RawTokenTransfer {
     function cacheCaller() internal {
         assembly {
             sstore(CACHE_SLOT, caller())
@@ -42,7 +43,7 @@ contract Composer is DeltaFlashAggregatorMantleInternal {
                 opdata.length := calldatalength
             }
             // exec op
-            if (operation == 0x0) transferIn(opdata);
+            if (operation == 0x0) _transferERC20TokensFromInternal(opdata);
             else if (operation == 0x01) flashSwapExactIn(opdata);
             else if (operation == 0x02) flashSwapExactOut(opdata);
             else if (operation == 0x03) swapExactInSpot(opdata);
@@ -53,7 +54,7 @@ contract Composer is DeltaFlashAggregatorMantleInternal {
             else if (operation == 0x08) borrow(opdata);
             else if (operation == 0x09) withdraw(opdata);
             else if (operation == 0x10) repay(opdata);
-            else if (operation == 0x11) refund(opdata);
+            else if (operation == 0x11) _transferERC20TokensInternal(opdata);
             else revert();
 
             // update op offset

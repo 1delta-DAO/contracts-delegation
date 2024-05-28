@@ -883,7 +883,9 @@ abstract contract MarginTradingInternal is BaseSwapper, BaseLending {
                 // pay the pool
                 handleTransferOut(tokenIn, getCachedAddress(), pair, payType, amountIn, lenderId);
                 // only cache the amount if this is the last pool
-                gcs().cache = bytes32(amountIn);
+                assembly {
+                    sstore(CACHE_SLOT, DEFAULT_CACHE)
+                }
             }
             ////////////////////////////////////////////////////
             // The swap is executed at the end and sends 
