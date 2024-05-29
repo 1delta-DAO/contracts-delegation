@@ -371,19 +371,19 @@ contract GeneralMoeLBTest is DeltaSetup {
     function getSpotExactInSingleLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = BIN_STEP_LOWEST;
         uint8 poolId = MERCHANT_MOE_LB;
-        return abi.encodePacked(tokenIn, uint8(0), poolId, fee, tokenOut, uint8(99));
+        return abi.encodePacked(tokenIn, uint8(10), poolId, fee, tokenOut, uint8(99));
     }
 
     function getSpotExactOutSingleLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint8 poolId = MERCHANT_MOE_LB;
-        return abi.encodePacked(tokenOut, uint8(1), poolId, BIN_STEP_LOWEST, tokenIn);
+        return abi.encodePacked(tokenOut, uint8(11), poolId, BIN_STEP_LOWEST, tokenIn);
     }
 
     function getSpotExactOutMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint8 poolId = MERCHANT_MOE_LB;
         bytes memory firstPart = abi.encodePacked(tokenOut, uint8(1), poolId, BIN_STEP_LOWEST, USDT);
         poolId = MERCHANT_MOE;
-        return abi.encodePacked(firstPart, uint8(1), poolId, tokenIn);
+        return abi.encodePacked(firstPart, uint8(11), poolId, tokenIn);
     }
 
     function getSpotExactOutMultiLBEnd(address tokenIn, address tokenOut) internal view returns (bytes memory data) {

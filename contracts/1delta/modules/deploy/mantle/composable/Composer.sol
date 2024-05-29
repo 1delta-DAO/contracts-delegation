@@ -6,27 +6,42 @@ import "./FlashAggregatorInternal.sol";
 import "./TokenTransfer.sol";
 
 contract Composer is DeltaFlashAggregatorMantleInternal, RawTokenTransfer {
-    function cacheCaller() internal {
+
+    /// @dev determines whether we skip caching the caller address
+    ///      Typically we want to skip cahching when executing spot batches
+    modifier handleSetCache(bytes1 useCache) {
         assembly {
-            sstore(CACHE_SLOT, caller())
+            if useCache {
+                sstore(CACHE_SLOT, caller())
+            }
+        }
+        _;
+        assembly {
+            if useCache {
+                sstore(CACHE_SLOT, DEFAULT_CACHE)
+            }
         }
     }
 
-    function freeCache() internal {
-        assembly {
-            sstore(CACHE_SLOT, DEFAULT_CACHE)
-        }
-    }
+    bytes1 private constant ZERO = 0x0;
 
     /**
      * Execute a set op packed operations
      * @param data packed ops array
-     * op0 | length0 | data0 | op1 | length1 | ...
-     * 1   |    16   | ...   |  1  |    16   | ...
+     * requireCache |op0 | length0 | data0 | op1 | length1 | ...
+     *      1       | 1   |    16   | ...   |  1  |    16   | ...
      */
-    function deltaCompose(bytes calldata data) external payable {
-        // cache context
-        cacheCaller();
+    function deltaCompose(
+        bytes calldata data
+    )
+        external
+        payable
+        handleSetCache(bytes1(data)) // the first bytes determines whether we skip the cache
+    {
+        assembly {
+            data.offset := add(data.offset, 1)
+            data.length := sub(data.length, 1)
+        }
         // data encding paramters
         uint calldatalength;
         uint currentOffset;
@@ -65,9 +80,6 @@ contract Composer is DeltaFlashAggregatorMantleInternal, RawTokenTransfer {
             // break criteria
             if (currentOffset == data.length) break;
         }
-
-        // clear the cached context
-        freeCache();
     }
 
     ////////////////////////////////////////////////////
