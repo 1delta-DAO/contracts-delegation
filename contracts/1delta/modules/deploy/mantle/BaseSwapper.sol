@@ -43,7 +43,12 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
      * @param path path calldata
      * @return amountOut buy amount
      */
-    function swapExactIn(uint256 amountIn, address receiver, address payer, bytes calldata path) internal returns (uint256 amountOut) {
+    function swapExactIn(
+        uint256 amountIn,
+        address receiver, // last step
+        address payer, // first step
+        bytes calldata path
+    ) internal returns (uint256 amountOut) {
         address currentReceiver = address(this);
         uint256 identifier;
         assembly {
@@ -156,9 +161,15 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
         } else
             revert invalidDexId();
         
-        // decide whether to continue or terminate
+        ////////////////////////////////////////////////////
+        // We recursively re-call this function until the
+        // path is short enough as a break criteria
+        ////////////////////////////////////////////////////
         if (path.length > 30) {
-            // the payer in this case is always this contract
+            ////////////////////////////////////////////////////
+            // In the second or later iterations, the payer is
+            // always this contract
+            ////////////////////////////////////////////////////
             return swapExactIn(amountIn, receiver, address(this), path);
         } else return amountIn;
     }
