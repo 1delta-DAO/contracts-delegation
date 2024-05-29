@@ -168,7 +168,8 @@ abstract contract ExoticSwapper {
         address tokenIn, 
         address tokenOut, 
         uint256 amountIn, 
-        address receiver, 
+        address receiver,
+        address payer,
         uint16 binStep // identifies pair
     ) internal returns (uint256 amountOut) {
         assembly {
@@ -230,35 +231,66 @@ abstract contract ExoticSwapper {
             ////////////////////////////////////////////////////
             // Transfer amountIn to pair
             ////////////////////////////////////////////////////
+            switch eq(payer, address())
+            case 0 {
+                // selector for transferFrom(address,address,uint256)
+                mstore(ptr, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
+                mstore(add(ptr, 0x04), payer)
+                mstore(add(ptr, 0x24), pair)
+                mstore(add(ptr, 0x44), amountIn)
 
-            // selector for transfer(address,uint256)
-            mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
-            mstore(add(ptr, 0x04), pair)
-            mstore(add(ptr, 0x24), amountIn)
+                let success := call(gas(), tokenIn, 0, ptr, 0x64, ptr, 32)
 
-            let success := call(gas(), tokenIn, 0x0, ptr, 0x44, ptr, 32)
+                let rdsize := returndatasize()
 
-            let rdsize := returndatasize()
-
-            // Check for ERC20 success. ERC20 tokens should return a boolean,
-            // but some don't. We accept 0-length return data as success, or at
-            // least 32 bytes that starts with a 32-byte boolean true.
-            success := and(
-                success, // call itself succeeded
-                or(
-                    iszero(rdsize), // no return data, or
-                    and(
-                        iszero(lt(rdsize, 32)), // at least 32 bytes
-                        eq(mload(ptr), 1) // starts with uint256(1)
+                // Check for ERC20 success. ERC20 tokens should return a boolean,
+                // but some don't. We accept 0-length return data as success, or at
+                // least 32 bytes that starts with a 32-byte boolean true.
+                success := and(
+                    success, // call itself succeeded
+                    or(
+                        iszero(rdsize), // no return data, or
+                        and(
+                            iszero(lt(rdsize, 32)), // at least 32 bytes
+                            eq(mload(ptr), 1) // starts with uint256(1)
+                        )
                     )
                 )
-            )
 
-            if iszero(success) {
-                returndatacopy(ptr, 0, rdsize)
-                revert(ptr, rdsize)
+                if iszero(success) {
+                    returndatacopy(ptr, 0, rdsize)
+                    revert(ptr, rdsize)
+                }
+            } 
+            default {
+                // selector for transfer(address,uint256)
+                mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+                mstore(add(ptr, 0x04), pair)
+                mstore(add(ptr, 0x24), amountIn)
+
+                let success := call(gas(), tokenIn, 0x0, ptr, 0x44, ptr, 32)
+
+                let rdsize := returndatasize()
+
+                // Check for ERC20 success. ERC20 tokens should return a boolean,
+                // but some don't. We accept 0-length return data as success, or at
+                // least 32 bytes that starts with a 32-byte boolean true.
+                success := and(
+                    success, // call itself succeeded
+                    or(
+                        iszero(rdsize), // no return data, or
+                        and(
+                            iszero(lt(rdsize, 32)), // at least 32 bytes
+                            eq(mload(ptr), 1) // starts with uint256(1)
+                        )
+                    )
+                )
+
+                if iszero(success) {
+                    returndatacopy(ptr, 0, rdsize)
+                    revert(ptr, rdsize)
+                }
             }
-
             ////////////////////////////////////////////////////
             // Execute swap function
             ////////////////////////////////////////////////////
@@ -269,7 +301,7 @@ abstract contract ExoticSwapper {
             mstore(add(ptr, 0x24), receiver)
             // call swap, revert if invalid/undefined pair
             if iszero(call(gas(), pair, 0x0, ptr, 0x44, ptr, 0x20)) {
-                rdsize := returndatasize()
+                let rdsize := returndatasize()
                 revert(ptr, rdsize)
             }
             // the swap call returns both amounts encoded into a single bytes32 as (amountX,amountY)

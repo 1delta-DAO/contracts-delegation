@@ -33,12 +33,11 @@ contract GeneralMoeLBTest is DeltaSetup {
 
         uint256 amountIn = 10.0e6;
 
-        bytes[] memory calls = new bytes[](2);
-        calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, assetIn, amountIn);
+        bytes[] memory calls = new bytes[](1);
 
         bytes memory swapPath = getSpotExactInSingleLB(assetIn, assetOut);
         uint256 minimumOut = 10.0e6;
-        calls[1] = abi.encodeWithSelector(
+        calls[0] = abi.encodeWithSelector(
             IFlashAggregator.swapExactInSpot.selector, // 3 args
             amountIn,
             minimumOut,
@@ -72,7 +71,7 @@ contract GeneralMoeLBTest is DeltaSetup {
 
         uint256 amountOut = 10.0e6;
 
-        bytes[] memory calls = new bytes[](2);
+        bytes[] memory calls = new bytes[](1);
 
         bytes memory swapPath = getSpotExactOutSingleLB(assetIn, assetOut);
         uint256 maximumIn = 10.0e18;
@@ -84,7 +83,6 @@ contract GeneralMoeLBTest is DeltaSetup {
             swapPath
         );
 
-        calls[1] = abi.encodeWithSelector(ILending.sweep.selector, assetOut);
         vm.prank(user);
         IERC20All(assetIn).approve(brokerProxyAddress, maximumIn);
 

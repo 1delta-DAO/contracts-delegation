@@ -122,3 +122,34 @@ Ran 3 tests for test/mantle/Stratum.t.sol:StratumCurveTest
 [PASS] test_mantle_stratum_spot_exact_in_reverse() (gas: 489532)
 [PASS] test_mantle_stratum_spot_exact_in_usd() (gas: 165)
 Suite result: ok. 3 passed; 0 failed; 0 skipped; finished in 10.04s (12.10ms CPU time)
+
+Ran 7 tests for test/mantle/SwapGen2.t.sol:SwapGen2Test
+[PASS] test_mantle_gen_2_spot_exact_in() (gas: 308083)
+Logs:
+  gas 107512 144771
+
+[PASS] test_mantle_gen_2_spot_exact_in_V2() (gas: 297289)
+Logs:
+  gas 96276 144771
+
+[PASS] test_mantle_gen_2_spot_exact_in_multi() (gas: 620549)
+Logs:
+  gas 477184 144771
+
+[PASS] test_mantle_gen_2_spot_exact_in_multi_mixed() (gas: 455884)
+Logs:
+  gas 284268 144771
+
+[PASS] test_mantle_gen_2_spot_exact_out() (gas: 311879)
+Logs:
+  gas 112179 144771
+
+[PASS] test_mantle_gen_2_spot_exact_out_multi() (gas: 641714)
+Logs:
+  gas 482353 144771
+
+[PASS] test_mantle_gen_2_spot_exact_out_multi_mixed() (gas: 420132)
+Logs:
+  gas 280394 144771
+
+Suite result: ok. 7 passed; 0 failed; 0 skipped; finished in 12.25s (28.47ms CPU time)
