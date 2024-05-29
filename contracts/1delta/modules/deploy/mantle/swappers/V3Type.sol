@@ -62,6 +62,7 @@ abstract contract V3TypeSwapper {
     /// tokenIn | actionId | fee | tokenOut
     function _swapUniswapV3PoolExactIn(
         address receiver,
+        address payer,
         int256 fromAmount,
         bytes calldata path
     )
@@ -219,10 +220,16 @@ abstract contract V3TypeSwapper {
                 mstore(add(ptr, 100), MAX_SQRT_RATIO)
                 // Store data offset
                 mstore(add(ptr, 132), 0xa0)
-                /// Store data length
-                mstore(add(ptr, 164), path.length)
                 // Store path
-                calldatacopy(add(ptr, 196), path.offset, path.length)
+                calldatacopy(add(ptr, 196), path.offset, pathLength)
+                
+                // within the callback, we add the payer
+                mstore(add(add(ptr, 196), pathLength), shl(96, payer))
+                pathLength := add(pathLength, 20)
+                
+                /// Store data length
+                mstore(add(ptr, 164), pathLength)
+
                 // Perform the external 'swap' call
                 if iszero(call(gas(), pool, 0, ptr, add(228, pathLength), ptr, 32)) {
                     // store return value directly to free memory pointer
@@ -247,12 +254,18 @@ abstract contract V3TypeSwapper {
                 mstore(add(ptr, 100), MIN_SQRT_RATIO)
                 // Store data offset
                 mstore(add(ptr, 132), 0xa0)
-                /// Store data length
-                mstore(add(ptr, 164), path.length)
                 // Store path
-                calldatacopy(add(ptr, 196), path.offset, path.length)
+                calldatacopy(add(ptr, 196), path.offset, pathLength)
+
+                // within the callback, we add the payer
+                mstore(add(add(ptr, 196), pathLength), shl(96, payer))
+                pathLength := add(pathLength, 20)
+
+                /// Store data length
+                mstore(add(ptr, 164), pathLength)
+                
                 // Perform the external 'swap' call
-                if iszero(call(gas(), pool, 0, ptr, add(228, path.length), ptr, 64)) {
+                if iszero(call(gas(), pool, 0, ptr, add(228, pathLength), ptr, 64)) {
                     // store return value directly to free memory pointer
                     // The call failed; we retrieve the exact error message and revert with it
                     returndatacopy(0, 0, returndatasize()) // Copy the error message to the start of memory
@@ -270,6 +283,7 @@ abstract contract V3TypeSwapper {
     /// @dev Swap exact input through izumi
     function _swapIZIPoolExactIn(
         address receiver,
+        address payer,
         uint128 fromAmount,
         bytes calldata path
     )
@@ -306,7 +320,7 @@ abstract contract V3TypeSwapper {
             p := add(p, 32)
             mstore(p, IZI_POOL_INIT_CODE_HASH)
             pool := and(ADDRESS_MASK, keccak256(ptr, 85))
-
+            let pathLength := path.length
             // Return amount0 or amount1 depending on direction
             switch zeroForOne
             case 0 {
@@ -321,12 +335,19 @@ abstract contract V3TypeSwapper {
                 mstore(add(ptr, 68), 799999)
                 // Store data offset
                 mstore(add(ptr, 100), sub(0xa0, 0x20))
-                /// Store data length
-                mstore(add(ptr, 132), path.length)
+
                 // Store path
-                calldatacopy(add(ptr, 164), path.offset, path.length)
+                calldatacopy(add(ptr, 164), path.offset, pathLength)
+                                
+                // within the callback, we add the payer
+                mstore(add(add(ptr, 164), pathLength), shl(96, payer))
+                pathLength := add(pathLength, 20)
+                
+                /// Store data length
+                mstore(add(ptr, 132), pathLength)
+
                 // Perform the external 'swap' call
-                if iszero(call(gas(), pool, 0, ptr, add(196, path.length), ptr, 32)) {
+                if iszero(call(gas(), pool, 0, ptr, add(196, pathLength), ptr, 32)) {
                     // store return value directly to free memory pointer
                     // The call failed; we retrieve the exact error message and revert with it
                     returndatacopy(0, 0, returndatasize()) // Copy the error message to the start of memory
@@ -347,12 +368,19 @@ abstract contract V3TypeSwapper {
                 mstore(add(ptr, 68), sub(0, 799999))
                 // Store data offset
                 mstore(add(ptr, 100), sub(0xa0, 0x20))
-                /// Store data length
-                mstore(add(ptr, 132), path.length)
+
                 // Store path
-                calldatacopy(add(ptr, 164), path.offset, path.length)
+                calldatacopy(add(ptr, 164), path.offset, pathLength)
+
+                // within the callback, we add the payer
+                mstore(add(add(ptr, 164), pathLength), shl(96, payer))
+                pathLength := add(pathLength, 20)
+                
+                /// Store data length
+                mstore(add(ptr, 132), pathLength)
+
                 // Perform the external 'swap' call
-                if iszero(call(gas(), pool, 0, ptr, add(196, path.length), ptr, 64)) {
+                if iszero(call(gas(), pool, 0, ptr, add(196, pathLength), ptr, 64)) {
                     // store return value directly to free memory pointer
                     // The call failed; we retrieve the exact error message and revert with it
                     returndatacopy(0, 0, returndatasize()) // Copy the error message to the start of memory
@@ -367,6 +395,7 @@ abstract contract V3TypeSwapper {
     /// @dev Swap exact output through izumi
     function _swapIZIPoolExactOut(
         address receiver,
+        address payer,
         uint128 toAmount,
         bytes calldata path
     )
@@ -402,6 +431,7 @@ abstract contract V3TypeSwapper {
             p := add(p, 32)
             mstore(p, IZI_POOL_INIT_CODE_HASH)
             pool := and(ADDRESS_MASK, keccak256(ptr, 85))
+            let pathLength := path.length
 
             // Return amount0 or amount1 depending on direction
             switch zeroForOne
@@ -420,9 +450,17 @@ abstract contract V3TypeSwapper {
                 /// Store data length
                 mstore(add(ptr, 132), path.length)
                 // Store path
-                calldatacopy(add(ptr, 164), path.offset, path.length)
+                calldatacopy(add(ptr, 164), path.offset, pathLength)
+          
+                // within the callback, we add the payer
+                mstore(add(add(ptr, 164), pathLength), shl(96, payer))
+                pathLength := add(pathLength, 20)
+                
+                /// Store data length
+                mstore(add(ptr, 132), pathLength)
+
                 // Perform the external 'swap' call
-                if iszero(call(gas(), pool, 0, ptr, add(196, path.length), ptr, 64)) {
+                if iszero(call(gas(), pool, 0, ptr, add(196, pathLength), ptr, 64)) {
                     // store return value directly to free memory pointer
                     // The call failed; we retrieve the exact error message and revert with it
                     returndatacopy(0, 0, returndatasize()) // Copy the error message to the start of memory
@@ -443,12 +481,18 @@ abstract contract V3TypeSwapper {
                 mstore(add(ptr, 68), sub(0, 800001))
                 // Store data offset
                 mstore(add(ptr, 100), sub(0xa0, 0x20))
-                /// Store data length
-                mstore(add(ptr, 132), path.length)
                 // Store path
-                calldatacopy(add(ptr, 164), path.offset, path.length)
+                calldatacopy(add(ptr, 164), path.offset, pathLength)
+                          
+                // within the callback, we add the payer
+                mstore(add(add(ptr, 164), pathLength), shl(96, payer))
+                pathLength := add(pathLength, 20)
+                
+                /// Store data length
+                mstore(add(ptr, 132), pathLength)
+
                 // Perform the external 'swap' call
-                if iszero(call(gas(), pool, 0, ptr, add(196, path.length), ptr, 32)) {
+                if iszero(call(gas(), pool, 0, ptr, add(196, pathLength), ptr, 32)) {
                     // store return value directly to free memory pointer
                     // The call failed; we retrieve the exact error message and revert with it
                     returndatacopy(0, 0, returndatasize()) // Copy the error message to the start of memory
@@ -463,6 +507,7 @@ abstract contract V3TypeSwapper {
     /// @dev swap uniswap V3 style exact out
     function _swapUniswapV3PoolExactOut(
         address receiver,
+        address payer,
         int256 fromAmount,
         bytes calldata path
     )
@@ -607,7 +652,7 @@ abstract contract V3TypeSwapper {
             default {
                 revert (0, 0)
             }
-
+            let pathLength := path.length
             // Return amount0 or amount1 depending on direction
             switch zeroForOne
             case 0 {
@@ -624,12 +669,18 @@ abstract contract V3TypeSwapper {
                 mstore(add(ptr, 100), MAX_SQRT_RATIO)
                 // Store data offset
                 mstore(add(ptr, 132), 0xa0)
-                /// Store data length
-                mstore(add(ptr, 164), path.length)
                 // Store path
-                calldatacopy(add(ptr, 196), path.offset, path.length)
+                calldatacopy(add(ptr, 196), path.offset, pathLength)
+
+                // within the callback, we add the payer
+                mstore(add(add(ptr, 196), pathLength), shl(96, payer))
+                pathLength := add(pathLength, 20)
+                
+                /// Store data length
+                mstore(add(ptr, 164), pathLength)
+
                 // Perform the external 'swap' call
-                if iszero(call(gas(), pool, 0, ptr, add(228, path.length), ptr, 32)) {
+                if iszero(call(gas(), pool, 0, ptr, add(228, pathLength), ptr, 32)) {
                     // store return value directly to free memory pointer
                     // The call failed; we retrieve the exact error message and revert with it
                     returndatacopy(0, 0, returndatasize()) // Copy the error message to the start of memory
@@ -652,12 +703,18 @@ abstract contract V3TypeSwapper {
                 mstore(add(ptr, 100), MIN_SQRT_RATIO)
                 // Store data offset
                 mstore(add(ptr, 132), 0xa0)
-                /// Store data length
-                mstore(add(ptr, 164), path.length)
                 // Store path
-                calldatacopy(add(ptr, 196), path.offset, path.length)
+                calldatacopy(add(ptr, 196), path.offset, pathLength)
+
+                // within the callback, we add the payer
+                mstore(add(add(ptr, 196), pathLength), shl(96, payer))
+                pathLength := add(pathLength, 20)
+                
+                /// Store data length
+                mstore(add(ptr, 164), pathLength)
+
                 // Perform the external 'swap' call
-                if iszero(call(gas(), pool, 0, ptr, add(228, path.length), ptr, 64)) {
+                if iszero(call(gas(), pool, 0, ptr, add(228, pathLength), ptr, 64)) {
                     // store return value directly to free memory pointer
                     // The call failed; we retrieve the exact error message and revert with it
                     returndatacopy(0, 0, returndatasize()) // Copy the error message to the start of memory

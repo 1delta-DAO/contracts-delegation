@@ -43,6 +43,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
     function _swapV2StyleExactOut(
         uint256 amountOut,
         address receiver,
+        address payer,
         bytes calldata path
     )
         internal
@@ -225,12 +226,22 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
             mstore(add(ptr, 68), address())
             // Store data offset
             mstore(add(ptr, 100), sub(0xa0, 0x20))
-            /// Store data length
-            mstore(add(ptr, 132), path.length)
+
+            ////////////////////////////////////////////////////
+            // We append amountIn (uint128) & payer (address) (36 bytes)
+            // This is to prevent the re-calculation of amount in
+            ////////////////////////////////////////////////////
+            let pathLength := path.length
             // Store path
-            calldatacopy(add(ptr, 164), path.offset, path.length)
+            calldatacopy(add(ptr, 164), path.offset, pathLength)
+            pathLength := add(pathLength, 16) // pad
+            mstore(add(add(ptr, 164), pathLength), shl(96, payer))
+            pathLength := add(pathLength, 20)
+            /// Store updated data length
+            mstore(add(ptr, 132), pathLength)
+
             // Perform the external 'swap' call
-            if iszero(call(gas(), pair, 0, ptr, add(196, path.length), ptr, 0x0)) {
+            if iszero(call(gas(), pair, 0, ptr, add(196, pathLength), ptr, 0x0)) {
                 // store return value directly to free memory pointer
                 // The call failed; we retrieve the exact error message and revert with it
                 returndatacopy(0, 0, returndatasize()) // Copy the error message to the start of memory
@@ -627,6 +638,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
     function swapUniV2ExactInComplete(
         uint256 amountIn,
         address receiver,
+        address payer,
         bool useFlashSwap,
         bytes calldata path
     ) internal returns (uint256 buyAmount) {
@@ -636,9 +648,13 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
             // We extract all relevant data from the path bytes blob
             ////////////////////////////////////////////////////
             let pair
-            let firstWord := calldataload(path.offset)
-            let tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
-            let _pId := and(shr(80, firstWord), UINT8_MASK)
+            let _pId
+            let tokenIn 
+            {
+                let firstWord := calldataload(path.offset)
+                tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
+                _pId := and(shr(80, firstWord), UINT8_MASK)
+            }
             let zeroForOne
             // narrow the scope
             {
@@ -889,14 +905,19 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                 ////////////////////////////////////////////////////
                 switch useFlashSwap
                 case 1 {
-                    mstore(0xB84, path.length) // bytes length
-                    calldatacopy(0xBA4, path.offset, path.length)
+                    let pathLength := path.length
+                    calldatacopy(0xBA4, path.offset, pathLength)
+                    mstore(add(0xBA4, pathLength), shl(128, amountIn)) // store payer
+                    pathLength := add(pathLength, 16)
+                    mstore(add(0xBA4, pathLength), shl(96, payer)) //store amountIn
+                    pathLength := add(pathLength, 20)
+                    mstore(0xB84, pathLength) // bytes length
                     success := call(
                         gas(),
                         pair,
                         0x0,
                         0xB00, // input selector
-                        add(0xA4, path.length), // input size = 164 (selector (4bytes) plus 5*32bytes)
+                        add(0xA4, pathLength), // input size = 164 (selector (4bytes) plus 5*32bytes)
                         0x0, // output = 0
                         0x0 // output size = 0
                     )
@@ -912,11 +933,11 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                     ////////////////////////////////////////////////////
                     // We check whether we pull from the cached address 
                     ////////////////////////////////////////////////////
-                    switch and(shr(88, firstWord), UINT8_MASK)
+                    switch and(shr(88, calldataload(path.offset)), UINT8_MASK) 
                     case 10 {
                         // selector for transferFrom(address,address,uint256)
                         mstore(ptr, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
-                        mstore(add(ptr, 0x04), sload(CACHE_SLOT))
+                        mstore(add(ptr, 0x04), payer)
                         mstore(add(ptr, 0x24), pair)
                         mstore(add(ptr, 0x44), amountIn)
 

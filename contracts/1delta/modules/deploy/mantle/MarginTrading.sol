@@ -22,22 +22,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
     error InvalidDexId();
 
     bytes32 internal constant DEFAULT_CACHE = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
-
-    function _cacheCaller() internal {
-        assembly {
-            sstore(CACHE_SLOT, caller())
-        }
-    }
-
-    modifier cacheCallerAdress {
-        assembly {
-            sstore(CACHE_SLOT, caller())
-        }
-        _;
-        assembly {
-            sstore(CACHE_SLOT, DEFAULT_CACHE)
-        }
-    }
+    uint256 private constant UINT128_MASK = 0x00000000000000000000000000000000ffffffffffffffffffffffffffffffff;
 
     constructor() BaseSwapper() BaseLending() {}
 
@@ -46,7 +31,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         uint256 amountIn,
         uint256 amountOutMinimum,
         bytes calldata path
-    ) external payable cacheCallerAdress {
+    ) external payable {
         uint256 amountOut = flashSwapExactInInternal(amountIn, path);
         // slippage check
         assembly {
@@ -62,8 +47,8 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         uint256 amountOut,
         uint256 amountInMaximum,
         bytes calldata path
-    ) external payable cacheCallerAdress {
-        flashSwapExactOutInternal(amountOut, address(this), path);
+    ) external payable {
+        flashSwapExactOutInternal(amountOut, address(this), msg.sender, path);
         // slippage check
         assembly {
             let amountIn := sload(NUMBER_CACHE_SLOT)
@@ -78,7 +63,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
 
     // Exact Input Swap where the entire collateral amount is withdrawn - The path parameters determine the lending actions
     // if the collateral balance is zerp. the tx reverts
-    function flashSwapAllIn(uint256 amountOutMinimum, bytes calldata path) external payable cacheCallerAdress {
+    function flashSwapAllIn(uint256 amountOutMinimum, bytes calldata path) external payable {
         uint256 amountIn;
         {
             address tokenIn;    
@@ -99,7 +84,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
     }
 
     // Exact Output Swap where the entire debt balacne is repaid - The path parameters determine the lending actions
-    function flashSwapAllOut(uint256 amountInMaximum, bytes calldata path) external payable cacheCallerAdress {
+    function flashSwapAllOut(uint256 amountInMaximum, bytes calldata path) external payable {
         uint256 amountOut;
         {
             address tokenOut;
@@ -122,7 +107,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             }
         }
 
-        flashSwapExactOutInternal(amountOut, address(this), path);
+        flashSwapExactOutInternal(amountOut, address(this), msg.sender, path);
         // slippage check
         assembly {
             let amountIn := sload(NUMBER_CACHE_SLOT)
@@ -225,8 +210,8 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         address tokenIn;
         address tokenOut;
         uint256 tradeId;
+        address payer;
         bool payFromCache;
-        bool preventCaching;
         assembly {
             let firstWord := calldataload(_data.offset)
             
@@ -393,6 +378,24 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             if iszero(eq(caller(), pool)) {
                 revert (0, 0)
             }
+
+            ////////////////////////////////////////////////////
+            // We fetch the original initiator of the swap function
+            // It is represented by the lsat 20 bytes of the path
+            ////////////////////////////////////////////////////
+            payer := and(
+                ADDRESS_MASK,
+                shr(
+                    96,
+                    calldataload(
+                        add(
+                            _data.offset,
+                            sub(_data.length, 20)) // last 20 bytes
+                        )
+                )
+            )
+            _data.length := sub(_data.length, 20) // skim address from calldata
+
             // use tradeId as tradetype
             tradeId := and(shr(88, calldataload(_data.offset)) , UINT8_MASK)
 
@@ -412,7 +415,6 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 // will result in slippage failure if done for classic
                 // flash swaps
                 if eq(tradeId, 12) {
-                    preventCaching := 1
                     tradeId := 1
                 }
             }
@@ -434,14 +436,14 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 // the router returns the amount that we can finally supply to the protocol
                 _data = _data[24:];
                 // we have to cache the amountOut in this case
-                amountOut = swapExactIn(amountOut, address(this), _data);
+                amountOut = swapExactIn(amountOut, address(this), address(this), _data);
                 // cache amount
                 // this is required in traditional flash swaps
                 assembly {
                     sstore(NUMBER_CACHE_SLOT, amountOut)
                 }
             }
-            if(payFromCache) _transferERC20TokensFrom(tokenIn, getCachedAddress(), msg.sender, tradeId);
+            if(payFromCache) _transferERC20TokensFrom(tokenIn, payer, msg.sender, tradeId);
             else _transferERC20Tokens(tokenIn, msg.sender, tradeId);
             return;
         }
@@ -459,14 +461,14 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // either initiate the next swap or pay
             if (_data.length > 46) {
                 _data = _data[24:];
-                flashSwapExactOutInternal(amountToPay, msg.sender, _data);
+                flashSwapExactOutInternal(amountToPay, msg.sender, payer, _data);
             } else {
                 // fetch payment config - ignored for paying firectly
                 (uint256 payType, uint8 lenderId) = getPayConfig(_data);
                 // pay the pool
                 handlePayPool(
                     tokenOut,
-                    payFromCache ? getCachedAddress() : address(0),
+                    payFromCache ? payer : address(0),
                     msg.sender,
                     payType,
                     amountToPay,
@@ -474,9 +476,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 );
                 // cache amount if flag is set
                 assembly {
-                    if iszero(preventCaching) {
-                        sstore(NUMBER_CACHE_SLOT, amountToPay)
-                    }
+                    sstore(NUMBER_CACHE_SLOT, amountToPay)
                 }
             }
             return;
@@ -498,7 +498,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                     // we need to swap to the token that we want to supply
                     // the router returns the amount that we can finally supply to the protocol
                     _data = _data[24:];
-                    amountToSwap = swapExactIn(amountToSwap, address(this), _data);
+                    amountToSwap = swapExactIn(amountToSwap, address(this), address(this), _data);
                     // re-assign tokenOut
                     tokenOut = getLastToken(_data);
                 }
@@ -506,19 +506,19 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 // _data = _data[(cache - 1):cache];
 
                 (uint256 payType, uint8 lenderId) = getPayConfig(_data);
-                address user = getCachedAddress();
+
                 // 6 is mint / deposit
                 if (tradeId == 6) {
-                    _deposit(tokenOut, user, amountToSwap, lenderId);
+                    _deposit(tokenOut, payer, amountToSwap, lenderId);
                 } else {
                     // tradeId minus 6 yields the interest rate mode
                     tradeId -= 6;
-                    _repay(tokenOut, user, amountToSwap, tradeId, lenderId);
+                    _repay(tokenOut, payer, amountToSwap, tradeId, lenderId);
                 }
                 // pay the pool
                 handlePayPool(
                     tokenIn,
-                    user,
+                    payer,
                     msg.sender,
                     payType,
                     amountToRepayToPool,
@@ -530,29 +530,29 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 }
             } else {
                 (uint256 payType, uint8 lenderId) = getPayConfig(_data);
-                address user = getCachedAddress();
+
                 // exact out
                 (uint256 amountInLastPool, uint256 amountToSupply) = amount0Delta > 0
                     ? (uint256(amount0Delta), uint256(-amount1Delta))
                     : (uint256(amount1Delta), uint256(-amount0Delta));
                 // 3 is deposit
                 if (tradeId == 3) {
-                     _deposit(tokenIn, user, amountToSupply, lenderId);
+                     _deposit(tokenIn, payer, amountToSupply, lenderId);
                 } else {
                     // 4, 5 are repay - subtracting 3 yields the interest rate mode
                     tradeId -= 3;
-                    _repay(tokenIn, user, amountToSupply, tradeId, lenderId);
+                    _repay(tokenIn, payer, amountToSupply, tradeId, lenderId);
                 }
 
                 // multihop if required
                 if (_data.length > 46) {
                     _data = _data[24:];
-                    flashSwapExactOutInternal(amountInLastPool, msg.sender, _data);
+                    flashSwapExactOutInternal(amountInLastPool, msg.sender, payer, _data);
                 } else {
                     // pay the pool
                     handlePayPool(
                         tokenOut,
-                        user,
+                        payer,
                         msg.sender,
                         payType,
                         amountInLastPool,
@@ -614,13 +614,13 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         address tokenOut;
         bool zeroForOne;
         bool payFromCache;
-        bool preventCaching;
-        uint8 identifier;
+        uint256 refAmount;
+        address payer;
         // the fee parameter in the path can be ignored for validating a V2 pool
         assembly {
             let firstWord := calldataload(data.offset)
             tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
-            identifier := and(shr(80, firstWord), UINT8_MASK) // swap pool identifier
+            let identifier := and(shr(80, firstWord), UINT8_MASK) // swap pool identifier
             tradeId := and(shr(88, firstWord), UINT8_MASK) // interaction identifier
             tokenOut := and(ADDRESS_MASK, shr(96, calldataload(add(data.offset, 22))))
             zeroForOne := lt(tokenIn, tokenOut)
@@ -777,6 +777,31 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             if iszero(eq(pair, caller())) {
                 revert (0, 0)
             }
+            ////////////////////////////////////////////////////
+            // We fetch the original initiator of the swap function
+            // It is represented by the lsat 20 bytes of the path
+            ////////////////////////////////////////////////////
+            payer := and(
+                ADDRESS_MASK,
+                shr(
+                    96,
+                    calldataload(
+                        add(
+                            data.offset,
+                            sub(data.length, 20)) // last 20 bytes
+                        )
+                )
+            )
+            refAmount := and(
+                UINT128_MASK,
+                calldataload(
+                    add(
+                        data.offset,
+                        sub(data.length, 52)) // last 52 bytes
+                )
+            )
+            data.length := sub(data.length, 36) // skim address from calldata
+
             // use tradeId as tradetype
             tradeId := and(shr(88, firstWord) , UINT8_MASK)
             if gt(tradeId, 9) {
@@ -795,7 +820,6 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 // will result in slippage failure if done for classic
                 // flash swaps
                 if eq(tradeId, 12) {
-                    preventCaching := 1
                     tradeId := 1
                 }
             }
@@ -812,31 +836,34 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 // the router returns the amount that we can finally supply to the protocol
                 data = data[22:];
                 // continue swapping
-                tradeId = swapExactIn(amountToSwap, address(this), data);
+                tradeId = swapExactIn(amountToSwap, address(this), address(this), data);
                 // store result in cache
                 assembly {
                     sstore(NUMBER_CACHE_SLOT, tradeId)
                 }
             }
-            amountToSwap = getV2AmountInDirect(msg.sender, tokenIn, tokenOut, amountToSwap, identifier);
-            if(payFromCache) _transferERC20TokensFrom(getCachedAddress(), tokenIn, msg.sender, amountToSwap);
+            amountToSwap = refAmount;
+            if(payFromCache) _transferERC20TokensFrom(payer, tokenIn, msg.sender, amountToSwap);
             else _transferERC20Tokens(tokenIn, msg.sender, amountToSwap);
             return;
         } else if (tradeId == 1) {
+            assembly {
+                tradeId := and(shr(80, calldataload(data.offset)), UINT8_MASK) // swap pool identifier
+            }
             // fetch amountOut
             uint256 referenceAmount = zeroForOne ? amount0 : amount1;
             // calculte amountIn (note that tokenIn/out are read inverted at the top)
-            referenceAmount = getV2AmountInDirect(msg.sender, tokenOut, tokenIn, referenceAmount, identifier);
+            referenceAmount = getV2AmountInDirect(msg.sender, tokenOut, tokenIn, referenceAmount, tradeId);
             // either initiate the next swap or pay
             if (data.length > 44) {
                 data = data[22:];
-                flashSwapExactOutInternal(referenceAmount, msg.sender, data);
+                flashSwapExactOutInternal(referenceAmount, msg.sender, payer, data);
             } else {
                 (uint256 payType, uint8 lenderId) = getPayConfig(data);
                 // pay the pool
                 handlePayPool(
                     tokenOut,
-                    payFromCache ? getCachedAddress() : address(0),
+                    payFromCache ? payer : address(0),
                     msg.sender,
                     payType,
                     referenceAmount,
@@ -844,9 +871,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 );
                 // cache amount if wanted
                 assembly {
-                    if iszero(preventCaching) {
-                        sstore(NUMBER_CACHE_SLOT, referenceAmount)
-                    }
+                    sstore(NUMBER_CACHE_SLOT, referenceAmount)
                 }
             }
             return;
@@ -856,35 +881,34 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // since v2 does not send the input amount as parameter, we have to fetch
             // the other amount manually through a separate number cache
             uint256 amountToSwap = zeroForOne ? amount1 : amount0;
-            uint256 amountToBorrow = getV2AmountInDirect(msg.sender, tokenIn, tokenOut, amountToSwap, identifier);
+            uint256 amountToBorrow = refAmount;
             if (data.length > 44) {
                 // we need to swap to the token that we want to supply
                 // the router returns the amount that we can finally supply to the protocol
                 data = data[22:];
-                amountToSwap = swapExactIn(amountToSwap, address(this), data);
+                amountToSwap = swapExactIn(amountToSwap, address(this), address(this), data);
                 // supply directly
                 tokenOut = getLastToken(data);
             }
             // slice out the end flag
 
             (uint256 payType, uint8 lenderId) = getPayConfig(data);
-            address user = getCachedAddress();
 
             // cache amount
             // 6 is mint / deposit
             if (tradeId == 6) {
                 // deposit funds for id == 6
-                _deposit(tokenOut, user, amountToSwap, lenderId);
+                _deposit(tokenOut, payer, amountToSwap, lenderId);
             } else {
                 // repay - tradeId is irMode plus 6
                 tradeId -= 6;
-                _repay(tokenOut, user, amountToSwap, tradeId, lenderId);
+                _repay(tokenOut, payer, amountToSwap, tradeId, lenderId);
             }
 
             // pay the pool
             handlePayPool(
                 tokenIn,
-                user,
+                payer,
                 msg.sender,
                 payType,
                 amountToBorrow,
@@ -897,28 +921,30 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         } else {
             // fetch amountOut
             uint256 referenceAmount = zeroForOne ? amount0 : amount1;
-            address user = getCachedAddress();
             (uint256 payType, uint8 lenderId) = getPayConfig(data);
 
             // 3 is deposit
             if (tradeId == 3) {
-                _deposit(tokenIn, user, referenceAmount, lenderId);
+                _deposit(tokenIn, payer, referenceAmount, lenderId);
             } else {
                 // 4, 5 are repay, subtracting 3 yields the interest rate mode
                 tradeId -= 3;
-                _repay(tokenIn, user, referenceAmount, tradeId, lenderId);
+                _repay(tokenIn, payer, referenceAmount, tradeId, lenderId);
+            }
+            assembly {
+                tradeId := and(shr(80, calldataload(data.offset)), UINT8_MASK) // swap pool identifier
             }
             // calculate amountIn (note that tokenIn/out are read inverted at the top)
-            referenceAmount = getV2AmountInDirect(msg.sender, tokenOut, tokenIn, referenceAmount, identifier);
+            referenceAmount = getV2AmountInDirect(msg.sender, tokenOut, tokenIn, referenceAmount, tradeId);
             // constinue swapping if more data is provided
             if (data.length > 44) {
                 data = data[22:];
-                flashSwapExactOutInternal(referenceAmount, msg.sender, data);
+                flashSwapExactOutInternal(referenceAmount, msg.sender, payer, data);
             } else {
                 // pay the pool
                 handlePayPool(
                     tokenOut,
-                    user,
+                    payer,
                     msg.sender,
                     payType,
                     referenceAmount,
@@ -961,7 +987,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
      * @param receiver address
      * @param path path calldata
      */
-    function flashSwapExactOutInternal(uint256 amountOut, address receiver, bytes calldata path) internal {
+    function flashSwapExactOutInternal(uint256 amountOut, address receiver, address payer, bytes calldata path) internal {
         // fetch the pool identifier from the path
         uint256 identifier;
         assembly {
@@ -971,6 +997,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         if (identifier < 50) {
             _swapUniswapV3PoolExactOut(
                 receiver,
+                payer,
                 -int256(amountOut),
                 path
             );
@@ -980,6 +1007,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             _swapV2StyleExactOut(
                 amountOut,
                 receiver,
+                payer,
                 path
             );
         }
@@ -987,25 +1015,29 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         else if (identifier == 100) {
             _swapIZIPoolExactOut(
                 receiver,
+                payer,
                 uint128(amountOut),
                 path
             );
         // special case: Moe LB, no flash swaps, recursive nesting is applied
         } else if (identifier == 103) {
-            uint16 bin;
             address tokenIn;
-            address tokenOut;
-            assembly {
-                let firstWord := calldataload(path.offset)
-                tokenOut := and(ADDRESS_MASK, shr(96, firstWord))
-                bin := and(shr(64, firstWord), UINT16_MASK)
-                tokenIn := and(ADDRESS_MASK, shr(96, calldataload(add(path.offset, 24))))
+            address tokenOutThenPair;
+            uint256 amountIn;
+            bool swapForY;
+            {
+                uint16 bin;
+                assembly {
+                    let firstWord := calldataload(path.offset)
+                    tokenOutThenPair := and(ADDRESS_MASK, shr(96, firstWord))
+                    bin := and(shr(64, firstWord), UINT16_MASK)
+                    tokenIn := and(ADDRESS_MASK, shr(96, calldataload(add(path.offset, 24))))
+                }
+                ////////////////////////////////////////////////////
+                // We calculate the required amount for the next swap
+                ////////////////////////////////////////////////////
+                (amountIn, tokenOutThenPair, swapForY) = getLBAmountIn(tokenIn, tokenOutThenPair, amountOut, bin);
             }
-            ////////////////////////////////////////////////////
-            // We calculate the required amount for the next swap
-            ////////////////////////////////////////////////////
-            (uint256 amountIn, address pair, bool swapForY) = getLBAmountIn(tokenIn, tokenOut, amountOut, bin);
-
             ////////////////////////////////////////////////////
             // If the path includes more pairs, we nest another exact out swap
             // The funds of this exact out swap are sent to the LB pair
@@ -1015,7 +1047,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             if(path.length > 46) {
                 // remove the last token from the path
                 path = path[24:];
-                flashSwapExactOutInternal(amountIn, pair, path);
+                flashSwapExactOutInternal(amountIn, tokenOutThenPair, payer, path);
             } 
             ////////////////////////////////////////////////////
             // Otherwise, we6 pay the funds to the pair
@@ -1045,8 +1077,8 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 // pay the pool
                 handlePayPool(
                     tokenIn,
-                    payFromCache ? getCachedAddress() : address(0), // prevents sload if desired
-                    pair,
+                    payer, // prevents sload if desired
+                    tokenOutThenPair,
                     payType,
                     amountIn,
                     lenderId
@@ -1062,7 +1094,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // The swap is executed at the end and sends 
             // the funds to the receiver addresss
             ////////////////////////////////////////////////////
-            swapLBexactOut(pair, swapForY, amountOut, receiver);
+            swapLBexactOut(tokenOutThenPair, swapForY, amountOut, receiver);
         } else
             revert invalidDexId();
     }
@@ -1081,6 +1113,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         if (identifier < 50) {
             _swapUniswapV3PoolExactIn(
                 address(this),
+                msg.sender,
                 int256(amountIn),
                 path
             );
@@ -1090,6 +1123,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             swapUniV2ExactInComplete(
                 amountIn,
                 address(this),
+                msg.sender,
                 true,
                 path
             );
@@ -1098,6 +1132,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         else if (identifier == 100) {
             _swapIZIPoolExactIn(
                 address(this),
+                msg.sender,
                 uint128(amountIn),
                 path
             );

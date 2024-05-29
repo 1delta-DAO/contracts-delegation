@@ -25,8 +25,8 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
         uint256 maximumAmountIn,
         address receiver,
         bytes calldata path
-    ) external payable cacheCallerAdress {
-        flashSwapExactOutInternal(amountOut, receiver, path);
+    ) external payable {
+        flashSwapExactOutInternal(amountOut, receiver, msg.sender, path);
         // slippage check
         assembly {
             let amountIn := sload(NUMBER_CACHE_SLOT)
@@ -48,7 +48,7 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
         bytes calldata path
     ) external payable {
         // we do not need to cache anything in this case
-        flashSwapExactOutInternal(amountOut, address(this), path);
+        flashSwapExactOutInternal(amountOut, address(this), address(this), path);
         // slippage check
         assembly {
             let amountIn := sload(NUMBER_CACHE_SLOT)
@@ -70,8 +70,8 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
         uint256 minimumAmountOut,
         address receiver,
         bytes calldata path
-    ) external payable cacheCallerAdress {
-        uint256 amountOut = swapExactIn(amountIn, receiver, path);
+    ) external payable {
+        uint256 amountOut = swapExactIn(amountIn, receiver, msg.sender, path);
         // slippage check
         assembly {
             if lt(amountOut, minimumAmountOut) {
@@ -91,7 +91,7 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
         uint256 minimumAmountOut,
         bytes calldata path
     ) external payable {
-        uint256 amountOut = swapExactIn(amountIn, msg.sender, path);
+        uint256 amountOut = swapExactIn(amountIn, msg.sender, address(this), path);
         // slippage check
         assembly {
             if lt(amountOut, minimumAmountOut) {
@@ -109,7 +109,7 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
         uint256 maximumAmountIn,
         uint256 interestRateMode,
         bytes calldata path
-    ) external payable cacheCallerAdress {
+    ) external payable {
         uint256 _debtBalance;
         uint256 _interestRateMode = interestRateMode;
         address tokenOut;
@@ -120,7 +120,7 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
         else _debtBalance = _stableDebtBalance(tokenOut, msg.sender, getLender(path));
         if (_debtBalance == 0) revert NoBalance(); // revert if amount is zero
 
-        flashSwapExactOutInternal(_debtBalance, address(this), path);
+        flashSwapExactOutInternal(_debtBalance, address(this), msg.sender, path);
         // slippage check
         assembly {
             let amountIn := sload(NUMBER_CACHE_SLOT)
@@ -151,7 +151,7 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
         else _debtBalance = _stableDebtBalance(tokenOut, msg.sender, getLender(path));
         if (_debtBalance == 0) revert NoBalance(); // revert if amount is zero
 
-        flashSwapExactOutInternal(_debtBalance, address(this), path);
+        flashSwapExactOutInternal(_debtBalance, address(this), address(this), path);
         // slippage check
         assembly {
             let amountIn := sload(NUMBER_CACHE_SLOT)
@@ -177,7 +177,7 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
         }
         uint256 amountIn = _balanceOfThis(tokenIn);
         if (amountIn == 0) revert NoBalance(); // revert if amount is zero
-        uint256 amountOut = swapExactIn(amountIn, msg.sender, path);
+        uint256 amountOut = swapExactIn(amountIn, msg.sender, msg.sender, path);
         // slippage check
         assembly {
             if lt(amountOut, minimumAmountOut) {
