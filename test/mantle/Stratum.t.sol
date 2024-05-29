@@ -25,12 +25,11 @@ contract StratumCurveTest is DeltaSetup {
 
         uint256 quoted = testQuoter._quoteStratumGeneral(getTokenIdEth(assetIn), getTokenIdEth(assetOut), 0, amountIn);
 
-        bytes[] memory calls = new bytes[](3);
-        calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, assetIn, amountIn);
+        bytes[] memory calls = new bytes[](1);
 
         bytes memory swapPath = getSpotExactInSingleStratumEth(assetIn, assetOut);
         uint256 minimumOut = 0.03e8;
-        calls[1] = abi.encodeWithSelector(
+        calls[0] = abi.encodeWithSelector(
             IFlashAggregator.swapExactInSpot.selector, // 3 args
             amountIn,
             minimumOut,
@@ -38,7 +37,6 @@ contract StratumCurveTest is DeltaSetup {
             swapPath
         );
 
-        calls[2] = abi.encodeWithSelector(ILending.sweep.selector, assetOut);
         vm.prank(user);
         IERC20All(assetIn).approve(brokerProxyAddress, amountIn);
 
@@ -72,7 +70,6 @@ contract StratumCurveTest is DeltaSetup {
         // uint256 quoted = testQuoter._quoteStratumGeneral(getTokenIdUSD(assetIn), getTokenIdUSD(assetOut), 1, amountIn);
 
         // bytes[] memory calls = new bytes[](3);
-        // calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, assetIn, amountIn);
 
         // bytes memory swapPath = getSpotExactInSingleStratumUsd(assetIn, assetOut);
         // uint256 minimumOut = 0.03e8;
@@ -114,12 +111,11 @@ contract StratumCurveTest is DeltaSetup {
 
         uint256 quoted = testQuoter._quoteStratumGeneral(getTokenIdEth(assetIn), getTokenIdEth(assetOut), 0, amountIn);
 
-        bytes[] memory calls = new bytes[](3);
-        calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, assetIn, amountIn);
+        bytes[] memory calls = new bytes[](1);
 
         bytes memory swapPath = getSpotExactInSingleStratumEth(assetIn, assetOut);
         uint256 minimumOut = 0.03e8;
-        calls[1] = abi.encodeWithSelector(
+        calls[0] = abi.encodeWithSelector(
             IFlashAggregator.swapExactInSpot.selector, // 3 args
             amountIn,
             minimumOut,
@@ -127,7 +123,6 @@ contract StratumCurveTest is DeltaSetup {
             swapPath
         );
 
-        calls[2] = abi.encodeWithSelector(ILending.sweep.selector, assetOut);
         vm.prank(user);
         IERC20All(assetIn).approve(brokerProxyAddress, amountIn);
 

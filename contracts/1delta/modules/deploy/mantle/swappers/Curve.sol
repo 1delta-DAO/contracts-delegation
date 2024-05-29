@@ -6,7 +6,6 @@ pragma solidity 0.8.26;
 * Author: Achthar | 1delta 
 /******************************************************************************/
 
-
 // solhint-disable max-line-length
 
 /**
@@ -35,8 +34,44 @@ abstract contract CurveSwapper {
      * @param amountIn sell amount
      * @return amountOut buy amount
      */
-    function swapStratum3(address tokenIn, address tokenOut, uint256 amountIn) internal returns (uint256 amountOut) {
+    function swapStratum3(address tokenIn, address tokenOut, uint256 amountIn, address payer, address receiver) internal returns (uint256 amountOut) {
         assembly {
+            let ptr := mload(0x40)
+
+            ////////////////////////////////////////////////////
+            // Pull funds if needed
+            ////////////////////////////////////////////////////
+            if iszero(eq(payer, address())) {
+                // selector for transferFrom(address,address,uint256)
+                mstore(ptr, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
+                mstore(add(ptr, 0x04), payer)
+                mstore(add(ptr, 0x24), address())
+                mstore(add(ptr, 0x44), amountIn)
+
+                let success := call(gas(), tokenIn, 0, ptr, 0x64, ptr, 32)
+
+                let rdsize := returndatasize()
+
+                // Check for ERC20 success. ERC20 tokens should return a boolean,
+                // but some don't. We accept 0-length return data as success, or at
+                // least 32 bytes that starts with a 32-byte boolean true.
+                success := and(
+                    success, // call itself succeeded
+                    or(
+                        iszero(rdsize), // no return data, or
+                        and(
+                            iszero(lt(rdsize, 32)), // at least 32 bytes
+                            eq(mload(ptr), 1) // starts with uint256(1)
+                        )
+                    )
+                )
+
+                if iszero(success) {
+                    returndatacopy(ptr, 0, rdsize)
+                    revert(ptr, rdsize)
+                }
+            }
+        
             // curve forks work with indices, we determine these below
             let indexIn
             let indexOut
@@ -154,29 +189,154 @@ abstract contract CurveSwapper {
                 // load the retrieved balance
                 amountOut := mload(0xB00)
             }
+
+            ////////////////////////////////////////////////////
+            // Send funds to receiver if needed
+            ////////////////////////////////////////////////////
+            if iszero(eq(receiver, address())) {
+                // selector for transfer(address,uint256)
+                mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+                mstore(add(ptr, 0x04), receiver)
+                mstore(add(ptr, 0x24), amountOut)
+                let success := call(gas(), tokenOut, 0, ptr, 0x44, ptr, 32)
+
+                let rdsize := returndatasize()
+
+                // Check for ERC20 success. ERC20 tokens should return a boolean,
+                // but some don't. We accept 0-length return data as success, or at
+                // least 32 bytes that starts with a 32-byte boolean true.
+                success := and(
+                    success, // call itself succeeded
+                    or(
+                        iszero(rdsize), // no return data, or
+                        and(
+                            iszero(lt(rdsize, 32)), // at least 32 bytes
+                            eq(mload(ptr), 1) // starts with uint256(1)
+                        )
+                    )
+                )
+
+                if iszero(success) {
+                    returndatacopy(ptr, 0, rdsize)
+                    revert(ptr, rdsize)
+                }
+            }
         }
     }
 
-    function swapCurveGeneral(uint256 indexIn, uint256 indexOut, address pool, uint256 amountIn) internal returns (uint256 amountOut) {
+    function swapCurveGeneral(bytes calldata pathSlice, uint256 amountIn, address payer, address receiver) internal returns (uint256 amountOut) {
         assembly {
+            let ptr := mload(0x40)
+            ////////////////////////////////////////////////////
+            // Pull funds if needed
+            ////////////////////////////////////////////////////
+            if iszero(eq(payer, address())) {
+                // selector for transferFrom(address,address,uint256)
+                mstore(ptr, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
+                mstore(add(ptr, 0x04), payer)
+                mstore(add(ptr, 0x24), address())
+                mstore(add(ptr, 0x44), amountIn)
+
+                let success := call(
+                    gas(),
+                    and(
+                        0x00ffffffffffffffffffffffffffffffffffffffff,
+                        shr(96, calldataload(pathSlice.offset)) // tokenIn
+                    ), 
+                    0,
+                    ptr,
+                    0x64,
+                    ptr,
+                    32
+                )
+
+                let rdsize := returndatasize()
+
+                // Check for ERC20 success. ERC20 tokens should return a boolean,
+                // but some don't. We accept 0-length return data as success, or at
+                // least 32 bytes that starts with a 32-byte boolean true.
+                success := and(
+                    success, // call itself succeeded
+                    or(
+                        iszero(rdsize), // no return data, or
+                        and(
+                            iszero(lt(rdsize, 32)), // at least 32 bytes
+                            eq(mload(ptr), 1) // starts with uint256(1)
+                        )
+                    )
+                )
+
+                if iszero(success) {
+                    returndatacopy(ptr, 0, rdsize)
+                    revert(ptr, rdsize)
+                }
+            }
+            
+            let indexData := calldataload(add(pathSlice.offset, 21))
+            let indexIn := and(shr(240, indexData), 0xff)
+            let indexOut := and(shr(232, indexData), 0xff)
+            let pool := and(shr(72, indexData), 0x00ffffffffffffffffffffffffffffffffffffffff)
             ////////////////////////////////////////////////////
             // Execute swap function 
             ////////////////////////////////////////////////////
 
             // selector for swap(uint8,uint8,uint256,uint256,uint256)
-            mstore(0xB00, 0x9169558600000000000000000000000000000000000000000000000000000000)
-            mstore(0xB04, indexIn)
-            mstore(0xB24, indexOut)
-            mstore(0xB44, amountIn)
-            mstore(0xB64, 0) // min out is zero, we validate slippage at the end
-            mstore(0xB84, 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff) // no deadline
-            if iszero(call(gas(), pool, 0x0, 0xB00, 0xA4, 0xB00, 0x20)) {
+            mstore(ptr, 0x9169558600000000000000000000000000000000000000000000000000000000)
+            mstore(add(ptr, 0x4), indexIn)
+            mstore(add(ptr, 0x24), indexOut)
+            mstore(add(ptr, 0x44), amountIn)
+            mstore(add(ptr, 0x64), 0) // min out is zero, we validate slippage at the end
+            mstore(add(ptr, 0x84), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff) // no deadline
+            if iszero(call(gas(), pool, 0x0, ptr, 0xA4, ptr, 0x20)) {
                 let rdsize := returndatasize()
-                returndatacopy(0xB00, 0, rdsize)
-                revert(0xB00, rdsize)
+                returndatacopy(ptr, 0, rdsize)
+                revert(ptr, rdsize)
             }
 
-            amountOut := mload(0xB00)
+            amountOut := mload(ptr)
+
+                        ////////////////////////////////////////////////////
+            // Send funds to receiver if needed
+            ////////////////////////////////////////////////////
+            if iszero(eq(receiver, address())) {
+                // selector for transfer(address,uint256)
+                mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+                mstore(add(ptr, 0x04), receiver)
+                mstore(add(ptr, 0x24), amountOut)
+                let success := call(
+                    gas(),
+                    and(
+                        0x00ffffffffffffffffffffffffffffffffffffffff,
+                        shr(96, calldataload(add(pathSlice.offset, 44))) // tokenIn, added 2x addr + 4x uint8
+                    ), 
+                    0,
+                    ptr,
+                    0x44,
+                    ptr,
+                    32
+                )
+
+                let rdsize := returndatasize()
+
+                // Check for ERC20 success. ERC20 tokens should return a boolean,
+                // but some don't. We accept 0-length return data as success, or at
+                // least 32 bytes that starts with a 32-byte boolean true.
+                success := and(
+                    success, // call itself succeeded
+                    or(
+                        iszero(rdsize), // no return data, or
+                        and(
+                            iszero(lt(rdsize, 32)), // at least 32 bytes
+                            eq(mload(ptr), 1) // starts with uint256(1)
+                        )
+                    )
+                )
+
+                if iszero(success) {
+                    returndatacopy(ptr, 0, rdsize)
+                    revert(ptr, rdsize)
+                }
+            }
         }
     }
 }
