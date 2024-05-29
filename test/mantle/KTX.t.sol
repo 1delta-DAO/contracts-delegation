@@ -27,12 +27,11 @@ contract KTXTest is DeltaSetup {
 
         uint256 quoted = testQuoter._quoteKTXExactIn(assetIn, assetOut, amountIn);
 
-        bytes[] memory calls = new bytes[](2);
-        calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, assetIn, amountIn);
+        bytes[] memory calls = new bytes[](1);
 
         bytes memory swapPath = getSpotExactInSingleKTX(assetIn, assetOut);
         uint256 minimumOut = 0.03e8;
-        calls[1] = abi.encodeWithSelector(
+        calls[0] = abi.encodeWithSelector(
             IFlashAggregator.swapExactInSpot.selector, // 3 args
             amountIn,
             minimumOut,
@@ -85,12 +84,11 @@ contract KTXTest is DeltaSetup {
 
         uint256 quoted = testQuoter._quoteKTXExactIn(assetIn, assetOut, amountIn);
 
-        bytes[] memory calls = new bytes[](2);
-        calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, assetIn, amountIn);
+        bytes[] memory calls = new bytes[](1);
 
         bytes memory swapPath = getSpotExactInSingleKTX(assetIn, assetOut);
         uint256 minimumOut = 0.03e8;
-        calls[1] = abi.encodeWithSelector(
+        calls[0] = abi.encodeWithSelector(
             IFlashAggregator.swapExactInSpot.selector, // 3 args
             amountIn,
             minimumOut,
@@ -128,12 +126,11 @@ contract KTXTest is DeltaSetup {
 
         uint256 quoted = testQuoter._quoteKTXExactIn(assetIn, assetOut, amountIn);
 
-        bytes[] memory calls = new bytes[](2);
-        calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, assetIn, amountIn);
+        bytes[] memory calls = new bytes[](1);
 
         bytes memory swapPath = getSpotExactInSingleKTX(assetIn, assetOut);
         uint256 minimumOut = 0.03e8;
-        calls[1] = abi.encodeWithSelector(
+        calls[0] = abi.encodeWithSelector(
             IFlashAggregator.swapExactInSpot.selector, // 3 args
             amountIn,
             minimumOut,

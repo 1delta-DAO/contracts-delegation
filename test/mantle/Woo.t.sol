@@ -26,12 +26,10 @@ contract WooFiTest is DeltaSetup {
 
         uint256 quoted = testQuoter._quoteWooFiExactIn(assetIn, assetOut, amountIn);
 
-        bytes[] memory calls = new bytes[](2);
-        calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, assetIn, amountIn);
-
+        bytes[] memory calls = new bytes[](1);
         bytes memory swapPath = getSpotExactInSingleWOO_FI(assetIn, assetOut);
         uint256 minimumOut = 0.03e8;
-        calls[1] = abi.encodeWithSelector(
+        calls[0] = abi.encodeWithSelector(
             IFlashAggregator.swapExactInSpot.selector, // 3 args
             amountIn,
             minimumOut,

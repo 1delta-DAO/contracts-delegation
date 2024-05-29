@@ -32,62 +32,103 @@ abstract contract ExoticSwapper {
      * @param amountIn sell amount
      * @return amountOut buy amount
      */
-    function swapWooFiExactIn(address tokenIn, address tokenOut, uint256 amountIn, address receiver) internal returns (uint256 amountOut) {
+    function swapWooFiExactIn(
+        address tokenIn,
+        address tokenOut,
+        uint256 amountIn,
+        address receiver,
+        address payer // funds can be pulled directly from a user
+    ) internal returns (uint256 amountOut) {
         assembly {
-            // selector for transfer(address,uint256)
-            mstore(0xB00, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
-            mstore(add(0xB00, 0x04), WOO_POOL)
-            mstore(add(0xB00, 0x24), amountIn)
+            let ptr := mload(0x40)
+            let success
+            switch eq(payer, address())
+            case 0 {
+                // selector for transferFrom(address,address,uint256)
+                mstore(ptr, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
+                mstore(add(ptr, 0x04), payer)
+                mstore(add(ptr, 0x24), WOO_POOL)
+                mstore(add(ptr, 0x44), amountIn)
 
-            let success := call(gas(), tokenIn, 0, 0xB00, 0x44, 0xB00, 32)
+                success := call(gas(), tokenIn, 0, ptr, 0x64, ptr, 32)
 
-            let rdsize := returndatasize()
+                let rdsize := returndatasize()
 
-            // Check for ERC20 success. ERC20 tokens should return a boolean,
-            // but some don't. We accept 0-length return data as success, or at
-            // least 32 bytes that starts with a 32-byte boolean true.
-            success := and(
-                success, // call itself succeeded
-                or(
-                    iszero(rdsize), // no return data, or
-                    and(
-                        iszero(lt(rdsize, 32)), // at least 32 bytes
-                        eq(mload(0xB00), 1) // starts with uint256(1)
+                // Check for ERC20 success. ERC20 tokens should return a boolean,
+                // but some don't. We accept 0-length return data as success, or at
+                // least 32 bytes that starts with a 32-byte boolean true.
+                success := and(
+                    success, // call itself succeeded
+                    or(
+                        iszero(rdsize), // no return data, or
+                        and(
+                            iszero(lt(rdsize, 32)), // at least 32 bytes
+                            eq(mload(ptr), 1) // starts with uint256(1)
+                        )
                     )
                 )
-            )
 
-            if iszero(success) {
-                returndatacopy(0xB00, 0, rdsize)
-                revert(0xB00, rdsize)
+                if iszero(success) {
+                    returndatacopy(ptr, 0, rdsize)
+                    revert(ptr, rdsize)
+                }
+            }
+            default {
+                // selector for transfer(address,uint256)
+                mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+                mstore(add(ptr, 0x04), WOO_POOL)
+                mstore(add(ptr, 0x24), amountIn)
+
+                success := call(gas(), tokenIn, 0, ptr, 0x44, ptr, 32)
+
+                let rdsize := returndatasize()
+
+                // Check for ERC20 success. ERC20 tokens should return a boolean,
+                // but some don't. We accept 0-length return data as success, or at
+                // least 32 bytes that starts with a 32-byte boolean true.
+                success := and(
+                    success, // call itself succeeded
+                    or(
+                        iszero(rdsize), // no return data, or
+                        and(
+                            iszero(lt(rdsize, 32)), // at least 32 bytes
+                            eq(mload(ptr), 1) // starts with uint256(1)
+                        )
+                    )
+                )
+
+                if iszero(success) {
+                    returndatacopy(ptr, 0, rdsize)
+                    revert(ptr, rdsize)
+                }
             }
             // selector for swap(address,address,uint256,uint256,address,address)
             mstore(
-                0xB00, // 2816
+                ptr, // 2816
                 0x7dc2038200000000000000000000000000000000000000000000000000000000
             )
-            mstore(0xB04, tokenIn)
-            mstore(0xB24, tokenOut)
-            mstore(0xB44, amountIn)
-            mstore(0xB64, 0x0) // amountOutMin unused
-            mstore(0xB84, receiver) // recipient
-            mstore(0xBA4, REBATE_RECIPIENT) // rebateTo
+            mstore(add(ptr, 0x04), tokenIn)
+            mstore(add(ptr, 0x24), tokenOut)
+            mstore(add(ptr, 0x44), amountIn)
+            mstore(add(ptr, 0x64), 0x0) // amountOutMin unused
+            mstore(add(ptr, 0x84), receiver) // recipient
+            mstore(add(ptr, 0xA4), REBATE_RECIPIENT) // rebateTo
             success := call(
                 gas(),
                 WOO_POOL,
                 0x0, // no native transfer
-                0xB00,
+                ptr,
                 0xC4, // input length 196
-                0xB00, // store output here
+                ptr, // store output here
                 0x20 // output is just uint
             )
             if iszero(success) {
-                rdsize := returndatasize()
-                returndatacopy(0xB00, 0, rdsize)
-                revert(0xB00, rdsize)
+                let rdsize := returndatasize()
+                returndatacopy(ptr, 0, rdsize)
+                revert(ptr, rdsize)
             }
 
-            amountOut := mload(0xB00)
+            amountOut := mload(ptr)
         }
     }
 
@@ -98,59 +139,100 @@ abstract contract ExoticSwapper {
      * @param amountIn sell amount
      * @return amountOut buy amount
      */
-    function swapKTXExactIn(address tokenIn, address tokenOut, uint256 amountIn, address receiver) internal returns (uint256 amountOut) {
+    function swapKTXExactIn(
+        address tokenIn, 
+        address tokenOut, 
+        uint256 amountIn, 
+        address receiver,
+        address payer
+    ) internal returns (uint256 amountOut) {
         assembly {
-            // selector for transfer(address,uint256)
-            mstore(0xB00, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
-            mstore(add(0xB00, 0x04), KTX_VAULT)
-            mstore(add(0xB00, 0x24), amountIn)
+            let ptr := mload(0x40)
+            let success
+            switch eq(payer, address())
+            case 0 {
+                // selector for transferFrom(address,address,uint256)
+                mstore(ptr, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
+                mstore(add(ptr, 0x04), payer)
+                mstore(add(ptr, 0x24), KTX_VAULT)
+                mstore(add(ptr, 0x44), amountIn)
 
-            let success := call(gas(), tokenIn, 0, 0xB00, 0x44, 0xB00, 32)
+                success := call(gas(), tokenIn, 0, ptr, 0x64, ptr, 32)
 
-            let rdsize := returndatasize()
+                let rdsize := returndatasize()
 
-            // Check for ERC20 success. ERC20 tokens should return a boolean,
-            // but some don't. We accept 0-length return data as success, or at
-            // least 32 bytes that starts with a 32-byte boolean true.
-            success := and(
-                success, // call itself succeeded
-                or(
-                    iszero(rdsize), // no return data, or
-                    and(
-                        iszero(lt(rdsize, 32)), // at least 32 bytes
-                        eq(mload(0xB00), 1) // starts with uint256(1)
+                // Check for ERC20 success. ERC20 tokens should return a boolean,
+                // but some don't. We accept 0-length return data as success, or at
+                // least 32 bytes that starts with a 32-byte boolean true.
+                success := and(
+                    success, // call itself succeeded
+                    or(
+                        iszero(rdsize), // no return data, or
+                        and(
+                            iszero(lt(rdsize, 32)), // at least 32 bytes
+                            eq(mload(ptr), 1) // starts with uint256(1)
+                        )
                     )
                 )
-            )
 
-            if iszero(success) {
-                returndatacopy(0xB00, 0, rdsize)
-                revert(0xB00, rdsize)
+                if iszero(success) {
+                    returndatacopy(ptr, 0, rdsize)
+                    revert(ptr, rdsize)
+                }
             }
+            default {
+                // selector for transfer(address,uint256)
+                mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+                mstore(add(ptr, 0x04), KTX_VAULT)
+                mstore(add(ptr, 0x24), amountIn)
+                success := call(gas(), tokenIn, 0, ptr, 0x44, ptr, 32)
+
+                let rdsize := returndatasize()
+
+                // Check for ERC20 success. ERC20 tokens should return a boolean,
+                // but some don't. We accept 0-length return data as success, or at
+                // least 32 bytes that starts with a 32-byte boolean true.
+                success := and(
+                    success, // call itself succeeded
+                    or(
+                        iszero(rdsize), // no return data, or
+                        and(
+                            iszero(lt(rdsize, 32)), // at least 32 bytes
+                            eq(mload(ptr), 1) // starts with uint256(1)
+                        )
+                    )
+                )
+
+                if iszero(success) {
+                    returndatacopy(ptr, 0, rdsize)
+                    revert(ptr, rdsize)
+                }
+            }
+
             // selector for swap(address,address,address)
             mstore(
-                0xB00, // 2816
+                ptr, // 2816
                 0x9331621200000000000000000000000000000000000000000000000000000000
             )
-            mstore(0xB04, tokenIn)
-            mstore(0xB24, tokenOut)
-            mstore(0xB44, receiver)
+            mstore(add(ptr, 0x04), tokenIn)
+            mstore(add(ptr, 0x24), tokenOut)
+            mstore(add(ptr, 0x44), receiver)
             success := call(
                 gas(),
                 KTX_VAULT,
                 0x0, // no native transfer
-                0xB00,
+                ptr,
                 0x64, // input length 66 bytes
-                0xB00, // store output here
+                ptr, // store output here
                 0x20 // output is just uint
             )
             if iszero(success) {
-                rdsize := returndatasize()
-                returndatacopy(0xB00, 0, rdsize)
-                revert(0xB00, rdsize)
+                let rdsize := returndatasize()
+                returndatacopy(ptr, 0, rdsize)
+                revert(ptr, rdsize)
             }
 
-            amountOut := mload(0xB00)
+            amountOut := mload(ptr)
         }
     }
 

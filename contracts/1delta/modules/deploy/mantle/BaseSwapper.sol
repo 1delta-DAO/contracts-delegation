@@ -93,7 +93,7 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
                 tokenIn := shr(96, firstWord)
                 tokenOut := shr(96, calldataload(add(path.offset, 22)))
             }
-            amountIn = swapWooFiExactIn(tokenIn, tokenOut, amountIn, receiver);
+            amountIn = swapWooFiExactIn(tokenIn, tokenOut, amountIn, receiver, payer);
             path = path[21:];
         }
         // Stratum 3USD with wrapper
@@ -137,7 +137,7 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
                 tokenIn := shr(96, calldataload(path.offset))
                 tokenOut := shr(96, calldataload(add(path.offset, 22)))
             }
-            amountIn = swapKTXExactIn(tokenIn, tokenOut, amountIn, receiver);
+            amountIn = swapKTXExactIn(tokenIn, tokenOut, amountIn, receiver, payer);
             path = path[22:];
         } 
         // Curve stable general
