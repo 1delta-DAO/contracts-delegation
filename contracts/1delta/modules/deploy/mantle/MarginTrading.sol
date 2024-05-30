@@ -48,7 +48,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         uint256 amountInMaximum,
         bytes calldata path
     ) external payable {
-        flashSwapExactOutInternal(amountOut, address(this), msg.sender, path);
+        flashSwapExactOutInternal(amountOut, msg.sender, address(this), path);
         // slippage check
         assembly {
             let amountIn := sload(NUMBER_CACHE_SLOT)
@@ -107,7 +107,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             }
         }
 
-        flashSwapExactOutInternal(amountOut, address(this), msg.sender, path);
+        flashSwapExactOutInternal(amountOut, msg.sender, address(this), path);
         // slippage check
         assembly {
             let amountIn := sload(NUMBER_CACHE_SLOT)
@@ -461,7 +461,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // either initiate the next swap or pay
             if (_data.length > 46) {
                 _data = _data[24:];
-                flashSwapExactOutInternal(amountToPay, msg.sender, payer, _data);
+                flashSwapExactOutInternal(amountToPay, payer, msg.sender, _data);
             } else {
                 // fetch payment config - ignored for paying firectly
                 (uint256 payType, uint8 lenderId) = getPayConfig(_data);
@@ -547,7 +547,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 // multihop if required
                 if (_data.length > 46) {
                     _data = _data[24:];
-                    flashSwapExactOutInternal(amountInLastPool, msg.sender, payer, _data);
+                    flashSwapExactOutInternal(amountInLastPool, payer, msg.sender, _data);
                 } else {
                     // pay the pool
                     handlePayPool(
@@ -857,7 +857,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // either initiate the next swap or pay
             if (data.length > 44) {
                 data = data[22:];
-                flashSwapExactOutInternal(referenceAmount, msg.sender, payer, data);
+                flashSwapExactOutInternal(referenceAmount, payer, msg.sender, data);
             } else {
                 (uint256 payType, uint8 lenderId) = getPayConfig(data);
                 // pay the pool
@@ -939,7 +939,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // constinue swapping if more data is provided
             if (data.length > 44) {
                 data = data[22:];
-                flashSwapExactOutInternal(referenceAmount, msg.sender, payer, data);
+                flashSwapExactOutInternal(referenceAmount, payer, msg.sender, data);
             } else {
                 // pay the pool
                 handlePayPool(
@@ -987,7 +987,12 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
      * @param receiver address
      * @param path path calldata
      */
-    function flashSwapExactOutInternal(uint256 amountOut, address receiver, address payer, bytes calldata path) internal {
+    function flashSwapExactOutInternal(
+        uint256 amountOut,
+        address payer,
+        address receiver,
+        bytes calldata path
+    ) internal {
         // fetch the pool identifier from the path
         uint256 identifier;
         assembly {
@@ -1047,7 +1052,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             if(path.length > 46) {
                 // remove the last token from the path
                 path = path[24:];
-                flashSwapExactOutInternal(amountIn, tokenOutThenPair, payer, path);
+                flashSwapExactOutInternal(amountIn, payer, tokenOutThenPair, path);
             } 
             ////////////////////////////////////////////////////
             // Otherwise, we6 pay the funds to the pair

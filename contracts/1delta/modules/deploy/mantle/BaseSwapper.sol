@@ -45,8 +45,8 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
      */
     function swapExactIn(
         uint256 amountIn,
-        address receiver, // last step
         address payer, // first step
+        address receiver, // last step
         bytes calldata path
     ) internal returns (uint256 amountOut) {
         address currentReceiver = address(this);
@@ -172,7 +172,7 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
             // In the second or later iterations, the payer is
             // always this contract
             ////////////////////////////////////////////////////
-            return swapExactIn(amountIn, receiver, address(this), path);
+            return swapExactIn(amountIn, address(this), receiver, path);
         } else return amountIn;
     }
 }
