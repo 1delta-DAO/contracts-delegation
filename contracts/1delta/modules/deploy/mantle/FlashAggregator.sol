@@ -26,17 +26,7 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
         address receiver,
         bytes calldata path
     ) external payable {
-        flashSwapExactOutInternal(amountOut, msg.sender, receiver, path);
-        // slippage check
-        assembly {
-            let amountIn := sload(NUMBER_CACHE_SLOT)
-            if gt(amountIn, maximumAmountIn) {
-                mstore(0, SLIPPAGE)
-                revert (0, 0x4)
-            }
-            // reset cache
-            sstore(NUMBER_CACHE_SLOT, DEFAULT_CACHE)
-        }
+        flashSwapExactOutInternal(amountOut, maximumAmountIn, msg.sender, receiver, path);
     }
 
     /**
@@ -48,17 +38,7 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
         bytes calldata path
     ) external payable {
         // we do not need to cache anything in this case
-        flashSwapExactOutInternal(amountOut, address(this), address(this), path);
-        // slippage check
-        assembly {
-            let amountIn := sload(NUMBER_CACHE_SLOT)
-            if gt(amountIn, maximumAmountIn) {
-                mstore(0, SLIPPAGE)
-                revert (0, 0x4)
-            }
-            // reset cache
-            sstore(NUMBER_CACHE_SLOT, DEFAULT_CACHE)
-        }
+        flashSwapExactOutInternal(amountOut, maximumAmountIn, address(this), address(this), path);
     }
 
     /**
@@ -120,17 +100,7 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
         else _debtBalance = _stableDebtBalance(tokenOut, msg.sender, getLender(path));
         if (_debtBalance == 0) revert NoBalance(); // revert if amount is zero
 
-        flashSwapExactOutInternal(_debtBalance, msg.sender, address(this), path);
-        // slippage check
-        assembly {
-            let amountIn := sload(NUMBER_CACHE_SLOT)
-            if gt(amountIn, maximumAmountIn) {
-                mstore(0, SLIPPAGE)
-                revert (0, 0x4)
-            }
-            // reset cache
-            sstore(NUMBER_CACHE_SLOT, DEFAULT_CACHE)
-        }
+        flashSwapExactOutInternal(_debtBalance, maximumAmountIn, msg.sender, address(this), path);
     }
 
     /**
@@ -151,17 +121,7 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
         else _debtBalance = _stableDebtBalance(tokenOut, msg.sender, getLender(path));
         if (_debtBalance == 0) revert NoBalance(); // revert if amount is zero
 
-        flashSwapExactOutInternal(_debtBalance, address(this), address(this), path);
-        // slippage check
-        assembly {
-            let amountIn := sload(NUMBER_CACHE_SLOT)
-            if gt(amountIn, maximumAmountIn) {
-                mstore(0, SLIPPAGE)
-                revert (0, 0x4)
-            }
-            // reset cache
-            sstore(NUMBER_CACHE_SLOT, DEFAULT_CACHE)
-        }
+        flashSwapExactOutInternal(_debtBalance, maximumAmountIn, address(this), address(this), path);
     }
 
     /**

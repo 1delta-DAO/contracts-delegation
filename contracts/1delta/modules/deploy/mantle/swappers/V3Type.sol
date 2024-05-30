@@ -61,7 +61,8 @@ abstract contract V3TypeSwapper {
     /// the calldata arrives as
     /// tokenIn | actionId | fee | tokenOut
     function _swapUniswapV3PoolExactIn(
-        int256 fromAmount,
+        uint256 fromAmount,
+        uint256 minOut,
         address payer,
         address receiver,
         bytes calldata path
@@ -223,6 +224,9 @@ abstract contract V3TypeSwapper {
                 // Store path
                 calldatacopy(add(ptr, 196), path.offset, pathLength)
                 
+                // within the callback, we add the maximum in amount
+                mstore(add(add(ptr, 196), pathLength), shl(128, minOut))
+                pathLength := add(pathLength, 16)
                 // within the callback, we add the payer
                 mstore(add(add(ptr, 196), pathLength), shl(96, payer))
                 pathLength := add(pathLength, 20)
@@ -257,6 +261,9 @@ abstract contract V3TypeSwapper {
                 // Store path
                 calldatacopy(add(ptr, 196), path.offset, pathLength)
 
+                // within the callback, we add the maximum in amount
+                mstore(add(add(ptr, 196), pathLength), shl(128, minOut))
+                pathLength := add(pathLength, 16)
                 // within the callback, we add the payer
                 mstore(add(add(ptr, 196), pathLength), shl(96, payer))
                 pathLength := add(pathLength, 20)
@@ -283,6 +290,7 @@ abstract contract V3TypeSwapper {
     /// @dev Swap exact input through izumi
     function _swapIZIPoolExactIn(
         uint128 fromAmount,
+        uint256 minOut,
         address payer,
         address receiver,
         bytes calldata path
@@ -338,7 +346,10 @@ abstract contract V3TypeSwapper {
 
                 // Store path
                 calldatacopy(add(ptr, 164), path.offset, pathLength)
-                                
+
+                // within the callback, we add the maximum in amount
+                mstore(add(add(ptr, 164), pathLength), shl(128, minOut))
+                pathLength := add(pathLength, 16)
                 // within the callback, we add the payer
                 mstore(add(add(ptr, 164), pathLength), shl(96, payer))
                 pathLength := add(pathLength, 20)
@@ -371,7 +382,10 @@ abstract contract V3TypeSwapper {
 
                 // Store path
                 calldatacopy(add(ptr, 164), path.offset, pathLength)
-
+                
+                // within the callback, we add the maximum in amount
+                mstore(add(add(ptr, 164), pathLength), shl(128, minOut))
+                pathLength := add(pathLength, 16)
                 // within the callback, we add the payer
                 mstore(add(add(ptr, 164), pathLength), shl(96, payer))
                 pathLength := add(pathLength, 20)
@@ -395,6 +409,7 @@ abstract contract V3TypeSwapper {
     /// @dev Swap exact output through izumi
     function _swapIZIPoolExactOut(
         uint128 toAmount,
+        uint256 maxIn,
         address payer,
         address receiver,
         bytes calldata path
@@ -451,8 +466,11 @@ abstract contract V3TypeSwapper {
                 mstore(add(ptr, 132), path.length)
                 // Store path
                 calldatacopy(add(ptr, 164), path.offset, pathLength)
-          
-                // within the callback, we add the payer
+
+                // within the callback, we add the maximum in amount
+                mstore(add(add(ptr, 164), pathLength), shl(128, maxIn))
+                pathLength := add(pathLength, 16)
+                // and the payer address
                 mstore(add(add(ptr, 164), pathLength), shl(96, payer))
                 pathLength := add(pathLength, 20)
                 
@@ -483,8 +501,11 @@ abstract contract V3TypeSwapper {
                 mstore(add(ptr, 100), sub(0xa0, 0x20))
                 // Store path
                 calldatacopy(add(ptr, 164), path.offset, pathLength)
-                          
-                // within the callback, we add the payer
+
+                // within the callback, we add the maximum in amount
+                mstore(add(add(ptr, 164), pathLength), shl(128, maxIn))
+                pathLength := add(pathLength, 16)
+                // and the payer address
                 mstore(add(add(ptr, 164), pathLength), shl(96, payer))
                 pathLength := add(pathLength, 20)
                 
@@ -507,6 +528,7 @@ abstract contract V3TypeSwapper {
     /// @dev swap uniswap V3 style exact out
     function _swapUniswapV3PoolExactOut(
         int256 fromAmount,
+        uint256 maxIn,
         address payer,
         address receiver,
         bytes calldata path
@@ -672,7 +694,10 @@ abstract contract V3TypeSwapper {
                 // Store path
                 calldatacopy(add(ptr, 196), path.offset, pathLength)
 
-                // within the callback, we add the payer
+                // within the callback, we add the maximum in amount
+                mstore(add(add(ptr, 196), pathLength), shl(128, maxIn))
+                pathLength := add(pathLength, 16)
+                // and the payer address
                 mstore(add(add(ptr, 196), pathLength), shl(96, payer))
                 pathLength := add(pathLength, 20)
                 
@@ -706,7 +731,10 @@ abstract contract V3TypeSwapper {
                 // Store path
                 calldatacopy(add(ptr, 196), path.offset, pathLength)
 
-                // within the callback, we add the payer
+                // within the callback, we add the maximum in amount
+                mstore(add(add(ptr, 196), pathLength), shl(128, maxIn))
+                pathLength := add(pathLength, 16)
+                // then we add the payer
                 mstore(add(add(ptr, 196), pathLength), shl(96, payer))
                 pathLength := add(pathLength, 20)
                 

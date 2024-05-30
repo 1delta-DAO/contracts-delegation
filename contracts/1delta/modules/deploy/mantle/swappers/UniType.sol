@@ -42,6 +42,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
     /// @dev Swap exact out via v2 type pool
     function _swapV2StyleExactOut(
         uint256 amountOut,
+        uint256 maxIn,
         address payer,
         address receiver,
         bytes calldata path
@@ -52,177 +53,182 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
         assembly {
             let ptr := mload(0x40)
             let pair
-            let firstWord := calldataload(path.offset)
-            let tokenB := and(ADDRESS_MASK, shr(96, firstWord))
-            let _pId := and(shr(80, firstWord), UINT8_MASK) // poolId
-            let tokenA := and(ADDRESS_MASK, shr(96, calldataload(add(path.offset, 22))))
-            let zeroForOne := lt(tokenA, tokenB)
+            let tokenB
+            {  
 
-            ////////////////////////////////////////////////////
-            // Same code as for the other V2 pool address getters
-            ////////////////////////////////////////////////////
-            switch _pId
-            // FusionX
-            case 50 {
+                let tokenA
+                let firstWord := calldataload(path.offset)
+                tokenB := and(ADDRESS_MASK, shr(96, firstWord))
+                tokenA := and(ADDRESS_MASK, shr(96, calldataload(add(path.offset, 22))))
+                
+                let zeroForOne := lt(tokenA, tokenB)
+
+                ////////////////////////////////////////////////////
+                // Same code as for the other V2 pool address getters
+                ////////////////////////////////////////////////////
+                switch and(shr(80, firstWord), UINT8_MASK)
+                // FusionX
+                case 50 {
+                    switch zeroForOne
+                    case 0 {
+                        mstore(0xB14, tokenA)
+                        mstore(0xB00, tokenB)
+                    }
+                    default {
+                        mstore(0xB14, tokenB)
+                        mstore(0xB00, tokenA)
+                    }
+                    zeroForOne := keccak256(0xB0C, 0x28)
+                    mstore(0xB00, FUSION_V2_FF_FACTORY)
+                    mstore(0xB15, zeroForOne)
+                    mstore(0xB35, CODE_HASH_FUSION_V2)
+
+                    pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+                }
+                // 51: Merchant Moe
+                case 51 {
+                    // selector for getPair(address,address)
+                    mstore(0xB00, 0xe6a4390500000000000000000000000000000000000000000000000000000000)
+                    mstore(add(0xB00, 0x4), tokenA)
+                    mstore(add(0xB00, 0x24), tokenB)
+
+                    // call to collateralToken
+                    pop(staticcall(gas(), MERCHANT_MOE_FACTORY, 0xB00, 0x48, 0xB00, 0x20))
+
+                    // load the retrieved protocol share
+                    pair := and(ADDRESS_MASK, mload(0xB00))
+                }
+                // Velo Volatile
+                case 52 {
+                    switch zeroForOne
+                    case 0 {
+                        mstore(0xB14, tokenA)
+                        mstore(0xB00, tokenB)
+                    }
+                    default {
+                        mstore(0xB14, tokenB)
+                        mstore(0xB00, tokenA)
+                    }
+                    mstore8(0xB34, 0)
+                    zeroForOne := keccak256(0xB0C, 0x29)
+                    mstore(0xB00, VELO_FF_FACTORY)
+                    mstore(0xB15, zeroForOne)
+                    mstore(0xB35, VELO_CODE_HASH)
+
+                    pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+                }
+                // Velo Stable
+                case 53 {
+                    switch zeroForOne
+                    case 0 {
+                        mstore(0xB14, tokenA)
+                        mstore(0xB00, tokenB)
+                    }
+                    default {
+                        mstore(0xB14, tokenB)
+                        mstore(0xB00, tokenA)
+                    }
+                    mstore8(0xB34, 1)
+                    zeroForOne := keccak256(0xB0C, 0x29)
+                    mstore(0xB00, VELO_FF_FACTORY)
+                    mstore(0xB15, zeroForOne)
+                    mstore(0xB35, VELO_CODE_HASH)
+
+                    pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+                }
+                // Cleo V1 Volatile
+                case 54 {
+                    switch zeroForOne
+                    case 0 {
+                        mstore(0xB14, tokenA)
+                        mstore(0xB00, tokenB)
+                    }
+                    default {
+                        mstore(0xB14, tokenB)
+                        mstore(0xB00, tokenA)
+                    }
+                    mstore8(0xB34, 0)
+                    zeroForOne := keccak256(0xB0C, 0x29)
+                    mstore(0xB00, CLEO_V1_FF_FACTORY)
+                    mstore(0xB15, zeroForOne)
+                    mstore(0xB35, CLEO_V1_CODE_HASH)
+
+                    pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+                }
+                // Cleo V1 Stable
+                case 55 {
+                    switch zeroForOne
+                    case 0 {
+                        mstore(0xB14, tokenA)
+                        mstore(0xB00, tokenB)
+                    }
+                    default {
+                        mstore(0xB14, tokenB)
+                        mstore(0xB00, tokenA)
+                    }
+                    mstore8(0xB34, 1)
+                    zeroForOne := keccak256(0xB0C, 0x29)
+                    mstore(0xB00, CLEO_V1_FF_FACTORY)
+                    mstore(0xB15, zeroForOne)
+                    mstore(0xB35, CLEO_V1_CODE_HASH)
+
+                    pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+                }
+                // Stratum Volatile
+                case 56 {
+                    switch zeroForOne
+                    case 0 {
+                        mstore(0xB14, tokenA)
+                        mstore(0xB00, tokenB)
+                    }
+                    default {
+                        mstore(0xB14, tokenB)
+                        mstore(0xB00, tokenA)
+                    }
+                    mstore8(0xB34, 0)
+                    zeroForOne := keccak256(0xB0C, 0x29)
+                    mstore(0xB00, STRATUM_FF_FACTORY)
+                    mstore(0xB15, zeroForOne)
+                    mstore(0xB35, STRATUM_CODE_HASH)
+
+                    pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+                }
+                // 57: Stratum Stable
+                default {
+                    switch zeroForOne
+                    case 0 {
+                        mstore(0xB14, tokenA)
+                        mstore(0xB00, tokenB)
+                    }
+                    default {
+                        mstore(0xB14, tokenB)
+                        mstore(0xB00, tokenA)
+                    }
+                    mstore8(0xB34, 1)
+                    zeroForOne := keccak256(0xB0C, 0x29)
+                    mstore(0xB00, STRATUM_FF_FACTORY)
+                    mstore(0xB15, zeroForOne)
+                    mstore(0xB35, STRATUM_CODE_HASH)
+
+                    pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+                }
+
+                // selector for swap(...)
+                mstore(ptr, 0x022c0d9f00000000000000000000000000000000000000000000000000000000)
+
                 switch zeroForOne
-                case 0 {
-                    mstore(0xB14, tokenA)
-                    mstore(0xB00, tokenB)
+                case 1 {
+                    mstore(add(ptr, 4), 0x0)
+                    mstore(add(ptr, 36), amountOut)
                 }
                 default {
-                    mstore(0xB14, tokenB)
-                    mstore(0xB00, tokenA)
+                    mstore(add(ptr, 4), amountOut)
+                    mstore(add(ptr, 36), 0x0)
                 }
-                let salt := keccak256(0xB0C, 0x28)
-                mstore(0xB00, FUSION_V2_FF_FACTORY)
-                mstore(0xB15, salt)
-                mstore(0xB35, CODE_HASH_FUSION_V2)
-
-                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
-            }
-            // 51: Merchant Moe
-            case 51 {
-                // selector for getPair(address,address)
-                mstore(0xB00, 0xe6a4390500000000000000000000000000000000000000000000000000000000)
-                mstore(add(0xB00, 0x4), tokenA)
-                mstore(add(0xB00, 0x24), tokenB)
-
-                // call to collateralToken
-                pop(staticcall(gas(), MERCHANT_MOE_FACTORY, 0xB00, 0x48, 0xB00, 0x20))
-
-                // load the retrieved protocol share
-                pair := and(ADDRESS_MASK, mload(0xB00))
-            }
-            // Velo Volatile
-            case 52 {
-                switch zeroForOne
-                case 0 {
-                    mstore(0xB14, tokenA)
-                    mstore(0xB00, tokenB)
-                }
-                default {
-                    mstore(0xB14, tokenB)
-                    mstore(0xB00, tokenA)
-                }
-                mstore8(0xB34, 0)
-                let salt := keccak256(0xB0C, 0x29)
-                mstore(0xB00, VELO_FF_FACTORY)
-                mstore(0xB15, salt)
-                mstore(0xB35, VELO_CODE_HASH)
-
-                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
-            }
-            // Velo Stable
-            case 53 {
-                switch zeroForOne
-                case 0 {
-                    mstore(0xB14, tokenA)
-                    mstore(0xB00, tokenB)
-                }
-                default {
-                    mstore(0xB14, tokenB)
-                    mstore(0xB00, tokenA)
-                }
-                mstore8(0xB34, 1)
-                let salt := keccak256(0xB0C, 0x29)
-                mstore(0xB00, VELO_FF_FACTORY)
-                mstore(0xB15, salt)
-                mstore(0xB35, VELO_CODE_HASH)
-
-                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
-            }
-            // Cleo V1 Volatile
-            case 54 {
-                switch zeroForOne
-                case 0 {
-                    mstore(0xB14, tokenA)
-                    mstore(0xB00, tokenB)
-                }
-                default {
-                    mstore(0xB14, tokenB)
-                    mstore(0xB00, tokenA)
-                }
-                mstore8(0xB34, 0)
-                let salt := keccak256(0xB0C, 0x29)
-                mstore(0xB00, CLEO_V1_FF_FACTORY)
-                mstore(0xB15, salt)
-                mstore(0xB35, CLEO_V1_CODE_HASH)
-
-                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
-            }
-            // Cleo V1 Stable
-            case 55 {
-                switch zeroForOne
-                case 0 {
-                    mstore(0xB14, tokenA)
-                    mstore(0xB00, tokenB)
-                }
-                default {
-                    mstore(0xB14, tokenB)
-                    mstore(0xB00, tokenA)
-                }
-                mstore8(0xB34, 1)
-                let salt := keccak256(0xB0C, 0x29)
-                mstore(0xB00, CLEO_V1_FF_FACTORY)
-                mstore(0xB15, salt)
-                mstore(0xB35, CLEO_V1_CODE_HASH)
-
-                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
-            }
-            // Stratum Volatile
-            case 56 {
-                switch zeroForOne
-                case 0 {
-                    mstore(0xB14, tokenA)
-                    mstore(0xB00, tokenB)
-                }
-                default {
-                    mstore(0xB14, tokenB)
-                    mstore(0xB00, tokenA)
-                }
-                mstore8(0xB34, 0)
-                let salt := keccak256(0xB0C, 0x29)
-                mstore(0xB00, STRATUM_FF_FACTORY)
-                mstore(0xB15, salt)
-                mstore(0xB35, STRATUM_CODE_HASH)
-
-                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
-            }
-            // 57: Stratum Stable
-            default {
-                switch zeroForOne
-                case 0 {
-                    mstore(0xB14, tokenA)
-                    mstore(0xB00, tokenB)
-                }
-                default {
-                    mstore(0xB14, tokenB)
-                    mstore(0xB00, tokenA)
-                }
-                mstore8(0xB34, 1)
-                let salt := keccak256(0xB0C, 0x29)
-                mstore(0xB00, STRATUM_FF_FACTORY)
-                mstore(0xB15, salt)
-                mstore(0xB35, STRATUM_CODE_HASH)
-
-                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
-            }
-
-            // selector for swap(...)
-            mstore(ptr, 0x022c0d9f00000000000000000000000000000000000000000000000000000000)
-
-            switch zeroForOne
-            case 1 {
-                mstore(add(ptr, 4), 0x0)
-                mstore(add(ptr, 36), amountOut)
-            }
-            default {
-                mstore(add(ptr, 4), amountOut)
-                mstore(add(ptr, 36), 0x0)
             }
             // Prepare external call data
 
-            // Store sqrtPriceLimitX96
+            // Store recipient
             mstore(add(ptr, 68), address())
             // Store data offset
             mstore(add(ptr, 100), sub(0xa0, 0x20))
@@ -234,7 +240,9 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
             let pathLength := path.length
             // Store path
             calldatacopy(add(ptr, 164), path.offset, pathLength)
-            pathLength := add(pathLength, 16) // pad
+
+            mstore(add(add(ptr, 164), pathLength), shl(128, maxIn)) // store amountIn
+            pathLength := add(pathLength, 32) // pad
             mstore(add(add(ptr, 164), pathLength), shl(96, payer))
             pathLength := add(pathLength, 20)
             /// Store updated data length
@@ -637,6 +645,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
      */
     function swapUniV2ExactInComplete(
         uint256 amountIn,
+        uint256 amountOutMax,
         address payer,
         address receiver,
         bool useFlashSwap,
@@ -648,13 +657,9 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
             // We extract all relevant data from the path bytes blob
             ////////////////////////////////////////////////////
             let pair
-            let _pId
-            let tokenIn 
-            {
-                let firstWord := calldataload(path.offset)
-                tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
-                _pId := and(shr(80, firstWord), UINT8_MASK)
-            }
+            let tokenIn := calldataload(path.offset)
+            let pId_amountWithFee_pathLength := and(shr(80, tokenIn), UINT8_MASK)
+            tokenIn := and(ADDRESS_MASK, shr(96, tokenIn))
             let zeroForOne
             // narrow the scope
             {
@@ -662,11 +667,11 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                 zeroForOne := lt(tokenIn, tokenOut)
             
                 ////////////////////////////////////////////////////
-                // We get the poolIdentifier as _pId
+                // We get the poolIdentifier as pId_amountWithFee_pathLength
                 // we extract the correct pool address from that info
                 ////////////////////////////////////////////////////
         
-                switch _pId
+                switch pId_amountWithFee_pathLength
                 case 50 {
                     // fusionX
                     switch zeroForOne
@@ -682,7 +687,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                     mstore(0xB15, keccak256(0xB0C, 0x28))
                     mstore(0xB35, CODE_HASH_FUSION_V2)
 
-                    pair := and(ADDRESS_MASK_UPPER, keccak256(0xB00, 0x55))
+                    mstore(0, and(ADDRESS_MASK_UPPER, keccak256(0xB00, 0x55)))
                 }
                 case 51 {
                     // merchant moe -> call to factory to identify pair address
@@ -694,9 +699,9 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                     // call to factory
                     pop(staticcall(gas(), MERCHANT_MOE_FACTORY, 0xB00, 0x48, 0xB00, 0x20))
                     // load the retrieved protocol share
-                    pair := and(ADDRESS_MASK, mload(0xB00))
+                    mstore(0, and(ADDRESS_MASK, mload(0xB00)))
                 }
-                // Velo Volatile
+                //) Velo Volatile
                 case 52 {
                     switch zeroForOne
                     case 0 {
@@ -712,7 +717,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                     mstore(0xB15, keccak256(0xB0C, 0x29))
                     mstore(0xB35, VELO_CODE_HASH)
 
-                    pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+                    mstore(0, and(ADDRESS_MASK, keccak256(0xB00, 0x55)))
                 }
                 // Velo Stable
                 case 53 {
@@ -730,7 +735,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                     mstore(0xB15, keccak256(0xB0C, 0x29))
                     mstore(0xB35, VELO_CODE_HASH)
 
-                    pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+                    mstore(0, and(ADDRESS_MASK, keccak256(0xB00, 0x55)))
                 }
                 // Cleo V1 Volatile
                 case 54 {
@@ -748,7 +753,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                     mstore(0xB15, keccak256(0xB0C, 0x29))
                     mstore(0xB35, CLEO_V1_CODE_HASH)
 
-                    pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+                    mstore(0, and(ADDRESS_MASK, keccak256(0xB00, 0x55)))
                 }
                 // Cleo V1 Stable
                 case 55 {
@@ -766,7 +771,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                     mstore(0xB15, keccak256(0xB0C, 0x29))
                     mstore(0xB35, CLEO_V1_CODE_HASH)
 
-                    pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+                    mstore(0, and(ADDRESS_MASK, keccak256(0xB00, 0x55)))
                 }
                 // Stratum Volatile
                 case 56 {
@@ -784,7 +789,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                     mstore(0xB15, keccak256(0xB0C, 0x29))
                     mstore(0xB35, STRATUM_CODE_HASH)
 
-                    pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+                    mstore(0, and(ADDRESS_MASK, keccak256(0xB00, 0x55)))
                 }
                 // 57: Stratum Stable
                 default {
@@ -802,7 +807,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                     mstore(0xB15, keccak256(0xB0C, 0x29))
                     mstore(0xB35, STRATUM_CODE_HASH)
 
-                    pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+                    mstore(0, and(ADDRESS_MASK, keccak256(0xB00, 0x55)))
                 }
             }
             // Compute the buy amount based on the pair reserves.
@@ -810,11 +815,11 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                 // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
                 // buyAmount = (pairSellAmount * feeAm * buyReserve) /
                 //     (pairSellAmount * feeAm + sellReserve * 1000);
-                switch _pId
+                switch pId_amountWithFee_pathLength
                 case 50 {
                     // Call pair.getReserves(), store the results at `0xC00`
                     mstore(0xB00, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
-                    if iszero(staticcall(gas(), pair, 0xB00, 0x4, 0xC00, 0x40)) {
+                    if iszero(staticcall(gas(), mload(0), 0xB00, 0x4, 0xC00, 0x40)) {
                         returndatacopy(0, 0, returndatasize())
                         revert(0, returndatasize())
                     }
@@ -835,13 +840,13 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                         buyReserve := mload(0xC00)
                     }
                     // feeAm is 998 for fusionX (1000 - 2) for 0.2% fee
-                    let sellAmountWithFee := mul(amountIn, 998)
-                    buyAmount := div(mul(sellAmountWithFee, buyReserve), add(sellAmountWithFee, mul(sellReserve, 1000)))
+                    pId_amountWithFee_pathLength := mul(amountIn, 998)
+                    buyAmount := div(mul(pId_amountWithFee_pathLength, buyReserve), add(pId_amountWithFee_pathLength, mul(sellReserve, 1000)))
                 }
                 case 51 {
                     // Call pair.getReserves(), store the results at `0xC00`
                     mstore(0xB00, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
-                    if iszero(staticcall(gas(), pair, 0xB00, 0x4, 0xC00, 0x40)) {
+                    if iszero(staticcall(gas(), mload(0), 0xB00, 0x4, 0xC00, 0x40)) {
                         returndatacopy(0, 0, returndatasize())
                         revert(0, returndatasize())
                     }
@@ -862,8 +867,8 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                         buyReserve := mload(0xC00)
                     }
                     // feeAm is 997 for Moe (1000 - 3) for 0.3% fee
-                    let sellAmountWithFee := mul(amountIn, 997)
-                    buyAmount := div(mul(sellAmountWithFee, buyReserve), add(sellAmountWithFee, mul(sellReserve, 1000)))
+                    pId_amountWithFee_pathLength := mul(amountIn, 997)
+                    buyAmount := div(mul(pId_amountWithFee_pathLength, buyReserve), add(pId_amountWithFee_pathLength, mul(sellReserve, 1000)))
                 }
                 // all solidly-based protocols (velo, cleo V1, stratum)
                 default {
@@ -871,7 +876,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                     mstore(0xB00, 0xf140a35a00000000000000000000000000000000000000000000000000000000)
                     mstore(0xB04, amountIn)
                     mstore(0xB24, tokenIn)
-                    if iszero(staticcall(gas(), pair, 0xB00, 0x44, 0xB00, 0x20)) {
+                    if iszero(staticcall(gas(), mload(0), 0xB00, 0x44, 0xB00, 0x20)) {
                         returndatacopy(0, 0, returndatasize())
                         revert(0, returndatasize())
                     }
@@ -879,7 +884,6 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                     buyAmount := mload(0xB00)
                 }
 
-                let success
                 ////////////////////////////////////////////////////
                 // Prepare the swap tx
                 ////////////////////////////////////////////////////
@@ -905,22 +909,31 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                 ////////////////////////////////////////////////////
                 switch useFlashSwap
                 case 1 {
-                    let pathLength := path.length
-                    calldatacopy(0xBA4, path.offset, pathLength)
-                    mstore(add(0xBA4, pathLength), shl(128, amountIn)) // store payer
-                    pathLength := add(pathLength, 16)
-                    mstore(add(0xBA4, pathLength), shl(96, payer)) //store amountIn
-                    pathLength := add(pathLength, 20)
-                    mstore(0xB84, pathLength) // bytes length
-                    success := call(
+                    pId_amountWithFee_pathLength := path.length
+                    calldatacopy(0xBA4, path.offset, pId_amountWithFee_pathLength)
+                    // store max amount
+                    mstore(add(0xBA4, pId_amountWithFee_pathLength), shl(128, amountOutMax))
+                    // store amountIn
+                    mstore(add(0xBA4, add(pId_amountWithFee_pathLength, 16)), shl(128, amountIn))
+                    pId_amountWithFee_pathLength := add(pId_amountWithFee_pathLength, 32)
+                    //store amountIn
+                    mstore(add(0xBA4, pId_amountWithFee_pathLength), shl(96, payer))
+                    pId_amountWithFee_pathLength := add(pId_amountWithFee_pathLength, 20)
+                    // bytes length
+                    mstore(0xB84, pId_amountWithFee_pathLength)
+                    if iszero(call(
                         gas(),
-                        pair,
+                        mload(0),
                         0x0,
                         0xB00, // input selector
-                        add(0xA4, pathLength), // input size = 164 (selector (4bytes) plus 5*32bytes)
+                        add(0xA4, pId_amountWithFee_pathLength), // input size = 164 (selector (4bytes) plus 5*32bytes)
                         0x0, // output = 0
                         0x0 // output size = 0
-                    )
+                    )) {
+                        // Forward the error
+                        returndatacopy(0, 0, returndatasize())
+                        revert(0, returndatasize())
+                    }
                 }
                 ////////////////////////////////////////////////////
                 // Otherwise, we transfer before
@@ -938,10 +951,10 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                         // selector for transferFrom(address,address,uint256)
                         mstore(ptr, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
                         mstore(add(ptr, 0x04), payer)
-                        mstore(add(ptr, 0x24), pair)
+                        mstore(add(ptr, 0x24), mload(0))
                         mstore(add(ptr, 0x44), amountIn)
 
-                        success := call(gas(), tokenIn, 0, ptr, 0x64, ptr, 32)
+                        let success := call(gas(), tokenIn, 0, ptr, 0x64, ptr, 32)
 
                         let rdsize := returndatasize()
 
@@ -970,10 +983,10 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                     default {
                         // selector for transfer(address,uint256)
                         mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
-                        mstore(add(ptr, 0x04), and(pair, ADDRESS_MASK_UPPER))
+                        mstore(add(ptr, 0x04), and(mload(0), ADDRESS_MASK_UPPER))
                         mstore(add(ptr, 0x24), amountIn)
 
-                        success := call(gas(), and(tokenIn, ADDRESS_MASK_UPPER), 0, ptr, 0x44, ptr, 32)
+                        let success := call(gas(), and(tokenIn, ADDRESS_MASK_UPPER), 0, ptr, 0x44, ptr, 32)
 
                         let rdsize := returndatasize()
 
@@ -1001,22 +1014,21 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                     // and directly trigger the swap
                     ////////////////////////////////////////////////////
                     mstore(0xB84, 0) // bytes length
-                    success := call(
+                    if iszero(call(
                         gas(),
-                        pair,
+                        mload(0),
                         0x0,
                         0xB00, // input selector
                         0xA4, // input size = 164 (selector (4bytes) plus 5*32bytes)
                         0, // output = 0
                         0 // output size = 0
-                    )
-                }
- 
-                if iszero(success) {
+                    )) {
                     // Forward the error
                     returndatacopy(0, 0, returndatasize())
                     revert(0, returndatasize())
                 }
+                }
+
             }
         }
     }

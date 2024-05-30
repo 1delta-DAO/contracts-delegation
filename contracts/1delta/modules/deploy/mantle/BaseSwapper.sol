@@ -19,7 +19,6 @@ import {ExoticSwapper} from "./swappers/Exotic.sol";
  */
 abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, ExoticSwapper {
     error invalidDexId();
-    uint256 internal constant MINIMUM_PATH_LENGTH = 42;
 
     constructor() {}
 
@@ -65,7 +64,8 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
         if (identifier < 50) {
             if(path.length < 46) currentReceiver = receiver;
             amountIn = _swapUniswapV3PoolExactIn(
-                int256(amountIn),
+                amountIn,
+                0,
                 payer,
                 currentReceiver,
                 path[:44] // we do not need end flags
@@ -77,6 +77,7 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
             if(path.length < 44) currentReceiver = receiver;
             amountIn = swapUniV2ExactInComplete(
                 amountIn,
+                0,
                 payer,
                 currentReceiver,
                 false,
@@ -89,6 +90,7 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
             if(path.length < 46) currentReceiver = receiver;
             amountIn = _swapIZIPoolExactIn(
                 uint128(amountIn),
+                0,
                 payer,
                 currentReceiver,
                 path[:44]
