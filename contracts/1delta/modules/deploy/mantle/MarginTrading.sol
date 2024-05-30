@@ -996,9 +996,9 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         // uniswapV3 style
         if (identifier < 50) {
             _swapUniswapV3PoolExactOut(
-                receiver,
-                payer,
                 -int256(amountOut),
+                payer,
+                receiver,
                 path
             );
         }
@@ -1006,17 +1006,17 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         else if (identifier < 100) {
             _swapV2StyleExactOut(
                 amountOut,
-                receiver,
                 payer,
+                receiver,
                 path
             );
         }
         // iZi
         else if (identifier == 100) {
             _swapIZIPoolExactOut(
-                receiver,
-                payer,
                 uint128(amountOut),
+                payer,
+                receiver,
                 path
             );
         // special case: Moe LB, no flash swaps, recursive nesting is applied
@@ -1112,9 +1112,9 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         // uniswapV3 types
         if (identifier < 50) {
             _swapUniswapV3PoolExactIn(
-                address(this),
-                msg.sender,
                 int256(amountIn),
+                msg.sender,
+                address(this),
                 path
             );
         }
@@ -1122,8 +1122,8 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         else if (identifier < 100) {
             swapUniV2ExactInComplete(
                 amountIn,
-                address(this),
                 msg.sender,
+                address(this),
                 true,
                 path
             );
@@ -1131,9 +1131,9 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         // iZi
         else if (identifier == 100) {
             _swapIZIPoolExactIn(
-                address(this),
-                msg.sender,
                 uint128(amountIn),
+                msg.sender,
+                address(this),
                 path
             );
         } else revert InvalidDexId();

@@ -65,9 +65,9 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
         if (identifier < 50) {
             if(path.length < 46) currentReceiver = receiver;
             amountIn = _swapUniswapV3PoolExactIn(
-                currentReceiver,
-                payer,
                 int256(amountIn),
+                payer,
+                currentReceiver,
                 path[:44] // we do not need end flags
             );
             path = path[24:];
@@ -77,8 +77,8 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
             if(path.length < 44) currentReceiver = receiver;
             amountIn = swapUniV2ExactInComplete(
                 amountIn,
-                currentReceiver,
                 payer,
+                currentReceiver,
                 false,
                 path[:41]
             );
@@ -88,9 +88,9 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
         else if (identifier == 100) {
             if(path.length < 46) currentReceiver = receiver;
             amountIn = _swapIZIPoolExactIn(
-                currentReceiver,
-                payer,
                 uint128(amountIn),
+                payer,
+                currentReceiver,
                 path[:44]
             );
             path = path[24:];
@@ -105,7 +105,7 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
                 tokenIn := shr(96, firstWord)
                 tokenOut := shr(96, calldataload(add(path.offset, 22)))
             }
-            amountIn = swapWooFiExactIn(tokenIn, tokenOut, amountIn, currentReceiver, payer);
+            amountIn = swapWooFiExactIn(tokenIn, tokenOut, amountIn, payer, currentReceiver);
             path = path[21:];
         }
         // Stratum 3USD with wrapper
@@ -137,8 +137,8 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
                 tokenIn,
                 tokenOut,
                 amountIn,
-                currentReceiver,
                 payer,
+                currentReceiver,
                 bin
             );
             path = path[24:];
@@ -152,7 +152,7 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
                 tokenIn := shr(96, calldataload(path.offset))
                 tokenOut := shr(96, calldataload(add(path.offset, 22)))
             }
-            amountIn = swapKTXExactIn(tokenIn, tokenOut, amountIn, currentReceiver, payer);
+            amountIn = swapKTXExactIn(tokenIn, tokenOut, amountIn, payer, currentReceiver);
             path = path[22:];
         } 
         // Curve stable general

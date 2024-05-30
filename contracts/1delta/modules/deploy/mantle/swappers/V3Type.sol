@@ -61,9 +61,9 @@ abstract contract V3TypeSwapper {
     /// the calldata arrives as
     /// tokenIn | actionId | fee | tokenOut
     function _swapUniswapV3PoolExactIn(
-        address receiver,
-        address payer,
         int256 fromAmount,
+        address payer,
+        address receiver,
         bytes calldata path
     )
         internal
@@ -282,9 +282,9 @@ abstract contract V3TypeSwapper {
 
     /// @dev Swap exact input through izumi
     function _swapIZIPoolExactIn(
-        address receiver,
-        address payer,
         uint128 fromAmount,
+        address payer,
+        address receiver,
         bytes calldata path
     )
         internal
@@ -394,9 +394,9 @@ abstract contract V3TypeSwapper {
 
     /// @dev Swap exact output through izumi
     function _swapIZIPoolExactOut(
-        address receiver,
-        address payer,
         uint128 toAmount,
+        address payer,
+        address receiver,
         bytes calldata path
     )
         internal
@@ -506,9 +506,9 @@ abstract contract V3TypeSwapper {
 
     /// @dev swap uniswap V3 style exact out
     function _swapUniswapV3PoolExactOut(
-        address receiver,
-        address payer,
         int256 fromAmount,
+        address payer,
+        address receiver,
         bytes calldata path
     )
         internal

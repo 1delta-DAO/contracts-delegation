@@ -36,8 +36,8 @@ abstract contract ExoticSwapper {
         address tokenIn,
         address tokenOut,
         uint256 amountIn,
-        address receiver,
-        address payer // funds can be pulled directly from a user
+        address payer, // funds can be pulled directly from a user
+        address receiver
     ) internal returns (uint256 amountOut) {
         assembly {
             let ptr := mload(0x40)
@@ -249,9 +249,9 @@ abstract contract ExoticSwapper {
     function swapLBexactIn(
         address tokenIn, 
         address tokenOut, 
-        uint256 amountIn, 
-        address receiver,
+        uint256 amountIn,
         address payer,
+        address receiver,
         uint16 binStep // identifies pair
     ) internal returns (uint256 amountOut) {
         assembly {

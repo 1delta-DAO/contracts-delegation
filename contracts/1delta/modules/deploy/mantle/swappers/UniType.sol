@@ -42,8 +42,8 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
     /// @dev Swap exact out via v2 type pool
     function _swapV2StyleExactOut(
         uint256 amountOut,
-        address receiver,
         address payer,
+        address receiver,
         bytes calldata path
     )
         internal
@@ -637,8 +637,8 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
      */
     function swapUniV2ExactInComplete(
         uint256 amountIn,
-        address receiver,
         address payer,
+        address receiver,
         bool useFlashSwap,
         bytes calldata path
     ) internal returns (uint256 buyAmount) {

@@ -34,7 +34,13 @@ abstract contract CurveSwapper {
      * @param amountIn sell amount
      * @return amountOut buy amount
      */
-    function swapStratum3(address tokenIn, address tokenOut, uint256 amountIn, address payer, address receiver) internal returns (uint256 amountOut) {
+    function swapStratum3(
+        address tokenIn, 
+        address tokenOut, 
+        uint256 amountIn, 
+        address payer,
+        address receiver
+    ) internal returns (uint256 amountOut) {
         assembly {
             let ptr := mload(0x40)
 
@@ -224,7 +230,12 @@ abstract contract CurveSwapper {
         }
     }
 
-    function swapCurveGeneral(bytes calldata pathSlice, uint256 amountIn, address payer, address receiver) internal returns (uint256 amountOut) {
+    function swapCurveGeneral(
+        bytes calldata pathSlice,
+        uint256 amountIn,
+        address payer,
+        address receiver
+    ) internal returns (uint256 amountOut) {
         assembly {
             let ptr := mload(0x40)
             ////////////////////////////////////////////////////
