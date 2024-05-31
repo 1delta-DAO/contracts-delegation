@@ -47,6 +47,19 @@ contract DeltaMetaAggregator {
         validTarget[target] = value;
     }
 
+    function rescueFunds(address asset) external onlyOwner {
+        if (asset == address(0)) {
+            uint256 balance = address(this).balance;
+            if (balance != 0) {
+                (bool success, ) = payable(msg.sender).call{value: balance}("");
+                if (!success) revert();
+            }
+        } else {
+            uint256 balance = _balanceOf(asset, address(this));
+            if (balance != 0) _transferERC20Tokens(asset, msg.sender, balance);
+        }
+    }
+
     ////////////////////////////////////////////////////
     // Swap functions
     ////////////////////////////////////////////////////
