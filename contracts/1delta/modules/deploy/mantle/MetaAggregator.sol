@@ -66,13 +66,20 @@ contract DeltaMetaAggregator {
 
     function swapMeta(
         address assetIn,
+        uint256 amountIn,
         address approvalTarget,
         address swapTarget,
         bytes calldata swapData //
     ) external payable {
+        address _assetIn = assetIn;
         // zero address prevents an approval
         // can be done if already approved or for native swaps
-        if (assetIn != address(0)) _approveIfBelow(assetIn, approvalTarget, MAX_UINT);
+        if (_assetIn != address(0)) {
+            // pull balance
+            _transferERC20TokensFrom(_assetIn, msg.sender, address(this), amountIn);
+            // approve if no allowance
+            _approveIfBelow(_assetIn, approvalTarget, MAX_UINT);
+        }
 
         _validateCall(approvalTarget, swapTarget);
 
@@ -192,6 +199,46 @@ contract DeltaMetaAggregator {
             mstore(add(ptr, 0x24), amount)
 
             let success := call(gas(), token, 0, ptr, 0x44, ptr, 32)
+
+            let rdsize := returndatasize()
+
+            // Check for ERC20 success. ERC20 tokens should return a boolean,
+            // but some don't. We accept 0-length return data as success, or at
+            // least 32 bytes that starts with a 32-byte boolean true.
+            success := and(
+                success, // call itself succeeded
+                or(
+                    iszero(rdsize), // no return data, or
+                    and(
+                        iszero(lt(rdsize, 32)), // at least 32 bytes
+                        eq(mload(ptr), 1) // starts with uint256(1)
+                    )
+                )
+            )
+
+            if iszero(success) {
+                returndatacopy(ptr, 0, rdsize)
+                revert(ptr, rdsize)
+            }
+        }
+    }
+
+    /// @dev Transfers ERC20 tokens from `owner` to `to`.
+    /// @param token The token to spend.
+    /// @param owner The owner of the tokens.
+    /// @param to The recipient of the tokens.
+    /// @param amount The amount of `token` to transfer.
+    function _transferERC20TokensFrom(address token, address owner, address to, uint256 amount) internal {
+        assembly {
+            let ptr := mload(0x40) // free memory pointer
+
+            // selector for transferFrom(address,address,uint256)
+            mstore(ptr, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
+            mstore(add(ptr, 0x04), owner)
+            mstore(add(ptr, 0x24), to)
+            mstore(add(ptr, 0x44), amount)
+
+            let success := call(gas(), token, 0, ptr, 0x64, ptr, 32)
 
             let rdsize := returndatasize()
 
