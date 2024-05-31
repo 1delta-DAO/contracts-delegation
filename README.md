@@ -45,6 +45,17 @@ Tests for LB: `forge test --match-test "mantle_lb" -vv`
 
 ### Swap Architecture
 
+#### Batching
+
+We employ a direct batch function that allows chaining multiple operations. 
+
+|length op | opId |op paramters|length op | opId |op paramters|
+|--------|-----------|--------|------------|--------|-----------|
+|uint16 | bytes1 |bytes|uint16 |bytes1 |bytes|
+
+The length is encoded as a `uint16` which is enough for swap path types described below.
+The opertions are sequentially executed which prevents multicall usage (which saves gas due to the preventions of internal `delegatecall`s). 
+
 #### Path encoding
 
 We follow the general approach of encoding actionIds, dexIds and params, sandwiched by tokens. This means, that for a route of tokens, eg.g `token0->token1->token2`, we specify the route as follows:
@@ -55,6 +66,34 @@ We follow the general approach of encoding actionIds, dexIds and params, sandwic
 | address| uint8     | uint8  | bytes      | address| uint8     | uint8  | bytes      | address| uint8    | uint8   |
 
 The encoding of the parameters depends on the dexId provided, i.e. for Uniswap V3 types, it is the fee parameter, for curve the parameters are the swap indexes.
+
+#### Action and pay type defininitions
+
+The **actions** are defined as follows
+
+|id| action|description|
+|--------|-----------|--------|
+| 0 | swap exact in simple  | tbu |
+| 1 | swap exact out simple | tbu  |
+| 6 | deposit exact in | tbu  |
+| 7 | repay stable exact in | tbu  |
+| 8 | repay variable exact in | tbu  |
+| 3 | deposit exact out | tbu  |
+| 4 | repay stable exact out | tbu  |
+| 5 | repay variable exact out | tbu  |
+
+The **pay types** are defined as follows
+
+|id| pay type|description|
+|--------|-----------|--------|
+| 1 | borrow swable  | tbu |
+| 2 | borrow variable | tbu  |
+| 3 | withdraw collateral | tbu  |
+| 4 | caller pays | tbu  |
+
+#### Lender id
+
+The `lenderId` is a network-specific identifier for a lender.
 
 #### Case single route
 
@@ -69,7 +108,7 @@ Caller --> pool --> pool --> receiver
 - Then the routes are swapped internally
 - Finally, the tokens are transferred to the receiver
 
-Caller --> | pool --> pool | 
+Caller --> | pool --> pool |
            | pool --> pool | --> receiver
 
 - This applies for exact in & exact out
