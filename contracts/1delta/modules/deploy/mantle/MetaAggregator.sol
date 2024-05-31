@@ -96,13 +96,23 @@ contract DeltaMetaAggregator {
 
     function simSwapMeta(
         address assetIn,
+        uint256 amountIn,
         address assetOut,
         address receiver,
         address approvalTarget,
         address swapTarget,
         bytes calldata swapData //
     ) external payable returns (uint256 amountReceived) {
-        if (assetIn != address(0)) _approveIfBelow(assetIn, approvalTarget, MAX_UINT);
+        address _assetIn = assetIn;
+        // zero address prevents an approval
+        // can be done if already approved or for native swaps
+        if (_assetIn != address(0)) {
+            // pull balance
+            _transferERC20TokensFrom(_assetIn, msg.sender, address(this), amountIn);
+            // approve if no allowance
+            _approveIfBelow(_assetIn, approvalTarget, MAX_UINT);
+        }
+
         uint256 before = _balanceOf(assetOut, receiver);
         (bool success, bytes memory returnData) = swapTarget.call{value: msg.value}(swapData);
         if (!success) {
