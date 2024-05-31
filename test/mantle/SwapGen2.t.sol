@@ -155,7 +155,7 @@ contract SwapGen2Test is DeltaSetup {
         balanceIn = balanceIn - IERC20All(assetFrom).balanceOf(user);
         assertApproxEqAbs(balanceIn, amountToSwap, 0);
         // loses 0.2 USDT on the trade (due to low liquidity)
-        assertApproxEqAbs(1806454, balanceOut, 1);
+        assertApproxEqAbs(1993355, balanceOut, 1);
     }
 
     function test_mantle_gen_2_spot_exact_in_multi_mixed() external /** address user, uint8 lenderId */ {
@@ -253,13 +253,13 @@ contract SwapGen2Test is DeltaSetup {
         tokens[1] = WMNT;
         tokens[2] = WETH;
         tokens[3] = USDT;
-        pIds[0] = FUSION_X;
+        pIds[0] = CLEOPATRA_CL;
         pIds[1] = AGNI;
         pIds[2] = AGNI;
         actions[0] = 10;
         actions[1] = 0;
         actions[2] = 0;
-        fees[0] = 2500;
+        fees[0] = 250;
         fees[1] = 500;
         fees[2] = 500;
     }

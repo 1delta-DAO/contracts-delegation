@@ -831,7 +831,16 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // the swap amount is expected to be the nonzero output amount
             // since v2 does not send the input amount as parameter, we have to fetch
             // the other amount manually through the cache
-            uint256 amountToSwap = zeroForOne ? amount1 : amount0;
+            uint256 amountToSwap;
+            assembly {
+                switch zeroForOne
+                case 1 {
+                    amountToSwap := amount1
+                }
+                default {
+                    amountToSwap := amount0
+                }
+            }
             if (data.length > 44) {
                 // we need to swap to the token that we want to supply
                 // the router returns the amount that we can finally supply to the protocol
@@ -853,7 +862,16 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 tradeId := and(shr(80, calldataload(data.offset)), UINT8_MASK) // swap pool identifier
             }
             // fetch amountOut
-            uint256 referenceAmount = zeroForOne ? amount0 : amount1;
+            uint256 referenceAmount;
+            assembly {
+                switch zeroForOne
+                case 1 {
+                    referenceAmount := amount0
+                }
+                default {
+                    referenceAmount := amount1
+                }
+            }
             // calculte amountIn (note that tokenIn/out are read inverted at the top)
             referenceAmount = getV2AmountInDirect(msg.sender, tokenOut, tokenIn, referenceAmount, tradeId);
             // either initiate the next swap or pay
@@ -882,7 +900,16 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // the swap amount is expected to be the nonzero output amount
             // since v2 does not send the input amount as parameter, we have to fetch
             // the other amount manually through a separate number cache
-            uint256 amountToSwap = zeroForOne ? amount1 : amount0;
+            uint256 amountToSwap;
+            assembly {
+                switch zeroForOne
+                case 1 {
+                    amountToSwap := amount1
+                }
+                default {
+                    amountToSwap := amount0
+                }
+            }
             if (data.length > 44) {
                 // we need to swap to the token that we want to supply
                 // the router returns the amount that we can finally supply to the protocol
@@ -1058,7 +1085,10 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             ////////////////////////////////////////////////////
             if(path.length > 46) {
                 // remove the last token from the path
-                path = path[24:];
+                assembly {
+                    path.offset := add(path.offset, 24)
+                    path.length := sub(path.length, 24)
+                }
                 flashSwapExactOutInternal(
                     amountIn,
                     maxIn,
