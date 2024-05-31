@@ -49,6 +49,7 @@ Tests for LB: `forge test --match-test "mantle_lb" -vv`
 
 We follow the general approach of encoding actionIds, dexIds and params, sandwiched by tokens. This means, that for a route of tokens, eg.g `token0->token1->token2`, we specify the route as follows:
 
+|token in path| action|dex|parameters|token in path|action|dex|parameters|token in path|lender|payment option|
 |--------|-----------|--------|------------|--------|-----------|--------|------------|--------|----------|---------|
 | token0 | actionId0 | dexId0 | paramsDex0 | token1 | actionId1 | dexId1 | paramsDex1 | token2 | lenderId | payType |
 | address| uint8     | uint8  | bytes      | address| uint8     | uint8  | bytes      | address| uint8    | uint8   |
