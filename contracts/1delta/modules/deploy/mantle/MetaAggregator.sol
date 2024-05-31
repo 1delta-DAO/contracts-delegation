@@ -10,6 +10,7 @@ contract DeltaMetaAggregator {
     error InvalidTarget();
     error NotOwner();
     error Paused();
+    error HasMsgValue();
 
     ////////////////////////////////////////////////////
     // State
@@ -25,6 +26,8 @@ contract DeltaMetaAggregator {
     constructor() {
         OWNER = msg.sender;
     }
+
+    receive() external payable {}
 
     ////////////////////////////////////////////////////
     // Modifier
@@ -72,9 +75,9 @@ contract DeltaMetaAggregator {
         bytes calldata swapData //
     ) external payable {
         address _assetIn = assetIn;
-        // zero address prevents an approval
-        // can be done if already approved or for native swaps
+        // zero address assumes native transfer
         if (_assetIn != address(0)) {
+            if (msg.value != 0) revert HasMsgValue();
             // pull balance
             _transferERC20TokensFrom(_assetIn, msg.sender, address(this), amountIn);
             // approve if no allowance
@@ -104,9 +107,9 @@ contract DeltaMetaAggregator {
         bytes calldata swapData //
     ) external payable returns (uint256 amountReceived) {
         address _assetIn = assetIn;
-        // zero address prevents an approval
-        // can be done if already approved or for native swaps
+        // zero address assumes native transfer
         if (_assetIn != address(0)) {
+            if (msg.value != 0) revert HasMsgValue();
             // pull balance
             _transferERC20TokensFrom(_assetIn, msg.sender, address(this), amountIn);
             // approve if no allowance
