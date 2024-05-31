@@ -30,18 +30,6 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
     }
 
     /**
-     * @notice Same as swapExactOutSpot, except that the payer is this contract.
-     */
-    function swapExactOutSpotSelf(
-        uint256 amountOut,
-        uint256 maximumAmountIn,
-        bytes calldata path
-    ) external payable {
-        // we do not need to cache anything in this case
-        flashSwapExactOutInternal(amountOut, maximumAmountIn, address(this), address(this), path);
-    }
-
-    /**
      * @notice A simple exact input spot swap using internal callbacks. 
      * Variant that can be called as is provided the path tradeId starts with 10
      */
@@ -52,26 +40,6 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
         bytes calldata path
     ) external payable {
         uint256 amountOut = swapExactIn(amountIn, msg.sender, receiver, path);
-        // slippage check
-        assembly {
-            if lt(amountOut, minimumAmountOut) {
-                mstore(0, SLIPPAGE)
-                revert (0, 0x4)
-            }
-        }
-    }
-
-    /**
-     * @notice A simple exact input spot swap using internal callbacks.
-     * Has to be batch-called with transfer in / sweep functions
-     * Requires that the funds already have been transferred to this contract
-     */
-    function swapExactInSpotSelf(
-        uint256 amountIn,
-        uint256 minimumAmountOut,
-        bytes calldata path
-    ) external payable {
-        uint256 amountOut = swapExactIn(amountIn, address(this), msg.sender, path);
         // slippage check
         assembly {
             if lt(amountOut, minimumAmountOut) {

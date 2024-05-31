@@ -41,3 +41,44 @@ foundryup
 Tests for Mantle: `forge test --match-test "mantle" -vv`
 
 Tests for LB: `forge test --match-test "mantle_lb" -vv`
+
+
+### Swap Architecture
+
+#### Path encoding
+
+We follow the general approach of encoding actionIds, dexIds and params, sandwiched by tokens. This means, that for a route of tokens, eg.g `token0->token1->token2`, we specify the route as follows:
+
+`token0 | actionId0 | dexId0 | paramsDex0 | token1 | actionId1 | dexId1 | paramsDex1 | token2 | lenderId | payType`
+`address| uint8     | uint8  | bytes      | address| uint8     | uint8  | bytes      | address| uint8    | uint8`
+
+The encoding of the parameters depends on the dexId provided, i.e. for Uniswap V3 types, it is the fee parameter, for curve the parameters are the swap indexes.
+
+#### Case single route
+
+- Direct transfers from caller to pool / pool to receiver are possible - this should make all of this compatible with FoT tokens
+- Enabled for both exactIn / exactOut swaps
+
+Caller --> pool --> pool --> receiver
+
+#### Multi route
+
+- First, tokens are transferred from caller to contract
+- Then the routes are swapped internally
+- Finally, the tokens are transferred to the receiver
+
+Caller --> | pool --> pool | 
+           | pool --> pool | --> receiver
+
+- This applies for exact in & exact out
+
+#### Flash swaps
+
+- Ideal for single route margin trades
+- Allows multi-lender selection
+- Gas efficient for mid-sized swaps (e.g. on uni/curve combo)
+
+#### Flash loan 
+
+- Can wrap any sequence of actions
+- 
