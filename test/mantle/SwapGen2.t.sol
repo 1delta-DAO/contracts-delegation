@@ -70,7 +70,6 @@ contract SwapGen2Test is DeltaSetup {
         address user = testUser;
         vm.assume(user != address(0));
 
-
         uint256 amountToReceive = 1.0e6;
 
         (address assetFrom, address assetTo, bytes memory swapPath) = getPathAndTokensV3ExactOut();
@@ -99,7 +98,6 @@ contract SwapGen2Test is DeltaSetup {
     function test_mantle_gen_2_spot_exact_out_multi_mixed() external /** address user, uint8 lenderId */ {
         address user = testUser;
         vm.assume(user != address(0));
-
 
         uint256 amountToReceive = 1.0e6;
 
@@ -223,13 +221,15 @@ contract SwapGen2Test is DeltaSetup {
     function getSpotExactInSingleGen2(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_STABLES);
         uint8 poolId = AGNI;
-        return abi.encodePacked(tokenIn, uint8(10), poolId, fee, tokenOut);
+        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
+        return abi.encodePacked(tokenIn, uint8(10), poolId, pool, fee, tokenOut);
     }
 
     function getSpotExactOutSingleGen2(address tokenOut, address tokenIn) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_STABLES);
         uint8 poolId = AGNI;
-        return abi.encodePacked(tokenIn, uint8(11), poolId, fee, tokenOut);
+        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
+        return abi.encodePacked(tokenIn, uint8(11), poolId, pool, fee, tokenOut);
     }
 
     function getPathDataV3()
@@ -312,7 +312,11 @@ contract SwapGen2Test is DeltaSetup {
         fees[2] = 500;
     }
 
-    function getPathDataMixedExactOut() internal view returns (address[] memory tokens, uint8[] memory actions, uint8[] memory pIds, uint16[] memory fees) {
+    function getPathDataMixedExactOut()
+        internal
+        view
+        returns (address[] memory tokens, uint8[] memory actions, uint8[] memory pIds, uint16[] memory fees)
+    {
         uint256 length = 4;
         uint256 lengthDecreased = length - 1;
         tokens = new address[](length);
@@ -334,18 +338,22 @@ contract SwapGen2Test is DeltaSetup {
         fees[2] = 500;
     }
 
-
     function getSpotSingleGen2Mixed(
         address[] memory tokens,
         uint8[] memory actions,
         uint8[] memory pIds,
         uint16[] memory fees
-    ) internal pure returns (bytes memory path) {
+    ) internal view returns (bytes memory path) {
         path = abi.encodePacked(tokens[0]);
         for (uint i = 1; i < tokens.length; i++) {
             uint8 pId = pIds[i - 1];
-            if (pId < 50) path = abi.encodePacked(path, actions[i - 1], pIds[i - 1], fees[i - 1], tokens[i]);
-            else path = abi.encodePacked(path, actions[i - 1], pIds[i - 1], tokens[i]);
+            if (pId < 50) {
+                address pool = testQuoter._v3TypePool(tokens[i - 1], tokens[i], fees[i - 1], pId);
+                path = abi.encodePacked(path, actions[i - 1], pId, pool, fees[i - 1], tokens[i]);
+            } else {
+                address pool = testQuoter._v2TypePairAddress(tokens[i - 1], tokens[i], pId);
+                path = abi.encodePacked(path, actions[i - 1], pId, pool, tokens[i]);
+            }
         }
     }
 
@@ -387,6 +395,7 @@ contract SwapGen2Test is DeltaSetup {
 
     function getSpotExactInSingleGen2V2(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint8 poolId = MERCHANT_MOE;
-        return abi.encodePacked(tokenIn, uint8(10), poolId, tokenOut);
+        address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
+        return abi.encodePacked(tokenIn, uint8(10), poolId, pool, tokenOut);
     }
 }

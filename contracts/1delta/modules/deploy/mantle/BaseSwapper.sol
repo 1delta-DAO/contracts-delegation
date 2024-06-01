@@ -63,24 +63,24 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
         // uniswapV3 style
         if (identifier < 50) {
             assembly {
-                if lt(path.length, 46) { currentReceiver := receiver}
+                if lt(path.length, 66) { currentReceiver := receiver}
             }
             amountIn = _swapUniswapV3PoolExactIn(
                 amountIn,
                 0,
                 payer,
                 currentReceiver,
-                path[:44] // we do not need end flags
+                path[:64] // we do not need end flags
             );
             assembly {
-                path.offset := add(path.offset, 24)
-                path.length := sub(path.length, 24)
+                path.offset := add(path.offset, 44)
+                path.length := sub(path.length, 44)
             }
         }
         // uniswapV2 style
         else if (identifier < 100) {
             assembly {
-                if lt(path.length, 44) { currentReceiver := receiver}
+                if lt(path.length, 64) { currentReceiver := receiver}
             }
             amountIn = swapUniV2ExactInComplete(
                 amountIn,
@@ -88,28 +88,28 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
                 payer,
                 currentReceiver,
                 false,
-                path[:41]
+                path[:62]
             );
             assembly {
-                path.offset := add(path.offset, 22)
-                path.length := sub(path.length, 22)
+                path.offset := add(path.offset, 42)
+                path.length := sub(path.length, 42)
             }
         }
         // iZi
         else if (identifier == 100) {
             assembly {
-                if lt(path.length, 46) { currentReceiver := receiver}
+                if lt(path.length, 66) { currentReceiver := receiver}
             }
             amountIn = _swapIZIPoolExactIn(
                 uint128(amountIn),
                 0,
                 payer,
                 currentReceiver,
-                path[:44]
+                path[:64]
             );
             assembly {
-                path.offset := add(path.offset, 24)
-                path.length := sub(path.length, 24)
+                path.offset := add(path.offset, 44)
+                path.length := sub(path.length, 44)
             }
         }
         // WOO Fi

@@ -77,136 +77,21 @@ abstract contract V3TypeSwapper {
             let _pId := and(shr(80, firstWord), UINT8_MASK) // poolId
             // get tokens
             let tokenA := and(ADDRESS_MASK, shr(96, firstWord))
-            firstWord := calldataload(add(path.offset, 22))
+            firstWord := calldataload(add(path.offset, 42))
             let tokenB := and(ADDRESS_MASK, shr(80, firstWord))
-            let zeroForOne := lt(tokenA, tokenB)
             
             // read the pool address
-            let p := ptr
-            let pool
-            switch _pId
-            // Fusion
-            case 0 {
-                mstore(p, FUSION_V3_FF_FACTORY)
-                p := add(p, 21)
-                // Compute the inner hash in-place
-                switch lt(tokenA, tokenB)
-                case 0 {
-                    mstore(p, tokenB)
-                    mstore(add(p, 32), tokenA)
-                }
-                default {
-                    mstore(p, tokenA)
-                    mstore(add(p, 32), tokenB)
-                }
-                mstore(add(p, 64), and(shr(240, firstWord), UINT16_MASK))
-                mstore(p, keccak256(p, 96))
-                p := add(p, 32)
-                mstore(p, FUSION_POOL_INIT_CODE_HASH)
-                pool := and(ADDRESS_MASK, keccak256(ptr, 85))
-            }
-            // agni
-            case 1 {
-                mstore(p, AGNI_V3_FF_FACTORY)
-                p := add(p, 21)
-                // Compute the inner hash in-place
-                switch lt(tokenA, tokenB)
-                case 0 {
-                    mstore(p, tokenB)
-                    mstore(add(p, 32), tokenA)
-                }
-                default {
-                    mstore(p, tokenA)
-                    mstore(add(p, 32), tokenB)
-                }
-                mstore(add(p, 64), and(shr(240, firstWord), UINT16_MASK))
-                mstore(p, keccak256(p, 96))
-                p := add(p, 32)
-                mstore(p, AGNI_POOL_INIT_CODE_HASH)
-                pool := and(ADDRESS_MASK, keccak256(ptr, 85))
-            }
-            // Algebra / Swapsicle
-            case 2 {
-                mstore(p, ALGEBRA_V3_FF_DEPLOYER)
-                p := add(p, 21)
-                // Compute the inner hash in-place
-                switch lt(tokenA, tokenB)
-                case 0 {
-                    mstore(p, tokenB)
-                    mstore(add(p, 32), tokenA)
-                }
-                default {
-                    mstore(p, tokenA)
-                    mstore(add(p, 32), tokenB)
-                }
-                mstore(p, keccak256(p, 64))
-                p := add(p, 32)
-                mstore(p, ALGEBRA_POOL_INIT_CODE_HASH)
-                pool := and(ADDRESS_MASK, keccak256(ptr, 85))
-            }
-            // Butter
-            case 3 {
-                mstore(p, BUTTER_FF_FACTORY)
-                p := add(p, 21)
-                // Compute the inner hash in-place
-                switch lt(tokenA, tokenB)
-                case 0 {
-                    mstore(p, tokenB)
-                    mstore(add(p, 32), tokenA)
-                }
-                default {
-                    mstore(p, tokenA)
-                    mstore(add(p, 32), tokenB)
-                }
-                mstore(add(p, 64), and(shr(240, firstWord), UINT16_MASK))
-                mstore(p, keccak256(p, 96))
-                p := add(p, 32)
-                mstore(p, BUTTER_POOL_INIT_CODE_HASH)
-                pool := and(ADDRESS_MASK, keccak256(ptr, 85))
-            }
-            // Cleo
-            case 4 {
-                mstore(p, CLEO_FF_FACTORY)
-                p := add(p, 21)
-                // Compute the inner hash in-place
-                switch lt(tokenA, tokenB)
-                case 0 {
-                    mstore(p, tokenB)
-                    mstore(add(p, 32), tokenA)
-                }
-                default {
-                    mstore(p, tokenA)
-                    mstore(add(p, 32), tokenB)
-                }
-                mstore(add(p, 64), and(shr(240, firstWord), UINT16_MASK))
-                mstore(p, keccak256(p, 96))
-                p := add(p, 32)
-                mstore(p, CLEO_POOL_INIT_CODE_HASH)
-                pool := and(ADDRESS_MASK, keccak256(ptr, 85))
-            }
-            // MethLab
-            default {
-                mstore(p, METHLAB_FF_FACTORY)
-                p := add(p, 21)
-                // Compute the inner hash in-place
-                switch lt(tokenA, tokenB)
-                case 0 {
-                    mstore(p, tokenB)
-                    mstore(add(p, 32), tokenA)
-                }
-                default {
-                    mstore(p, tokenA)
-                    mstore(add(p, 32), tokenB)
-                }
-                mstore(add(p, 64), and(shr(240, firstWord), UINT16_MASK))
-                mstore(p, keccak256(p, 96))
-                p := add(p, 32)
-                mstore(p, METHLAB_INIT_CODE_HASH)
-                pool := and(ADDRESS_MASK, keccak256(ptr, 85))
-            }
+            let pool := and(
+                ADDRESS_MASK,
+                shr(
+                    96,
+                    calldataload(add(path.offset, 22))
+                )
+            )
+
             let pathLength := path.length
             // Return amount0 or amount1 depending on direction
-            switch zeroForOne
+            switch lt(tokenA, tokenB)
             case 0 {
                 // Prepare external call data
                 // Store swap selector (0x128acb08)
@@ -302,35 +187,23 @@ abstract contract V3TypeSwapper {
         assembly {
             let ptr := mload(0x40)
             let firstWord := calldataload(path.offset)
+            let _pId := and(shr(80, firstWord), UINT8_MASK) // poolId
             // get tokens
             let tokenA := and(ADDRESS_MASK, shr(96, firstWord))
-            firstWord := calldataload(add(path.offset, 22))
+            firstWord := calldataload(add(path.offset, 42))
             let tokenB := and(ADDRESS_MASK, shr(80, firstWord))
-            let zeroForOne := lt(tokenA, tokenB)
             
-            let pool
-            let p := ptr
-            
-            mstore(p, IZI_FF_FACTORY)
-            p := add(p, 21)
-            // Compute the inner hash in-place
-            switch zeroForOne
-            case 0 {
-                mstore(p, tokenB)
-                mstore(add(p, 32), tokenA)
-            }
-            default {
-                mstore(p, tokenA)
-                mstore(add(p, 32), tokenB)
-            }
-            mstore(add(p, 64), and(shr(240, firstWord), UINT16_MASK))
-            mstore(p, keccak256(p, 96))
-            p := add(p, 32)
-            mstore(p, IZI_POOL_INIT_CODE_HASH)
-            pool := and(ADDRESS_MASK, keccak256(ptr, 85))
+            // read the pool address
+            let pool := and(
+                ADDRESS_MASK,
+                shr(
+                    96,
+                    calldataload(add(path.offset, 22))
+                )
+            )
             let pathLength := path.length
             // Return amount0 or amount1 depending on direction
-            switch zeroForOne
+            switch lt(tokenA, tokenB)
             case 0 {
                 // Prepare external call data
                 // Store swapY2X selector (0x2c481252)
@@ -422,32 +295,21 @@ abstract contract V3TypeSwapper {
             let ptr := mload(0x40)
             let firstWord := calldataload(path.offset)
             let tokenB := and(ADDRESS_MASK, shr(96, firstWord))
-            firstWord := calldataload(add(path.offset, 22))
+            firstWord := calldataload(add(path.offset, 42))
             let tokenA := and(ADDRESS_MASK, shr(80, firstWord))
 
             let zeroForOne := lt(tokenA, tokenB)
-            let pool
-            let p := ptr
-            
-            mstore(p, IZI_FF_FACTORY)
-            p := add(p, 21)
-            // Compute the inner hash in-place
-            switch zeroForOne
-            case 0 {
-                mstore(p, tokenB)
-                mstore(add(p, 32), tokenA)
-            }
-            default {
-                mstore(p, tokenA)
-                mstore(add(p, 32), tokenB)
-            }
-            mstore(add(p, 64), and(shr(240, firstWord), UINT16_MASK))
-            mstore(p, keccak256(p, 96))
-            p := add(p, 32)
-            mstore(p, IZI_POOL_INIT_CODE_HASH)
-            pool := and(ADDRESS_MASK, keccak256(ptr, 85))
-            let pathLength := path.length
 
+            // read the pool address
+            let pool := and(
+                ADDRESS_MASK,
+                shr(
+                    96,
+                    calldataload(add(path.offset, 22))
+                )
+            )
+
+            let pathLength := path.length
             // Return amount0 or amount1 depending on direction
             switch zeroForOne
             case 0 {
@@ -542,141 +404,20 @@ abstract contract V3TypeSwapper {
             let firstWord := calldataload(path.offset)
             let poolId := and(shr(80, firstWord), UINT8_MASK) // poolId
             let tokenB := and(ADDRESS_MASK, shr(96, firstWord))
-            firstWord := calldataload(add(path.offset, 22))
+            firstWord := calldataload(add(path.offset, 42))
             let tokenA := and(ADDRESS_MASK, shr(80, firstWord))
+            // read the pool address
+            let pool := and(
+                ADDRESS_MASK,
+                shr(
+                    96,
+                    calldataload(add(path.offset, 22))
+                )
+            )
 
-            let zeroForOne := lt(tokenA, tokenB)
-            let pool
-            let p := ptr
-            ////////////////////////////////////////////////////
-            // Same code as for the other V3 pool address getters
-            ////////////////////////////////////////////////////
-            switch poolId // poolId
-            // Fusion
-            case 0 {
-                mstore(p, FUSION_V3_FF_FACTORY)
-                p := add(p, 21)
-                // Compute the inner hash in-place
-                switch zeroForOne
-                case 0 {
-                    mstore(p, tokenB)
-                    mstore(add(p, 32), tokenA)
-                }
-                default {
-                    mstore(p, tokenA)
-                    mstore(add(p, 32), tokenB)
-                }
-                mstore(add(p, 64), and(shr(240, firstWord), UINT16_MASK))
-                mstore(p, keccak256(p, 96))
-                p := add(p, 32)
-                mstore(p, FUSION_POOL_INIT_CODE_HASH)
-                pool := and(ADDRESS_MASK, keccak256(ptr, 85))
-            }
-            // agni
-            case 1 {
-                mstore(p, AGNI_V3_FF_FACTORY)
-                p := add(p, 21)
-                // Compute the inner hash in-place
-                switch zeroForOne
-                case 0 {
-                    mstore(p, tokenB)
-                    mstore(add(p, 32), tokenA)
-                }
-                default {
-                    mstore(p, tokenA)
-                    mstore(add(p, 32), tokenB)
-                }
-                mstore(add(p, 64), and(shr(240, firstWord), UINT16_MASK))
-                mstore(p, keccak256(p, 96))
-                p := add(p, 32)
-                mstore(p, AGNI_POOL_INIT_CODE_HASH)
-                pool := and(ADDRESS_MASK, keccak256(ptr, 85))
-            }
-            // Algebra / Swapsicle
-            case 2 {
-                mstore(p, ALGEBRA_V3_FF_DEPLOYER)
-                p := add(p, 21)
-                // Compute the inner hash in-place
-                switch zeroForOne
-                case 0 {
-                    mstore(p, tokenB)
-                    mstore(add(p, 32), tokenA)
-                }
-                default {
-                    mstore(p, tokenA)
-                    mstore(add(p, 32), tokenB)
-                }
-                mstore(p, keccak256(p, 64))
-                p := add(p, 32)
-                mstore(p, ALGEBRA_POOL_INIT_CODE_HASH)
-                pool := and(ADDRESS_MASK, keccak256(ptr, 85))
-            }
-            // Butter
-            case 3 {
-                mstore(p, BUTTER_FF_FACTORY)
-                p := add(p, 21)
-                // Compute the inner hash in-place
-                switch zeroForOne
-                case 0 {
-                    mstore(p, tokenB)
-                    mstore(add(p, 32), tokenA)
-                }
-                default {
-                    mstore(p, tokenA)
-                    mstore(add(p, 32), tokenB)
-                }
-                mstore(add(p, 64), and(shr(240, firstWord), UINT16_MASK))
-                mstore(p, keccak256(p, 96))
-                p := add(p, 32)
-                mstore(p, BUTTER_POOL_INIT_CODE_HASH)
-                pool := and(ADDRESS_MASK, keccak256(ptr, 85))
-            }
-            // Cleo
-            case 4 {
-                mstore(p, CLEO_FF_FACTORY)
-                p := add(p, 21)
-                // Compute the inner hash in-place
-                switch zeroForOne
-                case 0 {
-                    mstore(p, tokenB)
-                    mstore(add(p, 32), tokenA)
-                }
-                default {
-                    mstore(p, tokenA)
-                    mstore(add(p, 32), tokenB)
-                }
-                mstore(add(p, 64), and(shr(240, firstWord), UINT16_MASK))
-                mstore(p, keccak256(p, 96))
-                p := add(p, 32)
-                mstore(p, CLEO_POOL_INIT_CODE_HASH)
-                pool := and(ADDRESS_MASK, keccak256(ptr, 85))
-            }
-            // MethLab
-            case 5 {
-                mstore(p, METHLAB_FF_FACTORY)
-                p := add(p, 21)
-                // Compute the inner hash in-place
-                switch zeroForOne
-                case 0 {
-                    mstore(p, tokenB)
-                    mstore(add(p, 32), tokenA)
-                }
-                default {
-                    mstore(p, tokenA)
-                    mstore(add(p, 32), tokenB)
-                }
-                mstore(add(p, 64), and(shr(240, firstWord), UINT16_MASK))
-                mstore(p, keccak256(p, 96))
-                p := add(p, 32)
-                mstore(p, METHLAB_INIT_CODE_HASH)
-                pool := and(ADDRESS_MASK, keccak256(ptr, 85))
-            }
-            default {
-                revert (0, 0)
-            }
             let pathLength := path.length
             // Return amount0 or amount1 depending on direction
-            switch zeroForOne
+            switch lt(tokenA, tokenB)
             case 0 {
                 // Prepare external call data
                 // Store swap selector (0x128acb08)

@@ -143,7 +143,6 @@ contract SwapGen2Test is DeltaSetup {
         assertApproxEqAbs(amountToSwap, balanceDebt, 1e6);
     }
 
-
     // function test_mantle_gen_2_spot_exact_in_multi() external /** address user, uint8 lenderId */ {
     //     address user = testUser;
     //     vm.assume(user != address(0));
@@ -241,7 +240,8 @@ contract SwapGen2Test is DeltaSetup {
     function getOpenExactInSingleGen2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_STABLES);
         uint8 poolId = AGNI;
-        return abi.encodePacked(tokenIn, uint8(6), poolId, fee, tokenOut, lenderId, uint8(2));
+        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
+        return abi.encodePacked(tokenIn, uint8(6), poolId, pool, fee, tokenOut, lenderId, uint8(2));
     }
 
     function getPathDataV3() internal view returns (address[] memory tokens, uint8[] memory actions, uint8[] memory pIds, uint16[] memory fees) {
@@ -295,12 +295,18 @@ contract SwapGen2Test is DeltaSetup {
         uint16[] memory fees,
         uint8 lenderId,
         uint8 endId
-    ) internal pure returns (bytes memory path) {
+    ) internal view returns (bytes memory path) {
         path = abi.encodePacked(tokens[0]);
         for (uint i = 1; i < tokens.length; i++) {
             uint8 pId = pIds[i - 1];
-            if (pId < 50) path = abi.encodePacked(path, actions[i - 1], pIds[i - 1], fees[i - 1], tokens[i]);
-            else path = abi.encodePacked(path, actions[i - 1], pIds[i - 1], tokens[i]);
+            if (pId < 50) {
+                address pool = testQuoter._v3TypePool(tokens[i - 1], tokens[i], fees[i - 1], pId);
+                path = abi.encodePacked(path, actions[i - 1], pId, pool, fees[i - 1], tokens[i]);
+            }
+            else {
+                address pool = testQuoter._v2TypePairAddress(tokens[i - 1], tokens[i], pId);
+                path = abi.encodePacked(path, actions[i - 1], pId, pool, tokens[i]);
+            }
         }
         path = abi.encodePacked(path, lenderId, endId);
     }
