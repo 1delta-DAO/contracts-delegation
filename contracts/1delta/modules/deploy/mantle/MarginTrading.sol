@@ -90,18 +90,110 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
     function fusionXV3SwapCallback(
         int256 amount0Delta,
         int256 amount1Delta,
-        bytes calldata data
+        bytes calldata path
     ) external {
-        uniswapV3SwapCallbackInternal(amount0Delta, amount1Delta, data);
+        address tokenIn;
+        address tokenOut;
+        uint256 tradeId;
+        assembly {
+            let firstWord := calldataload(path.offset)
+            
+            tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
+            tradeId := and(shr(80, firstWord), UINT8_MASK) // poolId
+            // second word
+            firstWord := calldataload(add(path.offset, 22))
+            let fee := and(
+                    shr(240, firstWord), 
+                    UINT16_MASK
+            ) // uniswapV3 type fee
+            
+            tokenOut := and(ADDRESS_MASK, shr(80, firstWord))
+
+            ////////////////////////////////////////////////////
+            // Compute and validate pool address
+            ////////////////////////////////////////////////////
+            let s := mload(0x40)
+            let p := s
+            mstore(p, FUSION_V3_FF_FACTORY)
+            p := add(p, 21)
+            // Compute the inner hash in-place
+            switch lt(tokenIn, tokenOut)
+            case 0 {
+                mstore(p, tokenOut)
+                mstore(add(p, 32), tokenIn)
+            }
+            default {
+                mstore(p, tokenIn)
+                mstore(add(p, 32), tokenOut)
+            }
+            mstore(add(p, 64), and(UINT24_MASK, fee))
+            mstore(p, keccak256(p, 96))
+            p := add(p, 32)
+            mstore(p, FUSION_POOL_INIT_CODE_HASH)
+        
+            ////////////////////////////////////////////////////
+            // If the caller is not the calculated pool, we revert
+            ////////////////////////////////////////////////////
+            if iszero(eq(caller(), and(ADDRESS_MASK, keccak256(s, 85)))) {
+                // revert (0, 0)
+            }
+        }
+        clSwapCallback(amount0Delta, amount1Delta, tokenIn, tokenOut, path);
     }
 
     // agni
     function agniSwapCallback(
         int256 amount0Delta,
         int256 amount1Delta,
-        bytes calldata _data
+        bytes calldata path
     ) external {
-        uniswapV3SwapCallbackInternal(amount0Delta, amount1Delta, _data);
+        address tokenIn;
+        address tokenOut;
+        uint256 tradeId;
+        assembly {
+            let firstWord := calldataload(path.offset)
+            
+            tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
+            tradeId := and(shr(80, firstWord), UINT8_MASK) // poolId
+            // second word
+            firstWord := calldataload(add(path.offset, 22))
+            let fee := and(
+                    shr(240, firstWord), 
+                    UINT16_MASK
+            ) // uniswapV3 type fee
+            
+            tokenOut := and(ADDRESS_MASK, shr(80, firstWord))
+
+            ////////////////////////////////////////////////////
+            // Compute and validate pool address
+            ////////////////////////////////////////////////////
+            let s := mload(0x40)
+            let p := s
+            mstore(p, AGNI_V3_FF_FACTORY)
+            p := add(p, 21)
+            // Compute the inner hash in-place
+            switch lt(tokenIn, tokenOut)
+            case 0 {
+                mstore(p, tokenOut)
+                mstore(add(p, 32), tokenIn)
+            }
+            default {
+                mstore(p, tokenIn)
+                mstore(add(p, 32), tokenOut)
+            }
+            mstore(add(p, 64), and(UINT24_MASK, fee))
+            mstore(p, keccak256(p, 96))
+            p := add(p, 32)
+            mstore(p, AGNI_POOL_INIT_CODE_HASH)
+        
+            ////////////////////////////////////////////////////
+            // If the caller is not the calculated pool, we revert
+            ////////////////////////////////////////////////////
+            if iszero(eq(caller(), and(ADDRESS_MASK, keccak256(s, 85)))) {
+                // revert (0, 0)
+            }
+        }
+        clSwapCallback(amount0Delta, amount1Delta, tokenIn, tokenOut, path);
     }
 
     // swapsicle
@@ -110,7 +202,47 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         int256 amount1Delta,
         bytes calldata path
     ) external {
-        uniswapV3SwapCallbackInternal(amount0Delta, amount1Delta, path);
+        address tokenIn;
+        address tokenOut;
+        uint256 tradeId;
+        assembly {
+            let firstWord := calldataload(path.offset)
+            
+            tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
+            tradeId := and(shr(80, firstWord), UINT8_MASK) // poolId
+            // second word
+            firstWord := calldataload(add(path.offset, 22))
+            tokenOut := and(ADDRESS_MASK, shr(80, firstWord))
+
+            ////////////////////////////////////////////////////
+            // Compute and validate pool address
+            ////////////////////////////////////////////////////
+            let s := mload(0x40)
+            let p := s
+            mstore(p, ALGEBRA_V3_FF_DEPLOYER)
+            p := add(p, 21)
+            // Compute the inner hash in-place
+            switch lt(tokenIn, tokenOut)
+            case 0 {
+                mstore(p, tokenOut)
+                mstore(add(p, 32), tokenIn)
+            }
+            default {
+                mstore(p, tokenIn)
+                mstore(add(p, 32), tokenOut)
+            }
+            mstore(p, keccak256(p, 64))
+            p := add(p, 32)
+            mstore(p, ALGEBRA_POOL_INIT_CODE_HASH)
+        
+            ////////////////////////////////////////////////////
+            // If the caller is not the calculated pool, we revert
+            ////////////////////////////////////////////////////
+            if iszero(eq(caller(), and(ADDRESS_MASK, keccak256(s, 85)))) {
+                // revert (0, 0)
+            }
+        }
+        clSwapCallback(amount0Delta, amount1Delta, tokenIn, tokenOut, path);
     }
 
     // butter
@@ -119,7 +251,53 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         int256 amount1Delta,
         bytes calldata path
     ) external  {
-        uniswapV3SwapCallbackInternal(amount0Delta, amount1Delta, path);
+        address tokenIn;
+        address tokenOut;
+        uint256 tradeId;
+        assembly {
+            let firstWord := calldataload(path.offset)
+            
+            tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
+            tradeId := and(shr(80, firstWord), UINT8_MASK) // poolId
+            // second word
+            firstWord := calldataload(add(path.offset, 22))
+            let fee := and(
+                    shr(240, firstWord), 
+                    UINT16_MASK
+            ) // uniswapV3 type fee
+            
+            tokenOut := and(ADDRESS_MASK, shr(80, firstWord))
+
+            ////////////////////////////////////////////////////
+            // Compute and validate pool address
+            ////////////////////////////////////////////////////
+            let s := mload(0x40)
+            let p := s
+            mstore(p, BUTTER_FF_FACTORY)
+            p := add(p, 21)
+            // Compute the inner hash in-place
+            switch lt(tokenIn, tokenOut)
+            case 0 {
+                mstore(p, tokenOut)
+                mstore(add(p, 32), tokenIn)
+            }
+            default {
+                mstore(p, tokenIn)
+                mstore(add(p, 32), tokenOut)
+            }
+            mstore(add(p, 64), and(UINT24_MASK, fee))
+            mstore(p, keccak256(p, 96))
+            p := add(p, 32)
+            mstore(p, BUTTER_POOL_INIT_CODE_HASH)
+        
+            ////////////////////////////////////////////////////
+            // If the caller is not the calculated pool, we revert
+            ////////////////////////////////////////////////////
+            if iszero(eq(caller(), and(ADDRESS_MASK, keccak256(s, 85)))) {
+                // revert (0, 0)
+            }
+        }
+        clSwapCallback(amount0Delta, amount1Delta, tokenIn, tokenOut, path);
     }
 
     // cleo
@@ -128,7 +306,53 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         int256 amount1Delta,
         bytes calldata path
     ) external  {
-        uniswapV3SwapCallbackInternal(amount0Delta, amount1Delta, path);
+        address tokenIn;
+        address tokenOut;
+        uint256 tradeId;
+        assembly {
+            let firstWord := calldataload(path.offset)
+            
+            tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
+            tradeId := and(shr(80, firstWord), UINT8_MASK) // poolId
+            // second word
+            firstWord := calldataload(add(path.offset, 22))
+            let fee := and(
+                    shr(240, firstWord), 
+                    UINT16_MASK
+            ) // uniswapV3 type fee
+            
+            tokenOut := and(ADDRESS_MASK, shr(80, firstWord))
+
+            ////////////////////////////////////////////////////
+            // Compute and validate pool address
+            ////////////////////////////////////////////////////
+            let s := mload(0x40)
+            let p := s
+            mstore(p, CLEO_FF_FACTORY)
+            p := add(p, 21)
+            // Compute the inner hash in-place
+            switch lt(tokenIn, tokenOut)
+            case 0 {
+                mstore(p, tokenOut)
+                mstore(add(p, 32), tokenIn)
+            }
+            default {
+                mstore(p, tokenIn)
+                mstore(add(p, 32), tokenOut)
+            }
+            mstore(add(p, 64), and(UINT24_MASK, fee))
+            mstore(p, keccak256(p, 96))
+            p := add(p, 32)
+            mstore(p, CLEO_POOL_INIT_CODE_HASH)
+        
+            ////////////////////////////////////////////////////
+            // If the caller is not the calculated pool, we revert
+            ////////////////////////////////////////////////////
+            if iszero(eq(caller(), and(ADDRESS_MASK, keccak256(s, 85)))) {
+                // revert (0, 0)
+            }
+        }
+        clSwapCallback(amount0Delta, amount1Delta, tokenIn, tokenOut, path);
     }
 
     // methlab
@@ -137,7 +361,169 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         int256 amount1Delta,
         bytes calldata path
     ) external {
-        uniswapV3SwapCallbackInternal(amount0Delta, amount1Delta, path);
+        address tokenIn;
+        address tokenOut;
+        uint256 tradeId;
+        assembly {
+            let firstWord := calldataload(path.offset)
+            
+            tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
+            tradeId := and(shr(80, firstWord), UINT8_MASK) // poolId
+            // second word
+            firstWord := calldataload(add(path.offset, 22))
+            let fee := and(
+                    shr(240, firstWord), 
+                    UINT16_MASK
+            ) // uniswapV3 type fee
+            
+            tokenOut := and(ADDRESS_MASK, shr(80, firstWord))
+
+            ////////////////////////////////////////////////////
+            // Compute and validate pool address
+            ////////////////////////////////////////////////////
+            let s := mload(0x40)
+            let p := s
+            mstore(p, METHLAB_FF_FACTORY)
+            p := add(p, 21)
+            // Compute the inner hash in-place
+            switch lt(tokenIn, tokenOut)
+            case 0 {
+                mstore(p, tokenOut)
+                mstore(add(p, 32), tokenIn)
+            }
+            default {
+                mstore(p, tokenIn)
+                mstore(add(p, 32), tokenOut)
+            }
+            mstore(add(p, 64), and(UINT24_MASK, fee))
+            mstore(p, keccak256(p, 96))
+            p := add(p, 32)
+            mstore(p, METHLAB_INIT_CODE_HASH)
+        
+            ////////////////////////////////////////////////////
+            // If the caller is not the calculated pool, we revert
+            ////////////////////////////////////////////////////
+            if iszero(eq(caller(), and(ADDRESS_MASK, keccak256(s, 85)))) {
+                // revert (0, 0)
+            }
+        }
+        clSwapCallback(amount0Delta, amount1Delta, tokenIn, tokenOut, path);
+    }
+
+    // iZi callbacks
+    
+    // zeroForOne = true
+    function swapY2XCallback(uint256 x, uint256 y, bytes calldata path) external {
+        address tokenIn;
+        address tokenOut;
+        uint256 tradeId;
+        assembly {
+            let firstWord := calldataload(path.offset)
+            
+            tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
+            tradeId := and(shr(80, firstWord), UINT8_MASK) // poolId
+            // second word
+            firstWord := calldataload(add(path.offset, 22))
+            let fee := and(
+                    shr(240, firstWord), 
+                    UINT16_MASK
+            ) // uniswapV3 type fee
+            
+            tokenOut := and(ADDRESS_MASK, shr(80, firstWord))
+
+            ////////////////////////////////////////////////////
+            // Compute and validate pool address
+            ////////////////////////////////////////////////////
+            let s := mload(0x40)
+            let p := s
+            mstore(p, IZI_FF_FACTORY)
+            p := add(p, 21)
+            // Compute the inner hash in-place
+            switch lt(tokenIn, tokenOut)
+            case 0 {
+                mstore(p, tokenOut)
+                mstore(add(p, 32), tokenIn)
+            }
+            default {
+                mstore(p, tokenIn)
+                mstore(add(p, 32), tokenOut)
+            }
+            mstore(add(p, 64), and(UINT24_MASK, fee))
+            mstore(p, keccak256(p, 96))
+            p := add(p, 32)
+            mstore(p, IZI_POOL_INIT_CODE_HASH)
+        
+            ////////////////////////////////////////////////////
+            // If the caller is not the calculated pool, we revert
+            ////////////////////////////////////////////////////
+            if iszero(eq(caller(), and(ADDRESS_MASK, keccak256(s, 85)))) {
+                // revert (0, 0)
+            }
+        }
+        clSwapCallback(
+            -int256(x),
+            int256(y),
+            tokenIn,
+            tokenOut,
+            path
+        );
+    }
+
+    // zeroForOne = false
+    function swapX2YCallback(uint256 x, uint256 y, bytes calldata path) external {
+        address tokenIn;
+        address tokenOut;
+        uint256 tradeId;
+        assembly {
+            let firstWord := calldataload(path.offset)
+            
+            tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
+            tradeId := and(shr(80, firstWord), UINT8_MASK) // poolId
+            // second word
+            firstWord := calldataload(add(path.offset, 22))
+            let fee := and(
+                    shr(240, firstWord), 
+                    UINT16_MASK
+            ) // uniswapV3 type fee
+            
+            tokenOut := and(ADDRESS_MASK, shr(80, firstWord))
+
+            ////////////////////////////////////////////////////
+            // Compute and validate pool address
+            ////////////////////////////////////////////////////
+            let s := mload(0x40)
+            let p := s
+            mstore(p, IZI_FF_FACTORY)
+            p := add(p, 21)
+            // Compute the inner hash in-place
+            switch lt(tokenIn, tokenOut)
+            case 0 {
+                mstore(p, tokenOut)
+                mstore(add(p, 32), tokenIn)
+            }
+            default {
+                mstore(p, tokenIn)
+                mstore(add(p, 32), tokenOut)
+            }
+            mstore(add(p, 64), and(UINT24_MASK, fee))
+            mstore(p, keccak256(p, 96))
+            p := add(p, 32)
+            mstore(p, IZI_POOL_INIT_CODE_HASH)
+        
+            ////////////////////////////////////////////////////
+            // If the caller is not the calculated pool, we revert
+            ////////////////////////////////////////////////////
+            if iszero(eq(caller(), and(ADDRESS_MASK, keccak256(s, 85)))) {
+                // revert (0, 0)
+            }
+        }
+        clSwapCallback(
+            int256(x),
+            -int256(y),
+            tokenIn,
+            tokenOut,
+            path
+        );
     }
 
    /**
@@ -168,184 +554,20 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
     * @param amount1Delta delta of token1, if positive, we have to pay, if negative, we received
     * @param _data path calldata
     */
-    function uniswapV3SwapCallbackInternal(
+    function clSwapCallback(
         int256 amount0Delta,
         int256 amount1Delta,
+        address tokenIn,
+        address tokenOut,
         bytes calldata _data
     ) private {
-        address tokenIn;
-        address tokenOut;
         uint256 tradeId;
-        address payer;
         bool preventSelfPayment;
+        address payer;
         uint256 maximumAmount;
         assembly {
             let firstWord := calldataload(_data.offset)
-            
-            tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
             tradeId := and(shr(80, firstWord), UINT8_MASK) // poolId
-            // second word
-            firstWord := calldataload(add(_data.offset, 22))
-            let fee := and(
-                    shr(240, firstWord), 
-                    UINT16_MASK
-            ) // uniswapV3 type fee
-            
-            tokenOut := and(ADDRESS_MASK, shr(80, firstWord))
-
-            ////////////////////////////////////////////////////
-            // Compute and validate pool address
-            ////////////////////////////////////////////////////
-            let s := mload(0x40)
-            let p := s
-            let pool
-            switch tradeId
-            // Fusion
-            case 0 {
-                mstore(p, FUSION_V3_FF_FACTORY)
-                p := add(p, 21)
-                // Compute the inner hash in-place
-                switch lt(tokenIn, tokenOut)
-                case 0 {
-                    mstore(p, tokenOut)
-                    mstore(add(p, 32), tokenIn)
-                }
-                default {
-                    mstore(p, tokenIn)
-                    mstore(add(p, 32), tokenOut)
-                }
-                mstore(add(p, 64), and(UINT24_MASK, fee))
-                mstore(p, keccak256(p, 96))
-                p := add(p, 32)
-                mstore(p, FUSION_POOL_INIT_CODE_HASH)
-                pool := and(ADDRESS_MASK, keccak256(s, 85))
-            }
-            // agni
-            case 1 {
-                mstore(p, AGNI_V3_FF_FACTORY)
-                p := add(p, 21)
-                // Compute the inner hash in-place
-                switch lt(tokenIn, tokenOut)
-                case 0 {
-                    mstore(p, tokenOut)
-                    mstore(add(p, 32), tokenIn)
-                }
-                default {
-                    mstore(p, tokenIn)
-                    mstore(add(p, 32), tokenOut)
-                }
-                mstore(add(p, 64), and(UINT24_MASK, fee))
-                mstore(p, keccak256(p, 96))
-                p := add(p, 32)
-                mstore(p, AGNI_POOL_INIT_CODE_HASH)
-                pool := and(ADDRESS_MASK, keccak256(s, 85))
-            }
-            // Algebra / Swapsicle
-            case 2 {
-                mstore(p, ALGEBRA_V3_FF_DEPLOYER)
-                p := add(p, 21)
-                // Compute the inner hash in-place
-                switch lt(tokenIn, tokenOut)
-                case 0 {
-                    mstore(p, tokenOut)
-                    mstore(add(p, 32), tokenIn)
-                }
-                default {
-                    mstore(p, tokenIn)
-                    mstore(add(p, 32), tokenOut)
-                }
-                mstore(p, keccak256(p, 64))
-                p := add(p, 32)
-                mstore(p, ALGEBRA_POOL_INIT_CODE_HASH)
-                pool := and(ADDRESS_MASK, keccak256(s, 85))
-            }
-            // Butter
-            case 3 {
-                mstore(p, BUTTER_FF_FACTORY)
-                p := add(p, 21)
-                // Compute the inner hash in-place
-                switch lt(tokenIn, tokenOut)
-                case 0 {
-                    mstore(p, tokenOut)
-                    mstore(add(p, 32), tokenIn)
-                }
-                default {
-                    mstore(p, tokenIn)
-                    mstore(add(p, 32), tokenOut)
-                }
-                mstore(add(p, 64), and(UINT24_MASK, fee))
-                mstore(p, keccak256(p, 96))
-                p := add(p, 32)
-                mstore(p, BUTTER_POOL_INIT_CODE_HASH)
-                pool := and(ADDRESS_MASK, keccak256(s, 85))
-            }
-            // Cleo
-            case 4 {
-                mstore(p, CLEO_FF_FACTORY)
-                p := add(p, 21)
-                // Compute the inner hash in-place
-                switch lt(tokenIn, tokenOut)
-                case 0 {
-                    mstore(p, tokenOut)
-                    mstore(add(p, 32), tokenIn)
-                }
-                default {
-                    mstore(p, tokenIn)
-                    mstore(add(p, 32), tokenOut)
-                }
-                mstore(add(p, 64), and(UINT24_MASK, fee))
-                mstore(p, keccak256(p, 96))
-                p := add(p, 32)
-                mstore(p, CLEO_POOL_INIT_CODE_HASH)
-                pool := and(ADDRESS_MASK, keccak256(s, 85))
-            }
-            // MethLab
-            case 5 {
-                mstore(p, METHLAB_FF_FACTORY)
-                p := add(p, 21)
-                // Compute the inner hash in-place
-                switch lt(tokenIn, tokenOut)
-                case 0 {
-                    mstore(p, tokenOut)
-                    mstore(add(p, 32), tokenIn)
-                }
-                default {
-                    mstore(p, tokenIn)
-                    mstore(add(p, 32), tokenOut)
-                }
-                mstore(add(p, 64), and(UINT24_MASK, fee))
-                mstore(p, keccak256(p, 96))
-                p := add(p, 32)
-                mstore(p, METHLAB_INIT_CODE_HASH)
-                pool := and(ADDRESS_MASK, keccak256(s, 85))
-            }
-            // iZi
-            default {
-                mstore(p, IZI_FF_FACTORY)
-                p := add(p, 21)
-                // Compute the inner hash in-place
-                switch lt(tokenIn, tokenOut)
-                case 0 {
-                    mstore(p, tokenOut)
-                    mstore(add(p, 32), tokenIn)
-                }
-                default {
-                    mstore(p, tokenIn)
-                    mstore(add(p, 32), tokenOut)
-                }
-                mstore(add(p, 64), and(UINT24_MASK, fee))
-                mstore(p, keccak256(p, 96))
-                p := add(p, 32)
-                mstore(p, IZI_POOL_INIT_CODE_HASH)
-                pool := and(ADDRESS_MASK, keccak256(s, 85))
-            }
-            ////////////////////////////////////////////////////
-            // If the caller is not the calculated pool, we revert
-            ////////////////////////////////////////////////////
-            if iszero(eq(caller(), pool)) {
-                revert (0, 0)
-            }
-
             ////////////////////////////////////////////////////
             // We fetch the original initiator of the swap function
             // It is represented by the lsat 20 bytes of the path
@@ -372,7 +594,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             _data.length := sub(_data.length, 36) // skim address from calldata
 
             // use tradeId as tradetype
-            tradeId := and(shr(88, calldataload(_data.offset)) , UINT8_MASK)
+            tradeId := and(shr(88, firstWord) , UINT8_MASK)
 
 
             // 10 (11) means that we are paying from the cache in an exact input (output)
@@ -574,6 +796,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             return;
         }
     }
+
 
     // The uniswapV2 style callback for fusionX
     function FusionXCall(
@@ -986,26 +1209,6 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 if(refAmount >> 128 < amount1) revert Slippage();
             }
         }
-    }
-
-    // iZi callbacks
-    
-    // zeroForOne = true
-    function swapY2XCallback(uint256 x, uint256 y, bytes calldata path) external {
-        uniswapV3SwapCallbackInternal(
-            -int256(x),
-            int256(y),
-            path
-        );
-    }
-
-    // zeroForOne = false
-    function swapX2YCallback(uint256 x, uint256 y, bytes calldata path) external {
-        uniswapV3SwapCallbackInternal(
-            int256(x),
-            -int256(y),
-            path
-        );
     }
 
     /**
