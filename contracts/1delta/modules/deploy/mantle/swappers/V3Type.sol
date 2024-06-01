@@ -88,7 +88,6 @@ abstract contract V3TypeSwapper {
                     calldataload(add(path.offset, 22))
                 )
             )
-
             let pathLength := path.length
             // Return amount0 or amount1 depending on direction
             switch lt(tokenA, tokenB)
@@ -297,9 +296,6 @@ abstract contract V3TypeSwapper {
             let tokenB := and(ADDRESS_MASK, shr(96, firstWord))
             firstWord := calldataload(add(path.offset, 42))
             let tokenA := and(ADDRESS_MASK, shr(80, firstWord))
-
-            let zeroForOne := lt(tokenA, tokenB)
-
             // read the pool address
             let pool := and(
                 ADDRESS_MASK,
@@ -308,10 +304,9 @@ abstract contract V3TypeSwapper {
                     calldataload(add(path.offset, 22))
                 )
             )
-
             let pathLength := path.length
             // Return amount0 or amount1 depending on direction
-            switch zeroForOne
+            switch lt(tokenA, tokenB)
             case 0 {
                 // Prepare external call data
                 // Store swapY2XDesireX selector (0xf094685a)

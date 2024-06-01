@@ -118,8 +118,8 @@ contract TestQuoterMantle is OneDeltaQuoterMantle {
     }
 
     /// @dev Returns the pool for the given token pair and fee. The pool contract may or may not exist.
-    function _getiZiPool(address tokenA, address tokenB, uint24 fee) public pure returns (IiZiSwapPool pool) {
-        return super.getiZiPool(tokenA, tokenB, fee);
+    function _getiZiPool(address tokenA, address tokenB, uint24 fee) public pure returns (address pool) {
+        return address(super.getiZiPool(tokenA, tokenB, fee));
     }
 
     /// @dev gets uniswapV2 (and fork) pair addresses

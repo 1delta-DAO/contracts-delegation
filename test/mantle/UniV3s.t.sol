@@ -7,7 +7,6 @@ import "./DeltaSetup.f.sol";
  * Tests Uni V3 style DEX
  */
 contract GeneralMoeLBTest is DeltaSetup {
-
     function setUp() public virtual override {
         vm.createSelectFork({blockNumber: 62267594, urlOrAlias: "https://mantle-mainnet.public.blastapi.io"});
 
@@ -59,10 +58,11 @@ contract GeneralMoeLBTest is DeltaSetup {
 
     /** KTX PATH BUILDERS */
 
-    function getSpotExactInSinglePuff(address tokenIn, address tokenOut) internal pure returns (bytes memory data) {
+    function getSpotExactInSinglePuff(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = 3000;
         uint8 poolId = 5;
-        return abi.encodePacked(tokenIn, uint8(10), poolId , fee, tokenOut);
+        address pool = testQuoter._v3TypePool(tokenOut, tokenIn, fee, poolId);
+        return abi.encodePacked(tokenIn, uint8(10), poolId, pool, fee, tokenOut);
     }
 
     function getSpotQuoteExactInSinglePuff(address tokenIn, address tokenOut) internal pure returns (bytes memory data) {

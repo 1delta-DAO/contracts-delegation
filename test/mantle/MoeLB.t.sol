@@ -361,7 +361,8 @@ contract GeneralMoeLBTest is DeltaSetup {
     function getOpenExactInMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         (uint8 actionId, uint8 midId, uint8 endId) = getOpenExactInFlags();
         uint8 poolId = MERCHANT_MOE;
-        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, USDe);
+        address pool = testQuoter._v2TypePairAddress(USDe, tokenIn, MERCHANT_MOE);
+        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, USDe);
         poolId = MERCHANT_MOE_LB;
         return abi.encodePacked(firstPart, midId, poolId, BIN_STEP_LOWEST, tokenOut, DEFAULT_LENDER, endId);
     }
@@ -381,12 +382,14 @@ contract GeneralMoeLBTest is DeltaSetup {
         uint8 poolId = MERCHANT_MOE_LB;
         bytes memory firstPart = abi.encodePacked(tokenOut, uint8(1), poolId, BIN_STEP_LOWEST, USDT);
         poolId = MERCHANT_MOE;
-        return abi.encodePacked(firstPart, uint8(11), poolId, tokenIn);
+        address pool = testQuoter._v2TypePairAddress(USDT, tokenIn, MERCHANT_MOE);
+        return abi.encodePacked(firstPart, uint8(11), poolId, pool, tokenIn);
     }
 
     function getSpotExactOutMultiLBEnd(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint8 poolId = MERCHANT_MOE;
-        bytes memory firstPart = abi.encodePacked(tokenOut, uint8(1), poolId, USDT);
+        address pool = testQuoter._v2TypePairAddress(USDT, tokenOut, MERCHANT_MOE);
+        bytes memory firstPart = abi.encodePacked(tokenOut, uint8(1), poolId, pool, USDT);
         poolId = MERCHANT_MOE_LB;
         return abi.encodePacked(firstPart, uint8(1), poolId, BIN_STEP_LOWEST, tokenIn);
     }
@@ -394,26 +397,30 @@ contract GeneralMoeLBTest is DeltaSetup {
     function getSpotExactInMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         (uint8 actionId, uint8 midId, uint8 endId) = getOpenExactInFlags();
         uint8 poolId = AGNI;
-        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, DEX_FEE_LOW, USDT);
+        address pool = testQuoter._v3TypePool(USDT, tokenIn, poolId, DEX_FEE_LOW);
+        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, DEX_FEE_LOW, USDT);
         poolId = MERCHANT_MOE_LB;
         return abi.encodePacked(firstPart, midId, poolId, BIN_STEP_LOWEST, tokenOut, endId);
     }
 
     function getOpenExactOutMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         (uint8 actionId, uint8 midId, uint8 endId) = getOpenExactOutFlags();
-        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, MERCHANT_MOE, USDe);
+        address pool = testQuoter._v2TypePairAddress(USDe, tokenOut, MERCHANT_MOE);
+        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, MERCHANT_MOE, pool, USDe);
         return abi.encodePacked(firstPart, midId, MERCHANT_MOE_LB, BIN_STEP_LOWEST, tokenIn, DEFAULT_LENDER, endId);
     }
 
     function getCloseExactOutMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         (uint8 actionId, uint8 midId, uint8 endId) = getCloseExactOutFlags();
-        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, MERCHANT_MOE, USDe);
+        address pool = testQuoter._v2TypePairAddress(USDe, tokenOut, MERCHANT_MOE);
+        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, MERCHANT_MOE, pool, USDe);
         return abi.encodePacked(firstPart, midId, MERCHANT_MOE_LB, BIN_STEP_LOWEST, tokenIn, DEFAULT_LENDER, endId);
     }
 
     function getCloseExactInMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         (uint8 actionId, uint8 midId, uint8 endId) = getCloseExactInFlags();
-        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, MERCHANT_MOE, USDe);
+        address pool = testQuoter._v2TypePairAddress(USDe, tokenIn, MERCHANT_MOE);
+        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, MERCHANT_MOE, pool, USDe);
         return abi.encodePacked(firstPart, midId, MERCHANT_MOE_LB, BIN_STEP_LOWEST, tokenOut, DEFAULT_LENDER, endId);
     }
 

@@ -283,7 +283,10 @@ contract FlashSwapExacInTest is DeltaSetup {
     }
 
     function getSpotExactInAgni(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        return abi.encodePacked(tokenIn, ZERO_8, AGNI, uint16(DEX_FEE_STABLES), tokenOut);
+        uint16 fee = uint16(DEX_FEE_STABLES);
+        uint8 poolId = AGNI;
+        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
+        return abi.encodePacked(tokenIn, ZERO_8, poolId, pool, fee, tokenOut);
     }
 
     function getSpotExactInSingleStratumMETH(address token) internal view returns (bytes memory data) {
@@ -318,6 +321,8 @@ contract FlashSwapExacInTest is DeltaSetup {
     }
 
     function getSpotExactInDoubleStratumMETHV2_3Pool(address token) internal view returns (bytes memory data) {
+        uint8 poolId = MERCHANT_MOE;
+        address pool = testQuoter._v2TypePairAddress(token, METH, poolId);
         return
             abi.encodePacked(
                 getSpotExactInAgni(token, METH),
@@ -326,7 +331,7 @@ contract FlashSwapExacInTest is DeltaSetup {
                 abi.encodePacked(getTokenIdEth(METH), getTokenIdEth(token)),
                 STRATUM_ETH_POOL,
                 token,
-                abi.encodePacked(ZERO_8, MERCHANT_MOE, METH)
+                abi.encodePacked(ZERO_8, MERCHANT_MOE, pool, METH)
             );
     }
 
@@ -355,7 +360,9 @@ contract FlashSwapExacInTest is DeltaSetup {
     }
 
     function getSpotExactInMoe(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        return abi.encodePacked(tokenIn, ZERO_8, MERCHANT_MOE, tokenOut);
+        uint8 poolId = MERCHANT_MOE;
+        address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
+        return abi.encodePacked(tokenIn, ZERO_8, poolId, pool, tokenOut);
     }
 
     function moe() internal view returns (bytes memory) {

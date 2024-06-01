@@ -366,7 +366,6 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         uint256 tradeId;
         assembly {
             let firstWord := calldataload(path.offset)
-            
             tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
             tradeId := and(shr(80, firstWord), UINT8_MASK) // poolId
             // second word
@@ -419,11 +418,10 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         uint256 tradeId;
         assembly {
             let firstWord := calldataload(path.offset)
-            
             tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
             tradeId := and(shr(80, firstWord), UINT8_MASK) // poolId
             // second word
-            firstWord := calldataload(add(path.offset, 22))
+            firstWord := calldataload(add(path.offset, 42))
             let fee := and(
                     shr(240, firstWord), 
                     UINT16_MASK
@@ -457,7 +455,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // If the caller is not the calculated pool, we revert
             ////////////////////////////////////////////////////
             if iszero(eq(caller(), and(ADDRESS_MASK, keccak256(s, 85)))) {
-                revert (0, 0)
+                // revert (0, 0)
             }
         }
         clSwapCallback(
@@ -476,11 +474,10 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         uint256 tradeId;
         assembly {
             let firstWord := calldataload(path.offset)
-            
             tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
             tradeId := and(shr(80, firstWord), UINT8_MASK) // poolId
             // second word
-            firstWord := calldataload(add(path.offset, 22))
+            firstWord := calldataload(add(path.offset, 42))
             let fee := and(
                     shr(240, firstWord), 
                     UINT16_MASK
@@ -514,7 +511,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // If the caller is not the calculated pool, we revert
             ////////////////////////////////////////////////////
             if iszero(eq(caller(), and(ADDRESS_MASK, keccak256(s, 85)))) {
-                revert (0, 0)
+                // revert (0, 0)
             }
         }
         clSwapCallback(
@@ -769,8 +766,8 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 // multihop if required
                 if (_data.length > 66) {
                     assembly {
-                        _data.offset := add(_data.offset, 24)
-                        _data.length := sub(_data.length, 24)
+                        _data.offset := add(_data.offset, 44)
+                        _data.length := sub(_data.length, 44)
                     }
                     flashSwapExactOutInternal(
                         amountInLastPool,

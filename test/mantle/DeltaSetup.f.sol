@@ -284,4 +284,339 @@ contract DeltaSetup is AddressesMantle, Script, Test {
         vm.prank(user);
         brokerProxy.multicall(calls);
     }
+
+    /** HELPER FUNCTIONS */
+
+    /** OPEN */
+
+    function getOpenExactInSingle(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+        uint16 fee = uint16(DEX_FEE_LOW);
+        uint8 poolId = AGNI;
+        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
+        (uint8 actionId, , uint8 endId) = getOpenExactInFlags();
+        return abi.encodePacked(tokenIn, actionId, poolId, pool, fee, tokenOut, lenderId, endId);
+    }
+
+    function getOpenExactInSingle_izi(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+        uint16 fee = uint16(DEX_FEE_LOW_HIGH);
+        uint8 poolId = IZUMI;
+        address pool = testQuoter._getiZiPool(tokenIn, tokenOut, fee);
+        (uint8 actionId, , uint8 endId) = getOpenExactInFlags();
+        return abi.encodePacked(tokenIn, actionId, poolId, pool, fee, tokenOut, lenderId, endId);
+    }
+
+    function getSpotExactInSingle_izi(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
+        uint16 fee = uint16(DEX_FEE_LOW_HIGH);
+        uint8 poolId = IZUMI;
+        address pool = testQuoter._getiZiPool(tokenIn, tokenOut, fee);
+        return abi.encodePacked(tokenIn, uint8(10), poolId, pool, fee, tokenOut);
+    }
+
+    function getSpotExactOutSingle_izi(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
+        uint16 fee = uint16(DEX_FEE_LOW_HIGH);
+        uint8 poolId = IZUMI;
+        address pool = testQuoter._getiZiPool(tokenIn, tokenOut, fee);
+        return abi.encodePacked(tokenOut, uint8(11), poolId, pool, fee, tokenIn);
+    }
+
+    function getOpenExactOutSingle(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+        uint16 fee = uint16(DEX_FEE_LOW);
+        uint8 poolId = AGNI;
+        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
+        (uint8 actionId, , uint8 endId) = getOpenExactOutFlags();
+        return abi.encodePacked(tokenOut, actionId, poolId, pool, fee, tokenIn, lenderId, endId);
+    }
+
+    function getOpenExactInMulti(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+        uint16 fee = uint16(DEX_FEE_LOW);
+        (uint8 actionId, uint8 midId, uint8 endId) = getOpenExactInFlags();
+        uint8 poolId = IZUMI;
+        address pool = testQuoter._getiZiPool(tokenIn, USDT, fee);
+        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, fee, USDT);
+        fee = uint16(DEX_FEE_STABLES);
+        poolId = FUSION_X;
+        pool = testQuoter._v3TypePool(USDT, tokenOut, fee, poolId);
+        return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenOut, lenderId, endId);
+    }
+
+    function getOpenExactOutMulti(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+        uint16 fee = uint16(DEX_FEE_STABLES);
+        (uint8 actionId, uint8 midId, uint8 endId) = getOpenExactOutFlags();
+        uint8 poolId = FUSION_X;
+        address pool = testQuoter._v3TypePool(tokenOut, USDT, fee, poolId);
+        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, fee, USDT);
+        fee = uint16(DEX_FEE_LOW);
+        poolId = IZUMI;
+        pool = testQuoter._getiZiPool(USDT, tokenIn, fee);
+        return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenIn, lenderId, endId);
+    }
+
+    /** CLOSE */
+
+    function getCloseExactOutSingle(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+        uint16 fee = uint16(DEX_FEE_LOW);
+        uint8 poolId = AGNI;
+        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
+        (uint8 actionId, , uint8 endId) = getCloseExactOutFlags();
+        return abi.encodePacked(tokenOut, actionId, poolId, pool, fee, tokenIn, lenderId, endId);
+    }
+
+    function getCloseExactInSingle(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+        uint16 fee = uint16(DEX_FEE_LOW);
+        uint8 poolId = AGNI;
+        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
+        (uint8 actionId, , uint8 endId) = getCloseExactInFlags();
+        return abi.encodePacked(tokenIn, actionId, poolId, pool, fee, tokenOut, lenderId, endId);
+    }
+
+    function getCloseExactInMulti(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+        uint16 fee = uint16(DEX_FEE_LOW);
+        (uint8 actionId, uint8 midId, uint8 endId) = getCloseExactInFlags();
+        uint8 poolId = IZUMI;
+        address pool = testQuoter._getiZiPool(USDT, tokenIn, fee);
+        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, fee, USDT);
+        fee = uint16(DEX_FEE_STABLES);
+        poolId = FUSION_X;
+        pool = testQuoter._v3TypePool(USDT, tokenOut, fee, poolId);
+        return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenOut, lenderId, endId);
+    }
+
+    function getCloseExactOutMulti(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+        uint16 fee = uint16(DEX_FEE_STABLES);
+        (uint8 actionId, uint8 midId, uint8 endId) = getCloseExactOutFlags();
+        uint8 poolId = FUSION_X;
+        address pool = testQuoter._v3TypePool(USDT, tokenOut, fee, poolId);
+        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, fee, USDT);
+        fee = uint16(DEX_FEE_LOW);
+        poolId = IZUMI;
+        pool = testQuoter._getiZiPool(USDT, tokenIn, fee);
+        return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenIn, lenderId, endId);
+    }
+
+    /** COLLATERAL SWAP */
+
+    function getCollateralSwapExactInSingle(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+        uint16 fee = uint16(DEX_FEE_LOW);
+        uint8 poolId = AGNI;
+        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
+        (uint8 actionId, , uint8 endId) = getCollateralSwapExactInFlags();
+        return abi.encodePacked(tokenIn, actionId, poolId, pool, fee, tokenOut, lenderId, endId);
+    }
+
+    function getCollateralSwapExactOutSingle(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+        uint16 fee = uint16(DEX_FEE_LOW);
+        uint8 poolId = AGNI;
+        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
+        (uint8 actionId, , uint8 endId) = getCollateralSwapExactOutFlags();
+        return abi.encodePacked(tokenOut, actionId, poolId, pool, fee, tokenIn, lenderId, endId);
+    }
+
+    function getCollateralSwapExactInMulti(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+        uint16 fee = uint16(DEX_FEE_LOW_MEDIUM);
+        (uint8 actionId, uint8 midId, uint8 endId) = getCollateralSwapExactInFlags();
+        uint8 poolId = AGNI;
+        address pool = testQuoter._v3TypePool(tokenIn, WETH, fee, poolId);
+        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, fee, WETH);
+        fee = uint16(DEX_FEE_LOW);
+        poolId = FUSION_X;
+        pool = testQuoter._v3TypePool(tokenOut, WETH, fee, poolId);
+        return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenOut, lenderId, endId);
+    }
+
+    function getCollateralSwapExactOutMulti(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+        uint16 fee = uint16(DEX_FEE_LOW_MEDIUM);
+        (uint8 actionId, uint8 midId, uint8 endId) = getCollateralSwapExactOutFlags();
+        uint8 poolId = AGNI;
+        address pool = testQuoter._v3TypePool(tokenOut, WETH, fee, poolId);
+        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, fee, WETH);
+        fee = uint16(DEX_FEE_LOW);
+        poolId = FUSION_X;
+        pool = testQuoter._v3TypePool(tokenIn, WETH, fee, poolId);
+        return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenIn, lenderId, endId);
+    }
+
+    /** DEBT SWAP */
+
+    function getDebtSwapExactInSingle(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+        uint16 fee = uint16(DEX_FEE_LOW_MEDIUM);
+        uint8 poolId = AGNI;
+        address pool = testQuoter._v3TypePool(tokenOut, tokenIn, fee, poolId);
+        (uint8 actionId, , uint8 endId) = getDebtSwapExactInFlags();
+        return abi.encodePacked(tokenIn, actionId, poolId, pool, fee, tokenOut, lenderId, endId);
+    }
+
+    function getDebtSwapExactOutSingle(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+        uint16 fee = uint16(DEX_FEE_LOW_MEDIUM);
+        uint8 poolId = AGNI;
+        address pool = testQuoter._v3TypePool(tokenOut, tokenIn, fee, poolId);
+        (uint8 actionId, , uint8 endId) = getDebtSwapExactOutFlags();
+        return abi.encodePacked(tokenOut, actionId, poolId, pool, fee, tokenIn, lenderId, endId);
+    }
+
+    function getDebtSwapExactInMulti(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+        uint16 fee = uint16(DEX_FEE_LOW);
+        (uint8 actionId, uint8 midId, uint8 endId) = getDebtSwapExactInFlags();
+        uint8 poolId = BUTTER;
+        address pool = testQuoter._v3TypePool(tokenIn, USDT, fee, poolId);
+        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, fee, USDT);
+        fee = uint16(DEX_FEE_LOW);
+        poolId = BUTTER;
+        pool = testQuoter._v3TypePool(tokenOut, USDT, fee, poolId);
+        return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenOut, lenderId, endId);
+    }
+
+    function getDebtSwapExactOutMulti(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+        uint16 fee = uint16(DEX_FEE_LOW);
+        (uint8 actionId, uint8 midId, uint8 endId) = getDebtSwapExactOutFlags();
+        uint8 poolId = BUTTER;
+        address pool = testQuoter._v3TypePool(tokenOut, USDT, fee, poolId);
+        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, fee, USDT);
+        fee = uint16(DEX_FEE_LOW);
+        poolId = BUTTER;
+        pool = testQuoter._v3TypePool(tokenIn, USDT, fee, poolId);
+        return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenIn, lenderId, endId);
+    }
+
+    /** OPEN */
+
+    function getOpenExactInSingleV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+        uint8 poolId = MERCHANT_MOE;
+        (uint8 actionId, , uint8 endId) = getOpenExactInFlags();
+        address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
+        return abi.encodePacked(tokenIn, actionId, poolId, pool, tokenOut, lenderId, endId);
+    }
+
+    function getOpenExactOutSingleV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+        uint8 poolId = MERCHANT_MOE;
+        (uint8 actionId, , uint8 endId) = getOpenExactOutFlags();
+        address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
+        return abi.encodePacked(tokenOut, actionId, poolId, pool, tokenIn, lenderId, endId);
+    }
+
+    function getOpenExactInMultiV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+        (uint8 actionId, uint8 midId, uint8 endId) = getOpenExactInFlags();
+        uint8 poolId = MERCHANT_MOE;
+        address pool = testQuoter._v2TypePairAddress(tokenIn, USDT, poolId);
+        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, USDT);
+        poolId = MERCHANT_MOE;
+        pool = testQuoter._v2TypePairAddress(USDT, tokenOut, poolId);
+        return abi.encodePacked(firstPart, midId, poolId, pool, tokenOut, lenderId, endId);
+    }
+
+    function getOpenExactOutMultiV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+        (uint8 actionId, uint8 midId, uint8 endId) = getOpenExactOutFlags();
+        uint8 poolId = MERCHANT_MOE;
+        address pool = testQuoter._v2TypePairAddress(USDT, tokenOut, poolId);
+        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, USDT);
+        pool = testQuoter._v2TypePairAddress(tokenIn, USDT, poolId);
+        return abi.encodePacked(firstPart, midId, poolId, pool, tokenIn, lenderId, endId);
+    }
+
+    /** CLOSE */
+
+    function getCloseExactOutSingleV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+        uint8 poolId = MERCHANT_MOE;
+        address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
+        (uint8 actionId, , uint8 endId) = getCloseExactOutFlags();
+        return abi.encodePacked(tokenOut, actionId, poolId, pool, tokenIn, lenderId, endId);
+    }
+
+    function getCloseExactInSingleV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+        uint8 poolId = MERCHANT_MOE;
+        address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
+        (uint8 actionId, , uint8 endId) = getCloseExactInFlags();
+        return abi.encodePacked(tokenIn, actionId, poolId, pool, tokenOut, lenderId, endId);
+    }
+
+    function getCloseExactInMultiV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+        (uint8 actionId, uint8 midId, uint8 endId) = getCloseExactInFlags();
+        uint8 poolId = MERCHANT_MOE;
+        address pool = testQuoter._v2TypePairAddress(tokenIn, USDT, poolId);
+        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, USDT);
+        poolId = MERCHANT_MOE;
+        pool = testQuoter._v2TypePairAddress(tokenOut, USDT, poolId);
+        return abi.encodePacked(firstPart, midId, poolId, pool, tokenOut, lenderId, endId);
+    }
+
+    function getCloseExactOutMultiV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+        (uint8 actionId, uint8 midId, uint8 endId) = getCloseExactOutFlags();
+        uint8 poolId = MERCHANT_MOE;
+        address pool = testQuoter._v2TypePairAddress(tokenOut, USDT, poolId);
+        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, USDT);
+        poolId = MERCHANT_MOE;
+        pool = testQuoter._v2TypePairAddress(tokenIn, USDT, poolId);
+        return abi.encodePacked(firstPart, midId, poolId, pool, tokenIn, lenderId, endId);
+    }
+
+    /** COLLATERAL SWAP */
+
+    function getCollateralSwapExactInSingleV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+        uint8 poolId = MERCHANT_MOE;
+        address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
+        (uint8 actionId, , uint8 endId) = getCollateralSwapExactInFlags();
+        return abi.encodePacked(tokenIn, actionId, poolId, pool, tokenOut, lenderId, endId);
+    }
+
+    function getCollateralSwapExactOutSingleV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+        uint8 poolId = MERCHANT_MOE;
+        address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
+        (uint8 actionId, , uint8 endId) = getCollateralSwapExactOutFlags();
+        return abi.encodePacked(tokenOut, actionId, poolId, pool, tokenIn, lenderId, endId);
+    }
+
+    function getCollateralSwapExactInMultiV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+        (uint8 actionId, uint8 midId, uint8 endId) = getCollateralSwapExactInFlags();
+        uint8 poolId = MERCHANT_MOE;
+        address pool = testQuoter._v2TypePairAddress(tokenIn, METH, poolId);
+        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, METH);
+        poolId = MERCHANT_MOE;
+        pool = testQuoter._v2TypePairAddress(tokenOut, METH, poolId);
+        return abi.encodePacked(firstPart, midId, poolId, pool, tokenOut, lenderId, endId);
+    }
+
+    function getCollateralSwapExactOutMultiV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+        (uint8 actionId, uint8 midId, uint8 endId) = getCollateralSwapExactOutFlags();
+        uint8 poolId = MERCHANT_MOE;
+        address pool = testQuoter._v2TypePairAddress(tokenOut, METH, poolId);
+        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, METH);
+        poolId = MERCHANT_MOE;
+        pool = testQuoter._v2TypePairAddress(tokenIn, METH, poolId);
+        return abi.encodePacked(firstPart, midId, poolId, pool, tokenIn, lenderId, endId);
+    }
+
+    /** DEBT SWAP */
+
+    function getDebtSwapExactInSingleV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+        uint8 poolId = MERCHANT_MOE;
+        address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
+        (uint8 actionId, , uint8 endId) = getDebtSwapExactInFlags();
+        return abi.encodePacked(tokenIn, actionId, poolId, pool, tokenOut, lenderId, endId);
+    }
+
+    function getDebtSwapExactOutSingleV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+        uint8 poolId = MERCHANT_MOE;
+        address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
+        (uint8 actionId, , uint8 endId) = getDebtSwapExactOutFlags();
+        return abi.encodePacked(tokenOut, actionId, poolId, pool, tokenIn, lenderId, endId);
+    }
+
+    function getDebtSwapExactInMultiV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+        (uint8 actionId, uint8 midId, uint8 endId) = getDebtSwapExactInFlags();
+        uint8 poolId = MERCHANT_MOE;
+        address pool = testQuoter._v2TypePairAddress(tokenIn, METH, poolId);
+        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, METH);
+        poolId = MERCHANT_MOE;
+        pool = testQuoter._v2TypePairAddress(tokenOut, METH, poolId);
+        return abi.encodePacked(firstPart, midId, poolId, pool, tokenOut, lenderId, endId);
+    }
+
+    function getDebtSwapExactOutMultiV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+        (uint8 actionId, uint8 midId, uint8 endId) = getDebtSwapExactOutFlags();
+        uint8 poolId = MERCHANT_MOE;
+        address pool = testQuoter._v2TypePairAddress(tokenOut, METH, poolId);
+        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, METH);
+        poolId = MERCHANT_MOE;
+        pool = testQuoter._v2TypePairAddress(tokenIn, METH, poolId);
+        return abi.encodePacked(firstPart, midId, poolId, pool, tokenIn, lenderId, endId);
+    }
 }
