@@ -805,7 +805,35 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         uint256 amount1,
         bytes calldata data
     ) external {
-        _uniswapV2StyleCallback(amount0, amount1, data);
+        address tokenIn;
+        address tokenOut;
+        bool zeroForOne;
+        // the fee parameter in the path can be ignored for validating a V2 pool
+        assembly {
+            tokenIn := and(ADDRESS_MASK, shr(96, calldataload(data.offset)))
+            tokenOut := and(ADDRESS_MASK, shr(96, calldataload(add(data.offset, 22))))
+            zeroForOne := lt(tokenIn, tokenOut)
+
+            switch zeroForOne
+            case 0 {
+                mstore(0xB14, tokenIn)
+                mstore(0xB00, tokenOut)
+            }
+            default {
+                mstore(0xB14, tokenOut)
+                mstore(0xB00, tokenIn)
+            }
+            let salt := keccak256(0xB0C, 0x28)
+            mstore(0xB00, FUSION_V2_FF_FACTORY)
+            mstore(0xB15, salt)
+            mstore(0xB35, CODE_HASH_FUSION_V2)
+
+            // verify that the caller is a v2 type pool
+            if iszero(eq(and(ADDRESS_MASK, keccak256(0xB00, 0x55)), caller())) {
+                revert (0, 0)
+            }
+        }
+        _v2StyleCallback(amount0, amount1, tokenIn, tokenOut, zeroForOne, data);
     }
 
     // The uniswapV2 style callback for Merchant Moe
@@ -815,7 +843,29 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         uint256 amount1,
         bytes calldata data
     ) external {
-        _uniswapV2StyleCallback(amount0, amount1, data);
+        address tokenIn;
+        address tokenOut;
+        bool zeroForOne;
+        // the fee parameter in the path can be ignored for validating a V2 pool
+        assembly {
+            tokenIn := and(ADDRESS_MASK, shr(96, calldataload(data.offset)))
+            tokenOut := and(ADDRESS_MASK, shr(96, calldataload(add(data.offset, 22))))
+            zeroForOne := lt(tokenIn, tokenOut)
+
+            // selector for getPair(address,address)
+            mstore(0xB00, 0xe6a4390500000000000000000000000000000000000000000000000000000000)
+            mstore(add(0xB00, 0x4), tokenIn)
+            mstore(add(0xB00, 0x24), tokenOut)
+
+            // call to collateralToken
+            pop(staticcall(gas(), MERCHANT_MOE_FACTORY, 0xB00, 0x48, 0xB00, 0x20))
+
+            // verify that the caller is a v2 type pool
+            if iszero(eq(and(ADDRESS_MASK, mload(0xB00)), caller())) {
+                revert (0, 0)
+            }
+        }
+        _v2StyleCallback(amount0, amount1, tokenIn, tokenOut, zeroForOne, data);
     }
 
     // The uniswapV2 style callback for Velocimeter, Cleopatra V1 and Stratum
@@ -825,27 +875,10 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         uint256 amount1,
         bytes calldata data
     ) external {
-        _uniswapV2StyleCallback(amount0, amount1, data);
-    }
-
-    /**
-     * Flash swap callback for all UniV2 and Solidly type DEXs
-     * @param amount0 amount of token0 received
-     * @param amount1 amount of token1 received
-     * @param data path calldata
-     */
-    function _uniswapV2StyleCallback(
-        uint256 amount0,
-        uint256 amount1,
-        bytes calldata data
-    ) private {
         uint256 tradeId;
         address tokenIn;
         address tokenOut;
         bool zeroForOne;
-        bool preventSelfPayment;
-        uint256 refAmount;
-        address payer;
         // the fee parameter in the path can be ignored for validating a V2 pool
         assembly {
             let firstWord := calldataload(data.offset)
@@ -857,37 +890,6 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             
             let pair
             switch identifier
-            // FusionX
-            case 50 {
-                switch zeroForOne
-                case 0 {
-                    mstore(0xB14, tokenIn)
-                    mstore(0xB00, tokenOut)
-                }
-                default {
-                    mstore(0xB14, tokenOut)
-                    mstore(0xB00, tokenIn)
-                }
-                let salt := keccak256(0xB0C, 0x28)
-                mstore(0xB00, FUSION_V2_FF_FACTORY)
-                mstore(0xB15, salt)
-                mstore(0xB35, CODE_HASH_FUSION_V2)
-
-                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
-            }
-            // 51: Merchant Moe
-            case 51 {
-                // selector for getPair(address,address)
-                mstore(0xB00, 0xe6a4390500000000000000000000000000000000000000000000000000000000)
-                mstore(add(0xB00, 0x4), tokenIn)
-                mstore(add(0xB00, 0x24), tokenOut)
-
-                // call to collateralToken
-                pop(staticcall(gas(), MERCHANT_MOE_FACTORY, 0xB00, 0x48, 0xB00, 0x20))
-
-                // load the retrieved protocol share
-                pair := and(ADDRESS_MASK, mload(0xB00))
-            }
             // Velo Volatile
             case 52 {
                 switch zeroForOne
@@ -1007,6 +1009,33 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             if iszero(eq(pair, caller())) {
                 revert (0, 0)
             }
+        }
+        _v2StyleCallback(amount0, amount1, tokenIn, tokenOut, zeroForOne, data);
+    }
+
+    /**
+     * Flash swap callback for all UniV2 and Solidly type DEXs
+     * @param amount0 amount of token0 received
+     * @param amount1 amount of token1 received
+     * @param data path calldata
+     */
+    function _v2StyleCallback(
+        uint256 amount0,
+        uint256 amount1,
+        address tokenIn,
+        address tokenOut,
+        bool zeroForOne,
+        bytes calldata data
+    ) private {
+        uint256 tradeId;
+        bool preventSelfPayment;
+        uint256 refAmount;
+        address payer;
+        // the fee parameter in the path can be ignored for validating a V2 pool
+        assembly {
+            let firstWord := calldataload(data.offset)
+            let identifier := and(shr(80, firstWord), UINT8_MASK) // swap pool identifier
+            tradeId := and(shr(88, firstWord), UINT8_MASK) // interaction identifier
             ////////////////////////////////////////////////////
             // We fetch the original initiator of the swap function
             // It is represented by the last 20 bytes of the path
@@ -1210,7 +1239,6 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             }
         }
     }
-
     /**
      * (flash, whenever possible)-swaps exact output
      * Funds are sent to receiver address
