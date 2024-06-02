@@ -171,7 +171,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
             // Compute the sell amount based on the pair reserves.
             {
                 switch pId
-                case 50 {
+                case 100 {
                     let sellReserve
                     let buyReserve
                     switch lt(tokenIn, tokenOut)
@@ -192,7 +192,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                     x := add(div(mul(mul(sellReserve, buyAmount), 1000), mul(sub(buyReserve, buyAmount), 998)), 1)
                 }
                 // merchant moe
-                case 51 {
+                case 101 {
                     let sellReserve
                     let buyReserve
                     switch lt(tokenIn, tokenOut)
@@ -213,7 +213,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                     x := add(div(mul(mul(sellReserve, buyAmount), 1000), mul(sub(buyReserve, buyAmount), 997)), 1)
                 }
                 // velo volatile
-                case 52 {
+                case 121 {
                     let sellReserve
                     let buyReserve
                     switch lt(tokenIn, tokenOut)
@@ -247,7 +247,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                     )
                 }
                 // stratum volatile
-                case 56 {
+                case 125 {
                     let sellReserve
                     let buyReserve
                     switch lt(tokenIn, tokenOut)
@@ -281,7 +281,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                     )
                 }
                 // cleo V1 volatile
-                case 54 {
+                case 123 {
                     let sellReserve
                     let buyReserve
                     switch lt(tokenIn, tokenOut)
@@ -432,14 +432,14 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                     // selector for getFee(address)
                     switch pId
                     // velo stable
-                    case 53 {
+                    case 122 {
                         mstore(ptr, 0xb88c914800000000000000000000000000000000000000000000000000000000)
                         mstore(add(ptr, 0x4), pair)
                         pop(staticcall(gas(), VELO_FACTORY, ptr, 0x24, ptr, 0x20))
                         _decimalsOut_xy_fee := mload(ptr)
                     }
                     // stratum stable
-                    case 57 {
+                    case 123 {
                         mstore(ptr, 0xb88c914800000000000000000000000000000000000000000000000000000000)
                         mstore(add(ptr, 0x4), pair)
                         pop(staticcall(gas(), STRATUM_FACTORY, ptr, 0x24, ptr, 0x20))
@@ -511,7 +511,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                 // buyAmount = (pairSellAmount * feeAm * buyReserve) /
                 //     (pairSellAmount * feeAm + sellReserve * 1000);
                 switch pId_amountWithFee_pathLength
-                case 50 {
+                case 100 {
                     // Call pair.getReserves(), store the results at `0xC00`
                     mstore(0xB00, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
                     if iszero(staticcall(gas(), pair, 0xB00, 0x4, 0xC00, 0x40)) {
@@ -537,7 +537,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                     pId_amountWithFee_pathLength := mul(amountIn, 998)
                     buyAmount := div(mul(pId_amountWithFee_pathLength, buyAmount), add(pId_amountWithFee_pathLength, mul(sellReserve, 1000)))
                 }
-                case 51 {
+                case 101 {
                     // Call pair.getReserves(), store the results at `0xC00`
                     mstore(0xB00, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
                     if iszero(staticcall(gas(), pair, 0xB00, 0x4, 0xC00, 0x40)) {

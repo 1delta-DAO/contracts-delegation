@@ -826,7 +826,7 @@ contract OneDeltaQuoterMantle {
         assembly {
             switch _pId
             // FusionX
-            case 50 {
+            case 100 {
                 switch lt(tokenA, tokenB)
                 case 0 {
                     mstore(0xB14, tokenA)
@@ -843,8 +843,8 @@ contract OneDeltaQuoterMantle {
 
                 pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
             }
-            // 51: Merchant Moe
-            case 51 {
+            // 101: Merchant Moe
+            case 101 {
                 // selector for getPair(address,address
                 mstore(0xB00, 0xe6a4390500000000000000000000000000000000000000000000000000000000)
                 mstore(add(0xB00, 0x4), tokenA)
@@ -857,7 +857,7 @@ contract OneDeltaQuoterMantle {
                 pair := and(ADDRESS_MASK, mload(0xB00))
             }
             // Velo Volatile
-            case 52 {
+            case 121 {
                 switch lt(tokenA, tokenB)
                 case 0 {
                     mstore(0xB14, tokenA)
@@ -876,7 +876,7 @@ contract OneDeltaQuoterMantle {
                 pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
             }
             // Velo Stable
-            case 53 {
+            case 122 {
                 switch lt(tokenA, tokenB)
                 case 0 {
                     mstore(0xB14, tokenA)
@@ -895,7 +895,7 @@ contract OneDeltaQuoterMantle {
                 pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
             }
             // Cleo V1 Volatile
-            case 54 {
+            case 123 {
                 switch lt(tokenA, tokenB)
                 case 0 {
                     mstore(0xB14, tokenA)
@@ -914,7 +914,7 @@ contract OneDeltaQuoterMantle {
                 pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
             }
             // Cleo V1 Stable
-            case 55 {
+            case 124 {
                 switch lt(tokenA, tokenB)
                 case 0 {
                     mstore(0xB14, tokenA)
@@ -933,7 +933,7 @@ contract OneDeltaQuoterMantle {
                 pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
             }
             // Stratum Volatile
-            case 56 {
+            case 125 {
                 switch lt(tokenA, tokenB)
                 case 0 {
                     mstore(0xB14, tokenA)
@@ -951,7 +951,7 @@ contract OneDeltaQuoterMantle {
 
                 pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
             }
-            // 57: Stratum Stable
+            // 126: Stratum Stable
             default {
                 switch lt(tokenA, tokenB)
                 case 0 {
@@ -992,7 +992,7 @@ contract OneDeltaQuoterMantle {
             }
 
             // v3 types
-            if (poolId < 50) {
+            if (poolId < 49) {
                 uint24 fee;
                 assembly {
                     fee := and(
@@ -1005,23 +1005,36 @@ contract OneDeltaQuoterMantle {
                 }
                 amountIn = quoteExactInputSingleV3(tokenIn, tokenOut, fee, poolId, amountIn);
             }
-            // v2 types
-            else if (poolId < 100) {
-                address pair = v2TypePairAddress(tokenIn, tokenOut, poolId);
-                amountIn = getAmountOutUniV2Type(pair, tokenIn, tokenOut, amountIn, poolId);
-            }
             // iZi
-            else if (poolId == 100) {
+            else if (poolId == 49) {
                 uint24 fee;
                 assembly {
                     fee := and(shr(72, calldataload(path.offset)), 0xffffff)
                 }
                 amountIn = quoteExactInputSingle_iZi(tokenIn, tokenOut, fee, uint128(amountIn));
-            } else if (poolId == 101) {
-                amountIn = quoteWOO(tokenIn, tokenOut, amountIn);
-            } else if (poolId == 102) {
+            }
+            else if (poolId == 50) {
                 amountIn = quoteStratum3(tokenIn, tokenOut, amountIn);
-            } else if (poolId == 103) {
+            } else if (poolId == 51) {
+                uint8 indexIn;
+                uint8 indexOut;
+                uint8 subGroup;
+                assembly {
+                    let indexData := and(shr(72, calldataload(path.offset)), 0xffffff)
+                    indexIn := and(shr(16, indexData), 0xff)
+                    indexOut := and(shr(8, indexData), 0xff)
+                    subGroup := and(indexData, 0xff)
+                }
+                amountIn = quoteStratumGeneral(indexIn, indexOut, subGroup, amountIn);
+            } 
+            // v2 types
+            else if (poolId < 150) {
+                address pair = v2TypePairAddress(tokenIn, tokenOut, poolId);
+                amountIn = getAmountOutUniV2Type(pair, tokenIn, tokenOut, amountIn, poolId);
+            }
+             else if (poolId == 150) {
+                amountIn = quoteWOO(tokenIn, tokenOut, amountIn);
+            } else if (poolId == 151) {
                 uint24 bin;
                 assembly {
                     bin := and(
@@ -1033,19 +1046,8 @@ contract OneDeltaQuoterMantle {
                     )
                 }
                 amountIn = getLBAmountOut(tokenIn, tokenOut, amountIn, uint16(bin));
-            } else if (poolId == 104) {
+            } else if (poolId == 152) {
                 amountIn = quoteKTXExactIn(tokenIn, tokenOut, amountIn);
-            } else if (poolId == 105) {
-                uint8 indexIn;
-                uint8 indexOut;
-                uint8 subGroup;
-                assembly {
-                    let indexData := and(shr(72, calldataload(path.offset)), 0xffffff)
-                    indexIn := and(shr(16, indexData), 0xff)
-                    indexOut := and(shr(8, indexData), 0xff)
-                    subGroup := and(indexData, 0xff)
-                }
-                amountIn = quoteStratumGeneral(indexIn, indexOut, subGroup, amountIn);
             } else {
                 revert invalidDexId();
             }
@@ -1076,24 +1078,25 @@ contract OneDeltaQuoterMantle {
             }
 
             // v3 types
-            if (poolId < 50) {
+            if (poolId < 49) {
                 uint24 fee;
                 assembly {
                     fee := and(shr(72, calldataload(path.offset)), 0xffffff)
                 }
                 amountOut = quoteExactOutputSingleV3(tokenIn, tokenOut, fee, poolId, amountOut);
             }
-            // v2 types
-            else if (poolId < 100) {
-                address pair = v2TypePairAddress(tokenIn, tokenOut, poolId);
-                amountOut = getV2AmountInDirect(pair, tokenIn, tokenOut, amountOut, poolId);
-            } else if (poolId == 100) {
+            else if (poolId == 49) {
                 uint24 fee;
                 assembly {
                     fee := and(shr(72, calldataload(path.offset)), 0xffffff)
                 }
                 amountOut = quoteExactOutputSingle_iZi(tokenIn, tokenOut, fee, uint128(amountOut));
-            } else if (poolId == 103) {
+            }
+            // v2 types
+            else if (poolId < 150) {
+                address pair = v2TypePairAddress(tokenIn, tokenOut, poolId);
+                amountOut = getV2AmountInDirect(pair, tokenIn, tokenOut, amountOut, poolId);
+            } else if (poolId == 151) {
                 uint24 bin;
                 assembly {
                     bin := and(
@@ -1132,7 +1135,7 @@ contract OneDeltaQuoterMantle {
                 // buyAmount = (pairSellAmount * feeAm * buyReserve) /
                 //     (pairSellAmount * feeAm + sellReserve * 1000);
                 switch _pId
-                case 50 {
+                case 100 {
                     // Call pair.getReserves(), store the results at `0xC00`
                     mstore(0xB00, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
                     if iszero(staticcall(gas(), pair, 0xB00, 0x4, 0xC00, 0x40)) {
@@ -1161,7 +1164,7 @@ contract OneDeltaQuoterMantle {
                     buyAmount := div(mul(sellAmountWithFee, buyReserve), add(sellAmountWithFee, mul(sellReserve, 1000)))
                 }
                 // merchant moe
-                case 51 {
+                case 101 {
                     // Call pair.getReserves(), store the results at `0xC00`
                     mstore(0xB00, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
                     if iszero(staticcall(gas(), pair, 0xB00, 0x4, 0xC00, 0x40)) {
@@ -1349,7 +1352,7 @@ contract OneDeltaQuoterMantle {
             // Compute the sell amount based on the pair reserves.
             {
                 switch pId
-                case 50 {
+                case 100 {
                     let sellReserve
                     let buyReserve
                     switch lt(tokenIn, tokenOut)
@@ -1373,7 +1376,7 @@ contract OneDeltaQuoterMantle {
                     // feeAm is 998 for fusionX
                     x := add(div(mul(mul(sellReserve, buyAmount), 1000), mul(sub(buyReserve, buyAmount), 998)), 1)
                 }
-                case 51 {
+                case 101 {
                     let sellReserve
                     let buyReserve
                     switch lt(tokenIn, tokenOut)
@@ -1398,7 +1401,7 @@ contract OneDeltaQuoterMantle {
                     x := add(div(mul(mul(sellReserve, buyAmount), 1000), mul(sub(buyReserve, buyAmount), 997)), 1)
                 }
                 // velocimeter volatile
-                case 52 {
+                case 121 {
                     let sellReserve
                     let buyReserve
                     switch lt(tokenIn, tokenOut)
@@ -1436,7 +1439,7 @@ contract OneDeltaQuoterMantle {
                     )
                 }
                 // stratum volatile (same as velo, just different addresses)
-                case 56 {
+                case 125 {
                     let sellReserve
                     let buyReserve
                     switch lt(tokenIn, tokenOut)
@@ -1474,7 +1477,7 @@ contract OneDeltaQuoterMantle {
                     )
                 }
                 // cleo volatile
-                case 54 {
+                case 123 {
                     let sellReserve
                     let buyReserve
                     switch lt(tokenIn, tokenOut)
@@ -1635,7 +1638,7 @@ contract OneDeltaQuoterMantle {
                     // fetch the fee from the factory
                     switch pId
                     // cleo stable
-                    case 55 {
+                    case 124 {
                         // selector for pairFee(address)
                         mstore(ptr, 0x841fa66b00000000000000000000000000000000000000000000000000000000)
                         mstore(add(ptr, 0x4), pair)
@@ -1651,7 +1654,7 @@ contract OneDeltaQuoterMantle {
                         }
                     }
                     // velo stable
-                    case 53 {
+                    case 122 {
                         // selector for getFee(address)
                         mstore(ptr, 0xb88c914800000000000000000000000000000000000000000000000000000000)
                         mstore(add(ptr, 0x4), pair)

@@ -115,15 +115,17 @@ contract AddressesMantle {
     uint8 internal FUSION_X = 0;
     uint8 internal BUTTER = 3;
     uint8 internal CLEOPATRA_CL = 4;
-    uint8 internal IZUMI = 100;
+    uint8 internal IZUMI = 49;
+    uint8 internal STRATUM_CURVE = 51;
+    uint8 internal STRATUM_USD = 50;
+    
+    uint8 internal FUSION_X_V2 = 100;
+    uint8 internal MERCHANT_MOE = 101;
+    uint8 internal MERCHANT_MOE_LB = 151;
+    uint8 internal WOO_FI = 150;
+    uint8 internal KTX = 152;
+    
 
-    uint8 internal FUSION_X_V2 = 50;
-    uint8 internal MERCHANT_MOE = 51;
-    uint8 internal MERCHANT_MOE_LB = 103;
-    uint8 internal WOO_FI = 101;
-    uint8 internal KTX = 104;
-    uint8 internal STRATUM_CURVE = 105;
-    uint8 internal STRATUM_USD = 102;
 
     /** TRADE TYPE FLAG GETTERS */
 

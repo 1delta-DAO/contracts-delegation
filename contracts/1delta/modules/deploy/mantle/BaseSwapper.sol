@@ -16,6 +16,11 @@ import {ExoticSwapper} from "./swappers/Exotic.sol";
 /**
  * @title Base swapper contract
  * @notice Contains basic logic for swap executions with DEXs
+ * DEX Id layout:
+ * 0 --- 100 : Self swappers (Uni V3, Curve, Clipper)
+ * 100 - 255 : Funded swaps (Uni V2, Solidly, Moe,Joe LB, WooFI, GMX)
+ *             Uni V2: 100 - 110
+ *             Solidly:121 - 130
  */
 abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, ExoticSwapper {
     error invalidDexId();
@@ -48,7 +53,7 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
         address receiver, // last step
         bytes calldata path
     ) internal returns (uint256 amountOut) {
-        address currentReceiver = address(this);
+        address currentReceiver;
         ////////////////////////////////////////////////////
         // We switch-case through the different pool types
         // To select the correct pool for the swap action
@@ -59,11 +64,23 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
         uint256 identifier;
         assembly {
             identifier := and(shr(80, calldataload(path.offset)), UINT8_MASK)
+            currentReceiver := address()
         }
         // uniswapV3 style
-        if (identifier < 50) {
+        if (identifier < 49) {
             assembly {
-                if lt(path.length, 66) { currentReceiver := receiver}
+                switch lt(path.length, 66)
+                case 1 { currentReceiver := receiver}
+                default {
+                    // let nextId := and(shr(80, calldataload(add(path.offset, 44))), UINT8_MASK)
+                    // switch gt(nextId, 49) 
+                    // case 1 {
+                    //     currentReceiver := and(ADDRESS_MASK, shr(96, calldataload(add(path.offset, 42))))
+                    // }
+                    // default {
+                    //     currentReceiver := address()
+                    // }
+                }
             }
             amountIn = _swapUniswapV3PoolExactIn(
                 amountIn,
@@ -77,26 +94,8 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
                 path.length := sub(path.length, 44)
             }
         }
-        // uniswapV2 style
-        else if (identifier < 100) {
-            assembly {
-                if lt(path.length, 64) { currentReceiver := receiver}
-            }
-            amountIn = swapUniV2ExactInComplete(
-                amountIn,
-                0,
-                payer,
-                currentReceiver,
-                false,
-                path[:62]
-            );
-            assembly {
-                path.offset := add(path.offset, 42)
-                path.length := sub(path.length, 42)
-            }
-        }
         // iZi
-        else if (identifier == 100) {
+        else if (identifier == 49) {
             assembly {
                 if lt(path.length, 66) { currentReceiver := receiver}
             }
@@ -112,26 +111,8 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
                 path.length := sub(path.length, 44)
             }
         }
-        // WOO Fi
-        else if (identifier == 101) {
-            assembly {
-                if lt(path.length, 44) { currentReceiver := receiver}
-            }
-            address tokenIn;
-            address tokenOut;
-            assembly {
-                let firstWord := calldataload(path.offset)
-                tokenIn := shr(96, firstWord)
-                tokenOut := shr(96, calldataload(add(path.offset, 22)))
-            }
-            amountIn = swapWooFiExactIn(tokenIn, tokenOut, amountIn, payer, currentReceiver);
-            assembly {
-                path.offset := add(path.offset, 21)
-                path.length := sub(path.length, 21)
-            }
-        }
         // Stratum 3USD with wrapper
-        else if (identifier == 102) {
+        else if (identifier == 50) {
             assembly {
                 if lt(path.length, 44) { currentReceiver := receiver}
             }
@@ -148,8 +129,55 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
                 path.length := sub(path.length, 23)
             }
         }
+        // Curve stable general
+        else if (identifier == 51) {
+            assembly {
+                if lt(path.length, 74) { currentReceiver := receiver}
+            }
+            amountIn = swapCurveGeneral(path[:64], amountIn, payer, currentReceiver);
+            assembly {
+                path.offset := add(path.offset, 44)
+                path.length := sub(path.length, 44)
+            }
+        }
+        // uniswapV2 style
+        else if (identifier < 150) {
+            assembly {
+                if lt(path.length, 64) { currentReceiver := receiver}
+            }
+            amountIn = swapUniV2ExactInComplete(
+                amountIn,
+                0,
+                payer,
+                currentReceiver,
+                false,
+                path[:62]
+            );
+            assembly {
+                path.offset := add(path.offset, 42)
+                path.length := sub(path.length, 42)
+            }
+        }
+        // WOO Fi
+        else if (identifier == 150) {
+            assembly {
+                if lt(path.length, 44) { currentReceiver := receiver}
+            }
+            address tokenIn;
+            address tokenOut;
+            assembly {
+                let firstWord := calldataload(path.offset)
+                tokenIn := shr(96, firstWord)
+                tokenOut := shr(96, calldataload(add(path.offset, 22)))
+            }
+            amountIn = swapWooFiExactIn(tokenIn, tokenOut, amountIn, payer, currentReceiver);
+            assembly {
+                path.offset := add(path.offset, 21)
+                path.length := sub(path.length, 21)
+            }
+        }
         // Moe LB
-        else if (identifier == 103) {
+        else if (identifier == 151) {
             assembly {
                 if lt(path.length, 46) { currentReceiver := receiver}
             }
@@ -176,7 +204,7 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
             }
         } 
         // KTX / GMX
-        else if(identifier == 104) {
+        else if(identifier == 152) {
             assembly {
                 if lt(path.length, 44) { currentReceiver := receiver}
             }
@@ -192,17 +220,7 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
                 path.length := sub(path.length, 22)
             }
         } 
-        // Curve stable general
-        else if (identifier == 105) {
-            assembly {
-                if lt(path.length, 74) { currentReceiver := receiver}
-            }
-            amountIn = swapCurveGeneral(path[:64], amountIn, payer, currentReceiver);
-            assembly {
-                path.offset := add(path.offset, 44)
-                path.length := sub(path.length, 44)
-            }
-        } else
+         else
             revert invalidDexId();
         
         ////////////////////////////////////////////////////

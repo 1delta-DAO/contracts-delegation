@@ -888,7 +888,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             let pair
             switch identifier
             // Velo Volatile
-            case 52 {
+            case 121 {
                 switch zeroForOne
                 case 0 {
                     mstore(0xB14, tokenIn)
@@ -907,7 +907,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
             }
             // Velo Stable
-            case 53 {
+            case 122 {
                 switch zeroForOne
                 case 0 {
                     mstore(0xB14, tokenIn)
@@ -926,7 +926,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
             }
             // Cleo V1 Volatile
-            case 54 {
+            case 123 {
                 switch zeroForOne
                 case 0 {
                     mstore(0xB14, tokenIn)
@@ -945,7 +945,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
             }
             // Cleo V1 Stable
-            case 55 {
+            case 124 {
                 switch zeroForOne
                 case 0 {
                     mstore(0xB14, tokenIn)
@@ -964,7 +964,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
             }
             // Stratum Volatile
-            case 56 {
+            case 125 {
                 switch zeroForOne
                 case 0 {
                     mstore(0xB14, tokenIn)
@@ -982,7 +982,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
 
                 pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
             }
-            // 57: Stratum Stable
+            // 126: Stratum Stable
             default {
                 switch zeroForOne
                 case 0 {
@@ -1258,7 +1258,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             identifier := and(shr(80, calldataload(path.offset)), UINT8_MASK)
         }
         // uniswapV3 style
-        if (identifier < 50) {
+        if (identifier < 49) {
             _swapUniswapV3PoolExactOut(
                 -int256(amountOut),
                 maxIn,
@@ -1267,18 +1267,8 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 path
             );
         }
-        // uniswapV2 style
-        else if (identifier < 100) {
-            _swapV2StyleExactOut(
-                amountOut,
-                maxIn,
-                payer,
-                receiver,
-                path
-            );
-        }
         // iZi
-        else if (identifier == 100) {
+        else if (identifier == 49) {
             _swapIZIPoolExactOut(
                 uint128(amountOut),
                 maxIn,
@@ -1286,8 +1276,17 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 receiver,
                 path
             );
+        // uniswapV2 style
+        } else if (identifier < 150) {
+            _swapV2StyleExactOut(
+                amountOut,
+                maxIn,
+                payer,
+                receiver,
+                path
+            );
         // special case: Moe LB, no flash swaps, recursive nesting is applied
-        } else if (identifier == 103) {
+        } else if (identifier == 151) {
             address tokenIn;
             address tokenOutThenPair;
             uint256 amountIn;
@@ -1364,7 +1363,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             identifier := and(shr(80, calldataload(path.offset)), UINT8_MASK)
         }
         // uniswapV3 types
-        if (identifier < 50) {
+        if (identifier < 49) {
             _swapUniswapV3PoolExactIn(
                 amountIn,
                 amountOutMinimum,
@@ -1373,8 +1372,18 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 path
             );
         }
+        // iZi
+        else if (identifier == 49) {
+            _swapIZIPoolExactIn(
+                uint128(amountIn),
+                amountOutMinimum,
+                msg.sender,
+                address(this),
+                path
+            );
+        }
         // uniswapV2 types
-        else if (identifier < 100) {
+        else if (identifier < 150) {
             swapUniV2ExactInComplete(
                 amountIn,
                 amountOutMinimum,
@@ -1384,16 +1393,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 path
             );
         }
-        // iZi
-        else if (identifier == 100) {
-            _swapIZIPoolExactIn(
-                uint128(amountIn),
-                amountOutMinimum,
-                msg.sender,
-                address(this),
-                path
-            );
-        } else revert InvalidDexId();
+        else revert InvalidDexId();
     }
 
     /// @dev gets leder and pay config - the assumption is that the last byte is the payType
