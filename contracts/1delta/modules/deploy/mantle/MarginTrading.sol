@@ -455,7 +455,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // If the caller is not the calculated pool, we revert
             ////////////////////////////////////////////////////
             if iszero(eq(caller(), and(ADDRESS_MASK, keccak256(s, 85)))) {
-                // revert (0, 0)
+                revert (0, 0)
             }
         }
         clSwapCallback(
