@@ -24,7 +24,8 @@ import {ExoticSwapper} from "./swappers/Exotic.sol";
  */
 abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, ExoticSwapper {
     error invalidDexId();
-    error Slippage();
+    // selectors for errors
+    bytes4 internal constant SLIPPAGE = 0x7dd37f70;
 
     constructor() {}
 
@@ -42,105 +43,101 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
     }
 
 
-    function _preFundTrade(
-        address payer,
-        uint256 amountIn,
-        bytes calldata path
-    ) internal returns (address receiver) {
-        address tokenIn;
-        uint256 dexId;
-        address nextPool;
+    /**
+     * Fund the first pool for self funded DEXs like Uni V2, GMX, LB, WooFi and Solidly V2 
+     */
+    function _preFundTrade(address payer, uint256 amountIn, bytes calldata path) internal returns (uint256 dexId) {
         assembly {
-            tokenIn := and(
+            dexId := and(shr(80, calldataload(path.offset)), UINT8_MASK)
+            ////////////////////////////////////////////////////
+            // dexs with ids of 100 and greater are assumed to
+            // be based on pre-funding, i.e. the funds have to
+            // be sendt to the DEX before the swap call  
+            ////////////////////////////////////////////////////
+            if gt(dexId, 99) {
+                let tokenIn := and(
                     ADDRESS_MASK,
                     shr(
                         96,
                         calldataload(path.offset) // nextPoolAddress
                     )
-            )
-            nextPool := and(
+                )
+                let nextPool := and(
                     ADDRESS_MASK,
                     shr(
                         96,
                         calldataload(add(path.offset, 22)) // nextPoolAddress
                     )
-            )
-            
-            dexId := and(shr(80, calldataload(path.offset)), UINT8_MASK)
-            switch gt(dexId, 99) 
-            case 1 {
-                // transfer to nextPool
-                receiver := nextPool
-            }
-            default {
-                receiver := address()
-            }
-        }
-        if( dexId > 99) {
-           if(payer == address(this)) _transferERC20Tokens(tokenIn, receiver, amountIn);
-           else _transferERC20TokensFrom(tokenIn, payer, receiver, amountIn);
-        } 
-    }
+                )
 
+                ////////////////////////////////////////////////////
+                // if the payer is this not contract, we
+                // `transferFrom`, otherwise use `transfer`
+                ////////////////////////////////////////////////////
+                switch eq(payer, address())
+                case 0 {
+                    let ptr := mload(0x40) // free memory pointer
 
-    function _preFundTradeMargin(
-        address payer,
-        uint256 amountIn,
-        bytes calldata path
-    ) internal returns (address receiver) {
-        address tokenIn;
-        uint256 dexId;
-        address nextPool;
-        assembly {
-            tokenIn := and(
-                    ADDRESS_MASK,
-                    shr(
-                        96,
-                        calldataload(path.offset) // nextPoolAddress
+                    // selector for transferFrom(address,address,uint256)
+                    mstore(ptr, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
+                    mstore(add(ptr, 0x04), payer)
+                    mstore(add(ptr, 0x24), nextPool)
+                    mstore(add(ptr, 0x44), amountIn)
+
+                    let success := call(gas(), tokenIn, 0, ptr, 0x64, ptr, 32)
+
+                    let rdsize := returndatasize()
+
+                    // Check for ERC20 success. ERC20 tokens should return a boolean,
+                    // but some don't. We accept 0-length return data as success, or at
+                    // least 32 bytes that starts with a 32-byte boolean true.
+                    success := and(
+                        success, // call itself succeeded
+                        or(
+                            iszero(rdsize), // no return data, or
+                            and(
+                                iszero(lt(rdsize, 32)), // at least 32 bytes
+                                eq(mload(ptr), 1) // starts with uint256(1)
+                            )
+                        )
                     )
-            )
-            nextPool := and(
-                    ADDRESS_MASK,
-                    shr(
-                        96,
-                        calldataload(add(path.offset, 22)) // nextPoolAddress
-                    )
-            )
-            
-            dexId := and(shr(80, calldataload(path.offset)), UINT8_MASK)
-            switch gt(dexId, 99) 
-            case 1 {
-                // transfer to nextPool
-                receiver := nextPool
-            }
-            default {
-                receiver := address()
-            }
-        }
-        if( dexId > 99) {
-           if(payer == address(this)) _transferERC20Tokens(tokenIn, receiver, amountIn);
-           else _transferERC20TokensFrom(tokenIn, payer, receiver, amountIn);
-        } 
-    }
 
+                    if iszero(success) {
+                        returndatacopy(ptr, 0, rdsize)
+                        revert(ptr, rdsize)
+                    }
+                }
+                default {
+                    let ptr := mload(0x40) // free memory pointer
 
-    function _getPoolReceiver(uint256 offset, bytes calldata path) internal view returns (address receiver) {
-        uint256 dexId;
-        assembly {
-            dexId := and(shr(80, calldataload(path.offset)), UINT8_MASK)
-            switch gt(dexId, 99) 
-            case 1 {
-                // transfer to nextPool
-                receiver := and(
-                    ADDRESS_MASK,
-                    shr(
-                        96,
-                        calldataload(add(path.offset, offset)) // nextPoolAddress
+                    // selector for transfer(address,uint256)
+                    mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+                    mstore(add(ptr, 0x04), nextPool)
+                    mstore(add(ptr, 0x24), amountIn)
+
+                    let success := call(gas(), tokenIn, 0, ptr, 0x44, ptr, 32)
+
+                    let rdsize := returndatasize()
+
+                    // Check for ERC20 success. ERC20 tokens should return a boolean,
+                    // but some don't. We accept 0-length return data as success, or at
+                    // least 32 bytes that starts with a 32-byte boolean true.
+                    success := and(
+                        success, // call itself succeeded
+                        or(
+                            iszero(rdsize), // no return data, or
+                            and(
+                                iszero(lt(rdsize, 32)), // at least 32 bytes
+                                eq(mload(ptr), 1) // starts with uint256(1)
+                            )
+                        )
                     )
-            )
-            }
-            default {
-                receiver := address()
+
+                    if iszero(success) {
+                        returndatacopy(ptr, 0, rdsize)
+                        revert(ptr, rdsize)
+                    }
+                }
             }
         }
     }
@@ -148,12 +145,16 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
     /**
      * Swaps exact in internally using all implemented Dexs
      * Will NOT use a flash swap
+     * The dexId is assumed to be fetched before in a prefunding action
+     * As such, the parameter can be plugged in here directly 
      * @param amountIn sell amount
+     * @param dexId dex identifier
      * @param path path calldata
      * @return amountOut buy amount
      */
     function swapExactIn(
         uint256 amountIn,
+        uint256 dexId,
         address payer, // first step
         address receiver, // last step
         bytes calldata path
@@ -166,11 +167,7 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
         // as such, this is dynamically usable within
         // flash-swaps 
         ////////////////////////////////////////////////////
-        uint256 dexId;
-        assembly {
-            dexId := and(shr(80, calldataload(path.offset)), UINT8_MASK)
-            currentReceiver := address()
-        }
+
         // uniswapV3 style
         if (dexId < 49) {
             assembly {
@@ -486,11 +483,14 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
         // path is short enough as a break criteria
         ////////////////////////////////////////////////////
         if (path.length > 30) {
+            assembly {
+                dexId := and(shr(80, calldataload(path.offset)), UINT8_MASK)
+            }
             ////////////////////////////////////////////////////
             // In the second or later iterations, the payer is
             // always this contract
             ////////////////////////////////////////////////////
-            return swapExactIn(amountIn, address(this), receiver, path);
+            return swapExactIn(amountIn, dexId, address(this), receiver, path);
         } else return amountIn;
     }
 
@@ -498,6 +498,8 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
     /**
      * Swaps exact in through a single Dex
      * Will NOT use a flash swap
+     * No complex pre-funding
+     * No calldata slicing
      * @param amountIn sell amount
      * @param path path calldata
      * @return amountOut buy amount
@@ -611,6 +613,12 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
          else
             revert invalidDexId();
 
-        if(minOut > amountOut) revert Slippage();
+        // slippage check
+        assembly {
+            if lt(amountOut, minOut) {
+                mstore(0, SLIPPAGE)
+                revert (0, 0x4)
+            }
+        }
     }
 }

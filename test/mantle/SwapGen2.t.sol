@@ -5,6 +5,7 @@ import "./DeltaSetup.f.sol";
 
 contract SwapGen2Test is DeltaSetup {
     uint256 DEFAULT_IR_MODE = 2; // variable
+    address internal LEND = 0x25356aeca4210eF7553140edb9b8026089E49396;
 
     function test_mantle_gen_2_spot_exact_in() external /** address user, uint8 lenderId */ {
         address user = testUser;
@@ -34,6 +35,36 @@ contract SwapGen2Test is DeltaSetup {
         balanceIn = balanceIn - IERC20All(assetFrom).balanceOf(user);
         assertApproxEqAbs(balanceIn, amountToSwap, 0);
         assertApproxEqAbs(amountToSwap, balanceOut, 1e6);
+    }
+
+    function test_mantle_gen_2_spot_exact_in_v2_fusion_pure() external /** address user, uint8 lenderId */ {
+        address user = testUser;
+        vm.assume(user != address(0));
+        address assetFrom = WMNT;
+
+        address assetTo = LEND;
+        deal(assetFrom, user, 1e20);
+
+        uint256 amountToSwap = 20.0e6;
+
+        bytes memory swapPath = getSpotExactInSingleGen2FusionX(assetFrom, assetTo);
+        uint256 minimumOut = 10.0e6;
+        vm.prank(user);
+        IERC20All(assetFrom).approve(address(aggregator), amountToSwap);
+
+        uint256 balanceIn = IERC20All(assetFrom).balanceOf(user);
+        uint256 balanceOut = IERC20All(assetTo).balanceOf(user);
+
+        vm.prank(user);
+        uint256 gas = gasleft();
+        aggregator.swapExactInSpot(amountToSwap, minimumOut, user, swapPath);
+        gas = gas - gasleft();
+        console.log("gas", gas, 144771);
+
+        balanceOut = IERC20All(assetTo).balanceOf(user) - balanceOut;
+        balanceIn = balanceIn - IERC20All(assetFrom).balanceOf(user);
+        assertApproxEqAbs(balanceIn, amountToSwap, 0);
+        assertApproxEqAbs(178522773, balanceOut, 1e6);
     }
 
     function test_mantle_gen_2_spot_exact_out() external /** address user, uint8 lenderId */ {
@@ -223,6 +254,12 @@ contract SwapGen2Test is DeltaSetup {
         uint8 poolId = AGNI;
         address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
         return abi.encodePacked(tokenIn, uint8(10), poolId, pool, fee, tokenOut);
+    }
+
+    function getSpotExactInSingleGen2FusionX(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
+        uint8 poolId = FUSION_X_V2;
+        address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
+        return abi.encodePacked(tokenIn, uint8(10), poolId, pool, tokenOut);
     }
 
     function getSpotExactOutSingleGen2(address tokenOut, address tokenIn) internal view returns (bytes memory data) {

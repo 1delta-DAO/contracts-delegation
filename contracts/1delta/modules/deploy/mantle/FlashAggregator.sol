@@ -39,8 +39,8 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
         address receiver,
         bytes calldata path
     ) external payable {
-        _preFundTrade(msg.sender, amountIn, path);
-        uint256 amountOut = swapExactIn(amountIn, msg.sender, receiver, path);
+        uint256 dexId = _preFundTrade(msg.sender, amountIn, path);
+        uint256 amountOut = swapExactIn(amountIn, dexId, msg.sender, receiver, path);
         // slippage check
         assembly {
             if lt(amountOut, minimumAmountOut) {
@@ -106,7 +106,9 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
         }
         uint256 amountIn = _balanceOfThis(tokenIn);
         if (amountIn == 0) revert NoBalance(); // revert if amount is zero
-        uint256 amountOut = swapExactIn(amountIn, msg.sender, msg.sender, path);
+
+        uint256 dexId = _preFundTrade(msg.sender, amountIn, path);
+        uint256 amountOut = swapExactIn(amountIn, dexId, msg.sender, msg.sender, path);
         // slippage check
         assembly {
             if lt(amountOut, minimumAmountOut) {

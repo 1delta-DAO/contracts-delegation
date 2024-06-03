@@ -41,6 +41,7 @@ contract DeltaSetup is AddressesMantle, Script, Test {
     IModuleConfig internal deltaConfig;
     IManagement internal management;
     TestQuoterMantle testQuoter;
+    DeltaFlashAggregatorMantle internal aggregator;
 
     mapping(address => mapping(uint8 => address)) internal collateralTokens;
     mapping(address => mapping(uint8 => address)) internal debtTokens;
@@ -167,7 +168,7 @@ contract DeltaSetup is AddressesMantle, Script, Test {
 
         // add all modules
         deltaConfig.configureModules(_moduleConfig);
-
+        aggregator = _aggregator;
         management = IManagement(brokerProxyAddress);
         MarginTraderInit(brokerProxyAddress).initMarginTrader(address(0));
     }
