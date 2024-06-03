@@ -24,6 +24,7 @@ import {ExoticSwapper} from "./swappers/Exotic.sol";
  */
 abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, ExoticSwapper {
     error invalidDexId();
+    error Slippage();
 
     constructor() {}
 
@@ -37,6 +38,110 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
     function getLastToken(bytes calldata data) internal pure returns (address token) {
         assembly {
             token := shr(96, calldataload(add(data.offset, sub(data.length, 22))))
+        }
+    }
+
+
+    function _preFundTrade(
+        address payer,
+        uint256 amountIn,
+        bytes calldata path
+    ) internal returns (address receiver) {
+        address tokenIn;
+        uint256 dexId;
+        address nextPool;
+        assembly {
+            tokenIn := and(
+                    ADDRESS_MASK,
+                    shr(
+                        96,
+                        calldataload(path.offset) // nextPoolAddress
+                    )
+            )
+            nextPool := and(
+                    ADDRESS_MASK,
+                    shr(
+                        96,
+                        calldataload(add(path.offset, 22)) // nextPoolAddress
+                    )
+            )
+            
+            dexId := and(shr(80, calldataload(path.offset)), UINT8_MASK)
+            switch gt(dexId, 99) 
+            case 1 {
+                // transfer to nextPool
+                receiver := nextPool
+            }
+            default {
+                receiver := address()
+            }
+        }
+        if( dexId > 99) {
+           if(payer == address(this)) _transferERC20Tokens(tokenIn, receiver, amountIn);
+           else _transferERC20TokensFrom(tokenIn, payer, receiver, amountIn);
+        } 
+    }
+
+
+    function _preFundTradeMargin(
+        address payer,
+        uint256 amountIn,
+        bytes calldata path
+    ) internal returns (address receiver) {
+        address tokenIn;
+        uint256 dexId;
+        address nextPool;
+        assembly {
+            tokenIn := and(
+                    ADDRESS_MASK,
+                    shr(
+                        96,
+                        calldataload(path.offset) // nextPoolAddress
+                    )
+            )
+            nextPool := and(
+                    ADDRESS_MASK,
+                    shr(
+                        96,
+                        calldataload(add(path.offset, 22)) // nextPoolAddress
+                    )
+            )
+            
+            dexId := and(shr(80, calldataload(path.offset)), UINT8_MASK)
+            switch gt(dexId, 99) 
+            case 1 {
+                // transfer to nextPool
+                receiver := nextPool
+            }
+            default {
+                receiver := address()
+            }
+        }
+        if( dexId > 99) {
+           if(payer == address(this)) _transferERC20Tokens(tokenIn, receiver, amountIn);
+           else _transferERC20TokensFrom(tokenIn, payer, receiver, amountIn);
+        } 
+    }
+
+
+    function _getPoolReceiver(uint256 offset, bytes calldata path) internal view returns (address receiver) {
+        uint256 dexId;
+        assembly {
+            dexId := and(shr(80, calldataload(path.offset)), UINT8_MASK)
+            switch gt(dexId, 99) 
+            case 1 {
+                // transfer to nextPool
+                receiver := and(
+                    ADDRESS_MASK,
+                    shr(
+                        96,
+                        calldataload(add(path.offset, offset)) // nextPoolAddress
+                    )
+            )
+            }
+            default {
+                receiver := address()
+            }
         }
     }
 
@@ -61,25 +166,36 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
         // as such, this is dynamically usable within
         // flash-swaps 
         ////////////////////////////////////////////////////
-        uint256 identifier;
+        uint256 dexId;
         assembly {
-            identifier := and(shr(80, calldataload(path.offset)), UINT8_MASK)
+            dexId := and(shr(80, calldataload(path.offset)), UINT8_MASK)
             currentReceiver := address()
         }
         // uniswapV3 style
-        if (identifier < 49) {
+        if (dexId < 49) {
             assembly {
                 switch lt(path.length, 66)
                 case 1 { currentReceiver := receiver}
                 default {
-                    // let nextId := and(shr(80, calldataload(add(path.offset, 44))), UINT8_MASK)
-                    // switch gt(nextId, 49) 
-                    // case 1 {
-                    //     currentReceiver := and(ADDRESS_MASK, shr(96, calldataload(add(path.offset, 42))))
-                    // }
-                    // default {
-                    //     currentReceiver := address()
-                    // }
+                    let nextId := and(shr(80, calldataload(add(path.offset, 44))), UINT8_MASK)
+                    switch gt(nextId, 99) 
+                    case 1 {
+                        currentReceiver := and(
+                            ADDRESS_MASK,
+                            shr(
+                                96,
+                                calldataload(
+                                    add(
+                                        path.offset,
+                                        66 // 20 + 2 + 20 + 2 + 20 + 2 [poolAddress starts here]
+                                    )
+                                ) // poolAddress
+                            )
+                        )
+                    }
+                    default {
+                        currentReceiver := address()
+                    }
                 }
             }
             amountIn = _swapUniswapV3PoolExactIn(
@@ -95,9 +211,31 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
             }
         }
         // iZi
-        else if (identifier == 49) {
+        else if (dexId == 49) {
             assembly {
-                if lt(path.length, 66) { currentReceiver := receiver}
+                switch lt(path.length, 66)
+                case 1 { currentReceiver := receiver}
+                default {
+                    let nextId := and(shr(80, calldataload(add(path.offset, 44))), UINT8_MASK)
+                    switch gt(nextId, 99) 
+                    case 1 {
+                        currentReceiver := and(
+                            ADDRESS_MASK,
+                            shr(
+                                96,
+                                calldataload(
+                                    add(
+                                        path.offset,
+                                        66 // 20 + 2 + 20 + 2 + 20 + 2 [poolAddress starts here]
+                                    )
+                                ) // poolAddress
+                            )
+                        )
+                    }
+                    default {
+                        currentReceiver := address()
+                    }
+                }
             }
             amountIn = _swapIZIPoolExactIn(
                 uint128(amountIn),
@@ -112,7 +250,7 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
             }
         }
         // Stratum 3USD with wrapper
-        else if (identifier == 50) {
+        else if (dexId == 50) {
             assembly {
                 if lt(path.length, 44) { currentReceiver := receiver}
             }
@@ -130,9 +268,31 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
             }
         }
         // Curve stable general
-        else if (identifier == 51) {
+        else if (dexId == 51) {
             assembly {
-                if lt(path.length, 74) { currentReceiver := receiver}
+                switch lt(path.length, 74)
+                case 1 { currentReceiver := receiver}
+                default {
+                    let nextId := and(shr(80, calldataload(add(path.offset, 44))), UINT8_MASK)
+                    switch gt(nextId, 99) 
+                    case 1 {
+                        currentReceiver := and(
+                            ADDRESS_MASK,
+                            shr(
+                                96,
+                                calldataload(
+                                    add(
+                                        path.offset,
+                                        66 // 20 + 2 + 20 + 2 + 20 + 2 [poolAddress starts here]
+                                    )
+                                ) // poolAddress
+                            )
+                        )
+                    }
+                    default {
+                        currentReceiver := address()
+                    }
+                }
             }
             amountIn = swapCurveGeneral(path[:64], amountIn, payer, currentReceiver);
             assembly {
@@ -141,9 +301,31 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
             }
         }
         // uniswapV2 style
-        else if (identifier < 150) {
+        else if (dexId < 150) {
             assembly {
-                if lt(path.length, 64) { currentReceiver := receiver}
+                switch lt(path.length, 64)
+                case 1 { currentReceiver := receiver}
+                default {
+                    let nextId := and(shr(80, calldataload(add(path.offset, 44))), UINT8_MASK)
+                    switch gt(nextId, 99) 
+                    case 1 {
+                        currentReceiver := and(
+                            ADDRESS_MASK,
+                            shr(
+                                96,
+                                calldataload(
+                                    add(
+                                        path.offset,
+                                        64 // 20 + 2 + 20 + 20 + 2 [poolAddress starts here]
+                                    )
+                                ) // poolAddress
+                            )
+                        )
+                    }
+                    default {
+                        currentReceiver := address()
+                    }
+                }
             }
             amountIn = swapUniV2ExactInComplete(
                 amountIn,
@@ -159,65 +341,141 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
             }
         }
         // WOO Fi
-        else if (identifier == 150) {
+        else if (dexId == 150) {
             assembly {
-                if lt(path.length, 44) { currentReceiver := receiver}
+                switch lt(path.length, 64)
+                case 1 { currentReceiver := receiver}
+                default {
+                    let nextId := and(shr(80, calldataload(add(path.offset, 44))), UINT8_MASK)
+                    switch gt(nextId, 99) 
+                    case 1 {
+                        currentReceiver := and(
+                            ADDRESS_MASK,
+                            shr(
+                                96,
+                                calldataload(
+                                    add(
+                                        path.offset,
+                                        64 // 20 + 2 + 20 + 20 + 2 [poolAddress starts here]
+                                    )
+                                ) // poolAddress
+                            )
+                        )
+                    }
+                    default {
+                        currentReceiver := address()
+                    }
+                }
             }
             address tokenIn;
             address tokenOut;
+            address pool;
             assembly {
-                let firstWord := calldataload(path.offset)
-                tokenIn := shr(96, firstWord)
-                tokenOut := shr(96, calldataload(add(path.offset, 22)))
+                tokenIn := shr(96,  calldataload(path.offset))
+                tokenOut := shr(96, calldataload(add(path.offset, 42)))
+                pool := shr(96, calldataload(add(path.offset, 22)))
             }
-            amountIn = swapWooFiExactIn(tokenIn, tokenOut, amountIn, payer, currentReceiver);
+            amountIn = swapWooFiExactIn(
+                tokenIn, 
+                tokenOut, 
+                pool, 
+                amountIn,
+                currentReceiver
+            );
             assembly {
-                path.offset := add(path.offset, 21)
-                path.length := sub(path.length, 21)
+                path.offset := add(path.offset, 42)
+                path.length := sub(path.length, 42)
             }
         }
         // Moe LB
-        else if (identifier == 151) {
+        else if (dexId == 151) {
             assembly {
-                if lt(path.length, 46) { currentReceiver := receiver}
+                switch lt(path.length, 64)
+                case 1 { currentReceiver := receiver}
+                default {
+                    let nextId := and(shr(80, calldataload(add(path.offset, 44))), UINT8_MASK)
+                    switch gt(nextId, 99) 
+                    case 1 {
+                        currentReceiver := and(
+                            ADDRESS_MASK,
+                            shr(
+                                96,
+                                calldataload(
+                                    add(
+                                        path.offset,
+                                        64 // 20 + 2 + 20 + 20 + 2 [poolAddress starts here]
+                                    )
+                                ) // poolAddress
+                            )
+                        )
+                    }
+                    default {
+                        currentReceiver := address()
+                    }
+                }
             }
             address tokenIn;
             address tokenOut;
-            uint16 bin;
-            assembly {
-                let firstWord := calldataload(path.offset)
-                tokenIn := shr(96, firstWord)
-                tokenOut := shr(96, calldataload(add(path.offset, 24)))
-                bin := and(shr(64, firstWord), UINT16_MASK)
-            }
-            amountIn = swapLBexactIn(
-                tokenIn,
-                tokenOut,
-                amountIn,
-                payer,
-                currentReceiver,
-                bin
-            );
-            assembly {
-                path.offset := add(path.offset, 24)
-                path.length := sub(path.length, 24)
-            }
-        } 
-        // KTX / GMX
-        else if(identifier == 152) {
-            assembly {
-                if lt(path.length, 44) { currentReceiver := receiver}
-            }
-            address tokenIn;
-            address tokenOut;
+            address pair;
             assembly {
                 tokenIn := shr(96, calldataload(path.offset))
-                tokenOut := shr(96, calldataload(add(path.offset, 22)))
+                tokenOut := shr(96, calldataload(add(path.offset, 42)))
+                pair := shr(96, calldataload(add(path.offset, 22)))
             }
-            amountIn = swapKTXExactIn(tokenIn, tokenOut, amountIn, payer, currentReceiver);
+            amountIn = swapLBexactIn(
+                tokenOut,
+                pair,
+                currentReceiver
+            );
             assembly {
-                path.offset := add(path.offset, 22)
-                path.length := sub(path.length, 22)
+                path.offset := add(path.offset, 42)
+                path.length := sub(path.length, 42)
+            }
+        } 
+        // GMX
+        else if(dexId == 152) {
+            assembly {
+                switch lt(path.length, 64)
+                case 1 { currentReceiver := receiver}
+                default {
+                    let nextId := and(shr(80, calldataload(add(path.offset, 44))), UINT8_MASK)
+                    switch gt(nextId, 99) 
+                    case 1 {
+                        currentReceiver := and(
+                            ADDRESS_MASK,
+                            shr(
+                                96,
+                                calldataload(
+                                    add(
+                                        path.offset,
+                                        64 // 20 + 2 + 20 + 20 + 2 [poolAddress starts here]
+                                    )
+                                ) // poolAddress
+                            )
+                        )
+                    }
+                    default {
+                        currentReceiver := address()
+                    }
+                }
+            }
+            address tokenIn;
+            address tokenOut;
+            address vault;
+            assembly {
+                tokenIn := shr(96, calldataload(path.offset))
+                tokenOut := shr(96, calldataload(add(path.offset, 42)))
+                vault := shr(96, calldataload(add(path.offset, 22)))
+            }
+            amountIn = swapGMXExactIn(
+                tokenIn,
+                tokenOut,
+                vault,
+                currentReceiver
+            );
+            assembly {
+                path.offset := add(path.offset, 42)
+                path.length := sub(path.length, 42)
             }
         } 
          else
@@ -234,5 +492,125 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
             ////////////////////////////////////////////////////
             return swapExactIn(amountIn, address(this), receiver, path);
         } else return amountIn;
+    }
+
+
+    /**
+     * Swaps exact in through a single Dex
+     * Will NOT use a flash swap
+     * @param amountIn sell amount
+     * @param path path calldata
+     * @return amountOut buy amount
+     */
+    function swapExactInSingle(
+        uint256 amountIn,
+        uint256 minOut,
+        address receiver, // last step
+        bytes calldata path
+    ) external returns (uint256 amountOut) {
+        ////////////////////////////////////////////////////
+        // No loop, direct single swaps are more efficient
+        // since we can skip larger chunks of the logic
+        ////////////////////////////////////////////////////
+        uint256 dexId;
+        assembly {
+            dexId := and(shr(80, calldataload(path.offset)), UINT8_MASK)
+        }
+        // uniswapV3 style
+        if (dexId < 49) {
+            amountOut = _swapUniswapV3PoolExactIn(
+                amountIn,
+                0,
+                msg.sender,
+                receiver,
+                path[:64] // we do not need end flags
+            );
+        }
+        // iZi
+        else if (dexId == 49) {
+            amountOut = _swapIZIPoolExactIn(
+                uint128(amountIn),
+                0,
+                msg.sender,
+                receiver,
+                path[:64]
+            );
+        }
+        // Stratum 3USD with wrapper
+        else if (dexId == 50) {
+            address tokenIn;
+            address tokenOut;
+            assembly {
+                let firstWord := calldataload(path.offset)
+                tokenIn := shr(96, firstWord)
+                tokenOut := shr(96, calldataload(add(path.offset, 25)))
+            }
+            amountOut = swapStratum3(tokenIn, tokenOut, amountIn, msg.sender, receiver);
+        }
+        // Curve stable general
+        else if (dexId == 51) {
+            amountOut = swapCurveGeneral(path[:64], amountIn, msg.sender, receiver);
+        }
+        // uniswapV2 style
+        else if (dexId < 150) {
+            amountOut = swapUniV2ExactInComplete(
+                amountIn,
+                0,
+                msg.sender,
+                receiver,
+                false,
+                path[:62]
+            );
+        }
+        // WOO Fi
+        else if (dexId == 150) {
+            address tokenIn;
+            address tokenOut;
+            address pool;
+            assembly {
+                tokenIn := shr(96,  calldataload(path.offset))
+                tokenOut := shr(96, calldataload(add(path.offset, 42)))
+                pool := shr(96, calldataload(add(path.offset, 22)))
+            }
+            amountOut = swapWooFiExactIn(
+                tokenIn,
+                tokenOut,
+                pool,
+                amountIn,
+                receiver
+            );
+        }
+        // Moe LB
+        else if (dexId == 151) {
+            address tokenIn;
+            address tokenOut;
+            address pair;
+            assembly {
+                tokenIn := shr(96, calldataload(path.offset))
+                tokenOut := shr(96, calldataload(add(path.offset, 42)))
+                pair := shr(96, calldataload(add(path.offset, 22)))
+            }
+            amountOut = swapLBexactIn(
+                tokenOut,
+                pair,
+                receiver
+            );
+        } 
+        // KTX / GMX
+        else if(dexId == 152) {
+            address tokenIn;
+            address tokenOut;
+            address vault;
+            assembly {
+                tokenIn := shr(96, calldataload(path.offset))
+                tokenOut := shr(96, calldataload(add(path.offset, 42)))
+                vault := shr(96, calldataload(add(path.offset, 22)))
+            }
+            amountOut = swapGMXExactIn(tokenIn, tokenOut, vault, receiver);
+        } 
+         else
+            revert invalidDexId();
+
+        if(minOut > amountOut) revert Slippage();
     }
 }

@@ -3,6 +3,17 @@ pragma solidity ^0.8.19;
 
 import "./DeltaSetup.f.sol";
 
+interface ILBFactory {
+    struct LBPairInformation {
+        uint16 binStep;
+        address LBPair;
+        bool createdByOwner;
+        bool ignoredForRouting;
+    }
+
+    function getLBPairInformation(address tokenX, address tokenY, uint256 binStep) external view returns (LBPairInformation memory);
+}
+
 /**
  * Tests Merchant Moe's LB in all configs
  * Exact out ath the beginning, end
@@ -364,25 +375,30 @@ contract GeneralMoeLBTest is DeltaSetup {
         address pool = testQuoter._v2TypePairAddress(USDe, tokenIn, MERCHANT_MOE);
         bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, USDe);
         poolId = MERCHANT_MOE_LB;
-        return abi.encodePacked(firstPart, midId, poolId, BIN_STEP_LOWEST, tokenOut, DEFAULT_LENDER, endId);
+        pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenOut, USDe, BIN_STEP_LOWEST).LBPair;
+        return abi.encodePacked(firstPart, midId, poolId, pool, tokenOut, DEFAULT_LENDER, endId);
     }
 
     function getSpotExactInSingleLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = BIN_STEP_LOWEST;
         uint8 poolId = MERCHANT_MOE_LB;
-        return abi.encodePacked(tokenIn, uint8(10), poolId, fee, tokenOut, uint8(99));
+        address pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenOut, tokenIn, fee).LBPair;
+        return abi.encodePacked(tokenIn, uint8(10), poolId, pool, tokenOut, uint8(99));
     }
 
     function getSpotExactOutSingleLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint8 poolId = MERCHANT_MOE_LB;
-        return abi.encodePacked(tokenOut, uint8(11), poolId, BIN_STEP_LOWEST, tokenIn);
+        address pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenOut, tokenIn, BIN_STEP_LOWEST).LBPair;
+        return abi.encodePacked(tokenOut, uint8(11), poolId, pool, tokenIn);
     }
 
     function getSpotExactOutMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint8 poolId = MERCHANT_MOE_LB;
-        bytes memory firstPart = abi.encodePacked(tokenOut, uint8(1), poolId, BIN_STEP_LOWEST, USDT);
+        address pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenOut, USDT, BIN_STEP_LOWEST).LBPair;
+
+        bytes memory firstPart = abi.encodePacked(tokenOut, uint8(1), poolId, pool, USDT);
         poolId = MERCHANT_MOE;
-        address pool = testQuoter._v2TypePairAddress(USDT, tokenIn, MERCHANT_MOE);
+        pool = testQuoter._v2TypePairAddress(USDT, tokenIn, MERCHANT_MOE);
         return abi.encodePacked(firstPart, uint8(11), poolId, pool, tokenIn);
     }
 
@@ -391,7 +407,8 @@ contract GeneralMoeLBTest is DeltaSetup {
         address pool = testQuoter._v2TypePairAddress(USDT, tokenOut, MERCHANT_MOE);
         bytes memory firstPart = abi.encodePacked(tokenOut, uint8(1), poolId, pool, USDT);
         poolId = MERCHANT_MOE_LB;
-        return abi.encodePacked(firstPart, uint8(1), poolId, BIN_STEP_LOWEST, tokenIn);
+        pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenIn, USDT, BIN_STEP_LOWEST).LBPair;
+        return abi.encodePacked(firstPart, uint8(1), poolId, pool, tokenIn);
     }
 
     function getSpotExactInMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
@@ -400,28 +417,32 @@ contract GeneralMoeLBTest is DeltaSetup {
         address pool = testQuoter._v3TypePool(USDT, tokenIn, poolId, DEX_FEE_LOW);
         bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, DEX_FEE_LOW, USDT);
         poolId = MERCHANT_MOE_LB;
-        return abi.encodePacked(firstPart, midId, poolId, BIN_STEP_LOWEST, tokenOut, endId);
+        pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenOut, USDT, BIN_STEP_LOWEST).LBPair;
+        return abi.encodePacked(firstPart, midId, poolId, pool, tokenOut, endId);
     }
 
     function getOpenExactOutMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         (uint8 actionId, uint8 midId, uint8 endId) = getOpenExactOutFlags();
         address pool = testQuoter._v2TypePairAddress(USDe, tokenOut, MERCHANT_MOE);
         bytes memory firstPart = abi.encodePacked(tokenOut, actionId, MERCHANT_MOE, pool, USDe);
-        return abi.encodePacked(firstPart, midId, MERCHANT_MOE_LB, BIN_STEP_LOWEST, tokenIn, DEFAULT_LENDER, endId);
+        pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenIn, USDe, BIN_STEP_LOWEST).LBPair;
+        return abi.encodePacked(firstPart, midId, MERCHANT_MOE_LB, pool, tokenIn, DEFAULT_LENDER, endId);
     }
 
     function getCloseExactOutMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         (uint8 actionId, uint8 midId, uint8 endId) = getCloseExactOutFlags();
         address pool = testQuoter._v2TypePairAddress(USDe, tokenOut, MERCHANT_MOE);
         bytes memory firstPart = abi.encodePacked(tokenOut, actionId, MERCHANT_MOE, pool, USDe);
-        return abi.encodePacked(firstPart, midId, MERCHANT_MOE_LB, BIN_STEP_LOWEST, tokenIn, DEFAULT_LENDER, endId);
+        pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenIn, USDe, BIN_STEP_LOWEST).LBPair;
+        return abi.encodePacked(firstPart, midId, MERCHANT_MOE_LB, pool, tokenIn, DEFAULT_LENDER, endId);
     }
 
     function getCloseExactInMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         (uint8 actionId, uint8 midId, uint8 endId) = getCloseExactInFlags();
         address pool = testQuoter._v2TypePairAddress(USDe, tokenIn, MERCHANT_MOE);
         bytes memory firstPart = abi.encodePacked(tokenIn, actionId, MERCHANT_MOE, pool, USDe);
-        return abi.encodePacked(firstPart, midId, MERCHANT_MOE_LB, BIN_STEP_LOWEST, tokenOut, DEFAULT_LENDER, endId);
+        pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenOut, USDe, BIN_STEP_LOWEST).LBPair;
+        return abi.encodePacked(firstPart, midId, MERCHANT_MOE_LB, pool, tokenOut, DEFAULT_LENDER, endId);
     }
 
     /** DEPO AND BORROW HELPER */

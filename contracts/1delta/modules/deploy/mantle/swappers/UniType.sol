@@ -636,72 +636,72 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                     // Populate tx for transfer to pair
                     ////////////////////////////////////////////////////
                     
-                    ////////////////////////////////////////////////////
-                    // We check whether we pull from the cached address 
-                    ////////////////////////////////////////////////////
-                    switch and(shr(88, calldataload(path.offset)), UINT8_MASK) 
-                    case 10 {
-                        // selector for transferFrom(address,address,uint256)
-                        mstore(ptr, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
-                        mstore(add(ptr, 0x04), payer)
-                        mstore(add(ptr, 0x24), pair)
-                        mstore(add(ptr, 0x44), amountIn)
+                    // ////////////////////////////////////////////////////
+                    // // We check whether we pull from the cached address 
+                    // ////////////////////////////////////////////////////
+                    // switch and(shr(88, calldataload(path.offset)), UINT8_MASK) 
+                    // case 10 {
+                    //     // selector for transferFrom(address,address,uint256)
+                    //     mstore(ptr, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
+                    //     mstore(add(ptr, 0x04), payer)
+                    //     mstore(add(ptr, 0x24), pair)
+                    //     mstore(add(ptr, 0x44), amountIn)
 
-                        let success := call(gas(), tokenIn, 0, ptr, 0x64, ptr, 32)
+                    //     let success := call(gas(), tokenIn, 0, ptr, 0x64, ptr, 32)
 
-                        let rdsize := returndatasize()
+                    //     let rdsize := returndatasize()
 
-                        // Check for ERC20 success. ERC20 tokens should return a boolean,
-                        // but some don't. We accept 0-length return data as success, or at
-                        // least 32 bytes that starts with a 32-byte boolean true.
-                        success := and(
-                            success, // call itself succeeded
-                            or(
-                                iszero(rdsize), // no return data, or
-                                and(
-                                    iszero(lt(rdsize, 32)), // at least 32 bytes
-                                    eq(mload(ptr), 1) // starts with uint256(1)
-                                )
-                            )
-                        )
+                    //     // Check for ERC20 success. ERC20 tokens should return a boolean,
+                    //     // but some don't. We accept 0-length return data as success, or at
+                    //     // least 32 bytes that starts with a 32-byte boolean true.
+                    //     success := and(
+                    //         success, // call itself succeeded
+                    //         or(
+                    //             iszero(rdsize), // no return data, or
+                    //             and(
+                    //                 iszero(lt(rdsize, 32)), // at least 32 bytes
+                    //                 eq(mload(ptr), 1) // starts with uint256(1)
+                    //             )
+                    //         )
+                    //     )
 
-                        if iszero(success) {
-                            returndatacopy(ptr, 0, rdsize)
-                            revert(ptr, rdsize)
-                        }
-                    } 
-                    ////////////////////////////////////////////////////
-                    // If not, use this contract's balance and transfer()
-                    ////////////////////////////////////////////////////
-                    default {
-                        // selector for transfer(address,uint256)
-                        mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
-                        mstore(add(ptr, 0x04), and(pair, ADDRESS_MASK_UPPER))
-                        mstore(add(ptr, 0x24), amountIn)
+                    //     if iszero(success) {
+                    //         returndatacopy(ptr, 0, rdsize)
+                    //         revert(ptr, rdsize)
+                    //     }
+                    // } 
+                    // ////////////////////////////////////////////////////
+                    // // If not, use this contract's balance and transfer()
+                    // ////////////////////////////////////////////////////
+                    // default {
+                    //     // selector for transfer(address,uint256)
+                    //     mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+                    //     mstore(add(ptr, 0x04), and(pair, ADDRESS_MASK_UPPER))
+                    //     mstore(add(ptr, 0x24), amountIn)
 
-                        let success := call(gas(), and(tokenIn, ADDRESS_MASK_UPPER), 0, ptr, 0x44, ptr, 32)
+                    //     let success := call(gas(), and(tokenIn, ADDRESS_MASK_UPPER), 0, ptr, 0x44, ptr, 32)
 
-                        let rdsize := returndatasize()
+                    //     let rdsize := returndatasize()
 
-                        // Check for ERC20 success. ERC20 tokens should return a boolean,
-                        // but some don't. We accept 0-length return data as success, or at
-                        // least 32 bytes that starts with a 32-byte boolean true.
-                        success := and(
-                            success, // call itself succeeded
-                            or(
-                                iszero(rdsize), // no return data, or
-                                and(
-                                    iszero(lt(rdsize, 32)), // at least 32 bytes
-                                    eq(mload(ptr), 1) // starts with uint256(1)
-                                )
-                            )
-                        )
+                    //     // Check for ERC20 success. ERC20 tokens should return a boolean,
+                    //     // but some don't. We accept 0-length return data as success, or at
+                    //     // least 32 bytes that starts with a 32-byte boolean true.
+                    //     success := and(
+                    //         success, // call itself succeeded
+                    //         or(
+                    //             iszero(rdsize), // no return data, or
+                    //             and(
+                    //                 iszero(lt(rdsize, 32)), // at least 32 bytes
+                    //                 eq(mload(ptr), 1) // starts with uint256(1)
+                    //             )
+                    //         )
+                    //     )
 
-                        if iszero(success) {
-                            returndatacopy(0x0, 0, rdsize)
-                            revert(0x0, rdsize)
-                        }
-                    }
+                    //     if iszero(success) {
+                    //         returndatacopy(0x0, 0, rdsize)
+                    //         revert(0x0, rdsize)
+                    //     }
+                    // }
                     ////////////////////////////////////////////////////
                     // We store the bytes length to zero (no callback)
                     // and directly trigger the swap

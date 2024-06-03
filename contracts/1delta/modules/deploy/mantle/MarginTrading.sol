@@ -17,7 +17,6 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
     // selectors for errors
     bytes4 internal constant SLIPPAGE = 0x7dd37f70;
     // errors
-    error Slippage();
     error NoBalance();
     error InvalidDexId();
 
@@ -880,13 +879,13 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         assembly {
             let firstWord := calldataload(data.offset)
             tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
-            let identifier := and(shr(80, firstWord), UINT8_MASK) // swap pool identifier
-            tradeId := and(shr(88, firstWord), UINT8_MASK) // interaction identifier
+            let dexId := and(shr(80, firstWord), UINT8_MASK) // swap pool dexId
+            tradeId := and(shr(88, firstWord), UINT8_MASK) // interaction dexId
             tokenOut := and(ADDRESS_MASK, shr(96, calldataload(add(data.offset, 42))))
             zeroForOne := lt(tokenIn, tokenOut)
             
             let pair
-            switch identifier
+            switch dexId
             // Velo Volatile
             case 121 {
                 switch zeroForOne
@@ -1097,6 +1096,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                     data.offset := add(data.offset, 42)
                     data.length := sub(data.length, 42)
                 }
+                _preFundTrade(address(this),amountToSwap, data);
                 // continue swapping
                 tradeId = swapExactIn(amountToSwap, address(this), address(this), data);
                 // store result in cache
@@ -1166,6 +1166,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                     data.offset := add(data.offset, 42)
                     data.length := sub(data.length, 42)
                 }
+                _preFundTrade(address(this),amountToSwap, data);
                 amountToSwap = swapExactIn(amountToSwap, address(this), address(this), data);
                 // supply directly
                 tokenOut = getLastToken(data);
@@ -1288,21 +1289,20 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         // special case: Moe LB, no flash swaps, recursive nesting is applied
         } else if (identifier == 151) {
             address tokenIn;
-            address tokenOutThenPair;
             uint256 amountIn;
             bool swapForY;
+            address pair;
             {
-                uint16 bin;
+                address tokenOut;
                 assembly {
-                    let firstWord := calldataload(path.offset)
-                    tokenOutThenPair := and(ADDRESS_MASK, shr(96, firstWord))
-                    bin := and(shr(64, firstWord), UINT16_MASK)
-                    tokenIn := and(ADDRESS_MASK, shr(96, calldataload(add(path.offset, 24))))
+                    tokenOut := shr(96, calldataload(path.offset))
+                    tokenIn := shr(96, calldataload(add(path.offset, 42)))
+                    pair := shr(96, calldataload(add(path.offset, 22)))
                 }
                 ////////////////////////////////////////////////////
                 // We calculate the required amount for the next swap
                 ////////////////////////////////////////////////////
-                (amountIn, tokenOutThenPair, swapForY) = getLBAmountIn(tokenIn, tokenOutThenPair, amountOut, bin);
+                (amountIn, swapForY) = getLBAmountIn(tokenOut, pair, amountOut);
             }
             ////////////////////////////////////////////////////
             // If the path includes more pairs, we nest another exact out swap
@@ -1310,17 +1310,17 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // This is done by re-calling this same function after skimming the
             // data parameter by the leading token config 
             ////////////////////////////////////////////////////
-            if(path.length > 46) {
+            if(path.length > 64) {
                 // remove the last token from the path
                 assembly {
-                    path.offset := add(path.offset, 24)
-                    path.length := sub(path.length, 24)
+                    path.offset := add(path.offset, 42)
+                    path.length := sub(path.length, 42)
                 }
                 flashSwapExactOutInternal(
                     amountIn,
                     maxIn,
                     payer,
-                    tokenOutThenPair,
+                    pair,
                     path
                 );
             } 
@@ -1335,7 +1335,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 handlePayPool(
                     tokenIn,
                     payer, // prevents sload if desired
-                    tokenOutThenPair,
+                    pair,
                     payType,
                     amountIn,
                     lenderId
@@ -1346,7 +1346,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // The swap is executed at the end and sends 
             // the funds to the receiver addresss
             ////////////////////////////////////////////////////
-            swapLBexactOut(tokenOutThenPair, swapForY, amountOut, receiver);
+            swapLBexactOut(pair, swapForY, amountOut, receiver);
         } else
             revert invalidDexId();
     }
@@ -1364,21 +1364,73 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         }
         // uniswapV3 types
         if (identifier < 49) {
+            address reciever;
+            assembly {
+                switch lt(path.length, 66)
+                case 1 { reciever := address()}
+                default {
+                    let nextId := and(shr(80, calldataload(add(path.offset, 44))), UINT8_MASK)
+                    switch gt(nextId, 99) 
+                    case 1 {
+                        reciever := and(
+                            ADDRESS_MASK,
+                            shr(
+                                96,
+                                calldataload(
+                                    add(
+                                        path.offset,
+                                        66 // 20 + 2 + 20 + 2 + 20 + 2 [poolAddress starts here]
+                                    )
+                                ) // poolAddress
+                            )
+                        )
+                    }
+                    default {
+                        reciever := address()
+                    }
+                }
+            }
             _swapUniswapV3PoolExactIn(
                 amountIn,
                 amountOutMinimum,
                 msg.sender,
-                address(this),
+                reciever,
                 path
             );
         }
         // iZi
         else if (identifier == 49) {
+            address reciever;
+            assembly {
+                switch lt(path.length, 66)
+                case 1 { reciever := address()}
+                default {
+                    let nextId := and(shr(80, calldataload(add(path.offset, 44))), UINT8_MASK)
+                    switch gt(nextId, 99) 
+                    case 1 {
+                        reciever := and(
+                            ADDRESS_MASK,
+                            shr(
+                                96,
+                                calldataload(
+                                    add(
+                                        path.offset,
+                                        66 // 20 + 2 + 20 + 2 + 20 + 2 [poolAddress starts here]
+                                    )
+                                ) // poolAddress
+                            )
+                        )
+                    }
+                    default {
+                        reciever := address()
+                    }
+                }
+            }
             _swapIZIPoolExactIn(
                 uint128(amountIn),
                 amountOutMinimum,
                 msg.sender,
-                address(this),
+                reciever,
                 path
             );
         }

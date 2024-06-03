@@ -160,6 +160,6 @@ contract KTXTest is DeltaSetup {
 
     function getSpotExactInSingleKTX(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint8 poolId = KTX;
-        return abi.encodePacked(tokenIn, uint8(0), poolId, tokenOut);
+        return abi.encodePacked(tokenIn, uint8(0), poolId, KTX_VAULT, tokenOut);
     }
 }

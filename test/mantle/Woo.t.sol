@@ -59,6 +59,6 @@ contract WooFiTest is DeltaSetup {
 
     function getSpotExactInSingleWOO_FI(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint8 poolId = WOO_FI;
-        return abi.encodePacked(tokenIn, uint8(0), poolId, tokenOut);
+        return abi.encodePacked(tokenIn, uint8(0), poolId, WOO_POOL, tokenOut);
     }
 }
