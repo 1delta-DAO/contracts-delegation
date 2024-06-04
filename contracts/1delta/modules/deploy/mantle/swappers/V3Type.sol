@@ -52,9 +52,6 @@ abstract contract V3TypeSwapper {
 
     constructor() {}
 
-    uint256 internal constant UNI3_CALLDATA_LENGTH = 44; // uint8, uint8, uint16, sandwiched by 2 addresses
-    uint256 internal constant UNI3_TOKEN_OUT_OFFSET = 44;
-    uint256 internal constant UNI3_POOL_OFFSET = 22;
     uint256 internal constant UINT16_MASK = 0xffff;
 
     /// @dev Swap Uniswap V3 style exact in

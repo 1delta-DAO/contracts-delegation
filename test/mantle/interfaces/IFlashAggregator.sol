@@ -2,6 +2,9 @@
 pragma solidity ^0.8.0;
 
 interface IFlashAggregator {
+    /** COMPOSER */
+    function deltaCompose(bytes calldata data) external payable;
+
     /** MARGIN */
 
     function flashSwapExactIn(uint256 amountIn, uint256 amountOutMinimum, bytes calldata path) external payable;

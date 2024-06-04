@@ -20,7 +20,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
 
     // BadPool() selector for errors
     bytes32 private constant _BAD_POOL = 0xb2c0272200000000000000000000000000000000000000000000000000000000;
-    uint256 private constant UINT128_MASK = 0x00000000000000000000000000000000ffffffffffffffffffffffffffffffff;
+    uint256 internal constant UINT128_MASK = 0x00000000000000000000000000000000ffffffffffffffffffffffffffffffff;
 
     constructor() BaseSwapper() BaseLending() {}
 

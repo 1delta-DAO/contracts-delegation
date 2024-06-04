@@ -26,7 +26,7 @@ import {MarginTraderInit} from "../../contracts/1delta/initializers/MarginTrader
 
 // core modules
 import {ManagementModule} from "../../contracts/1delta/modules/aave/ManagementModule.sol";
-import {DeltaFlashAggregatorMantle} from "../../contracts/1delta/modules/deploy/mantle/FlashAggregator.sol";
+import {Composer} from "../../contracts/1delta/modules/deploy/mantle/Composer.sol";
 import {LendleFlashModule} from "../../contracts/1delta/modules/deploy/mantle/LendleFlashModule.sol";
 import {DeltaLendingInterfaceMantle} from "../../contracts/1delta/modules/deploy/mantle/LendingInterface.sol";
 
@@ -41,7 +41,7 @@ contract DeltaSetup is AddressesMantle, Script, Test {
     IModuleConfig internal deltaConfig;
     IManagement internal management;
     TestQuoterMantle testQuoter;
-    DeltaFlashAggregatorMantle internal aggregator;
+    Composer internal aggregator;
 
     mapping(address => mapping(uint8 => address)) internal collateralTokens;
     mapping(address => mapping(uint8 => address)) internal debtTokens;
@@ -75,7 +75,7 @@ contract DeltaSetup is AddressesMantle, Script, Test {
     }
 
     function flashAggregatorSelectors() internal pure returns (bytes4[] memory selectors) {
-        selectors = new bytes4[](22);
+        selectors = new bytes4[](23);
         /** margin */
         selectors[0] = IFlashAggregator.flashSwapExactIn.selector;
         selectors[1] = IFlashAggregator.flashSwapExactOut.selector;
@@ -101,6 +101,7 @@ contract DeltaSetup is AddressesMantle, Script, Test {
         selectors[19] = IFlashAggregator.swapX2YCallback.selector;
         selectors[20] = IFlashAggregator.uniswapV3SwapCallback.selector;
         selectors[21] = IFlashAggregator.swapExactInSpotSelf.selector;
+        selectors[21] = IFlashAggregator.deltaCompose.selector;
         return selectors;
     }
 
@@ -150,7 +151,7 @@ contract DeltaSetup is AddressesMantle, Script, Test {
         brokerProxy = IBrokerProxy(brokerProxyAddress);
 
         ManagementModule _management = new ManagementModule();
-        DeltaFlashAggregatorMantle _aggregator = new DeltaFlashAggregatorMantle();
+        Composer _aggregator = new Composer();
         DeltaLendingInterfaceMantle _lending = new DeltaLendingInterfaceMantle();
         MarginTraderInit init = new MarginTraderInit();
         LendleFlashModule lendleFlashModule = new LendleFlashModule();
