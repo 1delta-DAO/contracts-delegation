@@ -270,24 +270,4 @@ contract Composer is DeltaFlashAggregatorMantle, RawTokenTransfer {
             if (currentOffsetIncrement >= data.length) break;
         }
     }
-
-    ////////////////////////////////////////////////////
-    // Lending
-    ////////////////////////////////////////////////////
-
-    function depo(bytes calldata data) internal {
-        _deposit(address(bytes20(data)), address(bytes20(data[20:40])), uint(bytes32(data[20:52])), 0);
-    }
-
-    function borrow(bytes calldata data) internal {
-        _borrow(address(bytes20(data)), address(bytes20(data[20:40])), uint(bytes32(data[20:52])), 1, 0);
-    }
-
-    function withdraw(bytes calldata data) internal {
-        _withdraw(address(bytes20(data)), address(bytes20(data[20:40])), uint(bytes32(data[20:52])), 0);
-    }
-
-    function repay(bytes calldata data) internal {
-        _repay(address(bytes20(data)), address(bytes20(data[20:40])), uint(bytes32(data[20:52])), 1, 0);
-    }
 }

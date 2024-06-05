@@ -166,7 +166,7 @@ contract ComposerTest is DeltaSetup {
         console.log("gas", gas);
     }
 
-    function test_multi_route_exact_in() external {
+    function test_mantle_composer_multi_route_exact_in() external {
         address user = testUser;
         uint256 amount = 2000.0e6;
 
