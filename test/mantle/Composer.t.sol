@@ -4,15 +4,24 @@ pragma solidity ^0.8.19;
 import "./DeltaSetup.f.sol";
 
 contract ComposerTest is DeltaSetup {
+    uint8 DEAULT_MODE = 2;
     uint8 SWAP_EXACT_IN = 0x0;
     uint256 private constant USE_PERMIT2_FLAG = 1 << 127;
     uint256 private constant UNWRAP_NATIVE_MASK = 1 << 254;
-    uint256 private constant UINT128_MASK =     0x00000000000000000000000000000000ffffffffffffffffffffffffffffffff;
-    uint256 private constant UINT112_MASK =     0x000000000000000000000000000000000000ffffffffffffffffffffffffffff;
-    uint256 private constant LENDER_ID_MASK =   0x0000000000000000000000000000000000ff0000000000000000000000000000;
+    uint256 private constant UINT128_MASK = 0x00000000000000000000000000000000ffffffffffffffffffffffffffffffff;
+    uint256 private constant UINT112_MASK = 0x000000000000000000000000000000000000ffffffffffffffffffffffffffff;
+    uint256 private constant LENDER_ID_MASK = 0x0000000000000000000000000000000000ff0000000000000000000000000000;
 
     function populateAmountDeposit(uint8 lender, uint256 amount) internal pure returns (bytes memory data) {
         data = abi.encodePacked(lender, uint112(amount)); // 14 + 1 byte
+    }
+
+    function populateAmountBorrow(uint8 lender, uint8 mode, uint256 amount) internal pure returns (bytes memory data) {
+        data = abi.encodePacked(lender, mode, uint112(amount)); // 14 + 2 byte
+    }
+
+    function populateAmountRepay(uint8 lender, uint8 mode, uint256 amount) internal pure returns (bytes memory data) {
+        data = abi.encodePacked(lender, mode, uint112(amount)); // 14 + 2 byte
     }
 
     function test_composer_depo() external {
@@ -39,6 +48,49 @@ contract ComposerTest is DeltaSetup {
             populateAmountDeposit(lenderId, amount) // 15
         );
         data = abi.encodePacked(transfer, data);
+        vm.prank(user);
+        uint gas = gasleft();
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
+        gas = gas - gasleft();
+        console.log("gas", gas);
+    }
+
+    function test_composer_borrow() external {
+        uint8 lenderId = 0;
+        address user = testUser;
+        uint256 amount = 10.0e6;
+        address asset = USDT;
+        deal(asset, user, 1e23);
+
+        _deposit(asset, user, amount, lenderId);
+
+        vm.prank(user);
+        IERC20All(asset).approve(address(brokerProxyAddress), amount);
+
+        // bytes memory transfer = abi.encodePacked(
+        //     uint8(0x12),
+        //     uint16(72),
+        //     USDT,
+        //     brokerProxyAddress,
+        //     amount //
+        // );
+        uint256 borrowAmount = 5.0e6;
+
+        address borrowAsset = USDC;
+        vm.prank(user);
+        IERC20All(debtTokens[borrowAsset][lenderId]).approveDelegation(
+            address(brokerProxyAddress), //
+            borrowAmount
+        );
+
+        bytes memory data = abi.encodePacked(
+            uint8(0x11), // 1
+            uint16(55), // redundant, 2
+            borrowAsset, // 20
+            user, // 20
+            populateAmountBorrow(lenderId, DEAULT_MODE, borrowAmount) // 16
+        );
+        // data = abi.encodePacked(transfer, data);
         vm.prank(user);
         uint gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
@@ -83,5 +135,33 @@ contract ComposerTest is DeltaSetup {
         uint16 fee = uint16(DEX_FEE_STABLES);
         address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
         return abi.encodePacked(tokenIn, uint8(10), poolId, pool, fee, tokenOut);
+    }
+
+    function _deposit(address asset, address user, uint256 amount, uint8 lenderId) internal {
+        deal(asset, user, 1e23);
+
+        vm.prank(user);
+        IERC20All(asset).approve(address(brokerProxyAddress), amount);
+
+        bytes memory transfer = abi.encodePacked(
+            uint8(0x12),
+            uint16(72),
+            asset,
+            brokerProxyAddress,
+            amount //
+        );
+        bytes memory data = abi.encodePacked(
+            uint8(3), // 1
+            uint16(55), // redundant, 2
+            asset, // 20
+            user, // 20
+            populateAmountDeposit(lenderId, amount) // 15
+        );
+        data = abi.encodePacked(transfer, data);
+        vm.prank(user);
+        uint gas = gasleft();
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
+        gas = gas - gasleft();
+        console.log("gas", gas);
     }
 }

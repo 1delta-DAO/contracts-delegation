@@ -133,13 +133,12 @@ contract Composer is DeltaFlashAggregatorMantle, RawTokenTransfer {
                     address receiver;
                     uint256 amount;
                     uint256 lenderId;
-                    bytes32 lastBytes;
                     assembly {
                         opdata.offset := add(data.offset, currentOffsetIncrement)
                         opdata.length := calldatalength
                         underlying := and(ADDRESS_MASK, shr(96, calldataload(opdata.offset)))
                         receiver := and(ADDRESS_MASK, shr(96, calldataload(add(opdata.offset, 20))))
-                        lastBytes := calldataload(add(opdata.offset, 40))
+                        let lastBytes := calldataload(add(opdata.offset, 40))
                         amount := and(_UINT112_MASK, shr(136, lastBytes))
                         lenderId := and(UINT8_MASK, shr(248, lastBytes))
                         if iszero(amount) {
@@ -172,18 +171,24 @@ contract Composer is DeltaFlashAggregatorMantle, RawTokenTransfer {
                     address user;
                     uint256 amount;
                     uint256 lenderId;
+                    uint256 mode;
                     assembly {
                         opdata.offset := add(data.offset, currentOffsetIncrement)
                         opdata.length := calldatalength
                         underlying := and(ADDRESS_MASK, shr(96, calldataload(opdata.offset)))
                         receiver := and(ADDRESS_MASK, shr(96, calldataload(add(opdata.offset, 20))))
                         let lastBytes := calldataload(add(opdata.offset, 40))
-                        amount := and(_UINT112_MASK, shr(112, lastBytes))
-                        lenderId := and(UINT8_MASK, lastBytes)
+                        amount := and(_UINT112_MASK, shr(128, lastBytes))
+                        lenderId := and(UINT8_MASK, shr(248, lastBytes))
+                        mode := and(UINT8_MASK, shr(240, lastBytes))
                         user := caller()
+                        calldatalength := 56
                     }
                     // borrow(opdata);
-                    _borrow(underlying, user, amount, 1, lenderId);
+                    _borrow(underlying, user, amount, mode, lenderId);
+                    if(receiver != address(this)) {
+                        _transferERC20Tokens(underlying, receiver, amount);
+                    }
                 }
                 //  else if (operation == 0x122) withdraw(opdata);
                 // else if (operation == 0x13) repay(opdata);
