@@ -5,8 +5,18 @@ import "./DeltaSetup.f.sol";
 
 contract ComposerTest is DeltaSetup {
     uint8 SWAP_EXACT_IN = 0x0;
+    uint256 private constant USE_PERMIT2_FLAG = 1 << 127;
+    uint256 private constant UNWRAP_NATIVE_MASK = 1 << 254;
+    uint256 private constant UINT128_MASK =     0x00000000000000000000000000000000ffffffffffffffffffffffffffffffff;
+    uint256 private constant UINT112_MASK =     0x000000000000000000000000000000000000ffffffffffffffffffffffffffff;
+    uint256 private constant LENDER_ID_MASK =   0x0000000000000000000000000000000000ff0000000000000000000000000000;
+
+    function populateAmountDeposit(uint8 lender, uint256 amount) internal pure returns (bytes memory data) {
+        data = abi.encodePacked(lender, uint112(amount)); // 14 + 1 byte
+    }
 
     function test_composer_depo() external {
+        uint8 lenderId = 1;
         address user = testUser;
         uint256 amount = 10.0e6;
         deal(USDT, user, 1e23);
@@ -22,11 +32,11 @@ contract ComposerTest is DeltaSetup {
             amount //
         );
         bytes memory data = abi.encodePacked(
-            uint8(3),
-            uint16(72), // redundant
-            USDT,
-            user,
-            amount //
+            uint8(3), // 1
+            uint16(55), // redundant, 2
+            USDT, // 20
+            user, // 20
+            populateAmountDeposit(lenderId, amount) // 15
         );
         data = abi.encodePacked(transfer, data);
         vm.prank(user);

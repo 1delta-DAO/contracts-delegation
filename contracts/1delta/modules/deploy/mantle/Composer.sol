@@ -12,6 +12,7 @@ contract Composer is DeltaFlashAggregatorMantle, RawTokenTransfer {
     uint256 internal constant _PAY_SELF = 1 << 255;
     uint256 internal constant _USE_BALANCE = 1 << 254;
     uint256 private constant _UPPER_120_MASK = 0x00ffffffffffffffffffffffffffffff00000000000000000000000000000000;
+    uint256 private constant _UINT112_MASK =     0x000000000000000000000000000000000000ffffffffffffffffffffffffffff;
 
     /**
      * Execute a set op packed operations
@@ -56,7 +57,7 @@ contract Composer is DeltaFlashAggregatorMantle, RawTokenTransfer {
                             payer := caller()
                         }
                         opdata.offset := add(52, opdata.offset)
-                        if and(_USE_BALANCE, amountIn) {
+                        if iszero(amountIn) {
                             // selector for balanceOf(address)
                             mstore(0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
                             // add this address as parameter
@@ -132,14 +133,34 @@ contract Composer is DeltaFlashAggregatorMantle, RawTokenTransfer {
                     address receiver;
                     uint256 amount;
                     uint256 lenderId;
+                    bytes32 lastBytes;
                     assembly {
                         opdata.offset := add(data.offset, currentOffsetIncrement)
                         opdata.length := calldatalength
                         underlying := and(ADDRESS_MASK, shr(96, calldataload(opdata.offset)))
                         receiver := and(ADDRESS_MASK, shr(96, calldataload(add(opdata.offset, 20))))
-                        let lastBytes := calldataload(add(opdata.offset, 40))
-                        amount := and(UINT128_MASK, lastBytes)
-                        lenderId := and(UINT8_MASK, shr(8, lastBytes))
+                        lastBytes := calldataload(add(opdata.offset, 40))
+                        amount := and(_UINT112_MASK, shr(136, lastBytes))
+                        lenderId := and(UINT8_MASK, shr(248, lastBytes))
+                        if iszero(amount) {
+                            // selector for balanceOf(address)
+                            mstore(0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+                            // add this address as parameter
+                            mstore(0x04, address())
+                            // call to token
+                            pop(
+                                staticcall(
+                                    gas(),
+                                    underlying, // token
+                                    0x0,
+                                    0x24,
+                                    0x0,
+                                    0x20
+                                )
+                            )
+                            // load the retrieved balance
+                            amount := mload(0x0)
+                        }
                     }
                     _deposit(underlying, receiver, amount, lenderId);
                 }
@@ -157,8 +178,8 @@ contract Composer is DeltaFlashAggregatorMantle, RawTokenTransfer {
                         underlying := and(ADDRESS_MASK, shr(96, calldataload(opdata.offset)))
                         receiver := and(ADDRESS_MASK, shr(96, calldataload(add(opdata.offset, 20))))
                         let lastBytes := calldataload(add(opdata.offset, 40))
-                        amount := and(UINT128_MASK, lastBytes)
-                        lenderId := and(UINT8_MASK, shr(8, lastBytes))
+                        amount := and(_UINT112_MASK, shr(112, lastBytes))
+                        lenderId := and(UINT8_MASK, lastBytes)
                         user := caller()
                     }
                     // borrow(opdata);
