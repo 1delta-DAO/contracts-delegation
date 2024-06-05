@@ -24,7 +24,7 @@ contract ComposerTest is DeltaSetup {
         data = abi.encodePacked(lender, mode, uint112(amount)); // 14 + 2 byte
     }
 
-    function test_composer_depo() external {
+    function test_mantle_composer_depo() external {
         uint8 lenderId = 1;
         address user = testUser;
         uint256 amount = 10.0e6;
@@ -34,7 +34,7 @@ contract ComposerTest is DeltaSetup {
         IERC20All(USDT).approve(address(brokerProxyAddress), amount);
 
         bytes memory transfer = abi.encodePacked(
-            uint8(0x12),
+            uint8(0x15),
             uint16(72),
             USDT,
             brokerProxyAddress,
@@ -55,25 +55,17 @@ contract ComposerTest is DeltaSetup {
         console.log("gas", gas);
     }
 
-    function test_composer_borrow() external {
+    function test_mantle_composer_borrow() external {
         uint8 lenderId = 0;
         address user = testUser;
         uint256 amount = 10.0e6;
         address asset = USDT;
-        deal(asset, user, 1e23);
 
         _deposit(asset, user, amount, lenderId);
 
         vm.prank(user);
         IERC20All(asset).approve(address(brokerProxyAddress), amount);
 
-        // bytes memory transfer = abi.encodePacked(
-        //     uint8(0x12),
-        //     uint16(72),
-        //     USDT,
-        //     brokerProxyAddress,
-        //     amount //
-        // );
         uint256 borrowAmount = 5.0e6;
 
         address borrowAsset = USDC;
@@ -90,7 +82,50 @@ contract ComposerTest is DeltaSetup {
             user, // 20
             populateAmountBorrow(lenderId, DEAULT_MODE, borrowAmount) // 16
         );
-        // data = abi.encodePacked(transfer, data);
+
+        vm.prank(user);
+        uint gas = gasleft();
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
+        gas = gas - gasleft();
+        console.log("gas", gas);
+    }
+
+    function test_mantle_composer_repay() external {
+        uint8 lenderId = 0;
+        address user = testUser;
+
+        uint256 amount = 10.0e6;
+        address asset = USDT;
+
+        uint256 borrowAmount = 5.0e6;
+        address borrowAsset = USDC;
+
+        _deposit(asset, user, amount, lenderId);
+
+        _borrow(borrowAsset, user, borrowAmount, lenderId);
+
+        uint256 repayAmount = 2.50e6;
+
+        bytes memory transfer = abi.encodePacked(
+            uint8(0x15),
+            uint16(72),
+            borrowAsset,
+            brokerProxyAddress,
+            repayAmount //
+        );
+
+        bytes memory data = abi.encodePacked(
+            uint8(0x18), // 1
+            uint16(56), // redundant, 2
+            borrowAsset, // 20
+            user, // 20
+            populateAmountRepay(lenderId, DEAULT_MODE, repayAmount) // 16
+        );
+        data = abi.encodePacked(transfer, data);
+
+        vm.prank(user);
+        IERC20All(borrowAsset).approve(address(brokerProxyAddress), repayAmount);
+
         vm.prank(user);
         uint gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
@@ -138,13 +173,13 @@ contract ComposerTest is DeltaSetup {
     }
 
     function _deposit(address asset, address user, uint256 amount, uint8 lenderId) internal {
-        deal(asset, user, 1e23);
+        deal(asset, user, amount);
 
         vm.prank(user);
         IERC20All(asset).approve(address(brokerProxyAddress), amount);
 
         bytes memory transfer = abi.encodePacked(
-            uint8(0x12),
+            uint8(0x15),
             uint16(72),
             asset,
             brokerProxyAddress,
@@ -152,12 +187,35 @@ contract ComposerTest is DeltaSetup {
         );
         bytes memory data = abi.encodePacked(
             uint8(3), // 1
-            uint16(55), // redundant, 2
+            uint16(56), // redundant, 2
             asset, // 20
             user, // 20
             populateAmountDeposit(lenderId, amount) // 15
         );
         data = abi.encodePacked(transfer, data);
+
+        vm.prank(user);
+        uint gas = gasleft();
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
+        gas = gas - gasleft();
+        console.log("gas", gas);
+    }
+
+    function _borrow(address borrowAsset, address user, uint256 borrowAmount, uint8 lenderId) internal {
+        vm.prank(user);
+        IERC20All(debtTokens[borrowAsset][lenderId]).approveDelegation(
+            address(brokerProxyAddress), //
+            borrowAmount
+        );
+
+        bytes memory data = abi.encodePacked(
+            uint8(0x11), // 1
+            uint16(56), // redundant, 2
+            borrowAsset, // 20
+            user, // 20
+            populateAmountBorrow(lenderId, DEAULT_MODE, borrowAmount) // 16
+        );
+
         vm.prank(user);
         uint gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);

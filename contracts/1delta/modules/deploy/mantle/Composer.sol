@@ -12,7 +12,7 @@ contract Composer is DeltaFlashAggregatorMantle, RawTokenTransfer {
     uint256 internal constant _PAY_SELF = 1 << 255;
     uint256 internal constant _USE_BALANCE = 1 << 254;
     uint256 private constant _UPPER_120_MASK = 0x00ffffffffffffffffffffffffffffff00000000000000000000000000000000;
-    uint256 private constant _UINT112_MASK =     0x000000000000000000000000000000000000ffffffffffffffffffffffffffff;
+    uint256 private constant _UINT112_MASK = 0x000000000000000000000000000000000000ffffffffffffffffffffffffffff;
 
     /**
      * Execute a set op packed operations
@@ -33,8 +33,8 @@ contract Composer is DeltaFlashAggregatorMantle, RawTokenTransfer {
                 let word := calldataload(add(data.offset, currentOffsetIncrement))
                 calldatalength := and(shr(232, word), UINT16_MASK)
                 operation := and(shr(248, word), UINT8_MASK)
-                currentOffsetIncrement := add(3, currentOffsetIncrement)
             }
+
             if (operation < 0x10) {
                 // exec op
                 if (operation == Commands.SWAP_EXACT_IN) {
@@ -44,6 +44,7 @@ contract Composer is DeltaFlashAggregatorMantle, RawTokenTransfer {
                     address receiver;
                     uint256 minimumAmountOut;
                     assembly {
+                        currentOffsetIncrement := add(3, currentOffsetIncrement)
                         opdata.offset := add(data.offset, currentOffsetIncrement)
                         opdata.length := calldatalength
                         amountIn := calldataload(opdata.offset)
@@ -134,6 +135,7 @@ contract Composer is DeltaFlashAggregatorMantle, RawTokenTransfer {
                     uint256 amount;
                     uint256 lenderId;
                     assembly {
+                        currentOffsetIncrement := add(3, currentOffsetIncrement)
                         opdata.offset := add(data.offset, currentOffsetIncrement)
                         opdata.length := calldatalength
                         underlying := and(ADDRESS_MASK, shr(96, calldataload(opdata.offset)))
@@ -173,6 +175,7 @@ contract Composer is DeltaFlashAggregatorMantle, RawTokenTransfer {
                     uint256 lenderId;
                     uint256 mode;
                     assembly {
+                        currentOffsetIncrement := add(3, currentOffsetIncrement)
                         opdata.offset := add(data.offset, currentOffsetIncrement)
                         opdata.length := calldatalength
                         underlying := and(ADDRESS_MASK, shr(96, calldataload(opdata.offset)))
@@ -186,16 +189,38 @@ contract Composer is DeltaFlashAggregatorMantle, RawTokenTransfer {
                     }
                     // borrow(opdata);
                     _borrow(underlying, user, amount, mode, lenderId);
-                    if(receiver != address(this)) {
+                    if (receiver != address(this)) {
                         _transferERC20Tokens(underlying, receiver, amount);
                     }
+                } else if (operation == 0x18) {
+                    bytes calldata opdata;
+                    address underlying;
+                    address receiver;
+                    uint256 amount;
+                    uint256 lenderId;
+                    uint256 mode;
+                    assembly {
+                        currentOffsetIncrement := add(3, currentOffsetIncrement)
+                        opdata.offset := add(data.offset, currentOffsetIncrement)
+                        opdata.length := calldatalength
+                        underlying := and(ADDRESS_MASK, shr(96, calldataload(opdata.offset)))
+                        receiver := and(ADDRESS_MASK, shr(96, calldataload(add(opdata.offset, 20))))
+                        let lastBytes := calldataload(add(opdata.offset, 40))
+                        amount := and(_UINT112_MASK, shr(128, lastBytes))
+                        lenderId := and(UINT8_MASK, shr(248, lastBytes))
+                        mode := and(UINT8_MASK, shr(240, lastBytes))
+                    }
+                    // borrow(opdata);
+                    _repay(underlying, receiver, amount, mode, lenderId);
                 }
                 //  else if (operation == 0x122) withdraw(opdata);
                 // else if (operation == 0x13) repay(opdata);
-                else if (operation == 0x12) {
+                else if (operation == 0x15) {
                     bytes calldata opdata;
                     assembly {
+                        currentOffsetIncrement := add(3, currentOffsetIncrement)
                         opdata.offset := add(data.offset, currentOffsetIncrement)
+                        calldatalength := 72
                         opdata.length := calldatalength
                     }
                     _transferERC20TokensFromInternal(opdata);
