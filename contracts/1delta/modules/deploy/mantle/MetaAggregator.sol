@@ -150,7 +150,7 @@ contract DeltaMetaAggregator {
         assembly {
             let ptr := mload(0x40)
             ////////////////////////////////////////////////////
-            // get allowance and vaidate returndata
+            // get allowance and validate returndata
             ////////////////////////////////////////////////////
             mstore(ptr, 0xdd62ed3e00000000000000000000000000000000000000000000000000000000)
             mstore(add(ptr, 0x4), address())
@@ -179,10 +179,12 @@ contract DeltaMetaAggregator {
 
     // balanceOf call in assembly for smaller contract size
     function _balanceOf(address underlying, address entity) internal view returns (uint256 entityBalance) {
-        if (underlying == address(0)) {
-            entityBalance = entity.balance;
-        } else {
-            assembly {
+        assembly {
+            switch eq(underlying, 0)
+            case 1 {
+                entityBalance := balance(entity)
+            }
+            default {
                 ////////////////////////////////////////////////////
                 // get token balance in assembly usingn scrap space (64 bytes)
                 ////////////////////////////////////////////////////
