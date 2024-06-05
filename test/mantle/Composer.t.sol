@@ -24,6 +24,10 @@ contract ComposerTest is DeltaSetup {
         data = abi.encodePacked(lender, mode, uint112(amount)); // 14 + 2 byte
     }
 
+    function populateAmountWithdraw(uint8 lender, uint256 amount) internal pure returns (bytes memory data) {
+        data = abi.encodePacked(lender, uint112(amount)); // 14 + 1 byte
+    }
+
     function test_mantle_composer_depo() external {
         uint8 lenderId = 1;
         address user = testUser;
@@ -125,6 +129,35 @@ contract ComposerTest is DeltaSetup {
 
         vm.prank(user);
         IERC20All(borrowAsset).approve(address(brokerProxyAddress), repayAmount);
+
+        vm.prank(user);
+        uint gas = gasleft();
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
+        gas = gas - gasleft();
+        console.log("gas", gas);
+    }
+
+    function test_mantle_composer_withdraw() external {
+        uint8 lenderId = 0;
+        address user = testUser;
+
+        uint256 amount = 10.0e6;
+        address asset = USDT;
+
+        _deposit(asset, user, amount, lenderId);
+
+        uint256 withdrawAmount = 2.50e6;
+
+        bytes memory data = abi.encodePacked(
+            uint8(0x17), // 1
+            uint16(56), // redundant, 2
+            asset, // 20
+            user, // 20
+            populateAmountWithdraw(lenderId, withdrawAmount) // 16
+        );
+
+        vm.prank(user);
+        IERC20All(collateralTokens[asset][lenderId]).approve(address(brokerProxyAddress), withdrawAmount);
 
         vm.prank(user);
         uint gas = gasleft();
