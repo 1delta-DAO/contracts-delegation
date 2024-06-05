@@ -3,14 +3,8 @@ pragma solidity ^0.8.19;
 
 import "./DeltaSetup.f.sol";
 
-contract SwapGen2Test is DeltaSetup {
-    function test_composer() external {
-        bytes memory data = abi.encodePacked(uint8(0), uint16(20), uint8(1), USDT, uint16(32), uint8(2), uint256(1));
-        uint gas = gasleft();
-        // composer.deltaCompose(data);
-        gas = gas - gasleft();
-        console.log("gas", gas);
-    }
+contract ComposerTest is DeltaSetup {
+    uint8 SWAP_EXACT_IN = 0x0;
 
     function test_composer_depo() external {
         address user = testUser;
@@ -40,5 +34,44 @@ contract SwapGen2Test is DeltaSetup {
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
+    }
+
+    function test_multi_route_exact_in() external {
+        address user = testUser;
+        uint256 amount = 2000.0e6;
+
+        address assetIn = USDC;
+        address assetOut = USDT;
+        deal(assetIn, user, 1e23);
+
+        bytes memory dataAgni = getSpotExactInSingleGen2(assetIn, assetOut, AGNI);
+        bytes memory dataFusion = getSpotExactInSingleGen2(assetIn, assetOut, FUSION_X);
+        bytes memory data = abi.encodePacked(
+            SWAP_EXACT_IN,
+            uint16(dataAgni.length + 52), // begin agni data
+            amount / 2,
+            user,
+            dataAgni,
+            SWAP_EXACT_IN,
+            uint16(dataFusion.length + 52), // begin fusionX data
+            amount / 2,
+            user,
+            dataFusion
+        );
+
+        vm.prank(user);
+        IERC20All(assetIn).approve(address(brokerProxyAddress), amount);
+
+        vm.prank(user);
+        uint gas = gasleft();
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
+        gas = gas - gasleft();
+        console.log("gas", gas);
+    }
+
+    function getSpotExactInSingleGen2(address tokenIn, address tokenOut, uint8 poolId) internal view returns (bytes memory data) {
+        uint16 fee = uint16(DEX_FEE_STABLES);
+        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
+        return abi.encodePacked(tokenIn, uint8(10), poolId, pool, fee, tokenOut);
     }
 }
