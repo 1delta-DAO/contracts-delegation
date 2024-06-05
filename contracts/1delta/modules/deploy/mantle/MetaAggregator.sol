@@ -6,7 +6,7 @@ contract DeltaMetaAggregator {
     ////////////////////////////////////////////////////
     // Errors
     ////////////////////////////////////////////////////
-    error SimulationResults(bool success, uint256 amountReceived);
+    error SimulationResults(bool success, uint256 amountReceived, string data);
     error InvalidTarget();
     error NotOwner();
     error Paused();
@@ -124,10 +124,10 @@ contract DeltaMetaAggregator {
             assembly {
                 returnData := add(returnData, 0x04)
             }
-            revert(abi.decode(returnData, (string)));
+            revert SimulationResults(false, 0, abi.decode(returnData, (string)));   
         }
         amountReceived = _balanceOf(assetOut, receiver) - before;
-        revert SimulationResults(success, amountReceived);
+        revert SimulationResults(success, amountReceived, "");
     }
 
     ////////////////////////////////////////////////////
