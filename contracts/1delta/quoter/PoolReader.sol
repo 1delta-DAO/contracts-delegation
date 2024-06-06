@@ -3,19 +3,25 @@ pragma solidity ^0.8.0;
 
 interface IFactory {
     function allPairsLength() external view returns (uint256);
+
     function allPairs(uint256) external view returns (address);
 }
 
 interface IPool {
     function token0() external view returns (address);
+
     function token1() external view returns (address);
 }
 
 interface IERC20 {
     function balanceOf(address account) external view returns (uint256);
+
     function name() external view returns (string memory);
+
     function symbol() external view returns (string memory);
+
     function decimals() external view returns (uint8);
+
     function totalSupply() external view returns (uint256);
 }
 
@@ -36,12 +42,7 @@ contract PoolReader {
         ERC20Info token1Info;
     }
 
-    function getUniswapV2Info(
-                address factoryAddress, 
-                uint256 indexFrom, 
-                uint256 indexTo
-                ) external view returns (UniswapV2Info[] memory) {
-
+    function getUniswapV2Info(address factoryAddress, uint256 indexFrom, uint256 indexTo) external view returns (UniswapV2Info[] memory) {
         IFactory factory = IFactory(factoryAddress);
         uint256 totalPools = factory.allPairsLength();
 
