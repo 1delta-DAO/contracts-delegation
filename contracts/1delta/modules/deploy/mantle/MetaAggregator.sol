@@ -1,7 +1,17 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.25;
+pragma solidity ^0.8.25;
 
+////////////////////////////////////////////////////
+// Minimal meta swap aggregation contract
+// - Allows simulation to validate receiver amount
+// - Owner can enable/disable valid swap targets
+// - Swap aggregation calls are assumed to already
+//   check for slippage and send funds directly to the
+//   user-defined receiver
+// - Owner can rescue funds in case the aggregator has
+//   this contract as receiver address
+////////////////////////////////////////////////////
 contract DeltaMetaAggregator {
     ////////////////////////////////////////////////////
     // Errors
@@ -15,7 +25,10 @@ contract DeltaMetaAggregator {
     ////////////////////////////////////////////////////
     // State
     ////////////////////////////////////////////////////
-    mapping(address => bool) public validTarget;
+
+    /// @notice maps approvalTarget to swapTarget to bool
+    mapping(address => mapping(address => bool)) private _validTargets;
+    /// @notice contract owner
     address public OWNER;
 
     ////////////////////////////////////////////////////
@@ -24,7 +37,7 @@ contract DeltaMetaAggregator {
     uint256 private constant MAX_UINT = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
 
     ////////////////////////////////////////////////////
-    // Constructor
+    // Constructor, assigns initial owner
     ////////////////////////////////////////////////////
 
     constructor() {
@@ -32,7 +45,7 @@ contract DeltaMetaAggregator {
     }
 
     ////////////////////////////////////////////////////
-    // Receive function
+    // Receive function for native swaps
     ////////////////////////////////////////////////////
 
     receive() external payable {}
@@ -54,8 +67,8 @@ contract DeltaMetaAggregator {
         OWNER = newOwner;
     }
 
-    function setValidTarget(address target, bool value) external onlyOwner {
-        validTarget[target] = value;
+    function setValidTarget(address approvalTarget, address swapTarget, bool value) external onlyOwner {
+        _validTargets[approvalTarget][swapTarget] = value;
     }
 
     function rescueFunds(address asset) external onlyOwner {
@@ -82,16 +95,15 @@ contract DeltaMetaAggregator {
         address swapTarget,
         bytes calldata swapData //
     ) external payable {
-        address _assetIn = assetIn;
         // zero address assumes native transfer
-        if (_assetIn != address(0)) {
+        if (assetIn != address(0)) {
             if (msg.value != 0) revert HasMsgValue();
             // pull balance
-            _transferERC20TokensFrom(_assetIn, msg.sender, address(this), amountIn);
+            _transferERC20TokensFrom(assetIn, amountIn);
             // approve if no allowance
-            _approveIfBelow(_assetIn, approvalTarget, amountIn);
+            _approveIfBelow(assetIn, approvalTarget, amountIn);
         }
-
+        // validates approval target and
         _validateCall(approvalTarget, swapTarget);
 
         (bool success, bytes memory returnData) = swapTarget.call{value: msg.value}(swapData);
@@ -114,14 +126,13 @@ contract DeltaMetaAggregator {
         address swapTarget,
         bytes calldata swapData //
     ) external payable returns (uint256 amountReceived) {
-        address _assetIn = assetIn;
         // zero address assumes native transfer
-        if (_assetIn != address(0)) {
+        if (assetIn != address(0)) {
             if (msg.value != 0) revert HasMsgValue();
             // pull balance
-            _transferERC20TokensFrom(_assetIn, msg.sender, address(this), amountIn);
+            _transferERC20TokensFrom(assetIn, amountIn);
             // approve if no allowance
-            _approveIfBelow(_assetIn, approvalTarget, amountIn);
+            _approveIfBelow(assetIn, approvalTarget, amountIn);
         }
 
         uint256 before = _balanceOf(assetOut, receiver);
@@ -132,10 +143,18 @@ contract DeltaMetaAggregator {
             assembly {
                 returnData := add(returnData, 0x04)
             }
-            revert SimulationResults(false, 0, abi.decode(returnData, (string)));   
+            revert SimulationResults(false, 0, abi.decode(returnData, (string)));
         }
         amountReceived = _balanceOf(assetOut, receiver) - before;
         revert SimulationResults(success, amountReceived, "");
+    }
+
+    ////////////////////////////////////////////////////
+    // Read functions
+    ////////////////////////////////////////////////////
+
+    function isValidTarget(address approvalTarget, address swapTarget) external view returns (bool) {
+        return _validTargets[approvalTarget][swapTarget];
     }
 
     ////////////////////////////////////////////////////
@@ -144,8 +163,7 @@ contract DeltaMetaAggregator {
 
     /// @dev chcecks whether both addresses are validTargets
     function _validateCall(address approvalTarget, address swapTarget) private view {
-        if (!validTarget[approvalTarget]) revert InvalidTarget();
-        if (approvalTarget != swapTarget && !validTarget[swapTarget]) revert InvalidTarget();
+        if (!_validTargets[approvalTarget][swapTarget]) revert InvalidTarget();
     }
 
     /// @dev Calls `IERC20Token(token).approve()` and sets the allowance to the
@@ -154,7 +172,7 @@ contract DeltaMetaAggregator {
     /// @param token The address of the token contract.
     /// @param spender The address that receives an allowance.
     /// @param amount The minimum allowance needed.
-    function _approveIfBelow(address token, address spender, uint256 amount) internal {
+    function _approveIfBelow(address token, address spender, uint256 amount) private {
         assembly {
             let ptr := mload(0x40)
             ////////////////////////////////////////////////////
@@ -186,7 +204,7 @@ contract DeltaMetaAggregator {
     }
 
     // balanceOf call in assembly for smaller contract size
-    function _balanceOf(address underlying, address entity) internal view returns (uint256 entityBalance) {
+    function _balanceOf(address underlying, address entity) private view returns (uint256 entityBalance) {
         assembly {
             switch eq(underlying, 0)
             case 1 {
@@ -216,7 +234,7 @@ contract DeltaMetaAggregator {
     /// @param token The token to spend.
     /// @param to The recipient of the tokens.
     /// @param amount The amount of `token` to transfer.
-    function _transferERC20Tokens(address token, address to, uint256 amount) internal {
+    function _transferERC20Tokens(address token, address to, uint256 amount) private {
         assembly {
             let ptr := mload(0x40) // free memory pointer
 
@@ -250,19 +268,17 @@ contract DeltaMetaAggregator {
         }
     }
 
-    /// @dev Transfers ERC20 tokens from `owner` to `to`.
+    /// @dev Transfers ERC20 tokens from `caller()` to `address()`.
     /// @param token The token to spend.
-    /// @param owner The owner of the tokens.
-    /// @param to The recipient of the tokens.
     /// @param amount The amount of `token` to transfer.
-    function _transferERC20TokensFrom(address token, address owner, address to, uint256 amount) internal {
+    function _transferERC20TokensFrom(address token, uint256 amount) private {
         assembly {
             let ptr := mload(0x40) // free memory pointer
 
             // selector for transferFrom(address,address,uint256)
             mstore(ptr, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
-            mstore(add(ptr, 0x04), owner)
-            mstore(add(ptr, 0x24), to)
+            mstore(add(ptr, 0x04), caller())
+            mstore(add(ptr, 0x24), address())
             mstore(add(ptr, 0x44), amount)
 
             let success := call(gas(), token, 0, ptr, 0x64, ptr, 32)
