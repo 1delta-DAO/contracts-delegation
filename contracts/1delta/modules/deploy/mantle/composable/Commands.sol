@@ -17,7 +17,7 @@ library Commands {
     uint256 constant SWAP_EXACT_OUT = 0x01;
     uint256 constant FLASH_SWAP_EXACT_IN = 0x02;
     uint256 constant PERMIT2_PERMIT_BATCH = 0x03;
-    uint256 constant SWEEP = 0x04;
+    // uint256 constant SWEEP = 0x04;
     uint256 constant TRANSFER = 0x05;
     uint256 constant PAY_PORTION = 0x06;
     uint256 constant COMMAND_PLACEHOLDER_0x07 = 0x07;
@@ -26,8 +26,6 @@ library Commands {
     uint256 constant V2_SWAP_EXACT_IN = 0x08;
     uint256 constant V2_SWAP_EXACT_OUT = 0x09;
     uint256 constant PERMIT2_PERMIT = 0x0a;
-    uint256 constant WRAP_ETH = 0x0b;
-    uint256 constant UNWRAP_WETH = 0x0c;
     uint256 constant PERMIT2_TRANSFER_FROM_BATCH = 0x0d;
     uint256 constant COMMAND_PLACEHOLDER_0x0e = 0x0e;
     uint256 constant COMMAND_PLACEHOLDER_0x0f = 0x0f;
@@ -41,4 +39,15 @@ library Commands {
     uint256 constant OWNER_CHECK_721 = 0x15;
     uint256 constant OWNER_CHECK_1155 = 0x16;
     uint256 constant SWEEP_ERC721 = 0x17;
+
+    // Command Types where 0x10<=value<0x18, executed in the third nested-if block
+    uint256 constant DEPOSIT = 0x13;
+    uint256 constant BORROW = 0x11;
+    uint256 constant REPAY = 0x18;
+    uint256 constant WITHDRAW = 0x17;
+
+    uint256 constant TRANSFER_FROM = 0x15;
+    uint256 constant SWEEP = 0x17;
+    uint256 constant WRAP_ETH = 0x0b;
+    uint256 constant UNWRAP_WETH = 0x0c;
 }

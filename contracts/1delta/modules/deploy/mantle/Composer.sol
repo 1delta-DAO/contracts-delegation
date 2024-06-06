@@ -3,10 +3,9 @@
 pragma solidity 0.8.26;
 
 import {DeltaFlashAggregatorMantle} from "./FlashAggregator.sol";
-import {RawTokenTransfer} from "./composable/TokenTransfer.sol";
 import {Commands} from "./composable/Commands.sol";
 
-contract Composer is DeltaFlashAggregatorMantle, RawTokenTransfer {
+contract Composer is DeltaFlashAggregatorMantle {
     bytes1 private constant ZERO = 0x0;
 
     uint256 internal constant _PAY_SELF = 1 << 255;
@@ -130,7 +129,7 @@ contract Composer is DeltaFlashAggregatorMantle, RawTokenTransfer {
                     flashSwapExactOutInternal(amountOut, amountInMaximum, msg.sender, receiver, opdata);
                 }
             } else {
-                if (operation == 0x13) {
+                if (operation == Commands.DEPOSIT) {
                     address underlying;
                     address receiver;
                     uint256 amount;
@@ -164,7 +163,7 @@ contract Composer is DeltaFlashAggregatorMantle, RawTokenTransfer {
                         }
                     }
                     _deposit(underlying, receiver, amount, lenderId);
-                } else if (operation == 0x11) {
+                } else if (operation == Commands.BORROW) {
                     address underlying;
                     address receiver;
                     address user;
@@ -188,7 +187,7 @@ contract Composer is DeltaFlashAggregatorMantle, RawTokenTransfer {
                     if (receiver != address(this)) {
                         _transferERC20Tokens(underlying, receiver, amount);
                     }
-                } else if (operation == 0x18) {
+                } else if (operation == Commands.REPAY) {
                     address underlying;
                     address receiver;
                     uint256 amount;
@@ -207,7 +206,7 @@ contract Composer is DeltaFlashAggregatorMantle, RawTokenTransfer {
                     }
                     // borrow(opdata);
                     _repay(underlying, receiver, amount, mode, lenderId);
-                } else if (operation == 0x17) {
+                } else if (operation == Commands.WITHDRAW) {
                     address underlying;
                     address receiver;
                     uint256 amount;
@@ -244,7 +243,7 @@ contract Composer is DeltaFlashAggregatorMantle, RawTokenTransfer {
                     }
                     _preWithdraw(underlying, user, amount, lenderId);
                     _withdraw(underlying, receiver, amount, lenderId);
-                } else if (operation == 0x15) {
+                } else if (operation == Commands.TRANSFER_FROM) {
                     // bytes calldata opdata;
                     address owner;
                     address underlying;
@@ -261,6 +260,23 @@ contract Composer is DeltaFlashAggregatorMantle, RawTokenTransfer {
                         amount := calldataload(add(offset, 40))
                     }
                     _transferERC20TokensFrom(underlying, owner, receiver, amount);
+                } else if (operation == Commands.SWEEP) {
+                    // bytes calldata opdata;
+                    address owner;
+                    address underlying;
+                    address receiver;
+                    uint256 amount;
+                    assembly {
+                        currentOffsetIncrement := add(3, currentOffsetIncrement)
+                        let offset := add(data.offset, currentOffsetIncrement)
+                        calldatalength := 72
+                        // opdata.length := calldatalength
+                        owner := caller()
+                        underlying := and(ADDRESS_MASK, shr(96, calldataload(offset)))
+                        receiver := and(ADDRESS_MASK, shr(96, calldataload(add(offset, 20))))
+                        amount := calldataload(add(offset, 40))
+                    }
+                    _transferERC20Tokens(underlying, receiver, amount);
                 } else revert();
             }
             // update op offset
