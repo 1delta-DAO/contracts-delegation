@@ -128,19 +128,19 @@ contract Composer is DeltaFlashAggregatorMantle, RawTokenTransfer {
                         }
                     }
                     flashSwapExactOutInternal(amountOut, amountInMaximum, msg.sender, receiver, opdata);
-                } else if (operation == 3) {
-                    bytes calldata opdata;
+                }
+            } else {
+                if (operation == 0x13) {
                     address underlying;
                     address receiver;
                     uint256 amount;
                     uint256 lenderId;
                     assembly {
                         currentOffsetIncrement := add(3, currentOffsetIncrement)
-                        opdata.offset := add(data.offset, currentOffsetIncrement)
-                        opdata.length := calldatalength
-                        underlying := and(ADDRESS_MASK, shr(96, calldataload(opdata.offset)))
-                        receiver := and(ADDRESS_MASK, shr(96, calldataload(add(opdata.offset, 20))))
-                        let lastBytes := calldataload(add(opdata.offset, 40))
+                        let offset := add(data.offset, currentOffsetIncrement)
+                        underlying := and(ADDRESS_MASK, shr(96, calldataload(offset)))
+                        receiver := and(ADDRESS_MASK, shr(96, calldataload(add(offset, 20))))
+                        let lastBytes := calldataload(add(offset, 40))
                         amount := and(_UINT112_MASK, shr(136, lastBytes))
                         lenderId := and(UINT8_MASK, shr(248, lastBytes))
                         if iszero(amount) {
@@ -164,9 +164,7 @@ contract Composer is DeltaFlashAggregatorMantle, RawTokenTransfer {
                         }
                     }
                     _deposit(underlying, receiver, amount, lenderId);
-                }
-            } else {
-                if (operation == 0x11) {
+                } else if (operation == 0x11) {
                     address underlying;
                     address receiver;
                     address user;
@@ -210,7 +208,6 @@ contract Composer is DeltaFlashAggregatorMantle, RawTokenTransfer {
                     // borrow(opdata);
                     _repay(underlying, receiver, amount, mode, lenderId);
                 } else if (operation == 0x17) {
-                    bytes calldata opdata;
                     address underlying;
                     address receiver;
                     uint256 amount;
@@ -218,11 +215,10 @@ contract Composer is DeltaFlashAggregatorMantle, RawTokenTransfer {
                     uint256 lenderId;
                     assembly {
                         currentOffsetIncrement := add(3, currentOffsetIncrement)
-                        opdata.offset := add(data.offset, currentOffsetIncrement)
-                        opdata.length := calldatalength
-                        underlying := and(ADDRESS_MASK, shr(96, calldataload(opdata.offset)))
-                        receiver := and(ADDRESS_MASK, shr(96, calldataload(add(opdata.offset, 20))))
-                        let lastBytes := calldataload(add(opdata.offset, 40))
+                        let offset := add(data.offset, currentOffsetIncrement)
+                        underlying := and(ADDRESS_MASK, shr(96, calldataload(offset)))
+                        receiver := and(ADDRESS_MASK, shr(96, calldataload(add(offset, 20))))
+                        let lastBytes := calldataload(add(offset, 40))
                         amount := and(_UINT112_MASK, shr(136, lastBytes))
                         lenderId := and(UINT8_MASK, shr(248, lastBytes))
                         user := caller()
@@ -249,7 +245,6 @@ contract Composer is DeltaFlashAggregatorMantle, RawTokenTransfer {
                     _preWithdraw(underlying, user, amount, lenderId);
                     _withdraw(underlying, receiver, amount, lenderId);
                 }
-                // else if (operation == 0x13) repay(opdata);
                 else if (operation == 0x15) {
                     bytes calldata opdata;
                     assembly {

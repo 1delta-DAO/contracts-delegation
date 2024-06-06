@@ -45,7 +45,7 @@ contract ComposerTest is DeltaSetup {
             amount //
         );
         bytes memory data = abi.encodePacked(
-            uint8(3), // 1
+            uint8(0x13), // 1
             uint16(55), // redundant, 2
             USDT, // 20
             user, // 20
@@ -219,7 +219,7 @@ contract ComposerTest is DeltaSetup {
             amount //
         );
         bytes memory data = abi.encodePacked(
-            uint8(3), // 1
+            uint8(0x13), // 1
             uint16(56), // redundant, 2
             asset, // 20
             user, // 20
