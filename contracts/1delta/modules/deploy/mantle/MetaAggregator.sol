@@ -23,9 +23,17 @@ contract DeltaMetaAggregator {
     ////////////////////////////////////////////////////
     uint256 private constant MAX_UINT = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
 
+    ////////////////////////////////////////////////////
+    // Constructor
+    ////////////////////////////////////////////////////
+
     constructor() {
         OWNER = msg.sender;
     }
+
+    ////////////////////////////////////////////////////
+    // Receive function
+    ////////////////////////////////////////////////////
 
     receive() external payable {}
 
@@ -81,7 +89,7 @@ contract DeltaMetaAggregator {
             // pull balance
             _transferERC20TokensFrom(_assetIn, msg.sender, address(this), amountIn);
             // approve if no allowance
-            _approveIfBelow(_assetIn, approvalTarget, MAX_UINT);
+            _approveIfBelow(_assetIn, approvalTarget, amountIn);
         }
 
         _validateCall(approvalTarget, swapTarget);
@@ -113,7 +121,7 @@ contract DeltaMetaAggregator {
             // pull balance
             _transferERC20TokensFrom(_assetIn, msg.sender, address(this), amountIn);
             // approve if no allowance
-            _approveIfBelow(_assetIn, approvalTarget, MAX_UINT);
+            _approveIfBelow(_assetIn, approvalTarget, amountIn);
         }
 
         uint256 before = _balanceOf(assetOut, receiver);
