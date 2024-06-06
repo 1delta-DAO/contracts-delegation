@@ -88,6 +88,18 @@ contract DeltaMetaAggregator {
     // Swap functions
     ////////////////////////////////////////////////////
 
+    /**
+     * Executes meta aggregation swap.
+     * Can only be executed on valid approval- and swap target combo.
+     * Note that the receiver address has to be manually set in
+     * the aggregation call, otherwise, the funds will remain in this contract
+     * Ideally this function is executed after an simulation via `simSwapMeta`
+     * @param assetIn token input address, user zero address for native
+     * @param amountIn input amount, ignored for native transfer
+     * @param approvalTarget approve this target when swapping (only if allowance too low)
+     * @param swapTarget swap aggregation executor
+     * @param swapData swap calldata
+     */
     function swapMeta(
         address assetIn,
         uint256 amountIn,
@@ -103,7 +115,8 @@ contract DeltaMetaAggregator {
             // approve if no allowance
             _approveIfBelow(assetIn, approvalTarget, amountIn);
         }
-        // validates approval target and
+
+        // validate approval- and swap target
         _validateCall(approvalTarget, swapTarget);
 
         (bool success, bytes memory returnData) = swapTarget.call{value: msg.value}(swapData);
@@ -117,6 +130,19 @@ contract DeltaMetaAggregator {
         }
     }
 
+    /**
+     * Simulates the swap aggregation. Should be called before `swapMeta`
+     * Always reverts.
+     * Ideally called as staticcall, the return object conatains
+     * the balance change of the `receiver` address 
+     * @param assetIn token in address, zero address for native
+     * @param amountIn input amount
+     * @param assetOut token out, zero address for native
+     * @param receiver recipient of swap
+     * @param approvalTarget address to be approved
+     * @param swapTarget swap aggregator
+     * @param swapData swap calldata
+     */
     function simSwapMeta(
         address assetIn,
         uint256 amountIn,
@@ -134,8 +160,9 @@ contract DeltaMetaAggregator {
             // approve if no allowance
             _approveIfBelow(assetIn, approvalTarget, amountIn);
         }
-
+        // get initial balane of receiver
         uint256 before = _balanceOf(assetOut, receiver);
+
         (bool success, bytes memory returnData) = swapTarget.call{value: msg.value}(swapData);
         if (!success) {
             // Next 5 lines from https://ethereum.stackexchange.com/a/83577
@@ -145,6 +172,8 @@ contract DeltaMetaAggregator {
             }
             revert SimulationResults(false, 0, abi.decode(returnData, (string)));
         }
+
+        // get net amount received
         amountReceived = _balanceOf(assetOut, receiver) - before;
         revert SimulationResults(success, amountReceived, "");
     }
