@@ -92,7 +92,7 @@ contract DeltaMetaAggregator {
      * Executes meta aggregation swap.
      * Can only be executed on valid approval- and swap target combo.
      * Note that the receiver address has to be manually set in
-     * the aggregation call, otherwise, the funds will remain in this contract
+     * the aggregation call, otherwise, the funds might remain in this contract
      * Ideally this function is executed after an simulation via `simSwapMeta`
      * @param assetIn token input address, user zero address for native
      * @param amountIn input amount, ignored for native transfer
@@ -133,8 +133,8 @@ contract DeltaMetaAggregator {
     /**
      * Simulates the swap aggregation. Should be called before `swapMeta`
      * Always reverts.
-     * Ideally called as staticcall, the return object conatains
-     * the balance change of the `receiver` address 
+     * Ideally called via staticcall, the return object contains
+     * the balance change of the `receiver` address.
      * @param assetIn token in address, zero address for native
      * @param amountIn input amount
      * @param assetOut token out, zero address for native
@@ -232,7 +232,7 @@ contract DeltaMetaAggregator {
         }
     }
 
-    // balanceOf call in assembly for smaller contract size
+    /// @dev balanceOf call in assembly, compatible for both native (user address zero for underlying) and ERC20
     function _balanceOf(address underlying, address entity) private view returns (uint256 entityBalance) {
         assembly {
             switch eq(underlying, 0)
@@ -297,7 +297,7 @@ contract DeltaMetaAggregator {
         }
     }
 
-    /// @dev Transfers ERC20 tokens from `caller()` to `address()`.
+    /// @dev Transfers ERC20 tokens from msg.sender to address(this).
     /// @param token The token to spend.
     /// @param amount The amount of `token` to transfer.
     function _transferERC20TokensFrom(address token, uint256 amount) private {
