@@ -213,7 +213,7 @@ contract DeltaMetaAggregator {
             // call to token
             // success is false or return data not provided
             if or(iszero(staticcall(gas(), token, ptr, 0x44, ptr, 0x20)), lt(returndatasize(), 0x20)) {
-                revert(ptr, returndatasize())
+                revert(0x0, 0x0)
             }
             // approve if necessary
             if lt(mload(ptr), amount) {
@@ -225,8 +225,8 @@ contract DeltaMetaAggregator {
                 mstore(add(ptr, 0x04), spender)
                 mstore(add(ptr, 0x24), MAX_UINT)
 
-                if iszero(call(gas(), token, 0, ptr, 0x44, ptr, 32)) {
-                    revert(ptr, returndatasize())
+                if iszero(call(gas(), token, 0x0, ptr, 0x44, ptr, 32)) {
+                    revert(0x0, 0x0)
                 }
             }
         }
@@ -235,7 +235,7 @@ contract DeltaMetaAggregator {
     /// @dev balanceOf call in assembly, compatible for both native (user address zero for underlying) and ERC20
     function _balanceOf(address underlying, address entity) private view returns (uint256 entityBalance) {
         assembly {
-            switch eq(underlying, 0)
+            switch iszero(underlying)
             case 1 {
                 entityBalance := balance(entity)
             }
@@ -251,7 +251,7 @@ contract DeltaMetaAggregator {
 
                 // call to underlying
                 if iszero(staticcall(gas(), underlying, 0x0, 0x24, 0x0, 0x20)) {
-                    revert(0, 0)
+                    revert(0x0, 0x0)
                 }
 
                 entityBalance := mload(0x0)
@@ -272,7 +272,7 @@ contract DeltaMetaAggregator {
             mstore(add(ptr, 0x04), to)
             mstore(add(ptr, 0x24), amount)
 
-            let success := call(gas(), token, 0, ptr, 0x44, ptr, 32)
+            let success := call(gas(), token, 0x0, ptr, 0x44, ptr, 32)
 
             let rdsize := returndatasize()
 
@@ -291,7 +291,7 @@ contract DeltaMetaAggregator {
             )
 
             if iszero(success) {
-                returndatacopy(ptr, 0, rdsize)
+                returndatacopy(ptr, 0x0, rdsize)
                 revert(ptr, rdsize)
             }
         }
@@ -310,7 +310,7 @@ contract DeltaMetaAggregator {
             mstore(add(ptr, 0x24), address())
             mstore(add(ptr, 0x44), amount)
 
-            let success := call(gas(), token, 0, ptr, 0x64, ptr, 32)
+            let success := call(gas(), token, 0x0, ptr, 0x64, ptr, 32)
 
             let rdsize := returndatasize()
 
@@ -329,7 +329,7 @@ contract DeltaMetaAggregator {
             )
 
             if iszero(success) {
-                returndatacopy(ptr, 0, rdsize)
+                returndatacopy(ptr, 0x0, rdsize)
                 revert(ptr, rdsize)
             }
         }
