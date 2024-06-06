@@ -244,16 +244,23 @@ contract Composer is DeltaFlashAggregatorMantle, RawTokenTransfer {
                     }
                     _preWithdraw(underlying, user, amount, lenderId);
                     _withdraw(underlying, receiver, amount, lenderId);
-                }
-                else if (operation == 0x15) {
-                    bytes calldata opdata;
+                } else if (operation == 0x15) {
+                    // bytes calldata opdata;
+                    address owner;
+                    address underlying;
+                    address receiver;
+                    uint256 amount;
                     assembly {
                         currentOffsetIncrement := add(3, currentOffsetIncrement)
-                        opdata.offset := add(data.offset, currentOffsetIncrement)
+                        let offset := add(data.offset, currentOffsetIncrement)
                         calldatalength := 72
-                        opdata.length := calldatalength
+                        // opdata.length := calldatalength
+                        owner := caller()
+                        underlying := and(ADDRESS_MASK, shr(96, calldataload(offset)))
+                        receiver := and(ADDRESS_MASK, shr(96, calldataload(add(offset, 20))))
+                        amount := calldataload(add(offset, 40))
                     }
-                    _transferERC20TokensFromInternal(opdata);
+                    _transferERC20TokensFrom(underlying, owner, receiver, amount);
                 } else revert();
             }
             // update op offset

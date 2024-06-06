@@ -256,3 +256,32 @@ contract ComposerTest is DeltaSetup {
         console.log("gas", gas);
     }
 }
+
+
+
+// Ran 5 tests for test/mantle/Composer.t.sol:ComposerTest
+// [PASS] test_mantle_composer_borrow() (gas: 917234)
+// Logs:
+//   gas 378856
+//   gas 432689
+
+// [PASS] test_mantle_composer_depo() (gas: 371166)
+// Logs:
+//   gas 249083
+
+// [PASS] test_mantle_composer_multi_route_exact_in() (gas: 380612)
+// Logs:
+//   gas 196757
+
+// [PASS] test_mantle_composer_repay() (gas: 986219)
+// Logs:
+//   gas 378856
+//   gas 432689
+//   gas 102425
+
+// [PASS] test_mantle_composer_withdraw() (gas: 702160)
+// Logs:
+//   gas 378856
+//   gas 253987
+
+// Suite result: ok. 5 passed; 0 failed; 0 skipped; finished in 171.55ms (16.04ms CPU time)
