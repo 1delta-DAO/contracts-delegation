@@ -39,14 +39,12 @@ contract ComposerTest is DeltaSetup {
 
         bytes memory transfer = abi.encodePacked(
             uint8(0x15),
-            uint16(72),
             USDT,
             brokerProxyAddress,
             amount //
         );
         bytes memory data = abi.encodePacked(
             uint8(0x13), // 1
-            uint16(55), // redundant, 2
             USDT, // 20
             user, // 20
             populateAmountDeposit(lenderId, amount) // 15
@@ -81,7 +79,6 @@ contract ComposerTest is DeltaSetup {
 
         bytes memory data = abi.encodePacked(
             uint8(0x11), // 1
-            uint16(55), // redundant, 2
             borrowAsset, // 20
             user, // 20
             populateAmountBorrow(lenderId, DEAULT_MODE, borrowAmount) // 16
@@ -112,7 +109,6 @@ contract ComposerTest is DeltaSetup {
 
         bytes memory transfer = abi.encodePacked(
             uint8(0x15),
-            uint16(72),
             borrowAsset,
             brokerProxyAddress,
             repayAmount //
@@ -120,7 +116,6 @@ contract ComposerTest is DeltaSetup {
 
         bytes memory data = abi.encodePacked(
             uint8(0x18), // 1
-            uint16(56), // redundant, 2
             borrowAsset, // 20
             user, // 20
             populateAmountRepay(lenderId, DEAULT_MODE, repayAmount) // 16
@@ -150,10 +145,9 @@ contract ComposerTest is DeltaSetup {
 
         bytes memory data = abi.encodePacked(
             uint8(0x17), // 1
-            uint16(56), // redundant, 2
             asset, // 20
             user, // 20
-            populateAmountWithdraw(lenderId, withdrawAmount) // 16
+            populateAmountWithdraw(lenderId, withdrawAmount) // 15
         );
 
         vm.prank(user);
@@ -176,16 +170,17 @@ contract ComposerTest is DeltaSetup {
 
         bytes memory dataAgni = getSpotExactInSingleGen2(assetIn, assetOut, AGNI);
         bytes memory dataFusion = getSpotExactInSingleGen2(assetIn, assetOut, FUSION_X);
+
         bytes memory data = abi.encodePacked(
             SWAP_EXACT_IN,
-            uint16(dataAgni.length + 52), // begin agni data
             amount / 2,
             user,
+            uint16(dataAgni.length), // begin agni data
             dataAgni,
             SWAP_EXACT_IN,
-            uint16(dataFusion.length + 52), // begin fusionX data
             amount / 2,
             user,
+            uint16(dataFusion.length), // begin fusionX data
             dataFusion
         );
 
@@ -213,14 +208,12 @@ contract ComposerTest is DeltaSetup {
 
         bytes memory transfer = abi.encodePacked(
             uint8(0x15),
-            uint16(72),
             asset,
             brokerProxyAddress,
             amount //
         );
         bytes memory data = abi.encodePacked(
             uint8(0x13), // 1
-            uint16(56), // redundant, 2
             asset, // 20
             user, // 20
             populateAmountDeposit(lenderId, amount) // 15
@@ -243,7 +236,6 @@ contract ComposerTest is DeltaSetup {
 
         bytes memory data = abi.encodePacked(
             uint8(0x11), // 1
-            uint16(56), // redundant, 2
             borrowAsset, // 20
             user, // 20
             populateAmountBorrow(lenderId, DEAULT_MODE, borrowAmount) // 16
@@ -256,8 +248,6 @@ contract ComposerTest is DeltaSetup {
         console.log("gas", gas);
     }
 }
-
-
 
 // Ran 5 tests for test/mantle/Composer.t.sol:ComposerTest
 // [PASS] test_mantle_composer_borrow() (gas: 917234)

@@ -21,19 +21,21 @@ contract Composer is DeltaFlashAggregatorMantle {
      */
     function deltaCompose(bytes calldata data) external payable {
         // data encding paramters
-        uint256 calldatalength;
+        uint256 calldataLength;
+        uint256 currentOffset;
         uint256 currentOffsetIncrement;
-        uint256 operation;
+        assembly {
+            currentOffset := data.offset
+        }
 
         // execute ops
         while (true) {
+            uint256 operation;
             // fetch op metadata
             assembly {
-                let word := calldataload(add(data.offset, currentOffsetIncrement))
-                calldatalength := and(shr(232, word), UINT16_MASK)
-                operation := and(shr(248, word), UINT8_MASK)
+                operation := and(shr(248, calldataload(currentOffset)), UINT8_MASK)
+                currentOffset := add(1, currentOffset)
             }
-
             if (operation < 0x10) {
                 // exec op
                 if (operation == Commands.SWAP_EXACT_IN) {
@@ -43,12 +45,14 @@ contract Composer is DeltaFlashAggregatorMantle {
                     address receiver;
                     uint256 minimumAmountOut;
                     assembly {
-                        currentOffsetIncrement := add(3, currentOffsetIncrement)
-                        opdata.offset := add(data.offset, currentOffsetIncrement)
-                        opdata.length := calldatalength
-                        amountIn := calldataload(opdata.offset)
+                        opdata.offset := add(currentOffset, 54) // 32 +20 + 2
+                        let lastparam := calldataload(add(currentOffset, 32))
+                        receiver := and(ADDRESS_MASK, shr(96, lastparam))
+                        calldataLength := and(shr(80, lastparam), UINT16_MASK)
+                        opdata.length := and(calldataLength, UINT16_MASK)
+                        calldataLength := add(54, calldataLength)
+                        amountIn := calldataload(currentOffset)
                         minimumAmountOut := and(shr(128, amountIn), _UPPER_120_MASK)
-                        receiver := and(ADDRESS_MASK, shr(96, calldataload(add(opdata.offset, 32))))
                         switch and(_PAY_SELF, amountIn)
                         case 1 {
                             payer := address()
@@ -56,7 +60,6 @@ contract Composer is DeltaFlashAggregatorMantle {
                         default {
                             payer := caller()
                         }
-                        opdata.offset := add(52, opdata.offset)
                         if iszero(amountIn) {
                             // selector for balanceOf(address)
                             mstore(0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
@@ -66,7 +69,7 @@ contract Composer is DeltaFlashAggregatorMantle {
                             pop(
                                 staticcall(
                                     gas(),
-                                    calldataload(and(ADDRESS_MASK, add(opdata.offset, 32))),
+                                    calldataload(and(ADDRESS_MASK, add(currentOffset, 32))),
                                     0x0,
                                     0x24,
                                     0x0,
@@ -76,6 +79,8 @@ contract Composer is DeltaFlashAggregatorMantle {
                             // load the retrieved balance
                             amountIn := mload(0x0)
                         }
+                        currentOffset := add(currentOffset, calldataLength)
+                        calldataLength := add(calldataLength, 52)
                     }
                     amountIn = uint128(amountIn);
 
@@ -95,7 +100,6 @@ contract Composer is DeltaFlashAggregatorMantle {
                     address receiver;
                     uint256 amountInMaximum;
                     assembly {
-                        currentOffsetIncrement := add(currentOffsetIncrement, 3)
                         amountOut := calldataload(currentOffsetIncrement)
                         amountInMaximum := shr(128, and(amountOut, _UPPER_120_MASK))
                         switch and(_PAY_SELF, amountOut)
@@ -125,6 +129,7 @@ contract Composer is DeltaFlashAggregatorMantle {
                             // load the retrieved balance
                             amountOut := mload(0x0)
                         }
+                        calldataLength := 57
                     }
                     flashSwapExactOutInternal(amountOut, amountInMaximum, msg.sender, receiver, opdata);
                 }
@@ -135,8 +140,7 @@ contract Composer is DeltaFlashAggregatorMantle {
                     uint256 amount;
                     uint256 lenderId;
                     assembly {
-                        currentOffsetIncrement := add(3, currentOffsetIncrement)
-                        let offset := add(data.offset, currentOffsetIncrement)
+                        let offset := currentOffset
                         underlying := and(ADDRESS_MASK, shr(96, calldataload(offset)))
                         receiver := and(ADDRESS_MASK, shr(96, calldataload(add(offset, 20))))
                         let lastBytes := calldataload(add(offset, 40))
@@ -161,6 +165,8 @@ contract Composer is DeltaFlashAggregatorMantle {
                             // load the retrieved balance
                             amount := mload(0x0)
                         }
+                        calldataLength := 57
+                        currentOffset := add(currentOffset, 73)
                     }
                     _deposit(underlying, receiver, amount, lenderId);
                 } else if (operation == Commands.BORROW) {
@@ -171,8 +177,7 @@ contract Composer is DeltaFlashAggregatorMantle {
                     uint256 lenderId;
                     uint256 mode;
                     assembly {
-                        currentOffsetIncrement := add(3, currentOffsetIncrement)
-                        let offset := add(data.offset, currentOffsetIncrement)
+                        let offset := currentOffset
                         underlying := and(ADDRESS_MASK, shr(96, calldataload(offset)))
                         receiver := and(ADDRESS_MASK, shr(96, calldataload(add(offset, 20))))
                         let lastBytes := calldataload(add(offset, 40))
@@ -180,7 +185,8 @@ contract Composer is DeltaFlashAggregatorMantle {
                         lenderId := and(UINT8_MASK, shr(248, lastBytes))
                         mode := and(UINT8_MASK, shr(240, lastBytes))
                         user := caller()
-                        calldatalength := 56
+                        calldataLength := 57
+                        currentOffset := add(currentOffset, 57)
                     }
                     // borrow(opdata);
                     _borrow(underlying, user, amount, mode, lenderId);
@@ -194,17 +200,15 @@ contract Composer is DeltaFlashAggregatorMantle {
                     uint256 lenderId;
                     uint256 mode;
                     assembly {
-                        currentOffsetIncrement := add(3, currentOffsetIncrement)
-                        let offset := add(data.offset, currentOffsetIncrement)
+                        let offset := currentOffset
                         underlying := and(ADDRESS_MASK, shr(96, calldataload(offset)))
                         receiver := and(ADDRESS_MASK, shr(96, calldataload(add(offset, 20))))
                         let lastBytes := calldataload(add(offset, 40))
                         amount := and(_UINT112_MASK, shr(128, lastBytes))
                         lenderId := and(UINT8_MASK, shr(248, lastBytes))
                         mode := and(UINT8_MASK, shr(240, lastBytes))
-                        // calldatalength := 72
+                        currentOffset := add(currentOffset, 57)
                     }
-                    // borrow(opdata);
                     _repay(underlying, receiver, amount, mode, lenderId);
                 } else if (operation == Commands.WITHDRAW) {
                     address underlying;
@@ -213,8 +217,7 @@ contract Composer is DeltaFlashAggregatorMantle {
                     address user;
                     uint256 lenderId;
                     assembly {
-                        currentOffsetIncrement := add(3, currentOffsetIncrement)
-                        let offset := add(data.offset, currentOffsetIncrement)
+                        let offset := currentOffset
                         underlying := and(ADDRESS_MASK, shr(96, calldataload(offset)))
                         receiver := and(ADDRESS_MASK, shr(96, calldataload(add(offset, 20))))
                         let lastBytes := calldataload(add(offset, 40))
@@ -240,7 +243,10 @@ contract Composer is DeltaFlashAggregatorMantle {
                             // load the retrieved balance
                             amount := mload(0x0)
                         }
+                        calldataLength := 56
+                        currentOffset := add(currentOffset, 56)
                     }
+
                     _preWithdraw(underlying, user, amount, lenderId);
                     _withdraw(underlying, receiver, amount, lenderId);
                 } else if (operation == Commands.TRANSFER_FROM) {
@@ -250,14 +256,14 @@ contract Composer is DeltaFlashAggregatorMantle {
                     address receiver;
                     uint256 amount;
                     assembly {
-                        currentOffsetIncrement := add(3, currentOffsetIncrement)
-                        let offset := add(data.offset, currentOffsetIncrement)
-                        calldatalength := 72
+                        let offset := currentOffset // add(data.offset, currentOffsetIncrement)
+                        calldataLength := 73
                         // opdata.length := calldatalength
                         owner := caller()
                         underlying := and(ADDRESS_MASK, shr(96, calldataload(offset)))
                         receiver := and(ADDRESS_MASK, shr(96, calldataload(add(offset, 20))))
                         amount := calldataload(add(offset, 40))
+                        currentOffset := add(currentOffset, 72)
                     }
                     _transferERC20TokensFrom(underlying, owner, receiver, amount);
                 } else if (operation == Commands.SWEEP) {
@@ -267,9 +273,8 @@ contract Composer is DeltaFlashAggregatorMantle {
                     address receiver;
                     uint256 amount;
                     assembly {
-                        currentOffsetIncrement := add(3, currentOffsetIncrement)
                         let offset := add(data.offset, currentOffsetIncrement)
-                        calldatalength := 72
+                        calldataLength := 73
                         // opdata.length := calldatalength
                         owner := caller()
                         underlying := and(ADDRESS_MASK, shr(96, calldataload(offset)))
@@ -282,7 +287,7 @@ contract Composer is DeltaFlashAggregatorMantle {
             // update op offset
             assembly {
                 // length plus uint16 plus bytes1
-                currentOffsetIncrement := add(calldatalength, currentOffsetIncrement)
+                currentOffsetIncrement := add(calldataLength, currentOffsetIncrement)
             }
             // break criteria
             if (currentOffsetIncrement >= data.length) break;
