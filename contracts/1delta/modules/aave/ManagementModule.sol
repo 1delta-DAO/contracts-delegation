@@ -24,6 +24,12 @@ contract ManagementModule is WithStorage {
 
     // STATE CHANGING FUNCTION
 
+    // sets the initial cache
+    function clearCache() external onlyManagement {
+        gcs().cache = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
+        ncs().amount = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
+    }
+
     /** DEPRECATED SINGLE_LENDER FUNCTIONS */
 
     function addAToken(address _underlying, address _aToken) external onlyManagement {

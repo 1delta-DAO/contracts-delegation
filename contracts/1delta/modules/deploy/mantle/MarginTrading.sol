@@ -769,7 +769,6 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                     amountToRepayToPool,
                     lenderId
                 );
-
             } else {
                 (uint256 payType, uint8 lenderId) = getPayConfig(_data);
                 // exact out

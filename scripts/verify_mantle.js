@@ -8,7 +8,7 @@ module.exports = [
 ];
 
 
-// npx hardhat verify --network mantle 0xC977656F90Aa682688e7B0550F2A32D0D6c3cA18 --contract contracts/1delta/modules/deploy/mantle/FlashAggregator.sol:DeltaFlashAggregatorMantle 
+// npx hardhat verify --network mantle 0xa11460Eb02F827D1269e586c5f01dB992e8ab190 --contract contracts/1delta/modules/deploy/mantle/FlashAggregator.sol:DeltaFlashAggregatorMantle 
 
 // npx hardhat verify --network mantle 0xD41DAb36B729C772CdDF2A3F240C93ccEdDaD70E --contract contracts/1delta/modules/deploy/mantle/LendingInterface.sol:DeltaLendingInterfaceMantle 
 
@@ -28,3 +28,5 @@ module.exports = [
 // npx hardhat verify --network mantle 0xB2B6Bd4C88124D73dE0ea128c86267AB64Fd1069 --contract contracts/1delta/modules/aave/MarginTradeDataViewerModule.sol:MarginTradeDataViewerModule
 
 // npx hardhat verify --network mantle 0xA453ba397c61B0c292EA3959A858821145B2707F --contract contracts/1delta/initializers/MarginTraderInit.sol:MarginTraderInit --constructor-args scripts/verify_mantle.js
+
+// npx hardhat verify --network mantle 0xCc0264D9235756950613C770455424f9F7294A1f --contract contracts/1delta/modules/deploy/mantle/MetaAggregator.sol:DeltaMetaAggregator 
