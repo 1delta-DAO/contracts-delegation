@@ -6,11 +6,13 @@ import "./DeltaSetup.f.sol";
 contract ComposerTest is DeltaSetup {
     uint8 DEAULT_MODE = 2;
     uint8 SWAP_EXACT_IN = 0x0;
+    uint8 SWAP_EXACT_OUT = 1;
     uint256 private constant USE_PERMIT2_FLAG = 1 << 127;
     uint256 private constant UNWRAP_NATIVE_MASK = 1 << 254;
     uint256 private constant UINT128_MASK = 0x00000000000000000000000000000000ffffffffffffffffffffffffffffffff;
     uint256 private constant UINT112_MASK = 0x000000000000000000000000000000000000ffffffffffffffffffffffffffff;
     uint256 private constant LENDER_ID_MASK = 0x0000000000000000000000000000000000ff0000000000000000000000000000;
+    uint256 private constant UINT128_MASK_UPPER = 0xffffffffffffffffffffffffffffffff00000000000000000000000000000000;
 
     function populateAmountDeposit(uint8 lender, uint256 amount) internal pure returns (bytes memory data) {
         data = abi.encodePacked(lender, uint112(amount)); // 14 + 1 byte
@@ -26,6 +28,19 @@ contract ComposerTest is DeltaSetup {
 
     function populateAmountWithdraw(uint8 lender, uint256 amount) internal pure returns (bytes memory data) {
         data = abi.encodePacked(lender, uint112(amount)); // 14 + 1 byte
+    }
+
+    function encodeExactOutParams(uint256 amountOut, uint256 maximumAmountIn) internal pure returns (uint256) {
+        uint256 am = uint128(amountOut);
+        am = (am & ~UINT128_MASK_UPPER) | (uint256(maximumAmountIn) << 128);
+        return am;
+    }
+
+
+    function encodeExactInParams(uint256 amountIn, uint256 minimumOut) internal pure returns (uint256) {
+        uint256 am = uint128(amountIn);
+        am = (am & ~UINT128_MASK_UPPER) | (uint256(minimumOut) << 128);
+        return am;
     }
 
     function test_mantle_composer_depo() external {
@@ -163,6 +178,7 @@ contract ComposerTest is DeltaSetup {
     function test_mantle_composer_multi_route_exact_in() external {
         address user = testUser;
         uint256 amount = 2000.0e6;
+        uint256 amountMin = 900.0e6;
 
         address assetIn = USDC;
         address assetOut = USDT;
@@ -173,12 +189,12 @@ contract ComposerTest is DeltaSetup {
 
         bytes memory data = abi.encodePacked(
             SWAP_EXACT_IN,
-            amount / 2,
+            encodeExactInParams(amount / 2, amountMin),
             user,
             uint16(dataAgni.length), // begin agni data
             dataAgni,
             SWAP_EXACT_IN,
-            amount / 2,
+            encodeExactInParams(amount / 2, amountMin),
             user,
             uint16(dataFusion.length), // begin fusionX data
             dataFusion
@@ -194,10 +210,51 @@ contract ComposerTest is DeltaSetup {
         console.log("gas", gas);
     }
 
+    function test_mantle_composer_multi_route_exact_out() external {
+        address user = testUser;
+        uint256 amount = 2000.0e6;
+        uint256 maxIn = 1040.0e6;
+
+        address assetIn = USDC;
+        address assetOut = USDT;
+        deal(assetIn, user, 1e23);
+
+        bytes memory dataAgni = getSpotExactOutSingleGen2(assetIn, assetOut, AGNI);
+        bytes memory dataFusion = getSpotExactOutSingleGen2(assetIn, assetOut, FUSION_X);
+
+        bytes memory data = abi.encodePacked(
+            SWAP_EXACT_OUT,
+            encodeExactOutParams(amount / 2, maxIn),
+            user,
+            uint16(dataAgni.length), // begin agni data
+            dataAgni,
+            SWAP_EXACT_OUT,
+            encodeExactOutParams(amount / 2, maxIn),
+            user,
+            uint16(dataFusion.length), // begin fusionX data
+            dataFusion
+        );
+
+        vm.prank(user);
+        IERC20All(assetIn).approve(address(brokerProxyAddress), maxIn * 2);
+
+        vm.prank(user);
+        uint gas = gasleft();
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
+        gas = gas - gasleft();
+        console.log("gas", gas);
+    }
+
     function getSpotExactInSingleGen2(address tokenIn, address tokenOut, uint8 poolId) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_STABLES);
         address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
         return abi.encodePacked(tokenIn, uint8(10), poolId, pool, fee, tokenOut);
+    }
+
+    function getSpotExactOutSingleGen2(address tokenIn, address tokenOut, uint8 poolId) internal view returns (bytes memory data) {
+        uint16 fee = uint16(DEX_FEE_STABLES);
+        address pool = testQuoter._v3TypePool(tokenOut, tokenIn, fee, poolId);
+        return abi.encodePacked(tokenOut, uint8(11), poolId, pool, fee, tokenIn);
     }
 
     function _deposit(address asset, address user, uint256 amount, uint8 lenderId) internal {

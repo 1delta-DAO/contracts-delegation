@@ -52,7 +52,7 @@ contract Composer is DeltaFlashAggregatorMantle {
                         opdata.length := and(calldataLength, UINT16_MASK)
                         calldataLength := add(54, calldataLength)
                         amountIn := calldataload(currentOffset)
-                        minimumAmountOut := and(shr(128, amountIn), _UPPER_120_MASK)
+                        minimumAmountOut := shr(128, and(amountIn, _UPPER_120_MASK))
                         switch and(_PAY_SELF, amountIn)
                         case 1 {
                             payer := address()
@@ -60,6 +60,7 @@ contract Composer is DeltaFlashAggregatorMantle {
                         default {
                             payer := caller()
                         }
+                        amountIn := and(UINT128_MASK, amountIn)
                         if iszero(amountIn) {
                             // selector for balanceOf(address)
                             mstore(0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
@@ -82,8 +83,6 @@ contract Composer is DeltaFlashAggregatorMantle {
                         currentOffset := add(currentOffset, calldataLength)
                         calldataLength := add(calldataLength, 52)
                     }
-                    amountIn = uint128(amountIn);
-
                     uint256 dexId = _preFundTrade(payer, amountIn, opdata);
                     amountIn = swapExactIn(amountIn, dexId, payer, receiver, opdata);
                     // slippage check
@@ -100,7 +99,13 @@ contract Composer is DeltaFlashAggregatorMantle {
                     address receiver;
                     uint256 amountInMaximum;
                     assembly {
-                        amountOut := calldataload(currentOffsetIncrement)
+                        opdata.offset := add(currentOffset, 54) // 32 +20 + 2
+                        let lastparam := calldataload(add(currentOffset, 32))
+                        receiver := and(ADDRESS_MASK, shr(96, lastparam))
+                        calldataLength := and(shr(80, lastparam), UINT16_MASK)
+                        opdata.length := and(calldataLength, UINT16_MASK)
+                        calldataLength := add(54, calldataLength)
+                        amountOut := calldataload(currentOffset)
                         amountInMaximum := shr(128, and(amountOut, _UPPER_120_MASK))
                         switch and(_PAY_SELF, amountOut)
                         case 1 {
@@ -109,8 +114,8 @@ contract Composer is DeltaFlashAggregatorMantle {
                         default {
                             payer := caller()
                         }
-                        opdata.offset := add(32, currentOffsetIncrement)
-                        if and(_USE_BALANCE, amountOut) {
+                        amountOut := and(UINT128_MASK, amountOut)
+                        if iszero(amountOut) {
                             // selector for balanceOf(address)
                             mstore(0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
                             // add this address as parameter
@@ -119,19 +124,20 @@ contract Composer is DeltaFlashAggregatorMantle {
                             pop(
                                 staticcall(
                                     gas(),
-                                    calldataload(and(ADDRESS_MASK, currentOffsetIncrement)), // token
+                                    calldataload(and(ADDRESS_MASK, add(currentOffset, 32))),
                                     0x0,
                                     0x24,
                                     0x0,
-                                    0x20
+                                    0x20 //
                                 )
                             )
                             // load the retrieved balance
                             amountOut := mload(0x0)
                         }
-                        calldataLength := 57
+                        currentOffset := add(currentOffset, calldataLength)
+                        calldataLength := add(calldataLength, 52)
                     }
-                    flashSwapExactOutInternal(amountOut, amountInMaximum, msg.sender, receiver, opdata);
+                    flashSwapExactOutInternal(amountOut, amountInMaximum, payer, receiver, opdata);
                 }
             } else {
                 if (operation == Commands.DEPOSIT) {
