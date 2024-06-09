@@ -16,6 +16,15 @@ contract ComposerTest is DeltaSetup {
     uint256 private constant LENDER_ID_MASK = 0x0000000000000000000000000000000000ff0000000000000000000000000000;
     uint256 private constant UINT128_MASK_UPPER = 0xffffffffffffffffffffffffffffffff00000000000000000000000000000000;
 
+    function transferIn(address asset, address receiver, uint256 amount) internal pure returns (bytes memory data) {
+        data = abi.encodePacked(
+            uint8(0x15),
+            asset,
+            receiver,
+            uint112(amount) //
+        ); // 2 + 20 + 20 + 14 = 56 bytes
+    }
+
     function populateAmountDeposit(uint8 lender, uint256 amount) internal pure returns (bytes memory data) {
         data = abi.encodePacked(lender, uint112(amount)); // 14 + 1 byte
     }
@@ -54,8 +63,7 @@ contract ComposerTest is DeltaSetup {
         vm.prank(user);
         IERC20All(USDT).approve(address(brokerProxyAddress), amount);
 
-        bytes memory transfer = abi.encodePacked(
-            uint8(0x15),
+        bytes memory transfer = transferIn(
             USDT,
             brokerProxyAddress,
             amount //
@@ -124,8 +132,7 @@ contract ComposerTest is DeltaSetup {
 
         uint256 repayAmount = 2.50e6;
 
-        bytes memory transfer = abi.encodePacked(
-            uint8(0x15),
+        bytes memory transfer = transferIn(
             borrowAsset,
             brokerProxyAddress,
             repayAmount //
@@ -224,8 +231,7 @@ contract ComposerTest is DeltaSetup {
         bytes memory dataAgni = getSpotExactInSingleGen2Self(assetIn, assetOut, AGNI);
         bytes memory dataFusion = getSpotExactInSingleGen2Self(assetIn, assetOut, FUSION_X);
 
-        bytes memory transfer = abi.encodePacked(
-            uint8(0x15),
+        bytes memory transfer = transferIn(
             assetIn,
             brokerProxyAddress,
             amount //
@@ -313,8 +319,7 @@ contract ComposerTest is DeltaSetup {
         vm.prank(user);
         IERC20All(asset).approve(address(brokerProxyAddress), amount);
 
-        bytes memory transfer = abi.encodePacked(
-            uint8(0x15),
+        bytes memory transfer = transferIn(
             asset,
             brokerProxyAddress,
             amount //
@@ -356,29 +361,37 @@ contract ComposerTest is DeltaSetup {
     }
 }
 
-// Ran 5 tests for test/mantle/Composer.t.sol:ComposerTest
-// [PASS] test_mantle_composer_borrow() (gas: 917234)
+// Ran 7 tests for test/mantle/Composer.t.sol:ComposerTest
+// [PASS] test_mantle_composer_borrow() (gas: 917049)
 // Logs:
-//   gas 378856
-//   gas 432689
+//   gas 378807
+//   gas 432642
 
-// [PASS] test_mantle_composer_depo() (gas: 371166)
+// [PASS] test_mantle_composer_depo() (gas: 371051)
 // Logs:
-//   gas 249083
+//   gas 249034
 
-// [PASS] test_mantle_composer_multi_route_exact_in() (gas: 380612)
+// [PASS] test_mantle_composer_multi_route_exact_in() (gas: 377161)
 // Logs:
-//   gas 196757
+//   gas 192081
 
-// [PASS] test_mantle_composer_repay() (gas: 986219)
+// [PASS] test_mantle_composer_multi_route_exact_in_self() (gas: 399292)
 // Logs:
-//   gas 378856
-//   gas 432689
-//   gas 102425
+//   gas 219302
 
-// [PASS] test_mantle_composer_withdraw() (gas: 702160)
+// [PASS] test_mantle_composer_multi_route_exact_out() (gas: 390341)
 // Logs:
-//   gas 378856
-//   gas 253987
+//   gas 190953
 
-// Suite result: ok. 5 passed; 0 failed; 0 skipped; finished in 171.55ms (16.04ms CPU time)
+// [PASS] test_mantle_composer_repay() (gas: 985895)
+// Logs:
+//   gas 378807
+//   gas 432642
+//   gas 102377
+
+// [PASS] test_mantle_composer_withdraw() (gas: 702011)
+// Logs:
+//   gas 378807
+//   gas 253947
+
+// Suite result: ok. 7 passed; 0 failed; 0 skipped; finished in 163.74ms (20.60ms CPU time)

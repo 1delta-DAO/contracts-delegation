@@ -52,7 +52,7 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
             ////////////////////////////////////////////////////
             // dexs with ids of 100 and greater are assumed to
             // be based on pre-funding, i.e. the funds have to
-            // be sendt to the DEX before the swap call  
+            // be sent to the DEX before the swap call  
             ////////////////////////////////////////////////////
             if gt(dexId, 99) {
                 let tokenIn := and(

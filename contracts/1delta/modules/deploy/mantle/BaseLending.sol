@@ -15,9 +15,9 @@ abstract contract BaseLending {
     // this is the slot for the cache
     bytes32 private constant CACHE_SLOT = 0x468881cf549dc8cc10a98ff7dab63b93cde29208fb93e08f19acee97cac5ba05;
     // lender token slots
-    bytes32 private constant COLLATERAL_TOKENS_SLOT = 0xff0471b67e4632a86905e3993f5377c608866007c59224eed7731408a9f3f8b3;
-    bytes32 private constant STABLE_DEBT_TOKENS_SLOT = 0xff0471b67e4632a86905e3993f5377c608866007c59224eed7731408a9f3f8b5;
-    bytes32 private constant VARIABLE_DEBT_TOKENS_SLOT = 0xff0471b67e4632a86905e3993f5377c608866007c59224eed7731408a9f3f8b4;
+    bytes32 internal constant COLLATERAL_TOKENS_SLOT = 0xff0471b67e4632a86905e3993f5377c608866007c59224eed7731408a9f3f8b3;
+    bytes32 internal constant STABLE_DEBT_TOKENS_SLOT = 0xff0471b67e4632a86905e3993f5377c608866007c59224eed7731408a9f3f8b5;
+    bytes32 internal constant VARIABLE_DEBT_TOKENS_SLOT = 0xff0471b67e4632a86905e3993f5377c608866007c59224eed7731408a9f3f8b4;
     
     // masks
     uint256 private constant ADDRESS_MASK_UPPER = 0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff;
@@ -222,19 +222,18 @@ abstract contract BaseLending {
 
     function _callerCollateralBalance(address underlying, uint8 lenderId) internal view returns (uint256 callerBalance) {
         assembly {
-            let ptr := mload(0x40) // free memory pointer
-            mstore(ptr, underlying)
-            mstore8(ptr, lenderId)
-            mstore(add(ptr, 0x20), COLLATERAL_TOKENS_SLOT)
-            let collateralToken := sload(keccak256(ptr, 0x40))
+            mstore(0x0, underlying)
+            mstore8(0x0, lenderId)
+            mstore(0x20, COLLATERAL_TOKENS_SLOT)
+            let collateralToken := sload(keccak256(0x0, 0x40))
             // selector for balanceOf(address)
-            mstore(ptr, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+            mstore(0x0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
             // add caller address as parameter
-            mstore(add(ptr, 0x4), caller())
+            mstore(add(0x0, 0x4), caller())
             // call to collateralToken
-            pop(staticcall(gas(), collateralToken, ptr, 0x24, ptr, 0x20))
+            pop(staticcall(gas(), collateralToken, 0x0, 0x24, 0x0, 0x20))
 
-            callerBalance := mload(ptr)
+            callerBalance := mload(0x0)
         }
     }
 
