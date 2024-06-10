@@ -6,13 +6,15 @@ pragma solidity 0.8.26;
 * Author: Achthar | 1delta 
 /******************************************************************************/
 
+import {CurveSwapper} from "./Curve.sol";
+
 // solhint-disable max-line-length
 
 /**
  * @title Base swapper contract
  * @notice Contains basic logic for swap executions with DEXs
  */
-abstract contract ExoticSwapper {
+abstract contract ExoticSwapper is CurveSwapper {
 
     /// @dev WooFi rebate receiver
     address internal constant REBATE_RECIPIENT = 0xC95eED7F6E8334611765F84CEb8ED6270F08907E;

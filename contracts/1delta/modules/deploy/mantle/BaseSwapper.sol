@@ -7,8 +7,6 @@ pragma solidity 0.8.26;
 /******************************************************************************/
 
 import {TokenTransfer} from "./TokenTransfer.sol";
-import {UniTypeSwapper} from "./swappers/UniType.sol";
-import {CurveSwapper} from "./swappers/Curve.sol";
 import {ExoticSwapper} from "./swappers/Exotic.sol";
 
 // solhint-disable max-line-length
@@ -22,15 +20,7 @@ import {ExoticSwapper} from "./swappers/Exotic.sol";
  *             Uni V2: 100 - 110
  *             Solidly:121 - 130
  */
-abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, ExoticSwapper {
-    error invalidDexId();
-    // selectors for errors
-    bytes4 internal constant SLIPPAGE = 0x7dd37f70;
-    // NativeTransferFailed()
-    bytes4 internal constant NATIVE_TRANSFER = 0xf4b3b1bc;
-    // WrapFailed()
-    bytes4 internal constant WRAP = 0xc30d93ce;
-
+abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
     constructor() {}
 
     /**
@@ -48,7 +38,8 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
 
 
     /**
-     * Fund the first pool for self funded DEXs like Uni V2, GMX, LB, WooFi and Solidly V2 
+     * Fund the first pool for self funded DEXs like Uni V2, GMX, LB, WooFi and Solidly V2 (dexId >= 100) 
+     * Extracts and returns the first dexId of the path 
      */
     function _preFundTrade(address payer, uint256 amountIn, bytes calldata path) internal returns (uint256 dexId) {
         assembly {

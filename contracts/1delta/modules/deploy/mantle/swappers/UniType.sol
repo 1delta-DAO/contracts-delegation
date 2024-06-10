@@ -20,6 +20,10 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
     /// @dev used for some of the denominators in solidly calculations
     uint256 private constant SCALE_18 = 1.0e18;
 
+    ////////////////////////////////////////////////////
+    // dex references
+    ////////////////////////////////////////////////////
+
     address internal constant MERCHANT_MOE_FACTORY = 0x5bEf015CA9424A7C07B68490616a4C1F094BEdEc;
 
     bytes32 internal constant FUSION_V2_FF_FACTORY = 0xffE5020961fA51ffd3662CDf307dEf18F9a87Cce7c0000000000000000000000;
@@ -632,76 +636,6 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                 // Otherwise, we transfer before
                 ////////////////////////////////////////////////////
                 default {
-                    ////////////////////////////////////////////////////
-                    // Populate tx for transfer to pair
-                    ////////////////////////////////////////////////////
-                    
-                    // ////////////////////////////////////////////////////
-                    // // We check whether we pull from the cached address 
-                    // ////////////////////////////////////////////////////
-                    // switch and(shr(88, calldataload(path.offset)), UINT8_MASK) 
-                    // case 10 {
-                    //     // selector for transferFrom(address,address,uint256)
-                    //     mstore(ptr, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
-                    //     mstore(add(ptr, 0x04), payer)
-                    //     mstore(add(ptr, 0x24), pair)
-                    //     mstore(add(ptr, 0x44), amountIn)
-
-                    //     let success := call(gas(), tokenIn, 0, ptr, 0x64, ptr, 32)
-
-                    //     let rdsize := returndatasize()
-
-                    //     // Check for ERC20 success. ERC20 tokens should return a boolean,
-                    //     // but some don't. We accept 0-length return data as success, or at
-                    //     // least 32 bytes that starts with a 32-byte boolean true.
-                    //     success := and(
-                    //         success, // call itself succeeded
-                    //         or(
-                    //             iszero(rdsize), // no return data, or
-                    //             and(
-                    //                 iszero(lt(rdsize, 32)), // at least 32 bytes
-                    //                 eq(mload(ptr), 1) // starts with uint256(1)
-                    //             )
-                    //         )
-                    //     )
-
-                    //     if iszero(success) {
-                    //         returndatacopy(ptr, 0, rdsize)
-                    //         revert(ptr, rdsize)
-                    //     }
-                    // } 
-                    // ////////////////////////////////////////////////////
-                    // // If not, use this contract's balance and transfer()
-                    // ////////////////////////////////////////////////////
-                    // default {
-                    //     // selector for transfer(address,uint256)
-                    //     mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
-                    //     mstore(add(ptr, 0x04), and(pair, ADDRESS_MASK_UPPER))
-                    //     mstore(add(ptr, 0x24), amountIn)
-
-                    //     let success := call(gas(), and(tokenIn, ADDRESS_MASK_UPPER), 0, ptr, 0x44, ptr, 32)
-
-                    //     let rdsize := returndatasize()
-
-                    //     // Check for ERC20 success. ERC20 tokens should return a boolean,
-                    //     // but some don't. We accept 0-length return data as success, or at
-                    //     // least 32 bytes that starts with a 32-byte boolean true.
-                    //     success := and(
-                    //         success, // call itself succeeded
-                    //         or(
-                    //             iszero(rdsize), // no return data, or
-                    //             and(
-                    //                 iszero(lt(rdsize, 32)), // at least 32 bytes
-                    //                 eq(mload(ptr), 1) // starts with uint256(1)
-                    //             )
-                    //         )
-                    //     )
-
-                    //     if iszero(success) {
-                    //         returndatacopy(0x0, 0, rdsize)
-                    //         revert(0x0, rdsize)
-                    //     }
-                    // }
                     ////////////////////////////////////////////////////
                     // We store the bytes length to zero (no callback)
                     // and directly trigger the swap

@@ -19,9 +19,6 @@ abstract contract BaseLending {
     bytes32 internal constant STABLE_DEBT_TOKENS_SLOT = 0xff0471b67e4632a86905e3993f5377c608866007c59224eed7731408a9f3f8b5;
     bytes32 internal constant VARIABLE_DEBT_TOKENS_SLOT = 0xff0471b67e4632a86905e3993f5377c608866007c59224eed7731408a9f3f8b4;
     
-    // masks
-    uint256 private constant ADDRESS_MASK_UPPER = 0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff;
-
     // lender pool addresses
     address internal constant AURELIUS_POOL = 0x7c9C6F5BEd9Cfe5B9070C7D3322CF39eAD2F9492;
     address internal constant LENDLE_POOL = 0xCFa5aE7c2CE8Fadc6426C1ff872cA45378Fb7cF3;
@@ -171,12 +168,6 @@ abstract contract BaseLending {
                 returndatacopy(0x0, 0x0, rdsize)
                 revert(0x0, rdsize)
             }
-        }
-    }
-
-    function getCachedAddress() internal view returns (address cachedAddress) {
-        assembly {
-            cachedAddress := and(sload(CACHE_SLOT), ADDRESS_MASK_UPPER)
         }
     }
 

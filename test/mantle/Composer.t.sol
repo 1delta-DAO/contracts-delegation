@@ -524,37 +524,46 @@ contract ComposerTest is DeltaSetup {
     }
 }
 
-// Ran 7 tests for test/mantle/Composer.t.sol:ComposerTest
-// [PASS] test_mantle_composer_borrow() (gas: 917049)
+// Ran 9 tests for test/mantle/Composer.t.sol:ComposerTest
+// [PASS] test_mantle_composer_borrow() (gas: 916996)
 // Logs:
-//   gas 378807
-//   gas 432642
+//   gas 378726
+//   gas 432641
 
-// [PASS] test_mantle_composer_depo() (gas: 371051)
+// [PASS] test_mantle_composer_depo() (gas: 370985)
 // Logs:
-//   gas 249034
+//   gas 248953
 
-// [PASS] test_mantle_composer_multi_route_exact_in() (gas: 377161)
+// [PASS] test_mantle_composer_multi_route_exact_in() (gas: 377195)
 // Logs:
 //   gas 192081
 
-// [PASS] test_mantle_composer_multi_route_exact_in_self() (gas: 399292)
+// [PASS] test_mantle_composer_multi_route_exact_in_native() (gas: 368278)
 // Logs:
-//   gas 219302
+//   gas 374362
 
-// [PASS] test_mantle_composer_multi_route_exact_out() (gas: 390341)
+// [PASS] test_mantle_composer_multi_route_exact_in_native_out() (gas: 633219)
 // Logs:
-//   gas 190953
+//   gas-exactIn-native-out-2 split 547587
 
-// [PASS] test_mantle_composer_repay() (gas: 985895)
+// [PASS] test_mantle_composer_multi_route_exact_in_self() (gas: 399399)
 // Logs:
-//   gas 378807
+//   gas 219226
+
+// [PASS] test_mantle_composer_multi_route_exact_out() (gas: 390492)
+// Logs:
+//   gas 190951
+
+// [PASS] test_mantle_composer_repay() (gas: 985698)
+// Logs:
+//   gas 378726
 //   gas 432642
-//   gas 102377
+//   gas 102297
 
-// [PASS] test_mantle_composer_withdraw() (gas: 702011)
+// [PASS] test_mantle_composer_withdraw() (gas: 701987)
 // Logs:
-//   gas 378807
-//   gas 253947
+//   gas 378726
+//   gas 253944
 
-// Suite result: ok. 7 passed; 0 failed; 0 skipped; finished in 163.74ms (20.60ms CPU time)
+// Suite result: ok. 9 passed; 0 failed; 0 skipped; finished in 147.99ms (22.59ms CPU time)
+

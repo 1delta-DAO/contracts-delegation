@@ -2,7 +2,6 @@
 
 pragma solidity 0.8.26;
 
-
 /******************************************************************************\
 * Author: Achthar | 1delta 
 /******************************************************************************/
@@ -14,20 +13,41 @@ pragma solidity 0.8.26;
  * @notice Contains basic logic for swap executions with DEXs
  */
 abstract contract V3TypeSwapper {
-    // this is the slot for the cache
-    bytes32 internal constant CACHE_SLOT = 0x468881cf549dc8cc10a98ff7dab63b93cde29208fb93e08f19acee97cac5ba05;
-    bytes32 internal constant NUMBER_CACHE_SLOT = 0xcff5bbd1b2d2801305f53eb2f94cba4428e797852af2f6b82f41fdca2c9a278a;
+    ////////////////////////////////////////////////////
+    // Error data
+    ////////////////////////////////////////////////////
+    error invalidDexId();
+    // selectors for errors
+
+    // Slippage()
+    bytes4 internal constant SLIPPAGE = 0x7dd37f70;
+    // NativeTransferFailed()
+    bytes4 internal constant NATIVE_TRANSFER = 0xf4b3b1bc;
+    // WrapFailed()
+    bytes4 internal constant WRAP = 0xc30d93ce;
+    // InvalidDex()
+    bytes4 internal constant IVALID_DEX = 0xc30d93ce;
+    // BadPool()
+    bytes4 internal constant BAD_POOL = 0xb2c02722;
+
+    ////////////////////////////////////////////////////
+    // Masks
+    ////////////////////////////////////////////////////
 
     /// @dev Mask of lower 20 bytes.
     uint256 internal constant ADDRESS_MASK = 0x00ffffffffffffffffffffffffffffffffffffffff;
     /// @dev Mask of lower 3 bytes.
-    uint256 internal constant UINT24_MASK = 0xffffff;   
+    uint256 internal constant UINT24_MASK = 0xffffff;
     /// @dev Mask of lower 1 byte.
     uint256 internal constant UINT8_MASK = 0xff;
     /// @dev MIN_SQRT_RATIO + 1 from Uniswap's TickMath
     uint160 internal constant MIN_SQRT_RATIO = 4295128740;
     /// @dev MAX_SQRT_RATIO - 1 from Uniswap's TickMath
     uint160 internal constant MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970341;
+
+    ////////////////////////////////////////////////////
+    // dex references
+    ////////////////////////////////////////////////////
 
     bytes32 internal constant FUSION_V3_FF_FACTORY = 0xff8790c2C3BA67223D83C8FCF2a5E3C650059987b40000000000000000000000;
     bytes32 internal constant FUSION_POOL_INIT_CODE_HASH = 0x1bce652aaa6528355d7a339037433a20cd28410e3967635ba8d2ddb037440dbf;
@@ -63,10 +83,7 @@ abstract contract V3TypeSwapper {
         address payer,
         address receiver,
         bytes calldata path
-    )
-        internal
-        returns (uint256 receivedAmount)
-    {
+    ) internal returns (uint256 receivedAmount) {
         // solhint-disable-next-line no-inline-assembly
         assembly {
             let ptr := mload(0x40)
@@ -76,13 +93,13 @@ abstract contract V3TypeSwapper {
             let tokenA := and(ADDRESS_MASK, shr(96, firstWord))
             firstWord := calldataload(add(path.offset, 42))
             let tokenB := and(ADDRESS_MASK, shr(80, firstWord))
-            
+
             // read the pool address
             let pool := and(
                 ADDRESS_MASK,
                 shr(
                     96,
-                    calldataload(add(path.offset, 22))
+                    calldataload(add(path.offset, 22)) // starts as first param
                 )
             )
             let pathLength := path.length
@@ -104,14 +121,14 @@ abstract contract V3TypeSwapper {
                 mstore(add(ptr, 132), 0xa0)
                 // Store path
                 calldatacopy(add(ptr, 196), path.offset, pathLength)
-                
+
                 // within the callback, we add the maximum in amount
                 mstore(add(add(ptr, 196), pathLength), shl(128, minOut))
                 pathLength := add(pathLength, 16)
                 // within the callback, we add the payer
                 mstore(add(add(ptr, 196), pathLength), shl(96, payer))
                 pathLength := add(pathLength, 20)
-                
+
                 /// Store data length
                 mstore(add(ptr, 164), pathLength)
 
@@ -151,7 +168,7 @@ abstract contract V3TypeSwapper {
 
                 /// Store data length
                 mstore(add(ptr, 164), pathLength)
-                
+
                 // Perform the external 'swap' call
                 if iszero(call(gas(), pool, 0, ptr, add(228, pathLength), ptr, 64)) {
                     // store return value directly to free memory pointer
@@ -175,10 +192,7 @@ abstract contract V3TypeSwapper {
         address payer,
         address receiver,
         bytes calldata path
-    )
-        internal
-        returns (uint256 receivedAmount)
-    {
+    ) internal returns (uint256 receivedAmount) {
         // solhint-disable-next-line no-inline-assembly
         assembly {
             let ptr := mload(0x40)
@@ -188,13 +202,13 @@ abstract contract V3TypeSwapper {
             let tokenA := and(ADDRESS_MASK, shr(96, firstWord))
             firstWord := calldataload(add(path.offset, 42))
             let tokenB := and(ADDRESS_MASK, shr(80, firstWord))
-            
+
             // read the pool address
             let pool := and(
                 ADDRESS_MASK,
                 shr(
                     96,
-                    calldataload(add(path.offset, 22))
+                    calldataload(add(path.offset, 22)) // first param
                 )
             )
             let pathLength := path.length
@@ -222,7 +236,7 @@ abstract contract V3TypeSwapper {
                 // within the callback, we add the payer
                 mstore(add(add(ptr, 164), pathLength), shl(96, payer))
                 pathLength := add(pathLength, 20)
-                
+
                 /// Store data length
                 mstore(add(ptr, 132), pathLength)
 
@@ -251,14 +265,14 @@ abstract contract V3TypeSwapper {
 
                 // Store path
                 calldatacopy(add(ptr, 164), path.offset, pathLength)
-                
+
                 // within the callback, we add the maximum in amount
                 mstore(add(add(ptr, 164), pathLength), shl(128, minOut))
                 pathLength := add(pathLength, 16)
                 // within the callback, we add the payer
                 mstore(add(add(ptr, 164), pathLength), shl(96, payer))
                 pathLength := add(pathLength, 20)
-                
+
                 /// Store data length
                 mstore(add(ptr, 132), pathLength)
 
@@ -282,10 +296,7 @@ abstract contract V3TypeSwapper {
         address payer,
         address receiver,
         bytes calldata path
-    )
-        internal
-        returns (uint256 fromAmount)
-    {
+    ) internal returns (uint256 fromAmount) {
         // solhint-disable-next-line no-inline-assembly
         assembly {
             let ptr := mload(0x40)
@@ -298,7 +309,7 @@ abstract contract V3TypeSwapper {
                 ADDRESS_MASK,
                 shr(
                     96,
-                    calldataload(add(path.offset, 22))
+                    calldataload(add(path.offset, 22)) // first param
                 )
             )
             let pathLength := path.length
@@ -327,7 +338,7 @@ abstract contract V3TypeSwapper {
                 // and the payer address
                 mstore(add(add(ptr, 164), pathLength), shl(96, payer))
                 pathLength := add(pathLength, 20)
-                
+
                 /// Store data length
                 mstore(add(ptr, 132), pathLength)
 
@@ -338,7 +349,7 @@ abstract contract V3TypeSwapper {
                     returndatacopy(0, 0, returndatasize()) // Copy the error message to the start of memory
                     revert(0, returndatasize()) // Revert with the error message
                 }
-                                // If direction is 1, return amount1
+                // If direction is 1, return amount1
                 fromAmount := mload(add(ptr, 32))
             }
             default {
@@ -362,7 +373,7 @@ abstract contract V3TypeSwapper {
                 // and the payer address
                 mstore(add(add(ptr, 164), pathLength), shl(96, payer))
                 pathLength := add(pathLength, 20)
-                
+
                 /// Store data length
                 mstore(add(ptr, 132), pathLength)
 
@@ -386,10 +397,7 @@ abstract contract V3TypeSwapper {
         address payer,
         address receiver,
         bytes calldata path
-    )
-        internal
-        returns (uint256 receivedAmount)
-    {
+    ) internal returns (uint256 receivedAmount) {
         // solhint-disable-next-line no-inline-assembly
         assembly {
             let ptr := mload(0x40)
@@ -403,7 +411,7 @@ abstract contract V3TypeSwapper {
                 ADDRESS_MASK,
                 shr(
                     96,
-                    calldataload(add(path.offset, 22))
+                    calldataload(add(path.offset, 22)) // first param
                 )
             )
 
@@ -433,7 +441,7 @@ abstract contract V3TypeSwapper {
                 // and the payer address
                 mstore(add(add(ptr, 196), pathLength), shl(96, payer))
                 pathLength := add(pathLength, 20)
-                
+
                 /// Store data length
                 mstore(add(ptr, 164), pathLength)
 
@@ -470,7 +478,7 @@ abstract contract V3TypeSwapper {
                 // then we add the payer
                 mstore(add(add(ptr, 196), pathLength), shl(96, payer))
                 pathLength := add(pathLength, 20)
-                
+
                 /// Store data length
                 mstore(add(ptr, 164), pathLength)
 

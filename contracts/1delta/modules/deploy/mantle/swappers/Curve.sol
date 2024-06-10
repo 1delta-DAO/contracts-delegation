@@ -6,13 +6,15 @@ pragma solidity 0.8.26;
 * Author: Achthar | 1delta 
 /******************************************************************************/
 
+import {UniTypeSwapper} from "./UniType.sol";
+
 // solhint-disable max-line-length
 
 /**
  * @title Base swapper contract
  * @notice Contains basic logic for swap executions with DEXs
  */
-abstract contract CurveSwapper {
+abstract contract CurveSwapper is UniTypeSwapper {
 
     address internal constant STRATUM_3POOL = 0xD6F312AA90Ad4C92224436a7A4a648d69482e47e;
     address internal constant STRATUM_3POOL_2 = 0x7d3621aCA02B711F5f738C9f21C1bFE294df094d;
