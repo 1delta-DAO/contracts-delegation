@@ -6,7 +6,7 @@ pragma solidity 0.8.26;
 * Author: Achthar | 1delta 
 /******************************************************************************/
 
-import {TokenTransfer} from "../../../libraries/TokenTransfer.sol";
+import {TokenTransfer} from "./TokenTransfer.sol";
 import {UniTypeSwapper} from "./swappers/UniType.sol";
 import {CurveSwapper} from "./swappers/Curve.sol";
 import {ExoticSwapper} from "./swappers/Exotic.sol";
@@ -26,6 +26,10 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
     error invalidDexId();
     // selectors for errors
     bytes4 internal constant SLIPPAGE = 0x7dd37f70;
+    // NativeTransferFailed()
+    bytes4 internal constant NATIVE_TRANSFER = 0xf4b3b1bc;
+    // WrapFailed()
+    bytes4 internal constant WRAP = 0xc30d93ce;
 
     constructor() {}
 
@@ -167,7 +171,6 @@ abstract contract BaseSwapper is TokenTransfer, UniTypeSwapper, CurveSwapper, Ex
         // as such, this is dynamically usable within
         // flash-swaps 
         ////////////////////////////////////////////////////
-
         // uniswapV3 style
         if (dexId < 49) {
             assembly {

@@ -129,6 +129,25 @@ abstract contract TokenTransfer {
     }
 
     // deposit native by just sending native to it
+    function _depositNativeAmount(uint256 amount) internal {
+        assembly {
+            if iszero(
+                call(
+                    gas(),
+                    WRAPPED_NATIVE,
+                    amount, // ETH to deposit
+                    0x0, // no input
+                    0x0, // input size = zero
+                    0x0, // output = empty
+                    0x0 // output size = zero
+                )
+            ) {
+                revert(0, 0) // revert when native transfer fails
+            }
+        }
+    }
+
+        // deposit native by just sending native to it
     function _depositNative() internal {
         assembly {
             if iszero(

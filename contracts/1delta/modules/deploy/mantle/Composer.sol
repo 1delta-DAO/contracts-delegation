@@ -14,7 +14,6 @@ import {Commands} from "./composable/Commands.sol";
  */
 contract Composer is DeltaFlashAggregatorMantle {
     uint256 internal constant _PAY_SELF = 1 << 255;
-    uint256 internal constant _USE_BALANCE = 1 << 254;
     uint256 private constant _UPPER_120_MASK = 0x00ffffffffffffffffffffffffffffff00000000000000000000000000000000;
     uint256 private constant _UINT112_MASK = 0x000000000000000000000000000000000000ffffffffffffffffffffffffffff;
 
@@ -52,6 +51,7 @@ contract Composer is DeltaFlashAggregatorMantle {
                 operation := and(shr(248, calldataload(currentOffset)), UINT8_MASK)
                 // we increment the current offset to skip the operation
                 currentOffset := add(1, currentOffset)
+                // data.offset := currentOffset
             }
             if (operation < 0x10) {
                 // exec op
@@ -132,6 +132,7 @@ contract Composer is DeltaFlashAggregatorMantle {
                     }
                 } else if (operation == Commands.SWAP_EXACT_OUT) {
                     ////////////////////////////////////////////////////
+                    // Always uses a flash swap when possible
                     // Encoded parameters for the swap
                     // | amount | receiver | pathLength | path |
                     // | uint256| address  |  uint16    | bytes|
@@ -380,33 +381,250 @@ contract Composer is DeltaFlashAggregatorMantle {
                     _preWithdraw(underlying, user, amount, lenderId);
                     _withdraw(underlying, receiver, amount, lenderId);
                 } else if (operation == Commands.TRANSFER_FROM) {
-                    // bytes calldata opdata;
-                    address owner;
-                    address underlying;
-                    address receiver;
-                    uint256 amount;
+                    ////////////////////////////////////////////////////
+                    // Transfers tokens froom caller to this address
+                    // zero amount flags that the entire balance is sent
+                    ////////////////////////////////////////////////////
                     assembly {
-                        owner := caller()
-                        underlying := and(ADDRESS_MASK, shr(96, calldataload(currentOffset)))
-                        receiver := and(ADDRESS_MASK, shr(96, calldataload(add(currentOffset, 20))))
-                        amount := and(_UINT112_MASK, calldataload(add(currentOffset, 22)))
+                        let owner := caller()
+                        let underlying := and(ADDRESS_MASK, shr(96, calldataload(currentOffset)))
+                        let receiver := and(ADDRESS_MASK, shr(96, calldataload(add(currentOffset, 20))))
+                        let amount := and(_UINT112_MASK, calldataload(add(currentOffset, 22)))
+                        // when entering 0 as amount, use the callwe balance
+                        if iszero(amount) {
+                            // selector for balanceOf(address)
+                            mstore(0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+                            // add this address as parameter
+                            mstore(0x04, owner)
+                            // call to token
+                            pop(
+                                staticcall(
+                                    gas(),
+                                    underlying, // token
+                                    0x0,
+                                    0x24,
+                                    0x0,
+                                    0x20
+                                )
+                            )
+                            // load the retrieved balance
+                            amount := mload(0x0)
+                        }
+                        let ptr := mload(0x40) // free memory pointer
+
+                        // selector for transferFrom(address,address,uint256)
+                        mstore(ptr, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
+                        mstore(add(ptr, 0x04), owner)
+                        mstore(add(ptr, 0x24), receiver)
+                        mstore(add(ptr, 0x44), amount)
+
+                        let success := call(gas(), underlying, 0, ptr, 0x64, ptr, 32)
+
+                        let rdsize := returndatasize()
+
+                        // Check for ERC20 success. ERC20 tokens should return a boolean,
+                        // but some don't. We accept 0-length return data as success, or at
+                        // least 32 bytes that starts with a 32-byte boolean true.
+                        success := and(
+                            success, // call itself succeeded
+                            or(
+                                iszero(rdsize), // no return data, or
+                                and(
+                                    iszero(lt(rdsize, 32)), // at least 32 bytes
+                                    eq(mload(ptr), 1) // starts with uint256(1)
+                                )
+                            )
+                        )
+
+                        if iszero(success) {
+                            returndatacopy(ptr, 0, rdsize)
+                            revert(ptr, rdsize)
+                        }
                         currentOffset := add(currentOffset, 54)
                     }
-                    _transferERC20TokensFrom(underlying, owner, receiver, amount);
                 } else if (operation == Commands.SWEEP) {
-                    // bytes calldata opdata;
-                    address owner;
-                    address underlying;
-                    address receiver;
-                    uint256 amount;
+                    ////////////////////////////////////////////////////
+                    // Transfers either token or native balance from this
+                    // contract to receiver. Reverts if minAmount is
+                    // less than the contract balance
+                    // native asset is flagge via address(0) as parameter
+                    ////////////////////////////////////////////////////
                     assembly {
-                        owner := caller()
-                        underlying := and(ADDRESS_MASK, shr(96, calldataload(currentOffset)))
-                        receiver := and(ADDRESS_MASK, shr(96, calldataload(add(currentOffset, 20))))
-                        amount := calldataload(add(currentOffset, 40))
+                        let underlying := and(ADDRESS_MASK, shr(96, calldataload(currentOffset)))
+                        let receiver := and(ADDRESS_MASK, shr(96, calldataload(add(currentOffset, 20))))
+
+                        let amountMin := and(_UINT112_MASK, calldataload(add(currentOffset, 22)))
+
+                        switch iszero(underlying)
+                        ////////////////////////////////////////////////////
+                        // Transfer token
+                        ////////////////////////////////////////////////////
+                        case 0 {
+                            // selector for balanceOf(address)
+                            mstore(0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+                            // add this address as parameter
+                            mstore(0x04, address())
+                            // call to token
+                            pop(
+                                staticcall(
+                                    gas(),
+                                    underlying,
+                                    0x0,
+                                    0x24,
+                                    0x0,
+                                    0x20 //
+                                )
+                            )
+                            // load the retrieved balance
+                            let tokenBalance := mload(0x0)
+                            // revert if balance is not enough
+                            if lt(tokenBalance, amountMin) {
+                                mstore(0, SLIPPAGE)
+                                revert(0, 0x4)
+                            }
+                            let ptr := mload(0x40) // free memory pointer
+
+                            // selector for transfer(address,uint256)
+                            mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+                            mstore(add(ptr, 0x04), receiver)
+                            mstore(add(ptr, 0x24), tokenBalance)
+
+                            let success := call(gas(), underlying, 0, ptr, 0x44, ptr, 32)
+
+                            let rdsize := returndatasize()
+
+                            // Check for ERC20 success. ERC20 tokens should return a boolean,
+                            // but some don't. We accept 0-length return data as success, or at
+                            // least 32 bytes that starts with a 32-byte boolean true.
+                            success := and(
+                                success, // call itself succeeded
+                                or(
+                                    iszero(rdsize), // no return data, or
+                                    and(
+                                        iszero(lt(rdsize, 32)), // at least 32 bytes
+                                        eq(mload(ptr), 1) // starts with uint256(1)
+                                    )
+                                )
+                            )
+
+                            if iszero(success) {
+                                returndatacopy(ptr, 0, rdsize)
+                                revert(ptr, rdsize)
+                            }
+                        }
+                        ////////////////////////////////////////////////////
+                        // Transfer native
+                        ////////////////////////////////////////////////////
+                        default {
+                            let nativeBalance := balance(address())
+                            // revert if balance is not enough
+                            if lt(nativeBalance, amountMin) {
+                                mstore(0, SLIPPAGE)
+                                revert(0, 0x4)
+                            }
+
+                            if iszero(
+                                call(
+                                    gas(),
+                                    receiver,
+                                    nativeBalance,
+                                    0x0, // input = empty for fallback
+                                    0x0, // input size = zero
+                                    0x0, // output = empty
+                                    0x0 // output size = zero
+                                )
+                            ) {
+                                revert(0, 0) // revert when native transfer fails
+                            }
+                        }
                         currentOffset := add(currentOffset, 72)
                     }
-                    _transferERC20Tokens(underlying, receiver, amount);
+                } else if (operation == Commands.WRAP_NATIVE) {
+                    uint256 am;
+                    assembly {
+
+                        am := and(_UINT112_MASK, shr(144, calldataload(currentOffset)))
+                    }
+                    ////////////////////////////////////////////////////
+                    // Wrap native, only uses amount as uint112
+                    ////////////////////////////////////////////////////
+                    assembly {
+                        let amount := and(_UINT112_MASK, shr(144, calldataload(currentOffset)))
+                        if iszero(
+                            call(
+                                gas(),
+                                WRAPPED_NATIVE,
+                                amount, // ETH to deposit
+                                0x0, // no input
+                                0x0, // input size = zero
+                                0x0, // output = empty
+                                0x0 // output size = zero
+                            )
+                        ) {
+                            // revert when native transfer fails
+                            mstore(0, WRAP)
+                            revert(0, 0x4)
+                        }
+                        currentOffset := add(currentOffset, 14)
+                    }
+                } else if (operation == Commands.UNWRAP_WNATIVE) {
+                    ////////////////////////////////////////////////////
+                    // Transfers either token or native balance from this
+                    // contract to receiver. Reverts if minAmount is
+                    // less than the contract balance
+                    // native asset is flagge via address(0) as parameter
+                    ////////////////////////////////////////////////////
+                    assembly {
+                        let receiver := and(ADDRESS_MASK, shr(96, calldataload(currentOffset)))
+                        let amount := and(_UINT112_MASK, shr(144, calldataload(add(currentOffset, 20))))
+                        // selector for balanceOf(address)
+                        mstore(0x0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+                        // add this address as parameter
+                        mstore(0x4, address())
+
+                        // call to underlying
+                        pop(staticcall(gas(), WRAPPED_NATIVE, 0x0, 0x24, 0x0, 0x20))
+
+                        let thisBalance := mload(0x0)
+                        if gt(thisBalance, amount) {
+                            mstore(0, SLIPPAGE)
+                            revert(0, 0x4)
+                        }
+
+                        // selector for withdraw(uint256)
+                        mstore(0x0, 0x2e1a7d4d00000000000000000000000000000000000000000000000000000000)
+                        mstore(0x4, thisBalance)
+                        // should not fail since WRAPPED_NATIVE is immutable
+                        pop(
+                            call(
+                                gas(),
+                                WRAPPED_NATIVE,
+                                0x0, // no ETH
+                                0x0, // start of data
+                                0x24, // input size = zero
+                                0x0, // output = empty
+                                0x0 // output size = zero
+                            )
+                        )
+
+                        // transfer native to receiver
+                        if iszero(
+                            call(
+                                gas(),
+                                receiver,
+                                thisBalance,
+                                0x0, // input = empty for fallback
+                                0x0, // input size = zero
+                                0x0, // output = empty
+                                0x0 // output size = zero
+                            )
+                        ) {
+                            // should only revert if receiver cannot receive native
+                            mstore(0, NATIVE_TRANSFER)
+                            revert(0, 0x4)
+                        }
+                        currentOffset := add(currentOffset, 34)
+                    }
                 } else revert();
             }
             // break criteria

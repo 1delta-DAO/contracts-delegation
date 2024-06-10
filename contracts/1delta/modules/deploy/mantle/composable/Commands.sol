@@ -48,6 +48,6 @@ library Commands {
 
     uint256 constant TRANSFER_FROM = 0x15;
     uint256 constant SWEEP = 0x17;
-    uint256 constant WRAP_ETH = 0x0b;
-    uint256 constant UNWRAP_WETH = 0x0c;
+    uint256 constant WRAP_NATIVE = 0x19;
+    uint256 constant UNWRAP_WNATIVE = 0x0c;
 }
