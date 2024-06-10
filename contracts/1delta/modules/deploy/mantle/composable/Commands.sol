@@ -50,4 +50,7 @@ library Commands {
     uint256 constant SWEEP = 0x17;
     uint256 constant WRAP_NATIVE = 0x19;
     uint256 constant UNWRAP_WNATIVE = 0x20;
+
+    uint256 constant CALL_ON_VALID_TARGET = 0x21;
+    uint256 constant EXEC_PERMIT = 0x0a;
 }

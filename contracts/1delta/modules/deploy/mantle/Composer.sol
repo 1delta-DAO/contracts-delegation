@@ -13,7 +13,7 @@ import {Commands} from "./composable/Commands.sol";
  * @author 1delta Labs
  */
 contract Composer is DeltaFlashAggregatorMantle {
-    uint256 internal constant _PAY_SELF = 1 << 255;
+    uint256 private constant _PAY_SELF = 1 << 255;
     uint256 private constant _UPPER_120_MASK = 0x00ffffffffffffffffffffffffffffff00000000000000000000000000000000;
     uint256 private constant _UINT112_MASK = 0x000000000000000000000000000000000000ffffffffffffffffffffffffffff;
 
