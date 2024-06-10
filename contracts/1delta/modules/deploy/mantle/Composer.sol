@@ -38,7 +38,7 @@ contract Composer is DeltaFlashAggregatorMantle {
         // From there on, we read the data based on the
         // what the operation expects, e.g. read the next 32 bytes as uint256.
         //
-        // `currentOffset` represents the current bytes at which we
+        // `currentOffset` represents the current byte at which we
         //            are in the calldata
         // `maxIndex` is used as break criteria, this means that if
         //            currentOffset >= maxIndex, we iterated through

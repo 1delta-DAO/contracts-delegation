@@ -49,9 +49,9 @@ Tests for LB: `forge test --match-test "mantle_lb" -vv`
 
 We employ a direct batch function that allows chaining multiple operations. 
 
-| opId |op paramters| opId |op paramters|
-|--------|-----------|--------|------------|
-|uint16 | uint8 |bytes|uint8 |bytes|
+| opId |op paramters| opId |op paramters| ...|
+|--------|-----------|--------|------------|------|
+| uint8 |bytes|uint8 |bytes|...|
 
 The length is encoded as a `uint16` which is enough for swap path types described below.
 The opertions are sequentially executed which prevents multicall usage (which saves gas due to the preventions of internal `delegatecall`s). 
