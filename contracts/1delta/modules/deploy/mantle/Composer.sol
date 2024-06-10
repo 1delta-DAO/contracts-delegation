@@ -540,11 +540,6 @@ contract Composer is DeltaFlashAggregatorMantle {
                         currentOffset := add(currentOffset, 72)
                     }
                 } else if (operation == Commands.WRAP_NATIVE) {
-                    uint256 am;
-                    assembly {
-
-                        am := and(_UINT112_MASK, shr(144, calldataload(currentOffset)))
-                    }
                     ////////////////////////////////////////////////////
                     // Wrap native, only uses amount as uint112
                     ////////////////////////////////////////////////////
@@ -586,7 +581,7 @@ contract Composer is DeltaFlashAggregatorMantle {
                         pop(staticcall(gas(), WRAPPED_NATIVE, 0x0, 0x24, 0x0, 0x20))
 
                         let thisBalance := mload(0x0)
-                        if gt(thisBalance, amount) {
+                        if lt(thisBalance, amount) {
                             mstore(0, SLIPPAGE)
                             revert(0, 0x4)
                         }
