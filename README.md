@@ -69,27 +69,27 @@ The encoding of the parameters depends on the dexId provided, i.e. for Uniswap V
 
 #### Action and pay type defininitions
 
-The **actions** are defined as follows
+The **actions** are defined as follows. The actions are only relevant for within flash swap callbacks.
 
 |id| action|description|
 |--------|-----------|--------|
-| 0 | swap exact in simple  | tbu |
-| 1 | swap exact out simple | tbu  |
-| 6 | deposit exact in | tbu  |
-| 7 | repay stable exact in | tbu  |
-| 8 | repay variable exact in | tbu  |
-| 3 | deposit exact out | tbu  |
-| 4 | repay stable exact out | tbu  |
-| 5 | repay variable exact out | tbu  |
+| 0 | swap exact in simple  | Simple exact input swap, pay either with contract balance or from caller |
+| 1 | swap exact out simple | Simple exact out swap, allows payin g through lender or via conventional transfer |
+| 6 | deposit exact in | Deposits received funds, used for collateral swaps or margin open  |
+| 7 | repay stable exact in | repay received funds in stable mode (if supported) |
+| 8 | repay variable exact in | repay received funds in variable mode |
+| 3 | deposit exact out | deposits in exact out config |
+| 4 | repay stable exact out | repay received funds in stable mode   |
+| 5 | repay variable exact out | repay received funds in variable mode   |
 
 The **pay types** are defined as follows
 
 |id| pay type|description|
 |--------|-----------|--------|
-| 1 | borrow swable  | tbu |
-| 2 | borrow variable | tbu  |
-| 3 | withdraw collateral | tbu  |
-| 4 | caller pays | tbu  |
+| 1 | borrow stable  | borrow to pay from a lender that has stable rate borrowing |
+| 2 | borrow variable | borrow  to pay with default mode (variable in most cases) |
+| 3 | withdraw collateral | withdraw collateral to pay  |
+| >4 | caller pays | pay from provided address (original caller or this contract)  |
 
 #### Lender id
 
@@ -122,4 +122,3 @@ Caller --> | pool --> pool |
 #### Flash loan 
 
 - Can wrap any sequence of actions
-- 
