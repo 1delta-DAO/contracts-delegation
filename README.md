@@ -43,9 +43,9 @@ Tests for Mantle: `forge test --match-test "mantle" -vv`
 Tests for LB: `forge test --match-test "mantle_lb" -vv`
 
 
-### Swap Architecture
+## Swap Architecture
 
-#### Batching
+### Batching
 
 We employ a direct batch function that allows chaining multiple operations. The batching is tiggered via `deltaCompose(bytes calldata data)` and the input data is a compact bytes array encoded as follows. 
 
@@ -56,7 +56,7 @@ We employ a direct batch function that allows chaining multiple operations. The 
 The length is encoded as a `uint16` which is enough for swap path types described below.
 The opertions are sequentially executed which prevents multicall usage (which saves gas due to the preventions of internal `delegatecall`s). 
 
-##### Operations
+#### Operations
 
 | operation | id | parameters | param names |
 |--------|--------|--------|--------|
@@ -72,7 +72,7 @@ The opertions are sequentially executed which prevents multicall usage (which sa
 | 0x20| Unwrap | (address,uint112) | receiver, minimumAmount|
 | 0x22| Sweep | (address,address,uint112) |asset, receiver, minimumAmount|
 
-#### Path encoding
+### Path encoding
 
 We follow the general approach of encoding actionIds, dexIds and params, sandwiched by tokens. This means, that for a route of tokens, eg.g `token0->token1->token2`, we specify the route as follows:
 
@@ -83,7 +83,7 @@ We follow the general approach of encoding actionIds, dexIds and params, sandwic
 
 The encoding of the parameters depends on the dexId provided, i.e. for Uniswap V3 types, it is the fee parameter, for curve the parameters are the swap indexes.
 
-#### Action and pay type defininitions
+### Action and pay type defininitions
 
 The **actions** are defined as follows. The actions are only relevant for within flash swap callbacks.
 
@@ -107,18 +107,18 @@ The **pay types** are defined as follows
 | 3 | withdraw collateral | withdraw collateral to pay  |
 | >4 | caller pays | pay from provided address (original caller or this contract)  |
 
-#### Lender id
+### Lender id
 
 The `lenderId` is a network-specific identifier for a lender.
 
-#### Case single route
+### Case single route
 
 - Direct transfers from caller to pool / pool to receiver are possible - this should make all of this compatible with FoT tokens
 - Enabled for both exactIn / exactOut swaps
 
 Caller --> pool --> pool --> receiver
 
-#### Multi route
+### Multi route
 
 - First, tokens are transferred from caller to contract
 - Then the routes are swapped internally
@@ -129,12 +129,12 @@ Caller --> | pool --> pool |
 
 - This applies for exact in & exact out
 
-#### Flash swaps
+### Flash swaps
 
 - Ideal for single route margin trades
 - Allows multi-lender selection
 - Gas efficient for mid-sized swaps (e.g. on uni/curve combo)
 
-#### Flash loan 
+### Flash loan 
 
 - Can wrap any sequence of actions
