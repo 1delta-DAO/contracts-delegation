@@ -469,8 +469,12 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
                 path.length := sub(path.length, 42)
             }
         } 
-         else
-            revert invalidDexId();
+         else {
+            assembly {
+                mstore(0, INVALID_DEX)
+                revert (0, 0x4)
+            }
+         }
         
         ////////////////////////////////////////////////////
         // We recursively re-call this function until the
@@ -604,8 +608,12 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
             }
             amountOut = swapGMXExactIn(tokenIn, tokenOut, vault, receiver);
         } 
-         else
-            revert invalidDexId();
+         else {
+            assembly {
+                mstore(0, INVALID_DEX)
+                revert (0, 0x4)
+            }
+         }
 
         // slippage check
         assembly {

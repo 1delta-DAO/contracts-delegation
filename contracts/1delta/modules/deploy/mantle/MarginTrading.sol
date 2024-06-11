@@ -16,7 +16,7 @@ import {BaseLending} from "./BaseLending.sol";
 abstract contract MarginTrading is BaseSwapper, BaseLending {
     // errors
     error NoBalance();
-    error InvalidDexId();
+    error InvalidDex();
 
     uint256 internal constant UINT128_MASK = 0x00000000000000000000000000000000ffffffffffffffffffffffffffffffff;
 
@@ -612,7 +612,6 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 preventSelfPayment := 1
                 tradeId := 1
             }
-
         }
         ////////////////////////////////////////////////////
         // Exact input base swap handling
@@ -1427,8 +1426,12 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // the funds to the receiver addresss
             ////////////////////////////////////////////////////
             swapLBexactOut(pair, swapForY, amountOut, receiver);
-        } else
-            revert invalidDexId();
+        } else {
+            assembly {
+                mstore(0, INVALID_DEX)
+                revert (0, 0x4)
+            }
+        }
     }
 
     // Exact Input Flash Swap - The path parameters determine the lending actions
@@ -1525,7 +1528,12 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 path
             );
         }
-        else revert InvalidDexId();
+        else {
+            assembly {
+                mstore(0, INVALID_DEX)
+                revert (0, 0x4)
+            }
+        }
     }
 
     /// @dev gets leder and pay config - the assumption is that the last byte is the payType

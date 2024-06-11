@@ -26,7 +26,7 @@ abstract contract V3TypeSwapper {
     // WrapFailed()
     bytes4 internal constant WRAP = 0xc30d93ce;
     // InvalidDex()
-    bytes4 internal constant IVALID_DEX = 0xc30d93ce;
+    bytes4 internal constant INVALID_DEX = 0x7948739e;
     // BadPool()
     bytes4 internal constant BAD_POOL = 0xb2c02722;
 
