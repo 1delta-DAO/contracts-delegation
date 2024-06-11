@@ -394,6 +394,62 @@ contract ComposerTest is DeltaSetup {
         assertApproxEqAbs(balanceInBefore - balanceInAfter, 1668753875334069967, 0);
     }
 
+    function test_mantle_composer_multi_route_exact_out_native_in() external {
+        address user = testUser;
+        uint256 amount = 2.0e18;
+        uint256 amountMax = 9000.0e18;
+
+        address assetIn = WMNT;
+        address assetOut = WETH;
+        vm.deal(user, amountMax);
+
+        bytes memory dataAgni = getSpotExactOutSingleGen2(
+            assetIn,
+            assetOut,
+            AGNI,
+            uint16(DEX_FEE_LOW), //
+            true
+        );
+        bytes memory dataFusion;
+        {
+            (
+                address[] memory tks,
+                uint8[] memory pids, //
+                uint16[] memory fees
+            ) = getWethToNative();
+            dataFusion = getSpotExactOutMultiGen2(tks, pids, fees, true);
+        }
+        bytes memory data = abi.encodePacked(
+            SWAP_EXACT_OUT,
+            encodeExactOutParams(amount / 2, amountMax / 2, true),
+            user,
+            uint16(dataAgni.length), // begin agni data
+            dataAgni,
+            SWAP_EXACT_OUT,
+            encodeExactOutParams(amount / 2, amountMax / 2, true),
+            user,
+            uint16(dataFusion.length), // begin fusionX data
+            dataFusion
+        );
+
+        data = abi.encodePacked(wrap(amountMax), data, unwrap(user, 0));
+
+        uint balanceOutBefore = IERC20All(assetOut).balanceOf(user);
+        uint balanceInBefore = user.balance;
+        {
+            vm.prank(user);
+            uint gas = gasleft();
+            IFlashAggregator(brokerProxyAddress).deltaCompose{value: amountMax}(data);
+            gas = gas - gasleft();
+            console.log("gas-exactOut-native-in-2 split", gas);
+        }
+        uint balanceOutAfter = IERC20All(assetOut).balanceOf(user);
+        uint balanceInAfter = user.balance;
+
+        assertApproxEqAbs(balanceOutAfter - balanceOutBefore, amount, 1);
+        assertApproxEqAbs(balanceInBefore - balanceInAfter, 4825933262798723917376, 0);
+    }
+
     function test_mantle_composer_multi_route_exact_in_native_out() external {
         address user = testUser;
         uint256 amount = 2.0e18;
@@ -583,7 +639,7 @@ contract ComposerTest is DeltaSetup {
             address pool = testQuoter._v3TypePool(tokens[i], tokens[i + 1], fees[i], pids[i]);
             data = abi.encodePacked(data, actions[i], pids[i], pool, fees[i], tokens[i + 1]);
         }
-        return data;
+        return abi.encodePacked(data, uint8(99));
     }
 
     function getSpotExactInSingleGen2(
@@ -609,7 +665,7 @@ contract ComposerTest is DeltaSetup {
         address pool = testQuoter._v3TypePool(tokenOut, tokenIn, fee, poolId);
         uint8 action = 1;
         if (!self) action = 11;
-        return abi.encodePacked(tokenOut, action, poolId, pool, fee, tokenIn);
+        return abi.encodePacked(tokenOut, action, poolId, pool, fee, tokenIn, uint8(99));
     }
 
     function _deposit(address asset, address user, uint256 amount, uint8 lenderId) internal {

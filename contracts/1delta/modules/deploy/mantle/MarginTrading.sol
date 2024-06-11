@@ -569,7 +569,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         uint256 maximumAmount;
         assembly {
             let firstWord := calldataload(_data.offset)
-            tradeId := and(shr(80, firstWord), UINT8_MASK) // poolId
+            tradeId := and(shr(80, firstWord), UINT8_MASK) 
             ////////////////////////////////////////////////////
             // We fetch the original initiator of the swap function
             // It is represented by the lsat 20 bytes of the path
