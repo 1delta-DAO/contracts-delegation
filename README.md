@@ -47,7 +47,7 @@ Tests for LB: `forge test --match-test "mantle_lb" -vv`
 
 #### Batching
 
-We employ a direct batch function that allows chaining multiple operations. 
+We employ a direct batch function that allows chaining multiple operations. The batching is tiggered via `deltaCompose(bytes calldata data)` and the input data is a compact bytes array encoded as follows. 
 
 | opId |op paramters| opId |op paramters| ...|
 |--------|-----------|--------|------------|------|
@@ -55,6 +55,22 @@ We employ a direct batch function that allows chaining multiple operations.
 
 The length is encoded as a `uint16` which is enough for swap path types described below.
 The opertions are sequentially executed which prevents multicall usage (which saves gas due to the preventions of internal `delegatecall`s). 
+
+##### Operations
+
+| operation | id | parameters | param names |
+|--------|--------|--------|--------|
+| 0| Swap exact input | (uint256,address,uint16,bytes) | amount, receiver,pathLength, path|
+| 1| Swap exact output | (uint256,address,uint16,bytes) |amount, receiver,pathLength, path|
+| 3| Flash swap exact input | (uint256,address,uint16,bytes) |amount, receiver,pathLength, path|
+| 0x13| Deposit | (address,address,uint8,uint112) |asset, receiver,lenderId, amount|
+| 0x11| Borrow | (address,address,uint8,uint8,uint112) |asset, receiver,lenderId,mode, amount|
+| 0x17| Withdraw | (address,address,uint8,uint112) |asset, receiver,lenderId, amount|
+| 0x18| Repay | (address,address,uint8,uint8,uint112) |asset, receiver,lenderId, mode, amount|
+| 0x15| Transfer in | (address,address,uint112) |asset, receiver, amount|
+| 0x19| Wrap | (uint112) | amount|
+| 0x20| Unwrap | (address,uint112) | receiver, minimumAmount|
+| 0x22| Sweep | (address,address,uint112) |asset, receiver, minimumAmount|
 
 #### Path encoding
 

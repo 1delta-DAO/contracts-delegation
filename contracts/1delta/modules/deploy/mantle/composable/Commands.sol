@@ -47,7 +47,7 @@ library Commands {
     uint256 constant WITHDRAW = 0x17;
 
     uint256 constant TRANSFER_FROM = 0x15;
-    uint256 constant SWEEP = 0x17;
+    uint256 constant SWEEP = 0x22;
     uint256 constant WRAP_NATIVE = 0x19;
     uint256 constant UNWRAP_WNATIVE = 0x20;
 
