@@ -633,7 +633,9 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                     }
                 }
                 ////////////////////////////////////////////////////
-                // Otherwise, we transfer before
+                // Otherwise, we have to assume that
+                // the swap is prefunded, i.e. the input amount has
+                // already been sent to the uniV2 style pool
                 ////////////////////////////////////////////////////
                 default {
                     ////////////////////////////////////////////////////
