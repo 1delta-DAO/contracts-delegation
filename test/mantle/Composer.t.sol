@@ -620,7 +620,14 @@ contract ComposerTest is DeltaSetup {
         data = abi.encodePacked(tokens[0]);
         for (uint i; i < pids.length; i++) {
             address pool = testQuoter._v3TypePool(tokens[i], tokens[i + 1], fees[i], pids[i]);
-            data = abi.encodePacked(data, actions[i], pids[i], pool, fees[i], tokens[i + 1]);
+            data = abi.encodePacked(
+                data,
+                actions[i], // action id
+                pids[i], // dex identifier
+                pool, // dex param 0
+                fees[i], // dex param 1
+                tokens[i + 1]
+            );
         }
         return data;
     }
@@ -716,7 +723,6 @@ contract ComposerTest is DeltaSetup {
     }
 }
 
-
 // Ran 11 tests for test/mantle/Composer.t.sol:ComposerTest
 // [PASS] test_mantle_composer_borrow() (gas: 917038)
 // Logs:
@@ -727,21 +733,21 @@ contract ComposerTest is DeltaSetup {
 // Logs:
 //   gas 248957
 
-// [PASS] test_mantle_composer_multi_route_exact_in() (gas: 377126)
+// [PASS] test_mantle_composer_multi_route_exact_in() (gas: 377134)
 // Logs:
-//   gas 192085
+//   gas 192095
 
-// [PASS] test_mantle_composer_multi_route_exact_in_native() (gas: 368211)
+// [PASS] test_mantle_composer_multi_route_exact_in_native() (gas: 368206)
 // Logs:
-//   gas 374366
+//   gas 374361
 
-// [PASS] test_mantle_composer_multi_route_exact_in_native_out() (gas: 633203)
+// [PASS] test_mantle_composer_multi_route_exact_in_native_out() (gas: 633199)
 // Logs:
-//   gas-exactIn-native-out-2 split 547591
+//   gas-exactIn-native-out-2 split 547586
 
-// [PASS] test_mantle_composer_multi_route_exact_in_self() (gas: 399340)
+// [PASS] test_mantle_composer_multi_route_exact_in_self() (gas: 399348)
 // Logs:
-//   gas 219230
+//   gas 219240
 
 // [PASS] test_mantle_composer_multi_route_exact_out() (gas: 390674)
 // Logs:
@@ -766,4 +772,4 @@ contract ComposerTest is DeltaSetup {
 //   gas 378730
 //   gas 253948
 
-// Suite result: ok. 11 passed; 0 failed; 0 skipped; finished in 166.70ms (35.96ms CPU time)
+// Suite result: ok. 11 passed; 0 failed; 0 skipped; finished in 319.97ms (40.41ms CPU time)

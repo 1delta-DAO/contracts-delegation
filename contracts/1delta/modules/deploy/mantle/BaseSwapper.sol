@@ -160,7 +160,9 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
         // To select the correct pool for the swap action
         // Note that this is auto-forwarding the amountIn,
         // as such, this is dynamically usable within
-        // flash-swaps 
+        // flash-swaps.
+        // Note that `dexId` gets reassigned within each
+        // execution step if we are not yet at the final pool
         ////////////////////////////////////////////////////
         // uniswapV3 style
         if (dexId < 49) {
@@ -168,8 +170,8 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
                 switch lt(path.length, 66)
                 case 1 { currentReceiver := receiver}
                 default {
-                    let nextId := and(shr(80, calldataload(add(path.offset, 44))), UINT8_MASK)
-                    switch gt(nextId, 99) 
+                    dexId := and(shr(80, calldataload(add(path.offset, 44))), UINT8_MASK)
+                    switch gt(dexId, 99) 
                     case 1 {
                         currentReceiver := and(
                             ADDRESS_MASK,
@@ -207,8 +209,8 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
                 switch lt(path.length, 66)
                 case 1 { currentReceiver := receiver}
                 default {
-                    let nextId := and(shr(80, calldataload(add(path.offset, 44))), UINT8_MASK)
-                    switch gt(nextId, 99) 
+                    dexId := and(shr(80, calldataload(add(path.offset, 44))), UINT8_MASK)
+                    switch gt(dexId, 99) 
                     case 1 {
                         currentReceiver := and(
                             ADDRESS_MASK,
@@ -243,19 +245,40 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
         // Stratum 3USD with wrapper
         else if (dexId == 50) {
             assembly {
-                if lt(path.length, 44) { currentReceiver := receiver}
+                switch lt(path.length, 44)
+                case 1 { currentReceiver := receiver}
+                default {
+                    dexId := and(shr(80, calldataload(add(path.offset, 22))), UINT8_MASK)
+                    switch gt(dexId, 99) 
+                    case 1 {
+                        currentReceiver := and(
+                            ADDRESS_MASK,
+                            shr(
+                                96,
+                                calldataload(
+                                    add(
+                                        path.offset,
+                                        44 // 20 + 2 + 20 + 2 [poolAddress starts here]
+                                    )
+                                ) // poolAddress
+                            )
+                        )
+                    }
+                    default {
+                        currentReceiver := address()
+                    }
+                }
             }
             address tokenIn;
             address tokenOut;
             assembly {
-                let firstWord := calldataload(path.offset)
-                tokenIn := shr(96, firstWord)
-                tokenOut := shr(96, calldataload(add(path.offset, 25)))
+                tokenIn := shr(96, calldataload(path.offset))
+                tokenOut := shr(96, calldataload(add(path.offset, 22)))
             }
             amountIn = swapStratum3(tokenIn, tokenOut, amountIn, payer, currentReceiver);
             assembly {
-                path.offset := add(path.offset, 23)
-                path.length := sub(path.length, 23)
+                path.offset := add(path.offset, 22)
+                path.length := sub(path.length, 22)
             }
         }
         // Curve stable general
@@ -264,8 +287,8 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
                 switch lt(path.length, 74)
                 case 1 { currentReceiver := receiver}
                 default {
-                    let nextId := and(shr(80, calldataload(add(path.offset, 44))), UINT8_MASK)
-                    switch gt(nextId, 99) 
+                    dexId := and(shr(80, calldataload(add(path.offset, 44))), UINT8_MASK)
+                    switch gt(dexId, 99) 
                     case 1 {
                         currentReceiver := and(
                             ADDRESS_MASK,
@@ -297,8 +320,8 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
                 switch lt(path.length, 64)
                 case 1 { currentReceiver := receiver}
                 default {
-                    let nextId := and(shr(80, calldataload(add(path.offset, 44))), UINT8_MASK)
-                    switch gt(nextId, 99) 
+                    dexId := and(shr(80, calldataload(add(path.offset, 42))), UINT8_MASK)
+                    switch gt(dexId, 99) 
                     case 1 {
                         currentReceiver := and(
                             ADDRESS_MASK,
@@ -337,8 +360,8 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
                 switch lt(path.length, 64)
                 case 1 { currentReceiver := receiver}
                 default {
-                    let nextId := and(shr(80, calldataload(add(path.offset, 44))), UINT8_MASK)
-                    switch gt(nextId, 99) 
+                    dexId := and(shr(80, calldataload(add(path.offset, 44))), UINT8_MASK)
+                    switch gt(dexId, 99) 
                     case 1 {
                         currentReceiver := and(
                             ADDRESS_MASK,
@@ -384,8 +407,8 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
                 switch lt(path.length, 64)
                 case 1 { currentReceiver := receiver}
                 default {
-                    let nextId := and(shr(80, calldataload(add(path.offset, 44))), UINT8_MASK)
-                    switch gt(nextId, 99) 
+                    dexId := and(shr(80, calldataload(add(path.offset, 44))), UINT8_MASK)
+                    switch gt(dexId, 99) 
                     case 1 {
                         currentReceiver := and(
                             ADDRESS_MASK,
@@ -429,8 +452,8 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
                 switch lt(path.length, 64)
                 case 1 { currentReceiver := receiver}
                 default {
-                    let nextId := and(shr(80, calldataload(add(path.offset, 44))), UINT8_MASK)
-                    switch gt(nextId, 99) 
+                    dexId := and(shr(80, calldataload(add(path.offset, 42))), UINT8_MASK)
+                    switch gt(dexId, 99) 
                     case 1 {
                         currentReceiver := and(
                             ADDRESS_MASK,
@@ -475,15 +498,12 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
                 revert (0, 0x4)
             }
          }
-        
+
         ////////////////////////////////////////////////////
         // We recursively re-call this function until the
         // path is short enough as a break criteria
         ////////////////////////////////////////////////////
         if (path.length > 30) {
-            assembly {
-                dexId := and(shr(80, calldataload(path.offset)), UINT8_MASK)
-            }
             ////////////////////////////////////////////////////
             // In the second or later iterations, the payer is
             // always this contract
