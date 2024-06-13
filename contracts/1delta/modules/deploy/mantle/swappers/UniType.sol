@@ -43,7 +43,16 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
 
     constructor() {}
 
-    /// @dev Swap exact out via v2 type pool
+    /**
+     * Swap exact out via v2 type pool
+     * We always pay within the callback.
+     * This requires us to manually transfer to the reciever
+     * @param amountOut receive amount
+     * @param maxIn maimum in to pass into callback
+     * @param payer payer to pass into callback
+     * @param receiver receiver address
+     * @param path path calldata
+     */
     function _swapV2StyleExactOut(
         uint256 amountOut,
         uint256 maxIn,
@@ -162,8 +171,8 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
         assembly {
             let ptr := mload(0x40)
             // Call pair.getReserves(), store the results at `free memo`
-            mstore(ptr, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
-            if iszero(staticcall(gas(), pair, ptr, 0x4, ptr, 0x40)) {
+            mstore(0x0, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
+            if iszero(staticcall(gas(), pair, 0x0, 0x4, 0x0, 0x40)) {
                 returndatacopy(0, 0, returndatasize())
                 revert(0, returndatasize())
             }
@@ -181,12 +190,12 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                     switch lt(tokenIn, tokenOut)
                     case 0 {
                         // Transpose if pair order is different.
-                        sellReserve := mload(add(ptr, 0x20))
-                        buyReserve := mload(ptr)
+                        sellReserve := mload(0x20)
+                        buyReserve := mload(0x0)
                     }
                     default {
-                        sellReserve := mload(ptr)
-                        buyReserve := mload(add(ptr, 0x20))
+                        sellReserve := mload(0x0)
+                        buyReserve := mload(0x20)
                     }
 
                     // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
@@ -202,12 +211,12 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                     switch lt(tokenIn, tokenOut)
                     case 0 {
                         // Transpose if pair order is different.
-                        sellReserve := mload(add(ptr, 0x20))
-                        buyReserve := mload(ptr)
+                        sellReserve := mload(0x20)
+                        buyReserve := mload(0x0)
                     }
                     default {
-                        sellReserve := mload(ptr)
-                        buyReserve := mload(add(ptr, 0x20))
+                        sellReserve := mload(0x0)
+                        buyReserve := mload(0x20)
                     }
 
                     // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
@@ -223,18 +232,18 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                     switch lt(tokenIn, tokenOut)
                     case 0 {
                         // Transpose if pair order is different.
-                        sellReserve := mload(add(ptr, 0x20))
-                        buyReserve := mload(ptr)
+                        sellReserve := mload(0x20)
+                        buyReserve := mload(0x0)
                     }
                     default {
-                        sellReserve := mload(ptr)
-                        buyReserve := mload(add(ptr, 0x20))
+                        sellReserve := mload(0x0)
+                        buyReserve := mload(0x20)
                     }
                     // fetch the fee from the factory
                     // selector for getFee(address)
-                    mstore(ptr, 0xb88c914800000000000000000000000000000000000000000000000000000000)
-                    mstore(add(ptr, 0x4), pair)
-                    pop(staticcall(gas(), VELO_FACTORY, ptr, 0x24, ptr, 0x20))
+                    mstore(0x0, 0xb88c914800000000000000000000000000000000000000000000000000000000)
+                    mstore(0x4, pair)
+                    pop(staticcall(gas(), VELO_FACTORY, 0x0, 0x24, 0x0, 0x20))
                     // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
                     // x = (reserveIn * amountOut * 10000) /
                     //     ((reserveOut - amountOut) * feeAm) + 1;
@@ -244,7 +253,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                             mul(mul(sellReserve, buyAmount), 10000),
                             mul(
                                 sub(buyReserve, buyAmount),
-                                sub(10000, mload(ptr)) // adjust for Velo fee
+                                sub(10000, mload(0x0)) // adjust for Velo fee
                             )
                         ),
                         1
@@ -257,18 +266,18 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                     switch lt(tokenIn, tokenOut)
                     case 0 {
                         // Transpose if pair order is different.
-                        sellReserve := mload(add(ptr, 0x20))
-                        buyReserve := mload(ptr)
+                        sellReserve := mload(0x20)
+                        buyReserve := mload(0x0)
                     }
                     default {
-                        sellReserve := mload(ptr)
-                        buyReserve := mload(add(ptr, 0x20))
+                        sellReserve := mload(0x0)
+                        buyReserve := mload(0x20)
                     }
                     // fetch the fee from the factory
                     // selector for getFee(address)
-                    mstore(ptr, 0xb88c914800000000000000000000000000000000000000000000000000000000)
-                    mstore(add(ptr, 0x4), pair)
-                    pop(staticcall(gas(), STRATUM_FACTORY, ptr, 0x24, ptr, 0x20))
+                    mstore(0x0, 0xb88c914800000000000000000000000000000000000000000000000000000000)
+                    mstore(0x4, pair)
+                    pop(staticcall(gas(), STRATUM_FACTORY, 0x0, 0x24, 0x0, 0x20))
                     // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
                     // x = (reserveIn * amountOut * 10000) /
                     //     ((reserveOut - amountOut) * feeAm) + 1;
@@ -278,7 +287,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                             mul(mul(sellReserve, buyAmount), 10000),
                             mul(
                                 sub(buyReserve, buyAmount),
-                                sub(10000, mload(ptr)) // adjust for Velo fee
+                                sub(10000, mload(0x0)) // adjust for Velo fee
                             )
                         ),
                         1
@@ -291,12 +300,12 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                     switch lt(tokenIn, tokenOut)
                     case 1 {
                         // Transpose if pair order is different.
-                        sellReserve := mload(ptr)
-                        buyReserve := mload(add(ptr, 0x20))
+                        sellReserve := mload(0x0)
+                        buyReserve := mload(0x20)
                     }
                     default {
-                        buyReserve := mload(ptr)
-                        sellReserve := mload(add(ptr, 0x20))
+                        buyReserve := mload(0x0)
+                        sellReserve := mload(0x20)
                     }
                     // revert if insufficient reserves
                     if lt(buyReserve, buyAmount) {
@@ -304,16 +313,16 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                     }
                     // fetch the fee from the factory
                     // selector for pairFee(address)
-                    mstore(ptr, 0x841fa66b00000000000000000000000000000000000000000000000000000000)
-                    mstore(add(ptr, 0x4), pair)
-                    pop(staticcall(gas(), CLEO_V1_FACTORY, ptr, 0x24, ptr, 0x20))
-                    let fee := mload(ptr)
+                    mstore(0x0, 0x841fa66b00000000000000000000000000000000000000000000000000000000)
+                    mstore(0x4, pair)
+                    pop(staticcall(gas(), CLEO_V1_FACTORY, 0x0, 0x24, 0x0, 0x20))
+                    let fee := mload(0x0)
                     // if the fee is zero, it will be overridden by the default ones
                     if iszero(fee) {
                         // selector for volatileFee()
-                        mstore(ptr, 0x5084ed0300000000000000000000000000000000000000000000000000000000)
-                        pop(staticcall(gas(), CLEO_V1_FACTORY, ptr, 0x24, ptr, 0x20))
-                        fee := mload(ptr)
+                        mstore(0x0, 0x5084ed0300000000000000000000000000000000000000000000000000000000)
+                        pop(staticcall(gas(), CLEO_V1_FACTORY, 0x0, 0x24, 0x0, 0x20))
+                        fee := mload(0x0)
                     }
                     // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
                     // x = (reserveIn * amountOut * 10000) /
@@ -337,19 +346,20 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                     let y0
                     let _reserveInScaled
                     {
-                        {
-                            let ptrPlus4 := add(ptr, 0x4)
-                            // selector for decimals()
-                            mstore(ptr, 0x313ce56700000000000000000000000000000000000000000000000000000000)
-                            pop(staticcall(gas(), tokenIn, ptr, 0x4, ptrPlus4, 0x20))
-                            _decimalsIn := exp(10, mload(ptrPlus4))
-                            pop(staticcall(gas(), tokenOut, ptr, 0x4, ptrPlus4, 0x20))
-                            _decimalsOut_xy_fee := exp(10, mload(ptrPlus4))
-                        }
+                        /////////////////////////////////////////////////////////////
+                        // We fetch the decimals of the tokens to compute the curve style logic
+                        // we do this in the scrap space
+                        /////////////////////////////////////////////////////////////
+                        // selector for decimals()
+                        mstore(0x0, 0x313ce56700000000000000000000000000000000000000000000000000000000)
+                        pop(staticcall(gas(), tokenIn, 0x0, 0x4, 0x4, 0x20))
+                        _decimalsIn := exp(10, mload(0x4))
+                        pop(staticcall(gas(), tokenOut, 0x0, 0x4, 0x4, 0x20))
+                        _decimalsOut_xy_fee := exp(10, mload(0x4))
 
-                        // Call pair.getReserves(), store the results at `free memo`
-                        mstore(ptr, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
-                        if iszero(staticcall(gas(), pair, ptr, 0x4, ptr, 0x40)) {
+                        // Call pair.getReserves(), store the results in scrap space
+                        mstore(0x0, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
+                        if iszero(staticcall(gas(), pair, 0x0, 0x4, 0x0, 0x40)) {
                             returndatacopy(0, 0, returndatasize())
                             revert(0, returndatasize())
                         }
@@ -361,12 +371,12 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                         let _reserveOutScaled
                         switch lt(tokenIn, tokenOut)
                         case 1 {
-                            _reserveInScaled := div(mul(mload(ptr), SCALE_18), _decimalsIn)
-                            _reserveOutScaled := div(mul(mload(add(ptr, 0x20)), SCALE_18), _decimalsOut_xy_fee)
+                            _reserveInScaled := div(mul(mload(0x0), SCALE_18), _decimalsIn)
+                            _reserveOutScaled := div(mul(mload(0x20), SCALE_18), _decimalsOut_xy_fee)
                         }
                         default {
-                            _reserveInScaled := div(mul(mload(add(ptr, 0x20)), SCALE_18), _decimalsIn)
-                            _reserveOutScaled := div(mul(mload(ptr), SCALE_18), _decimalsOut_xy_fee)
+                            _reserveInScaled := div(mul(mload(0x20), SCALE_18), _decimalsIn)
+                            _reserveOutScaled := div(mul(mload(0x0), SCALE_18), _decimalsOut_xy_fee)
                         }
                         y0 := sub(_reserveOutScaled, div(mul(buyAmount, SCALE_18), _decimalsOut_xy_fee))
                         x := _reserveInScaled
@@ -437,32 +447,32 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                     switch pId
                     // velo stable
                     case 122 {
-                        mstore(ptr, 0xb88c914800000000000000000000000000000000000000000000000000000000)
-                        mstore(add(ptr, 0x4), pair)
-                        pop(staticcall(gas(), VELO_FACTORY, ptr, 0x24, ptr, 0x20))
-                        _decimalsOut_xy_fee := mload(ptr)
+                        mstore(0x0, 0xb88c914800000000000000000000000000000000000000000000000000000000)
+                        mstore(0x4, pair)
+                        pop(staticcall(gas(), VELO_FACTORY, 0x0, 0x24, 0x0, 0x20))
+                        _decimalsOut_xy_fee := mload(0x0)
                     }
                     // stratum stable
                     case 123 {
-                        mstore(ptr, 0xb88c914800000000000000000000000000000000000000000000000000000000)
-                        mstore(add(ptr, 0x4), pair)
-                        pop(staticcall(gas(), STRATUM_FACTORY, ptr, 0x24, ptr, 0x20))
-                        _decimalsOut_xy_fee := mload(ptr)
+                        mstore(0x0, 0xb88c914800000000000000000000000000000000000000000000000000000000)
+                        mstore(0x4, pair)
+                        pop(staticcall(gas(), STRATUM_FACTORY, 0x0, 0x24, 0x0, 0x20))
+                        _decimalsOut_xy_fee := mload(0x0)
                     }
                     // cleo stable
                     default {
                         // selector for pairFee(address)
-                        mstore(ptr, 0x841fa66b00000000000000000000000000000000000000000000000000000000)
-                        mstore(add(ptr, 0x4), pair)
-                        pop(staticcall(gas(), CLEO_V1_FACTORY, ptr, 0x24, ptr, 0x20))
+                        mstore(0x0, 0x841fa66b00000000000000000000000000000000000000000000000000000000)
+                        mstore(0x4, pair)
+                        pop(staticcall(gas(), CLEO_V1_FACTORY, 0x0, 0x24, 0x0, 0x20))
                         // store fee in param
-                        _decimalsOut_xy_fee := mload(ptr)
+                        _decimalsOut_xy_fee := mload(0x0)
                         // if the fee is zero, it is overridden by the stableFee default
                         if iszero(_decimalsOut_xy_fee) {
                             // selector for stableFee()
-                            mstore(ptr, 0x40bbd77500000000000000000000000000000000000000000000000000000000)
-                            pop(staticcall(gas(), CLEO_V1_FACTORY, ptr, 0x24, ptr, 0x20))
-                            _decimalsOut_xy_fee := mload(ptr)
+                            mstore(0x0, 0x40bbd77500000000000000000000000000000000000000000000000000000000)
+                            pop(staticcall(gas(), CLEO_V1_FACTORY, 0x0, 0x24, 0x0, 0x20))
+                            _decimalsOut_xy_fee := mload(0x0)
                         }
                     }
                     // calculate and adjust the result (reserveInNew - reserveIn) * 10k / (10k - fee)
@@ -516,9 +526,9 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                 //     (pairSellAmount * feeAm + sellReserve * 1000);
                 switch pId_amountWithFee_pathLength
                 case 100 {
-                    // Call pair.getReserves(), store the results at `0xC00`
-                    mstore(0xB00, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
-                    if iszero(staticcall(gas(), pair, 0xB00, 0x4, 0xC00, 0x40)) {
+                    // Call pair.getReserves(), store the results in scrap space
+                    mstore(0x0, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
+                    if iszero(staticcall(gas(), pair, 0x0, 0x4, 0x0, 0x40)) {
                         returndatacopy(0, 0, returndatasize())
                         revert(0, returndatasize())
                     }
@@ -530,21 +540,21 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                     switch zeroForOne
                     case 1 {
                         // Transpose if pair order is different.
-                        sellReserve := mload(0xC00)
-                        buyAmount := mload(0xC20)
+                        sellReserve := mload(0x0)
+                        buyAmount := mload(0x20)
                     }
                     default {
-                        sellReserve := mload(0xC20)
-                        buyAmount := mload(0xC00)
+                        sellReserve := mload(0x20)
+                        buyAmount := mload(0x0)
                     }
                     // feeAm is 998 for fusionX (1000 - 2) for 0.2% fee
                     pId_amountWithFee_pathLength := mul(amountIn, 998)
                     buyAmount := div(mul(pId_amountWithFee_pathLength, buyAmount), add(pId_amountWithFee_pathLength, mul(sellReserve, 1000)))
                 }
                 case 101 {
-                    // Call pair.getReserves(), store the results at `0xC00`
-                    mstore(0xB00, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
-                    if iszero(staticcall(gas(), pair, 0xB00, 0x4, 0xC00, 0x40)) {
+                    // Call pair.getReserves(), store the results in scrap space
+                    mstore(0x0, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
+                    if iszero(staticcall(gas(), pair, 0x0, 0x4, 0x0, 0x40)) {
                         returndatacopy(0, 0, returndatasize())
                         revert(0, returndatasize())
                     }
@@ -556,12 +566,12 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                     switch zeroForOne
                     case 1 {
                         // Transpose if pair order is different.
-                        sellReserve := mload(0xC00)
-                        buyAmount := mload(0xC20)
+                        sellReserve := mload(0x0)
+                        buyAmount := mload(0x20)
                     }
                     default {
-                        sellReserve := mload(0xC20)
-                        buyAmount := mload(0xC00)
+                        sellReserve := mload(0x20)
+                        buyAmount := mload(0x0)
                     }
                     // feeAm is 997 for Moe (1000 - 3) for 0.3% fee
                     pId_amountWithFee_pathLength := mul(amountIn, 997)
@@ -570,15 +580,15 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                 // all solidly-based protocols (velo, cleo V1, stratum)
                 default {
                     // selector for getAmountOut(uint256,address)
-                    mstore(0xB00, 0xf140a35a00000000000000000000000000000000000000000000000000000000)
-                    mstore(0xB04, amountIn)
-                    mstore(0xB24, tokenIn)
-                    if iszero(staticcall(gas(), pair, 0xB00, 0x44, 0xB00, 0x20)) {
+                    mstore(ptr, 0xf140a35a00000000000000000000000000000000000000000000000000000000)
+                    mstore(add(ptr, 0x4), amountIn)
+                    mstore(add(ptr, 0x24), tokenIn)
+                    if iszero(staticcall(gas(), pair, ptr, 0x44, ptr, 0x20)) {
                         returndatacopy(0, 0, returndatasize())
                         revert(0, returndatasize())
                     }
 
-                    buyAmount := mload(0xB00)
+                    buyAmount := mload(ptr)
                 }
 
                 ////////////////////////////////////////////////////
@@ -586,19 +596,19 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                 ////////////////////////////////////////////////////
 
                 // selector for swap(...)
-                mstore(0xB00, 0x022c0d9f00000000000000000000000000000000000000000000000000000000)
+                mstore(ptr, 0x022c0d9f00000000000000000000000000000000000000000000000000000000)
 
                 switch zeroForOne
                 case 0 {
-                    mstore(0xB04, buyAmount)
-                    mstore(0xB24, 0)
+                    mstore(add(ptr, 0x4), buyAmount)
+                    mstore(add(ptr, 0x24), 0)
                 }
                 default {
-                    mstore(0xB04, 0)
-                    mstore(0xB24, buyAmount)
+                    mstore(add(ptr, 0x4), 0)
+                    mstore(add(ptr, 0x24), buyAmount)
                 }
-                mstore(0xB44, receiver)
-                mstore(0xB64, 0x80) // bytes offset
+                mstore(add(ptr, 0x44), receiver)
+                mstore(add(ptr, 0x64), 0x80) // bytes offset
 
                 ////////////////////////////////////////////////////
                 // In case of a flash swap, we copy the calldata to
@@ -606,23 +616,25 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                 ////////////////////////////////////////////////////
                 switch useFlashSwap
                 case 1 {
+                    // we store the offset of the bytes calldata in the func call
+                    let calldataOffsetStart := add(ptr, 0xA4)
                     pId_amountWithFee_pathLength := path.length
-                    calldatacopy(0xBA4, path.offset, pId_amountWithFee_pathLength)
+                    calldatacopy(calldataOffsetStart, path.offset, pId_amountWithFee_pathLength)
                     // store max amount
-                    mstore(add(0xBA4, pId_amountWithFee_pathLength), shl(128, amountOutMin))
+                    mstore(add(calldataOffsetStart, pId_amountWithFee_pathLength), shl(128, amountOutMin))
                     // store amountIn
-                    mstore(add(0xBA4, add(pId_amountWithFee_pathLength, 16)), shl(128, amountIn))
+                    mstore(add(calldataOffsetStart, add(pId_amountWithFee_pathLength, 16)), shl(128, amountIn))
                     pId_amountWithFee_pathLength := add(pId_amountWithFee_pathLength, 32)
                     //store amountIn
-                    mstore(add(0xBA4, pId_amountWithFee_pathLength), shl(96, payer))
+                    mstore(add(calldataOffsetStart, pId_amountWithFee_pathLength), shl(96, payer))
                     pId_amountWithFee_pathLength := add(pId_amountWithFee_pathLength, 20)
                     // bytes length
-                    mstore(0xB84, pId_amountWithFee_pathLength)
+                    mstore(add(ptr, 0x84), pId_amountWithFee_pathLength)
                     if iszero(call(
                         gas(),
                         pair,
                         0x0,
-                        0xB00, // input selector
+                        ptr, // input selector
                         add(0xA4, pId_amountWithFee_pathLength), // input size = 164 (selector (4bytes) plus 5*32bytes)
                         0x0, // output = 0
                         0x0 // output size = 0
@@ -642,12 +654,12 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                     // We store the bytes length to zero (no callback)
                     // and directly trigger the swap
                     ////////////////////////////////////////////////////
-                    mstore(0xB84, 0) // bytes length
+                    mstore(add(ptr, 0x84), 0) // bytes length
                     if iszero(call(
                         gas(),
                         pair,
                         0x0,
-                        0xB00, // input selector
+                        ptr, // input selector
                         0xA4, // input size = 164 (selector (4bytes) plus 5*32bytes)
                         0, // output = 0
                         0 // output size = 0

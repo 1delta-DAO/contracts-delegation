@@ -1310,6 +1310,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             }
         }
     }
+
     /**
      * (flash, whenever possible)-swaps exact output
      * Funds are sent to receiver address
