@@ -110,9 +110,8 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // Compute and validate pool address
             ////////////////////////////////////////////////////
             let s := mload(0x40)
-            let p := s
-            mstore(p, FUSION_V3_FF_FACTORY)
-            p := add(p, 21)
+            mstore(s, FUSION_V3_FF_FACTORY)
+            let p := add(s, 21)
             // Compute the inner hash in-place
             switch lt(tokenIn, tokenOut)
             case 0 {
@@ -166,9 +165,8 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // Compute and validate pool address
             ////////////////////////////////////////////////////
             let s := mload(0x40)
-            let p := s
-            mstore(p, AGNI_V3_FF_FACTORY)
-            p := add(p, 21)
+            mstore(s, AGNI_V3_FF_FACTORY)
+            let p := add(s, 21)
             // Compute the inner hash in-place
             switch lt(tokenIn, tokenOut)
             case 0 {
@@ -217,9 +215,8 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // Compute and validate pool address
             ////////////////////////////////////////////////////
             let s := mload(0x40)
-            let p := s
-            mstore(p, ALGEBRA_V3_FF_DEPLOYER)
-            p := add(p, 21)
+            mstore(s, ALGEBRA_V3_FF_DEPLOYER)
+            let p := add(s, 21)
             // Compute the inner hash in-place
             switch lt(tokenIn, tokenOut)
             case 0 {
@@ -272,9 +269,8 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // Compute and validate pool address
             ////////////////////////////////////////////////////
             let s := mload(0x40)
-            let p := s
-            mstore(p, BUTTER_FF_FACTORY)
-            p := add(p, 21)
+            mstore(s, BUTTER_FF_FACTORY)
+            let p := add(s, 21)
             // Compute the inner hash in-place
             switch lt(tokenIn, tokenOut)
             case 0 {
@@ -328,9 +324,8 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // Compute and validate pool address
             ////////////////////////////////////////////////////
             let s := mload(0x40)
-            let p := s
-            mstore(p, CLEO_FF_FACTORY)
-            p := add(p, 21)
+            mstore(s, CLEO_FF_FACTORY)
+            let p := add(s, 21)
             // Compute the inner hash in-place
             switch lt(tokenIn, tokenOut)
             case 0 {
@@ -383,9 +378,8 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // Compute and validate pool address
             ////////////////////////////////////////////////////
             let s := mload(0x40)
-            let p := s
-            mstore(p, METHLAB_FF_FACTORY)
-            p := add(p, 21)
+            mstore(s, METHLAB_FF_FACTORY)
+            let p := add(s, 21)
             // Compute the inner hash in-place
             switch lt(tokenIn, tokenOut)
             case 0 {
@@ -436,9 +430,8 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // Compute and validate pool address
             ////////////////////////////////////////////////////
             let s := mload(0x40)
-            let p := s
-            mstore(p, IZI_FF_FACTORY)
-            p := add(p, 21)
+            mstore(s, IZI_FF_FACTORY)
+            let p := add(s, 21)
             // Compute the inner hash in-place
             switch lt(tokenIn, tokenOut)
             case 0 {
@@ -850,23 +843,23 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             tokenIn := and(ADDRESS_MASK, shr(96, calldataload(data.offset)))
             tokenOut := and(ADDRESS_MASK, shr(96, calldataload(add(data.offset, 42))))
             zeroForOne := lt(tokenIn, tokenOut)
-
+            let ptr := mload(0x40)
             switch zeroForOne
             case 0 {
-                mstore(0xB14, tokenIn)
-                mstore(0xB00, tokenOut)
+                mstore(add(ptr, 0x14), tokenIn)
+                mstore(ptr, tokenOut)
             }
             default {
-                mstore(0xB14, tokenOut)
-                mstore(0xB00, tokenIn)
+                mstore(add(ptr, 0x14), tokenOut)
+                mstore(ptr, tokenIn)
             }
-            let salt := keccak256(0xB0C, 0x28)
-            mstore(0xB00, FUSION_V2_FF_FACTORY)
-            mstore(0xB15, salt)
-            mstore(0xB35, CODE_HASH_FUSION_V2)
+            let salt := keccak256(add(ptr, 0x0C), 0x28)
+            mstore(ptr, FUSION_V2_FF_FACTORY)
+            mstore(add(ptr, 0x15), salt)
+            mstore(add(ptr, 0x35), CODE_HASH_FUSION_V2)
 
             // verify that the caller is a v2 type pool
-            if xor(and(ADDRESS_MASK, keccak256(0xB00, 0x55)), caller()) {
+            if xor(and(ADDRESS_MASK, keccak256(ptr, 0x55)), caller()) {
                 mstore(0, BAD_POOL)
             }
         }
@@ -888,18 +881,18 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             tokenIn := and(ADDRESS_MASK, shr(96, calldataload(data.offset)))
             tokenOut := and(ADDRESS_MASK, shr(96, calldataload(add(data.offset, 42))))
             zeroForOne := lt(tokenIn, tokenOut)
-
+            let ptr := mload(0x40)
             // selector for getPair(address,address)
-            mstore(0xB00, 0xe6a4390500000000000000000000000000000000000000000000000000000000)
-            mstore(add(0xB00, 0x4), tokenIn)
-            mstore(add(0xB00, 0x24), tokenOut)
+            mstore(ptr, 0xe6a4390500000000000000000000000000000000000000000000000000000000)
+            mstore(add(ptr, 0x4), tokenIn)
+            mstore(add(ptr, 0x24), tokenOut)
 
             // call to collateralToken, this will always succeed due
             // to the immutable call target
-            pop(staticcall(gas(), MERCHANT_MOE_FACTORY, 0xB00, 0x48, 0xB00, 0x20))
+            pop(staticcall(gas(), MERCHANT_MOE_FACTORY, ptr, 0x48, ptr, 0x20))
 
             // verify that the caller is a v2 type pool
-            if xor(and(ADDRESS_MASK, mload(0xB00)), caller()) {
+            if xor(and(ADDRESS_MASK, mload(ptr)), caller()) {
                 revert(0, 4)
             }
         }
@@ -925,122 +918,122 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             tradeId := and(shr(88, firstWord), UINT8_MASK) // interaction dexId
             tokenOut := and(ADDRESS_MASK, shr(96, calldataload(add(data.offset, 42))))
             zeroForOne := lt(tokenIn, tokenOut)
-            
+            let ptr := mload(0x40)
             let pair
             switch dexId
             // Velo Volatile
             case 121 {
                 switch zeroForOne
                 case 0 {
-                    mstore(0xB14, tokenIn)
-                    mstore(0xB00, tokenOut)
+                    mstore(add(ptr, 0x14), tokenIn)
+                    mstore(ptr, tokenOut)
                 }
                 default {
-                    mstore(0xB14, tokenOut)
-                    mstore(0xB00, tokenIn)
+                    mstore(add(ptr, 0x14), tokenOut)
+                    mstore(ptr, tokenIn)
                 }
-                mstore8(0xB34, 0)
-                let salt := keccak256(0xB0C, 0x29)
-                mstore(0xB00, VELO_FF_FACTORY)
-                mstore(0xB15, salt)
-                mstore(0xB35, VELO_CODE_HASH)
+                mstore8(add(ptr, 0x34), 0)
+                let salt := keccak256(add(ptr, 0x0C), 0x29)
+                mstore(ptr, VELO_FF_FACTORY)
+                mstore(add(ptr, 0x15), salt)
+                mstore(add(ptr, 0x35), VELO_CODE_HASH)
 
-                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+                pair := and(ADDRESS_MASK, keccak256(ptr, 0x55))
             }
             // Velo Stable
             case 122 {
                 switch zeroForOne
                 case 0 {
-                    mstore(0xB14, tokenIn)
-                    mstore(0xB00, tokenOut)
+                    mstore(add(ptr, 0x14), tokenIn)
+                    mstore(ptr, tokenOut)
                 }
                 default {
-                    mstore(0xB14, tokenOut)
-                    mstore(0xB00, tokenIn)
+                    mstore(add(ptr, 0x14), tokenOut)
+                    mstore(ptr, tokenIn)
                 }
-                mstore8(0xB34, 1)
-                let salt := keccak256(0xB0C, 0x29)
-                mstore(0xB00, VELO_FF_FACTORY)
-                mstore(0xB15, salt)
-                mstore(0xB35, VELO_CODE_HASH)
+                mstore8(add(ptr, 0x34), 1)
+                let salt := keccak256(add(ptr, 0x0C), 0x29)
+                mstore(ptr, VELO_FF_FACTORY)
+                mstore(add(ptr, 0x15), salt)
+                mstore(add(ptr, 0x35), VELO_CODE_HASH)
 
-                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+                pair := and(ADDRESS_MASK, keccak256(ptr, 0x55))
             }
             // Cleo V1 Volatile
             case 123 {
                 switch zeroForOne
                 case 0 {
-                    mstore(0xB14, tokenIn)
-                    mstore(0xB00, tokenOut)
+                    mstore(add(ptr, 0x14), tokenIn)
+                    mstore(ptr, tokenOut)
                 }
                 default {
-                    mstore(0xB14, tokenOut)
-                    mstore(0xB00, tokenIn)
+                    mstore(add(ptr, 0x14), tokenOut)
+                    mstore(ptr, tokenIn)
                 }
-                mstore8(0xB34, 0)
-                let salt := keccak256(0xB0C, 0x29)
-                mstore(0xB00, CLEO_V1_FF_FACTORY)
-                mstore(0xB15, salt)
-                mstore(0xB35, CLEO_V1_CODE_HASH)
+                mstore8(add(ptr, 0x34), 0)
+                let salt := keccak256(add(ptr, 0x0C), 0x29)
+                mstore(ptr, CLEO_V1_FF_FACTORY)
+                mstore(add(ptr, 0x15), salt)
+                mstore(add(ptr, 0x35), CLEO_V1_CODE_HASH)
 
-                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+                pair := and(ADDRESS_MASK, keccak256(ptr, 0x55))
             }
             // Cleo V1 Stable
             case 124 {
                 switch zeroForOne
                 case 0 {
-                    mstore(0xB14, tokenIn)
-                    mstore(0xB00, tokenOut)
+                    mstore(add(ptr, 0x14), tokenIn)
+                    mstore(ptr, tokenOut)
                 }
                 default {
-                    mstore(0xB14, tokenOut)
-                    mstore(0xB00, tokenIn)
+                    mstore(add(ptr, 0x14), tokenOut)
+                    mstore(ptr, tokenIn)
                 }
-                mstore8(0xB34, 1)
-                let salt := keccak256(0xB0C, 0x29)
-                mstore(0xB00, CLEO_V1_FF_FACTORY)
-                mstore(0xB15, salt)
-                mstore(0xB35, CLEO_V1_CODE_HASH)
+                mstore8(add(ptr, 0x34), 1)
+                let salt := keccak256(add(ptr, 0x0C), 0x29)
+                mstore(ptr, CLEO_V1_FF_FACTORY)
+                mstore(add(ptr, 0x15), salt)
+                mstore(add(ptr, 0x35), CLEO_V1_CODE_HASH)
 
-                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+                pair := and(ADDRESS_MASK, keccak256(ptr, 0x55))
             }
             // Stratum Volatile
             case 125 {
                 switch zeroForOne
                 case 0 {
-                    mstore(0xB14, tokenIn)
-                    mstore(0xB00, tokenOut)
+                    mstore(add(ptr, 0x14), tokenIn)
+                    mstore(ptr, tokenOut)
                 }
                 default {
-                    mstore(0xB14, tokenOut)
-                    mstore(0xB00, tokenIn)
+                    mstore(add(ptr, 0x14), tokenOut)
+                    mstore(ptr, tokenIn)
                 }
-                mstore8(0xB34, 0)
-                let salt := keccak256(0xB0C, 0x29)
-                mstore(0xB00, STRATUM_FF_FACTORY)
-                mstore(0xB15, salt)
-                mstore(0xB35, STRATUM_CODE_HASH)
+                mstore8(add(ptr, 0x34), 0)
+                let salt := keccak256(add(ptr, 0x0C), 0x29)
+                mstore(ptr, STRATUM_FF_FACTORY)
+                mstore(add(ptr, 0x15), salt)
+                mstore(add(ptr, 0x35), STRATUM_CODE_HASH)
 
-                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+                pair := and(ADDRESS_MASK, keccak256(ptr, 0x55))
             }
             // 126: Stratum Stable
             default {
                 switch zeroForOne
                 case 0 {
-                    mstore(0xB14, tokenIn)
-                    mstore(0xB00, tokenOut)
+                    mstore(add(ptr, 0x14), tokenIn)
+                    mstore(ptr, tokenOut)
                 }
                 default {
-                    mstore(0xB14, tokenOut)
-                    mstore(0xB00, tokenIn)
+                    mstore(add(ptr, 0x14), tokenOut)
+                    mstore(ptr, tokenIn)
                 }
-                mstore8(0xB34, 1)
-                let salt := keccak256(0xB0C, 0x29)
-                mstore(0xB00, STRATUM_FF_FACTORY)
-                mstore(0xB15, salt)
-                mstore(0xB35, STRATUM_CODE_HASH)
+                mstore8(add(ptr, 0x34), 1)
+                let salt := keccak256(add(ptr, 0x0C), 0x29)
+                mstore(ptr, STRATUM_FF_FACTORY)
+                mstore(add(ptr, 0x15), salt)
+                mstore(add(ptr, 0x35), STRATUM_CODE_HASH)
 
-                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+                pair := and(ADDRESS_MASK, keccak256(ptr, 0x55))
             }
 
             // verify that the caller is a v2 type pool
