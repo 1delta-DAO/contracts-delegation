@@ -97,6 +97,37 @@ contract SwapGen2Test is DeltaSetup {
         assertApproxEqAbs(amountToReceive, balanceOut, 1e6);
     }
 
+
+    function test_mantle_gen_2_spot_exact_out_solidly() external /** address user, uint8 lenderId */ {
+        address user = testUser;
+        vm.assume(user != address(0));
+        address assetFrom = USDC;
+
+        address assetTo = aUSD;
+        deal(assetFrom, user, 1e20);
+
+        uint256 amountToReceive = 2000.0e18;
+
+        bytes memory swapPath = getSpotExactOutSingleSolidlyGen2(assetFrom, assetTo);
+        uint256 maximumIn = 2300.0e6;
+        vm.prank(user);
+        IERC20All(assetFrom).approve(brokerProxyAddress, maximumIn);
+
+        uint256 balanceIn = IERC20All(assetFrom).balanceOf(user);
+        uint256 balanceOut = IERC20All(assetTo).balanceOf(user);
+
+        vm.prank(user);
+        uint256 gas = gasleft();
+        IFlashAggregator(address(brokerProxy)).swapExactOutSpot(amountToReceive, maximumIn, user, swapPath);
+        gas = gas - gasleft();
+        console.log("gas", gas, 144771);
+
+        balanceOut = IERC20All(assetTo).balanceOf(user) - balanceOut;
+        balanceIn = balanceIn - IERC20All(assetFrom).balanceOf(user);
+        assertApproxEqAbs(balanceIn, 2024300011, 0);
+        assertApproxEqAbs(amountToReceive, balanceOut, 1e6);
+    }
+
     function test_mantle_gen_2_spot_exact_out_multi() external /** address user, uint8 lenderId */ {
         address user = testUser;
         vm.assume(user != address(0));
@@ -299,6 +330,12 @@ contract SwapGen2Test is DeltaSetup {
         uint8 poolId = AGNI;
         address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
         return abi.encodePacked(tokenIn, uint8(11), poolId, pool, fee, tokenOut);
+    }
+
+    function getSpotExactOutSingleSolidlyGen2(address tokenOut, address tokenIn) internal view returns (bytes memory data) {
+        uint8 poolId = CLEO_V1_STABLE;
+        address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
+        return abi.encodePacked(tokenIn, uint8(11), poolId, pool, tokenOut);
     }
 
     function getPathDataV3()

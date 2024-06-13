@@ -18,6 +18,7 @@ contract AddressesMantle {
     address internal mUSD = 0xab575258d37EaA5C8956EfABe71F4eE8F6397cF3;
     address internal USDe = 0x5d3a1Ff2b6BAb83b63cd9AD0787074081a52ef34;
     address internal PUFF = 0x26a6b0dcdCfb981362aFA56D581e4A7dBA3Be140;
+    address internal aUSD = 0xD2B4C9B0d70e3Da1fBDD98f469bD02E77E12FC79; 
 
     // users
     address internal testUser = 0xaaaa4a3F69b6DB76889bDfa4edBe1c0BB57BAA5c;
@@ -123,6 +124,7 @@ contract AddressesMantle {
     
     uint8 internal FUSION_X_V2 = 100;
     uint8 internal MERCHANT_MOE = 101;
+    uint8 internal CLEO_V1_STABLE = 124;
     uint8 internal MERCHANT_MOE_LB = 151;
     uint8 internal WOO_FI = 150;
     uint8 internal KTX = 152;
