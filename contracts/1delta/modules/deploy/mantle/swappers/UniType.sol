@@ -54,10 +54,14 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
      * @param path path calldata
      */
     function _swapV2StyleExactOut(
+        address tokenA,
+        address tokenB,
+        address pair,
         uint256 amountOut,
         uint256 maxIn,
         address payer,
         address receiver,
+        bool useFlashSwap,
         bytes calldata path
     )
         internal
@@ -65,87 +69,109 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
         // solhint-disable-next-line no-inline-assembly
         assembly {
             let ptr := mload(0x40)
-            let tokenB := and(ADDRESS_MASK, shr(96, calldataload(path.offset)))
-            let tokenA := and(ADDRESS_MASK, shr(96, calldataload(add(path.offset, 42))))
-            let pair := and(ADDRESS_MASK, shr(96, calldataload(add(path.offset, 22))))
-
             // selector for swap(...)
             mstore(ptr, 0x022c0d9f00000000000000000000000000000000000000000000000000000000)
 
             switch lt(tokenA, tokenB)
             case 1 {
-                mstore(add(ptr, 4), 0x0)
-                mstore(add(ptr, 36), amountOut)
+                mstore(add(ptr, 0x4), 0x0)
+                mstore(add(ptr, 0x24), amountOut)
             }
             default {
-                mstore(add(ptr, 4), amountOut)
-                mstore(add(ptr, 36), 0x0)
+                mstore(add(ptr, 0x4), amountOut)
+                mstore(add(ptr, 0x24), 0x0)
             }
         
             // Prepare external call data
+            switch useFlashSwap
+            case 1 {
+                // Store recipient
+                mstore(add(ptr, 0x44), address())
+                // Store data offset
+                mstore(add(ptr, 0x64), 0x80)
 
-            // Store recipient
-            mstore(add(ptr, 68), address())
-            // Store data offset
-            mstore(add(ptr, 100), sub(0xa0, 0x20))
-
-            ////////////////////////////////////////////////////
-            // We append amountIn (uint128) & payer (address) (36 bytes)
-            // This is to prevent the re-calculation of amount in
-            ////////////////////////////////////////////////////
-            let pathLength := path.length
-            // Store path
-            calldatacopy(add(ptr, 164), path.offset, pathLength)
-
-            mstore(add(add(ptr, 164), pathLength), shl(128, maxIn)) // store amountIn
-            pathLength := add(pathLength, 32) // pad
-            mstore(add(add(ptr, 164), pathLength), shl(96, payer))
-            pathLength := add(pathLength, 20)
-            /// Store updated data length
-            mstore(add(ptr, 132), pathLength)
-
-            // Perform the external 'swap' call
-            if iszero(call(gas(), pair, 0, ptr, add(196, pathLength), ptr, 0x0)) {
-                // store return value directly to free memory pointer
-                // The call failed; we retrieve the exact error message and revert with it
-                returndatacopy(0, 0, returndatasize()) // Copy the error message to the start of memory
-                revert(0, returndatasize()) // Revert with the error message
-            }
-
-            ////////////////////////////////////////////////////
-            // We chain the transfer to the receiver, given that
-            // it is not this address
-            ////////////////////////////////////////////////////
-            if iszero(eq(address(), receiver)) {
                 ////////////////////////////////////////////////////
-                // Populate tx for transfer to receiver
+                // We append amountIn (uint128) & payer (address) (36 bytes)
+                // This is to prevent the re-calculation of amount in
                 ////////////////////////////////////////////////////
-                // selector for transfer(address,uint256)
-                mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
-                mstore(add(ptr, 0x04), receiver)
-                mstore(add(ptr, 0x24), amountOut)
+                let pathLength := path.length
+                // Store path
+                calldatacopy(add(ptr, 164), path.offset, pathLength)
 
-                let success := call(gas(), tokenB, 0, ptr, 0x44, ptr, 32)
+                mstore(add(add(ptr, 164), pathLength), shl(128, maxIn)) // store amountIn
+                pathLength := add(pathLength, 32) // pad
+                mstore(add(add(ptr, 164), pathLength), shl(96, payer))
+                pathLength := add(pathLength, 20)
+                /// Store updated data length
+                mstore(add(ptr, 132), pathLength)
 
-                let rdsize := returndatasize()
+                // Perform the external 'swap' call
+                if iszero(call(gas(), pair, 0, ptr, add(196, pathLength), ptr, 0x0)) {
+                    // store return value directly to free memory pointer
+                    // The call failed; we retrieve the exact error message and revert with it
+                    returndatacopy(0, 0, returndatasize()) // Copy the error message to the start of memory
+                    revert(0, returndatasize()) // Revert with the error message
+                }
 
-                // Check for ERC20 success. ERC20 tokens should return a boolean,
-                // but some don't. We accept 0-length return data as success, or at
-                // least 32 bytes that starts with a 32-byte boolean true.
-                success := and(
-                    success, // call itself succeeded
-                    or(
-                        iszero(rdsize), // no return data, or
-                        and(
-                            iszero(lt(rdsize, 32)), // at least 32 bytes
-                            eq(mload(ptr), 1) // starts with uint256(1)
+                ////////////////////////////////////////////////////
+                // We chain the transfer to the receiver, given that
+                // it is not this address
+                ////////////////////////////////////////////////////
+                if iszero(eq(address(), receiver)) {
+                    ////////////////////////////////////////////////////
+                    // Populate tx for transfer to receiver
+                    ////////////////////////////////////////////////////
+                    // selector for transfer(address,uint256)
+                    mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+                    mstore(add(ptr, 0x04), receiver)
+                    mstore(add(ptr, 0x24), amountOut)
+
+                    let success := call(gas(), tokenB, 0, ptr, 0x44, ptr, 32)
+
+                    let rdsize := returndatasize()
+
+                    // Check for ERC20 success. ERC20 tokens should return a boolean,
+                    // but some don't. We accept 0-length return data as success, or at
+                    // least 32 bytes that starts with a 32-byte boolean true.
+                    success := and(
+                        success, // call itself succeeded
+                        or(
+                            iszero(rdsize), // no return data, or
+                            and(
+                                iszero(lt(rdsize, 32)), // at least 32 bytes
+                                eq(mload(ptr), 1) // starts with uint256(1)
+                            )
                         )
                     )
-                )
 
-                if iszero(success) {
-                    returndatacopy(0x0, 0, rdsize)
-                    revert(0x0, rdsize)
+                    if iszero(success) {
+                        returndatacopy(0x0, 0, rdsize)
+                        revert(0x0, rdsize)
+                    }
+                }
+            }
+            default {
+                // Store recipient directly
+                mstore(add(ptr, 0x44), receiver)
+                // Store data offset
+                mstore(add(ptr, 0x64), 0x80)
+                ////////////////////////////////////////////////////
+                // We store the bytes length to zero (no callback)
+                // and directly trigger the swap
+                ////////////////////////////////////////////////////
+                mstore(add(ptr, 0x84), 0) // bytes length
+                if iszero(call(
+                    gas(),
+                    pair,
+                    0x0,
+                    ptr, // input selector
+                    0xA4, // input size = 164 (selector (4bytes) plus 5*32bytes)
+                    0, // output = 0
+                    0 // output size = 0
+                )) {
+                    // Forward the error
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
                 }
             }
         }
@@ -664,10 +690,10 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                         0, // output = 0
                         0 // output size = 0
                     )) {
-                    // Forward the error
-                    returndatacopy(0, 0, returndatasize())
-                    revert(0, returndatasize())
-                }
+                        // Forward the error
+                        returndatacopy(0, 0, returndatasize())
+                        revert(0, returndatasize())
+                    }
                 }
 
             }

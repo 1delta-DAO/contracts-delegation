@@ -16,6 +16,7 @@ library Commands {
     uint256 constant SWAP_EXACT_IN = 0x00;
     uint256 constant SWAP_EXACT_OUT = 0x01;
     uint256 constant FLASH_SWAP_EXACT_IN = 0x02;
+    uint256 constant FLASH_SWAP_EXACT_OUT = 0x03;
     uint256 constant PERMIT2_PERMIT_BATCH = 0x03;
     // uint256 constant SWEEP = 0x04;
     uint256 constant TRANSFER = 0x05;

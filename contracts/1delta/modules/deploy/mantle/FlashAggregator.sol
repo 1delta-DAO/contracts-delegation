@@ -26,7 +26,7 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
         address receiver,
         bytes calldata path
     ) external payable {
-        flashSwapExactOutInternal(amountOut, maximumAmountIn, msg.sender, receiver, path);
+        swapExactOutInternal(amountOut, maximumAmountIn, msg.sender, receiver, path);
     }
 
     /**
@@ -69,7 +69,7 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
         else _debtBalance = _stableDebtBalance(tokenOut, msg.sender, getLender(path));
         if (_debtBalance == 0) revert NoBalance(); // revert if amount is zero
 
-        flashSwapExactOutInternal(_debtBalance, maximumAmountIn, msg.sender, address(this), path);
+        swapExactOutInternal(_debtBalance, maximumAmountIn, msg.sender, address(this), path);
     }
 
     /**
@@ -90,7 +90,7 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
         else _debtBalance = _stableDebtBalance(tokenOut, msg.sender, getLender(path));
         if (_debtBalance == 0) revert NoBalance(); // revert if amount is zero
 
-        flashSwapExactOutInternal(_debtBalance, maximumAmountIn, address(this), address(this), path);
+        swapExactOutInternal(_debtBalance, maximumAmountIn, address(this), address(this), path);
     }
 
     /**

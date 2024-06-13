@@ -190,7 +190,7 @@ contract Composer is DeltaFlashAggregatorMantle {
                         }
                         currentOffset := add(currentOffset, calldataLength)
                     }
-                    flashSwapExactOutInternal(amountOut, amountInMaximum, payer, receiver, opdata);
+                    swapExactOutInternal(amountOut, amountInMaximum, payer, receiver, opdata);
                 } else if (operation == Commands.FLASH_SWAP_EXACT_IN) {
                     ////////////////////////////////////////////////////
                     // Parameter encoding is the same as for SWAP_EXACT_IN
@@ -269,6 +269,67 @@ contract Composer is DeltaFlashAggregatorMantle {
                         currentOffset := add(currentOffset, calldataLength)
                     }
                     flashSwapExactInInternal(amountIn, minimumAmountOut, opdata);
+                } else if (operation == Commands.FLASH_SWAP_EXACT_OUT) {
+                    ////////////////////////////////////////////////////
+                    // Always uses a flash swap when possible
+                    // Encoded parameters for the swap
+                    // | amount | receiver | pathLength | path |
+                    // | uint256| address  |  uint16    | bytes|
+                    // where amount is provided as
+                    // pay self         (bool)      in the upper bit
+                    //                              if true, payer is this contract
+                    // maximumAmountIn  (uint120)   in the bytes starting at bit 128
+                    //                              from the right
+                    // amountOut        (uint128)   in the lowest bytes
+                    //                              zero is for paying withn the balance of
+                    //                              payer (self or caller)
+                    ////////////////////////////////////////////////////
+                    bytes calldata opdata;
+                    uint256 amountOut;
+                    address payer;
+                    address receiver;
+                    uint256 amountInMaximum;
+                    assembly {
+                        opdata.offset := add(currentOffset, 54) // 32 +20 + 2
+                        let lastparam := calldataload(add(currentOffset, 32))
+                        receiver := and(ADDRESS_MASK, shr(96, lastparam))
+                        // we get the calldatalength of the path
+                        let calldataLength := and(shr(80, lastparam), UINT16_MASK)
+                        opdata.length := and(calldataLength, UINT16_MASK)
+
+                        calldataLength := add(54, calldataLength)
+                        amountOut := calldataload(currentOffset)
+                        amountInMaximum := shr(128, and(amountOut, _UPPER_120_MASK))
+                        switch iszero(and(_PAY_SELF, amountOut))
+                        case 0 {
+                            payer := address()
+                        }
+                        default {
+                            payer := caller()
+                        }
+                        amountOut := and(UINT128_MASK, amountOut)
+                        if iszero(amountOut) {
+                            // selector for balanceOf(address)
+                            mstore(0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+                            // add this address as parameter
+                            mstore(0x04, payer)
+                            // call to token
+                            pop(
+                                staticcall(
+                                    gas(),
+                                    calldataload(and(ADDRESS_MASK, add(currentOffset, 32))),
+                                    0x0,
+                                    0x24,
+                                    0x0,
+                                    0x20 //
+                                )
+                            )
+                            // load the retrieved balance
+                            amountOut := mload(0x0)
+                        }
+                        currentOffset := add(currentOffset, calldataLength)
+                    }
+                    flashSwapExactOutInternal(amountOut, amountInMaximum, payer, receiver, opdata);
                 }
             } else {
                 if (operation == Commands.DEPOSIT) {
