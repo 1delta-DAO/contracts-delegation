@@ -347,8 +347,8 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                     let _reserveInScaled
                     {
                         /////////////////////////////////////////////////////////////
-                        // We fetch the decimals of the tokens to compute the curve style logic
-                        // we do this in the scrap space
+                        // We fetch the decimals of the tokens to compute the curve
+                        // style logic we do this in the scrap space
                         /////////////////////////////////////////////////////////////
                         // selector for decimals()
                         mstore(0x0, 0x313ce56700000000000000000000000000000000000000000000000000000000)
