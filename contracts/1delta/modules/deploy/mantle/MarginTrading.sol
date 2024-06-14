@@ -1537,9 +1537,9 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             address tokenIn;
             address pair;
             assembly {
-            tokenOut := and(ADDRESS_MASK, shr(96, calldataload(path.offset)))
-            tokenIn := and(ADDRESS_MASK, shr(96, calldataload(add(path.offset, 42))))
-            pair := and(ADDRESS_MASK, shr(96, calldataload(add(path.offset, 22))))
+                tokenOut := and(ADDRESS_MASK, shr(96, calldataload(path.offset)))
+                tokenIn := and(ADDRESS_MASK, shr(96, calldataload(add(path.offset, 42))))
+                pair := and(ADDRESS_MASK, shr(96, calldataload(add(path.offset, 22))))
             }
             _swapV2StyleExactOut(
                 tokenIn,
@@ -1647,10 +1647,10 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         else if (poolId < 150) {
             swapUniV2ExactInComplete(
                 amountIn,
-                amountOutMinimum,
+                amountOutMinimum, // we need to forward the amountMin
                 msg.sender,
-                address(this),
-                true,
+                address(this), // receiver has to be this address
+                true, // use flash swap
                 path
             );
         }
