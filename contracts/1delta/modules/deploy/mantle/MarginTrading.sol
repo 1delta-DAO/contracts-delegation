@@ -131,8 +131,8 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // If the caller is not the calculated pool, we revert
             ////////////////////////////////////////////////////
             if xor(caller(), and(ADDRESS_MASK, keccak256(s, 85))) {
-                mstore(0, BAD_POOL)
-                revert(0, 4)
+                mstore(0x0, BAD_POOL)
+                revert(0x0, 0x4)
             }
         }
         clSwapCallback(amount0Delta, amount1Delta, tokenIn, tokenOut, path);
@@ -186,8 +186,8 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // If the caller is not the calculated pool, we revert
             ////////////////////////////////////////////////////
             if xor(caller(), and(ADDRESS_MASK, keccak256(s, 85))) {
-                mstore(0, BAD_POOL)
-                revert(0, 4)
+                mstore(0x0, BAD_POOL)
+                revert(0x0, 0x4)
             }
         }
         clSwapCallback(amount0Delta, amount1Delta, tokenIn, tokenOut, path);
@@ -235,8 +235,8 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // If the caller is not the calculated pool, we revert
             ////////////////////////////////////////////////////
             if xor(caller(), and(ADDRESS_MASK, keccak256(s, 85))) {
-                mstore(0, BAD_POOL)
-                revert(0, 4)
+                mstore(0x0, BAD_POOL)
+                revert(0x0, 0x4)
             }
         }
         clSwapCallback(amount0Delta, amount1Delta, tokenIn, tokenOut, path);
@@ -290,8 +290,8 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // If the caller is not the calculated pool, we revert
             ////////////////////////////////////////////////////
             if xor(caller(), and(ADDRESS_MASK, keccak256(s, 85))) {
-                mstore(0, BAD_POOL)
-                revert(0, 4)
+                mstore(0x0, BAD_POOL)
+                revert(0x0, 0x4)
             }
         }
         clSwapCallback(amount0Delta, amount1Delta, tokenIn, tokenOut, path);
@@ -345,8 +345,8 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // If the caller is not the calculated pool, we revert
             ////////////////////////////////////////////////////
             if xor(caller(), and(ADDRESS_MASK, keccak256(s, 85))) {
-                mstore(0, BAD_POOL)
-                revert(0, 4)
+                mstore(0x0, BAD_POOL)
+                revert(0x0, 0x4)
             }
         }
         clSwapCallback(amount0Delta, amount1Delta, tokenIn, tokenOut, path);
@@ -399,8 +399,8 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // If the caller is not the calculated pool, we revert
             ////////////////////////////////////////////////////
             if xor(caller(), and(ADDRESS_MASK, keccak256(s, 85))) {
-                mstore(0, BAD_POOL)
-                revert(0, 4)
+                mstore(0x0, BAD_POOL)
+                revert(0x0, 0x4)
             }
         }
         clSwapCallback(amount0Delta, amount1Delta, tokenIn, tokenOut, path);
@@ -451,8 +451,8 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // If the caller is not the calculated pool, we revert
             ////////////////////////////////////////////////////
             if xor(caller(), and(ADDRESS_MASK, keccak256(s, 85))) {
-                mstore(0, BAD_POOL)
-                revert(0, 4)
+                mstore(0x0, BAD_POOL)
+                revert(0x0, 0x4)
             }
         }
         clSwapCallback(
@@ -508,8 +508,8 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // If the caller is not the calculated pool, we revert
             ////////////////////////////////////////////////////
             if xor(caller(), and(ADDRESS_MASK, keccak256(s, 85))) {
-                mstore(0, BAD_POOL)
-                revert(0, 4)
+                mstore(0x0, BAD_POOL)
+                revert(0x0, 0x4)
             }
         }
         clSwapCallback(
@@ -860,7 +860,8 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
 
             // verify that the caller is a v2 type pool
             if xor(and(ADDRESS_MASK, keccak256(ptr, 0x55)), caller()) {
-                mstore(0, BAD_POOL)
+                mstore(0x0, BAD_POOL)
+                revert(0x0, 0x4)
             }
         }
         _v2StyleCallback(amount0, amount1, tokenIn, tokenOut, zeroForOne, data);
@@ -893,7 +894,8 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
 
             // verify that the caller is a v2 type pool
             if xor(and(ADDRESS_MASK, mload(ptr)), caller()) {
-                revert(0, 4)
+                mstore(0x0, BAD_POOL)
+                revert(0x0, 0x4)
             }
         }
         _v2StyleCallback(amount0, amount1, tokenIn, tokenOut, zeroForOne, data);
@@ -1038,8 +1040,8 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
 
             // verify that the caller is a v2 type pool
             if xor(pair, caller()) {
-                mstore(0, BAD_POOL)
-                revert(0, 4)
+                mstore(0x0, BAD_POOL)
+                revert(0x0, 0x4)
             }
         }
         _v2StyleCallback(amount0, amount1, tokenIn, tokenOut, zeroForOne, data);
