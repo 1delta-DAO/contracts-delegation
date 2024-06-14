@@ -2,8 +2,9 @@
 pragma solidity ^0.8.19;
 
 import "./DeltaSetup.f.sol";
+import "./ComposerUtils.sol";
 
-contract SwapGen2Test is DeltaSetup {
+contract SwapGen2Test is DeltaSetup, ComposerUtils {
     uint256 DEFAULT_IR_MODE = 2; // variable
 
     function test_mantle_gen_2_open_exact_in() external /** address user, uint8 lenderId */ {
@@ -43,7 +44,59 @@ contract SwapGen2Test is DeltaSetup {
         uint256 gas = gasleft();
         IFlashAggregator(address(brokerProxy)).flashSwapExactIn(amountToSwap, minimumOut, swapPath);
         gas = gas - gasleft();
-        console.log("gas", gas, 144771);
+        console.log("gas-open-exactIn-single", gas);
+
+        balanceDebt = IERC20All(debtToken).balanceOf(user) - balanceDebt;
+        balanceCollateral = IERC20All(collateralToken).balanceOf(user) - balanceCollateral;
+        assertApproxEqAbs(balanceCollateral, 3999669280, 0);
+        assertApproxEqAbs(amountToSwap, balanceDebt, 1e6);
+    }
+
+    function test_mantle_gen_2_open_exact_in_composer() external /** address user, uint8 lenderId */ {
+        address user = testUser;
+        uint8 lenderId = DEFAULT_LENDER;
+        vm.assume(user != address(0));
+        address assetFrom = USDC;
+        address assetTo = USDT;
+        address debtToken = debtTokens[assetFrom][lenderId];
+        address collateralToken = collateralTokens[assetTo][lenderId];
+
+        uint256 amountToSwap = 2000.0e6;
+        uint256 amountToDeposit = 2000.0e6;
+        deal(assetTo, user, amountToDeposit);
+
+        bytes memory swapPath = getOpenExactInSingleGen2(assetFrom, assetTo, lenderId);
+        uint256 minimumOut = 10.0e6;
+
+        uint256 balanceCollateral = IERC20All(collateralToken).balanceOf(user);
+        uint256 balanceDebt = IERC20All(debtToken).balanceOf(user);
+        {
+            bytes[] memory calls = new bytes[](2);
+            calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, assetTo, amountToDeposit);
+            calls[1] = abi.encodeWithSelector(ILending.deposit.selector, assetTo, user, lenderId);
+
+            vm.prank(user);
+            IERC20All(assetTo).approve(brokerProxyAddress, amountToDeposit);
+
+            vm.prank(user);
+            brokerProxy.multicall(calls);
+        }
+
+        vm.prank(user);
+        IERC20All(debtToken).approveDelegation(address(brokerProxy), amountToSwap);
+
+        swapPath = abi.encodePacked(
+            uint8(Commands.FLASH_SWAP_EXACT_IN),
+            encodeExactInParams(amountToSwap, minimumOut, false),
+            user,
+            uint16(swapPath.length), // begin agni data
+            swapPath
+        );
+        vm.prank(user);
+        uint256 gas = gasleft();
+        IFlashAggregator(address(brokerProxy)).deltaCompose(swapPath);
+        gas = gas - gasleft();
+        console.log("gas-open-exactIn-single-composer", gas);
 
         balanceDebt = IERC20All(debtToken).balanceOf(user) - balanceDebt;
         balanceCollateral = IERC20All(collateralToken).balanceOf(user) - balanceCollateral;
@@ -188,7 +241,6 @@ contract SwapGen2Test is DeltaSetup {
         assertApproxEqAbs(balanceCollateral, 199246552, 0);
         assertApproxEqAbs(amountToSwap, balanceDebt, 1e6);
     }
-
 
     // function test_mantle_gen_2_spot_exact_in_multi() external /** address user, uint8 lenderId */ {
     //     address user = testUser;
@@ -391,7 +443,6 @@ contract SwapGen2Test is DeltaSetup {
             getOpenExactInSingleGen2Mixed(tokens, actions, pIds, fees, lenderId, uint8(2)) //
         );
     }
-
 
     function getPathAndTokensMixedDoubleV2(uint8 lenderId) internal view returns (address tokenIn, address tokenOut, bytes memory path) {
         (address[] memory tokens, uint8[] memory actions, uint8[] memory pIds, uint16[] memory fees) = getPathDataMixedDoubleV2();

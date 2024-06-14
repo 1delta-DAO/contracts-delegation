@@ -98,7 +98,7 @@ abstract contract TokenTransfer {
 
     function _transferEth() internal {
         assembly {
-            let bal := balance(address())
+            let bal := selfbalance()
             if not(iszero(bal)) {
                 if iszero(
                     call(

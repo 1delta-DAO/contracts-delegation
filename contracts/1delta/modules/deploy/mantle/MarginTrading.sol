@@ -28,23 +28,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         uint256 amountOutMinimum,
         bytes calldata path
     ) external payable {
-        flashSwapExactInInternal(amountIn, amountOutMinimum, path);
-    }
-
-    // Exact Output Swap - The path parameters determine the lending actions
-    function flashSwapExactOut(
-        uint256 amountOut,
-        uint256 amountInMaximum,
-        bytes calldata path
-    ) external payable {
-        flashSwapExactOutInternal(amountOut, amountInMaximum, msg.sender, address(this), path);
-    }
-
-    // Exact Input Swap where the entire collateral amount is withdrawn - The path parameters determine the lending actions
-    // if the collateral balance is zerp. the tx reverts
-    function flashSwapAllIn(uint256 amountOutMinimum, bytes calldata path) external payable {
-        uint256 amountIn;
-        {
+        if(amountIn == 0) {
             address tokenIn;    
             assembly {
                 tokenIn := shr(96, calldataload(path.offset))
@@ -56,10 +40,13 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         flashSwapExactInInternal(amountIn, amountOutMinimum, path);
     }
 
-    // Exact Output Swap where the entire debt balacne is repaid - The path parameters determine the lending actions
-    function flashSwapAllOut(uint256 amountInMaximum, bytes calldata path) external payable {
-        uint256 amountOut;
-        {
+    // Exact Output Swap - The path parameters determine the lending actions
+    function flashSwapExactOut(
+        uint256 amountOut,
+        uint256 amountInMaximum,
+        bytes calldata path
+    ) external payable {
+        if(amountOut == 0) {
             address tokenOut;
             uint8 _identifier;
             // we need tokenIn together with lender id for he balance fetch
@@ -73,13 +60,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             if (_identifier == 5) amountOut = _variableDebtBalance(tokenOut, msg.sender, getLender(path));
             else amountOut = _stableDebtBalance(tokenOut, msg.sender, getLender(path));
             if (amountOut == 0) revert NoBalance();
-        
-            // fetch poolId - store it in _identifier
-            assembly {
-                _identifier := shr(64, calldataload(path.offset))
-            }
         }
-
         flashSwapExactOutInternal(amountOut, amountInMaximum, msg.sender, address(this), path);
     }
 

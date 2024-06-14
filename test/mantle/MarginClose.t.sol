@@ -191,7 +191,7 @@ contract MarginCloseTest is DeltaSetup {
         bytes memory swapPath = getCloseExactInSingle(asset, borrowAsset, lenderId);
 
         uint256 minimumOut = 8.0e18;
-        calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapAllIn.selector, minimumOut, swapPath);
+        calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactIn.selector, uint256(0), minimumOut, swapPath);
 
         vm.prank(user);
         IERC20All(collateralAsset).approve(brokerProxyAddress, (amountIn * 101) / 100);
@@ -234,7 +234,7 @@ contract MarginCloseTest is DeltaSetup {
 
         bytes memory swapPath = getCloseExactOutSingle(asset, borrowAsset, lenderId);
         uint256 amountInMaximum = 35.0e6;
-        calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapAllOut.selector, amountInMaximum, swapPath);
+        calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactOut.selector, uint256(0), amountInMaximum, swapPath);
 
         vm.prank(user);
         IERC20All(collateralAsset).approve(brokerProxyAddress, amountInMaximum);
@@ -403,7 +403,7 @@ contract MarginCloseTest is DeltaSetup {
 
         bytes memory swapPath = getCloseExactOutSingleV2(asset, borrowAsset, lenderId);
         uint256 amountInMaximum = 35.0e6;
-        calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapAllOut.selector, amountInMaximum, swapPath);
+        calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactOut.selector, uint256(0), amountInMaximum, swapPath);
 
         vm.prank(user);
         IERC20All(collateralAsset).approve(brokerProxyAddress, amountInMaximum);

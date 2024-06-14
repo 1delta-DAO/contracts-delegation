@@ -577,7 +577,7 @@ contract Composer is DeltaFlashAggregatorMantle {
                         // Transfer native
                         ////////////////////////////////////////////////////
                         default {
-                            let nativeBalance := balance(address())
+                            let nativeBalance := selfbalance()
                             // revert if balance is not enough
                             if lt(nativeBalance, amountMin) {
                                 mstore(0, SLIPPAGE)

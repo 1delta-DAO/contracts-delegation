@@ -9,8 +9,8 @@ pragma solidity ^0.8.26;
 import {MarginTrading} from "./MarginTrading.sol";
 
 /**
- * @title FlashAggregator
- * @notice Adds spot trading functions to general margin trading
+ * Aggregator contract that directly exposes spot trading functions
+ * Ideal for gas savings when not using split routes
  */
 contract DeltaFlashAggregatorMantle is MarginTrading {
 
@@ -41,74 +41,6 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
     ) external payable {
         uint256 dexId = _preFundTrade(msg.sender, amountIn, path);
         uint256 amountOut = swapExactIn(amountIn, dexId, msg.sender, receiver, path);
-        // slippage check
-        assembly {
-            if lt(amountOut, minimumAmountOut) {
-                mstore(0, SLIPPAGE)
-                revert (0, 0x4)
-            }
-        }
-    }
-
-    /**
-     * @notice The same as swapExactOutSpot, except that we snipe the debt balance
-     * This ensures that no borrow dust will be left. The next step in the batch has to the repay function.
-     */
-    function swapAllOutSpot(
-        uint256 maximumAmountIn,
-        uint256 interestRateMode,
-        bytes calldata path
-    ) external payable {
-        uint256 _debtBalance;
-        uint256 _interestRateMode = interestRateMode;
-        address tokenOut;
-        assembly {
-            tokenOut := shr(96, calldataload(path.offset))
-        }
-        if (_interestRateMode == 2) _debtBalance = _variableDebtBalance(tokenOut, msg.sender, getLender(path));
-        else _debtBalance = _stableDebtBalance(tokenOut, msg.sender, getLender(path));
-        if (_debtBalance == 0) revert NoBalance(); // revert if amount is zero
-
-        swapExactOutInternal(_debtBalance, maximumAmountIn, msg.sender, address(this), path);
-    }
-
-    /**
-     * @notice The same as swapAllOutSpot, except that the payer is this contract - used when wrapping ETH before calling
-     */
-    function swapAllOutSpotSelf(
-        uint256 maximumAmountIn,
-        uint256 interestRateMode,
-        bytes calldata path
-    ) external payable {
-        uint256 _debtBalance;
-        uint256 _interestRateMode = interestRateMode;
-        address tokenOut;
-        assembly {
-            tokenOut := shr(96, calldataload(path.offset))
-        }
-        if (_interestRateMode == 2) _debtBalance = _variableDebtBalance(tokenOut, msg.sender, getLender(path));
-        else _debtBalance = _stableDebtBalance(tokenOut, msg.sender, getLender(path));
-        if (_debtBalance == 0) revert NoBalance(); // revert if amount is zero
-
-        swapExactOutInternal(_debtBalance, maximumAmountIn, address(this), address(this), path);
-    }
-
-    /**
-     * @notice The same as swapExactInSpot, except that we swap the entire balance
-     * This function can be used after a withdrawals and other operations that
-     * transfer into this contract
-     *  - to make sure that no dust is left
-     */
-    function swapAllInSpot(uint256 minimumAmountOut, bytes calldata path) external payable {
-        address tokenIn;
-        assembly {
-            tokenIn := shr(96, calldataload(path.offset))
-        }
-        uint256 amountIn = _balanceOfThis(tokenIn);
-        if (amountIn == 0) revert NoBalance(); // revert if amount is zero
-
-        uint256 dexId = _preFundTrade(msg.sender, amountIn, path);
-        uint256 amountOut = swapExactIn(amountIn, dexId, msg.sender, msg.sender, path);
         // slippage check
         assembly {
             if lt(amountOut, minimumAmountOut) {

@@ -190,7 +190,7 @@ contract MarginDebtSwapTest is DeltaSetup {
 
         bytes memory swapPath = getDebtSwapExactOutSingle(assetFrom, borrowAsset, lenderId);
         uint256 maxIn = 0.01e18;
-        calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapAllOut.selector, maxIn, swapPath);
+        calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactOut.selector, uint256(0), maxIn, swapPath);
 
         vm.prank(user);
         IERC20All(debtAssetFrom).approveDelegation(brokerProxyAddress, maxIn);
@@ -398,7 +398,7 @@ contract MarginDebtSwapTest is DeltaSetup {
 
         bytes memory swapPath = getDebtSwapExactOutSingleV2(assetFrom, borrowAsset, lenderId);
         uint256 maxIn = 0.01e18;
-        calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapAllOut.selector, maxIn, swapPath);
+        calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactOut.selector, uint256(0), maxIn, swapPath);
 
         vm.prank(user);
         IERC20All(debtAssetFrom).approveDelegation(brokerProxyAddress, maxIn);
