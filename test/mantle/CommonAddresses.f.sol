@@ -196,6 +196,15 @@ contract AddressesMantle {
         return abi.encodePacked(tokenOut, fee, poolId, uint8(1), tokenIn, uint8(99));
     }
 
+    function getSpotExactOutMultiNativeIn(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
+        uint24 fee = DEX_FEE_STABLES;
+        uint8 poolId = FUSION_X;
+        data = abi.encodePacked(tokenOut, fee, poolId, uint8(1), USDT);
+        fee = DEX_FEE_LOW_HIGH;
+        poolId = IZUMI;
+        return abi.encodePacked(data, fee, poolId, uint8(1), tokenIn, uint8(0), uint8(99));
+    }
+
     function getOpenExactOutSingle(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
         uint24 fee = DEX_FEE_LOW;
         uint8 poolId = AGNI;

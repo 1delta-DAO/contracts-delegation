@@ -79,8 +79,87 @@ contract MarginOpenTest is DeltaSetup {
         assertApproxEqAbs(amountToSwap, balance, 1e7);
     }
 
+    function test_margin_mantle_spot_exact_out_native_in() external /** address user, uint8 lenderId */ {
+        address user = testUser;
+        vm.assume(user != address(0));
 
-     function test_margin_mantle_spot_exact_in_izi_reverted() external /** address user, uint8 lenderId */ {
+        address asset = WMNT;
+        address assetOut = USDT;
+
+
+        uint256 amountToSwap = 30.0e6;
+
+        bytes[] memory calls = new bytes[](4);
+        // calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, asset, amountToSwap);
+
+        bytes memory swapPath = getSpotExactOutSingle_izi(asset, assetOut);
+        uint256 maximumIn = 30.0e18;
+        vm.deal(user, maximumIn);
+        calls[0] = abi.encodeWithSelector(ILending.wrap.selector);
+        calls[1] = abi.encodeWithSelector(IFlashAggregator.swapExactOutSpotSelf.selector, amountToSwap, maximumIn, swapPath);
+        calls[2] = abi.encodeWithSelector(ILending.sweep.selector, assetOut);
+        calls[3] = abi.encodeWithSelector(ILending.unwrap.selector);
+        
+        vm.prank(user);
+        IERC20All(asset).approve(brokerProxyAddress, maximumIn);
+
+        uint256 inBalance = user.balance;
+        uint256 balance = IERC20All(assetOut).balanceOf(user);
+
+        vm.prank(user);
+        brokerProxy.multicall{value: maximumIn}(calls);
+
+        balance = IERC20All(assetOut).balanceOf(user) - balance;
+        inBalance = inBalance - user.balance;
+
+        // deposit 10, recieve 13
+        assertApproxEqAbs(20100460398190718408, inBalance, 1);
+        // izi can be unprecise
+        assertApproxEqAbs(amountToSwap, balance, 1e7);
+    }
+
+
+    function test_margin_mantle_spot_exact_out_native_in_multi() external /** address user, uint8 lenderId */ {
+        address user = testUser;
+        vm.assume(user != address(0));
+
+        address asset = WMNT;
+        address assetOut = USDC;
+
+
+        uint256 amountToSwap = 30.0e6;
+
+        bytes[] memory calls = new bytes[](4);
+        // calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, asset, amountToSwap);
+
+        bytes memory swapPath = getSpotExactOutMultiNativeIn(asset, assetOut);
+        uint256 maximumIn = 30.0e18;
+        vm.deal(user, maximumIn);
+        calls[0] = abi.encodeWithSelector(ILending.wrap.selector);
+        calls[1] = abi.encodeWithSelector(IFlashAggregator.swapExactOutSpotSelf.selector, amountToSwap, maximumIn, swapPath);
+        calls[2] = abi.encodeWithSelector(ILending.sweep.selector, assetOut);
+        calls[3] = abi.encodeWithSelector(ILending.unwrap.selector);
+        
+        vm.prank(user);
+        IERC20All(asset).approve(brokerProxyAddress, maximumIn);
+
+        uint256 inBalance = user.balance;
+        uint256 balance = IERC20All(assetOut).balanceOf(user);
+
+        vm.prank(user);
+        brokerProxy.multicall{value: maximumIn}(calls);
+
+        balance = IERC20All(assetOut).balanceOf(user) - balance;
+        inBalance = inBalance - user.balance;
+
+        // deposit 10, recieve 13
+        assertApproxEqAbs(20101429314690533657, inBalance, 1);
+        // izi can be unprecise
+        assertApproxEqAbs(amountToSwap, balance, 1e7);
+    }
+
+
+    function test_margin_mantle_spot_exact_in_izi_reverted() external /** address user, uint8 lenderId */ {
         address user = testUser;
         vm.assume(user != address(0));
 
