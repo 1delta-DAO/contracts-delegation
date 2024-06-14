@@ -41,3 +41,100 @@ foundryup
 Tests for Mantle: `forge test --match-test "mantle" -vv`
 
 Tests for LB: `forge test --match-test "mantle_lb" -vv`
+
+
+## Swap Architecture
+
+### Batching
+
+We employ a direct batch function that allows chaining multiple operations. The batching is tiggered via `deltaCompose(bytes calldata data)` and the input data is a compact bytes array encoded as follows. 
+
+| opId |op paramters| opId |op paramters| ...|
+|--------|-----------|--------|------------|------|
+| uint8 |bytes|uint8 |bytes|...|
+
+The length is encoded as a `uint16` which is enough for swap path types described below.
+The opertions are sequentially executed which prevents multicall usage (which saves gas due to the preventions of internal `delegatecall`s). 
+
+#### Operations
+
+| operation | id | parameters | param names |
+|--------|--------|--------|--------|
+| 0| Swap exact input | (uint256,address,uint16,bytes) | amount, receiver,pathLength, path|
+| 1| Swap exact output | (uint256,address,uint16,bytes) |amount, receiver,pathLength, path|
+| 3| Flash swap exact input | (uint256,address,uint16,bytes) |amount, receiver,pathLength, path|
+| 0x13| Deposit | (address,address,uint8,uint112) |asset, receiver,lenderId, amount|
+| 0x11| Borrow | (address,address,uint8,uint8,uint112) |asset, receiver,lenderId,mode, amount|
+| 0x17| Withdraw | (address,address,uint8,uint112) |asset, receiver,lenderId, amount|
+| 0x18| Repay | (address,address,uint8,uint8,uint112) |asset, receiver,lenderId, mode, amount|
+| 0x15| Transfer in | (address,address,uint112) |asset, receiver, amount|
+| 0x19| Wrap | (uint112) | amount|
+| 0x20| Unwrap | (address,uint112) | receiver, minimumAmount|
+| 0x22| Sweep | (address,address,uint112) |asset, receiver, minimumAmount|
+
+### Path encoding
+
+We follow the general approach of encoding actionIds, dexIds and params, sandwiched by tokens. This means, that for a route of tokens, eg.g `token0->token1->token2`, we specify the route as follows:
+
+|token in path| action|dex|parameters|token in path|action|dex|parameters|token in path|lender|payment option|
+|--------|-----------|--------|------------|--------|-----------|--------|------------|--------|----------|---------|
+| token0 | actionId0 | dexId0 | paramsDex0 | token1 | actionId1 | dexId1 | paramsDex1 | token2 | lenderId | payType |
+| address| uint8     | uint8  | bytes      | address| uint8     | uint8  | bytes      | address| uint8    | uint8   |
+
+The encoding of the parameters depends on the dexId provided, i.e. for Uniswap V3 types, it is the fee parameter, for curve the parameters are the swap indexes.
+
+### Action and pay type defininitions
+
+The **actions** are defined as follows. The actions are only relevant for within flash swap callbacks.
+
+|id| action|description|
+|--------|-----------|--------|
+| 0 | swap exact in simple  | Simple exact input swap, pay either with contract balance or from caller |
+| 1 | swap exact out simple | Simple exact out swap, allows payin g through lender or via conventional transfer |
+| 6 | deposit exact in | Deposits received funds, used for collateral swaps or margin open  |
+| 7 | repay stable exact in | repay received funds in stable mode (if supported) |
+| 8 | repay variable exact in | repay received funds in variable mode |
+| 3 | deposit exact out | deposits in exact out config |
+| 4 | repay stable exact out | repay received funds in stable mode   |
+| 5 | repay variable exact out | repay received funds in variable mode   |
+
+The **pay types** are defined as follows
+
+|id| pay type|description|
+|--------|-----------|--------|
+| 1 | borrow stable  | borrow to pay from a lender that has stable rate borrowing |
+| 2 | borrow variable | borrow  to pay with default mode (variable in most cases) |
+| 3 | withdraw collateral | withdraw collateral to pay  |
+| >4 | caller pays | pay from provided address (original caller or this contract)  |
+
+### Lender id
+
+The `lenderId` is a network-specific identifier for a lender.
+
+### Case single route
+
+- Direct transfers from caller to pool / pool to receiver are possible - this should make all of this compatible with FoT tokens
+- Enabled for both exactIn / exactOut swaps
+
+Caller --> pool --> pool --> receiver
+
+### Multi route
+
+- First, tokens are transferred from caller to contract
+- Then the routes are swapped internally
+- Finally, the tokens are transferred to the receiver
+
+Caller --> | pool --> pool |
+           | pool --> pool | --> receiver
+
+- This applies for exact in & exact out
+
+### Flash swaps
+
+- Ideal for single route margin trades
+- Allows multi-lender selection
+- Gas efficient for mid-sized swaps (e.g. on uni/curve combo)
+
+### Flash loan 
+
+- Can wrap any sequence of actions

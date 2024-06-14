@@ -2,7 +2,7 @@
 
 import "../AggregationQuoterMantle.sol";
 
-pragma solidity ^0.8.25;
+pragma solidity ^0.8.26;
 
 /**
  * Test quoter contract - exposes all internal functions
@@ -15,7 +15,6 @@ contract TestQuoterMantle is OneDeltaQuoterMantle {
     function _quoteWooFiExactIn(address _tokenIn, address _tokenOut, uint256 amountIn) public view returns (uint256 amountOut) {
         return super.quoteWOO(_tokenIn, _tokenOut, amountIn);
     }
-
 
     function _quoteStratumGeneral(uint256 indexIn, uint256 indexOut, uint256 subGroup, uint256 amountIn) public view returns (uint256 amountOut) {
         return super.quoteStratumGeneral(indexIn, indexOut, subGroup, amountIn);
@@ -114,13 +113,13 @@ contract TestQuoterMantle is OneDeltaQuoterMantle {
 
     /// @dev Returns the pool for the given token pair and fee.
     /// The pool contract may or may not exist.
-    function _v3TypePool(address tokenA, address tokenB, uint24 fee, uint256 _pId) public pure returns (ISwapPool pool) {
-        return super.v3TypePool(tokenA, tokenB, fee, _pId);
+    function _v3TypePool(address tokenA, address tokenB, uint24 fee, uint256 _pId) public pure returns (address pool) {
+        return address(super.v3TypePool(tokenA, tokenB, fee, _pId));
     }
 
     /// @dev Returns the pool for the given token pair and fee. The pool contract may or may not exist.
-    function _getiZiPool(address tokenA, address tokenB, uint24 fee) public pure returns (IiZiSwapPool pool) {
-        return super.getiZiPool(tokenA, tokenB, fee);
+    function _getiZiPool(address tokenA, address tokenB, uint24 fee) public pure returns (address pool) {
+        return address(super.getiZiPool(tokenA, tokenB, fee));
     }
 
     /// @dev gets uniswapV2 (and fork) pair addresses

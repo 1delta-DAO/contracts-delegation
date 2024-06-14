@@ -2,25 +2,30 @@
 pragma solidity ^0.8.0;
 
 interface IFlashAggregator {
+    /** COMPOSER */
+    function deltaCompose(bytes calldata data) external payable;
+
     /** MARGIN */
 
-    function flashSwapExactIn(uint256 amountIn, uint256 amountOutMinimum, bytes calldata path) external payable returns (uint256 amountOut);
+    function flashSwapExactIn(uint256 amountIn, uint256 amountOutMinimum, bytes calldata path) external payable;
 
-    function flashSwapExactOut(uint256 amountOut, uint256 amountInMaximum, bytes calldata path) external payable returns (uint256 amountIn);
+    function flashSwapExactOut(uint256 amountOut, uint256 amountInMaximum, bytes calldata path) external payable;
 
-    function flashSwapAllIn(uint256 amountOutMinimum, bytes calldata path) external payable returns (uint256 amountOut);
+    function flashSwapAllIn(uint256 amountOutMinimum, bytes calldata path) external payable;
 
-    function flashSwapAllOut(uint256 amountInMaximum, bytes calldata path) external payable returns (uint256 amountIn);
+    function flashSwapAllOut(uint256 amountInMaximum, bytes calldata path) external payable;
 
     /** SPOT */
 
-    function flashSwapExactInSimple(uint256 amountIn, uint256 amountOutMinimum, bytes calldata path) external payable returns (uint256 amountOut);
+    function flashSwapExactInSimple(uint256 amountIn, uint256 amountOutMinimum, bytes calldata path) external payable;
 
-    function swapExactOutSpot(uint256 amountOut, uint256 maximumAmountIn, bytes calldata path) external payable;
+    function swapExactOutSpot(uint256 amountOut, uint256 maximumAmountIn, address receiver, bytes calldata path) external payable;
 
     function swapExactOutSpotSelf(uint256 amountOut, uint256 maximumAmountIn, bytes calldata path) external payable;
 
-    function swapExactInSpot(uint256 amountIn, uint256 minimumAmountOut, bytes calldata path) external payable;
+    function swapExactInSpot(uint256 amountIn, uint256 minimumAmountOut, address receiver, bytes calldata path) external payable;
+
+    function swapExactInSpotSelf(uint256 amountIn, uint256 minimumAmountOut, bytes calldata path) external payable;
 
     function swapAllOutSpot(uint256 maximumAmountIn, uint8 lenderId, uint256 interestRateMode, bytes calldata path) external payable;
 

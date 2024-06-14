@@ -18,7 +18,6 @@ contract LendingTest is DeltaSetup {
 
         uint256 balanceBefore = IERC20All(collateralAsset).balanceOf(user);
         _deposit(asset, user, amountToDeposit, lenderId);
-
         uint256 balance = IERC20All(collateralAsset).balanceOf(user);
         assertApproxEqAbs(balance - balanceBefore, amountToDeposit, 0);
     }
@@ -102,7 +101,10 @@ contract LendingTest is DeltaSetup {
         calls[1] = abi.encodeWithSelector(ILending.deposit.selector, asset, user, lenderId);
 
         vm.prank(user);
+        uint gas = gasleft();
         brokerProxy.multicall(calls);
+        gas = gas - gasleft();
+        console.log("-------------------gas", gas);
     }
 
     function _withdraw(address asset, address collateralAsset, address user, uint256 amount, uint8 lenderId) internal {

@@ -191,7 +191,7 @@ contract MarginCollateralSwapTest is DeltaSetup {
 
         bytes memory swapPath = getCollateralSwapExactInSingle(asset, assetTo, lenderId);
         uint256 minimumOut = 29.9499e6;
-        calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapAllIn.selector, minimumOut, swapPath);
+        calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactIn.selector, uint256(0), minimumOut, swapPath);
 
         vm.prank(user);
         IERC20All(collateralAsset).approve(brokerProxyAddress, 1e20);
@@ -401,7 +401,7 @@ contract MarginCollateralSwapTest is DeltaSetup {
 
         bytes memory swapPath = getCollateralSwapExactInSingleV2(asset, assetTo, lenderId);
         uint256 minimumOut = 29.9399e6;
-        calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapAllIn.selector, minimumOut, swapPath);
+        calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactIn.selector, uint256(0), minimumOut, swapPath);
 
         vm.prank(user);
         IERC20All(collateralAsset).approve(brokerProxyAddress, 1e20);

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity ^0.8.25;
+pragma solidity ^0.8.26;
 
 /******************************************************************************\
 * Author: Achthar | 1delta 
@@ -11,12 +11,13 @@ import {WrappedNativeHandler} from "./WrappedNativeHandler.sol";
 import {SelfPermit} from "../../base/SelfPermit.sol";
 import {ILendingPool} from "./ILendingPool.sol";
 import {BaseLending} from "./BaseLending.sol";
+import {WithStorage} from "../../../storage/BrokerStorage.sol";
 
 /**
  * @title LendingInterface
  * @notice Adds money market and default transfer functions to margin trading - also includes permits
  */
-contract DeltaLendingInterfaceMantle is BaseLending, WrappedNativeHandler, SelfPermit {
+contract DeltaLendingInterfaceMantle is BaseLending, WrappedNativeHandler, SelfPermit, WithStorage {
     // constant pool
 
     constructor() {}

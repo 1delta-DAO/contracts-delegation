@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL 1.1
 
-pragma solidity ^0.8.25;
+pragma solidity ^0.8.26;
 
 /// @dev Helpers for moving tokens around.
 abstract contract TokenTransfer {
@@ -88,7 +88,7 @@ abstract contract TokenTransfer {
 
     function _transferEth() internal {
         assembly {
-            let bal := balance(address())
+            let bal := selfbalance()
             if not(iszero(bal)) {
                 if iszero(
                     call(
@@ -109,7 +109,7 @@ abstract contract TokenTransfer {
 
     function _transferEthTo(address recipient) internal {
         assembly {
-            let bal := balance(address())
+            let bal := selfbalance()
             if not(iszero(bal)) {
                 if iszero(
                     call(
@@ -129,6 +129,25 @@ abstract contract TokenTransfer {
     }
 
     // deposit native by just sending native to it
+    function _depositNativeAmount(uint256 amount) internal {
+        assembly {
+            if iszero(
+                call(
+                    gas(),
+                    WRAPPED_NATIVE,
+                    amount, // ETH to deposit
+                    0x0, // no input
+                    0x0, // input size = zero
+                    0x0, // output = empty
+                    0x0 // output size = zero
+                )
+            ) {
+                revert(0, 0) // revert when native transfer fails
+            }
+        }
+    }
+
+        // deposit native by just sending native to it
     function _depositNative() internal {
         assembly {
             if iszero(
