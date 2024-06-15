@@ -23,6 +23,16 @@ contract ComposerUtils {
         ); // 2 + 20 + 20 + 14 = 56 bytes
     }
 
+    function sweep(address asset, address receiver, uint256 amount) internal pure returns (bytes memory data) {
+        data = abi.encodePacked(
+            uint8(Commands.SWEEP),
+            asset,
+            receiver,
+            uint112(amount) //
+        ); // 2 + 20 + 20 + 14 = 56 bytes
+    }
+
+
     function wrap(uint256 amount) internal pure returns (bytes memory data) {
         data = abi.encodePacked(
             uint8(Commands.WRAP_NATIVE),

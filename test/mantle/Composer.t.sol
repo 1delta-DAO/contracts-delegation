@@ -553,7 +553,6 @@ contract ComposerTest is DeltaSetup, ComposerUtils {
         bool self
     ) internal view returns (bytes memory data) {
         uint8[] memory actions = new uint8[](pids.length);
-        if (!self) actions[0] = 10;
         data = abi.encodePacked(tokens[0]);
         for (uint i; i < pids.length; i++) {
             address pool = testQuoter._v3TypePool(tokens[i], tokens[i + 1], fees[i], pids[i]);
@@ -579,7 +578,6 @@ contract ComposerTest is DeltaSetup, ComposerUtils {
         data = abi.encodePacked(tokens[0]);
         for (uint i; i < pids.length; i++) {
             actions[i] = 1;
-            if (!self && i == (pids.length - 1)) actions[i] = 11;
             address pool = testQuoter._v3TypePool(tokens[i], tokens[i + 1], fees[i], pids[i]);
             data = abi.encodePacked(data, actions[i], pids[i], pool, fees[i], tokens[i + 1]);
         }
@@ -595,7 +593,6 @@ contract ComposerTest is DeltaSetup, ComposerUtils {
     ) internal view returns (bytes memory data) {
         address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
         uint8 action = 0;
-        if (!self) action = 10;
         return abi.encodePacked(tokenIn, action, poolId, pool, fee, tokenOut);
     }
 
@@ -608,7 +605,6 @@ contract ComposerTest is DeltaSetup, ComposerUtils {
     ) internal view returns (bytes memory data) {
         address pool = testQuoter._v3TypePool(tokenOut, tokenIn, fee, poolId);
         uint8 action = 1;
-        if (!self) action = 11;
         return abi.encodePacked(tokenOut, action, poolId, pool, fee, tokenIn, uint8(99));
     }
 

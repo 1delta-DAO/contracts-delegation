@@ -138,7 +138,7 @@ contract AddressesMantle {
     }
 
     function getOpenExactOutFlags() internal pure returns (uint8 flagStart, uint8 flagMiddle, uint8 flagEnd) {
-        return (3, 11, 2);
+        return (3, 1, 2);
     }
 
     function getCollateralSwapExactInFlags() internal pure returns (uint8 flagStart, uint8 flagMiddle, uint8 flagEnd) {
@@ -146,7 +146,7 @@ contract AddressesMantle {
     }
 
     function getCollateralSwapExactOutFlags() internal pure returns (uint8 flagStart, uint8 flagMiddle, uint8 flagEnd) {
-        return (3, 11, 3);
+        return (3, 1, 3);
     }
 
     function getCloseExactInFlags() internal pure returns (uint8 flagStart, uint8 flagMiddle, uint8 flagEnd) {
@@ -154,7 +154,7 @@ contract AddressesMantle {
     }
 
     function getCloseExactOutFlags() internal pure returns (uint8 flagStart, uint8 flagMiddle, uint8 flagEnd) {
-        return (5, 11, 3);
+        return (5, 1, 3);
     }
 
     function getDebtSwapExactInFlags() internal pure returns (uint8 flagStart, uint8 flagMiddle, uint8 flagEnd) {
@@ -162,7 +162,7 @@ contract AddressesMantle {
     }
 
     function getDebtSwapExactOutFlags() internal pure returns (uint8 flagStart, uint8 flagMiddle, uint8 flagEnd) {
-        return (5, 11, 2);
+        return (5, 1, 2);
     }
 
     /** we can use a pair struct to identify a functional path */

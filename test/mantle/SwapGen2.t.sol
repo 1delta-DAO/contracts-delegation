@@ -375,32 +375,32 @@ contract SwapGen2Test is DeltaSetup {
         uint16 fee = uint16(DEX_FEE_STABLES);
         uint8 poolId = AGNI;
         address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
-        return abi.encodePacked(tokenIn, uint8(10), poolId, pool, fee, tokenOut);
+        return abi.encodePacked(tokenIn, uint8(0), poolId, pool, fee, tokenOut);
     }
 
     function getSpotExactInSingleGen2FusionX(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint8 poolId = FUSION_X_V2;
         address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
-        return abi.encodePacked(tokenIn, uint8(10), poolId, pool, tokenOut);
+        return abi.encodePacked(tokenIn, uint8(0), poolId, pool, tokenOut);
     }
 
     function getSpotExactOutSingleGen2(address tokenOut, address tokenIn) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_STABLES);
         uint8 poolId = AGNI;
         address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
-        return abi.encodePacked(tokenIn, uint8(11), poolId, pool, fee, tokenOut);
+        return abi.encodePacked(tokenIn, uint8(1), poolId, pool, fee, tokenOut);
     }
 
     function getSpotExactOutSingleSolidlyGen2(address tokenOut, address tokenIn) internal view returns (bytes memory data) {
         uint8 poolId = CLEO_V1_STABLE;
         address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
-        return abi.encodePacked(tokenIn, uint8(11), poolId, pool, tokenOut);
+        return abi.encodePacked(tokenIn, uint8(1), poolId, pool, tokenOut);
     }
 
     function getSpotExactOutSingleV2Gen2(address tokenOut, address tokenIn) internal view returns (bytes memory data) {
         uint8 poolId = MERCHANT_MOE;
         address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
-        return abi.encodePacked(tokenIn, uint8(11), poolId, pool, tokenOut);
+        return abi.encodePacked(tokenIn, uint8(1), poolId, pool, tokenOut);
     }
 
     function getPathDataV3()
@@ -427,7 +427,7 @@ contract SwapGen2Test is DeltaSetup {
         pIds[0] = CLEOPATRA_CL;
         pIds[1] = AGNI;
         pIds[2] = AGNI;
-        actions[0] = 10;
+        actions[0] = 0;
         actions[1] = 0;
         actions[2] = 0;
         fees[0] = 250;
@@ -455,7 +455,7 @@ contract SwapGen2Test is DeltaSetup {
         pIds[2] = AGNI;
         actions[0] = 1;
         actions[1] = 1;
-        actions[2] = 11;
+        actions[2] = 1;
         fees[0] = 2500;
         fees[1] = 500;
         fees[2] = 500;
@@ -475,7 +475,7 @@ contract SwapGen2Test is DeltaSetup {
         pIds[0] = MERCHANT_MOE;
         pIds[1] = AGNI;
         pIds[2] = AGNI;
-        actions[0] = 10;
+        actions[0] = 0;
         actions[1] = 0;
         actions[2] = 0;
         fees[0] = 2500;
@@ -503,7 +503,7 @@ contract SwapGen2Test is DeltaSetup {
         pIds[1] = KTX;
         pIds[2] = MERCHANT_MOE;
         pIds[3] = MERCHANT_MOE;
-        actions[0] = 10;
+        actions[0] = 0;
         actions[1] = 0;
         actions[2] = 0;
         actions[3] = 0;
@@ -533,7 +533,7 @@ contract SwapGen2Test is DeltaSetup {
         pIds[2] = AGNI;
         actions[0] = 1;
         actions[1] = 1;
-        actions[2] = 11;
+        actions[2] = 1;
         fees[0] = 2500;
         fees[1] = 500;
         fees[2] = 500;

@@ -2,13 +2,14 @@
 pragma solidity ^0.8.19;
 
 import "./DeltaSetup.f.sol";
+import "./ComposerUtils.sol";
 
 /**
  * We test flash swap executions using exact in trade types (given that the first pool supports flash swaps)
  * These are always applied on margin, however, we make sure that we always get
  * The expected amounts. Exact out swaps always execute flash swaps whenever possible.
  */
-contract FlashSwapExacInTest is DeltaSetup {
+contract FlashSwapExacInTest is DeltaSetup, ComposerUtils {
     uint8 ZERO_8 = 0;
 
     function setUp() public virtual override {
@@ -29,29 +30,30 @@ contract FlashSwapExacInTest is DeltaSetup {
         address assetOut = WETH;
 
         uint256 amountIn = 1.0e18;
+        uint256 minimumOut = amountIn;
 
         uint256 quoted = testQuoter.quoteExactInput(getSpotExactInSingleStratumMETHQuoter(WETH), amountIn);
 
-        bytes[] memory calls = new bytes[](2);
-
         bytes memory swapPath = getSpotExactInSingleStratumMETH(asset);
-        uint256 minimumOut = amountIn;
-        calls[0] = abi.encodeWithSelector(
-            IFlashAggregator.flashSwapExactIn.selector, // 3 args
-            amountIn,
-            minimumOut,
+
+        bytes memory data = abi.encodePacked(
+            uint8(Commands.FLASH_SWAP_EXACT_IN),
+            encodeExactInParams(amountIn, minimumOut, true),
+            user,
+            uint16(swapPath.length), // begin agni data
             swapPath
         );
-
-        calls[1] = abi.encodeWithSelector(ILending.sweep.selector, assetOut);
+        data = abi.encodePacked(data, sweep(assetOut, user, 0));
         vm.prank(user);
         IERC20All(asset).approve(brokerProxyAddress, amountIn);
 
         uint256 assetBalance = IERC20All(asset).balanceOf(user);
 
         vm.prank(user);
-        brokerProxy.multicall(calls);
-
+        uint gas = gasleft();
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
+        gas = gas - gasleft();
+        console.log("gas", gas);
         // This amount should be positive if there is extractable arbitrage
         assetBalance = IERC20All(asset).balanceOf(user) - assetBalance;
 
@@ -72,32 +74,46 @@ contract FlashSwapExacInTest is DeltaSetup {
         uint256 amountIn = 1.0e18;
 
         uint256 quoted = testQuoter.quoteExactInput(getSpotExactInDoubleStratumMETHQuoterWithV2(WETH), amountIn);
-
-        bytes[] memory calls = new bytes[](3);
+        uint256 minimumOut = quoted;
 
         bytes memory swapPath = getSpotExactInDoubleStratumMETHV2(asset);
 
         // since we use MerchantMode, we expect a loss inn execution, we have to contribute this amount
         uint256 residual = quoted >= amountIn ? 0 : amountIn - quoted;
-        deal(asset, user, residual);
 
-        uint256 minimumOut = quoted;
-        calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, asset, residual);
-        calls[1] = abi.encodeWithSelector(
-            IFlashAggregator.flashSwapExactIn.selector, // 3 args
-            amountIn,
-            minimumOut,
+        bytes memory data = abi.encodePacked(
+            uint8(Commands.FLASH_SWAP_EXACT_IN),
+            encodeExactInParams(amountIn, minimumOut, true),
+            user,
+            uint16(swapPath.length), // begin agni data
             swapPath
         );
+        data = abi.encodePacked(
+            transferIn(
+                asset,
+                brokerProxyAddress, // transfer in
+                residual
+            ), //
+            data,
+            sweep(
+                assetOut,
+                user,
+                0 // no minOut
+            )
+        );
 
-        calls[2] = abi.encodeWithSelector(ILending.sweep.selector, assetOut);
+        deal(asset, user, residual);
+
         vm.prank(user);
         IERC20All(asset).approve(brokerProxyAddress, amountIn);
 
         uint256 assetBalance = IERC20All(asset).balanceOf(user);
 
         vm.prank(user);
-        brokerProxy.multicall(calls);
+        uint gas = gasleft();
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
+        gas = gas - gasleft();
+        console.log("gas", gas);
 
         // This amount should be positive if there is a loss
         assetBalance = assetBalance - IERC20All(asset).balanceOf(user);
@@ -120,29 +136,44 @@ contract FlashSwapExacInTest is DeltaSetup {
 
         uint256 quoted = testQuoter.quoteExactInput(getSpotExactInDoubleStratumMETHQuoterWithV2_3Pools(WETH), amountIn);
 
-        bytes[] memory calls = new bytes[](3);
-
         bytes memory swapPath = getSpotExactInDoubleStratumMETHV2_3Pool(asset);
 
         deal(asset, user, amountIn);
 
         uint256 minimumOut = quoted;
-        calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, asset, amountIn);
-        calls[1] = abi.encodeWithSelector(
-            IFlashAggregator.flashSwapExactIn.selector, // 3 args
-            amountIn,
-            minimumOut,
+
+        bytes memory data = abi.encodePacked(
+            uint8(Commands.FLASH_SWAP_EXACT_IN),
+            encodeExactInParams(amountIn, minimumOut, true),
+            user,
+            uint16(swapPath.length), // begin agni data
             swapPath
         );
+        data = abi.encodePacked(
+            transferIn(
+                asset,
+                brokerProxyAddress, // transfer in
+                amountIn
+            ), //
+            data,
+            sweep(
+                assetOut,
+                user,
+                0 // no minOut
+            )
+        );
 
-        calls[2] = abi.encodeWithSelector(ILending.sweep.selector, assetOut);
+        // calls[2] = abi.encodeWithSelector(ILending.sweep.selector, assetOut);
         vm.prank(user);
         IERC20All(asset).approve(brokerProxyAddress, amountIn);
 
         uint256 assetBalance = IERC20All(assetOut).balanceOf(user);
 
         vm.prank(user);
-        brokerProxy.multicall(calls);
+        uint gas = gasleft();
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
+        gas = gas - gasleft();
+        console.log("gas", gas);
 
         assetBalance = IERC20All(assetOut).balanceOf(user) - assetBalance;
 
@@ -163,29 +194,41 @@ contract FlashSwapExacInTest is DeltaSetup {
 
         uint256 quoted = testQuoter.quoteExactInput(getSpotExactInDoubleStratumMETHQuoterWithV2_3Pools_V3Last(WETH), amountIn);
 
-        bytes[] memory calls = new bytes[](3);
-
         bytes memory swapPath = getSpotExactInDoubleStratumMETHV2_3Pool_V3Last(asset);
 
         deal(asset, user, amountIn);
 
         uint256 minimumOut = quoted;
-        calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, asset, amountIn);
-        calls[1] = abi.encodeWithSelector(
-            IFlashAggregator.flashSwapExactIn.selector, // 3 args
-            amountIn,
-            minimumOut,
+        bytes memory data = abi.encodePacked(
+            uint8(Commands.FLASH_SWAP_EXACT_IN),
+            encodeExactInParams(amountIn, minimumOut, true),
+            user,
+            uint16(swapPath.length), // begin agni data
             swapPath
         );
-
-        calls[2] = abi.encodeWithSelector(ILending.sweep.selector, assetOut);
+        data = abi.encodePacked(
+            transferIn(
+                asset,
+                brokerProxyAddress, // transfer in
+                amountIn
+            ), //
+            data,
+            sweep(
+                assetOut,
+                user,
+                0 // no minOut
+            )
+        );
         vm.prank(user);
         IERC20All(asset).approve(brokerProxyAddress, amountIn);
 
         uint256 assetBalance = IERC20All(assetOut).balanceOf(user);
 
         vm.prank(user);
-        brokerProxy.multicall(calls);
+        uint gas = gasleft();
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
+        gas = gas - gasleft();
+        console.log("gas", gas);
 
         assetBalance = IERC20All(assetOut).balanceOf(user) - assetBalance;
 
@@ -207,29 +250,42 @@ contract FlashSwapExacInTest is DeltaSetup {
 
         uint256 quoted = testQuoter.quoteExactInput(getSpotExactInDoubleStratumMETHQuoterWithV2_3Pools(WETH), amountIn);
 
-        bytes[] memory calls = new bytes[](3);
-
         bytes memory swapPath = getSpotExactInDoubleStratumMETHV2_3Pool(asset);
 
         deal(asset, user, amountIn);
 
         uint256 minimumOut = quoted;
-        calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, asset, amountIn);
-        calls[1] = abi.encodeWithSelector(
-            IFlashAggregator.flashSwapExactIn.selector, // 3 args
-            amountIn,
-            minimumOut,
+        bytes memory data = abi.encodePacked(
+            uint8(Commands.FLASH_SWAP_EXACT_IN),
+            encodeExactInParams(amountIn, minimumOut, true),
+            user,
+            uint16(swapPath.length), // begin agni data
             swapPath
         );
+        data = abi.encodePacked(
+            transferIn(
+                asset,
+                brokerProxyAddress, // transfer in
+                amountIn
+            ), //
+            data,
+            sweep(
+                assetOut,
+                user,
+                0 // no minOut
+            )
+        );
 
-        calls[2] = abi.encodeWithSelector(ILending.sweep.selector, assetOut);
         vm.prank(user);
         IERC20All(asset).approve(brokerProxyAddress, amountIn);
 
         uint256 assetBalance = IERC20All(assetOut).balanceOf(user);
 
         vm.prank(user);
-        brokerProxy.multicall(calls);
+        uint gas = gasleft();
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
+        gas = gas - gasleft();
+        console.log("gas", gas);
 
         assetBalance = IERC20All(assetOut).balanceOf(user) - assetBalance;
 
@@ -246,29 +302,42 @@ contract FlashSwapExacInTest is DeltaSetup {
 
         uint256 quoted = testQuoter.quoteExactInput(getSpotExactInDoubleStratumMETHQuoterWithV2_3Pools_V3Last(WETH), amountIn);
 
-        bytes[] memory calls = new bytes[](3);
-
         bytes memory swapPath = getSpotExactInDoubleStratumMETHV2_3Pool_V3Last(asset);
 
         deal(asset, user, amountIn);
 
         uint256 minimumOut = quoted;
-        calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, asset, amountIn);
-        calls[1] = abi.encodeWithSelector(
-            IFlashAggregator.flashSwapExactIn.selector, // 3 args
-            amountIn,
-            minimumOut,
+        bytes memory data = abi.encodePacked(
+            uint8(Commands.FLASH_SWAP_EXACT_IN),
+            encodeExactInParams(amountIn, minimumOut, true),
+            user,
+            uint16(swapPath.length), // begin agni data
             swapPath
         );
+        data = abi.encodePacked(
+            transferIn(
+                asset,
+                brokerProxyAddress, // transfer in
+                amountIn
+            ), //
+            data,
+            sweep(
+                assetOut,
+                user,
+                0 // no minOut
+            )
+        );
 
-        calls[2] = abi.encodeWithSelector(ILending.sweep.selector, assetOut);
         vm.prank(user);
         IERC20All(asset).approve(brokerProxyAddress, amountIn);
 
         uint256 assetBalance = IERC20All(assetOut).balanceOf(user);
 
         vm.prank(user);
-        brokerProxy.multicall(calls);
+        uint gas = gasleft();
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
+        gas = gas - gasleft();
+        console.log("gas", gas);
 
         assetBalance = IERC20All(assetOut).balanceOf(user) - assetBalance;
 

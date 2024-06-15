@@ -268,7 +268,7 @@ contract Composer is DeltaFlashAggregatorMantle {
                         }
                         currentOffset := add(currentOffset, calldataLength)
                     }
-                    flashSwapExactInInternal(amountIn, minimumAmountOut, opdata);
+                    flashSwapExactInInternal(amountIn, minimumAmountOut, payer, opdata);
                 } else if (operation == Commands.FLASH_SWAP_EXACT_OUT) {
                     ////////////////////////////////////////////////////
                     // Always uses a flash swap when possible

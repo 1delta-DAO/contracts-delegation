@@ -37,7 +37,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             amountIn = _callerCollateralBalance(tokenIn, getLender(path));
             if (amountIn == 0) revert NoBalance();
         }
-        flashSwapExactInInternal(amountIn, amountOutMinimum, path);
+        flashSwapExactInInternal(amountIn, amountOutMinimum, msg.sender, path);
     }
 
     // Exact Output Swap - The path parameters determine the lending actions
@@ -538,7 +538,6 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         bytes calldata _data
     ) private {
         uint256 tradeId;
-        bool preventSelfPayment;
         address payer;
         uint256 maximumAmount;
         assembly {
@@ -575,17 +574,6 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
 
             // use tradeId as tradetype
             tradeId := and(shr(88, firstWord) , UINT8_MASK)
-
-            // 10 (11) means that we are paying from the cache in an exact input (output)
-            // scenario                
-            if eq(tradeId, 10) {
-                preventSelfPayment := 1
-                tradeId := 0
-            }        
-            if eq(tradeId, 11) {
-                preventSelfPayment := 1
-                tradeId := 1
-            }
         }
         ////////////////////////////////////////////////////
         // Exact input base swap handling
@@ -630,8 +618,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 }
                 
             }
-            if(preventSelfPayment) _transferERC20TokensFrom(tokenIn, payer, msg.sender, tradeId);
-            else _transferERC20Tokens(tokenIn, msg.sender, tradeId);
+            payConventional(tokenIn, payer, msg.sender, tradeId);
             return;
         }
         ////////////////////////////////////////////////////
@@ -658,7 +645,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 // pay the pool
                 handlePayPool(
                     tokenOut,
-                    preventSelfPayment ? payer : address(this),
+                    payer,
                     msg.sender,
                     payType,
                     amountToPay,
@@ -1043,7 +1030,6 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         bytes calldata data
     ) private {
         uint256 tradeId;
-        bool preventSelfPayment;
         uint256 refAmount;
         address payer;
         // the fee parameter in the path can be ignored for validating a V2 pool
@@ -1080,17 +1066,6 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
 
             // use tradeId as tradetype
             tradeId := and(shr(88, firstWord) , UINT8_MASK)
-
-            // 10 (11) means that we are paying from the cache in an exact input (output)
-            // scenario                
-            if eq(tradeId, 10) {
-                preventSelfPayment := 1
-                tradeId := 0
-            }        
-            if eq(tradeId, 11) {
-                preventSelfPayment := 1
-                tradeId := 1
-            }
         }
         // exact in is handled outside a callback
         // however, if calldata is provided, the pool is paid here
@@ -1134,8 +1109,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 }
             }
             amountToSwap = refAmount & UINT128_MASK;
-            if(preventSelfPayment) _transferERC20TokensFrom(payer, tokenIn, msg.sender, amountToSwap);
-            else _transferERC20Tokens(tokenIn, msg.sender, amountToSwap);
+            payConventional(tokenIn, payer, msg.sender, amountToSwap);
             return;
         } else if (tradeId == 1) {
             assembly {
@@ -1166,7 +1140,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 // pay the pool
                 handlePayPool(
                     tokenOut,
-                    preventSelfPayment ? payer : address(this),
+                    payer,
                     msg.sender,
                     payType,
                     referenceAmount,
@@ -1547,6 +1521,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
     function flashSwapExactInInternal(
         uint256 amountIn,
         uint256 amountOutMinimum,
+        address payer,
         bytes calldata path
     ) internal {
         // fetch the pool poolId from the path
@@ -1585,7 +1560,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             _swapUniswapV3PoolExactIn(
                 amountIn,
                 amountOutMinimum,
-                msg.sender,
+                payer,
                 reciever,
                 path
             );
@@ -1621,7 +1596,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             _swapIZIPoolExactIn(
                 uint128(amountIn),
                 amountOutMinimum,
-                msg.sender,
+                payer,
                 reciever,
                 path
             );
@@ -1631,7 +1606,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             swapUniV2ExactInComplete(
                 amountIn,
                 amountOutMinimum, // we need to forward the amountMin
-                msg.sender,
+                payer,
                 address(this), // receiver has to be this address
                 true, // use flash swap
                 path
@@ -1708,13 +1683,76 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 _withdraw(token, receiver, value, lenderId);
             } 
         } else {
-            // otherwise, just transfer it from cached address
-            if (payer == address(this)) {
-                // pay with tokens already in the contract (for the exact input multihop case)
-                _transferERC20Tokens(token, receiver, value);
-            } else {
-                // pull payment
-                _transferERC20TokensFrom(token, payer, receiver, value);
+            payConventional(token, payer, receiver, value);
+        }
+    }
+
+
+    function payConventional(address underlying,address payer, address receiver, uint256 amount) internal {
+        assembly {
+            switch eq(payer, address())
+            case 0 {
+                let ptr := mload(0x40) // free memory pointer
+
+                // selector for transferFrom(address,address,uint256)
+                mstore(ptr, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
+                mstore(add(ptr, 0x04), payer)
+                mstore(add(ptr, 0x24), receiver)
+                mstore(add(ptr, 0x44), amount)
+
+                let success := call(gas(), underlying, 0, ptr, 0x64, ptr, 32)
+
+                let rdsize := returndatasize()
+
+                // Check for ERC20 success. ERC20 tokens should return a boolean,
+                // but some don't. We accept 0-length return data as success, or at
+                // least 32 bytes that starts with a 32-byte boolean true.
+                success := and(
+                    success, // call itself succeeded
+                    or(
+                        iszero(rdsize), // no return data, or
+                        and(
+                            iszero(lt(rdsize, 32)), // at least 32 bytes
+                            eq(mload(ptr), 1) // starts with uint256(1)
+                        )
+                    )
+                )
+
+                if iszero(success) {
+                    returndatacopy(ptr, 0, rdsize)
+                    revert(ptr, rdsize)
+                }
+            }
+            default {
+                let ptr := mload(0x40) // free memory pointer
+
+                // selector for transfer(address,uint256)
+                mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+                mstore(add(ptr, 0x04), receiver)
+                mstore(add(ptr, 0x24), amount)
+
+                let success := call(gas(), underlying, 0, ptr, 0x44, ptr, 32)
+
+                let rdsize := returndatasize()
+
+                // Check for ERC20 success. ERC20 tokens should return a boolean,
+                // but some don't. We accept 0-length return data as success, or at
+                // least 32 bytes that starts with a 32-byte boolean true.
+                success := and(
+                    success, // call itself succeeded
+                    or(
+                        iszero(rdsize), // no return data, or
+                        and(
+                            iszero(lt(rdsize, 32)), // at least 32 bytes
+                            eq(mload(ptr), 1) // starts with uint256(1)
+                        )
+                    )
+                )
+
+                if iszero(success) {
+                    returndatacopy(ptr, 0, rdsize)
+                    revert(ptr, rdsize)
+                }
             }
         }
     }
