@@ -340,7 +340,7 @@ contract SwapGen2Test is DeltaSetup, ComposerUtils {
         uint16 fee = uint16(DEX_FEE_STABLES);
         uint8 poolId = AGNI;
         address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
-        return abi.encodePacked(tokenIn, uint8(6), poolId, pool, fee, tokenOut, lenderId, uint8(2));
+        return abi.encodePacked(tokenIn, uint8(3), poolId, pool, fee, tokenOut, lenderId, uint8(2));
     }
 
     function getPathDataV3() internal view returns (address[] memory tokens, uint8[] memory actions, uint8[] memory pIds, uint16[] memory fees) {
@@ -357,7 +357,7 @@ contract SwapGen2Test is DeltaSetup, ComposerUtils {
         pIds[0] = FUSION_X;
         pIds[1] = AGNI;
         pIds[2] = AGNI;
-        actions[0] = 6;
+        actions[0] = 3;
         actions[1] = 0;
         actions[2] = 0;
         fees[0] = 2500;
@@ -379,7 +379,7 @@ contract SwapGen2Test is DeltaSetup, ComposerUtils {
         pIds[0] = MERCHANT_MOE;
         pIds[1] = AGNI;
         pIds[2] = AGNI;
-        actions[0] = 6;
+        actions[0] = 3;
         actions[1] = 0;
         actions[2] = 0;
         fees[0] = 2500;
@@ -405,7 +405,7 @@ contract SwapGen2Test is DeltaSetup, ComposerUtils {
         pIds[0] = MERCHANT_MOE;
         pIds[1] = AGNI;
         pIds[2] = MERCHANT_MOE;
-        actions[0] = 6;
+        actions[0] = 3;
         actions[1] = 0;
         actions[2] = 0;
         fees[0] = 2500;

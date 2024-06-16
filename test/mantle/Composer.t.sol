@@ -150,15 +150,13 @@ contract ComposerTest is DeltaSetup, ComposerUtils {
             assetIn,
             assetOut,
             AGNI,
-            uint16(DEX_FEE_STABLES),
-            false //
+            uint16(DEX_FEE_STABLES) //
         );
         bytes memory dataFusion = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
             FUSION_X,
-            uint16(DEX_FEE_STABLES),
-            false //
+            uint16(DEX_FEE_STABLES) //
         );
 
         bytes memory data = abi.encodePacked(
@@ -239,8 +237,7 @@ contract ComposerTest is DeltaSetup, ComposerUtils {
             assetIn,
             assetOut,
             AGNI,
-            uint16(DEX_FEE_LOW),
-            true //
+            uint16(DEX_FEE_LOW) //
         );
         bytes memory dataFusion;
         {
@@ -249,7 +246,7 @@ contract ComposerTest is DeltaSetup, ComposerUtils {
                 uint8[] memory pids, //
                 uint16[] memory fees
             ) = getNativeToWeth();
-            dataFusion = getSpotExactInMultiGen2(tks, pids, fees, true);
+            dataFusion = getSpotExactInMultiGen2(tks, pids, fees);
         }
         bytes memory data = abi.encodePacked(
             uint8(Commands.SWAP_EXACT_IN),
@@ -285,8 +282,7 @@ contract ComposerTest is DeltaSetup, ComposerUtils {
             assetIn,
             assetOut,
             AGNI,
-            uint16(DEX_FEE_LOW), //
-            false
+            uint16(DEX_FEE_LOW) //
         );
         bytes memory dataFusion;
         {
@@ -295,7 +291,7 @@ contract ComposerTest is DeltaSetup, ComposerUtils {
                 uint8[] memory pids, //
                 uint16[] memory fees
             ) = getNativeToWeth();
-            dataFusion = getSpotExactOutMultiGen2(tks, pids, fees, false);
+            dataFusion = getSpotExactOutMultiGen2(tks, pids, fees);
         }
         bytes memory data = abi.encodePacked(
             uint8(Commands.SWAP_EXACT_OUT),
@@ -344,8 +340,7 @@ contract ComposerTest is DeltaSetup, ComposerUtils {
             assetIn,
             assetOut,
             AGNI,
-            uint16(DEX_FEE_LOW), //
-            true
+            uint16(DEX_FEE_LOW) //
         );
         bytes memory dataFusion;
         {
@@ -354,7 +349,7 @@ contract ComposerTest is DeltaSetup, ComposerUtils {
                 uint8[] memory pids, //
                 uint16[] memory fees
             ) = getWethToNative();
-            dataFusion = getSpotExactOutMultiGen2(tks, pids, fees, true);
+            dataFusion = getSpotExactOutMultiGen2(tks, pids, fees);
         }
         bytes memory data = abi.encodePacked(
             uint8(Commands.SWAP_EXACT_OUT),
@@ -400,8 +395,7 @@ contract ComposerTest is DeltaSetup, ComposerUtils {
             assetIn,
             assetOut,
             AGNI,
-            uint16(DEX_FEE_LOW),
-            false //
+            uint16(DEX_FEE_LOW) //
         );
         bytes memory dataFusion;
         {
@@ -410,7 +404,7 @@ contract ComposerTest is DeltaSetup, ComposerUtils {
                 uint8[] memory pids, //
                 uint16[] memory fees
             ) = getWethToNative();
-            dataFusion = getSpotExactInMultiGen2(tks, pids, fees, false);
+            dataFusion = getSpotExactInMultiGen2(tks, pids, fees);
         }
         bytes memory data = abi.encodePacked(
             uint8(Commands.SWAP_EXACT_IN),
@@ -459,15 +453,13 @@ contract ComposerTest is DeltaSetup, ComposerUtils {
             assetIn,
             assetOut,
             AGNI,
-            uint16(DEX_FEE_STABLES),
-            true //
+            uint16(DEX_FEE_STABLES) //
         );
         bytes memory dataFusion = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
             FUSION_X,
-            uint16(DEX_FEE_STABLES),
-            true //
+            uint16(DEX_FEE_STABLES) //
         );
 
         bytes memory transfer = transferIn(
@@ -512,15 +504,13 @@ contract ComposerTest is DeltaSetup, ComposerUtils {
             assetIn,
             assetOut,
             AGNI,
-            uint16(DEX_FEE_STABLES),
-            false //
+            uint16(DEX_FEE_STABLES) //
         );
         bytes memory dataFusion = getSpotExactOutSingleGen2(
             assetIn,
             assetOut,
             FUSION_X,
-            uint16(DEX_FEE_STABLES),
-            false //
+            uint16(DEX_FEE_STABLES) //
         );
 
         bytes memory data = abi.encodePacked(
@@ -549,8 +539,7 @@ contract ComposerTest is DeltaSetup, ComposerUtils {
     function getSpotExactInMultiGen2(
         address[] memory tokens,
         uint8[] memory pids,
-        uint16[] memory fees,
-        bool self
+        uint16[] memory fees
     ) internal view returns (bytes memory data) {
         uint8[] memory actions = new uint8[](pids.length);
         data = abi.encodePacked(tokens[0]);
@@ -571,13 +560,12 @@ contract ComposerTest is DeltaSetup, ComposerUtils {
     function getSpotExactOutMultiGen2(
         address[] memory tokens,
         uint8[] memory pids,
-        uint16[] memory fees,
-        bool self
+        uint16[] memory fees
     ) internal view returns (bytes memory data) {
         uint8[] memory actions = new uint8[](pids.length);
         data = abi.encodePacked(tokens[0]);
         for (uint i; i < pids.length; i++) {
-            actions[i] = 1;
+            actions[i] = 0;
             address pool = testQuoter._v3TypePool(tokens[i], tokens[i + 1], fees[i], pids[i]);
             data = abi.encodePacked(data, actions[i], pids[i], pool, fees[i], tokens[i + 1]);
         }
@@ -588,8 +576,7 @@ contract ComposerTest is DeltaSetup, ComposerUtils {
         address tokenIn,
         address tokenOut,
         uint8 poolId,
-        uint16 fee,
-        bool self
+        uint16 fee
     ) internal view returns (bytes memory data) {
         address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
         uint8 action = 0;
@@ -600,11 +587,10 @@ contract ComposerTest is DeltaSetup, ComposerUtils {
         address tokenIn,
         address tokenOut,
         uint8 poolId,
-        uint16 fee,
-        bool self
+        uint16 fee
     ) internal view returns (bytes memory data) {
         address pool = testQuoter._v3TypePool(tokenOut, tokenIn, fee, poolId);
-        uint8 action = 1;
+        uint8 action = 0;
         return abi.encodePacked(tokenOut, action, poolId, pool, fee, tokenIn, uint8(99));
     }
 

@@ -134,35 +134,35 @@ contract AddressesMantle {
     /** TRADE TYPE FLAG GETTERS */
 
     function getOpenExactInFlags() internal pure returns (uint8 flagStart, uint8 flagMiddle, uint8 flagEnd) {
-        return (6, 0, 2);
+        return (3, 0, 2);
     }
 
     function getOpenExactOutFlags() internal pure returns (uint8 flagStart, uint8 flagMiddle, uint8 flagEnd) {
-        return (3, 1, 2);
+        return (3, 0, 2);
     }
 
     function getCollateralSwapExactInFlags() internal pure returns (uint8 flagStart, uint8 flagMiddle, uint8 flagEnd) {
-        return (6, 0, 3);
+        return (3, 0, 3);
     }
 
     function getCollateralSwapExactOutFlags() internal pure returns (uint8 flagStart, uint8 flagMiddle, uint8 flagEnd) {
-        return (3, 1, 3);
+        return (3, 0, 3);
     }
 
     function getCloseExactInFlags() internal pure returns (uint8 flagStart, uint8 flagMiddle, uint8 flagEnd) {
-        return (8, 0, 3);
+        return (2, 0, 3);
     }
 
     function getCloseExactOutFlags() internal pure returns (uint8 flagStart, uint8 flagMiddle, uint8 flagEnd) {
-        return (5, 1, 3);
+        return (2, 0, 3);
     }
 
     function getDebtSwapExactInFlags() internal pure returns (uint8 flagStart, uint8 flagMiddle, uint8 flagEnd) {
-        return (8, 0, 2);
+        return (2, 0, 2);
     }
 
     function getDebtSwapExactOutFlags() internal pure returns (uint8 flagStart, uint8 flagMiddle, uint8 flagEnd) {
-        return (5, 1, 2);
+        return (2, 0, 2);
     }
 
     /** we can use a pair struct to identify a functional path */

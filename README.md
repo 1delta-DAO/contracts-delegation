@@ -76,12 +76,13 @@ The opertions are sequentially executed which prevents multicall usage (which sa
 
 We follow the general approach of encoding actionIds, dexIds and params, sandwiched by tokens. This means, that for a route of tokens, eg.g `token0->token1->token2`, we specify the route as follows:
 
-|token in path| action|dex|parameters|token in path|action|dex|parameters|token in path|lender|payment option|
+|token in path| action|dex|parameters|token in path|action|dex|parameters|token in path|_lender_|_payment option_|
 |--------|-----------|--------|------------|--------|-----------|--------|------------|--------|----------|---------|
 | token0 | actionId0 | dexId0 | paramsDex0 | token1 | actionId1 | dexId1 | paramsDex1 | token2 | lenderId | payType |
 | address| uint8     | uint8  | bytes      | address| uint8     | uint8  | bytes      | address| uint8    | uint8   |
 
 The encoding of the parameters depends on the dexId provided, i.e. for Uniswap V3 types, it is the fee parameter, for curve the parameters are the swap indexes.
+It is highly important to note that the payment option and lenderId must be attached, even if they are not used, otherwise, the config will default to some values that the caller might not expect.
 
 ### Action and pay type defininitions
 
@@ -89,23 +90,20 @@ The **actions** are defined as follows. The actions are only relevant for within
 
 |id| action|description|
 |--------|-----------|--------|
-| 0 | swap exact in simple  | Simple exact input swap, pay either with contract balance or from caller |
-| 1 | swap exact out simple | Simple exact out swap, allows payin g through lender or via conventional transfer |
-| 6 | deposit exact in | Deposits received funds, used for collateral swaps or margin open  |
-| 7 | repay stable exact in | repay received funds in stable mode (if supported) |
-| 8 | repay variable exact in | repay received funds in variable mode |
-| 3 | deposit exact out | deposits in exact out config |
-| 4 | repay stable exact out | repay received funds in stable mode   |
-| 5 | repay variable exact out | repay received funds in variable mode   |
+| 0 | swap simple  | Simple exact input swap, pay either with contract balance or from caller |
+| 1 | repay stable |
+| 2 | repay variable  |
+| 3 | deposit |
 
 The **pay types** are defined as follows
 
 |id| pay type|description|
 |--------|-----------|--------|
+| 0 | caller pays  | pay from provided address (original caller or this contract) |
 | 1 | borrow stable  | borrow to pay from a lender that has stable rate borrowing |
 | 2 | borrow variable | borrow  to pay with default mode (variable in most cases) |
 | 3 | withdraw collateral | withdraw collateral to pay  |
-| >4 | caller pays | pay from provided address (original caller or this contract)  |
+| >4 | unused | so far unused, will likely be extennded for permit2  |
 
 ### Lender id
 

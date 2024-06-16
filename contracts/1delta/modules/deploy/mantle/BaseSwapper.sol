@@ -21,21 +21,6 @@ import {ExoticSwapper} from "./swappers/Exotic.sol";
  *             Solidly:121 - 130
  */
 abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
-    constructor() {}
-
-    /**
-     * Get the last token from path calldata for the margin case
-     * As such, we assume that 2 flags (lender & payConfig) preceed
-     * The data.
-     * @param data input data
-     * @return token address
-     */
-    function getLastToken(bytes calldata data) internal pure returns (address token) {
-        assembly {
-            token := shr(96, calldataload(add(data.offset, sub(data.length, 22))))
-        }
-    }
-
 
     /**
      * Fund the first pool for self funded DEXs like Uni V2, GMX, LB, WooFi and Solidly V2 (dexId >= 100) 

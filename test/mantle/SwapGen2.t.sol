@@ -388,19 +388,19 @@ contract SwapGen2Test is DeltaSetup {
         uint16 fee = uint16(DEX_FEE_STABLES);
         uint8 poolId = AGNI;
         address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
-        return abi.encodePacked(tokenIn, uint8(1), poolId, pool, fee, tokenOut);
+        return abi.encodePacked(tokenIn, uint8(0), poolId, pool, fee, tokenOut);
     }
 
     function getSpotExactOutSingleSolidlyGen2(address tokenOut, address tokenIn) internal view returns (bytes memory data) {
         uint8 poolId = CLEO_V1_STABLE;
         address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
-        return abi.encodePacked(tokenIn, uint8(1), poolId, pool, tokenOut);
+        return abi.encodePacked(tokenIn, uint8(0), poolId, pool, tokenOut);
     }
 
     function getSpotExactOutSingleV2Gen2(address tokenOut, address tokenIn) internal view returns (bytes memory data) {
         uint8 poolId = MERCHANT_MOE;
         address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
-        return abi.encodePacked(tokenIn, uint8(1), poolId, pool, tokenOut);
+        return abi.encodePacked(tokenIn, uint8(0), poolId, pool, tokenOut);
     }
 
     function getPathDataV3()
@@ -453,9 +453,9 @@ contract SwapGen2Test is DeltaSetup {
         pIds[0] = FUSION_X;
         pIds[1] = AGNI;
         pIds[2] = AGNI;
-        actions[0] = 1;
-        actions[1] = 1;
-        actions[2] = 1;
+        actions[0] = 0;
+        actions[1] = 0;
+        actions[2] = 0;
         fees[0] = 2500;
         fees[1] = 500;
         fees[2] = 500;
@@ -531,9 +531,9 @@ contract SwapGen2Test is DeltaSetup {
         pIds[0] = MERCHANT_MOE;
         pIds[1] = AGNI;
         pIds[2] = AGNI;
-        actions[0] = 1;
-        actions[1] = 1;
-        actions[2] = 1;
+        actions[0] = 0;
+        actions[1] = 0;
+        actions[2] = 0;
         fees[0] = 2500;
         fees[1] = 500;
         fees[2] = 500;
