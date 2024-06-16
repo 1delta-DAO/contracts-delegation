@@ -31,7 +31,6 @@ contract DeltaFlashAggregatorMantle is MarginTrading {
 
     /**
      * @notice A simple exact input spot swap using internal callbacks. 
-     * Variant that can be called as is provided the path tradeId starts with 10
      */
     function swapExactInSpot(
         uint256 amountIn,

@@ -341,6 +341,9 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
         }
         // WOO Fi
         else if (dexId == 150) {
+            address tokenIn;
+            address tokenOut;
+            address pool;
             assembly {
                 switch lt(path.length, 64)
                 case 1 { currentReceiver := receiver}
@@ -365,11 +368,6 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
                         currentReceiver := address()
                     }
                 }
-            }
-            address tokenIn;
-            address tokenOut;
-            address pool;
-            assembly {
                 tokenIn := shr(96,  calldataload(path.offset))
                 tokenOut := shr(96, calldataload(add(path.offset, 42)))
                 pool := shr(96, calldataload(add(path.offset, 22)))
@@ -388,6 +386,9 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
         }
         // Moe LB
         else if (dexId == 151) {
+            address tokenIn;
+            address tokenOut;
+            address pair;
             assembly {
                 switch lt(path.length, 64)
                 case 1 { currentReceiver := receiver}
@@ -412,11 +413,6 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
                         currentReceiver := address()
                     }
                 }
-            }
-            address tokenIn;
-            address tokenOut;
-            address pair;
-            assembly {
                 tokenIn := shr(96, calldataload(path.offset))
                 tokenOut := shr(96, calldataload(add(path.offset, 42)))
                 pair := shr(96, calldataload(add(path.offset, 22)))
@@ -433,6 +429,9 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
         } 
         // GMX
         else if(dexId == 152) {
+            address tokenIn;
+            address tokenOut;
+            address vault;
             assembly {
                 switch lt(path.length, 64)
                 case 1 { currentReceiver := receiver}
@@ -457,11 +456,6 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
                         currentReceiver := address()
                     }
                 }
-            }
-            address tokenIn;
-            address tokenOut;
-            address vault;
-            assembly {
                 tokenIn := shr(96, calldataload(path.offset))
                 tokenOut := shr(96, calldataload(add(path.offset, 42)))
                 vault := shr(96, calldataload(add(path.offset, 22)))
