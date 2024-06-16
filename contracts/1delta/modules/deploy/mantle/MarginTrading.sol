@@ -475,7 +475,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
     * PATH IDENTIFICATION
     * 
     * [actionId]
-    * 0: base swap
+    * 0: base swap - just pay the pool
     * 1: repay stable
     * 2: repay variable
     * 3: deposit
@@ -543,7 +543,9 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                         sub(data.length, 52)) // last 52 bytes
                 )
             )
-            data.length := sub(data.length, 36) // skim address from calldata
+            // skim address from calldata
+            data.length := sub(data.length, 36)
+            // assume a multihop if the calldata is longer than 66
             multihop := gt(data.length, 66)
             // use tradeId as tradetype
             tradeId := and(shr(88, calldataload(data.offset)) , UINT8_MASK)
@@ -895,7 +897,6 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         // the fee parameter in the path can be ignored for validating a V2 pool
         assembly {
             let firstWord := calldataload(data.offset)
-            let identifier := and(shr(80, firstWord), UINT8_MASK) // swap pool identifier
             tradeId := and(shr(88, firstWord), UINT8_MASK) // interaction identifier
             ////////////////////////////////////////////////////
             // We fetch the original initiator of the swap function
@@ -913,16 +914,29 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 )
             )
             ////////////////////////////////////////////////////
-            // amounnt [128|128] starting at the 52th byte
+            // amount [128|128] starting at the 52th byte
             // from the right as [maximum|amountToPay]
-            // here we fetch the etire amount
+            // here we fetch the entire amount and decompose it
             ////////////////////////////////////////////////////
             maxAmount := calldataload(
                     add(
                         data.offset,
                         sub(data.length, 52)) // last 52 bytes
             )
-
+            ////////////////////////////////////////////////////
+            // pay amount provided in lower 16 bytes
+            // we assume that this value is zero for 
+            // exactOut swaps as we calculate the amount in this
+            // case
+            ////////////////////////////////////////////////////
+            amountToPay := and(UINT128_MASK, maxAmount)
+            // max as upper bytes
+            maxAmount := shr(128, maxAmount)
+            // skim address from calldatas
+            data.length := sub(data.length, 52)
+            // assume a multihop if the calldata is longer than 64
+            multihop := gt(data.length, 64)
+            // assign amount received
             switch iszero(amount0)
             case 0 {
                 amountReceived := amount0
@@ -930,12 +944,6 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             default {
                 amountReceived := amount1
             }
-            // pay amount as lower bytes
-            amountToPay := and(UINT128_MASK, maxAmount)
-            // max as upper bytes
-            maxAmount := shr(128, maxAmount)
-            data.length := sub(data.length, 52) // skim address from calldata
-            multihop := gt(data.length, 64)
         }
         ////////////////////////////////////////////////////
         // exactIn is used when `amountToPay` is nonzero

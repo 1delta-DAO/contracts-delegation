@@ -45,12 +45,13 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
 
     /**
      * Swap exact out via v2 type pool
-     * We always pay within the callback.
-     * This requires us to manually transfer to the reciever
+     * Optinally pay in the callback. If ot, we assume that the funds have been prepaid
+     * The pay/input amount can be calculated via `getV2AmountInDirect`.
      * @param amountOut receive amount
      * @param maxIn maimum in to pass into callback
      * @param payer payer to pass into callback
      * @param receiver receiver address
+     * @param useFlashSwap if true, we assume payment in callback
      * @param path path calldata
      */
     function _swapV2StyleExactOut(
@@ -179,7 +180,11 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
 
     /**
      * Calculates the input amount for a UniswapV2 and Solidly style swap
-     * Assumes that the pair address has been pre-calculated
+     * This function is separate from the swapper because it is needed
+     * in the spot case where we iteratively execute swaps between the
+     * calculation of the amount and the execution of the v2 swap.
+     * Compatible with solidly stable swaps.
+     * We assume that the pair address is already provided.
      * @param pair provided pair address
      * @param tokenIn input
      * @param tokenOut output
