@@ -2,11 +2,9 @@
 pragma solidity ^0.8.19;
 
 import "../../contracts/1delta/modules/deploy/mantle/composable/Commands.sol";
-import "./ComposerUtils.sol";
 import "./DeltaSetup.f.sol";
 
-contract ComposerTest is DeltaSetup, ComposerUtils {
-
+contract ComposerTest is DeltaSetup {
     function test_mantle_composer_depo() external {
         uint8 lenderId = 1;
         address user = testUser;
@@ -21,11 +19,11 @@ contract ComposerTest is DeltaSetup, ComposerUtils {
             brokerProxyAddress,
             amount //
         );
-        bytes memory data = abi.encodePacked(
-            uint8(0x13), // 1
-            USDT, // 20
-            user, // 20
-            populateAmountDeposit(lenderId, amount) // 15
+        bytes memory data = deposit(
+            USDT,
+            user,
+            amount,
+            lenderId //
         );
         data = abi.encodePacked(transfer, data);
         vm.prank(user);
@@ -55,13 +53,7 @@ contract ComposerTest is DeltaSetup, ComposerUtils {
             borrowAmount
         );
 
-        bytes memory data = abi.encodePacked(
-            uint8(0x11), // 1
-            borrowAsset, // 20
-            user, // 20
-            populateAmountBorrow(lenderId, DEAULT_MODE, borrowAmount) // 16
-        );
-
+        bytes memory data = borrow(borrowAsset, user, borrowAmount, lenderId, DEFAULT_MODE);
         vm.prank(user);
         uint gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
@@ -91,11 +83,12 @@ contract ComposerTest is DeltaSetup, ComposerUtils {
             repayAmount //
         );
 
-        bytes memory data = abi.encodePacked(
-            uint8(Commands.REPAY), // 1
-            borrowAsset, // 20
-            user, // 20
-            populateAmountRepay(lenderId, DEAULT_MODE, repayAmount) // 16
+        bytes memory data = repay(
+            borrowAsset,
+            user,
+            repayAmount,
+            lenderId, //
+            DEFAULT_MODE
         );
         data = abi.encodePacked(transfer, data);
 
@@ -120,12 +113,7 @@ contract ComposerTest is DeltaSetup, ComposerUtils {
 
         uint256 withdrawAmount = 2.50e6;
 
-        bytes memory data = abi.encodePacked(
-            uint8(Commands.WITHDRAW), // 1
-            asset, // 20
-            user, // 20
-            populateAmountWithdraw(lenderId, withdrawAmount) // 15
-        );
+        bytes memory data = withdraw(asset, user, withdrawAmount, lenderId);
 
         vm.prank(user);
         IERC20All(collateralTokens[asset][lenderId]).approve(address(brokerProxyAddress), withdrawAmount);
@@ -536,11 +524,7 @@ contract ComposerTest is DeltaSetup, ComposerUtils {
         console.log("gas", gas);
     }
 
-    function getSpotExactInMultiGen2(
-        address[] memory tokens,
-        uint8[] memory pids,
-        uint16[] memory fees
-    ) internal view returns (bytes memory data) {
+    function getSpotExactInMultiGen2(address[] memory tokens, uint8[] memory pids, uint16[] memory fees) internal view returns (bytes memory data) {
         uint8[] memory actions = new uint8[](pids.length);
         data = abi.encodePacked(tokens[0]);
         for (uint i; i < pids.length; i++) {
@@ -557,11 +541,7 @@ contract ComposerTest is DeltaSetup, ComposerUtils {
         return data;
     }
 
-    function getSpotExactOutMultiGen2(
-        address[] memory tokens,
-        uint8[] memory pids,
-        uint16[] memory fees
-    ) internal view returns (bytes memory data) {
+    function getSpotExactOutMultiGen2(address[] memory tokens, uint8[] memory pids, uint16[] memory fees) internal view returns (bytes memory data) {
         uint8[] memory actions = new uint8[](pids.length);
         data = abi.encodePacked(tokens[0]);
         for (uint i; i < pids.length; i++) {
@@ -572,23 +552,13 @@ contract ComposerTest is DeltaSetup, ComposerUtils {
         return abi.encodePacked(data, uint8(99));
     }
 
-    function getSpotExactInSingleGen2(
-        address tokenIn,
-        address tokenOut,
-        uint8 poolId,
-        uint16 fee
-    ) internal view returns (bytes memory data) {
+    function getSpotExactInSingleGen2(address tokenIn, address tokenOut, uint8 poolId, uint16 fee) internal view returns (bytes memory data) {
         address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
         uint8 action = 0;
         return abi.encodePacked(tokenIn, action, poolId, pool, fee, tokenOut);
     }
 
-    function getSpotExactOutSingleGen2(
-        address tokenIn,
-        address tokenOut,
-        uint8 poolId,
-        uint16 fee
-    ) internal view returns (bytes memory data) {
+    function getSpotExactOutSingleGen2(address tokenIn, address tokenOut, uint8 poolId, uint16 fee) internal view returns (bytes memory data) {
         address pool = testQuoter._v3TypePool(tokenOut, tokenIn, fee, poolId);
         uint8 action = 0;
         return abi.encodePacked(tokenOut, action, poolId, pool, fee, tokenIn, uint8(99));
@@ -605,11 +575,11 @@ contract ComposerTest is DeltaSetup, ComposerUtils {
             brokerProxyAddress,
             amount //
         );
-        bytes memory data = abi.encodePacked(
-            uint8(Commands.DEPOSIT),
-            asset, // 20
-            user, // 20
-            populateAmountDeposit(lenderId, amount) // 15
+        bytes memory data = deposit(
+            asset,
+            user,
+            amount,
+            lenderId //
         );
         data = abi.encodePacked(transfer, data);
 
@@ -627,11 +597,12 @@ contract ComposerTest is DeltaSetup, ComposerUtils {
             borrowAmount
         );
 
-        bytes memory data = abi.encodePacked(
-            uint8(Commands.BORROW),
-            borrowAsset, // 20
-            user, // 20
-            populateAmountBorrow(lenderId, DEAULT_MODE, borrowAmount) // 16
+        bytes memory data = borrow(
+            borrowAsset,
+            user,
+            borrowAmount,
+            lenderId, //
+            DEFAULT_MODE
         );
 
         vm.prank(user);

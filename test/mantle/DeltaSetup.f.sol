@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {AddressesMantle} from "./CommonAddresses.f.sol";
+import {AddressesMantle} from "./utils/CommonAddresses.f.sol";
 import "../../contracts/1delta/quoter/test/TestQuoterMantle.sol";
+import {ComposerUtils, Commands} from "./utils/ComposerUtils.sol";
 
 // interfaces
 import {IFlashAggregator} from "./interfaces/IFlashAggregator.sol";
@@ -25,7 +26,7 @@ import {DeltaBrokerProxy} from "../../contracts/1delta/proxy/DeltaBroker.sol";
 import {MarginTraderInit} from "../../contracts/1delta/initializers/MarginTraderInit.sol";
 
 // core modules
-import {ManagementModule} from "../../contracts/1delta/modules/aave/ManagementModule.sol";
+import {ManagementModule} from "../../contracts/1delta/modules/deploy/mantle/storage/ManagementModule.sol";
 import {Composer} from "../../contracts/1delta/modules/deploy/mantle/Composer.sol";
 import {LendleFlashModule} from "../../contracts/1delta/modules/deploy/mantle/LendleFlashModule.sol";
 import {DeltaLendingInterfaceMantle} from "../../contracts/1delta/modules/deploy/mantle/LendingInterface.sol";
@@ -35,7 +36,7 @@ import {Script, console2} from "forge-std/Script.sol";
 import {console} from "forge-std/console.sol";
 import {Test} from "forge-std/Test.sol";
 
-contract DeltaSetup is AddressesMantle, Script, Test {
+contract DeltaSetup is AddressesMantle, ComposerUtils, Script, Test {
     address internal brokerProxyAddress;
     IBrokerProxy internal brokerProxy;
     IModuleConfig internal deltaConfig;
@@ -265,25 +266,134 @@ contract DeltaSetup is AddressesMantle, Script, Test {
 
     /** DEPOSIT AND OPEN TO SPIN UP POSITIONS */
 
+    function execDeposit(address user, address asset, uint256 depositAmount, uint8 lenderId) internal {
+        deal(asset, user, depositAmount);
+
+        bytes memory data = transferIn(asset, brokerProxyAddress, depositAmount);
+
+        data = abi.encodePacked(
+            data,
+            deposit(asset, user, depositAmount, lenderId) //
+        );
+
+        vm.prank(user);
+        IERC20All(asset).approve(brokerProxyAddress, depositAmount);
+        vm.prank(user);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
+    }
+
     function openSimple(address user, address asset, address borrowAsset, uint256 depositAmount, uint256 borrowAmount, uint8 lenderId) internal {
         address debtAsset = debtTokens[borrowAsset][lenderId];
         deal(asset, user, depositAmount);
 
-        bytes[] memory calls = new bytes[](3);
-        calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, asset, depositAmount);
-        calls[1] = abi.encodeWithSelector(ILending.deposit.selector, asset, user, lenderId);
+        bytes memory data = transferIn(asset, brokerProxyAddress, depositAmount);
+
+        data = abi.encodePacked(
+            data,
+            deposit(asset, user, depositAmount, lenderId) //
+        );
 
         bytes memory swapPath = getOpenExactInSingle(borrowAsset, asset, lenderId);
-        uint256 minimumOut = 0; // we do not care about slippage in that regard
-        calls[2] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactIn.selector, borrowAmount, minimumOut, swapPath);
+        uint256 checkAmount = 0; // we do not care about slippage in that regard
+        data = abi.encodePacked(
+            data,
+            encodeSwap(
+                Commands.FLASH_SWAP_EXACT_IN, // open
+                user,
+                borrowAmount,
+                checkAmount,
+                false,
+                swapPath
+            )
+        );
 
         vm.prank(user);
         IERC20All(asset).approve(brokerProxyAddress, depositAmount);
         vm.prank(user);
         IERC20All(debtAsset).approveDelegation(brokerProxyAddress, borrowAmount);
+        vm.prank(user);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
+    }
+
+    function openExactIn(
+        address user,
+        address asset,
+        address borrowAsset,
+        uint256 depositAmount,
+        uint256 borrowAmount,
+        uint256 checkAmount,
+        bytes memory path, //
+        uint8 lenderId
+    ) internal {
+        address debtAsset = debtTokens[borrowAsset][lenderId];
+        deal(asset, user, depositAmount);
+
+        bytes memory data = transferIn(asset, brokerProxyAddress, depositAmount);
+
+        data = abi.encodePacked(
+            data,
+            deposit(asset, user, depositAmount, lenderId) //
+        );
+
+        data = abi.encodePacked(
+            data,
+            encodeSwap(
+                uint8(Commands.FLASH_SWAP_EXACT_IN), // open
+                user,
+                borrowAmount,
+                checkAmount,
+                false,
+                path
+            )
+        );
 
         vm.prank(user);
-        brokerProxy.multicall(calls);
+        IERC20All(asset).approve(brokerProxyAddress, depositAmount);
+        vm.prank(user);
+        IERC20All(debtAsset).approveDelegation(brokerProxyAddress, borrowAmount);
+        vm.prank(user);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
+    }
+
+
+    function openExactOut(
+        address user,
+        address asset,
+        address borrowAsset,
+        uint256 depositAmount,
+        uint256 borrowAmount,
+        uint256 checkAmount,
+        bytes memory path, //
+        uint8 lenderId
+    ) internal {
+        address debtAsset = debtTokens[borrowAsset][lenderId];
+        deal(asset, user, depositAmount);
+
+        bytes memory data = transferIn(asset, brokerProxyAddress, depositAmount);
+
+        data = abi.encodePacked(
+            data,
+            deposit(asset, user, depositAmount, lenderId) //
+        );
+
+        data = abi.encodePacked(
+            data,
+            encodeSwap(
+                uint8(Commands.FLASH_SWAP_EXACT_OUT), // open
+                user,
+                borrowAmount,
+                checkAmount,
+                false,
+                path
+            )
+        );
+
+        vm.prank(user);
+        IERC20All(asset).approve(brokerProxyAddress, depositAmount);
+        vm.prank(user);
+        IERC20All(debtAsset).approveDelegation(brokerProxyAddress, borrowAmount);
+        vm.prank(user);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
     }
 
     /** HELPER FUNCTIONS */
@@ -619,5 +729,34 @@ contract DeltaSetup is AddressesMantle, Script, Test {
         poolId = MERCHANT_MOE;
         pool = testQuoter._v2TypePairAddress(tokenIn, METH, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, tokenIn, lenderId, endId);
+    }
+
+    struct TestParamsOpen {
+        address assetIn;
+        address assetOut;
+        address bIn;
+        address cOut;
+        uint256 amountToDeposit;
+        uint256 amountToBorrow;
+        uint256 checkAmount;
+    }
+
+    function getOpenParams(
+        address assetIn,
+        address assetOut,
+        uint256 amountToDeposit,
+        uint256 amountToBorrow,
+        uint256 checkAmount,
+        uint8 lenderId
+    ) internal view returns (TestParamsOpen memory p) {
+        p = TestParamsOpen(
+            assetIn, //
+            assetOut,
+            debtTokens[assetIn][lenderId],
+            collateralTokens[assetOut][lenderId],
+            amountToDeposit,
+            amountToBorrow,
+            checkAmount
+        );
     }
 }

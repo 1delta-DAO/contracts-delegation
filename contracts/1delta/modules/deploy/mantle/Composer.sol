@@ -362,7 +362,7 @@ contract Composer is DeltaFlashAggregatorMantle {
                             // load the retrieved balance
                             amount := mload(0x0)
                         }
-                        currentOffset := add(currentOffset, 73)
+                        currentOffset := add(currentOffset, 55)
                     }
                     _deposit(underlying, receiver, amount, lenderId);
                 } else if (operation == Commands.BORROW) {
@@ -380,7 +380,7 @@ contract Composer is DeltaFlashAggregatorMantle {
                         lenderId := and(UINT8_MASK, shr(248, lastBytes))
                         mode := and(UINT8_MASK, shr(240, lastBytes))
                         user := caller()
-                        currentOffset := add(currentOffset, 57)
+                        currentOffset := add(currentOffset, 56)
                     }
                     // borrow(opdata);
                     _borrow(underlying, user, amount, mode, lenderId);
@@ -401,7 +401,7 @@ contract Composer is DeltaFlashAggregatorMantle {
                         amount := and(_UINT112_MASK, shr(128, lastBytes))
                         lenderId := and(UINT8_MASK, shr(248, lastBytes))
                         mode := and(UINT8_MASK, shr(240, lastBytes))
-                        currentOffset := add(currentOffset, 57)
+                        currentOffset := add(currentOffset, 56)
                     }
                     _repay(underlying, receiver, amount, mode, lenderId);
                 } else if (operation == Commands.WITHDRAW) {
@@ -436,7 +436,7 @@ contract Composer is DeltaFlashAggregatorMantle {
                             // load the retrieved balance
                             amount := mload(0x0)
                         }
-                        currentOffset := add(currentOffset, 56)
+                        currentOffset := add(currentOffset, 55)
                     }
 
                     _preWithdraw(underlying, user, amount, lenderId);

@@ -2,9 +2,8 @@
 pragma solidity ^0.8.19;
 
 import "./DeltaSetup.f.sol";
-import "./ComposerUtils.sol";
 
-contract SwapGen2Test is DeltaSetup, ComposerUtils {
+contract SwapGen2Test is DeltaSetup {
     uint256 DEFAULT_IR_MODE = 2; // variable
 
     function test_mantle_gen_2_open_exact_in() external /** address user, uint8 lenderId */ {
@@ -25,17 +24,13 @@ contract SwapGen2Test is DeltaSetup, ComposerUtils {
 
         uint256 balanceCollateral = IERC20All(collateralToken).balanceOf(user);
         uint256 balanceDebt = IERC20All(debtToken).balanceOf(user);
-        {
-            bytes[] memory calls = new bytes[](2);
-            calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, assetTo, amountToDeposit);
-            calls[1] = abi.encodeWithSelector(ILending.deposit.selector, assetTo, user, lenderId);
 
-            vm.prank(user);
-            IERC20All(assetTo).approve(brokerProxyAddress, amountToDeposit);
-
-            vm.prank(user);
-            brokerProxy.multicall(calls);
-        }
+        execDeposit(
+            user,
+            assetTo,
+            amountToDeposit,
+            lenderId //
+        );
 
         vm.prank(user);
         IERC20All(debtToken).approveDelegation(address(brokerProxy), amountToSwap);
@@ -70,17 +65,13 @@ contract SwapGen2Test is DeltaSetup, ComposerUtils {
 
         uint256 balanceCollateral = IERC20All(collateralToken).balanceOf(user);
         uint256 balanceDebt = IERC20All(debtToken).balanceOf(user);
-        {
-            bytes[] memory calls = new bytes[](2);
-            calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, assetTo, amountToDeposit);
-            calls[1] = abi.encodeWithSelector(ILending.deposit.selector, assetTo, user, lenderId);
 
-            vm.prank(user);
-            IERC20All(assetTo).approve(brokerProxyAddress, amountToDeposit);
-
-            vm.prank(user);
-            brokerProxy.multicall(calls);
-        }
+        execDeposit(
+            user,
+            assetTo,
+            amountToDeposit,
+            lenderId //
+        );
 
         vm.prank(user);
         IERC20All(debtToken).approveDelegation(address(brokerProxy), amountToSwap);
@@ -123,17 +114,13 @@ contract SwapGen2Test is DeltaSetup, ComposerUtils {
 
         uint256 balanceCollateral = IERC20All(collateralToken).balanceOf(user);
         uint256 balanceDebt = IERC20All(debtToken).balanceOf(user);
-        {
-            bytes[] memory calls = new bytes[](2);
-            calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, assetTo, amountToDeposit);
-            calls[1] = abi.encodeWithSelector(ILending.deposit.selector, assetTo, user, lenderId);
 
-            vm.prank(user);
-            IERC20All(assetTo).approve(brokerProxyAddress, amountToDeposit);
-
-            vm.prank(user);
-            brokerProxy.multicall(calls);
-        }
+        execDeposit(
+            user,
+            assetTo,
+            amountToDeposit,
+            lenderId //
+        );
 
         vm.prank(user);
         IERC20All(debtToken).approveDelegation(address(brokerProxy), amountToSwap);
@@ -169,17 +156,13 @@ contract SwapGen2Test is DeltaSetup, ComposerUtils {
 
         uint256 balanceCollateral = IERC20All(collateralToken).balanceOf(user);
         uint256 balanceDebt = IERC20All(debtToken).balanceOf(user);
-        {
-            bytes[] memory calls = new bytes[](2);
-            calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, assetTo, amountToDeposit);
-            calls[1] = abi.encodeWithSelector(ILending.deposit.selector, assetTo, user, lenderId);
 
-            vm.prank(user);
-            IERC20All(assetTo).approve(brokerProxyAddress, amountToDeposit);
-
-            vm.prank(user);
-            brokerProxy.multicall(calls);
-        }
+        execDeposit(
+            user,
+            assetTo,
+            amountToDeposit,
+            lenderId //
+        );
 
         vm.prank(user);
         IERC20All(debtToken).approveDelegation(address(brokerProxy), amountToSwap);
@@ -215,17 +198,13 @@ contract SwapGen2Test is DeltaSetup, ComposerUtils {
 
         uint256 balanceCollateral = IERC20All(collateralToken).balanceOf(user);
         uint256 balanceDebt = IERC20All(debtToken).balanceOf(user);
-        {
-            bytes[] memory calls = new bytes[](2);
-            calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, assetTo, amountToDeposit);
-            calls[1] = abi.encodeWithSelector(ILending.deposit.selector, assetTo, user, lenderId);
 
-            vm.prank(user);
-            IERC20All(assetTo).approve(brokerProxyAddress, amountToDeposit);
-
-            vm.prank(user);
-            brokerProxy.multicall(calls);
-        }
+        execDeposit(
+            user,
+            assetTo,
+            amountToDeposit,
+            lenderId //
+        );
 
         vm.prank(user);
         IERC20All(debtToken).approveDelegation(address(brokerProxy), amountToSwap);

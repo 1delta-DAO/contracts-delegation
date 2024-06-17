@@ -2,14 +2,13 @@
 pragma solidity ^0.8.19;
 
 import "./DeltaSetup.f.sol";
-import "./ComposerUtils.sol";
 
 /**
  * We test flash swap executions using exact in trade types (given that the first pool supports flash swaps)
  * These are always applied on margin, however, we make sure that we always get
  * The expected amounts. Exact out swaps always execute flash swaps whenever possible.
  */
-contract FlashSwapExacInTest is DeltaSetup, ComposerUtils {
+contract FlashSwapExacInTest is DeltaSetup {
     uint8 ZERO_8 = 0;
 
     function setUp() public virtual override {

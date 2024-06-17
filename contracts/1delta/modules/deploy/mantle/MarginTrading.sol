@@ -638,6 +638,13 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                     data
                 );
             } else {
+                // check slippage
+                assembly {
+                    if lt(maximumAmount, amountToPay) {
+                        mstore(0, SLIPPAGE)
+                        revert (0, 0x4)
+                    }
+                }
                 ////////////////////////////////////////////////////
                 // pay the pool
                 ////////////////////////////////////////////////////
@@ -649,13 +656,6 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                     amountToPay,
                     lenderId
                 );
-                // check slippage
-                assembly {
-                    if lt(maximumAmount, amountToPay) {
-                        mstore(0, SLIPPAGE)
-                        revert (0, 0x4)
-                    }
-                }
                 return;
             }
         }
@@ -1026,6 +1026,13 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 }
                 swapExactOutInternal(amountToPay, maxAmount, payer, msg.sender, data);
             } else {
+                // if(maxAmount < amountToPay) revert Slippage();
+                assembly {
+                    if lt(maxAmount, amountToPay) {
+                        mstore(0, SLIPPAGE)
+                        revert (0, 0x4)
+                    }
+                }
                 // pay the pool
                 handlePayPool(
                     tokenOut,
@@ -1035,13 +1042,6 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                     amountToPay,
                     lenderId
                 );
-                // if(maxAmount < amountToPay) revert Slippage();
-                assembly {
-                    if lt(maxAmount, amountToPay) {
-                        mstore(0, SLIPPAGE)
-                        revert (0, 0x4)
-                    }
-                }
             }
             return;
         }
