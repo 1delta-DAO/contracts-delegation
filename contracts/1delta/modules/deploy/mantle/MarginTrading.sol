@@ -61,7 +61,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             else amountOut = _stableDebtBalance(tokenOut, msg.sender, getLender(path));
             if (amountOut == 0) revert NoBalance();
         }
-        flashSwapExactOutInternal(amountOut, amountInMaximum, msg.sender, address(this), path);
+        flashSwapExactOutInternal(amountOut, amountInMaximum, msg.sender, path);
     }
 
     // fusionx
@@ -1240,14 +1240,13 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
      * Path is assumed to start from output token
      * The input amount is cached and not directly returned by this function
      * @param amountOut buy amount
-     * @param receiver address
+     * @param payer payer address (MUST be this contract or caller)
      * @param path path calldata
      */
     function flashSwapExactOutInternal(
         uint256 amountOut,
         uint256 maxIn,
         address payer,
-        address receiver,
         bytes calldata path
     ) internal {
         // fetch the pool identifier from the path
@@ -1261,7 +1260,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 -int256(amountOut),
                 maxIn,
                 payer,
-                receiver,
+                address(this),
                 path
             );
         }
@@ -1271,7 +1270,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 uint128(amountOut),
                 maxIn,
                 payer,
-                receiver,
+                address(this),
                 path
             );
         // uniswapV2 style
@@ -1291,7 +1290,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 amountOut,
                 maxIn,
                 payer,
-                receiver,
+                address(this),
                 true,
                 path
             );

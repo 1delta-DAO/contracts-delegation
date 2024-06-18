@@ -10,7 +10,9 @@ contract ComposerUtils {
     // uint256 internal constant PAY_SELF = 1 << 254;
     uint256 internal constant PAY_SELF = 1 << 255;
     uint256 internal constant UINT128_MASK = 0x00000000000000000000000000000000ffffffffffffffffffffffffffffffff;
-    uint256 internal constant UINT112_MASK = 0x000000000000000000000000000000000000ffffffffffffffffffffffffffff;
+    uint256 internal constant UINT112_MASK    = 0x000000000000000000000000000000000000ffffffffffffffffffffffffffff;
+    uint256 internal constant UINT112_MASK_16 = 0x00000000000000000000000000000000ffffffffffffffffffffffffffff0000;
+    uint256 internal constant UINT112_MASK_U = 0x0000ffffffffffffffffffffffffffff00000000000000000000000000000000;
     uint256 internal constant LENDER_ID_MASK = 0x0000000000000000000000000000000000ff0000000000000000000000000000;
     uint256 internal constant UINT128_MASK_UPPER = 0xffffffffffffffffffffffffffffffff00000000000000000000000000000000;
 
@@ -118,6 +120,15 @@ contract ComposerUtils {
         return am;
     }
 
+    function encodeFlashParams(uint256 amount, uint256 validate, bool paySelf, uint256 pathLength) internal pure returns (uint256) {
+        uint256 am = uint16(pathLength);
+        am = (am & ~UINT112_MASK_16) | (uint256(amount) << 16);
+        am = (am & ~UINT112_MASK_U) | (uint256(validate) << 128);
+        if (paySelf) am = (am & ~PAY_SELF) | (1 << 255);
+        return am;
+    }
+
+
     function encodeSwap(
         uint256 command,
         address receiver,
@@ -132,6 +143,21 @@ contract ComposerUtils {
                 encodeExactInParams(amount, max, self),
                 receiver,
                 uint16(path.length), // begin agni data
+                path
+            );
+    }
+
+    function encodeFlashSwap(
+        uint256 command,
+        uint256 amount,
+        uint max,
+        bool self,
+        bytes memory path
+    ) internal pure returns (bytes memory) {
+        return
+            abi.encodePacked(
+                uint8(command),
+                encodeFlashParams(amount, max, self, path.length),
                 path
             );
     }

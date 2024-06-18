@@ -297,9 +297,8 @@ contract DeltaSetup is AddressesMantle, ComposerUtils, Script, Test {
         uint256 checkAmount = 0; // we do not care about slippage in that regard
         data = abi.encodePacked(
             data,
-            encodeSwap(
+            encodeFlashSwap(
                 Commands.FLASH_SWAP_EXACT_IN, // open
-                user,
                 borrowAmount,
                 checkAmount,
                 false,
@@ -337,9 +336,8 @@ contract DeltaSetup is AddressesMantle, ComposerUtils, Script, Test {
 
         data = abi.encodePacked(
             data,
-            encodeSwap(
+            encodeFlashSwap(
                 uint8(Commands.FLASH_SWAP_EXACT_IN), // open
-                user,
                 borrowAmount,
                 checkAmount,
                 false,
@@ -361,7 +359,7 @@ contract DeltaSetup is AddressesMantle, ComposerUtils, Script, Test {
         address asset,
         address borrowAsset,
         uint256 depositAmount,
-        uint256 borrowAmount,
+        uint256 amountToReceive,
         uint256 checkAmount,
         bytes memory path, //
         uint8 lenderId
@@ -378,10 +376,9 @@ contract DeltaSetup is AddressesMantle, ComposerUtils, Script, Test {
 
         data = abi.encodePacked(
             data,
-            encodeSwap(
+            encodeFlashSwap(
                 uint8(Commands.FLASH_SWAP_EXACT_OUT), // open
-                user,
-                borrowAmount,
+                amountToReceive,
                 checkAmount,
                 false,
                 path
@@ -391,7 +388,7 @@ contract DeltaSetup is AddressesMantle, ComposerUtils, Script, Test {
         vm.prank(user);
         IERC20All(asset).approve(brokerProxyAddress, depositAmount);
         vm.prank(user);
-        IERC20All(debtAsset).approveDelegation(brokerProxyAddress, borrowAmount);
+        IERC20All(debtAsset).approveDelegation(brokerProxyAddress, checkAmount);
         vm.prank(user);
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
     }
@@ -732,30 +729,30 @@ contract DeltaSetup is AddressesMantle, ComposerUtils, Script, Test {
     }
 
     struct TestParamsOpen {
-        address assetIn;
-        address assetOut;
-        address bIn;
-        address cOut;
+        address borrowAsset;
+        address collateralAsset;
+        address debtToken;
+        address collateralToken;
         uint256 amountToDeposit;
-        uint256 amountToBorrow;
+        uint256 swapAmount;
         uint256 checkAmount;
     }
 
     function getOpenParams(
-        address assetIn,
-        address assetOut,
+        address borrowAsset,
+        address collateralAsset,
         uint256 amountToDeposit,
-        uint256 amountToBorrow,
+        uint256 swapAmount,
         uint256 checkAmount,
         uint8 lenderId
     ) internal view returns (TestParamsOpen memory p) {
         p = TestParamsOpen(
-            assetIn, //
-            assetOut,
-            debtTokens[assetIn][lenderId],
-            collateralTokens[assetOut][lenderId],
+            borrowAsset, //
+            collateralAsset,
+            debtTokens[borrowAsset][lenderId],
+            collateralTokens[collateralAsset][lenderId],
             amountToDeposit,
-            amountToBorrow,
+            swapAmount,
             checkAmount
         );
     }
