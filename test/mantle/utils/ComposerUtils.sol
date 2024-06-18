@@ -9,6 +9,7 @@ contract ComposerUtils {
     // uint256 internal constant UNWRAP_NATIVE_MASK = 1 << 254;
     // uint256 internal constant PAY_SELF = 1 << 254;
     uint256 internal constant PAY_SELF = 1 << 255;
+    uint256 internal constant FOT = 1 << 254;
     uint256 internal constant UINT128_MASK = 0x00000000000000000000000000000000ffffffffffffffffffffffffffffffff;
     uint256 internal constant UINT112_MASK    = 0x000000000000000000000000000000000000ffffffffffffffffffffffffffff;
     uint256 internal constant UINT112_MASK_16 = 0x00000000000000000000000000000000ffffffffffffffffffffffffffff0000;
@@ -109,6 +110,15 @@ contract ComposerUtils {
         am = (am & ~UINT112_MASK_16) | (uint256(amount) << 16);
         am = (am & ~UINT112_MASK_U) | (uint256(validate) << 128);
         if (paySelf) am = (am & ~PAY_SELF) | (1 << 255);
+        return am;
+    }
+
+    function encodeSwapAmountParamsFOT(uint256 amount, uint256 validate, bool paySelf, bool fot, uint256 pathLength) internal pure returns (uint256) {
+        uint256 am = uint16(pathLength);
+        am = (am & ~UINT112_MASK_16) | (uint256(amount) << 16);
+        am = (am & ~UINT112_MASK_U) | (uint256(validate) << 128);
+        if (paySelf) am = (am & ~PAY_SELF) | (1 << 255);
+        if (fot) am = (am & ~FOT) | (1 << 254);
         return am;
     }
 

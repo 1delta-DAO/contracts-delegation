@@ -2,8 +2,9 @@
 
 pragma solidity 0.8.26;
 
-import {DeltaFlashAggregatorMantle} from "./FlashAggregator.sol";
+import {MarginTrading} from "./MarginTrading.sol";
 import {Commands} from "./composable/Commands.sol";
+import {PermitUtils} from "./permit/PermitUtils.sol";
 
 /**
  * @title Flash aggregator contract.
@@ -12,9 +13,11 @@ import {Commands} from "./composable/Commands.sol";
  *        Single route swap functions exposed to allower lower gas const for L1s
  * @author 1delta Labs
  */
-contract Composer is DeltaFlashAggregatorMantle {
+contract Composer is MarginTrading, PermitUtils {
     /// @dev the highest bit signals whether the swap is internal (the payer is this contract)
     uint256 private constant _PAY_SELF = 1 << 255;
+    /// @dev the second bit signals whether  the input token is a FOT token
+    uint256 private constant _FEE_ON_TRANSFER = 1 << 254;
     /// @dev we use uint112-encoded ammounts to typically fit one bit flag, one path length (uint16)
     ///      ad 2 amounts (2xuint112) into 32bytes, as such we use this mask for extractinng those
     uint256 private constant _UINT112_MASK = 0x000000000000000000000000000000000000ffffffffffffffffffffffffffff;
@@ -63,8 +66,8 @@ contract Composer is DeltaFlashAggregatorMantle {
                     // | receiver | amount | pathLength | path |
                     // | address  | uint240|   uint16   | bytes|
                     // where amount is provided as
-                    // pay self         (bool)      in the upper bit
-                    //                              if true, payer is this contract
+                    // pay self         (bool)      in the upper bit if true, payer is this contract
+                    // fot              (bool)      2nd bit, if true, assume fee-on-transfer as input
                     // minimumAmountOut (uint120)   in the bytes starting at bit 128
                     //                              from the right
                     // amountIn         (uint128)   in the lowest bytes
@@ -76,9 +79,10 @@ contract Composer is DeltaFlashAggregatorMantle {
                     address payer;
                     address receiver;
                     uint256 minimumAmountOut;
+                    bool noFOT;
                     assembly {
                         // the path starts after the path length
-                        opdata.offset := add(currentOffset, 52) // 20 + 32 (address + amountBitmap) 
+                        opdata.offset := add(currentOffset, 52) // 20 + 32 (address + amountBitmap)
                         // the first 20 bytes are the receiver address
                         receiver := and(ADDRESS_MASK, shr(96, calldataload(currentOffset)))
                         // assign the entire 32 bytes of amounts data
@@ -90,7 +94,7 @@ contract Composer is DeltaFlashAggregatorMantle {
                         calldataLength := add(52, calldataLength)
                         // validation amount starts at bit 128 from the right
                         minimumAmountOut := and(_UINT112_MASK, shr(128, amountIn))
-                        // check whether the swap is internal by the highest bit 
+                        // check whether the swap is internal by the highest bit
                         switch iszero(and(_PAY_SELF, amountIn))
                         case 0 {
                             payer := address()
@@ -98,6 +102,7 @@ contract Composer is DeltaFlashAggregatorMantle {
                         default {
                             payer := caller()
                         }
+                        noFOT := iszero(and(_FEE_ON_TRANSFER, amountIn))
                         // mask input amount
                         amountIn := and(_UINT112_MASK, shr(16, amountIn))
                         // fetch balance if needed
@@ -123,7 +128,10 @@ contract Composer is DeltaFlashAggregatorMantle {
                         currentOffset := add(currentOffset, calldataLength)
                     }
                     uint256 dexId = _preFundTrade(payer, amountIn, opdata);
-                    amountIn = swapExactIn(amountIn, dexId, payer, receiver, opdata);
+                    // swap execution
+                    if (noFOT) amountIn = swapExactIn(amountIn, dexId, payer, receiver, opdata);
+                    else amountIn = swapExactInFOT(amountIn, dexId, receiver, opdata);
+
                     // slippage check
                     assembly {
                         if lt(amountIn, minimumAmountOut) {
@@ -152,7 +160,7 @@ contract Composer is DeltaFlashAggregatorMantle {
                     address receiver;
                     uint256 amountInMaximum;
                     assembly {
-                        opdata.offset := add(currentOffset, 52) // 20 + 32 (address + amountBitmap) 
+                        opdata.offset := add(currentOffset, 52) // 20 + 32 (address + amountBitmap)
                         receiver := and(ADDRESS_MASK, shr(96, calldataload(currentOffset)))
                         // get the number parameters
                         amountOut := calldataload(add(currentOffset, 20))
@@ -300,14 +308,14 @@ contract Composer is DeltaFlashAggregatorMantle {
                     assembly {
                         opdata.offset := add(currentOffset, 32) // 32
                         let firstParam := calldataload(currentOffset)
-                        
+
                         // we get the calldatalength of the path
                         // these are populated in the lower two bytes
                         let calldataLength := and(firstParam, UINT16_MASK)
                         opdata.length := calldataLength
                         calldataLength := add(32, calldataLength)
                         // check amount strats at bit 128 from the right (within first 32 )
-                        amountInMaximum :=  and(shr(128, firstParam), _UINT112_MASK)
+                        amountInMaximum := and(shr(128, firstParam), _UINT112_MASK)
                         // check highest bit
                         switch iszero(and(_PAY_SELF, firstParam))
                         case 0 {
@@ -690,9 +698,11 @@ contract Composer is DeltaFlashAggregatorMantle {
                         }
                         currentOffset := add(currentOffset, 34)
                     }
+                } else if (operation == Commands.EXEC_PERMIT) {
+                    _tryPermit(address(bytes20(data)), data[20:]);
                 } else revert();
             }
-            // break criteria
+            // break criteria - we shifted to the end of the calldata
             if (currentOffset >= maxIndex) break;
         }
     }

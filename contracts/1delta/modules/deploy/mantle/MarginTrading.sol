@@ -22,48 +22,6 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
 
     constructor() BaseSwapper() BaseLending() {}
 
-    /// @dev Exact Input Flash Swap - The path parameters determine the lending actions
-    function flashSwapExactIn(
-        uint256 amountIn,
-        uint256 amountOutMinimum,
-        bytes calldata path
-    ) external payable {
-        if(amountIn == 0) {
-            address tokenIn;    
-            assembly {
-                tokenIn := shr(96, calldataload(path.offset))
-            }
-            // fetch collateral balance
-            amountIn = _callerCollateralBalance(tokenIn, getLender(path));
-            if (amountIn == 0) revert NoBalance();
-        }
-        flashSwapExactInInternal(amountIn, amountOutMinimum, msg.sender, path);
-    }
-
-    // Exact Output Swap - The path parameters determine the lending actions
-    function flashSwapExactOut(
-        uint256 amountOut,
-        uint256 amountInMaximum,
-        bytes calldata path
-    ) external payable {
-        if(amountOut == 0) {
-            address tokenOut;
-            uint8 _identifier;
-            // we need tokenIn together with lender id for he balance fetch
-            assembly {
-                let firstWord := calldataload(path.offset)
-                tokenOut := shr(96, firstWord)
-                _identifier := shr(88, firstWord)
-            }   
-
-            // determine output amount as respective debt balance
-            if (_identifier == 2) amountOut = _variableDebtBalance(tokenOut, msg.sender, getLender(path));
-            else amountOut = _stableDebtBalance(tokenOut, msg.sender, getLender(path));
-            if (amountOut == 0) revert NoBalance();
-        }
-        flashSwapExactOutInternal(amountOut, amountInMaximum, msg.sender, path);
-    }
-
     // fusionx
     function fusionXV3SwapCallback(
         int256 amount0Delta,

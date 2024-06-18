@@ -490,4 +490,64 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
             return swapExactIn(amountIn, dexId, address(this), receiver, path);
         } else return amountIn;
     }
+
+    /**
+     * Swaps exact in internally specifically for FOT tokens (uni V2 type only)
+     * Will work with nnormal tokens, too, however, it is slightly less efficient
+     * Will also never use a flash swap
+     * The dexId is assumed to be fetched before in a prefunding action
+     * @param amountIn sell amount
+     * @param dexId dex identifier
+     * @param path path calldata
+     * @return amountOut buy amount
+     */
+    function swapExactInFOT(
+        uint256 amountIn,
+        uint256 dexId,
+        address receiver, // last step
+        bytes calldata path
+    ) internal returns (uint256 amountOut) {
+        address currentReceiver;
+        assembly {
+            switch lt(path.length, 64)
+            case 1 { currentReceiver := receiver}
+            default {
+                dexId := and(shr(80, calldataload(add(path.offset, 42))), UINT8_MASK)
+                switch gt(dexId, 99) 
+                case 1 {
+                    currentReceiver := and(
+                        ADDRESS_MASK,
+                        shr(
+                            96,
+                            calldataload(
+                                add(
+                                    path.offset,
+                                    64 // 20 + 2 + 20 + 20 + 2 [poolAddress starts here]
+                                )
+                            ) // poolAddress
+                        )
+                    )
+                }
+                default {
+                    currentReceiver := address()
+                }
+            }
+        }
+        amountIn = swapUniV2ExactInFOT(
+            amountIn,
+            currentReceiver,
+            path
+        );
+        assembly {
+            path.offset := add(path.offset, 42)
+            path.length := sub(path.length, 42)
+        }
+        ////////////////////////////////////////////////////
+        // From there on, we just continue to swap if needed
+        // similar to conventional swaps
+        ////////////////////////////////////////////////////
+        if (path.length > 30) {
+            return swapExactIn(amountIn, dexId, address(this), receiver, path);
+        } else return amountIn;
+    }
 }

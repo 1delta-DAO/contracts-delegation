@@ -612,12 +612,12 @@ contract SwapGen2Test is DeltaSetup {
     function getSpotExactInSingleGen2V2(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint8 poolId = MERCHANT_MOE;
         address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
-        return abi.encodePacked(tokenIn, uint8(10), poolId, pool, tokenOut);
+        return abi.encodePacked(tokenIn, uint8(0), poolId, pool, tokenOut);
     }
 
     function getSpotExactInSingleGen2Solidly(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint8 poolId = CLEO_V1_STABLE;
         address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
-        return abi.encodePacked(tokenIn, uint8(10), poolId, pool, tokenOut);
+        return abi.encodePacked(tokenIn, uint8(0), poolId, pool, tokenOut);
     }
 }
