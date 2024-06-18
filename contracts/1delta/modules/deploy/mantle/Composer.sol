@@ -76,19 +76,18 @@ contract Composer is DeltaFlashAggregatorMantle {
                     uint256 minimumAmountOut;
                     assembly {
                         // the path starts after the path length
-                        opdata.offset := add(currentOffset, 54) // 32 +20 + 2
+                        opdata.offset := add(currentOffset, 52) // 20 + 32
                         // lastparam includes receiver address and pathlength
-                        let lastparam := calldataload(add(currentOffset, 32))
-                        receiver := and(ADDRESS_MASK, shr(96, lastparam))
+                        receiver := and(ADDRESS_MASK, shr(96, calldataload(currentOffset)))
+                        // these are the entire 32 bytes of amounts data
+                        amountIn := calldataload(add(currentOffset, 20))
                         // this is the path data length
-                        let calldataLength := and(shr(80, lastparam), UINT16_MASK)
+                        let calldataLength := and(amountIn, UINT16_MASK)
                         opdata.length := calldataLength
-                        // add the length to 54 (=32+20+2)
-                        calldataLength := add(54, calldataLength)
-                        // these are the entire first 32 bytes
-                        amountIn := calldataload(currentOffset)
+                        // add the length to 52 (=32+20)
+                        calldataLength := add(52, calldataLength)
                         // extract the upper 120 bits
-                        minimumAmountOut := shr(128, and(amountIn, _UPPER_120_MASK))
+                        minimumAmountOut := and(_UINT112_MASK, shr(128, amountIn))
                         // upper but signals whether to pay with full balance
                         switch iszero(and(_PAY_SELF, amountIn))
                         case 0 {
@@ -98,7 +97,7 @@ contract Composer is DeltaFlashAggregatorMantle {
                             payer := caller()
                         }
                         // mask input amount
-                        amountIn := and(UINT128_MASK, amountIn)
+                        amountIn := and(_UINT112_MASK, shr(16, amountIn))
                         // fetch balance if needed
                         if iszero(amountIn) {
                             // selector for balanceOf(address)
@@ -134,8 +133,8 @@ contract Composer is DeltaFlashAggregatorMantle {
                     ////////////////////////////////////////////////////
                     // Always uses a flash swap when possible
                     // Encoded parameters for the swap
-                    // | amount | receiver | pathLength | path |
-                    // | uint256| address  |  uint16    | bytes|
+                    // | receiver | amount  | pathLength | path |
+                    // | address  | uint240 | uint16     | bytes|
                     // where amount is provided as
                     // pay self         (bool)      in the upper bit
                     //                              if true, payer is this contract
@@ -151,16 +150,16 @@ contract Composer is DeltaFlashAggregatorMantle {
                     address receiver;
                     uint256 amountInMaximum;
                     assembly {
-                        opdata.offset := add(currentOffset, 54) // 32 +20 + 2
-                        let lastparam := calldataload(add(currentOffset, 32))
-                        receiver := and(ADDRESS_MASK, shr(96, lastparam))
+                        opdata.offset := add(currentOffset, 52) // 32 +20 + 2
+                        receiver := and(ADDRESS_MASK, shr(96, calldataload(currentOffset)))
+                        // get the number parameters
+                        amountOut := calldataload(add(currentOffset, 20))
                         // we get the calldatalength of the path
-                        let calldataLength := and(shr(80, lastparam), UINT16_MASK)
-                        opdata.length := and(calldataLength, UINT16_MASK)
+                        let calldataLength := and(amountOut, UINT16_MASK)
+                        opdata.length := calldataLength
 
-                        calldataLength := add(54, calldataLength)
-                        amountOut := calldataload(currentOffset)
-                        amountInMaximum := shr(128, and(amountOut, _UPPER_120_MASK))
+                        calldataLength := add(52, calldataLength)
+                        amountInMaximum := add(_UINT112_MASK, shr(128, amountOut))
                         switch iszero(and(_PAY_SELF, amountOut))
                         case 0 {
                             payer := address()
@@ -168,7 +167,7 @@ contract Composer is DeltaFlashAggregatorMantle {
                         default {
                             payer := caller()
                         }
-                        amountOut := and(UINT128_MASK, amountOut)
+                        amountOut := and(_UINT112_MASK, shr(16, amountOut))
                         if iszero(amountOut) {
                             // selector for balanceOf(address)
                             mstore(0, 0x70a0823100000000000000000000000000000000000000000000000000000000)

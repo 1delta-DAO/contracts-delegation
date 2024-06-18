@@ -106,21 +106,7 @@ contract ComposerUtils {
         data = abi.encodePacked(lender, uint112(amount)); // 14 + 1 byte
     }
 
-    function encodeExactOutParams(uint256 amountOut, uint256 maximumAmountIn, bool paySelf) internal pure returns (uint256) {
-        uint256 am = uint128(amountOut);
-        am = (am & ~UINT128_MASK_UPPER) | (uint256(maximumAmountIn) << 128);
-        if (paySelf) am = (am & ~PAY_SELF) | (1 << 255);
-        return am;
-    }
-
-    function encodeExactInParams(uint256 amountIn, uint256 minimumOut, bool paySelf) internal pure returns (uint256) {
-        uint256 am = uint128(amountIn);
-        am = (am & ~UINT128_MASK_UPPER) | (uint256(minimumOut) << 128);
-        if (paySelf) am = (am & ~PAY_SELF) | (1 << 255);
-        return am;
-    }
-
-    function encodeFlashParams(uint256 amount, uint256 validate, bool paySelf, uint256 pathLength) internal pure returns (uint256) {
+    function encodeSwapAmountParams(uint256 amount, uint256 validate, bool paySelf, uint256 pathLength) internal pure returns (uint256) {
         uint256 am = uint16(pathLength);
         am = (am & ~UINT112_MASK_16) | (uint256(amount) << 16);
         am = (am & ~UINT112_MASK_U) | (uint256(validate) << 128);
@@ -140,8 +126,8 @@ contract ComposerUtils {
         return
             abi.encodePacked(
                 uint8(command),
-                encodeExactInParams(amount, max, self),
                 receiver,
+                encodeSwapAmountParams(amount, max, self,  path.length),
                 uint16(path.length), // begin agni data
                 path
             );
@@ -157,7 +143,7 @@ contract ComposerUtils {
         return
             abi.encodePacked(
                 uint8(command),
-                encodeFlashParams(amount, max, self, path.length),
+                encodeSwapAmountParams(amount, max, self, path.length),
                 path
             );
     }

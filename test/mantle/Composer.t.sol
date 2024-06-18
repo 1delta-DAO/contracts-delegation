@@ -149,15 +149,13 @@ contract ComposerTest is DeltaSetup {
 
         bytes memory data = abi.encodePacked(
             uint8(Commands.SWAP_EXACT_IN),
-            encodeExactInParams(amount / 2, amountMin, false),
             user,
-            uint16(dataAgni.length), // begin agni data
+            encodeSwapAmountParams(amount / 2, amountMin, false, dataAgni.length),
             dataAgni,
             uint8(Commands.SWAP_EXACT_IN),
-            encodeExactInParams(amount / 2, amountMin, false),
             user,
-            uint16(dataFusion.length), // begin fusionX data
-            dataFusion
+            encodeSwapAmountParams(amount / 2, amountMin, false, dataFusion.length),
+            dataFusion //
         );
 
         vm.prank(user);
@@ -238,15 +236,13 @@ contract ComposerTest is DeltaSetup {
         }
         bytes memory data = abi.encodePacked(
             uint8(Commands.SWAP_EXACT_IN),
-            encodeExactInParams(amount / 2, amountMin, true),
             user,
-            uint16(dataAgni.length), // begin agni data
+            encodeSwapAmountParams(amount / 2, amountMin, true, dataAgni.length),
             dataAgni,
             uint8(Commands.SWAP_EXACT_IN),
-            encodeExactInParams(amount / 2, amountMin, true),
             user,
-            uint16(dataFusion.length), // begin fusionX data
-            dataFusion
+            encodeSwapAmountParams(amount / 2, amountMin, true, dataFusion.length),
+            dataFusion //
         );
 
         data = abi.encodePacked(wrap(amount), data);
@@ -283,15 +279,13 @@ contract ComposerTest is DeltaSetup {
         }
         bytes memory data = abi.encodePacked(
             uint8(Commands.SWAP_EXACT_OUT),
-            encodeExactOutParams(amount / 2, amountMax / 2, false),
             brokerProxyAddress,
-            uint16(dataAgni.length), // begin agni data
+            encodeSwapAmountParams(amount / 2, amountMax / 2, false, dataAgni.length),
             dataAgni,
             uint8(Commands.SWAP_EXACT_OUT),
-            encodeExactOutParams(amount / 2, amountMax / 2, false),
             brokerProxyAddress,
-            uint16(dataFusion.length), // begin fusionX data
-            dataFusion
+            encodeSwapAmountParams(amount / 2, amountMax / 2, false, dataFusion.length),
+            dataFusion // 
         );
 
         data = abi.encodePacked(data, unwrap(user, amount));
@@ -341,15 +335,13 @@ contract ComposerTest is DeltaSetup {
         }
         bytes memory data = abi.encodePacked(
             uint8(Commands.SWAP_EXACT_OUT),
-            encodeExactOutParams(amount / 2, amountMax / 2, true),
             user,
-            uint16(dataAgni.length), // begin agni data
+            encodeSwapAmountParams(amount / 2, amountMax / 2, true, dataAgni.length),
             dataAgni,
             uint8(Commands.SWAP_EXACT_OUT),
-            encodeExactOutParams(amount / 2, amountMax / 2, true),
             user,
-            uint16(dataFusion.length), // begin fusionX data
-            dataFusion
+            encodeSwapAmountParams(amount / 2, amountMax / 2, true, dataFusion.length),
+            dataFusion //
         );
 
         data = abi.encodePacked(wrap(amountMax), data, unwrap(user, 0));
@@ -396,14 +388,12 @@ contract ComposerTest is DeltaSetup {
         }
         bytes memory data = abi.encodePacked(
             uint8(Commands.SWAP_EXACT_IN),
-            encodeExactInParams(amount / 2, 0, false),
             brokerProxyAddress,
-            uint16(dataAgni.length), // begin agni data
+            encodeSwapAmountParams(amount / 2, 0, false, dataAgni.length),
             dataAgni,
             uint8(Commands.SWAP_EXACT_IN),
-            encodeExactInParams(amount / 2, 0, false),
             brokerProxyAddress,
-            uint16(dataFusion.length), // begin fusionX data
+            encodeSwapAmountParams(amount / 2, 0, false, dataFusion.length),
             dataFusion
         );
 
@@ -458,14 +448,12 @@ contract ComposerTest is DeltaSetup {
 
         bytes memory data = abi.encodePacked(
             uint8(Commands.SWAP_EXACT_IN),
-            encodeExactInParams(amount / 2, amountMin, true),
             user,
-            uint16(dataAgni.length), // begin agni data
+            encodeSwapAmountParams(amount / 2, amountMin, true, dataAgni.length),
             dataAgni,
             uint8(Commands.SWAP_EXACT_IN),
-            encodeExactInParams(amount / 2, amountMin, true),
             user,
-            uint16(dataFusion.length), // begin fusionX data
+            encodeSwapAmountParams(amount / 2, amountMin, true, dataFusion.length),
             dataFusion
         );
 
@@ -503,15 +491,13 @@ contract ComposerTest is DeltaSetup {
 
         bytes memory data = abi.encodePacked(
             uint8(Commands.SWAP_EXACT_OUT),
-            encodeExactOutParams(amount / 2, maxIn, false),
             user,
-            uint16(dataAgni.length), // begin agni data
+            encodeSwapAmountParams(amount / 2, maxIn, false, dataAgni.length),
             dataAgni,
             uint8(Commands.SWAP_EXACT_OUT),
-            encodeExactOutParams(amount / 2, maxIn, false),
             user,
-            uint16(dataFusion.length), // begin fusionX data
-            dataFusion
+            encodeSwapAmountParams(amount / 2, maxIn, false, dataFusion.length),
+            dataFusion //
         );
 
         vm.prank(user);

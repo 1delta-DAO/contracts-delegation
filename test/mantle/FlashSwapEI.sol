@@ -37,7 +37,7 @@ contract FlashSwapExacInTest is DeltaSetup {
 
         bytes memory data = abi.encodePacked(
             uint8(Commands.FLASH_SWAP_EXACT_IN),
-            encodeFlashParams(amountIn, minimumOut, true, swapPath.length),
+            encodeSwapAmountParams(amountIn, minimumOut, true, swapPath.length),
             swapPath
         );
         data = abi.encodePacked(data, sweep(assetOut, user, 0));
@@ -80,7 +80,7 @@ contract FlashSwapExacInTest is DeltaSetup {
 
         bytes memory data = abi.encodePacked(
             uint8(Commands.FLASH_SWAP_EXACT_IN),
-            encodeFlashParams(amountIn, minimumOut, true, swapPath.length),
+            encodeSwapAmountParams(amountIn, minimumOut, true, swapPath.length),
             swapPath
         );
         data = abi.encodePacked(
@@ -139,7 +139,7 @@ contract FlashSwapExacInTest is DeltaSetup {
 
         bytes memory data = abi.encodePacked(
             uint8(Commands.FLASH_SWAP_EXACT_IN),
-            encodeFlashParams(amountIn, minimumOut, true, swapPath.length),
+            encodeSwapAmountParams(amountIn, minimumOut, true, swapPath.length),
             swapPath
         );
         data = abi.encodePacked(
@@ -194,7 +194,7 @@ contract FlashSwapExacInTest is DeltaSetup {
         uint256 minimumOut = quoted;
         bytes memory data = abi.encodePacked(
             uint8(Commands.FLASH_SWAP_EXACT_IN),
-            encodeFlashParams(amountIn, minimumOut, true, swapPath.length),
+            encodeSwapAmountParams(amountIn, minimumOut, true, swapPath.length),
             swapPath
         );
         data = abi.encodePacked(
@@ -248,7 +248,7 @@ contract FlashSwapExacInTest is DeltaSetup {
         uint256 minimumOut = quoted;
         bytes memory data = abi.encodePacked(
             uint8(Commands.FLASH_SWAP_EXACT_IN),
-            encodeFlashParams(amountIn, minimumOut, true, swapPath.length),
+            encodeSwapAmountParams(amountIn, minimumOut, true, swapPath.length),
             swapPath
         );
         data = abi.encodePacked(
@@ -298,7 +298,7 @@ contract FlashSwapExacInTest is DeltaSetup {
         uint256 minimumOut = quoted;
         bytes memory data = abi.encodePacked(
             uint8(Commands.FLASH_SWAP_EXACT_IN),
-            encodeFlashParams(amountIn, minimumOut, true, swapPath.length),
+            encodeSwapAmountParams(amountIn, minimumOut, true, swapPath.length),
             swapPath
         );
         data = abi.encodePacked(

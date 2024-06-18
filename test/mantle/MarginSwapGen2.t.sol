@@ -78,7 +78,7 @@ contract SwapGen2Test is DeltaSetup {
 
         swapPath = abi.encodePacked(
             uint8(Commands.FLASH_SWAP_EXACT_IN),
-            encodeFlashParams(amountToSwap, minimumOut, false, swapPath.length),
+            encodeSwapAmountParams(amountToSwap, minimumOut, false, swapPath.length),
             swapPath //
         );
         vm.prank(user);
