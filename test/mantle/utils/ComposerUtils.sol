@@ -125,8 +125,7 @@ contract ComposerUtils {
             abi.encodePacked(
                 uint8(command),
                 receiver,
-                encodeSwapAmountParams(amount, max, self,  path.length),
-                uint16(path.length), // begin agni data
+                encodeSwapAmountParams(amount, max, self, path.length),
                 path
             );
     }
