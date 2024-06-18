@@ -699,7 +699,27 @@ contract Composer is MarginTrading, PermitUtils {
                         currentOffset := add(currentOffset, 34)
                     }
                 } else if (operation == Commands.EXEC_PERMIT) {
-                    _tryPermit(address(bytes20(data)), data[20:]);
+                    ////////////////////////////////////////////////////
+                    // Execute normal transfer permit (Dai, ERC20Permit, P2).
+                    // The specific permit type is executed based 
+                    // on the permit length (credits to 1inch for the implementation)
+                    // Data layout:
+                    //      bytes 0-20:                  token
+                    //      bytes 20-22:                 permit length
+                    //      bytes 22-(22+permit length): permit data 
+                    ////////////////////////////////////////////////////
+                    bytes calldata permitData;
+                    address token;
+                    assembly {
+                        token := calldataload(currentOffset)
+                        let permitLength := and(UINT16_MASK, shr(80, token))
+                        token := and(ADDRESS_MASK, shr(96, token))
+                        permitData.offset := add(currentOffset, 22)
+                        permitData.length := permitLength
+                        permitLength := add(22, permitLength)
+                        currentOffset := add(currentOffset, permitLength)
+                    }
+                    _tryPermit(token, permitData);
                 } else revert();
             }
             // break criteria - we shifted to the end of the calldata
