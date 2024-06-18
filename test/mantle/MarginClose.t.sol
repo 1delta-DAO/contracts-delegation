@@ -22,7 +22,6 @@ contract MarginCloseTest is DeltaSetup {
             openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
 
-
         bytes memory swapPath = getCloseExactInSingle(asset, borrowAsset, lenderId);
         uint256 amountIn = 15.0e6;
         uint256 minimumOut = 10.0e18;
@@ -32,9 +31,15 @@ contract MarginCloseTest is DeltaSetup {
 
         uint256 borrowBalance = IERC20All(debtAsset).balanceOf(user);
         uint256 balance = IERC20All(collateralAsset).balanceOf(user);
-
+        bytes memory data = encodeFlashSwap(
+            Commands.FLASH_SWAP_EXACT_IN,
+            amountIn, //
+            minimumOut,
+            false,
+            swapPath
+        );
         vm.prank(user);
-        IFlashAggregator(brokerProxyAddress).flashSwapExactIn(amountIn, minimumOut, swapPath);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
 
         balance = balance - IERC20All(collateralAsset).balanceOf(user);
         borrowBalance = borrowBalance - IERC20All(debtAsset).balanceOf(user);
@@ -61,7 +66,6 @@ contract MarginCloseTest is DeltaSetup {
             openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
 
-
         bytes memory swapPath = getCloseExactInMulti(asset, borrowAsset, lenderId);
         uint256 amountIn = 1.5e6;
         uint256 minimumOut = 0.9e18; // this one provides a bad swap rate
@@ -71,9 +75,15 @@ contract MarginCloseTest is DeltaSetup {
 
         uint256 borrowBalance = IERC20All(debtAsset).balanceOf(user);
         uint256 balance = IERC20All(collateralAsset).balanceOf(user);
-
+        bytes memory data = encodeFlashSwap(
+            Commands.FLASH_SWAP_EXACT_IN,
+            amountIn, //
+            minimumOut,
+            false,
+            swapPath
+        );
         vm.prank(user);
-        IFlashAggregator(brokerProxyAddress).flashSwapExactIn(amountIn, minimumOut, swapPath);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
 
         balance = balance - IERC20All(collateralAsset).balanceOf(user);
         borrowBalance = borrowBalance - IERC20All(debtAsset).balanceOf(user);
@@ -100,7 +110,6 @@ contract MarginCloseTest is DeltaSetup {
             openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
 
-
         bytes memory swapPath = getCloseExactOutSingle(asset, borrowAsset, lenderId);
         uint256 amountOut = 15.0e18;
         uint256 amountInMaximum = 25.0e6;
@@ -110,9 +119,15 @@ contract MarginCloseTest is DeltaSetup {
 
         uint256 borrowBalance = IERC20All(debtAsset).balanceOf(user);
         uint256 balance = IERC20All(collateralAsset).balanceOf(user);
-
+        bytes memory data = encodeFlashSwap(
+            Commands.FLASH_SWAP_EXACT_OUT,
+            amountOut, //
+            amountInMaximum,
+            false,
+            swapPath
+        );
         vm.prank(user);
-        IFlashAggregator(brokerProxyAddress).flashSwapExactOut(amountOut, amountInMaximum, swapPath);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
 
         balance = balance - IERC20All(collateralAsset).balanceOf(user);
         borrowBalance = borrowBalance - IERC20All(debtAsset).balanceOf(user);
@@ -139,7 +154,6 @@ contract MarginCloseTest is DeltaSetup {
             openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
 
-
         bytes memory swapPath = getCloseExactOutMulti(asset, borrowAsset, lenderId);
         uint256 amountOut = 1.0e18;
         uint256 amountInMaximum = 20.0e6;
@@ -150,8 +164,16 @@ contract MarginCloseTest is DeltaSetup {
         uint256 borrowBalance = IERC20All(debtAsset).balanceOf(user);
         uint256 balance = IERC20All(collateralAsset).balanceOf(user);
 
+        bytes memory data = encodeFlashSwap(
+            Commands.FLASH_SWAP_EXACT_OUT,
+            amountOut, //
+            amountInMaximum,
+            false,
+            swapPath
+        );
+
         vm.prank(user);
-        IFlashAggregator(brokerProxyAddress).flashSwapExactOut(amountOut, amountInMaximum, swapPath);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
 
         balance = balance - IERC20All(collateralAsset).balanceOf(user);
         borrowBalance = borrowBalance - IERC20All(debtAsset).balanceOf(user);
@@ -178,7 +200,6 @@ contract MarginCloseTest is DeltaSetup {
             openSimple(user, USDT, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
 
-
         bytes memory swapPath = getCloseExactInSingle(asset, borrowAsset, lenderId);
 
         uint256 minimumOut = 8.0e18;
@@ -189,8 +210,16 @@ contract MarginCloseTest is DeltaSetup {
         uint256 borrowBalance = IERC20All(debtAsset).balanceOf(user);
         uint256 balance = IERC20All(collateralAsset).balanceOf(user);
 
+       bytes memory data = encodeFlashSwap(
+            Commands.FLASH_SWAP_EXACT_IN,
+            0, // max
+            minimumOut,
+            false,
+            swapPath
+        );
+
         vm.prank(user);
-        IFlashAggregator(brokerProxyAddress).flashSwapExactIn(amountIn, minimumOut, swapPath);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
 
         // debt as to be zero now
         uint256 finalbalance = IERC20All(collateralAsset).balanceOf(user);
@@ -220,7 +249,6 @@ contract MarginCloseTest is DeltaSetup {
             openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
 
-
         bytes memory swapPath = getCloseExactOutSingle(asset, borrowAsset, lenderId);
         uint256 amountInMaximum = 35.0e6;
 
@@ -230,8 +258,16 @@ contract MarginCloseTest is DeltaSetup {
         uint256 borrowBalance = IERC20All(debtAsset).balanceOf(user);
         uint256 balance = IERC20All(collateralAsset).balanceOf(user);
 
+        bytes memory data = encodeFlashSwap(
+            Commands.FLASH_SWAP_EXACT_OUT,
+            0, // max
+            amountInMaximum,
+            false,
+            swapPath
+        );
+
         vm.prank(user);
-        IFlashAggregator(brokerProxyAddress).flashSwapExactOut(0, amountInMaximum, swapPath);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
 
         balance = balance - IERC20All(collateralAsset).balanceOf(user);
         // expect zero debt left
@@ -265,7 +301,6 @@ contract MarginCloseTest is DeltaSetup {
             openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
 
-
         bytes memory swapPath = getCloseExactInSingleV2(asset, borrowAsset, lenderId);
         uint256 amountIn = 15.0e6;
         uint256 minimumOut = 8.0e18;
@@ -276,8 +311,16 @@ contract MarginCloseTest is DeltaSetup {
         uint256 borrowBalance = IERC20All(debtAsset).balanceOf(user);
         uint256 balance = IERC20All(collateralAsset).balanceOf(user);
 
+        bytes memory data = encodeFlashSwap(
+            Commands.FLASH_SWAP_EXACT_IN,
+            amountIn, // 
+            minimumOut,
+            false,
+            swapPath
+        );
+
         vm.prank(user);
-        IFlashAggregator(brokerProxyAddress).flashSwapExactIn(amountIn, minimumOut, swapPath);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
 
         balance = balance - IERC20All(collateralAsset).balanceOf(user);
         borrowBalance = borrowBalance - IERC20All(debtAsset).balanceOf(user);
@@ -304,7 +347,6 @@ contract MarginCloseTest is DeltaSetup {
             openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
 
-
         bytes memory swapPath = getCloseExactInMultiV2(asset, borrowAsset, lenderId);
         uint256 amountIn = 15.0e6;
         uint256 minimumOut = 9.0e18; // this one provides a bad swap rate
@@ -315,8 +357,16 @@ contract MarginCloseTest is DeltaSetup {
         uint256 borrowBalance = IERC20All(debtAsset).balanceOf(user);
         uint256 balance = IERC20All(collateralAsset).balanceOf(user);
 
+        bytes memory data = encodeFlashSwap(
+            Commands.FLASH_SWAP_EXACT_IN,
+            amountIn, // 
+            minimumOut,
+            false,
+            swapPath
+        );
+
         vm.prank(user);
-        IFlashAggregator(brokerProxyAddress).flashSwapExactIn(amountIn, minimumOut, swapPath);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
 
         balance = balance - IERC20All(collateralAsset).balanceOf(user);
         borrowBalance = borrowBalance - IERC20All(debtAsset).balanceOf(user);
@@ -343,7 +393,6 @@ contract MarginCloseTest is DeltaSetup {
             openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
 
-
         bytes memory swapPath = getCloseExactOutSingleV2(asset, borrowAsset, lenderId);
         uint256 amountOut = 15.0e18;
         uint256 amountInMaximum = 23.0e6;
@@ -354,8 +403,15 @@ contract MarginCloseTest is DeltaSetup {
         uint256 borrowBalance = IERC20All(debtAsset).balanceOf(user);
         uint256 balance = IERC20All(collateralAsset).balanceOf(user);
 
+        bytes memory data = encodeFlashSwap(
+            Commands.FLASH_SWAP_EXACT_OUT,
+            amountOut, // 
+            amountInMaximum,
+            false,
+            swapPath
+        );
         vm.prank(user);
-        IFlashAggregator(brokerProxyAddress).flashSwapExactOut(amountOut, amountInMaximum, swapPath);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
 
         balance = balance - IERC20All(collateralAsset).balanceOf(user);
         borrowBalance = borrowBalance - IERC20All(debtAsset).balanceOf(user);
@@ -381,7 +437,6 @@ contract MarginCloseTest is DeltaSetup {
             openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
 
-
         bytes memory swapPath = getCloseExactOutSingleV2(asset, borrowAsset, lenderId);
         uint256 amountInMaximum = 35.0e6;
 
@@ -391,8 +446,16 @@ contract MarginCloseTest is DeltaSetup {
         uint256 borrowBalance = IERC20All(debtAsset).balanceOf(user);
         uint256 balance = IERC20All(collateralAsset).balanceOf(user);
 
+        bytes memory data = encodeFlashSwap(
+            Commands.FLASH_SWAP_EXACT_OUT,
+            0, // max
+            amountInMaximum,
+            false,
+            swapPath
+        );
+
         vm.prank(user);
-        IFlashAggregator(brokerProxyAddress).flashSwapExactOut(0, amountInMaximum, swapPath);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
 
         balance = balance - IERC20All(collateralAsset).balanceOf(user);
         // expect zero debt left

@@ -25,26 +25,23 @@ contract StratumCurveTest is DeltaSetup {
 
         uint256 quoted = testQuoter._quoteStratumGeneral(getTokenIdEth(assetIn), getTokenIdEth(assetOut), 0, amountIn);
 
-        bytes[] memory calls = new bytes[](1);
-
         bytes memory swapPath = getSpotExactInSingleStratumEth(assetIn, assetOut);
         uint256 minimumOut = 0.03e8;
-        calls[0] = abi.encodeWithSelector(
-            IFlashAggregator.swapExactInSpot.selector, // 3 args
-            amountIn,
-            minimumOut,
-            user,
-            swapPath
-        );
-
         vm.prank(user);
         IERC20All(assetIn).approve(brokerProxyAddress, amountIn);
 
         uint256 balanceIn = IERC20All(assetIn).balanceOf(user);
         uint256 balanceOut = IERC20All(assetOut).balanceOf(user);
-
+        bytes memory data = encodeSwap(
+            Commands.SWAP_EXACT_IN,
+            user,
+            amountIn, //
+            minimumOut,
+            false,
+            swapPath
+        );
         vm.prank(user);
-        brokerProxy.multicall(calls);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
 
         balanceOut = IERC20All(assetOut).balanceOf(user) - balanceOut;
         balanceIn = balanceIn - IERC20All(assetIn).balanceOf(user);
@@ -69,8 +66,6 @@ contract StratumCurveTest is DeltaSetup {
 
         // uint256 quoted = testQuoter._quoteStratumGeneral(getTokenIdUSD(assetIn), getTokenIdUSD(assetOut), 1, amountIn);
 
-        // bytes[] memory calls = new bytes[](3);
-
         // bytes memory swapPath = getSpotExactInSingleStratumUsd(assetIn, assetOut);
         // uint256 minimumOut = 0.03e8;
         // calls[1] = abi.encodeWithSelector(
@@ -88,7 +83,7 @@ contract StratumCurveTest is DeltaSetup {
         // uint256 balanceOut = IERC20All(assetOut).balanceOf(user);
 
         // vm.prank(user);
-        // brokerProxy.multicall(calls);
+        // IFlashAggregator(brokerProxyAddress).deltaCompose(data);
 
         // balanceOut = IERC20All(assetOut).balanceOf(user) - balanceOut;
         // balanceIn = balanceIn - IERC20All(assetIn).balanceOf(user);
@@ -111,26 +106,23 @@ contract StratumCurveTest is DeltaSetup {
 
         uint256 quoted = testQuoter._quoteStratumGeneral(getTokenIdEth(assetIn), getTokenIdEth(assetOut), 0, amountIn);
 
-        bytes[] memory calls = new bytes[](1);
-
         bytes memory swapPath = getSpotExactInSingleStratumEth(assetIn, assetOut);
         uint256 minimumOut = 0.03e8;
-        calls[0] = abi.encodeWithSelector(
-            IFlashAggregator.swapExactInSpot.selector, // 3 args
-            amountIn,
-            minimumOut,
-            user,
-            swapPath
-        );
-
         vm.prank(user);
         IERC20All(assetIn).approve(brokerProxyAddress, amountIn);
 
         uint256 balanceIn = IERC20All(assetIn).balanceOf(user);
         uint256 balanceOut = IERC20All(assetOut).balanceOf(user);
-
+        bytes memory data = encodeSwap(
+            Commands.SWAP_EXACT_IN,
+            user,
+            amountIn, //
+            minimumOut,
+            false,
+            swapPath
+        );
         vm.prank(user);
-        brokerProxy.multicall(calls);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
 
         balanceOut = IERC20All(assetOut).balanceOf(user) - balanceOut;
         balanceIn = balanceIn - IERC20All(assetIn).balanceOf(user);

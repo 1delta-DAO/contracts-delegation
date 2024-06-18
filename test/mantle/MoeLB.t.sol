@@ -44,25 +44,25 @@ contract GeneralMoeLBTest is DeltaSetup {
 
         uint256 amountIn = 10.0e6;
 
-        bytes[] memory calls = new bytes[](1);
 
         bytes memory swapPath = getSpotExactInSingleLB(assetIn, assetOut);
         uint256 minimumOut = 10.0e6;
-        calls[0] = abi.encodeWithSelector(
-            IFlashAggregator.swapExactInSpot.selector, // 3 args
-            amountIn,
-            minimumOut,
-            user,
-            swapPath
-        );
+
         vm.prank(user);
         IERC20All(assetIn).approve(brokerProxyAddress, amountIn);
 
         uint256 balanceIn = IERC20All(assetIn).balanceOf(user);
         uint256 balanceOut = IERC20All(assetOut).balanceOf(user);
-
+        bytes memory data = encodeSwap(
+            Commands.SWAP_EXACT_IN,
+            user,
+            amountIn, // 
+            minimumOut,
+            false,
+            swapPath
+        );
         vm.prank(user);
-        brokerProxy.multicall(calls);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
 
         balanceOut = IERC20All(assetOut).balanceOf(user) - balanceOut;
         balanceIn = balanceIn - IERC20All(assetIn).balanceOf(user);
@@ -82,26 +82,25 @@ contract GeneralMoeLBTest is DeltaSetup {
 
         uint256 amountOut = 10.0e6;
 
-        bytes[] memory calls = new bytes[](1);
 
         bytes memory swapPath = getSpotExactOutSingleLB(assetIn, assetOut);
         uint256 maximumIn = 10.0e18;
-        calls[0] = abi.encodeWithSelector(
-            IFlashAggregator.swapExactOutSpot.selector, // 3 args
-            amountOut,
-            maximumIn,
-            user,
-            swapPath
-        );
 
         vm.prank(user);
         IERC20All(assetIn).approve(brokerProxyAddress, maximumIn);
 
         uint256 balanceIn = IERC20All(assetIn).balanceOf(user);
         uint256 balanceOut = IERC20All(assetOut).balanceOf(user);
-
+        bytes memory data = encodeSwap(
+            Commands.SWAP_EXACT_OUT,
+            user,
+            amountOut, // 
+            maximumIn,
+            false,
+            swapPath
+        );
         vm.prank(user);
-        brokerProxy.multicall(calls);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
 
         balanceOut = IERC20All(assetOut).balanceOf(user) - balanceOut;
         balanceIn = balanceIn - IERC20All(assetIn).balanceOf(user);
@@ -139,9 +138,16 @@ contract GeneralMoeLBTest is DeltaSetup {
 
         uint256 balanceIn = IERC20All(assetIn).balanceOf(user);
         uint256 balanceOut = IERC20All(assetOut).balanceOf(user);
-
+        bytes memory data = encodeSwap(
+            Commands.SWAP_EXACT_OUT,
+            user,
+            amountOut, // 
+            maximumIn,
+            false,
+            swapPath
+        );
         vm.prank(user);
-        brokerProxy.multicall(calls);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
 
         balanceOut = IERC20All(assetOut).balanceOf(user) - balanceOut;
         balanceIn = balanceIn - IERC20All(assetIn).balanceOf(user);
@@ -179,9 +185,16 @@ contract GeneralMoeLBTest is DeltaSetup {
 
         uint256 balanceIn = IERC20All(assetIn).balanceOf(user);
         uint256 balanceOut = IERC20All(assetOut).balanceOf(user);
-
+        bytes memory data = encodeSwap(
+            Commands.SWAP_EXACT_OUT,
+            user,
+            amountOut, // 
+            maximumIn,
+            false,
+            swapPath
+        );
         vm.prank(user);
-        brokerProxy.multicall(calls);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
 
         balanceOut = IERC20All(assetOut).balanceOf(user) - balanceOut;
         balanceIn = balanceIn - IERC20All(assetIn).balanceOf(user);
@@ -205,25 +218,24 @@ contract GeneralMoeLBTest is DeltaSetup {
 
         _deposit(user, asset, amountToDeposit);
 
-        bytes[] memory calls = new bytes[](1);
         uint256 amountToLeverage = 2.0e6;
         bytes memory swapPath = getOpenExactInMultiLB(borrowAsset, asset);
         uint256 minimumOut = 1.95e6;
-        calls[0] = abi.encodeWithSelector(
-            IFlashAggregator.flashSwapExactIn.selector, // 3 params
-            amountToLeverage,
-            minimumOut, //
-            swapPath
-        );
 
         vm.prank(user);
         IERC20All(debtAsset).approveDelegation(brokerProxyAddress, amountToLeverage);
 
         uint256 borrowBalance = IERC20All(debtAsset).balanceOf(user);
         uint256 balance = IERC20All(collateralAsset).balanceOf(user);
-
+        bytes memory data = encodeFlashSwap(
+            Commands.FLASH_SWAP_EXACT_IN,
+            amountToLeverage, // 
+            minimumOut,
+            false,
+            swapPath
+        );
         vm.prank(user);
-        brokerProxy.multicall(calls);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
 
         balance = IERC20All(collateralAsset).balanceOf(user) - balance;
         borrowBalance = IERC20All(debtAsset).balanceOf(user) - borrowBalance;
@@ -246,25 +258,24 @@ contract GeneralMoeLBTest is DeltaSetup {
 
         _deposit(user, asset, amountToDeposit);
 
-        bytes[] memory calls = new bytes[](1);
         uint256 amountToReceive = 2.0e6;
         bytes memory swapPath = getOpenExactOutMultiLB(borrowAsset, asset);
         uint256 maximumIn = 2.05e6;
-        calls[0] = abi.encodeWithSelector(
-            IFlashAggregator.flashSwapExactOut.selector, //
-            amountToReceive,
-            maximumIn, //
-            swapPath
-        );
 
         vm.prank(user);
         IERC20All(debtAsset).approveDelegation(brokerProxyAddress, maximumIn);
 
         uint256 borrowBalance = IERC20All(debtAsset).balanceOf(user);
         uint256 balance = IERC20All(collateralAsset).balanceOf(user);
-
+        bytes memory data = encodeFlashSwap(
+            Commands.FLASH_SWAP_EXACT_OUT,
+            amountToReceive, // 
+            maximumIn,
+            false,
+            swapPath
+        );
         vm.prank(user);
-        brokerProxy.multicall(calls);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
 
         balance = IERC20All(collateralAsset).balanceOf(user) - balance;
         borrowBalance = IERC20All(debtAsset).balanceOf(user) - borrowBalance;
@@ -292,26 +303,25 @@ contract GeneralMoeLBTest is DeltaSetup {
             _borrow(user, borrowAsset, amountToLeverage);
         }
 
-        bytes[] memory calls = new bytes[](1);
 
         bytes memory swapPath = getCloseExactInMultiLB(asset, borrowAsset);
         uint256 amountIn = 1.5e6;
         uint256 minimumOut = 1.48e6; // this one provides a bad swap rate
-        calls[0] = abi.encodeWithSelector(
-            IFlashAggregator.flashSwapExactIn.selector, //
-            amountIn,
-            minimumOut,
-            swapPath
-        );
 
         vm.prank(user);
         IERC20All(collateralAsset).approve(brokerProxyAddress, amountIn);
 
         uint256 borrowBalance = IERC20All(debtAsset).balanceOf(user);
         uint256 balance = IERC20All(collateralAsset).balanceOf(user);
-
+        bytes memory data = encodeFlashSwap(
+            Commands.FLASH_SWAP_EXACT_IN,
+            amountIn,
+            minimumOut,
+            false ,//
+            swapPath
+        );
         vm.prank(user);
-        brokerProxy.multicall(calls);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
 
         balance = balance - IERC20All(collateralAsset).balanceOf(user);
         borrowBalance = borrowBalance - IERC20All(debtAsset).balanceOf(user);
@@ -337,26 +347,27 @@ contract GeneralMoeLBTest is DeltaSetup {
             _deposit(user, asset, amountToDeposit);
             _borrow(user, borrowAsset, amountToLeverage);
         }
-        bytes[] memory calls = new bytes[](1);
 
         bytes memory swapPath = getCloseExactOutMultiLB(asset, borrowAsset);
         uint256 amountOut = 1.0e6;
         uint256 amountInMaximum = 1.20e6;
-        calls[0] = abi.encodeWithSelector(
-            IFlashAggregator.flashSwapExactOut.selector,
-            amountOut, //
-            amountInMaximum,
-            swapPath
-        );
-
+ 
         vm.prank(user);
         IERC20All(collateralAsset).approve(brokerProxyAddress, amountInMaximum);
 
         uint256 borrowBalance = IERC20All(debtAsset).balanceOf(user);
         uint256 balance = IERC20All(collateralAsset).balanceOf(user);
 
+        bytes memory data = encodeFlashSwap(
+            Commands.FLASH_SWAP_EXACT_OUT,
+            amountOut, // 
+            amountInMaximum,
+            false,
+            swapPath
+        );
+        
         vm.prank(user);
-        brokerProxy.multicall(calls);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
 
         balance = balance - IERC20All(collateralAsset).balanceOf(user);
         borrowBalance = borrowBalance - IERC20All(debtAsset).balanceOf(user);
@@ -451,21 +462,17 @@ contract GeneralMoeLBTest is DeltaSetup {
         deal(asset, user, amount);
         vm.prank(user);
         IERC20All(asset).approve(brokerProxyAddress, amount);
-        bytes[] memory calls = new bytes[](2);
-        calls[0] = abi.encodeWithSelector(ILending.transferERC20In.selector, asset, amount);
-        calls[1] = abi.encodeWithSelector(ILending.deposit.selector, asset, user, DEFAULT_LENDER);
+        bytes memory t = transferIn( asset, brokerProxyAddress, amount);
+        bytes memory d = deposit(asset, user, amount, DEFAULT_LENDER);
         vm.prank(user);
-        brokerProxy.multicall(calls);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(abi.encodePacked(t, d));
     }
 
     function _borrow(address user, address asset, uint256 amount) internal {
         address debtAsset = debtTokens[asset][DEFAULT_LENDER];
         vm.prank(user);
         IERC20All(debtAsset).approveDelegation(brokerProxyAddress, amount);
-        bytes[] memory calls = new bytes[](2);
-        calls[0] = abi.encodeWithSelector(ILending.borrow.selector, asset, amount, DEFAULT_IR_MODE, DEFAULT_LENDER);
-        calls[1] = abi.encodeWithSelector(ILending.sweep.selector, asset, user);
         vm.prank(user);
-        brokerProxy.multicall(calls);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(borrow(asset, user, amount, DEFAULT_LENDER, DEFAULT_MODE));
     }
 }

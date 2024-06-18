@@ -325,22 +325,37 @@ contract Composer is MarginTrading, PermitUtils {
                             payer := caller()
                         }
                         amountOut := and(_UINT112_MASK, shr(16, firstParam))
+                        ////////////////////////////////////////////////////
+                        // Fetch the debt balance in case amountOut is zero
+                        ////////////////////////////////////////////////////
                         if iszero(amountOut) {
+                            let tokenIn := calldataload(opdata.offset)
+                            let _identifier := and(UINT8_MASK, shr(88, tokenIn))
+                            tokenIn := and(ADDRESS_MASK, shr(96, tokenIn))
+
+                            // last 32 bytes
+                            let lastWord := calldataload(sub(add(opdata.length, opdata.offset), 32))
+                            let lenderId := and(shr(8, lastWord), UINT8_MASK)
+                            mstore(0x0, tokenIn)
+                            mstore8(0x0, lenderId)
+                            switch _identifier
+                            case 2 {
+                                mstore(0x20, VARIABLE_DEBT_TOKENS_SLOT)
+                            }
+                            case 1 {
+                                mstore(0x20, STABLE_DEBT_TOKENS_SLOT)
+                            }
+                            default {
+                                revert(0, 0)
+                            }
+
+                            let debtToken := sload(keccak256(0x0, 0x40))
                             // selector for balanceOf(address)
-                            mstore(0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
-                            // add this address as parameter
-                            mstore(0x04, payer)
-                            // call to token
-                            pop(
-                                staticcall(
-                                    gas(),
-                                    calldataload(and(ADDRESS_MASK, add(currentOffset, 32))),
-                                    0x0,
-                                    0x24,
-                                    0x0,
-                                    0x20 //
-                                )
-                            )
+                            mstore(0x0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+                            // add caller address as parameter
+                            mstore(0x4, caller())
+                            // call to debtToken
+                            pop(staticcall(gas(), debtToken, 0x0, 0x24, 0x0, 0x20))
                             // load the retrieved balance
                             amountOut := mload(0x0)
                         }
@@ -701,12 +716,12 @@ contract Composer is MarginTrading, PermitUtils {
                 } else if (operation == Commands.EXEC_PERMIT) {
                     ////////////////////////////////////////////////////
                     // Execute normal transfer permit (Dai, ERC20Permit, P2).
-                    // The specific permit type is executed based 
+                    // The specific permit type is executed based
                     // on the permit length (credits to 1inch for the implementation)
                     // Data layout:
                     //      bytes 0-20:                  token
                     //      bytes 20-22:                 permit length
-                    //      bytes 22-(22+permit length): permit data 
+                    //      bytes 22-(22+permit length): permit data
                     ////////////////////////////////////////////////////
                     bytes calldata permitData;
                     address token;

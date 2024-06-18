@@ -23,7 +23,6 @@ contract MarginCollateralSwapTest is DeltaSetup {
         address assetTo = USDT;
         address collateralAssetTo = collateralTokens[assetTo][lenderId];
 
-
         bytes memory swapPath = getCollateralSwapExactInSingle(asset, assetTo, lenderId);
         uint256 amountIn = 15.0e6;
         uint256 minimumOut = 14.9499e6;
@@ -33,9 +32,15 @@ contract MarginCollateralSwapTest is DeltaSetup {
 
         uint256 balanceFrom = IERC20All(collateralAsset).balanceOf(user);
         uint256 balance = IERC20All(collateralAssetTo).balanceOf(user);
-
+        bytes memory data = encodeFlashSwap(
+            Commands.FLASH_SWAP_EXACT_IN,
+            amountIn, //
+            minimumOut,
+            false,
+            swapPath
+        );
         vm.prank(user);
-        IFlashAggregator(brokerProxyAddress).flashSwapExactIn(amountIn, minimumOut, swapPath);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
 
         balance = IERC20All(collateralAssetTo).balanceOf(user) - balance;
         balanceFrom = balanceFrom - IERC20All(collateralAsset).balanceOf(user);
@@ -62,7 +67,6 @@ contract MarginCollateralSwapTest is DeltaSetup {
         address assetTo = USDT;
         address collateralAssetTo = collateralTokens[assetTo][lenderId];
 
-
         bytes memory swapPath = getCollateralSwapExactInMulti(asset, assetTo, lenderId);
         uint256 amountIn = 15.0e6;
         uint256 minimumOut = 14.8499e6;
@@ -72,9 +76,15 @@ contract MarginCollateralSwapTest is DeltaSetup {
 
         uint256 balanceFrom = IERC20All(collateralAsset).balanceOf(user);
         uint256 balance = IERC20All(collateralAssetTo).balanceOf(user);
-
+        bytes memory data = encodeFlashSwap(
+            Commands.FLASH_SWAP_EXACT_IN,
+            amountIn, //
+            minimumOut,
+            false,
+            swapPath
+        );
         vm.prank(user);
-      IFlashAggregator(brokerProxyAddress).flashSwapExactIn(amountIn, minimumOut, swapPath);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
 
         balance = IERC20All(collateralAssetTo).balanceOf(user) - balance;
         balanceFrom = balanceFrom - IERC20All(collateralAsset).balanceOf(user);
@@ -101,7 +111,6 @@ contract MarginCollateralSwapTest is DeltaSetup {
         address assetTo = USDT;
         address collateralAssetTo = collateralTokens[assetTo][lenderId];
 
-
         bytes memory swapPath = getCollateralSwapExactOutSingle(asset, assetTo, lenderId);
         uint256 amountOut = 15.0e6;
         uint256 maximumIn = 15.05e6;
@@ -111,9 +120,15 @@ contract MarginCollateralSwapTest is DeltaSetup {
 
         uint256 balanceFrom = IERC20All(collateralAsset).balanceOf(user);
         uint256 balance = IERC20All(collateralAssetTo).balanceOf(user);
-
+        bytes memory data = encodeFlashSwap(
+            Commands.FLASH_SWAP_EXACT_OUT,
+            amountOut, //
+            maximumIn,
+            false,
+            swapPath
+        );
         vm.prank(user);
-        IFlashAggregator(brokerProxyAddress).flashSwapExactOut(amountOut, maximumIn, swapPath);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
 
         balance = IERC20All(collateralAssetTo).balanceOf(user) - balance;
         balanceFrom = balanceFrom - IERC20All(collateralAsset).balanceOf(user);
@@ -140,7 +155,6 @@ contract MarginCollateralSwapTest is DeltaSetup {
         address assetTo = USDT;
         address collateralAssetTo = collateralTokens[assetTo][lenderId];
 
-
         bytes memory swapPath = getCollateralSwapExactOutMulti(asset, assetTo, lenderId);
         uint256 amountOut = 15.0e6;
         uint256 maximumIn = 15.55e6;
@@ -150,9 +164,15 @@ contract MarginCollateralSwapTest is DeltaSetup {
 
         uint256 balanceFrom = IERC20All(collateralAsset).balanceOf(user);
         uint256 balance = IERC20All(collateralAssetTo).balanceOf(user);
-
+        bytes memory data = encodeFlashSwap(
+            Commands.FLASH_SWAP_EXACT_OUT,
+            amountOut, //
+            maximumIn,
+            false,
+            swapPath
+        );
         vm.prank(user);
-         IFlashAggregator(brokerProxyAddress).flashSwapExactOut(amountOut, maximumIn, swapPath);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
 
         balance = IERC20All(collateralAssetTo).balanceOf(user) - balance;
         balanceFrom = balanceFrom - IERC20All(collateralAsset).balanceOf(user);
@@ -179,7 +199,6 @@ contract MarginCollateralSwapTest is DeltaSetup {
         address assetTo = USDT;
         address collateralAssetTo = collateralTokens[assetTo][lenderId];
 
-
         bytes memory swapPath = getCollateralSwapExactInSingle(asset, assetTo, lenderId);
         uint256 minimumOut = 29.9499e6;
 
@@ -188,9 +207,15 @@ contract MarginCollateralSwapTest is DeltaSetup {
 
         uint256 balanceFrom = IERC20All(collateralAsset).balanceOf(user);
         uint256 balance = IERC20All(collateralAssetTo).balanceOf(user);
-
+        bytes memory data = encodeFlashSwap(
+            Commands.FLASH_SWAP_EXACT_IN,
+            0, //
+            minimumOut,
+            false,
+            swapPath
+        );
         vm.prank(user);
-         IFlashAggregator(brokerProxyAddress).flashSwapExactIn( uint256(0), minimumOut, swapPath);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
 
         balance = IERC20All(collateralAssetTo).balanceOf(user) - balance;
 
@@ -223,7 +248,6 @@ contract MarginCollateralSwapTest is DeltaSetup {
         address assetTo = USDT;
         address collateralAssetTo = collateralTokens[assetTo][lenderId];
 
-
         bytes memory swapPath = getCollateralSwapExactInSingleV2(asset, assetTo, lenderId);
         uint256 amountIn = 15.0e6;
         uint256 minimumOut = 14.5499e6;
@@ -233,9 +257,15 @@ contract MarginCollateralSwapTest is DeltaSetup {
 
         uint256 balanceFrom = IERC20All(collateralAsset).balanceOf(user);
         uint256 balance = IERC20All(collateralAssetTo).balanceOf(user);
-
+        bytes memory data = encodeFlashSwap(
+            Commands.FLASH_SWAP_EXACT_IN,
+            amountIn, //
+            minimumOut,
+            false,
+            swapPath
+        );
         vm.prank(user);
-           IFlashAggregator(brokerProxyAddress).flashSwapExactIn(amountIn, minimumOut, swapPath);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
 
         balance = IERC20All(collateralAssetTo).balanceOf(user) - balance;
         balanceFrom = balanceFrom - IERC20All(collateralAsset).balanceOf(user);
@@ -262,7 +292,6 @@ contract MarginCollateralSwapTest is DeltaSetup {
         address assetTo = USDT;
         address collateralAssetTo = collateralTokens[assetTo][lenderId];
 
-
         bytes memory swapPath = getCollateralSwapExactInMultiV2(asset, assetTo, lenderId);
         uint256 amountIn = 15.0e6;
         uint256 minimumOut = 14.5499e6;
@@ -272,9 +301,15 @@ contract MarginCollateralSwapTest is DeltaSetup {
 
         uint256 balanceFrom = IERC20All(collateralAsset).balanceOf(user);
         uint256 balance = IERC20All(collateralAssetTo).balanceOf(user);
-
+        bytes memory data = encodeFlashSwap(
+            Commands.FLASH_SWAP_EXACT_IN,
+            amountIn, //
+            minimumOut,
+            false,
+            swapPath
+        );
         vm.prank(user);
-       IFlashAggregator(brokerProxyAddress).flashSwapExactIn(amountIn, minimumOut, swapPath);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
 
         balance = IERC20All(collateralAssetTo).balanceOf(user) - balance;
         balanceFrom = balanceFrom - IERC20All(collateralAsset).balanceOf(user);
@@ -301,7 +336,6 @@ contract MarginCollateralSwapTest is DeltaSetup {
         address assetTo = USDT;
         address collateralAssetTo = collateralTokens[assetTo][lenderId];
 
-
         bytes memory swapPath = getCollateralSwapExactOutSingleV2(asset, assetTo, lenderId);
         uint256 amountOut = 15.0e6;
         uint256 maximumIn = 15.5e6;
@@ -311,9 +345,15 @@ contract MarginCollateralSwapTest is DeltaSetup {
 
         uint256 balanceFrom = IERC20All(collateralAsset).balanceOf(user);
         uint256 balance = IERC20All(collateralAssetTo).balanceOf(user);
-
+        bytes memory data = encodeFlashSwap(
+            Commands.FLASH_SWAP_EXACT_OUT,
+            amountOut, //
+            maximumIn,
+            false,
+            swapPath
+        );
         vm.prank(user);
-         IFlashAggregator(brokerProxyAddress).flashSwapExactOut(amountOut, maximumIn, swapPath);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
 
         balance = IERC20All(collateralAssetTo).balanceOf(user) - balance;
         balanceFrom = balanceFrom - IERC20All(collateralAsset).balanceOf(user);
@@ -340,7 +380,6 @@ contract MarginCollateralSwapTest is DeltaSetup {
         address assetTo = USDT;
         address collateralAssetTo = collateralTokens[assetTo][lenderId];
 
-
         bytes memory swapPath = getCollateralSwapExactOutMultiV2(asset, assetTo, lenderId);
         uint256 amountOut = 15.0e6;
         uint256 maximumIn = 15.5e6;
@@ -350,9 +389,15 @@ contract MarginCollateralSwapTest is DeltaSetup {
 
         uint256 balanceFrom = IERC20All(collateralAsset).balanceOf(user);
         uint256 balance = IERC20All(collateralAssetTo).balanceOf(user);
-
+        bytes memory data = encodeFlashSwap(
+            Commands.FLASH_SWAP_EXACT_OUT,
+            amountOut, //
+            maximumIn,
+            false,
+            swapPath
+        );
         vm.prank(user);
-         IFlashAggregator(brokerProxyAddress).flashSwapExactOut(amountOut, maximumIn, swapPath);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
 
         balance = IERC20All(collateralAssetTo).balanceOf(user) - balance;
         balanceFrom = balanceFrom - IERC20All(collateralAsset).balanceOf(user);
@@ -379,7 +424,6 @@ contract MarginCollateralSwapTest is DeltaSetup {
         address assetTo = USDT;
         address collateralAssetTo = collateralTokens[assetTo][lenderId];
 
-
         bytes memory swapPath = getCollateralSwapExactInSingleV2(asset, assetTo, lenderId);
         uint256 minimumOut = 29.9399e6;
 
@@ -388,9 +432,15 @@ contract MarginCollateralSwapTest is DeltaSetup {
 
         uint256 balanceFrom = IERC20All(collateralAsset).balanceOf(user);
         uint256 balance = IERC20All(collateralAssetTo).balanceOf(user);
-
+        bytes memory data = encodeFlashSwap(
+            Commands.FLASH_SWAP_EXACT_IN,
+            0, //
+            minimumOut,
+            false,
+            swapPath
+        );
         vm.prank(user);
-        IFlashAggregator(brokerProxyAddress).flashSwapExactIn( uint256(0), minimumOut, swapPath);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
 
         balance = IERC20All(collateralAssetTo).balanceOf(user) - balance;
 

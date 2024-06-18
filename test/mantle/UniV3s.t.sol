@@ -24,28 +24,26 @@ contract GeneralMoeLBTest is DeltaSetup {
 
         uint256 amountIn = 20.0e18;
 
-        bytes[] memory calls = new bytes[](1);
-
         uint256 quote = testQuoter.quoteExactInput(getSpotQuoteExactInSinglePuff(assetIn, assetOut), amountIn);
 
         bytes memory swapPath = getSpotExactInSinglePuff(assetIn, assetOut);
         uint256 minimumOut = 0.03e8;
-        calls[0] = abi.encodeWithSelector(
-            IFlashAggregator.swapExactInSpot.selector, // 3 args
-            amountIn,
-            minimumOut,
-            user,
-            swapPath
-        );
 
         vm.prank(user);
         IERC20All(assetIn).approve(brokerProxyAddress, amountIn);
 
         uint256 balanceIn = IERC20All(assetIn).balanceOf(user);
         uint256 balanceOut = IERC20All(assetOut).balanceOf(user);
-
+        bytes memory data = encodeSwap(
+            Commands.SWAP_EXACT_IN,
+            user,
+            amountIn, //
+            minimumOut,
+            false,
+            swapPath
+        );
         vm.prank(user);
-        brokerProxy.multicall(calls);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
 
         balanceOut = IERC20All(assetOut).balanceOf(user) - balanceOut;
         balanceIn = balanceIn - IERC20All(assetIn).balanceOf(user);

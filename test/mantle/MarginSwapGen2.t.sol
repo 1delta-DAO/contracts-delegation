@@ -15,12 +15,10 @@ contract SwapGen2Test is DeltaSetup {
         address debtToken = debtTokens[assetFrom][lenderId];
         address collateralToken = collateralTokens[assetTo][lenderId];
 
-        uint256 amountToSwap = 2000.0e6;
         uint256 amountToDeposit = 2000.0e6;
         deal(assetTo, user, amountToDeposit);
 
         bytes memory swapPath = getOpenExactInSingleGen2(assetFrom, assetTo, lenderId);
-        uint256 minimumOut = 10.0e6;
 
         uint256 balanceCollateral = IERC20All(collateralToken).balanceOf(user);
         uint256 balanceDebt = IERC20All(debtToken).balanceOf(user);
@@ -31,13 +29,24 @@ contract SwapGen2Test is DeltaSetup {
             amountToDeposit,
             lenderId //
         );
+        bytes memory data;
+        uint256 amountToSwap = 2000.0e6;
+        {
+            uint256 minimumOut = 10.0e6;
+            vm.prank(user);
+            IERC20All(debtToken).approveDelegation(brokerProxyAddress, amountToSwap);
 
-        vm.prank(user);
-        IERC20All(debtToken).approveDelegation(brokerProxyAddress, amountToSwap);
-
+            data = encodeFlashSwap(
+                Commands.FLASH_SWAP_EXACT_IN,
+                amountToSwap, //
+                minimumOut,
+                false,
+                swapPath
+            );
+        }
         vm.prank(user);
         uint256 gas = gasleft();
-        IFlashAggregator(brokerProxyAddress).flashSwapExactIn(amountToSwap, minimumOut, swapPath);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas-open-exactIn-single", gas);
 
@@ -108,8 +117,6 @@ contract SwapGen2Test is DeltaSetup {
 
         deal(assetTo, user, amountToDeposit);
 
-        uint256 minimumOut = 0.90e6;
-
         uint256 balanceCollateral = IERC20All(collateralToken).balanceOf(user);
         uint256 balanceDebt = IERC20All(debtToken).balanceOf(user);
 
@@ -121,11 +128,22 @@ contract SwapGen2Test is DeltaSetup {
         );
 
         vm.prank(user);
-        IERC20All(debtToken).approveDelegation(brokerProxyAddress, amountToSwap);
 
+        IERC20All(debtToken).approveDelegation(brokerProxyAddress, amountToSwap);
+        bytes memory data;
+        {
+            uint256 minimumOut = 0.90e6;
+            data = encodeFlashSwap(
+                Commands.FLASH_SWAP_EXACT_IN,
+                amountToSwap, //
+                minimumOut,
+                false,
+                swapPath
+            );
+        }
         vm.prank(user);
         uint256 gas = gasleft();
-        IFlashAggregator(brokerProxyAddress).flashSwapExactIn(amountToSwap, minimumOut, swapPath);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas, 144771);
 
@@ -150,8 +168,6 @@ contract SwapGen2Test is DeltaSetup {
 
         deal(assetTo, user, amountToDeposit);
 
-        uint256 minimumOut = 0.90e6;
-
         uint256 balanceCollateral = IERC20All(collateralToken).balanceOf(user);
         uint256 balanceDebt = IERC20All(debtToken).balanceOf(user);
 
@@ -164,10 +180,20 @@ contract SwapGen2Test is DeltaSetup {
 
         vm.prank(user);
         IERC20All(debtToken).approveDelegation(brokerProxyAddress, amountToSwap);
-
+        bytes memory data;
+        {
+            uint256 minimumOut = 0.90e6;
+            data = encodeFlashSwap(
+                Commands.FLASH_SWAP_EXACT_IN,
+                amountToSwap, //
+                minimumOut,
+                false,
+                swapPath
+            );
+        }
         vm.prank(user);
         uint256 gas = gasleft();
-        IFlashAggregator(brokerProxyAddress).flashSwapExactIn(amountToSwap, minimumOut, swapPath);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas, 144771);
 
@@ -192,8 +218,6 @@ contract SwapGen2Test is DeltaSetup {
 
         deal(assetTo, user, amountToDeposit);
 
-        uint256 minimumOut = 0.90e6;
-
         uint256 balanceCollateral = IERC20All(collateralToken).balanceOf(user);
         uint256 balanceDebt = IERC20All(debtToken).balanceOf(user);
 
@@ -206,10 +230,20 @@ contract SwapGen2Test is DeltaSetup {
 
         vm.prank(user);
         IERC20All(debtToken).approveDelegation(brokerProxyAddress, amountToSwap);
-
+        bytes memory data;
+        {
+            uint256 minimumOut = 0.90e6;
+            data = encodeFlashSwap(
+                Commands.FLASH_SWAP_EXACT_IN,
+                amountToSwap, //
+                minimumOut,
+                false,
+                swapPath
+            );
+        }
         vm.prank(user);
         uint256 gas = gasleft();
-        IFlashAggregator(brokerProxyAddress).flashSwapExactIn(amountToSwap, minimumOut, swapPath);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas, 144771);
 
@@ -218,100 +252,6 @@ contract SwapGen2Test is DeltaSetup {
         assertApproxEqAbs(balanceCollateral, 199246552, 0);
         assertApproxEqAbs(amountToSwap, balanceDebt, 1e6);
     }
-
-    // function test_mantle_gen_2_spot_exact_in_multi() external /** address user, uint8 lenderId */ {
-    //     address user = testUser;
-    //     vm.assume(user != address(0));
-
-    //     uint256 amountToSwap = 2.0e6;
-
-    //     (address assetFrom, address assetTo, bytes memory swapPath) = getPathAndTokensV3();
-
-    //     deal(assetFrom, user, 1e20);
-
-    //     uint256 minimumOut = 1.0e6;
-
-    //     vm.prank(user);
-    //     IERC20All(assetFrom).approve(brokerProxyAddress, amountToSwap);
-
-    //     uint256 balanceIn = IERC20All(assetFrom).balanceOf(user);
-    //     uint256 balanceOut = IERC20All(assetTo).balanceOf(user);
-
-    //     vm.prank(user);
-    //     uint256 gas = gasleft();
-    //     IFlashAggregator(brokerProxyAddress).swapExactInSpot(amountToSwap, minimumOut, swapPath);
-    //     gas = gas - gasleft();
-
-    //     console.log("gas", gas, 144771);
-
-    //     balanceOut = IERC20All(assetTo).balanceOf(user) - balanceOut;
-    //     balanceIn = balanceIn - IERC20All(assetFrom).balanceOf(user);
-    //     assertApproxEqAbs(balanceIn, amountToSwap, 0);
-    //     // loses 0.2 USDT on the trade (due to low liquidity)
-    //     assertApproxEqAbs(1806454, balanceOut, 1);
-    // }
-
-    // function test_mantle_gen_2_spot_exact_in_multi_mixed() external /** address user, uint8 lenderId */ {
-    //     address user = testUser;
-    //     vm.assume(user != address(0));
-
-    //     uint256 amountToSwap = 2.0e6;
-
-    //     (address assetFrom, address assetTo, bytes memory swapPath) = getPathAndTokensMixed();
-
-    //     deal(assetFrom, user, 1e20);
-
-    //     uint256 minimumOut = 1.0e6;
-
-    //     vm.prank(user);
-    //     IERC20All(assetFrom).approve(brokerProxyAddress, amountToSwap);
-
-    //     uint256 balanceIn = IERC20All(assetFrom).balanceOf(user);
-    //     uint256 balanceOut = IERC20All(assetTo).balanceOf(user);
-
-    //     vm.prank(user);
-    //     uint256 gas = gasleft();
-    //     IFlashAggregator(brokerProxyAddress).swapExactInSpot(amountToSwap, minimumOut, swapPath);
-    //     gas = gas - gasleft();
-
-    //     console.log("gas", gas, 144771);
-
-    //     balanceOut = IERC20All(assetTo).balanceOf(user) - balanceOut;
-    //     balanceIn = balanceIn - IERC20All(assetFrom).balanceOf(user);
-    //     assertApproxEqAbs(balanceIn, amountToSwap, 0);
-    //     // loses 0.2 USDT on the trade (due to low liquidity)
-    //     assertApproxEqAbs(1990518, balanceOut, 1);
-    // }
-
-    // function test_mantle_gen_2_spot_exact_in_V2() external /** address user, uint8 lenderId */ {
-    //     address user = testUser;
-    //     vm.assume(user != address(0));
-    //     address assetFrom = USDC;
-
-    //     address assetTo = USDT;
-    //     deal(assetFrom, user, 1e20);
-
-    //     uint256 amountToSwap = 200.0e6;
-
-    //     bytes memory swapPath = getOpenExactInSingleGen2V2(assetFrom, assetTo);
-    //     uint256 minimumOut = 10.0e6;
-
-    //     vm.prank(user);
-    //     IERC20All(assetFrom).approve(brokerProxyAddress, amountToSwap);
-
-    //     uint256 balanceIn = IERC20All(assetFrom).balanceOf(user);
-    //     uint256 balanceOut = IERC20All(assetTo).balanceOf(user);
-
-    //     vm.prank(user);
-    //     uint256 gas = gasleft();
-    //     IFlashAggregator(brokerProxyAddress).swapExactInSpot(amountToSwap, minimumOut, swapPath);
-    //     gas = gas - gasleft();
-    //     console.log("gas", gas, 144771);
-    //     balanceOut = IERC20All(assetTo).balanceOf(user) - balanceOut;
-    //     balanceIn = balanceIn - IERC20All(assetFrom).balanceOf(user);
-    //     assertApproxEqAbs(balanceIn, amountToSwap, 0);
-    //     assertApproxEqAbs(198751420, balanceOut, 1);
-    // }
 
     function getOpenExactInSingleGen2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_STABLES);

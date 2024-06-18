@@ -65,11 +65,18 @@ contract SwapGen2Test is DeltaSetup {
         uint256 balanceIn = IERC20All(assetFrom).balanceOf(user);
         uint256 balanceOut = IERC20All(assetTo).balanceOf(user);
 
-        console.log("TESAFD");
+        bytes memory data = encodeSwap(
+            Commands.SWAP_EXACT_IN,
+            user,
+            amountToSwap, // 
+            minimumOut,
+            false,
+            swapPath
+        );
 
         vm.prank(user);
         uint256 gas = gasleft();
-        IFlashAggregator(brokerProxyAddress).swapExactInSpot(amountToSwap, minimumOut, user, swapPath);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
 

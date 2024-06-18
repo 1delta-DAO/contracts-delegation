@@ -17,7 +17,6 @@ contract MarginOpenTest is DeltaSetup {
 
         uint256 amountToSwap = 20.0e6;
 
-
         bytes memory swapPath = getSpotExactInSingle_izi(asset, assetOut);
         uint256 minimumOut = 13.0e18;
 
@@ -26,9 +25,16 @@ contract MarginOpenTest is DeltaSetup {
 
         uint256 inBalance = IERC20All(asset).balanceOf(user);
         uint256 balance = IERC20All(assetOut).balanceOf(user);
-
+        bytes memory data = encodeSwap(
+            Commands.SWAP_EXACT_IN,
+            user,
+            amountToSwap, //
+            minimumOut,
+            false,
+            swapPath
+        );
         vm.prank(user);
-        IFlashAggregator(brokerProxyAddress).swapExactInSpot(amountToSwap, minimumOut, user, swapPath);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
 
         balance = IERC20All(assetOut).balanceOf(user) - balance;
         inBalance = inBalance - IERC20All(asset).balanceOf(user);
@@ -49,7 +55,6 @@ contract MarginOpenTest is DeltaSetup {
 
         uint256 amountToSwap = 18.0e18;
 
-
         bytes memory swapPath = getSpotExactOutSingle_izi(asset, assetOut);
         uint256 maximumIn = 30.0e6;
 
@@ -58,9 +63,16 @@ contract MarginOpenTest is DeltaSetup {
 
         uint256 inBalance = IERC20All(asset).balanceOf(user);
         uint256 balance = IERC20All(assetOut).balanceOf(user);
-
+        bytes memory data = encodeSwap(
+            Commands.SWAP_EXACT_OUT,
+            user,
+            amountToSwap, //
+            maximumIn,
+            false,
+            swapPath
+        );
         vm.prank(user);
-        IFlashAggregator(brokerProxyAddress).swapExactOutSpot(amountToSwap, maximumIn, user, swapPath);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
 
         balance = IERC20All(assetOut).balanceOf(user) - balance;
         inBalance = inBalance - IERC20All(asset).balanceOf(user);
@@ -82,7 +94,6 @@ contract MarginOpenTest is DeltaSetup {
 
         uint256 amountToSwap = 20.0e18;
 
-
         bytes memory swapPath = getSpotExactInSingle_izi(asset, assetOut);
         uint256 minimumOut = 13.0e6;
 
@@ -91,9 +102,16 @@ contract MarginOpenTest is DeltaSetup {
 
         uint256 inBalance = IERC20All(asset).balanceOf(user);
         uint256 balance = IERC20All(assetOut).balanceOf(user);
-
+        bytes memory data = encodeSwap(
+            Commands.SWAP_EXACT_IN,
+            user,
+            amountToSwap, //
+            minimumOut,
+            false,
+            swapPath
+        );
         vm.prank(user);
-         IFlashAggregator(brokerProxyAddress).swapExactInSpot(amountToSwap, minimumOut, user, swapPath);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
 
         balance = IERC20All(assetOut).balanceOf(user) - balance;
         inBalance = inBalance - IERC20All(asset).balanceOf(user);
@@ -114,7 +132,6 @@ contract MarginOpenTest is DeltaSetup {
 
         uint256 amountToSwap = 18.0e6;
 
-
         bytes memory swapPath = getSpotExactOutSingle_izi(asset, assetOut);
         uint256 maximumIn = 30.0e18;
 
@@ -123,9 +140,16 @@ contract MarginOpenTest is DeltaSetup {
 
         uint256 inBalance = IERC20All(asset).balanceOf(user);
         uint256 balance = IERC20All(assetOut).balanceOf(user);
-
+        bytes memory data = encodeSwap(
+            Commands.SWAP_EXACT_OUT,
+            user,
+            amountToSwap, //
+            maximumIn,
+            false,
+            swapPath
+        );
         vm.prank(user);
-        IFlashAggregator(brokerProxyAddress).swapExactOutSpot(amountToSwap, maximumIn, user, swapPath);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
 
         balance = IERC20All(assetOut).balanceOf(user) - balance;
         inBalance = inBalance - IERC20All(asset).balanceOf(user);

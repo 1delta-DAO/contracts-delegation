@@ -27,18 +27,18 @@ contract KTXTest is DeltaSetup {
 
         uint256 quoted = testQuoter._quoteKTXExactIn(assetIn, assetOut, amountIn);
 
-        bytes[] memory calls = new bytes[](1);
 
         bytes memory swapPath = getSpotExactInSingleKTX(assetIn, assetOut);
         uint256 minimumOut = 0.03e8;
-        calls[0] = abi.encodeWithSelector(
-            IFlashAggregator.swapExactInSpot.selector, // 3 args
-            amountIn,
-            minimumOut,
+
+        bytes memory data = encodeSwap(
+            Commands.SWAP_EXACT_IN,
             user,
+            amountIn, // 
+            minimumOut,
+            false,
             swapPath
         );
-
         vm.prank(user);
         IERC20All(assetIn).approve(brokerProxyAddress, amountIn);
 
@@ -46,7 +46,7 @@ contract KTXTest is DeltaSetup {
         uint256 balanceOut = IERC20All(assetOut).balanceOf(user);
 
         vm.prank(user);
-        brokerProxy.multicall(calls);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
 
         balanceOut = IERC20All(assetOut).balanceOf(user) - balanceOut;
         balanceIn = balanceIn - IERC20All(assetIn).balanceOf(user);
@@ -84,18 +84,18 @@ contract KTXTest is DeltaSetup {
 
         uint256 quoted = testQuoter._quoteKTXExactIn(assetIn, assetOut, amountIn);
 
-        bytes[] memory calls = new bytes[](1);
 
         bytes memory swapPath = getSpotExactInSingleKTX(assetIn, assetOut);
         uint256 minimumOut = 0.03e8;
-        calls[0] = abi.encodeWithSelector(
-            IFlashAggregator.swapExactInSpot.selector, // 3 args
-            amountIn,
-            minimumOut,
+
+        bytes memory data = encodeSwap(
+            Commands.SWAP_EXACT_IN,
             user,
+            amountIn, // 
+            minimumOut,
+            false,
             swapPath
         );
-
         vm.prank(user);
         IERC20All(assetIn).approve(brokerProxyAddress, amountIn);
 
@@ -103,7 +103,7 @@ contract KTXTest is DeltaSetup {
         uint256 balanceOut = IERC20All(assetOut).balanceOf(user);
 
         vm.prank(user);
-        brokerProxy.multicall(calls);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
 
         balanceOut = IERC20All(assetOut).balanceOf(user) - balanceOut;
         balanceIn = balanceIn - IERC20All(assetIn).balanceOf(user);
@@ -126,18 +126,18 @@ contract KTXTest is DeltaSetup {
 
         uint256 quoted = testQuoter._quoteKTXExactIn(assetIn, assetOut, amountIn);
 
-        bytes[] memory calls = new bytes[](1);
 
         bytes memory swapPath = getSpotExactInSingleKTX(assetIn, assetOut);
         uint256 minimumOut = 0.03e8;
-        calls[0] = abi.encodeWithSelector(
-            IFlashAggregator.swapExactInSpot.selector, // 3 args
-            amountIn,
-            minimumOut,
+
+        bytes memory data = encodeSwap(
+            Commands.SWAP_EXACT_IN,
             user,
+            amountIn, // 
+            minimumOut,
+            false,
             swapPath
         );
-
         vm.prank(user);
         IERC20All(assetIn).approve(brokerProxyAddress, amountIn);
 
@@ -145,7 +145,7 @@ contract KTXTest is DeltaSetup {
         uint256 balanceOut = IERC20All(assetOut).balanceOf(user);
 
         vm.prank(user);
-        brokerProxy.multicall(calls);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
 
         balanceOut = IERC20All(assetOut).balanceOf(user) - balanceOut;
         balanceIn = balanceIn - IERC20All(assetIn).balanceOf(user);
