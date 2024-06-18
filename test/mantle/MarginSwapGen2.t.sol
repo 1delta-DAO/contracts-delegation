@@ -33,11 +33,11 @@ contract SwapGen2Test is DeltaSetup {
         );
 
         vm.prank(user);
-        IERC20All(debtToken).approveDelegation(address(brokerProxy), amountToSwap);
+        IERC20All(debtToken).approveDelegation(brokerProxyAddress, amountToSwap);
 
         vm.prank(user);
         uint256 gas = gasleft();
-        IFlashAggregator(address(brokerProxy)).flashSwapExactIn(amountToSwap, minimumOut, swapPath);
+        IFlashAggregator(brokerProxyAddress).flashSwapExactIn(amountToSwap, minimumOut, swapPath);
         gas = gas - gasleft();
         console.log("gas-open-exactIn-single", gas);
 
@@ -74,7 +74,7 @@ contract SwapGen2Test is DeltaSetup {
         );
 
         vm.prank(user);
-        IERC20All(debtToken).approveDelegation(address(brokerProxy), amountToSwap);
+        IERC20All(debtToken).approveDelegation(brokerProxyAddress, amountToSwap);
 
         swapPath = abi.encodePacked(
             uint8(Commands.FLASH_SWAP_EXACT_IN),
@@ -83,7 +83,7 @@ contract SwapGen2Test is DeltaSetup {
         );
         vm.prank(user);
         uint256 gas = gasleft();
-        IFlashAggregator(address(brokerProxy)).deltaCompose(swapPath);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(swapPath);
         gas = gas - gasleft();
         console.log("gas-open-exactIn-single-composer", gas);
 
@@ -121,11 +121,11 @@ contract SwapGen2Test is DeltaSetup {
         );
 
         vm.prank(user);
-        IERC20All(debtToken).approveDelegation(address(brokerProxy), amountToSwap);
+        IERC20All(debtToken).approveDelegation(brokerProxyAddress, amountToSwap);
 
         vm.prank(user);
         uint256 gas = gasleft();
-        IFlashAggregator(address(brokerProxy)).flashSwapExactIn(amountToSwap, minimumOut, swapPath);
+        IFlashAggregator(brokerProxyAddress).flashSwapExactIn(amountToSwap, minimumOut, swapPath);
         gas = gas - gasleft();
         console.log("gas", gas, 144771);
 
@@ -163,11 +163,11 @@ contract SwapGen2Test is DeltaSetup {
         );
 
         vm.prank(user);
-        IERC20All(debtToken).approveDelegation(address(brokerProxy), amountToSwap);
+        IERC20All(debtToken).approveDelegation(brokerProxyAddress, amountToSwap);
 
         vm.prank(user);
         uint256 gas = gasleft();
-        IFlashAggregator(address(brokerProxy)).flashSwapExactIn(amountToSwap, minimumOut, swapPath);
+        IFlashAggregator(brokerProxyAddress).flashSwapExactIn(amountToSwap, minimumOut, swapPath);
         gas = gas - gasleft();
         console.log("gas", gas, 144771);
 
@@ -205,11 +205,11 @@ contract SwapGen2Test is DeltaSetup {
         );
 
         vm.prank(user);
-        IERC20All(debtToken).approveDelegation(address(brokerProxy), amountToSwap);
+        IERC20All(debtToken).approveDelegation(brokerProxyAddress, amountToSwap);
 
         vm.prank(user);
         uint256 gas = gasleft();
-        IFlashAggregator(address(brokerProxy)).flashSwapExactIn(amountToSwap, minimumOut, swapPath);
+        IFlashAggregator(brokerProxyAddress).flashSwapExactIn(amountToSwap, minimumOut, swapPath);
         gas = gas - gasleft();
         console.log("gas", gas, 144771);
 
@@ -239,7 +239,7 @@ contract SwapGen2Test is DeltaSetup {
 
     //     vm.prank(user);
     //     uint256 gas = gasleft();
-    //     IFlashAggregator(address(brokerProxy)).swapExactInSpot(amountToSwap, minimumOut, swapPath);
+    //     IFlashAggregator(brokerProxyAddress).swapExactInSpot(amountToSwap, minimumOut, swapPath);
     //     gas = gas - gasleft();
 
     //     console.log("gas", gas, 144771);
@@ -271,7 +271,7 @@ contract SwapGen2Test is DeltaSetup {
 
     //     vm.prank(user);
     //     uint256 gas = gasleft();
-    //     IFlashAggregator(address(brokerProxy)).swapExactInSpot(amountToSwap, minimumOut, swapPath);
+    //     IFlashAggregator(brokerProxyAddress).swapExactInSpot(amountToSwap, minimumOut, swapPath);
     //     gas = gas - gasleft();
 
     //     console.log("gas", gas, 144771);
@@ -304,7 +304,7 @@ contract SwapGen2Test is DeltaSetup {
 
     //     vm.prank(user);
     //     uint256 gas = gasleft();
-    //     IFlashAggregator(address(brokerProxy)).swapExactInSpot(amountToSwap, minimumOut, swapPath);
+    //     IFlashAggregator(brokerProxyAddress).swapExactInSpot(amountToSwap, minimumOut, swapPath);
     //     gas = gas - gasleft();
     //     console.log("gas", gas, 144771);
     //     balanceOut = IERC20All(assetTo).balanceOf(user) - balanceOut;
