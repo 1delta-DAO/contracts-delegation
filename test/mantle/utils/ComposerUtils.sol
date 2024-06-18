@@ -13,8 +13,6 @@ contract ComposerUtils {
     uint256 internal constant UINT112_MASK    = 0x000000000000000000000000000000000000ffffffffffffffffffffffffffff;
     uint256 internal constant UINT112_MASK_16 = 0x00000000000000000000000000000000ffffffffffffffffffffffffffff0000;
     uint256 internal constant UINT112_MASK_U = 0x0000ffffffffffffffffffffffffffff00000000000000000000000000000000;
-    uint256 internal constant LENDER_ID_MASK = 0x0000000000000000000000000000000000ff0000000000000000000000000000;
-    uint256 internal constant UINT128_MASK_UPPER = 0xffffffffffffffffffffffffffffffff00000000000000000000000000000000;
 
     function transferIn(address asset, address receiver, uint256 amount) internal pure returns (bytes memory data) {
         data = abi.encodePacked(
