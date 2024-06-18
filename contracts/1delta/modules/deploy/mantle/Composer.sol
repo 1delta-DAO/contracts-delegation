@@ -58,8 +58,8 @@ contract Composer is DeltaFlashAggregatorMantle {
                 if (operation == Commands.SWAP_EXACT_IN) {
                     ////////////////////////////////////////////////////
                     // Encoded parameters for the swap
-                    // | amount | receiver | pathLength | path |
-                    // | uint256| address  |  uint16    | bytes|
+                    // | receiver | amount | pathLength | path |
+                    // | address  | uint240|   uint16   | bytes|
                     // where amount is provided as
                     // pay self         (bool)      in the upper bit
                     //                              if true, payer is this contract
