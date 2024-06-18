@@ -23,12 +23,9 @@ contract MarginDebtSwapTest is DeltaSetup {
         address assetFrom = WETH;
         address debtAssetFrom = debtTokens[assetFrom][lenderId];
 
-        bytes[] memory calls = new bytes[](1);
-
         bytes memory swapPath = getDebtSwapExactInSingle(assetFrom, borrowAsset, lenderId);
         uint256 amountIn = 0.001e18;
         uint256 minimumOut = 1.7e18;
-        calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactIn.selector, amountIn, minimumOut, swapPath);
 
         vm.prank(user);
         IERC20All(debtAssetFrom).approveDelegation(brokerProxyAddress, amountIn);
@@ -37,7 +34,7 @@ contract MarginDebtSwapTest is DeltaSetup {
         uint256 balance = IERC20All(debtAsset).balanceOf(user);
 
         vm.prank(user);
-        brokerProxy.multicall(calls);
+        IFlashAggregator(brokerProxyAddress).flashSwapExactIn(amountIn, minimumOut, swapPath);
 
         balance = balance - IERC20All(debtAsset).balanceOf(user);
         balanceFrom = IERC20All(debtAssetFrom).balanceOf(user) - balanceFrom;
@@ -64,12 +61,10 @@ contract MarginDebtSwapTest is DeltaSetup {
         address assetFrom = WETH;
         address debtAssetFrom = debtTokens[assetFrom][lenderId];
 
-        bytes[] memory calls = new bytes[](1);
 
         bytes memory swapPath = getDebtSwapExactInMulti(assetFrom, borrowAsset, lenderId);
         uint256 amountIn = 0.001e18;
         uint256 minimumOut = 1.7e18;
-        calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactIn.selector, amountIn, minimumOut, swapPath);
 
         vm.prank(user);
         IERC20All(debtAssetFrom).approveDelegation(brokerProxyAddress, amountIn);
@@ -78,7 +73,7 @@ contract MarginDebtSwapTest is DeltaSetup {
         uint256 balance = IERC20All(debtAsset).balanceOf(user);
 
         vm.prank(user);
-        brokerProxy.multicall(calls);
+        IFlashAggregator(brokerProxyAddress).flashSwapExactIn(amountIn, minimumOut, swapPath);
 
         balance = balance - IERC20All(debtAsset).balanceOf(user);
         balanceFrom = IERC20All(debtAssetFrom).balanceOf(user) - balanceFrom;
@@ -105,12 +100,10 @@ contract MarginDebtSwapTest is DeltaSetup {
         address assetFrom = WETH;
         address debtAssetFrom = debtTokens[assetFrom][lenderId];
 
-        bytes[] memory calls = new bytes[](1);
 
         bytes memory swapPath = getDebtSwapExactOutSingle(assetFrom, borrowAsset, lenderId);
         uint256 amountOut = 3.7e18;
         uint256 maxIn = 0.002e18;
-        calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactOut.selector, amountOut, maxIn, swapPath);
 
         vm.prank(user);
         IERC20All(debtAssetFrom).approveDelegation(brokerProxyAddress, maxIn);
@@ -119,7 +112,7 @@ contract MarginDebtSwapTest is DeltaSetup {
         uint256 balance = IERC20All(debtAsset).balanceOf(user);
 
         vm.prank(user);
-        brokerProxy.multicall(calls);
+        IFlashAggregator(brokerProxyAddress).flashSwapExactOut(amountOut, maxIn, swapPath);
 
         balance = balance - IERC20All(debtAsset).balanceOf(user);
         balanceFrom = IERC20All(debtAssetFrom).balanceOf(user) - balanceFrom;
@@ -146,12 +139,10 @@ contract MarginDebtSwapTest is DeltaSetup {
         address assetFrom = WETH;
         address debtAssetFrom = debtTokens[assetFrom][lenderId];
 
-        bytes[] memory calls = new bytes[](1);
 
         bytes memory swapPath = getDebtSwapExactOutMulti(assetFrom, borrowAsset, lenderId);
         uint256 amountOut = 3.7e18;
         uint256 maxIn = 0.004e18;
-        calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactOut.selector, amountOut, maxIn, swapPath);
 
         vm.prank(user);
         IERC20All(debtAssetFrom).approveDelegation(brokerProxyAddress, maxIn);
@@ -160,7 +151,7 @@ contract MarginDebtSwapTest is DeltaSetup {
         uint256 balance = IERC20All(debtAsset).balanceOf(user);
 
         vm.prank(user);
-        brokerProxy.multicall(calls);
+        IFlashAggregator(brokerProxyAddress).flashSwapExactOut(amountOut, maxIn, swapPath);
 
         balance = balance - IERC20All(debtAsset).balanceOf(user);
         balanceFrom = IERC20All(debtAssetFrom).balanceOf(user) - balanceFrom;
@@ -186,11 +177,9 @@ contract MarginDebtSwapTest is DeltaSetup {
         address assetFrom = WETH;
         address debtAssetFrom = debtTokens[assetFrom][lenderId];
 
-        bytes[] memory calls = new bytes[](1);
 
         bytes memory swapPath = getDebtSwapExactOutSingle(assetFrom, borrowAsset, lenderId);
         uint256 maxIn = 0.01e18;
-        calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactOut.selector, uint256(0), maxIn, swapPath);
 
         vm.prank(user);
         IERC20All(debtAssetFrom).approveDelegation(brokerProxyAddress, maxIn);
@@ -199,7 +188,7 @@ contract MarginDebtSwapTest is DeltaSetup {
         uint256 balance = IERC20All(debtAsset).balanceOf(user);
 
         vm.prank(user);
-        brokerProxy.multicall(calls);
+        IFlashAggregator(brokerProxyAddress).flashSwapExactOut(uint256(0), maxIn, swapPath);
 
         // no debt left
         uint256 debtBalanceFinal = IERC20All(debtAsset).balanceOf(user);
@@ -231,12 +220,10 @@ contract MarginDebtSwapTest is DeltaSetup {
         address assetFrom = WETH;
         address debtAssetFrom = debtTokens[assetFrom][lenderId];
 
-        bytes[] memory calls = new bytes[](1);
 
         bytes memory swapPath = getDebtSwapExactInSingleV2(assetFrom, borrowAsset, lenderId);
         uint256 amountIn = 0.001e18;
         uint256 minimumOut = 1.7e18;
-        calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactIn.selector, amountIn, minimumOut, swapPath);
 
         vm.prank(user);
         IERC20All(debtAssetFrom).approveDelegation(brokerProxyAddress, amountIn);
@@ -245,7 +232,7 @@ contract MarginDebtSwapTest is DeltaSetup {
         uint256 balance = IERC20All(debtAsset).balanceOf(user);
 
         vm.prank(user);
-        brokerProxy.multicall(calls);
+        IFlashAggregator(brokerProxyAddress).flashSwapExactIn(amountIn, minimumOut, swapPath);
 
         balance = balance - IERC20All(debtAsset).balanceOf(user);
         balanceFrom = IERC20All(debtAssetFrom).balanceOf(user) - balanceFrom;
@@ -272,12 +259,10 @@ contract MarginDebtSwapTest is DeltaSetup {
         address assetFrom = WETH;
         address debtAssetFrom = debtTokens[assetFrom][lenderId];
 
-        bytes[] memory calls = new bytes[](1);
 
         bytes memory swapPath = getDebtSwapExactInMultiV2(assetFrom, borrowAsset, lenderId);
         uint256 amountIn = 0.001e18;
         uint256 minimumOut = 1.7e18;
-        calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactIn.selector, amountIn, minimumOut, swapPath);
 
         vm.prank(user);
         IERC20All(debtAssetFrom).approveDelegation(brokerProxyAddress, amountIn);
@@ -286,7 +271,7 @@ contract MarginDebtSwapTest is DeltaSetup {
         uint256 balance = IERC20All(debtAsset).balanceOf(user);
 
         vm.prank(user);
-        brokerProxy.multicall(calls);
+        IFlashAggregator(brokerProxyAddress).flashSwapExactIn(amountIn, minimumOut, swapPath);
 
         balance = balance - IERC20All(debtAsset).balanceOf(user);
         balanceFrom = IERC20All(debtAssetFrom).balanceOf(user) - balanceFrom;
@@ -313,12 +298,10 @@ contract MarginDebtSwapTest is DeltaSetup {
         address assetFrom = WETH;
         address debtAssetFrom = debtTokens[assetFrom][lenderId];
 
-        bytes[] memory calls = new bytes[](1);
 
         bytes memory swapPath = getDebtSwapExactOutSingleV2(assetFrom, borrowAsset, lenderId);
         uint256 amountOut = 2.7e18;
         uint256 maxIn = 0.002e18;
-        calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactOut.selector, amountOut, maxIn, swapPath);
 
         vm.prank(user);
         IERC20All(debtAssetFrom).approveDelegation(brokerProxyAddress, maxIn);
@@ -327,7 +310,7 @@ contract MarginDebtSwapTest is DeltaSetup {
         uint256 balance = IERC20All(debtAsset).balanceOf(user);
 
         vm.prank(user);
-        brokerProxy.multicall(calls);
+        IFlashAggregator(brokerProxyAddress).flashSwapExactOut(amountOut, maxIn, swapPath);
 
         balance = balance - IERC20All(debtAsset).balanceOf(user);
         balanceFrom = IERC20All(debtAssetFrom).balanceOf(user) - balanceFrom;
@@ -354,12 +337,10 @@ contract MarginDebtSwapTest is DeltaSetup {
         address assetFrom = WETH;
         address debtAssetFrom = debtTokens[assetFrom][lenderId];
 
-        bytes[] memory calls = new bytes[](1);
 
         bytes memory swapPath = getDebtSwapExactOutMultiV2(assetFrom, borrowAsset, lenderId);
         uint256 amountOut = 3.7e18;
         uint256 maxIn = 0.004e18;
-        calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactOut.selector, amountOut, maxIn, swapPath);
 
         vm.prank(user);
         IERC20All(debtAssetFrom).approveDelegation(brokerProxyAddress, maxIn);
@@ -368,7 +349,7 @@ contract MarginDebtSwapTest is DeltaSetup {
         uint256 balance = IERC20All(debtAsset).balanceOf(user);
 
         vm.prank(user);
-        brokerProxy.multicall(calls);
+        IFlashAggregator(brokerProxyAddress).flashSwapExactOut(amountOut, maxIn, swapPath);
 
         balance = balance - IERC20All(debtAsset).balanceOf(user);
         balanceFrom = IERC20All(debtAssetFrom).balanceOf(user) - balanceFrom;
@@ -394,11 +375,9 @@ contract MarginDebtSwapTest is DeltaSetup {
         address assetFrom = WETH;
         address debtAssetFrom = debtTokens[assetFrom][lenderId];
 
-        bytes[] memory calls = new bytes[](1);
 
         bytes memory swapPath = getDebtSwapExactOutSingleV2(assetFrom, borrowAsset, lenderId);
         uint256 maxIn = 0.01e18;
-        calls[0] = abi.encodeWithSelector(IFlashAggregator.flashSwapExactOut.selector, uint256(0), maxIn, swapPath);
 
         vm.prank(user);
         IERC20All(debtAssetFrom).approveDelegation(brokerProxyAddress, maxIn);
@@ -407,7 +386,7 @@ contract MarginDebtSwapTest is DeltaSetup {
         uint256 balance = IERC20All(debtAsset).balanceOf(user);
 
         vm.prank(user);
-        brokerProxy.multicall(calls);
+        IFlashAggregator(brokerProxyAddress).flashSwapExactOut(uint256(0), maxIn, swapPath);
 
         // no debt left
         uint256 debtBalanceFinal = IERC20All(debtAsset).balanceOf(user);

@@ -104,7 +104,6 @@ contract LendingTest is DeltaSetup {
         uint gas = gasleft();
         brokerProxy.multicall(calls);
         gas = gas - gasleft();
-        console.log("-------------------gas", gas);
     }
 
     function _withdraw(address asset, address collateralAsset, address user, uint256 amount, uint8 lenderId) internal {
