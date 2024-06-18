@@ -13,8 +13,10 @@ import {Commands} from "./composable/Commands.sol";
  * @author 1delta Labs
  */
 contract Composer is DeltaFlashAggregatorMantle {
+    /// @dev the highest bit signals whether the swap is internal (the payer is this contract)
     uint256 private constant _PAY_SELF = 1 << 255;
-    uint256 private constant _UPPER_120_MASK = 0x00ffffffffffffffffffffffffffffff00000000000000000000000000000000;
+    /// @dev we use uint112-encoded ammounts to typically fit one bit flag, one path length (uint16)
+    ///      ad 2 amounts (2xuint112) into 32bytes, as such we use this mask for extractinng those
     uint256 private constant _UINT112_MASK = 0x000000000000000000000000000000000000ffffffffffffffffffffffffffff;
 
     /**
@@ -76,19 +78,19 @@ contract Composer is DeltaFlashAggregatorMantle {
                     uint256 minimumAmountOut;
                     assembly {
                         // the path starts after the path length
-                        opdata.offset := add(currentOffset, 52) // 20 + 32
-                        // lastparam includes receiver address and pathlength
+                        opdata.offset := add(currentOffset, 52) // 20 + 32 (address + amountBitmap) 
+                        // the first 20 bytes are the receiver address
                         receiver := and(ADDRESS_MASK, shr(96, calldataload(currentOffset)))
-                        // these are the entire 32 bytes of amounts data
+                        // assign the entire 32 bytes of amounts data
                         amountIn := calldataload(add(currentOffset, 20))
                         // this is the path data length
                         let calldataLength := and(amountIn, UINT16_MASK)
                         opdata.length := calldataLength
                         // add the length to 52 (=32+20)
                         calldataLength := add(52, calldataLength)
-                        // extract the upper 120 bits
+                        // validation amount starts at bit 128 from the right
                         minimumAmountOut := and(_UINT112_MASK, shr(128, amountIn))
-                        // upper but signals whether to pay with full balance
+                        // check whether the swap is internal by the highest bit 
                         switch iszero(and(_PAY_SELF, amountIn))
                         case 0 {
                             payer := address()
@@ -150,16 +152,18 @@ contract Composer is DeltaFlashAggregatorMantle {
                     address receiver;
                     uint256 amountInMaximum;
                     assembly {
-                        opdata.offset := add(currentOffset, 52) // 32 +20 + 2
+                        opdata.offset := add(currentOffset, 52) // 20 + 32 (address + amountBitmap) 
                         receiver := and(ADDRESS_MASK, shr(96, calldataload(currentOffset)))
                         // get the number parameters
                         amountOut := calldataload(add(currentOffset, 20))
                         // we get the calldatalength of the path
                         let calldataLength := and(amountOut, UINT16_MASK)
                         opdata.length := calldataLength
-
+                        // we increment the calldatalength
                         calldataLength := add(52, calldataLength)
+                        // validation amount starts at bit 128 from the right
                         amountInMaximum := add(_UINT112_MASK, shr(128, amountOut))
+                        // check the upper bit as to whether it is a internal swap
                         switch iszero(and(_PAY_SELF, amountOut))
                         case 0 {
                             payer := address()
@@ -167,6 +171,8 @@ contract Composer is DeltaFlashAggregatorMantle {
                         default {
                             payer := caller()
                         }
+                        // rigth shigt by pathlength size and masking yields
+                        // the final amout out
                         amountOut := and(_UINT112_MASK, shr(16, amountOut))
                         if iszero(amountOut) {
                             // selector for balanceOf(address)
