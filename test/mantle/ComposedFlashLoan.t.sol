@@ -3,9 +3,17 @@ pragma solidity ^0.8.19;
 
 import "./DeltaSetup.f.sol";
 
-contract MarginOpenTest is DeltaSetup {
+contract ComposedFlashLoanTest is DeltaSetup {
     uint256 DEFAULT_IR_MODE = 2; // variable
 
+    /**
+     * Transfers in
+     * flash loan
+     *  swap
+     *  depoist
+     *  borrow
+     *  payback
+     */
     function test_mantle_composed_flash_loan(uint8 lenderId) external /** address user, uint8 lenderId */ {
         TestParamsOpen memory params;
         address user = testUser;

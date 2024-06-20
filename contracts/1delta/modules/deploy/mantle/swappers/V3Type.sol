@@ -2,6 +2,8 @@
 
 pragma solidity 0.8.26;
 
+import {DeltaErrors} from "./Errors.sol";
+
 /******************************************************************************\
 * Author: Achthar | 1delta 
 /******************************************************************************/
@@ -12,24 +14,7 @@ pragma solidity 0.8.26;
  * @title Base swapper contract
  * @notice Contains basic logic for swap executions with DEXs
  */
-abstract contract V3TypeSwapper {
-    ////////////////////////////////////////////////////
-    // Error data
-    ////////////////////////////////////////////////////
-    error invalidDexId();
-    // selectors for errors
-
-    // Slippage()
-    bytes4 internal constant SLIPPAGE = 0x7dd37f70;
-    // NativeTransferFailed()
-    bytes4 internal constant NATIVE_TRANSFER = 0xf4b3b1bc;
-    // WrapFailed()
-    bytes4 internal constant WRAP = 0xc30d93ce;
-    // InvalidDex()
-    bytes4 internal constant INVALID_DEX = 0x7948739e;
-    // BadPool()
-    bytes4 internal constant BAD_POOL = 0xb2c02722;
-
+abstract contract V3TypeSwapper is DeltaErrors {
     ////////////////////////////////////////////////////
     // Masks
     ////////////////////////////////////////////////////

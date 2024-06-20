@@ -16,7 +16,6 @@ import {BaseLending} from "./BaseLending.sol";
 abstract contract MarginTrading is BaseSwapper, BaseLending {
     // errors
     error NoBalance();
-    error InvalidDex();
 
     uint256 internal constant UINT128_MASK = 0x00000000000000000000000000000000ffffffffffffffffffffffffffffffff;
 
@@ -632,7 +631,10 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         // the fee parameter in the path can be ignored for validating a V2 pool
         assembly {
             // revert if sender param is not this address
-            if xor(sender, address()) { revert (0, 0) }
+            if xor(sender, address()) { 
+                mstore(0, INVALID_FLASH_LOAN)
+                revert (0, 0x4)
+            }
             // fetch tokens
             tokenIn := and(ADDRESS_MASK, shr(96, calldataload(data.offset)))
             tokenOut := and(ADDRESS_MASK, shr(96, calldataload(add(data.offset, 42))))
@@ -672,7 +674,10 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         // the fee parameter in the path can be ignored for validating a V2 pool
         assembly {
             // revert if sender param is not this address
-            if xor(sender, address()) { revert (0, 0) }
+            if xor(sender, address()) { 
+                mstore(0, INVALID_FLASH_LOAN)
+                revert (0, 0x4)
+            }
             // fetch tokens
             tokenIn := and(ADDRESS_MASK, shr(96, calldataload(data.offset)))
             tokenOut := and(ADDRESS_MASK, shr(96, calldataload(add(data.offset, 42))))
@@ -708,7 +713,10 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         // the fee parameter in the path can be ignored for validating a V2 pool
         assembly {
             // revert if sender param is not this address
-            if xor(sender, address()) { revert (0, 0) }
+            if xor(sender, address()) { 
+                mstore(0, INVALID_FLASH_LOAN)
+                revert (0, 0x4)
+            }
             // fetch tokens
             let firstWord := calldataload(data.offset)
             tokenIn := and(ADDRESS_MASK, shr(96, firstWord))

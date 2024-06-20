@@ -2,6 +2,16 @@
 pragma solidity ^0.8.0;
 
 interface IFlashAggregator {
+    // the compiler should drop these since they are unused
+    error InvalidDexId();
+    error NativeTransferFailed();
+    error WrapFailed();
+    error InvalidDex();
+    error BadPool();
+    error InvalidFlashLoan();
+    error InvalidOperation();
+    error Slippage();
+
     /** COMPOSER */
     function deltaCompose(bytes calldata data) external payable;
 
@@ -68,4 +78,13 @@ interface IFlashAggregator {
 
     // zeroForOne = false
     function swapX2YCallback(uint256 x, uint256 y, bytes calldata path) external;
+
+    // flash loan
+    function executeOperation(
+        address[] calldata,
+        uint256[] calldata,
+        uint256[] calldata, // we assume that the data is known to the caller in advance
+        address initiator,
+        bytes calldata params
+    ) external returns (bool);
 }

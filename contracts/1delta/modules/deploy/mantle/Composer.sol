@@ -842,7 +842,12 @@ contract Composer is MarginTrading {
                         // increment offset
                         currentOffset := add(currentOffset, add(20, calldataLength))
                     }
-                } else revert();
+                } else {
+                    assembly {
+                        mstore(0, INVALID_OPERATION)
+                        revert(0, 0x4)
+                    }
+                }
             }
             // break criteria - we shifted to the end of the calldata
             if (currentOffset >= maxIndex) break;
@@ -871,7 +876,8 @@ contract Composer is MarginTrading {
             // this should prevent caller impersonation
             // but ONLY if we check the caller address, too
             if xor(address(), initiator) {
-                revert(0, 0)
+                mstore(0, INVALID_FLASH_LOAN)
+                revert(0, 0x4)
             }
             let firstWord := calldataload(params.offset)
             let source := and(UINT8_MASK, shr(248, firstWord))
@@ -881,16 +887,19 @@ contract Composer is MarginTrading {
             switch source
             case 0 {
                 if iszero(eq(caller(), LENDLE_POOL)) {
-                    revert(0, 0)
+                    mstore(0, INVALID_FLASH_LOAN)
+                    revert(0, 0x4)
                 }
             }
             case 1 {
                 if iszero(eq(caller(), AURELIUS_POOL)) {
-                    revert(0, 0)
+                    mstore(0, INVALID_FLASH_LOAN)
+                    revert(0, 0x4)
                 }
             }
             default {
-                revert(0, 0)
+                mstore(0, INVALID_FLASH_LOAN)
+                revert(0, 0x4)
             }
             origCaller := and(ADDRESS_MASK, shr(88, firstWord))
             params.offset := add(params.offset, 21)
