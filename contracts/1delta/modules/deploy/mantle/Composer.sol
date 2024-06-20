@@ -813,12 +813,18 @@ contract Composer is MarginTrading {
                         mstore(add(ptr, 324), amount) // amounts[0]
                         mstore(add(ptr, 356), 1) // length modes
                         mstore(add(ptr, 388), 0) // mode = 0
+                        ////////////////////////////////////////////////////
+                        // We attach [souceId | caller] as first 21 bytes
+                        // to the params  
+                        ////////////////////////////////////////////////////
                         mstore(add(ptr, 420), add(21, calldataLength)) // length calldata (plus 1 + address)
                         mstore8(add(ptr, 452), source) // source id
                         // caller at the beginning
                         mstore(add(ptr, 453), shl(96, caller()))
-                        // increment offset by
+
+                        // increment offset by the preceding bytes length
                         currentOffset := add(currentOffset, 37)
+                        // copy the calldataslice for the params
                         calldatacopy(
                             add(ptr, 473), // next slot
                             currentOffset, // offset starts at 37, already incremented
@@ -840,7 +846,7 @@ contract Composer is MarginTrading {
                             revert(0x0, rdlen)
                         }
                         // increment offset
-                        currentOffset := add(currentOffset, add(20, calldataLength))
+                        currentOffset := add(currentOffset, calldataLength)
                     }
                 } else {
                     assembly {
@@ -869,30 +875,36 @@ contract Composer is MarginTrading {
     ) external returns (bool) {
         address origCaller;
         assembly {
-            if lt(params.length, 20) {
-                revert(0, 0)
+            // we expect at least an address
+            // and a sourceId (uint8)
+            // invalid params will lead to errors
+            // in the lines at the bottom
+            if lt(params.length, 21) {
+                mstore(0, INVALID_FLASH_LOAN)
+                revert(0, 0x4)
             }
             // we require to self-initiate
-            // this should prevent caller impersonation
+            // this prevents caller impersonation,
             // but ONLY if we check the caller address, too
             if xor(address(), initiator) {
                 mstore(0, INVALID_FLASH_LOAN)
                 revert(0, 0x4)
             }
+            // validate caller
             let firstWord := calldataload(params.offset)
             let source := and(UINT8_MASK, shr(248, firstWord))
 
-            // validate soure call
+            // Validate the caller
             // we check that the caller is one of the lending pools
             switch source
             case 0 {
-                if iszero(eq(caller(), LENDLE_POOL)) {
+                if xor(caller(), LENDLE_POOL) {
                     mstore(0, INVALID_FLASH_LOAN)
                     revert(0, 0x4)
                 }
             }
             case 1 {
-                if iszero(eq(caller(), AURELIUS_POOL)) {
+                if xor(caller(), AURELIUS_POOL) {
                     mstore(0, INVALID_FLASH_LOAN)
                     revert(0, 0x4)
                 }
@@ -901,11 +913,17 @@ contract Composer is MarginTrading {
                 mstore(0, INVALID_FLASH_LOAN)
                 revert(0, 0x4)
             }
+            // Slice the original caller off the beginnig of the calldata
+            // From here on we have validated that the `origCaller`
+            // was attached in the deltaCompose function
+            // Otherwise, this would be a vulnerability
             origCaller := and(ADDRESS_MASK, shr(88, firstWord))
+            // shift / slice params
             params.offset := add(params.offset, 21)
             params.length := sub(params.length, 21)
         }
-        
+        // within the flash loan, any compose operations
+        // can be executed
         _deltaComposeInternal(origCaller, params);
         return true;
     }
