@@ -813,11 +813,14 @@ contract Composer is MarginTrading {
                         mstore(add(ptr, 324), amount) // amounts[0]
                         mstore(add(ptr, 356), 1) // length modes
                         mstore(add(ptr, 388), 0) // mode = 0
-                        mstore(add(ptr, 420), calldataLength) // length calldata
+                        mstore(add(ptr, 420), add(21, calldataLength)) // length calldata (plus 1 + address)
+                        mstore8(add(ptr, 452), source) // source id
+                        // caller at the beginning
+                        mstore(add(ptr, 453), shl(96, caller()))
                         // increment offset by
                         currentOffset := add(currentOffset, 37)
                         calldatacopy(
-                            add(ptr, 452), // next slot
+                            add(ptr, 473), // next slot
                             currentOffset, // offset starts at 37, already incremented
                             calldataLength // copy given length
                         ) // calldata
@@ -827,7 +830,7 @@ contract Composer is MarginTrading {
                                 pool,
                                 0x0,
                                 ptr,
-                                add(calldataLength, 452), // = 14 * 32 + 4
+                                add(calldataLength, 473), // = 14 * 32 + 4 + 20 (caller)
                                 0x0,
                                 0x0 //
                             )
@@ -837,7 +840,7 @@ contract Composer is MarginTrading {
                             revert(0x0, rdlen)
                         }
                         // increment offset
-                        currentOffset := add(currentOffset, calldataLength)
+                        currentOffset := add(currentOffset, add(20, calldataLength))
                     }
                 } else revert();
             }
@@ -850,7 +853,7 @@ contract Composer is MarginTrading {
      * @dev When `flashLoanSimple` is called on the the Aave pool, it invokes the `executeOperation` hook on the recipient.
      *  We assume that the flash loan fee and params have been pre-computed
      *  We never expect more than one token to be flashed
-     *  We assume that the asset loaned is already infinite-approved
+     *  We assume that the asset loaned is already infinite-approved (this->flashPool)
      */
     function executeOperation(
         address[] calldata,
@@ -890,9 +893,10 @@ contract Composer is MarginTrading {
                 revert(0, 0)
             }
             origCaller := and(ADDRESS_MASK, shr(88, firstWord))
-            params.offset := add(params.offset, 20)
-            params.length := sub(params.length, 20)
+            params.offset := add(params.offset, 21)
+            params.length := sub(params.length, 21)
         }
+        
         _deltaComposeInternal(origCaller, params);
         return true;
     }

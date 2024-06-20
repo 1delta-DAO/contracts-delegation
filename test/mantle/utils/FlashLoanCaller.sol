@@ -49,7 +49,7 @@ contract FCaller {
             if iszero(
                 call(
                     gas(),
-                    address(),
+                    target,
                     0x0,
                     ptr,
                     add(data.length, 484), // = 14 * 32 + 4
