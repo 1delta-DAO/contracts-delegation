@@ -107,15 +107,15 @@ contract DeltaSetup is AddressesMantle, ComposerUtils, Script, Test {
     }
 
     function lendleFlashModuleSelectors() internal pure returns (bytes4[] memory selectors) {
-        selectors = new bytes4[](2);
+        selectors = new bytes4[](1);
         /** margin */
-        selectors[0] = IFlashLoanReceiver.executeOperation.selector;
-        selectors[1] = IFlashLoanReceiver.executeOnLendle.selector;
+        // selectors[0] = IFlashLoanReceiver.executeOperation.selector;
+        selectors[0] = IFlashLoanReceiver.executeOnLendle.selector;
         return selectors;
     }
 
     function lendingSelectors() internal pure returns (bytes4[] memory selectors) {
-        selectors = new bytes4[](18);
+        selectors = new bytes4[](19);
         // baseline
         selectors[0] = ILending.deposit.selector;
         selectors[1] = ILending.withdraw.selector;
@@ -139,6 +139,7 @@ contract DeltaSetup is AddressesMantle, ComposerUtils, Script, Test {
         selectors[15] = ILending.sweepTo.selector;
         selectors[16] = ILending.refundNative.selector;
         selectors[17] = ILending.wrapTo.selector;
+        selectors[18] = IFlashLoanReceiver.executeOperation.selector;
 
         return selectors;
     }

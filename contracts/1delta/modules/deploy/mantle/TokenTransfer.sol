@@ -2,8 +2,10 @@
 
 pragma solidity ^0.8.26;
 
+import {PermitUtils} from "./permit/PermitUtils.sol";
+
 /// @dev Helpers for moving tokens around.
-abstract contract TokenTransfer {
+abstract contract TokenTransfer is PermitUtils {
     address internal constant WRAPPED_NATIVE = 0x78c1b0C915c4FAA5FffA6CAbf0219DA63d7f4cb8;
 
     /// @dev Transfers ERC20 tokens from `owner` to `to`.

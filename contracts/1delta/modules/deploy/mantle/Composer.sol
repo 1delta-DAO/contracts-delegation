@@ -4,7 +4,6 @@ pragma solidity 0.8.26;
 
 import {MarginTrading} from "./MarginTrading.sol";
 import {Commands} from "./composable/Commands.sol";
-import {PermitUtils} from "./permit/PermitUtils.sol";
 
 /**
  * @title Flash aggregator contract.
@@ -13,7 +12,7 @@ import {PermitUtils} from "./permit/PermitUtils.sol";
  *        Single route swap functions exposed to allower lower gas const for L1s
  * @author 1delta Labs
  */
-contract Composer is MarginTrading, PermitUtils {
+contract Composer is MarginTrading {
     /// @dev the highest bit signals whether the swap is internal (the payer is this contract)
     uint256 private constant _PAY_SELF = 1 << 255;
     /// @dev the second bit signals whether  the input token is a FOT token
@@ -22,13 +21,17 @@ contract Composer is MarginTrading, PermitUtils {
     ///      ad 2 amounts (2xuint112) into 32bytes, as such we use this mask for extractinng those
     uint256 private constant _UINT112_MASK = 0x000000000000000000000000000000000000ffffffffffffffffffffffffffff;
 
+    function deltaCompose(bytes calldata data) external payable {
+        _deltaComposeInternal(msg.sender, data);
+    }
+
     /**
      * Execute a set op packed operations
      * @param data packed ops array
      * | op0 | length0 | data0 | op1 | length1 | ...
      * | 1   |    16   | ...   |  1  |    16   | ...
      */
-    function deltaCompose(bytes calldata data) external payable {
+    function _deltaComposeInternal(address callerAddress, bytes calldata data) internal {
         // data loop paramters
         uint256 currentOffset;
         uint256 maxIndex;
@@ -100,7 +103,7 @@ contract Composer is MarginTrading, PermitUtils {
                             payer := address()
                         }
                         default {
-                            payer := caller()
+                            payer := callerAddress
                         }
                         noFOT := iszero(and(_FEE_ON_TRANSFER, amountIn))
                         // mask input amount
@@ -177,7 +180,7 @@ contract Composer is MarginTrading, PermitUtils {
                             payer := address()
                         }
                         default {
-                            payer := caller()
+                            payer := callerAddress
                         }
                         // rigth shigt by pathlength size and masking yields
                         // the final amout out
@@ -244,7 +247,7 @@ contract Composer is MarginTrading, PermitUtils {
                             payer := address()
                         }
                         default {
-                            payer := caller()
+                            payer := callerAddress
                         }
                         // mask input amount
                         amountIn := and(_UINT112_MASK, shr(16, firstParam))
@@ -276,7 +279,7 @@ contract Composer is MarginTrading, PermitUtils {
                             // selector for balanceOf(address)
                             mstore(0x0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
                             // add caller address as parameter
-                            mstore(add(0x0, 0x4), caller())
+                            mstore(add(0x0, 0x4), callerAddress)
                             // call to collateralToken
                             pop(staticcall(gas(), collateralToken, 0x0, 0x24, 0x0, 0x20))
                             // load the retrieved balance
@@ -322,7 +325,7 @@ contract Composer is MarginTrading, PermitUtils {
                             payer := address()
                         }
                         default {
-                            payer := caller()
+                            payer := callerAddress
                         }
                         amountOut := and(_UINT112_MASK, shr(16, firstParam))
                         ////////////////////////////////////////////////////
@@ -353,7 +356,7 @@ contract Composer is MarginTrading, PermitUtils {
                             // selector for balanceOf(address)
                             mstore(0x0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
                             // add caller address as parameter
-                            mstore(0x4, caller())
+                            mstore(0x4, callerAddress)
                             // call to debtToken
                             pop(staticcall(gas(), debtToken, 0x0, 0x24, 0x0, 0x20))
                             // load the retrieved balance
@@ -411,7 +414,7 @@ contract Composer is MarginTrading, PermitUtils {
                         amount := and(_UINT112_MASK, shr(128, lastBytes))
                         lenderId := and(UINT8_MASK, shr(248, lastBytes))
                         mode := and(UINT8_MASK, shr(240, lastBytes))
-                        user := caller()
+                        user := callerAddress
                         currentOffset := add(currentOffset, 56)
                     }
                     // borrow(opdata);
@@ -448,7 +451,7 @@ contract Composer is MarginTrading, PermitUtils {
                         let lastBytes := calldataload(add(currentOffset, 40))
                         amount := and(_UINT112_MASK, shr(136, lastBytes))
                         lenderId := and(UINT8_MASK, shr(248, lastBytes))
-                        user := caller()
+                        user := callerAddress
                         if iszero(amount) {
                             // selector for balanceOf(address)
                             mstore(0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
@@ -479,7 +482,7 @@ contract Composer is MarginTrading, PermitUtils {
                     // zero amount flags that the entire balance is sent
                     ////////////////////////////////////////////////////
                     assembly {
-                        let owner := caller()
+                        let owner := callerAddress
                         let underlying := and(ADDRESS_MASK, shr(96, calldataload(currentOffset)))
                         let receiver := and(ADDRESS_MASK, shr(96, calldataload(add(currentOffset, 20))))
                         let amount := and(_UINT112_MASK, calldataload(add(currentOffset, 22)))
@@ -735,10 +738,162 @@ contract Composer is MarginTrading, PermitUtils {
                         currentOffset := add(currentOffset, permitLength)
                     }
                     _tryPermit(token, permitData);
+                } else if (operation == Commands.EXEC_CREDIT_PERMIT) {
+                    ////////////////////////////////////////////////////
+                    // Execute credit delegation permit.
+                    // The specific permit type is executed based
+                    // on the permit length (credits to 1inch for the implementation)
+                    // Data layout:
+                    //      bytes 0-20:                  token
+                    //      bytes 20-22:                 permit length
+                    //      bytes 22-(22+permit length): permit data
+                    ////////////////////////////////////////////////////
+                    bytes calldata permitData;
+                    address token;
+                    assembly {
+                        token := calldataload(currentOffset)
+                        let permitLength := and(UINT16_MASK, shr(80, token))
+                        token := and(ADDRESS_MASK, shr(96, token))
+                        permitData.offset := add(currentOffset, 22)
+                        permitData.length := permitLength
+                        permitLength := add(22, permitLength)
+                        currentOffset := add(currentOffset, permitLength)
+                    }
+                    _tryCreditPermit(token, permitData);
+                } else if (operation == Commands.FLASH_LOAN) {
+                    ////////////////////////////////////////////////////
+                    // Execute single asset flash loan
+                    // It will forward the calldata and current caller to
+                    // the flash loan operator
+                    // It has to be made sure that the contract holds the
+                    // loaned tokens at the end of the execution
+                    // Leftover assets should be swept in the bach step
+                    // afterwards.
+                    // Data layout:
+                    //      bytes 0-1:                   source (uint8)
+                    //      bytes 1-21:                  asset  (address)
+                    //      bytes 21-35:                 amount (uint112)
+                    //      bytes 35-37:                 params length (uint16)
+                    //      bytes 37-(37+data length):   params (bytes)
+                    ////////////////////////////////////////////////////
+                    assembly {
+                        // first slice, including poolId, refCode, asset
+                        let slice := calldataload(currentOffset)
+                        let source := and(UINT8_MASK, shr(248, slice))
+                        // get token to loan
+                        let token := and(ADDRESS_MASK, shr(88, slice))
+                        // second calldata slice including amount annd params length
+                        slice := calldataload(add(currentOffset, 21))
+                        let amount := and(_UINT112_MASK, shr(144, slice))
+                        // length of params
+                        let calldataLength := and(UINT16_MASK, shr(128, slice))
+
+                        let pool
+                        switch source
+                        case 0 {
+                            pool := LENDLE_POOL
+                        }
+                        default {
+                            pool := AURELIUS_POOL
+                        }
+                        // call flash loan
+                        let ptr := mload(0x40)
+                        // flashLoan(...)
+                        mstore(ptr, 0xab9c4b5d00000000000000000000000000000000000000000000000000000000)
+                        mstore(add(ptr, 4), address()) // receiver is this address
+                        mstore(add(ptr, 36), 0x0e0) // offset assets
+                        mstore(add(ptr, 68), 0x120) // offset amounts
+                        mstore(add(ptr, 100), 0x160) // offset modes
+                        mstore(add(ptr, 132), 0) // onBefhalfOf = 0
+                        mstore(add(ptr, 164), 0x1a0) // offset calldata
+                        mstore(add(ptr, 196), 0) // referral code = 0
+                        mstore(add(ptr, 228), 1) // length assets
+                        mstore(add(ptr, 260), token) // assets[0]
+                        mstore(add(ptr, 292), 1) // length amounts
+                        mstore(add(ptr, 324), amount) // amounts[0]
+                        mstore(add(ptr, 356), 1) // length modes
+                        mstore(add(ptr, 388), 0) // mode = 0
+                        mstore(add(ptr, 420), calldataLength) // length calldata
+                        // increment offset by
+                        currentOffset := add(currentOffset, 37)
+                        calldatacopy(
+                            add(ptr, 452), // next slot
+                            currentOffset, // offset starts at 37, already incremented
+                            calldataLength // copy given length
+                        ) // calldata
+                        if iszero(
+                            call(
+                                gas(),
+                                pool,
+                                0x0,
+                                ptr,
+                                add(calldataLength, 452), // = 14 * 32 + 4
+                                0x0,
+                                0x0 //
+                            )
+                        ) {
+                            let rdlen := returndatasize()
+                            returndatacopy(0, 0, rdlen)
+                            revert(0x0, rdlen)
+                        }
+                        // increment offset
+                        currentOffset := add(currentOffset, calldataLength)
+                    }
                 } else revert();
             }
             // break criteria - we shifted to the end of the calldata
             if (currentOffset >= maxIndex) break;
         }
+    }
+
+    /**
+     * @dev When `flashLoanSimple` is called on the the Aave pool, it invokes the `executeOperation` hook on the recipient.
+     *  We assume that the flash loan fee and params have been pre-computed
+     *  We never expect more than one token to be flashed
+     *  We assume that the asset loaned is already infinite-approved
+     */
+    function executeOperation(
+        address[] calldata,
+        uint256[] calldata,
+        uint256[] calldata, // we assume that the data is known to the caller in advance
+        address initiator,
+        bytes calldata params
+    ) external returns (bool) {
+        address origCaller;
+        assembly {
+            if lt(params.length, 20) {
+                revert(0, 0)
+            }
+            // we require to self-initiate
+            // this should prevent caller impersonation
+            // but ONLY if we check the caller address, too
+            if xor(address(), initiator) {
+                revert(0, 0)
+            }
+            let firstWord := calldataload(params.offset)
+            let source := and(UINT8_MASK, shr(248, firstWord))
+
+            // validate soure call
+            // we check that the caller is one of the lending pools
+            switch source
+            case 0 {
+                if iszero(eq(caller(), LENDLE_POOL)) {
+                    revert(0, 0)
+                }
+            }
+            case 1 {
+                if iszero(eq(caller(), AURELIUS_POOL)) {
+                    revert(0, 0)
+                }
+            }
+            default {
+                revert(0, 0)
+            }
+            origCaller := and(ADDRESS_MASK, shr(88, firstWord))
+            params.offset := add(params.offset, 20)
+            params.length := sub(params.length, 20)
+        }
+        _deltaComposeInternal(origCaller, params);
+        return true;
     }
 }

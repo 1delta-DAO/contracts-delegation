@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.25;
 
-import "./IERC20Permit.sol";
-import "./IDaiLikePermit.sol";
-import "./IPermit2.sol";
+import {IERC20Permit} from "./IERC20Permit.sol";
+import {IDaiLikePermit} from "./IDaiLikePermit.sol";
+import {ICreditPermit} from "./ICreditPermit.sol";
+import {IPermit2} from "./IPermit2.sol";
 
 /// @title PermitUtils
 /// @notice A contract containing common utilities for Permit2
@@ -150,6 +151,61 @@ contract PermitUtils {
         }
     }
 
+    /**
+     * Executes credit delegation on given tokens / lenders
+     * Note that for lenders like Aave V3, the token needs to
+     * be the respective debt token and NOT the underlying
+     * Others like compound will not use it at all.
+     * @param token asset to permit / delegate
+     * @param permit calldata
+     */
+    function _tryCreditPermit(address token, bytes calldata permit) internal {
+        bytes4 permitSelector = ICreditPermit.delegationWithSig.selector;
+        assembly {
+            let success
+            let ptr := mload(0x40)
+            switch permit.length
+            // Compact IERC20Permit
+            case 100 {
+                mstore(ptr, permitSelector)     // store selector
+                mstore(add(ptr, 0x04), caller())   // store owner
+                mstore(add(ptr, 0x24), address()) // store spender
+
+                // Compact IERC20Permit.permit(uint256 value, uint32 deadline, uint256 r, uint256 vs)
+                {  // stack too deep
+                    let deadline := shr(224, calldataload(add(permit.offset, 0x20))) // loads permit.offset 0x20..0x23
+                    let vs := calldataload(add(permit.offset, 0x44))                 // loads permit.offset 0x44..0x63
+
+                    calldatacopy(add(ptr, 0x44), permit.offset, 0x20)            // store value     = copy permit.offset 0x00..0x19
+                    mstore(add(ptr, 0x64), sub(deadline, 1))                     // store deadline  = deadline - 1
+                    mstore(add(ptr, 0x84), add(27, shr(255, vs)))                // store v         = most significant bit of vs + 27 (27 or 28)
+                    calldatacopy(add(ptr, 0xa4), add(permit.offset, 0x24), 0x20) // store r         = copy permit.offset 0x24..0x43
+                    mstore(add(ptr, 0xc4), shr(1, shl(1, vs)))                   // store s         = vs without most significant bit
+                }
+                // IERC20Permit.permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+                success := call(gas(), token, 0, ptr, 0xe4, 0, 0)
+            }
+                        // IERC20Permit
+            case 224 {
+                mstore(ptr, permitSelector)
+                calldatacopy(add(ptr, 0x04), permit.offset, permit.length) // copy permit calldata
+                // IERC20Permit.permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+                success := call(gas(), token, 0, ptr, 0xe4, 0, 0)
+            }
+            // Unknown
+            default {
+                mstore(ptr, _PERMIT_LENGTH_ERROR)
+                revert(ptr, 4)
+            }
+
+            // revert if not successful
+            if iszero(success) {
+                returndatacopy(ptr, 0, returndatasize())
+                revert(ptr, returndatasize())
+            }
+        }
+     }
+
     /// @notice transferERC20from version using permit2
     function _transferFromPermit2(address token, address owner, address to, uint256 amount) internal {
         bytes4 permit2transferFromSelector = IPermit2.transferFrom.selector;
@@ -164,11 +220,7 @@ contract PermitUtils {
             mstore(add(ptr, 0x24), to)
             mstore(add(ptr, 0x44), amount)
             mstore(add(ptr, 0x64), token)
-            let success := call(gas(), PERMIT2, 0, ptr, 0x84, 0x0, 0x0)
-            if success {
-                success := gt(extcodesize(PERMIT2), 0)
-            }
-            if iszero(success) {
+            if iszero(call(gas(), PERMIT2, 0, ptr, 0x84, 0x0, 0x0)) {
                 returndatacopy(ptr, 0, returndatasize())
                 revert(ptr, returndatasize())
             }

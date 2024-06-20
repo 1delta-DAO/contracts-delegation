@@ -622,7 +622,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
 
     // The uniswapV2 style callback for fusionX
     function FusionXCall(
-        address,
+        address sender,
         uint256 amount0,
         uint256 amount1,
         bytes calldata data
@@ -631,6 +631,9 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         address tokenOut;
         // the fee parameter in the path can be ignored for validating a V2 pool
         assembly {
+            // revert if sender param is not this address
+            if xor(sender, address()) { revert (0, 0) }
+            // fetch tokens
             tokenIn := and(ADDRESS_MASK, shr(96, calldataload(data.offset)))
             tokenOut := and(ADDRESS_MASK, shr(96, calldataload(add(data.offset, 42))))
             let ptr := mload(0x40)
@@ -659,7 +662,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
 
     // The uniswapV2 style callback for Merchant Moe
     function moeCall(
-        address,
+        address sender,
         uint256 amount0,
         uint256 amount1,
         bytes calldata data
@@ -668,6 +671,9 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         address tokenOut;
         // the fee parameter in the path can be ignored for validating a V2 pool
         assembly {
+            // revert if sender param is not this address
+            if xor(sender, address()) { revert (0, 0) }
+            // fetch tokens
             tokenIn := and(ADDRESS_MASK, shr(96, calldataload(data.offset)))
             tokenOut := and(ADDRESS_MASK, shr(96, calldataload(add(data.offset, 42))))
             let ptr := mload(0x40)
@@ -691,7 +697,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
 
     // The uniswapV2 style callback for Velocimeter, Cleopatra V1 and Stratum
     function hook(
-        address,
+        address sender,
         uint256 amount0,
         uint256 amount1,
         bytes calldata data
@@ -701,6 +707,9 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         address tokenOut;
         // the fee parameter in the path can be ignored for validating a V2 pool
         assembly {
+            // revert if sender param is not this address
+            if xor(sender, address()) { revert (0, 0) }
+            // fetch tokens
             let firstWord := calldataload(data.offset)
             tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
             let dexId := and(shr(80, firstWord), UINT8_MASK) // swap pool dexId

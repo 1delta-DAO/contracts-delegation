@@ -11,7 +11,7 @@ contract ComposerUtils {
     uint256 internal constant PAY_SELF = 1 << 255;
     uint256 internal constant FOT = 1 << 254;
     uint256 internal constant UINT128_MASK = 0x00000000000000000000000000000000ffffffffffffffffffffffffffffffff;
-    uint256 internal constant UINT112_MASK    = 0x000000000000000000000000000000000000ffffffffffffffffffffffffffff;
+    uint256 internal constant UINT112_MASK = 0x000000000000000000000000000000000000ffffffffffffffffffffffffffff;
     uint256 internal constant UINT112_MASK_16 = 0x00000000000000000000000000000000ffffffffffffffffffffffffffff0000;
     uint256 internal constant UINT112_MASK_U = 0x0000ffffffffffffffffffffffffffff00000000000000000000000000000000;
 
@@ -88,7 +88,6 @@ contract ComposerUtils {
             );
     }
 
-
     function populateAmountDeposit(uint8 lender, uint256 amount) internal pure returns (bytes memory data) {
         data = abi.encodePacked(lender, uint112(amount)); // 14 + 1 byte
     }
@@ -122,6 +121,14 @@ contract ComposerUtils {
         return am;
     }
 
+    function encodeAaveV2FlashLoan(
+        address asset,
+        uint256 amount,
+        uint8 poolId, //
+        bytes memory data
+    ) internal pure returns (bytes memory) {
+        return abi.encodePacked(uint8(Commands.FLASH_LOAN), poolId, asset, uint112(amount), uint16(data.length), data);
+    }
 
     function encodeSwap(
         uint256 command,
@@ -131,27 +138,10 @@ contract ComposerUtils {
         bool self,
         bytes memory path
     ) internal pure returns (bytes memory) {
-        return
-            abi.encodePacked(
-                uint8(command),
-                receiver,
-                encodeSwapAmountParams(amount, max, self, path.length),
-                path
-            );
+        return abi.encodePacked(uint8(command), receiver, encodeSwapAmountParams(amount, max, self, path.length), path);
     }
 
-    function encodeFlashSwap(
-        uint256 command,
-        uint256 amount,
-        uint max,
-        bool self,
-        bytes memory path
-    ) internal pure returns (bytes memory) {
-        return
-            abi.encodePacked(
-                uint8(command),
-                encodeSwapAmountParams(amount, max, self, path.length),
-                path
-            );
+    function encodeFlashSwap(uint256 command, uint256 amount, uint max, bool self, bytes memory path) internal pure returns (bytes memory) {
+        return abi.encodePacked(uint8(command), encodeSwapAmountParams(amount, max, self, path.length), path);
     }
 }

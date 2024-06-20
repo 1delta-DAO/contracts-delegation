@@ -41,7 +41,7 @@ contract LendleFlashModule is WithStorage, BaseLending, TokenTransfer, IFlashLoa
             tokens,
             amounts,
             new uint256[](1),
-            address(this),
+            address(0),
             abi.encode(DeltaFlashParams({deltaParams: deltaParams, encodedSwapCall: swapCalldata, user: msg.sender})),
             0
         );

@@ -155,7 +155,7 @@ abstract contract V3TypeSwapper {
                 // Store sqrtPriceLimitX96
                 mstore(add(ptr, 100), MIN_SQRT_RATIO)
                 // Store data offset
-                mstore(add(ptr, 132), 0xa0)
+                mstore(add(ptr, 132), 0xa0) // 160
                 // Store path
                 calldatacopy(add(ptr, 196), path.offset, pathLength)
 
