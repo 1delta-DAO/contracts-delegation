@@ -434,6 +434,26 @@ contract Composer is MarginTrading {
                         receiver := and(ADDRESS_MASK, shr(96, calldataload(add(offset, 20))))
                         let lastBytes := calldataload(add(offset, 40))
                         amount := and(_UINT112_MASK, shr(128, lastBytes))
+                        // zero means that we repay whatever is in this contract
+                        if iszero(amount) {
+                            // selector for balanceOf(address)
+                            mstore(0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+                            // add this address as parameter
+                            mstore(0x04, address())
+                            // call to token
+                            pop(
+                                staticcall(
+                                    gas(),
+                                    underlying, // token
+                                    0x0,
+                                    0x24,
+                                    0x0,
+                                    0x20
+                                )
+                            )
+                            // load the retrieved balance
+                            amount := mload(0x0)
+                        }
                         lenderId := and(UINT8_MASK, shr(248, lastBytes))
                         mode := and(UINT8_MASK, shr(240, lastBytes))
                         currentOffset := add(currentOffset, 56)
@@ -473,7 +493,6 @@ contract Composer is MarginTrading {
                         }
                         currentOffset := add(currentOffset, 55)
                     }
-
                     _preWithdraw(underlying, user, amount, lenderId);
                     _withdraw(underlying, receiver, amount, lenderId);
                 } else if (operation == Commands.TRANSFER_FROM) {
@@ -760,6 +779,94 @@ contract Composer is MarginTrading {
                         currentOffset := add(currentOffset, permitLength)
                     }
                     _tryCreditPermit(token, permitData);
+                } else if (operation == Commands.EXTERNAL_CALL) {
+                    ////////////////////////////////////////////////////
+                    // Execute call to external contract. It consits of
+                    // an approval target and call target.
+                    // The combo of [approvalTarget, target] has to be whitelisted
+                    // for calls. Those are exclusively swap aggregator contracts.
+                    // An amount has to be supplied to check the allowance from
+                    // this contract to target.
+                    // NEVER whitelist a token as an attacker can call 
+                    // `transferFrom` on target
+                    // Data layout:
+                    //      bytes 0-20:                  token
+                    //      bytes 20-40:                 approvalTarget
+                    //      bytes 40-60:                 target
+                    //      bytes 60-74:                 amount
+                    //      bytes 74-76:                 calldata length
+                    //      bytes 76-(76+permit length): permit data
+                    ////////////////////////////////////////////////////
+                    assembly {
+                        // get first three addresses
+                        let token := and(ADDRESS_MASK, shr(96, calldataload(currentOffset)))
+                        let approvalTarget := and(ADDRESS_MASK, shr(96, calldataload(add(currentOffset, 20))))
+                        let aggregator := and(ADDRESS_MASK, shr(96, calldataload(add(currentOffset, 40))))
+                        // get slot isValidApproveAndCallTarget[approvalTarget][aggregator]
+                        mstore(0x0, approvalTarget)
+                        mstore(0x20, EXTERNAL_CALLS_SLOT)
+                        mstore(0x20, keccak256(0x0, 0x40))
+                        mstore(0x0, aggregator)
+                        // validate approvalTarget / target combo
+                        if iszero(sload(keccak256(0x0, 0x40))) {
+                            revert(0, 0)
+                        }
+                        // get amount to check allowance
+                        let amount := calldataload(add(currentOffset, 60))
+                        let dataLength := and(UINT16_MASK, shr(128, amount))
+                        amount := and(_UINT112_MASK, shr(144, amount))
+
+                        let ptr := mload(0x40)
+
+                        ////////////////////////////////////////////////////
+                        // get allowance and check if we have to approve
+                        ////////////////////////////////////////////////////
+                        mstore(ptr, 0xdd62ed3e00000000000000000000000000000000000000000000000000000000)
+                        mstore(add(ptr, 0x4), address())
+                        mstore(add(ptr, 0x24), approvalTarget)
+
+                        // call to token
+                        // success is false or return data not provided
+                        if iszero(staticcall(gas(), token, ptr, 0x44, ptr, 0x20)) {
+                            revert(0x0, 0x0)
+                        }
+                        // approve if necessary
+                        if lt(mload(ptr), amount) {
+                            ////////////////////////////////////////////////////
+                            // Approve, at this point it is clear that the target
+                            // whitelisted
+                            ////////////////////////////////////////////////////
+                            // selector for approve(address,uint256)
+                            mstore(ptr, 0x095ea7b300000000000000000000000000000000000000000000000000000000)
+                            mstore(add(ptr, 0x04), approvalTarget)
+                            mstore(add(ptr, 0x24), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff)
+
+                            if iszero(call(gas(), token, 0x0, ptr, 0x44, ptr, 32)) {
+                                revert(0x0, 0x0)
+                            }
+                        }
+                        // increment offset to calldata start 
+                        currentOffset := add(76, currentOffset)
+                        // copy calldata
+                        calldatacopy(ptr, currentOffset, dataLength)
+                        if iszero(
+                            call(
+                                gas(),
+                                aggregator,
+                                0x0,
+                                ptr, // 
+                                dataLength, // the length must be correct or the call will fail
+                                0x0, // output = empty
+                                0x0 // output size = zero
+                            )
+                        ) {
+                            let rdsize := returndatasize()
+                            returndatacopy(0, 0, rdsize)
+                            revert(0, rdsize)
+                        }
+                        // increment offset by data length
+                        currentOffset := add(currentOffset, dataLength)
+                    }
                 } else if (operation == Commands.FLASH_LOAN) {
                     ////////////////////////////////////////////////////
                     // Execute single asset flash loan
@@ -774,7 +881,7 @@ contract Composer is MarginTrading {
                     //      bytes 1-21:                  asset  (address)
                     //      bytes 21-35:                 amount (uint112)
                     //      bytes 35-37:                 params length (uint16)
-                    //      bytes 37-(37+data length):   params (bytes)
+                    //      bytes 37-(37+data length):   params (bytes) (to execute deltaCompose)
                     ////////////////////////////////////////////////////
                     assembly {
                         // first slice, including poolId, refCode, asset
@@ -815,7 +922,7 @@ contract Composer is MarginTrading {
                         mstore(add(ptr, 388), 0) // mode = 0
                         ////////////////////////////////////////////////////
                         // We attach [souceId | caller] as first 21 bytes
-                        // to the params  
+                        // to the params
                         ////////////////////////////////////////////////////
                         mstore(add(ptr, 420), add(21, calldataLength)) // length calldata (plus 1 + address)
                         mstore8(add(ptr, 452), source) // source id
@@ -922,7 +1029,7 @@ contract Composer is MarginTrading {
             params.offset := add(params.offset, 21)
             params.length := sub(params.length, 21)
         }
-        // within the flash loan, any compose operations
+        // within the flash loan, any compose operation
         // can be executed
         _deltaComposeInternal(origCaller, params);
         return true;

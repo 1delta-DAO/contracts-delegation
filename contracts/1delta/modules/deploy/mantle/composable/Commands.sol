@@ -35,4 +35,5 @@ library Commands {
     uint256 constant EXEC_PERMIT = 0x0a;
     uint256 constant EXEC_CREDIT_PERMIT = 0x23;
     uint256 constant FLASH_LOAN = 0x24;
+    uint256 constant EXTERNAL_CALL = 0x26;
 }

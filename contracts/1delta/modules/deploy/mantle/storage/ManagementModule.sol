@@ -39,8 +39,8 @@ contract ManagementModule is WithMantleStorage {
         ls().collateralTokens[key] = _aToken;
     }
 
-    function setValidTarget(address target, bool value) external onlyManagement {
-        gs().isValidTarget[target] = value;
+    function setValidTarget(address _approvalTarget, address _target, bool value) external onlyManagement {
+        es().isValidApproveAndCallTarget[_approvalTarget][_target] = value;
     }
 
     function approveAddress(address[] memory assets, address target) external onlyManagement {
@@ -73,7 +73,16 @@ contract ManagementModule is WithMantleStorage {
 
     /** TARGET FOR SWAPPING */
 
-    function getIsValidTarget(address _target) external view returns (bool) {
-        return gs().isValidTarget[_target];
+    bytes32 internal constant EXTERNAL_CALLS_SLOT = 0x9985cdfd7652aca37435f47bfd247a768d7f8206ef9518f447bfe8914bf4c668;
+
+    function getIsValidTarget(address _approvalTarget, address _target) external view returns (bool val) {
+        // return es().isValidApproveAndCallTarget[_approvalTarget][_target];
+        assembly {
+            mstore(0x0, _approvalTarget)
+            mstore(0x20, EXTERNAL_CALLS_SLOT)
+            mstore(0x20, keccak256(0x0, 0x40))
+            mstore(0x0, _target)
+            val := sload(keccak256(0x0, 0x40))
+        }
     }
 }

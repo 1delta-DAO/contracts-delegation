@@ -28,7 +28,6 @@ import {MarginTraderInit} from "../../contracts/1delta/initializers/MarginTrader
 // core modules
 import {ManagementModule} from "../../contracts/1delta/modules/deploy/mantle/storage/ManagementModule.sol";
 import {Composer} from "../../contracts/1delta/modules/deploy/mantle/Composer.sol";
-import {LendleFlashModule} from "../../contracts/1delta/modules/deploy/mantle/LendleFlashModule.sol";
 import {DeltaLendingInterfaceMantle} from "../../contracts/1delta/modules/deploy/mantle/LendingInterface.sol";
 
 // forge
@@ -107,14 +106,6 @@ contract DeltaSetup is AddressesMantle, ComposerUtils, Script, Test {
         return selectors;
     }
 
-    function lendleFlashModuleSelectors() internal pure returns (bytes4[] memory selectors) {
-        selectors = new bytes4[](1);
-        /** margin */
-        // selectors[0] = IFlashLoanReceiver.executeOperation.selector;
-        selectors[0] = IFlashLoanReceiver.executeOnLendle.selector;
-        return selectors;
-    }
-
     function lendingSelectors() internal pure returns (bytes4[] memory selectors) {
         selectors = new bytes4[](18);
         // baseline
@@ -156,7 +147,6 @@ contract DeltaSetup is AddressesMantle, ComposerUtils, Script, Test {
         Composer _aggregator = new Composer();
         DeltaLendingInterfaceMantle _lending = new DeltaLendingInterfaceMantle();
         MarginTraderInit init = new MarginTraderInit();
-        // LendleFlashModule lendleFlashModule = new LendleFlashModule();
 
         management = IManagement(brokerProxyAddress);
         deltaConfig = IModuleConfig(brokerProxyAddress);
@@ -167,7 +157,6 @@ contract DeltaSetup is AddressesMantle, ComposerUtils, Script, Test {
         _moduleConfig[1] = IModuleConfig.ModuleConfig(address(_aggregator), IModuleConfig.ModuleConfigAction.Add, flashAggregatorSelectors());
         _moduleConfig[2] = IModuleConfig.ModuleConfig(address(init), IModuleConfig.ModuleConfigAction.Add, initializeSelectors());
         _moduleConfig[3] = IModuleConfig.ModuleConfig(address(_lending), IModuleConfig.ModuleConfigAction.Add, lendingSelectors());
-        // _moduleConfig[4] = IModuleConfig.ModuleConfig(address(lendleFlashModule), IModuleConfig.ModuleConfigAction.Add, lendleFlashModuleSelectors());
 
         // add all modules
         deltaConfig.configureModules(_moduleConfig);

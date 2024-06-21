@@ -22,7 +22,7 @@ interface IManagement {
 
     function approveLendingPool(address[] memory assets) external;
 
-    function setValidTarget(address target, bool value) external;
+    function setValidTarget(address approvalTarget, address target, bool value) external;
 
     function approveAddress(address[] memory assets, address target) external;
 
@@ -36,7 +36,7 @@ interface IManagement {
 
     function getVToken(address _underlying) external view returns (address);
 
-    function getIsValidTarget(address _target) external view returns (bool);
+    function getIsValidTarget(address _approvalTarget, address _target) external view returns (bool);
 
     function getCollateralToken(address _underlying, uint8 _lenderId) external view returns (address);
 

@@ -2,6 +2,8 @@
 
 pragma solidity ^0.8.26;
 
+import {Slots} from "./storage/Slots.sol";
+
 /******************************************************************************\
 * Author: Achthar | 1delta 
 /******************************************************************************/
@@ -11,12 +13,7 @@ pragma solidity ^0.8.26;
 /**
  * @notice Lending base contract that wraps multiple lender types.
  */
-abstract contract BaseLending {
-    // lender token slots
-    bytes32 internal constant COLLATERAL_TOKENS_SLOT = 0xff0471b67e4632a86905e3993f5377c608866007c59224eed7731408a9f3f8b3;
-    bytes32 internal constant VARIABLE_DEBT_TOKENS_SLOT = 0xff0471b67e4632a86905e3993f5377c608866007c59224eed7731408a9f3f8b4;
-    bytes32 internal constant STABLE_DEBT_TOKENS_SLOT = 0xff0471b67e4632a86905e3993f5377c608866007c59224eed7731408a9f3f8b5;
-    
+abstract contract BaseLending is Slots {
     // lender pool addresses
     address internal constant AURELIUS_POOL = 0x7c9C6F5BEd9Cfe5B9070C7D3322CF39eAD2F9492;
     address internal constant LENDLE_POOL = 0xCFa5aE7c2CE8Fadc6426C1ff872cA45378Fb7cF3;

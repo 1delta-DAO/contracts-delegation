@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.26;
 
-
 struct GeneralLenderStorage {
     // map encoded uint8 + underlying address to lender tokens
     mapping(bytes32 => address) collateralTokens;
@@ -21,10 +20,8 @@ struct GeneralCache {
     bytes32 cache;
 }
 
-// for flash loan validations and call targets
-struct FlashLoanGatewayStorage {
-    uint256 isOpen;
-    mapping(address => bool) isValidTarget;
+struct ExternalCallStorage {
+    mapping(address => mapping(address => bool)) isValidApproveAndCallTarget;
 }
 
 struct InitializerStorage {
@@ -33,17 +30,11 @@ struct InitializerStorage {
 
 library LibStorage {
     // Storage are structs where the data gets updated throughout the lifespan of the project
-    bytes32 constant DATA_PROVIDER_STORAGE = keccak256("broker.storage.dataProvider");
-    bytes32 constant MARGIN_SWAP_STORAGE = keccak256("broker.storage.marginSwap");
-    bytes32 constant AAVE_STORAGE = keccak256("broker.storage.aave");
     bytes32 constant LENDER_STORAGE = keccak256("broker.storage.lender");
     bytes32 constant MANAGEMENT_STORAGE = keccak256("broker.storage.management");
-    bytes32 constant FLASH_LOAN_GATEWAY = keccak256("broker.storage.flashLoanGateway");
     bytes32 constant INITIALIZER = keccak256("broker.storage.initailizerStorage");
-    bytes32 constant NUMBER_CACHE = keccak256("broker.storage.cache.number");
-    bytes32 constant ADDRESS_CACHE = keccak256("broker.storage.cache.address");
     bytes32 constant GENERAL_CACHE = keccak256("broker.storage.cache.general");
-
+    bytes32 constant EXTERNAL_CALL_STORAGE = keccak256("broker.storage.externalCalls");
 
     function lenderStorage() internal pure returns (GeneralLenderStorage storage ls) {
         bytes32 position = LENDER_STORAGE;
@@ -66,17 +57,17 @@ library LibStorage {
         }
     }
 
-    function flashLoanGatewayStorage() internal pure returns (FlashLoanGatewayStorage storage gs) {
-        bytes32 position = FLASH_LOAN_GATEWAY;
-        assembly {
-            gs.slot := position
-        }
-    }
-
     function initializerStorage() internal pure returns (InitializerStorage storage izs) {
         bytes32 position = INITIALIZER;
         assembly {
             izs.slot := position
+        }
+    }
+
+    function externalCallsStorage() internal pure returns (ExternalCallStorage storage es) {
+        bytes32 position = EXTERNAL_CALL_STORAGE;
+        assembly {
+            es.slot := position
         }
     }
 }
@@ -93,16 +84,16 @@ contract WithMantleStorage {
         return LibStorage.managementStorage();
     }
 
-    function gs() internal pure returns (FlashLoanGatewayStorage storage) {
-        return LibStorage.flashLoanGatewayStorage();
-    }
-
     function gcs() internal pure returns (GeneralCache storage) {
         return LibStorage.generalCacheStorage();
     }
 
     function izs() internal pure returns (InitializerStorage storage) {
         return LibStorage.initializerStorage();
+    }
+
+    function es() internal pure returns (ExternalCallStorage storage) {
+        return LibStorage.externalCallsStorage();
     }
 
     /** TOKEN GETTERS */
