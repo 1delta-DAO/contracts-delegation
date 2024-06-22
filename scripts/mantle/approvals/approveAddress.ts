@@ -1,7 +1,8 @@
-import { ManagementModule__factory } from "../../../types";
+import { ManagementModule__factory, MantleManagementModule } from "../../../types";
 import { TOKENS_MANTLE } from "../addresses/tokens";
 import { AURELIUS_POOL } from "../addresses/aureliusAddresses";
 import { LENDLE_POOL } from "../addresses/lendleAddresses";
+import { MANTLE_CONFIGS, getMantleConfig } from "../utils";
 
 const managementInterface = ManagementModule__factory.createInterface()
 
@@ -63,3 +64,45 @@ export function getAureliusApproves(): string[] {
     ]
 }
 
+export async function execStratumApproves(manager: MantleManagementModule, nonce: number) {
+    let tx = await manager.approveAddress(
+        Object.values(STRATUM_USD),
+        stratum3USD,
+        getMantleConfig(nonce++)
+    )
+    await tx.wait()
+    tx = await manager.approveAddress(
+        Object.values(STRATUM_USD_2),
+        stratum3USD_2,
+        getMantleConfig(nonce++)
+    )
+    await tx.wait()
+    tx = await manager.approveAddress(
+        Object.values(underlyingsEth),
+        stratumETH,
+        getMantleConfig(nonce++)
+    )
+    await tx.wait()
+    return nonce
+}
+
+export async function execLendleApproves(manager: MantleManagementModule, nonce: number) {
+    const tx = await manager.approveAddress(
+        Object.values(TOKENS_MANTLE),
+        LENDLE_POOL,
+        getMantleConfig(nonce++)
+    )
+    await tx.wait()
+    return nonce
+
+}
+
+export async function execAureliusApproves(manager: MantleManagementModule, nonce: number) {
+    const tx = await manager.approveAddress(
+        Object.values(TOKENS_MANTLE),
+        AURELIUS_POOL,
+        getMantleConfig(nonce++)
+    )
+    await tx.wait()
+    return nonce
+}

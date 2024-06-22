@@ -12,7 +12,7 @@ import {WithMantleStorage} from "./BrokerStorage.sol";
  * @notice Allows the owner to insert token and lending protocol data
  *         Due to contract size limitations this is a separate contract
  */
-contract ManagementModule is WithMantleStorage {
+contract MantleManagementModule is WithMantleStorage {
     modifier onlyOwner() {
         require(ms().contractOwner == msg.sender, "Only owner can interact.");
         _;

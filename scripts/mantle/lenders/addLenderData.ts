@@ -1,8 +1,9 @@
-import { ManagementModule__factory } from "../../../types";
+import { ManagementModule__factory, MantleManagementModule } from "../../../types";
 import { LENDLE_A_TOKENS, LENDLE_S_TOKENS, LENDLE_V_TOKENS } from "../addresses/lendleAddresses";
 import { constants } from "ethers";
 import { AURELIUS_A_TOKENS, AURELIUS_S_TOKENS, AURELIUS_V_TOKENS } from "../addresses/aureliusAddresses";
 import { TOKENS_MANTLE } from "../addresses/tokens";
+import { MANTLE_CONFIGS, getMantleConfig } from "../utils";
 
 
 const managementInterface = ManagementModule__factory.createInterface()
@@ -45,4 +46,40 @@ export function getAddAureliusTokens() {
         )
     }
     return calls
+}
+
+export async function addLendleTokens(manager: MantleManagementModule, nonce: number) {
+    const tokenKeys = Object.keys(LENDLE_A_TOKENS)
+    for (let k of tokenKeys) {
+        console.log("add lendle tokens a", k)
+        const token = TOKENS_MANTLE[k]
+        const tx = await manager.addGeneralLenderTokens(
+            token,
+            LENDLE_A_TOKENS[k],
+            LENDLE_V_TOKENS[k],
+            LENDLE_S_TOKENS?.[k] ?? constants.AddressZero,
+            0,
+            getMantleConfig(nonce++)
+        )
+        await tx.wait()
+    }
+    return nonce
+}
+
+export async function addAureliusTokens(manager: MantleManagementModule, nonce: number) {
+    const tokenKeys = Object.keys(AURELIUS_A_TOKENS)
+    for (let k of tokenKeys) {
+        console.log("add aurelius tokens a", k)
+        const token = TOKENS_MANTLE[k]
+        const tx = await manager.addGeneralLenderTokens(
+            token,
+            AURELIUS_A_TOKENS[k],
+            AURELIUS_V_TOKENS[k],
+            AURELIUS_S_TOKENS?.[k] ?? constants.AddressZero,
+            1,
+            getMantleConfig(nonce++)
+        )
+        await tx.wait()
+    }
+    return nonce
 }
