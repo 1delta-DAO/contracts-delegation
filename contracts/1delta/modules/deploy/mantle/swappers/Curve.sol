@@ -253,7 +253,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
                 let success := call(
                     gas(),
                     and(
-                        0x00ffffffffffffffffffffffffffffffffffffffff,
+                        ADDRESS_MASK,
                         shr(96, calldataload(pathSlice.offset)) // tokenIn
                     ), 
                     0,
@@ -288,7 +288,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
             let indexData := calldataload(add(pathSlice.offset, 21))
             let indexIn := and(shr(240, indexData), 0xff)
             let indexOut := and(shr(232, indexData), 0xff)
-            let pool := and(shr(72, indexData), 0x00ffffffffffffffffffffffffffffffffffffffff)
+            let pool := and(shr(72, indexData), ADDRESS_MASK)
             ////////////////////////////////////////////////////
             // Execute swap function 
             ////////////////////////////////////////////////////
@@ -319,7 +319,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
                 let success := call(
                     gas(),
                     and(
-                        0x00ffffffffffffffffffffffffffffffffffffffff,
+                        ADDRESS_MASK,
                         shr(96, calldataload(add(pathSlice.offset, 44))) // tokenIn, added 2x addr + 4x uint8
                     ), 
                     0,

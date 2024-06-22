@@ -15,8 +15,6 @@ import {V3TypeSwapper} from "./V3Type.sol";
  * @notice Contains basic logic for swap executions with DEXs
  */
 abstract contract UniTypeSwapper is V3TypeSwapper {
-    uint256 internal constant ADDRESS_MASK_UPPER = 0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff;
-
     /// @dev used for some of the denominators in solidly calculations
     uint256 private constant SCALE_18 = 1.0e18;
 
