@@ -6,11 +6,10 @@ import {MarginTrading} from "./MarginTrading.sol";
 import {Commands} from "./composable/Commands.sol";
 
 /**
- * @title Flash aggregator contract.
+ * @title Universal aggregator contract.
  *        Allows spot and margin swap aggregation
  *        Efficient baching through compact calldata usage.
- *        Single route swap functions exposed to allower lower gas const for L1s
- * @author 1delta Labs
+ * @author 1delta Labs AG
  */
 contract Composer is MarginTrading {
     /// @dev the highest bit signals whether the swap is internal (the payer is this contract)
@@ -21,12 +20,18 @@ contract Composer is MarginTrading {
     ///      ad 2 amounts (2xuint112) into 32bytes, as such we use this mask for extractinng those
     uint256 private constant _UINT112_MASK = 0x000000000000000000000000000000000000ffffffffffffffffffffffffffff;
 
+    /**
+     * Batch-executes a series of operations
+     * @param data compressed instruction calldata 
+     */
     function deltaCompose(bytes calldata data) external payable {
         _deltaComposeInternal(msg.sender, data);
     }
 
     /**
      * Execute a set op packed operations
+     * @param callerAddress the address of the EOA/contract that 
+     *                      initially triggered the `deltaCompose`
      * @param data packed ops array
      * | op0 | length0 | data0 | op1 | length1 | ...
      * | 1   |    16   | ...   |  1  |    16   | ...

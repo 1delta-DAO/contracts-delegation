@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.26;
 
+import {LibModules} from "../../../../proxy/libraries/LibModules.sol";
+
+// We store lender data in the contract storage
+// This is to avoid external contract calls to
+// proxies to get certain addresses / references
 struct GeneralLenderStorage {
     // map encoded uint8 + underlying address to lender tokens
     mapping(bytes32 => address) collateralTokens;
@@ -10,29 +15,24 @@ struct GeneralLenderStorage {
     mapping(uint256 => address) lendingPools;
 }
 
-struct ManagementStorage {
-    address chief;
-    mapping(address => bool) isManager;
-}
-
 // allows storing anything into a bytes32
+// typically used for transient storage variables
 struct GeneralCache {
     bytes32 cache;
 }
 
+// a validation apping that ensures that an external call can
+// be executed on an address
+// it is typically linked to an approval call
 struct ExternalCallStorage {
     mapping(address => mapping(address => bool)) isValidApproveAndCallTarget;
 }
 
-struct InitializerStorage {
-    bool initialized;
-}
-
 library LibStorage {
+    // this is the core diamond storage location
+    bytes32 constant MODULE_STORAGE_POSITION = keccak256("diamond.standard.module.storage");
     // Storage are structs where the data gets updated throughout the lifespan of the project
     bytes32 constant LENDER_STORAGE = keccak256("broker.storage.lender");
-    bytes32 constant MANAGEMENT_STORAGE = keccak256("broker.storage.management");
-    bytes32 constant INITIALIZER = keccak256("broker.storage.initailizerStorage");
     bytes32 constant GENERAL_CACHE = keccak256("broker.storage.cache.general");
     bytes32 constant EXTERNAL_CALL_STORAGE = keccak256("broker.storage.externalCalls");
 
@@ -43,13 +43,6 @@ library LibStorage {
         }
     }
 
-    function managementStorage() internal pure returns (ManagementStorage storage ms) {
-        bytes32 position = MANAGEMENT_STORAGE;
-        assembly {
-            ms.slot := position
-        }
-    }
-
     function generalCacheStorage() internal pure returns (GeneralCache storage gcs) {
         bytes32 position = GENERAL_CACHE;
         assembly {
@@ -57,17 +50,17 @@ library LibStorage {
         }
     }
 
-    function initializerStorage() internal pure returns (InitializerStorage storage izs) {
-        bytes32 position = INITIALIZER;
-        assembly {
-            izs.slot := position
-        }
-    }
-
     function externalCallsStorage() internal pure returns (ExternalCallStorage storage es) {
         bytes32 position = EXTERNAL_CALL_STORAGE;
         assembly {
             es.slot := position
+        }
+    }
+
+    function moduleStorage() internal pure returns (LibModules.ModuleStorage storage ds) {
+        bytes32 position = MODULE_STORAGE_POSITION;
+        assembly {
+            ds.slot := position
         }
     }
 }
@@ -80,20 +73,16 @@ contract WithMantleStorage {
         return LibStorage.lenderStorage();
     }
 
-    function ms() internal pure returns (ManagementStorage storage) {
-        return LibStorage.managementStorage();
-    }
-
     function gcs() internal pure returns (GeneralCache storage) {
         return LibStorage.generalCacheStorage();
     }
 
-    function izs() internal pure returns (InitializerStorage storage) {
-        return LibStorage.initializerStorage();
-    }
-
     function es() internal pure returns (ExternalCallStorage storage) {
         return LibStorage.externalCallsStorage();
+    }
+
+    function ms() internal pure returns (LibModules.ModuleStorage storage) {
+        return LibStorage.moduleStorage();
     }
 
     /** TOKEN GETTERS */

@@ -20,15 +20,13 @@ import {ILendingPool} from "../../contracts/1delta/modules/deploy/mantle/ILendin
 
 // proxy and management
 import {ConfigModule} from "../../contracts/1delta/proxy/modules/ConfigModule.sol";
-import {DeltaBrokerProxy} from "../../contracts/1delta/proxy/DeltaBroker.sol";
+import {DeltaBrokerProxyGen2} from "../../contracts/1delta/proxy/DeltaBrokerGen2.sol";
 
 // initializer
-import {MarginTraderInit} from "../../contracts/1delta/initializers/MarginTraderInit.sol";
 
 // core modules
 import {ManagementModule} from "../../contracts/1delta/modules/deploy/mantle/storage/ManagementModule.sol";
 import {Composer} from "../../contracts/1delta/modules/deploy/mantle/Composer.sol";
-import {DeltaLendingInterfaceMantle} from "../../contracts/1delta/modules/deploy/mantle/LendingInterface.sol";
 
 // forge
 import {Script, console2} from "forge-std/Script.sol";
@@ -139,30 +137,25 @@ contract DeltaSetup is AddressesMantle, ComposerUtils, Script, Test {
 
     function deployDelta() internal virtual {
         ConfigModule _config = new ConfigModule();
-        brokerProxyAddress = address(new DeltaBrokerProxy(address(this), address(_config)));
+        brokerProxyAddress = address(new DeltaBrokerProxyGen2(address(this), address(_config)));
 
         brokerProxy = IBrokerProxy(brokerProxyAddress);
 
         ManagementModule _management = new ManagementModule();
         Composer _aggregator = new Composer();
-        DeltaLendingInterfaceMantle _lending = new DeltaLendingInterfaceMantle();
-        MarginTraderInit init = new MarginTraderInit();
 
         management = IManagement(brokerProxyAddress);
         deltaConfig = IModuleConfig(brokerProxyAddress);
 
         // define configs to add to proxy
-        IModuleConfig.ModuleConfig[] memory _moduleConfig = new IModuleConfig.ModuleConfig[](4);
+        IModuleConfig.ModuleConfig[] memory _moduleConfig = new IModuleConfig.ModuleConfig[](2);
         _moduleConfig[0] = IModuleConfig.ModuleConfig(address(_management), IModuleConfig.ModuleConfigAction.Add, managementSelectors());
         _moduleConfig[1] = IModuleConfig.ModuleConfig(address(_aggregator), IModuleConfig.ModuleConfigAction.Add, flashAggregatorSelectors());
-        _moduleConfig[2] = IModuleConfig.ModuleConfig(address(init), IModuleConfig.ModuleConfigAction.Add, initializeSelectors());
-        _moduleConfig[3] = IModuleConfig.ModuleConfig(address(_lending), IModuleConfig.ModuleConfigAction.Add, lendingSelectors());
 
         // add all modules
         deltaConfig.configureModules(_moduleConfig);
         aggregator = _aggregator;
         management = IManagement(brokerProxyAddress);
-        MarginTraderInit(brokerProxyAddress).initMarginTrader(address(0));
     }
 
     /** ADD AND APPROVE LENDER TOKENS */

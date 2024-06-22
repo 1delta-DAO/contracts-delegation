@@ -9,11 +9,11 @@ import {WithMantleStorage} from "./BrokerStorage.sol";
 
 /**
  * @title Management/Data Viewer contract
- * @notice Allows the management to insert token and protocol data
+ * @notice Allows the owner to insert token and lending protocol data
  */
 contract ManagementModule is WithMantleStorage {
     modifier onlyManagement() {
-        require(ms().isManager[msg.sender], "Only management can interact.");
+        require(ms().contractOwner == msg.sender, "Only owner can interact.");
         _;
     }
 
