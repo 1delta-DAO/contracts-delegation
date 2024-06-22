@@ -6,8 +6,6 @@ import "../../../contracts/1delta/modules/deploy/mantle/composable/Commands.sol"
 contract ComposerUtils {
     uint8 DEFAULT_MODE = 2;
     uint256 internal constant USE_PERMIT2_FLAG = 1 << 127;
-    // uint256 internal constant UNWRAP_NATIVE_MASK = 1 << 254;
-    // uint256 internal constant PAY_SELF = 1 << 254;
     uint256 internal constant PAY_SELF = 1 << 255;
     uint256 internal constant FOT = 1 << 254;
     uint256 internal constant UINT128_MASK = 0x00000000000000000000000000000000ffffffffffffffffffffffffffffffff;
@@ -24,11 +22,12 @@ contract ComposerUtils {
         ); // 2 + 20 + 20 + 14 = 56 bytes
     }
 
-    function sweep(address asset, address receiver, uint256 amount) internal pure returns (bytes memory data) {
+    function sweep(address asset, address receiver, uint256 amount, uint8 sweepType) internal pure returns (bytes memory data) {
         data = abi.encodePacked(
             uint8(Commands.SWEEP),
             asset,
             receiver,
+            sweepType,
             uint112(amount) //
         ); // 2 + 20 + 20 + 14 = 56 bytes
     }

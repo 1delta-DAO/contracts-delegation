@@ -35,7 +35,7 @@ contract AccessTests is DeltaSetup {
         IFlashAggregator(brokerProxyAddress).executeOperation(assets, amounts, modes, brokerProxyAddress, params);
 
         // attack from lending pool
-        vm.expectRevert(0xbafe1c53); // ("InvalidFlashLoan()");
+        vm.expectRevert(0x48f5c3ed); // ("InvalidCaller()");
         vm.prank(attacker);
         ILendingPool(LENDLE_POOL).flashLoan(
             brokerProxyAddress,
@@ -62,13 +62,13 @@ contract AccessTests is DeltaSetup {
         address pool = testQuoter._v2TypePairAddress(aUSD, USDC, CLEO_V1_STABLE);
 
         // should error before any data is decoded
-        vm.expectRevert(0xbafe1c53); // ("InvalidFlashLoan()");
+        vm.expectRevert(0x48f5c3ed); // ("InvalidCaller()");
         vm.prank(attacker);
         IERC20All(pool).swap(
             amount0,
             amount1,
             brokerProxyAddress,
-            abi.encodePacked(aUSD, USDC) //
+            abi.encodePacked(aUSD,uint8(0), CLEO_V1_STABLE, pool, USDC) // the data here makes the `badPool` check pass
         );
     }
 }

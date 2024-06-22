@@ -7,7 +7,7 @@ pragma solidity 0.8.26;
 /******************************************************************************/
 
 /**
- * @title Raw error data
+ * @title Raw error data holder contract
  */
 abstract contract DeltaErrors {
     ////////////////////////////////////////////////////
@@ -15,6 +15,8 @@ abstract contract DeltaErrors {
     ////////////////////////////////////////////////////
 
     // the compiler should drop these since they are unused
+    // but it should still be included in the ABI to parse the
+    // errors below
     error InvalidDexId();
     error NativeTransferFailed();
     error WrapFailed();
@@ -38,4 +40,6 @@ abstract contract DeltaErrors {
     bytes4 internal constant INVALID_FLASH_LOAN = 0xbafe1c53;
     // InvalidOperation()
     bytes4 internal constant INVALID_OPERATION = 0x398d4d32;
+    // InvalidCaller()
+    bytes4 internal constant INVALID_CALLER = 0x48f5c3ed;
 }

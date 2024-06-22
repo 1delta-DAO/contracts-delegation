@@ -658,6 +658,11 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 mstore(0x0, BAD_POOL)
                 revert(0x0, 0x4)
             }
+            // revert if sender param is not this address
+            if xor(sender, address()) { 
+                mstore(0, INVALID_CALLER)
+                revert (0, 0x4)
+            }
         }
         _v2StyleCallback(amount0, amount1, tokenIn, tokenOut, data);
     }
@@ -673,11 +678,6 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         address tokenOut;
         // the fee parameter in the path can be ignored for validating a V2 pool
         assembly {
-            // revert if sender param is not this address
-            if xor(sender, address()) { 
-                mstore(0, INVALID_FLASH_LOAN)
-                revert (0, 0x4)
-            }
             // fetch tokens
             tokenIn := and(ADDRESS_MASK, shr(96, calldataload(data.offset)))
             tokenOut := and(ADDRESS_MASK, shr(96, calldataload(add(data.offset, 42))))
@@ -696,6 +696,11 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 mstore(0x0, BAD_POOL)
                 revert(0x0, 0x4)
             }
+            // revert if sender param is not this address
+            if xor(sender, address()) { 
+                mstore(0, INVALID_CALLER)
+                revert (0, 0x4)
+            }
         }
         _v2StyleCallback(amount0, amount1, tokenIn, tokenOut, data);
     }
@@ -712,11 +717,6 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         address tokenOut;
         // the fee parameter in the path can be ignored for validating a V2 pool
         assembly {
-            // revert if sender param is not this address
-            if xor(sender, address()) { 
-                mstore(0, INVALID_FLASH_LOAN)
-                revert (0, 0x4)
-            }
             // fetch tokens
             let firstWord := calldataload(data.offset)
             tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
@@ -845,6 +845,11 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             if xor(pair, caller()) {
                 mstore(0x0, BAD_POOL)
                 revert(0x0, 0x4)
+            }
+            // revert if sender param is not this address
+            if xor(sender, address()) { 
+                mstore(0, INVALID_CALLER)
+                revert (0, 0x4)
             }
         }
         _v2StyleCallback(amount0, amount1, tokenIn, tokenOut, data);

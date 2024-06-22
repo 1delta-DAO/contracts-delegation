@@ -8,7 +8,7 @@ import {IPermit2} from "./IPermit2.sol";
 
 /// @title PermitUtils
 /// @notice A contract containing common utilities for Permit2
-contract PermitUtils {
+abstract contract PermitUtils {
     bytes4 private constant _PERMIT_LENGTH_ERROR = 0x68275857;  // SafePermitBadLength.selector
     /*//////////////////////////////////////////////////////////////
                                  ERRORS
@@ -20,7 +20,7 @@ contract PermitUtils {
                                 CONSTANTS
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev Permit2 address
+    /// @dev Permit2 address on mantle
     address internal constant PERMIT2 = 0x9b13cf0C98315b6e85E28630417050093A7086Aa; // solhint-disable-line var-name-mixedcase
 
     /*//////////////////////////////////////////////////////////////
@@ -214,7 +214,6 @@ contract PermitUtils {
             ////////////////////////////////////////////////////
             // transferFrom through permit2
             ////////////////////////////////////////////////////
-
             mstore(ptr, permit2transferFromSelector)
             mstore(add(ptr, 0x04), owner)
             mstore(add(ptr, 0x24), to)

@@ -2,6 +2,9 @@
 
 pragma solidity ^0.8.26;
 
+/**
+ * Contract holding diamond slot references for use in assembly 
+ */
 contract Slots {
     // lender token slots
     bytes32 internal constant EXTERNAL_CALLS_SLOT = 0x9985cdfd7652aca37435f47bfd247a768d7f8206ef9518f447bfe8914bf4c668;

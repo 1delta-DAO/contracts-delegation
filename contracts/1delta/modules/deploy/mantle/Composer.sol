@@ -12,17 +12,18 @@ import {Commands} from "./composable/Commands.sol";
  * @author 1delta Labs AG
  */
 contract Composer is MarginTrading {
-    /// @dev the highest bit signals whether the swap is internal (the payer is this contract)
+    /// @dev The highest bit signals whether the swap is internal (the payer is this contract)
     uint256 private constant _PAY_SELF = 1 << 255;
-    /// @dev the second bit signals whether  the input token is a FOT token
+    /// @dev The second bit signals whether the input token is a FOT token
+    ///      Only used for SWAP_EXACT_IN
     uint256 private constant _FEE_ON_TRANSFER = 1 << 254;
-    /// @dev we use uint112-encoded ammounts to typically fit one bit flag, one path length (uint16)
-    ///      ad 2 amounts (2xuint112) into 32bytes, as such we use this mask for extractinng those
+    /// @dev We use uint112-encoded ammounts to typically fit one bit flag, one path length (uint16)
+    ///      add 2 amounts (2xuint112) into 32bytes, as such we use this mask for extractinng those
     uint256 private constant _UINT112_MASK = 0x000000000000000000000000000000000000ffffffffffffffffffffffffffff;
 
     /**
      * Batch-executes a series of operations
-     * @param data compressed instruction calldata 
+     * @param data compressed instruction calldata
      */
     function deltaCompose(bytes calldata data) external payable {
         _deltaComposeInternal(msg.sender, data);
@@ -30,7 +31,7 @@ contract Composer is MarginTrading {
 
     /**
      * Execute a set op packed operations
-     * @param callerAddress the address of the EOA/contract that 
+     * @param callerAddress the address of the EOA/contract that
      *                      initially triggered the `deltaCompose`
      * @param data packed ops array
      * | op0 | length0 | data0 | op1 | length1 | ...
@@ -246,7 +247,7 @@ contract Composer is MarginTrading {
                         // extract lowr 112 bits shifted by 16
                         minimumAmountOut := and(_UINT112_MASK, shr(128, firstParam))
 
-                        // upper but signals whether to pay with full balance
+                        // upper bit signals whether to pay self
                         switch iszero(and(_PAY_SELF, firstParam))
                         case 0 {
                             payer := address()
@@ -379,7 +380,7 @@ contract Composer is MarginTrading {
                     uint256 lenderId;
                     assembly {
                         underlying := and(ADDRESS_MASK, shr(96, calldataload(currentOffset)))
-                        receiver := and(ADDRESS_MASK, shr(96, calldataload(add(currentOffset, 20))))
+                        receiver := and(ADDRESS_MASK, calldataload(add(currentOffset, 8)))
                         let lastBytes := calldataload(add(currentOffset, 40))
                         amount := and(_UINT112_MASK, shr(136, lastBytes))
                         lenderId := and(UINT8_MASK, shr(248, lastBytes))
@@ -414,7 +415,7 @@ contract Composer is MarginTrading {
                     uint256 mode;
                     assembly {
                         underlying := and(ADDRESS_MASK, shr(96, calldataload(currentOffset)))
-                        receiver := and(ADDRESS_MASK, shr(96, calldataload(add(currentOffset, 20))))
+                        receiver := and(ADDRESS_MASK, calldataload(add(currentOffset, 8)))
                         let lastBytes := calldataload(add(currentOffset, 40))
                         amount := and(_UINT112_MASK, shr(128, lastBytes))
                         lenderId := and(UINT8_MASK, shr(248, lastBytes))
@@ -436,7 +437,7 @@ contract Composer is MarginTrading {
                     assembly {
                         let offset := currentOffset
                         underlying := and(ADDRESS_MASK, shr(96, calldataload(offset)))
-                        receiver := and(ADDRESS_MASK, shr(96, calldataload(add(offset, 20))))
+                        receiver := and(ADDRESS_MASK, calldataload(add(offset, 8)))
                         let lastBytes := calldataload(add(offset, 40))
                         amount := and(_UINT112_MASK, shr(128, lastBytes))
                         // zero means that we repay whatever is in this contract
@@ -472,7 +473,7 @@ contract Composer is MarginTrading {
                     uint256 lenderId;
                     assembly {
                         underlying := and(ADDRESS_MASK, shr(96, calldataload(currentOffset)))
-                        receiver := and(ADDRESS_MASK, shr(96, calldataload(add(currentOffset, 20))))
+                        receiver := and(ADDRESS_MASK, calldataload(add(currentOffset, 8)))
                         let lastBytes := calldataload(add(currentOffset, 40))
                         amount := and(_UINT112_MASK, shr(136, lastBytes))
                         lenderId := and(UINT8_MASK, shr(248, lastBytes))
@@ -568,46 +569,71 @@ contract Composer is MarginTrading {
                     // contract to receiver. Reverts if minAmount is
                     // less than the contract balance
                     // native asset is flagge via address(0) as parameter
+                    // Data layout:
+                    //      bytes 0-20:                  token (if zero, we assume native)
+                    //      bytes 20-40:                 receiver
+                    //      bytes 40-41:                 config
+                    //                                      0: sweep balance and validate against amount
+                    //                                         fetches the balance anch checks balance >= amount
+                    //                                      1: transfer amount to receiver, skip validation
+                    //                                         forwards the ERC20 error if not enough balance
+                    //      bytes 41-65:                 amount, either validation or transfer amount
                     ////////////////////////////////////////////////////
                     assembly {
                         let underlying := and(ADDRESS_MASK, shr(96, calldataload(currentOffset)))
-                        let receiver := and(ADDRESS_MASK, shr(96, calldataload(add(currentOffset, 20))))
+                        // we skip shr by loading the address to the lower bytes
+                        let receiver := and(ADDRESS_MASK, calldataload(add(currentOffset, 8)))
+                        // load so that amount is in the lower 14 bytes already
+                        let providedAmount := calldataload(add(currentOffset, 23))
+                        // load config
+                        let config := and(UINT8_MASK, shr(112, providedAmount))
+                        // mask amount
+                        providedAmount := and(_UINT112_MASK, providedAmount)
+                        // initialize transferAmount
+                        let transferAmount
 
-                        let amountMin := and(_UINT112_MASK, calldataload(add(currentOffset, 22)))
-
+                        // zero address is native
                         switch iszero(underlying)
                         ////////////////////////////////////////////////////
                         // Transfer token
                         ////////////////////////////////////////////////////
                         case 0 {
-                            // selector for balanceOf(address)
-                            mstore(0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
-                            // add this address as parameter
-                            mstore(0x04, address())
-                            // call to token
-                            pop(
-                                staticcall(
-                                    gas(),
-                                    underlying,
-                                    0x0,
-                                    0x24,
-                                    0x0,
-                                    0x20 //
+                            // for config = 0, the amount is the balance and we
+                            // check that the balance is larger tha the amount provided
+                            switch config
+                            case 0 {
+                                // selector for balanceOf(address)
+                                mstore(0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+                                // add this address as parameter
+                                mstore(0x04, address())
+                                // call to token
+                                pop(
+                                    staticcall(
+                                        gas(),
+                                        underlying,
+                                        0x0,
+                                        0x24,
+                                        0x0,
+                                        0x20 //
+                                    )
                                 )
-                            )
-                            // load the retrieved balance
-                            let tokenBalance := mload(0x0)
-                            // revert if balance is not enough
-                            if lt(tokenBalance, amountMin) {
-                                mstore(0, SLIPPAGE)
-                                revert(0, 0x4)
+                                // load the retrieved balance
+                                transferAmount := mload(0x0)
+                                // revert if balance is not enough
+                                if lt(transferAmount, providedAmount) {
+                                    mstore(0, SLIPPAGE)
+                                    revert(0, 0x4)
+                                }
+                            }
+                            default {
+                                transferAmount := providedAmount
                             }
                             let ptr := mload(0x40) // free memory pointer
 
                             // selector for transfer(address,uint256)
                             mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
                             mstore(add(ptr, 0x04), receiver)
-                            mstore(add(ptr, 0x24), tokenBalance)
+                            mstore(add(ptr, 0x24), transferAmount)
 
                             let success := call(gas(), underlying, 0, ptr, 0x44, ptr, 32)
 
@@ -636,28 +662,35 @@ contract Composer is MarginTrading {
                         // Transfer native
                         ////////////////////////////////////////////////////
                         default {
-                            let nativeBalance := selfbalance()
-                            // revert if balance is not enough
-                            if lt(nativeBalance, amountMin) {
-                                mstore(0, SLIPPAGE)
-                                revert(0, 0x4)
+                            switch config
+                            case 0 {
+                                transferAmount := selfbalance()
+                                // revert if balance is not enough
+                                if lt(transferAmount, providedAmount) {
+                                    mstore(0, SLIPPAGE)
+                                    revert(0, 0x4)
+                                }
+                            }
+                            default {
+                                transferAmount := providedAmount
                             }
 
                             if iszero(
                                 call(
                                     gas(),
                                     receiver,
-                                    nativeBalance,
-                                    0x0, // input = empty for fallback
+                                    providedAmount,
+                                    0x0, // input = empty for fallback/receive
                                     0x0, // input size = zero
                                     0x0, // output = empty
                                     0x0 // output size = zero
                                 )
                             ) {
-                                revert(0, 0) // revert when native transfer fails
+                                mstore(0, NATIVE_TRANSFER)
+                                revert(0, 0x4) // revert when native transfer fails
                             }
                         }
-                        currentOffset := add(currentOffset, 72)
+                        currentOffset := add(currentOffset, 65)
                     }
                 } else if (operation == Commands.WRAP_NATIVE) {
                     ////////////////////////////////////////////////////
@@ -792,7 +825,7 @@ contract Composer is MarginTrading {
                     // for calls. Those are exclusively swap aggregator contracts.
                     // An amount has to be supplied to check the allowance from
                     // this contract to target.
-                    // NEVER whitelist a token as an attacker can call 
+                    // NEVER whitelist a token as an attacker can call
                     // `transferFrom` on target
                     // Data layout:
                     //      bytes 0-20:                  token
@@ -807,6 +840,7 @@ contract Composer is MarginTrading {
                         let token := and(ADDRESS_MASK, shr(96, calldataload(currentOffset)))
                         let approvalTarget := and(ADDRESS_MASK, shr(96, calldataload(add(currentOffset, 20))))
                         let aggregator := and(ADDRESS_MASK, shr(96, calldataload(add(currentOffset, 40))))
+
                         // get slot isValidApproveAndCallTarget[approvalTarget][aggregator]
                         mstore(0x0, approvalTarget)
                         mstore(0x20, EXTERNAL_CALLS_SLOT)
@@ -821,36 +855,49 @@ contract Composer is MarginTrading {
                         let dataLength := and(UINT16_MASK, shr(128, amount))
                         amount := and(_UINT112_MASK, shr(144, amount))
 
+                        // free memo ptr for populating the tx
                         let ptr := mload(0x40)
 
                         ////////////////////////////////////////////////////
-                        // get allowance and check if we have to approve
+                        // If the token is zero, we assume that it is a native
+                        // transfer / swap and the approval check is skipped
                         ////////////////////////////////////////////////////
-                        mstore(ptr, 0xdd62ed3e00000000000000000000000000000000000000000000000000000000)
-                        mstore(add(ptr, 0x4), address())
-                        mstore(add(ptr, 0x24), approvalTarget)
-
-                        // call to token
-                        // success is false or return data not provided
-                        if iszero(staticcall(gas(), token, ptr, 0x44, ptr, 0x20)) {
-                            revert(0x0, 0x0)
-                        }
-                        // approve if necessary
-                        if lt(mload(ptr), amount) {
+                        let nativeValue
+                        switch iszero(token)
+                        case 0 {
                             ////////////////////////////////////////////////////
-                            // Approve, at this point it is clear that the target
-                            // whitelisted
+                            // get allowance and check if we have to approve
                             ////////////////////////////////////////////////////
-                            // selector for approve(address,uint256)
-                            mstore(ptr, 0x095ea7b300000000000000000000000000000000000000000000000000000000)
-                            mstore(add(ptr, 0x04), approvalTarget)
-                            mstore(add(ptr, 0x24), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff)
+                            mstore(ptr, 0xdd62ed3e00000000000000000000000000000000000000000000000000000000)
+                            mstore(add(ptr, 0x4), address())
+                            mstore(add(ptr, 0x24), approvalTarget)
 
-                            if iszero(call(gas(), token, 0x0, ptr, 0x44, ptr, 32)) {
+                            // call to token
+                            // success is false or return data not provided
+                            if iszero(staticcall(gas(), token, ptr, 0x44, ptr, 0x20)) {
                                 revert(0x0, 0x0)
                             }
+                            // approve if necessary
+                            if lt(mload(ptr), amount) {
+                                ////////////////////////////////////////////////////
+                                // Approve, at this point it is clear that the target
+                                // whitelisted
+                                ////////////////////////////////////////////////////
+                                // selector for approve(address,uint256)
+                                mstore(ptr, 0x095ea7b300000000000000000000000000000000000000000000000000000000)
+                                mstore(add(ptr, 0x04), approvalTarget)
+                                mstore(add(ptr, 0x24), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff)
+
+                                if iszero(call(gas(), token, 0x0, ptr, 0x44, ptr, 32)) {
+                                    revert(0x0, 0x0)
+                                }
+                            }
+                            nativeValue := 0
                         }
-                        // increment offset to calldata start 
+                        default {
+                            nativeValue := amount
+                        }
+                        // increment offset to calldata start
                         currentOffset := add(76, currentOffset)
                         // copy calldata
                         calldatacopy(ptr, currentOffset, dataLength)
@@ -858,8 +905,8 @@ contract Composer is MarginTrading {
                             call(
                                 gas(),
                                 aggregator,
-                                0x0,
-                                ptr, // 
+                                nativeValue,
+                                ptr, //
                                 dataLength, // the length must be correct or the call will fail
                                 0x0, // output = empty
                                 0x0 // output size = zero
@@ -910,7 +957,7 @@ contract Composer is MarginTrading {
                         }
                         // call flash loan
                         let ptr := mload(0x40)
-                        // flashLoan(...)
+                        // flashLoan(...) (See Aave V2 ILendingPool)
                         mstore(ptr, 0xab9c4b5d00000000000000000000000000000000000000000000000000000000)
                         mstore(add(ptr, 4), address()) // receiver is this address
                         mstore(add(ptr, 36), 0x0e0) // offset assets
@@ -932,7 +979,7 @@ contract Composer is MarginTrading {
                         mstore(add(ptr, 420), add(21, calldataLength)) // length calldata (plus 1 + address)
                         mstore8(add(ptr, 452), source) // source id
                         // caller at the beginning
-                        mstore(add(ptr, 453), shl(96, caller()))
+                        mstore(add(ptr, 453), shl(96, callerAddress))
 
                         // increment offset by the preceding bytes length
                         currentOffset := add(currentOffset, 37)
@@ -989,25 +1036,21 @@ contract Composer is MarginTrading {
         assembly {
             // we expect at least an address
             // and a sourceId (uint8)
-            // invalid params will lead to errors
-            // in the lines at the bottom
+            // invalid params will lead to errors in the
+            // compose at the bottom
             if lt(params.length, 21) {
                 mstore(0, INVALID_FLASH_LOAN)
                 revert(0, 0x4)
             }
-            // we require to self-initiate
-            // this prevents caller impersonation,
-            // but ONLY if we check the caller address, too
-            if xor(address(), initiator) {
-                mstore(0, INVALID_FLASH_LOAN)
-                revert(0, 0x4)
-            }
             // validate caller
+            // - extract id from params
             let firstWord := calldataload(params.offset)
             let source := and(UINT8_MASK, shr(248, firstWord))
 
             // Validate the caller
-            // we check that the caller is one of the lending pools
+            // We check that the caller is one of the lending pools
+            // This is a crucial check since this makes
+            // the `initiator` paramter the caller of `flashLoan`
             switch source
             case 0 {
                 if xor(caller(), LENDLE_POOL) {
@@ -1021,8 +1064,17 @@ contract Composer is MarginTrading {
                     revert(0, 0x4)
                 }
             }
+            // We revert on any other id
             default {
                 mstore(0, INVALID_FLASH_LOAN)
+                revert(0, 0x4)
+            }
+            // We require to self-initiate
+            // this prevents caller impersonation,
+            // but ONLY if the caller address is
+            // an Aave V2 type lending pool
+            if xor(address(), initiator) {
+                mstore(0, INVALID_CALLER)
                 revert(0, 0x4)
             }
             // Slice the original caller off the beginnig of the calldata
