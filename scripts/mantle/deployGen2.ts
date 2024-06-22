@@ -8,7 +8,7 @@ import {
 } from "../../types";
 import { getMantleConfig } from "./utils";
 import { ModuleConfigAction, getContractSelectors } from "../../test-ts/libraries/diamond";
-import { addAureliusTokens, addLendleTokens, getAddAureliusTokens } from "./lenders/addLenderData";
+import { addAureliusTokens, addLendleTokens } from "./lenders/addLenderData";
 import { execAureliusApproves, execLendleApproves, execStratumApproves } from "./approvals/approveAddress";
 
 const aggregatorsTargets = [
