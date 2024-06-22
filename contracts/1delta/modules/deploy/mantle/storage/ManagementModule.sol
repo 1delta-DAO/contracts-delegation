@@ -10,9 +10,10 @@ import {WithMantleStorage} from "./BrokerStorage.sol";
 /**
  * @title Management/Data Viewer contract
  * @notice Allows the owner to insert token and lending protocol data
+ *         Due to contract size limitations this is a separate contract
  */
 contract ManagementModule is WithMantleStorage {
-    modifier onlyManagement() {
+    modifier onlyOwner() {
         require(ms().contractOwner == msg.sender, "Only owner can interact.");
         _;
     }
@@ -20,7 +21,7 @@ contract ManagementModule is WithMantleStorage {
     // STATE CHANGING FUNCTION
 
     // sets the initial cache
-    function clearCache() external onlyManagement {
+    function clearCache() external onlyOwner {
         gcs().cache = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
     }
 
@@ -32,24 +33,24 @@ contract ManagementModule is WithMantleStorage {
         address _vToken,
         address _sToken,
         uint8 _lenderId //
-    ) external onlyManagement {
+    ) external onlyOwner {
         bytes32 key = _getLenderTokenKey(_underlying, _lenderId);
         ls().debtTokens[key] = _vToken;
         ls().stableDebtTokens[key] = _sToken;
         ls().collateralTokens[key] = _aToken;
     }
 
-    function setValidTarget(address _approvalTarget, address _target, bool value) external onlyManagement {
+    function setValidTarget(address _approvalTarget, address _target, bool value) external onlyOwner {
         es().isValidApproveAndCallTarget[_approvalTarget][_target] = value;
     }
 
-    function approveAddress(address[] memory assets, address target) external onlyManagement {
+    function approveAddress(address[] memory assets, address target) external onlyOwner {
         for (uint256 i = 0; i < assets.length; i++) {
             IERC20(assets[i]).approve(target, type(uint256).max);
         }
     }
 
-    function decreaseAllowance(address[] memory assets, address target) external onlyManagement {
+    function decreaseAllowance(address[] memory assets, address target) external onlyOwner {
         for (uint256 i = 0; i < assets.length; i++) {
             IERC20(assets[i]).approve(target, 0);
         }
@@ -76,6 +77,7 @@ contract ManagementModule is WithMantleStorage {
     bytes32 internal constant EXTERNAL_CALLS_SLOT = 0x9985cdfd7652aca37435f47bfd247a768d7f8206ef9518f447bfe8914bf4c668;
 
     function getIsValidTarget(address _approvalTarget, address _target) external view returns (bool val) {
+        // equivalent to
         // return es().isValidApproveAndCallTarget[_approvalTarget][_target];
         assembly {
             mstore(0x0, _approvalTarget)

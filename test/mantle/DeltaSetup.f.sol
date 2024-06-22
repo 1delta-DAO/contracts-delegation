@@ -26,7 +26,7 @@ import {DeltaBrokerProxyGen2} from "../../contracts/1delta/proxy/DeltaBrokerGen2
 
 // core modules
 import {ManagementModule} from "../../contracts/1delta/modules/deploy/mantle/storage/ManagementModule.sol";
-import {Composer} from "../../contracts/1delta/modules/deploy/mantle/Composer.sol";
+import {OneDeltaComposerMantle} from "../../contracts/1delta/modules/deploy/mantle/Composer.sol";
 
 // forge
 import {Script, console2} from "forge-std/Script.sol";
@@ -39,7 +39,7 @@ contract DeltaSetup is AddressesMantle, ComposerUtils, Script, Test {
     IModuleConfig internal deltaConfig;
     IManagement internal management;
     TestQuoterMantle testQuoter;
-    Composer internal aggregator;
+    OneDeltaComposerMantle internal aggregator;
 
     mapping(address => mapping(uint8 => address)) internal collateralTokens;
     mapping(address => mapping(uint8 => address)) internal debtTokens;
@@ -142,7 +142,7 @@ contract DeltaSetup is AddressesMantle, ComposerUtils, Script, Test {
         brokerProxy = IBrokerProxy(brokerProxyAddress);
 
         ManagementModule _management = new ManagementModule();
-        Composer _aggregator = new Composer();
+        OneDeltaComposerMantle _aggregator = new OneDeltaComposerMantle();
 
         management = IManagement(brokerProxyAddress);
         deltaConfig = IModuleConfig(brokerProxyAddress);

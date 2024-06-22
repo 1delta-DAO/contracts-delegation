@@ -11,7 +11,7 @@ import {Commands} from "./composable/Commands.sol";
  *        Efficient baching through compact calldata usage.
  * @author 1delta Labs AG
  */
-contract Composer is MarginTrading {
+contract OneDeltaComposerMantle is MarginTrading {
     /// @dev The highest bit signals whether the swap is internal (the payer is this contract)
     uint256 private constant _PAY_SELF = 1 << 255;
     /// @dev The second bit signals whether the input token is a FOT token
@@ -371,8 +371,110 @@ contract Composer is MarginTrading {
                         currentOffset := add(currentOffset, calldataLength)
                     }
                     flashSwapExactOutInternal(amountOut, amountInMaximum, payer, opdata);
+                } else if (operation == Commands.EXTERNAL_CALL) {
+                    ////////////////////////////////////////////////////
+                    // Execute call to external contract. It consits of
+                    // an approval target and call target.
+                    // The combo of [approvalTarget, target] has to be whitelisted
+                    // for calls. Those are exclusively swap aggregator contracts.
+                    // An amount has to be supplied to check the allowance from
+                    // this contract to target.
+                    // NEVER whitelist a token as an attacker can call
+                    // `transferFrom` on target
+                    // Data layout:
+                    //      bytes 0-20:                  token
+                    //      bytes 20-40:                 approvalTarget
+                    //      bytes 40-60:                 target
+                    //      bytes 60-74:                 amount
+                    //      bytes 74-76:                 calldata length
+                    //      bytes 76-(76+permit length): permit data
+                    ////////////////////////////////////////////////////
+                    assembly {
+                        // get first three addresses
+                        let token := and(ADDRESS_MASK, shr(96, calldataload(currentOffset)))
+                        let approvalTarget := and(ADDRESS_MASK, shr(96, calldataload(add(currentOffset, 20))))
+                        let aggregator := and(ADDRESS_MASK, shr(96, calldataload(add(currentOffset, 40))))
+
+                        // get slot isValidApproveAndCallTarget[approvalTarget][aggregator]
+                        mstore(0x0, approvalTarget)
+                        mstore(0x20, EXTERNAL_CALLS_SLOT)
+                        mstore(0x20, keccak256(0x0, 0x40))
+                        mstore(0x0, aggregator)
+                        // validate approvalTarget / target combo
+                        if iszero(sload(keccak256(0x0, 0x40))) {
+                            revert(0, 0)
+                        }
+                        // get amount to check allowance
+                        let amount := calldataload(add(currentOffset, 60))
+                        let dataLength := and(UINT16_MASK, shr(128, amount))
+                        amount := and(_UINT112_MASK, shr(144, amount))
+
+                        // free memo ptr for populating the tx
+                        let ptr := mload(0x40)
+
+                        ////////////////////////////////////////////////////
+                        // If the token is zero, we assume that it is a native
+                        // transfer / swap and the approval check is skipped
+                        ////////////////////////////////////////////////////
+                        let nativeValue
+                        switch iszero(token)
+                        case 0 {
+                            ////////////////////////////////////////////////////
+                            // get allowance and check if we have to approve
+                            ////////////////////////////////////////////////////
+                            mstore(ptr, 0xdd62ed3e00000000000000000000000000000000000000000000000000000000)
+                            mstore(add(ptr, 0x4), address())
+                            mstore(add(ptr, 0x24), approvalTarget)
+
+                            // call to token
+                            // success is false or return data not provided
+                            if iszero(staticcall(gas(), token, ptr, 0x44, ptr, 0x20)) {
+                                revert(0x0, 0x0)
+                            }
+                            // approve if necessary
+                            if lt(mload(ptr), amount) {
+                                ////////////////////////////////////////////////////
+                                // Approve, at this point it is clear that the target
+                                // whitelisted
+                                ////////////////////////////////////////////////////
+                                // selector for approve(address,uint256)
+                                mstore(ptr, 0x095ea7b300000000000000000000000000000000000000000000000000000000)
+                                mstore(add(ptr, 0x04), approvalTarget)
+                                mstore(add(ptr, 0x24), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff)
+
+                                if iszero(call(gas(), token, 0x0, ptr, 0x44, ptr, 32)) {
+                                    revert(0x0, 0x0)
+                                }
+                            }
+                            nativeValue := 0
+                        }
+                        default {
+                            nativeValue := amount
+                        }
+                        // increment offset to calldata start
+                        currentOffset := add(76, currentOffset)
+                        // copy calldata
+                        calldatacopy(ptr, currentOffset, dataLength)
+                        if iszero(
+                            call(
+                                gas(),
+                                aggregator,
+                                nativeValue,
+                                ptr, //
+                                dataLength, // the length must be correct or the call will fail
+                                0x0, // output = empty
+                                0x0 // output size = zero
+                            )
+                        ) {
+                            let rdsize := returndatasize()
+                            returndatacopy(0, 0, rdsize)
+                            revert(0, rdsize)
+                        }
+                        // increment offset by data length
+                        currentOffset := add(currentOffset, dataLength)
+                    }
                 }
-            } else {
+            } else if (operation < 0x20) {
                 if (operation == Commands.DEPOSIT) {
                     address underlying;
                     address receiver;
@@ -501,7 +603,9 @@ contract Composer is MarginTrading {
                     }
                     _preWithdraw(underlying, user, amount, lenderId);
                     _withdraw(underlying, receiver, amount, lenderId);
-                } else if (operation == Commands.TRANSFER_FROM) {
+                }
+            } else if (operation < 0x30) {
+                if (operation == Commands.TRANSFER_FROM) {
                     ////////////////////////////////////////////////////
                     // Transfers tokens froom caller to this address
                     // zero amount flags that the entire balance is sent
@@ -773,7 +877,9 @@ contract Composer is MarginTrading {
                         }
                         currentOffset := add(currentOffset, 34)
                     }
-                } else if (operation == Commands.EXEC_PERMIT) {
+                }
+            } else {
+                if (operation == Commands.EXEC_PERMIT) {
                     ////////////////////////////////////////////////////
                     // Execute normal transfer permit (Dai, ERC20Permit, P2).
                     // The specific permit type is executed based
@@ -817,108 +923,6 @@ contract Composer is MarginTrading {
                         currentOffset := add(currentOffset, permitLength)
                     }
                     _tryCreditPermit(token, permitData);
-                } else if (operation == Commands.EXTERNAL_CALL) {
-                    ////////////////////////////////////////////////////
-                    // Execute call to external contract. It consits of
-                    // an approval target and call target.
-                    // The combo of [approvalTarget, target] has to be whitelisted
-                    // for calls. Those are exclusively swap aggregator contracts.
-                    // An amount has to be supplied to check the allowance from
-                    // this contract to target.
-                    // NEVER whitelist a token as an attacker can call
-                    // `transferFrom` on target
-                    // Data layout:
-                    //      bytes 0-20:                  token
-                    //      bytes 20-40:                 approvalTarget
-                    //      bytes 40-60:                 target
-                    //      bytes 60-74:                 amount
-                    //      bytes 74-76:                 calldata length
-                    //      bytes 76-(76+permit length): permit data
-                    ////////////////////////////////////////////////////
-                    assembly {
-                        // get first three addresses
-                        let token := and(ADDRESS_MASK, shr(96, calldataload(currentOffset)))
-                        let approvalTarget := and(ADDRESS_MASK, shr(96, calldataload(add(currentOffset, 20))))
-                        let aggregator := and(ADDRESS_MASK, shr(96, calldataload(add(currentOffset, 40))))
-
-                        // get slot isValidApproveAndCallTarget[approvalTarget][aggregator]
-                        mstore(0x0, approvalTarget)
-                        mstore(0x20, EXTERNAL_CALLS_SLOT)
-                        mstore(0x20, keccak256(0x0, 0x40))
-                        mstore(0x0, aggregator)
-                        // validate approvalTarget / target combo
-                        if iszero(sload(keccak256(0x0, 0x40))) {
-                            revert(0, 0)
-                        }
-                        // get amount to check allowance
-                        let amount := calldataload(add(currentOffset, 60))
-                        let dataLength := and(UINT16_MASK, shr(128, amount))
-                        amount := and(_UINT112_MASK, shr(144, amount))
-
-                        // free memo ptr for populating the tx
-                        let ptr := mload(0x40)
-
-                        ////////////////////////////////////////////////////
-                        // If the token is zero, we assume that it is a native
-                        // transfer / swap and the approval check is skipped
-                        ////////////////////////////////////////////////////
-                        let nativeValue
-                        switch iszero(token)
-                        case 0 {
-                            ////////////////////////////////////////////////////
-                            // get allowance and check if we have to approve
-                            ////////////////////////////////////////////////////
-                            mstore(ptr, 0xdd62ed3e00000000000000000000000000000000000000000000000000000000)
-                            mstore(add(ptr, 0x4), address())
-                            mstore(add(ptr, 0x24), approvalTarget)
-
-                            // call to token
-                            // success is false or return data not provided
-                            if iszero(staticcall(gas(), token, ptr, 0x44, ptr, 0x20)) {
-                                revert(0x0, 0x0)
-                            }
-                            // approve if necessary
-                            if lt(mload(ptr), amount) {
-                                ////////////////////////////////////////////////////
-                                // Approve, at this point it is clear that the target
-                                // whitelisted
-                                ////////////////////////////////////////////////////
-                                // selector for approve(address,uint256)
-                                mstore(ptr, 0x095ea7b300000000000000000000000000000000000000000000000000000000)
-                                mstore(add(ptr, 0x04), approvalTarget)
-                                mstore(add(ptr, 0x24), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff)
-
-                                if iszero(call(gas(), token, 0x0, ptr, 0x44, ptr, 32)) {
-                                    revert(0x0, 0x0)
-                                }
-                            }
-                            nativeValue := 0
-                        }
-                        default {
-                            nativeValue := amount
-                        }
-                        // increment offset to calldata start
-                        currentOffset := add(76, currentOffset)
-                        // copy calldata
-                        calldatacopy(ptr, currentOffset, dataLength)
-                        if iszero(
-                            call(
-                                gas(),
-                                aggregator,
-                                nativeValue,
-                                ptr, //
-                                dataLength, // the length must be correct or the call will fail
-                                0x0, // output = empty
-                                0x0 // output size = zero
-                            )
-                        ) {
-                            let rdsize := returndatasize()
-                            returndatacopy(0, 0, rdsize)
-                            revert(0, rdsize)
-                        }
-                        // increment offset by data length
-                        currentOffset := add(currentOffset, dataLength)
-                    }
                 } else if (operation == Commands.FLASH_LOAN) {
                     ////////////////////////////////////////////////////
                     // Execute single asset flash loan
