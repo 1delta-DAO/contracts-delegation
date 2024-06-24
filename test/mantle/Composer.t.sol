@@ -288,7 +288,7 @@ contract ComposerTest is DeltaSetup {
             dataFusion // 
         );
 
-        data = abi.encodePacked(data, unwrap(user, amount));
+        data = abi.encodePacked(data, unwrap(user, amount, ComposerUtils.SweepType.VALIDATE));
 
         vm.prank(user);
         IERC20All(assetIn).approve(brokerProxyAddress, amountMax);
@@ -344,7 +344,7 @@ contract ComposerTest is DeltaSetup {
             dataFusion //
         );
 
-        data = abi.encodePacked(wrap(amountMax), data, unwrap(user, 0));
+        data = abi.encodePacked(wrap(amountMax), data, unwrap(user, 0, ComposerUtils.SweepType.VALIDATE));
 
         uint balanceOutBefore = IERC20All(assetOut).balanceOf(user);
         uint balanceInBefore = user.balance;
@@ -397,7 +397,7 @@ contract ComposerTest is DeltaSetup {
             dataFusion
         );
 
-        data = abi.encodePacked(data, unwrap(user, amountMin));
+        data = abi.encodePacked(data, unwrap(user, amountMin, ComposerUtils.SweepType.VALIDATE));
 
         vm.prank(user);
         IERC20All(assetIn).approve(brokerProxyAddress, amount);

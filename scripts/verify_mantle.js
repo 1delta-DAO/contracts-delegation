@@ -20,7 +20,7 @@ module.exports = [
 
 // npx hardhat verify --network mantle 0x23d135c9747C73F4217976e4AcE261Df7236bcA2 --contract contracts/1delta/proxy/modules/ConfigModule.sol:ConfigModule
 
-// npx hardhat verify --network mantle 0x91549bad7A081742dEC72E2CF55a2477A880a798 --contract contracts/1delta/proxy/modules/LensModule.sol:LensModule
+// npx hardhat verify --network mantle 0x413d6a7871AF2a61B2cA398Efe33710d0d7B5B95 --contract contracts/1delta/proxy/modules/LensModule.sol:LensModule
 
 // npx hardhat verify --network mantle 0x32198Ee619fAd24169fa94A149Cb5205701C6AB1 --contract contracts/1delta/proxy/modules/OwnershipModule.sol:OwnershipModule
 
@@ -33,5 +33,5 @@ module.exports = [
 
 
 // npx hardhat verify --network mantle 0x9bc92bF848FaF2355c429c54d1edE3e767bDd790 --contract contracts/1delta/proxy/DeltaBrokerGen2.sol:DeltaBrokerProxyGen2 --constructor-args scripts/verify_mantle.js
-// npx hardhat verify --network mantle 0xf8A36239e822f9B05120Cb5AB149100E317EeB0F --contract contracts/1delta/modules/deploy/mantle/Composer.sol:OneDeltaComposerMantle 
+// npx hardhat verify --network mantle 0xA7634A458A6151f1Bd1104C74f67e92EB565532F --contract contracts/1delta/modules/deploy/mantle/Composer.sol:OneDeltaComposerMantle 
 // npx hardhat verify --network mantle 0xAaBeD4BCDd26e968b70c30011c96a4DC4bB75771 --contract contracts/1delta/modules/deploy/mantle/storage/ManagementModule.sol:MantleManagementModule 

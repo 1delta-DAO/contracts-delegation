@@ -40,7 +40,15 @@ contract FlashSwapExacInTest is DeltaSetup {
             encodeSwapAmountParams(amountIn, minimumOut, true, swapPath.length),
             swapPath
         );
-        data = abi.encodePacked(data, sweep(assetOut, user, 0, 0));
+        data = abi.encodePacked(
+            data,
+            sweep(
+                assetOut,
+                user,
+                0, //
+                ComposerUtils.SweepType.VALIDATE
+            )
+        );
         vm.prank(user);
         IERC20All(asset).approve(brokerProxyAddress, amountIn);
 
@@ -94,7 +102,7 @@ contract FlashSwapExacInTest is DeltaSetup {
                 assetOut,
                 user,
                 0, // no minOut
-                0
+                ComposerUtils.SweepType.VALIDATE
             )
         );
 
@@ -154,7 +162,7 @@ contract FlashSwapExacInTest is DeltaSetup {
                 assetOut,
                 user,
                 0, // no minOut
-                0
+                ComposerUtils.SweepType.VALIDATE
             )
         );
 
@@ -210,7 +218,7 @@ contract FlashSwapExacInTest is DeltaSetup {
                 assetOut,
                 user,
                 0, // no minOut
-                0
+                ComposerUtils.SweepType.VALIDATE
             )
         );
         vm.prank(user);
@@ -265,7 +273,7 @@ contract FlashSwapExacInTest is DeltaSetup {
                 assetOut,
                 user,
                 0, // no minOut
-                0
+                ComposerUtils.SweepType.VALIDATE
             )
         );
 
@@ -316,7 +324,7 @@ contract FlashSwapExacInTest is DeltaSetup {
                 assetOut,
                 user,
                 0, // no minOut
-                0
+                ComposerUtils.SweepType.VALIDATE
             )
         );
 

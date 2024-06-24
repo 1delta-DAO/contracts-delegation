@@ -4,6 +4,11 @@ pragma solidity ^0.8.19;
 import "../../../contracts/1delta/modules/deploy/mantle/composable/Commands.sol";
 
 contract ComposerUtils {
+    enum SweepType {
+        VALIDATE,
+        NO_VALIDATE
+    }
+
     uint8 DEFAULT_MODE = 2;
     uint256 internal constant USE_PERMIT2_FLAG = 1 << 127;
     uint256 internal constant PAY_SELF = 1 << 255;
@@ -22,7 +27,7 @@ contract ComposerUtils {
         ); // 2 + 20 + 20 + 14 = 56 bytes
     }
 
-    function sweep(address asset, address receiver, uint256 amount, uint8 sweepType) internal pure returns (bytes memory data) {
+    function sweep(address asset, address receiver, uint256 amount, SweepType sweepType) internal pure returns (bytes memory data) {
         data = abi.encodePacked(
             uint8(Commands.SWEEP),
             asset,
@@ -39,10 +44,11 @@ contract ComposerUtils {
         ); // 14 bytes
     }
 
-    function unwrap(address receiver, uint256 amount) internal pure returns (bytes memory data) {
+    function unwrap(address receiver, uint256 amount, SweepType sweepType) internal pure returns (bytes memory data) {
         data = abi.encodePacked(
             uint8(Commands.UNWRAP_WNATIVE),
             receiver,
+            sweepType,
             uint112(amount) //
         ); // 14 bytes
     }

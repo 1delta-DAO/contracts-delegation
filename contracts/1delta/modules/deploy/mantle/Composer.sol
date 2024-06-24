@@ -65,7 +65,6 @@ contract OneDeltaComposerMantle is MarginTrading {
                 operation := and(shr(248, calldataload(currentOffset)), UINT8_MASK)
                 // we increment the current offset to skip the operation
                 currentOffset := add(1, currentOffset)
-                // data.offset := currentOffset
             }
             if (operation < 0x10) {
                 // exec op
@@ -678,7 +677,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                     //      bytes 20-40:                 receiver
                     //      bytes 40-41:                 config
                     //                                      0: sweep balance and validate against amount
-                    //                                         fetches the balance anch checks balance >= amount
+                    //                                         fetches the balance and checks balance >= amount
                     //                                      1: transfer amount to receiver, skip validation
                     //                                         forwards the ERC20 error if not enough balance
                     //      bytes 41-65:                 amount, either validation or transfer amount
@@ -825,10 +824,19 @@ contract OneDeltaComposerMantle is MarginTrading {
                     // contract to receiver. Reverts if minAmount is
                     // less than the contract balance
                     // native asset is flagge via address(0) as parameter
+                    //      bytes 1-20:                 receiver
+                    //      bytes 20-21:                 config
+                    //                                      0: sweep balance and validate against amount
+                    //                                         fetches the balance and checks balance >= amount
+                    //                                      1: transfer amount to receiver, skip validation
+                    //      bytes 21-35:                 amount, either validation or transfer amount
                     ////////////////////////////////////////////////////
                     assembly {
                         let receiver := and(ADDRESS_MASK, shr(96, calldataload(currentOffset)))
-                        let amount := and(_UINT112_MASK, shr(144, calldataload(add(currentOffset, 20))))
+                        let providedAmount := calldataload(add(currentOffset, 3))
+                        // load config
+                        let config := and(UINT8_MASK, shr(112, providedAmount))
+                        providedAmount := and(_UINT112_MASK, providedAmount)
                         // selector for balanceOf(address)
                         mstore(0x0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
                         // add this address as parameter
@@ -837,15 +845,22 @@ contract OneDeltaComposerMantle is MarginTrading {
                         // call to underlying
                         pop(staticcall(gas(), WRAPPED_NATIVE, 0x0, 0x24, 0x0, 0x20))
 
-                        let thisBalance := mload(0x0)
-                        if lt(thisBalance, amount) {
-                            mstore(0, SLIPPAGE)
-                            revert(0, 0x4)
+                        let transferAmount
+                        // validate if config is zero, otherwise skip
+                        switch config
+                        case 0 {
+                            transferAmount := mload(0x0)
+                            if lt(transferAmount, providedAmount) {
+                                mstore(0, SLIPPAGE)
+                                revert(0, 0x4)
+                            }
                         }
-
+                        default {
+                            transferAmount := providedAmount
+                        }
                         // selector for withdraw(uint256)
                         mstore(0x0, 0x2e1a7d4d00000000000000000000000000000000000000000000000000000000)
-                        mstore(0x4, thisBalance)
+                        mstore(0x4, transferAmount)
                         // should not fail since WRAPPED_NATIVE is immutable
                         pop(
                             call(
@@ -853,29 +868,31 @@ contract OneDeltaComposerMantle is MarginTrading {
                                 WRAPPED_NATIVE,
                                 0x0, // no ETH
                                 0x0, // start of data
-                                0x24, // input size = zero
+                                0x24, // input size = selector plus amount
                                 0x0, // output = empty
                                 0x0 // output size = zero
                             )
                         )
-
-                        // transfer native to receiver
-                        if iszero(
-                            call(
-                                gas(),
-                                receiver,
-                                thisBalance,
-                                0x0, // input = empty for fallback
-                                0x0, // input size = zero
-                                0x0, // output = empty
-                                0x0 // output size = zero
-                            )
-                        ) {
-                            // should only revert if receiver cannot receive native
-                            mstore(0, NATIVE_TRANSFER)
-                            revert(0, 0x4)
+                        // transfer to receiver if different from this address
+                        if xor(receiver, address()) {
+                            // transfer native to receiver
+                            if iszero(
+                                call(
+                                    gas(),
+                                    receiver,
+                                    transferAmount,
+                                    0x0, // input = empty for fallback
+                                    0x0, // input size = zero
+                                    0x0, // output = empty
+                                    0x0 // output size = zero
+                                )
+                            ) {
+                                // should only revert if receiver cannot receive native
+                                mstore(0, NATIVE_TRANSFER)
+                                revert(0, 0x4)
+                            }
                         }
-                        currentOffset := add(currentOffset, 34)
+                        currentOffset := add(currentOffset, 35)
                     }
                 }
             } else {

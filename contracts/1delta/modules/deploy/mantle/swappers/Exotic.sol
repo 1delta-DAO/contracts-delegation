@@ -40,7 +40,7 @@ abstract contract ExoticSwapper is CurveSwapper {
             let success
             // selector for swap(address,address,uint256,uint256,address,address)
             mstore(
-                ptr, // 2816
+                ptr, 
                 0x7dc2038200000000000000000000000000000000000000000000000000000000
             )
             mstore(add(ptr, 0x04), tokenIn)
@@ -86,7 +86,7 @@ abstract contract ExoticSwapper is CurveSwapper {
             let success
             // selector for swap(address,address,address)
             mstore(
-                ptr, // 2816
+                ptr, 
                 0x9331621200000000000000000000000000000000000000000000000000000000
             )
             mstore(add(ptr, 0x04), tokenIn)
