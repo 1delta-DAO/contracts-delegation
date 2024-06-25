@@ -139,7 +139,6 @@ contract OneDeltaComposerMantle is MarginTrading {
                     // swap execution
                     if (noFOT) amountIn = swapExactIn(amountIn, dexId, payer, receiver, opdata);
                     else amountIn = swapExactInFOT(amountIn, dexId, receiver, opdata);
-
                     // slippage check
                     assembly {
                         if lt(amountIn, minimumAmountOut) {

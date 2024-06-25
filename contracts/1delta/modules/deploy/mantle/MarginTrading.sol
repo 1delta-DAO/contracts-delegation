@@ -1162,7 +1162,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // This is done by re-calling this same function after skimming the
             // data parameter by the leading token config 
             ////////////////////////////////////////////////////
-            if(path.length > 64) { // limit is 20+1+1+20+20+2
+            if(path.length > 65) { // limit is 20+1+1+20+20+2
                 // remove the last token from the path
                 assembly {
                     path.offset := add(path.offset, 42)
