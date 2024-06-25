@@ -1162,7 +1162,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // This is done by re-calling this same function after skimming the
             // data parameter by the leading token config 
             ////////////////////////////////////////////////////
-            if(path.length > 64) {
+            if(path.length > 64) { // limit is 20+1+1+20+20+2
                 // remove the last token from the path
                 assembly {
                     path.offset := add(path.offset, 42)
@@ -1298,7 +1298,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         if (poolId < 49) {
             address reciever;
             assembly {
-                switch lt(path.length, 66)
+                switch lt(path.length, 67) // see swapExactIn
                 case 1 { reciever := address()}
                 default {
                     let nextId := and(shr(80, calldataload(add(path.offset, 44))), UINT8_MASK)
@@ -1335,7 +1335,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         else if (poolId == 49) {
             address reciever;
             assembly {
-                switch lt(path.length, 66)
+                switch lt(path.length, 67) // see swapExactIn
                 case 1 { reciever := address()}
                 default {
                     let nextId := and(shr(80, calldataload(add(path.offset, 44))), UINT8_MASK)

@@ -455,6 +455,44 @@ contract SwapGen2Test is DeltaSetup {
         assertApproxEqAbs(198751420, balanceOut, 1);
     }
 
+    function test_mantle_gen_2_spot_exact_in_V2_all() external /** address user, uint8 lenderId */ {
+        address user = testUser;
+        vm.assume(user != address(0));
+        address assetFrom = USDC;
+
+        address assetTo = USDT;
+        uint256 amountToSwap = 200.0e6;
+        deal(assetFrom, user, amountToSwap);
+
+
+        bytes memory swapPath = getSpotExactInSingleGen2V2(assetFrom, assetTo);
+        uint256 minimumOut = 10.0e6;
+
+        vm.prank(user);
+        IERC20All(assetFrom).approve(brokerProxyAddress, amountToSwap);
+
+        uint256 balanceIn = IERC20All(assetFrom).balanceOf(user);
+        uint256 balanceOut = IERC20All(assetTo).balanceOf(user);
+        bytes memory data = encodeSwap(
+            Commands.SWAP_EXACT_IN,
+            user,
+            0, // all 
+            minimumOut,
+            false,
+            swapPath
+        );
+        vm.prank(user);
+        uint256 gas = gasleft();
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
+        gas = gas - gasleft();
+        console.log("gas", gas);
+        balanceOut = IERC20All(assetTo).balanceOf(user) - balanceOut;
+        balanceIn = balanceIn - IERC20All(assetFrom).balanceOf(user);
+        assertApproxEqAbs(balanceIn, amountToSwap, 0);
+        assertApproxEqAbs(198751420, balanceOut, 1);
+    }
+
+
     function getSpotExactInSingleGen2(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_STABLES);
         uint8 poolId = AGNI;

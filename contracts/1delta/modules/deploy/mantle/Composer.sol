@@ -117,13 +117,13 @@ contract OneDeltaComposerMantle is MarginTrading {
                         if iszero(amountIn) {
                             // selector for balanceOf(address)
                             mstore(0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
-                            // add this address as parameter
+                            // add payer address as parameter
                             mstore(0x04, payer)
                             // call to token
                             pop(
                                 staticcall(
                                     gas(),
-                                    calldataload(and(ADDRESS_MASK, opdata.offset)),
+                                    calldataload(and(ADDRESS_MASK, sub(opdata.offset, 12))), // fetches first token
                                     0x0,
                                     0x24,
                                     0x0,
@@ -199,7 +199,12 @@ contract OneDeltaComposerMantle is MarginTrading {
                             pop(
                                 staticcall(
                                     gas(),
-                                    calldataload(and(ADDRESS_MASK, add(currentOffset, 32))),
+                                    calldataload(
+                                        and(
+                                            ADDRESS_MASK,
+                                            add(currentOffset, 32) // this puts the address already in lower bytes
+                                        )
+                                    ),
                                     0x0,
                                     0x24,
                                     0x0,
@@ -314,7 +319,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                     address payer;
                     uint256 amountInMaximum;
                     assembly {
-                        opdata.offset := add(currentOffset, 32) // 32
+                        opdata.offset := add(currentOffset, 32) // opdata starts in 2nd byte
                         let firstParam := calldataload(currentOffset)
 
                         // we get the calldatalength of the path
@@ -434,7 +439,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                             if lt(mload(ptr), amount) {
                                 ////////////////////////////////////////////////////
                                 // Approve, at this point it is clear that the target
-                                // whitelisted
+                                // is whitelisted
                                 ////////////////////////////////////////////////////
                                 // selector for approve(address,uint256)
                                 mstore(ptr, 0x095ea7b300000000000000000000000000000000000000000000000000000000)

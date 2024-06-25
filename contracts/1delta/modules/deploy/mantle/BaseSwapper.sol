@@ -152,7 +152,7 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
         // uniswapV3 style
         if (dexId < 49) {
             assembly {
-                switch lt(path.length, 66)
+                switch lt(path.length, 67) // maxLength = 66 for single path
                 case 1 { currentReceiver := receiver}
                 default {
                     dexId := and(shr(80, calldataload(add(path.offset, 44))), UINT8_MASK)
@@ -192,7 +192,7 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
         // iZi
         else if (dexId == 49) {
             assembly {
-                switch lt(path.length, 66)
+                switch lt(path.length, 67) // same as for Uni V3 CL
                 case 1 { currentReceiver := receiver}
                 default {
                     dexId := and(shr(80, calldataload(add(path.offset, 44))), UINT8_MASK)
@@ -232,7 +232,7 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
         // Stratum 3USD with wrapper
         else if (dexId == 50) {
             assembly {
-                switch lt(path.length, 45) // maxLength = 20+1+1+20+2
+                switch lt(path.length, 45) // maxLength = 20+1+1+20+2=44
                 case 1 { currentReceiver := receiver}
                 default {
                     dexId := and(shr(80, calldataload(add(path.offset, 22))), UINT8_MASK)
@@ -271,7 +271,7 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
         // Curve stable general
         else if (dexId == 51) {
             assembly {
-                switch lt(path.length, 74) // lengthFull = 20+1+1+20+1+1+20 
+                switch lt(path.length, 67) // lengthFull = 20+1+1+20+1+1+20 = 64
                 case 1 { currentReceiver := receiver}
                 default {
                     dexId := and(shr(80, calldataload(add(path.offset, 44))), UINT8_MASK)
@@ -304,7 +304,7 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
         // uniswapV2 style
         else if (dexId < 150) {
             assembly {
-                switch lt(path.length, 64)
+                switch lt(path.length, 65)
                 case 1 { currentReceiver := receiver}
                 default {
                     dexId := and(shr(80, calldataload(add(path.offset, 42))), UINT8_MASK)
@@ -347,7 +347,7 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
             address tokenOut;
             address pool;
             assembly {
-                switch lt(path.length, 64)
+                switch lt(path.length, 65) // same as V2
                 case 1 { currentReceiver := receiver}
                 default {
                     dexId := and(shr(80, calldataload(add(path.offset, 44))), UINT8_MASK)
@@ -392,7 +392,7 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
             address tokenOut;
             address pair;
             assembly {
-                switch lt(path.length, 64)
+                switch lt(path.length, 65) // same as V2
                 case 1 { currentReceiver := receiver}
                 default {
                     dexId := and(shr(80, calldataload(add(path.offset, 44))), UINT8_MASK)
@@ -435,7 +435,7 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
             address tokenOut;
             address vault;
             assembly {
-                switch lt(path.length, 64)
+                switch lt(path.length, 65) // same as V2
                 case 1 { currentReceiver := receiver}
                 default {
                     dexId := and(shr(80, calldataload(add(path.offset, 42))), UINT8_MASK)
