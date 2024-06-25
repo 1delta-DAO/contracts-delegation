@@ -181,7 +181,8 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
                 0,
                 payer,
                 currentReceiver,
-                path[:64] // we do not need end flags
+                64, // we do not need end flags
+                path
             );
             assembly {
                 path.offset := add(path.offset, 44)
@@ -220,7 +221,8 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
                 0,
                 payer,
                 currentReceiver,
-                path[:64]
+                64,
+                path
             );
             assembly {
                 path.offset := add(path.offset, 44)
@@ -230,7 +232,7 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
         // Stratum 3USD with wrapper
         else if (dexId == 50) {
             assembly {
-                switch lt(path.length, 44)
+                switch lt(path.length, 45) // maxLength = 20+1+1+20+2
                 case 1 { currentReceiver := receiver}
                 default {
                     dexId := and(shr(80, calldataload(add(path.offset, 22))), UINT8_MASK)
@@ -269,7 +271,7 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
         // Curve stable general
         else if (dexId == 51) {
             assembly {
-                switch lt(path.length, 74)
+                switch lt(path.length, 74) // lengthFull = 20+1+1+20+1+1+20 
                 case 1 { currentReceiver := receiver}
                 default {
                     dexId := and(shr(80, calldataload(add(path.offset, 44))), UINT8_MASK)
@@ -332,7 +334,7 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
                 payer,
                 currentReceiver,
                 false,
-                path
+                path // we do not slice the path since we deterministically prevent flash swaps
             );
             assembly {
                 path.offset := add(path.offset, 42)

@@ -48,7 +48,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
             ////////////////////////////////////////////////////
             // Pull funds if needed
             ////////////////////////////////////////////////////
-            if iszero(eq(payer, address())) {
+            if xor(payer, address()) {
                 // selector for transferFrom(address,address,uint256)
                 mstore(ptr, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
                 mstore(add(ptr, 0x04), payer)
@@ -200,7 +200,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
             ////////////////////////////////////////////////////
             // Send funds to receiver if needed
             ////////////////////////////////////////////////////
-            if iszero(eq(receiver, address())) {
+            if xor(receiver, address()) {
                 // selector for transfer(address,uint256)
                 mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
                 mstore(add(ptr, 0x04), receiver)
@@ -242,7 +242,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
             ////////////////////////////////////////////////////
             // Pull funds if needed
             ////////////////////////////////////////////////////
-            if iszero(eq(payer, address())) {
+            if xor(payer, address()) {
                 // selector for transferFrom(address,address,uint256)
                 mstore(ptr, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
                 mstore(add(ptr, 0x04), payer)
@@ -310,7 +310,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
             ////////////////////////////////////////////////////
             // Send funds to receiver if needed
             ////////////////////////////////////////////////////
-            if iszero(eq(receiver, address())) {
+            if xor(receiver, address()) {
                 // selector for transfer(address,uint256)
                 mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
                 mstore(add(ptr, 0x04), receiver)

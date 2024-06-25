@@ -1327,6 +1327,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 amountOutMinimum,
                 payer,
                 reciever,
+                path.length,
                 path
             );
         }
@@ -1363,6 +1364,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 amountOutMinimum,
                 payer,
                 reciever,
+                path.length,
                 path
             );
         }

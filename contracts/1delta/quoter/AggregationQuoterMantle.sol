@@ -58,10 +58,10 @@ contract OneDeltaQuoterMantle is PoolGetter {
     /// @dev Transient storage variable used to check a safety condition in exact output swaps.
     uint256 private amountOutCached;
 
-    uint256 internal constant CL_PARAM_LENGTH = 43;
-    uint256 internal constant V2_PARAM_LENGTH = 41;
-    uint256 internal constant CURVE_PARAM_LENGTH = CL_PARAM_LENGTH;
-    uint256 internal constant CURVE_CUSTOM_PARAM_LENGTH = V2_PARAM_LENGTH;
+    uint256 internal constant CL_PARAM_LENGTH = 43; // token + id + pool + fee
+    uint256 internal constant V2_PARAM_LENGTH = 41; // token + id + pool
+    uint256 internal constant CURVE_PARAM_LENGTH = CL_PARAM_LENGTH; // token + id + pool + idIn + idOut
+    uint256 internal constant CURVE_CUSTOM_PARAM_LENGTH = 21; // no pool address provided
 
     function quoteKTXExactIn(address _tokenIn, address _tokenOut, uint256 amountIn) internal view returns (uint256 amountOut) {
         assembly {
@@ -130,7 +130,16 @@ contract OneDeltaQuoterMantle is PoolGetter {
             //      4.1: get usdg amount
             //      4.2: get getSwapFeeBasisPoints
             ////////////////////////////////////////////////////
-            let usdgAmount := div(mul(div(mul(amountIn, priceIn), PRICE_PRECISION), 1000000000000000000), decsIn)
+            let usdgAmount := div(
+                mul(
+                    div(
+                        mul(amountIn, priceIn), // price adj
+                        PRICE_PRECISION
+                    ),
+                    1000000000000000000 // 1e18
+                ),
+                decsIn
+            )
             // getSwapFeeBasisPoints(address,address,uint256)
             mstore(ptr, 0xda13381600000000000000000000000000000000000000000000000000000000)
             mstore(ptrPlus4, _tokenIn)
@@ -412,10 +421,12 @@ contract OneDeltaQuoterMantle is PoolGetter {
             let ptr := mload(0x40)
             // getTokenY()
             mstore(ptr, 0xda10610c00000000000000000000000000000000000000000000000000000000)
-            pop(
-                // the call will always succeed due to the pair being nonzero
+            if iszero(
+                // invalid pairs will make it fail here
                 staticcall(gas(), pair, ptr, 0x4, ptr, 0x20)
-            )
+            ) {
+                revert(0, 0)
+            }
             // override swapForY
             let swapForY := eq(tokenOut, mload(ptr))
             // getSwapOut(uint128,bool)
@@ -501,20 +512,31 @@ contract OneDeltaQuoterMantle is PoolGetter {
                 let firstWord := calldataload(path.offset)
                 tokenIn := shr(96, firstWord) // get first token
                 poolId := shr(88, firstWord) //
-                pair := shr(96, calldataload(add(path.offset, 21))) // tokenOut starts at 24th byte
-                tokenOut := shr(96, calldataload(add(path.offset, 41))) // tokenOut starts at 24th byte
+                pair := shr(96, calldataload(add(path.offset, 21))) // pool starts at 21st byte
             }
 
             // v3 types
             if (poolId < 49) {
+                assembly {
+                    // tokenOut starts at 43th byte for CL
+                    tokenOut := shr(96, calldataload(add(path.offset, 43)))
+                }
                 amountIn = quoteExactInputSingleV3(tokenIn, tokenOut, pair, amountIn);
                 path = path[CL_PARAM_LENGTH:];
             }
             // iZi
             else if (poolId == 49) {
+                assembly {
+                    // tokenOut starts at 43th byte for CL
+                    tokenOut := shr(96, calldataload(add(path.offset, 43)))
+                }
                 amountIn = quoteExactInputSingle_iZi(tokenIn, tokenOut, pair, uint128(amountIn));
                 path = path[CL_PARAM_LENGTH:];
             } else if (poolId == 50) {
+                assembly {
+                    // need to re-assign token out for stratum
+                    tokenOut := shr(96, calldataload(add(path.offset, 21)))
+                }
                 amountIn = quoteStratum3(tokenIn, tokenOut, amountIn);
                 path = path[CURVE_CUSTOM_PARAM_LENGTH:];
             } else if (poolId == 51) {
@@ -530,15 +552,31 @@ contract OneDeltaQuoterMantle is PoolGetter {
             }
             // v2 types
             else if (poolId < 150) {
+                assembly {
+                    // tokenOut starts at 41st byte
+                    tokenOut := shr(96, calldataload(add(path.offset, 41)))
+                }
                 amountIn = getAmountOutUniV2Type(pair, tokenIn, tokenOut, amountIn, poolId);
                 path = path[V2_PARAM_LENGTH:];
             } else if (poolId == 150) {
+                assembly {
+                    // tokenOut starts at 41st byte
+                    tokenOut := shr(96, calldataload(add(path.offset, 41)))
+                }
                 amountIn = quoteWOO(tokenIn, tokenOut, amountIn);
                 path = path[V2_PARAM_LENGTH:];
             } else if (poolId == 151) {
+                assembly {
+                    // tokenOut starts at 41st byte
+                    tokenOut := shr(96, calldataload(add(path.offset, 41)))
+                }
                 amountIn = getLBAmountOut(tokenOut, amountIn, pair);
                 path = path[V2_PARAM_LENGTH:];
             } else if (poolId == 152) {
+                assembly {
+                    // tokenOut starts at 41st byte
+                    tokenOut := shr(96, calldataload(add(path.offset, 41)))
+                }
                 amountIn = quoteKTXExactIn(tokenIn, tokenOut, amountIn);
                 path = path[V2_PARAM_LENGTH:];
             } else {
@@ -546,7 +584,7 @@ contract OneDeltaQuoterMantle is PoolGetter {
             }
 
             /// decide whether to continue or terminate
-            if (path.length < 44) {
+            if (path.length < 40) {
                 return amountIn;
             }
         }
@@ -566,30 +604,45 @@ contract OneDeltaQuoterMantle is PoolGetter {
                 let firstWord := calldataload(path.offset)
                 tokenOut := shr(96, firstWord) // get first token
                 poolId := shr(88, firstWord) //
-                pair := shr(96, calldataload(add(path.offset, 21))) // tokenOut starts at 24th byte
-                tokenIn := shr(96, calldataload(add(path.offset, 41))) // tokenOut starts at 24th byte
+                pair := shr(96, calldataload(add(path.offset, 21))) //
             }
 
             // v3 types
             if (poolId < 49) {
+                assembly {
+                    // tokenIn starts at 43th byte for CL
+                    tokenIn := shr(96, calldataload(add(path.offset, 43)))
+                }
                 amountOut = quoteExactOutputSingleV3(tokenIn, tokenOut, pair, amountOut);
                 path = path[CL_PARAM_LENGTH:];
             } else if (poolId == 49) {
+                assembly {
+                    // tokenIn starts at 43th byte for CL
+                    tokenIn := shr(96, calldataload(add(path.offset, 43)))
+                }
                 amountOut = quoteExactOutputSingle_iZi(tokenIn, tokenOut, pair, uint128(amountOut));
                 path = path[CL_PARAM_LENGTH:];
             }
             // v2 types
             else if (poolId < 150) {
+                assembly {
+                    // tokenIn starts at 43th byte for CL
+                    tokenIn := shr(96, calldataload(add(path.offset, 41)))
+                }
                 amountOut = getV2AmountInDirect(pair, tokenIn, tokenOut, amountOut, poolId);
                 path = path[V2_PARAM_LENGTH:];
             } else if (poolId == 151) {
+                assembly {
+                    // tokenIn starts at 43th byte for CL
+                    tokenIn := shr(96, calldataload(add(path.offset, 41)))
+                }
                 amountOut = getLBAmountIn(tokenOut, amountOut, pair);
                 path = path[V2_PARAM_LENGTH:];
             } else {
                 revert invalidDexId();
             }
             /// decide whether to continue or terminate
-            if (path.length < 44) {
+            if (path.length < 40) {
                 return amountOut;
             }
         }

@@ -61,12 +61,14 @@ abstract contract V3TypeSwapper is DeltaErrors {
 
     /// @dev Swap Uniswap V3 style exact in
     /// the calldata arrives as
-    /// tokenIn | actionId | fee | tokenOut
+    /// tokenIn | actionId | pool | fee | tokenOut
+    /// @param pathLength we add a custom path length for flexible use
     function _swapUniswapV3PoolExactIn(
         uint256 fromAmount,
         uint256 minOut,
         address payer,
         address receiver,
+        uint256 pathLength,
         bytes calldata path
     ) internal returns (uint256 receivedAmount) {
         // solhint-disable-next-line no-inline-assembly
@@ -87,7 +89,6 @@ abstract contract V3TypeSwapper is DeltaErrors {
                     calldataload(add(path.offset, 22)) // starts as first param
                 )
             )
-            let pathLength := path.length
             // Return amount0 or amount1 depending on direction
             switch lt(tokenA, tokenB)
             case 0 {
@@ -176,6 +177,7 @@ abstract contract V3TypeSwapper is DeltaErrors {
         uint256 minOut,
         address payer,
         address receiver,
+        uint256 pathLength,
         bytes calldata path
     ) internal returns (uint256 receivedAmount) {
         // solhint-disable-next-line no-inline-assembly
@@ -196,7 +198,6 @@ abstract contract V3TypeSwapper is DeltaErrors {
                     calldataload(add(path.offset, 22)) // first param
                 )
             )
-            let pathLength := path.length
             // Return amount0 or amount1 depending on direction
             switch lt(tokenA, tokenB)
             case 0 {

@@ -116,7 +116,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                 // We chain the transfer to the receiver, given that
                 // it is not this address
                 ////////////////////////////////////////////////////
-                if iszero(eq(address(), receiver)) {
+                if xor(address(), receiver) {
                     ////////////////////////////////////////////////////
                     // Populate tx for transfer to receiver
                     ////////////////////////////////////////////////////

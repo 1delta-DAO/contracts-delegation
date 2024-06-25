@@ -52,46 +52,49 @@ contract StratumCurveTest is DeltaSetup {
         assertApproxEqAbs(balanceIn, amountIn, 0);
     }
 
-    function test_mantle_stratum_spot_exact_in_usd() external pure {
-        return; // the usd pol is paused
-        // @solhint-ignore
-        // address user = testUser;
-        // vm.assume(user != address(0));
-        // address assetIn = USDC;
-        // address assetOut = USDY;
+    function test_mantle_stratum_spot_exact_in_usd() external {
+        address user = testUser;
+        vm.assume(user != address(0));
+        address assetIn = USDC;
+        address assetOut = USDY;
 
-        // deal(assetIn, user, 1e20);
+        deal(assetIn, user, 1e20);
 
-        // uint256 amountIn = 5000.0e6;
+        uint256 amountIn = 2000.0e6;
 
-        // uint256 quoted = testQuoter._quoteStratumGeneral(getTokenIdUSD(assetIn), getTokenIdUSD(assetOut), 1, amountIn);
+        uint256 quoted = testQuoter.quoteExactInput(
+            getSpotExactInSingleStratumUsdQuter(assetIn, assetOut),
+            amountIn //
+        );
 
-        // bytes memory swapPath = getSpotExactInSingleStratumUsd(assetIn, assetOut);
-        // uint256 minimumOut = 0.03e8;
-        // calls[1] = abi.encodeWithSelector(
-        //     IFlashAggregator.swapExactInSpot.selector, // 3 args
-        //     amountIn,
-        //     minimumOut,
-        //     swapPath
-        // );
+        bytes memory swapPath = getSpotExactInSingleStratumUsdTrade(assetIn, assetOut);
+        uint256 minimumOut = 0.03e8;
 
-        // calls[2] = abi.encodeWithSelector(ILending.sweep.selector, assetOut);
-        // vm.prank(user);
-        // IERC20All(assetIn).approve(brokerProxyAddress, amountIn);
+        bytes memory data = encodeSwap(
+            Commands.SWAP_EXACT_IN,
+            user,
+            amountIn,
+            minimumOut,
+            false, // not self
+            swapPath
+        );
 
-        // uint256 balanceIn = IERC20All(assetIn).balanceOf(user);
-        // uint256 balanceOut = IERC20All(assetOut).balanceOf(user);
+        vm.prank(user);
+        IERC20All(assetIn).approve(brokerProxyAddress, amountIn);
 
-        // vm.prank(user);
-        // IFlashAggregator(brokerProxyAddress).deltaCompose(data);
+        uint256 balanceIn = IERC20All(assetIn).balanceOf(user);
+        uint256 balanceOut = IERC20All(assetOut).balanceOf(user);
 
-        // balanceOut = IERC20All(assetOut).balanceOf(user) - balanceOut;
-        // balanceIn = balanceIn - IERC20All(assetIn).balanceOf(user);
+        vm.prank(user);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
 
-        // // swap 5, receive approx 4.9, but in 18 decs
-        // assertApproxEqAbs(4848576987354878062, balanceOut, 1);
-        // assertApproxEqAbs(quoted, balanceOut, 0);
-        // assertApproxEqAbs(balanceIn, amountIn, 0);
+        balanceOut = IERC20All(assetOut).balanceOf(user) - balanceOut;
+        balanceIn = balanceIn - IERC20All(assetIn).balanceOf(user);
+
+        // swap 5, receive approx 4.9, but in 18 decs
+        assertApproxEqAbs(quoted, balanceOut, 0);
+        assertApproxEqAbs(quoted, 1934254534138061721830, 0);
+        assertApproxEqAbs(balanceIn, amountIn, 0);
     }
 
     function test_mantle_stratum_spot_exact_in_reverse() external {
@@ -167,9 +170,36 @@ contract StratumCurveTest is DeltaSetup {
             );
     }
 
+    function getSpotExactInSingleStratumUsdQuter(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
+        return
+            abi.encodePacked(
+                tokenIn,
+                STRATUM_USD, // pid
+                tokenOut
+            );
+    }
+
+    function getSpotExactInSingleStratumUsdTrade(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
+        return
+            abi.encodePacked(
+                tokenIn,
+                uint8(0), //action
+                STRATUM_USD, // only Id
+                tokenOut,
+                uint8(0),
+                uint8(0)
+            );
+    }
+
     function getTokenIdUSD(address t) internal view returns (uint8) {
         if (t == USDC) return 0;
         if (t == USDT) return 1;
         else return 2;
+    }
+
+    function getTokenIdUSDY(address t) internal view returns (uint8) {
+        if (t == USDC) return 1;
+        if (t == USDT) return 2;
+        else return 0;
     }
 }
