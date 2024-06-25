@@ -364,27 +364,28 @@ contract FlashSwapExacInTest is DeltaSetup {
                 getSpotExactInAgni(token, METH),
                 ZERO_8,
                 STRATUM_CURVE,
-                abi.encodePacked(getTokenIdEth(METH), getTokenIdEth(token)),
                 STRATUM_ETH_POOL,
+                abi.encodePacked(getTokenIdEth(METH), getTokenIdEth(token)),
                 token
             );
     }
 
     function getSpotExactInAgniQuoter(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        return abi.encodePacked(tokenIn, uint24(DEX_FEE_STABLES), AGNI, tokenOut);
+        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, DEX_FEE_STABLES, AGNI);
+        return abi.encodePacked(tokenIn, AGNI, pool, DEX_FEE_STABLES, tokenOut);
     }
 
     function getSpotExactInMoeQuoter(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        return abi.encodePacked(tokenIn, uint24(DEX_FEE_NONE), MERCHANT_MOE, tokenOut);
+        address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, MERCHANT_MOE);
+        return abi.encodePacked(tokenIn, MERCHANT_MOE, pool, tokenOut);
     }
 
     function getSpotExactInSingleStratumMETHQuoter(address token) internal view returns (bytes memory data) {
-        uint8 poolId = STRATUM_CURVE;
         return
             abi.encodePacked(
                 getSpotExactInAgniQuoter(token, METH),
-                abi.encodePacked(getTokenIdEth(METH), getTokenIdEth(token), ZERO_8),
-                poolId,
+                STRATUM_CURVE,
+                abi.encodePacked(STRATUM_ETH_POOL, getTokenIdEth(METH), getTokenIdEth(token)),
                 token
             );
     }
@@ -395,10 +396,9 @@ contract FlashSwapExacInTest is DeltaSetup {
         return
             abi.encodePacked(
                 getSpotExactInAgni(token, METH),
-                ZERO_8,
+                ZERO_8, 
                 STRATUM_CURVE,
-                abi.encodePacked(getTokenIdEth(METH), getTokenIdEth(token)),
-                STRATUM_ETH_POOL,
+                abi.encodePacked(STRATUM_ETH_POOL, getTokenIdEth(METH), getTokenIdEth(token)),
                 token,
                 abi.encodePacked(ZERO_8, MERCHANT_MOE, pool, METH)
             );
@@ -408,10 +408,10 @@ contract FlashSwapExacInTest is DeltaSetup {
         return
             abi.encodePacked(
                 getSpotExactInMoe(token, METH),
-                ZERO_8,
+                ZERO_8, // action
                 STRATUM_CURVE,
-                abi.encodePacked(getTokenIdEth(METH), getTokenIdEth(token)),
                 STRATUM_ETH_POOL,
+                abi.encodePacked(getTokenIdEth(METH), getTokenIdEth(token)),
                 getSpotExactInAgni(token, METH)
             );
     }
@@ -420,10 +420,10 @@ contract FlashSwapExacInTest is DeltaSetup {
         return
             abi.encodePacked(
                 getSpotExactInMoe(token, METH),
-                ZERO_8,
+                ZERO_8, // action
                 STRATUM_CURVE,
-                abi.encodePacked(getTokenIdEth(METH), getTokenIdEth(token)),
                 STRATUM_ETH_POOL,
+                abi.encodePacked(getTokenIdEth(METH), getTokenIdEth(token)),
                 token
             );
     }
@@ -434,16 +434,12 @@ contract FlashSwapExacInTest is DeltaSetup {
         return abi.encodePacked(tokenIn, ZERO_8, poolId, pool, tokenOut);
     }
 
-    function moe() internal view returns (bytes memory) {
-        return abi.encodePacked(DEX_FEE_NONE, MERCHANT_MOE);
-    }
-
     function getSpotExactInDoubleStratumMETHQuoterWithV2(address token) internal view returns (bytes memory data) {
         return
             abi.encodePacked(
                 getSpotExactInMoeQuoter(token, METH),
-                abi.encodePacked(getTokenIdEth(METH), getTokenIdEth(token), ZERO_8),
                 STRATUM_CURVE,
+                abi.encodePacked(STRATUM_ETH_POOL, getTokenIdEth(METH), getTokenIdEth(token)),
                 token
             );
     }
@@ -452,10 +448,10 @@ contract FlashSwapExacInTest is DeltaSetup {
         return
             abi.encodePacked(
                 getSpotExactInAgniQuoter(token, METH),
-                abi.encodePacked(getTokenIdEth(METH), getTokenIdEth(token), ZERO_8),
                 STRATUM_CURVE,
+                abi.encodePacked(STRATUM_ETH_POOL, getTokenIdEth(METH), getTokenIdEth(token)),
                 token,
-                abi.encodePacked(DEX_FEE_NONE, MERCHANT_MOE, METH)
+                abi.encodePacked(MERCHANT_MOE, testQuoter._v2TypePairAddress(token, METH, MERCHANT_MOE), METH)
             );
     }
 
@@ -463,8 +459,8 @@ contract FlashSwapExacInTest is DeltaSetup {
         return
             abi.encodePacked(
                 getSpotExactInMoeQuoter(token, METH),
-                abi.encodePacked(getTokenIdEth(METH), getTokenIdEth(token), ZERO_8),
                 STRATUM_CURVE,
+                abi.encodePacked(STRATUM_ETH_POOL, getTokenIdEth(METH), getTokenIdEth(token)),
                 getSpotExactInAgniQuoter(token, METH)
             );
     }

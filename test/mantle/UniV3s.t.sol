@@ -63,9 +63,10 @@ contract GeneralMoeLBTest is DeltaSetup {
         return abi.encodePacked(tokenIn, uint8(0), poolId, pool, fee, tokenOut);
     }
 
-    function getSpotQuoteExactInSinglePuff(address tokenIn, address tokenOut) internal pure returns (bytes memory data) {
+    function getSpotQuoteExactInSinglePuff(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint24 fee = 3000;
         uint8 poolId = 5;
-        return abi.encodePacked(tokenIn, fee, poolId, tokenOut);
+        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
+        return abi.encodePacked(tokenIn, poolId, pool, fee, tokenOut);
     }
 }

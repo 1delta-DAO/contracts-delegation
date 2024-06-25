@@ -7,7 +7,6 @@ import "./DeltaSetup.f.sol";
  * Tests KTX / GMX style DEXs exact in swaps
  */
 contract KTXTest is DeltaSetup {
-
     function setUp() public virtual override {
         vm.createSelectFork({blockNumber: 62267594, urlOrAlias: "https://mantle-mainnet.public.blastapi.io"});
 
@@ -25,8 +24,7 @@ contract KTXTest is DeltaSetup {
 
         uint256 amountIn = 20.0e18;
 
-        uint256 quoted = testQuoter._quoteKTXExactIn(assetIn, assetOut, amountIn);
-
+        uint256 quoted = testQuoter.quoteExactInput(getKTXQuotePath(assetIn, assetOut), amountIn);
 
         bytes memory swapPath = getSpotExactInSingleKTX(assetIn, assetOut);
         uint256 minimumOut = 0.03e8;
@@ -34,7 +32,7 @@ contract KTXTest is DeltaSetup {
         bytes memory data = encodeSwap(
             Commands.SWAP_EXACT_IN,
             user,
-            amountIn, // 
+            amountIn, //
             minimumOut,
             false,
             swapPath
@@ -69,7 +67,7 @@ contract KTXTest is DeltaSetup {
         uint256 amountIn = 20.0e18;
 
         vm.expectRevert();
-        testQuoter._quoteKTXExactIn(assetIn, assetOut, amountIn);
+        testQuoter.quoteExactInput(getKTXQuotePath(assetIn, assetOut), amountIn);
     }
 
     function test_mantle_ktx_spot_exact_in_stable_out() external {
@@ -82,8 +80,7 @@ contract KTXTest is DeltaSetup {
 
         uint256 amountIn = 1.0e8;
 
-        uint256 quoted = testQuoter._quoteKTXExactIn(assetIn, assetOut, amountIn);
-
+        uint256 quoted = testQuoter.quoteExactInput(getKTXQuotePath(assetIn, assetOut), amountIn);
 
         bytes memory swapPath = getSpotExactInSingleKTX(assetIn, assetOut);
         uint256 minimumOut = 0.03e8;
@@ -91,7 +88,7 @@ contract KTXTest is DeltaSetup {
         bytes memory data = encodeSwap(
             Commands.SWAP_EXACT_IN,
             user,
-            amountIn, // 
+            amountIn, //
             minimumOut,
             false,
             swapPath
@@ -124,8 +121,7 @@ contract KTXTest is DeltaSetup {
 
         uint256 amountIn = 10000.0e6;
 
-        uint256 quoted = testQuoter._quoteKTXExactIn(assetIn, assetOut, amountIn);
-
+        uint256 quoted = testQuoter.quoteExactInput(getKTXQuotePath(assetIn, assetOut), amountIn);
 
         bytes memory swapPath = getSpotExactInSingleKTX(assetIn, assetOut);
         uint256 minimumOut = 0.03e8;
@@ -133,7 +129,7 @@ contract KTXTest is DeltaSetup {
         bytes memory data = encodeSwap(
             Commands.SWAP_EXACT_IN,
             user,
-            amountIn, // 
+            amountIn, //
             minimumOut,
             false,
             swapPath
@@ -161,5 +157,10 @@ contract KTXTest is DeltaSetup {
     function getSpotExactInSingleKTX(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint8 poolId = KTX;
         return abi.encodePacked(tokenIn, uint8(0), poolId, KTX_VAULT, tokenOut);
+    }
+
+    function getKTXQuotePath(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
+        uint8 poolId = KTX;
+        return abi.encodePacked(tokenIn, poolId, KTX_VAULT, tokenOut);
     }
 }

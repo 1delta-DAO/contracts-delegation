@@ -23,7 +23,7 @@ contract StratumCurveTest is DeltaSetup {
 
         uint256 amountIn = 5.0e18;
 
-        uint256 quoted = testQuoter._quoteStratumGeneral(getTokenIdEth(assetIn), getTokenIdEth(assetOut), 0, amountIn);
+        uint256 quoted = testQuoter._quoteStratumGeneral(getTokenIdEth(assetIn), getTokenIdEth(assetOut), STRATUM_ETH_POOL, amountIn);
 
         bytes memory swapPath = getSpotExactInSingleStratumEth(assetIn, assetOut);
         uint256 minimumOut = 0.03e8;
@@ -104,7 +104,7 @@ contract StratumCurveTest is DeltaSetup {
 
         uint256 amountIn = 5.0e18;
 
-        uint256 quoted = testQuoter._quoteStratumGeneral(getTokenIdEth(assetIn), getTokenIdEth(assetOut), 0, amountIn);
+        uint256 quoted = testQuoter._quoteStratumGeneral(getTokenIdEth(assetIn), getTokenIdEth(assetOut), STRATUM_ETH_POOL, amountIn);
 
         bytes memory swapPath = getSpotExactInSingleStratumEth(assetIn, assetOut);
         uint256 minimumOut = 0.03e8;
@@ -141,8 +141,8 @@ contract StratumCurveTest is DeltaSetup {
                 tokenIn,
                 uint8(0),
                 STRATUM_CURVE,
-                abi.encodePacked(getTokenIdEth(tokenIn), getTokenIdEth(tokenOut)),
                 STRATUM_ETH_POOL,
+                abi.encodePacked(getTokenIdEth(tokenIn), getTokenIdEth(tokenOut)),
                 tokenOut
             );
     }
@@ -157,11 +157,13 @@ contract StratumCurveTest is DeltaSetup {
         return
             abi.encodePacked(
                 tokenIn,
-                abi.encodePacked(getTokenIdUSD(tokenIn), getTokenIdUSD(tokenOut), uint8(1)),
-                poolId,
                 uint8(0),
+                poolId,
+                STRATUM_3POOL_2,
+                abi.encodePacked(getTokenIdUSD(tokenIn), getTokenIdUSD(tokenOut)),
                 tokenOut,
-                uint8(99)
+                uint8(99),
+                uint8(0)
             );
     }
 

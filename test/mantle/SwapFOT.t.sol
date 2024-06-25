@@ -37,14 +37,14 @@ contract SwapGen2Test is DeltaSetup {
         IV2Router(FUSION_ROUTER).addLiquidity(
             token,
             otherToken,
-            100_000.0e18,
+            100_000.0e18, // add 1:1 liquidity
             100_000.0e18,
             0,
             0,
             creator,
             type(uint).max //
         );
-        console.log("supplied", token);
+        console.log("supplied fot token", token);
     }
 
     function test_mantle_gen_2_buy_FOT() external /** address user, uint8 lenderId */ {

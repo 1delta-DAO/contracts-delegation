@@ -400,26 +400,26 @@ contract GeneralMoeLBTest is DeltaSetup {
     function getSpotExactOutSingleLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint8 poolId = MERCHANT_MOE_LB;
         address pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenOut, tokenIn, BIN_STEP_LOWEST).LBPair;
-        return abi.encodePacked(tokenOut, uint8(11), poolId, pool, tokenIn);
+        return abi.encodePacked(tokenOut, uint8(0), poolId, pool, tokenIn);
     }
 
     function getSpotExactOutMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint8 poolId = MERCHANT_MOE_LB;
         address pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenOut, USDT, BIN_STEP_LOWEST).LBPair;
 
-        bytes memory firstPart = abi.encodePacked(tokenOut, uint8(1), poolId, pool, USDT);
+        bytes memory firstPart = abi.encodePacked(tokenOut, uint8(0), poolId, pool, USDT);
         poolId = MERCHANT_MOE;
         pool = testQuoter._v2TypePairAddress(USDT, tokenIn, MERCHANT_MOE);
-        return abi.encodePacked(firstPart, uint8(11), poolId, pool, tokenIn);
+        return abi.encodePacked(firstPart, uint8(0), poolId, pool, tokenIn);
     }
 
     function getSpotExactOutMultiLBEnd(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint8 poolId = MERCHANT_MOE;
         address pool = testQuoter._v2TypePairAddress(USDT, tokenOut, MERCHANT_MOE);
-        bytes memory firstPart = abi.encodePacked(tokenOut, uint8(1), poolId, pool, USDT);
+        bytes memory firstPart = abi.encodePacked(tokenOut, uint8(0), poolId, pool, USDT);
         poolId = MERCHANT_MOE_LB;
         pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenIn, USDT, BIN_STEP_LOWEST).LBPair;
-        return abi.encodePacked(firstPart, uint8(1), poolId, pool, tokenIn);
+        return abi.encodePacked(firstPart, uint8(0), poolId, pool, tokenIn);
     }
 
     function getSpotExactInMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {

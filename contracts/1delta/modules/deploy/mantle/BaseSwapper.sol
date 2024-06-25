@@ -293,7 +293,7 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
                     }
                 }
             }
-            amountIn = swapCurveGeneral(path[:64], amountIn, payer, currentReceiver);
+            amountIn = swapCurveGeneral(path, amountIn, payer, currentReceiver);
             assembly {
                 path.offset := add(path.offset, 44)
                 path.length := sub(path.length, 44)
@@ -332,7 +332,7 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
                 payer,
                 currentReceiver,
                 false,
-                path[:62]
+                path
             );
             assembly {
                 path.offset := add(path.offset, 42)

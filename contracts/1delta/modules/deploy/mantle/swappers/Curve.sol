@@ -25,7 +25,6 @@ abstract contract CurveSwapper is UniTypeSwapper {
 
     constructor() {}
 
-
     /**
      * Swaps Stratums Curve fork exact in internally and handles wrapping/unwrapping of mUSD->USDY
      * This one has a dedicated implementation as this pool has a rebasing asset which can be unwrapped
@@ -285,10 +284,10 @@ abstract contract CurveSwapper is UniTypeSwapper {
                 }
             }
             
-            let indexData := calldataload(add(pathSlice.offset, 21))
-            let indexIn := and(shr(240, indexData), 0xff)
-            let indexOut := and(shr(232, indexData), 0xff)
-            let pool := and(shr(72, indexData), ADDRESS_MASK)
+            let indexData := calldataload(add(pathSlice.offset, 22))
+            let pool := and(shr(96, indexData), ADDRESS_MASK)
+            let indexIn := and(shr(88, indexData), 0xff)
+            let indexOut := and(shr(80, indexData), 0xff)
             ////////////////////////////////////////////////////
             // Execute swap function 
             ////////////////////////////////////////////////////
@@ -308,7 +307,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
 
             amountOut := mload(ptr)
 
-                        ////////////////////////////////////////////////////
+            ////////////////////////////////////////////////////
             // Send funds to receiver if needed
             ////////////////////////////////////////////////////
             if iszero(eq(receiver, address())) {
