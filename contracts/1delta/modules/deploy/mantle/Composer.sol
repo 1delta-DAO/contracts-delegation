@@ -837,18 +837,19 @@ contract OneDeltaComposerMantle is MarginTrading {
                         // load config
                         let config := and(UINT8_MASK, shr(112, providedAmount))
                         providedAmount := and(_UINT112_MASK, providedAmount)
-                        // selector for balanceOf(address)
-                        mstore(0x0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
-                        // add this address as parameter
-                        mstore(0x4, address())
-
-                        // call to underlying
-                        pop(staticcall(gas(), WRAPPED_NATIVE, 0x0, 0x24, 0x0, 0x20))
 
                         let transferAmount
                         // validate if config is zero, otherwise skip
                         switch config
                         case 0 {
+                            // selector for balanceOf(address)
+                            mstore(0x0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+                            // add this address as parameter
+                            mstore(0x4, address())
+
+                            // call to underlying
+                            pop(staticcall(gas(), WRAPPED_NATIVE, 0x0, 0x24, 0x0, 0x20))
+
                             transferAmount := mload(0x0)
                             if lt(transferAmount, providedAmount) {
                                 mstore(0, SLIPPAGE)
