@@ -17,6 +17,10 @@ abstract contract BaseLending is Slots {
     // lender pool addresses
     address internal constant AURELIUS_POOL = 0x7c9C6F5BEd9Cfe5B9070C7D3322CF39eAD2F9492;
     address internal constant LENDLE_POOL = 0xCFa5aE7c2CE8Fadc6426C1ff872cA45378Fb7cF3;
+    address internal constant AAVE_V3 = 0x794a61358D6845594F94dc1DB02A252b5b4814aD;
+    address internal constant YLDR = 0x6447c4390457CaD03Ec1BaA4254CEe1A3D9e1Bbd;
+    address internal constant COMET_USDC = 0xF25212E676D1F7F89Cd72fFEe66158f541246445;
+
 
     /// @notice Withdraw from lender given user address and lender Id from cache
     function _withdraw(address _underlying, address _to, uint256 amount, uint256 _lenderId) internal {

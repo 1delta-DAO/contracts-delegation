@@ -229,45 +229,6 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
                 path.length := sub(path.length, 44)
             }
         }
-        // Stratum 3USD with wrapper
-        else if (dexId == 50) {
-            assembly {
-                switch lt(path.length, 45) // maxLength = 20+1+1+20+2=44
-                case 1 { currentReceiver := receiver}
-                default {
-                    dexId := and(shr(80, calldataload(add(path.offset, 22))), UINT8_MASK)
-                    switch gt(dexId, 99) 
-                    case 1 {
-                        currentReceiver := and(
-                            ADDRESS_MASK,
-                            shr(
-                                96,
-                                calldataload(
-                                    add(
-                                        path.offset,
-                                        44 // 20 + 2 + 20 + 2 [poolAddress starts here]
-                                    )
-                                ) // poolAddress
-                            )
-                        )
-                    }
-                    default {
-                        currentReceiver := address()
-                    }
-                }
-            }
-            address tokenIn;
-            address tokenOut;
-            assembly {
-                tokenIn := shr(96, calldataload(path.offset))
-                tokenOut := shr(96, calldataload(add(path.offset, 22)))
-            }
-            amountIn = swapStratum3(tokenIn, tokenOut, amountIn, payer, currentReceiver);
-            assembly {
-                path.offset := add(path.offset, 22)
-                path.length := sub(path.length, 22)
-            }
-        }
         // Curve stable general
         else if (dexId == 51) {
             assembly {
@@ -386,49 +347,6 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
                 path.length := sub(path.length, 42)
             }
         }
-        // Moe LB
-        else if (dexId == 151) {
-            address tokenIn;
-            address tokenOut;
-            address pair;
-            assembly {
-                switch lt(path.length, 65) // same as V2
-                case 1 { currentReceiver := receiver}
-                default {
-                    dexId := and(shr(80, calldataload(add(path.offset, 42))), UINT8_MASK)
-                    switch gt(dexId, 99) 
-                    case 1 {
-                        currentReceiver := and(
-                            ADDRESS_MASK,
-                            shr(
-                                96,
-                                calldataload(
-                                    add(
-                                        path.offset,
-                                        64 // 20 + 2 + 20 + 20 + 2 [poolAddress starts here]
-                                    )
-                                ) // poolAddress
-                            )
-                        )
-                    }
-                    default {
-                        currentReceiver := address()
-                    }
-                }
-                tokenIn := shr(96, calldataload(path.offset))
-                tokenOut := shr(96, calldataload(add(path.offset, 42)))
-                pair := shr(96, calldataload(add(path.offset, 22)))
-            }
-            amountIn = swapLBexactIn(
-                tokenOut,
-                pair,
-                currentReceiver
-            );
-            assembly {
-                path.offset := add(path.offset, 42)
-                path.length := sub(path.length, 42)
-            }
-        } 
         // GMX
         else if(dexId == 152) {
             address tokenIn;

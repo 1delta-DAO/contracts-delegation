@@ -6,7 +6,7 @@ import {PermitUtils} from "./permit/PermitUtils.sol";
 
 /// @dev Helpers for moving tokens around.
 abstract contract TokenTransfer is PermitUtils {
-    address internal constant WRAPPED_NATIVE = 0x78c1b0C915c4FAA5FffA6CAbf0219DA63d7f4cb8;
+    address internal constant WRAPPED_NATIVE = 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270;
 
     /// @dev Transfers ERC20 tokens from `owner` to `to`.
     /// @param token The token to spend.
