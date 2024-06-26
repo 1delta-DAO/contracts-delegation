@@ -9,18 +9,19 @@ contract ComposerTest is DeltaSetup {
         uint8 lenderId = 1;
         address user = testUser;
         uint256 amount = 10.0e6;
-        deal(USDT, user, 1e23);
+        address asset = USDT;
+        deal(asset, user, 1e23);
 
         vm.prank(user);
-        IERC20All(USDT).approve(address(brokerProxyAddress), amount);
+        IERC20All(asset).approve(address(brokerProxyAddress), amount);
 
         bytes memory transfer = transferIn(
-            USDT,
+            asset,
             brokerProxyAddress,
             amount //
         );
         bytes memory data = deposit(
-            USDT,
+            asset,
             user,
             amount,
             lenderId //
@@ -31,10 +32,11 @@ contract ComposerTest is DeltaSetup {
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
+        assertApproxEqAbs(amount, IERC20All(collateralTokens[asset][lenderId]).balanceOf(user), 0);
     }
 
     function test_polygon_composer_borrow() external {
-        uint8 lenderId = 0;
+        uint8 lenderId = 1;
         address user = testUser;
         uint256 amount = 10.0e6;
         address asset = USDT;
@@ -59,10 +61,11 @@ contract ComposerTest is DeltaSetup {
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
+        assertApproxEqAbs(borrowAmount, IERC20All(debtTokens[borrowAsset][lenderId]).balanceOf(user), 0);
     }
 
     function test_polygon_composer_repay() external {
-        uint8 lenderId = 0;
+        uint8 lenderId = 1;
         address user = testUser;
 
         uint256 amount = 10.0e6;
@@ -103,7 +106,7 @@ contract ComposerTest is DeltaSetup {
     }
 
     function test_polygon_composer_withdraw() external {
-        uint8 lenderId = 0;
+        uint8 lenderId = 1;
         address user = testUser;
 
         uint256 amount = 10.0e6;

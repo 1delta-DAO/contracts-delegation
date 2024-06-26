@@ -12,7 +12,7 @@ contract AddressesPolygon {
     address internal constant WOO_POOL = 0xEd9e3f98bBed560e66B89AaC922E29D4596A9642;
 
     address internal constant AAVE_POOL = 0x794a61358D6845594F94dc1DB02A252b5b4814aD;
-    address internal constant YLDR_POOL = 0x6447c4390457CaD03Ec1BaA4254CEe1A3D9e1Bbd;
+    address internal constant YLDR_POOL = 0x8183D4e0561cBdc6acC0Bdb963c352606A2Fa76F;
 
     /// @dev Mask of lower 20 bytes.
     uint256 internal constant ADDRESS_MASK = 0x00ffffffffffffffffffffffffffffffffffffffff;

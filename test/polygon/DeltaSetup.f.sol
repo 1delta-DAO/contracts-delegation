@@ -25,8 +25,8 @@ import {DeltaBrokerProxyGen2} from "../../contracts/1delta/proxy/DeltaBrokerGen2
 // initializer
 
 // core modules
-import {MantleManagementModule} from "../../contracts/1delta/modules/deploy/mantle/storage/ManagementModule.sol";
-import {OneDeltaComposerMantle} from "../../contracts/1delta/modules/deploy/mantle/Composer.sol";
+import {MantleManagementModule} from "../../contracts/1delta/modules/deploy/polygon/storage/ManagementModule.sol";
+import {OneDeltaComposerPolygon} from "../../contracts/1delta/modules/deploy/polygon/Composer.sol";
 
 // forge
 import {Script, console2} from "forge-std/Script.sol";
@@ -39,7 +39,7 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
     IModuleConfig internal deltaConfig;
     IManagement internal management;
     TestQuoterMantle testQuoter;
-    OneDeltaComposerMantle internal aggregator;
+    OneDeltaComposerPolygon internal aggregator;
 
     mapping(address => mapping(uint8 => address)) internal collateralTokens;
     mapping(address => mapping(uint8 => address)) internal debtTokens;
@@ -88,9 +88,9 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
         selectors[9] = IFlashAggregator.swapAllInSpot.selector;
         /** callbacks */
         selectors[10] = IFlashAggregator.fusionXV3SwapCallback.selector;
-        selectors[11] = IFlashAggregator.uniswapV3SwapCallback.selector;
+        selectors[11] = IFlashAggregator.agniSwapCallback.selector;
         selectors[12] = IFlashAggregator.algebraSwapCallback.selector;
-        selectors[13] = IFlashAggregator.uniswapV3SwapCallback.selector;
+        selectors[13] = IFlashAggregator.butterSwapCallback.selector;
         selectors[14] = IFlashAggregator.ramsesV2SwapCallback.selector;
         selectors[15] = IFlashAggregator.FusionXCall.selector;
         selectors[16] = IFlashAggregator.hook.selector;
@@ -142,7 +142,7 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
         brokerProxy = IBrokerProxy(brokerProxyAddress);
 
         MantleManagementModule _management = new MantleManagementModule();
-        OneDeltaComposerMantle _aggregator = new OneDeltaComposerMantle();
+        OneDeltaComposerPolygon _aggregator = new OneDeltaComposerPolygon();
 
         management = IManagement(brokerProxyAddress);
         deltaConfig = IModuleConfig(brokerProxyAddress);
@@ -164,7 +164,6 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
         // quoter
 
         testQuoter = new TestQuoterMantle();
-
         management.clearCache();
     
         // lendle
@@ -172,41 +171,50 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
         management.addGeneralLenderTokens(USDT, USDT_A_TOKEN_AAVE_V3 , USDT_V_TOKEN_AAVE_V3, USDT_S_TOKEN_AAVE_V3, AAVE_V3);
         management.addGeneralLenderTokens(WBTC, WBTC_A_TOKEN_AAVE_V3 , WBTC_V_TOKEN_AAVE_V3, WBTC_S_TOKEN_AAVE_V3, AAVE_V3);
         management.addGeneralLenderTokens(WETH, WETH_A_TOKEN_AAVE_V3 , WETH_V_TOKEN_AAVE_V3, WETH_S_TOKEN_AAVE_V3, AAVE_V3);
+        management.addGeneralLenderTokens(WMATIC, WMATIC_A_TOKEN_AAVE_V3 , WMATIC_V_TOKEN_AAVE_V3, WMATIC_S_TOKEN_AAVE_V3, AAVE_V3);
 
         collateralTokens[USDC][AAVE_V3] = USDC_A_TOKEN_AAVE_V3;
         collateralTokens[USDT][AAVE_V3] = USDT_A_TOKEN_AAVE_V3;
         collateralTokens[WBTC][AAVE_V3] = WBTC_A_TOKEN_AAVE_V3;
         collateralTokens[WETH][AAVE_V3] = WETH_A_TOKEN_AAVE_V3;
+        collateralTokens[WMATIC][AAVE_V3] = WMATIC_A_TOKEN_AAVE_V3;
 
         debtTokens[USDC][AAVE_V3] = USDC_V_TOKEN_AAVE_V3;
         debtTokens[USDT][AAVE_V3] = USDT_V_TOKEN_AAVE_V3;
         debtTokens[WBTC][AAVE_V3] = WBTC_V_TOKEN_AAVE_V3;
         debtTokens[WETH][AAVE_V3] = WETH_V_TOKEN_AAVE_V3;
+        debtTokens[WMATIC][AAVE_V3] = WMATIC_V_TOKEN_AAVE_V3;
 
         // aurelius
         management.addGeneralLenderTokens(USDC, USDC_A_TOKEN_YLDR, USDC_V_TOKEN_YLDR, address(0), YLDR);
         management.addGeneralLenderTokens(USDT, USDT_A_TOKEN_YLDR, USDT_V_TOKEN_YLDR, address(0), YLDR);
         management.addGeneralLenderTokens(WBTC, WBTC_A_TOKEN_YLDR, WBTC_V_TOKEN_YLDR, address(0), YLDR);
         management.addGeneralLenderTokens(WETH, WETH_A_TOKEN_YLDR, WETH_V_TOKEN_YLDR, address(0), YLDR);
+        management.addGeneralLenderTokens(WMATIC, WMATIC_A_TOKEN_YLDR, WMATIC_V_TOKEN_YLDR, address(0), YLDR);
 
         collateralTokens[USDC][YLDR] = USDC_A_TOKEN_YLDR;
         collateralTokens[USDT][YLDR] = USDT_A_TOKEN_YLDR;
         collateralTokens[WBTC][YLDR] = WBTC_A_TOKEN_YLDR;
         collateralTokens[WETH][YLDR] = WETH_A_TOKEN_YLDR;
+        collateralTokens[WMATIC][YLDR] = WMATIC_A_TOKEN_YLDR;
 
         debtTokens[USDC][YLDR] = USDC_V_TOKEN_YLDR;
         debtTokens[USDT][YLDR] = USDT_V_TOKEN_YLDR;
         debtTokens[WBTC][YLDR] = WBTC_V_TOKEN_YLDR;
         debtTokens[WETH][YLDR] = WETH_V_TOKEN_YLDR;
+        debtTokens[WMATIC][YLDR] = WMATIC_V_TOKEN_YLDR;
 
         // approve pools
         address[] memory assets = new address[](5);
         assets[0] = USDC;
         assets[1] = WBTC;
         assets[2] = WETH;
-        assets[4] = USDT;
+        assets[3] = USDT;
+        assets[4] = WMATIC;
+
         management.approveAddress(assets, AAVE_POOL);
         management.approveAddress(assets, YLDR_POOL);
+
 
         // address[] memory stratumAssets = new address[](6);
         // stratumAssets[0] = USDC;
@@ -233,7 +241,7 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
     }
 
     function setUp() public virtual {
-        vm.createSelectFork({blockNumber: 58631818, urlOrAlias: "https://polygon-bor-rpc.publicnode.com"});
+        vm.createSelectFork({blockNumber: 58631818, urlOrAlias: "https://polygon-rpc.com"});
 
         deployDelta();
         initializeDelta();

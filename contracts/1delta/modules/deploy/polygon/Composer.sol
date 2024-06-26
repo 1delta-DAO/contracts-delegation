@@ -976,10 +976,10 @@ contract OneDeltaComposerPolygon is MarginTrading {
                         let pool
                         switch source
                         case 0 {
-                            pool := LENDLE_POOL
+                            pool := AAVE_V3
                         }
                         default {
-                            pool := AURELIUS_POOL
+                            pool := YLDR
                         }
                         // call flash loan
                         let ptr := mload(0x40)
@@ -1079,13 +1079,13 @@ contract OneDeltaComposerPolygon is MarginTrading {
             // the `initiator` paramter the caller of `flashLoan`
             switch source
             case 0 {
-                if xor(caller(), LENDLE_POOL) {
+                if xor(caller(), AAVE_V3) {
                     mstore(0, INVALID_FLASH_LOAN)
                     revert(0, 0x4)
                 }
             }
             case 1 {
-                if xor(caller(), AURELIUS_POOL) {
+                if xor(caller(), YLDR) {
                     mstore(0, INVALID_FLASH_LOAN)
                     revert(0, 0x4)
                 }
