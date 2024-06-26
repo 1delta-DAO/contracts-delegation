@@ -5,7 +5,7 @@ import "../../contracts/1delta/modules/deploy/mantle/composable/Commands.sol";
 import "./DeltaSetup.f.sol";
 
 contract ComposerTest is DeltaSetup {
-    function test_mantle_composer_depo() external {
+    function test_polygon_composer_depo() external {
         uint8 lenderId = 1;
         address user = testUser;
         uint256 amount = 10.0e6;
@@ -33,7 +33,7 @@ contract ComposerTest is DeltaSetup {
         console.log("gas", gas);
     }
 
-    function test_mantle_composer_borrow() external {
+    function test_polygon_composer_borrow() external {
         uint8 lenderId = 0;
         address user = testUser;
         uint256 amount = 10.0e6;
@@ -61,7 +61,7 @@ contract ComposerTest is DeltaSetup {
         console.log("gas", gas);
     }
 
-    function test_mantle_composer_repay() external {
+    function test_polygon_composer_repay() external {
         uint8 lenderId = 0;
         address user = testUser;
 
@@ -102,7 +102,7 @@ contract ComposerTest is DeltaSetup {
         console.log("gas", gas);
     }
 
-    function test_mantle_composer_withdraw() external {
+    function test_polygon_composer_withdraw() external {
         uint8 lenderId = 0;
         address user = testUser;
 
@@ -125,7 +125,7 @@ contract ComposerTest is DeltaSetup {
         console.log("gas", gas);
     }
 
-    function test_mantle_composer_multi_route_exact_in() external {
+    function test_polygon_composer_multi_route_exact_in() external {
         address user = testUser;
         uint256 amount = 2000.0e6;
         uint256 amountMin = 900.0e6;
@@ -137,13 +137,13 @@ contract ComposerTest is DeltaSetup {
         bytes memory dataAgni = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
-            AGNI,
+            UNI_V3,
             uint16(DEX_FEE_STABLES) //
         );
         bytes memory dataFusion = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
-            FUSION_X,
+            SUSHI_V3,
             uint16(DEX_FEE_STABLES) //
         );
 
@@ -178,15 +178,15 @@ contract ComposerTest is DeltaSetup {
         )
     {
         tks = new address[](3);
-        tks[0] = WMNT;
-        tks[1] = METH;
+        tks[0] = WMATIC;
+        tks[1] = USDC;
         tks[2] = WETH;
         fees = new uint16[](2);
         fees[0] = uint16(250);
         fees[1] = uint16(DEX_FEE_STABLES);
         pids = new uint8[](2);
-        pids[0] = CLEOPATRA_CL;
-        pids[1] = AGNI;
+        pids[0] = SUSHI_V3;
+        pids[1] = UNI_V3;
     }
 
     function getWethToNative()
@@ -200,29 +200,29 @@ contract ComposerTest is DeltaSetup {
     {
         tks = new address[](3);
         tks[0] = WETH;
-        tks[1] = METH;
-        tks[2] = WMNT;
+        tks[1] = USDC;
+        tks[2] = WMATIC;
         fees = new uint16[](2);
         fees[0] = uint16(DEX_FEE_STABLES);
         fees[1] = uint16(250);
         pids = new uint8[](2);
-        pids[0] = AGNI;
-        pids[1] = CLEOPATRA_CL;
+        pids[0] = UNI_V3;
+        pids[1] = SUSHI_V3;
     }
 
-    function test_mantle_composer_multi_route_exact_in_native() external {
+    function test_polygon_composer_multi_route_exact_in_native() external {
         address user = testUser;
         uint256 amount = 4000.0e18;
         uint256 amountMin = 0.10e18;
 
-        address assetIn = WMNT;
+        address assetIn = WMATIC;
         address assetOut = WETH;
         vm.deal(user, amount);
 
         bytes memory dataAgni = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
-            AGNI,
+            UNI_V3,
             uint16(DEX_FEE_LOW) //
         );
         bytes memory dataFusion;
@@ -253,19 +253,19 @@ contract ComposerTest is DeltaSetup {
         console.log("gas", gas);
     }
 
-    function test_mantle_composer_multi_route_exact_out_native_out() external {
+    function test_polygon_composer_multi_route_exact_out_native_out() external {
         address user = testUser;
         uint256 amount = 4000.0e18;
         uint256 amountMax = 5.0e18;
 
         address assetIn = WETH;
-        address assetOut = WMNT;
+        address assetOut = WMATIC;
         deal(assetIn, user, amountMax);
 
         bytes memory dataAgni = getSpotExactOutSingleGen2(
             assetIn,
             assetOut,
-            AGNI,
+            UNI_V3,
             uint16(DEX_FEE_LOW) //
         );
         bytes memory dataFusion;
@@ -309,19 +309,19 @@ contract ComposerTest is DeltaSetup {
         assertApproxEqAbs(balanceInBefore - balanceInAfter, 1668753875334069967, 0);
     }
 
-    function test_mantle_composer_multi_route_exact_out_native_in() external {
+    function test_polygon_composer_multi_route_exact_out_native_in() external {
         address user = testUser;
         uint256 amount = 2.0e18;
         uint256 amountMax = 9000.0e18;
 
-        address assetIn = WMNT;
+        address assetIn = WMATIC;
         address assetOut = WETH;
         vm.deal(user, amountMax);
 
         bytes memory dataAgni = getSpotExactOutSingleGen2(
             assetIn,
             assetOut,
-            AGNI,
+            UNI_V3,
             uint16(DEX_FEE_LOW) //
         );
         bytes memory dataFusion;
@@ -362,19 +362,19 @@ contract ComposerTest is DeltaSetup {
         assertApproxEqAbs(balanceInBefore - balanceInAfter, 4825933262798723917376, 0);
     }
 
-    function test_mantle_composer_multi_route_exact_in_native_out() external {
+    function test_polygon_composer_multi_route_exact_in_native_out() external {
         address user = testUser;
         uint256 amount = 2.0e18;
         uint256 amountMin = 4000.0e18;
 
         address assetIn = WETH;
-        address assetOut = WMNT;
+        address assetOut = WMATIC;
         deal(assetIn, user, amount);
 
         bytes memory dataAgni = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
-            AGNI,
+            UNI_V3,
             uint16(DEX_FEE_LOW) //
         );
         bytes memory dataFusion;
@@ -418,7 +418,7 @@ contract ComposerTest is DeltaSetup {
         assertApproxEqAbs(balanceInBefore - balanceInAfter, amount, 0);
     }
 
-    function test_mantle_composer_multi_route_exact_in_self() external {
+    function test_polygon_composer_multi_route_exact_in_self() external {
         address user = testUser;
         uint256 amount = 2000.0e6;
         uint256 amountMin = 900.0e6;
@@ -430,13 +430,13 @@ contract ComposerTest is DeltaSetup {
         bytes memory dataAgni = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
-            AGNI,
+            UNI_V3,
             uint16(DEX_FEE_STABLES) //
         );
         bytes memory dataFusion = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
-            FUSION_X,
+            SUSHI_V3,
             uint16(DEX_FEE_STABLES) //
         );
 
@@ -467,7 +467,7 @@ contract ComposerTest is DeltaSetup {
         console.log("gas", gas);
     }
 
-    function test_mantle_composer_multi_route_exact_out() external {
+    function test_polygon_composer_multi_route_exact_out() external {
         address user = testUser;
         uint256 amount = 2000.0e6;
         uint256 maxIn = 1040.0e6;
@@ -479,13 +479,13 @@ contract ComposerTest is DeltaSetup {
         bytes memory dataAgni = getSpotExactOutSingleGen2(
             assetIn,
             assetOut,
-            AGNI,
+            UNI_V3,
             uint16(DEX_FEE_STABLES) //
         );
         bytes memory dataFusion = getSpotExactOutSingleGen2(
             assetIn,
             assetOut,
-            FUSION_X,
+            SUSHI_V3,
             uint16(DEX_FEE_STABLES) //
         );
 
@@ -600,50 +600,50 @@ contract ComposerTest is DeltaSetup {
 }
 
 // Ran 11 tests for test/mantle/Composer.t.sol:ComposerTest
-// [PASS] test_mantle_composer_borrow() (gas: 917038)
+// [PASS] test_polygon_composer_borrow() (gas: 917038)
 // Logs:
 //   gas 378730
 //   gas 432645
 
-// [PASS] test_mantle_composer_depo() (gas: 371016)
+// [PASS] test_polygon_composer_depo() (gas: 371016)
 // Logs:
 //   gas 248957
 
-// [PASS] test_mantle_composer_multi_route_exact_in() (gas: 377134)
+// [PASS] test_polygon_composer_multi_route_exact_in() (gas: 377134)
 // Logs:
 //   gas 192095
 
-// [PASS] test_mantle_composer_multi_route_exact_in_native() (gas: 368206)
+// [PASS] test_polygon_composer_multi_route_exact_in_native() (gas: 368206)
 // Logs:
 //   gas 374361
 
-// [PASS] test_mantle_composer_multi_route_exact_in_native_out() (gas: 633199)
+// [PASS] test_polygon_composer_multi_route_exact_in_native_out() (gas: 633199)
 // Logs:
 //   gas-exactIn-native-out-2 split 547586
 
-// [PASS] test_mantle_composer_multi_route_exact_in_self() (gas: 399348)
+// [PASS] test_polygon_composer_multi_route_exact_in_self() (gas: 399348)
 // Logs:
 //   gas 219240
 
-// [PASS] test_mantle_composer_multi_route_exact_out() (gas: 390674)
+// [PASS] test_polygon_composer_multi_route_exact_out() (gas: 390674)
 // Logs:
 //   gas 190957
 
-// [PASS] test_mantle_composer_multi_route_exact_out_native_in() (gas: 408213)
+// [PASS] test_polygon_composer_multi_route_exact_out_native_in() (gas: 408213)
 // Logs:
 //   gas-exactOut-native-in-2 split 385726
 
-// [PASS] test_mantle_composer_multi_route_exact_out_native_out() (gas: 558685)
+// [PASS] test_polygon_composer_multi_route_exact_out_native_out() (gas: 558685)
 // Logs:
 //   gas-exactOut-native-out-2 split 413439
 
-// [PASS] test_mantle_composer_repay() (gas: 985744)
+// [PASS] test_polygon_composer_repay() (gas: 985744)
 // Logs:
 //   gas 378730
 //   gas 432646
 //   gas 102301
 
-// [PASS] test_mantle_composer_withdraw() (gas: 702003)
+// [PASS] test_polygon_composer_withdraw() (gas: 702003)
 // Logs:
 //   gas 378730
 //   gas 253948

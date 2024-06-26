@@ -28,7 +28,7 @@ contract ComposedFlashLoanTest is DeltaSetup {
      *  borrow
      *  payback
      */
-    function test_mantle_composed_flash_loan_open(uint8 lenderId) external /** address user, uint8 lenderId */ {
+    function test_polygon_composed_flash_loan_open(uint8 lenderId) external /** address user, uint8 lenderId */ {
         TestParamsOpen memory params;
         address user = testUser;
         vm.assume(user != address(0) && lenderId < 2);
@@ -36,7 +36,7 @@ contract ComposedFlashLoanTest is DeltaSetup {
         {
             address asset = USDC;
 
-            address borrowAsset = WMNT;
+            address borrowAsset = WMATIC;
             deal(asset, user, 1e20);
 
             uint256 amountToDeposit = 10.0e6;
@@ -73,7 +73,7 @@ contract ComposedFlashLoanTest is DeltaSetup {
         bytes memory dataBorrow;
         {
             uint borrowAm = params.swapAmount +
-                (params.swapAmount * ILendingPool(LENDLE_POOL).FLASHLOAN_PREMIUM_TOTAL()) / //
+                (params.swapAmount * ILendingPool(AAVE_POOL).FLASHLOAN_PREMIUM_TOTAL()) / //
                 10000;
             vm.prank(user);
             IERC20All(params.debtToken).approveDelegation(brokerProxyAddress, borrowAm);
@@ -123,7 +123,7 @@ contract ComposedFlashLoanTest is DeltaSetup {
         assertApproxEqAbs(borrowBalance, 20018000000000000000, 1);
     }
 
-    function test_mantle_ext_call() external {
+    function test_polygon_ext_call() external {
         address someAddr = vm.addr(0x324);
         address someOtherAddr = vm.addr(0x324);
 
@@ -133,7 +133,7 @@ contract ComposedFlashLoanTest is DeltaSetup {
         console.log(val);
     }
 
-    function test_mantle_composed_flash_loan_close() external {
+    function test_polygon_composed_flash_loan_close() external {
         uint8 lenderId = 0;
         address user = testUser;
         vm.assume(user != address(0) && lenderId < 2);
@@ -160,7 +160,7 @@ contract ComposedFlashLoanTest is DeltaSetup {
         bytes memory dataWithdraw;
         uint witdrawAm;
         {
-            witdrawAm = amountToFlashWithdraw + (amountToFlashWithdraw * ILendingPool(LENDLE_POOL).FLASHLOAN_PREMIUM_TOTAL()) / 10000;
+            witdrawAm = amountToFlashWithdraw + (amountToFlashWithdraw * ILendingPool(AAVE_POOL).FLASHLOAN_PREMIUM_TOTAL()) / 10000;
             vm.prank(user);
             IERC20All(collateralToken).approve(brokerProxyAddress, witdrawAm);
 
@@ -210,14 +210,14 @@ contract ComposedFlashLoanTest is DeltaSetup {
 
     function getOpenExactInInternal(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_LOW);
-        uint8 poolId = AGNI;
+        uint8 poolId = UNI_V3;
         address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
         return abi.encodePacked(tokenIn, uint8(0), poolId, pool, fee, tokenOut, uint8(0), uint8(0));
     }
 
     function getCloseExactInInternal(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_LOW);
-        uint8 poolId = AGNI;
+        uint8 poolId = UNI_V3;
         address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
         return abi.encodePacked(tokenIn, uint8(0), poolId, pool, fee, tokenOut, uint8(0), uint8(0));
     }
