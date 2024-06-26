@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {AddressesMantle} from "./utils/CommonAddresses.f.sol";
+import {AddressesPolygon} from "./utils/CommonAddresses.f.sol";
 import "../../contracts/1delta/quoter/test/TestQuoterMantle.sol";
 import {ComposerUtils, Commands} from "../shared/utils/ComposerUtils.sol";
 
@@ -33,7 +33,7 @@ import {Script, console2} from "forge-std/Script.sol";
 import {console} from "forge-std/console.sol";
 import {Test} from "forge-std/Test.sol";
 
-contract DeltaSetup is AddressesMantle, ComposerUtils, Script, Test {
+contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
     address internal brokerProxyAddress;
     IBrokerProxy internal brokerProxy;
     IModuleConfig internal deltaConfig;
@@ -241,7 +241,7 @@ contract DeltaSetup is AddressesMantle, ComposerUtils, Script, Test {
     }
 
     function setUp() public virtual {
-        vm.createSelectFork({blockNumber: 62219594, urlOrAlias: "https://mantle-mainnet.public.blastapi.io"});
+        vm.createSelectFork({blockNumber: 58631818, urlOrAlias: "https://polygon-bor-rpc.publicnode.com"});
 
         deployDelta();
         initializeDelta();
