@@ -28,6 +28,11 @@ struct ExternalCallStorage {
     mapping(address => mapping(address => bool)) isValidApproveAndCallTarget;
 }
 
+// controls access to balancer-type flash loans
+struct FlashLoanGateway {
+    uint256 entryState;
+}
+
 library LibStorage {
     // this is the core diamond storage location
     bytes32 constant MODULE_STORAGE_POSITION = keccak256("diamond.standard.module.storage");
@@ -35,6 +40,7 @@ library LibStorage {
     bytes32 constant LENDER_STORAGE = keccak256("broker.storage.lender");
     bytes32 constant GENERAL_CACHE = keccak256("broker.storage.cache.general");
     bytes32 constant EXTERNAL_CALL_STORAGE = keccak256("broker.storage.externalCalls");
+    bytes32 constant FLASH_LOAN_GATEWAY = keccak256("broker.storage.flashLoanGateway");
 
     function lenderStorage() internal pure returns (GeneralLenderStorage storage ls) {
         bytes32 position = LENDER_STORAGE;
@@ -61,6 +67,13 @@ library LibStorage {
         bytes32 position = MODULE_STORAGE_POSITION;
         assembly {
             ds.slot := position
+        }
+    }
+
+    function flashLoanGatewayStorage() internal pure returns (FlashLoanGateway storage fgs) {
+        bytes32 position = FLASH_LOAN_GATEWAY;
+        assembly {
+            fgs.slot := position
         }
     }
 }

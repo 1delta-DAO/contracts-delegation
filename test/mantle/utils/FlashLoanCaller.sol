@@ -14,6 +14,14 @@ interface IFL {
         bytes calldata params,
         uint16 referralCode
     ) external;
+
+    function flashLoanSimple(
+        address receiverAddress,
+        address asset,
+        uint256 amount,
+        bytes calldata params, //
+        uint16 referralCode
+    ) external;
 }
 
 contract FCaller {
@@ -73,6 +81,21 @@ contract FCaller {
         bytes calldata params,
         uint16 referralCode
     ) external {
+        console.log("enter flash loan");
+        uint offs;
+        assembly {
+            offs := params.offset
+        }
+        console.log("test", offs);
+    }
+
+    function executeOperation(
+        address asset,
+        uint256 amount,
+        uint256 premium,
+        address initiator,
+        bytes calldata params // user params
+    ) external returns (bool) {
         console.log("enter flash loan");
         uint offs;
         assembly {

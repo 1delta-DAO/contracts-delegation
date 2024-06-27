@@ -15,6 +15,8 @@ contract AddressesPolygon {
     address internal constant YLDR_POOL = 0x8183D4e0561cBdc6acC0Bdb963c352606A2Fa76F;
     address internal constant COMET_USDC = 0xF25212E676D1F7F89Cd72fFEe66158f541246445;
 
+    address internal constant BALANCER_VAULT = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
+
     /// @dev Mask of lower 20 bytes.
     uint256 internal constant ADDRESS_MASK = 0x00ffffffffffffffffffffffffffffffffffffffff;
     /// @dev Mask of upper 20 bytes.
@@ -215,7 +217,6 @@ contract AddressesPolygon {
     address internal constant AAVE_INTEREST_RATE_STRATEGY = 0x03733F4E008d36f2e37F0080fF1c8DF756622E6F;
 
     address internal constant AAVE_STATA_TOKEN_AAVE_V3 = 0xCA2E1E33E5BCF4978E2d683656E1f5610f8C4A7E;
-
 
     uint8 internal constant WMATIC_DECIMALS = 18;
 

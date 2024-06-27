@@ -4,14 +4,14 @@ import {console} from "forge-std/console.sol";
 
 pragma solidity 0.8.26;
 
-interface IFL {
-    function flashLoan(
+interface IAllFlashLoans {
+    function flashLoan(address recipient, address[] memory tokens, uint256[] memory amounts, bytes memory userData) external;
+
+    function flashLoanSimple(
         address receiverAddress,
-        address[] calldata assets,
-        uint256[] calldata amounts,
-        uint256[] calldata modes,
-        address onBehalfOf,
-        bytes calldata params,
+        address asset,
+        uint256 amount,
+        bytes calldata params, //
         uint16 referralCode
     ) external;
 }
@@ -20,8 +20,45 @@ contract FCaller {
     function callFlash(
         address target,
         address receiver,
-        address obf,
-        uint mode,
+        address asset,
+        uint112 amount,
+        bytes calldata data //
+    ) external {
+        assembly {
+            let ptr := mload(0x40)
+            // flashLoan(...)
+            mstore(ptr, 0x5c38449e00000000000000000000000000000000000000000000000000000000)
+            mstore(add(ptr, 4), receiver)
+            mstore(add(ptr, 36), 0x80) // offset assets
+            mstore(add(ptr, 68), 0xc0) // offset amounts
+            mstore(add(ptr, 100), 0x100) // offset modes
+            mstore(add(ptr, 132), 1) // onBefhalfOf
+            mstore(add(ptr, 164), asset) // offset calldata
+            mstore(add(ptr, 196), 1) // referral code
+            mstore(add(ptr, 228), amount) // length assets
+            mstore(add(ptr, 260), data.length) // length calldata
+            calldatacopy(add(ptr, 292), data.offset, data.length) // calldata
+            if iszero(
+                call(
+                    gas(),
+                    target,
+                    0x0,
+                    ptr,
+                    add(data.length, 324), // = 10 * 32 + 4
+                    0x0,
+                    0x0 //
+                )
+            ) {
+                let rdlen := returndatasize()
+                returndatacopy(0, 0, rdlen)
+                revert(0x0, rdlen)
+            }
+        }
+    }
+
+    function callFlashAave(
+        address target,
+        address receiver,
         address asset,
         uint112 amount,
         uint16 ref,
@@ -29,30 +66,22 @@ contract FCaller {
     ) external {
         assembly {
             let ptr := mload(0x40)
-            // flashLoan(...)
-            mstore(ptr, 0xab9c4b5d00000000000000000000000000000000000000000000000000000000)
+            // flashLoanSimple(...)
+            mstore(ptr, 0x42b0b77c00000000000000000000000000000000000000000000000000000000)
             mstore(add(ptr, 4), receiver)
-            mstore(add(ptr, 36), 0x0e0) // offset assets
-            mstore(add(ptr, 68), 0x120) // offset amounts
-            mstore(add(ptr, 100), 0x160) // offset modes
-            mstore(add(ptr, 132), obf) // onBefhalfOf
-            mstore(add(ptr, 164), 0x1a0) // offset calldata
-            mstore(add(ptr, 196), ref) // referral code
-            mstore(add(ptr, 228), 1) // length assets
-            mstore(add(ptr, 260), asset) // assets[0]
-            mstore(add(ptr, 292), 1) // length amounts
-            mstore(add(ptr, 324), amount) // amounts[0]
-            mstore(add(ptr, 356), 1) // length modes
-            mstore(add(ptr, 388), mode) // mode
-            mstore(add(ptr, 420), data.length) // length calldata
-            calldatacopy(add(ptr, 452), data.offset, data.length) // calldata
+            mstore(add(ptr, 36), asset) // offset assets
+            mstore(add(ptr, 68), amount) // offset amounts
+            mstore(add(ptr, 100), 0xa0) // offset modes
+            mstore(add(ptr, 132), ref) // onBefhalfOf
+            mstore(add(ptr, 164), data.length) // length calldata
+            calldatacopy(add(ptr, 196), data.offset, data.length) // calldata
             if iszero(
                 call(
                     gas(),
                     target,
                     0x0,
                     ptr,
-                    add(data.length, 484), // = 14 * 32 + 4
+                    add(data.length, 228), // = 10 * 32 + 4
                     0x0,
                     0x0 //
                 )
@@ -65,15 +94,27 @@ contract FCaller {
     }
 
     function flashLoan(
-        address receiverAddress,
-        address[] calldata assets,
+        address recipient,
+        address[] calldata tokens,
         uint256[] calldata amounts,
-        uint256[] calldata modes,
-        address onBehalfOf,
-        bytes calldata params,
-        uint16 referralCode
+        bytes calldata userData //
     ) external {
         console.log("enter flash loan");
+        uint offs;
+        assembly {
+            offs := userData.offset
+        }
+        console.log("test", offs);
+    }
+
+    function flashLoanSimple(
+        address receiverAddress,
+        address asset,
+        uint256 amount,
+        bytes calldata params, //
+        uint16 referralCode
+    ) external {
+        console.log("enter flash loan-----aave");
         uint offs;
         assembly {
             offs := params.offset
