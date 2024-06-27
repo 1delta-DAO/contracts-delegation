@@ -1051,12 +1051,10 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         if(paymentType < 8) {
             if (paymentType < 3) {
                 // borrow and repay pool - tradeId matches interest rate mode (reverts within Aave when 0 is selected)
-                _borrow(token, payer, value, paymentType, lenderId);
-                _transferERC20Tokens(token, receiver, value);
+                _borrow(token, payer,  receiver, value, paymentType, lenderId);
             } else {
-                _preWithdraw(token, payer, value, lenderId);
                 // ids 3-7 are reserved
-                _withdraw(token, receiver, value, lenderId);
+                _withdraw(token, payer, receiver, value, lenderId);
             } 
         } else {
             payConventional(token, payer, receiver, value);

@@ -4,7 +4,7 @@ pragma solidity ^0.8.19;
 import "../../contracts/1delta/modules/deploy/mantle/composable/Commands.sol";
 import "./DeltaSetup.f.sol";
 
-contract ComposerTest is DeltaSetup {
+contract ComposerTestMantle is DeltaSetup {
     function test_mantle_composer_depo() external {
         uint8 lenderId = 1;
         address user = testUser;

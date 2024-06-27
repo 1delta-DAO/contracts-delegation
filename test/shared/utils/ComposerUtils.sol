@@ -111,16 +111,16 @@ contract ComposerUtils {
 
     function encodeSwapAmountParams(uint256 amount, uint256 validate, bool paySelf, uint256 pathLength) internal pure returns (uint256) {
         uint256 am = uint16(pathLength);
-        am = (am & ~UINT112_MASK_16) | (uint256(amount) << 16);
         am = (am & ~UINT112_MASK_U) | (uint256(validate) << 128);
+        am = (am & ~UINT112_MASK_16) | (uint256(amount) << 16);
         if (paySelf) am = (am & ~PAY_SELF) | (1 << 255);
         return am;
     }
 
     function encodeSwapAmountParamsFOT(uint256 amount, uint256 validate, bool paySelf, bool fot, uint256 pathLength) internal pure returns (uint256) {
         uint256 am = uint16(pathLength);
-        am = (am & ~UINT112_MASK_16) | (uint256(amount) << 16);
         am = (am & ~UINT112_MASK_U) | (uint256(validate) << 128);
+        am = (am & ~UINT112_MASK_16) | (uint256(amount) << 16);
         if (paySelf) am = (am & ~PAY_SELF) | (1 << 255);
         if (fot) am = (am & ~FOT) | (1 << 254);
         return am;

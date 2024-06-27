@@ -2,7 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {AddressesPolygon} from "./utils/CommonAddresses.f.sol";
-import "../../contracts/1delta/quoter/test/TestQuoterMantle.sol";
+import "../../contracts/1delta/quoter/test/TestQuoterPolygon.sol";
 import {ComposerUtils, Commands} from "../shared/utils/ComposerUtils.sol";
 
 // interfaces
@@ -13,6 +13,7 @@ import {ILending} from "../shared/interfaces/ILending.sol";
 import {IInitialize} from "../shared/interfaces/IInitialize.sol";
 import {IBrokerProxy} from "../shared/interfaces/IBrokerProxy.sol";
 import {IModuleConfig} from "../../contracts/1delta/proxy/interfaces/IModuleConfig.sol";
+import {IComet} from "../../contracts/1delta/interfaces/IComet.sol";
 // universal erc20
 import {IERC20All} from "../shared/interfaces/IERC20All.sol";
 // lending pool for debugging
@@ -38,7 +39,7 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
     IBrokerProxy internal brokerProxy;
     IModuleConfig internal deltaConfig;
     IManagement internal management;
-    TestQuoterMantle testQuoter;
+    TestQuoterPolygon testQuoter;
     OneDeltaComposerPolygon internal aggregator;
 
     mapping(address => mapping(uint8 => address)) internal collateralTokens;
@@ -163,15 +164,15 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
     function initializeDelta() internal virtual {
         // quoter
 
-        testQuoter = new TestQuoterMantle();
+        testQuoter = new TestQuoterPolygon();
         management.clearCache();
-    
+
         // lendle
-        management.addGeneralLenderTokens(USDC, USDC_A_TOKEN_AAVE_V3 , USDC_V_TOKEN_AAVE_V3, USDC_S_TOKEN_AAVE_V3, AAVE_V3);
-        management.addGeneralLenderTokens(USDT, USDT_A_TOKEN_AAVE_V3 , USDT_V_TOKEN_AAVE_V3, USDT_S_TOKEN_AAVE_V3, AAVE_V3);
-        management.addGeneralLenderTokens(WBTC, WBTC_A_TOKEN_AAVE_V3 , WBTC_V_TOKEN_AAVE_V3, WBTC_S_TOKEN_AAVE_V3, AAVE_V3);
-        management.addGeneralLenderTokens(WETH, WETH_A_TOKEN_AAVE_V3 , WETH_V_TOKEN_AAVE_V3, WETH_S_TOKEN_AAVE_V3, AAVE_V3);
-        management.addGeneralLenderTokens(WMATIC, WMATIC_A_TOKEN_AAVE_V3 , WMATIC_V_TOKEN_AAVE_V3, WMATIC_S_TOKEN_AAVE_V3, AAVE_V3);
+        management.addGeneralLenderTokens(USDC, USDC_A_TOKEN_AAVE_V3, USDC_V_TOKEN_AAVE_V3, USDC_S_TOKEN_AAVE_V3, AAVE_V3);
+        management.addGeneralLenderTokens(USDT, USDT_A_TOKEN_AAVE_V3, USDT_V_TOKEN_AAVE_V3, USDT_S_TOKEN_AAVE_V3, AAVE_V3);
+        management.addGeneralLenderTokens(WBTC, WBTC_A_TOKEN_AAVE_V3, WBTC_V_TOKEN_AAVE_V3, WBTC_S_TOKEN_AAVE_V3, AAVE_V3);
+        management.addGeneralLenderTokens(WETH, WETH_A_TOKEN_AAVE_V3, WETH_V_TOKEN_AAVE_V3, WETH_S_TOKEN_AAVE_V3, AAVE_V3);
+        management.addGeneralLenderTokens(WMATIC, WMATIC_A_TOKEN_AAVE_V3, WMATIC_V_TOKEN_AAVE_V3, WMATIC_S_TOKEN_AAVE_V3, AAVE_V3);
 
         collateralTokens[USDC][AAVE_V3] = USDC_A_TOKEN_AAVE_V3;
         collateralTokens[USDT][AAVE_V3] = USDT_A_TOKEN_AAVE_V3;
@@ -214,7 +215,7 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
 
         management.approveAddress(assets, AAVE_POOL);
         management.approveAddress(assets, YLDR_POOL);
-
+        management.approveAddress(assets, COMET_USDC);
 
         // address[] memory stratumAssets = new address[](6);
         // stratumAssets[0] = USDC;
@@ -241,7 +242,7 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
     }
 
     function setUp() public virtual {
-        vm.createSelectFork({blockNumber: 58631818, urlOrAlias: "https://polygon-rpc.com"});
+        vm.createSelectFork({blockNumber: 58645304, urlOrAlias: "https://polygon-rpc.com"});
 
         deployDelta();
         initializeDelta();
@@ -336,7 +337,6 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
     }
 
-
     function openExactOut(
         address user,
         address asset,
@@ -374,6 +374,40 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
         IERC20All(debtAsset).approveDelegation(brokerProxyAddress, checkAmount);
         vm.prank(user);
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
+    }
+
+    function getBorrowBalance(address user, address asset, uint8 lenderId) internal view returns (uint256) {
+        if (lenderId < 50) {
+            return IERC20All(debtTokens[asset][lenderId]).balanceOf(user);
+        } else {
+            return IComet(COMET_USDC).borrowBalanceOf(user);
+        }
+    }
+
+    function getCollateralBalance(address user, address asset, uint8 lenderId) internal view returns (uint256) {
+        if (lenderId < 50) {
+            return IERC20All(collateralTokens[asset][lenderId]).balanceOf(user);
+        } else {
+            return IComet(COMET_USDC).userCollateral(user, asset).balance;
+        }
+    }
+
+    function approveWithdrawal(address user, address asset, uint256 amount, uint8 lenderId) internal {
+        vm.prank(user);
+        if (lenderId < 50) {
+            IERC20All(collateralTokens[asset][lenderId]).approve(address(brokerProxyAddress), amount);
+        } else {
+            IComet(COMET_USDC).allow(brokerProxyAddress, true);
+        }
+    }
+
+    function approveBorrowDelegation(address user, address asset, uint256 amount, uint8 lenderId) internal {
+        vm.prank(user);
+        if (lenderId < 50) {
+            IERC20All(debtTokens[asset][lenderId]).approveDelegation(address(brokerProxyAddress), amount);
+        } else {
+            IComet(COMET_USDC).allow(brokerProxyAddress, true);
+        }
     }
 
     /** HELPER FUNCTIONS */

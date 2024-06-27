@@ -4,12 +4,12 @@ pragma solidity ^0.8.19;
 import "../../contracts/1delta/modules/deploy/mantle/composable/Commands.sol";
 import "./DeltaSetup.f.sol";
 
-contract ComposerTest is DeltaSetup {
+contract ComposerTestPolygon is DeltaSetup {
     function test_polygon_composer_depo() external {
-        uint8 lenderId = 1;
+        uint8 lenderId = 50;
         address user = testUser;
         uint256 amount = 10.0e6;
-        address asset = USDT;
+        address asset = WMATIC;
         deal(asset, user, 1e23);
 
         vm.prank(user);
@@ -32,28 +32,25 @@ contract ComposerTest is DeltaSetup {
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
-        assertApproxEqAbs(amount, IERC20All(collateralTokens[asset][lenderId]).balanceOf(user), 0);
+
+        assertApproxEqAbs(amount, getCollateralBalance(user, asset, lenderId), 0);
     }
 
     function test_polygon_composer_borrow() external {
-        uint8 lenderId = 1;
+        uint8 lenderId = 50;
         address user = testUser;
-        uint256 amount = 10.0e6;
-        address asset = USDT;
+        uint256 amount = 500.0e18;
+        address asset = WMATIC;
 
         _deposit(asset, user, amount, lenderId);
 
         vm.prank(user);
         IERC20All(asset).approve(address(brokerProxyAddress), amount);
 
-        uint256 borrowAmount = 5.0e6;
+        uint256 borrowAmount = 100.0e6;
 
         address borrowAsset = USDC;
-        vm.prank(user);
-        IERC20All(debtTokens[borrowAsset][lenderId]).approveDelegation(
-            address(brokerProxyAddress), //
-            borrowAmount
-        );
+        approveBorrowDelegation(user, borrowAsset, borrowAmount, lenderId);
 
         bytes memory data = borrow(borrowAsset, user, borrowAmount, lenderId, DEFAULT_MODE);
         vm.prank(user);
@@ -61,24 +58,25 @@ contract ComposerTest is DeltaSetup {
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
-        assertApproxEqAbs(borrowAmount, IERC20All(debtTokens[borrowAsset][lenderId]).balanceOf(user), 0);
+
+        assertApproxEqAbs(borrowAmount, getBorrowBalance(user, asset, lenderId), 0);
     }
 
     function test_polygon_composer_repay() external {
         uint8 lenderId = 1;
         address user = testUser;
 
-        uint256 amount = 10.0e6;
-        address asset = USDT;
+        uint256 amount = 500.0e18;
+        address asset = WMATIC;
 
-        uint256 borrowAmount = 5.0e6;
+        uint256 borrowAmount = 100.0e6;
         address borrowAsset = USDC;
 
         _deposit(asset, user, amount, lenderId);
 
         _borrow(borrowAsset, user, borrowAmount, lenderId);
 
-        uint256 repayAmount = 2.50e6;
+        uint256 repayAmount = 20.50e6;
 
         bytes memory transfer = transferIn(
             borrowAsset,
@@ -103,29 +101,30 @@ contract ComposerTest is DeltaSetup {
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
+
+        assertApproxEqAbs(borrowAmount - repayAmount, getBorrowBalance(user, asset, lenderId), 2);
     }
 
     function test_polygon_composer_withdraw() external {
-        uint8 lenderId = 1;
+        uint8 lenderId = 50;
         address user = testUser;
 
-        uint256 amount = 10.0e6;
-        address asset = USDT;
+        uint256 amount = 10.0e18;
+        address asset = WMATIC;
 
         _deposit(asset, user, amount, lenderId);
 
-        uint256 withdrawAmount = 2.50e6;
+        uint256 withdrawAmount = 2.50e18;
 
         bytes memory data = withdraw(asset, user, withdrawAmount, lenderId);
-
-        vm.prank(user);
-        IERC20All(collateralTokens[asset][lenderId]).approve(address(brokerProxyAddress), withdrawAmount);
+        approveWithdrawal(user, asset, withdrawAmount, lenderId);
 
         vm.prank(user);
         uint gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
+        assertApproxEqAbs(amount - withdrawAmount, getCollateralBalance(user, asset, lenderId), 2);
     }
 
     function test_polygon_composer_multi_route_exact_in() external {
@@ -185,8 +184,8 @@ contract ComposerTest is DeltaSetup {
         tks[1] = USDC;
         tks[2] = WETH;
         fees = new uint16[](2);
-        fees[0] = uint16(250);
-        fees[1] = uint16(DEX_FEE_STABLES);
+        fees[0] = uint16(500);
+        fees[1] = uint16(500);
         pids = new uint8[](2);
         pids[0] = SUSHI_V3;
         pids[1] = UNI_V3;
@@ -206,8 +205,8 @@ contract ComposerTest is DeltaSetup {
         tks[1] = USDC;
         tks[2] = WMATIC;
         fees = new uint16[](2);
-        fees[0] = uint16(DEX_FEE_STABLES);
-        fees[1] = uint16(250);
+        fees[0] = uint16(500);
+        fees[1] = uint16(500);
         pids = new uint8[](2);
         pids[0] = UNI_V3;
         pids[1] = SUSHI_V3;
@@ -259,7 +258,7 @@ contract ComposerTest is DeltaSetup {
     function test_polygon_composer_multi_route_exact_out_native_out() external {
         address user = testUser;
         uint256 amount = 4000.0e18;
-        uint256 amountMax = 5.0e18;
+        uint256 amountMax = 7.0e18;
 
         address assetIn = WETH;
         address assetOut = WMATIC;
@@ -288,7 +287,7 @@ contract ComposerTest is DeltaSetup {
             uint8(Commands.SWAP_EXACT_OUT),
             brokerProxyAddress,
             encodeSwapAmountParams(amount / 2, amountMax / 2, false, dataFusion.length),
-            dataFusion // 
+            dataFusion //
         );
 
         data = abi.encodePacked(data, unwrap(user, amount, ComposerUtils.SweepType.VALIDATE));
@@ -309,7 +308,7 @@ contract ComposerTest is DeltaSetup {
         uint balanceInAfter = IERC20All(assetIn).balanceOf(user);
 
         assertApproxEqAbs(balanceOutAfter - balanceOutBefore, amount, 1);
-        assertApproxEqAbs(balanceInBefore - balanceInAfter, 1668753875334069967, 0);
+        assertApproxEqAbs(balanceInBefore - balanceInAfter, 665692566352012255, 0);
     }
 
     function test_polygon_composer_multi_route_exact_out_native_in() external {
@@ -580,11 +579,7 @@ contract ComposerTest is DeltaSetup {
     }
 
     function _borrow(address borrowAsset, address user, uint256 borrowAmount, uint8 lenderId) internal {
-        vm.prank(user);
-        IERC20All(debtTokens[borrowAsset][lenderId]).approveDelegation(
-            address(brokerProxyAddress), //
-            borrowAmount
-        );
+        approveBorrowDelegation(user, borrowAsset, borrowAmount, lenderId);
 
         bytes memory data = borrow(
             borrowAsset,

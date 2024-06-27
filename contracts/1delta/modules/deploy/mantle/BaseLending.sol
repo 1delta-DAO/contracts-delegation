@@ -19,9 +19,44 @@ abstract contract BaseLending is Slots {
     address internal constant LENDLE_POOL = 0xCFa5aE7c2CE8Fadc6426C1ff872cA45378Fb7cF3;
 
     /// @notice Withdraw from lender given user address and lender Id from cache
-    function _withdraw(address _underlying, address _to, uint256 amount, uint256 _lenderId) internal {
+    function _withdraw(address _underlying, address _from, address _to, uint256 amount, uint256 _lenderId) internal {
         assembly {
             let ptr := mload(0x40)
+
+            // Slot for collateralTokens[target] is keccak256(target . collateralTokens.slot).
+            mstore(0x0, _underlying)
+            mstore8(0x0, _lenderId)
+            mstore(0x20, COLLATERAL_TOKENS_SLOT)
+            let collateralToken := sload(keccak256(0x0, 0x40))
+
+            /** PREPARE TRANSFER_FROM USER */
+
+            // selector for transferFrom(address,address,uint256)
+            mstore(ptr, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
+            mstore(add(ptr, 0x04), _from)
+            mstore(add(ptr, 0x24), address())
+            mstore(add(ptr, 0x44), amount)
+
+            let success := call(gas(), collateralToken, 0x0, ptr, 0x64, 0x0, 0x20)
+
+            let rdsize := returndatasize()
+
+            success := and(
+                success, // call itself succeeded
+                or(
+                    iszero(rdsize), // no return data, or
+                    and(
+                        iszero(lt(rdsize, 32)), // at least 32 bytes
+                        eq(mload(0x0), 1) // starts with uint256(1)
+                    )
+                )
+            )
+
+            if iszero(success) {
+                returndatacopy(0x0, 0x0, rdsize)
+                revert(0x0, rdsize)
+            }
+
             // selector withdraw(address,uint256,address)
             mstore(ptr, 0x69328dec00000000000000000000000000000000000000000000000000000000)
             mstore(add(ptr, 0x04), _underlying)
@@ -38,7 +73,7 @@ abstract contract BaseLending is Slots {
             }
             // call pool
             if iszero(call(gas(), pool, 0x0, ptr, 0x64, 0x0, 0x0)) {
-                let rdsize := returndatasize()
+                rdsize := returndatasize()
                 returndatacopy(0x0, 0x0, rdsize)
                 revert(0x0, rdsize)
             }
@@ -46,7 +81,7 @@ abstract contract BaseLending is Slots {
     }
 
     /// @notice Borrow from lender given user address and lender Id from cache
-    function _borrow(address _underlying, address _from, uint256 _amount, uint256 _mode, uint256 _lenderId) internal {
+    function _borrow(address _underlying, address _from, address _to, uint256 _amount, uint256 _mode, uint256 _lenderId) internal {
         assembly {
             let ptr := mload(0x40)
             // selector borrow(address,uint256,uint256,uint16,address)
@@ -70,6 +105,36 @@ abstract contract BaseLending is Slots {
                 let rdsize := returndatasize()
                 returndatacopy(0x0, 0x0, rdsize)
                 revert(0x0, rdsize)
+            }
+            //  transfer underlying if needed
+            if xor(_to, address()) {
+                // selector for transfer(address,uint256)
+                mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+                mstore(add(ptr, 0x04), _to)
+                mstore(add(ptr, 0x24), _amount)
+
+                let success := call(gas(), _underlying, 0, ptr, 0x44, ptr, 32)
+
+                let rdsize := returndatasize()
+
+                // Check for ERC20 success. ERC20 tokens should return a boolean,
+                // but some don't. We accept 0-length return data as success, or at
+                // least 32 bytes that starts with a 32-byte boolean true.
+                success := and(
+                    success, // call itself succeeded
+                    or(
+                        iszero(rdsize), // no return data, or
+                        and(
+                            iszero(lt(rdsize, 32)), // at least 32 bytes
+                            eq(mload(ptr), 1) // starts with uint256(1)
+                        )
+                    )
+                )
+
+                if iszero(success) {
+                    returndatacopy(ptr, 0, rdsize)
+                    revert(ptr, rdsize)
+                }
             }
         }
     }
@@ -124,46 +189,6 @@ abstract contract BaseLending is Slots {
             // call pool
             if iszero(call(gas(), pool, 0x0, ptr, 0x84, 0x0, 0x0)) {
                 let rdsize := returndatasize()
-                returndatacopy(0x0, 0x0, rdsize)
-                revert(0x0, rdsize)
-            }
-        }
-    }
-
-    /// @notice Withdraw from lender by transferFrom collateral tokens from user to this and call withdraw on pool
-    ///         user address and lenderId are provided by cache
-    function _preWithdraw(address _underlying, address user, uint256 _amount, uint256 lenderId) internal {
-        assembly {
-            // Slot for collateralTokens[target] is keccak256(target . collateralTokens.slot).
-            mstore(0x0, _underlying)
-            mstore8(0x0, lenderId)
-            mstore(0x20, COLLATERAL_TOKENS_SLOT)
-            let collateralToken := sload(keccak256(0x0, 0x40))
-
-            /** PREPARE TRANSFER_FROM USER */
-            let ptr := mload(0x40)
-            // selector for transferFrom(address,address,uint256)
-            mstore(ptr, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
-            mstore(add(ptr, 0x04), user)
-            mstore(add(ptr, 0x24), address())
-            mstore(add(ptr, 0x44), _amount)
-
-            let success := call(gas(), collateralToken, 0x0, ptr, 0x64, 0x0, 0x20)
-
-            let rdsize := returndatasize()
-
-            success := and(
-                success, // call itself succeeded
-                or(
-                    iszero(rdsize), // no return data, or
-                    and(
-                        iszero(lt(rdsize, 32)), // at least 32 bytes
-                        eq(mload(0x0), 1) // starts with uint256(1)
-                    )
-                )
-            )
-
-            if iszero(success) {
                 returndatacopy(0x0, 0x0, rdsize)
                 revert(0x0, rdsize)
             }

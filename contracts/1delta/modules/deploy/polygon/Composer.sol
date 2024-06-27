@@ -177,7 +177,7 @@ contract OneDeltaComposerPolygon is MarginTrading {
                         // we increment the calldatalength
                         calldataLength := add(52, calldataLength)
                         // validation amount starts at bit 128 from the right
-                        amountInMaximum := add(_UINT112_MASK, shr(128, amountOut))
+                        amountInMaximum := and(_UINT112_MASK, shr(128, amountOut))
                         // check the upper bit as to whether it is a internal swap
                         switch iszero(and(_PAY_SELF, amountOut))
                         case 0 {
@@ -528,11 +528,7 @@ contract OneDeltaComposerPolygon is MarginTrading {
                         user := callerAddress
                         currentOffset := add(currentOffset, 56)
                     }
-                    // borrow(opdata);
-                    _borrow(underlying, user, amount, mode, lenderId);
-                    if (receiver != address(this)) {
-                        _transferERC20Tokens(underlying, receiver, amount);
-                    }
+                    _borrow(underlying, user, receiver, amount, mode, lenderId);
                 } else if (operation == Commands.REPAY) {
                     address underlying;
                     address receiver;
@@ -604,8 +600,7 @@ contract OneDeltaComposerPolygon is MarginTrading {
                         }
                         currentOffset := add(currentOffset, 55)
                     }
-                    _preWithdraw(underlying, user, amount, lenderId);
-                    _withdraw(underlying, receiver, amount, lenderId);
+                    _withdraw(underlying, receiver, user, amount, lenderId);
                 }
             } else if (operation < 0x30) {
                 if (operation == Commands.TRANSFER_FROM) {

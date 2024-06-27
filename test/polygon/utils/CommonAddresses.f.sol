@@ -7,12 +7,13 @@ contract AddressesPolygon {
     address internal WMATIC = 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270;
 
     // users
-    address internal testUser = 0xaaaa4a3F69b6DB76889bDfa4edBe1c0BB57BAA5c;
+    address internal testUser = 0x5f6f935A9a69F886Dc0147904D0F455ABaC67e14;
 
     address internal constant WOO_POOL = 0xEd9e3f98bBed560e66B89AaC922E29D4596A9642;
 
     address internal constant AAVE_POOL = 0x794a61358D6845594F94dc1DB02A252b5b4814aD;
     address internal constant YLDR_POOL = 0x8183D4e0561cBdc6acC0Bdb963c352606A2Fa76F;
+    address internal constant COMET_USDC = 0xF25212E676D1F7F89Cd72fFEe66158f541246445;
 
     /// @dev Mask of lower 20 bytes.
     uint256 internal constant ADDRESS_MASK = 0x00ffffffffffffffffffffffffffffffffffffffff;
