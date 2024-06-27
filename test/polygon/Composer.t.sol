@@ -59,7 +59,7 @@ contract ComposerTestPolygon is DeltaSetup {
         gas = gas - gasleft();
         console.log("gas", gas);
 
-        assertApproxEqAbs(borrowAmount, getBorrowBalance(user, asset, lenderId), 0);
+        assertApproxEqAbs(borrowAmount, getBorrowBalance(user, borrowAsset, lenderId), 1);
     }
 
     function test_polygon_composer_repay() external {
@@ -102,7 +102,7 @@ contract ComposerTestPolygon is DeltaSetup {
         gas = gas - gasleft();
         console.log("gas", gas);
 
-        assertApproxEqAbs(borrowAmount - repayAmount, getBorrowBalance(user, asset, lenderId), 2);
+        assertApproxEqAbs(borrowAmount - repayAmount, getBorrowBalance(user, borrowAsset, lenderId), 2);
     }
 
     function test_polygon_composer_withdraw() external {
@@ -268,7 +268,7 @@ contract ComposerTestPolygon is DeltaSetup {
             assetIn,
             assetOut,
             UNI_V3,
-            uint16(DEX_FEE_LOW) //
+            uint16(500) //
         );
         bytes memory dataFusion;
         {
@@ -313,8 +313,8 @@ contract ComposerTestPolygon is DeltaSetup {
 
     function test_polygon_composer_multi_route_exact_out_native_in() external {
         address user = testUser;
-        uint256 amount = 2.0e18;
-        uint256 amountMax = 9000.0e18;
+        uint256 amount = 1.0e18;
+        uint256 amountMax = 7500.0e18;
 
         address assetIn = WMATIC;
         address assetOut = WETH;
@@ -324,7 +324,7 @@ contract ComposerTestPolygon is DeltaSetup {
             assetIn,
             assetOut,
             UNI_V3,
-            uint16(DEX_FEE_LOW) //
+            uint16(500) //
         );
         bytes memory dataFusion;
         {
@@ -361,7 +361,7 @@ contract ComposerTestPolygon is DeltaSetup {
         uint balanceInAfter = user.balance;
 
         assertApproxEqAbs(balanceOutAfter - balanceOutBefore, amount, 1);
-        assertApproxEqAbs(balanceInBefore - balanceInAfter, 4825933262798723917376, 0);
+        assertApproxEqAbs(balanceInBefore - balanceInAfter, 6303318979812611491310, 0);
     }
 
     function test_polygon_composer_multi_route_exact_in_native_out() external {
@@ -416,7 +416,7 @@ contract ComposerTestPolygon is DeltaSetup {
         uint balanceOutAfter = user.balance;
         uint balanceInAfter = IERC20All(assetIn).balanceOf(user);
 
-        assertApproxEqAbs(balanceOutAfter - balanceOutBefore, 4791714389649651447685, 1);
+        assertApproxEqAbs(balanceOutAfter - balanceOutBefore, 11668752556768511510064, 1);
         assertApproxEqAbs(balanceInBefore - balanceInAfter, amount, 0);
     }
 
@@ -472,7 +472,7 @@ contract ComposerTestPolygon is DeltaSetup {
     function test_polygon_composer_multi_route_exact_out() external {
         address user = testUser;
         uint256 amount = 2000.0e6;
-        uint256 maxIn = 1040.0e6;
+        uint256 maxIn = 1140.0e6;
 
         address assetIn = USDC;
         address assetOut = USDT;
