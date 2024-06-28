@@ -105,6 +105,48 @@ contract ComposerTestPolygon is DeltaSetup {
         assertApproxEqAbs(borrowAmount - repayAmount, getBorrowBalance(user, borrowAsset, lenderId), 2);
     }
 
+    function test_polygon_composer_repay_too_much() external {
+        uint8 lenderId = 50;
+        address user = testUser;
+
+        uint256 amount = 500.0e18;
+        address asset = WMATIC;
+
+        uint256 borrowAmount = 100.0e6;
+        address borrowAsset = USDC;
+
+        _deposit(asset, user, amount, lenderId);
+
+        _borrow(borrowAsset, user, borrowAmount, lenderId);
+
+        uint256 repayAmount = 120.50e6;
+        deal(borrowAsset, user, repayAmount);
+        bytes memory transfer = transferIn(
+            borrowAsset,
+            brokerProxyAddress,
+            repayAmount //
+        );
+        bytes memory data = repay(
+            borrowAsset,
+            user,
+            type(uint112).max,
+            lenderId, //
+            DEFAULT_MODE
+        );
+        data = abi.encodePacked(transfer, data, sweep(borrowAsset, user, 0, SweepType.VALIDATE));
+
+        vm.prank(user);
+        IERC20All(borrowAsset).approve(address(brokerProxyAddress), repayAmount);
+
+        vm.prank(user);
+        uint gas = gasleft();
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
+        gas = gas - gasleft();
+        console.log("gas", gas);
+
+        console.log(IERC20All(borrowAsset).balanceOf(user));
+    }
+
     function test_polygon_composer_withdraw() external {
         uint8 lenderId = 50;
         address user = testUser;
@@ -125,6 +167,29 @@ contract ComposerTestPolygon is DeltaSetup {
         gas = gas - gasleft();
         console.log("gas", gas);
         assertApproxEqAbs(amount - withdrawAmount, getCollateralBalance(user, asset, lenderId), 2);
+    }
+
+    function test_polygon_composer_withdraw_all() external {
+        uint8 lenderId = 1;
+        address user = testUser;
+
+        uint256 amount = 500.0e18;
+        address asset = WMATIC;
+
+        _deposit(asset, user, amount, lenderId);
+
+        uint256 withdrawAmount = type(uint112).max;
+
+        bytes memory data = withdraw(asset, user, withdrawAmount, lenderId);
+        approveWithdrawal(user, asset, withdrawAmount, lenderId);
+
+        vm.prank(user);
+        uint gas = gasleft();
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
+        gas = gas - gasleft();
+        console.log("gas", gas);
+
+        assertApproxEqAbs(0, getCollateralBalance(user, asset, lenderId), 2);
     }
 
     function test_polygon_composer_multi_route_exact_in() external {

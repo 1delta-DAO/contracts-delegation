@@ -29,6 +29,8 @@ abstract contract V3TypeSwapper is DeltaErrors {
     uint160 internal constant MIN_SQRT_RATIO = 4295128740;
     /// @dev MAX_SQRT_RATIO - 1 from Uniswap's TickMath
     uint160 internal constant MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970341;
+    /// @dev Mask of lower 1 byte.
+    uint256 internal constant MAX_UINT256 = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
 
     ////////////////////////////////////////////////////
     // dex references

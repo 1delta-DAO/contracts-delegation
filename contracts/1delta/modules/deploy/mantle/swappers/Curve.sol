@@ -163,7 +163,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
             mstore(0xB24, indexOut)
             mstore(0xB44, amountIn)
             mstore(0xB64, 0) // min out is zero, we validate slippage at the end
-            mstore(0xB84, 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff) // no deadline
+            mstore(0xB84, MAX_UINT256) // no deadline
             if iszero(call(gas(), STRATUM_3POOL, 0x0, 0xB00, 0xA4, 0xB00, 0x20)) {
                 let rdsize := returndatasize()
                 returndatacopy(0xB00, 0, rdsize)
@@ -298,7 +298,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
             mstore(add(ptr, 0x24), indexOut)
             mstore(add(ptr, 0x44), amountIn)
             mstore(add(ptr, 0x64), 0) // min out is zero, we validate slippage at the end
-            mstore(add(ptr, 0x84), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff) // no deadline
+            mstore(add(ptr, 0x84), MAX_UINT256) // no deadline
             if iszero(call(gas(), pool, 0x0, ptr, 0xA4, ptr, 0x20)) {
                 let rdsize := returndatasize()
                 returndatacopy(ptr, 0, rdsize)

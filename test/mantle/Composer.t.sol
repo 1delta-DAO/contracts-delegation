@@ -102,6 +102,48 @@ contract ComposerTestMantle is DeltaSetup {
         console.log("gas", gas);
     }
 
+    function test_mantle_composer_repay_too_much() external {
+        uint8 lenderId = 0;
+        address user = testUser;
+
+        uint256 amount = 10.0e6;
+        address asset = USDT;
+
+        uint256 borrowAmount = 5.0e6;
+        address borrowAsset = USDC;
+
+        _deposit(asset, user, amount, lenderId);
+
+        _borrow(borrowAsset, user, borrowAmount, lenderId);
+
+        uint256 repayAmount = 12.50e6;
+        deal(borrowAsset, user, repayAmount);
+        bytes memory transfer = transferIn(
+            borrowAsset,
+            brokerProxyAddress,
+            repayAmount //
+        );
+        bytes memory data = repay(
+            borrowAsset,
+            user,
+            type(uint112).max,
+            lenderId, //
+            DEFAULT_MODE
+        );
+        data = abi.encodePacked(transfer, data, sweep(borrowAsset, user, 0, SweepType.VALIDATE));
+
+        vm.prank(user);
+        IERC20All(borrowAsset).approve(address(brokerProxyAddress), repayAmount);
+
+        vm.prank(user);
+        uint gas = gasleft();
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
+        gas = gas - gasleft();
+        console.log("gas", gas);
+
+        console.log(IERC20All(borrowAsset).balanceOf(user));
+    }
+
     function test_mantle_composer_withdraw() external {
         uint8 lenderId = 0;
         address user = testUser;
@@ -123,6 +165,32 @@ contract ComposerTestMantle is DeltaSetup {
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
+    }
+
+
+    function test_mantle_composer_withdraw_all() external {
+        uint8 lenderId = 0;
+        address user = testUser;
+
+        uint256 amount = 10.0e6;
+        address asset = USDT;
+
+        _deposit(asset, user, amount, lenderId);
+
+        uint256 withdrawAmount = type(uint112).max;
+
+        bytes memory data = withdraw(asset, user, withdrawAmount, lenderId);
+
+        vm.prank(user);
+        IERC20All(collateralTokens[asset][lenderId]).approve(address(brokerProxyAddress), withdrawAmount);
+
+        vm.prank(user);
+        uint gas = gasleft();
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
+        gas = gas - gasleft();
+        console.log("gas", gas);
+
+        assert(IERC20All(collateralTokens[asset][lenderId]).balanceOf(user) == 0);
     }
 
     function test_mantle_composer_multi_route_exact_in() external {
@@ -285,7 +353,7 @@ contract ComposerTestMantle is DeltaSetup {
             uint8(Commands.SWAP_EXACT_OUT),
             brokerProxyAddress,
             encodeSwapAmountParams(amount / 2, amountMax / 2, false, dataFusion.length),
-            dataFusion // 
+            dataFusion //
         );
 
         data = abi.encodePacked(data, unwrap(user, amount, ComposerUtils.SweepType.VALIDATE));

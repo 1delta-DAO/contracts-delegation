@@ -514,7 +514,6 @@ contract OneDeltaComposerMantle is MarginTrading {
                 } else if (operation == Commands.BORROW) {
                     address underlying;
                     address receiver;
-                    address user;
                     uint256 amount;
                     uint256 lenderId;
                     uint256 mode;
@@ -525,10 +524,9 @@ contract OneDeltaComposerMantle is MarginTrading {
                         amount := and(_UINT112_MASK, shr(128, lastBytes))
                         lenderId := and(UINT8_MASK, shr(248, lastBytes))
                         mode := and(UINT8_MASK, shr(240, lastBytes))
-                        user := callerAddress
                         currentOffset := add(currentOffset, 56)
                     }
-                    _borrow(underlying, user, receiver, amount, mode, lenderId);
+                    _borrow(underlying, callerAddress, receiver, amount, mode, lenderId);
                 } else if (operation == Commands.REPAY) {
                     address underlying;
                     address receiver;
@@ -540,8 +538,13 @@ contract OneDeltaComposerMantle is MarginTrading {
                         underlying := and(ADDRESS_MASK, shr(96, calldataload(offset)))
                         receiver := and(ADDRESS_MASK, calldataload(add(offset, 8)))
                         let lastBytes := calldataload(add(offset, 40))
+                        lenderId := and(UINT8_MASK, shr(248, lastBytes))
+                        mode := and(UINT8_MASK, shr(240, lastBytes))
                         amount := and(_UINT112_MASK, shr(128, lastBytes))
                         // zero means that we repay whatever is in this contract
+                        // Note that Aave protocols allow repayments, even if amount > borrow balance
+                        // in that case, the protocol will pull the desired amount
+                        // the caller has to make sure to call sweep afterwards
                         if iszero(amount) {
                             // selector for balanceOf(address)
                             mstore(0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
@@ -561,8 +564,6 @@ contract OneDeltaComposerMantle is MarginTrading {
                             // load the retrieved balance
                             amount := mload(0x0)
                         }
-                        lenderId := and(UINT8_MASK, shr(248, lastBytes))
-                        mode := and(UINT8_MASK, shr(240, lastBytes))
                         currentOffset := add(currentOffset, 56)
                     }
                     _repay(underlying, receiver, amount, mode, lenderId);
@@ -570,7 +571,6 @@ contract OneDeltaComposerMantle is MarginTrading {
                     address underlying;
                     address receiver;
                     uint256 amount;
-                    address user;
                     uint256 lenderId;
                     assembly {
                         underlying := and(ADDRESS_MASK, shr(96, calldataload(currentOffset)))
@@ -578,8 +578,11 @@ contract OneDeltaComposerMantle is MarginTrading {
                         let lastBytes := calldataload(add(currentOffset, 40))
                         amount := and(_UINT112_MASK, shr(136, lastBytes))
                         lenderId := and(UINT8_MASK, shr(248, lastBytes))
-                        user := callerAddress
-                        if iszero(amount) {
+
+                        // amounts 0 and maximum uint112 have special meanings
+                        switch amount
+                        // case contract underlying balance
+                        case 0 {
                             // selector for balanceOf(address)
                             mstore(0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
                             // add this address as parameter
@@ -598,9 +601,38 @@ contract OneDeltaComposerMantle is MarginTrading {
                             // load the retrieved balance
                             amount := mload(0x0)
                         }
+                        // case user collateral balance
+                        case 0xffffffffffffffffffffffffffff {
+                            switch lt(lenderId, 50)
+                            // get aave type user collateral balance
+                            case 1 {
+                                // Slot for collateralTokens[target] is keccak256(target . collateralTokens.slot).
+                                mstore(0x0, underlying)
+                                mstore8(0x0, lenderId)
+                                mstore(0x20, COLLATERAL_TOKENS_SLOT)
+                                let collateralToken := sload(keccak256(0x0, 0x40))
+                                // selector for balanceOf(address)
+                                mstore(0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+                                // add caller address as parameter
+                                mstore(0x04, callerAddress)
+                                // call to token
+                                pop(
+                                    staticcall(
+                                        gas(),
+                                        collateralToken, // collateral token
+                                        0x0,
+                                        0x24,
+                                        0x0,
+                                        0x20
+                                    )
+                                )
+                                // load the retrieved balance
+                                amount := mload(0x0)
+                            }
+                        }
                         currentOffset := add(currentOffset, 55)
                     }
-                    _withdraw(underlying, user, receiver, amount, lenderId);
+                    _withdraw(underlying, callerAddress, receiver, amount, lenderId);
                 }
             } else if (operation < 0x30) {
                 if (operation == Commands.TRANSFER_FROM) {

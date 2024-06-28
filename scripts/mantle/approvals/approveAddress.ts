@@ -9,7 +9,7 @@ const managementInterface = ManagementModule__factory.createInterface()
 const STRATUM_USD = [
     TOKENS_MANTLE.USDC,
     TOKENS_MANTLE.USDT,
-    '0xab575258d37EaA5C8956EfABe71F4eE8F6397cF3' // mUSD
+    TOKENS_MANTLE.mUSD // mUSD
 ]
 
 const STRATUM_USD_2 = [
@@ -101,6 +101,16 @@ export async function execAureliusApproves(manager: MantleManagementModule, nonc
     const tx = await manager.approveAddress(
         Object.values(TOKENS_MANTLE),
         AURELIUS_POOL,
+        getMantleConfig(nonce++)
+    )
+    await tx.wait()
+    return nonce
+}
+
+export async function execMUSDApproves(manager: MantleManagementModule, nonce: number) {
+    const tx = await manager.approveAddress(
+        [TOKENS_MANTLE.USDY],
+        TOKENS_MANTLE.mUSD,
         getMantleConfig(nonce++)
     )
     await tx.wait()
