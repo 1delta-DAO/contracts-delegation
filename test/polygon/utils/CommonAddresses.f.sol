@@ -48,7 +48,7 @@ contract AddressesPolygon {
     uint8 internal UNI_V3 = 0;
     uint8 internal RETRO = 1;
     uint8 internal SUSHI_V3 = 2;
-    uint8 internal ALGEBRA = 4;
+    uint8 internal ALGEBRA = 3;
     uint8 internal IZUMI = 49;
     uint8 internal CURVE = 50;
 

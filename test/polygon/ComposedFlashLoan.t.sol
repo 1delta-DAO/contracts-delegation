@@ -18,17 +18,17 @@ contract ComposedFlashLoanTestPolygon is DeltaSetup {
         TestParamsOpen memory params;
         address user = testUser;
 
-        vm.assume(user != address(0) && lenderId < 2);
+        vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
         vm.deal(user, 1.0e18);
         {
-            address asset = USDC;
+            address asset = WMATIC;
 
-            address borrowAsset = WMATIC;
-            deal(asset, user, 1e20);
+            address borrowAsset = USDC;
 
-            uint256 amountToDeposit = 10.0e6;
+            uint256 amountToDeposit = 200.0e18;
+            deal(asset, user, amountToDeposit);
 
-            uint256 amountToBorrow = 20.0e18;
+            uint256 amountToBorrow = 100.0e6; // need to borrow at least 100 for C3
             uint256 minimumOut = 10.0e6;
             params = getOpenParams(
                 borrowAsset,
@@ -82,14 +82,13 @@ contract ComposedFlashLoanTestPolygon is DeltaSetup {
             brokerProxyAddress,
             params.swapAmount,
             0, // do not slippage check here
-            true,
+            true, // self
             getOpenExactInInternal(
                 params.borrowAsset,
                 params.collateralAsset //
             )
         );
         data = abi.encodePacked(data, dataLending);
-        console.log("data.length", data.length);
         data = abi.encodePacked(
             initTransfer,
             encodeAaveV2FlashLoan(
@@ -99,7 +98,6 @@ contract ComposedFlashLoanTestPolygon is DeltaSetup {
                 data //
             )
         );
-        console.log("test");
         vm.prank(user);
         uint gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
@@ -111,7 +109,7 @@ contract ComposedFlashLoanTestPolygon is DeltaSetup {
         borrowBalance = getBorrowBalance(user, params.borrowAsset, lenderId) - borrowBalance;
 
         // deposit 10, recieve 32.1... makes 42.1...
-        assertApproxEqAbs(21095499, balance, 1);
+        assertApproxEqAbs(379869471726271100564, balance, 1);
         {
             uint borrowAm = params.swapAmount +
                 (params.swapAmount * (flashSource == BALANCER_V2 ? 0 : ILendingPool(AAVE_POOL).FLASHLOAN_PREMIUM_TOTAL())) / //
@@ -134,19 +132,19 @@ contract ComposedFlashLoanTestPolygon is DeltaSetup {
     function test_polygon_composed_flash_loan_close() external {
         uint8 lenderId = 0;
         address user = testUser;
-        vm.assume(user != address(0) && lenderId < 2);
-        address asset = USDC;
+        vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
+        address asset = WMATIC;
         address collateralToken = collateralTokens[asset][lenderId];
 
-        address borrowAsset = USDT;
+        address borrowAsset = USDC;
 
         fundRouter(asset, borrowAsset);
 
         address debtToken = debtTokens[borrowAsset][lenderId];
 
         {
-            uint256 amountToDeposit = 10.0e6;
-            uint256 amountToLeverage = 20.0e6;
+            uint256 amountToDeposit = 200.0e18;
+            uint256 amountToLeverage = 100.0e6;
 
             openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, 0);
         }
@@ -208,14 +206,16 @@ contract ComposedFlashLoanTestPolygon is DeltaSetup {
 
     function getOpenExactInInternal(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_LOW);
-        uint8 poolId = UNI_V3;
+        uint8 poolId = ALGEBRA;
+        console.log("t");
         address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
+        console.log("t", pool);
         return abi.encodePacked(tokenIn, uint8(0), poolId, pool, fee, tokenOut, uint8(0), uint8(0));
     }
 
     function getCloseExactInInternal(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_LOW);
-        uint8 poolId = UNI_V3;
+        uint8 poolId = ALGEBRA;
         address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
         return abi.encodePacked(tokenIn, uint8(0), poolId, pool, fee, tokenOut, uint8(0), uint8(0));
     }

@@ -125,7 +125,7 @@ abstract contract PoolGetterPolygon {
                 mstore(p, RETRO_POOL_INIT_CODE_HASH)
                 pool := and(ADDRESS_MASK, keccak256(s, 85))
             }
-            // Algebra / Swapsicle
+            // Algebra / QUickswap V3
             case 3 {
                 mstore(p, ALGEBRA_V3_FF_DEPLOYER)
                 p := add(p, 21)
