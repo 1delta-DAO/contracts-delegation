@@ -2,23 +2,9 @@
 pragma solidity ^0.8.19;
 
 import "./DeltaSetup.f.sol";
-import {MockRouter} from "../../contracts/mocks/MockRouter.sol";
 
-contract ComposedFlashLoanTest is DeltaSetup {
+contract ComposedFlashLoanTestPolygon is DeltaSetup {
     uint256 DEFAULT_IR_MODE = 2; // variable
-    MockRouter router;
-
-    function setUp() public virtual override {
-        vm.createSelectFork({blockNumber: 62219594, urlOrAlias: "https://mantle-mainnet.public.blastapi.io"});
-
-        router = new MockRouter(1.0e18, 12);
-
-        deployDelta();
-        initializeDelta();
-
-        management.approveAddress(getAssets(), address(router));
-        management.setValidTarget(address(router), address(router), true);
-    }
 
     /**
      * Transfers in
@@ -31,6 +17,7 @@ contract ComposedFlashLoanTest is DeltaSetup {
     function test_polygon_composed_flash_loan_open(uint8 lenderId) external /** address user, uint8 lenderId */ {
         TestParamsOpen memory params;
         address user = testUser;
+
         vm.assume(user != address(0) && lenderId < 2);
         vm.deal(user, 1.0e18);
         {
@@ -52,8 +39,8 @@ contract ComposedFlashLoanTest is DeltaSetup {
                 lenderId
             );
         }
-        uint256 borrowBalance = IERC20All(params.debtToken).balanceOf(user);
-        uint256 balance = IERC20All(params.collateralToken).balanceOf(user);
+        uint256 borrowBalance = getBorrowBalance(user, params.borrowAsset, lenderId);
+        uint256 balance = getCollateralBalance(user, params.collateralAsset, lenderId);
 
         vm.prank(user);
         IERC20All(params.collateralAsset).approve(brokerProxyAddress, params.amountToDeposit);
@@ -64,29 +51,33 @@ contract ComposedFlashLoanTest is DeltaSetup {
             params.amountToDeposit // init depo
         );
 
-        bytes memory dataDeposit = deposit(
+        bytes memory dataLending = deposit(
             params.collateralAsset,
             user,
             0, // all, incl init depo
             lenderId
         );
-        bytes memory dataBorrow;
+
+        uint8 flashSource = BALANCER_V2;
         {
             uint borrowAm = params.swapAmount +
-                (params.swapAmount * ILendingPool(AAVE_POOL).FLASHLOAN_PREMIUM_TOTAL()) / //
+                (params.swapAmount * (flashSource == BALANCER_V2 ? 0 : ILendingPool(AAVE_POOL).FLASHLOAN_PREMIUM_TOTAL())) / //
                 10000;
-            vm.prank(user);
-            IERC20All(params.debtToken).approveDelegation(brokerProxyAddress, borrowAm);
 
-            dataBorrow = borrow(
-                params.borrowAsset,
-                brokerProxyAddress,
-                borrowAm,
-                lenderId,
-                uint8(DEFAULT_IR_MODE) //
+            approveBorrowDelegation(user, params.borrowAsset, borrowAm, lenderId);
+
+            dataLending = abi.encodePacked(
+                dataLending,
+                borrow(
+                    params.borrowAsset,
+                    BALANCER_VAULT,
+                    borrowAm,
+                    lenderId,
+                    uint8(DEFAULT_IR_MODE) //
+                )
             );
         }
-        bytes memory swap = encodeSwap(
+        bytes memory data = encodeSwap(
             Commands.SWAP_EXACT_IN,
             brokerProxyAddress,
             params.swapAmount,
@@ -97,30 +88,37 @@ contract ComposedFlashLoanTest is DeltaSetup {
                 params.collateralAsset //
             )
         );
-        bytes memory data = abi.encodePacked(
+        data = abi.encodePacked(data, dataLending);
+        console.log("data.length", data.length);
+        data = abi.encodePacked(
             initTransfer,
             encodeAaveV2FlashLoan(
                 params.borrowAsset,
                 params.swapAmount,
-                lenderId,
-                abi.encodePacked(swap, dataDeposit, dataBorrow) //
+                flashSource,
+                data //
             )
         );
-
+        console.log("test");
         vm.prank(user);
         uint gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
-        
+
         console.log("gas-flash-loan-open", gas);
 
-        balance = IERC20All(params.collateralToken).balanceOf(user) - balance;
-        borrowBalance = IERC20All(params.debtToken).balanceOf(user) - borrowBalance;
+        balance = getCollateralBalance(user, params.collateralAsset, lenderId) - balance;
+        borrowBalance = getBorrowBalance(user, params.borrowAsset, lenderId) - borrowBalance;
 
         // deposit 10, recieve 32.1... makes 42.1...
-        assertApproxEqAbs(39122533, balance, 1);
-        // deviations through rouding expected, accuracy for 10 decimals
-        assertApproxEqAbs(borrowBalance, 20018000000000000000, 1);
+        assertApproxEqAbs(21095499, balance, 1);
+        {
+            uint borrowAm = params.swapAmount +
+                (params.swapAmount * (flashSource == BALANCER_V2 ? 0 : ILendingPool(AAVE_POOL).FLASHLOAN_PREMIUM_TOTAL())) / //
+                10000;
+            // deviations through rouding expected, accuracy for 10 decimals
+            assertApproxEqAbs(borrowBalance, borrowAm, 1);
+        }
     }
 
     function test_polygon_ext_call() external {
@@ -179,7 +177,7 @@ contract ComposedFlashLoanTest is DeltaSetup {
             data = encodeAaveV2FlashLoan(
                 asset, // flash withdraw asset
                 amountToFlashWithdraw,
-                lenderId,
+                BALANCER_V2,
                 abi.encodePacked(
                     encodeExtCall(
                         asset,

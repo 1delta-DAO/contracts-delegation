@@ -105,6 +105,7 @@ contract FCaller {
             offs := userData.offset
         }
         console.log("test", offs);
+        console.logBytes(userData);
     }
 
     function flashLoanSimple(

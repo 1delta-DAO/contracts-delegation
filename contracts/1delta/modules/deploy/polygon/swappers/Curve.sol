@@ -79,14 +79,13 @@ abstract contract CurveSwapper is UniTypeSwapper {
             // Execute swap function 
             ////////////////////////////////////////////////////
 
-            // selector for swap(uint8,uint8,uint256,uint256,uint256)
-            mstore(ptr, 0x9169558600000000000000000000000000000000000000000000000000000000)
+            // selector for exchange_underlying(uint256,uint256,uint256,uint256)
+            mstore(ptr, 0xa6417ed600000000000000000000000000000000000000000000000000000000)
             mstore(add(ptr, 0x4), indexIn)
             mstore(add(ptr, 0x24), indexOut)
             mstore(add(ptr, 0x44), amountIn)
             mstore(add(ptr, 0x64), 0) // min out is zero, we validate slippage at the end
-            mstore(add(ptr, 0x84), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff) // no deadline
-            if iszero(call(gas(), pool, 0x0, ptr, 0xA4, ptr, 0x20)) {
+            if iszero(call(gas(), pool, 0x0, ptr, 0x84, ptr, 0x20)) {
                 let rdsize := returndatasize()
                 returndatacopy(ptr, 0, rdsize)
                 revert(ptr, rdsize)

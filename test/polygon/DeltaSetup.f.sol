@@ -3,6 +3,7 @@ pragma solidity ^0.8.19;
 
 import {AddressesPolygon} from "./utils/CommonAddresses.f.sol";
 import "../../contracts/1delta/quoter/test/TestQuoterPolygon.sol";
+import {MockRouter} from "../../contracts/mocks/MockRouter.sol";
 import {ComposerUtils, Commands} from "../shared/utils/ComposerUtils.sol";
 
 // interfaces
@@ -41,6 +42,7 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
     IManagement internal management;
     TestQuoterPolygon testQuoter;
     OneDeltaComposerPolygon internal aggregator;
+    MockRouter router;
 
     mapping(address => mapping(uint8 => address)) internal collateralTokens;
     mapping(address => mapping(uint8 => address)) internal debtTokens;
@@ -66,15 +68,9 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
         selectors[11] = IManagement.clearCache.selector;
         return selectors;
     }
-
-    function initializeSelectors() internal pure returns (bytes4[] memory selectors) {
-        selectors = new bytes4[](1);
-        selectors[0] = IInitialize.initMarginTrader.selector;
-        return selectors;
-    }
-
+    
     function flashAggregatorSelectors() internal pure returns (bytes4[] memory selectors) {
-        selectors = new bytes4[](23);
+        selectors = new bytes4[](24);
         /** margin */
         selectors[0] = IFlashAggregator.flashSwapExactIn.selector;
         selectors[1] = IFlashAggregator.flashSwapExactOut.selector;
@@ -102,6 +98,7 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
         selectors[21] = IFlashAggregator.swapExactInSpotSelf.selector;
         selectors[21] = IFlashAggregator.deltaCompose.selector;
         selectors[22] = IFlashLoanReceiver.executeOperation.selector;
+        selectors[23] = IFlashLoanReceiver.receiveFlashLoan.selector;
         return selectors;
     }
 
@@ -152,7 +149,7 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
         IModuleConfig.ModuleConfig[] memory _moduleConfig = new IModuleConfig.ModuleConfig[](2);
         _moduleConfig[0] = IModuleConfig.ModuleConfig(address(_management), IModuleConfig.ModuleConfigAction.Add, managementSelectors());
         _moduleConfig[1] = IModuleConfig.ModuleConfig(address(_aggregator), IModuleConfig.ModuleConfigAction.Add, flashAggregatorSelectors());
-
+    
         // add all modules
         deltaConfig.configureModules(_moduleConfig);
         aggregator = _aggregator;
@@ -216,6 +213,7 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
         management.approveAddress(assets, AAVE_POOL);
         management.approveAddress(assets, YLDR_POOL);
         management.approveAddress(assets, COMET_USDC);
+        management.approveAddress(assets, CRV_3_ASSET_POOL);
 
         // address[] memory stratumAssets = new address[](6);
         // stratumAssets[0] = USDC;
@@ -243,9 +241,10 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
 
     function setUp() public virtual {
         vm.createSelectFork({blockNumber: 58645304, urlOrAlias: "https://polygon-rpc.com"});
-
+        router = new MockRouter(1.0e18, 12);
         deployDelta();
         initializeDelta();
+        management.setValidTarget(address(router), address(router), true);
     }
 
     /** DEPOSIT AND OPEN TO SPIN UP POSITIONS */

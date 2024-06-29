@@ -566,7 +566,7 @@ contract OneDeltaComposerPolygon is MarginTrading {
                             amount := mload(0x0)
                         }
                         // full user debt balance
-                        // only used for Compound V3. Overpaying results into the residual 
+                        // only used for Compound V3. Overpaying results into the residual
                         // being converted to collateral
                         // Aave V2/3s allow higher amounts than the balance and will correclty adapt
                         case 0xffffffffffffffffffffffffffff {
@@ -1071,12 +1071,9 @@ contract OneDeltaComposerPolygon is MarginTrading {
                         let amount := and(_UINT112_MASK, shr(144, slice))
                         // length of params
                         let calldataLength := and(UINT16_MASK, shr(128, slice))
-
-                        let pool
                         switch source
-                        case 255 {
+                        case 0xff {
                             // balancer should be the primary choice
-                            pool := BALANCER_V2_VAULT
                             let ptr := mload(0x40)
                             // flashLoan(...)
                             mstore(ptr, 0x5c38449e00000000000000000000000000000000000000000000000000000000)
@@ -1088,18 +1085,22 @@ contract OneDeltaComposerPolygon is MarginTrading {
                             mstore(add(ptr, 164), token) // asset
                             mstore(add(ptr, 196), 1) // length amounts
                             mstore(add(ptr, 228), amount) // amount
-                            mstore(add(ptr, 260), data.length) // length calldata
+                            mstore(add(ptr, 260), add(21, calldataLength)) // length calldata
+                            mstore8(add(ptr, 292), source) // source id
+                            // caller at the beginning
+                            mstore(add(ptr, 293), shl(96, callerAddress))
+                            // caller at the beginning
                             currentOffset := add(currentOffset, 37)
-                            calldatacopy(add(ptr, 292), currentOffset, calldataLength) // calldata
+                            calldatacopy(add(ptr, 313), currentOffset, calldataLength) // calldata
                             // set entry flag
                             sstore(FLASH_LOAN_GATEWAY_SLOT, 2)
                             if iszero(
                                 call(
                                     gas(),
-                                    pool,
+                                    BALANCER_V2_VAULT,
                                     0x0,
                                     ptr,
-                                    add(data.length, 324), // = 10 * 32 + 4
+                                    add(calldataLength, 345), // = 10 * 32 + 4
                                     0x0,
                                     0x0 //
                                 )
@@ -1112,6 +1113,7 @@ contract OneDeltaComposerPolygon is MarginTrading {
                             sstore(FLASH_LOAN_GATEWAY_SLOT, 1)
                         }
                         default {
+                            let pool
                             switch source
                             case 0 {
                                 pool := AAVE_V3
@@ -1132,16 +1134,19 @@ contract OneDeltaComposerPolygon is MarginTrading {
                             mstore(add(ptr, 68), amount) // amount
                             mstore(add(ptr, 100), 0xa0) // offset calldata
                             mstore(add(ptr, 132), 0) // refCode
-                            mstore(add(ptr, 164), data.length) // length calldata
+                            mstore(add(ptr, 164), add(21, calldataLength)) // length calldata
+                            mstore8(add(ptr, 196), source) // source id
+                            // caller at the beginning
+                            mstore(add(ptr, 197), shl(96, callerAddress))
                             currentOffset := add(currentOffset, 37)
-                            calldatacopy(add(ptr, 196), currentOffset, calldataLength) // calldata
+                            calldatacopy(add(ptr, 217), currentOffset, calldataLength) // calldata
                             if iszero(
                                 call(
                                     gas(),
                                     pool,
                                     0x0,
                                     ptr,
-                                    add(data.length, 228), // = 10 * 32 + 4
+                                    add(calldataLength, 228), // = 10 * 32 + 4
                                     0x0,
                                     0x0 //
                                 )
@@ -1269,7 +1274,7 @@ contract OneDeltaComposerPolygon is MarginTrading {
             // This is a crucial check since this makes
             // the `initiator` paramter the caller of `flashLoan`
             switch source
-            case 255 {
+            case 0xff {
                 if xor(caller(), BALANCER_V2_VAULT) {
                     mstore(0, INVALID_FLASH_LOAN)
                     revert(0, 0x4)
@@ -1281,7 +1286,7 @@ contract OneDeltaComposerPolygon is MarginTrading {
                 revert(0, 0x4)
             }
             // check that the entry flag is
-            if xor(2, sload(FLASH_LOAN_GATEWAY_SLOT)) {
+            if iszero(eq(2, sload(FLASH_LOAN_GATEWAY_SLOT))) {
                 mstore(0, INVALID_CALLER)
                 revert(0, 0x4)
             }

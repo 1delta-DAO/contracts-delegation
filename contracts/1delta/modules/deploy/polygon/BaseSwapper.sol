@@ -230,7 +230,7 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
             }
         }
         // Curve stable general
-        else if (dexId == 51) {
+        else if (dexId == 50) {
             assembly {
                 switch lt(path.length, 67) // lengthFull = 20+1+1+20+1+1+20 = 64
                 case 1 { currentReceiver := receiver}

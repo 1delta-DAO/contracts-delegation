@@ -24,12 +24,15 @@ contract AddressesPolygon {
     /// @dev Mask of lower 3 bytes.
     uint256 internal constant UINT24_MASK = 0xffffff;
 
+    address internal constant CRV_3_ASSET_POOL = 0x445FE580eF8d70FF569aB36e80c647af338db351;
+
     /** DEFAULTS */
 
     uint8 DEFAULT_LENDER = 1;
     uint8 AAVE_V3 = 0;
     uint8 YLDR = 1;
     uint8 COMPOUND_V3_USDC = 10;
+    uint8 BALANCER_V2 = 0xff;
 
     /** DEX CONFIG */
 
@@ -47,6 +50,7 @@ contract AddressesPolygon {
     uint8 internal SUSHI_V3 = 2;
     uint8 internal ALGEBRA = 4;
     uint8 internal IZUMI = 49;
+    uint8 internal CURVE = 50;
 
     uint8 internal FUSION_X_V2 = 100;
     uint8 internal MERCHANT_MOE = 101;
