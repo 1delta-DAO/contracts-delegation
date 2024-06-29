@@ -68,7 +68,7 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
         selectors[11] = IManagement.clearCache.selector;
         return selectors;
     }
-    
+
     function flashAggregatorSelectors() internal pure returns (bytes4[] memory selectors) {
         selectors = new bytes4[](24);
         /** margin */
@@ -149,7 +149,7 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
         IModuleConfig.ModuleConfig[] memory _moduleConfig = new IModuleConfig.ModuleConfig[](2);
         _moduleConfig[0] = IModuleConfig.ModuleConfig(address(_management), IModuleConfig.ModuleConfigAction.Add, managementSelectors());
         _moduleConfig[1] = IModuleConfig.ModuleConfig(address(_aggregator), IModuleConfig.ModuleConfigAction.Add, flashAggregatorSelectors());
-    
+
         // add all modules
         deltaConfig.configureModules(_moduleConfig);
         aggregator = _aggregator;
@@ -266,7 +266,6 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
     }
 
     function openSimple(address user, address asset, address borrowAsset, uint256 depositAmount, uint256 borrowAmount, uint8 lenderId) internal {
-        address debtAsset = debtTokens[borrowAsset][lenderId];
         deal(asset, user, depositAmount);
 
         bytes memory data = transferIn(asset, brokerProxyAddress, depositAmount);
@@ -291,8 +290,9 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
 
         vm.prank(user);
         IERC20All(asset).approve(brokerProxyAddress, depositAmount);
-        vm.prank(user);
-        IERC20All(debtAsset).approveDelegation(brokerProxyAddress, borrowAmount);
+
+        approveBorrowDelegation(user, borrowAsset, borrowAmount, lenderId);
+
         vm.prank(user);
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
     }

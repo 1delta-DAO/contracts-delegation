@@ -704,7 +704,7 @@ contract OneDeltaComposerPolygon is MarginTrading {
                         }
                         currentOffset := add(currentOffset, 55)
                     }
-                    _withdraw(underlying, receiver, callerAddress, amount, lenderId);
+                    _withdraw(underlying, callerAddress, receiver, amount, lenderId);
                 }
             } else if (operation < 0x30) {
                 if (operation == Commands.TRANSFER_FROM) {

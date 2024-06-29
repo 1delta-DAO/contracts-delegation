@@ -61,7 +61,7 @@ contract ComposedFlashLoanTestPolygon is DeltaSetup {
         uint8 flashSource = BALANCER_V2;
         {
             uint borrowAm = params.swapAmount +
-                (params.swapAmount * (flashSource == BALANCER_V2 ? 0 : ILendingPool(AAVE_POOL).FLASHLOAN_PREMIUM_TOTAL())) / //
+                (params.swapAmount * getFlashFee(flashSource)) / //
                 10000;
 
             approveBorrowDelegation(user, params.borrowAsset, borrowAm, lenderId);
@@ -112,7 +112,7 @@ contract ComposedFlashLoanTestPolygon is DeltaSetup {
         assertApproxEqAbs(379869471726271100564, balance, 1);
         {
             uint borrowAm = params.swapAmount +
-                (params.swapAmount * (flashSource == BALANCER_V2 ? 0 : ILendingPool(AAVE_POOL).FLASHLOAN_PREMIUM_TOTAL())) / //
+                (params.swapAmount * getFlashFee(flashSource)) / //
                 10000;
             // deviations through rouding expected, accuracy for 10 decimals
             assertApproxEqAbs(borrowBalance, borrowAm, 1);
@@ -129,53 +129,51 @@ contract ComposedFlashLoanTestPolygon is DeltaSetup {
         console.log(val);
     }
 
-    function test_polygon_composed_flash_loan_close() external {
-        uint8 lenderId = 0;
+    function test_polygon_composed_flash_loan_close(uint8 lenderId) external {
+        management.setValidTarget(address(router), address(router), true);
         address user = testUser;
         vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
         address asset = WMATIC;
-        address collateralToken = collateralTokens[asset][lenderId];
-
+        uint8 flashSource = BALANCER_V2;
         address borrowAsset = USDC;
 
         fundRouter(asset, borrowAsset);
-
-        address debtToken = debtTokens[borrowAsset][lenderId];
-
+        router.setRate(1e6);
         {
             uint256 amountToDeposit = 200.0e18;
             uint256 amountToLeverage = 100.0e6;
 
-            openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, 0);
+            openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
 
-        uint256 amountToFlashWithdraw = 15.0e6;
+        uint256 amountToFlashWithdraw = 50.0e18;
 
-        uint256 borrowBalance = IERC20All(debtToken).balanceOf(user);
-        uint256 balance = IERC20All(collateralToken).balanceOf(user);
-        bytes memory dataWithdraw;
+        uint256 borrowBalance = getBorrowBalance(user, borrowAsset, lenderId);
+        uint256 balance = getCollateralBalance(user, asset, lenderId);
+        bytes memory data;
         uint witdrawAm;
         {
-            witdrawAm = amountToFlashWithdraw + (amountToFlashWithdraw * ILendingPool(AAVE_POOL).FLASHLOAN_PREMIUM_TOTAL()) / 10000;
-            vm.prank(user);
-            IERC20All(collateralToken).approve(brokerProxyAddress, witdrawAm);
-
-            dataWithdraw = withdraw(asset, brokerProxyAddress, witdrawAm, lenderId);
+            witdrawAm = amountToFlashWithdraw + (amountToFlashWithdraw * getFlashFee(flashSource)) / 10000;
+            approveWithdrawal(user, asset, witdrawAm, lenderId);
+            data = withdraw(asset, BALANCER_VAULT, witdrawAm, lenderId);
         }
 
         {
-            bytes memory data = repay(
-                borrowAsset,
-                user,
-                0, // all, incl init depo
-                lenderId,
-                uint8(DEFAULT_IR_MODE)
+            data = abi.encodePacked(
+                repay(
+                    borrowAsset,
+                    user,
+                    0, // all, incl init depo
+                    lenderId,
+                    uint8(DEFAULT_IR_MODE)
+                ),
+                data
             );
 
             data = encodeAaveV2FlashLoan(
                 asset, // flash withdraw asset
                 amountToFlashWithdraw,
-                BALANCER_V2,
+                flashSource,
                 abi.encodePacked(
                     encodeExtCall(
                         asset,
@@ -184,8 +182,7 @@ contract ComposedFlashLoanTestPolygon is DeltaSetup {
                         address(router),
                         amountToFlashWithdraw //
                     ),
-                    data, // repay
-                    dataWithdraw
+                    data // repay
                 ) //
             );
 
@@ -195,13 +192,13 @@ contract ComposedFlashLoanTestPolygon is DeltaSetup {
             gas = gas - gasleft();
             console.log("gas-flash-loan-close", gas);
         }
-        balance = balance - IERC20All(collateralToken).balanceOf(user);
-        borrowBalance = borrowBalance - IERC20All(debtToken).balanceOf(user);
+        balance = balance - getCollateralBalance(user, asset, lenderId);
+        borrowBalance = borrowBalance - getBorrowBalance(user, borrowAsset, lenderId);
 
         // deposit 10, recieve 32.1... makes 42.1...
         assertApproxEqAbs(witdrawAm, balance, 1);
         // deviations through rouding expected, accuracy for 10 decimals
-        assertApproxEqAbs(14999988, borrowBalance, 1);
+        assertApproxEqAbs(49999987, borrowBalance, 1);
     }
 
     function getOpenExactInInternal(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
@@ -237,5 +234,9 @@ contract ComposedFlashLoanTestPolygon is DeltaSetup {
                 uint16(data.length),
                 data
             );
+    }
+
+    function getFlashFee(uint8 source) internal view returns (uint) {
+        return source == BALANCER_V2 ? 0 : ILendingPool(AAVE_POOL).FLASHLOAN_PREMIUM_TOTAL();
     }
 }
