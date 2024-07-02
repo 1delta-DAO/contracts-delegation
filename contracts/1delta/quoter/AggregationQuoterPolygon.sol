@@ -333,8 +333,8 @@ contract OneDeltaQuoterPolygon is PoolGetterPolygon {
                 uint256 feeDenom;
                 assembly {
                     // tokenOut starts at 41st byte
-                    tokenOut := shr(96, calldataload(add(path.offset, 41)))
-                    feeDenom := and(UINT16_MASK, shr(240, calldataload(add(path.offset, 39))))
+                    tokenOut := shr(96, calldataload(add(path.offset, CL_PARAM_LENGTH)))
+                    feeDenom := and(UINT16_MASK, shr(80, calldataload(add(path.offset, 21))))
                 }
                 amountIn = getAmountOutUniV2Type(pair, tokenIn, tokenOut, amountIn, feeDenom, poolId);
                 path = path[V2_PARAM_LENGTH:];
@@ -394,7 +394,7 @@ contract OneDeltaQuoterPolygon is PoolGetterPolygon {
                 uint256 feeDenom;
                 assembly {
                     // tokenIn starts at 43th byte for CL
-                    tokenIn := shr(96, calldataload(add(path.offset, 43)))
+                    tokenIn := shr(96, calldataload(add(path.offset, CL_PARAM_LENGTH)))
                     feeDenom := and(UINT16_MASK, shr(80, calldataload(add(path.offset, 21))))
                 }
                 amountOut = getV2AmountInDirect(pair, tokenIn, tokenOut, amountOut, feeDenom, poolId);
@@ -530,7 +530,16 @@ contract OneDeltaQuoterPolygon is PoolGetterPolygon {
             // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
             // x = (reserveIn * amountOut * 1000) /
             //     ((reserveOut - amountOut) * feeAm) + 1;
-            x := add(div(mul(mul(sellReserve, buyAmount), 10000), mul(sub(buyReserve, buyAmount), feeDenom)), 1)
+            x := add(
+                div(
+                    mul(mul(sellReserve, buyAmount), 10000),
+                    mul(
+                        sub(buyReserve, buyAmount),
+                        feeDenom // adjust for Velo fee
+                    )
+                ),
+                1
+            )
         }
     }
 }

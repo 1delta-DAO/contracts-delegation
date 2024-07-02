@@ -36,8 +36,8 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
             tradeId := and(shr(80, firstWord), UINT8_MASK) // poolId
             // second word
-            firstWord := calldataload(add(path.offset, 42))
-            tokenOut := and(ADDRESS_MASK, shr(80, firstWord))
+            firstWord := calldataload(add(path.offset, 32))
+            tokenOut := and(ADDRESS_MASK, firstWord)
 
             ////////////////////////////////////////////////////
             // Compute and validate pool address
@@ -85,8 +85,8 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
             tradeId := and(shr(80, firstWord), UINT8_MASK) // poolId
             // second word
-            firstWord := calldataload(add(path.offset, 42))
-            tokenOut := and(ADDRESS_MASK, shr(80, firstWord))
+            firstWord := calldataload(add(path.offset, 32))
+            tokenOut := and(ADDRESS_MASK, firstWord)
 
             ////////////////////////////////////////////////////
             // Compute and validate pool address
@@ -106,7 +106,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                     mstore(p, tokenIn)
                     mstore(add(p, 32), tokenOut)
                 }
-                mstore(add(p, 64), and(UINT16_MASK, shr(240, firstWord)))
+                mstore(add(p, 64), and(UINT16_MASK, shr(160, firstWord)))
                 mstore(p, keccak256(p, 96))
                 p := add(p, 32)
                 mstore(p, UNI_POOL_INIT_CODE_HASH)
@@ -124,7 +124,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                     mstore(p, tokenIn)
                     mstore(add(p, 32), tokenOut)
                 }
-                mstore(add(p, 64), and(UINT16_MASK, shr(240, firstWord)))
+                mstore(add(p, 64), and(UINT16_MASK, shr(160, firstWord)))
                 mstore(p, keccak256(p, 96))
                 p := add(p, 32)
                 mstore(p, RETRO_POOL_INIT_CODE_HASH)
@@ -142,7 +142,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                     mstore(p, tokenIn)
                     mstore(add(p, 32), tokenOut)
                 }
-                mstore(add(p, 64), and(UINT16_MASK, shr(240, firstWord)))
+                mstore(add(p, 64), and(UINT16_MASK, shr(160, firstWord)))
                 mstore(p, keccak256(p, 96))
                 p := add(p, 32)
                 mstore(p, SUSHI_POOL_INIT_CODE_HASH)
@@ -173,9 +173,9 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
             tradeId := and(shr(80, firstWord), UINT8_MASK) // poolId
             // second word
-            firstWord := calldataload(add(path.offset, 42))
+            firstWord := calldataload(add(path.offset, 32))
             
-            tokenOut := and(ADDRESS_MASK, shr(80, firstWord))
+            tokenOut := and(ADDRESS_MASK, firstWord)
 
             ////////////////////////////////////////////////////
             // Compute and validate pool address
@@ -193,7 +193,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 mstore(p, tokenIn)
                 mstore(add(p, 32), tokenOut)
             }
-            mstore(add(p, 64), and(UINT16_MASK, shr(240, firstWord)))
+            mstore(add(p, 64), and(UINT16_MASK, shr(160, firstWord)))
             mstore(p, keccak256(p, 96))
             p := add(p, 32)
             mstore(p, IZI_POOL_INIT_CODE_HASH)
@@ -225,8 +225,8 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
             tradeId := and(shr(80, firstWord), UINT8_MASK) // poolId
             // second word
-            firstWord := calldataload(add(path.offset, 42))
-            tokenOut := and(ADDRESS_MASK, shr(80, firstWord))
+            firstWord := calldataload(add(path.offset, 32))
+            tokenOut := and(ADDRESS_MASK, firstWord)
 
             ////////////////////////////////////////////////////
             // Compute and validate pool address
@@ -245,7 +245,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 mstore(p, tokenIn)
                 mstore(add(p, 32), tokenOut)
             }
-            mstore(add(p, 64), and(UINT16_MASK, shr(240, firstWord)))
+            mstore(add(p, 64), and(UINT16_MASK, shr(160, firstWord)))
             mstore(p, keccak256(p, 96))
             p := add(p, 32)
             mstore(p, IZI_POOL_INIT_CODE_HASH)

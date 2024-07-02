@@ -46,10 +46,10 @@ contract PolygonQuotingTest is DeltaSetup {
 
         deal(assetIn, user, 1e30);
 
-        uint256 amountIn = 3100.0005e6;
+        uint256 amountOut = 3100.0005e6;
 
         bytes memory quotePath = getSpotQuotePathSingle(assetOut, assetIn, QUICK_V2, QUICK_V2_FEE_DENOM);
-        uint256 quote = testQuoter.quoteExactOutput(quotePath, amountIn);
+        uint256 quote = testQuoter.quoteExactOutput(quotePath, amountOut);
         assertApproxEqAbs(919125098675979978, quote, 0);
     }
 

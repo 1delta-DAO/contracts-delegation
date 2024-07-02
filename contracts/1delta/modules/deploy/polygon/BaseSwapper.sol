@@ -155,7 +155,7 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
                 switch lt(path.length, 67) // maxLength = 66 for single path
                 case 1 { currentReceiver := receiver}
                 default {
-                    dexId := and(shr(80, calldataload(add(path.offset, 44))), UINT8_MASK)
+                    dexId := and(shr(80, calldataload(add(path.offset, SKIP_LENGTH_UNOSWAP))), UINT8_MASK)
                     switch gt(dexId, 99) 
                     case 1 {
                         currentReceiver := and(
