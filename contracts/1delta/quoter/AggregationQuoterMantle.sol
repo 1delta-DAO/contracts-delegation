@@ -57,9 +57,12 @@ interface ISwapPool {
 contract OneDeltaQuoterMantle is PoolGetter {
     /// @dev Transient storage variable used to check a safety condition in exact output swaps.
     uint256 private amountOutCached;
+    uint256 internal constant UINT16_MASK = 0xffff;
+    uint256 internal constant SCALE_18 = 1e18;
 
     uint256 internal constant CL_PARAM_LENGTH = 43; // token + id + pool + fee
-    uint256 internal constant V2_PARAM_LENGTH = 41; // token + id + pool
+    uint256 internal constant V2_PARAM_LENGTH = CL_PARAM_LENGTH; // token + id + pool
+    uint256 internal constant EXOTIC_PARAM_LENGTH = 41; // token + id + pool
     uint256 internal constant CURVE_PARAM_LENGTH = CL_PARAM_LENGTH; // token + id + pool + idIn + idOut
     uint256 internal constant CURVE_CUSTOM_PARAM_LENGTH = 21; // no pool address provided
 
@@ -528,7 +531,7 @@ contract OneDeltaQuoterMantle is PoolGetter {
             else if (poolId == 49) {
                 assembly {
                     // tokenOut starts at 43th byte for CL
-                    tokenOut := shr(96, calldataload(add(path.offset, 43)))
+                    tokenOut := shr(96, calldataload(add(path.offset, CL_PARAM_LENGTH)))
                 }
                 amountIn = quoteExactInputSingle_iZi(tokenIn, tokenOut, pair, uint128(amountIn));
                 path = path[CL_PARAM_LENGTH:];
@@ -552,11 +555,13 @@ contract OneDeltaQuoterMantle is PoolGetter {
             }
             // v2 types
             else if (poolId < 150) {
+                uint256 feeDenom;
                 assembly {
-                    // tokenOut starts at 41st byte
-                    tokenOut := shr(96, calldataload(add(path.offset, 41)))
+                    // tokenOut starts at 43rd byte
+                    tokenOut := shr(96, calldataload(add(path.offset, CL_PARAM_LENGTH)))
+                    feeDenom := and(UINT16_MASK, shr(80, calldataload(add(path.offset, 21))))
                 }
-                amountIn = getAmountOutUniV2Type(pair, tokenIn, tokenOut, amountIn, poolId);
+                amountIn = getAmountOutUniV2Type(pair, tokenIn, tokenOut, amountIn, feeDenom, poolId);
                 path = path[V2_PARAM_LENGTH:];
             } else if (poolId == 150) {
                 assembly {
@@ -564,21 +569,21 @@ contract OneDeltaQuoterMantle is PoolGetter {
                     tokenOut := shr(96, calldataload(add(path.offset, 41)))
                 }
                 amountIn = quoteWOO(tokenIn, tokenOut, amountIn);
-                path = path[V2_PARAM_LENGTH:];
+                path = path[EXOTIC_PARAM_LENGTH:];
             } else if (poolId == 151) {
                 assembly {
                     // tokenOut starts at 41st byte
                     tokenOut := shr(96, calldataload(add(path.offset, 41)))
                 }
                 amountIn = getLBAmountOut(tokenOut, amountIn, pair);
-                path = path[V2_PARAM_LENGTH:];
+                path = path[EXOTIC_PARAM_LENGTH:];
             } else if (poolId == 152) {
                 assembly {
                     // tokenOut starts at 41st byte
                     tokenOut := shr(96, calldataload(add(path.offset, 41)))
                 }
                 amountIn = quoteKTXExactIn(tokenIn, tokenOut, amountIn);
-                path = path[V2_PARAM_LENGTH:];
+                path = path[EXOTIC_PARAM_LENGTH:];
             } else {
                 revert invalidDexId();
             }
@@ -611,33 +616,35 @@ contract OneDeltaQuoterMantle is PoolGetter {
             if (poolId < 49) {
                 assembly {
                     // tokenIn starts at 43th byte for CL
-                    tokenIn := shr(96, calldataload(add(path.offset, 43)))
+                    tokenIn := shr(96, calldataload(add(path.offset, CL_PARAM_LENGTH)))
                 }
                 amountOut = quoteExactOutputSingleV3(tokenIn, tokenOut, pair, amountOut);
                 path = path[CL_PARAM_LENGTH:];
             } else if (poolId == 49) {
                 assembly {
                     // tokenIn starts at 43th byte for CL
-                    tokenIn := shr(96, calldataload(add(path.offset, 43)))
+                    tokenIn := shr(96, calldataload(add(path.offset, CL_PARAM_LENGTH)))
                 }
                 amountOut = quoteExactOutputSingle_iZi(tokenIn, tokenOut, pair, uint128(amountOut));
                 path = path[CL_PARAM_LENGTH:];
             }
             // v2 types
             else if (poolId < 150) {
+                uint256 feeDenom;
                 assembly {
                     // tokenIn starts at 43th byte for CL
-                    tokenIn := shr(96, calldataload(add(path.offset, 41)))
+                    tokenIn := shr(96, calldataload(add(path.offset, CL_PARAM_LENGTH)))
+                    feeDenom := and(UINT16_MASK, shr(80, calldataload(add(path.offset, 21))))
                 }
-                amountOut = getV2AmountInDirect(pair, tokenIn, tokenOut, amountOut, poolId);
+                amountOut = getV2AmountInDirect(pair, tokenIn, tokenOut, amountOut, feeDenom, poolId);
                 path = path[V2_PARAM_LENGTH:];
             } else if (poolId == 151) {
                 assembly {
-                    // tokenIn starts at 43th byte for CL
+                    // tokenIn starts at 41st byte for CL
                     tokenIn := shr(96, calldataload(add(path.offset, 41)))
                 }
                 amountOut = getLBAmountIn(tokenOut, amountOut, pair);
-                path = path[V2_PARAM_LENGTH:];
+                path = path[EXOTIC_PARAM_LENGTH:];
             } else {
                 revert invalidDexId();
             }
@@ -654,6 +661,7 @@ contract OneDeltaQuoterMantle is PoolGetter {
         address tokenIn, // only used for solidly forks
         address tokenOut,
         uint256 sellAmount,
+        uint256 feeDenom,
         uint256 _pId // to identify the fee
     ) internal view returns (uint256 buyAmount) {
         assembly {
@@ -662,8 +670,8 @@ contract OneDeltaQuoterMantle is PoolGetter {
                 // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
                 // buyAmount = (pairSellAmount * feeAm * buyReserve) /
                 //     (pairSellAmount * feeAm + sellReserve * 1000);
-                switch _pId
-                case 100 {
+                switch lt(_pId, 120)
+                case 1 {
                     // Call pair.getReserves(), store the results at `0xC00`
                     mstore(0xB00, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
                     if iszero(staticcall(gas(), pair, 0xB00, 0x4, 0xC00, 0x40)) {
@@ -687,38 +695,8 @@ contract OneDeltaQuoterMantle is PoolGetter {
                         sellReserve := mload(0xC20)
                         buyReserve := mload(0xC00)
                     }
-                    // fusionX v2 feeAm: 998
-                    let sellAmountWithFee := mul(sellAmount, 998)
-                    buyAmount := div(mul(sellAmountWithFee, buyReserve), add(sellAmountWithFee, mul(sellReserve, 1000)))
-                }
-                // merchant moe
-                case 101 {
-                    // Call pair.getReserves(), store the results at `0xC00`
-                    mstore(0xB00, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
-                    if iszero(staticcall(gas(), pair, 0xB00, 0x4, 0xC00, 0x40)) {
-                        returndatacopy(0, 0, returndatasize())
-                        revert(0, returndatasize())
-                    }
-                    // Revert if the pair contract does not return at least two words.
-                    if lt(returndatasize(), 0x40) {
-                        revert(0, 0)
-                    }
-
-                    let sellReserve
-                    let buyReserve
-                    switch lt(tokenIn, tokenOut)
-                    case 1 {
-                        // Transpose if pair order is different.
-                        sellReserve := mload(0xC00)
-                        buyReserve := mload(0xC20)
-                    }
-                    default {
-                        sellReserve := mload(0xC20)
-                        buyReserve := mload(0xC00)
-                    }
-                    // merchant moe feeAm: 997
-                    let sellAmountWithFee := mul(sellAmount, 997)
-                    buyAmount := div(mul(sellAmountWithFee, buyReserve), add(sellAmountWithFee, mul(sellReserve, 1000)))
+                    let sellAmountWithFee := mul(sellAmount, feeDenom)
+                    buyAmount := div(mul(sellAmountWithFee, buyReserve), add(sellAmountWithFee, mul(sellReserve, 10000)))
                 }
                 // covers solidly: velo volatile, stable and cleo V1 volatile, stable, stratum volatile, stable
                 default {
@@ -845,19 +823,36 @@ contract OneDeltaQuoterMantle is PoolGetter {
         }
     }
 
-    /// @dev calculates the input amount for a UniswapV2 style swap - requires overflow checks
+    /**
+     * Calculates the input amount for a UniswapV2 and Solidly style swap
+     * This function is separate from the swapper because it is needed
+     * in the spot case where we iteratively execute swaps between the
+     * calculation of the amount and the execution of the v2 swap.
+     * Compatible with solidly stable swaps.
+     * We assume that the pair address is already provided.
+     * We split dexIds
+     * -> 100-135: Uniswap V2 / Solidly Volatile
+     * -> 135-150: Solidly Stable
+     * @param pair provided pair address
+     * @param tokenIn input
+     * @param tokenOut output
+     * @param buyAmount output amunt
+     * @param pId DEX identifier
+     * @return x input amount
+     */
     function getV2AmountInDirect(
         address pair,
         address tokenIn, // some DEXs are more efficiently queried directly
         address tokenOut,
         uint256 buyAmount,
+        uint256 feeDenom,
         uint256 pId // poolId
     ) internal view returns (uint256 x) {
         assembly {
             let ptr := mload(0x40)
-            // Call pair.getReserves(), store the results at `free memo`
-            mstore(ptr, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
-            if iszero(staticcall(gas(), pair, ptr, 0x4, ptr, 0x40)) {
+            // Call pair.getReserves(), store the results at `screp space`
+            mstore(0x0, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
+            if iszero(staticcall(gas(), pair, 0x0, 0x4, 0x0, 0x40)) {
                 returndatacopy(0, 0, returndatasize())
                 revert(0, returndatasize())
             }
@@ -868,197 +863,57 @@ contract OneDeltaQuoterMantle is PoolGetter {
 
             // Compute the sell amount based on the pair reserves.
             {
-                switch pId
-                case 100 {
+                switch lt(pId, 135)
+                case 1 {
                     let sellReserve
                     let buyReserve
                     switch lt(tokenIn, tokenOut)
-                    case 1 {
+                    case 0 {
                         // Transpose if pair order is different.
-                        sellReserve := mload(ptr)
-                        buyReserve := mload(add(ptr, 0x20))
+                        sellReserve := mload(0x20)
+                        buyReserve := mload(0x0)
                     }
                     default {
-                        buyReserve := mload(ptr)
-                        sellReserve := mload(add(ptr, 0x20))
-                    }
-                    // revert if insufficient reserves
-                    if lt(buyReserve, buyAmount) {
-                        revert(0, 0)
+                        sellReserve := mload(0x0)
+                        buyReserve := mload(0x20)
                     }
 
                     // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
-                    // x = (reserveIn * amountOut * 1000) /
-                    //     ((reserveOut - amountOut) * feeAm) + 1;
-                    // feeAm is 998 for fusionX
-                    x := add(div(mul(mul(sellReserve, buyAmount), 1000), mul(sub(buyReserve, buyAmount), 998)), 1)
-                }
-                case 101 {
-                    let sellReserve
-                    let buyReserve
-                    switch lt(tokenIn, tokenOut)
-                    case 1 {
-                        // Transpose if pair order is different.
-                        sellReserve := mload(ptr)
-                        buyReserve := mload(add(ptr, 0x20))
-                    }
-                    default {
-                        buyReserve := mload(ptr)
-                        sellReserve := mload(add(ptr, 0x20))
-                    }
-                    // revert if insufficient reserves
-                    if lt(buyReserve, buyAmount) {
-                        revert(0, 0)
-                    }
-
-                    // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
-                    // x = (reserveIn * amountOut * 1000) /
-                    //     ((reserveOut - amountOut) * feeAm) + 1;
-                    // feAm is 997 for Moe
-                    x := add(div(mul(mul(sellReserve, buyAmount), 1000), mul(sub(buyReserve, buyAmount), 997)), 1)
-                }
-                // velocimeter volatile
-                case 121 {
-                    let sellReserve
-                    let buyReserve
-                    switch lt(tokenIn, tokenOut)
-                    case 1 {
-                        // Transpose if pair order is different.
-                        sellReserve := mload(ptr)
-                        buyReserve := mload(add(ptr, 0x20))
-                    }
-                    default {
-                        buyReserve := mload(ptr)
-                        sellReserve := mload(add(ptr, 0x20))
-                    }
-                    // revert if insufficient reserves
-                    if lt(buyReserve, buyAmount) {
-                        revert(0, 0)
-                    }
-                    // fetch the fee from the factory
-                    // selector for getFee(address)
-                    mstore(ptr, 0xb88c914800000000000000000000000000000000000000000000000000000000)
-                    mstore(add(ptr, 0x4), pair)
-                    pop(staticcall(gas(), VELO_FACTORY, ptr, 0x24, ptr, 0x20))
-                    // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
                     // x = (reserveIn * amountOut * 10000) /
                     //     ((reserveOut - amountOut) * feeAm) + 1;
-                    // for Velo volatile, we fetch the fee
                     x := add(
                         div(
                             mul(mul(sellReserve, buyAmount), 10000),
                             mul(
                                 sub(buyReserve, buyAmount),
-                                sub(10000, mload(ptr)) // adjust for Velo fee
+                                feeDenom // adjust for Velo fee
                             )
                         ),
                         1
                     )
                 }
-                // stratum volatile (same as velo, just different addresses)
-                case 125 {
-                    let sellReserve
-                    let buyReserve
-                    switch lt(tokenIn, tokenOut)
-                    case 1 {
-                        // Transpose if pair order is different.
-                        sellReserve := mload(ptr)
-                        buyReserve := mload(add(ptr, 0x20))
-                    }
-                    default {
-                        buyReserve := mload(ptr)
-                        sellReserve := mload(add(ptr, 0x20))
-                    }
-                    // revert if insufficient reserves
-                    if lt(buyReserve, buyAmount) {
-                        revert(0, 0)
-                    }
-                    // fetch the fee from the factory
-                    // selector for getFee(address)
-                    mstore(ptr, 0xb88c914800000000000000000000000000000000000000000000000000000000)
-                    mstore(add(ptr, 0x4), pair)
-                    pop(staticcall(gas(), STRATUM_FACTORY, ptr, 0x24, ptr, 0x20))
-                    // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
-                    // x = (reserveIn * amountOut * 10000) /
-                    //     ((reserveOut - amountOut) * feeAm) + 1;
-                    // for Velo volatile, we fetch the fee
-                    x := add(
-                        div(
-                            mul(mul(sellReserve, buyAmount), 10000),
-                            mul(
-                                sub(buyReserve, buyAmount),
-                                sub(10000, mload(ptr)) // adjust for Velo fee
-                            )
-                        ),
-                        1
-                    )
-                }
-                // cleo volatile
-                case 123 {
-                    let sellReserve
-                    let buyReserve
-                    switch lt(tokenIn, tokenOut)
-                    case 1 {
-                        // Transpose if pair order is different.
-                        sellReserve := mload(ptr)
-                        buyReserve := mload(add(ptr, 0x20))
-                    }
-                    default {
-                        buyReserve := mload(ptr)
-                        sellReserve := mload(add(ptr, 0x20))
-                    }
-                    // revert if insufficient reserves
-                    if lt(buyReserve, buyAmount) {
-                        revert(0, 0)
-                    }
-                    // fetch the fee from the factory
-                    // selector for pairFee(address)
-                    mstore(ptr, 0x841fa66b00000000000000000000000000000000000000000000000000000000)
-                    mstore(add(ptr, 0x4), pair)
-                    pop(staticcall(gas(), CLEO_V1_FACTORY, ptr, 0x24, ptr, 0x20))
-                    let fee := mload(ptr)
-                    // if the fee is zero, it will be overridden by the default ones
-                    if iszero(fee) {
-                        // selector for volatileFee()
-                        mstore(ptr, 0x5084ed0300000000000000000000000000000000000000000000000000000000)
-                        pop(staticcall(gas(), CLEO_V1_FACTORY, ptr, 0x24, ptr, 0x20))
-                        fee := mload(ptr)
-                    }
-                    // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
-                    // x = (reserveIn * amountOut * 10000) /
-                    //     ((reserveOut - amountOut) * feeAm) + 1;
-                    // for Velo volatile, we fetch the fee
-                    x := add(
-                        div(
-                            mul(mul(sellReserve, buyAmount), 10000),
-                            mul(
-                                sub(buyReserve, buyAmount),
-                                sub(10000, fee) // adjust for Cleo fee
-                            )
-                        ),
-                        1
-                    )
-                }
-                // covers solidly forks for stable pools (53, 55, 57)
+                // covers solidly forks for stable pools (>=135)
                 default {
                     let _decimalsIn
+                    let _decimalsOut_xy
                     let y0
                     let _reserveInScaled
-                    let _decimalsOut_xy_fee
+                    // scope for scaled reserves
                     {
-                        {
-                            let ptrPlus4 := add(ptr, 0x4)
-                            // selector for decimals()
-                            mstore(ptr, 0x313ce56700000000000000000000000000000000000000000000000000000000)
-                            pop(staticcall(gas(), tokenIn, ptr, 0x4, ptrPlus4, 0x20))
-                            _decimalsIn := exp(10, mload(ptrPlus4))
-                            pop(staticcall(gas(), tokenOut, ptr, 0x4, ptrPlus4, 0x20))
-                            _decimalsOut_xy_fee := exp(10, mload(ptrPlus4))
-                        }
+                        /////////////////////////////////////////////////////////////
+                        // We fetch the decimals of the tokens to compute the curve
+                        // style logic we do this in the scrap space
+                        /////////////////////////////////////////////////////////////
+                        // selector for decimals()
+                        mstore(0x0, 0x313ce56700000000000000000000000000000000000000000000000000000000)
+                        pop(staticcall(gas(), tokenIn, 0x0, 0x4, 0x4, 0x20))
+                        _decimalsIn := exp(10, mload(0x4))
+                        pop(staticcall(gas(), tokenOut, 0x0, 0x4, 0x4, 0x20))
+                        _decimalsOut_xy := exp(10, mload(0x4))
 
-                        // Call pair.getReserves(), store the results at `free memo`
-                        mstore(ptr, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
-                        if iszero(staticcall(gas(), pair, ptr, 0x4, ptr, 0x40)) {
+                        // Call pair.getReserves(), store the results in scrap space
+                        mstore(0x0, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
+                        if iszero(staticcall(gas(), pair, 0x0, 0x4, 0x0, 0x40)) {
                             returndatacopy(0, 0, returndatasize())
                             revert(0, returndatasize())
                         }
@@ -1070,36 +925,25 @@ contract OneDeltaQuoterMantle is PoolGetter {
                         let _reserveOutScaled
                         switch lt(tokenIn, tokenOut)
                         case 1 {
-                            _reserveInScaled := div(mul(mload(ptr), 1000000000000000000), _decimalsIn)
-                            let reserveOut := mload(add(ptr, 0x20))
-                            // revert if insufficient reserves
-                            if lt(reserveOut, buyAmount) {
-                                revert(0, 0)
-                            }
-                            _reserveOutScaled := div(mul(reserveOut, 1000000000000000000), _decimalsOut_xy_fee)
+                            _reserveInScaled := div(mul(mload(0x0), SCALE_18), _decimalsIn)
+                            _reserveOutScaled := div(mul(mload(0x20), SCALE_18), _decimalsOut_xy)
                         }
                         default {
-                            _reserveInScaled := div(mul(mload(add(ptr, 0x20)), 1000000000000000000), _decimalsIn)
-                            let reserveOut := mload(ptr)
-                            // revert if insufficient reserves
-                            if lt(reserveOut, buyAmount) {
-                                revert(0, 0)
-                            }
-                            _reserveOutScaled := div(mul(reserveOut, 1000000000000000000), _decimalsOut_xy_fee)
+                            _reserveInScaled := div(mul(mload(0x20), SCALE_18), _decimalsIn)
+                            _reserveOutScaled := div(mul(mload(0x0), SCALE_18), _decimalsOut_xy)
                         }
-
-                        y0 := sub(_reserveOutScaled, div(mul(buyAmount, 1000000000000000000), _decimalsOut_xy_fee))
+                        y0 := sub(_reserveOutScaled, div(mul(buyAmount, SCALE_18), _decimalsOut_xy))
                         x := _reserveInScaled
                         // get xy
-                        _decimalsOut_xy_fee := div(
+                        _decimalsOut_xy := div(
                             mul(
-                                div(mul(_reserveInScaled, _reserveOutScaled), 1000000000000000000),
+                                div(mul(_reserveInScaled, _reserveOutScaled), SCALE_18),
                                 add(
-                                    div(mul(_reserveInScaled, _reserveInScaled), 1000000000000000000),
-                                    div(mul(_reserveOutScaled, _reserveOutScaled), 1000000000000000000)
+                                    div(mul(_reserveInScaled, _reserveInScaled), SCALE_18), //
+                                    div(mul(_reserveOutScaled, _reserveOutScaled), SCALE_18)
                                 )
                             ),
-                            1000000000000000000
+                            SCALE_18
                         )
                     }
                     // for-loop for approximation
@@ -1111,18 +955,21 @@ contract OneDeltaQuoterMantle is PoolGetter {
                     } {
                         let x_prev := x
                         let k := add(
-                            div(mul(x, div(mul(div(mul(y0, y0), 1000000000000000000), y0), 1000000000000000000)), 1000000000000000000),
-                            div(mul(y0, div(mul(div(mul(x, x), 1000000000000000000), x), 1000000000000000000)), 1000000000000000000)
+                            div(mul(x, div(mul(div(mul(y0, y0), SCALE_18), y0), SCALE_18)), SCALE_18),
+                            div(mul(y0, div(mul(div(mul(x, x), SCALE_18), x), SCALE_18)), SCALE_18)
                         )
-                        switch lt(k, _decimalsOut_xy_fee)
+                        switch lt(k, _decimalsOut_xy)
                         case 1 {
                             x := add(
                                 x,
                                 div(
-                                    mul(sub(_decimalsOut_xy_fee, k), 1000000000000000000),
+                                    mul(sub(_decimalsOut_xy, k), SCALE_18),
                                     add(
-                                        div(mul(mul(3, y0), div(mul(x, x), 1000000000000000000)), 1000000000000000000),
-                                        div(mul(div(mul(y0, y0), 1000000000000000000), y0), 1000000000000000000)
+                                        div(mul(mul(3, y0), div(mul(x, x), SCALE_18)), SCALE_18),
+                                        div(
+                                            mul(div(mul(y0, y0), SCALE_18), y0), //
+                                            SCALE_18
+                                        )
                                     )
                                 )
                             )
@@ -1131,10 +978,13 @@ contract OneDeltaQuoterMantle is PoolGetter {
                             x := sub(
                                 x,
                                 div(
-                                    mul(sub(k, _decimalsOut_xy_fee), 1000000000000000000),
+                                    mul(sub(k, _decimalsOut_xy), SCALE_18),
                                     add(
-                                        div(mul(mul(3, y0), div(mul(x, x), 1000000000000000000)), 1000000000000000000),
-                                        div(mul(div(mul(y0, y0), 1000000000000000000), y0), 1000000000000000000)
+                                        div(
+                                            mul(mul(3, y0), div(mul(x, x), SCALE_18)), //
+                                            SCALE_18
+                                        ),
+                                        div(mul(div(mul(y0, y0), SCALE_18), y0), SCALE_18)
                                     )
                                 )
                             )
@@ -1152,48 +1002,14 @@ contract OneDeltaQuoterMantle is PoolGetter {
                         }
                         i := add(i, 1)
                     }
-                    // fetch the fee from the factory
-                    switch pId
-                    // cleo stable
-                    case 124 {
-                        // selector for pairFee(address)
-                        mstore(ptr, 0x841fa66b00000000000000000000000000000000000000000000000000000000)
-                        mstore(add(ptr, 0x4), pair)
-                        pop(staticcall(gas(), CLEO_V1_FACTORY, ptr, 0x24, ptr, 0x20))
-                        // store fee in param
-                        _decimalsOut_xy_fee := mload(ptr)
-                        // if the fee is zero, it is overridden by the stableFee default
-                        if iszero(_decimalsOut_xy_fee) {
-                            // selector for stableFee()
-                            mstore(ptr, 0x40bbd77500000000000000000000000000000000000000000000000000000000)
-                            pop(staticcall(gas(), CLEO_V1_FACTORY, ptr, 0x24, ptr, 0x20))
-                            _decimalsOut_xy_fee := mload(ptr)
-                        }
-                    }
-                    // velo stable
-                    case 122 {
-                        // selector for getFee(address)
-                        mstore(ptr, 0xb88c914800000000000000000000000000000000000000000000000000000000)
-                        mstore(add(ptr, 0x4), pair)
-                        pop(staticcall(gas(), VELO_FACTORY, ptr, 0x24, ptr, 0x20))
-                        _decimalsOut_xy_fee := mload(ptr)
-                    }
-                    // Stratum stable
-                    default {
-                        // selector for getFee(address)
-                        mstore(ptr, 0xb88c914800000000000000000000000000000000000000000000000000000000)
-                        mstore(add(ptr, 0x4), pair)
-                        pop(staticcall(gas(), STRATUM_FACTORY, ptr, 0x24, ptr, 0x20))
-                        _decimalsOut_xy_fee := mload(ptr)
-                    }
                     // calculate and adjust the result (reserveInNew - reserveIn) * 10k / (10k - fee)
                     x := add(
                         div(
                             div(
                                 mul(mul(sub(x, _reserveInScaled), _decimalsIn), 10000),
-                                sub(10000, _decimalsOut_xy_fee) // 10000 - fee
+                                feeDenom // 10000 - fee
                             ),
-                            1000000000000000000
+                            SCALE_18
                         ),
                         1 // rounding up
                     )

@@ -68,7 +68,7 @@ contract AccessTests is DeltaSetup {
             amount0,
             amount1,
             brokerProxyAddress,
-            abi.encodePacked(aUSD,uint8(0), CLEO_V1_STABLE, pool, USDC) // the data here makes the `badPool` check pass
+            abi.encodePacked(aUSD,uint8(0), CLEO_V1_STABLE, pool, uint16(0), USDC) // the data here makes the `badPool` check pass
         );
     }
 }

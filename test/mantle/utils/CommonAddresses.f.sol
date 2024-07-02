@@ -1,6 +1,22 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
+interface IFactoryFeeGetter {
+    function getFee(bool x) external view returns (uint256);
+
+    function getPairFee(address y, bool x) external view returns (uint256);
+
+    function stableFee() external view returns (uint256);
+
+    function volatileFee() external view returns (uint256);
+
+    function pairFee(address x) external view returns (uint256);
+
+    function getFee(address x) external view returns (uint256);
+
+    function stable() external view returns (bool);
+}
+
 contract AddressesMantle {
     // assets
 
@@ -18,7 +34,7 @@ contract AddressesMantle {
     address internal mUSD = 0xab575258d37EaA5C8956EfABe71F4eE8F6397cF3;
     address internal USDe = 0x5d3a1Ff2b6BAb83b63cd9AD0787074081a52ef34;
     address internal PUFF = 0x26a6b0dcdCfb981362aFA56D581e4A7dBA3Be140;
-    address internal aUSD = 0xD2B4C9B0d70e3Da1fBDD98f469bD02E77E12FC79; 
+    address internal aUSD = 0xD2B4C9B0d70e3Da1fBDD98f469bD02E77E12FC79;
 
     // users
     address internal testUser = 0xaaaa4a3F69b6DB76889bDfa4edBe1c0BB57BAA5c;
@@ -39,7 +55,7 @@ contract AddressesMantle {
 
     address internal constant MERCHANT_MOE_FACTORY = 0x5bEf015CA9424A7C07B68490616a4C1F094BEdEc;
     address internal constant MERCHANT_MOE_LB_FACTORY = 0xa6630671775c4EA2743840F9A5016dCf2A104054;
-    
+
     address internal constant KTX_VAULT = 0x2e488D7ED78171793FA91fAd5352Be423A50Dae1;
     address internal constant WOO_POOL = 0xEd9e3f98bBed560e66B89AaC922E29D4596A9642;
 
@@ -121,15 +137,47 @@ contract AddressesMantle {
     uint8 internal IZUMI = 49;
     uint8 internal STRATUM_CURVE = 51;
     uint8 internal STRATUM_USD = 50;
-    
+
     uint8 internal FUSION_X_V2 = 100;
     uint8 internal MERCHANT_MOE = 101;
-    uint8 internal CLEO_V1_STABLE = 124;
+    // Solidly STable
+    uint8 internal CLEO_V1_STABLE = 135;
+    uint8 internal STRATUM_STABLE = 136;
+    uint8 internal VELO_STABLE = 137;
+
+    // Solidly Volatile
+    uint8 internal CLEO_V1_VOLAT = 120;
+    uint8 internal STRATUM_VOLAT = 121;
+    uint8 internal VELO_VOLAT = 122;
+
+    uint16 internal FUSION_X_V2_FEE_DENOM = 10000 - 20;
+    uint16 internal MERCHANT_MOE_FEE_DENOM = 10000 - 30;
+    uint16 internal BASE_DENOM = 10000;
+
+    function getV2PairFeeDenom(uint8 fork, address pool) internal view returns (uint16) {
+        if (fork == FUSION_X_V2) return FUSION_X_V2_FEE_DENOM;
+        if (fork == MERCHANT_MOE) return MERCHANT_MOE_FEE_DENOM;
+        if (fork == CLEO_V1_STABLE) {
+            uint16 pairFee = uint16(IFactoryFeeGetter(CLEO_V1_FACOTRY).pairFee(pool));
+            if (pairFee == 0) pairFee = uint16(IFactoryFeeGetter(CLEO_V1_FACOTRY).stableFee());
+            return 10000 - pairFee;
+        }
+        if (fork == CLEO_V1_VOLAT) {
+            uint16 pairFee = uint16(IFactoryFeeGetter(CLEO_V1_FACOTRY).pairFee(pool));
+            if (pairFee == 0) pairFee = uint16(IFactoryFeeGetter(CLEO_V1_FACOTRY).volatileFee());
+            return 10000 - pairFee;
+        }
+        if (fork == VELO_STABLE || fork == VELO_VOLAT) {
+            uint16 pairFee = uint16(IFactoryFeeGetter(VELO_FACOTRY).pairFee(pool));
+            return 10000 - pairFee;
+        }
+        return 0;
+    }
+
+    // exotic
     uint8 internal MERCHANT_MOE_LB = 151;
     uint8 internal WOO_FI = 150;
     uint8 internal KTX = 152;
-    
-
 
     /** TRADE TYPE FLAG GETTERS */
 

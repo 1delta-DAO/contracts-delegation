@@ -8,7 +8,7 @@ import {ComposerUtils, Commands} from "../shared/utils/ComposerUtils.sol";
 
 // interfaces
 import {IFlashAggregator} from "../shared/interfaces/IFlashAggregator.sol";
-import {IFlashLoanReceiver} from "../../contracts/1delta/modules/deploy/mantle/IFlashLoanReceiver.sol";
+import {IFlashLoanReceiver} from "../../contracts/1delta/modules/deploy/polygon/IFlashLoanReceiver.sol";
 import {IManagement} from "../shared/interfaces/IManagement.sol";
 import {ILending} from "../shared/interfaces/ILending.sol";
 import {IInitialize} from "../shared/interfaces/IInitialize.sol";

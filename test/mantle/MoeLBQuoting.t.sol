@@ -106,10 +106,9 @@ contract MoeLBQuotingTest is DeltaSetup {
         uint8 poolId = MERCHANT_MOE_LB;
         address pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenOut, USDT, fee).LBPair;
         bytes memory firstPart = abi.encodePacked(tokenOut, poolId, pool, USDT);
-        fee = DEX_FEE_NONE;
         poolId = MERCHANT_MOE;
         pool = testQuoter._v2TypePairAddress(USDT, tokenIn, poolId);
-        return abi.encodePacked(firstPart, poolId, pool, tokenIn);
+        return abi.encodePacked(firstPart, poolId, pool, MERCHANT_MOE_FEE_DENOM, tokenIn);
     }
 
     function getSpotExactInSinglBroken(address tokenIn, address tokenOut) internal view returns (bytes memory data) {

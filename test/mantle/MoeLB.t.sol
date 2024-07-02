@@ -44,7 +44,6 @@ contract GeneralMoeLBTest is DeltaSetup {
 
         uint256 amountIn = 10.0e6;
 
-
         bytes memory swapPath = getSpotExactInSingleLB(assetIn, assetOut);
         uint256 minimumOut = 10.0e6;
 
@@ -56,7 +55,7 @@ contract GeneralMoeLBTest is DeltaSetup {
         bytes memory data = encodeSwap(
             Commands.SWAP_EXACT_IN,
             user,
-            amountIn, // 
+            amountIn, //
             minimumOut,
             false,
             swapPath
@@ -82,7 +81,6 @@ contract GeneralMoeLBTest is DeltaSetup {
 
         uint256 amountOut = 10.0e6;
 
-
         bytes memory swapPath = getSpotExactOutSingleLB(assetIn, assetOut);
         uint256 maximumIn = 10.0e18;
 
@@ -94,7 +92,7 @@ contract GeneralMoeLBTest is DeltaSetup {
         bytes memory data = encodeSwap(
             Commands.SWAP_EXACT_OUT,
             user,
-            amountOut, // 
+            amountOut, //
             maximumIn,
             false,
             swapPath
@@ -141,7 +139,7 @@ contract GeneralMoeLBTest is DeltaSetup {
         bytes memory data = encodeSwap(
             Commands.SWAP_EXACT_OUT,
             user,
-            amountOut, // 
+            amountOut, //
             maximumIn,
             false,
             swapPath
@@ -188,7 +186,7 @@ contract GeneralMoeLBTest is DeltaSetup {
         bytes memory data = encodeSwap(
             Commands.SWAP_EXACT_OUT,
             user,
-            amountOut, // 
+            amountOut, //
             maximumIn,
             false,
             swapPath
@@ -229,7 +227,7 @@ contract GeneralMoeLBTest is DeltaSetup {
         uint256 balance = IERC20All(collateralAsset).balanceOf(user);
         bytes memory data = encodeFlashSwap(
             Commands.FLASH_SWAP_EXACT_IN,
-            amountToLeverage, // 
+            amountToLeverage, //
             minimumOut,
             false,
             swapPath
@@ -269,7 +267,7 @@ contract GeneralMoeLBTest is DeltaSetup {
         uint256 balance = IERC20All(collateralAsset).balanceOf(user);
         bytes memory data = encodeFlashSwap(
             Commands.FLASH_SWAP_EXACT_OUT,
-            amountToReceive, // 
+            amountToReceive, //
             maximumIn,
             false,
             swapPath
@@ -303,7 +301,6 @@ contract GeneralMoeLBTest is DeltaSetup {
             _borrow(user, borrowAsset, amountToLeverage);
         }
 
-
         bytes memory swapPath = getCloseExactInMultiLB(asset, borrowAsset);
         uint256 amountIn = 1.5e6;
         uint256 minimumOut = 1.48e6; // this one provides a bad swap rate
@@ -317,7 +314,7 @@ contract GeneralMoeLBTest is DeltaSetup {
             Commands.FLASH_SWAP_EXACT_IN,
             amountIn,
             minimumOut,
-            false ,//
+            false, //
             swapPath
         );
         vm.prank(user);
@@ -351,7 +348,7 @@ contract GeneralMoeLBTest is DeltaSetup {
         bytes memory swapPath = getCloseExactOutMultiLB(asset, borrowAsset);
         uint256 amountOut = 1.0e6;
         uint256 amountInMaximum = 1.20e6;
- 
+
         vm.prank(user);
         IERC20All(collateralAsset).approve(brokerProxyAddress, amountInMaximum);
 
@@ -360,12 +357,12 @@ contract GeneralMoeLBTest is DeltaSetup {
 
         bytes memory data = encodeFlashSwap(
             Commands.FLASH_SWAP_EXACT_OUT,
-            amountOut, // 
+            amountOut, //
             amountInMaximum,
             false,
             swapPath
         );
-        
+
         vm.prank(user);
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
 
@@ -384,7 +381,7 @@ contract GeneralMoeLBTest is DeltaSetup {
         (uint8 actionId, uint8 midId, uint8 endId) = getOpenExactInFlags();
         uint8 poolId = MERCHANT_MOE;
         address pool = testQuoter._v2TypePairAddress(USDe, tokenIn, MERCHANT_MOE);
-        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, USDe);
+        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, MERCHANT_MOE_FEE_DENOM, USDe);
         poolId = MERCHANT_MOE_LB;
         pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenOut, USDe, BIN_STEP_LOWEST).LBPair;
         return abi.encodePacked(firstPart, midId, poolId, pool, tokenOut, DEFAULT_LENDER, endId);
@@ -410,13 +407,13 @@ contract GeneralMoeLBTest is DeltaSetup {
         bytes memory firstPart = abi.encodePacked(tokenOut, uint8(0), poolId, pool, USDT);
         poolId = MERCHANT_MOE;
         pool = testQuoter._v2TypePairAddress(USDT, tokenIn, MERCHANT_MOE);
-        return abi.encodePacked(firstPart, uint8(0), poolId, pool, tokenIn);
+        return abi.encodePacked(firstPart, uint8(0), poolId, pool, MERCHANT_MOE_FEE_DENOM, tokenIn);
     }
 
     function getSpotExactOutMultiLBEnd(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint8 poolId = MERCHANT_MOE;
         address pool = testQuoter._v2TypePairAddress(USDT, tokenOut, MERCHANT_MOE);
-        bytes memory firstPart = abi.encodePacked(tokenOut, uint8(0), poolId, pool, USDT);
+        bytes memory firstPart = abi.encodePacked(tokenOut, uint8(0), poolId, pool, MERCHANT_MOE_FEE_DENOM, USDT);
         poolId = MERCHANT_MOE_LB;
         pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenIn, USDT, BIN_STEP_LOWEST).LBPair;
         return abi.encodePacked(firstPart, uint8(0), poolId, pool, tokenIn);
@@ -435,7 +432,7 @@ contract GeneralMoeLBTest is DeltaSetup {
     function getOpenExactOutMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         (uint8 actionId, uint8 midId, uint8 endId) = getOpenExactOutFlags();
         address pool = testQuoter._v2TypePairAddress(USDe, tokenOut, MERCHANT_MOE);
-        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, MERCHANT_MOE, pool, USDe);
+        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, MERCHANT_MOE, pool, MERCHANT_MOE_FEE_DENOM, USDe);
         pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenIn, USDe, BIN_STEP_LOWEST).LBPair;
         return abi.encodePacked(firstPart, midId, MERCHANT_MOE_LB, pool, tokenIn, DEFAULT_LENDER, endId);
     }
@@ -443,7 +440,7 @@ contract GeneralMoeLBTest is DeltaSetup {
     function getCloseExactOutMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         (uint8 actionId, uint8 midId, uint8 endId) = getCloseExactOutFlags();
         address pool = testQuoter._v2TypePairAddress(USDe, tokenOut, MERCHANT_MOE);
-        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, MERCHANT_MOE, pool, USDe);
+        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, MERCHANT_MOE, pool, MERCHANT_MOE_FEE_DENOM, USDe);
         pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenIn, USDe, BIN_STEP_LOWEST).LBPair;
         return abi.encodePacked(firstPart, midId, MERCHANT_MOE_LB, pool, tokenIn, DEFAULT_LENDER, endId);
     }
@@ -451,7 +448,7 @@ contract GeneralMoeLBTest is DeltaSetup {
     function getCloseExactInMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         (uint8 actionId, uint8 midId, uint8 endId) = getCloseExactInFlags();
         address pool = testQuoter._v2TypePairAddress(USDe, tokenIn, MERCHANT_MOE);
-        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, MERCHANT_MOE, pool, USDe);
+        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, MERCHANT_MOE, pool, MERCHANT_MOE_FEE_DENOM, USDe);
         pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenOut, USDe, BIN_STEP_LOWEST).LBPair;
         return abi.encodePacked(firstPart, midId, MERCHANT_MOE_LB, pool, tokenOut, DEFAULT_LENDER, endId);
     }
@@ -462,7 +459,7 @@ contract GeneralMoeLBTest is DeltaSetup {
         deal(asset, user, amount);
         vm.prank(user);
         IERC20All(asset).approve(brokerProxyAddress, amount);
-        bytes memory t = transferIn( asset, brokerProxyAddress, amount);
+        bytes memory t = transferIn(asset, brokerProxyAddress, amount);
         bytes memory d = deposit(asset, user, amount, DEFAULT_LENDER);
         vm.prank(user);
         IFlashAggregator(brokerProxyAddress).deltaCompose(abi.encodePacked(t, d));

@@ -192,7 +192,7 @@ contract ComposedFlashLoanTest is DeltaSetup {
                     dataWithdraw
                 ) //
             );
-
+console.log("bam");
             vm.prank(user);
             uint gas = gasleft();
             IFlashAggregator(brokerProxyAddress).deltaCompose(data);

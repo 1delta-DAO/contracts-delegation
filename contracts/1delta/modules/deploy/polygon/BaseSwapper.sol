@@ -268,7 +268,7 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
                 switch lt(path.length, 67)
                 case 1 { currentReceiver := receiver}
                 default {
-                    dexId := and(shr(80, calldataload(add(path.offset, 42))), UINT8_MASK)
+                    dexId := and(shr(80, calldataload(add(path.offset, SKIP_LENGTH_UNOSWAP))), UINT8_MASK)
                     switch gt(dexId, 99) 
                     case 1 {
                         currentReceiver := and(
@@ -429,7 +429,7 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
     ) internal returns (uint256 amountOut) {
         address currentReceiver;
         assembly {
-            switch lt(path.length, MAX_SINGLE_LENGTH_UNOSWAP)
+            switch lt(path.length, 67)
             case 1 { currentReceiver := receiver}
             default {
                 dexId := and(shr(80, calldataload(add(path.offset, SKIP_LENGTH_UNOSWAP))), UINT8_MASK)

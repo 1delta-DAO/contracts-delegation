@@ -267,7 +267,6 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
             // we define this as token in and later re-assign this to
             // reserve in to prevent stack too deep errors
             let tokenIn_reserveIn := calldataload(path.offset)
-            let pId_pathLength := and(shr(80, tokenIn_reserveIn), UINT8_MASK)
             tokenIn_reserveIn := and(ADDRESS_MASK, shr(96, tokenIn_reserveIn))
 
             // Compute the buy amount based on the pair reserves.
@@ -329,25 +328,25 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                 case 1 {
                     // we store the offset of the bytes calldata in the func call
                     let calldataOffsetStart := add(ptr, 0xA4)
-                    pId_pathLength := path.length
-                    calldatacopy(calldataOffsetStart, path.offset, pId_pathLength)
+                    let pathLength := path.length
+                    calldatacopy(calldataOffsetStart, path.offset, pathLength)
                     // store max amount
-                    mstore(add(calldataOffsetStart, pId_pathLength), shl(128, amountOutMin))
+                    mstore(add(calldataOffsetStart, pathLength), shl(128, amountOutMin))
                     // store amountIn
-                    mstore(add(calldataOffsetStart, add(pId_pathLength, 16)), shl(128, amountIn))
-                    pId_pathLength := add(pId_pathLength, 32)
+                    mstore(add(calldataOffsetStart, add(pathLength, 16)), shl(128, amountIn))
+                    pathLength := add(pathLength, 32)
                     //store amountIn
-                    mstore(add(calldataOffsetStart, pId_pathLength), shl(96, payer))
-                    pId_pathLength := add(pId_pathLength, 20)
+                    mstore(add(calldataOffsetStart, pathLength), shl(96, payer))
+                    pathLength := add(pathLength, 20)
                     // bytes length
-                    mstore(add(ptr, 0x84), pId_pathLength)
+                    mstore(add(ptr, 0x84), pathLength)
                     if iszero(
                         call(
                             gas(),
                             pair,
                             0x0,
                             ptr, // input selector
-                            add(0xA4, pId_pathLength), // input size = 164 (selector (4bytes) plus 5*32bytes)
+                            add(0xA4, pathLength), // input size = 164 (selector (4bytes) plus 5*32bytes)
                             0x0, // output = 0
                             0x0 // output size = 0
                         )
@@ -409,7 +408,6 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
             // we define this as token in and later re-assign this to
             // reserve in to prevent stack too deep errors
             let tokenIn := calldataload(path.offset)
-            let pId_amountWithFee_pathLength := and(shr(80, tokenIn), UINT8_MASK)
             tokenIn := and(ADDRESS_MASK, shr(96, tokenIn))
             // Compute the buy amount based on the pair reserves.
             {

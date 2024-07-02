@@ -346,7 +346,14 @@ contract SwapGen2Test is DeltaSetup {
                 path = abi.encodePacked(path, actions[i - 1], pId, pool, fees[i - 1], tokens[i]);
             } else {
                 address pool = testQuoter._v2TypePairAddress(tokens[i - 1], tokens[i], pId);
-                path = abi.encodePacked(path, actions[i - 1], pId, pool, tokens[i]);
+                path = abi.encodePacked(
+                    path,
+                    actions[i - 1],
+                    pId,
+                    pool,
+                    getV2PairFeeDenom(pId, pool), //
+                    tokens[i]
+                );
             }
         }
         path = abi.encodePacked(path, lenderId, endId);

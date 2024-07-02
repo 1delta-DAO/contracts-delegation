@@ -33,6 +33,13 @@ abstract contract V3TypeSwapper is DeltaErrors {
     uint256 internal constant MAX_UINT256 = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
 
     ////////////////////////////////////////////////////
+    // param lengths
+    ////////////////////////////////////////////////////
+
+    uint256 internal constant MAX_SINGLE_LENGTH_UNOSWAP = 66;
+    uint256 internal constant SKIP_LENGTH_UNOSWAP = 44; // = 20+1+1+20+2
+
+    ////////////////////////////////////////////////////
     // dex references
     ////////////////////////////////////////////////////
 

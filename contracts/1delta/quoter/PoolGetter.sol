@@ -283,7 +283,7 @@ abstract contract PoolGetter {
                 pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
             }
             // Velo Stable
-            case 122 {
+            case 136 {
                 switch lt(tokenA, tokenB)
                 case 0 {
                     mstore(0xB14, tokenA)
@@ -302,7 +302,7 @@ abstract contract PoolGetter {
                 pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
             }
             // Cleo V1 Volatile
-            case 123 {
+            case 120 {
                 switch lt(tokenA, tokenB)
                 case 0 {
                     mstore(0xB14, tokenA)
@@ -321,7 +321,7 @@ abstract contract PoolGetter {
                 pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
             }
             // Cleo V1 Stable
-            case 124 {
+            case 135 {
                 switch lt(tokenA, tokenB)
                 case 0 {
                     mstore(0xB14, tokenA)
@@ -340,7 +340,7 @@ abstract contract PoolGetter {
                 pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
             }
             // Stratum Volatile
-            case 125 {
+            case 122 {
                 switch lt(tokenA, tokenB)
                 case 0 {
                     mstore(0xB14, tokenA)
@@ -358,7 +358,7 @@ abstract contract PoolGetter {
 
                 pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
             }
-            // 126: Stratum Stable
+            // 137: Stratum Stable
             default {
                 switch lt(tokenA, tokenB)
                 case 0 {

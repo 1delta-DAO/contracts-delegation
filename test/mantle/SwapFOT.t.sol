@@ -68,7 +68,7 @@ contract SwapGen2Test is DeltaSetup {
         bytes memory data = encodeSwap(
             Commands.SWAP_EXACT_IN,
             user,
-            amountToSwap, // 
+            amountToSwap, //
             minimumOut,
             false,
             swapPath
@@ -106,18 +106,11 @@ contract SwapGen2Test is DeltaSetup {
         bytes memory data = abi.encodePacked(
             uint8(Commands.SWAP_EXACT_IN),
             user,
-            encodeSwapAmountParamsFOT(
-                amountToSwap,
-                minimumOut,
-                false,
-                true,
-                swapPath.length
-            ),
+            encodeSwapAmountParamsFOT(amountToSwap, minimumOut, false, true, swapPath.length),
             swapPath
         );
         vm.prank(user);
         uint256 gas = gasleft();
-        // IFlashAggregator(brokerProxyAddress).swapExactInSpot(amountToSwap, minimumOut, user, swapPath);
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
@@ -131,18 +124,48 @@ contract SwapGen2Test is DeltaSetup {
     function getSpotExactInBuyFOT(address tokenIn, address mid, address tokenOut) internal view returns (bytes memory data) {
         uint8 poolId = FUSION_X_V2;
         address pool = testQuoter._v2TypePairAddress(tokenIn, mid, poolId);
-        data = abi.encodePacked(tokenIn, uint8(0), poolId, pool, mid);
+        data = abi.encodePacked(
+            tokenIn,
+            uint8(0),
+            poolId,
+            pool,
+            getV2PairFeeDenom(poolId, pool), //
+            mid
+        );
         pool = testQuoter._v2TypePairAddress(tokenOut, mid, poolId);
         poolId = FUSION_X_V2;
-        return abi.encodePacked(data, uint8(0), poolId, pool, tokenOut);
+        return
+            abi.encodePacked(
+                data,
+                uint8(0),
+                poolId,
+                pool,
+                getV2PairFeeDenom(poolId, pool), //
+                tokenOut
+            );
     }
 
-        function getSpotExactInSellFOT(address tokenIn, address mid, address tokenOut) internal view returns (bytes memory data) {
+    function getSpotExactInSellFOT(address tokenIn, address mid, address tokenOut) internal view returns (bytes memory data) {
         uint8 poolId = FUSION_X_V2;
         address pool = testQuoter._v2TypePairAddress(tokenIn, mid, poolId);
-        data = abi.encodePacked(tokenIn, uint8(0), poolId, pool, mid);
+        data = abi.encodePacked(
+            tokenIn,
+            uint8(0),
+            poolId,
+            pool,
+            getV2PairFeeDenom(poolId, pool), //
+            mid
+        );
         poolId = FUSION_X_V2;
         pool = testQuoter._v2TypePairAddress(tokenOut, mid, poolId);
-        return abi.encodePacked(data, uint8(0), poolId, pool, tokenOut);
+        return
+            abi.encodePacked(
+                data,
+                uint8(0),
+                poolId,
+                pool,
+                getV2PairFeeDenom(poolId, pool), //
+                tokenOut
+            );
     }
 }

@@ -55,7 +55,6 @@ interface ISwapPool {
  * Paths have to be encoded as follows: token0 (address) | param0 (uint24) | poolId (uint8) | token1 (address) |
  */
 contract OneDeltaQuoterPolygon is PoolGetterPolygon {
-
     /// @dev Transient storage variable used to check a safety condition in exact output swaps.
     uint256 private amountOutCached;
     uint256 internal constant UINT16_MASK = 0xffff;
@@ -337,7 +336,7 @@ contract OneDeltaQuoterPolygon is PoolGetterPolygon {
                     tokenOut := shr(96, calldataload(add(path.offset, 41)))
                     feeDenom := and(UINT16_MASK, shr(240, calldataload(add(path.offset, 39))))
                 }
-                amountIn = getAmountOutUniV2Type(pair, tokenIn, tokenOut, amountIn, poolId);
+                amountIn = getAmountOutUniV2Type(pair, tokenIn, tokenOut, amountIn, feeDenom, poolId);
                 path = path[V2_PARAM_LENGTH:];
             } else if (poolId == 150) {
                 assembly {
@@ -415,8 +414,9 @@ contract OneDeltaQuoterPolygon is PoolGetterPolygon {
         address pair,
         address tokenIn, // only used for solidly forks
         address tokenOut,
+        uint256 feeDenom,
         uint256 sellAmount,
-        uint256 _pId // to identify the fee
+        uint256  // to identify the fee
     ) internal view returns (uint256 buyAmount) {
         assembly {
             // Compute the buy amount based on the pair reserves.
@@ -424,68 +424,34 @@ contract OneDeltaQuoterPolygon is PoolGetterPolygon {
                 // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
                 // buyAmount = (pairSellAmount * feeAm * buyReserve) /
                 //     (pairSellAmount * feeAm + sellReserve * 1000);
-                switch _pId
-                // polycat
-                case 104 {
-                    // Call pair.getReserves(), store the results at `0xC00`
-                    mstore(0xB00, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
-                    if iszero(staticcall(gas(), pair, 0xB00, 0x4, 0xC00, 0x40)) {
-                        returndatacopy(0, 0, returndatasize())
-                        revert(0, returndatasize())
-                    }
-                    // Revert if the pair contract does not return at least two words.
-                    if lt(returndatasize(), 0x40) {
-                        revert(0, 0)
-                    }
-
-                    let sellReserve
-                    let buyReserve
-                    switch lt(tokenIn, tokenOut)
-                    case 1 {
-                        // Transpose if pair order is different.
-                        sellReserve := mload(0xC00)
-                        buyReserve := mload(0xC20)
-                    }
-                    default {
-                        sellReserve := mload(0xC20)
-                        buyReserve := mload(0xC00)
-                    }
-                    // polycat feeAm: 9976
-                    let sellAmountWithFee := mul(sellAmount, 9976)
-                    buyAmount := div(
-                        mul(sellAmountWithFee, buyReserve),
-                        add(sellAmountWithFee, mul(sellReserve, 10000)) //
-                    )
+                // Call pair.getReserves(), store the results at `0xC00`
+                mstore(0xB00, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
+                if iszero(staticcall(gas(), pair, 0xB00, 0x4, 0xC00, 0x40)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
                 }
-                // uni V2 clone
+                // Revert if the pair contract does not return at least two words.
+                if lt(returndatasize(), 0x40) {
+                    revert(0, 0)
+                }
+
+                let sellReserve
+                let buyReserve
+                switch lt(tokenIn, tokenOut)
+                case 1 {
+                    // Transpose if pair order is different.
+                    sellReserve := mload(0xC00)
+                    buyReserve := mload(0xC20)
+                }
                 default {
-                    // Call pair.getReserves(), store the results at `0xC00`
-                    mstore(0xB00, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
-                    if iszero(staticcall(gas(), pair, 0xB00, 0x4, 0xC00, 0x40)) {
-                        returndatacopy(0, 0, returndatasize())
-                        revert(0, returndatasize())
-                    }
-                    // Revert if the pair contract does not return at least two words.
-                    if lt(returndatasize(), 0x40) {
-                        revert(0, 0)
-                    }
-
-                    let sellReserve
-                    let buyReserve
-                    switch lt(tokenIn, tokenOut)
-                    case 1 {
-                        // Transpose if pair order is different.
-                        sellReserve := mload(0xC00)
-                        buyReserve := mload(0xC20)
-                    }
-                    default {
-                        sellReserve := mload(0xC20)
-                        buyReserve := mload(0xC00)
-                    }
-                    // merchant moe feeAm: 997
-                    let sellAmountWithFee := mul(sellAmount, 997)
-                    buyAmount := div(mul(sellAmountWithFee, buyReserve), add(sellAmountWithFee, mul(sellReserve, 1000)))
+                    sellReserve := mload(0xC20)
+                    buyReserve := mload(0xC00)
                 }
+                let sellAmountWithFee := mul(sellAmount, feeDenom)
+                buyAmount := div(
+                    mul(sellAmountWithFee, buyReserve),
+                    add(sellAmountWithFee, mul(sellReserve, 10000)) //
+                )
             }
         }
     }

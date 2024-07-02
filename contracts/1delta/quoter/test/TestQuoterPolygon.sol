@@ -28,24 +28,6 @@ contract TestQuoterPolygon is OneDeltaQuoterPolygon {
         return super.v2TypePairAddress(tokenA, tokenB, _pId);
     }
 
-    /// @dev calculate amountOut for uniV2 style pools - does not require overflow checks
-    function _getAmountOutUniV2Type(
-        address pair,
-        address tokenIn, // only used for solidly forks
-        address tokenOut,
-        uint256 sellAmount,
-        uint256 _pId // to identify the fee
-    ) public view returns (uint256 buyAmount) {
-        return
-            super.getAmountOutUniV2Type(
-                pair,
-                tokenIn, // only used for solidly forks
-                tokenOut,
-                sellAmount,
-                _pId // to identify the fee
-            );
-    }
-
     function _quoteWOO(address tokenIn, address tokenOut, uint256 amountIn) public view returns (uint256 amountOut) {
         return super.quoteWOO(tokenIn, tokenOut, amountIn);
     }

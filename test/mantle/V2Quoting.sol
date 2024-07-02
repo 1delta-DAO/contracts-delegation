@@ -70,15 +70,22 @@ contract IzumiQuotingTest is DeltaSetup {
 
         deal(assetIn, user, 1e30);
 
-        uint256 amountIn = 1.0005e18;
+        uint256 amountOut = 1.0005e18;
 
         bytes memory quotePath = getSpotQuotePathSingle(assetOut, assetIn, CLEO_V1_STABLE);
-        uint256 quote = testQuoter.quoteExactOutput(quotePath, amountIn);
+        uint256 quote = testQuoter.quoteExactOutput(quotePath, amountOut);
         assertApproxEqAbs(1001091, quote, 0);
     }
 
     function getSpotQuotePathSingle(address tokenIn, address tokenOut, uint8 poolId) internal view returns (bytes memory data) {
         address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
-        return abi.encodePacked(tokenIn, poolId, pool, tokenOut);
+        return
+            abi.encodePacked(
+                tokenIn,
+                poolId,
+                pool,
+                getV2PairFeeDenom(poolId, pool), //
+                tokenOut
+            );
     }
 }

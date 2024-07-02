@@ -127,13 +127,13 @@ contract IzumiQuotingTest is DeltaSetup {
         data = abi.encodePacked(tokenIn, poolId, pool, fee, mid);
         poolId = MERCHANT_MOE;
         pool = testQuoter._v2TypePairAddress(mid, tokenOut, poolId);
-        data = abi.encodePacked(data, poolId, pool, tokenOut);
+        data = abi.encodePacked(data, poolId, pool, MERCHANT_MOE_FEE_DENOM, tokenOut);
     }
 
     function getSpotQuotePathDoubleReverse(address tokenIn, address mid, address tokenOut) internal view returns (bytes memory data) {
         uint8 poolId = MERCHANT_MOE;
         address pool = testQuoter._v2TypePairAddress(mid, tokenOut, poolId);
-        data = abi.encodePacked(tokenIn, poolId, pool, mid);
+        data = abi.encodePacked(tokenIn, poolId, pool, MERCHANT_MOE_FEE_DENOM, mid);
         poolId = IZUMI;
         uint16 fee = DEX_FEE_LOW;
         pool = testQuoter._getiZiPool(tokenIn, mid, fee);

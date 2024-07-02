@@ -27,7 +27,7 @@ contract SwapGen2Test is DeltaSetup {
         bytes memory data = encodeSwap(
             Commands.SWAP_EXACT_IN,
             user,
-            amountToSwap, // 
+            amountToSwap, //
             minimumOut,
             false,
             swapPath
@@ -64,7 +64,7 @@ contract SwapGen2Test is DeltaSetup {
         bytes memory data = encodeSwap(
             Commands.SWAP_EXACT_IN,
             user,
-            amountToSwap, // 
+            amountToSwap, //
             minimumOut,
             false,
             swapPath
@@ -101,7 +101,7 @@ contract SwapGen2Test is DeltaSetup {
         bytes memory data = encodeSwap(
             Commands.SWAP_EXACT_OUT,
             user,
-            amountToReceive, // 
+            amountToReceive, //
             maximumIn,
             false,
             swapPath
@@ -138,7 +138,7 @@ contract SwapGen2Test is DeltaSetup {
         bytes memory data = encodeSwap(
             Commands.SWAP_EXACT_OUT,
             user,
-            amountToReceive, // 
+            amountToReceive, //
             maximumIn,
             false,
             swapPath
@@ -166,6 +166,7 @@ contract SwapGen2Test is DeltaSetup {
         uint256 amountToSwap = 2000.0e6;
 
         bytes memory swapPath = getSpotExactInSingleGen2Solidly(assetFrom, assetTo);
+        console.log("ts");
         uint256 minimumOut = 1900.0e18;
         vm.prank(user);
         IERC20All(assetFrom).approve(brokerProxyAddress, amountToSwap);
@@ -175,7 +176,7 @@ contract SwapGen2Test is DeltaSetup {
         bytes memory data = encodeSwap(
             Commands.SWAP_EXACT_IN,
             user,
-            amountToSwap, // 
+            amountToSwap, //
             minimumOut,
             false,
             swapPath
@@ -212,7 +213,7 @@ contract SwapGen2Test is DeltaSetup {
         bytes memory data = encodeSwap(
             Commands.SWAP_EXACT_OUT,
             user,
-            amountToReceive, // 
+            amountToReceive, //
             maximumIn,
             false,
             swapPath
@@ -248,7 +249,7 @@ contract SwapGen2Test is DeltaSetup {
         bytes memory data = encodeSwap(
             Commands.SWAP_EXACT_OUT,
             user,
-            amountToReceive, // 
+            amountToReceive, //
             maximumIn,
             false,
             swapPath
@@ -284,7 +285,7 @@ contract SwapGen2Test is DeltaSetup {
         bytes memory data = encodeSwap(
             Commands.SWAP_EXACT_OUT,
             user,
-            amountToReceive, // 
+            amountToReceive, //
             maximumIn,
             false,
             swapPath
@@ -321,7 +322,7 @@ contract SwapGen2Test is DeltaSetup {
         bytes memory data = encodeSwap(
             Commands.SWAP_EXACT_IN,
             user,
-            amountToSwap, // 
+            amountToSwap, //
             minimumOut,
             false,
             swapPath
@@ -360,7 +361,7 @@ contract SwapGen2Test is DeltaSetup {
         bytes memory data = encodeSwap(
             Commands.SWAP_EXACT_IN,
             user,
-            amountToSwap, // 
+            amountToSwap, //
             minimumOut,
             false,
             swapPath
@@ -386,7 +387,7 @@ contract SwapGen2Test is DeltaSetup {
         uint256 amountToSwap = 1.0e6;
 
         (address assetFrom, address assetTo, bytes memory swapPath) = getPathAndTokensMixedExotic();
-
+console.log("path");
         deal(assetFrom, user, 1.0e20);
 
         uint256 minimumOut = 0.9e6;
@@ -399,7 +400,7 @@ contract SwapGen2Test is DeltaSetup {
         bytes memory data = encodeSwap(
             Commands.SWAP_EXACT_IN,
             user,
-            amountToSwap, // 
+            amountToSwap, //
             minimumOut,
             false,
             swapPath
@@ -439,7 +440,7 @@ contract SwapGen2Test is DeltaSetup {
         bytes memory data = encodeSwap(
             Commands.SWAP_EXACT_IN,
             user,
-            amountToSwap, // 
+            amountToSwap, //
             minimumOut,
             false,
             swapPath
@@ -464,7 +465,6 @@ contract SwapGen2Test is DeltaSetup {
         uint256 amountToSwap = 200.0e6;
         deal(assetFrom, user, amountToSwap);
 
-
         bytes memory swapPath = getSpotExactInSingleGen2V2(assetFrom, assetTo);
         uint256 minimumOut = 10.0e6;
 
@@ -476,7 +476,7 @@ contract SwapGen2Test is DeltaSetup {
         bytes memory data = encodeSwap(
             Commands.SWAP_EXACT_IN,
             user,
-            0, // all 
+            0, // all
             minimumOut,
             false,
             swapPath
@@ -492,7 +492,6 @@ contract SwapGen2Test is DeltaSetup {
         assertApproxEqAbs(198751420, balanceOut, 1);
     }
 
-
     function getSpotExactInSingleGen2(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_STABLES);
         uint8 poolId = AGNI;
@@ -503,7 +502,15 @@ contract SwapGen2Test is DeltaSetup {
     function getSpotExactInSingleGen2FusionX(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint8 poolId = FUSION_X_V2;
         address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
-        return abi.encodePacked(tokenIn, uint8(0), poolId, pool, tokenOut);
+        return
+            abi.encodePacked(
+                tokenIn,
+                uint8(0),
+                poolId,
+                pool,
+                getV2PairFeeDenom(poolId, pool), //
+                tokenOut
+            );
     }
 
     function getSpotExactOutSingleGen2(address tokenOut, address tokenIn) internal view returns (bytes memory data) {
@@ -516,13 +523,29 @@ contract SwapGen2Test is DeltaSetup {
     function getSpotExactOutSingleSolidlyGen2(address tokenOut, address tokenIn) internal view returns (bytes memory data) {
         uint8 poolId = CLEO_V1_STABLE;
         address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
-        return abi.encodePacked(tokenIn, uint8(0), poolId, pool, tokenOut);
+        return
+            abi.encodePacked(
+                tokenIn,
+                uint8(0),
+                poolId,
+                pool,
+                getV2PairFeeDenom(poolId, pool), //
+                tokenOut
+            );
     }
 
     function getSpotExactOutSingleV2Gen2(address tokenOut, address tokenIn) internal view returns (bytes memory data) {
         uint8 poolId = MERCHANT_MOE;
         address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
-        return abi.encodePacked(tokenIn, uint8(0), poolId, pool, tokenOut);
+        return
+            abi.encodePacked(
+                tokenIn,
+                uint8(0),
+                poolId,
+                pool,
+                getV2PairFeeDenom(poolId, pool), //
+                tokenOut
+            );
     }
 
     function getPathDataV3()
@@ -681,7 +704,14 @@ contract SwapGen2Test is DeltaSetup {
                 path = abi.encodePacked(path, actions[i - 1], pId, KTX_VAULT, tokens[i]);
             } else {
                 address pool = testQuoter._v2TypePairAddress(tokens[i - 1], tokens[i], pId);
-                path = abi.encodePacked(path, actions[i - 1], pId, pool, tokens[i]);
+                path = abi.encodePacked(
+                    path,
+                    actions[i - 1],
+                    pId,
+                    pool,
+                    getV2PairFeeDenom(pId, pool), //
+                    tokens[i]
+                );
             }
         }
     }
@@ -734,12 +764,20 @@ contract SwapGen2Test is DeltaSetup {
     function getSpotExactInSingleGen2V2(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint8 poolId = MERCHANT_MOE;
         address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
-        return abi.encodePacked(tokenIn, uint8(0), poolId, pool, tokenOut);
+        return abi.encodePacked(tokenIn, uint8(0), poolId, pool, MERCHANT_MOE_FEE_DENOM, tokenOut);
     }
 
     function getSpotExactInSingleGen2Solidly(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint8 poolId = CLEO_V1_STABLE;
         address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
-        return abi.encodePacked(tokenIn, uint8(0), poolId, pool, tokenOut);
+        return
+            abi.encodePacked(
+                tokenIn,
+                uint8(0),
+                poolId,
+                pool,
+                getV2PairFeeDenom(poolId, pool), //
+                tokenOut
+            );
     }
 }

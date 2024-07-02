@@ -377,7 +377,7 @@ contract FlashSwapExacInTest is DeltaSetup {
 
     function getSpotExactInMoeQuoter(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, MERCHANT_MOE);
-        return abi.encodePacked(tokenIn, MERCHANT_MOE, pool, tokenOut);
+        return abi.encodePacked(tokenIn, MERCHANT_MOE, pool, MERCHANT_MOE_FEE_DENOM, tokenOut);
     }
 
     function getSpotExactInSingleStratumMETHQuoter(address token) internal view returns (bytes memory data) {
@@ -400,7 +400,7 @@ contract FlashSwapExacInTest is DeltaSetup {
                 STRATUM_CURVE,
                 abi.encodePacked(STRATUM_ETH_POOL, getTokenIdEth(METH), getTokenIdEth(token)),
                 token,
-                abi.encodePacked(ZERO_8, MERCHANT_MOE, pool, METH)
+                abi.encodePacked(ZERO_8, MERCHANT_MOE, pool, MERCHANT_MOE_FEE_DENOM, METH)
             );
     }
 
@@ -431,7 +431,7 @@ contract FlashSwapExacInTest is DeltaSetup {
     function getSpotExactInMoe(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint8 poolId = MERCHANT_MOE;
         address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
-        return abi.encodePacked(tokenIn, ZERO_8, poolId, pool, tokenOut);
+        return abi.encodePacked(tokenIn, ZERO_8, poolId, pool, MERCHANT_MOE_FEE_DENOM, tokenOut);
     }
 
     function getSpotExactInDoubleStratumMETHQuoterWithV2(address token) internal view returns (bytes memory data) {
@@ -451,7 +451,7 @@ contract FlashSwapExacInTest is DeltaSetup {
                 STRATUM_CURVE,
                 abi.encodePacked(STRATUM_ETH_POOL, getTokenIdEth(METH), getTokenIdEth(token)),
                 token,
-                abi.encodePacked(MERCHANT_MOE, testQuoter._v2TypePairAddress(token, METH, MERCHANT_MOE), METH)
+                abi.encodePacked(MERCHANT_MOE, testQuoter._v2TypePairAddress(token, METH, MERCHANT_MOE), MERCHANT_MOE_FEE_DENOM, METH)
             );
     }
 

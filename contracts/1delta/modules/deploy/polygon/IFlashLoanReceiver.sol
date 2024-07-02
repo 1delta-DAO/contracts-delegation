@@ -8,31 +8,28 @@ pragma solidity ^0.8.26;
  * @dev implement this interface to develop a flashloan-compatible flashLoanReceiver contract
  **/
 interface IFlashLoanReceiver {
+    /**
+     * @dev When `flashLoanSimple` is called on the the Aave pool, it invokes the `executeOperation` hook on the recipient.
+     *  We assume that the flash loan fee and params have been pre-computed
+     *  We never expect more than one token to be flashed
+     *  We assume that the asset loaned is already infinite-approved (this->flashPool)
+     */
     function executeOperation(
-        address[] calldata assets,
-        uint256[] calldata amounts,
-        uint256[] calldata premiums,
+        address,
+        uint256,
+        uint256,
         address initiator,
-        bytes calldata params
+        bytes calldata params // user params
     ) external returns (bool);
 
-    struct DeltaParams {
-        address baseAsset; // the asset paired with the flash loan
-        address target; // the swap target
-        uint8 marginTradeType; // trade type determining the lending actions
-        // 0 = Margin open
-        // 1 = margin close
-        // 2 = collateral / open
-        // 3 = debt / close
-        uint8 interestRateModeIn; // aave interest mode
-        uint8 interestRateModeOut; // aave interest mode
-        bool withdrawMax; // a flag that indicates that the entire balance is withdrawn
-    }
-
-    function executeOnLendle(
-        address asset,
-        uint256 amount,
-        DeltaParams calldata deltaParams, // params are kept separate
-        bytes calldata swapCalldata
-    ) external payable;
+    /**
+     * @dev Balancer flash loan call
+     * Gated via flash loan gateway flag to prevent calls from sources other than this contract
+     */
+    function receiveFlashLoan(
+        address[] calldata,
+        uint256[] calldata,
+        uint256[] calldata,
+        bytes calldata params //
+    ) external;
 }
