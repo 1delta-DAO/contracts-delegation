@@ -480,7 +480,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             let firstWord := calldataload(data.offset)
             let pId := and(UINT8_MASK, shr(88, firstWord)) 
             tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
-            tokenOut := and(ADDRESS_MASK, shr(96, calldataload(add(data.offset, SKIP_LENGTH_UNOSWAP))))
+            tokenOut := and(ADDRESS_MASK, calldataload(add(data.offset, 32)))
             let ptr := mload(0x40)
             switch lt(tokenIn, tokenOut)
             case 0 {
@@ -529,8 +529,14 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 mstore(add(ptr, 0x15), salt)
                 mstore(add(ptr, 0x35), CODE_HASH_COMETH)
             }
+            case 107 {
+                mstore(ptr, WAULTSWAP_FF_FACTORY)
+                mstore(add(ptr, 0x15), salt)
+                mstore(add(ptr, 0x35), CODE_HASH_WAULTSWAP)
+            }
             default {
-                revert(0, 0)
+                mstore(0x0, BAD_POOL)
+                revert(0x0, 0x4)
             }
             // verify that the caller is a v2 type pool
             if xor(and(ADDRESS_MASK, keccak256(ptr, 0x55)), caller()) {
@@ -540,6 +546,84 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // revert if sender param is not this address
             // this occurs if someone sends valid
             // calldata with this contract as recipient
+            if xor(sender, address()) { 
+                mstore(0, INVALID_CALLER)
+                revert (0, 0x4)
+            }
+        }
+        _v2StyleCallback(amount0, amount1, tokenIn, tokenOut, data);
+    }
+
+    // The uniswapV2 style callback for solidly forks
+    function hook(
+        address sender,
+        uint256 amount0,
+        uint256 amount1,
+        bytes calldata data
+    ) external {
+        uint256 tradeId;
+        address tokenIn;
+        address tokenOut;
+        // the fee parameter in the path can be ignored for validating a V2 pool
+        assembly {
+            // fetch tokens
+            let firstWord := calldataload(data.offset)
+            tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
+            let dexId := and(shr(80, firstWord), UINT8_MASK) // swap pool dexId
+            tradeId := and(shr(88, firstWord), UINT8_MASK) // interaction dexId
+            tokenOut := and(ADDRESS_MASK, calldataload(add(data.offset, 32)))
+            let ptr := mload(0x40)
+            let pair
+            switch dexId
+            // Dystopia Volatile
+            case 120 {
+                switch lt(tokenIn, tokenOut)
+                case 0 {
+                    mstore(add(ptr, 0x14), tokenIn)
+                    mstore(ptr, tokenOut)
+                }
+                default {
+                    mstore(add(ptr, 0x14), tokenOut)
+                    mstore(ptr, tokenIn)
+                }
+                mstore8(add(ptr, 0x34), 0)
+                let salt := keccak256(add(ptr, 0x0C), 0x29)
+                mstore(ptr, DYSTOPIA_FF_FACTORY)
+                mstore(add(ptr, 0x15), salt)
+                mstore(add(ptr, 0x35), CODE_HASH_DYSTOPIA)
+
+                pair := and(ADDRESS_MASK, keccak256(ptr, 0x55))
+            }
+            // Dystopia Stable
+            case 135 {
+                switch lt(tokenIn, tokenOut)
+                case 0 {
+                    mstore(add(ptr, 0x14), tokenIn)
+                    mstore(ptr, tokenOut)
+                }
+                default {
+                    mstore(add(ptr, 0x14), tokenOut)
+                    mstore(ptr, tokenIn)
+                }
+                mstore8(add(ptr, 0x34), 1)
+                let salt := keccak256(add(ptr, 0x0C), 0x29)
+                mstore(ptr, DYSTOPIA_FF_FACTORY)
+                mstore(add(ptr, 0x15), salt)
+                mstore(add(ptr, 0x35), CODE_HASH_DYSTOPIA)
+
+                pair := and(ADDRESS_MASK, keccak256(ptr, 0x55))
+            }
+            default {
+                mstore(0x0, BAD_POOL)
+                revert(0x0, 0x4)
+            }
+
+            // verify that the caller is a v2 type pool
+            if xor(pair, caller()) {
+                mstore(0x0, BAD_POOL)
+                revert(0x0, 0x4)
+            }
+            // revert if sender param is not this address
             if xor(sender, address()) { 
                 mstore(0, INVALID_CALLER)
                 revert (0, 0x4)

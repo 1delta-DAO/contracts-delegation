@@ -63,6 +63,9 @@ abstract contract PoolGetterPolygon {
     bytes32 internal constant APESWAP_FF_FACTORY = 0xffCf083Be4164828f00cAE704EC15a36D7114912840000000000000000000000;
     bytes32 internal constant CODE_HASH_APESWAP = 0x511f0f358fe530cda0859ec20becf391718fdf5a329be02f4c95361f3d6a42d8;
 
+    bytes32 internal constant WAULTSWAP_FF_FACTORY = 0xffa98ea6356A316b44Bf710D5f9b6b4eA0081409Ef0000000000000000000000;
+    bytes32 internal constant CODE_HASH_WAULTSWAP = 0x1cdc2246d318ab84d8bc7ae2a3d81c235f3db4e113f4c6fdc1e2211a9291be47;
+
     /// @dev Returns the pool for the given token pair and fee.
     /// The pool contract may or may not exist.
     function v3TypePool(address tokenA, address tokenB, uint24 fee, uint256 _pId) internal pure returns (address pool) {

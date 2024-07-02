@@ -45,6 +45,12 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
     bytes32 internal constant COMETH_FF_FACTORY = 0xff800b052609c355cA8103E06F022aA30647eAd60a0000000000000000000000;
     bytes32 internal constant CODE_HASH_COMETH = 0x499154cad90a3563f914a25c3710ed01b9a43b8471a35ba8a66a056f37638542;
 
+    bytes32 internal constant WAULTSWAP_FF_FACTORY = 0xffa98ea6356A316b44Bf710D5f9b6b4eA0081409Ef0000000000000000000000;
+    bytes32 internal constant CODE_HASH_WAULTSWAP = 0x1cdc2246d318ab84d8bc7ae2a3d81c235f3db4e113f4c6fdc1e2211a9291be47;
+
+    bytes32 internal constant DYSTOPIA_FF_FACTORY = 0xff1d21Db6cde1b18c7E47B0F7F42f4b3F68b9beeC90000000000000000000000;
+    bytes32 internal constant CODE_HASH_DYSTOPIA = 0x009bce6d7eb00d3d075e5bd9851068137f44bba159f1cde806a268e20baaf2e8;
+
     constructor() {}
 
     /**
@@ -201,7 +207,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
         address tokenOut,
         uint256 buyAmount,
         uint256 feeDenom,
-        uint256 // poolId unused on Polygon for now
+        uint256 pId // poolId is used to identify solidly stable
     ) internal view returns (uint256 x) {
         assembly {
             let ptr := mload(0x40)
@@ -217,31 +223,159 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
             }
 
             // Compute the sell amount based on the pair reserves.
-            let sellReserve
-            let buyReserve
-            switch lt(tokenIn, tokenOut)
-            case 0 {
-                // Transpose if pair order is different.
-                sellReserve := mload(0x20)
-                buyReserve := mload(0x0)
-            }
-            default {
-                sellReserve := mload(0x0)
-                buyReserve := mload(0x20)
-            }
-            // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
-            // x = (reserveIn * amountOut * 10000) /
-            //     ((reserveOut - amountOut) * feeAm) + 1;
-            x := add(
-                div(
-                    mul(mul(sellReserve, buyAmount), 10000),
-                    mul(
-                        sub(buyReserve, buyAmount),
-                        feeDenom // 
+            {
+                switch lt(pId, 135)
+                case 1 {
+                    let sellReserve
+                    let buyReserve
+                    switch lt(tokenIn, tokenOut)
+                    case 0 {
+                        // Transpose if pair order is different.
+                        sellReserve := mload(0x20)
+                        buyReserve := mload(0x0)
+                    }
+                    default {
+                        sellReserve := mload(0x0)
+                        buyReserve := mload(0x20)
+                    }
+
+                    // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
+                    // x = (reserveIn * amountOut * 10000) /
+                    //     ((reserveOut - amountOut) * feeAm) + 1;
+                    x := add(
+                        div(
+                            mul(mul(sellReserve, buyAmount), 10000),
+                            mul(
+                                sub(buyReserve, buyAmount),
+                                feeDenom // adjust for Velo fee
+                            )
+                        ),
+                        1
                     )
-                ),
-                1
-            )
+                }
+                // covers solidly forks for stable pools (>=135)
+                default {
+                    let _decimalsIn
+                    let _decimalsOut_xy_fee
+                    let y0
+                    let _reserveInScaled
+                    // scope for scaled reserves
+                    {
+                        /////////////////////////////////////////////////////////////
+                        // We fetch the decimals of the tokens to compute the curve
+                        // style logic we do this in the scrap space
+                        /////////////////////////////////////////////////////////////
+                        // selector for decimals()
+                        mstore(0x0, 0x313ce56700000000000000000000000000000000000000000000000000000000)
+                        pop(staticcall(gas(), tokenIn, 0x0, 0x4, 0x4, 0x20))
+                        _decimalsIn := exp(10, mload(0x4))
+                        pop(staticcall(gas(), tokenOut, 0x0, 0x4, 0x4, 0x20))
+                        _decimalsOut_xy_fee := exp(10, mload(0x4))
+
+                        // Call pair.getReserves(), store the results in scrap space
+                        mstore(0x0, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
+                        if iszero(staticcall(gas(), pair, 0x0, 0x4, 0x0, 0x40)) {
+                            returndatacopy(0, 0, returndatasize())
+                            revert(0, returndatasize())
+                        }
+                        // Revert if the pair contract does not return at least two words.
+                        if lt(returndatasize(), 0x40) {
+                            revert(0, 0)
+                        }
+                        // assign reserves to in/out
+                        let _reserveOutScaled
+                        switch lt(tokenIn, tokenOut)
+                        case 1 {
+                            _reserveInScaled := div(mul(mload(0x0), SCALE_18), _decimalsIn)
+                            _reserveOutScaled := div(mul(mload(0x20), SCALE_18), _decimalsOut_xy_fee)
+                        }
+                        default {
+                            _reserveInScaled := div(mul(mload(0x20), SCALE_18), _decimalsIn)
+                            _reserveOutScaled := div(mul(mload(0x0), SCALE_18), _decimalsOut_xy_fee)
+                        }
+                        y0 := sub(_reserveOutScaled, div(mul(buyAmount, SCALE_18), _decimalsOut_xy_fee))
+                        x := _reserveInScaled
+                        // get xy
+                        _decimalsOut_xy_fee := div(
+                            mul(
+                                div(mul(_reserveInScaled, _reserveOutScaled), SCALE_18),
+                                add(
+                                    div(mul(_reserveInScaled, _reserveInScaled), SCALE_18), //
+                                    div(mul(_reserveOutScaled, _reserveOutScaled), SCALE_18)
+                                )
+                            ),
+                            SCALE_18
+                        )
+                    }
+                    // for-loop for approximation
+                    let i := 0
+                    for {
+
+                    } lt(i, 255) {
+
+                    } {
+                        let x_prev := x
+                        let k := add(
+                            div(mul(x, div(mul(div(mul(y0, y0), SCALE_18), y0), SCALE_18)), SCALE_18),
+                            div(mul(y0, div(mul(div(mul(x, x), SCALE_18), x), SCALE_18)), SCALE_18)
+                        )
+                        switch lt(k, _decimalsOut_xy_fee)
+                        case 1 {
+                            x := add(
+                                x,
+                                div(
+                                    mul(sub(_decimalsOut_xy_fee, k), SCALE_18),
+                                    add(
+                                        div(mul(mul(3, y0), div(mul(x, x), SCALE_18)), SCALE_18),
+                                        div(
+                                            mul(div(mul(y0, y0), SCALE_18), y0), //
+                                            SCALE_18
+                                        )
+                                    )
+                                )
+                            )
+                        }
+                        default {
+                            x := sub(
+                                x,
+                                div(
+                                    mul(sub(k, _decimalsOut_xy_fee), SCALE_18),
+                                    add(
+                                        div(
+                                            mul(mul(3, y0), div(mul(x, x), SCALE_18)), //
+                                            SCALE_18
+                                        ),
+                                        div(mul(div(mul(y0, y0), SCALE_18), y0), SCALE_18)
+                                    )
+                                )
+                            )
+                        }
+                        switch gt(x, x_prev)
+                        case 1 {
+                            if lt(sub(x, x_prev), 2) {
+                                break
+                            }
+                        }
+                        default {
+                            if lt(sub(x_prev, x), 2) {
+                                break
+                            }
+                        }
+                        i := add(i, 1)
+                    }
+                    // calculate and adjust the result (reserveInNew - reserveIn) * 10k / (10k - fee)
+                    x := add(
+                        div(
+                            div(
+                                mul(mul(sub(x, _reserveInScaled), _decimalsIn), 10000),
+                                feeDenom // 10000 - fee
+                            ),
+                            SCALE_18
+                        ),
+                        1 // rounding up
+                    )
+                }
+            }
         }
     }
 
@@ -274,41 +408,60 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
             // we define this as token in and later re-assign this to
             // reserve in to prevent stack too deep errors
             let tokenIn_reserveIn := calldataload(path.offset)
-            tokenIn_reserveIn := and(ADDRESS_MASK, shr(96, tokenIn_reserveIn))
+
+            let pId := and(shr(80, tokenIn_reserveIn), UINT8_MASK)
+            tokenIn_reserveIn := and(ADDRESS_MASK, shr(96, calldataload(path.offset)))
 
             // Compute the buy amount based on the pair reserves.
             {
                 let zeroForOne := lt(
                     tokenIn_reserveIn,
-                    and(ADDRESS_MASK, calldataload(add(path.offset, 30))) // tokenOut
+                    and(ADDRESS_MASK, calldataload(add(path.offset, 32))) // tokenOut
                 )
                 // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
                 // buyAmount = (pairSellAmount * feeAm * buyReserve) /
                 //     (pairSellAmount * feeAm + sellReserve * 1000);
-
-                // Call pair.getReserves(), store the results in scrap space
-                mstore(0x0, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
-                if iszero(staticcall(gas(), pair, 0x0, 0x4, 0x0, 0x40)) {
-                    returndatacopy(0, 0, returndatasize())
-                    revert(0, returndatasize())
-                }
-                // Revert if the pair contract does not return at least two words.
-                if lt(returndatasize(), 0x40) {
-                    revert(0, 0)
-                }
-                switch zeroForOne
+                switch lt(pId, 120)
                 case 1 {
-                    // Transpose if pair order is different.
-                    tokenIn_reserveIn := mload(0x0)
-                    buyAmount := mload(0x20)
+                    // Call pair.getReserves(), store the results in scrap space
+                    mstore(0x0, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
+                    if iszero(staticcall(gas(), pair, 0x0, 0x4, 0x0, 0x40)) {
+                        returndatacopy(0, 0, returndatasize())
+                        revert(0, returndatasize())
+                    }
+                    // Revert if the pair contract does not return at least two words.
+                    if lt(returndatasize(), 0x40) {
+                        revert(0, 0)
+                    }
+                    switch zeroForOne
+                    case 1 {
+                        // Transpose if pair order is different.
+                        buyAmount := mload(0x20)
+                        tokenIn_reserveIn := mload(0x0)
+                    }
+                    default {
+                        tokenIn_reserveIn := mload(0x20)
+                        buyAmount := mload(0x0)
+                    }
+                    poolFeeDenom := mul(amountIn, poolFeeDenom)
+                    buyAmount := div(
+                        mul(poolFeeDenom, buyAmount),
+                        add(poolFeeDenom, mul(tokenIn_reserveIn, 10000)) //
+                    )
                 }
+                // all solidly-based protocols
                 default {
-                    tokenIn_reserveIn := mload(0x20)
-                    buyAmount := mload(0x0)
+                    // selector for getAmountOut(uint256,address)
+                    mstore(ptr, 0xf140a35a00000000000000000000000000000000000000000000000000000000)
+                    mstore(add(ptr, 0x4), amountIn)
+                    mstore(add(ptr, 0x24), tokenIn_reserveIn)
+                    if iszero(staticcall(gas(), pair, ptr, 0x44, ptr, 0x20)) {
+                        returndatacopy(0, 0, returndatasize())
+                        revert(0, returndatasize())
+                    }
+
+                    buyAmount := mload(ptr)
                 }
-                // feeAm is 997 for Moe (1000 - 3) for 0.3% fee
-                poolFeeDenom := mul(amountIn, poolFeeDenom)
-                buyAmount := div(mul(poolFeeDenom, buyAmount), add(poolFeeDenom, mul(tokenIn_reserveIn, 1000)))
                 
 
                 ////////////////////////////////////////////////////
@@ -421,7 +574,10 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
             tokenIn := and(ADDRESS_MASK, shr(96, tokenIn))
             // Compute the buy amount based on the pair reserves.
             {
-                let zeroForOne := lt(tokenIn, and(ADDRESS_MASK, calldataload(add(path.offset, 30))))
+                let zeroForOne := lt(
+                    tokenIn,
+                    and(ADDRESS_MASK, calldataload(add(path.offset, 32))) // tokenOut
+                )
                 // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
                 // buyAmount = (pairSellAmount * feeAm * buyReserve) /
                 //     (pairSellAmount * feeAm + sellReserve * 1000);

@@ -637,7 +637,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             }
             // fetch tokens
             tokenIn := and(ADDRESS_MASK, shr(96, calldataload(data.offset)))
-            tokenOut := and(ADDRESS_MASK, shr(96, calldataload(add(data.offset, SKIP_LENGTH_UNOSWAP))))
+            tokenOut := and(ADDRESS_MASK, calldataload(add(data.offset, 32)))
             let ptr := mload(0x40)
             switch lt(tokenIn, tokenOut)
             case 0 {
@@ -680,7 +680,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         assembly {
             // fetch tokens
             tokenIn := and(ADDRESS_MASK, shr(96, calldataload(data.offset)))
-            tokenOut := and(ADDRESS_MASK, shr(96, calldataload(add(data.offset, SKIP_LENGTH_UNOSWAP))))
+            tokenOut := and(ADDRESS_MASK, calldataload(add(data.offset, 32)))
             let ptr := mload(0x40)
             // selector for getPair(address,address)
             mstore(ptr, 0xe6a4390500000000000000000000000000000000000000000000000000000000)
@@ -722,7 +722,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
             let dexId := and(shr(80, firstWord), UINT8_MASK) // swap pool dexId
             tradeId := and(shr(88, firstWord), UINT8_MASK) // interaction dexId
-            tokenOut := and(ADDRESS_MASK, shr(96, calldataload(add(data.offset, SKIP_LENGTH_UNOSWAP))))
+            tokenOut := and(ADDRESS_MASK, calldataload(add(data.offset, 32)))
             let ptr := mload(0x40)
             let pair
             switch dexId

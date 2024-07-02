@@ -408,7 +408,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
             {
                 let zeroForOne := lt(
                     tokenIn_reserveIn,
-                    and(ADDRESS_MASK, calldataload(add(path.offset, 30))) // tokenOut
+                    and(ADDRESS_MASK, calldataload(add(path.offset, 32))) // tokenOut
                 )
                 // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
                 // buyAmount = (pairSellAmount * feeAm * buyReserve) /
@@ -570,7 +570,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
             {
                 let zeroForOne := lt(
                     tokenIn,
-                    and(ADDRESS_MASK, calldataload(add(path.offset, 30))) // tokenOut
+                    and(ADDRESS_MASK, calldataload(add(path.offset, 32))) // tokenOut
                 )
                 // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
                 // buyAmount = (pairSellAmount * feeAm * buyReserve) /
