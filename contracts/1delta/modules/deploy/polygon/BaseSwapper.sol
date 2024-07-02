@@ -165,7 +165,7 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
                                 calldataload(
                                     add(
                                         path.offset,
-                                        66 // 20 + 2 + 20 + 2 + 20 + 2 [poolAddress starts here]
+                                        MAX_SINGLE_LENGTH_UNOSWAP // 20 + 2 + 20 + 2 + 20 + 2 [poolAddress starts here]
                                     )
                                 ) // poolAddress
                             )
@@ -185,8 +185,8 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
                 path
             );
             assembly {
-                path.offset := add(path.offset, 44)
-                path.length := sub(path.length, 44)
+                path.offset := add(path.offset, SKIP_LENGTH_UNOSWAP)
+                path.length := sub(path.length, SKIP_LENGTH_UNOSWAP)
             }
         }
         // iZi
@@ -195,7 +195,7 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
                 switch lt(path.length, 67) // same as for Uni V3 CL
                 case 1 { currentReceiver := receiver}
                 default {
-                    dexId := and(shr(80, calldataload(add(path.offset, 44))), UINT8_MASK)
+                    dexId := and(shr(80, calldataload(add(path.offset, SKIP_LENGTH_UNOSWAP))), UINT8_MASK)
                     switch gt(dexId, 99) 
                     case 1 {
                         currentReceiver := and(
@@ -205,7 +205,7 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
                                 calldataload(
                                     add(
                                         path.offset,
-                                        66 // 20 + 2 + 20 + 2 + 20 + 2 [poolAddress starts here]
+                                        MAX_SINGLE_LENGTH_UNOSWAP // 20 + 2 + 20 + 2 + 20 + 2 [poolAddress starts here]
                                     )
                                 ) // poolAddress
                             )
@@ -225,8 +225,8 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
                 path
             );
             assembly {
-                path.offset := add(path.offset, 44)
-                path.length := sub(path.length, 44)
+                path.offset := add(path.offset, SKIP_LENGTH_UNOSWAP)
+                path.length := sub(path.length, SKIP_LENGTH_UNOSWAP)
             }
         }
         // Curve stable general
@@ -235,7 +235,7 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
                 switch lt(path.length, 67) // lengthFull = 20+1+1+20+1+1+20 = 64
                 case 1 { currentReceiver := receiver}
                 default {
-                    dexId := and(shr(80, calldataload(add(path.offset, 44))), UINT8_MASK)
+                    dexId := and(shr(80, calldataload(add(path.offset, SKIP_LENGTH_UNOSWAP))), UINT8_MASK)
                     switch gt(dexId, 99) 
                     case 1 {
                         currentReceiver := and(
@@ -245,7 +245,7 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
                                 calldataload(
                                     add(
                                         path.offset,
-                                        66 // 20 + 2 + 20 + 2 + 20 + 2 [poolAddress starts here]
+                                        MAX_SINGLE_LENGTH_UNOSWAP // 20 + 2 + 20 + 2 + 20 + 2 [poolAddress starts here]
                                     )
                                 ) // poolAddress
                             )
@@ -258,14 +258,14 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
             }
             amountIn = swapCurveGeneral(path, amountIn, payer, currentReceiver);
             assembly {
-                path.offset := add(path.offset, 44)
-                path.length := sub(path.length, 44)
+                path.offset := add(path.offset, SKIP_LENGTH_UNOSWAP)
+                path.length := sub(path.length, SKIP_LENGTH_UNOSWAP)
             }
         }
         // uniswapV2 style
         else if (dexId < 150) {
             assembly {
-                switch lt(path.length, 65)
+                switch lt(path.length, 67)
                 case 1 { currentReceiver := receiver}
                 default {
                     dexId := and(shr(80, calldataload(add(path.offset, 42))), UINT8_MASK)
@@ -278,7 +278,7 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
                                 calldataload(
                                     add(
                                         path.offset,
-                                        64 // 20 + 2 + 20 + 20 + 2 [poolAddress starts here]
+                                        MAX_SINGLE_LENGTH_UNOSWAP // 20 + 2 + 20 + 20 + 2 [poolAddress starts here]
                                     )
                                 ) // poolAddress
                             )
@@ -298,8 +298,8 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
                 path // we do not slice the path since we deterministically prevent flash swaps
             );
             assembly {
-                path.offset := add(path.offset, 42)
-                path.length := sub(path.length, 42)
+                path.offset := add(path.offset, SKIP_LENGTH_UNOSWAP)
+                path.length := sub(path.length, SKIP_LENGTH_UNOSWAP)
             }
         }
         // WOO Fi
@@ -429,10 +429,10 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
     ) internal returns (uint256 amountOut) {
         address currentReceiver;
         assembly {
-            switch lt(path.length, 64)
+            switch lt(path.length, MAX_SINGLE_LENGTH_UNOSWAP)
             case 1 { currentReceiver := receiver}
             default {
-                dexId := and(shr(80, calldataload(add(path.offset, 42))), UINT8_MASK)
+                dexId := and(shr(80, calldataload(add(path.offset, SKIP_LENGTH_UNOSWAP))), UINT8_MASK)
                 switch gt(dexId, 99) 
                 case 1 {
                     currentReceiver := and(
@@ -442,7 +442,7 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
                             calldataload(
                                 add(
                                     path.offset,
-                                    64 // 20 + 2 + 20 + 20 + 2 [poolAddress starts here]
+                                    MAX_SINGLE_LENGTH_UNOSWAP // 20 + 2 + 20 + 20 + 2 [poolAddress starts here]
                                 )
                             ) // poolAddress
                         )
@@ -459,8 +459,8 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
             path
         );
         assembly {
-            path.offset := add(path.offset, 42)
-            path.length := sub(path.length, 42)
+            path.offset := add(path.offset, SKIP_LENGTH_UNOSWAP)
+            path.length := sub(path.length, SKIP_LENGTH_UNOSWAP)
         }
         ////////////////////////////////////////////////////
         // From there on, we just continue to swap if needed

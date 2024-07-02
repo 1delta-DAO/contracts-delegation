@@ -52,12 +52,23 @@ contract AddressesPolygon {
     uint8 internal IZUMI = 49;
     uint8 internal CURVE = 50;
 
-    uint8 internal FUSION_X_V2 = 100;
-    uint8 internal MERCHANT_MOE = 101;
-    uint8 internal CLEO_V1_STABLE = 124;
-    uint8 internal MERCHANT_MOE_LB = 151;
+    uint8 internal UNI_V2 = 100;
+    uint8 internal QUICK_V2 = 101;
+    uint8 internal SUSHI_V2 = 102;
+    uint8 internal DFYN = 103;
+    uint8 internal POLYCAT = 104;
+    uint8 internal APESWAP = 105;
+    uint8 internal COMETH = 106;
+
+    uint16 internal UNI_V2_FEE_DENOM = 10000 - 30;
+    uint16 internal QUICK_V2_FEE_DENOM = 10000 - 30;
+    uint16 internal SUSHI_V2_FEE_DENOM = 10000 - 30;
+    uint16 internal DFYN_FEE_DENOM = 10000 - 30;
+    uint16 internal POLYCAT_FEE_DENOM = 10000 - 24;
+    uint16 internal APESWAP_FEE_DENOM = 10000 - 20;
+    uint16 internal COMETH_FEE_DENOM = 10000 - 50;
+
     uint8 internal WOO_FI = 150;
-    uint8 internal KTX = 152;
 
     /** TRADE TYPE FLAG GETTERS */
 

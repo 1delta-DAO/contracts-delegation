@@ -8,10 +8,6 @@ pragma solidity ^0.8.26;
  * Test quoter contract - exposes all internal functions
  */
 contract TestQuoterPolygon is OneDeltaQuoterPolygon {
-    function _quoteKTXExactIn(address _tokenIn, address _tokenOut, uint256 amountIn) public view returns (uint256 amountOut) {
-        return super.quoteKTXExactIn(_tokenIn, _tokenOut, amountIn);
-    }
-
     function _quoteWooFiExactIn(address _tokenIn, address _tokenOut, uint256 amountIn) public view returns (uint256 amountOut) {
         return super.quoteWOO(_tokenIn, _tokenOut, amountIn);
     }
@@ -52,23 +48,5 @@ contract TestQuoterPolygon is OneDeltaQuoterPolygon {
 
     function _quoteWOO(address tokenIn, address tokenOut, uint256 amountIn) public view returns (uint256 amountOut) {
         return super.quoteWOO(tokenIn, tokenOut, amountIn);
-    }
-
-    /// @dev calculates the input amount for a UniswapV2 style swap - requires overflow checks
-    function _getV2AmountInDirect(
-        address pair,
-        address tokenIn, // some DEXs are more efficiently queried directly
-        address tokenOut,
-        uint256 buyAmount,
-        uint256 pId // poolId
-    ) internal view returns (uint256 x) {
-        return
-            super.getV2AmountInDirect(
-                pair,
-                tokenIn, // some DEXs are more efficiently queried directly
-                tokenOut,
-                buyAmount,
-                pId // poolId
-            );
     }
 }

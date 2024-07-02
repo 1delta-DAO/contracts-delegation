@@ -130,7 +130,6 @@ contract ComposedFlashLoanTestPolygon is DeltaSetup {
     }
 
     function test_polygon_composed_flash_loan_close(uint8 lenderId) external {
-        management.setValidTarget(address(router), address(router), true);
         address user = testUser;
         vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
         address asset = WMATIC;

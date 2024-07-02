@@ -23,7 +23,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
     ////////////////////////////////////////////////////
 
     bytes32 internal constant QUICK_V2_FF_FACTORY = 0xff5757371414417b8c6caad45baef941abc7d3ab320000000000000000000000;
- 
+
     bytes32 internal constant UNI_V2_FF_FACTORY = 0xff9e5A52f57b3038F1B8EeE45F28b3C1967e22799C0000000000000000000000;
     bytes32 internal constant CODE_HASH_UNI_V2 = 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f;
 
@@ -32,9 +32,18 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
 
     bytes32 internal constant SUSHI_V2_FF_FACTORY = 0xffc35DADB65012eC5796536bD9864eD8773aBc74C40000000000000000000000;
     bytes32 internal constant CODE_HASH_SUSHI_V2 = 0xe18a34eb0e04b04f7a0ac29a6e80748dca96319b42c54d679cb821dca90c6303;
- 
+
     bytes32 internal constant DFYN_FF_FACTORY = 0xffE7Fb3e833eFE5F9c441105EB65Ef8b261266423B0000000000000000000000;
     bytes32 internal constant CODE_HASH_DFYN = 0xf187ed688403aa4f7acfada758d8d53698753b998a3071b06f1b777f4330eaf3;
+
+    bytes32 internal constant POLYCAT_FF_FACTORY = 0xff477Ce834Ae6b7aB003cCe4BC4d8697763FF456FA0000000000000000000000;
+    bytes32 internal constant CODE_HASH_POLYCAT = 0x3cad6f9e70e13835b4f07e5dd475f25a109450b22811d0437da51e66c161255a;
+
+    bytes32 internal constant APESWAP_FF_FACTORY = 0xffCf083Be4164828f00cAE704EC15a36D7114912840000000000000000000000;
+    bytes32 internal constant CODE_HASH_APESWAP = 0x511f0f358fe530cda0859ec20becf391718fdf5a329be02f4c95361f3d6a42d8;
+
+    bytes32 internal constant COMETH_FF_FACTORY = 0xff800b052609c355cA8103E06F022aA30647eAd60a0000000000000000000000;
+    bytes32 internal constant CODE_HASH_COMETH = 0x511f0f358fe530cda0859ec20becf391718fdf5a329be02f4c95361f3d6a42d8;
 
     constructor() {}
 
@@ -59,9 +68,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
         address receiver,
         bool useFlashSwap,
         bytes calldata path
-    )
-        internal
-    {
+    ) internal {
         // solhint-disable-next-line no-inline-assembly
         assembly {
             let ptr := mload(0x40)
@@ -77,7 +84,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                 mstore(add(ptr, 0x4), amountOut)
                 mstore(add(ptr, 0x24), 0x0)
             }
-        
+
             // Prepare external call data
             switch useFlashSwap
             case 1 {
@@ -156,15 +163,17 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                 // and directly trigger the swap
                 ////////////////////////////////////////////////////
                 mstore(add(ptr, 0x84), 0) // bytes length
-                if iszero(call(
-                    gas(),
-                    pair,
-                    0x0,
-                    ptr, // input selector
-                    0xA4, // input size = 164 (selector (4bytes) plus 5*32bytes)
-                    0, // output = 0
-                    0 // output size = 0
-                )) {
+                if iszero(
+                    call(
+                        gas(),
+                        pair,
+                        0x0,
+                        ptr, // input selector
+                        0xA4, // input size = 164 (selector (4bytes) plus 5*32bytes)
+                        0, // output = 0
+                        0 // output size = 0
+                    )
+                ) {
                     // Forward the error
                     returndatacopy(0, 0, returndatasize())
                     revert(0, returndatasize())
@@ -184,15 +193,15 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
      * @param tokenIn input
      * @param tokenOut output
      * @param buyAmount output amunt
-     * @param pId DEX identifier
      * @return x input amount
      */
     function getV2AmountInDirect(
         address pair,
         address tokenIn, // some DEXs are more efficiently queried directly
         address tokenOut,
+        uint256 feeDenom,
         uint256 buyAmount,
-        uint256 pId // poolId
+        uint256 // poolId unused on Polygon for now
     ) internal view returns (uint256 x) {
         assembly {
             let ptr := mload(0x40)
@@ -208,51 +217,24 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
             }
 
             // Compute the sell amount based on the pair reserves.
-            {
-                switch pId
-                case 100 {
-                    let sellReserve
-                    let buyReserve
-                    switch lt(tokenIn, tokenOut)
-                    case 0 {
-                        // Transpose if pair order is different.
-                        sellReserve := mload(0x20)
-                        buyReserve := mload(0x0)
-                    }
-                    default {
-                        sellReserve := mload(0x0)
-                        buyReserve := mload(0x20)
-                    }
-
-                    // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
-                    // x = (reserveIn * amountOut * 1000) /
-                    //     ((reserveOut - amountOut) * feeAm) + 1;
-                    // feeAm is 998 for fusionX
-                    x := add(div(mul(mul(sellReserve, buyAmount), 1000), mul(sub(buyReserve, buyAmount), 997)), 1)
-                }
-                // merchant moe
-                case 101 {
-                    let sellReserve
-                    let buyReserve
-                    switch lt(tokenIn, tokenOut)
-                    case 0 {
-                        // Transpose if pair order is different.
-                        sellReserve := mload(0x20)
-                        buyReserve := mload(0x0)
-                    }
-                    default {
-                        sellReserve := mload(0x0)
-                        buyReserve := mload(0x20)
-                    }
-
-                    // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
-                    // x = (reserveIn * amountOut * 1000) /
-                    //     ((reserveOut - amountOut) * feeAm) + 1;
-                    // feAm is 997 for Moe
-                    x := add(div(mul(mul(sellReserve, buyAmount), 1000), mul(sub(buyReserve, buyAmount), 997)), 1)
-                }
-                default { revert(0, 0) }
+            let sellReserve
+            let buyReserve
+            switch lt(tokenIn, tokenOut)
+            case 0 {
+                // Transpose if pair order is different.
+                sellReserve := mload(0x20)
+                buyReserve := mload(0x0)
             }
+            default {
+                sellReserve := mload(0x0)
+                buyReserve := mload(0x20)
+            }
+
+            // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
+            // x = (reserveIn * amountOut * 1000) /
+            //     ((reserveOut - amountOut) * feeAm) + 1;
+            // feeAm is 9976 for Polycat
+            x := add(div(mul(mul(sellReserve, buyAmount), 10000), mul(sub(buyReserve, buyAmount), feeDenom)), 1)
         }
     }
 
@@ -278,11 +260,14 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
             ////////////////////////////////////////////////////
             // We extract all relevant data from the path bytes blob
             ////////////////////////////////////////////////////
-            let pair := and(ADDRESS_MASK, shr(96, calldataload(add(path.offset, 22))))
-            // we define this as token in and later re-assign this to 
+            let pair := calldataload(add(path.offset, 22))
+            // this is expected to be 10000 - x, where x is the poolfee in bps
+            let poolFeeDenom := and(shr(80, pair), UINT16_MASK)
+            pair := and(ADDRESS_MASK, shr(96, pair))
+            // we define this as token in and later re-assign this to
             // reserve in to prevent stack too deep errors
             let tokenIn_reserveIn := calldataload(path.offset)
-            let pId_amountWithFee_pathLength := and(shr(80, tokenIn_reserveIn), UINT8_MASK)
+            let pId_pathLength := and(shr(80, tokenIn_reserveIn), UINT8_MASK)
             tokenIn_reserveIn := and(ADDRESS_MASK, shr(96, tokenIn_reserveIn))
 
             // Compute the buy amount based on the pair reserves.
@@ -291,70 +276,31 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                 // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
                 // buyAmount = (pairSellAmount * feeAm * buyReserve) /
                 //     (pairSellAmount * feeAm + sellReserve * 1000);
-                switch pId_amountWithFee_pathLength
-                case 100 {
-                    // Call pair.getReserves(), store the results in scrap space
-                    mstore(0x0, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
-                    if iszero(staticcall(gas(), pair, 0x0, 0x4, 0x0, 0x40)) {
-                        returndatacopy(0, 0, returndatasize())
-                        revert(0, returndatasize())
-                    }
-                    // Revert if the pair contract does not return at least two words.
-                    if lt(returndatasize(), 0x40) {
-                        revert(0, 0)
-                    }
-                    switch zeroForOne
-                    case 1 {
-                        // Transpose if pair order is different.
-                        buyAmount := mload(0x20)
-                        tokenIn_reserveIn := mload(0x0)
-                    }
-                    default {
-                        tokenIn_reserveIn := mload(0x20)
-                        buyAmount := mload(0x0)
-                    }
-                    // feeAm is 998 for fusionX (1000 - 2) for 0.2% fee
-                    pId_amountWithFee_pathLength := mul(amountIn, 998)
-                    buyAmount := div(mul(pId_amountWithFee_pathLength, buyAmount), add(pId_amountWithFee_pathLength, mul(tokenIn_reserveIn, 1000)))
-                }
-                case 101 {
-                    // Call pair.getReserves(), store the results in scrap space
-                    mstore(0x0, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
-                    if iszero(staticcall(gas(), pair, 0x0, 0x4, 0x0, 0x40)) {
-                        returndatacopy(0, 0, returndatasize())
-                        revert(0, returndatasize())
-                    }
-                    // Revert if the pair contract does not return at least two words.
-                    if lt(returndatasize(), 0x40) {
-                        revert(0, 0)
-                    }
-                    switch zeroForOne
-                    case 1 {
-                        // Transpose if pair order is different.
-                        tokenIn_reserveIn := mload(0x0)
-                        buyAmount := mload(0x20)
-                    }
-                    default {
-                        tokenIn_reserveIn := mload(0x20)
-                        buyAmount := mload(0x0)
-                    }
-                    // feeAm is 997 for Moe (1000 - 3) for 0.3% fee
-                    pId_amountWithFee_pathLength := mul(amountIn, 997)
-                    buyAmount := div(mul(pId_amountWithFee_pathLength, buyAmount), add(pId_amountWithFee_pathLength, mul(tokenIn_reserveIn, 1000)))
-                }
-                // all solidly-based protocols (velo, cleo V1, stratum)
-                default {
-                    // selector for getAmountOut(uint256,address)
-                    mstore(ptr, 0xf140a35a00000000000000000000000000000000000000000000000000000000)
-                    mstore(add(ptr, 0x4), amountIn)
-                    mstore(add(ptr, 0x24), tokenIn_reserveIn)
-                    if iszero(staticcall(gas(), pair, ptr, 0x44, ptr, 0x20)) {
-                        returndatacopy(0, 0, returndatasize())
-                        revert(0, returndatasize())
-                    }
 
-                    buyAmount := mload(ptr)
+                // Call pair.getReserves(), store the results in scrap space
+                mstore(0x0, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
+                if iszero(staticcall(gas(), pair, 0x0, 0x4, 0x0, 0x40)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
                 }
+                // Revert if the pair contract does not return at least two words.
+                if lt(returndatasize(), 0x40) {
+                    revert(0, 0)
+                }
+                switch zeroForOne
+                case 1 {
+                    // Transpose if pair order is different.
+                    tokenIn_reserveIn := mload(0x0)
+                    buyAmount := mload(0x20)
+                }
+                default {
+                    tokenIn_reserveIn := mload(0x20)
+                    buyAmount := mload(0x0)
+                }
+                // feeAm is 997 for Moe (1000 - 3) for 0.3% fee
+                poolFeeDenom := mul(amountIn, poolFeeDenom)
+                buyAmount := div(mul(poolFeeDenom, buyAmount), add(poolFeeDenom, mul(tokenIn_reserveIn, 1000)))
+                
 
                 ////////////////////////////////////////////////////
                 // Prepare the swap tx
@@ -383,27 +329,29 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                 case 1 {
                     // we store the offset of the bytes calldata in the func call
                     let calldataOffsetStart := add(ptr, 0xA4)
-                    pId_amountWithFee_pathLength := path.length
-                    calldatacopy(calldataOffsetStart, path.offset, pId_amountWithFee_pathLength)
+                    pId_pathLength := path.length
+                    calldatacopy(calldataOffsetStart, path.offset, pId_pathLength)
                     // store max amount
-                    mstore(add(calldataOffsetStart, pId_amountWithFee_pathLength), shl(128, amountOutMin))
+                    mstore(add(calldataOffsetStart, pId_pathLength), shl(128, amountOutMin))
                     // store amountIn
-                    mstore(add(calldataOffsetStart, add(pId_amountWithFee_pathLength, 16)), shl(128, amountIn))
-                    pId_amountWithFee_pathLength := add(pId_amountWithFee_pathLength, 32)
+                    mstore(add(calldataOffsetStart, add(pId_pathLength, 16)), shl(128, amountIn))
+                    pId_pathLength := add(pId_pathLength, 32)
                     //store amountIn
-                    mstore(add(calldataOffsetStart, pId_amountWithFee_pathLength), shl(96, payer))
-                    pId_amountWithFee_pathLength := add(pId_amountWithFee_pathLength, 20)
+                    mstore(add(calldataOffsetStart, pId_pathLength), shl(96, payer))
+                    pId_pathLength := add(pId_pathLength, 20)
                     // bytes length
-                    mstore(add(ptr, 0x84), pId_amountWithFee_pathLength)
-                    if iszero(call(
-                        gas(),
-                        pair,
-                        0x0,
-                        ptr, // input selector
-                        add(0xA4, pId_amountWithFee_pathLength), // input size = 164 (selector (4bytes) plus 5*32bytes)
-                        0x0, // output = 0
-                        0x0 // output size = 0
-                    )) {
+                    mstore(add(ptr, 0x84), pId_pathLength)
+                    if iszero(
+                        call(
+                            gas(),
+                            pair,
+                            0x0,
+                            ptr, // input selector
+                            add(0xA4, pId_pathLength), // input size = 164 (selector (4bytes) plus 5*32bytes)
+                            0x0, // output = 0
+                            0x0 // output size = 0
+                        )
+                    ) {
                         // Forward the error
                         returndatacopy(0, 0, returndatasize())
                         revert(0, returndatasize())
@@ -420,25 +368,25 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                     // and directly trigger the swap
                     ////////////////////////////////////////////////////
                     mstore(add(ptr, 0x84), 0) // bytes length
-                    if iszero(call(
-                        gas(),
-                        pair,
-                        0x0,
-                        ptr, // input selector
-                        0xA4, // input size = 164 (selector (4bytes) plus 5*32bytes)
-                        0, // output = 0
-                        0 // output size = 0
-                    )) {
+                    if iszero(
+                        call(
+                            gas(),
+                            pair,
+                            0x0,
+                            ptr, // input selector
+                            0xA4, // input size = 164 (selector (4bytes) plus 5*32bytes)
+                            0, // output = 0
+                            0 // output size = 0
+                        )
+                    ) {
                         // Forward the error
                         returndatacopy(0, 0, returndatasize())
                         revert(0, returndatasize())
                     }
                 }
-
             }
         }
     }
-
 
     /**
      * Executes an exact input swap internally across major UniV2 forks supporting
@@ -448,18 +396,17 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
      * @param amountIn sell amount
      * @return buyAmount output amount
      */
-    function swapUniV2ExactInFOT(
-        uint256 amountIn,
-        address receiver,
-        bytes calldata path
-    ) internal returns (uint256 buyAmount) {
+    function swapUniV2ExactInFOT(uint256 amountIn, address receiver, bytes calldata path) internal returns (uint256 buyAmount) {
         assembly {
             let ptr := mload(0x40) // free memory pointer
             ////////////////////////////////////////////////////
             // We extract all relevant data from the path bytes blob
             ////////////////////////////////////////////////////
-            let pair := and(ADDRESS_MASK, shr(96, calldataload(add(path.offset, 22))))
-            // we define this as token in and later re-assign this to 
+            let pair := calldataload(add(path.offset, 22))
+            // this is expected to be 10000 - x, where x is the poolfee in bps
+            let poolFeeDenom := and(shr(80, pair), UINT16_MASK)
+            pair := and(ADDRESS_MASK, shr(96, pair))
+            // we define this as token in and later re-assign this to
             // reserve in to prevent stack too deep errors
             let tokenIn := calldataload(path.offset)
             let pId_amountWithFee_pathLength := and(shr(80, tokenIn), UINT8_MASK)
@@ -470,78 +417,38 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                 // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
                 // buyAmount = (pairSellAmount * feeAm * buyReserve) /
                 //     (pairSellAmount * feeAm + sellReserve * 1000);
-                switch pId_amountWithFee_pathLength
-                case 100 {
-                    // Call pair.getReserves(), store the results in scrap space
-                    mstore(0x0, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
-                    if iszero(staticcall(gas(), pair, 0x0, 0x4, 0x0, 0x40)) {
-                        returndatacopy(0, 0, returndatasize())
-                        revert(0, returndatasize())
-                    }
-                    // Revert if the pair contract does not return at least two words.
-                    if lt(returndatasize(), 0x40) {
-                        revert(0, 0)
-                    }
-                    let sellReserve
-                    switch zeroForOne
-                    case 1 {
-                        // Transpose if pair order is different.
-                        sellReserve := mload(0x0)
-                        buyAmount := mload(0x20)
-                    }
-                    default {
-                        sellReserve := mload(0x20)
-                        buyAmount := mload(0x0)
-                    }
-                    // call tokenIn.balanceOf(pair)
-                    mstore(0x0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
-                    mstore(0x4, pair)
-                    // we store the result
-                    pop(staticcall(gas(), tokenIn, 0x0, 0x24, 0x0, 0x20))
-                    amountIn := sub(mload(0x0), sellReserve)
-
-                    // feeAm is 998 for fusionX (1000 - 2) for 0.2% fee
-                    pId_amountWithFee_pathLength := mul(amountIn, 998)
-                    buyAmount := div(mul(pId_amountWithFee_pathLength, buyAmount), add(pId_amountWithFee_pathLength, mul(sellReserve, 1000)))
+                // Call pair.getReserves(), store the results in scrap space
+                mstore(0x0, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
+                if iszero(staticcall(gas(), pair, 0x0, 0x4, 0x0, 0x40)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
                 }
-                case 101 {
-                    // Call pair.getReserves(), store the results in scrap space
-                    mstore(0x0, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
-                    if iszero(staticcall(gas(), pair, 0x0, 0x4, 0x0, 0x40)) {
-                        returndatacopy(0, 0, returndatasize())
-                        revert(0, returndatasize())
-                    }
-                    // Revert if the pair contract does not return at least two words.
-                    if lt(returndatasize(), 0x40) {
-                        revert(0, 0)
-                    }
-                    let sellReserve
-                    switch zeroForOne
-                    case 1 {
-                        // Transpose if pair order is different.
-                        sellReserve := mload(0x0)
-                        buyAmount := mload(0x20)
-                    }
-                    default {
-                        sellReserve := mload(0x20)
-                        buyAmount := mload(0x0)
-                    }
-                    // call tokenIn.balanceOf(pair)
-                    mstore(0x0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
-                    mstore(0x4, pair)
-                    // we store the result
-                    pop(staticcall(gas(), tokenIn, 0x0, 0x24, 0x0, 0x20))
-                    amountIn := sub(mload(0x0), sellReserve)
-
-                    // feeAm is 997 for Moe (1000 - 3) for 0.3% fee
-                    pId_amountWithFee_pathLength := mul(amountIn, 997)
-                    buyAmount := div(mul(pId_amountWithFee_pathLength, buyAmount), add(pId_amountWithFee_pathLength, mul(sellReserve, 1000)))
+                // Revert if the pair contract does not return at least two words.
+                if lt(returndatasize(), 0x40) {
+                    revert(0, 0)
                 }
-                // otherwise we revert as the behaviour becomes unpredictable 
+                let sellReserve
+                switch zeroForOne
+                case 1 {
+                    // Transpose if pair order is different.
+                    sellReserve := mload(0x0)
+                    buyAmount := mload(0x20)
+                }
                 default {
-                    mstore(0x0, BAD_POOL)
-                    revert(0x0, 0x4)
+                    sellReserve := mload(0x20)
+                    buyAmount := mload(0x0)
                 }
+                // call tokenIn.balanceOf(pair)
+                mstore(0x0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+                mstore(0x4, pair)
+                // we store the result
+                pop(staticcall(gas(), tokenIn, 0x0, 0x24, 0x0, 0x20))
+                amountIn := sub(mload(0x0), sellReserve)
+
+                // adjustment via denominator
+                poolFeeDenom := mul(amountIn, poolFeeDenom)
+                buyAmount := div(mul(poolFeeDenom, buyAmount), add(poolFeeDenom, mul(sellReserve, 10000)))
+            
 
                 ////////////////////////////////////////////////////
                 // Prepare the swap tx
@@ -567,15 +474,17 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                 // and directly trigger the swap
                 ////////////////////////////////////////////////////
                 mstore(add(ptr, 0x84), 0) // bytes length
-                if iszero(call(
-                    gas(),
-                    pair,
-                    0x0,
-                    ptr, // input selector
-                    0xA4, // input size = 164 (selector (4bytes) plus 5*32bytes)
-                    0, // output = 0
-                    0 // output size = 0
-                )) {
+                if iszero(
+                    call(
+                        gas(),
+                        pair,
+                        0x0,
+                        ptr, // input selector
+                        0xA4, // input size = 164 (selector (4bytes) plus 5*32bytes)
+                        0, // output = 0
+                        0 // output size = 0
+                    )
+                ) {
                     // Forward the error
                     // returndatacopy(0, 0, returndatasize())
                     // revert(0, returndatasize())

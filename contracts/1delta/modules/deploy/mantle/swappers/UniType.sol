@@ -233,7 +233,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                     // feeAm is 998 for fusionX
                     x := add(div(mul(mul(sellReserve, buyAmount), 1000), mul(sub(buyReserve, buyAmount), 998)), 1)
                 }
-                // merchant moe
+                // merchant moe / Uniswap V2 default
                 case 101 {
                     let sellReserve
                     let buyReserve
@@ -251,7 +251,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                     // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
                     // x = (reserveIn * amountOut * 1000) /
                     //     ((reserveOut - amountOut) * feeAm) + 1;
-                    // feAm is 997 for Moe
+                    // feAm is 997 for Uniswap V2 default
                     x := add(div(mul(mul(sellReserve, buyAmount), 1000), mul(sub(buyReserve, buyAmount), 997)), 1)
                 }
                 // velo volatile
@@ -602,7 +602,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                         tokenIn_reserveIn := mload(0x20)
                         buyAmount := mload(0x0)
                     }
-                    // feeAm is 997 for Moe (1000 - 3) for 0.3% fee
+                    // feeAm is 997 for Uniswap V2 default (1000 - 3) for 0.3% fee
                     pId_amountWithFee_pathLength := mul(amountIn, 997)
                     buyAmount := div(mul(pId_amountWithFee_pathLength, buyAmount), add(pId_amountWithFee_pathLength, mul(tokenIn_reserveIn, 1000)))
                 }
@@ -797,7 +797,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                     pop(staticcall(gas(), tokenIn, 0x0, 0x24, 0x0, 0x20))
                     amountIn := sub(mload(0x0), sellReserve)
 
-                    // feeAm is 997 for Moe (1000 - 3) for 0.3% fee
+                    // feeAm is 997 for Uniswap V2 default (1000 - 3) for 0.3% fee
                     pId_amountWithFee_pathLength := mul(amountIn, 997)
                     buyAmount := div(mul(pId_amountWithFee_pathLength, buyAmount), add(pId_amountWithFee_pathLength, mul(sellReserve, 1000)))
                 }

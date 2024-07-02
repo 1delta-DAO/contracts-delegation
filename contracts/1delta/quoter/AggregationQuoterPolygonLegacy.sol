@@ -55,12 +55,11 @@ interface ISwapPool {
  * Paths have to be encoded as follows: token0 (address) | param0 (uint24) | poolId (uint8) | token1 (address) |
  */
 contract OneDeltaQuoterPolygon is PoolGetterPolygon {
-
     /// @dev Transient storage variable used to check a safety condition in exact output swaps.
     uint256 private amountOutCached;
-    uint256 internal constant UINT16_MASK = 0xffff;
+
     uint256 internal constant CL_PARAM_LENGTH = 43; // token + id + pool + fee
-    uint256 internal constant V2_PARAM_LENGTH = CL_PARAM_LENGTH; // token + id + pool + denom
+    uint256 internal constant V2_PARAM_LENGTH = 41; // token + id + pool
     uint256 internal constant CURVE_PARAM_LENGTH = CL_PARAM_LENGTH; // token + id + pool + idIn + idOut
     uint256 internal constant CURVE_CUSTOM_PARAM_LENGTH = 21; // no pool address provided
 
@@ -98,13 +97,33 @@ contract OneDeltaQuoterPolygon is PoolGetterPolygon {
         }
     }
 
-    // uni, sushi and others
+    // fusionx v3
+    function fusionXV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata path) external view {
+        _v3SwapCallback(amount0Delta, amount1Delta, path);
+    }
+
+    // methlab
     function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata path) external view {
         _v3SwapCallback(amount0Delta, amount1Delta, path);
     }
 
-    // quickswap
+    // agni
+    function agniSwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata path) external view {
+        _v3SwapCallback(amount0Delta, amount1Delta, path);
+    }
+
+    //butter
+    function butterSwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata _data) external view {
+        _v3SwapCallback(amount0Delta, amount1Delta, _data);
+    }
+
+    // swapsicle
     function algebraSwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata path) external view {
+        _v3SwapCallback(amount0Delta, amount1Delta, path);
+    }
+
+    // Cleo
+    function ramsesV2SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata path) external view {
         _v3SwapCallback(amount0Delta, amount1Delta, path);
     }
 
@@ -282,6 +301,90 @@ contract OneDeltaQuoterPolygon is PoolGetterPolygon {
         }
     }
 
+    function getLBAmountOut(
+        address tokenOut,
+        uint256 amountIn,
+        address pair // identifies the exact pair address
+    ) internal view returns (uint256 amountOut) {
+        assembly {
+            let ptr := mload(0x40)
+            // getTokenY()
+            mstore(ptr, 0xda10610c00000000000000000000000000000000000000000000000000000000)
+            if iszero(
+                // invalid pairs will make it fail here
+                staticcall(gas(), pair, ptr, 0x4, ptr, 0x20)
+            ) {
+                revert(0, 0)
+            }
+            // override swapForY
+            let swapForY := eq(tokenOut, mload(ptr))
+            // getSwapOut(uint128,bool)
+            mstore(ptr, 0xe77366f800000000000000000000000000000000000000000000000000000000)
+            mstore(add(ptr, 0x4), amountIn)
+            mstore(add(ptr, 0x24), swapForY)
+            // call swap simulator, revert if invalid/undefined pair
+            if iszero(staticcall(gas(), pair, ptr, 0x44, ptr, 0x40)) {
+                revert(0, 0)
+            }
+            amountOut := and(
+                0x00000000000000000000000000000000ffffffffffffffffffffffffffffffff, // mask uint128
+                mload(add(ptr, 0x20))
+            )
+            // the first slot returns amount in left, if positive, we revert
+            if gt(mload(ptr), 0) {
+                revert(0, 0)
+            }
+        }
+    }
+
+    function getLBAmountIn(
+        address tokenOut,
+        uint256 amountOut,
+        address pair // this param identifies the pair
+    ) internal view returns (uint256 amountIn) {
+        assembly {
+            // selector for balanceOf(address)
+            mstore(0x0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+            // add this address as parameter
+            mstore(0x4, pair)
+
+            // call to underlying
+            if iszero(staticcall(gas(), tokenOut, 0x0, 0x24, 0x0, 0x20)) {
+                revert(0, 0)
+            }
+            // pair must have enough liquidity
+            if lt(mload(0x0), amountOut) {
+                revert(0, 0)
+            }
+
+            let ptr := mload(0x40)
+            // getTokenY()
+            mstore(ptr, 0xda10610c00000000000000000000000000000000000000000000000000000000)
+            pop(
+                // the call will always succeed due to the pair being nonzero
+                staticcall(gas(), pair, ptr, 0x4, ptr, 0x20)
+            )
+            // override swapForY
+            let swapForY := eq(tokenOut, mload(ptr))
+            // getSwapIn(uint128,bool)
+            mstore(ptr, 0xabcd783000000000000000000000000000000000000000000000000000000000)
+            mstore(add(ptr, 0x4), amountOut)
+            mstore(add(ptr, 0x24), swapForY)
+            // call swap simulator, revert if invalid/undefined pair
+            if iszero(staticcall(gas(), pair, ptr, 0x44, ptr, 0x40)) {
+                revert(0, 0)
+            }
+            amountIn := and(
+                0x00000000000000000000000000000000ffffffffffffffffffffffffffffffff, // mask uint128
+                mload(ptr)
+            )
+            // the second slot returns amount out left, if positive, we revert
+            if gt(mload(add(ptr, 0x20)), 0) {
+                revert(0, 0)
+            }
+        }
+    }
+
     /************************************************** Mixed **************************************************/
 
     /// @dev Get the quote for an exactIn swap between an array of Stable, V2 and/or V3 pools
@@ -318,7 +421,7 @@ contract OneDeltaQuoterPolygon is PoolGetterPolygon {
                 }
                 amountIn = quoteExactInputSingle_iZi(tokenIn, tokenOut, pair, uint128(amountIn));
                 path = path[CL_PARAM_LENGTH:];
-            } else if (poolId == 50) {
+            } else if (poolId == 51) {
                 uint8 indexIn;
                 uint8 indexOut;
                 assembly {
@@ -326,16 +429,14 @@ contract OneDeltaQuoterPolygon is PoolGetterPolygon {
                     indexIn := and(shr(88, indexData), 0xff)
                     indexOut := and(shr(80, indexData), 0xff)
                 }
-                amountIn = quoteCurve(indexIn, indexOut, pair, amountIn);
+                amountIn = quoteCurveGeneral(indexIn, indexOut, pair, amountIn);
                 path = path[CURVE_PARAM_LENGTH:];
             }
             // v2 types
             else if (poolId < 150) {
-                uint256 feeDenom;
                 assembly {
                     // tokenOut starts at 41st byte
                     tokenOut := shr(96, calldataload(add(path.offset, 41)))
-                    feeDenom := and(UINT16_MASK, shr(240, calldataload(add(path.offset, 39))))
                 }
                 amountIn = getAmountOutUniV2Type(pair, tokenIn, tokenOut, amountIn, poolId);
                 path = path[V2_PARAM_LENGTH:];
@@ -345,6 +446,13 @@ contract OneDeltaQuoterPolygon is PoolGetterPolygon {
                     tokenOut := shr(96, calldataload(add(path.offset, 41)))
                 }
                 amountIn = quoteWOO(tokenIn, tokenOut, amountIn);
+                path = path[V2_PARAM_LENGTH:];
+            } else if (poolId == 151) {
+                assembly {
+                    // tokenOut starts at 41st byte
+                    tokenOut := shr(96, calldataload(add(path.offset, 41)))
+                }
+                amountIn = getLBAmountOut(tokenOut, amountIn, pair);
                 path = path[V2_PARAM_LENGTH:];
             } else {
                 revert invalidDexId();
@@ -392,13 +500,18 @@ contract OneDeltaQuoterPolygon is PoolGetterPolygon {
             }
             // v2 types
             else if (poolId < 150) {
-                uint256 feeDenom;
                 assembly {
                     // tokenIn starts at 43th byte for CL
-                    tokenIn := shr(96, calldataload(add(path.offset, 43)))
-                    feeDenom := and(UINT16_MASK, shr(80, calldataload(add(path.offset, 21))))
+                    tokenIn := shr(96, calldataload(add(path.offset, 41)))
                 }
-                amountOut = getV2AmountInDirect(pair, tokenIn, tokenOut, amountOut, feeDenom, poolId);
+                amountOut = getV2AmountInDirect(pair, tokenIn, tokenOut, amountOut, poolId);
+                path = path[V2_PARAM_LENGTH:];
+            } else if (poolId == 151) {
+                assembly {
+                    // tokenIn starts at 43th byte for CL
+                    tokenIn := shr(96, calldataload(add(path.offset, 41)))
+                }
+                amountOut = getLBAmountIn(tokenOut, amountOut, pair);
                 path = path[V2_PARAM_LENGTH:];
             } else {
                 revert invalidDexId();
@@ -425,8 +538,7 @@ contract OneDeltaQuoterPolygon is PoolGetterPolygon {
                 // buyAmount = (pairSellAmount * feeAm * buyReserve) /
                 //     (pairSellAmount * feeAm + sellReserve * 1000);
                 switch _pId
-                // polycat
-                case 104 {
+                case 100 {
                     // Call pair.getReserves(), store the results at `0xC00`
                     mstore(0xB00, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
                     if iszero(staticcall(gas(), pair, 0xB00, 0x4, 0xC00, 0x40)) {
@@ -450,15 +562,12 @@ contract OneDeltaQuoterPolygon is PoolGetterPolygon {
                         sellReserve := mload(0xC20)
                         buyReserve := mload(0xC00)
                     }
-                    // polycat feeAm: 9976
-                    let sellAmountWithFee := mul(sellAmount, 9976)
-                    buyAmount := div(
-                        mul(sellAmountWithFee, buyReserve),
-                        add(sellAmountWithFee, mul(sellReserve, 10000)) //
-                    )
+                    // fusionX v2 feeAm: 998
+                    let sellAmountWithFee := mul(sellAmount, 998)
+                    buyAmount := div(mul(sellAmountWithFee, buyReserve), add(sellAmountWithFee, mul(sellReserve, 1000)))
                 }
-                // uni V2 clone
-                default {
+                // merchant moe
+                case 101 {
                     // Call pair.getReserves(), store the results at `0xC00`
                     mstore(0xB00, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
                     if iszero(staticcall(gas(), pair, 0xB00, 0x4, 0xC00, 0x40)) {
@@ -486,6 +595,19 @@ contract OneDeltaQuoterPolygon is PoolGetterPolygon {
                     let sellAmountWithFee := mul(sellAmount, 997)
                     buyAmount := div(mul(sellAmountWithFee, buyReserve), add(sellAmountWithFee, mul(sellReserve, 1000)))
                 }
+                // covers solidly: velo volatile, stable and cleo V1 volatile, stable, stratum volatile, stable
+                default {
+                    // selector for getAmountOut(uint256,address)
+                    mstore(0xB00, 0xf140a35a00000000000000000000000000000000000000000000000000000000)
+                    mstore(0xB04, sellAmount)
+                    mstore(0xB24, tokenIn)
+                    if iszero(staticcall(gas(), pair, 0xB00, 0x44, 0xB00, 0x20)) {
+                        returndatacopy(0, 0, returndatasize())
+                        revert(0, returndatasize())
+                    }
+
+                    buyAmount := mload(0xB00)
+                }
             }
         }
     }
@@ -505,10 +627,10 @@ contract OneDeltaQuoterPolygon is PoolGetterPolygon {
         }
     }
 
-    function quoteCurve(uint256 indexIn, uint256 indexOut, address pool, uint256 amountIn) internal view returns (uint256 amountOut) {
+    function quoteCurveGeneral(uint256 indexIn, uint256 indexOut, address pool, uint256 amountIn) internal view returns (uint256 amountOut) {
         assembly {
-            // selector for get_dy(uint256,uint256,uint256)
-            mstore(0xB00, 0x556d6e9f00000000000000000000000000000000000000000000000000000000)
+            // selector for calculateSwap(uint8,uint8,uint256)
+            mstore(0xB00, 0xa95b089f00000000000000000000000000000000000000000000000000000000)
             mstore(0xB04, indexIn)
             mstore(0xB24, indexOut)
             mstore(0xB44, amountIn)
@@ -526,8 +648,7 @@ contract OneDeltaQuoterPolygon is PoolGetterPolygon {
         address tokenIn, // some DEXs are more efficiently queried directly
         address tokenOut,
         uint256 buyAmount,
-        uint256 feeDenom,
-        uint256 // poolId unused here
+        uint256 pId // poolId
     ) internal view returns (uint256 x) {
         assembly {
             let ptr := mload(0x40)
@@ -543,28 +664,57 @@ contract OneDeltaQuoterPolygon is PoolGetterPolygon {
             }
 
             // Compute the sell amount based on the pair reserves.
+            {
+                switch pId
+                case 100 {
+                    let sellReserve
+                    let buyReserve
+                    switch lt(tokenIn, tokenOut)
+                    case 1 {
+                        // Transpose if pair order is different.
+                        sellReserve := mload(ptr)
+                        buyReserve := mload(add(ptr, 0x20))
+                    }
+                    default {
+                        buyReserve := mload(ptr)
+                        sellReserve := mload(add(ptr, 0x20))
+                    }
+                    // revert if insufficient reserves
+                    if lt(buyReserve, buyAmount) {
+                        revert(0, 0)
+                    }
 
-            let sellReserve
-            let buyReserve
-            switch lt(tokenIn, tokenOut)
-            case 1 {
-                // Transpose if pair order is different.
-                sellReserve := mload(ptr)
-                buyReserve := mload(add(ptr, 0x20))
-            }
-            default {
-                buyReserve := mload(ptr)
-                sellReserve := mload(add(ptr, 0x20))
-            }
-            // revert if insufficient reserves
-            if lt(buyReserve, buyAmount) {
-                revert(0, 0)
-            }
+                    // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
+                    // x = (reserveIn * amountOut * 1000) /
+                    //     ((reserveOut - amountOut) * feeAm) + 1;
+                    // feeAm is 998 for fusionX
+                    x := add(div(mul(mul(sellReserve, buyAmount), 1000), mul(sub(buyReserve, buyAmount), 997)), 1)
+                }
+                default {
+                    let sellReserve
+                    let buyReserve
+                    switch lt(tokenIn, tokenOut)
+                    case 1 {
+                        // Transpose if pair order is different.
+                        sellReserve := mload(ptr)
+                        buyReserve := mload(add(ptr, 0x20))
+                    }
+                    default {
+                        buyReserve := mload(ptr)
+                        sellReserve := mload(add(ptr, 0x20))
+                    }
+                    // revert if insufficient reserves
+                    if lt(buyReserve, buyAmount) {
+                        revert(0, 0)
+                    }
 
-            // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
-            // x = (reserveIn * amountOut * 1000) /
-            //     ((reserveOut - amountOut) * feeAm) + 1;
-            x := add(div(mul(mul(sellReserve, buyAmount), 10000), mul(sub(buyReserve, buyAmount), feeDenom)), 1)
+                    // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
+                    // x = (reserveIn * amountOut * 1000) /
+                    //     ((reserveOut - amountOut) * feeAm) + 1;
+                    // feAm is 997 for Moe
+                    x := add(div(mul(mul(sellReserve, buyAmount), 1000), mul(sub(buyReserve, buyAmount), 997)), 1)
+                } 
+            }
         }
     }
 }
