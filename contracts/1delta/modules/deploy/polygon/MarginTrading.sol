@@ -514,17 +514,17 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 mstore(add(ptr, 0x15), salt)
                 mstore(add(ptr, 0x35), CODE_HASH_DFYN)
             }
-            case 120 {
+            case 104 {
                 mstore(ptr, POLYCAT_FF_FACTORY)
                 mstore(add(ptr, 0x15), salt)
                 mstore(add(ptr, 0x35), CODE_HASH_POLYCAT)
             }
-            case 121 {
+            case 105 {
                 mstore(ptr, APESWAP_FF_FACTORY)
                 mstore(add(ptr, 0x15), salt)
                 mstore(add(ptr, 0x35), CODE_HASH_APESWAP)
             }
-            case 122 {
+            case 106 {
                 mstore(ptr, COMETH_FF_FACTORY)
                 mstore(add(ptr, 0x15), salt)
                 mstore(add(ptr, 0x35), CODE_HASH_COMETH)
@@ -779,10 +779,8 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 assembly {
                     tokenOut := shr(96, calldataload(path.offset))
                     tokenIn := shr(96, calldataload(add(path.offset, SKIP_LENGTH_UNOSWAP)))
-                    // load so that the pair address is at the top
-                    feeDenom := calldataload(add(path.offset, 22))
-                    pair := shr(96, feeDenom)
-                    feeDenom := and(UINT16_MASK, shr(80, feeDenom))
+                    pair := shr(96, calldataload(add(path.offset, 22)))
+                    feeDenom := and(UINT16_MASK, shr(80, calldataload(add(path.offset, 22))))
                 }
                 ////////////////////////////////////////////////////
                 // We calculate the required amount for the next swap
@@ -795,7 +793,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // This is done by re-calling this same function after skimming the
             // data parameter by the leading token config 
             ////////////////////////////////////////////////////
-            if(path.length > 64) {
+            if(path.length > MAX_SINGLE_LENGTH_UNOSWAP) {
                 // remove the last token from the path
                 assembly {
                     path.offset := add(path.offset, SKIP_LENGTH_UNOSWAP)

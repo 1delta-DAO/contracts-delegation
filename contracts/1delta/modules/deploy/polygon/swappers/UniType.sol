@@ -43,7 +43,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
     bytes32 internal constant CODE_HASH_APESWAP = 0x511f0f358fe530cda0859ec20becf391718fdf5a329be02f4c95361f3d6a42d8;
 
     bytes32 internal constant COMETH_FF_FACTORY = 0xff800b052609c355cA8103E06F022aA30647eAd60a0000000000000000000000;
-    bytes32 internal constant CODE_HASH_COMETH = 0x511f0f358fe530cda0859ec20becf391718fdf5a329be02f4c95361f3d6a42d8;
+    bytes32 internal constant CODE_HASH_COMETH = 0x499154cad90a3563f914a25c3710ed01b9a43b8471a35ba8a66a056f37638542;
 
     constructor() {}
 
@@ -199,13 +199,13 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
         address pair,
         address tokenIn, // some DEXs are more efficiently queried directly
         address tokenOut,
-        uint256 feeDenom,
         uint256 buyAmount,
+        uint256 feeDenom,
         uint256 // poolId unused on Polygon for now
     ) internal view returns (uint256 x) {
         assembly {
             let ptr := mload(0x40)
-            // Call pair.getReserves(), store the results at `free memo`
+            // Call pair.getReserves(), store the results at `scrap space`
             mstore(0x0, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
             if iszero(staticcall(gas(), pair, 0x0, 0x4, 0x0, 0x40)) {
                 returndatacopy(0, 0, returndatasize())
@@ -229,12 +229,19 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                 sellReserve := mload(0x0)
                 buyReserve := mload(0x20)
             }
-
             // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
-            // x = (reserveIn * amountOut * 1000) /
+            // x = (reserveIn * amountOut * 10000) /
             //     ((reserveOut - amountOut) * feeAm) + 1;
-            // feeAm is 9976 for Polycat
-            x := add(div(mul(mul(sellReserve, buyAmount), 10000), mul(sub(buyReserve, buyAmount), feeDenom)), 1)
+            x := add(
+                div(
+                    mul(mul(sellReserve, buyAmount), 10000),
+                    mul(
+                        sub(buyReserve, buyAmount),
+                        feeDenom // 
+                    )
+                ),
+                1
+            )
         }
     }
 

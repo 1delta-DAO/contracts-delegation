@@ -57,6 +57,12 @@ abstract contract PoolGetterPolygon {
     bytes32 internal constant POLYCAT_FF_FACTORY = 0xff477Ce834Ae6b7aB003cCe4BC4d8697763FF456FA0000000000000000000000;
     bytes32 internal constant CODE_HASH_POLYCAT = 0x3cad6f9e70e13835b4f07e5dd475f25a109450b22811d0437da51e66c161255a;
 
+    bytes32 internal constant COMETH_FF_FACTORY = 0xff800b052609c355cA8103E06F022aA30647eAd60a0000000000000000000000;
+    bytes32 internal constant CODE_HASH_COMETH = 0x499154cad90a3563f914a25c3710ed01b9a43b8471a35ba8a66a056f37638542;
+
+    bytes32 internal constant APESWAP_FF_FACTORY = 0xffCf083Be4164828f00cAE704EC15a36D7114912840000000000000000000000;
+    bytes32 internal constant CODE_HASH_APESWAP = 0x511f0f358fe530cda0859ec20becf391718fdf5a329be02f4c95361f3d6a42d8;
+
     /// @dev Returns the pool for the given token pair and fee.
     /// The pool contract may or may not exist.
     function v3TypePool(address tokenA, address tokenB, uint24 fee, uint256 _pId) internal pure returns (address pool) {
@@ -265,6 +271,42 @@ abstract contract PoolGetterPolygon {
                 mstore(0xB00, POLYCAT_FF_FACTORY)
                 mstore(0xB15, salt)
                 mstore(0xB35, CODE_HASH_POLYCAT)
+
+                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+            }
+            // ape
+            case 105 {
+                switch lt(tokenA, tokenB)
+                case 0 {
+                    mstore(0xB14, tokenA)
+                    mstore(0xB00, tokenB)
+                }
+                default {
+                    mstore(0xB14, tokenB)
+                    mstore(0xB00, tokenA)
+                }
+                let salt := keccak256(0xB0C, 0x28)
+                mstore(0xB00, APESWAP_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, CODE_HASH_APESWAP)
+
+                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+            }
+            // cometh
+            case 106 {
+                switch lt(tokenA, tokenB)
+                case 0 {
+                    mstore(0xB14, tokenA)
+                    mstore(0xB00, tokenB)
+                }
+                default {
+                    mstore(0xB14, tokenB)
+                    mstore(0xB00, tokenA)
+                }
+                let salt := keccak256(0xB0C, 0x28)
+                mstore(0xB00, COMETH_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, CODE_HASH_COMETH)
 
                 pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
             }
