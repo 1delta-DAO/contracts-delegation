@@ -549,14 +549,18 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
      * @param amountIn sell amount
      * @return buyAmount output amount
      */
-    function swapUniV2ExactInFOT(uint256 amountIn, address receiver, bytes calldata path) internal returns (uint256 buyAmount) {
+    function swapUniV2ExactInFOT(
+        uint256 amountIn,
+        address receiver,
+        bytes calldata path // minimal inputs
+    ) internal returns (uint256 buyAmount) {
         assembly {
             let ptr := mload(0x40) // free memory pointer
             ////////////////////////////////////////////////////
             // We extract all relevant data from the path bytes blob
             ////////////////////////////////////////////////////
             let pair := calldataload(add(path.offset, 22))
-            let poolFeeDenom := and(UINT16_MASK, and(ADDRESS_MASK, shr(80, pair)))
+            let poolFeeDenom := and(UINT16_MASK, shr(80, pair))
             pair := and(ADDRESS_MASK, shr(96, pair))
             // we define this as token in and later re-assign this to
             // reserve in to prevent stack too deep errors
