@@ -22,7 +22,7 @@ const aggregatorsTargets = [
 const aggregatorsToApproves = [
     '0x4E3288c9ca110bCC82bf38F09A7b425c095d92Bf', // ODOS
     '0x6131B5fae19EA4f9D964eAc0408E4408b66337b5', // KYBER
-    '0x216b4b4ba9f3e719726886d34a177484278bfcae', // PARASWAP,
+    '0x216b4b4ba9f3e719726886d34a177484278bfcae', // PARASWAP TRANSFER PTOXY
     '0x1111111254eeb25477b68fb85ed929f73a960582' // 1inch
 ]
 
@@ -30,7 +30,7 @@ async function main() {
     const accounts = await ethers.getSigners()
     const operator = accounts[1]
     const chainId = await operator.getChainId();
-    if (chainId !== 5000) throw new Error("invalid chainId")
+    if (chainId !== 137) throw new Error("invalid chainId")
     console.log("operator", operator.address, "on", chainId)
 
     // we manually increment the nonce
@@ -92,7 +92,7 @@ async function main() {
 
     const oneDeltaModuleConfig = await new ConfigModule__factory(operator).attach(proxy.address)
 
-    let tx = await oneDeltaModuleConfig.configureModules(cut)
+    let tx = await oneDeltaModuleConfig.configureModules(cut, getPolygonConfig(nonce++))
     await tx.wait()
     console.log("modules added")
     const oneDeltaManagement = await new MantleManagementModule__factory(operator).attach(proxy.address)
