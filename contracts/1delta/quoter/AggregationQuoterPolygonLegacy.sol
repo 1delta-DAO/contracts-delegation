@@ -54,7 +54,7 @@ interface ISwapPool {
  * Quoter contract
  * Paths have to be encoded as follows: token0 (address) | param0 (uint24) | poolId (uint8) | token1 (address) |
  */
-contract OneDeltaQuoterPolygon is PoolGetterPolygon {
+contract OneDeltaQuoterPolygonLegacy is PoolGetterPolygon {
     /// @dev Transient storage variable used to check a safety condition in exact output swaps.
     uint256 private amountOutCached;
 
@@ -713,7 +713,7 @@ contract OneDeltaQuoterPolygon is PoolGetterPolygon {
                     //     ((reserveOut - amountOut) * feeAm) + 1;
                     // feAm is 997 for Moe
                     x := add(div(mul(mul(sellReserve, buyAmount), 1000), mul(sub(buyReserve, buyAmount), 997)), 1)
-                } 
+                }
             }
         }
     }

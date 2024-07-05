@@ -522,7 +522,7 @@ contract OneDeltaQuoterMantle is PoolGetter {
             if (poolId < 49) {
                 assembly {
                     // tokenOut starts at 43th byte for CL
-                    tokenOut := shr(96, calldataload(add(path.offset, 43)))
+                    tokenOut := shr(96, calldataload(add(path.offset, CL_PARAM_LENGTH)))
                 }
                 amountIn = quoteExactInputSingleV3(tokenIn, tokenOut, pair, amountIn);
                 path = path[CL_PARAM_LENGTH:];
@@ -877,6 +877,10 @@ contract OneDeltaQuoterMantle is PoolGetter {
                         sellReserve := mload(0x0)
                         buyReserve := mload(0x20)
                     }
+                    // we ensure that the pair has enough funds
+                    if gt(buyAmount, buyReserve) {
+                        revert(0, 0)
+                    }
 
                     // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
                     // x = (reserveIn * amountOut * 10000) /
@@ -926,11 +930,21 @@ contract OneDeltaQuoterMantle is PoolGetter {
                         switch lt(tokenIn, tokenOut)
                         case 1 {
                             _reserveInScaled := div(mul(mload(0x0), SCALE_18), _decimalsIn)
-                            _reserveOutScaled := div(mul(mload(0x20), SCALE_18), _decimalsOut_xy)
+                            let buyReserve := mload(0x20)
+                            // we ensure that the pair has enough funds
+                            if gt(buyAmount, buyReserve) {
+                                revert(0, 0)
+                            }
+                            _reserveOutScaled := div(mul(buyReserve, SCALE_18), _decimalsOut_xy)
                         }
                         default {
                             _reserveInScaled := div(mul(mload(0x20), SCALE_18), _decimalsIn)
-                            _reserveOutScaled := div(mul(mload(0x0), SCALE_18), _decimalsOut_xy)
+                            let buyReserve := mload(0x0)
+                            // we ensure that the pair has enough funds
+                            if gt(buyAmount, buyReserve) {
+                                revert(0, 0)
+                            }
+                            _reserveOutScaled := div(mul(buyReserve, SCALE_18), _decimalsOut_xy)
                         }
                         y0 := sub(_reserveOutScaled, div(mul(buyAmount, SCALE_18), _decimalsOut_xy))
                         x := _reserveInScaled

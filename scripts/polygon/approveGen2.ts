@@ -3,7 +3,7 @@ import { ethers } from "hardhat";
 import {
     MantleManagementModule__factory,
 } from "../../types";
-import { ONE_DELTA_GEN2_ADDRESSES } from "./addresses/oneDeltaAddresses";
+import { ONE_DELTA_GEN2_ADDRESSES_POLYGON } from "./addresses/oneDeltaAddresses";
 
 async function main() {
     const accounts = await ethers.getSigners()
@@ -16,7 +16,7 @@ async function main() {
     let nonce = await operator.getTransactionCount()
    
     console.log("modules added")
-    const oneDeltaManagement = await new MantleManagementModule__factory(operator).attach(ONE_DELTA_GEN2_ADDRESSES.proxy)
+    const oneDeltaManagement = await new MantleManagementModule__factory(operator).attach(ONE_DELTA_GEN2_ADDRESSES_POLYGON.proxy)
 
     // nonce = await execMUSDApproves(oneDeltaManagement, nonce)
 

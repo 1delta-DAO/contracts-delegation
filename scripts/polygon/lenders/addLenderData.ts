@@ -11,7 +11,7 @@ import { YLDR_A_TOKENS, YLDR_V_TOKENS } from "../addresses/yldrAddresses";
 export async function addAaveV3Tokens(manager: MantleManagementModule, nonce: number) {
     const tokenKeys = Object.keys(AAVE_V3_A_TOKENS)
     for (let k of tokenKeys) {
-        console.log("add lendle tokens a", k)
+        console.log("add aave v3 tokens a", k)
         const token = TOKENS_POLYGON[k]
         const tx = await manager.addGeneralLenderTokens(
             token,
@@ -29,7 +29,7 @@ export async function addAaveV3Tokens(manager: MantleManagementModule, nonce: nu
 export async function addAaveV2Tokens(manager: MantleManagementModule, nonce: number) {
     const tokenKeys = Object.keys(AAVE_V2_A_TOKENS)
     for (let k of tokenKeys) {
-        console.log("add aurelius tokens a", k)
+        console.log("add aave v2 tokens a", k)
         const token = TOKENS_POLYGON[k]
         const tx = await manager.addGeneralLenderTokens(
             token,
@@ -48,7 +48,7 @@ export async function addAaveV2Tokens(manager: MantleManagementModule, nonce: nu
 export async function addYldrTokens(manager: MantleManagementModule, nonce: number) {
     const tokenKeys = Object.keys(YLDR_A_TOKENS)
     for (let k of tokenKeys) {
-        console.log("add aurelius tokens a", k)
+        console.log("add yldr tokens a", k)
         const token = TOKENS_POLYGON[k]
         const tx = await manager.addGeneralLenderTokens(
             token,

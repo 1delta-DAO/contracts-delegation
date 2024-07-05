@@ -3,7 +3,7 @@
 pragma solidity ^0.8.26;
 
 import {IERC20} from "../../../../../interfaces/IERC20.sol";
-import {WithMantleStorage} from "./BrokerStorage.sol";
+import {WithPolygonStorage} from "./BrokerStorage.sol";
 
 // solhint-disable max-line-length
 
@@ -12,7 +12,7 @@ import {WithMantleStorage} from "./BrokerStorage.sol";
  * @notice Allows the owner to insert token and lending protocol data
  *         Due to contract size limitations this is a separate contract
  */
-contract MantleManagementModule is WithMantleStorage {
+contract PolygonManagementModule is WithPolygonStorage {
     modifier onlyOwner() {
         require(ms().contractOwner == msg.sender, "Only owner can interact.");
         _;

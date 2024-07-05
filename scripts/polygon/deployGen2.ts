@@ -3,8 +3,8 @@ import { ethers } from "hardhat";
 import {
     DeltaBrokerProxyGen2__factory,
     ConfigModule__factory,
-    MantleManagementModule__factory,
-    OneDeltaComposerMantle__factory,
+    PolygonManagementModule__factory,
+    OneDeltaComposerPolygon__factory,
     LensModule__factory,
 } from "../../types";
 import { getPolygonConfig } from "./utils";
@@ -58,11 +58,11 @@ async function main() {
 
 
     // management
-    const management = await new MantleManagementModule__factory(operator).deploy(getPolygonConfig(nonce++))
+    const management = await new PolygonManagementModule__factory(operator).deploy(getPolygonConfig(nonce++))
     await management.deployed()
 
     // composer
-    const composer = await new OneDeltaComposerMantle__factory(operator).deploy(getPolygonConfig(nonce++))
+    const composer = await new OneDeltaComposerPolygon__factory(operator).deploy(getPolygonConfig(nonce++))
     await composer.deployed()
 
 
@@ -95,7 +95,7 @@ async function main() {
     let tx = await oneDeltaModuleConfig.configureModules(cut, getPolygonConfig(nonce++))
     await tx.wait()
     console.log("modules added")
-    const oneDeltaManagement = await new MantleManagementModule__factory(operator).attach(proxy.address)
+    const oneDeltaManagement = await new PolygonManagementModule__factory(operator).attach(proxy.address)
 
     // add aggregators
     tx = await oneDeltaManagement.setValidTarget(aggregatorsToApproves[0], aggregatorsTargets[0], true, getPolygonConfig(nonce++))

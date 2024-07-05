@@ -81,7 +81,7 @@ library LibStorage {
 /**
  * The `WithStorage` contract provides a base contract for Module contracts to inherit.
  */
-contract WithMantleStorage {
+contract WithPolygonStorage {
     function ls() internal pure returns (GeneralLenderStorage storage) {
         return LibStorage.lenderStorage();
     }

@@ -11,13 +11,15 @@ abstract contract PoolGetterPolygon {
 
     /// @dev Mask of lower 20 bytes.
     uint256 internal constant ADDRESS_MASK = 0x00ffffffffffffffffffffffffffffffffffffffff;
-    /// @dev Mask of lower 3 bytes.
-    uint256 internal constant UINT24_MASK = 0xffffff;
+
     /// @dev MIN_SQRT_RATIO + 1 from Uniswap's TickMath
     uint160 internal immutable MIN_SQRT_RATIO = 4295128740;
     /// @dev MAX_SQRT_RATIO - 1 from Uniswap's TickMath
     uint160 internal immutable MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970341;
 
+    /// @dev Mask of lower 3 bytes.
+    uint256 internal constant UINT24_MASK = 0xffffff;
+    
     // _FF_ is given as follows: bytes32((uint256(0xff) << 248) | (uint256(uint160(address)) << 88));
 
     bytes32 internal constant SMARDEX_FF_FACTORY = 0xff9A1e1681f6D59Ca051776410465AfAda6384398f0000000000000000000000;

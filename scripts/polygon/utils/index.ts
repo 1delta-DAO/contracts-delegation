@@ -1,6 +1,8 @@
-
+// 
+// Base: 65.992920355 Gwei |Max: 111.630131289 Gwei |Max Priority: 30 Gwei
 const POLYGON_CONFIGS = {
-    // none atm
+    maxFeePerGas: 250 * 1e9,
+    maxPriorityFeePerGas: 35 * 1e9
 }
 
 
