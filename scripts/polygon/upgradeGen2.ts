@@ -21,14 +21,12 @@ async function main() {
 
     // we manually increment the nonce
     let nonce = await operator.getTransactionCount()
-    // deploy module config
-    const moduleConfig = await new ConfigModule__factory(operator).attach(proxy)
 
     // deploy modules
 
     const lens = await new LensModule__factory(operator).attach(proxy)
 
-    const managementSelectors = await lens.moduleFunctionSelectors(ONE_DELTA_GEN2_ADDRESSES_POLYGON.managementImplementation)
+    // const managementSelectors = await lens.moduleFunctionSelectors(ONE_DELTA_GEN2_ADDRESSES_POLYGON.managementImplementation)
     const composerSelectors = await lens.moduleFunctionSelectors(ONE_DELTA_GEN2_ADDRESSES_POLYGON.composerImplementation)
 
     const cut: {
@@ -38,12 +36,12 @@ async function main() {
     }[] = []
 
 
-    // remove old
-    cut.push({
-        moduleAddress: ethers.constants.AddressZero,
-        action: ModuleConfigAction.Remove,
-        functionSelectors: managementSelectors
-    })
+    // // remove old
+    // cut.push({
+    //     moduleAddress: ethers.constants.AddressZero,
+    //     action: ModuleConfigAction.Remove,
+    //     functionSelectors: managementSelectors
+    // })
 
 
     // remove old
@@ -53,9 +51,9 @@ async function main() {
         functionSelectors: composerSelectors
     })
 
-    // management
-    const management = await new PolygonManagementModule__factory(operator).deploy(getPolygonConfig(nonce++))
-    await management.deployed()
+    // // management
+    // const management = await new PolygonManagementModule__factory(operator).deploy(getPolygonConfig(nonce++))
+    // await management.deployed()
 
     // composer
     const composer = await new OneDeltaComposerPolygon__factory(operator).deploy(getPolygonConfig(nonce++))
@@ -66,7 +64,7 @@ async function main() {
 
 
     const modules: any = []
-    modules.push(management)
+    // modules.push(management)
     modules.push(composer)
 
     console.log("Having", modules.length, "additions")
@@ -88,7 +86,7 @@ async function main() {
     console.log("deployment complete")
     console.log("======== Addresses =======")
     console.log("composerImplementation:", composer.address)
-    console.log("managementImplementation:", management.address)
+    // console.log("managementImplementation:", management.address)
     console.log("==========================")
 }
 

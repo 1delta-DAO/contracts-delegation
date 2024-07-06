@@ -27,7 +27,7 @@ import {DeltaBrokerProxyGen2} from "../../contracts/1delta/proxy/DeltaBrokerGen2
 // initializer
 
 // core modules
-import {MantleManagementModule} from "../../contracts/1delta/modules/deploy/polygon/storage/ManagementModule.sol";
+import {PolygonManagementModule} from "../../contracts/1delta/modules/deploy/polygon/storage/ManagementModule.sol";
 import {OneDeltaComposerPolygon} from "../../contracts/1delta/modules/deploy/polygon/Composer.sol";
 
 // forge
@@ -89,7 +89,7 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
         selectors[12] = IFlashAggregator.algebraSwapCallback.selector;
         selectors[13] = IFlashAggregator.butterSwapCallback.selector;
         selectors[14] = IFlashAggregator.ramsesV2SwapCallback.selector;
-        selectors[15] = IFlashAggregator.FusionXCall.selector;
+        selectors[15] = IFlashAggregator.uniswapV2Call.selector;
         selectors[16] = IFlashAggregator.hook.selector;
         selectors[17] = IFlashAggregator.moeCall.selector;
         selectors[18] = IFlashAggregator.swapY2XCallback.selector;
@@ -139,7 +139,7 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
 
         brokerProxy = IBrokerProxy(brokerProxyAddress);
 
-        MantleManagementModule _management = new MantleManagementModule();
+        PolygonManagementModule _management = new PolygonManagementModule();
         OneDeltaComposerPolygon _aggregator = new OneDeltaComposerPolygon();
 
         management = IManagement(brokerProxyAddress);

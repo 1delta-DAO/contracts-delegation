@@ -478,7 +478,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             }
             // fetch tokens
             let firstWord := calldataload(data.offset)
-            let pId := and(UINT8_MASK, shr(88, firstWord)) 
+            let pId := and(UINT8_MASK, shr(80, firstWord)) 
             tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
             tokenOut := and(ADDRESS_MASK, calldataload(add(data.offset, 32)))
             let ptr := mload(0x40)
@@ -692,7 +692,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // skim address from calldatas
             data.length := sub(data.length, 52)
             // assume a multihop if the calldata is longer than 64
-            multihop := gt(data.length, 64)
+            multihop := gt(data.length, MAX_SINGLE_LENGTH_UNOSWAP)
             // assign amount received
             switch iszero(amount0)
             case 0 {
