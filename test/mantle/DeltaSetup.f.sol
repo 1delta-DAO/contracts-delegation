@@ -13,6 +13,7 @@ import {ILending} from "../shared/interfaces/ILending.sol";
 import {IInitialize} from "../shared/interfaces/IInitialize.sol";
 import {IBrokerProxy} from "../shared/interfaces/IBrokerProxy.sol";
 import {IModuleConfig} from "../../contracts/1delta/proxy/interfaces/IModuleConfig.sol";
+import {IModuleLens} from "../../contracts/1delta/proxy/interfaces/IModuleLens.sol";
 // universal erc20
 import {IERC20All} from "../shared/interfaces/IERC20All.sol";
 // lending pool for debugging
@@ -153,6 +154,31 @@ contract DeltaSetup is AddressesMantle, ComposerUtils, Script, Test {
         _moduleConfig[1] = IModuleConfig.ModuleConfig(address(_aggregator), IModuleConfig.ModuleConfigAction.Add, flashAggregatorSelectors());
 
         // add all modules
+        deltaConfig.configureModules(_moduleConfig);
+        aggregator = _aggregator;
+        management = IManagement(brokerProxyAddress);
+    }
+
+
+    function upgradeExistingDelta(address proxy, address admin, address oldModule) internal virtual {
+        brokerProxyAddress = proxy;
+
+        brokerProxy = IBrokerProxy(brokerProxyAddress);
+
+        OneDeltaComposerMantle _aggregator = new OneDeltaComposerMantle();
+
+        management = IManagement(brokerProxyAddress);
+        deltaConfig = IModuleConfig(brokerProxyAddress);
+
+        bytes4[] memory oldSelectors = IModuleLens(brokerProxyAddress).moduleFunctionSelectors(oldModule);
+
+        // define configs to add to proxy
+        IModuleConfig.ModuleConfig[] memory _moduleConfig = new IModuleConfig.ModuleConfig[](2);
+        _moduleConfig[0] = IModuleConfig.ModuleConfig(address(0), IModuleConfig.ModuleConfigAction.Remove, oldSelectors);
+        _moduleConfig[1] = IModuleConfig.ModuleConfig(address(_aggregator), IModuleConfig.ModuleConfigAction.Add, flashAggregatorSelectors());
+
+        // add all modules
+        vm.prank(admin);
         deltaConfig.configureModules(_moduleConfig);
         aggregator = _aggregator;
         management = IManagement(brokerProxyAddress);
