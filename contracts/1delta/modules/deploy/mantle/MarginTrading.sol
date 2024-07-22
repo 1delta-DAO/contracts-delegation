@@ -282,6 +282,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         uint256 tradeId;
         assembly {
             let firstWord := calldataload(path.offset)
+            let dexId := and(UINT8_MASK, shr(80, firstWord))
             tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
             tradeId := and(shr(80, firstWord), UINT8_MASK) // poolId
             // second word
@@ -292,23 +293,46 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // Compute and validate pool address
             ////////////////////////////////////////////////////
             let s := mload(0x40)
-            mstore(s, METHLAB_FF_FACTORY)
-            let p := add(s, 21)
-            // Compute the inner hash in-place
-            switch lt(tokenIn, tokenOut)
-            case 0 {
-                mstore(p, tokenOut)
-                mstore(add(p, 32), tokenIn)
+            switch dexId
+            case 6 {
+                mstore(s, UNISWAP_V3_FF_FACTORY)
+                let p := add(s, 21)
+                // Compute the inner hash in-place
+                switch lt(tokenIn, tokenOut)
+                case 0 {
+                    mstore(p, tokenOut)
+                    mstore(add(p, 32), tokenIn)
+                }
+                default {
+                    mstore(p, tokenIn)
+                    mstore(add(p, 32), tokenOut)
+                }
+                mstore(add(p, 64), and(UINT16_MASK, shr(160, firstWord)))
+                mstore(p, keccak256(p, 96))
+                p := add(p, 32)
+                mstore(p, UNISWAP_V3_INIT_CODE_HASH)
+            }
+            case 5 {
+                mstore(s, METHLAB_FF_FACTORY)
+                let p := add(s, 21)
+                // Compute the inner hash in-place
+                switch lt(tokenIn, tokenOut)
+                case 0 {
+                    mstore(p, tokenOut)
+                    mstore(add(p, 32), tokenIn)
+                }
+                default {
+                    mstore(p, tokenIn)
+                    mstore(add(p, 32), tokenOut)
+                }
+                mstore(add(p, 64), and(UINT16_MASK, shr(160, firstWord)))
+                mstore(p, keccak256(p, 96))
+                p := add(p, 32)
+                mstore(p, METHLAB_INIT_CODE_HASH)
             }
             default {
-                mstore(p, tokenIn)
-                mstore(add(p, 32), tokenOut)
+                revert(0, 0)
             }
-            mstore(add(p, 64), and(UINT16_MASK, shr(160, firstWord)))
-            mstore(p, keccak256(p, 96))
-            p := add(p, 32)
-            mstore(p, METHLAB_INIT_CODE_HASH)
-        
             ////////////////////////////////////////////////////
             // If the caller is not the calculated pool, we revert
             ////////////////////////////////////////////////////

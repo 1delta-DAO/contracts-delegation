@@ -47,6 +47,9 @@ abstract contract PoolGetter {
     bytes32 internal constant METHLAB_FF_FACTORY = 0xff8f140fc3e9211b8dc2fc1d7ee3292f6817c5dd5d0000000000000000000000;
     bytes32 internal constant METHLAB_INIT_CODE_HASH = 0xacd26fbb15704ae5e5fe7342ea8ebace020e4fa5ad4a03122ce1678278cf382b;
 
+    bytes32 internal constant UNISWAP_V3_FF_FACTORY = 0xff0d922Fb1Bc191F64970ac40376643808b4B74Df90000000000000000000000;
+    bytes32 internal constant UNISWAP_V3_INIT_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
+
     bytes32 internal constant VELO_FF_FACTORY = 0xff99F9a4A96549342546f9DAE5B2738EDDcD43Bf4C0000000000000000000000;
     bytes32 constant VELO_CODE_HASH = 0x0ccd005ee58d5fb11632ef5c2e0866256b240965c62c8e990c0f84a97f311879;
     address internal constant VELO_FACTORY = 0x99F9a4A96549342546f9DAE5B2738EDDcD43Bf4C;
@@ -66,14 +69,13 @@ abstract contract PoolGetter {
     address internal constant KTX_VAULT_PRICE_FEED = 0xEdd1E8aACF7652aD8c015C4A403A9aE36F3Fe4B7;
     address internal constant USDG = 0x1Ca85898619cF01eDD8bE6ef7f8989da03D6B694;
     uint256 internal constant PRICE_PRECISION = 10 ** 30;
-    
+
     address internal constant STRATUM_3POOL = 0xD6F312AA90Ad4C92224436a7A4a648d69482e47e;
     address internal constant STRATUM_3POOL_2 = 0x7d3621aCA02B711F5f738C9f21C1bFE294df094d;
     address internal constant STRATUM_ETH_POOL = 0xe8792eD86872FD6D8b74d0668E383454cbA15AFc;
 
     address internal constant USDY = 0x5bE26527e817998A7206475496fDE1E68957c5A6;
-    address internal constant MUSD = 0xab575258d37EaA5C8956EfABe71F4eE8F6397cF3;    
-
+    address internal constant MUSD = 0xab575258d37EaA5C8956EfABe71F4eE8F6397cF3;
 
     /// @dev Returns the pool for the given token pair and fee.
     /// The pool contract may or may not exist.
@@ -182,7 +184,7 @@ abstract contract PoolGetter {
                 pool := and(ADDRESS_MASK, keccak256(s, 85))
             }
             // MethLab
-            default {
+            case 5 {
                 mstore(p, METHLAB_FF_FACTORY)
                 p := add(p, 21)
                 // Compute the inner hash in-place
@@ -199,6 +201,25 @@ abstract contract PoolGetter {
                 mstore(p, keccak256(p, 96))
                 p := add(p, 32)
                 mstore(p, METHLAB_INIT_CODE_HASH)
+                pool := and(ADDRESS_MASK, keccak256(s, 85))
+            }
+            default {
+                mstore(p, UNISWAP_V3_FF_FACTORY)
+                p := add(p, 21)
+                // Compute the inner hash in-place
+                switch lt(tokenA, tokenB)
+                case 0 {
+                    mstore(p, tokenB)
+                    mstore(add(p, 32), tokenA)
+                }
+                default {
+                    mstore(p, tokenA)
+                    mstore(add(p, 32), tokenB)
+                }
+                mstore(add(p, 64), and(UINT24_MASK, fee))
+                mstore(p, keccak256(p, 96))
+                p := add(p, 32)
+                mstore(p, UNISWAP_V3_INIT_CODE_HASH)
                 pool := and(ADDRESS_MASK, keccak256(s, 85))
             }
         }
