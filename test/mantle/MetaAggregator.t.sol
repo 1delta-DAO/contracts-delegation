@@ -2,7 +2,7 @@
 pragma solidity ^0.8.19;
 
 import "./DeltaSetup.f.sol";
-import "../../contracts/1delta/modules/deploy/mantle/MetaAggregator.sol";
+import "../../contracts/1delta/modules/mantle/MetaAggregator.sol";
 
 contract Nothing {
     function call() external {}

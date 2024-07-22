@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.26;
 
-import {WithVenusStorage} from "../../../../storage/VenusStorage.sol";
+import {WithVenusStorage} from "../../../storage/VenusStorage.sol";
 
 interface IVT {
     function exchangeRateStored() external view returns (uint);

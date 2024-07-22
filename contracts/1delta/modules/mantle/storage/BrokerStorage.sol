@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.26;
 
-import {LibModules} from "../../../../proxy/libraries/LibModules.sol";
+import {LibModules} from "../../../proxy/libraries/LibModules.sol";
 
 // We store lender data in the contract storage
 // This is to avoid external contract calls to
@@ -28,11 +28,6 @@ struct ExternalCallStorage {
     mapping(address => mapping(address => bool)) isValidApproveAndCallTarget;
 }
 
-// controls access to balancer-type flash loans
-struct FlashLoanGateway {
-    uint256 entryState;
-}
-
 library LibStorage {
     // this is the core diamond storage location
     bytes32 constant MODULE_STORAGE_POSITION = keccak256("diamond.standard.module.storage");
@@ -40,7 +35,6 @@ library LibStorage {
     bytes32 constant LENDER_STORAGE = keccak256("broker.storage.lender");
     bytes32 constant GENERAL_CACHE = keccak256("broker.storage.cache.general");
     bytes32 constant EXTERNAL_CALL_STORAGE = keccak256("broker.storage.externalCalls");
-    bytes32 constant FLASH_LOAN_GATEWAY = keccak256("broker.storage.flashLoanGateway");
 
     function lenderStorage() internal pure returns (GeneralLenderStorage storage ls) {
         bytes32 position = LENDER_STORAGE;
@@ -69,19 +63,12 @@ library LibStorage {
             ds.slot := position
         }
     }
-
-    function flashLoanGatewayStorage() internal pure returns (FlashLoanGateway storage fgs) {
-        bytes32 position = FLASH_LOAN_GATEWAY;
-        assembly {
-            fgs.slot := position
-        }
-    }
 }
 
 /**
  * The `WithStorage` contract provides a base contract for Module contracts to inherit.
  */
-contract WithPolygonStorage {
+contract WithMantleStorage {
     function ls() internal pure returns (GeneralLenderStorage storage) {
         return LibStorage.lenderStorage();
     }

@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.26;
 
-import {IERC20} from "../../../../../interfaces/IERC20.sol";
+import {IERC20} from "../../../../interfaces/IERC20.sol";
 import {WithMantleStorage} from "./BrokerStorage.sol";
 
 // solhint-disable max-line-length

@@ -8,7 +8,7 @@ import {ComposerUtils, Commands} from "../shared/utils/ComposerUtils.sol";
 
 // interfaces
 import {IFlashAggregator} from "../shared/interfaces/IFlashAggregator.sol";
-import {IFlashLoanReceiver} from "../../contracts/1delta/modules/deploy/polygon/IFlashLoanReceiver.sol";
+import {IFlashLoanReceiver} from "../../contracts/1delta/modules/polygon/IFlashLoanReceiver.sol";
 import {IManagement} from "../shared/interfaces/IManagement.sol";
 import {ILending} from "../shared/interfaces/ILending.sol";
 import {IInitialize} from "../shared/interfaces/IInitialize.sol";
@@ -18,7 +18,7 @@ import {IComet} from "../../contracts/1delta/interfaces/IComet.sol";
 // universal erc20
 import {IERC20All} from "../shared/interfaces/IERC20All.sol";
 // lending pool for debugging
-import {ILendingPool} from "../../contracts/1delta/modules/deploy/mantle/ILendingPool.sol";
+import {ILendingPool} from "../../contracts/1delta/modules/mantle/ILendingPool.sol";
 
 // proxy and management
 import {ConfigModule} from "../../contracts/1delta/proxy/modules/ConfigModule.sol";
@@ -27,8 +27,8 @@ import {DeltaBrokerProxyGen2} from "../../contracts/1delta/proxy/DeltaBrokerGen2
 // initializer
 
 // core modules
-import {PolygonManagementModule} from "../../contracts/1delta/modules/deploy/polygon/storage/ManagementModule.sol";
-import {OneDeltaComposerPolygon} from "../../contracts/1delta/modules/deploy/polygon/Composer.sol";
+import {PolygonManagementModule} from "../../contracts/1delta/modules/polygon/storage/ManagementModule.sol";
+import {OneDeltaComposerPolygon} from "../../contracts/1delta/modules/polygon/Composer.sol";
 
 // forge
 import {Script, console2} from "forge-std/Script.sol";

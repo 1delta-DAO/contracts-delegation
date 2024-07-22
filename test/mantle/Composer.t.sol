@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import "../../contracts/1delta/modules/deploy/mantle/composable/Commands.sol";
+import "../../contracts/1delta/modules/mantle/composable/Commands.sol";
 import "./DeltaSetup.f.sol";
 
 contract ComposerTestMantle is DeltaSetup {

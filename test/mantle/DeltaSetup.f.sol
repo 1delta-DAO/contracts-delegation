@@ -7,7 +7,7 @@ import {ComposerUtils, Commands} from "../shared/utils/ComposerUtils.sol";
 
 // interfaces
 import {IFlashAggregator} from "../shared/interfaces/IFlashAggregator.sol";
-import {IFlashLoanReceiver} from "../../contracts/1delta/modules/deploy/mantle/IFlashLoanReceiver.sol";
+import {IFlashLoanReceiver} from "../../contracts/1delta/modules/mantle/IFlashLoanReceiver.sol";
 import {IManagement} from "../shared/interfaces/IManagement.sol";
 import {ILending} from "../shared/interfaces/ILending.sol";
 import {IInitialize} from "../shared/interfaces/IInitialize.sol";
@@ -17,7 +17,7 @@ import {IModuleLens} from "../../contracts/1delta/proxy/interfaces/IModuleLens.s
 // universal erc20
 import {IERC20All} from "../shared/interfaces/IERC20All.sol";
 // lending pool for debugging
-import {ILendingPool} from "../../contracts/1delta/modules/deploy/mantle/ILendingPool.sol";
+import {ILendingPool} from "../../contracts/1delta/modules/mantle/ILendingPool.sol";
 
 // proxy and management
 import {ConfigModule} from "../../contracts/1delta/proxy/modules/ConfigModule.sol";
@@ -26,8 +26,8 @@ import {DeltaBrokerProxyGen2} from "../../contracts/1delta/proxy/DeltaBrokerGen2
 // initializer
 
 // core modules
-import {MantleManagementModule} from "../../contracts/1delta/modules/deploy/mantle/storage/ManagementModule.sol";
-import {OneDeltaComposerMantle} from "../../contracts/1delta/modules/deploy/mantle/Composer.sol";
+import {MantleManagementModule} from "../../contracts/1delta/modules/mantle/storage/ManagementModule.sol";
+import {OneDeltaComposerMantle} from "../../contracts/1delta/modules/mantle/Composer.sol";
 
 // forge
 import {Script, console2} from "forge-std/Script.sol";

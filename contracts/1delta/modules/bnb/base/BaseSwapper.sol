@@ -6,9 +6,9 @@ pragma solidity 0.8.26;
 * Author: Achthar | 1delta 
 /******************************************************************************/
 
-import {IUniversalV3StyleSwap} from "../../../../dex-tools/interfaces/IUniversalSwap.sol";
-import {IUniswapV2Pair} from "../../../../../external-protocols/uniswapV2/core/interfaces/IUniswapV2Pair.sol";
-import {TokenTransfer} from "../../../../libraries/TokenTransfer.sol";
+import {IUniversalV3StyleSwap} from "../../../dex-tools/interfaces/IUniversalSwap.sol";
+import {IUniswapV2Pair} from "../../../../external-protocols/uniswapV2/core/interfaces/IUniswapV2Pair.sol";
+import {TokenTransfer} from "../../../libraries/TokenTransfer.sol";
 
 // solhint-disable max-line-length
 
