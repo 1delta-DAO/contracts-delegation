@@ -713,7 +713,6 @@ contract OneDeltaComposerPolygon is MarginTrading {
                     // zero amount flags that the entire balance is sent
                     ////////////////////////////////////////////////////
                     assembly {
-                        let owner := callerAddress
                         let underlying := and(ADDRESS_MASK, shr(96, calldataload(currentOffset)))
                         let receiver := and(ADDRESS_MASK, shr(96, calldataload(add(currentOffset, 20))))
                         let amount := and(_UINT112_MASK, calldataload(add(currentOffset, 22)))
@@ -722,7 +721,7 @@ contract OneDeltaComposerPolygon is MarginTrading {
                             // selector for balanceOf(address)
                             mstore(0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
                             // add this address as parameter
-                            mstore(0x04, owner)
+                            mstore(0x04, callerAddress)
                             // call to token
                             pop(
                                 staticcall(
@@ -741,7 +740,7 @@ contract OneDeltaComposerPolygon is MarginTrading {
 
                         // selector for transferFrom(address,address,uint256)
                         mstore(ptr, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
-                        mstore(add(ptr, 0x04), owner)
+                        mstore(add(ptr, 0x04), callerAddress)
                         mstore(add(ptr, 0x24), receiver)
                         mstore(add(ptr, 0x44), amount)
 
@@ -834,34 +833,36 @@ contract OneDeltaComposerPolygon is MarginTrading {
                             default {
                                 transferAmount := providedAmount
                             }
-                            let ptr := mload(0x40) // free memory pointer
+                            if gt(transferAmount, 0) {
+                                let ptr := mload(0x40) // free memory pointer
 
-                            // selector for transfer(address,uint256)
-                            mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
-                            mstore(add(ptr, 0x04), receiver)
-                            mstore(add(ptr, 0x24), transferAmount)
+                                // selector for transfer(address,uint256)
+                                mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+                                mstore(add(ptr, 0x04), receiver)
+                                mstore(add(ptr, 0x24), transferAmount)
 
-                            let success := call(gas(), underlying, 0, ptr, 0x44, ptr, 32)
+                                let success := call(gas(), underlying, 0, ptr, 0x44, ptr, 32)
 
-                            let rdsize := returndatasize()
+                                let rdsize := returndatasize()
 
-                            // Check for ERC20 success. ERC20 tokens should return a boolean,
-                            // but some don't. We accept 0-length return data as success, or at
-                            // least 32 bytes that starts with a 32-byte boolean true.
-                            success := and(
-                                success, // call itself succeeded
-                                or(
-                                    iszero(rdsize), // no return data, or
-                                    and(
-                                        iszero(lt(rdsize, 32)), // at least 32 bytes
-                                        eq(mload(ptr), 1) // starts with uint256(1)
+                                // Check for ERC20 success. ERC20 tokens should return a boolean,
+                                // but some don't. We accept 0-length return data as success, or at
+                                // least 32 bytes that starts with a 32-byte boolean true.
+                                success := and(
+                                    success, // call itself succeeded
+                                    or(
+                                        iszero(rdsize), // no return data, or
+                                        and(
+                                            iszero(lt(rdsize, 32)), // at least 32 bytes
+                                            eq(mload(ptr), 1) // starts with uint256(1)
+                                        )
                                     )
                                 )
-                            )
 
-                            if iszero(success) {
-                                returndatacopy(ptr, 0, rdsize)
-                                revert(ptr, rdsize)
+                                if iszero(success) {
+                                    returndatacopy(ptr, 0, rdsize)
+                                    revert(ptr, rdsize)
+                                }
                             }
                         }
                         ////////////////////////////////////////////////////
@@ -880,20 +881,21 @@ contract OneDeltaComposerPolygon is MarginTrading {
                             default {
                                 transferAmount := providedAmount
                             }
-
-                            if iszero(
-                                call(
-                                    gas(),
-                                    receiver,
-                                    providedAmount,
-                                    0x0, // input = empty for fallback/receive
-                                    0x0, // input size = zero
-                                    0x0, // output = empty
-                                    0x0 // output size = zero
-                                )
-                            ) {
-                                mstore(0, NATIVE_TRANSFER)
-                                revert(0, 0x4) // revert when native transfer fails
+                            if gt(transferAmount, 0) {
+                                if iszero(
+                                    call(
+                                        gas(),
+                                        receiver,
+                                        providedAmount,
+                                        0x0, // input = empty for fallback/receive
+                                        0x0, // input size = zero
+                                        0x0, // output = empty
+                                        0x0 // output size = zero
+                                    )
+                                ) {
+                                    mstore(0, NATIVE_TRANSFER)
+                                    revert(0, 0x4) // revert when native transfer fails
+                                }
                             }
                         }
                         currentOffset := add(currentOffset, 65)
@@ -962,38 +964,40 @@ contract OneDeltaComposerPolygon is MarginTrading {
                         default {
                             transferAmount := providedAmount
                         }
-                        // selector for withdraw(uint256)
-                        mstore(0x0, 0x2e1a7d4d00000000000000000000000000000000000000000000000000000000)
-                        mstore(0x4, transferAmount)
-                        // should not fail since WRAPPED_NATIVE is immutable
-                        pop(
-                            call(
-                                gas(),
-                                WRAPPED_NATIVE,
-                                0x0, // no ETH
-                                0x0, // start of data
-                                0x24, // input size = selector plus amount
-                                0x0, // output = empty
-                                0x0 // output size = zero
-                            )
-                        )
-                        // transfer to receiver if different from this address
-                        if xor(receiver, address()) {
-                            // transfer native to receiver
-                            if iszero(
+                        if gt(transferAmount, 0) {
+                            // selector for withdraw(uint256)
+                            mstore(0x0, 0x2e1a7d4d00000000000000000000000000000000000000000000000000000000)
+                            mstore(0x4, transferAmount)
+                            // should not fail since WRAPPED_NATIVE is immutable
+                            pop(
                                 call(
                                     gas(),
-                                    receiver,
-                                    transferAmount,
-                                    0x0, // input = empty for fallback
-                                    0x0, // input size = zero
+                                    WRAPPED_NATIVE,
+                                    0x0, // no ETH
+                                    0x0, // start of data
+                                    0x24, // input size = selector plus amount
                                     0x0, // output = empty
                                     0x0 // output size = zero
                                 )
-                            ) {
-                                // should only revert if receiver cannot receive native
-                                mstore(0, NATIVE_TRANSFER)
-                                revert(0, 0x4)
+                            )
+                            // transfer to receiver if different from this address
+                            if xor(receiver, address()) {
+                                // transfer native to receiver
+                                if iszero(
+                                    call(
+                                        gas(),
+                                        receiver,
+                                        transferAmount,
+                                        0x0, // input = empty for fallback
+                                        0x0, // input size = zero
+                                        0x0, // output = empty
+                                        0x0 // output size = zero
+                                    )
+                                ) {
+                                    // should only revert if receiver cannot receive native
+                                    mstore(0, NATIVE_TRANSFER)
+                                    revert(0, 0x4)
+                                }
                             }
                         }
                         currentOffset := add(currentOffset, 35)

@@ -6,7 +6,8 @@ import "../../../contracts/1delta/modules/mantle/composable/Commands.sol";
 contract ComposerUtils {
     enum SweepType {
         VALIDATE,
-        NO_VALIDATE
+        BALANCE,
+        AMOUNT
     }
 
     uint8 DEFAULT_MODE = 2;
