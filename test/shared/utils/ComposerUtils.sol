@@ -126,7 +126,7 @@ contract ComposerUtils {
         return am;
     }
 
-    function encodeAaveV2FlashLoan(
+    function encodeFlashLoan(
         address asset,
         uint256 amount,
         uint8 poolId, //

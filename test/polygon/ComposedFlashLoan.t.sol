@@ -91,7 +91,7 @@ contract ComposedFlashLoanTestPolygon is DeltaSetup {
         data = abi.encodePacked(data, dataLending);
         data = abi.encodePacked(
             initTransfer,
-            encodeAaveV2FlashLoan(
+            encodeFlashLoan(
                 params.borrowAsset,
                 params.swapAmount,
                 flashSource,
@@ -169,7 +169,7 @@ contract ComposedFlashLoanTestPolygon is DeltaSetup {
                 data
             );
 
-            data = encodeAaveV2FlashLoan(
+            data = encodeFlashLoan(
                 asset, // flash withdraw asset
                 amountToFlashWithdraw,
                 flashSource,

@@ -99,7 +99,7 @@ contract ComposedFlashLoanTest is DeltaSetup {
         );
         bytes memory data = abi.encodePacked(
             initTransfer,
-            encodeAaveV2FlashLoan(
+            encodeFlashLoan(
                 params.borrowAsset,
                 params.swapAmount,
                 lenderId,
@@ -176,7 +176,7 @@ contract ComposedFlashLoanTest is DeltaSetup {
                 uint8(DEFAULT_IR_MODE)
             );
 
-            data = encodeAaveV2FlashLoan(
+            data = encodeFlashLoan(
                 asset, // flash withdraw asset
                 amountToFlashWithdraw,
                 lenderId,
@@ -192,7 +192,7 @@ contract ComposedFlashLoanTest is DeltaSetup {
                     dataWithdraw
                 ) //
             );
-console.log("bam");
+            
             vm.prank(user);
             uint gas = gasleft();
             IFlashAggregator(brokerProxyAddress).deltaCompose(data);
