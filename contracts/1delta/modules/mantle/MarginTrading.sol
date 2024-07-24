@@ -1025,8 +1025,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             assembly {
                 //  | actId | pId | pair | feeDenom
                 //  | 20    | 21  |22-42 | 42-44
-                // load so that feeDenom is at thge lower bytes
-                // starts at 
+                // load so that feeDenom is in the lower bytes
                 feeDenom := calldataload(add(data.offset, 12))
                 tradeId := and(shr(176, feeDenom), UINT8_MASK) // swap pool identifier
                 feeDenom := and(feeDenom, UINT16_MASK) // mask denom
