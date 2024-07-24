@@ -129,14 +129,14 @@ contract FlashLoanTestPolygon is DeltaSetup {
         address[] memory assets = new address[](1);
         assets[0] = WMATIC;
         caller.arr2(assets, assets);
-        console.log("test arr");
+        // console.log("test arr");
         uint s = 32;
         uint t = 32;
         for (uint i; i < 10; i++) {
             for (uint j; j < 10; j++) {
                 caller.callArr2(s, t);
                 t += 32;
-                console.log("s,t", s, t);
+                // console.log("s,t", s, t);
             }
             s += 32;
         }
@@ -145,7 +145,7 @@ contract FlashLoanTestPolygon is DeltaSetup {
     function print() internal view {
         uint i;
         while (true) {
-            console.log("index", i, i * 32 + 4);
+            // console.log("index", i, i * 32 + 4);
             i++;
             if (i > 20) break;
         }

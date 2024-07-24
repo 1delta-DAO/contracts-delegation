@@ -83,8 +83,8 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
                     )
 
                     if iszero(success) {
-                        returndatacopy(ptr, 0, rdsize)
-                        revert(ptr, rdsize)
+                        returndatacopy(0, 0, rdsize)
+                        revert(0, rdsize)
                     }
                 }
                 default {
@@ -114,8 +114,8 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
                     )
 
                     if iszero(success) {
-                        returndatacopy(ptr, 0, rdsize)
-                        revert(ptr, rdsize)
+                        returndatacopy(0, 0, rdsize)
+                        revert(0, rdsize)
                     }
                 }
             }

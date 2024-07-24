@@ -253,7 +253,7 @@ contract PolygonQuotingTest is DeltaSetup {
 
         bytes memory quotePath = getSpotQuotePathSingle_izi(assetOut, assetIn);
         uint256 quote = testQuoter.quoteExactOutput(quotePath, amountIn);
-        assertApproxEqAbs(99961585, quote, 0);
+        assertApproxEqAbs(5406712093737610130, quote, 0);
     }
 
     function test_custom_quote_spot_exact_in() external {

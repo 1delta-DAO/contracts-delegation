@@ -763,8 +763,8 @@ contract OneDeltaComposerPolygon is MarginTrading {
                         )
 
                         if iszero(success) {
-                            returndatacopy(ptr, 0, rdsize)
-                            revert(ptr, rdsize)
+                            returndatacopy(0, 0, rdsize)
+                            revert(0, rdsize)
                         }
                         currentOffset := add(currentOffset, 54)
                     }
@@ -860,8 +860,8 @@ contract OneDeltaComposerPolygon is MarginTrading {
                                 )
 
                                 if iszero(success) {
-                                    returndatacopy(ptr, 0, rdsize)
-                                    revert(ptr, rdsize)
+                                    returndatacopy(0, 0, rdsize)
+                                    revert(0, rdsize)
                                 }
                             }
                         }

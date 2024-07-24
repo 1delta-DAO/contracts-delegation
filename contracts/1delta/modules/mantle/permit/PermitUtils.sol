@@ -145,8 +145,8 @@ abstract contract PermitUtils {
 
             // revert if not successful
             if iszero(success) {
-                returndatacopy(ptr, 0, returndatasize())
-                revert(ptr, returndatasize())
+                returndatacopy(0, 0, returndatasize())
+                revert(0, returndatasize())
             }
         }
     }
@@ -200,8 +200,8 @@ abstract contract PermitUtils {
 
             // revert if not successful
             if iszero(success) {
-                returndatacopy(ptr, 0, returndatasize())
-                revert(ptr, returndatasize())
+                returndatacopy(0, 0, returndatasize())
+                revert(0, returndatasize())
             }
         }
      }
@@ -220,8 +220,8 @@ abstract contract PermitUtils {
             mstore(add(ptr, 0x44), amount)
             mstore(add(ptr, 0x64), token)
             if iszero(call(gas(), PERMIT2, 0, ptr, 0x84, 0x0, 0x0)) {
-                returndatacopy(ptr, 0, returndatasize())
-                revert(ptr, returndatasize())
+                returndatacopy(0, 0, returndatasize())
+                revert(0, returndatasize())
             }
         }
     }

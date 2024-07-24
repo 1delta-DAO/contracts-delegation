@@ -154,8 +154,8 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                     )
 
                     if iszero(success) {
-                        returndatacopy(0x0, 0, rdsize)
-                        revert(0x0, rdsize)
+                        returndatacopy(0, 0, rdsize)
+                        revert(0, rdsize)
                     }
                 }
             }
@@ -650,8 +650,8 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                     )
                 ) {
                     // Forward the error
-                    // returndatacopy(0, 0, returndatasize())
-                    // revert(0, returndatasize())
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
                 }
             }
         }

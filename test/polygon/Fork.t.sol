@@ -1,0 +1,27 @@
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.19;
+
+import "./DeltaSetup.f.sol";
+
+contract ForkTestPolygon is DeltaSetup {
+    function setUp() public virtual override {
+        vm.createSelectFork({blockNumber: 59748779, urlOrAlias: "https://polygon-rpc.com"});
+        address admin = 0x999999833d965c275A2C102a4Ebf222ca938546f;
+        address proxy = 0x6A6faa54B9238f0F079C8e6CBa08a7b9776C7fE4;
+        address oldModule = 0x627b69E4f1719E19db01F25Be24BD4099df84670;
+        upgradeExistingDelta(proxy, admin, oldModule);
+    }
+
+    // skipt this one for now
+    function test_permit_polygon() external /** address user, uint8 lenderId */ {
+        address user = 0x91ae002a960e63Ccb0E5bDE83A8C13E51e1cB91A;
+        vm.prank(user);
+        vm.expectRevert(); // should revert with overflow
+        IFlashAggregator(brokerProxyAddress).deltaCompose(getSwapWithPermit());
+    }
+
+    function getSwapWithPermit() internal pure returns (bytes memory data) {
+        // this data is incorrect
+        data = hex"33fb00ac187a8eb5afae4eace434f493eb62672df700e000000000000000000000000091ae002a960e63ccb0e5bde83a8c13e51e1cb91a0000000000000000000000009bc92bf848faf2355c429c54d1ede3e767bdd7900000000000000000000000000000000000000000000000000000000001312d000000000000000000000000000000000000000000000000000000000066a0ed68000000000000000000000000000000000000000000000000000000000000001cc9033bf915778d3371a6acfc1ac70746e966edef8b700b552ee7f681a239470d5dd60184a3bd687b618a6bde359a684c92659adf06e489b1a88e560b0ba8df98020000000000000000000b3a2656e0411f0000000000000000000000a7d8c00042c2132d05d31c914a87c6611c10748aeb04b58e8f03039ceff2f5138fc59eb925d270b8a7a9c02a1810f253cd7ceb23fd6bc0add59e62ac25578270cff1b9f619000202000000000000000000082a8eaf3ba3a300000000000000000000007a1200006ec2132d05d31c914a87c6611c10748aeb04b58e8f0300254aa3a898071d6a2da0db11da73b02b4646078f00648f3cf7ad23cd3cadbd9735aff958023239c6a06300035bf44bb003efe05f711a14a189c0902d6626e91995537ceb23fd6bc0add59e62ac25578270cff1b9f61900020200000000000000000001058b8aacfb0600000000000000000000000f42400042c2132d05d31c914a87c6611c10748aeb04b58e8f03003840d6a1b96292c8e44991b5605e03245584585b00647ceb23fd6bc0add59e62ac25578270cff1b9f6190002";
+    }
+}

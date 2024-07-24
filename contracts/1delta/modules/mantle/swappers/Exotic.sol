@@ -60,8 +60,8 @@ abstract contract ExoticSwapper is CurveSwapper {
             )
             if iszero(success) {
                 let rdsize := returndatasize()
-                returndatacopy(ptr, 0, rdsize)
-                revert(ptr, rdsize)
+                returndatacopy(0, 0, rdsize)
+                revert(0, rdsize)
             }
 
             amountOut := mload(ptr)
@@ -103,8 +103,8 @@ abstract contract ExoticSwapper is CurveSwapper {
             )
             if iszero(success) {
                 let rdsize := returndatasize()
-                returndatacopy(ptr, 0, rdsize)
-                revert(ptr, rdsize)
+                returndatacopy(0, 0, rdsize)
+                revert(0, rdsize)
             }
 
             amountOut := mload(ptr)
@@ -153,7 +153,8 @@ abstract contract ExoticSwapper is CurveSwapper {
             // call swap, revert if invalid/undefined pair
             if iszero(call(gas(), pair, 0x0, ptr, 0x44, ptr, 0x20)) {
                 let rdsize := returndatasize()
-                revert(ptr, rdsize)
+                returndatacopy(0, 0, rdsize)
+                revert(0, rdsize)
             }
             // the swap call returns both amounts encoded into a single bytes32 as (amountX,amountY)
             switch swapForY

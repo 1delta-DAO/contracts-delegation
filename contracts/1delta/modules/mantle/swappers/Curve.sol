@@ -74,8 +74,8 @@ abstract contract CurveSwapper is UniTypeSwapper {
                 )
 
                 if iszero(success) {
-                    returndatacopy(ptr, 0, rdsize)
-                    revert(ptr, rdsize)
+                    returndatacopy(0, 0, rdsize)
+                    revert(0, rdsize)
                 }
             }
         
@@ -224,8 +224,8 @@ abstract contract CurveSwapper is UniTypeSwapper {
                 )
 
                 if iszero(success) {
-                    returndatacopy(ptr, 0, rdsize)
-                    revert(ptr, rdsize)
+                    returndatacopy(0, 0, rdsize)
+                    revert(0, rdsize)
                 }
             }
         }
@@ -279,8 +279,8 @@ abstract contract CurveSwapper is UniTypeSwapper {
                 )
 
                 if iszero(success) {
-                    returndatacopy(ptr, 0, rdsize)
-                    revert(ptr, rdsize)
+                    returndatacopy(0, 0, rdsize)
+                    revert(0, rdsize)
                 }
             }
             
@@ -301,8 +301,8 @@ abstract contract CurveSwapper is UniTypeSwapper {
             mstore(add(ptr, 0x84), MAX_UINT256) // no deadline
             if iszero(call(gas(), pool, 0x0, ptr, 0xA4, ptr, 0x20)) {
                 let rdsize := returndatasize()
-                returndatacopy(ptr, 0, rdsize)
-                revert(ptr, rdsize)
+                returndatacopy(0, 0, rdsize)
+                revert(0, rdsize)
             }
 
             amountOut := mload(ptr)
@@ -345,8 +345,8 @@ abstract contract CurveSwapper is UniTypeSwapper {
                 )
 
                 if iszero(success) {
-                    returndatacopy(ptr, 0, rdsize)
-                    revert(ptr, rdsize)
+                    returndatacopy(0, 0, rdsize)
+                    revert(0, rdsize)
                 }
             }
         }
