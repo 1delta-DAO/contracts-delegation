@@ -566,9 +566,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 revert (0, 0x4)
             }
             // fetch tokens
-            let firstWord := calldataload(data.offset)
-            let pId := and(UINT8_MASK, shr(80, firstWord)) 
-            tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
+            tokenIn := and(ADDRESS_MASK, shr(96, calldataload(data.offset)))
             tokenOut := and(ADDRESS_MASK, calldataload(add(data.offset, 32)))
             let ptr := mload(0x40)
             switch lt(tokenIn, tokenOut)
@@ -580,19 +578,17 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 mstore(add(ptr, 0x14), tokenOut)
                 mstore(ptr, tokenIn)
             }
-
+            let salt := keccak256(add(ptr, 0x0C), 0x28)
             mstore(ptr, WAULTSWAP_FF_FACTORY)
-            mstore(add(ptr, 0x15), keccak256(add(ptr, 0x0C), 0x28))
+            mstore(add(ptr, 0x15), salt)
             mstore(add(ptr, 0x35), CODE_HASH_WAULTSWAP)
-            
+
             // verify that the caller is a v2 type pool
             if xor(and(ADDRESS_MASK, keccak256(ptr, 0x55)), caller()) {
                 mstore(0x0, BAD_POOL)
                 revert(0x0, 0x4)
             }
             // revert if sender param is not this address
-            // this occurs if someone sends valid
-            // calldata with this contract as recipient
             if xor(sender, address()) { 
                 mstore(0, INVALID_CALLER)
                 revert (0, 0x4)
