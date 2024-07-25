@@ -473,6 +473,48 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
                 path.length := sub(path.length, 42)
             }
         } 
+        // DODO V2
+        else if(dexId == 153) {
+            address pair;
+            uint8 sellQuote;
+            assembly {
+                switch lt(path.length, 66) // same as V2
+                case 1 { currentReceiver := receiver}
+                default {
+                    dexId := and(shr(80, calldataload(add(path.offset, 43))), UINT8_MASK)
+                    switch gt(dexId, 99) 
+                    case 1 {
+                        currentReceiver := and(
+                            ADDRESS_MASK,
+                            shr(
+                                96,
+                                calldataload(
+                                    add(
+                                        path.offset,
+                                        65 // 20 + 2 + 20 + 1 + 20 + 2 [poolAddress starts here]
+                                    )
+                                ) // poolAddress
+                            )
+                        )
+                    }
+                    default {
+                        currentReceiver := address()
+                    }
+                }
+                let params := calldataload(add(path.offset, 11))
+                pair := shr(8, params)
+                sellQuote := and(UINT8_MASK, params)
+            }
+            amountIn = swapDodoV2ExactIn(
+                sellQuote,
+                pair,
+                currentReceiver
+            );
+            assembly {
+                path.offset := add(path.offset, 43)
+                path.length := sub(path.length, 43)
+            }
+        } 
          else {
             assembly {
                 mstore(0, INVALID_DEX)

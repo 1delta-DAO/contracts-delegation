@@ -518,11 +518,6 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 mstore(add(ptr, 0x15), salt)
                 mstore(add(ptr, 0x35), CODE_HASH_POLYCAT)
             }
-            case 105 {
-                mstore(ptr, APESWAP_FF_FACTORY)
-                mstore(add(ptr, 0x15), salt)
-                mstore(add(ptr, 0x35), CODE_HASH_APESWAP)
-            }
             case 106 {
                 mstore(ptr, COMETH_FF_FACTORY)
                 mstore(add(ptr, 0x15), salt)
@@ -582,6 +577,54 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             mstore(ptr, WAULTSWAP_FF_FACTORY)
             mstore(add(ptr, 0x15), salt)
             mstore(add(ptr, 0x35), CODE_HASH_WAULTSWAP)
+
+            // verify that the caller is a v2 type pool
+            if xor(and(ADDRESS_MASK, keccak256(ptr, 0x55)), caller()) {
+                mstore(0x0, BAD_POOL)
+                revert(0x0, 0x4)
+            }
+            // revert if sender param is not this address
+            if xor(sender, address()) { 
+                mstore(0, INVALID_CALLER)
+                revert (0, 0x4)
+            }
+        }
+        _v2StyleCallback(amount0, amount1, tokenIn, tokenOut, data);
+    }
+
+    // The uniswapV2 style callback for apeswap
+    function apeCall(
+        address sender,
+        uint256 amount0,
+        uint256 amount1,
+        bytes calldata data
+    ) external {
+        address tokenIn;
+        address tokenOut;
+        // the fee parameter in the path can be ignored for validating a V2 pool
+        assembly {
+            // revert if sender param is not this address
+            if xor(sender, address()) { 
+                mstore(0, INVALID_FLASH_LOAN)
+                revert (0, 0x4)
+            }
+            // fetch tokens
+            tokenIn := and(ADDRESS_MASK, shr(96, calldataload(data.offset)))
+            tokenOut := and(ADDRESS_MASK, calldataload(add(data.offset, 32)))
+            let ptr := mload(0x40)
+            switch lt(tokenIn, tokenOut)
+            case 0 {
+                mstore(add(ptr, 0x14), tokenIn)
+                mstore(ptr, tokenOut)
+            }
+            default {
+                mstore(add(ptr, 0x14), tokenOut)
+                mstore(ptr, tokenIn)
+            }
+            let salt := keccak256(add(ptr, 0x0C), 0x28)
+            mstore(ptr, APESWAP_FF_FACTORY)
+            mstore(add(ptr, 0x15), salt)
+            mstore(add(ptr, 0x35), CODE_HASH_APESWAP)
 
             // verify that the caller is a v2 type pool
             if xor(and(ADDRESS_MASK, keccak256(ptr, 0x55)), caller()) {
