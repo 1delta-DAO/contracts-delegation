@@ -59,12 +59,47 @@ contract OneDeltaQuoterMantle is PoolGetter {
     uint256 private amountOutCached;
     uint256 internal constant UINT16_MASK = 0xffff;
     uint256 internal constant SCALE_18 = 1e18;
+    uint256 internal constant UINT8_MASK = 0xff;
 
     uint256 internal constant CL_PARAM_LENGTH = 43; // token + id + pool + fee
     uint256 internal constant V2_PARAM_LENGTH = CL_PARAM_LENGTH; // token + id + pool
     uint256 internal constant EXOTIC_PARAM_LENGTH = 41; // token + id + pool
+    uint256 internal constant DODO_PARAM_LENGTH = 42; // token + id + pool + uint8
     uint256 internal constant CURVE_PARAM_LENGTH = CL_PARAM_LENGTH; // token + id + pool + idIn + idOut
     uint256 internal constant CURVE_CUSTOM_PARAM_LENGTH = 21; // no pool address provided
+
+    function quoteDodoV2ExactIn(address pair, uint256 sellQuote, uint256 amountIn) internal view returns (uint256 amountOut) {
+        assembly {
+            let ptr := mload(0x40)
+            // get selector
+            switch sellQuote
+            case 0 {
+                // querySellBase(address,uint256)
+                mstore(ptr, 0x79a0487600000000000000000000000000000000000000000000000000000000)
+            }
+            default {
+                // querySellQuote(address,uint256)
+                mstore(ptr, 0x66410a2100000000000000000000000000000000000000000000000000000000)
+            }
+            mstore(add(ptr, 0x4), 0) // trader is zero
+            mstore(add(ptr, 0x24), amountIn)
+            // call pool
+            if iszero(
+                staticcall(
+                    gas(),
+                    pair,
+                    ptr,
+                    0x44, //
+                    ptr,
+                    0x20
+                )
+            ) {
+                returndatacopy(0, 0, returndatasize())
+                revert(0, returndatasize())
+            }
+            amountOut := mload(ptr)
+        }
+    }
 
     function quoteKTXExactIn(address _tokenIn, address _tokenOut, uint256 amountIn) internal view returns (uint256 amountOut) {
         assembly {
@@ -515,7 +550,7 @@ contract OneDeltaQuoterMantle is PoolGetter {
                 let firstWord := calldataload(path.offset)
                 tokenIn := shr(96, firstWord) // get first token
                 poolId := shr(88, firstWord) //
-                pair := shr(96, calldataload(add(path.offset, 21))) // pool starts at 21st byte
+                pair := calldataload(add(path.offset, 9)) // pool starts at 21st byte
             }
 
             // v3 types
@@ -584,6 +619,14 @@ contract OneDeltaQuoterMantle is PoolGetter {
                 }
                 amountIn = quoteKTXExactIn(tokenIn, tokenOut, amountIn);
                 path = path[EXOTIC_PARAM_LENGTH:];
+            } else if (poolId == 153) {
+                uint256 sellQuote;
+                assembly {
+                    // sellQuote starts after the pair
+                    sellQuote := and(UINT8_MASK, calldataload(add(path.offset, 10)))
+                }
+                amountIn = quoteDodoV2ExactIn(pair, sellQuote, amountIn);
+                path = path[DODO_PARAM_LENGTH:];
             } else {
                 revert invalidDexId();
             }

@@ -6,7 +6,7 @@ import "./DeltaSetup.f.sol";
 /**
  * Tests DODO V2 style DEXs exact in swaps
  */
-contract DOdoTest is DeltaSetup {
+contract DodoTest is DeltaSetup {
     address someOtherUser = 0x813fBB2915B96DFbE00D88dd3D842b6e3e91FB38;
 
     address internal FBTC_WBTC_POOL = 0xD39DFbfBA9E7eccd813918FfbDa10B783EA3b3C6;
@@ -30,6 +30,11 @@ contract DOdoTest is DeltaSetup {
 
         uint256 amountIn = 0.01e8;
 
+        uint256 quoted = testQuoter.quoteExactInput(
+            getQuoteSpotExactInSingleDodoV2(assetIn, assetOut, 1),
+            amountIn //
+        );
+        console.log("quoted", quoted);
         bytes memory swapPath = getSpotExactInSingleDodoV2(assetIn, assetOut, 1);
         uint256 minimumOut = 0.001e8;
 
@@ -55,6 +60,7 @@ contract DOdoTest is DeltaSetup {
 
         // swap 10, receive approx 10, but in 18 decs
         assertApproxEqAbs(999400, balanceOut, 1);
+        assertApproxEqAbs(quoted, balanceOut, 1);
         assertApproxEqAbs(balanceIn, amountIn, 0);
     }
 
@@ -143,6 +149,11 @@ contract DOdoTest is DeltaSetup {
     function getSpotExactInSingleDodoV2(address tokenIn, address tokenOut, uint8 sellQuote) internal view returns (bytes memory data) {
         uint8 poolId = DODO;
         return abi.encodePacked(tokenIn, uint8(0), poolId, FBTC_WBTC_POOL, sellQuote, tokenOut);
+    }
+
+    function getQuoteSpotExactInSingleDodoV2(address tokenIn, address tokenOut, uint8 sellQuote) internal view returns (bytes memory data) {
+        uint8 poolId = DODO;
+        return abi.encodePacked(tokenIn, poolId, FBTC_WBTC_POOL, sellQuote, tokenOut);
     }
 
     function getSpotExactInSingleDodoV2Multi(address tokenIn, address tokenOut, uint8 sellQuote) internal view returns (bytes memory data) {
