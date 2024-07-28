@@ -478,19 +478,19 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         address sender,
         uint256 amount0,
         uint256 amount1,
-        bytes calldata data
+        bytes calldata path
     ) external {
         address tokenIn;
         address tokenOut;
         uint256 pathLength;
         // the fee parameter in the path can be ignored for validating a V2 pool
         assembly {
+            pathLength := path.length
             // revert if sender param is not this address
             if xor(sender, address()) { 
                 mstore(0, INVALID_FLASH_LOAN)
                 revert (0, 0x4)
             }
-            pathLength := data.length
             // fetch tokens
             let firstWord := calldataload(PATH_OFFSET_CALLBACK_V2)
             let pId := and(UINT8_MASK, shr(80, firstWord)) 
@@ -565,19 +565,19 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         address sender,
         uint256 amount0,
         uint256 amount1,
-        bytes calldata data
+        bytes calldata path
     ) external {
         address tokenIn;
         address tokenOut;
         uint256 pathLength;
         // the fee parameter in the path can be ignored for validating a V2 pool
         assembly {
+            pathLength := path.length
             // revert if sender param is not this address
             if xor(sender, address()) { 
                 mstore(0, INVALID_FLASH_LOAN)
                 revert (0, 0x4)
             }
-            pathLength := data.length
             // fetch tokens
             tokenIn := and(ADDRESS_MASK, shr(96, calldataload(PATH_OFFSET_CALLBACK_V2)))
             tokenOut := and(ADDRESS_MASK, calldataload(196)) // PATH_OFFSET_CALLBACK_V2 + 32
@@ -615,19 +615,19 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         address sender,
         uint256 amount0,
         uint256 amount1,
-        bytes calldata data
+        bytes calldata path
     ) external {
         address tokenIn;
         address tokenOut;
         uint256 pathLength;
         // the fee parameter in the path can be ignored for validating a V2 pool
         assembly {
+            pathLength := path.length
             // revert if sender param is not this address
             if xor(sender, address()) { 
                 mstore(0, INVALID_FLASH_LOAN)
                 revert (0, 0x4)
             }
-            pathLength := data.length
             // fetch tokens
             tokenIn := and(ADDRESS_MASK, shr(96, calldataload(PATH_OFFSET_CALLBACK_V2)))
             tokenOut := and(ADDRESS_MASK, calldataload(196)) // PATH_OFFSET_CALLBACK_V2 + 32
@@ -665,7 +665,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         address sender,
         uint256 amount0,
         uint256 amount1,
-        bytes calldata data
+        bytes calldata path
     ) external {
         uint256 tradeId;
         address tokenIn;
@@ -673,12 +673,12 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         uint256 pathLength;
         // the fee parameter in the path can be ignored for validating a V2 pool
         assembly {
+            pathLength := path.length
             // revert if sender param is not this address
             if xor(sender, address()) { 
                 mstore(0, INVALID_FLASH_LOAN)
                 revert (0, 0x4)
             }
-            pathLength := data.length
             // fetch tokens
             let firstWord := calldataload(PATH_OFFSET_CALLBACK_V2)
             tokenIn := and(ADDRESS_MASK, shr(96, firstWord))

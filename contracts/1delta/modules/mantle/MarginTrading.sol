@@ -833,6 +833,11 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         // the fee parameter in the path can be ignored for validating a V2 pool
         assembly {
             pathLength := path.length
+            // revert if sender param is not this address
+            if xor(sender, address()) { 
+                mstore(0, INVALID_FLASH_LOAN)
+                revert (0, 0x4)
+            }
             // fetch tokens
             tokenIn := and(ADDRESS_MASK, shr(96, calldataload(PATH_OFFSET_CALLBACK_V2)))
             tokenOut := and(ADDRESS_MASK, calldataload(196)) // PATH_OFFSET_CALLBACK_V2 + 32
@@ -850,11 +855,6 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             if xor(and(ADDRESS_MASK, mload(ptr)), caller()) {
                 mstore(0x0, BAD_POOL)
                 revert(0x0, 0x4)
-            }
-            // revert if sender param is not this address
-            if xor(sender, address()) { 
-                mstore(0, INVALID_CALLER)
-                revert (0, 0x4)
             }
         }
         _v2StyleCallback(amount0, amount1, tokenIn, tokenOut, pathLength);
@@ -874,6 +874,11 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         // the fee parameter in the path can be ignored for validating a V2 pool
         assembly {
             pathLength := path.length
+            // revert if sender param is not this address
+            if xor(sender, address()) { 
+                mstore(0, INVALID_FLASH_LOAN)
+                revert (0, 0x4)
+            }
             // fetch tokens
             let firstWord := calldataload(PATH_OFFSET_CALLBACK_V2)
             tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
@@ -1006,11 +1011,6 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             if xor(pair, caller()) {
                 mstore(0x0, BAD_POOL)
                 revert(0x0, 0x4)
-            }
-            // revert if sender param is not this address
-            if xor(sender, address()) { 
-                mstore(0, INVALID_CALLER)
-                revert (0, 0x4)
             }
         }
         _v2StyleCallback(amount0, amount1, tokenIn, tokenOut, pathLength);
