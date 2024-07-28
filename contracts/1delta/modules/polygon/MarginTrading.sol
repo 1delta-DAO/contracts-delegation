@@ -41,7 +41,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             let firstWord := calldataload(PATH_OFFSET_CALLBACK_V3)
             
             tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
-            tradeId := and(shr(80, firstWord), UINT8_MASK) // poolId
+            tradeId := and(UINT8_MASK, shr(80, firstWord)) // poolId
             // second word
             firstWord := calldataload(164) // PATH_OFFSET_CALLBACK_V3 + 32
             tokenOut := and(ADDRESS_MASK, firstWord)
@@ -92,7 +92,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             let firstWord := calldataload(PATH_OFFSET_CALLBACK_V3)
             let dexId := and(UINT8_MASK, shr(80, firstWord))
             tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
-            tradeId := and(shr(80, firstWord), UINT8_MASK) // poolId
+            tradeId := and(UINT8_MASK, shr(80, firstWord)) // poolId
             // second word
             firstWord := calldataload(164) // PATH_OFFSET_CALLBACK_V3 + 32
             tokenOut := and(ADDRESS_MASK, firstWord)
@@ -182,7 +182,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             pathLength := path.length
             let firstWord := calldataload(PATH_OFFSET_CALLBACK_V3)
             tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
-            tradeId := and(shr(80, firstWord), UINT8_MASK) // poolId
+            tradeId := and(UINT8_MASK, shr(80, firstWord)) // poolId
             // second word
             firstWord := calldataload(164) // PATH_OFFSET_CALLBACK_V3 + 32
             
@@ -236,7 +236,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             pathLength := path.length
             let firstWord := calldataload(PATH_OFFSET_CALLBACK_V3)
             tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
-            tradeId := and(shr(80, firstWord), UINT8_MASK) // poolId
+            tradeId := and(UINT8_MASK, shr(80, firstWord)) // poolId
             // second word
             firstWord := calldataload(164) // PATH_OFFSET_CALLBACK_V3 + 32
             tokenOut := and(ADDRESS_MASK, firstWord)
