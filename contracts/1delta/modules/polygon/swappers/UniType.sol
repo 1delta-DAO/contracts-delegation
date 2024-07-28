@@ -62,7 +62,6 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
      * @param payer payer to pass into callback
      * @param receiver receiver address
      * @param useFlashSwap if true, we assume payment in callback
-     * @param path path calldata
      */
     function _swapV2StyleExactOut(
         address tokenA,
@@ -73,7 +72,8 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
         address payer,
         address receiver,
         bool useFlashSwap,
-        bytes calldata path
+        uint256 pathOffset,
+        uint256 pathLengh
     ) internal {
         // solhint-disable-next-line no-inline-assembly
         assembly {
@@ -103,19 +103,18 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                 // We append amountIn (uint128) & payer (address) (36 bytes)
                 // This is to prevent the re-calculation of amount in
                 ////////////////////////////////////////////////////
-                let pathLength := path.length
                 // Store path
-                calldatacopy(add(ptr, 164), path.offset, pathLength)
+                calldatacopy(add(ptr, 164), pathOffset, pathLengh)
 
-                mstore(add(add(ptr, 164), pathLength), shl(128, maxIn)) // store amountIn
-                pathLength := add(pathLength, 32) // pad
-                mstore(add(add(ptr, 164), pathLength), shl(96, payer))
-                pathLength := add(pathLength, 20)
+                mstore(add(add(ptr, 164), pathLengh), shl(128, maxIn)) // store amountIn
+                pathLengh := add(pathLengh, 32) // pad
+                mstore(add(add(ptr, 164), pathLengh), shl(96, payer))
+                pathLengh := add(pathLengh, 20)
                 /// Store updated data length
-                mstore(add(ptr, 132), pathLength)
+                mstore(add(ptr, 132), pathLengh)
 
                 // Perform the external 'swap' call
-                if iszero(call(gas(), pair, 0, ptr, add(196, pathLength), ptr, 0x0)) {
+                if iszero(call(gas(), pair, 0, ptr, add(196, pathLengh), ptr, 0x0)) {
                     // store return value directly to free memory pointer
                     // The call failed; we retrieve the exact error message and revert with it
                     returndatacopy(0, 0, returndatasize()) // Copy the error message to the start of memory
@@ -394,29 +393,30 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
         address payer,
         address receiver,
         bool useFlashSwap,
-        bytes calldata path
+        uint256 pathOffset,
+        uint256 pathLength
     ) internal returns (uint256 buyAmount) {
         assembly {
             let ptr := mload(0x40) // free memory pointer
             ////////////////////////////////////////////////////
             // We extract all relevant data from the path bytes blob
             ////////////////////////////////////////////////////
-            let pair := calldataload(add(path.offset, 22))
+            let pair := calldataload(add(pathOffset, 22))
             // this is expected to be 10000 - x, where x is the poolfee in bps
             let poolFeeDenom := and(shr(80, pair), UINT16_MASK)
             pair := and(ADDRESS_MASK, shr(96, pair))
             // we define this as token in and later re-assign this to
             // reserve in to prevent stack too deep errors
-            let tokenIn_reserveIn := calldataload(path.offset)
+            let tokenIn_reserveIn := calldataload(pathOffset)
 
             let pId := and(shr(80, tokenIn_reserveIn), UINT8_MASK)
-            tokenIn_reserveIn := and(ADDRESS_MASK, shr(96, calldataload(path.offset)))
+            tokenIn_reserveIn := and(ADDRESS_MASK, shr(96, calldataload(pathOffset)))
 
             // Compute the buy amount based on the pair reserves.
             {
                 let zeroForOne := lt(
                     tokenIn_reserveIn,
-                    and(ADDRESS_MASK, calldataload(add(path.offset, 32))) // tokenOut
+                    and(ADDRESS_MASK, calldataload(add(pathOffset, 32))) // tokenOut
                 )
                 // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
                 // buyAmount = (pairSellAmount * feeAm * buyReserve) /
@@ -491,25 +491,25 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                 case 1 {
                     // we store the offset of the bytes calldata in the func call
                     let calldataOffsetStart := add(ptr, 0xA4)
-                    let pathLength := path.length
-                    calldatacopy(calldataOffsetStart, path.offset, pathLength)
+                    let _pathLength := pathLength
+                    calldatacopy(calldataOffsetStart, pathOffset, _pathLength)
                     // store max amount
-                    mstore(add(calldataOffsetStart, pathLength), shl(128, amountOutMin))
+                    mstore(add(calldataOffsetStart, _pathLength), shl(128, amountOutMin))
                     // store amountIn
-                    mstore(add(calldataOffsetStart, add(pathLength, 16)), shl(128, amountIn))
-                    pathLength := add(pathLength, 32)
+                    mstore(add(calldataOffsetStart, add(_pathLength, 16)), shl(128, amountIn))
+                    _pathLength := add(_pathLength, 32)
                     //store amountIn
-                    mstore(add(calldataOffsetStart, pathLength), shl(96, payer))
-                    pathLength := add(pathLength, 20)
+                    mstore(add(calldataOffsetStart, _pathLength), shl(96, payer))
+                    _pathLength := add(_pathLength, 20)
                     // bytes length
-                    mstore(add(ptr, 0x84), pathLength)
+                    mstore(add(ptr, 0x84), _pathLength)
                     if iszero(
                         call(
                             gas(),
                             pair,
                             0x0,
                             ptr, // input selector
-                            add(0xA4, pathLength), // input size = 164 (selector (4bytes) plus 5*32bytes)
+                            add(0xA4, _pathLength), // input size = 164 (selector (4bytes) plus 5*32bytes)
                             0x0, // output = 0
                             0x0 // output size = 0
                         )
@@ -558,25 +558,29 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
      * @param amountIn sell amount
      * @return buyAmount output amount
      */
-    function swapUniV2ExactInFOT(uint256 amountIn, address receiver, bytes calldata path) internal returns (uint256 buyAmount) {
+    function swapUniV2ExactInFOT(
+        uint256 amountIn, 
+        address receiver, 
+        uint256 pathOffset
+    ) internal returns (uint256 buyAmount) {
         assembly {
             let ptr := mload(0x40) // free memory pointer
             ////////////////////////////////////////////////////
             // We extract all relevant data from the path bytes blob
             ////////////////////////////////////////////////////
-            let pair := calldataload(add(path.offset, 22))
+            let pair := calldataload(add(pathOffset, 22))
             // this is expected to be 10000 - x, where x is the poolfee in bps
             let poolFeeDenom := and(shr(80, pair), UINT16_MASK)
             pair := and(ADDRESS_MASK, shr(96, pair))
             // we define this as token in and later re-assign this to
             // reserve in to prevent stack too deep errors
-            let tokenIn := calldataload(path.offset)
+            let tokenIn := calldataload(pathOffset)
             tokenIn := and(ADDRESS_MASK, shr(96, tokenIn))
             // Compute the buy amount based on the pair reserves.
             {
                 let zeroForOne := lt(
                     tokenIn,
-                    and(ADDRESS_MASK, calldataload(add(path.offset, 32))) // tokenOut
+                    and(ADDRESS_MASK, calldataload(add(pathOffset, 32))) // tokenOut
                 )
                 // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
                 // buyAmount = (pairSellAmount * feeAm * buyReserve) /

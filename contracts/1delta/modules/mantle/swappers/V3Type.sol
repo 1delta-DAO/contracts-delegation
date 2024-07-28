@@ -80,17 +80,17 @@ abstract contract V3TypeSwapper is DeltaErrors {
         uint256 minOut,
         address payer,
         address receiver,
-        uint256 pathLength,
-        bytes calldata path
+        uint256 pathOffset,
+        uint256 pathLength
     ) internal returns (uint256 receivedAmount) {
         // solhint-disable-next-line no-inline-assembly
         assembly {
             let ptr := mload(0x40)
-            let firstWord := calldataload(path.offset)
+            let firstWord := calldataload(pathOffset)
             let _pId := and(shr(80, firstWord), UINT8_MASK) // poolId
             // get tokens
             let tokenA := and(ADDRESS_MASK, shr(96, firstWord))
-            firstWord := calldataload(add(path.offset, 42))
+            firstWord := calldataload(add(pathOffset, 42))
             let tokenB := and(ADDRESS_MASK, shr(80, firstWord))
 
             // read the pool address
@@ -98,7 +98,7 @@ abstract contract V3TypeSwapper is DeltaErrors {
                 ADDRESS_MASK,
                 shr(
                     96,
-                    calldataload(add(path.offset, 22)) // starts as first param
+                    calldataload(add(pathOffset, 22)) // starts as first param
                 )
             )
             // Return amount0 or amount1 depending on direction
@@ -118,7 +118,7 @@ abstract contract V3TypeSwapper is DeltaErrors {
                 // Store data offset
                 mstore(add(ptr, 132), 0xa0)
                 // Store path
-                calldatacopy(add(ptr, 196), path.offset, pathLength)
+                calldatacopy(add(ptr, 196), pathOffset, pathLength)
 
                 // within the callback, we add the maximum in amount
                 mstore(add(add(ptr, 196), pathLength), shl(128, minOut))
@@ -155,7 +155,7 @@ abstract contract V3TypeSwapper is DeltaErrors {
                 // Store data offset
                 mstore(add(ptr, 132), 0xa0) // 160
                 // Store path
-                calldatacopy(add(ptr, 196), path.offset, pathLength)
+                calldatacopy(add(ptr, 196), pathOffset, pathLength)
 
                 // within the callback, we add the maximum in amount
                 mstore(add(add(ptr, 196), pathLength), shl(128, minOut))
@@ -189,17 +189,17 @@ abstract contract V3TypeSwapper is DeltaErrors {
         uint256 minOut,
         address payer,
         address receiver,
-        uint256 pathLength,
-        bytes calldata path
+        uint256 pathOffset,
+        uint256 pathLength
     ) internal returns (uint256 receivedAmount) {
         // solhint-disable-next-line no-inline-assembly
         assembly {
             let ptr := mload(0x40)
-            let firstWord := calldataload(path.offset)
+            let firstWord := calldataload(pathOffset)
             let _pId := and(shr(80, firstWord), UINT8_MASK) // poolId
             // get tokens
             let tokenA := and(ADDRESS_MASK, shr(96, firstWord))
-            firstWord := calldataload(add(path.offset, 42))
+            firstWord := calldataload(add(pathOffset, 42))
             let tokenB := and(ADDRESS_MASK, shr(80, firstWord))
 
             // read the pool address
@@ -207,7 +207,7 @@ abstract contract V3TypeSwapper is DeltaErrors {
                 ADDRESS_MASK,
                 shr(
                     96,
-                    calldataload(add(path.offset, 22)) // first param
+                    calldataload(add(pathOffset, 22)) // first param
                 )
             )
             // Return amount0 or amount1 depending on direction
@@ -226,7 +226,7 @@ abstract contract V3TypeSwapper is DeltaErrors {
                 mstore(add(ptr, 100), sub(0xa0, 0x20))
 
                 // Store path
-                calldatacopy(add(ptr, 164), path.offset, pathLength)
+                calldatacopy(add(ptr, 164), pathOffset, pathLength)
 
                 // within the callback, we add the maximum in amount
                 mstore(add(add(ptr, 164), pathLength), shl(128, minOut))
@@ -262,7 +262,7 @@ abstract contract V3TypeSwapper is DeltaErrors {
                 mstore(add(ptr, 100), sub(0xa0, 0x20))
 
                 // Store path
-                calldatacopy(add(ptr, 164), path.offset, pathLength)
+                calldatacopy(add(ptr, 164), pathOffset, pathLength)
 
                 // within the callback, we add the maximum in amount
                 mstore(add(add(ptr, 164), pathLength), shl(128, minOut))
@@ -293,24 +293,24 @@ abstract contract V3TypeSwapper is DeltaErrors {
         uint256 maxIn,
         address payer,
         address receiver,
-        bytes calldata path
+        uint256 pathOffset,
+        uint256 pathLength
     ) internal returns (uint256 fromAmount) {
         // solhint-disable-next-line no-inline-assembly
         assembly {
             let ptr := mload(0x40)
-            let firstWord := calldataload(path.offset)
+            let firstWord := calldataload(pathOffset)
             let tokenB := and(ADDRESS_MASK, shr(96, firstWord))
-            firstWord := calldataload(add(path.offset, 42))
+            firstWord := calldataload(add(pathOffset, 42))
             let tokenA := and(ADDRESS_MASK, shr(80, firstWord))
             // read the pool address
             let pool := and(
                 ADDRESS_MASK,
                 shr(
                     96,
-                    calldataload(add(path.offset, 22)) // first param
+                    calldataload(add(pathOffset, 22)) // first param
                 )
             )
-            let pathLength := path.length
             // Return amount0 or amount1 depending on direction
             switch lt(tokenA, tokenB)
             case 0 {
@@ -326,9 +326,9 @@ abstract contract V3TypeSwapper is DeltaErrors {
                 // Store data offset
                 mstore(add(ptr, 100), sub(0xa0, 0x20))
                 /// Store data length
-                mstore(add(ptr, 132), path.length)
+                mstore(add(ptr, 132), pathLength)
                 // Store path
-                calldatacopy(add(ptr, 164), path.offset, pathLength)
+                calldatacopy(add(ptr, 164), pathOffset, pathLength)
 
                 // within the callback, we add the maximum in amount
                 mstore(add(add(ptr, 164), pathLength), shl(128, maxIn))
@@ -363,7 +363,7 @@ abstract contract V3TypeSwapper is DeltaErrors {
                 // Store data offset
                 mstore(add(ptr, 100), sub(0xa0, 0x20))
                 // Store path
-                calldatacopy(add(ptr, 164), path.offset, pathLength)
+                calldatacopy(add(ptr, 164), pathOffset, pathLength)
 
                 // within the callback, we add the maximum in amount
                 mstore(add(add(ptr, 164), pathLength), shl(128, maxIn))
@@ -394,26 +394,26 @@ abstract contract V3TypeSwapper is DeltaErrors {
         uint256 maxIn,
         address payer,
         address receiver,
-        bytes calldata path
+        uint256 pathOffset,
+        uint256 pathLength
     ) internal returns (uint256 receivedAmount) {
         // solhint-disable-next-line no-inline-assembly
         assembly {
             let ptr := mload(0x40)
-            let firstWord := calldataload(path.offset)
+            let firstWord := calldataload(pathOffset)
             let poolId := and(shr(80, firstWord), UINT8_MASK) // poolId
             let tokenB := and(ADDRESS_MASK, shr(96, firstWord))
-            firstWord := calldataload(add(path.offset, 42))
+            firstWord := calldataload(add(pathOffset, 42))
             let tokenA := and(ADDRESS_MASK, shr(80, firstWord))
             // read the pool address
             let pool := and(
                 ADDRESS_MASK,
                 shr(
                     96,
-                    calldataload(add(path.offset, 22)) // first param
+                    calldataload(add(pathOffset, 22)) // first param
                 )
             )
 
-            let pathLength := path.length
             // Return amount0 or amount1 depending on direction
             switch lt(tokenA, tokenB)
             case 0 {
@@ -431,7 +431,7 @@ abstract contract V3TypeSwapper is DeltaErrors {
                 // Store data offset
                 mstore(add(ptr, 132), 0xa0)
                 // Store path
-                calldatacopy(add(ptr, 196), path.offset, pathLength)
+                calldatacopy(add(ptr, 196), pathOffset, pathLength)
 
                 // within the callback, we add the maximum in amount
                 mstore(add(add(ptr, 196), pathLength), shl(128, maxIn))
@@ -468,7 +468,7 @@ abstract contract V3TypeSwapper is DeltaErrors {
                 // Store data offset
                 mstore(add(ptr, 132), 0xa0)
                 // Store path
-                calldatacopy(add(ptr, 196), path.offset, pathLength)
+                calldatacopy(add(ptr, 196), pathOffset, pathLength)
 
                 // within the callback, we add the maximum in amount
                 mstore(add(add(ptr, 196), pathLength), shl(128, maxIn))

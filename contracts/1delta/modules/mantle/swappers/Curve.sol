@@ -232,10 +232,10 @@ abstract contract CurveSwapper is UniTypeSwapper {
     }
 
     function swapCurveGeneral(
-        bytes calldata pathSlice,
         uint256 amountIn,
         address payer,
-        address receiver
+        address receiver,
+        uint256 pathOffset
     ) internal returns (uint256 amountOut) {
         assembly {
             let ptr := mload(0x40)
@@ -253,7 +253,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
                     gas(),
                     and(
                         ADDRESS_MASK,
-                        shr(96, calldataload(pathSlice.offset)) // tokenIn
+                        shr(96, calldataload(pathOffset)) // tokenIn
                     ), 
                     0,
                     ptr,
@@ -284,7 +284,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
                 }
             }
             
-            let indexData := calldataload(add(pathSlice.offset, 22))
+            let indexData := calldataload(add(pathOffset, 22))
             let pool := and(shr(96, indexData), ADDRESS_MASK)
             let indexIn := and(shr(88, indexData), 0xff)
             let indexOut := and(shr(80, indexData), 0xff)
@@ -319,7 +319,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
                     gas(),
                     and(
                         ADDRESS_MASK,
-                        shr(96, calldataload(add(pathSlice.offset, 44))) // tokenIn, added 2x addr + 4x uint8
+                        shr(96, calldataload(add(pathOffset, 44))) // tokenIn, added 2x addr + 4x uint8
                     ), 
                     0,
                     ptr,

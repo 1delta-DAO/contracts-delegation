@@ -82,7 +82,8 @@ contract OneDeltaComposerMantle is MarginTrading {
                     //                              zero is for paying withn the balance of
                     //                              payer (self or caller)
                     ////////////////////////////////////////////////////
-                    bytes calldata opdata;
+                    uint256 opdataOffset;
+                    uint256 opdataLength;
                     uint256 amountIn;
                     address payer;
                     address receiver;
@@ -90,16 +91,13 @@ contract OneDeltaComposerMantle is MarginTrading {
                     bool noFOT;
                     assembly {
                         // the path starts after the path length
-                        opdata.offset := add(currentOffset, 52) // 20 + 32 (address + amountBitmap)
+                        opdataOffset := add(currentOffset, 52) // 20 + 32 (address + amountBitmap)
                         // the first 20 bytes are the receiver address
                         receiver := and(ADDRESS_MASK, shr(96, calldataload(currentOffset)))
                         // assign the entire 32 bytes of amounts data
                         amountIn := calldataload(add(currentOffset, 20))
                         // this is the path data length
-                        let calldataLength := and(amountIn, UINT16_MASK)
-                        opdata.length := calldataLength
-                        // add the length to 52 (=32+20)
-                        calldataLength := add(52, calldataLength)
+                        opdataLength := and(amountIn, UINT16_MASK)
                         // validation amount starts at bit 128 from the right
                         minimumAmountOut := and(_UINT112_MASK, shr(128, amountIn))
                         // check whether the swap is internal by the highest bit
@@ -123,7 +121,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                             pop(
                                 staticcall(
                                     gas(),
-                                    calldataload(and(ADDRESS_MASK, sub(opdata.offset, 12))), // fetches first token
+                                    calldataload(and(ADDRESS_MASK, sub(opdataOffset, 12))), // fetches first token
                                     0x0,
                                     0x24,
                                     0x0,
@@ -133,12 +131,12 @@ contract OneDeltaComposerMantle is MarginTrading {
                             // load the retrieved balance
                             amountIn := mload(0x0)
                         }
-                        currentOffset := add(currentOffset, calldataLength)
+                        currentOffset := add(currentOffset,  add(52, opdataLength))
                     }
-                    uint256 dexId = _preFundTrade(payer, amountIn, opdata);
+                    uint256 dexId = _preFundTrade(payer, amountIn, opdataOffset);
                     // swap execution
-                    if (noFOT) amountIn = swapExactIn(amountIn, dexId, payer, receiver, opdata);
-                    else amountIn = swapExactInFOT(amountIn, dexId, receiver, opdata);
+                    if (noFOT) amountIn = swapExactIn(amountIn, dexId, payer, receiver, opdataOffset, opdataLength);
+                    else amountIn = swapExactInFOT(amountIn, dexId, receiver, opdataOffset, opdataLength);
                     // slippage check
                     assembly {
                         if lt(amountIn, minimumAmountOut) {
@@ -161,21 +159,19 @@ contract OneDeltaComposerMantle is MarginTrading {
                     //                              zero is for paying withn the balance of
                     //                              payer (self or caller)
                     ////////////////////////////////////////////////////
-                    bytes calldata opdata;
+                    uint256 opdataOffset;
+                    uint256 opdataLength;
                     uint256 amountOut;
                     address payer;
                     address receiver;
                     uint256 amountInMaximum;
                     assembly {
-                        opdata.offset := add(currentOffset, 52) // 20 + 32 (address + amountBitmap)
+                        opdataOffset := add(currentOffset, 52) // 20 + 32 (address + amountBitmap)
                         receiver := and(ADDRESS_MASK, shr(96, calldataload(currentOffset)))
                         // get the number parameters
                         amountOut := calldataload(add(currentOffset, 20))
                         // we get the calldatalength of the path
-                        let calldataLength := and(amountOut, UINT16_MASK)
-                        opdata.length := calldataLength
-                        // we increment the calldatalength
-                        calldataLength := add(52, calldataLength)
+                        opdataLength := and(amountOut, UINT16_MASK)
                         // validation amount starts at bit 128 from the right
                         amountInMaximum := and(_UINT112_MASK, shr(128, amountOut))
                         // check the upper bit as to whether it is a internal swap
@@ -213,9 +209,9 @@ contract OneDeltaComposerMantle is MarginTrading {
                             // load the retrieved balance
                             amountOut := mload(0x0)
                         }
-                        currentOffset := add(currentOffset, calldataLength)
+                        currentOffset := add(currentOffset, add(52, opdataLength))
                     }
-                    swapExactOutInternal(amountOut, amountInMaximum, payer, receiver, opdata);
+                    swapExactOutInternal(amountOut, amountInMaximum, payer, receiver, opdataOffset, opdataLength);
                 } else if (operation == Commands.FLASH_SWAP_EXACT_IN) {
                     ////////////////////////////////////////////////////
                     // Encoded parameters for the swap
@@ -231,22 +227,20 @@ contract OneDeltaComposerMantle is MarginTrading {
                     //                              zero is for paying with the balance of
                     //                              payer (self or caller)
                     ////////////////////////////////////////////////////
-                    bytes calldata opdata;
+                    uint256 opdataOffset;
+                    uint256 opdataLength;
                     uint256 amountIn;
                     address payer;
                     uint256 minimumAmountOut;
                     // all but balance fetch same as for SWAP_EXACT_IN
                     assembly {
                         // the path starts after the path length
-                        opdata.offset := add(currentOffset, 32) // 32
+                        opdataOffset := add(currentOffset, 32) // 32
                         // lastparam includes receiver address and pathlength
                         let firstParam := calldataload(currentOffset)
                         // this is the path data length
                         // included in lowest 2 bytes
-                        let calldataLength := and(firstParam, UINT16_MASK)
-                        opdata.length := calldataLength
-                        // add the length to 32
-                        calldataLength := add(32, calldataLength)
+                        opdataLength := and(firstParam, UINT16_MASK)
                         // extract lowr 112 bits shifted by 16
                         minimumAmountOut := and(_UINT112_MASK, shr(128, firstParam))
 
@@ -268,13 +262,13 @@ contract OneDeltaComposerMantle is MarginTrading {
                         // `lenderId`   is at the end of the path
                         ////////////////////////////////////////////////////
                         if iszero(amountIn) {
-                            let tokenIn := and(ADDRESS_MASK, shr(96, calldataload(opdata.offset)))
+                            let tokenIn := and(ADDRESS_MASK, shr(96, calldataload(opdataOffset)))
                             let lenderId := and(
                                 shr(
                                     8,
                                     calldataload(
                                         sub(
-                                            add(opdata.length, opdata.offset), //
+                                            add(opdataLength, opdataOffset), //
                                             32
                                         )
                                     )
@@ -294,9 +288,9 @@ contract OneDeltaComposerMantle is MarginTrading {
                             // load the retrieved balance
                             amountIn := mload(0x0)
                         }
-                        currentOffset := add(currentOffset, calldataLength)
+                        currentOffset := add(currentOffset, add(32, opdataLength)) // 32 args plus path
                     }
-                    flashSwapExactInInternal(amountIn, minimumAmountOut, payer, opdata);
+                    flashSwapExactInInternal(amountIn, minimumAmountOut, payer, opdataOffset, opdataLength);
                 } else if (operation == Commands.FLASH_SWAP_EXACT_OUT) {
                     ////////////////////////////////////////////////////
                     // Always uses a flash swap when possible
@@ -313,19 +307,18 @@ contract OneDeltaComposerMantle is MarginTrading {
                     //                              zero is for paying with the balance of
                     //                              payer (self or caller)
                     ////////////////////////////////////////////////////
-                    bytes calldata opdata;
+                    uint256 opdataOffset;
+                    uint256 opdataLength;
                     uint256 amountOut;
                     address payer;
                     uint256 amountInMaximum;
                     assembly {
-                        opdata.offset := add(currentOffset, 32) // opdata starts in 2nd byte
+                        opdataOffset := add(currentOffset, 32) // opdata starts in 2nd byte
                         let firstParam := calldataload(currentOffset)
 
                         // we get the calldatalength of the path
                         // these are populated in the lower two bytes
-                        let calldataLength := and(firstParam, UINT16_MASK)
-                        opdata.length := calldataLength
-                        calldataLength := add(32, calldataLength)
+                        opdataLength := and(firstParam, UINT16_MASK)
                         // check amount strats at bit 128 from the right (within first 32 )
                         amountInMaximum := and(shr(128, firstParam), _UINT112_MASK)
                         // check highest bit
@@ -341,16 +334,16 @@ contract OneDeltaComposerMantle is MarginTrading {
                         // Fetch the debt balance in case amountOut is zero
                         ////////////////////////////////////////////////////
                         if iszero(amountOut) {
-                            let tokenIn := calldataload(opdata.offset)
-                            let _identifier := and(UINT8_MASK, shr(88, tokenIn))
+                            let tokenIn := calldataload(opdataOffset)
+                            let mode := and(UINT8_MASK, shr(88, tokenIn))
                             tokenIn := and(ADDRESS_MASK, shr(96, tokenIn))
 
                             // last 32 bytes
-                            let lastWord := calldataload(sub(add(opdata.length, opdata.offset), 32))
+                            let lastWord := calldataload(sub(add(opdataLength, opdataOffset), 32))
                             let lenderId := and(shr(8, lastWord), UINT8_MASK)
                             mstore(0x0, tokenIn)
                             mstore8(0x0, lenderId)
-                            switch _identifier
+                            switch mode
                             case 2 {
                                 mstore(0x20, VARIABLE_DEBT_TOKENS_SLOT)
                             }
@@ -371,9 +364,9 @@ contract OneDeltaComposerMantle is MarginTrading {
                             // load the retrieved balance
                             amountOut := mload(0x0)
                         }
-                        currentOffset := add(currentOffset, calldataLength)
+                        currentOffset := add(currentOffset, add(32, opdataLength))
                     }
-                    flashSwapExactOutInternal(amountOut, amountInMaximum, payer, opdata);
+                    flashSwapExactOutInternal(amountOut, amountInMaximum, payer, opdataOffset, opdataLength);
                 } else if (operation == Commands.EXTERNAL_CALL) {
                     ////////////////////////////////////////////////////
                     // Execute call to external contract. It consits of
