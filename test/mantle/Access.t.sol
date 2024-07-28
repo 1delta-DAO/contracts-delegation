@@ -62,7 +62,7 @@ contract AccessTests is DeltaSetup {
         address pool = testQuoter._v2TypePairAddress(aUSD, USDC, CLEO_V1_STABLE);
 
         // should error before any data is decoded
-        vm.expectRevert(0x48f5c3ed); // ("InvalidCaller()");
+        vm.expectRevert(0xbafe1c53); // ("InvalidFlashLoan()");
         vm.prank(attacker);
         IERC20All(pool).swap(
             amount0,
