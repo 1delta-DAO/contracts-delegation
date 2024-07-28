@@ -710,7 +710,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                     //                                         fetches the balance and checks balance >= amount
                     //                                      1: transfer amount to receiver, skip validation
                     //                                         forwards the ERC20 error if not enough balance
-                    //      bytes 41-65:                 amount, either validation or transfer amount
+                    //      bytes 41-55:                 amount, either validation or transfer amount
                     ////////////////////////////////////////////////////
                     assembly {
                         let underlying := and(ADDRESS_MASK, shr(96, calldataload(currentOffset)))
@@ -826,7 +826,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                                 }
                             }
                         }
-                        currentOffset := add(currentOffset, 65)
+                        currentOffset := add(currentOffset, 55)
                     }
                 } else if (operation == Commands.WRAP_NATIVE) {
                     ////////////////////////////////////////////////////

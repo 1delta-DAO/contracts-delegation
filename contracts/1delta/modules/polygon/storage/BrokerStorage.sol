@@ -21,11 +21,16 @@ struct GeneralCache {
     bytes32 cache;
 }
 
-// a validation apping that ensures that an external call can
-// be executed on an address
-// it is typically linked to an approval call
+// storage for external calls 
 struct ExternalCallStorage {
+    // a validation apping that ensures that an external call can
+    // be executed on an address
+    // it is typically linked to an approval call
     mapping(address => mapping(address => bool)) isValidApproveAndCallTarget;
+    // simple record that checks whether an address is ERC20-approved
+    // will prevent external allowance call
+    // typically used for curve style pools and dex aggregators
+    mapping(address => mapping(address => bool)) isApproved;
 }
 
 // controls access to balancer-type flash loans

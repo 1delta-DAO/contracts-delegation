@@ -229,37 +229,81 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
                 path.length := sub(path.length, SKIP_LENGTH_UNOSWAP)
             }
         }
-        // Curve stable general
-        else if (dexId == 50) {
-            assembly {
-                switch lt(path.length, 67) // lengthFull = 20+1+1+20+1+1+20 = 64
-                case 1 { currentReceiver := receiver}
-                default {
-                    dexId := and(shr(80, calldataload(add(path.offset, SKIP_LENGTH_UNOSWAP))), UINT8_MASK)
-                    switch gt(dexId, 99) 
-                    case 1 {
-                        currentReceiver := and(
-                            ADDRESS_MASK,
-                            shr(
-                                96,
-                                calldataload(
-                                    add(
-                                        path.offset,
-                                        MAX_SINGLE_LENGTH_UNOSWAP // 20 + 2 + 20 + 2 + 20 + 2 [poolAddress starts here]
-                                    )
-                                ) // poolAddress
-                            )
-                        )
-                    }
+        // Curve pool types
+        else if(dexId < 70){
+            // Curve standard pool
+            if (dexId == 50) {
+                assembly {
+                    switch lt(path.length, 68) // lengthFull = 20+1+1+20+1+1+1+20 = 65
+                    case 1 { currentReceiver := receiver}
                     default {
-                        currentReceiver := address()
+                        dexId := and(shr(80, calldataload(add(path.offset, 45))), UINT8_MASK)
+                        switch gt(dexId, 99) 
+                        case 1 {
+                            currentReceiver := and(
+                                ADDRESS_MASK,
+                                shr(
+                                    96,
+                                    calldataload(
+                                        add(
+                                            path.offset,
+                                            67 // 20 + 2 + 20 + 2 + 20 + 2 [poolAddress starts here]
+                                        )
+                                    ) // poolAddress
+                                )
+                            )
+                        }
+                        default {
+                            currentReceiver := address()
+                        }
                     }
                 }
-            }
-            amountIn = swapCurveGeneral(path, amountIn, payer, currentReceiver);
-            assembly {
-                path.offset := add(path.offset, SKIP_LENGTH_UNOSWAP)
-                path.length := sub(path.length, SKIP_LENGTH_UNOSWAP)
+                uint256 pathOffset;
+                assembly {
+                    pathOffset := path.offset
+                }
+                amountIn = swapCurveGeneral(pathOffset, amountIn, payer, currentReceiver);
+                assembly {
+                    path.offset := add(path.offset, 45)
+                    path.length := sub(path.length, 45)
+                }
+            } 
+            // curve metapool
+            else {
+                assembly {
+                    switch lt(path.length, 88) // lengthFull = 20+1+1+20+1+1+1+20 = 65
+                    case 1 { currentReceiver := receiver}
+                    default {
+                        dexId := and(shr(80, calldataload(add(path.offset, 65))), UINT8_MASK)
+                        switch gt(dexId, 99) 
+                        case 1 {
+                            currentReceiver := and(
+                                ADDRESS_MASK,
+                                shr(
+                                    96,
+                                    calldataload(
+                                        add(
+                                            path.offset,
+                                            87 // 20 + 2 + 20 + 2 + 20 + 2 [poolAddress starts here]
+                                        )
+                                    ) // poolAddress
+                                )
+                            )
+                        }
+                        default {
+                            currentReceiver := address()
+                        }
+                    }
+                }
+                uint256 pathOffset;
+                assembly {
+                    pathOffset := path.offset
+                }
+                amountIn = swapCurveMeta(pathOffset, amountIn, payer, currentReceiver);
+                assembly {
+                    path.offset := add(path.offset, 65)
+                    path.length := sub(path.length, 65)
+                }
             }
         }
         // uniswapV2 style

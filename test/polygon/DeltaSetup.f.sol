@@ -214,7 +214,7 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
         management.approveAddress(assets, AAVE_POOL);
         management.approveAddress(assets, YLDR_POOL);
         management.approveAddress(assets, COMET_USDC);
-        management.approveAddress(assets, CRV_3_ASSET_POOL);
+        management.approveAddress(assets, CRV_3_USD_AAVE_POOL);
 
         // address[] memory stratumAssets = new address[](6);
         // stratumAssets[0] = USDC;

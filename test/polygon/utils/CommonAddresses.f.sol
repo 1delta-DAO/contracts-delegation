@@ -24,7 +24,9 @@ contract AddressesPolygon {
     /// @dev Mask of lower 3 bytes.
     uint256 internal constant UINT24_MASK = 0xffffff;
 
-    address internal constant CRV_3_ASSET_POOL = 0x445FE580eF8d70FF569aB36e80c647af338db351;
+    address internal constant CRV_3_USD_AAVE_POOL = 0x445FE580eF8d70FF569aB36e80c647af338db351;
+    address internal constant CRV_TRICRYPTO_ZAP = 0x1d8b86e3D88cDb2d34688e87E72F388Cb541B7C8;
+    address internal constant CRV_TRICRYPTO_AAVE_META_POOL = 0x92215849c439E1f8612b6646060B4E3E5ef822cC;
 
     /** DEFAULTS */
 
@@ -51,6 +53,7 @@ contract AddressesPolygon {
     uint8 internal ALGEBRA = 3;
     uint8 internal IZUMI = 49;
     uint8 internal CURVE = 50;
+    uint8 internal CURVE_META = 51;
 
     uint8 internal UNI_V2 = 100;
     uint8 internal QUICK_V2 = 101;
