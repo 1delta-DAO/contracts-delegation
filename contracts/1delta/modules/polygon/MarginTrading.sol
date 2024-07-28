@@ -17,6 +17,11 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
     // errors
     error NoBalance();
 
+    uint256 internal constant PATH_OFFSET_CALLBACK_V2 = 164;
+    uint256 internal constant PATH_OFFSET_CALLBACK_V3 = 132;
+    uint256 internal constant NEXT_SWAP_V3_OFFSET = 176 ; //PATH_OFFSET_CALLBACK_V3 + SKIP_LENGTH_UNOSWAP;
+    uint256 internal constant NEXT_SWAP_V2_OFFSET = 208 ; //PATH_OFFSET_CALLBACK_V2 + SKIP_LENGTH_UNOSWAP;
+
     uint256 internal constant UINT128_MASK = 0x00000000000000000000000000000000ffffffffffffffffffffffffffffffff;
 
     constructor() BaseSwapper() BaseLending() {}
@@ -30,17 +35,15 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         address tokenIn;
         address tokenOut;
         uint256 tradeId;
-        uint256 pathOffset;
         uint256 pathLength;
         assembly {
-            pathOffset := path.offset
             pathLength := path.length
-            let firstWord := calldataload(pathOffset)
+            let firstWord := calldataload(PATH_OFFSET_CALLBACK_V3)
             
             tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
             tradeId := and(shr(80, firstWord), UINT8_MASK) // poolId
             // second word
-            firstWord := calldataload(add(pathOffset, 32))
+            firstWord := calldataload(164) // PATH_OFFSET_CALLBACK_V3 + 32
             tokenOut := and(ADDRESS_MASK, firstWord)
 
             ////////////////////////////////////////////////////
@@ -71,7 +74,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 revert(0x0, 0x4)
             }
         }
-        clSwapCallback(amount0Delta, amount1Delta, tokenIn, tokenOut, pathOffset, pathLength);
+        clSwapCallback(amount0Delta, amount1Delta, tokenIn, tokenOut, pathLength);
     }
 
     // uniswap, retro, sushi
@@ -83,17 +86,15 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         address tokenIn;
         address tokenOut;
         uint256 tradeId;
-        uint256 pathOffset;
         uint256 pathLength;
         assembly {
-            pathOffset := path.offset
             pathLength := path.length
-            let firstWord := calldataload(pathOffset)
+            let firstWord := calldataload(PATH_OFFSET_CALLBACK_V3)
             let dexId := and(UINT8_MASK, shr(80, firstWord))
             tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
             tradeId := and(shr(80, firstWord), UINT8_MASK) // poolId
             // second word
-            firstWord := calldataload(add(pathOffset, 32))
+            firstWord := calldataload(164) // PATH_OFFSET_CALLBACK_V3 + 32
             tokenOut := and(ADDRESS_MASK, firstWord)
 
             ////////////////////////////////////////////////////
@@ -166,7 +167,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 revert(0x0, 0x4)
             }
         }
-        clSwapCallback(amount0Delta, amount1Delta, tokenIn, tokenOut, pathOffset, pathLength);
+        clSwapCallback(amount0Delta, amount1Delta, tokenIn, tokenOut, pathLength);
     }
 
     // iZi callbacks
@@ -176,16 +177,14 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         address tokenIn;
         address tokenOut;
         uint256 tradeId;
-        uint256 pathOffset;
         uint256 pathLength;
         assembly {
-            pathOffset := path.offset
             pathLength := path.length
-            let firstWord := calldataload(pathOffset)
+            let firstWord := calldataload(PATH_OFFSET_CALLBACK_V3)
             tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
             tradeId := and(shr(80, firstWord), UINT8_MASK) // poolId
             // second word
-            firstWord := calldataload(add(pathOffset, 32))
+            firstWord := calldataload(164) // PATH_OFFSET_CALLBACK_V3 + 32
             
             tokenOut := and(ADDRESS_MASK, firstWord)
 
@@ -223,7 +222,6 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             int256(y),
             tokenIn,
             tokenOut,
-            pathOffset,
             pathLength
         );
     }
@@ -233,16 +231,14 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         address tokenIn;
         address tokenOut;
         uint256 tradeId;
-        uint256 pathOffset;
         uint256 pathLength;
         assembly {
-            pathOffset := path.offset
             pathLength := path.length
-            let firstWord := calldataload(pathOffset)
+            let firstWord := calldataload(PATH_OFFSET_CALLBACK_V3)
             tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
             tradeId := and(shr(80, firstWord), UINT8_MASK) // poolId
             // second word
-            firstWord := calldataload(add(pathOffset, 32))
+            firstWord := calldataload(164) // PATH_OFFSET_CALLBACK_V3 + 32
             tokenOut := and(ADDRESS_MASK, firstWord)
 
             ////////////////////////////////////////////////////
@@ -280,7 +276,6 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             -int256(y),
             tokenIn,
             tokenOut,
-            pathOffset,
             pathLength
         );
     }
@@ -310,7 +305,6 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         int256 amount1Delta,
         address tokenIn,
         address tokenOut,
-        uint256 pathOffset,
         uint256 pathLength
     ) private {
         uint256 tradeId;
@@ -342,7 +336,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                     96,
                     calldataload(
                         add(
-                            pathOffset,
+                            PATH_OFFSET_CALLBACK_V3,
                             sub(pathLength, 20)) // last 20 bytes
                         )
                 )
@@ -355,7 +349,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 UINT128_MASK,
                 calldataload(
                     add(
-                        pathOffset,
+                        PATH_OFFSET_CALLBACK_V3,
                         sub(pathLength, 52)) // last 52 bytes
                 )
             )
@@ -364,9 +358,11 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // assume a multihop if the calldata is longer than 66
             multihop := gt(pathLength, 66)
             // use tradeId as tradetype
-            tradeId := and(shr(88, calldataload(pathOffset)) , UINT8_MASK)
+            tradeId := and(shr(88, calldataload(PATH_OFFSET_CALLBACK_V3)) , UINT8_MASK)
         }
         if(isExactIn) {
+            // we record the offset here to be able to handle multihops
+            uint256 pathOffset = PATH_OFFSET_CALLBACK_V3;
             // if additional data is provided, we execute the swap
             if (multihop) {
                 ////////////////////////////////////////////////////
@@ -377,7 +373,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                     pathOffset := add(pathOffset, SKIP_LENGTH_UNOSWAP)
                     pathLength := sub(pathLength, SKIP_LENGTH_UNOSWAP)
                     // fetch the next dexId
-                    dexId := and(shr(80, calldataload(pathOffset)), UINT8_MASK)
+                    dexId := and(shr(80, calldataload(NEXT_SWAP_V3_OFFSET)), UINT8_MASK)
                 }
                 ////////////////////////////////////////////////////
                 // We assume that the next swap is funded
@@ -432,7 +428,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         // Exact output swap
         ////////////////////////////////////////////////////
         else {
-            (uint256 payType, uint8 lenderId) = getPayConfigFromCalldata(pathOffset, pathLength);
+            (uint256 payType, uint8 lenderId) = getPayConfigFromCalldata(PATH_OFFSET_CALLBACK_V3, pathLength);
             // we check if we have to deposit or repay in the callback
             if(tradeId != 0) {
                 payToLender(tokenIn, payer, amountReceived, tradeId, lenderId);
@@ -443,7 +439,6 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 // continue swapping
                 ////////////////////////////////////////////////////
                 assembly {
-                    pathOffset := add(pathOffset, SKIP_LENGTH_UNOSWAP)
                     pathLength := sub(pathLength, SKIP_LENGTH_UNOSWAP)
                 }
                 swapExactOutInternal(
@@ -451,7 +446,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                     maximumAmount,
                     payer,
                     msg.sender,
-                    pathOffset,
+                    NEXT_SWAP_V3_OFFSET,
                     pathLength
                 );
             } else {
@@ -487,7 +482,6 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
     ) external {
         address tokenIn;
         address tokenOut;
-        uint256 pathOffset;
         uint256 pathLength;
         // the fee parameter in the path can be ignored for validating a V2 pool
         assembly {
@@ -496,13 +490,12 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 mstore(0, INVALID_FLASH_LOAN)
                 revert (0, 0x4)
             }
-            pathOffset := data.offset
             pathLength := data.length
             // fetch tokens
-            let firstWord := calldataload(pathOffset)
+            let firstWord := calldataload(PATH_OFFSET_CALLBACK_V2)
             let pId := and(UINT8_MASK, shr(80, firstWord)) 
             tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
-            tokenOut := and(ADDRESS_MASK, calldataload(add(pathOffset, 32)))
+            tokenOut := and(ADDRESS_MASK, calldataload(196)) // PATH_OFFSET_CALLBACK_V2 + 32
             let ptr := mload(0x40)
             switch lt(tokenIn, tokenOut)
             case 0 {
@@ -563,7 +556,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 revert (0, 0x4)
             }
         }
-        _v2StyleCallback(amount0, amount1, tokenIn, tokenOut, pathOffset, pathLength);
+        _v2StyleCallback(amount0, amount1, tokenIn, tokenOut, pathLength);
     }
 
 
@@ -576,7 +569,6 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
     ) external {
         address tokenIn;
         address tokenOut;
-        uint256 pathOffset;
         uint256 pathLength;
         // the fee parameter in the path can be ignored for validating a V2 pool
         assembly {
@@ -585,11 +577,10 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 mstore(0, INVALID_FLASH_LOAN)
                 revert (0, 0x4)
             }
-            pathOffset := data.offset
             pathLength := data.length
             // fetch tokens
-            tokenIn := and(ADDRESS_MASK, shr(96, calldataload(pathOffset)))
-            tokenOut := and(ADDRESS_MASK, calldataload(add(pathOffset, 32)))
+            tokenIn := and(ADDRESS_MASK, shr(96, calldataload(PATH_OFFSET_CALLBACK_V2)))
+            tokenOut := and(ADDRESS_MASK, calldataload(196)) // PATH_OFFSET_CALLBACK_V2 + 32
             let ptr := mload(0x40)
             switch lt(tokenIn, tokenOut)
             case 0 {
@@ -616,7 +607,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 revert (0, 0x4)
             }
         }
-        _v2StyleCallback(amount0, amount1, tokenIn, tokenOut, pathOffset, pathLength);
+        _v2StyleCallback(amount0, amount1, tokenIn, tokenOut, pathLength);
     }
 
     // The uniswapV2 style callback for apeswap
@@ -628,7 +619,6 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
     ) external {
         address tokenIn;
         address tokenOut;
-        uint256 pathOffset;
         uint256 pathLength;
         // the fee parameter in the path can be ignored for validating a V2 pool
         assembly {
@@ -637,11 +627,10 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 mstore(0, INVALID_FLASH_LOAN)
                 revert (0, 0x4)
             }
-            pathOffset := data.offset
             pathLength := data.length
             // fetch tokens
-            tokenIn := and(ADDRESS_MASK, shr(96, calldataload(pathOffset)))
-            tokenOut := and(ADDRESS_MASK, calldataload(add(pathOffset, 32)))
+            tokenIn := and(ADDRESS_MASK, shr(96, calldataload(PATH_OFFSET_CALLBACK_V2)))
+            tokenOut := and(ADDRESS_MASK, calldataload(196)) // PATH_OFFSET_CALLBACK_V2 + 32
             let ptr := mload(0x40)
             switch lt(tokenIn, tokenOut)
             case 0 {
@@ -668,7 +657,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 revert (0, 0x4)
             }
         }
-        _v2StyleCallback(amount0, amount1, tokenIn, tokenOut, pathOffset, pathLength);
+        _v2StyleCallback(amount0, amount1, tokenIn, tokenOut, pathLength);
     }
 
     // The uniswapV2 style callback for solidly forks
@@ -681,7 +670,6 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         uint256 tradeId;
         address tokenIn;
         address tokenOut;  
-        uint256 pathOffset;
         uint256 pathLength;
         // the fee parameter in the path can be ignored for validating a V2 pool
         assembly {
@@ -690,14 +678,13 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 mstore(0, INVALID_FLASH_LOAN)
                 revert (0, 0x4)
             }
-            pathOffset := data.offset
             pathLength := data.length
             // fetch tokens
-            let firstWord := calldataload(pathOffset)
+            let firstWord := calldataload(PATH_OFFSET_CALLBACK_V2)
             tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
             let dexId := and(shr(80, firstWord), UINT8_MASK) // swap pool dexId
             tradeId := and(shr(88, firstWord), UINT8_MASK) // interaction dexId
-            tokenOut := and(ADDRESS_MASK, calldataload(add(pathOffset, 32)))
+            tokenOut := and(ADDRESS_MASK, calldataload(196)) // PATH_OFFSET_CALLBACK_V2 + 32
             let ptr := mload(0x40)
             let pair
             switch dexId
@@ -755,7 +742,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 revert (0, 0x4)
             }
         }
-        _v2StyleCallback(amount0, amount1, tokenIn, tokenOut, pathOffset, pathLength);
+        _v2StyleCallback(amount0, amount1, tokenIn, tokenOut, pathLength);
     }
 
     /**
@@ -768,7 +755,6 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         uint256 amount1,
         address tokenIn,
         address tokenOut,
-        uint256 pathOffset,
         uint256 pathLength
     ) private {
         uint256 tradeId;
@@ -779,7 +765,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         uint256 amountToPay;
         // the fee parameter in the path can be ignored for validating a V2 pool
         assembly {
-            let firstWord := calldataload(pathOffset)
+            let firstWord := calldataload(PATH_OFFSET_CALLBACK_V2)
             tradeId := and(shr(88, firstWord), UINT8_MASK) // interaction identifier
             ////////////////////////////////////////////////////
             // We fetch the original initiator of the swap function
@@ -791,7 +777,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                     96,
                     calldataload(
                         add(
-                            pathOffset,
+                            PATH_OFFSET_CALLBACK_V2,
                             sub(pathLength, 20)) // last 20 bytes
                         )
                 )
@@ -803,7 +789,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             ////////////////////////////////////////////////////
             maxAmount := calldataload(
                     add(
-                        pathOffset,
+                        PATH_OFFSET_CALLBACK_V2,
                         sub(pathLength, 52)) // last 52 bytes
             )
             ////////////////////////////////////////////////////
@@ -832,6 +818,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         // exactIn is used when `amountToPay` is nonzero
         ////////////////////////////////////////////////////
         if(amountToPay != 0) {
+            uint256 pathOffset = PATH_OFFSET_CALLBACK_V2;
             if (multihop) {
                 // we need to swap to the token that we want to supply
                 // the router returns the amount received that we can validate against
@@ -891,7 +878,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 payConventional(tokenIn, payer, msg.sender, amountToPay);
              }
         } else {
-            (uint256 payType, uint8 lenderId) = getPayConfigFromCalldata(pathOffset, pathLength);
+            (uint256 payType, uint8 lenderId) = getPayConfigFromCalldata(PATH_OFFSET_CALLBACK_V2, pathLength);
             if(tradeId != 0) {
                 // pay lender
                 payToLender(tokenIn, payer, amountReceived, tradeId, lenderId);
@@ -901,7 +888,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 //  | actId | pId | pair | feeDenom
                 //  | 20    | 21  |22-42 | 42-44
                 // load so that feeDenom is in the lower bytes
-                feeDenom := calldataload(add(pathOffset, 12))
+                feeDenom := calldataload(add(PATH_OFFSET_CALLBACK_V2, 12))
                 tradeId := and(shr(176, feeDenom), UINT8_MASK) // swap pool identifier
                 feeDenom := and(feeDenom, UINT16_MASK) // mask denom
             }
@@ -910,10 +897,9 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // either initiate the next swap or pay
             if (multihop) {
                 assembly {
-                    pathOffset := add(pathOffset, SKIP_LENGTH_UNOSWAP)
                     pathLength := sub(pathLength, SKIP_LENGTH_UNOSWAP)
                 }
-                swapExactOutInternal(amountToPay, maxAmount, payer, msg.sender, pathOffset, pathLength);
+                swapExactOutInternal(amountToPay, maxAmount, payer, msg.sender, NEXT_SWAP_V2_OFFSET, pathLength);
             } else {
                 // if(maxAmount < amountToPay) revert Slippage();
                 assembly {
