@@ -525,13 +525,11 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             ////////////////////////////////////////////////////
             payer := and(
                 ADDRESS_MASK,
-                shr(
-                    96,
-                    calldataload(
-                        add(
-                            PATH_OFFSET_CALLBACK_V3,
-                            sub(pathLength, 20)) // last 20 bytes
-                        )
+                calldataload(
+                    add(
+                        100, // PATH_OFFSET_CALLBACK_V3 - 32 
+                        pathLength
+                    ) // last 32 bytes
                 )
             )
             ////////////////////////////////////////////////////
@@ -542,8 +540,9 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 UINT128_MASK,
                 calldataload(
                     add(
-                        PATH_OFFSET_CALLBACK_V3,
-                        sub(pathLength, 52)) // last 52 bytes
+                        80, // PATH_OFFSET_CALLBACK_V3 - 52
+                        pathLength
+                    ) // last 52 bytes
                 )
             )
             // skim address from calldata
@@ -551,7 +550,10 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // assume a multihop if the calldata is longer than 66
             multihop := gt(pathLength, MAX_SINGLE_LENGTH_UNOSWAP)
             // use tradeId as tradetype
-            tradeId := and(shr(88, calldataload(PATH_OFFSET_CALLBACK_V3)) , UINT8_MASK)
+            tradeId := and(
+                calldataload(121), // PATH_OFFSET_CALLBACK_V3 - 11
+                UINT8_MASK
+            )
         }
         if(isExactIn) {
             // we record the offset here to be able to handle multihops
@@ -563,15 +565,25 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 ////////////////////////////////////////////////////
                 uint256 dexId;
                 assembly {
-                    pathOffset := add(pathOffset, SKIP_LENGTH_UNOSWAP)
+                    pathOffset := NEXT_SWAP_V3_OFFSET
                     pathLength := sub(pathLength, SKIP_LENGTH_UNOSWAP)
                     // fetch the next dexId
-                    dexId := and(shr(80, calldataload(NEXT_SWAP_V3_OFFSET)), UINT8_MASK)
+                    dexId := and(
+                        calldataload(166), // NEXT_SWAP_V3_OFFSET - 10
+                        UINT8_MASK
+                    )
                 }
                 ////////////////////////////////////////////////////
                 // We assume that the next swap is funded
                 ////////////////////////////////////////////////////
-                amountReceived = swapExactIn(amountReceived, dexId, address(this), address(this), pathOffset, pathLength);
+                amountReceived = swapExactIn(
+                    amountReceived,
+                    dexId,
+                    address(this),
+                    address(this),
+                    NEXT_SWAP_V3_OFFSET,
+                    pathLength
+                );
                 // check slippage since we will not be able to
                 // get the output amout outside of this scope
                 assembly {
@@ -686,7 +698,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 revert (0, 0x4)
             }
             // fetch tokens
-            tokenIn := and(ADDRESS_MASK, shr(96, calldataload(PATH_OFFSET_CALLBACK_V2)))
+            tokenIn := and(ADDRESS_MASK, calldataload(152)) // PATH_OFFSET_CALLBACK_V2 - 12
             tokenOut := and(ADDRESS_MASK, calldataload(196)) // PATH_OFFSET_CALLBACK_V2 + 32
             let ptr := mload(0x40)
             switch lt(tokenIn, tokenOut)
@@ -737,7 +749,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 revert (0, 0x4)
             }
             // fetch tokens
-            tokenIn := and(ADDRESS_MASK, shr(96, calldataload(PATH_OFFSET_CALLBACK_V2)))
+            tokenIn := and(ADDRESS_MASK, calldataload(152)) // PATH_OFFSET_CALLBACK_V2 - 12
             tokenOut := and(ADDRESS_MASK, calldataload(196)) // PATH_OFFSET_CALLBACK_V2 + 32
             let ptr := mload(0x40)
             switch lt(tokenIn, tokenOut)
@@ -788,7 +800,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 revert (0, 0x4)
             }
             // fetch tokens
-            tokenIn := and(ADDRESS_MASK, shr(96, calldataload(PATH_OFFSET_CALLBACK_V2)))
+            tokenIn := and(ADDRESS_MASK, calldataload(152)) // PATH_OFFSET_CALLBACK_V2 - 12
             tokenOut := and(ADDRESS_MASK, calldataload(196)) // PATH_OFFSET_CALLBACK_V2 + 32
             let ptr := mload(0x40)
             switch lt(tokenIn, tokenOut)
@@ -839,7 +851,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 revert (0, 0x4)
             }
             // fetch tokens
-            tokenIn := and(ADDRESS_MASK, shr(96, calldataload(PATH_OFFSET_CALLBACK_V2)))
+            tokenIn := and(ADDRESS_MASK, calldataload(152)) // PATH_OFFSET_CALLBACK_V2 - 12
             tokenOut := and(ADDRESS_MASK, calldataload(196)) // PATH_OFFSET_CALLBACK_V2 + 32
             let ptr := mload(0x40)
             // selector for getPair(address,address)
@@ -1044,13 +1056,11 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             ////////////////////////////////////////////////////
             payer := and(
                 ADDRESS_MASK,
-                shr(
-                    96,
-                    calldataload(
-                        add(
-                            PATH_OFFSET_CALLBACK_V2,
-                            sub(pathLength, 20)) // last 20 bytes
-                        )
+                calldataload(
+                    add(
+                        132, // PATH_OFFSET_CALLBACK_V2 - 32
+                        pathLength
+                    ) // last 32 bytes
                 )
             )
             ////////////////////////////////////////////////////
@@ -1060,8 +1070,9 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             ////////////////////////////////////////////////////
             maxAmount := calldataload(
                     add(
-                        PATH_OFFSET_CALLBACK_V2,
-                        sub(pathLength, 52)) // last 52 bytes
+                        112, // PATH_OFFSET_CALLBACK_V2 - 52
+                        pathLength
+                    ) // last 52 bytes
             )
             ////////////////////////////////////////////////////
             // pay amount provided in lower 16 bytes
@@ -1095,7 +1106,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 // the router returns the amount received that we can validate against
                 // throught the `maxAmount`
                 assembly {
-                    pathOffset := add(pathOffset, SKIP_LENGTH_UNOSWAP)
+                    pathOffset := NEXT_SWAP_V2_OFFSET
                     pathLength := sub(pathLength, SKIP_LENGTH_UNOSWAP)
                 }
                 ////////////////////////////////////////////////////
@@ -1103,9 +1114,16 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 // to be this contract. As such, we have to pre-fund 
                 // the next swap
                 ////////////////////////////////////////////////////
-                uint256 dexId = _preFundTrade(address(this), amountReceived, pathOffset);
+                uint256 dexId = _preFundTrade(address(this), amountReceived, NEXT_SWAP_V2_OFFSET);
                 // continue swapping
-                amountReceived = swapExactIn(amountReceived, dexId, address(this), address(this), pathOffset, pathLength);
+                amountReceived = swapExactIn(
+                    amountReceived,
+                    dexId,
+                    address(this),
+                    address(this),
+                    NEXT_SWAP_V2_OFFSET,
+                    pathLength
+                );
                 // store result in cache
                 // if(maxAmount > tradeId) revert Slippage();
                 assembly {
