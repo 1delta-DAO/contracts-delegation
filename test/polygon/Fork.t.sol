@@ -8,7 +8,7 @@ contract ForkTestPolygon is DeltaSetup {
         vm.createSelectFork({blockNumber: 59909525, urlOrAlias: "https://polygon-rpc.com"});
         address admin = 0x999999833d965c275A2C102a4Ebf222ca938546f;
         address proxy = 0x6A6faa54B9238f0F079C8e6CBa08a7b9776C7fE4;
-        address oldModule = 0xEF72f5FAd1345AcFc775B194edB2D42AA9a48Ff3;
+        address oldModule = 0x26A27420d7257a159DEcbb5b6EF05199DD20eAE5;
         upgradeExistingDelta(proxy, admin, oldModule);
     }
 
