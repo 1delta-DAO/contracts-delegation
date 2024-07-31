@@ -130,6 +130,11 @@ contract AddressesMantle {
     uint16 internal BIN_STEP_LOWEST = 1;
     uint16 internal BIN_STEP_LOW = 10;
 
+
+    address internal FBTC_WBTC_POOL = 0xD39DFbfBA9E7eccd813918FfbDa10B783EA3b3C6;
+    address internal FBTC = 0xC96dE26018A54D51c097160568752c4E3BD6C364;
+    uint8 DODO = 153;
+
     uint8 internal AGNI = 1;
     uint8 internal FUSION_X = 0;
     uint8 internal BUTTER = 3;

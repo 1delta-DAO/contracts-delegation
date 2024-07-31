@@ -3,7 +3,7 @@ pragma solidity ^0.8.19;
 
 import "./DeltaSetup.f.sol";
 
-contract ForkTestMantle is DeltaSetup {
+contract InitForkTestMantle is DeltaSetup {
     address user = 0x334d52E24d452fa20489f07Bd943b7cF943Cb881;
     address initProxy = 0xc08BFef7E778f3519D79E96780b77066F5d4FCC0;
 

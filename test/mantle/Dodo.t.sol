@@ -9,10 +9,6 @@ import "./DeltaSetup.f.sol";
 contract DodoTest is DeltaSetup {
     address someOtherUser = 0x813fBB2915B96DFbE00D88dd3D842b6e3e91FB38;
 
-    address internal FBTC_WBTC_POOL = 0xD39DFbfBA9E7eccd813918FfbDa10B783EA3b3C6;
-    address internal FBTC = 0xC96dE26018A54D51c097160568752c4E3BD6C364;
-    uint8 DODO = 153;
-
     function setUp() public virtual override {
         vm.createSelectFork({blockNumber: 66900822, urlOrAlias: "https://mantle-mainnet.public.blastapi.io"});
 
