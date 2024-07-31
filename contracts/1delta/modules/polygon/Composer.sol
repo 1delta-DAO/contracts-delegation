@@ -385,7 +385,7 @@ contract OneDeltaComposerPolygon is MarginTrading {
                     //      bytes 40-60:                 target
                     //      bytes 60-74:                 amount
                     //      bytes 74-76:                 calldata length
-                    //      bytes 76-(76+permit length): permit data
+                    //      bytes 76-(76+data length):   data
                     ////////////////////////////////////////////////////
                     assembly {
                         // get first three addresses
@@ -400,7 +400,8 @@ contract OneDeltaComposerPolygon is MarginTrading {
                         mstore(0x0, aggregator)
                         // validate approvalTarget / target combo
                         if iszero(sload(keccak256(0x0, 0x40))) {
-                            revert(0, 0)
+                            mstore(0, INVALID_TARGET)
+                            revert(0, 0x4)
                         }
                         // get amount to check allowance
                         let amount := calldataload(add(currentOffset, 60))

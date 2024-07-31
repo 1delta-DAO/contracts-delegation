@@ -4,7 +4,6 @@ pragma solidity ^0.8.19;
 import "./DeltaSetup.f.sol";
 
 contract AccessTests is DeltaSetup {
-    uint256 DEFAULT_IR_MODE = 2; // variable
 
     address internal attacker = 0x0c38845C2587e2fb0b7fba1cfB27f260F74066Aa;
 

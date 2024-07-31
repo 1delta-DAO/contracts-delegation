@@ -25,6 +25,7 @@ abstract contract DeltaErrors {
     error InvalidFlashLoan();
     error InvalidOperation();
     error Slippage();
+    error Target();
 
     // Slippage()
     bytes4 internal constant SLIPPAGE = 0x7dd37f70;
@@ -42,4 +43,6 @@ abstract contract DeltaErrors {
     bytes4 internal constant INVALID_OPERATION = 0x398d4d32;
     // InvalidCaller()
     bytes4 internal constant INVALID_CALLER = 0x48f5c3ed;
+    // Target()
+    bytes4 internal constant INVALID_TARGET = 0x4fe6f55f;
 }

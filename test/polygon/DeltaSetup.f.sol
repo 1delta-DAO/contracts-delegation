@@ -215,24 +215,9 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
         management.approveAddress(assets, YLDR_POOL);
         management.approveAddress(assets, COMET_USDC);
         management.approveAddress(assets, CRV_3_USD_AAVE_POOL);
-
-        // address[] memory stratumAssets = new address[](6);
-        // stratumAssets[0] = USDC;
-        // stratumAssets[1] = USDT;
-        // stratumAssets[2] = WETH;
-        // stratumAssets[3] = WETH;
-        // stratumAssets[4] = WETH;
-        // stratumAssets[5] = WETH;
-        // management.approveAddress(stratumAssets, STRATUM_3POOL);
-        // management.approveAddress(stratumAssets, STRATUM_3POOL_2);
-        // management.approveAddress(stratumAssets, STRATUM_ETH_POOL);
-
-        // address[] memory usdyAssets = new address[](1);
-        // usdyAssets[0] = USDY;
-        // management.approveAddress(usdyAssets, mUSD);
     }
 
-        function upgradeExistingDelta(address proxy, address admin, address oldModule) internal virtual {
+    function upgradeExistingDelta(address proxy, address admin, address oldModule) internal virtual {
         brokerProxyAddress = proxy;
 
         brokerProxy = IBrokerProxy(brokerProxyAddress);

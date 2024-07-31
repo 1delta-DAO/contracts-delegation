@@ -4,8 +4,6 @@ pragma solidity ^0.8.19;
 import "./DeltaSetup.f.sol";
 
 contract ForkTestMantle is DeltaSetup {
-    uint256 DEFAULT_IR_MODE = 2; // variable
-
     function setUp() public virtual override {
         vm.createSelectFork({blockNumber: 66773300, urlOrAlias: "https://mantle-mainnet.public.blastapi.io"});
         address admin = 0x999999833d965c275A2C102a4Ebf222ca938546f;
