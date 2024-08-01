@@ -30,14 +30,12 @@ abstract contract V3TypeSwapper is DeltaErrors {
     /// @dev MAX_SQRT_RATIO - 1 from Uniswap's TickMath
     uint160 internal constant MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970341;
 
-
     ////////////////////////////////////////////////////
     // param lengths
     ////////////////////////////////////////////////////
 
     uint256 internal constant MAX_SINGLE_LENGTH_UNOSWAP = 66;
     uint256 internal constant SKIP_LENGTH_UNOSWAP = 44; // = 20+1+1+20+2
-
 
     ////////////////////////////////////////////////////
     // dex references
@@ -116,16 +114,16 @@ abstract contract V3TypeSwapper is DeltaErrors {
 
                 // within the callback, we add the maximum in amount
                 mstore(add(add(ptr, 196), pathLength), shl(128, minOut))
-                pathLength := add(pathLength, 16)
+                let _pathLength := add(pathLength, 16)
                 // within the callback, we add the payer
-                mstore(add(add(ptr, 196), pathLength), shl(96, payer))
-                pathLength := add(pathLength, 20)
+                mstore(add(add(ptr, 196), _pathLength), shl(96, payer))
+                _pathLength := add(_pathLength, 20)
 
                 /// Store data length
-                mstore(add(ptr, 164), pathLength)
+                mstore(add(ptr, 164), _pathLength)
 
                 // Perform the external 'swap' call
-                if iszero(call(gas(), pool, 0, ptr, add(228, pathLength), ptr, 32)) {
+                if iszero(call(gas(), pool, 0, ptr, add(228, _pathLength), ptr, 32)) {
                     // store return value directly to free memory pointer
                     // The call failed; we retrieve the exact error message and revert with it
                     returndatacopy(0, 0, returndatasize()) // Copy the error message to the start of memory
@@ -153,16 +151,16 @@ abstract contract V3TypeSwapper is DeltaErrors {
 
                 // within the callback, we add the maximum in amount
                 mstore(add(add(ptr, 196), pathLength), shl(128, minOut))
-                pathLength := add(pathLength, 16)
+                let _pathLength := add(pathLength, 16)
                 // within the callback, we add the payer
-                mstore(add(add(ptr, 196), pathLength), shl(96, payer))
-                pathLength := add(pathLength, 20)
+                mstore(add(add(ptr, 196), _pathLength), shl(96, payer))
+                _pathLength := add(_pathLength, 20)
 
                 /// Store data length
-                mstore(add(ptr, 164), pathLength)
+                mstore(add(ptr, 164), _pathLength)
 
                 // Perform the external 'swap' call
-                if iszero(call(gas(), pool, 0, ptr, add(228, pathLength), ptr, 64)) {
+                if iszero(call(gas(), pool, 0, ptr, add(228, _pathLength), ptr, 64)) {
                     // store return value directly to free memory pointer
                     // The call failed; we retrieve the exact error message and revert with it
                     returndatacopy(0, 0, returndatasize()) // Copy the error message to the start of memory
@@ -224,16 +222,16 @@ abstract contract V3TypeSwapper is DeltaErrors {
 
                 // within the callback, we add the maximum in amount
                 mstore(add(add(ptr, 164), pathLength), shl(128, minOut))
-                pathLength := add(pathLength, 16)
+                let _pathLength := add(pathLength, 16)
                 // within the callback, we add the payer
-                mstore(add(add(ptr, 164), pathLength), shl(96, payer))
-                pathLength := add(pathLength, 20)
+                mstore(add(add(ptr, 164), _pathLength), shl(96, payer))
+                _pathLength := add(_pathLength, 20)
 
                 /// Store data length
-                mstore(add(ptr, 132), pathLength)
+                mstore(add(ptr, 132), _pathLength)
 
                 // Perform the external 'swap' call
-                if iszero(call(gas(), pool, 0, ptr, add(196, pathLength), ptr, 32)) {
+                if iszero(call(gas(), pool, 0, ptr, add(196, _pathLength), ptr, 32)) {
                     // store return value directly to free memory pointer
                     // The call failed; we retrieve the exact error message and revert with it
                     returndatacopy(0, 0, returndatasize()) // Copy the error message to the start of memory
@@ -260,16 +258,16 @@ abstract contract V3TypeSwapper is DeltaErrors {
 
                 // within the callback, we add the maximum in amount
                 mstore(add(add(ptr, 164), pathLength), shl(128, minOut))
-                pathLength := add(pathLength, 16)
+                let _pathLength := add(pathLength, 16)
                 // within the callback, we add the payer
-                mstore(add(add(ptr, 164), pathLength), shl(96, payer))
-                pathLength := add(pathLength, 20)
+                mstore(add(add(ptr, 164), _pathLength), shl(96, payer))
+                _pathLength := add(_pathLength, 20)
 
                 /// Store data length
-                mstore(add(ptr, 132), pathLength)
+                mstore(add(ptr, 132), _pathLength)
 
                 // Perform the external 'swap' call
-                if iszero(call(gas(), pool, 0, ptr, add(196, pathLength), ptr, 64)) {
+                if iszero(call(gas(), pool, 0, ptr, add(196, _pathLength), ptr, 64)) {
                     // store return value directly to free memory pointer
                     // The call failed; we retrieve the exact error message and revert with it
                     returndatacopy(0, 0, returndatasize()) // Copy the error message to the start of memory
@@ -326,16 +324,16 @@ abstract contract V3TypeSwapper is DeltaErrors {
 
                 // within the callback, we add the maximum in amount
                 mstore(add(add(ptr, 164), pathLength), shl(128, maxIn))
-                pathLength := add(pathLength, 16)
+                let _pathLength := add(pathLength, 16)
                 // and the payer address
-                mstore(add(add(ptr, 164), pathLength), shl(96, payer))
-                pathLength := add(pathLength, 20)
+                mstore(add(add(ptr, 164), _pathLength), shl(96, payer))
+                _pathLength := add(_pathLength, 20)
 
                 /// Store data length
-                mstore(add(ptr, 132), pathLength)
+                mstore(add(ptr, 132), _pathLength)
 
                 // Perform the external 'swap' call
-                if iszero(call(gas(), pool, 0, ptr, add(196, pathLength), ptr, 64)) {
+                if iszero(call(gas(), pool, 0, ptr, add(196, _pathLength), ptr, 64)) {
                     // store return value directly to free memory pointer
                     // The call failed; we retrieve the exact error message and revert with it
                     returndatacopy(0, 0, returndatasize()) // Copy the error message to the start of memory
@@ -361,16 +359,16 @@ abstract contract V3TypeSwapper is DeltaErrors {
 
                 // within the callback, we add the maximum in amount
                 mstore(add(add(ptr, 164), pathLength), shl(128, maxIn))
-                pathLength := add(pathLength, 16)
+                let _pathLength := add(pathLength, 16)
                 // and the payer address
-                mstore(add(add(ptr, 164), pathLength), shl(96, payer))
-                pathLength := add(pathLength, 20)
+                mstore(add(add(ptr, 164), _pathLength), shl(96, payer))
+                _pathLength := add(_pathLength, 20)
 
                 /// Store data length
-                mstore(add(ptr, 132), pathLength)
+                mstore(add(ptr, 132), _pathLength)
 
                 // Perform the external 'swap' call
-                if iszero(call(gas(), pool, 0, ptr, add(196, pathLength), ptr, 32)) {
+                if iszero(call(gas(), pool, 0, ptr, add(196, _pathLength), ptr, 32)) {
                     // store return value directly to free memory pointer
                     // The call failed; we retrieve the exact error message and revert with it
                     returndatacopy(0, 0, returndatasize()) // Copy the error message to the start of memory
@@ -429,16 +427,16 @@ abstract contract V3TypeSwapper is DeltaErrors {
 
                 // within the callback, we add the maximum in amount
                 mstore(add(add(ptr, 196), pathLength), shl(128, maxIn))
-                pathLength := add(pathLength, 16)
+                let _pathLength := add(pathLength, 16)
                 // and the payer address
-                mstore(add(add(ptr, 196), pathLength), shl(96, payer))
-                pathLength := add(pathLength, 20)
+                mstore(add(add(ptr, 196), _pathLength), shl(96, payer))
+                _pathLength := add(_pathLength, 20)
 
                 /// Store data length
-                mstore(add(ptr, 164), pathLength)
+                mstore(add(ptr, 164), _pathLength)
 
                 // Perform the external 'swap' call
-                if iszero(call(gas(), pool, 0, ptr, add(228, pathLength), ptr, 32)) {
+                if iszero(call(gas(), pool, 0, ptr, add(228, _pathLength), ptr, 32)) {
                     // store return value directly to free memory pointer
                     // The call failed; we retrieve the exact error message and revert with it
                     returndatacopy(0, 0, returndatasize()) // Copy the error message to the start of memory
@@ -466,16 +464,16 @@ abstract contract V3TypeSwapper is DeltaErrors {
 
                 // within the callback, we add the maximum in amount
                 mstore(add(add(ptr, 196), pathLength), shl(128, maxIn))
-                pathLength := add(pathLength, 16)
+                let _pathLength := add(pathLength, 16)
                 // then we add the payer
-                mstore(add(add(ptr, 196), pathLength), shl(96, payer))
-                pathLength := add(pathLength, 20)
+                mstore(add(add(ptr, 196), _pathLength), shl(96, payer))
+                _pathLength := add(_pathLength, 20)
 
                 /// Store data length
-                mstore(add(ptr, 164), pathLength)
+                mstore(add(ptr, 164), _pathLength)
 
                 // Perform the external 'swap' call
-                if iszero(call(gas(), pool, 0, ptr, add(228, pathLength), ptr, 64)) {
+                if iszero(call(gas(), pool, 0, ptr, add(228, _pathLength), ptr, 64)) {
                     // store return value directly to free memory pointer
                     // The call failed; we retrieve the exact error message and revert with it
                     returndatacopy(0, 0, returndatasize()) // Copy the error message to the start of memory
