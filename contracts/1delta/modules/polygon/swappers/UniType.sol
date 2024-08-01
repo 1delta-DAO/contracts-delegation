@@ -64,8 +64,8 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
      * @param useFlashSwap if true, we assume payment in callback
      */
     function _swapV2StyleExactOut(
-        address tokenA,
-        address tokenB,
+        address tokenIn,
+        address tokenOut,
         address pair,
         uint256 amountOut,
         uint256 maxIn,
@@ -81,7 +81,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
             // selector for swap(...)
             mstore(ptr, 0x022c0d9f00000000000000000000000000000000000000000000000000000000)
 
-            switch lt(tokenA, tokenB)
+            switch lt(tokenIn, tokenOut)
             case 1 {
                 mstore(add(ptr, 0x4), 0x0)
                 mstore(add(ptr, 0x24), amountOut)
@@ -134,7 +134,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                     mstore(add(ptr, 0x04), receiver)
                     mstore(add(ptr, 0x24), amountOut)
 
-                    let success := call(gas(), tokenB, 0, ptr, 0x44, ptr, 32)
+                    let success := call(gas(), tokenOut, 0, ptr, 0x44, ptr, 32)
 
                     let rdsize := returndatasize()
 
@@ -574,8 +574,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
             pair := and(ADDRESS_MASK, shr(96, pair))
             // we define this as token in and later re-assign this to
             // reserve in to prevent stack too deep errors
-            let tokenIn := calldataload(pathOffset)
-            tokenIn := and(ADDRESS_MASK, shr(96, tokenIn))
+            let tokenIn := and(ADDRESS_MASK, shr(96, calldataload(pathOffset)))
             // Compute the buy amount based on the pair reserves.
             {
                 let zeroForOne := lt(

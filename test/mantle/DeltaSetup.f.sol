@@ -7,7 +7,7 @@ import {ComposerUtils, Commands} from "../shared/utils/ComposerUtils.sol";
 
 // interfaces
 import {IFlashAggregator} from "../shared/interfaces/IFlashAggregator.sol";
-import {IFlashLoanReceiver} from "../../contracts/1delta/modules/mantle/IFlashLoanReceiver.sol";
+import {IFlashLoanReceiver} from "./utils/IFlashLoanReceiver.sol";
 import {IManagement} from "../shared/interfaces/IManagement.sol";
 import {ILending} from "../shared/interfaces/ILending.sol";
 import {IInitialize} from "../shared/interfaces/IInitialize.sol";
@@ -17,7 +17,7 @@ import {IModuleLens} from "../../contracts/1delta/proxy/interfaces/IModuleLens.s
 // universal erc20
 import {IERC20All} from "../shared/interfaces/IERC20All.sol";
 // lending pool for debugging
-import {ILendingPool} from "../../contracts/1delta/modules/mantle/ILendingPool.sol";
+import {ILendingPool} from "./utils/ILendingPool.sol";
 
 // proxy and management
 import {ConfigModule} from "../../contracts/1delta/proxy/modules/ConfigModule.sol";

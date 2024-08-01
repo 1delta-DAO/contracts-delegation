@@ -964,7 +964,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         // uniswapV3 style
         if (poolId < 49) {
             _swapUniswapV3PoolExactOut(
-                -int256(amountOut),
+                amountOut,
                 maxIn,
                 payer,
                 receiver,
@@ -1092,7 +1092,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         // uniswapV3 style
         if (poolId < 49) {
             _swapUniswapV3PoolExactOut(
-                -int256(amountOut),
+                amountOut,
                 maxIn,
                 payer,
                 address(this),

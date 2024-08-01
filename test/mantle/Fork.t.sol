@@ -24,7 +24,7 @@ contract ForkTestMantle is DeltaSetup {
         );
         console.log("quoted", quoted);
         vm.prank(user);
-        // vm.expectRevert();
+        vm.expectRevert();
         IFlashAggregator(brokerProxyAddress).deltaCompose(getSwapWithPermit());
     }
 

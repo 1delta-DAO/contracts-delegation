@@ -636,7 +636,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                     ////////////////////////////////////////////////////
                     assembly {
                         let underlying := and(ADDRESS_MASK, shr(96, calldataload(currentOffset)))
-                        let receiver := and(ADDRESS_MASK, shr(96, calldataload(add(currentOffset, 20))))
+                        let receiver := and(ADDRESS_MASK, calldataload(add(currentOffset, 8)))
                         let amount := and(_UINT112_MASK, calldataload(add(currentOffset, 22)))
                         // when entering 0 as amount, use the callwe balance
                         if iszero(amount) {

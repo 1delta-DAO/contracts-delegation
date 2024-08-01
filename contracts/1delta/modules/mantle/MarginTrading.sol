@@ -34,14 +34,12 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
     ) external {
         address tokenIn;
         address tokenOut;
-        uint256 tradeId;
         uint256 pathLength;
         assembly {
             pathLength := path.length
             let firstWord := calldataload(PATH_OFFSET_CALLBACK_V3)
             
             tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
-            tradeId := and(UINT8_MASK, shr(80, firstWord)) // poolId
             // second word
             firstWord := calldataload(164) // PATH_OFFSET_CALLBACK_V3 + 32
             
@@ -87,14 +85,12 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
     ) external {
         address tokenIn;
         address tokenOut;
-        uint256 tradeId;
         uint256 pathLength;
         assembly {
             pathLength := path.length
             let firstWord := calldataload(PATH_OFFSET_CALLBACK_V3)
             
             tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
-            tradeId := and(UINT8_MASK, shr(80, firstWord)) // poolId
             // second word
             firstWord := calldataload(164) // PATH_OFFSET_CALLBACK_V3 + 32
             tokenOut := and(ADDRESS_MASK, firstWord)
@@ -139,14 +135,12 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
     ) external {
         address tokenIn;
         address tokenOut;
-        uint256 tradeId;
         uint256 pathLength;
         assembly {
             pathLength := path.length
             let firstWord := calldataload(PATH_OFFSET_CALLBACK_V3)
             
             tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
-            tradeId := and(UINT8_MASK, shr(80, firstWord)) // poolId
             // second word
             firstWord := calldataload(164) // PATH_OFFSET_CALLBACK_V3 + 32
             tokenOut := and(ADDRESS_MASK, firstWord)
@@ -190,7 +184,6 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
     ) external  {
         address tokenIn;
         address tokenOut;
-        uint256 tradeId;
         uint256 pathLength;
         uint256 offs;
         assembly {
@@ -198,7 +191,6 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             let firstWord := calldataload(PATH_OFFSET_CALLBACK_V3)
             
             tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
-            tradeId := and(UINT8_MASK, shr(80, firstWord)) // poolId
             // second word
             firstWord := calldataload(164) // PATH_OFFSET_CALLBACK_V3 + 32
             tokenOut := and(ADDRESS_MASK, firstWord)
@@ -244,14 +236,12 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
     ) external  {
         address tokenIn;
         address tokenOut;
-        uint256 tradeId;
         uint256 pathLength;
         assembly {
             pathLength := path.length
             let firstWord := calldataload(PATH_OFFSET_CALLBACK_V3)
             
             tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
-            tradeId := and(UINT8_MASK, shr(80, firstWord)) // poolId
             // second word
             firstWord := calldataload(164) // PATH_OFFSET_CALLBACK_V3 + 32
             tokenOut := and(ADDRESS_MASK, firstWord)
@@ -296,14 +286,12 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
     ) external {
         address tokenIn;
         address tokenOut;
-        uint256 tradeId;
         uint256 pathLength;
         assembly {
             pathLength := path.length
             let firstWord := calldataload(PATH_OFFSET_CALLBACK_V3)
             let dexId := and(UINT8_MASK, shr(80, firstWord))
             tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
-            tradeId := and(UINT8_MASK, shr(80, firstWord)) // poolId
             // second word
             firstWord := calldataload(164) // PATH_OFFSET_CALLBACK_V3 + 32
             tokenOut := and(ADDRESS_MASK, firstWord)
@@ -369,13 +357,11 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
     function swapY2XCallback(uint256 x, uint256 y, bytes calldata path) external {
         address tokenIn;
         address tokenOut;
-        uint256 tradeId;
         uint256 pathLength;
         assembly {
             pathLength := path.length
             let firstWord := calldataload(PATH_OFFSET_CALLBACK_V3)
             tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
-            tradeId := and(UINT8_MASK, shr(80, firstWord)) // poolId
             // second word
             firstWord := calldataload(164) // PATH_OFFSET_CALLBACK_V3 + 32
             
@@ -423,13 +409,11 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
     function swapX2YCallback(uint256 x, uint256 y, bytes calldata path) external {
         address tokenIn;
         address tokenOut;
-        uint256 tradeId;
         uint256 pathLength;
         assembly {
             pathLength := path.length
             let firstWord := calldataload(PATH_OFFSET_CALLBACK_V3)
             tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
-            tradeId := and(UINT8_MASK, shr(80, firstWord)) // poolId
             // second word
             firstWord := calldataload(164) // PATH_OFFSET_CALLBACK_V3 + 32
             tokenOut := and(ADDRESS_MASK, firstWord)
@@ -879,7 +863,6 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         uint256 amount1,
         bytes calldata path
     ) external {
-        uint256 tradeId;
         address tokenIn;
         address tokenOut;
         uint256 pathLength;
@@ -895,7 +878,6 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             let firstWord := calldataload(PATH_OFFSET_CALLBACK_V2)
             tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
             let dexId := and(shr(80, firstWord), UINT8_MASK) // swap pool dexId
-            tradeId := and(shr(88, firstWord), UINT8_MASK) // interaction dexId
             tokenOut := and(ADDRESS_MASK, calldataload(196)) // PATH_OFFSET_CALLBACK_V2 + 32
             let ptr := mload(0x40)
             let pair
@@ -1048,8 +1030,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         uint256 amountToPay;
         // the fee parameter in the path can be ignored for validating a V2 pool
         assembly {
-            let firstWord := calldataload(PATH_OFFSET_CALLBACK_V2)
-            tradeId := and(shr(88, firstWord), UINT8_MASK) // interaction identifier
+            tradeId := and(calldataload(153), UINT8_MASK) // interaction identifier at PATH_OFFSET_CALLBACK_V2 - 11
             ////////////////////////////////////////////////////
             // We fetch the original initiator of the swap function
             // It is represented by the last 20 bytes of the path
@@ -1266,7 +1247,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                     tokenOut := shr(96, calldataload(pathOffset))
                     tokenIn := shr(96, calldataload(add(pathOffset, SKIP_LENGTH_UNOSWAP)))
                     pair := shr(96, calldataload(add(pathOffset, 22)))
-                    feeDenom := and(UINT16_MASK, shr(80, calldataload(add(pathOffset, 22))))
+                    feeDenom := and(UINT16_MASK, calldataload(add(pathOffset, 12)))
                 }
                 ////////////////////////////////////////////////////
                 // We calculate the required amount for the next swap
@@ -1454,9 +1435,9 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             address tokenIn;
             address pair;
             assembly {
-                tokenOut := and(ADDRESS_MASK, shr(96, calldataload(pathOffset)))
-                tokenIn := and(ADDRESS_MASK, shr(96, calldataload(add(pathOffset, SKIP_LENGTH_UNOSWAP))))
-                pair := and(ADDRESS_MASK, shr(96, calldataload(add(pathOffset, 22))))
+                tokenOut := shr(96, calldataload(pathOffset))
+                tokenIn := shr(96, calldataload(add(pathOffset, SKIP_LENGTH_UNOSWAP)))
+                pair := shr(96, calldataload(add(pathOffset, 22)))
             }
             _swapV2StyleExactOut(
                 tokenIn,
@@ -1498,12 +1479,10 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 switch lt(pathLength, 67) // see swapExactIn
                 case 1 { reciever := address()}
                 default {
-                    let nextId := and(shr(80, calldataload(add(pathOffset, SKIP_LENGTH_UNOSWAP))), UINT8_MASK)
+                    let nextId := and(calldataload(add(pathOffset, 34)), UINT8_MASK) // SKIP_LENGTH_UNISWAP - 10
                     switch gt(nextId, 99) 
                     case 1 {
-                        reciever := and(
-                            ADDRESS_MASK,
-                            shr(
+                        reciever := shr(
                                 96,
                                 calldataload(
                                     add(
@@ -1512,7 +1491,6 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                                     )
                                 ) // poolAddress
                             )
-                        )
                     }
                     default {
                         reciever := address()
@@ -1535,12 +1513,10 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 switch lt(pathLength, 67) // see swapExactIn
                 case 1 { reciever := address()}
                 default {
-                    let nextId := and(shr(80, calldataload(add(pathOffset, SKIP_LENGTH_UNOSWAP))), UINT8_MASK)
+                    let nextId := and(calldataload(add(pathOffset, 34)), UINT8_MASK) // SKIP_LENGTH_UNISWAP - 10
                     switch gt(nextId, 99) 
                     case 1 {
-                        reciever := and(
-                            ADDRESS_MASK,
-                            shr(
+                        reciever := shr(
                                 96,
                                 calldataload(
                                     add(
@@ -1549,7 +1525,6 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                                     )
                                 ) // poolAddress
                             )
-                        )
                     }
                     default {
                         reciever := address()
