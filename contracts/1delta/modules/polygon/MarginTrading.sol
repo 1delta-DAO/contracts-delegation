@@ -39,7 +39,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             pathLength := path.length
             let firstWord := calldataload(PATH_OFFSET_CALLBACK_V3)
             
-            tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
+            tokenIn := shr(96, firstWord)
             // second word
             firstWord := calldataload(164) // PATH_OFFSET_CALLBACK_V3 + 32
             tokenOut := and(ADDRESS_MASK, firstWord)
@@ -88,7 +88,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             pathLength := path.length
             let firstWord := calldataload(PATH_OFFSET_CALLBACK_V3)
             let dexId := and(UINT8_MASK, shr(80, firstWord))
-            tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
+            tokenIn := shr(96, firstWord)
             // second word
             firstWord := calldataload(164) // PATH_OFFSET_CALLBACK_V3 + 32
             tokenOut := and(ADDRESS_MASK, firstWord)
@@ -176,7 +176,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         assembly {
             pathLength := path.length
             let firstWord := calldataload(PATH_OFFSET_CALLBACK_V3)
-            tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
+            tokenIn := shr(96, firstWord)
             // second word
             firstWord := calldataload(164) // PATH_OFFSET_CALLBACK_V3 + 32
             
@@ -228,7 +228,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         assembly {
             pathLength := path.length
             let firstWord := calldataload(PATH_OFFSET_CALLBACK_V3)
-            tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
+            tokenIn := shr(96, firstWord)
             // second word
             firstWord := calldataload(164) // PATH_OFFSET_CALLBACK_V3 + 32
             tokenOut := and(ADDRESS_MASK, firstWord)
@@ -498,7 +498,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // fetch tokens
             let firstWord := calldataload(PATH_OFFSET_CALLBACK_V2)
             let pId := and(UINT8_MASK, shr(80, firstWord)) 
-            tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
+            tokenIn := shr(96, firstWord)
             tokenOut := and(ADDRESS_MASK, calldataload(196)) // PATH_OFFSET_CALLBACK_V2 + 32
             let ptr := mload(0x40)
             switch lt(tokenIn, tokenOut)
@@ -684,7 +684,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             }
             // fetch tokens
             let firstWord := calldataload(PATH_OFFSET_CALLBACK_V2)
-            tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
+            tokenIn := shr(96, firstWord)
             let dexId := and(shr(80, firstWord), UINT8_MASK) // swap pool dexId
             tokenOut := and(ADDRESS_MASK, calldataload(196)) // PATH_OFFSET_CALLBACK_V2 + 32
             let ptr := mload(0x40)
