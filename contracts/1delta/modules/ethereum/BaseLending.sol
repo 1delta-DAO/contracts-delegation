@@ -17,12 +17,19 @@ abstract contract BaseLending is Slots {
     // errors
     error BadLender();
 
-    // lender pool addresses
-    address internal constant AAVE_V3 = 0x794a61358D6845594F94dc1DB02A252b5b4814aD;
-    address internal constant AAVE_V2 = 0x8dFf5E27EA6b7AC08EbFdf9eB090F32ee9a30fcf;
+    // aave type lender pool addresses
+    address internal constant AAVE_V3 = 0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2;
+    address internal constant SPARK = 0xC13e21B648A5Ee794902342038FF3aDAB66BE987;
+    address internal constant ZEROLEND = 0x3BC3D34C32cc98bf098D832364Df8A222bBaB4c0;
+    address internal constant AVALON = 0x8dFf5E27EA6b7AC08EbFdf9eB090F32ee9a30fcf;
+    address internal constant RADIANT = 0x8dFf5E27EA6b7AC08EbFdf9eB090F32ee9a30fcf;
+    address internal constant UWU = 0x8dFf5E27EA6b7AC08EbFdf9eB090F32ee9a30fcf;
     address internal constant YLDR = 0x8183D4e0561cBdc6acC0Bdb963c352606A2Fa76F;
-    address internal constant COMET_USDC = 0xF25212E676D1F7F89Cd72fFEe66158f541246445;
-    address internal constant COMET_USDT = 0xaeB318360f27748Acb200CE616E389A6C9409a07;
+
+    // compound V3 addresses
+    address internal constant COMET_USDC = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
+    address internal constant COMET_USDT = 0x3Afdc9BCA9213A35503b077a6072F3D0d5AB0840;
+    address internal constant COMET_WETH = 0xA17581A9E3356d9A858b789D68B4d866e593aE94;
 
     // BadLender()
     bytes4 internal constant BAD_LENDER = 0x603b7f3e;
@@ -84,7 +91,7 @@ abstract contract BaseLending is Slots {
                     pool := YLDR
                 }
                 case 25 {
-                    pool := AAVE_V2
+                    pool := AVALON
                 }
                 default {
                     mstore(0x0, _lenderId)
@@ -103,36 +110,164 @@ abstract contract BaseLending is Slots {
                 }
             }
             case 0 {
-                let cometPool
-                switch _lenderId
-                case 50 {
-                    cometPool := COMET_USDC
-                }
-                case 51 {
-                    cometPool := COMET_USDT
-                }
-                // default: load comet from storage
-                // if it is not provided directly
-                default {
-                    mstore(0x0, _lenderId)
-                    mstore(0x20, LENDING_POOL_SLOT)
-                    cometPool := sload(keccak256(0x0, 0x40))
-                    if iszero(cometPool) {
-                        mstore(0, BAD_LENDER)
-                        revert(0, 0x4)
+                // Compound V3
+                switch lt(_lenderId, 75)
+                case 1 {
+                    let cometPool
+                    switch _lenderId
+                    case 50 {
+                        cometPool := COMET_USDC
+                    }
+                    case 51 {
+                        cometPool := COMET_USDT
+                    }
+                    // default: load comet from storage
+                    // if it is not provided directly
+                    default {
+                        mstore(0x0, _lenderId)
+                        mstore(0x20, LENDING_POOL_SLOT)
+                        cometPool := sload(keccak256(0x0, 0x40))
+                        if iszero(cometPool) {
+                            mstore(0, BAD_LENDER)
+                            revert(0, 0x4)
+                        }
+                    }
+                    // selector withdrawFrom(address,address,address,uint256)
+                    mstore(ptr, 0x2644131800000000000000000000000000000000000000000000000000000000)
+                    mstore(add(ptr, 0x04), _from)
+                    mstore(add(ptr, 0x24), _to)
+                    mstore(add(ptr, 0x44), _underlying)
+                    mstore(add(ptr, 0x64), amount)
+                    // call pool
+                    if iszero(call(gas(), cometPool, 0x0, ptr, 0x84, 0x0, 0x0)) {
+                        let rdsize := returndatasize()
+                        returndatacopy(0x0, 0x0, rdsize)
+                        revert(0x0, rdsize)
                     }
                 }
-                // selector withdrawFrom(address,address,address,uint256)
-                mstore(ptr, 0x2644131800000000000000000000000000000000000000000000000000000000)
-                mstore(add(ptr, 0x04), _from)
-                mstore(add(ptr, 0x24), _to)
-                mstore(add(ptr, 0x44), _underlying)
-                mstore(add(ptr, 0x64), amount)
-                // call pool
-                if iszero(call(gas(), cometPool, 0x0, ptr, 0x84, 0x0, 0x0)) {
-                    let rdsize := returndatasize()
-                    returndatacopy(0x0, 0x0, rdsize)
-                    revert(0x0, rdsize)
+                // Venus market ids
+                default {
+                    // load collateral token for market
+                    mstore(0, _underlying)
+                    mstore8(0, _lenderId)
+                    mstore(0x20, COLLATERAL_TOKENS_SLOT) // add pointer to slot
+                    let collateralToken := sload(keccak256(0x0, 0x40)) // access element
+
+                    // 1) CALCULTAE TRANSFER AMOUNT
+                    // Store fnSig (=bytes4(abi.encodeWithSignature("exchangeRateCurrent()"))) at params
+                    // - here we store 32 bytes : 4 bytes of fnSig and 28 bytes of RIGHT padding
+                    mstore(
+                        0x0,
+                        0xbd6d894d00000000000000000000000000000000000000000000000000000000 // with padding
+                    )
+                    // call to collateralToken
+                    // accrues interest. No real risk of failure.
+                    pop(
+                        call(
+                            gas(),
+                            collateralToken,
+                            0x0,
+                            0x0,
+                            0x24,
+                            0x0, // store back to ptr
+                            0x20
+                        )
+                    )
+
+                    // load the retrieved protocol share
+                    let refAmount := mload(0x0)
+
+                    // calculate collateral token amount, rounding up
+                    let transferAmount := add(
+                        div(
+                            mul(amount, 1000000000000000000), // multiply with 1e18
+                            refAmount // divide by rate
+                        ),
+                        1
+                    )
+                    // FETCH BALANCE
+                    // selector for balanceOf(address)
+                    mstore(0x0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+                    // add this address as parameter
+                    mstore(0x4, _to)
+
+                    // call to collateralToken
+                    pop(staticcall(gas(), collateralToken, 0x0, 0x24, 0x0, 0x20))
+
+                    // load the retrieved balance
+                    refAmount := mload(0x0)
+
+                    // floor to the balance
+                    if gt(transferAmount, refAmount) {
+                        transferAmount := refAmount
+                    }
+
+                    // 2) TRANSFER VTOKENS
+
+                    // selector for transferFrom(address,address,uint256)
+                    mstore(ptr, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
+                    mstore(add(ptr, 0x04), _to) // from user
+                    mstore(add(ptr, 0x24), address()) // to this address
+                    mstore(add(ptr, 0x44), transferAmount)
+
+                    let success := call(gas(), collateralToken, 0, ptr, 0x64, ptr, 32)
+
+                    if iszero(success) {
+                        returndatacopy(0, 0, returndatasize())
+                        revert(0, returndatasize())
+                    }
+
+                    // 3) REDEEM
+                    // selector for redeem(uint256)
+                    mstore(0, 0xdb006a7500000000000000000000000000000000000000000000000000000000)
+                    mstore(0x4, transferAmount)
+
+                    if iszero(
+                        call(
+                            gas(),
+                            collateralToken,
+                            0x0,
+                            0x0, // input = selector
+                            0x24, // input selector + uint256
+                            0x0, // output
+                            0x0 // output size = zero
+                        )
+                    ) {
+                        returndatacopy(0, 0, returndatasize())
+                        revert(0, returndatasize())
+                    }
+
+                    // transfer tokens only if the receiver is not this address
+                    if xor(address(), _to) {
+                        // 4) TRANSFER TO RECIPIENT
+                        // selector for transfer(address,uint256)
+                        mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+                        mstore(add(ptr, 0x04), _to)
+                        mstore(add(ptr, 0x24), amount)
+
+                        success := call(gas(), _underlying, 0, ptr, 0x44, ptr, 32)
+
+                        let rdsize := returndatasize()
+
+                        // Check for ERC20 success. ERC20 tokens should return a boolean,
+                        // but some don't. We accept 0-length return data as success, or at
+                        // least 32 bytes that starts with a 32-byte boolean true.
+                        success := and(
+                            success, // call itself succeeded
+                            or(
+                                iszero(rdsize), // no return data, or
+                                and(
+                                    iszero(lt(rdsize, 32)), // at least 32 bytes
+                                    eq(mload(ptr), 1) // starts with uint256(1)
+                                )
+                            )
+                        )
+
+                        if iszero(success) {
+                            returndatacopy(ptr, 0, rdsize)
+                            revert(ptr, rdsize)
+                        }
+                    }
                 }
             }
         }
@@ -167,7 +302,7 @@ abstract contract BaseLending is Slots {
                         pool := AAVE_V3
                     }
                     case 25 {
-                        pool := AAVE_V2
+                        pool := AVALON
                     }
                     default {
                         mstore(0x0, _lenderId)
@@ -225,36 +360,94 @@ abstract contract BaseLending is Slots {
                 }
             }
             default {
-                let cometPool
-                switch _lenderId
-                case 50 {
-                    cometPool := COMET_USDC
-                }
-                case 51 {
-                    cometPool := COMET_USDT
-                }
-                // default: load comet from storage
-                // if it is not provided directly
-                default {
-                    mstore(0x0, _lenderId)
-                    mstore(0x20, LENDING_POOL_SLOT)
-                    cometPool := sload(keccak256(0x0, 0x40))
-                    if iszero(cometPool) {
-                        mstore(0, BAD_LENDER)
-                        revert(0, 0x4)
+                switch lt(_lenderId, 75)
+                case 1 {
+                    let cometPool
+                    switch _lenderId
+                    case 50 {
+                        cometPool := COMET_USDC
+                    }
+                    case 51 {
+                        cometPool := COMET_USDT
+                    }
+                    // default: load comet from storage
+                    // if it is not provided directly
+                    default {
+                        mstore(0x0, _lenderId)
+                        mstore(0x20, LENDING_POOL_SLOT)
+                        cometPool := sload(keccak256(0x0, 0x40))
+                        if iszero(cometPool) {
+                            mstore(0, BAD_LENDER)
+                            revert(0, 0x4)
+                        }
+                    }
+                    // selector withdrawFrom(address,address,address,uint256)
+                    mstore(ptr, 0x2644131800000000000000000000000000000000000000000000000000000000)
+                    mstore(add(ptr, 0x04), _from)
+                    mstore(add(ptr, 0x24), _to)
+                    mstore(add(ptr, 0x44), _underlying)
+                    mstore(add(ptr, 0x64), _amount)
+                    // call pool
+                    if iszero(call(gas(), cometPool, 0x0, ptr, 0x84, 0x0, 0x0)) {
+                        let rdsize := returndatasize()
+                        returndatacopy(0x0, 0x0, rdsize)
+                        revert(0x0, rdsize)
                     }
                 }
-                // selector withdrawFrom(address,address,address,uint256)
-                mstore(ptr, 0x2644131800000000000000000000000000000000000000000000000000000000)
-                mstore(add(ptr, 0x04), _from)
-                mstore(add(ptr, 0x24), _to)
-                mstore(add(ptr, 0x44), _underlying)
-                mstore(add(ptr, 0x64), _amount)
-                // call pool
-                if iszero(call(gas(), cometPool, 0x0, ptr, 0x84, 0x0, 0x0)) {
-                    let rdsize := returndatasize()
-                    returndatacopy(0x0, 0x0, rdsize)
-                    revert(0x0, rdsize)
+                // Venus
+                default {
+                    mstore(0, _underlying) // pad the lender number (agnostic to uint_x)
+                    mstore8(0, _lenderId)
+                    mstore(0x20, COLLATERAL_TOKENS_SLOT) // add pointer to slot
+                    let collateralToken := sload(keccak256(0x0, 0x40)) // acces element
+                    // selector for borrowBehlaf(address,uint256)
+                    mstore(ptr, 0x856e5bb300000000000000000000000000000000000000000000000000000000)
+                    mstore(add(ptr, 0x4), _from) // user
+                    mstore(add(ptr, 0x24), _amount) // to this address
+                    if iszero(
+                        call(
+                            gas(),
+                            collateralToken,
+                            0x0, // no ETH sent
+                            ptr, // input selector
+                            0x44, // input size = selector + address + uint256
+                            ptr, // output
+                            0x0 // output size = zero
+                        )
+                    ) {
+                        returndatacopy(ptr, 0, returndatasize())
+                        revert(ptr, returndatasize())
+                    }
+                    if xor(address(), _to) {
+                        // 4) TRANSFER TO RECIPIENT
+                        // selector for transfer(address,uint256)
+                        mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+                        mstore(add(ptr, 0x04), _to)
+                        mstore(add(ptr, 0x24), _amount)
+
+                        let success := call(gas(), _underlying, 0, ptr, 0x44, ptr, 32)
+
+                        let rdsize := returndatasize()
+
+                        // Check for ERC20 success. ERC20 tokens should return a boolean,
+                        // but some don't. We accept 0-length return data as success, or at
+                        // least 32 bytes that starts with a 32-byte boolean true.
+                        success := and(
+                            success, // call itself succeeded
+                            or(
+                                iszero(rdsize), // no return data, or
+                                and(
+                                    iszero(lt(rdsize, 32)), // at least 32 bytes
+                                    eq(mload(ptr), 1) // starts with uint256(1)
+                                )
+                            )
+                        )
+
+                        if iszero(success) {
+                            returndatacopy(ptr, 0, rdsize)
+                            revert(ptr, rdsize)
+                        }
+                    }
                 }
             }
         }
@@ -303,7 +496,7 @@ abstract contract BaseLending is Slots {
                     let pool
                     switch _lenderId
                     case 25 {
-                        pool := AAVE_V2
+                        pool := AVALON
                     }
                     default {
                         mstore(0x0, _lenderId)
@@ -329,35 +522,111 @@ abstract contract BaseLending is Slots {
                 }
             }
             default {
-                let cometPool
-                switch _lenderId
-                case 50 {
-                    cometPool := COMET_USDC
-                }
-                case 51 {
-                    cometPool := COMET_USDT
-                }
-                // default: load comet from storage
-                // if it is not provided directly
-                default {
-                    mstore(0x0, _lenderId)
-                    mstore(0x20, LENDING_POOL_SLOT)
-                    cometPool := sload(keccak256(0x0, 0x40))
-                    if iszero(cometPool) {
-                        mstore(0, BAD_LENDER)
-                        revert(0, 0x4)
+                switch lt(_lenderId, 75)
+                case 1 {
+                    let cometPool
+                    switch _lenderId
+                    case 50 {
+                        cometPool := COMET_USDC
+                    }
+                    case 51 {
+                        cometPool := COMET_USDT
+                    }
+                    // default: load comet from storage
+                    // if it is not provided directly
+                    default {
+                        mstore(0x0, _lenderId)
+                        mstore(0x20, LENDING_POOL_SLOT)
+                        cometPool := sload(keccak256(0x0, 0x40))
+                        if iszero(cometPool) {
+                            mstore(0, BAD_LENDER)
+                            revert(0, 0x4)
+                        }
+                    }
+                    // selector supplyTo(address,address,uint256)
+                    mstore(ptr, 0x4232cd6300000000000000000000000000000000000000000000000000000000)
+                    mstore(add(ptr, 0x04), _user)
+                    mstore(add(ptr, 0x24), _underlying)
+                    mstore(add(ptr, 0x44), _amount)
+                    // call pool
+                    if iszero(call(gas(), cometPool, 0x0, ptr, 0x64, 0x0, 0x0)) {
+                        returndatacopy(0x0, 0x0, returndatasize())
+                        revert(0x0, returndatasize())
                     }
                 }
-                // selector supplyTo(address,address,uint256)
-                mstore(ptr, 0x4232cd6300000000000000000000000000000000000000000000000000000000)
-                mstore(add(ptr, 0x04), _user)
-                mstore(add(ptr, 0x24), _underlying)
-                mstore(add(ptr, 0x44), _amount)
-                // call pool
-                if iszero(call(gas(), cometPool, 0x0, ptr, 0x64, 0x0, 0x0)) {
-                    let rdsize := returndatasize()
-                    returndatacopy(0x0, 0x0, rdsize)
-                    revert(0x0, rdsize)
+                default {
+                    mstore(0, _underlying) // pad the lender number (agnostic to uint_x)
+                    mstore8(0, _lenderId)
+                    mstore(0x20, COLLATERAL_TOKENS_SLOT) // add pointer to slot
+                    let collateralToken := sload(keccak256(0x0, 0x40)) // acces element
+
+                    // 1) DEPOSIT
+
+                    // selector for mint(uint256)
+                    mstore(0x0, 0xa0712d6800000000000000000000000000000000000000000000000000000000)
+                    mstore(0x4, _amount)
+
+                    let success := call(
+                        gas(),
+                        collateralToken,
+                        0x0,
+                        0x0, // input = selector and data
+                        0x24, // input size = 4 + 32
+                        0x0, // output
+                        0x0 // output size = zero
+                    )
+
+                    if iszero(success) {
+                        returndatacopy(ptr, 0, returndatasize())
+                        revert(ptr, returndatasize())
+                    }
+
+                    // transfer the collateral tokens
+
+                    // 2) GET BALANCE OF COLLATERAL TOKEN
+
+                    // selector for balanceOf(address)
+                    mstore(0x0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+                    // add this address as parameter
+                    mstore(0x4, address())
+
+                    // call to collateralToken
+                    pop(staticcall(gas(), collateralToken, 0x0, 0x24, 0x0, 0x20))
+
+                    // load the retrieved balance
+                    let collateralTokenAmount := mload(0x0)
+
+                    // transfer to receiver if needed
+                    if xor(address(), _user) {
+                        // 3) TRANSFER TOKENS TO RECEIVER
+                        // selector for transfer(address,uint256)
+                        mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+                        mstore(add(ptr, 0x04), _user)
+                        mstore(add(ptr, 0x24), collateralTokenAmount)
+
+                        success := call(gas(), collateralToken, 0, ptr, 0x44, ptr, 32)
+
+                        let rdsize := returndatasize()
+
+                        // Check for ERC20 success. ERC20 tokens should return a boolean,
+                        // but some don't. We accept 0-length return data as success, or at
+                        // least 32 bytes that starts with a 32-byte boolean true.
+                        success := and(
+                            success, // call itself succeeded
+                            or(
+                                iszero(rdsize), // no return data, or
+                                and(
+                                    iszero(lt(rdsize, 32)), // at least 32 bytes
+                                    eq(mload(ptr), 1) // starts with uint256(1)
+                                )
+                            )
+                        )
+
+                        if iszero(success) {
+                            returndatacopy(ptr, 0, rdsize)
+                            revert(ptr, rdsize)
+                        }
+                    }
                 }
             }
         }
@@ -418,36 +687,65 @@ abstract contract BaseLending is Slots {
                 }
             }
             default {
-                let cometPool
-                switch _lenderId
-                case 50 {
-                    cometPool := COMET_USDC
-                }
-                case 51 {
-                    cometPool := COMET_USDT
-                }
-                // default: load comet from storage
-                // if it is not provided directly
-                default {
-                    mstore(0x0, _lenderId)
-                    mstore(0x20, LENDING_POOL_SLOT)
-                    cometPool := sload(keccak256(0x0, 0x40))
-                    if iszero(cometPool) {
-                        mstore(0, BAD_LENDER)
-                        revert(0, 0x4)
+                switch lt(_lenderId, 75)
+                case 1 {
+                    let cometPool
+                    switch _lenderId
+                    case 50 {
+                        cometPool := COMET_USDC
+                    }
+                    case 51 {
+                        cometPool := COMET_USDT
+                    }
+                    // default: load comet from storage
+                    // if it is not provided directly
+                    default {
+                        mstore(0x0, _lenderId)
+                        mstore(0x20, LENDING_POOL_SLOT)
+                        cometPool := sload(keccak256(0x0, 0x40))
+                        if iszero(cometPool) {
+                            mstore(0, BAD_LENDER)
+                            revert(0, 0x4)
+                        }
+                    }
+
+                    // selector supplyTo(address,address,uint256)
+                    mstore(ptr, 0x4232cd6300000000000000000000000000000000000000000000000000000000)
+                    mstore(add(ptr, 0x04), recipient)
+                    mstore(add(ptr, 0x24), _underlying)
+                    mstore(add(ptr, 0x44), _amount)
+                    // call pool
+                    if iszero(call(gas(), cometPool, 0x0, ptr, 0x64, 0x0, 0x0)) {
+                        returndatacopy(0x0, 0x0, returndatasize())
+                        revert(0x0, returndatasize())
                     }
                 }
+                default {
+                    // load collateral token
+                    mstore(0x0, _underlying)
+                    mstore8(0, _lenderId)
+                    mstore(0x20, COLLATERAL_TOKENS_SLOT) // add pointer to slot
+                    let collateralToken := sload(keccak256(0x0, 0x40)) // acces element
 
-                // selector supplyTo(address,address,uint256)
-                mstore(ptr, 0x4232cd6300000000000000000000000000000000000000000000000000000000)
-                mstore(add(ptr, 0x04), recipient)
-                mstore(add(ptr, 0x24), _underlying)
-                mstore(add(ptr, 0x44), _amount)
-                // call pool
-                if iszero(call(gas(), cometPool, 0x0, ptr, 0x64, 0x0, 0x0)) {
-                    let rdsize := returndatasize()
-                    returndatacopy(0x0, 0x0, rdsize)
-                    revert(0x0, rdsize)
+                    // selector for repayBorrowBehalf(address,uint256)
+                    mstore(ptr, 0x2608f81800000000000000000000000000000000000000000000000000000000)
+                    mstore(add(ptr, 0x4), recipient) // user
+                    mstore(add(ptr, 0x24), _amount) // to this address
+
+                    if iszero(
+                        call(
+                            gas(),
+                            collateralToken,
+                            0x0,
+                            ptr, // input = empty for fallback
+                            0x44, // input size = selector + address + uint256
+                            ptr, // output
+                            0x0 // output size = zero
+                        )
+                    ) {
+                        returndatacopy(0x0, 0, returndatasize())
+                        revert(0x0, returndatasize())
+                    }
                 }
             }
         }
