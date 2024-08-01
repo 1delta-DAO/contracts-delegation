@@ -1235,7 +1235,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         // uniswapV3 style
         if (poolId < 49) {
             _swapUniswapV3PoolExactOut(
-                -int256(amountOut),
+                amountOut,
                 maxIn,
                 payer,
                 receiver,
@@ -1246,7 +1246,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         // iZi
         else if (poolId == 49) {
             _swapIZIPoolExactOut(
-                uint128(amountOut),
+                amountOut,
                 maxIn,
                 payer,
                 receiver,
@@ -1290,8 +1290,8 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                     maxIn,
                     payer,
                     pair,
-                pathOffset,
-                pathLength
+                    pathOffset,
+                    pathLength
                 );
             } 
             ////////////////////////////////////////////////////
@@ -1430,7 +1430,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         // uniswapV3 style
         if (poolId < 49) {
             _swapUniswapV3PoolExactOut(
-                -int256(amountOut),
+                amountOut,
                 maxIn,
                 payer,
                 address(this),
@@ -1441,7 +1441,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         // iZi
         else if (poolId == 49) {
             _swapIZIPoolExactOut(
-                uint128(amountOut),
+                amountOut,
                 maxIn,
                 payer,
                 address(this),
@@ -1557,7 +1557,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 }
             }
             _swapIZIPoolExactIn(
-                uint128(amountIn),
+                amountIn,
                 amountOutMinimum,
                 payer,
                 reciever,

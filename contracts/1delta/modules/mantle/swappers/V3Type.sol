@@ -86,49 +86,46 @@ abstract contract V3TypeSwapper is DeltaErrors {
         // solhint-disable-next-line no-inline-assembly
         assembly {
             let ptr := mload(0x40)
-            let firstWord := calldataload(pathOffset)
-            let _pId := and(shr(80, firstWord), UINT8_MASK) // poolId
-            // get tokens
-            let tokenA := and(ADDRESS_MASK, shr(96, firstWord))
-            firstWord := calldataload(add(pathOffset, 42))
-            let tokenB := and(ADDRESS_MASK, shr(80, firstWord))
-
             // read the pool address
             let pool := and(
                 ADDRESS_MASK,
-                shr(
-                    96,
-                    calldataload(add(pathOffset, 22)) // starts as first param
-                )
+                calldataload(add(pathOffset, 10)) // starts as first param
             )
             // Return amount0 or amount1 depending on direction
-            switch lt(tokenA, tokenB)
+            let zeroForOne := lt(
+                and(ADDRESS_MASK, shr(96, calldataload(pathOffset))), // tokenIn
+                and(ADDRESS_MASK, calldataload(add(pathOffset, 32))) // tokenOut
+            )
+
+            // Prepare external call data
+            // Store swap selector (0x128acb08)
+            mstore(ptr, 0x128acb0800000000000000000000000000000000000000000000000000000000)
+            // Store toAddress
+            mstore(add(ptr, 4), receiver)
+            // Store direction
+            mstore(add(ptr, 36), zeroForOne)
+            // Store fromAmount
+            mstore(add(ptr, 68), fromAmount)
+
+            // Store data offset
+            mstore(add(ptr, 132), 0xa0)
+            // Store path
+            calldatacopy(add(ptr, 196), pathOffset, pathLength)
+
+            // within the callback, we add the maximum in amount
+            mstore(add(add(ptr, 196), pathLength), shl(128, minOut))
+            let _pathLength := add(pathLength, 16)
+            // within the callback, we add the payer
+            mstore(add(add(ptr, 196), _pathLength), shl(96, payer))
+            _pathLength := add(_pathLength, 20)
+
+            /// Store data length
+            mstore(add(ptr, 164), _pathLength)
+
+            switch zeroForOne
             case 0 {
-                // Prepare external call data
-                // Store swap selector (0x128acb08)
-                mstore(ptr, 0x128acb0800000000000000000000000000000000000000000000000000000000)
-                // Store toAddress
-                mstore(add(ptr, 4), receiver)
-                // Store direction
-                mstore(add(ptr, 36), 0)
-                // Store fromAmount
-                mstore(add(ptr, 68), fromAmount)
                 // Store sqrtPriceLimitX96
                 mstore(add(ptr, 100), MAX_SQRT_RATIO)
-                // Store data offset
-                mstore(add(ptr, 132), 0xa0)
-                // Store path
-                calldatacopy(add(ptr, 196), pathOffset, pathLength)
-
-                // within the callback, we add the maximum in amount
-                mstore(add(add(ptr, 196), pathLength), shl(128, minOut))
-                let _pathLength := add(pathLength, 16)
-                // within the callback, we add the payer
-                mstore(add(add(ptr, 196), _pathLength), shl(96, payer))
-                _pathLength := add(_pathLength, 20)
-
-                /// Store data length
-                mstore(add(ptr, 164), _pathLength)
 
                 // Perform the external 'swap' call
                 if iszero(call(gas(), pool, 0, ptr, add(228, _pathLength), ptr, 32)) {
@@ -138,34 +135,11 @@ abstract contract V3TypeSwapper is DeltaErrors {
                     revert(0, returndatasize()) // Revert with the error message
                 }
                 // If direction is 0, return amount0
-                fromAmount := mload(ptr)
+                receivedAmount := mload(ptr)
             }
             default {
-                // Prepare external call data
-                // Store swap selector (0x128acb08)
-                mstore(ptr, 0x128acb0800000000000000000000000000000000000000000000000000000000)
-                // Store toAddress
-                mstore(add(ptr, 4), receiver)
-                // Store direction
-                mstore(add(ptr, 36), 1)
-                // Store fromAmount
-                mstore(add(ptr, 68), fromAmount)
                 // Store sqrtPriceLimitX96
                 mstore(add(ptr, 100), MIN_SQRT_RATIO)
-                // Store data offset
-                mstore(add(ptr, 132), 0xa0) // 160
-                // Store path
-                calldatacopy(add(ptr, 196), pathOffset, pathLength)
-
-                // within the callback, we add the maximum in amount
-                mstore(add(add(ptr, 196), pathLength), shl(128, minOut))
-                let _pathLength := add(pathLength, 16)
-                // within the callback, we add the payer
-                mstore(add(add(ptr, 196), _pathLength), shl(96, payer))
-                _pathLength := add(_pathLength, 20)
-
-                /// Store data length
-                mstore(add(ptr, 164), _pathLength)
 
                 // Perform the external 'swap' call
                 if iszero(call(gas(), pool, 0, ptr, add(228, _pathLength), ptr, 64)) {
@@ -176,16 +150,16 @@ abstract contract V3TypeSwapper is DeltaErrors {
                 }
 
                 // If direction is 1, return amount1
-                fromAmount := mload(add(ptr, 32))
+                receivedAmount := mload(add(ptr, 32))
             }
-            // fromAmount = -fromAmount
-            receivedAmount := sub(0, fromAmount)
+            // receivedAmount = -receivedAmount
+            receivedAmount := sub(0, receivedAmount)
         }
     }
 
     /// @dev Swap exact input through izumi
     function _swapIZIPoolExactIn(
-        uint128 fromAmount,
+        uint256 fromAmount,
         uint256 minOut,
         address payer,
         address receiver,
@@ -195,23 +169,16 @@ abstract contract V3TypeSwapper is DeltaErrors {
         // solhint-disable-next-line no-inline-assembly
         assembly {
             let ptr := mload(0x40)
-            let firstWord := calldataload(pathOffset)
-            let _pId := and(shr(80, firstWord), UINT8_MASK) // poolId
-            // get tokens
-            let tokenA := and(ADDRESS_MASK, shr(96, firstWord))
-            firstWord := calldataload(add(pathOffset, 42))
-            let tokenB := and(ADDRESS_MASK, shr(80, firstWord))
-
             // read the pool address
             let pool := and(
                 ADDRESS_MASK,
-                shr(
-                    96,
-                    calldataload(add(pathOffset, 22)) // first param
-                )
+                calldataload(add(pathOffset, 10)) // starts as first param
             )
             // Return amount0 or amount1 depending on direction
-            switch lt(tokenA, tokenB)
+            switch lt(
+                and(ADDRESS_MASK, shr(96, calldataload(pathOffset))), // tokenIn
+                and(ADDRESS_MASK, calldataload(add(pathOffset, 32))) // tokenOut
+            )
             case 0 {
                 // Prepare external call data
                 // Store swapY2X selector (0x2c481252)
@@ -289,7 +256,7 @@ abstract contract V3TypeSwapper is DeltaErrors {
 
     /// @dev Swap exact output through izumi
     function _swapIZIPoolExactOut(
-        uint128 toAmount,
+        uint256 toAmount,
         uint256 maxIn,
         address payer,
         address receiver,
@@ -299,20 +266,15 @@ abstract contract V3TypeSwapper is DeltaErrors {
         // solhint-disable-next-line no-inline-assembly
         assembly {
             let ptr := mload(0x40)
-            let firstWord := calldataload(pathOffset)
-            let tokenB := and(ADDRESS_MASK, shr(96, firstWord))
-            firstWord := calldataload(add(pathOffset, 42))
-            let tokenA := and(ADDRESS_MASK, shr(80, firstWord))
-            // read the pool address
             let pool := and(
                 ADDRESS_MASK,
-                shr(
-                    96,
-                    calldataload(add(pathOffset, 22)) // first param
-                )
+                calldataload(add(pathOffset, 10)) // starts as first param
             )
             // Return amount0 or amount1 depending on direction
-            switch lt(tokenA, tokenB)
+            switch lt(
+                and(ADDRESS_MASK, calldataload(add(pathOffset, 32))), // tokenIn
+                and(ADDRESS_MASK, shr(96, calldataload(pathOffset))) // tokenOut
+            )
             case 0 {
                 // Prepare external call data
                 // Store swapY2XDesireX selector (0xf094685a)
@@ -390,7 +352,7 @@ abstract contract V3TypeSwapper is DeltaErrors {
 
     /// @dev swap uniswap V3 style exact out
     function _swapUniswapV3PoolExactOut(
-        int256 fromAmount,
+        uint256 fromAmount,
         uint256 maxIn,
         address payer,
         address receiver,
@@ -400,49 +362,45 @@ abstract contract V3TypeSwapper is DeltaErrors {
         // solhint-disable-next-line no-inline-assembly
         assembly {
             let ptr := mload(0x40)
-            let firstWord := calldataload(pathOffset)
-            let poolId := and(shr(80, firstWord), UINT8_MASK) // poolId
-            let tokenB := and(ADDRESS_MASK, shr(96, firstWord))
-            firstWord := calldataload(add(pathOffset, 42))
-            let tokenA := and(ADDRESS_MASK, shr(80, firstWord))
-            // read the pool address
             let pool := and(
                 ADDRESS_MASK,
-                shr(
-                    96,
-                    calldataload(add(pathOffset, 22)) // first param
-                )
+                calldataload(add(pathOffset, 10)) // starts as first param
+            )
+            // Return amount0 or amount1 depending on direction
+            let zeroForOne := lt(
+                and(ADDRESS_MASK, calldataload(add(pathOffset, 32))), // tokenIn
+                and(ADDRESS_MASK, shr(96, calldataload(pathOffset))) // tokenOut
             )
 
             // Return amount0 or amount1 depending on direction
-            switch lt(tokenA, tokenB)
+            // Prepare external call data
+            // Store swap selector (0x128acb08)
+            mstore(ptr, 0x128acb0800000000000000000000000000000000000000000000000000000000)
+            // Store toAddress
+            mstore(add(ptr, 4), receiver)
+            // Store direction
+            mstore(add(ptr, 36), zeroForOne)
+            // Store -fromAmount
+            mstore(add(ptr, 68), sub(0, fromAmount))
+            // Store data offset
+            mstore(add(ptr, 132), 0xa0)
+            // Store path
+            calldatacopy(add(ptr, 196), pathOffset, pathLength)
+
+            // within the callback, we add the maximum in amount
+            mstore(add(add(ptr, 196), pathLength), shl(128, maxIn))
+            let _pathLength := add(pathLength, 16)
+            // and the payer address
+            mstore(add(add(ptr, 196), _pathLength), shl(96, payer))
+            _pathLength := add(_pathLength, 20)
+
+            /// Store data length
+            mstore(add(ptr, 164), _pathLength)
+
+            switch zeroForOne
             case 0 {
-                // Prepare external call data
-                // Store swap selector (0x128acb08)
-                mstore(ptr, 0x128acb0800000000000000000000000000000000000000000000000000000000)
-                // Store toAddress
-                mstore(add(ptr, 4), receiver)
-                // Store direction
-                mstore(add(ptr, 36), 0)
-                // Store fromAmount
-                mstore(add(ptr, 68), fromAmount)
                 // Store sqrtPriceLimitX96
                 mstore(add(ptr, 100), MAX_SQRT_RATIO)
-                // Store data offset
-                mstore(add(ptr, 132), 0xa0)
-                // Store path
-                calldatacopy(add(ptr, 196), pathOffset, pathLength)
-
-                // within the callback, we add the maximum in amount
-                mstore(add(add(ptr, 196), pathLength), shl(128, maxIn))
-                let _pathLength := add(pathLength, 16)
-                // and the payer address
-                mstore(add(add(ptr, 196), _pathLength), shl(96, payer))
-                _pathLength := add(_pathLength, 20)
-
-                /// Store data length
-                mstore(add(ptr, 164), _pathLength)
-
                 // Perform the external 'swap' call
                 if iszero(call(gas(), pool, 0, ptr, add(228, _pathLength), ptr, 32)) {
                     // store return value directly to free memory pointer
@@ -451,34 +409,11 @@ abstract contract V3TypeSwapper is DeltaErrors {
                     revert(0, returndatasize()) // Revert with the error message
                 }
                 // If direction is 1, return amount1
-                fromAmount := mload(add(ptr, 32))
+                receivedAmount := mload(add(ptr, 32))
             }
             default {
-                // Prepare external call data
-                // Store swap selector (0x128acb08)
-                mstore(ptr, 0x128acb0800000000000000000000000000000000000000000000000000000000)
-                // Store toAddress
-                mstore(add(ptr, 4), receiver)
-                // Store direction
-                mstore(add(ptr, 36), 1)
-                // Store fromAmount
-                mstore(add(ptr, 68), fromAmount)
                 // Store sqrtPriceLimitX96
                 mstore(add(ptr, 100), MIN_SQRT_RATIO)
-                // Store data offset
-                mstore(add(ptr, 132), 0xa0)
-                // Store path
-                calldatacopy(add(ptr, 196), pathOffset, pathLength)
-
-                // within the callback, we add the maximum in amount
-                mstore(add(add(ptr, 196), pathLength), shl(128, maxIn))
-                let _pathLength := add(pathLength, 16)
-                // then we add the payer
-                mstore(add(add(ptr, 196), _pathLength), shl(96, payer))
-                _pathLength := add(_pathLength, 20)
-
-                /// Store data length
-                mstore(add(ptr, 164), _pathLength)
 
                 // Perform the external 'swap' call
                 if iszero(call(gas(), pool, 0, ptr, add(228, _pathLength), ptr, 64)) {
@@ -489,10 +424,8 @@ abstract contract V3TypeSwapper is DeltaErrors {
                 }
 
                 // If direction is 0, return amount0
-                fromAmount := mload(ptr)
+                receivedAmount := mload(ptr)
             }
-            // fromAmount = -fromAmount
-            receivedAmount := fromAmount
         }
     }
 }

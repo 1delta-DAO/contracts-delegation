@@ -964,7 +964,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         // uniswapV3 style
         if (poolId < 49) {
             _swapUniswapV3PoolExactOut(
-                -int256(amountOut),
+                amountOut,
                 maxIn,
                 payer,
                 receiver,
@@ -975,7 +975,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         // iZi
         else if (poolId == 49) {
             _swapIZIPoolExactOut(
-                uint128(amountOut),
+                amountOut,
                 maxIn,
                 payer,
                 receiver,
@@ -1092,7 +1092,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         // uniswapV3 style
         if (poolId < 49) {
             _swapUniswapV3PoolExactOut(
-                -int256(amountOut),
+                amountOut,
                 maxIn,
                 payer,
                 address(this),
@@ -1103,7 +1103,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         // iZi
         else if (poolId == 49) {
             _swapIZIPoolExactOut(
-                uint128(amountOut),
+                amountOut,
                 maxIn,
                 payer,
                 address(this),
@@ -1118,7 +1118,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             assembly {
                 tokenOut := and(ADDRESS_MASK, shr(96, calldataload(pathOffset)))
                 tokenIn := and(ADDRESS_MASK, shr(96, calldataload(add(pathOffset, SKIP_LENGTH_UNOSWAP))))
-                pair := and(ADDRESS_MASK, shr(96, calldataload(add(pathOffset, 22))))
+                pair := and(ADDRESS_MASK, calldataload(add(pathOffset, 10)))
             }
             _swapV2StyleExactOut(
                 tokenIn,
