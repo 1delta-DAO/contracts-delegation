@@ -88,10 +88,22 @@ abstract contract BaseLending is Slots {
                     pool := AAVE_V3
                 }
                 case 1 {
+                    pool := SPARK
+                }
+                case 2 {
+                    pool := ZEROLEND
+                }
+                case 3 {
                     pool := YLDR
                 }
                 case 25 {
                     pool := AVALON
+                }
+                case 26 {
+                    pool := UWU
+                }
+                case 27 {
+                    pool := RADIANT
                 }
                 default {
                     mstore(0x0, _lenderId)
@@ -116,9 +128,12 @@ abstract contract BaseLending is Slots {
                     let cometPool
                     switch _lenderId
                     case 50 {
-                        cometPool := COMET_USDC
+                        cometPool := COMET_WETH
                     }
                     case 51 {
+                        cometPool := COMET_USDC
+                    }
+                    case 52 {
                         cometPool := COMET_USDT
                     }
                     // default: load comet from storage
@@ -280,7 +295,7 @@ abstract contract BaseLending is Slots {
             switch lt(_lenderId, 50)
             case 1 {
                 switch _lenderId
-                case 1 {
+                case 3 {
                     // YLDR has no borrow mode
                     // selector borrow(address,uint256,uint16,address)
                     mstore(ptr, 0x1d5d723700000000000000000000000000000000000000000000000000000000)
@@ -301,8 +316,20 @@ abstract contract BaseLending is Slots {
                     case 0 {
                         pool := AAVE_V3
                     }
+                    case 1 {
+                        pool := SPARK
+                    }
+                    case 2 {
+                        pool := ZEROLEND
+                    }
                     case 25 {
                         pool := AVALON
+                    }
+                    case 26 {
+                        pool := UWU
+                    }
+                    case 27 {
+                        pool := RADIANT
                     }
                     default {
                         mstore(0x0, _lenderId)
@@ -365,9 +392,12 @@ abstract contract BaseLending is Slots {
                     let cometPool
                     switch _lenderId
                     case 50 {
-                        cometPool := COMET_USDC
+                        cometPool := COMET_WETH
                     }
                     case 51 {
+                        cometPool := COMET_USDC
+                    }
+                    case 52 {
                         cometPool := COMET_USDT
                     }
                     // default: load comet from storage
@@ -474,6 +504,12 @@ abstract contract BaseLending is Slots {
                         pool := AAVE_V3
                     }
                     case 1 {
+                        pool := SPARK
+                    }
+                    case 2 {
+                        pool := ZEROLEND
+                    }
+                    case 3 {
                         pool := YLDR
                     }
                     default {
@@ -497,6 +533,12 @@ abstract contract BaseLending is Slots {
                     switch _lenderId
                     case 25 {
                         pool := AVALON
+                    }
+                    case 26 {
+                        pool := UWU
+                    }
+                    case 27 {
+                        pool := RADIANT
                     }
                     default {
                         mstore(0x0, _lenderId)
@@ -527,9 +569,12 @@ abstract contract BaseLending is Slots {
                     let cometPool
                     switch _lenderId
                     case 50 {
-                        cometPool := COMET_USDC
+                        cometPool := COMET_WETH
                     }
                     case 51 {
+                        cometPool := COMET_USDC
+                    }
+                    case 52 {
                         cometPool := COMET_USDT
                     }
                     // default: load comet from storage
@@ -640,7 +685,7 @@ abstract contract BaseLending is Slots {
             case 1 {
                 // assign lending pool
                 switch _lenderId
-                case 1 {
+                case 3 {
                     // same as aave V3, just no mode
                     // selector repay(address,uint256,address)
                     mstore(ptr, 0x5ceae9c400000000000000000000000000000000000000000000000000000000)
@@ -660,8 +705,20 @@ abstract contract BaseLending is Slots {
                     case 0 {
                         pool := AAVE_V3
                     }
+                    case 1 {
+                        pool := SPARK
+                    }
+                    case 2 {
+                        pool := ZEROLEND
+                    }
                     case 25 {
-                        pool := AAVE_V3
+                        pool := AVALON
+                    }
+                    case 26 {
+                        pool := UWU
+                    }
+                    case 27 {
+                        pool := RADIANT
                     }
                     default {
                         mstore(0x0, _lenderId)
@@ -692,9 +749,12 @@ abstract contract BaseLending is Slots {
                     let cometPool
                     switch _lenderId
                     case 50 {
-                        cometPool := COMET_USDC
+                        cometPool := COMET_WETH
                     }
                     case 51 {
+                        cometPool := COMET_USDC
+                    }
+                    case 52 {
                         cometPool := COMET_USDT
                     }
                     // default: load comet from storage
