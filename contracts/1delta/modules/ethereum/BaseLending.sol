@@ -21,10 +21,10 @@ abstract contract BaseLending is Slots {
     address internal constant AAVE_V3 = 0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2;
     address internal constant SPARK = 0xC13e21B648A5Ee794902342038FF3aDAB66BE987;
     address internal constant ZEROLEND = 0x3BC3D34C32cc98bf098D832364Df8A222bBaB4c0;
-    address internal constant AVALON = 0x8dFf5E27EA6b7AC08EbFdf9eB090F32ee9a30fcf;
-    address internal constant RADIANT = 0x8dFf5E27EA6b7AC08EbFdf9eB090F32ee9a30fcf;
-    address internal constant UWU = 0x8dFf5E27EA6b7AC08EbFdf9eB090F32ee9a30fcf;
-    address internal constant YLDR = 0x8183D4e0561cBdc6acC0Bdb963c352606A2Fa76F;
+    address internal constant AVALON = 0x8AD8528202b747ED4Ab802Fd6A297c0B3CaD1cD4;
+    address internal constant RADIANT = 0xA950974f64aA33f27F6C5e017eEE93BF7588ED07;
+    address internal constant UWU = 0x2409aF0251DCB89EE3Dee572629291f9B087c668;
+    address internal constant YLDR = 0x6447c4390457CaD03Ec1BaA4254CEe1A3D9e1Bbd;
 
     // compound V3 addresses
     address internal constant COMET_USDC = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
@@ -35,7 +35,7 @@ abstract contract BaseLending is Slots {
     bytes4 internal constant BAD_LENDER = 0x603b7f3e;
 
     /// @notice Withdraw from lender given user address and lender Id from cache
-    function _withdraw(address _underlying, address _from, address _to, uint256 amount, uint256 _lenderId) internal {
+    function _withdraw(address _underlying, address _from, address _to, uint256 _amount, uint256 _lenderId) internal {
         assembly {
             let ptr := mload(0x40)
             // Aave types need to trasfer collateral tokens
@@ -53,7 +53,7 @@ abstract contract BaseLending is Slots {
                 mstore(ptr, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
                 mstore(add(ptr, 0x04), _from)
                 mstore(add(ptr, 0x24), address())
-                mstore(add(ptr, 0x44), amount)
+                mstore(add(ptr, 0x44), _amount)
 
                 let success := call(gas(), collateralToken, 0x0, ptr, 0x64, 0x0, 0x20)
 
@@ -78,7 +78,7 @@ abstract contract BaseLending is Slots {
                 // selector withdraw(address,uint256,address)
                 mstore(ptr, 0x69328dec00000000000000000000000000000000000000000000000000000000)
                 mstore(add(ptr, 0x04), _underlying)
-                mstore(add(ptr, 0x24), amount)
+                mstore(add(ptr, 0x24), _amount)
                 mstore(add(ptr, 0x44), _to)
 
                 let pool
@@ -137,7 +137,7 @@ abstract contract BaseLending is Slots {
                     mstore(add(ptr, 0x04), _from)
                     mstore(add(ptr, 0x24), _to)
                     mstore(add(ptr, 0x44), _underlying)
-                    mstore(add(ptr, 0x64), amount)
+                    mstore(add(ptr, 0x64), _amount)
                     // call pool
                     if iszero(call(gas(), cometPool, 0x0, ptr, 0x84, 0x0, 0x0)) {
                         let rdsize := returndatasize()
@@ -180,7 +180,7 @@ abstract contract BaseLending is Slots {
                     // calculate collateral token amount, rounding up
                     let transferAmount := add(
                         div(
-                            mul(amount, 1000000000000000000), // multiply with 1e18
+                            mul(_amount, 1000000000000000000), // multiply with 1e18
                             refAmount // divide by rate
                         ),
                         1
@@ -243,7 +243,7 @@ abstract contract BaseLending is Slots {
                         // selector for transfer(address,uint256)
                         mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
                         mstore(add(ptr, 0x04), _to)
-                        mstore(add(ptr, 0x24), amount)
+                        mstore(add(ptr, 0x24), _amount)
 
                         success := call(gas(), _underlying, 0, ptr, 0x44, ptr, 32)
 
@@ -454,7 +454,7 @@ abstract contract BaseLending is Slots {
     }
 
     /// @notice Deposit to lender given user address and lender Id from cache
-    function _deposit(address _underlying, address _user, uint256 _amount, uint256 _lenderId) internal {
+    function _deposit(address _underlying, address _to, uint256 _amount, uint256 _lenderId) internal {
         assembly {
             let ptr := mload(0x40)
             switch lt(_lenderId, 50)
@@ -465,7 +465,7 @@ abstract contract BaseLending is Slots {
                     mstore(ptr, 0x617ba03700000000000000000000000000000000000000000000000000000000)
                     mstore(add(ptr, 0x04), _underlying)
                     mstore(add(ptr, 0x24), _amount)
-                    mstore(add(ptr, 0x44), _user)
+                    mstore(add(ptr, 0x44), _to)
                     mstore(add(ptr, 0x64), 0x0)
                     let pool
                     // assign lending pool
@@ -511,7 +511,7 @@ abstract contract BaseLending is Slots {
                     mstore(ptr, 0xe8eda9df00000000000000000000000000000000000000000000000000000000)
                     mstore(add(ptr, 0x04), _underlying)
                     mstore(add(ptr, 0x24), _amount)
-                    mstore(add(ptr, 0x44), _user)
+                    mstore(add(ptr, 0x44), _to)
                     mstore(add(ptr, 0x64), 0x0)
                     // call pool
                     if iszero(call(gas(), pool, 0x0, ptr, 0x84, 0x0, 0x0)) {
@@ -545,7 +545,7 @@ abstract contract BaseLending is Slots {
                     }
                     // selector supplyTo(address,address,uint256)
                     mstore(ptr, 0x4232cd6300000000000000000000000000000000000000000000000000000000)
-                    mstore(add(ptr, 0x04), _user)
+                    mstore(add(ptr, 0x04), _to)
                     mstore(add(ptr, 0x24), _underlying)
                     mstore(add(ptr, 0x44), _amount)
                     // call pool
@@ -597,11 +597,11 @@ abstract contract BaseLending is Slots {
                     let collateralTokenAmount := mload(0x0)
 
                     // transfer to receiver if needed
-                    if xor(address(), _user) {
+                    if xor(address(), _to) {
                         // 3) TRANSFER TOKENS TO RECEIVER
                         // selector for transfer(address,uint256)
                         mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
-                        mstore(add(ptr, 0x04), _user)
+                        mstore(add(ptr, 0x04), _to)
                         mstore(add(ptr, 0x24), collateralTokenAmount)
 
                         success := call(gas(), collateralToken, 0, ptr, 0x44, ptr, 32)
@@ -633,7 +633,7 @@ abstract contract BaseLending is Slots {
     }
 
     /// @notice Repay to lender given user address and lender Id from cache
-    function _repay(address _underlying, address recipient, uint256 _amount, uint256 mode, uint256 _lenderId) internal {
+    function _repay(address _underlying, address _to, uint256 _amount, uint256 mode, uint256 _lenderId) internal {
         assembly {
             let ptr := mload(0x40)
             switch lt(_lenderId, 50)
@@ -646,7 +646,7 @@ abstract contract BaseLending is Slots {
                     mstore(ptr, 0x5ceae9c400000000000000000000000000000000000000000000000000000000)
                     mstore(add(ptr, 0x04), _underlying)
                     mstore(add(ptr, 0x24), _amount)
-                    mstore(add(ptr, 0x44), recipient)
+                    mstore(add(ptr, 0x44), _to)
                     // call pool
                     if iszero(call(gas(), YLDR, 0x0, ptr, 0x64, 0x0, 0x0)) {
                         let rdsize := returndatasize()
@@ -677,7 +677,7 @@ abstract contract BaseLending is Slots {
                     mstore(add(ptr, 0x04), _underlying)
                     mstore(add(ptr, 0x24), _amount)
                     mstore(add(ptr, 0x44), mode)
-                    mstore(add(ptr, 0x64), recipient)
+                    mstore(add(ptr, 0x64), _to)
                     // call pool
                     if iszero(call(gas(), pool, 0x0, ptr, 0x84, 0x0, 0x0)) {
                         let rdsize := returndatasize()
@@ -711,7 +711,7 @@ abstract contract BaseLending is Slots {
 
                     // selector supplyTo(address,address,uint256)
                     mstore(ptr, 0x4232cd6300000000000000000000000000000000000000000000000000000000)
-                    mstore(add(ptr, 0x04), recipient)
+                    mstore(add(ptr, 0x04), _to)
                     mstore(add(ptr, 0x24), _underlying)
                     mstore(add(ptr, 0x44), _amount)
                     // call pool
@@ -729,7 +729,7 @@ abstract contract BaseLending is Slots {
 
                     // selector for repayBorrowBehalf(address,uint256)
                     mstore(ptr, 0x2608f81800000000000000000000000000000000000000000000000000000000)
-                    mstore(add(ptr, 0x4), recipient) // user
+                    mstore(add(ptr, 0x4), _to) // user
                     mstore(add(ptr, 0x24), _amount) // to this address
 
                     if iszero(
