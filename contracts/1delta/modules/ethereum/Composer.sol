@@ -11,7 +11,7 @@ import {Commands} from "../shared/Commands.sol";
  *        Efficient baching through compact calldata usage.
  * @author 1delta Labs AG
  */
-contract OneDeltaComposerPolygon is MarginTrading {
+contract OneDeltaComposerEthereum is MarginTrading {
     /// @dev The highest bit signals whether the swap is internal (the payer is this contract)
     uint256 private constant _PAY_SELF = 1 << 255;
     /// @dev The second bit signals whether the input token is a FOT token
