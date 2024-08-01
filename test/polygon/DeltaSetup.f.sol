@@ -215,6 +215,7 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
         management.approveAddress(assets, YLDR_POOL);
         management.approveAddress(assets, COMET_USDC);
         management.approveAddress(assets, CRV_3_USD_AAVE_POOL);
+        management.approveAddress(assets, COMET_USDT);
     }
 
     function upgradeExistingDelta(address proxy, address admin, address oldModule) internal virtual {
@@ -389,7 +390,8 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
         if (lenderId < 50) {
             return IERC20All(debtTokens[asset][lenderId]).balanceOf(user);
         } else {
-            return IComet(COMET_USDC).borrowBalanceOf(user);
+            if (lenderId == 50) return IComet(COMET_USDC).borrowBalanceOf(user);
+            else return IComet(COMET_USDT).borrowBalanceOf(user);
         }
     }
 
@@ -397,7 +399,8 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
         if (lenderId < 50) {
             return IERC20All(collateralTokens[asset][lenderId]).balanceOf(user);
         } else {
-            return IComet(COMET_USDC).userCollateral(user, asset).balance;
+            if (lenderId == 50) return IComet(COMET_USDC).userCollateral(user, asset).balance;
+            else return IComet(COMET_USDT).userCollateral(user, asset).balance;
         }
     }
 
@@ -406,7 +409,8 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
         if (lenderId < 50) {
             IERC20All(collateralTokens[asset][lenderId]).approve(address(brokerProxyAddress), amount);
         } else {
-            IComet(COMET_USDC).allow(brokerProxyAddress, true);
+            if (lenderId == 50) IComet(COMET_USDC).allow(brokerProxyAddress, true);
+            if (lenderId == 51) IComet(COMET_USDT).allow(brokerProxyAddress, true);
         }
     }
 
@@ -415,7 +419,8 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
         if (lenderId < 50) {
             IERC20All(debtTokens[asset][lenderId]).approveDelegation(address(brokerProxyAddress), amount);
         } else {
-            IComet(COMET_USDC).allow(brokerProxyAddress, true);
+           if (lenderId == 50)  IComet(COMET_USDC).allow(brokerProxyAddress, true);
+           if (lenderId == 51)  IComet(COMET_USDT).allow(brokerProxyAddress, true);
         }
     }
 

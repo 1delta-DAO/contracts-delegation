@@ -14,11 +14,18 @@ import {Slots} from "./storage/Slots.sol";
  * @notice Lending base contract that wraps multiple lender types.
  */
 abstract contract BaseLending is Slots {
+    // errors
+    error BadLender();
+
     // lender pool addresses
     address internal constant AAVE_V3 = 0x794a61358D6845594F94dc1DB02A252b5b4814aD;
     address internal constant AAVE_V2 = 0x8dFf5E27EA6b7AC08EbFdf9eB090F32ee9a30fcf;
     address internal constant YLDR = 0x8183D4e0561cBdc6acC0Bdb963c352606A2Fa76F;
     address internal constant COMET_USDC = 0xF25212E676D1F7F89Cd72fFEe66158f541246445;
+    address internal constant COMET_USDT = 0xaeB318360f27748Acb200CE616E389A6C9409a07;
+
+    // BadLender()
+    bytes4 internal constant BAD_LENDER = 0x603b7f3e;
 
     /// @notice Withdraw from lender given user address and lender Id from cache
     function _withdraw(address _underlying, address _from, address _to, uint256 amount, uint256 _lenderId) internal {
@@ -80,7 +87,13 @@ abstract contract BaseLending is Slots {
                     pool := AAVE_V2
                 }
                 default {
-                    revert(0, 0)
+                    mstore(0x0, _lenderId)
+                    mstore(0x20, LENDING_POOL_SLOT)
+                    pool := sload(keccak256(0x0, 0x40))
+                    if iszero(pool) {
+                        mstore(0, BAD_LENDER)
+                        revert(0, 0x4)
+                    }
                 }
                 // call pool
                 if iszero(call(gas(), pool, 0x0, ptr, 0x64, 0x0, 0x0)) {
@@ -90,20 +103,36 @@ abstract contract BaseLending is Slots {
                 }
             }
             case 0 {
+                let cometPool
                 switch _lenderId
                 case 50 {
-                    // selector withdrawFrom(address,address,address,uint256)
-                    mstore(ptr, 0x2644131800000000000000000000000000000000000000000000000000000000)
-                    mstore(add(ptr, 0x04), _from)
-                    mstore(add(ptr, 0x24), _to)
-                    mstore(add(ptr, 0x44), _underlying)
-                    mstore(add(ptr, 0x64), amount)
-                    // call pool
-                    if iszero(call(gas(), COMET_USDC, 0x0, ptr, 0x84, 0x0, 0x0)) {
-                        let rdsize := returndatasize()
-                        returndatacopy(0x0, 0x0, rdsize)
-                        revert(0x0, rdsize)
+                    cometPool := COMET_USDC
+                }
+                case 51 {
+                    cometPool := COMET_USDT
+                }
+                // default: load comet from storage
+                // if it is not provided directly
+                default {
+                    mstore(0x0, _lenderId)
+                    mstore(0x20, LENDING_POOL_SLOT)
+                    cometPool := sload(keccak256(0x0, 0x40))
+                    if iszero(cometPool) {
+                        mstore(0, BAD_LENDER)
+                        revert(0, 0x4)
                     }
+                }
+                // selector withdrawFrom(address,address,address,uint256)
+                mstore(ptr, 0x2644131800000000000000000000000000000000000000000000000000000000)
+                mstore(add(ptr, 0x04), _from)
+                mstore(add(ptr, 0x24), _to)
+                mstore(add(ptr, 0x44), _underlying)
+                mstore(add(ptr, 0x64), amount)
+                // call pool
+                if iszero(call(gas(), cometPool, 0x0, ptr, 0x84, 0x0, 0x0)) {
+                    let rdsize := returndatasize()
+                    returndatacopy(0x0, 0x0, rdsize)
+                    revert(0x0, rdsize)
                 }
             }
         }
@@ -116,24 +145,8 @@ abstract contract BaseLending is Slots {
             switch lt(_lenderId, 50)
             case 1 {
                 switch _lenderId
-                case 0 {
-                    let pool := AAVE_V3
-                    // selector borrow(address,uint256,uint256,uint16,address)
-                    mstore(ptr, 0xa415bcad00000000000000000000000000000000000000000000000000000000)
-                    mstore(add(ptr, 0x04), _underlying)
-                    mstore(add(ptr, 0x24), _amount)
-                    mstore(add(ptr, 0x44), _mode)
-                    mstore(add(ptr, 0x64), 0x0)
-                    mstore(add(ptr, 0x84), _from)
-                    // call pool
-                    if iszero(call(gas(), pool, 0x0, ptr, 0xA4, 0x0, 0x0)) {
-                        let rdsize := returndatasize()
-                        returndatacopy(0x0, 0x0, rdsize)
-                        revert(0x0, rdsize)
-                    }
-                }
                 case 1 {
-                    let pool := YLDR // YLDR has no borrow mode
+                    // YLDR has no borrow mode
                     // selector borrow(address,uint256,uint16,address)
                     mstore(ptr, 0x1d5d723700000000000000000000000000000000000000000000000000000000)
                     mstore(add(ptr, 0x04), _underlying)
@@ -141,14 +154,30 @@ abstract contract BaseLending is Slots {
                     mstore(add(ptr, 0x44), 0x0)
                     mstore(add(ptr, 0x64), _from)
                     // call pool
-                    if iszero(call(gas(), pool, 0x0, ptr, 0x84, 0x0, 0x0)) {
+                    if iszero(call(gas(), YLDR, 0x0, ptr, 0x84, 0x0, 0x0)) {
                         let rdsize := returndatasize()
                         returndatacopy(0x0, 0x0, rdsize)
                         revert(0x0, rdsize)
                     }
                 }
-                case 25 {
-                    let pool := AAVE_V2
+                default {
+                    let pool
+                    switch _lenderId
+                    case 0 {
+                        pool := AAVE_V3
+                    }
+                    case 25 {
+                        pool := AAVE_V2
+                    }
+                    default {
+                        mstore(0x0, _lenderId)
+                        mstore(0x20, LENDING_POOL_SLOT)
+                        pool := sload(keccak256(0x0, 0x40))
+                        if iszero(pool) {
+                            mstore(0, BAD_LENDER)
+                            revert(0, 0x4)
+                        }
+                    }
                     // selector borrow(address,uint256,uint256,uint16,address)
                     mstore(ptr, 0xa415bcad00000000000000000000000000000000000000000000000000000000)
                     mstore(add(ptr, 0x04), _underlying)
@@ -163,9 +192,7 @@ abstract contract BaseLending is Slots {
                         revert(0x0, rdsize)
                     }
                 }
-                default {
-                    revert(0, 0)
-                }
+
                 //  transfer underlying if needed
                 if xor(_to, address()) {
                     // selector for transfer(address,uint256)
@@ -198,23 +225,36 @@ abstract contract BaseLending is Slots {
                 }
             }
             default {
+                let cometPool
                 switch _lenderId
                 case 50 {
-                    // selector withdrawFrom(address,address,address,uint256)
-                    mstore(ptr, 0x2644131800000000000000000000000000000000000000000000000000000000)
-                    mstore(add(ptr, 0x04), _from)
-                    mstore(add(ptr, 0x24), _to)
-                    mstore(add(ptr, 0x44), _underlying)
-                    mstore(add(ptr, 0x64), _amount)
-                    // call pool
-                    if iszero(call(gas(), COMET_USDC, 0x0, ptr, 0x84, 0x0, 0x0)) {
-                        let rdsize := returndatasize()
-                        returndatacopy(0x0, 0x0, rdsize)
-                        revert(0x0, rdsize)
+                    cometPool := COMET_USDC
+                }
+                case 51 {
+                    cometPool := COMET_USDT
+                }
+                // default: load comet from storage
+                // if it is not provided directly
+                default {
+                    mstore(0x0, _lenderId)
+                    mstore(0x20, LENDING_POOL_SLOT)
+                    cometPool := sload(keccak256(0x0, 0x40))
+                    if iszero(cometPool) {
+                        mstore(0, BAD_LENDER)
+                        revert(0, 0x4)
                     }
                 }
-                default {
-                    revert(0, 0)
+                // selector withdrawFrom(address,address,address,uint256)
+                mstore(ptr, 0x2644131800000000000000000000000000000000000000000000000000000000)
+                mstore(add(ptr, 0x04), _from)
+                mstore(add(ptr, 0x24), _to)
+                mstore(add(ptr, 0x44), _underlying)
+                mstore(add(ptr, 0x64), _amount)
+                // call pool
+                if iszero(call(gas(), cometPool, 0x0, ptr, 0x84, 0x0, 0x0)) {
+                    let rdsize := returndatasize()
+                    returndatacopy(0x0, 0x0, rdsize)
+                    revert(0x0, rdsize)
                 }
             }
         }
@@ -240,8 +280,17 @@ abstract contract BaseLending is Slots {
                     case 0 {
                         pool := AAVE_V3
                     }
-                    default {
+                    case 1 {
                         pool := YLDR
+                    }
+                    default {
+                        mstore(0x0, _lenderId)
+                        mstore(0x20, LENDING_POOL_SLOT)
+                        pool := sload(keccak256(0x0, 0x40))
+                        if iszero(pool) {
+                            mstore(0, BAD_LENDER)
+                            revert(0, 0x4)
+                        }
                     }
                     // call pool
                     if iszero(call(gas(), pool, 0x0, ptr, 0x84, 0x0, 0x0)) {
@@ -251,43 +300,64 @@ abstract contract BaseLending is Slots {
                     }
                 }
                 case 0 {
+                    let pool
                     switch _lenderId
                     case 25 {
-                        // selector deposit(address,uint256,address,uint16)
-                        mstore(ptr, 0xe8eda9df00000000000000000000000000000000000000000000000000000000)
-                        mstore(add(ptr, 0x04), _underlying)
-                        mstore(add(ptr, 0x24), _amount)
-                        mstore(add(ptr, 0x44), _user)
-                        mstore(add(ptr, 0x64), 0x0)
-                        // call pool
-                        if iszero(call(gas(), AAVE_V2, 0x0, ptr, 0x84, 0x0, 0x0)) {
-                            let rdsize := returndatasize()
-                            returndatacopy(0x0, 0x0, rdsize)
-                            revert(0x0, rdsize)
-                        }
+                        pool := AAVE_V2
                     }
                     default {
-                        revert(0, 0)
+                        mstore(0x0, _lenderId)
+                        mstore(0x20, LENDING_POOL_SLOT)
+                        pool := sload(keccak256(0x0, 0x40))
+                        if iszero(pool) {
+                            mstore(0, BAD_LENDER)
+                            revert(0, 0x4)
+                        }
                     }
-                }
-            }
-            default {
-                switch _lenderId
-                case 50 {
-                    // selector supplyTo(address,address,uint256)
-                    mstore(ptr, 0x4232cd6300000000000000000000000000000000000000000000000000000000)
-                    mstore(add(ptr, 0x04), _user)
-                    mstore(add(ptr, 0x24), _underlying)
-                    mstore(add(ptr, 0x44), _amount)
+                    // selector deposit(address,uint256,address,uint16)
+                    mstore(ptr, 0xe8eda9df00000000000000000000000000000000000000000000000000000000)
+                    mstore(add(ptr, 0x04), _underlying)
+                    mstore(add(ptr, 0x24), _amount)
+                    mstore(add(ptr, 0x44), _user)
+                    mstore(add(ptr, 0x64), 0x0)
                     // call pool
-                    if iszero(call(gas(), COMET_USDC, 0x0, ptr, 0x64, 0x0, 0x0)) {
+                    if iszero(call(gas(), pool, 0x0, ptr, 0x84, 0x0, 0x0)) {
                         let rdsize := returndatasize()
                         returndatacopy(0x0, 0x0, rdsize)
                         revert(0x0, rdsize)
                     }
                 }
+            }
+            default {
+                let cometPool
+                switch _lenderId
+                case 50 {
+                    cometPool := COMET_USDC
+                }
+                case 51 {
+                    cometPool := COMET_USDT
+                }
+                // default: load comet from storage
+                // if it is not provided directly
                 default {
-                    revert(0, 0)
+                    mstore(0x0, _lenderId)
+                    mstore(0x20, LENDING_POOL_SLOT)
+                    cometPool := sload(keccak256(0x0, 0x40))
+                    if iszero(cometPool) {
+                        mstore(0, BAD_LENDER)
+                        revert(0, 0x4)
+                    }
+                }
+                // selector supplyTo(address,address,uint256)
+                mstore(ptr, 0x4232cd6300000000000000000000000000000000000000000000000000000000)
+                mstore(add(ptr, 0x04), _user)
+                mstore(add(ptr, 0x24), _underlying)
+                mstore(add(ptr, 0x44), _amount)
+                // call pool
+                if iszero(call(gas(), cometPool, 0x0, ptr, 0x64, 0x0, 0x0)) {
+                    let rdsize := returndatasize()
+                    returndatacopy(0x0, 0x0, rdsize)
+                    revert(0x0, rdsize)
                 }
             }
         }
@@ -297,135 +367,89 @@ abstract contract BaseLending is Slots {
     function _repay(address _underlying, address recipient, uint256 _amount, uint256 mode, uint256 _lenderId) internal {
         assembly {
             let ptr := mload(0x40)
-            // assign lending pool
-            switch _lenderId
-            case 0 {
-                // selector repay(address,uint256,uint256,address)
-                mstore(ptr, 0x573ade8100000000000000000000000000000000000000000000000000000000)
-                mstore(add(ptr, 0x04), _underlying)
-                mstore(add(ptr, 0x24), _amount)
-                mstore(add(ptr, 0x44), mode)
-                mstore(add(ptr, 0x64), recipient)
-                // call pool
-                if iszero(call(gas(), AAVE_V3, 0x0, ptr, 0x84, 0x0, 0x0)) {
-                    let rdsize := returndatasize()
-                    returndatacopy(0x0, 0x0, rdsize)
-                    revert(0x0, rdsize)
-                }
-            }
-            case 25 {
-                // selector repay(address,uint256,uint256,address)
-                mstore(ptr, 0x573ade8100000000000000000000000000000000000000000000000000000000)
-                mstore(add(ptr, 0x04), _underlying)
-                mstore(add(ptr, 0x24), _amount)
-                mstore(add(ptr, 0x44), mode)
-                mstore(add(ptr, 0x64), recipient)
-                // call pool
-                if iszero(call(gas(), AAVE_V2, 0x0, ptr, 0x84, 0x0, 0x0)) {
-                    let rdsize := returndatasize()
-                    returndatacopy(0x0, 0x0, rdsize)
-                    revert(0x0, rdsize)
-                }
-            }
+            switch lt(_lenderId, 50)
             case 1 {
-                let pool := YLDR // same as aave V3, just no mode
-                // selector repay(address,uint256,address)
-                mstore(ptr, 0x5ceae9c400000000000000000000000000000000000000000000000000000000)
-                mstore(add(ptr, 0x04), _underlying)
-                mstore(add(ptr, 0x24), _amount)
-                mstore(add(ptr, 0x44), recipient)
-                // call pool
-                if iszero(call(gas(), pool, 0x0, ptr, 0x64, 0x0, 0x0)) {
-                    let rdsize := returndatasize()
-                    returndatacopy(0x0, 0x0, rdsize)
-                    revert(0x0, rdsize)
+                // assign lending pool
+                switch _lenderId
+                case 1 {
+                    // same as aave V3, just no mode
+                    // selector repay(address,uint256,address)
+                    mstore(ptr, 0x5ceae9c400000000000000000000000000000000000000000000000000000000)
+                    mstore(add(ptr, 0x04), _underlying)
+                    mstore(add(ptr, 0x24), _amount)
+                    mstore(add(ptr, 0x44), recipient)
+                    // call pool
+                    if iszero(call(gas(), YLDR, 0x0, ptr, 0x64, 0x0, 0x0)) {
+                        let rdsize := returndatasize()
+                        returndatacopy(0x0, 0x0, rdsize)
+                        revert(0x0, rdsize)
+                    }
+                }
+                default {
+                    let pool
+                    switch _lenderId
+                    case 0 {
+                        pool := AAVE_V3
+                    }
+                    case 25 {
+                        pool := AAVE_V3
+                    }
+                    default {
+                        mstore(0x0, _lenderId)
+                        mstore(0x20, LENDING_POOL_SLOT)
+                        pool := sload(keccak256(0x0, 0x40))
+                        if iszero(pool) {
+                            mstore(0, BAD_LENDER)
+                            revert(0, 0x4)
+                        }
+                    }
+                    // selector repay(address,uint256,uint256,address)
+                    mstore(ptr, 0x573ade8100000000000000000000000000000000000000000000000000000000)
+                    mstore(add(ptr, 0x04), _underlying)
+                    mstore(add(ptr, 0x24), _amount)
+                    mstore(add(ptr, 0x44), mode)
+                    mstore(add(ptr, 0x64), recipient)
+                    // call pool
+                    if iszero(call(gas(), pool, 0x0, ptr, 0x84, 0x0, 0x0)) {
+                        let rdsize := returndatasize()
+                        returndatacopy(0x0, 0x0, rdsize)
+                        revert(0x0, rdsize)
+                    }
                 }
             }
-            case 50 {
+            default {
+                let cometPool
+                switch _lenderId
+                case 50 {
+                    cometPool := COMET_USDC
+                }
+                case 51 {
+                    cometPool := COMET_USDT
+                }
+                // default: load comet from storage
+                // if it is not provided directly
+                default {
+                    mstore(0x0, _lenderId)
+                    mstore(0x20, LENDING_POOL_SLOT)
+                    cometPool := sload(keccak256(0x0, 0x40))
+                    if iszero(cometPool) {
+                        mstore(0, BAD_LENDER)
+                        revert(0, 0x4)
+                    }
+                }
+
                 // selector supplyTo(address,address,uint256)
                 mstore(ptr, 0x4232cd6300000000000000000000000000000000000000000000000000000000)
                 mstore(add(ptr, 0x04), recipient)
                 mstore(add(ptr, 0x24), _underlying)
                 mstore(add(ptr, 0x44), _amount)
                 // call pool
-                if iszero(call(gas(), COMET_USDC, 0x0, ptr, 0x64, 0x0, 0x0)) {
+                if iszero(call(gas(), cometPool, 0x0, ptr, 0x64, 0x0, 0x0)) {
                     let rdsize := returndatasize()
                     returndatacopy(0x0, 0x0, rdsize)
                     revert(0x0, rdsize)
                 }
             }
-            default {
-                revert(0, 0)
-            }
-        }
-    }
-
-    /** BALANCE FETCHERS FOR ALL IN / OUT */
-
-    function _variableDebtBalance(address underlying, address user, uint8 lenderId) internal view returns (uint256 callerBalance) {
-        assembly {
-            mstore(0x0, underlying)
-            mstore8(0x0, lenderId)
-            mstore(0x20, VARIABLE_DEBT_TOKENS_SLOT)
-            let debtToken := sload(keccak256(0x0, 0x40))
-            // selector for balanceOf(address)
-            mstore(0x0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
-            // add this address as parameter
-            mstore(0x4, user)
-
-            // call to debtToken
-            pop(staticcall(gas(), debtToken, 0x0, 0x24, 0x0, 0x20))
-
-            callerBalance := mload(0x0)
-        }
-    }
-
-    function _stableDebtBalance(address underlying, address user, uint8 lenderId) internal view returns (uint256 callerBalance) {
-        assembly {
-            mstore(0x0, underlying)
-            mstore8(0x0, lenderId)
-            mstore(0x20, STABLE_DEBT_TOKENS_SLOT)
-            let debtToken := sload(keccak256(0x0, 0x40))
-            // selector for balanceOf(address)
-            mstore(0x0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
-            // add this address as parameter
-            mstore(0x4, user)
-
-            // call to debtToken
-            pop(staticcall(gas(), debtToken, 0x0, 0x24, 0x0, 0x20))
-
-            callerBalance := mload(0x0)
-        }
-    }
-
-    function _callerCollateralBalance(address underlying, uint8 lenderId) internal view returns (uint256 callerBalance) {
-        assembly {
-            mstore(0x0, underlying)
-            mstore8(0x0, lenderId)
-            mstore(0x20, COLLATERAL_TOKENS_SLOT)
-            let collateralToken := sload(keccak256(0x0, 0x40))
-            // selector for balanceOf(address)
-            mstore(0x0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
-            // add caller address as parameter
-            mstore(0x4, caller())
-            // call to collateralToken
-            pop(staticcall(gas(), collateralToken, 0x0, 0x24, 0x0, 0x20))
-
-            callerBalance := mload(0x0)
-        }
-    }
-
-    function _balanceOfThis(address underlying) internal view returns (uint256 callerBalance) {
-        assembly {
-            // selector for balanceOf(address)
-            mstore(0x0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
-            // add this address as parameter
-            mstore(0x4, address())
-
-            // call to underlying
-            pop(staticcall(gas(), underlying, 0x0, 0x24, 0x0, 0x20))
-
-            callerBalance := mload(0x0)
         }
     }
 }

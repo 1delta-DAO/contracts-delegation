@@ -6,9 +6,9 @@ import "../shared/interfaces/ICurvePool.sol";
 import "./DeltaSetup.f.sol";
 
 contract ComposerTestPolygon is DeltaSetup {
-    function test_polygon_composer_depo() external {
-        uint8 lenderId = 50;
+    function test_polygon_composer_depo(uint8 lenderId) external {
         address user = testUser;
+        vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
         uint256 amount = 10.0e6;
         address asset = WMATIC;
         deal(asset, user, 1e23);
@@ -37,9 +37,42 @@ contract ComposerTestPolygon is DeltaSetup {
         assertApproxEqAbs(amount, getCollateralBalance(user, asset, lenderId), 0);
     }
 
-    function test_polygon_composer_borrow() external {
-        uint8 lenderId = 50;
+    function test_polygon_composer_depo_comet() external {
         address user = testUser;
+        uint8 lenderId = 50;
+        // vm.assume(user != address(0) && (lenderId == 50));
+        uint256 amount = 0.000000001e18;
+        address asset = WETH;
+        deal(asset, user, 1e23);
+
+        vm.prank(user);
+        IERC20All(asset).approve(address(brokerProxyAddress), amount);
+
+        bytes memory transfer = transferIn(
+            asset,
+            brokerProxyAddress,
+            amount //
+        );
+        bytes memory data = deposit(
+            asset,
+            user,
+            amount,
+            lenderId //
+        );
+        data = abi.encodePacked(transfer, data);
+        vm.prank(user);
+        uint gas = gasleft();
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
+        gas = gas - gasleft();
+        console.log("gas", gas);
+
+        assertApproxEqAbs(amount, getCollateralBalance(user, asset, lenderId), 0);
+    }
+
+
+    function test_polygon_composer_borrow(uint8 lenderId) external {
+        address user = testUser;
+        vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
         uint256 amount = 500.0e18;
         address asset = WMATIC;
 
@@ -63,9 +96,10 @@ contract ComposerTestPolygon is DeltaSetup {
         assertApproxEqAbs(borrowAmount, getBorrowBalance(user, borrowAsset, lenderId), 1);
     }
 
-    function test_polygon_composer_repay() external {
-        uint8 lenderId = 1;
+    function test_polygon_composer_repay(uint8 lenderId) external {
         address user = testUser;
+
+        vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
 
         uint256 amount = 500.0e18;
         address asset = WMATIC;
@@ -106,9 +140,9 @@ contract ComposerTestPolygon is DeltaSetup {
         assertApproxEqAbs(borrowAmount - repayAmount, getBorrowBalance(user, borrowAsset, lenderId), 2);
     }
 
-    function test_polygon_composer_repay_too_much() external {
-        uint8 lenderId = 50;
+    function test_polygon_composer_repay_too_much(uint8 lenderId) external {
         address user = testUser;
+        vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
 
         uint256 amount = 500.0e18;
         address asset = WMATIC;
@@ -130,11 +164,11 @@ contract ComposerTestPolygon is DeltaSetup {
         bytes memory data = repay(
             borrowAsset,
             user,
-            type(uint112).max,
+            lenderId > 49 ? type(uint112).max : repayAmount,
             lenderId, //
             DEFAULT_MODE
         );
-        data = abi.encodePacked(transfer, data, sweep(borrowAsset, user, 0, SweepType.VALIDATE));
+        data = abi.encodePacked(transfer, data, sweep(borrowAsset, user, lenderId, SweepType.VALIDATE));
 
         vm.prank(user);
         IERC20All(borrowAsset).approve(address(brokerProxyAddress), repayAmount);
@@ -151,6 +185,7 @@ contract ComposerTestPolygon is DeltaSetup {
     function test_polygon_composer_withdraw() external {
         uint8 lenderId = 50;
         address user = testUser;
+        vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
 
         uint256 amount = 10.0e18;
         address asset = WMATIC;
@@ -170,9 +205,10 @@ contract ComposerTestPolygon is DeltaSetup {
         assertApproxEqAbs(amount - withdrawAmount, getCollateralBalance(user, asset, lenderId), 2);
     }
 
-    function test_polygon_composer_withdraw_all() external {
-        uint8 lenderId = 1;
+    function test_polygon_composer_withdraw_all(uint8 lenderId) external {
         address user = testUser;
+
+        vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
 
         uint256 amount = 500.0e18;
         address asset = WMATIC;
