@@ -1234,7 +1234,8 @@ contract OneDeltaComposerPolygon is MarginTrading {
             // validate caller
             // - extract id from params
             let firstWord := calldataload(params.offset)
-            let source := and(UINT8_MASK, shr(248, firstWord))
+            // needs no uint8 masking as we shift 248 bits
+            let source := shr(248, firstWord)
 
             // Validate the caller
             // We check that the caller is one of the lending pools
@@ -1304,7 +1305,8 @@ contract OneDeltaComposerPolygon is MarginTrading {
             // validate caller
             // - extract id from params
             let firstWord := calldataload(params.offset)
-            let source := and(UINT8_MASK, shr(248, firstWord))
+            // needs no uint8 masking as we shift 248 bits
+            let source := shr(248, firstWord)
 
             // Validate the caller
             // We check that the caller is one of the lending pools
