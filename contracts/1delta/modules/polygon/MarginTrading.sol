@@ -26,7 +26,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
 
     constructor() BaseSwapper() BaseLending() {}
 
-    // swapsicle
+    // quickswap
     function algebraSwapCallback(
         int256 amount0Delta,
         int256 amount1Delta,
@@ -971,8 +971,73 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 pathOffset,
                 pathLength
             );
+        }
+        // Balancer V2
+        else if (poolId == 50) {
+            address tokenIn;
+            uint256 amountIn;
+            bytes32 balancerPoolId;
+            address tokenOut;
+            assembly {
+                tokenOut := shr(96, calldataload(pathOffset))
+                tokenIn := shr(96, calldataload(add(pathOffset, SKIP_LENGTH_BALANCER_V2)))
+                balancerPoolId := calldataload(add(pathOffset, 22))
+            }
+            ////////////////////////////////////////////////////
+            // We calculate the required amount for the next swap
+            ////////////////////////////////////////////////////
+            amountIn = _getBalancerAmountIn(balancerPoolId, tokenIn, tokenOut, amountOut);
+
+            if(pathLength > MAX_SINGLE_LENGTH_BALANCER_V2) {
+                // remove the last token from the path
+                assembly {
+                    pathOffset := add(pathOffset, SKIP_LENGTH_BALANCER_V2)
+                    pathLength := sub(pathLength, SKIP_LENGTH_BALANCER_V2)
+                }
+                swapExactOutInternal(
+                    amountIn,
+                    maxIn,
+                    payer,
+                    address(this), // balancer pulls from this address
+                    pathOffset,
+                    pathLength
+                );
+            }
+            ////////////////////////////////////////////////////
+            // Otherwise, we6 pay the funds to the pair
+            // according to the parametrization
+            // at the end of the path
+            ////////////////////////////////////////////////////
+            else {
+                (uint256 payType, uint8 lenderId) = getPayConfigFromCalldata(pathOffset, pathLength);
+                // pay the pool
+                handlePayPool(
+                    tokenIn,
+                    payer, // prevents sload if desired
+                    address(this), // balancer pulls from this address
+                    payType,
+                    amountIn,
+                    lenderId
+                );
+                // if(maxIn < amountIn) revert Slippage();
+                assembly {
+                    if lt(maxIn, amountIn) {
+                        mstore(0, SLIPPAGE)
+                        revert (0, 0x4)
+                    }
+                }
+            }
+            _swapBalancerExactOut(
+                balancerPoolId,
+                tokenIn,
+                tokenOut,
+                receiver,
+                amountOut,
+                true
+            );
+        }
         // uniswapV2 style
-        } else if (poolId < 150) {
+        else if (poolId < 150) {
             address tokenIn;
             uint256 amountIn;
             address pair;

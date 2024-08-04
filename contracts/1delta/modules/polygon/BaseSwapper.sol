@@ -7,7 +7,7 @@ pragma solidity 0.8.26;
 /******************************************************************************/
 
 import {TokenTransfer} from "./TokenTransfer.sol";
-import {ExoticSwapper} from "./swappers/Exotic.sol";
+import {BalancerSwapper} from "./swappers/Balancer.sol";
 
 // solhint-disable max-line-length
 
@@ -20,7 +20,7 @@ import {ExoticSwapper} from "./swappers/Exotic.sol";
  *             Uni V2: 100 - 110
  *             Solidly:121 - 130
  */
-abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
+abstract contract BaseSwapper is TokenTransfer, BalancerSwapper {
 
     /**
      * Fund the first pool for self funded DEXs like Uni V2, GMX, LB, WooFi and Solidly V2 (dexId >= 100) 
@@ -217,10 +217,44 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
                 pathLength := sub(pathLength, SKIP_LENGTH_UNOSWAP)
             }
         }
+        // Balancer V2
+        else if (dexId == 50) {
+            assembly {
+                switch lt(pathLength, 67) // same as for Uni V3 CL
+                case 1 { currentReceiver := receiver}
+                default {
+                    dexId := and(calldataload(add(pathOffset, 44)), UINT8_MASK) // SKIP_LENGTH_BALANCER_V2 - 10
+                    switch gt(dexId, 99) 
+                    case 1 {
+                        currentReceiver := shr(
+                                96,
+                                calldataload(
+                                    add(
+                                        pathOffset,
+                                        MAX_SINGLE_LENGTH_BALANCER_V2 // 
+                                    )
+                                ) // poolAddress
+                            )
+                    }
+                    default {
+                        currentReceiver := address()
+                    }
+                }
+            }
+            amountIn = _swapBalancerExactIn(
+                pathOffset,
+                amountIn,
+                currentReceiver
+            );
+            assembly {
+                pathOffset := add(pathOffset, SKIP_LENGTH_BALANCER_V2)
+                pathLength := sub(pathLength, SKIP_LENGTH_BALANCER_V2)
+            }
+        }
         // Curve pool types
         else if(dexId < 70){
             // Curve standard pool
-            if (dexId == 50) {
+            if (dexId == 60) {
                 assembly {
                     switch lt(pathLength, 68) // lengthFull = 20+1+1+20+1+1+1+20 = 65
                     case 1 { currentReceiver := receiver}
@@ -243,12 +277,12 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
                         }
                     }
                 }
-                amountIn = swapCurveGeneral(pathOffset, amountIn, payer, currentReceiver);
+                amountIn = _swapCurveGeneral(pathOffset, amountIn, payer, currentReceiver);
                 assembly {
                     pathOffset := add(pathOffset, 45)
                     pathLength := sub(pathLength, 45)
                 }
-            } 
+            }
             // curve metapool
             else {
                 assembly {
@@ -273,7 +307,7 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
                         }
                     }
                 }
-                amountIn = swapCurveMeta(pathOffset, amountIn, payer, currentReceiver);
+                amountIn = _swapCurveMeta(pathOffset, amountIn, payer, currentReceiver);
                 assembly {
                     pathOffset := add(pathOffset, 65)
                     pathLength := sub(pathLength, 65)
@@ -360,6 +394,36 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
                 pathLength := sub(pathLength, 42)
             }
         }
+        // Curve NG
+        else if (dexId == 151) {
+            assembly {
+                switch lt(pathLength, 68) // 
+                case 1 { currentReceiver := receiver}
+                default {
+                    dexId := and(calldataload(add(pathOffset, 35)), UINT8_MASK)
+                    switch gt(dexId, 99) 
+                    case 1 {
+                        currentReceiver := shr(
+                                96,
+                                calldataload(
+                                    add(
+                                        pathOffset,
+                                        67 // 20 + 2 + 20 + 2 + 20 + 2 [poolAddress starts here]
+                                    )
+                                ) // poolAddress
+                            )
+                    }
+                    default {
+                        currentReceiver := address()
+                    }
+                }
+            }
+            amountIn = _swapCurveNG(pathOffset, amountIn, currentReceiver);
+            assembly {
+                pathOffset := add(pathOffset, 45)
+                pathLength := sub(pathLength, 45)
+            }
+        }
         // GMX
         else if(dexId == 152) {
             address tokenIn;
@@ -401,7 +465,7 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
                 pathLength := sub(pathLength, 42)
             }
         } 
-         else {
+        else {
             assembly {
                 mstore(0, INVALID_DEX)
                 revert (0, 0x4)

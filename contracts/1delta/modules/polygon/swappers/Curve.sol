@@ -24,6 +24,9 @@ abstract contract CurveSwapper is UniTypeSwapper {
     // exchange_underlying(uint256,uint256,uint256,uint256,address)
     bytes32 private constant EXCHANGE_UNDERLYING_RECEIVER = 0xe2ad025a00000000000000000000000000000000000000000000000000000000;
 
+    // exchange_received(uint256,uint256,uint256,uint256,address)
+    bytes32 private constant EXCHANGE_RECEIVED = 0xafb4301200000000000000000000000000000000000000000000000000000000;
+
     /** Meta pool zap selectors - first argument is another curve pool */
 
     // exchange(address,uint256,uint256,uint256,uint256)
@@ -35,9 +38,6 @@ abstract contract CurveSwapper is UniTypeSwapper {
 
     /**
      * Swaps using a meta pool (i.e. a curve pool that has another one as underlying)
-     * We first swap normally to the metapool and the call `remove_liquidity_one_coin`
-     * to get the desired output coin.
-     * Wa assume that everything is pre-parametrized (meta:i,j,dx;pool:i,j)
      * Data is supposed to be packed as follows
      * tokenIn | actionId | dexId | metaPool | sm | i | j | pool | tokenOut
      * sm is the selecor,
@@ -45,7 +45,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
      * sp is the selector for for the regular pool
      * k is the withdraw index for the regular pool
      */
-    function swapCurveMeta(
+    function _swapCurveMeta(
         uint256 pathOffset,
         uint256 amountIn,
         address payer,
@@ -100,7 +100,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
 
             let indexData := calldataload(add(pathOffset, 22))
             let metaPool := and(shr(96, indexData), ADDRESS_MASK)
-            let selectorId := and(shr(88, indexData), 0xff)
+            let selectorId := and(shr(72, indexData), 0xff)
 
             ////////////////////////////////////////////////////
             // Execute swap function
@@ -116,8 +116,8 @@ abstract contract CurveSwapper is UniTypeSwapper {
                     add(ptr, 0x4),
                     and(shr(96, calldataload(add(pathOffset, 45))), ADDRESS_MASK) // pool
                 )
-                mstore(add(ptr, 0x24), and(shr(80, indexData), 0xff)) // indexIn
-                mstore(add(ptr, 0x44), and(shr(72, indexData), 0xff)) // indexOut
+                mstore(add(ptr, 0x24), and(shr(88, indexData), 0xff)) // indexIn
+                mstore(add(ptr, 0x44), and(shr(80, indexData), 0xff)) // indexOut
                 mstore(add(ptr, 0x64), amountIn)
                 mstore(add(ptr, 0x84), 0) // min out is zero, we validate slippage at the end
                 mstore(add(ptr, 0xA4), 0) // useEth=false
@@ -136,8 +136,8 @@ abstract contract CurveSwapper is UniTypeSwapper {
                     add(ptr, 0x4),
                     and(shr(96, calldataload(add(pathOffset, 45))), ADDRESS_MASK) // pool
                 )
-                mstore(add(ptr, 0x24), and(shr(80, indexData), 0xff)) // indexIn
-                mstore(add(ptr, 0x44), and(shr(72, indexData), 0xff))  // indexOut
+                mstore(add(ptr, 0x24), and(shr(88, indexData), 0xff)) // indexIn
+                mstore(add(ptr, 0x44), and(shr(80, indexData), 0xff)) // indexOut
                 mstore(add(ptr, 0x64), amountIn)
                 mstore(add(ptr, 0x84), 0) // min out is zero, we validate slippage at the end
                 if iszero(call(gas(), metaPool, 0x0, ptr, 0xA4, ptr, 0x20)) {
@@ -193,16 +193,13 @@ abstract contract CurveSwapper is UniTypeSwapper {
     }
 
     /**
-     * Swaps using a meta pool (i.e. a curve pool that has another one as underlying)
-     * We first swap normally to the metapool and the call `remove_liquidity_one_coin`
-     * to get the desired output coin.
-     * Wa assume that everything is pre-parametrized (meta:i,j,dx;pool:i,j)
+     * Swaps using a standard curve pool
      * Data is supposed to be packed as follows
      * tokenIn | actionId | dexId | pool | sm | i | j | tokenOut
      * sm is the selecor,
      * i,j are the swap indexes for the pool
      */
-    function swapCurveGeneral(
+    function _swapCurveGeneral(
         uint256 pathOffset,
         uint256 amountIn,
         address payer,
@@ -257,9 +254,9 @@ abstract contract CurveSwapper is UniTypeSwapper {
 
             let indexData := calldataload(add(pathOffset, 22))
             let pool := and(shr(96, indexData), ADDRESS_MASK)
-            let selectorId := and(shr(88, indexData), 0xff)
+            let indexIn := and(shr(88, indexData), 0xff)
             let indexOut := and(shr(80, indexData), 0xff)
-            let indexIn := and(shr(72, indexData), 0xff)
+            let selectorId := and(shr(72, indexData), 0xff)
 
             ////////////////////////////////////////////////////
             // Execute swap function
@@ -352,6 +349,75 @@ abstract contract CurveSwapper is UniTypeSwapper {
                     revert(0, rdsize)
                 }
             }
+        }
+    }
+
+    /**
+     * Swaps using a NG pool that allows for pre-funded swaps
+     * Data is supposed to be packed as follows
+     * tokenIn | actionId | dexId | pool | sm | i | j | tokenOut
+     * sm is the selecor,
+     * i,j are the swap indexes for the pool
+     */
+    function _swapCurveNG(
+        uint256 pathOffset,
+        uint256 amountIn,
+        address receiver //
+    ) internal returns (uint256 amountOut) {
+        assembly {
+            let ptr := mload(0x40)
+            let indexData := calldataload(add(pathOffset, 22))
+
+            let pool := and(shr(96, indexData), ADDRESS_MASK)
+            let indexIn := and(shr(88, indexData), 0xff)
+            let indexOut := and(shr(80, indexData), 0xff)
+            let selectorId := and(shr(72, indexData), 0xff)
+
+            ////////////////////////////////////////////////////
+            // Execute swap function
+            ////////////////////////////////////////////////////
+            switch selectorId
+            case 0 {
+                indexData := true
+                // selector for exchange_received(uint256,uint256,uint256,uint256,address)
+                mstore(ptr, EXCHANGE_RECEIVED)
+                mstore(add(ptr, 0x4), indexIn)
+                mstore(add(ptr, 0x24), indexOut)
+                mstore(add(ptr, 0x44), amountIn)
+                mstore(add(ptr, 0x64), 0) // min out is zero, we validate slippage at the end
+                mstore(add(ptr, 0x84), receiver)
+                if iszero(call(gas(), pool, 0x0, ptr, 0xA4, ptr, 0x20)) {
+                    returndatacopy(0, 0, returndatasize())
+                    // revert(0, returndatasize())
+                }
+            }
+            default {
+                revert(0, 0)
+            }
+
+            amountOut := mload(ptr)
+        }
+    }
+
+    /**
+     * Gets the input amount for a curve NG swap
+     */
+    function _getNGAmountIn(uint256 pathOffset, uint256 amountOut) internal view returns (uint256 amountIn) {
+        assembly {
+            let ptr := mload(0x40)
+            let indexData := calldataload(add(pathOffset, 22))
+            let pool := and(shr(96, indexData), ADDRESS_MASK)
+            let indexOut := and(shr(80, indexData), 0xff)
+            let indexIn := and(shr(72, indexData), 0xff)
+
+            // selector for get_dx(int128,int128,uint256)
+            mstore(ptr, 0x67df02ca00000000000000000000000000000000000000000000000000000000)
+            mstore(add(ptr, 0x4), indexIn)
+            mstore(add(ptr, 0x24), indexOut)
+            mstore(add(ptr, 0x44), amountOut)
+            pop(staticcall(gas(), pool, ptr, 0x64, ptr, 0x20))
+
+            amountIn := mload(ptr)
         }
     }
 }

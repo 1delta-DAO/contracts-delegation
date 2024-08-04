@@ -19,6 +19,7 @@ contract CurveTestPolygon is DeltaSetup {
             assetIn,
             assetOut,
             CURVE,
+            1,
             getCurveIndexes(assetIn, assetOut) //
         );
         bytes memory dataFusion = getSpotExactInSingleGen2(
@@ -54,6 +55,45 @@ contract CurveTestPolygon is DeltaSetup {
         assertApproxEqAbs(bal, 2000284652, 0);
     }
 
+    function test_polygon_composer_single_route_exact_in_curve_ng() external {
+        address user = testUser;
+        uint256 amount = 2000.0e18;
+        uint256 amountMin = 1900.0e6;
+
+        address assetIn = crvUSD;
+        address assetOut = USDCn;
+        deal(assetIn, user, 1e23);
+
+        bytes memory dataSwapFirst = getSpotExactInSingleGenCurve(
+            assetIn,
+            assetOut,
+            CURVE_NG,
+            0,
+            getCurveNGIndexes(assetIn) //
+        );
+
+        bytes memory data = abi.encodePacked(
+            uint8(Commands.SWAP_EXACT_IN),
+            user,
+            encodeSwapAmountParams(amount, amountMin, false, dataSwapFirst.length),
+            dataSwapFirst
+        );
+
+        uint256 bal = IERC20All(assetOut).balanceOf(user);
+
+        vm.prank(user);
+        IERC20All(assetIn).approve(address(brokerProxyAddress), amount);
+
+        vm.prank(user);
+        uint gas = gasleft();
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
+        gas = gas - gasleft();
+        console.log("gas", gas);
+        bal = IERC20All(assetOut).balanceOf(user) - bal;
+
+        assertApproxEqAbs(bal, 1995174084, 0);
+    }
+
     function test_polygon_composer_multi_route_exact_in_curve_metapool() external {
         address user = testUser;
         uint256 amount = 2000.0e6;
@@ -67,6 +107,7 @@ contract CurveTestPolygon is DeltaSetup {
             assetIn,
             assetOut,
             CURVE,
+            1,
             getCurveIndexes(assetIn, assetOut) //
         );
 
@@ -103,6 +144,11 @@ contract CurveTestPolygon is DeltaSetup {
         return abi.encodePacked(CRV_3_USD_AAVE_POOL, crvAaveIndexes(assetIn), crvAaveIndexes(assetOut));
     }
 
+    function getCurveNGIndexes(address assetIn) internal pure returns (bytes memory data) {
+        (uint8 indexIn, uint8 indexOut) = assetIn == crvUSD ? (0, 1) : (1, 0);
+        return abi.encodePacked(CRV_NG_USDN_CRVUSD, indexIn, indexOut);
+    }
+
     function getSpotExactInSingleGen2(address tokenIn, address tokenOut, uint8 poolId, uint16 fee) internal view returns (bytes memory data) {
         address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
         uint8 action = 0;
@@ -113,10 +159,11 @@ contract CurveTestPolygon is DeltaSetup {
         address tokenIn, //
         address tokenOut,
         uint8 pId,
+        uint8 selectorId,
         bytes memory data
     ) internal pure returns (bytes memory) {
         uint8 action = 0;
-        return abi.encodePacked(tokenIn, action, pId, data, uint8(1), tokenOut);
+        return abi.encodePacked(tokenIn, action, pId, data, selectorId, tokenOut);
     }
 
     function getCurveMeta(

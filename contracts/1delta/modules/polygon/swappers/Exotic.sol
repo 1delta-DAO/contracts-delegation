@@ -19,8 +19,6 @@ abstract contract ExoticSwapper is CurveSwapper {
     /// @dev WooFi rebate receiver
     address internal constant REBATE_RECIPIENT = 0x48CA3E658eCB84eE283dc21e475c22b5cc5d3f3C;
 
-    address internal constant BALANCER_V2_VAULT = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
-
     constructor() {}
 
     /**
