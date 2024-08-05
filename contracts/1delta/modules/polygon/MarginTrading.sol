@@ -1036,6 +1036,73 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 true
             );
         }
+        // Curve NG
+        else if (poolId == 151) {
+            address tokenIn;
+            uint256 amountIn;
+            uint256 indexIn;
+            uint256 indexOut;
+            address pool;
+            assembly {
+                tokenIn := shr(96, calldataload(add(pathOffset, 45)))
+                let indexesAndPool := calldataload(add(pathOffset, 22))
+                pool := and(shr(96, indexesAndPool), ADDRESS_MASK)
+                indexIn := and(shr(88, indexesAndPool), 0xff)
+                indexOut := and(shr(80, indexesAndPool), 0xff)
+            }
+            ////////////////////////////////////////////////////
+            // We calculate the required amount for the next swap
+            ////////////////////////////////////////////////////
+            amountIn = _getNGAmountIn(pool, indexIn, indexOut, amountOut);
+            if(pathLength > MAX_SINGLE_LENGTH_CURVE) {
+                // remove the last token from the path
+                assembly {
+                    pathOffset := add(pathOffset, SKIP_LENGTH_CURVE)
+                    pathLength := sub(pathLength, SKIP_LENGTH_CURVE)
+                }
+                swapExactOutInternal(
+                    amountIn,
+                    maxIn,
+                    payer,
+                    pool, // ng is pre-funded
+                    pathOffset,
+                    pathLength
+                );
+            }
+            ////////////////////////////////////////////////////
+            // Otherwise, we6 pay the funds to the pair
+            // according to the parametrization
+            // at the end of the path
+            ////////////////////////////////////////////////////
+            else {
+                (uint256 payType, uint8 lenderId) = getPayConfigFromCalldata(pathOffset, pathLength);
+                // pay the pool
+                handlePayPool(
+                    tokenIn,
+                    payer, // prevents sload if desired
+                    pool, // ng is pre-funded
+                    payType,
+                    amountIn,
+                    lenderId
+                );
+                // if(maxIn < amountIn) revert Slippage();
+                assembly {
+                    if lt(maxIn, amountIn) {
+                        mstore(0, SLIPPAGE)
+                        revert (0, 0x4)
+                    }
+                }
+            }
+            
+            _swapCurveNGExactOut(
+                pool,
+                pathOffset,
+                indexIn,
+                indexOut,
+                amountIn,
+                receiver
+            );
+        }
         // uniswapV2 style
         else if (poolId < 150) {
             address tokenIn;

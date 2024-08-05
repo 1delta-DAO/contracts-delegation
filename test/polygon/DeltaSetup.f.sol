@@ -216,6 +216,8 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
         management.approveAddress(assets, COMET_USDC);
         management.approveAddress(assets, CRV_3_USD_AAVE_POOL);
         management.approveAddress(assets, COMET_USDT);
+        management.approveAddress(assets, CRV_TRICRYPTO_ZAP);
+        management.approveAddress(assets, CRV_FACTORY_ZAP);
     }
 
     function upgradeExistingDelta(address proxy, address admin, address oldModule) internal virtual {

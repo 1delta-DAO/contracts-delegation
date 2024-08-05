@@ -34,12 +34,15 @@ abstract contract CurveSwapper is UniTypeSwapper {
     // exchange(address,uint256,uint256,uint256,uint256,bool,address)
     bytes32 private constant EXCHANGE_META_RECEIVER = 0xb837cc6900000000000000000000000000000000000000000000000000000000;
 
+    uint256 internal constant SKIP_LENGTH_CURVE = 45; // = 20+1+1+20+1+1+1
+    uint256 internal constant MAX_SINGLE_LENGTH_CURVE = 67; // = SKIP_LENGTH_CURVE+20+1+1
+
     constructor() {}
 
     /**
      * Swaps using a meta pool (i.e. a curve pool that has another one as underlying)
      * Data is supposed to be packed as follows
-     * tokenIn | actionId | dexId | metaPool | sm | i | j | pool | tokenOut
+     * tokenIn | actionId | dexId | zapFactory | i | j | sm | metaPool | tokenOut
      * sm is the selecor,
      * i,j are the swap indexes for the meta pool
      * sp is the selector for for the regular pool
@@ -65,10 +68,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
 
                 let success := call(
                     gas(),
-                    and(
-                        ADDRESS_MASK,
-                        shr(96, calldataload(pathOffset)) // tokenIn
-                    ),
+                    shr(96, calldataload(pathOffset)), // tokenIn
                     0,
                     ptr,
                     0x64,
@@ -98,8 +98,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
                 }
             }
 
-            let indexData := calldataload(add(pathOffset, 22))
-            let metaPool := and(shr(96, indexData), ADDRESS_MASK)
+            let indexData := calldataload(add(pathOffset, 42))
             let selectorId := and(shr(72, indexData), 0xff)
 
             ////////////////////////////////////////////////////
@@ -112,38 +111,50 @@ abstract contract CurveSwapper is UniTypeSwapper {
                 // we can do it so that the receiver is incldued
                 // in the call
                 mstore(ptr, EXCHANGE_META_RECEIVER)
-                mstore(
-                    add(ptr, 0x4),
-                    and(shr(96, calldataload(add(pathOffset, 45))), ADDRESS_MASK) // pool
-                )
+                mstore(add(ptr, 0x4), and(shr(96, indexData), ADDRESS_MASK))
                 mstore(add(ptr, 0x24), and(shr(88, indexData), 0xff)) // indexIn
                 mstore(add(ptr, 0x44), and(shr(80, indexData), 0xff)) // indexOut
                 mstore(add(ptr, 0x64), amountIn)
                 mstore(add(ptr, 0x84), 0) // min out is zero, we validate slippage at the end
                 mstore(add(ptr, 0xA4), 0) // useEth=false
                 mstore(add(ptr, 0xC4), receiver)
-                if iszero(call(gas(), metaPool, 0x0, ptr, 0xE4, ptr, 0x20)) {
-                    let rdsize := returndatasize()
-                    returndatacopy(0, 0, rdsize)
-                    revert(0, rdsize)
+                if iszero(
+                    call(
+                        gas(),
+                        shr(96, calldataload(add(pathOffset, 22))), // zap factory
+                        0x0,
+                        ptr,
+                        0xE4,
+                        ptr,
+                        0x20
+                    )
+                ) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
                 }
                 amountOut := mload(ptr)
             }
             default {
                 // otherwise, the reciever is this contract
                 mstore(ptr, EXCHANGE_META)
-                mstore(
-                    add(ptr, 0x4),
-                    and(shr(96, calldataload(add(pathOffset, 45))), ADDRESS_MASK) // pool
-                )
+                mstore(add(ptr, 0x4), and(shr(96, indexData), ADDRESS_MASK))
                 mstore(add(ptr, 0x24), and(shr(88, indexData), 0xff)) // indexIn
                 mstore(add(ptr, 0x44), and(shr(80, indexData), 0xff)) // indexOut
                 mstore(add(ptr, 0x64), amountIn)
                 mstore(add(ptr, 0x84), 0) // min out is zero, we validate slippage at the end
-                if iszero(call(gas(), metaPool, 0x0, ptr, 0xA4, ptr, 0x20)) {
-                    let rdsize := returndatasize()
-                    returndatacopy(0, 0, rdsize)
-                    revert(0, rdsize)
+                if iszero(
+                    call(
+                        gas(),
+                        shr(96, calldataload(add(pathOffset, 22))), // zap factory
+                        0x0,
+                        ptr,
+                        0xA4,
+                        ptr,
+                        0x20
+                    )
+                ) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
                 }
                 amountOut := mload(ptr)
                 ////////////////////////////////////////////////////
@@ -219,10 +230,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
 
                 let success := call(
                     gas(),
-                    and(
-                        ADDRESS_MASK,
-                        shr(96, calldataload(pathOffset)) // tokenIn
-                    ),
+                    shr(96, calldataload(pathOffset)), // tokenIn
                     0,
                     ptr,
                     0x64,
@@ -263,7 +271,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
             ////////////////////////////////////////////////////
             switch selectorId
             case 0 {
-                indexData := true
+                indexData := 0xf
                 // selector for exchange(uint256,uint256,uint256,uint256)
                 mstore(ptr, EXCHANGE)
                 mstore(add(ptr, 0x4), indexIn)
@@ -271,13 +279,12 @@ abstract contract CurveSwapper is UniTypeSwapper {
                 mstore(add(ptr, 0x44), amountIn)
                 mstore(add(ptr, 0x64), 0) // min out is zero, we validate slippage at the end
                 if iszero(call(gas(), pool, 0x0, ptr, 0x84, ptr, 0x20)) {
-                    let rdsize := returndatasize()
-                    returndatacopy(0, 0, rdsize)
-                    revert(0, rdsize)
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
                 }
             }
             case 1 {
-                indexData := true
+                indexData := 0xf
                 // selector for exchange_underlying(uint256,uint256,uint256,uint256)
                 mstore(ptr, EXCHANGE_UNDERLYING)
                 mstore(add(ptr, 0x4), indexIn)
@@ -285,23 +292,22 @@ abstract contract CurveSwapper is UniTypeSwapper {
                 mstore(add(ptr, 0x44), amountIn)
                 mstore(add(ptr, 0x64), 0) // min out is zero, we validate slippage at the end
                 if iszero(call(gas(), pool, 0x0, ptr, 0x84, ptr, 0x20)) {
-                    let rdsize := returndatasize()
-                    returndatacopy(0, 0, rdsize)
-                    revert(0, rdsize)
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
                 }
             }
             default {
-                indexData := false
+                indexData := 0
                 // exchange_underlying(uint256,uint256,uint256,uint256,address)
                 mstore(ptr, EXCHANGE_UNDERLYING_RECEIVER)
                 mstore(add(ptr, 0x4), indexIn)
                 mstore(add(ptr, 0x24), indexOut)
                 mstore(add(ptr, 0x44), amountIn)
                 mstore(add(ptr, 0x64), 0) // min out is zero, we validate slippage at the end
-                if iszero(call(gas(), pool, 0x0, ptr, 0x84, ptr, 0x20)) {
-                    let rdsize := returndatasize()
-                    returndatacopy(0, 0, rdsize)
-                    revert(0, rdsize)
+                mstore(add(ptr, 0x84), receiver)
+                if iszero(call(gas(), pool, 0x0, ptr, 0xA4, ptr, 0x20)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
                 }
             }
 
@@ -309,18 +315,17 @@ abstract contract CurveSwapper is UniTypeSwapper {
 
             ////////////////////////////////////////////////////
             // Send funds to receiver if needed
+            // indexData is now the flag for manually
+            // transferuing to the receiver
             ////////////////////////////////////////////////////
-            if xor(indexData, xor(receiver, address())) {
+            if and(indexData, xor(receiver, address())) {
                 // selector for transfer(address,uint256)
                 mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
                 mstore(add(ptr, 0x04), receiver)
                 mstore(add(ptr, 0x24), amountOut)
                 let success := call(
                     gas(),
-                    and(
-                        ADDRESS_MASK,
-                        shr(96, calldataload(add(pathOffset, 45))) // tokenIn, added 2x addr + 4x uint8
-                    ),
+                    shr(96, calldataload(add(pathOffset, 45))), // tokenIn, added 2x addr + 4x uint8
                     0,
                     ptr,
                     0x44,
@@ -378,7 +383,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
             ////////////////////////////////////////////////////
             switch selectorId
             case 0 {
-                indexData := true
+                indexData := 0xf
                 // selector for exchange_received(uint256,uint256,uint256,uint256,address)
                 mstore(ptr, EXCHANGE_RECEIVED)
                 mstore(add(ptr, 0x4), indexIn)
@@ -388,7 +393,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
                 mstore(add(ptr, 0x84), receiver)
                 if iszero(call(gas(), pool, 0x0, ptr, 0xA4, ptr, 0x20)) {
                     returndatacopy(0, 0, returndatasize())
-                    // revert(0, returndatasize())
+                    revert(0, returndatasize())
                 }
             }
             default {
@@ -400,24 +405,78 @@ abstract contract CurveSwapper is UniTypeSwapper {
     }
 
     /**
-     * Gets the input amount for a curve NG swap
+     * Swaps using a NG pool that allows for pre-funded swaps
+     * Data is supposed to be packed as follows
+     * tokenIn | actionId | dexId | pool | sm | i | j | tokenOut
+     * sm is the selecor,
+     * i,j are the swap indexes for the pool
      */
-    function _getNGAmountIn(uint256 pathOffset, uint256 amountOut) internal view returns (uint256 amountIn) {
+    function _swapCurveNGExactOut(
+        address pool,
+        uint256 pathOffset,
+        uint256 indexIn,
+        uint256 indexOut,
+        uint256 computedAmountIn,
+        address receiver //
+    ) internal {
         assembly {
             let ptr := mload(0x40)
             let indexData := calldataload(add(pathOffset, 22))
-            let pool := and(shr(96, indexData), ADDRESS_MASK)
-            let indexOut := and(shr(80, indexData), 0xff)
-            let indexIn := and(shr(72, indexData), 0xff)
+
+            let selectorId := and(shr(72, calldataload(add(pathOffset, 22))), 0xff)
+
+            ////////////////////////////////////////////////////
+            // Execute swap function
+            ////////////////////////////////////////////////////
+            switch selectorId
+            case 0 {
+                indexData := 0xf
+                // selector for exchange_received(uint256,uint256,uint256,uint256,address)
+                mstore(ptr, EXCHANGE_RECEIVED)
+                mstore(add(ptr, 0x4), indexIn)
+                mstore(add(ptr, 0x24), indexOut)
+                mstore(add(ptr, 0x44), computedAmountIn)
+                mstore(add(ptr, 0x64), 0) // min out should be set to the expected amount
+                mstore(add(ptr, 0x84), receiver)
+                if iszero(call(gas(), pool, 0x0, ptr, 0xA4, 0x0, 0x0)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
+            }
+            default {
+                revert(0, 0)
+            }
+        }
+    }
+
+    /**
+     * Gets the input amount for a curve NG swap
+     * Note that this has an adjustment of 0.5 bps for the poutput amount to account for inaccuracies
+     * when swapping using `exchange` or `exchange_received`
+     */
+    function _getNGAmountIn(address pool, uint256 indexIn, uint256 indexOut, uint256 amountOut) internal view returns (uint256 amountIn) {
+        assembly {
+            let ptr := mload(0x40)
 
             // selector for get_dx(int128,int128,uint256)
             mstore(ptr, 0x67df02ca00000000000000000000000000000000000000000000000000000000)
             mstore(add(ptr, 0x4), indexIn)
             mstore(add(ptr, 0x24), indexOut)
-            mstore(add(ptr, 0x44), amountOut)
-            pop(staticcall(gas(), pool, ptr, 0x64, ptr, 0x20))
+            mstore(
+                add(ptr, 0x44),
+                div(
+                    // we upscale to avoid insufficient amount received
+                    mul(
+                        10000050, // 0.50bp = 10_0000_50
+                        amountOut
+                    ),
+                    10000000
+                )
+            )
+            // ignore whether it succeeds as we expect the swap to fail in that case
+            pop(staticcall(gas(), pool, ptr, 0x64, 0x0, 0x20))
 
-            amountIn := mload(ptr)
+            amountIn := mload(0x0)
         }
     }
 }

@@ -279,8 +279,8 @@ abstract contract BaseSwapper is TokenTransfer, BalancerSwapper {
                 }
                 amountIn = _swapCurveGeneral(pathOffset, amountIn, payer, currentReceiver);
                 assembly {
-                    pathOffset := add(pathOffset, 45)
-                    pathLength := sub(pathLength, 45)
+                    pathOffset := add(pathOffset, SKIP_LENGTH_CURVE)
+                    pathLength := sub(pathLength, SKIP_LENGTH_CURVE)
                 }
             }
             // curve metapool
@@ -420,8 +420,8 @@ abstract contract BaseSwapper is TokenTransfer, BalancerSwapper {
             }
             amountIn = _swapCurveNG(pathOffset, amountIn, currentReceiver);
             assembly {
-                pathOffset := add(pathOffset, 45)
-                pathLength := sub(pathLength, 45)
+                pathOffset := add(pathOffset, SKIP_LENGTH_CURVE)
+                pathLength := sub(pathLength, SKIP_LENGTH_CURVE)
             }
         }
         // GMX
