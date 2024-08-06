@@ -18,14 +18,14 @@ abstract contract BalancerSwapper is ExoticSwapper {
     // all swaps go through the balancer vault
     address internal constant BALANCER_V2_VAULT = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
 
-    uint256 internal constant MAX_SINGLE_LENGTH_BALANCER_V2 = 76;
-    uint256 internal constant SKIP_LENGTH_BALANCER_V2 = 54; // = 20+1+1+32
+    uint256 internal constant MAX_SINGLE_LENGTH_BALANCER_V2 = 77;
+    uint256 internal constant SKIP_LENGTH_BALANCER_V2 = 55; // = 20+1+1+32
 
     /** Call queryBatchSwap on the Balancer V2 vault.
      *  Should be avoided if possible as it executes (but reverts) state changes in the balancer vault
      *  Executes `call` and therefore is non-view
      *  Will allow to save a refund transfer since we calculate the exact amount
-     *  Since we check slippage manually, the concerns mentioned in https://docs.balancer.fi/reference/contracts/query-functions.html 
+     *  Since we check slippage manually, the concerns mentioned in https://docs.balancer.fi/reference/contracts/query-functions.html
      *  do not apply.
      */
     function _getBalancerAmountIn(bytes32 pId, address tokenIn, address tokenOut, uint256 amountOut) internal returns (uint256 amountIn) {
@@ -77,8 +77,18 @@ abstract contract BalancerSwapper is ExoticSwapper {
             let tokenIn := shr(96, calldataload(add(offset, SKIP_LENGTH_BALANCER_V2)))
             let balancerPoolId := shr(96, calldataload(add(offset, 22)))
 
-            // populate call to vault
             let ptr := mload(0x40)
+
+            // approve if neeeded
+            if and(calldataload(add(offset, 9)), 0xff) {
+                // selector for approve(address,uint256)
+                mstore(ptr, ERC20_APPROVE)
+                mstore(add(ptr, 0x04), BALANCER_V2_VAULT)
+                mstore(add(ptr, 0x24), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff)
+                pop(call(gas(), tokenIn, 0, ptr, 0x44, ptr, 32))
+            }
+
+            // populate call to vault
             mstore(ptr, 0x52bbbe2900000000000000000000000000000000000000000000000000000000)
             mstore(add(ptr, 0x4), 0xe0) // FundManagement struct
             mstore(add(ptr, 0x24), address()) // sender
@@ -118,13 +128,13 @@ abstract contract BalancerSwapper is ExoticSwapper {
     }
 
     /** call single swap function on Balancer V2 vault */
-    function _swapBalancerExactOut(bytes32 pId, address tokenIn, address tokenOut, address receiver, uint256 amountOut, bool approve) internal {
+    function _swapBalancerExactOut(bytes32 pId, address tokenIn, address tokenOut, address receiver, uint256 amountOut, uint256 offset) internal {
         assembly {
             let ptr := mload(0x40)
             // approve if neeeded
-            if approve {
+            if and(calldataload(add(offset, 9)), 0xff) {
                 // selector for approve(address,uint256)
-                mstore(ptr, 0x095ea7b300000000000000000000000000000000000000000000000000000000)
+                mstore(ptr, ERC20_APPROVE)
                 mstore(add(ptr, 0x04), BALANCER_V2_VAULT)
                 mstore(add(ptr, 0x24), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff)
                 pop(call(gas(), tokenIn, 0, ptr, 0x44, ptr, 32))

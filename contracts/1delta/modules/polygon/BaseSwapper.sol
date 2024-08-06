@@ -146,7 +146,7 @@ abstract contract BaseSwapper is TokenTransfer, BalancerSwapper {
         // uniswapV3 style
         if (dexId < 49) {
             assembly {
-                switch lt(pathLength, 67) // maxLength = 66 for single path
+                switch lt(pathLength, 67) // MAX_SINGLE_LENGTH_UNOSWAP + 1
                 case 1 { currentReceiver := receiver}
                 default {
                     dexId := and(calldataload(add(pathOffset, 34)), UINT8_MASK) // SKIP_LENGTH_UNOSWAP - 10
@@ -183,7 +183,7 @@ abstract contract BaseSwapper is TokenTransfer, BalancerSwapper {
         // iZi
         else if (dexId == 49) {
             assembly {
-                switch lt(pathLength, 67) // same as for Uni V3 CL
+                switch lt(pathLength, 67) // MAX_SINGLE_LENGTH_UNOSWAP + 1
                 case 1 { currentReceiver := receiver}
                 default {
                     dexId := and(calldataload(add(pathOffset, 34)), UINT8_MASK) // SKIP_LENGTH_UNOSWAP - 10
@@ -220,10 +220,10 @@ abstract contract BaseSwapper is TokenTransfer, BalancerSwapper {
         // Balancer V2
         else if (dexId == 50) {
             assembly {
-                switch lt(pathLength, 67) // same as for Uni V3 CL
+                switch lt(pathLength, 68) // MAX_SINGLE_LENGTH_BALANCER_V2 + 1
                 case 1 { currentReceiver := receiver}
                 default {
-                    dexId := and(calldataload(add(pathOffset, 44)), UINT8_MASK) // SKIP_LENGTH_BALANCER_V2 - 10
+                    dexId := and(calldataload(add(pathOffset, 45)), UINT8_MASK) // SKIP_LENGTH_BALANCER_V2 - 10
                     switch gt(dexId, 99) 
                     case 1 {
                         currentReceiver := shr(
@@ -256,7 +256,7 @@ abstract contract BaseSwapper is TokenTransfer, BalancerSwapper {
             // Curve standard pool
             if (dexId == 60) {
                 assembly {
-                    switch lt(pathLength, 68) // lengthFull = 20+1+1+20+1+1+1+20 = 65
+                    switch lt(pathLength, 69) // MAX_SINGLE_LENGTH_CURVE + 1
                     case 1 { currentReceiver := receiver}
                     default {
                         dexId := and(calldataload(add(pathOffset, 35)), UINT8_MASK)
@@ -267,7 +267,7 @@ abstract contract BaseSwapper is TokenTransfer, BalancerSwapper {
                                     calldataload(
                                         add(
                                             pathOffset,
-                                            67 // 20 + 2 + 20 + 2 + 20 + 2 [poolAddress starts here]
+                                            MAX_SINGLE_LENGTH_CURVE // 20 + 2 + 20 + 2 + 20 + 2 [poolAddress starts here]
                                         )
                                     ) // poolAddress
                                 )
@@ -286,7 +286,7 @@ abstract contract BaseSwapper is TokenTransfer, BalancerSwapper {
             // curve metapool
             else {
                 assembly {
-                    switch lt(pathLength, 88) // lengthFull = 20+1+1+20+1+1+1+20 = 65
+                    switch lt(pathLength, 89) // lengthFull = 20+1+1+20+1+1+1+20 = 65
                     case 1 { currentReceiver := receiver}
                     default {
                         dexId := and(calldataload(add(pathOffset, 55)), UINT8_MASK)
@@ -297,7 +297,7 @@ abstract contract BaseSwapper is TokenTransfer, BalancerSwapper {
                                     calldataload(
                                         add(
                                             pathOffset,
-                                            87 // 20 + 2 + 20 + 2 + 20 + 2 [poolAddress starts here]
+                                            88 // 20 + 2 + 20 + 2 + 20 + 2 [poolAddress starts here]
                                         )
                                     ) // poolAddress
                                 )
@@ -408,7 +408,7 @@ abstract contract BaseSwapper is TokenTransfer, BalancerSwapper {
                                 calldataload(
                                     add(
                                         pathOffset,
-                                        67 // 20 + 2 + 20 + 2 + 20 + 2 [poolAddress starts here]
+                                        MAX_SINGLE_LENGTH_CURVE_NG // 20 + 2 + 20 + 2 + 20 + 2 [poolAddress starts here]
                                     )
                                 ) // poolAddress
                             )
@@ -420,8 +420,8 @@ abstract contract BaseSwapper is TokenTransfer, BalancerSwapper {
             }
             amountIn = _swapCurveNG(pathOffset, amountIn, currentReceiver);
             assembly {
-                pathOffset := add(pathOffset, SKIP_LENGTH_CURVE)
-                pathLength := sub(pathLength, SKIP_LENGTH_CURVE)
+                pathOffset := add(pathOffset, SKIP_LENGTH_CURVE_NG)
+                pathLength := sub(pathLength, SKIP_LENGTH_CURVE_NG)
             }
         }
         // GMX

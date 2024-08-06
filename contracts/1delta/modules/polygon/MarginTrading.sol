@@ -1033,7 +1033,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 tokenOut,
                 receiver,
                 amountOut,
-                true
+                pathOffset
             );
         }
         // Curve NG
@@ -1054,11 +1054,11 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             // We calculate the required amount for the next swap
             ////////////////////////////////////////////////////
             amountIn = _getNGAmountIn(pool, indexIn, indexOut, amountOut);
-            if(pathLength > MAX_SINGLE_LENGTH_CURVE) {
+            if(pathLength > MAX_SINGLE_LENGTH_CURVE_NG) {
                 // remove the last token from the path
                 assembly {
-                    pathOffset := add(pathOffset, SKIP_LENGTH_CURVE)
-                    pathLength := sub(pathLength, SKIP_LENGTH_CURVE)
+                    pathOffset := add(pathOffset, SKIP_LENGTH_CURVE_NG)
+                    pathLength := sub(pathLength, SKIP_LENGTH_CURVE_NG)
                 }
                 swapExactOutInternal(
                     amountIn,

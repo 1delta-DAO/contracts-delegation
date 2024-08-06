@@ -34,8 +34,11 @@ abstract contract CurveSwapper is UniTypeSwapper {
     // exchange(address,uint256,uint256,uint256,uint256,bool,address)
     bytes32 private constant EXCHANGE_META_RECEIVER = 0xb837cc6900000000000000000000000000000000000000000000000000000000;
 
-    uint256 internal constant SKIP_LENGTH_CURVE = 45; // = 20+1+1+20+1+1+1
-    uint256 internal constant MAX_SINGLE_LENGTH_CURVE = 67; // = SKIP_LENGTH_CURVE+20+1+1
+    uint256 internal constant SKIP_LENGTH_CURVE = 46; // = 20+1+1+20+1+1+1
+    uint256 internal constant MAX_SINGLE_LENGTH_CURVE = 68; // = SKIP_LENGTH_CURVE+20+1+1
+
+    uint256 internal constant SKIP_LENGTH_CURVE_NG = 45; // = 20+1+1+20+1+1+1
+    uint256 internal constant MAX_SINGLE_LENGTH_CURVE_NG = 67; // = SKIP_LENGTH_CURVE+20+1+1
 
     constructor() {}
 
@@ -61,7 +64,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
             ////////////////////////////////////////////////////
             if xor(payer, address()) {
                 // selector for transferFrom(address,address,uint256)
-                mstore(ptr, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
+                mstore(ptr, ERC20_TRANSFER_FROM)
                 mstore(add(ptr, 0x04), payer)
                 mstore(add(ptr, 0x24), address())
                 mstore(add(ptr, 0x44), amountIn)
@@ -99,6 +102,27 @@ abstract contract CurveSwapper is UniTypeSwapper {
             }
 
             let indexData := calldataload(add(pathOffset, 42))
+
+            // approve if neeeded
+            if and(shr(64, indexData), 0xff) {
+                // approveFlag
+                // selector for approve(address,uint256)
+                mstore(ptr, ERC20_APPROVE)
+                mstore(add(ptr, 0x04), shr(96, calldataload(add(pathOffset, 22))))
+                mstore(add(ptr, 0x24), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff)
+                pop(
+                    call(
+                        gas(),
+                        shr(96, calldataload(pathOffset)), // tokenIn
+                        0,
+                        ptr,
+                        0x44,
+                        ptr,
+                        32
+                    )
+                )
+            }
+
             let selectorId := and(shr(72, indexData), 0xff)
 
             ////////////////////////////////////////////////////
@@ -111,7 +135,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
                 // we can do it so that the receiver is incldued
                 // in the call
                 mstore(ptr, EXCHANGE_META_RECEIVER)
-                mstore(add(ptr, 0x4), and(shr(96, indexData), ADDRESS_MASK))
+                mstore(add(ptr, 0x4), shr(96, indexData))
                 mstore(add(ptr, 0x24), and(shr(88, indexData), 0xff)) // indexIn
                 mstore(add(ptr, 0x44), and(shr(80, indexData), 0xff)) // indexOut
                 mstore(add(ptr, 0x64), amountIn)
@@ -137,7 +161,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
             default {
                 // otherwise, the reciever is this contract
                 mstore(ptr, EXCHANGE_META)
-                mstore(add(ptr, 0x4), and(shr(96, indexData), ADDRESS_MASK))
+                mstore(add(ptr, 0x4), shr(96, indexData))
                 mstore(add(ptr, 0x24), and(shr(88, indexData), 0xff)) // indexIn
                 mstore(add(ptr, 0x44), and(shr(80, indexData), 0xff)) // indexOut
                 mstore(add(ptr, 0x64), amountIn)
@@ -162,7 +186,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
                 ////////////////////////////////////////////////////
                 if xor(receiver, address()) {
                     // selector for transfer(address,uint256)
-                    mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+                    mstore(ptr, ERC20_TRANSFER)
                     mstore(add(ptr, 0x04), receiver)
                     mstore(add(ptr, 0x24), amountOut)
                     let success := call(
@@ -223,7 +247,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
             ////////////////////////////////////////////////////
             if xor(payer, address()) {
                 // selector for transferFrom(address,address,uint256)
-                mstore(ptr, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
+                mstore(ptr, ERC20_TRANSFER_FROM)
                 mstore(add(ptr, 0x04), payer)
                 mstore(add(ptr, 0x24), address())
                 mstore(add(ptr, 0x44), amountIn)
@@ -261,47 +285,63 @@ abstract contract CurveSwapper is UniTypeSwapper {
             }
 
             let indexData := calldataload(add(pathOffset, 22))
-            let pool := and(shr(96, indexData), ADDRESS_MASK)
-            let indexIn := and(shr(88, indexData), 0xff)
-            let indexOut := and(shr(80, indexData), 0xff)
-            let selectorId := and(shr(72, indexData), 0xff)
+            let pool := shr(96, indexData) // pool is first param
+
+            // approve if neeeded
+            if and(shr(64, indexData), 0xff) {
+                // approveFlag
+                // selector for approve(address,uint256)
+                mstore(ptr, ERC20_APPROVE)
+                mstore(add(ptr, 0x04), pool)
+                mstore(add(ptr, 0x24), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff)
+                pop(
+                    call(
+                        gas(),
+                        shr(96, calldataload(pathOffset)), // tokenIn
+                        0,
+                        ptr,
+                        0x44,
+                        ptr,
+                        32
+                    )
+                )
+            }
 
             ////////////////////////////////////////////////////
             // Execute swap function
             ////////////////////////////////////////////////////
-            switch selectorId
+            switch and(shr(72, indexData), 0xff) // selectorId
             case 0 {
-                indexData := 0xf
                 // selector for exchange(uint256,uint256,uint256,uint256)
                 mstore(ptr, EXCHANGE)
-                mstore(add(ptr, 0x4), indexIn)
-                mstore(add(ptr, 0x24), indexOut)
+                mstore(add(ptr, 0x4), and(shr(88, indexData), 0xff))
+                mstore(add(ptr, 0x24), and(shr(80, indexData), 0xff))
                 mstore(add(ptr, 0x44), amountIn)
                 mstore(add(ptr, 0x64), 0) // min out is zero, we validate slippage at the end
                 if iszero(call(gas(), pool, 0x0, ptr, 0x84, ptr, 0x20)) {
                     returndatacopy(0, 0, returndatasize())
                     revert(0, returndatasize())
                 }
+                indexData := 0xf
             }
             case 1 {
-                indexData := 0xf
                 // selector for exchange_underlying(uint256,uint256,uint256,uint256)
                 mstore(ptr, EXCHANGE_UNDERLYING)
-                mstore(add(ptr, 0x4), indexIn)
-                mstore(add(ptr, 0x24), indexOut)
+                mstore(add(ptr, 0x4), and(shr(88, indexData), 0xff))
+                mstore(add(ptr, 0x24), and(shr(80, indexData), 0xff))
                 mstore(add(ptr, 0x44), amountIn)
                 mstore(add(ptr, 0x64), 0) // min out is zero, we validate slippage at the end
                 if iszero(call(gas(), pool, 0x0, ptr, 0x84, ptr, 0x20)) {
                     returndatacopy(0, 0, returndatasize())
                     revert(0, returndatasize())
                 }
+                indexData := 0xf
             }
             default {
-                indexData := 0
                 // exchange_underlying(uint256,uint256,uint256,uint256,address)
                 mstore(ptr, EXCHANGE_UNDERLYING_RECEIVER)
-                mstore(add(ptr, 0x4), indexIn)
-                mstore(add(ptr, 0x24), indexOut)
+                mstore(add(ptr, 0x4), and(shr(88, indexData), 0xff))
+                mstore(add(ptr, 0x24), and(shr(80, indexData), 0xff))
                 mstore(add(ptr, 0x44), amountIn)
                 mstore(add(ptr, 0x64), 0) // min out is zero, we validate slippage at the end
                 mstore(add(ptr, 0x84), receiver)
@@ -309,6 +349,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
                     returndatacopy(0, 0, returndatasize())
                     revert(0, returndatasize())
                 }
+                indexData := 0
             }
 
             amountOut := mload(ptr)
@@ -320,12 +361,12 @@ abstract contract CurveSwapper is UniTypeSwapper {
             ////////////////////////////////////////////////////
             if and(indexData, xor(receiver, address())) {
                 // selector for transfer(address,uint256)
-                mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+                mstore(ptr, ERC20_TRANSFER)
                 mstore(add(ptr, 0x04), receiver)
                 mstore(add(ptr, 0x24), amountOut)
                 let success := call(
                     gas(),
-                    shr(96, calldataload(add(pathOffset, 45))), // tokenIn, added 2x addr + 4x uint8
+                    shr(96, calldataload(add(pathOffset, 46))), // tokenIn, pool + 6x uint8 (i,j,s,a)
                     0,
                     ptr,
                     0x44,
@@ -373,28 +414,33 @@ abstract contract CurveSwapper is UniTypeSwapper {
             let ptr := mload(0x40)
             let indexData := calldataload(add(pathOffset, 22))
 
-            let pool := and(shr(96, indexData), ADDRESS_MASK)
-            let indexIn := and(shr(88, indexData), 0xff)
-            let indexOut := and(shr(80, indexData), 0xff)
-            let selectorId := and(shr(72, indexData), 0xff)
-
             ////////////////////////////////////////////////////
             // Execute swap function
             ////////////////////////////////////////////////////
-            switch selectorId
+            switch and(shr(72, indexData), 0xff)
             case 0 {
-                indexData := 0xf
                 // selector for exchange_received(uint256,uint256,uint256,uint256,address)
                 mstore(ptr, EXCHANGE_RECEIVED)
-                mstore(add(ptr, 0x4), indexIn)
-                mstore(add(ptr, 0x24), indexOut)
+                mstore(add(ptr, 0x4), and(shr(88, indexData), 0xff)) // indexIn
+                mstore(add(ptr, 0x24), and(shr(80, indexData), 0xff)) // indexOut
                 mstore(add(ptr, 0x44), amountIn)
                 mstore(add(ptr, 0x64), 0) // min out is zero, we validate slippage at the end
                 mstore(add(ptr, 0x84), receiver)
-                if iszero(call(gas(), pool, 0x0, ptr, 0xA4, ptr, 0x20)) {
+                if iszero(
+                    call(
+                        gas(),
+                        shr(96, indexData), // pool
+                        0x0,
+                        ptr,
+                        0xA4,
+                        ptr,
+                        0x20
+                    )
+                ) {
                     returndatacopy(0, 0, returndatasize())
                     revert(0, returndatasize())
                 }
+                indexData := 0xf
             }
             default {
                 revert(0, 0)
@@ -421,16 +467,13 @@ abstract contract CurveSwapper is UniTypeSwapper {
     ) internal {
         assembly {
             let ptr := mload(0x40)
-            let indexData := calldataload(add(pathOffset, 22))
-
-            let selectorId := and(shr(72, calldataload(add(pathOffset, 22))), 0xff)
 
             ////////////////////////////////////////////////////
             // Execute swap function
             ////////////////////////////////////////////////////
-            switch selectorId
+            switch and(shr(72, calldataload(add(pathOffset, 22))), 0xff) // selectorId
             case 0 {
-                indexData := 0xf
+                // indexData := 0xf
                 // selector for exchange_received(uint256,uint256,uint256,uint256,address)
                 mstore(ptr, EXCHANGE_RECEIVED)
                 mstore(add(ptr, 0x4), indexIn)

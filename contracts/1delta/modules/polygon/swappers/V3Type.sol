@@ -30,6 +30,11 @@ abstract contract V3TypeSwapper is DeltaErrors {
     /// @dev MAX_SQRT_RATIO - 1 from Uniswap's TickMath
     uint160 internal constant MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970341;
 
+    // selector for approve(address,uint256)
+    bytes32 internal constant ERC20_APPROVE = 0x095ea7b300000000000000000000000000000000000000000000000000000000;
+    bytes32 internal constant ERC20_TRANSFER_FROM = 0x23b872dd00000000000000000000000000000000000000000000000000000000;
+    bytes32 internal constant ERC20_TRANSFER = 0xa9059cbb00000000000000000000000000000000000000000000000000000000;
+
     ////////////////////////////////////////////////////
     // param lengths
     ////////////////////////////////////////////////////

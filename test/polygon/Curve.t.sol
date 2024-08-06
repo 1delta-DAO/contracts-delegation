@@ -6,6 +6,8 @@ import "../shared/interfaces/ICurvePool.sol";
 import "./DeltaSetup.f.sol";
 
 contract CurveTestPolygon is DeltaSetup {
+    uint8 APPROVE_FLAG = 1;
+
     function test_polygon_curve_multi_route_exact_in() external {
         address user = testUser;
         uint256 amount = 2000.0e6;
@@ -20,6 +22,7 @@ contract CurveTestPolygon is DeltaSetup {
             assetOut,
             CURVE,
             1,
+            APPROVE_FLAG,
             getCurveIndexes(assetIn, assetOut) //
         );
         bytes memory dataFusion = getSpotExactInSingleGen2(
@@ -69,6 +72,7 @@ contract CurveTestPolygon is DeltaSetup {
             assetOut,
             CURVE_NG,
             0,
+            APPROVE_FLAG,
             getCurveNGIndexes(assetIn) //
         );
 
@@ -104,7 +108,7 @@ contract CurveTestPolygon is DeltaSetup {
         address assetOut = USDCn;
         deal(assetIn, user, amountMax);
 
-        bytes memory dataCurveNg = getSpotExactOutSingleGenCurve(
+        bytes memory dataCurveNg = getSpotExactOutSingleGenCurveNG(
             assetIn,
             assetOut,
             CURVE_NG,
@@ -143,7 +147,7 @@ contract CurveTestPolygon is DeltaSetup {
         address assetOut = crvUSD;
         deal(assetIn, user, amountMax);
 
-        bytes memory dataCurveNg = getSpotExactOutSingleGenCurve(
+        bytes memory dataCurveNg = getSpotExactOutSingleGenCurveNG(
             assetIn,
             assetOut,
             CURVE_NG,
@@ -181,12 +185,13 @@ contract CurveTestPolygon is DeltaSetup {
         address assetOut = CRV;
         deal(assetIn, user, 1e23);
 
-        bytes memory dataSwapFirst = getCurveMetaFactoryIndexes(assetIn, assetOut, 0);
+        bytes memory dataSwapFirst = getCurveMetaFactoryIndexes(assetIn, assetOut);
         dataSwapFirst = getSpotExactInSingleGenCurve(
             assetIn,
             assetOut,
             CURVE_META,
             0,
+            APPROVE_FLAG,
             dataSwapFirst //
         );
 
@@ -227,6 +232,7 @@ contract CurveTestPolygon is DeltaSetup {
             assetOut,
             CURVE,
             2,
+            APPROVE_FLAG,
             dataSwapFirst //
         );
 
@@ -259,12 +265,10 @@ contract CurveTestPolygon is DeltaSetup {
         revert("crvAaveIndexes -> index");
     }
 
-
     function crvAaveFactoryIndexes(address asset) internal pure returns (uint8) {
         if (asset == USDC) return 2;
         revert("crvAaveFactoryIndexes -> index");
     }
-
 
     function crvTriMetaIndexes(address asset) internal pure returns (uint8) {
         if (asset == WBTC) return 3;
@@ -277,16 +281,15 @@ contract CurveTestPolygon is DeltaSetup {
         revert("crvCrvIndex -> index");
     }
 
-
     function getCurveIndexes(address assetIn, address assetOut) internal pure returns (bytes memory data) {
         return abi.encodePacked(CRV_3_USD_AAVE_POOL, crvAaveIndexes(assetIn), crvAaveIndexes(assetOut));
     }
 
-    function getCurveMetaFactoryIndexes(address assetIn, address assetOut, uint8 selectorId) internal pure returns (bytes memory data) {
-        return abi.encodePacked(CRV_FACTORY_ZAP, CRV_CRV_FACTORY_POOL, crvAaveFactoryIndexes(assetIn), crvCrvIndex(assetOut), selectorId);
+    function getCurveMetaFactoryIndexes(address assetIn, address assetOut) internal pure returns (bytes memory data) {
+        return abi.encodePacked(CRV_FACTORY_ZAP, CRV_CRV_FACTORY_POOL, crvAaveFactoryIndexes(assetIn), crvCrvIndex(assetOut));
     }
 
-        function getCurveMetaZapStandaloneIndexes(address assetIn, address assetOut) internal pure returns (bytes memory data) {
+    function getCurveMetaZapStandaloneIndexes(address assetIn, address assetOut) internal pure returns (bytes memory data) {
         return abi.encodePacked(CRV_TRICRYPTO_ZAP, crvAaveIndexes(assetIn), crvTriMetaIndexes(assetOut));
     }
 
@@ -306,13 +309,25 @@ contract CurveTestPolygon is DeltaSetup {
         address tokenOut,
         uint8 pId,
         uint8 selectorId,
+        uint8 preActionFlag,
+        bytes memory data
+    ) internal pure returns (bytes memory) {
+        uint8 action = 0;
+        return abi.encodePacked(tokenIn, action, pId, data, selectorId, preActionFlag, tokenOut);
+    }
+
+    function getSpotExactInSingleGenCurveNG(
+        address tokenIn, //
+        address tokenOut,
+        uint8 pId,
+        uint8 selectorId,
         bytes memory data
     ) internal pure returns (bytes memory) {
         uint8 action = 0;
         return abi.encodePacked(tokenIn, action, pId, data, selectorId, tokenOut);
     }
 
-    function getSpotExactOutSingleGenCurve(
+    function getSpotExactOutSingleGenCurveNG(
         address tokenIn, //
         address tokenOut,
         uint8 pId,
@@ -327,10 +342,11 @@ contract CurveTestPolygon is DeltaSetup {
         address tokenIn, //
         address tokenOut,
         uint8 pId,
+        uint8 preActionFlag,
         bytes memory data
     ) internal pure returns (bytes memory) {
         uint8 action = 0;
-        return abi.encodePacked(tokenIn, action, pId, data, uint8(1), tokenOut);
+        return abi.encodePacked(tokenIn, action, pId, data, uint8(1), preActionFlag, tokenOut);
     }
 }
 
