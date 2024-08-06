@@ -8,35 +8,39 @@ pragma solidity 0.8.26;
 
 import {UniTypeSwapper} from "./UniType.sol";
 
-// solhint-disable max-line-length
-
 /**
- * @title Base swapper contract
- * @notice Contains basic logic for swap executions with DEXs
+ * @title Curve swapper contract
+ * @notice We do Curve stuff here
  */
 abstract contract CurveSwapper is UniTypeSwapper {
     /** Standard curve pool selectors */
 
-    // exchange(uint256,uint256,uint256,uint256)
+    /// @notice selector exchange(uint256,uint256,uint256,uint256)
     bytes32 private constant EXCHANGE = 0x5b41b90800000000000000000000000000000000000000000000000000000000;
-    // exchange_underlying(uint256,uint256,uint256,uint256)
+
+    /// @notice selector exchange_underlying(uint256,uint256,uint256,uint256)
     bytes32 private constant EXCHANGE_UNDERLYING = 0xa6417ed600000000000000000000000000000000000000000000000000000000;
-    // exchange_underlying(uint256,uint256,uint256,uint256,address)
+
+    /// @notice selector exchange_underlying(uint256,uint256,uint256,uint256,address)
     bytes32 private constant EXCHANGE_UNDERLYING_RECEIVER = 0xe2ad025a00000000000000000000000000000000000000000000000000000000;
 
-    // exchange_received(uint256,uint256,uint256,uint256,address)
+    /// @notice selector exchange_received(uint256,uint256,uint256,uint256,address)
     bytes32 private constant EXCHANGE_RECEIVED = 0xafb4301200000000000000000000000000000000000000000000000000000000;
 
     /** Meta pool zap selectors - first argument is another curve pool */
 
-    // exchange(address,uint256,uint256,uint256,uint256)
+    /// @notice selector exchange(address,uint256,uint256,uint256,uint256)
     bytes32 private constant EXCHANGE_META = 0x64a1455800000000000000000000000000000000000000000000000000000000;
-    // exchange(address,uint256,uint256,uint256,uint256,bool,address)
+
+    /// @notice selector exchange(address,uint256,uint256,uint256,uint256,bool,address)
     bytes32 private constant EXCHANGE_META_RECEIVER = 0xb837cc6900000000000000000000000000000000000000000000000000000000;
 
+
+    /// @notice Curve params lengths
     uint256 internal constant SKIP_LENGTH_CURVE = 46; // = 20+1+1+20+1+1+1
     uint256 internal constant MAX_SINGLE_LENGTH_CURVE = 68; // = SKIP_LENGTH_CURVE+20+1+1
 
+    /// @notice Curve NG param lengths (has no approvals)
     uint256 internal constant SKIP_LENGTH_CURVE_NG = 45; // = 20+1+1+20+1+1+1
     uint256 internal constant MAX_SINGLE_LENGTH_CURVE_NG = 67; // = SKIP_LENGTH_CURVE+20+1+1
 
@@ -45,10 +49,11 @@ abstract contract CurveSwapper is UniTypeSwapper {
     /**
      * Swaps using a meta pool (i.e. a curve pool that has another one as underlying)
      * Data is supposed to be packed as follows
-     * tokenIn | actionId | dexId | zapFactory | i | j | sm | metaPool | tokenOut
+     * tokenIn | actionId | dexId | zapFactory | i | j | sm | a | metaPool | tokenOut
      * sm is the selecor,
      * i,j are the swap indexes for the meta pool
      * sp is the selector for for the regular pool
+     * a is the approval flag (also uint8)
      * k is the withdraw index for the regular pool
      */
     function _swapCurveMeta(
@@ -103,13 +108,15 @@ abstract contract CurveSwapper is UniTypeSwapper {
 
             let indexData := calldataload(add(pathOffset, 42))
 
-            // approve if neeeded
+            ////////////////////////////////////////////////////
+            // Approve zap factory funds if needed
+            ////////////////////////////////////////////////////
             if and(shr(64, indexData), 0xff) {
                 // approveFlag
                 // selector for approve(address,uint256)
                 mstore(ptr, ERC20_APPROVE)
-                mstore(add(ptr, 0x04), shr(96, calldataload(add(pathOffset, 22))))
-                mstore(add(ptr, 0x24), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff)
+                mstore(add(ptr, 0x04), shr(96, calldataload(add(pathOffset, 22)))) // zap factory
+                mstore(add(ptr, 0x24), MAX_UINT256)
                 pop(
                     call(
                         gas(),
@@ -230,9 +237,10 @@ abstract contract CurveSwapper is UniTypeSwapper {
     /**
      * Swaps using a standard curve pool
      * Data is supposed to be packed as follows
-     * tokenIn | actionId | dexId | pool | sm | i | j | tokenOut
+     * tokenIn | actionId | dexId | pool | i | j | sm | a | tokenOut
      * sm is the selecor,
      * i,j are the swap indexes for the pool
+     * a is the approval flag (also uint8)
      */
     function _swapCurveGeneral(
         uint256 pathOffset,
@@ -287,13 +295,15 @@ abstract contract CurveSwapper is UniTypeSwapper {
             let indexData := calldataload(add(pathOffset, 22))
             let pool := shr(96, indexData) // pool is first param
 
-            // approve if neeeded
+            ////////////////////////////////////////////////////
+            // Approve pool if needed
+            ////////////////////////////////////////////////////
             if and(shr(64, indexData), 0xff) {
                 // approveFlag
                 // selector for approve(address,uint256)
                 mstore(ptr, ERC20_APPROVE)
                 mstore(add(ptr, 0x04), pool)
-                mstore(add(ptr, 0x24), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff)
+                mstore(add(ptr, 0x24), MAX_UINT256)
                 pop(
                     call(
                         gas(),

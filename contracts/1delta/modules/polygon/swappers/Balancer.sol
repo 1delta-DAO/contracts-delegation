@@ -11,13 +11,17 @@ import {ExoticSwapper} from "./Exotic.sol";
 // solhint-disable max-line-length
 
 /**
- * @title Base swapper contract
- * @notice Contains basic logic for swap executions with DEXs
+ * @title Balancer V2 swapper contract
+ * @notice Balancer V2 is fun (mostly)
  */
 abstract contract BalancerSwapper is ExoticSwapper {
-    // all swaps go through the balancer vault
+    /// @dev All swaps go through the balancer vault
     address internal constant BALANCER_V2_VAULT = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
 
+    /// @dev Balancer's single swap function
+    bytes32 private constant BALANCER_SWAP = 0x52bbbe2900000000000000000000000000000000000000000000000000000000;
+
+    /// @dev Balancer parameter lengths
     uint256 internal constant MAX_SINGLE_LENGTH_BALANCER_V2 = 77;
     uint256 internal constant SKIP_LENGTH_BALANCER_V2 = 55; // = 20+1+1+32
 
@@ -31,7 +35,11 @@ abstract contract BalancerSwapper is ExoticSwapper {
     function _getBalancerAmountIn(bytes32 pId, address tokenIn, address tokenOut, uint256 amountOut) internal returns (uint256 amountIn) {
         assembly {
             let ptr := mload(0x40)
-            // call query batch swap
+            ////////////////////////////////////////////////////
+            // call `queryBatchSwap` function on vB2 vault
+            // This is not optimal as the call can cost
+            // quite some gas for CSPs (~90k), even if we use assembly
+            ////////////////////////////////////////////////////
             mstore(ptr, 0xf84d066e00000000000000000000000000000000000000000000000000000000)
             mstore(add(ptr, 0x4), 1)
             mstore(add(ptr, 0x24), 0xe0)
@@ -63,7 +71,8 @@ abstract contract BalancerSwapper is ExoticSwapper {
                     0x60 // return is always array of two, we want the first value
                 )
             ) {
-                revert(0, 0)
+                returndatacopy(0, 0, returndatasize())
+                revert(0, returndatasize())
             }
             amountIn := mload(add(ptr, 0x40))
         }
@@ -79,24 +88,28 @@ abstract contract BalancerSwapper is ExoticSwapper {
 
             let ptr := mload(0x40)
 
-            // approve if neeeded
+            ////////////////////////////////////////////////////
+            // Approve vault if needed
+            ////////////////////////////////////////////////////
             if and(calldataload(add(offset, 9)), 0xff) {
                 // selector for approve(address,uint256)
                 mstore(ptr, ERC20_APPROVE)
                 mstore(add(ptr, 0x04), BALANCER_V2_VAULT)
-                mstore(add(ptr, 0x24), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff)
+                mstore(add(ptr, 0x24), MAX_UINT256)
                 pop(call(gas(), tokenIn, 0, ptr, 0x44, ptr, 32))
             }
 
-            // populate call to vault
-            mstore(ptr, 0x52bbbe2900000000000000000000000000000000000000000000000000000000)
+            ////////////////////////////////////////////////////
+            // Execute swap function on B2 Vault
+            ////////////////////////////////////////////////////
+            mstore(ptr, BALANCER_SWAP)
             mstore(add(ptr, 0x4), 0xe0) // FundManagement struct
             mstore(add(ptr, 0x24), address()) // sender
             mstore(add(ptr, 0x44), 0) // fromInternalBalance
             mstore(add(ptr, 0x64), receiver) // receiver
             mstore(add(ptr, 0x84), 0) // toInternalBalance
-            mstore(add(ptr, 0xA4), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff) // limit
-            mstore(add(ptr, 0xC4), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff) // deadline
+            mstore(add(ptr, 0xA4), MAX_UINT256) // limit
+            mstore(add(ptr, 0xC4), MAX_UINT256) // deadline
             mstore(add(ptr, 0xE4), balancerPoolId)
             mstore(add(ptr, 0x104), 1) // SingleSwap struct
             mstore(add(ptr, 0x124), balancerPoolId) // poolId
@@ -131,23 +144,29 @@ abstract contract BalancerSwapper is ExoticSwapper {
     function _swapBalancerExactOut(bytes32 pId, address tokenIn, address tokenOut, address receiver, uint256 amountOut, uint256 offset) internal {
         assembly {
             let ptr := mload(0x40)
-            // approve if neeeded
+
+            ////////////////////////////////////////////////////
+            // Approve vault if needed
+            ////////////////////////////////////////////////////
             if and(calldataload(add(offset, 9)), 0xff) {
                 // selector for approve(address,uint256)
                 mstore(ptr, ERC20_APPROVE)
                 mstore(add(ptr, 0x04), BALANCER_V2_VAULT)
-                mstore(add(ptr, 0x24), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff)
+                mstore(add(ptr, 0x24), MAX_UINT256)
                 pop(call(gas(), tokenIn, 0, ptr, 0x44, ptr, 32))
             }
 
-            mstore(ptr, 0x52bbbe2900000000000000000000000000000000000000000000000000000000)
+            ////////////////////////////////////////////////////
+            // Execute swap function on B2 Vault
+            ////////////////////////////////////////////////////
+            mstore(ptr, BALANCER_SWAP)
             mstore(add(ptr, 0x4), 0xe0) // FundManagement struct
             mstore(add(ptr, 0x24), address()) // sender
             mstore(add(ptr, 0x44), 0) // fromInternalBalance
             mstore(add(ptr, 0x64), receiver) // receiver
             mstore(add(ptr, 0x84), 0) // toInternalBalance
-            mstore(add(ptr, 0xA4), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff) // limit
-            mstore(add(ptr, 0xC4), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff) // deadline
+            mstore(add(ptr, 0xA4), MAX_UINT256) // limit
+            mstore(add(ptr, 0xC4), MAX_UINT256) // deadline
             mstore(add(ptr, 0xE4), pId)
             mstore(add(ptr, 0x104), 1) // swapKind = GIVEN_OUT
             mstore(add(ptr, 0x124), tokenIn) // assetIn

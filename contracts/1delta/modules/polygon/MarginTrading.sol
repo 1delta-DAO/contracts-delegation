@@ -1432,7 +1432,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 let ptr := mload(0x40) // free memory pointer
 
                 // selector for transferFrom(address,address,uint256)
-                mstore(ptr, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
+                mstore(ptr, ERC20_TRANSFER_FROM)
                 mstore(add(ptr, 0x04), payer)
                 mstore(add(ptr, 0x24), receiver)
                 mstore(add(ptr, 0x44), amount)
@@ -1464,7 +1464,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 let ptr := mload(0x40) // free memory pointer
 
                 // selector for transfer(address,uint256)
-                mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+                mstore(ptr, ERC20_TRANSFER)
                 mstore(add(ptr, 0x04), receiver)
                 mstore(add(ptr, 0x24), amount)
 

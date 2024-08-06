@@ -17,8 +17,8 @@ contract OneDeltaComposerMantle is MarginTrading {
     /// @dev The second bit signals whether the input token is a FOT token
     ///      Only used for SWAP_EXACT_IN
     uint256 private constant _FEE_ON_TRANSFER = 1 << 254;
-    /// @dev We use uint112-encoded ammounts to typically fit one bit flag, one path length (uint16)
-    ///      add 2 amounts (2xuint112) into 32bytes, as such we use this mask for extractinng those
+    /// @dev We use uint112-encoded amounts to typically fit one bit flag, one path length (uint16)
+    ///      add 2 amounts (2xuint112) into 32bytes, as such we use this mask for extracting those
     uint256 private constant _UINT112_MASK = 0x000000000000000000000000000000000000ffffffffffffffffffffffffffff;
 
     /**
@@ -62,7 +62,7 @@ contract OneDeltaComposerMantle is MarginTrading {
             uint256 operation;
             // fetch op metadata
             assembly {
-                operation := and(shr(248, calldataload(currentOffset)), UINT8_MASK)
+                operation := shr(248, calldataload(currentOffset)) // last byte
                 // we increment the current offset to skip the operation
                 currentOffset := add(1, currentOffset)
             }
@@ -93,7 +93,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                         // the path starts after the path length
                         opdataOffset := add(currentOffset, 52) // 20 + 32 (address + amountBitmap)
                         // the first 20 bytes are the receiver address
-                        receiver := and(ADDRESS_MASK, shr(96, calldataload(currentOffset)))
+                        receiver := shr(96, calldataload(currentOffset))
                         // assign the entire 32 bytes of amounts data
                         amountIn := calldataload(add(currentOffset, 20))
                         // this is the path data length
@@ -114,7 +114,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                         // fetch balance if needed
                         if iszero(amountIn) {
                             // selector for balanceOf(address)
-                            mstore(0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+                            mstore(0, ERC20_BALANCE_OF)
                             // add payer address as parameter
                             mstore(0x04, payer)
                             // call to token
@@ -167,7 +167,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                     uint256 amountInMaximum;
                     assembly {
                         opdataOffset := add(currentOffset, 52) // 20 + 32 (address + amountBitmap)
-                        receiver := and(ADDRESS_MASK, shr(96, calldataload(currentOffset)))
+                        receiver := shr(96, calldataload(currentOffset))
                         // get the number parameters
                         amountOut := calldataload(add(currentOffset, 20))
                         // we get the calldatalength of the path
@@ -187,7 +187,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                         amountOut := and(_UINT112_MASK, shr(16, amountOut))
                         if iszero(amountOut) {
                             // selector for balanceOf(address)
-                            mstore(0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+                            mstore(0, ERC20_BALANCE_OF)
                             // add this address as parameter
                             mstore(0x04, payer)
                             // call to token
@@ -262,7 +262,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                         // `lenderId`   is at the end of the path
                         ////////////////////////////////////////////////////
                         if iszero(amountIn) {
-                            let tokenIn := and(ADDRESS_MASK, shr(96, calldataload(opdataOffset)))
+                            let tokenIn := shr(96, calldataload(opdataOffset))
                             let lenderId := and(
                                 shr(
                                     8,
@@ -280,7 +280,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                             mstore(0x20, COLLATERAL_TOKENS_SLOT)
                             let collateralToken := sload(keccak256(0x0, 0x40))
                             // selector for balanceOf(address)
-                            mstore(0x0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+                            mstore(0x0, ERC20_BALANCE_OF)
                             // add caller address as parameter
                             mstore(add(0x0, 0x4), callerAddress)
                             // call to collateralToken
@@ -336,7 +336,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                         if iszero(amountOut) {
                             let tokenIn := calldataload(opdataOffset)
                             let mode := and(UINT8_MASK, shr(88, tokenIn))
-                            tokenIn := and(ADDRESS_MASK, shr(96, tokenIn))
+                            tokenIn := shr(96, tokenIn)
 
                             // last 32 bytes
                             let lastWord := calldataload(sub(add(opdataLength, opdataOffset), 32))
@@ -356,7 +356,7 @@ contract OneDeltaComposerMantle is MarginTrading {
 
                             let debtToken := sload(keccak256(0x0, 0x40))
                             // selector for balanceOf(address)
-                            mstore(0x0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+                            mstore(0x0, ERC20_BALANCE_OF)
                             // add caller address as parameter
                             mstore(0x4, callerAddress)
                             // call to debtToken
@@ -387,9 +387,9 @@ contract OneDeltaComposerMantle is MarginTrading {
                     ////////////////////////////////////////////////////
                     assembly {
                         // get first three addresses
-                        let token := and(ADDRESS_MASK, shr(96, calldataload(currentOffset)))
-                        let approvalTarget := and(ADDRESS_MASK, shr(96, calldataload(add(currentOffset, 20))))
-                        let aggregator := and(ADDRESS_MASK, shr(96, calldataload(add(currentOffset, 40))))
+                        let token := shr(96, calldataload(currentOffset))
+                        let approvalTarget := shr(96, calldataload(add(currentOffset, 20)))
+                        let aggregator := shr(96, calldataload(add(currentOffset, 40)))
 
                         // get slot isValidApproveAndCallTarget[approvalTarget][aggregator]
                         mstore(0x0, approvalTarget)
@@ -419,7 +419,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                             ////////////////////////////////////////////////////
                             // get allowance and check if we have to approve
                             ////////////////////////////////////////////////////
-                            mstore(ptr, 0xdd62ed3e00000000000000000000000000000000000000000000000000000000)
+                            mstore(ptr, ERC20_ALLOWANCE)
                             mstore(add(ptr, 0x4), address())
                             mstore(add(ptr, 0x24), approvalTarget)
 
@@ -435,7 +435,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                                 // is whitelisted
                                 ////////////////////////////////////////////////////
                                 // selector for approve(address,uint256)
-                                mstore(ptr, 0x095ea7b300000000000000000000000000000000000000000000000000000000)
+                                mstore(ptr, ERC20_APPROVE)
                                 mstore(add(ptr, 0x04), approvalTarget)
                                 mstore(add(ptr, 0x24), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff)
 
@@ -478,14 +478,14 @@ contract OneDeltaComposerMantle is MarginTrading {
                     uint256 amount;
                     uint256 lenderId;
                     assembly {
-                        underlying := and(ADDRESS_MASK, shr(96, calldataload(currentOffset)))
+                        underlying := shr(96, calldataload(currentOffset))
                         receiver := and(ADDRESS_MASK, calldataload(add(currentOffset, 8)))
                         let lastBytes := calldataload(add(currentOffset, 40))
                         amount := and(_UINT112_MASK, shr(136, lastBytes))
-                        lenderId := and(UINT8_MASK, shr(248, lastBytes))
+                        lenderId := shr(248, lastBytes) // last byte
                         if iszero(amount) {
                             // selector for balanceOf(address)
-                            mstore(0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+                            mstore(0, ERC20_BALANCE_OF)
                             // add this address as parameter
                             mstore(0x04, address())
                             // call to token
@@ -512,11 +512,11 @@ contract OneDeltaComposerMantle is MarginTrading {
                     uint256 lenderId;
                     uint256 mode;
                     assembly {
-                        underlying := and(ADDRESS_MASK, shr(96, calldataload(currentOffset)))
+                        underlying := shr(96, calldataload(currentOffset))
                         receiver := and(ADDRESS_MASK, calldataload(add(currentOffset, 8)))
                         let lastBytes := calldataload(add(currentOffset, 40))
                         amount := and(_UINT112_MASK, shr(128, lastBytes))
-                        lenderId := and(UINT8_MASK, shr(248, lastBytes))
+                        lenderId := shr(248, lastBytes) // last byte
                         mode := and(UINT8_MASK, shr(240, lastBytes))
                         currentOffset := add(currentOffset, 56)
                     }
@@ -529,10 +529,10 @@ contract OneDeltaComposerMantle is MarginTrading {
                     uint256 mode;
                     assembly {
                         let offset := currentOffset
-                        underlying := and(ADDRESS_MASK, shr(96, calldataload(offset)))
+                        underlying := shr(96, calldataload(offset))
                         receiver := and(ADDRESS_MASK, calldataload(add(offset, 8)))
                         let lastBytes := calldataload(add(offset, 40))
-                        lenderId := and(UINT8_MASK, shr(248, lastBytes))
+                        lenderId := shr(248, lastBytes) // last byte
                         mode := and(UINT8_MASK, shr(240, lastBytes))
                         amount := and(_UINT112_MASK, shr(128, lastBytes))
                         // zero means that we repay whatever is in this contract
@@ -541,7 +541,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                         // the caller has to make sure to call sweep afterwards
                         if iszero(amount) {
                             // selector for balanceOf(address)
-                            mstore(0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+                            mstore(0, ERC20_BALANCE_OF)
                             // add this address as parameter
                             mstore(0x04, address())
                             // call to token
@@ -567,18 +567,18 @@ contract OneDeltaComposerMantle is MarginTrading {
                     uint256 amount;
                     uint256 lenderId;
                     assembly {
-                        underlying := and(ADDRESS_MASK, shr(96, calldataload(currentOffset)))
+                        underlying := shr(96, calldataload(currentOffset))
                         receiver := and(ADDRESS_MASK, calldataload(add(currentOffset, 8)))
                         let lastBytes := calldataload(add(currentOffset, 40))
                         amount := and(_UINT112_MASK, shr(136, lastBytes))
-                        lenderId := and(UINT8_MASK, shr(248, lastBytes))
+                        lenderId := shr(248, lastBytes) // last byte
 
                         // amounts 0 and maximum uint112 have special meanings
                         switch amount
                         // case contract underlying balance
                         case 0 {
                             // selector for balanceOf(address)
-                            mstore(0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+                            mstore(0, ERC20_BALANCE_OF)
                             // add this address as parameter
                             mstore(0x04, address())
                             // call to token
@@ -606,7 +606,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                                 mstore(0x20, COLLATERAL_TOKENS_SLOT)
                                 let collateralToken := sload(keccak256(0x0, 0x40))
                                 // selector for balanceOf(address)
-                                mstore(0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+                                mstore(0, ERC20_BALANCE_OF)
                                 // add caller address as parameter
                                 mstore(0x04, callerAddress)
                                 // call to token
@@ -635,13 +635,13 @@ contract OneDeltaComposerMantle is MarginTrading {
                     // zero amount flags that the entire balance is sent
                     ////////////////////////////////////////////////////
                     assembly {
-                        let underlying := and(ADDRESS_MASK, shr(96, calldataload(currentOffset)))
+                        let underlying := shr(96, calldataload(currentOffset))
                         let receiver := and(ADDRESS_MASK, calldataload(add(currentOffset, 8)))
                         let amount := and(_UINT112_MASK, calldataload(add(currentOffset, 22)))
                         // when entering 0 as amount, use the callwe balance
                         if iszero(amount) {
                             // selector for balanceOf(address)
-                            mstore(0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+                            mstore(0, ERC20_BALANCE_OF)
                             // add this address as parameter
                             mstore(0x04, callerAddress)
                             // call to token
@@ -661,7 +661,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                         let ptr := mload(0x40) // free memory pointer
 
                         // selector for transferFrom(address,address,uint256)
-                        mstore(ptr, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
+                        mstore(ptr, ERC20_TRANSFER_FROM)
                         mstore(add(ptr, 0x04), callerAddress)
                         mstore(add(ptr, 0x24), receiver)
                         mstore(add(ptr, 0x44), amount)
@@ -707,7 +707,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                     //      bytes 41-55:                 amount, either validation or transfer amount
                     ////////////////////////////////////////////////////
                     assembly {
-                        let underlying := and(ADDRESS_MASK, shr(96, calldataload(currentOffset)))
+                        let underlying := shr(96, calldataload(currentOffset))
                         // we skip shr by loading the address to the lower bytes
                         let receiver := and(ADDRESS_MASK, calldataload(add(currentOffset, 8)))
                         // load so that amount is in the lower 14 bytes already
@@ -730,7 +730,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                             switch config
                             case 0 {
                                 // selector for balanceOf(address)
-                                mstore(0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+                                mstore(0, ERC20_BALANCE_OF)
                                 // add this address as parameter
                                 mstore(0x04, address())
                                 // call to token
@@ -759,7 +759,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                                 let ptr := mload(0x40) // free memory pointer
 
                                 // selector for transfer(address,uint256)
-                                mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+                                mstore(ptr, ERC20_TRANSFER)
                                 mstore(add(ptr, 0x04), receiver)
                                 mstore(add(ptr, 0x24), transferAmount)
 
@@ -859,7 +859,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                     //      bytes 21-35:                 amount, either validation or transfer amount
                     ////////////////////////////////////////////////////
                     assembly {
-                        let receiver := and(ADDRESS_MASK, shr(96, calldataload(currentOffset)))
+                        let receiver := shr(96, calldataload(currentOffset))
                         let providedAmount := calldataload(add(currentOffset, 3))
                         // load config
                         let config := and(UINT8_MASK, shr(112, providedAmount))
@@ -870,7 +870,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                         switch config
                         case 0 {
                             // selector for balanceOf(address)
-                            mstore(0x0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+                            mstore(0x0, ERC20_BALANCE_OF)
                             // add this address as parameter
                             mstore(0x4, address())
 
@@ -941,7 +941,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                     assembly {
                         token := calldataload(currentOffset)
                         let permitLength := and(UINT16_MASK, shr(80, token))
-                        token := and(ADDRESS_MASK, shr(96, token))
+                        token := shr(96, token)
                         permitData.offset := add(currentOffset, 22)
                         permitData.length := permitLength
                         permitLength := add(22, permitLength)
@@ -963,7 +963,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                     assembly {
                         token := calldataload(currentOffset)
                         let permitLength := and(UINT16_MASK, shr(80, token))
-                        token := and(ADDRESS_MASK, shr(96, token))
+                        token := shr(96, token)
                         permitData.offset := add(currentOffset, 22)
                         permitData.length := permitLength
                         permitLength := add(22, permitLength)
@@ -989,7 +989,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                     assembly {
                         // first slice, including poolId, refCode, asset
                         let slice := calldataload(currentOffset)
-                        let source := and(UINT8_MASK, shr(248, slice))
+                        let source := shr(248, slice) // last byte
                         // get token to loan
                         let token := and(ADDRESS_MASK, shr(88, slice))
                         // second calldata slice including amount annd params length

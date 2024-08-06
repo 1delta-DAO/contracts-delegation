@@ -11,8 +11,8 @@ import {CurveSwapper} from "./Curve.sol";
 // solhint-disable max-line-length
 
 /**
- * @title Base swapper contract
- * @notice Contains basic logic for swap executions with DEXs
+ * @title Exotic swapper contract
+ * @notice Typically includes DEXs that do not fall into a broader category
  */
 abstract contract ExoticSwapper is CurveSwapper {
 
