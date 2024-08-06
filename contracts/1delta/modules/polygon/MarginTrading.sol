@@ -1004,7 +1004,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 );
             }
             ////////////////////////////////////////////////////
-            // Otherwise, we6 pay the funds to the pair
+            // Otherwise, we pay the funds to the pair
             // according to the parametrization
             // at the end of the path
             ////////////////////////////////////////////////////
@@ -1070,7 +1070,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 );
             }
             ////////////////////////////////////////////////////
-            // Otherwise, we6 pay the funds to the pair
+            // Otherwise, we pay the funds to the pair
             // according to the parametrization
             // at the end of the path
             ////////////////////////////////////////////////////
@@ -1145,7 +1145,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 );
             } 
             ////////////////////////////////////////////////////
-            // Otherwise, we6 pay the funds to the pair
+            // Otherwise, we pay the funds to the pair
             // according to the parametrization
             // at the end of the path
             ////////////////////////////////////////////////////
