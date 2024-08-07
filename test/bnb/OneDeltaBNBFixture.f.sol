@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity ^0.8.25;
+pragma solidity ^0.8.26;
 
 import "./CommonAddresses.f.sol";
 
 // modules
-import {VenusFlashAggregatorBNB} from "../../contracts/1delta/modules/deploy/bnb/venus/FlashAggregator.sol";
+import {VenusFlashAggregatorBNB} from "../../contracts/1delta/modules/bnb/venus/FlashAggregator.sol";
 import {VenusManagementModule} from "../../contracts/1delta/modules/venus/ManagementModule.sol";
 import {VenusMarginTraderInit} from "../../contracts/1delta/initializers/VenusMarginTraderInit.sol";
-import {MarginTrading} from "../../contracts/1delta/modules/deploy/bnb/venus/MarginTrading.sol";
+import {MarginTrading} from "../../contracts/1delta/modules/bnb/venus/MarginTrading.sol";
 
 // proxy & config
 import {DeltaBrokerProxy} from "../../contracts/1delta/proxy/DeltaBroker.sol";

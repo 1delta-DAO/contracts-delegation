@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL 1.1
 
-pragma solidity ^0.8.25;
+pragma solidity ^0.8.26;
 
 import "../../interfaces/IERC20.sol";
 
@@ -98,7 +98,7 @@ abstract contract TokenTransfer {
 
     function _transferEth() internal {
         assembly {
-            let bal := balance(address())
+            let bal := selfbalance()
             if not(iszero(bal)) {
                 if iszero(
                     call(

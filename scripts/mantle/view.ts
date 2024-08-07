@@ -1,10 +1,13 @@
 
 import { ethers } from "hardhat";
-import { ONE_DELTA_ADDRESSES, lendlePool } from "../../deploy/mantle_addresses"
 import { TOKENS_MANTLE } from "./addresses/tokens";
-import { ERC20BurnableMock__factory, ERC20__factory, ManagementModule__factory } from "../../types";
+import { ERC20BurnableMock__factory, ERC20__factory, MantleManagementModule__factory } from "../../types";
+import { ONE_DELTA_GEN2_ADDRESSES } from "./addresses/oneDeltaAddresses";
 
-
+const aggregatorsTargets = [
+    '0xD9F4e85489aDCD0bAF0Cd63b4231c6af58c26745', // ODOS
+    '0x6131B5fae19EA4f9D964eAc0408E4408b66337b5' // KYBER
+]
 async function main() {
 
     const accounts = await ethers.getSigners()
@@ -13,18 +16,22 @@ async function main() {
 
     if (chainId !== 5000) throw new Error("Invalid chain, expected Mantle")
 
-    const proxyAddress = ONE_DELTA_ADDRESSES.BrokerProxy[chainId]
+    const proxyAddress = ONE_DELTA_GEN2_ADDRESSES.proxy
 
-    const viewer = await new ManagementModule__factory(operator).attach(proxyAddress)
+    const viewer = await new MantleManagementModule__factory(operator).attach(proxyAddress)
 
     console.log("Operate on", chainId, "by", operator.address)
 
     // const pool = await viewer.getLendingPool()
     // const token = await viewer.getAToken(addressesTokensMantle.WMNT)
     // console.log("TOS", pool, token)
-    const usdcContract = await new ERC20BurnableMock__factory(operator).attach(TOKENS_MANTLE.WMNT)
-    const allow = await usdcContract.allowance(proxyAddress, lendlePool)
-    console.log("Allow", allow.toString())
+    // const usdcContract = await new ERC20BurnableMock__factory(operator).attach(TOKENS_MANTLE.WMNT)
+    // const allow = await usdcContract.allowance(proxyAddress, lendlePool)
+    // console.log("Allow", allow.toString())
+
+    const agg = aggregatorsTargets[1]
+    const isApr = await viewer.getIsValidTarget(agg, agg)
+    console.log("isa", isApr)
 }
 
 main()

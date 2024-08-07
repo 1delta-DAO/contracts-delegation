@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.25;
+pragma solidity 0.8.26;
 
 interface IComet {
     struct AssetInfo {
@@ -198,14 +198,7 @@ interface IComet {
 
     function totalsBasic() external view returns (TotalsBasic memory);
 
-    function allowBySig(
-        address owner,
-        address manager,
-        bool isAllowed_,
-        uint256 nonce,
-        uint256 expiry,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external ;
+    function allowBySig(address owner, address manager, bool isAllowed_, uint256 nonce, uint256 expiry, uint8 v, bytes32 r, bytes32 s) external;
+
+    function allow(address manager, bool isAllowed) external;
 }
