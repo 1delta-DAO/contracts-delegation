@@ -220,7 +220,7 @@ abstract contract BaseSwapper is TokenTransfer, BalancerSwapper {
         // Balancer V2
         else if (dexId == 50) {
             assembly {
-                switch lt(pathLength, 68) // MAX_SINGLE_LENGTH_BALANCER_V2 + 1
+                switch lt(pathLength, 78) // MAX_SINGLE_LENGTH_BALANCER_V2 + 1
                 case 1 { currentReceiver := receiver}
                 default {
                     dexId := and(calldataload(add(pathOffset, 45)), UINT8_MASK) // SKIP_LENGTH_BALANCER_V2 - 10
@@ -242,9 +242,10 @@ abstract contract BaseSwapper is TokenTransfer, BalancerSwapper {
                 }
             }
             amountIn = _swapBalancerExactIn(
-                pathOffset,
+                payer,
                 amountIn,
-                currentReceiver
+                currentReceiver,
+                pathOffset
             );
             assembly {
                 pathOffset := add(pathOffset, SKIP_LENGTH_BALANCER_V2)

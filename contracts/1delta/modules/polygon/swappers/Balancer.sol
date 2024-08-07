@@ -32,7 +32,7 @@ abstract contract BalancerSwapper is ExoticSwapper {
      *  Since we check slippage manually, the concerns mentioned in https://docs.balancer.fi/reference/contracts/query-functions.html
      *  do not apply.
      */
-    function _getBalancerAmountIn(bytes32 pId, address tokenIn, address tokenOut, uint256 amountOut) internal returns (uint256 amountIn) {
+    function _getBalancerAmountIn(bytes32 balancerPoolId, address tokenIn, address tokenOut, uint256 amountOut) internal returns (uint256 amountIn) {
         assembly {
             let ptr := mload(0x40)
             ////////////////////////////////////////////////////
@@ -50,7 +50,7 @@ abstract contract BalancerSwapper is ExoticSwapper {
             mstore(add(ptr, 0xC4), 0) // toInternalBalance
             mstore(add(ptr, 0xE4), 1)
             mstore(add(ptr, 0x104), 0x20) // SingleSwap struct
-            mstore(add(ptr, 0x124), pId) // poolId
+            mstore(add(ptr, 0x124), balancerPoolId) // poolId
             mstore(add(ptr, 0x144), 0) // userDataLength
             mstore(add(ptr, 0x164), 1) // swapKind = GIVEN_OUT
             mstore(add(ptr, 0x184), amountOut) // amount
@@ -79,13 +79,114 @@ abstract contract BalancerSwapper is ExoticSwapper {
     }
 
     /** Simple exact input swap with Balancer V2. We assume `userData` in the struct to be empty */
-    function _swapBalancerExactIn(uint256 offset, uint256 amountIn, address receiver) internal returns (uint256 amountOut) {
+    function _swapBalancerExactIn(address payer, uint256 amountIn, address receiver, uint256 offset) internal returns (uint256 amountOut) {
         assembly {
             // fetch swap context
-            let tokenOut := shr(96, calldataload(offset))
-            let tokenIn := shr(96, calldataload(add(offset, SKIP_LENGTH_BALANCER_V2)))
-            let balancerPoolId := shr(96, calldataload(add(offset, 22)))
+            let tokenIn := shr(96, calldataload(offset))
+            let tokenOut := shr(96, calldataload(add(offset, SKIP_LENGTH_BALANCER_V2)))
+            let balancerPoolId := calldataload(add(offset, 22))
 
+            let ptr := mload(0x40)
+            ////////////////////////////////////////////////////
+            // Pull funds if needed
+            ////////////////////////////////////////////////////
+            if xor(payer, address()) {
+                // selector for transferFrom(address,address,uint256)
+                mstore(ptr, ERC20_TRANSFER_FROM)
+                mstore(add(ptr, 0x04), payer)
+                mstore(add(ptr, 0x24), address())
+                mstore(add(ptr, 0x44), amountIn)
+
+                let success := call(
+                    gas(),
+                    tokenIn, //
+                    0,
+                    ptr,
+                    0x64,
+                    ptr,
+                    32
+                )
+
+                let rdsize := returndatasize()
+
+                // Check for ERC20 success. ERC20 tokens should return a boolean,
+                // but some don't. We accept 0-length return data as success, or at
+                // least 32 bytes that starts with a 32-byte boolean true.
+                success := and(
+                    success, // call itself succeeded
+                    or(
+                        iszero(rdsize), // no return data, or
+                        and(
+                            iszero(lt(rdsize, 32)), // at least 32 bytes
+                            eq(mload(ptr), 1) // starts with uint256(1)
+                        )
+                    )
+                )
+
+                if iszero(success) {
+                    returndatacopy(0, 0, rdsize)
+                    revert(0, rdsize)
+                }
+            }
+            ////////////////////////////////////////////////////
+            // Approve vault if needed
+            ////////////////////////////////////////////////////
+            if and(calldataload(add(offset, 9)), 0xff) {
+                // selector for approve(address,uint256)
+                mstore(ptr, ERC20_APPROVE)
+                mstore(add(ptr, 0x04), BALANCER_V2_VAULT)
+                mstore(add(ptr, 0x24), MAX_UINT256)
+                pop(call(gas(), tokenIn, 0, ptr, 0x44, ptr, 32))
+            }
+
+            ////////////////////////////////////////////////////
+            // Execute swap function on B2 Vault
+            ////////////////////////////////////////////////////
+            mstore(ptr, BALANCER_SWAP)
+            mstore(add(ptr, 0x4), 0xe0) // FundManagement struct
+            mstore(add(ptr, 0x24), address()) // sender
+            mstore(add(ptr, 0x44), 0) // fromInternalBalance
+            mstore(add(ptr, 0x64), receiver) // receiver
+            mstore(add(ptr, 0x84), 0) // toInternalBalance
+            mstore(add(ptr, 0xA4), 0) // limit
+            mstore(add(ptr, 0xC4), MAX_UINT256) // deadline
+            mstore(add(ptr, 0xE4), balancerPoolId)
+            mstore(add(ptr, 0x104), 0) // swapKind = GIVEN_IN
+            mstore(add(ptr, 0x124), tokenIn) // assetIn
+            mstore(add(ptr, 0x144), tokenOut) // assetOut
+            mstore(add(ptr, 0x164), amountIn) // amount
+            mstore(add(ptr, 0x184), 0xC0) // offest
+            mstore(add(ptr, 0x1A4), 0) // userData length
+
+            if iszero(
+                call(
+                    gas(),
+                    BALANCER_V2_VAULT,
+                    0x0,
+                    ptr,
+                    0x1C4,
+                    0x0,
+                    0x20 // we do not use the return array
+                )
+            ) {
+                returndatacopy(0, 0, returndatasize())
+                revert(0, returndatasize())
+            }
+
+            amountOut := mload(0x0)
+        }
+    }
+
+    /** call single swap function on Balancer V2 vault */
+    function _swapBalancerExactOut(
+        bytes32 balancerPoolId,
+        address tokenIn,
+        address tokenOut,
+        address receiver,
+        uint256 amountOut,
+        uint256 offset
+    ) internal {
+        assembly {
             let ptr := mload(0x40)
 
             ////////////////////////////////////////////////////
@@ -111,63 +212,6 @@ abstract contract BalancerSwapper is ExoticSwapper {
             mstore(add(ptr, 0xA4), MAX_UINT256) // limit
             mstore(add(ptr, 0xC4), MAX_UINT256) // deadline
             mstore(add(ptr, 0xE4), balancerPoolId)
-            mstore(add(ptr, 0x104), 1) // SingleSwap struct
-            mstore(add(ptr, 0x124), balancerPoolId) // poolId
-            mstore(add(ptr, 0x144), 0) // userDataLength
-            mstore(add(ptr, 0x164), 0) // swapKind = GIVEN_IN
-            mstore(add(ptr, 0x184), tokenIn) // assetIn
-            mstore(add(ptr, 0x1A4), tokenOut) // assetOut
-            mstore(add(ptr, 0x1C4), amountIn) // amount
-            mstore(add(ptr, 0x1E4), 0xC0) // offest
-            mstore(add(ptr, 0x204), 0) // assetIn
-
-            if iszero(
-                call(
-                    gas(),
-                    BALANCER_V2_VAULT,
-                    0x0,
-                    ptr,
-                    0x224,
-                    0x0,
-                    0x20 // amountOut
-                )
-            ) {
-                returndatacopy(0, 0, returndatasize())
-                revert(0, returndatasize())
-            }
-
-            amountOut := mload(0x0)
-        }
-    }
-
-    /** call single swap function on Balancer V2 vault */
-    function _swapBalancerExactOut(bytes32 pId, address tokenIn, address tokenOut, address receiver, uint256 amountOut, uint256 offset) internal {
-        assembly {
-            let ptr := mload(0x40)
-
-            ////////////////////////////////////////////////////
-            // Approve vault if needed
-            ////////////////////////////////////////////////////
-            if and(calldataload(add(offset, 9)), 0xff) {
-                // selector for approve(address,uint256)
-                mstore(ptr, ERC20_APPROVE)
-                mstore(add(ptr, 0x04), BALANCER_V2_VAULT)
-                mstore(add(ptr, 0x24), MAX_UINT256)
-                pop(call(gas(), tokenIn, 0, ptr, 0x44, ptr, 32))
-            }
-
-            ////////////////////////////////////////////////////
-            // Execute swap function on B2 Vault
-            ////////////////////////////////////////////////////
-            mstore(ptr, BALANCER_SWAP)
-            mstore(add(ptr, 0x4), 0xe0) // FundManagement struct
-            mstore(add(ptr, 0x24), address()) // sender
-            mstore(add(ptr, 0x44), 0) // fromInternalBalance
-            mstore(add(ptr, 0x64), receiver) // receiver
-            mstore(add(ptr, 0x84), 0) // toInternalBalance
-            mstore(add(ptr, 0xA4), MAX_UINT256) // limit
-            mstore(add(ptr, 0xC4), MAX_UINT256) // deadline
-            mstore(add(ptr, 0xE4), pId)
             mstore(add(ptr, 0x104), 1) // swapKind = GIVEN_OUT
             mstore(add(ptr, 0x124), tokenIn) // assetIn
             mstore(add(ptr, 0x144), tokenOut) // assetOut
