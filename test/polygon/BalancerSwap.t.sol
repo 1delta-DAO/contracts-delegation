@@ -129,7 +129,7 @@ contract CurveTestPolygon is DeltaSetup {
         assertApproxEqAbs(balanceOut, amount, 0);
     }
 
-   function test_polygon_balancer_exact_in_cpool() external {
+    function test_polygon_balancer_exact_in_cpool() external {
         address user = testUser;
         uint256 amount = 10_000.0e18;
         uint256 minOut = 11_100.0e18;
@@ -167,16 +167,12 @@ contract CurveTestPolygon is DeltaSetup {
         assertApproxEqAbs(balanceOut, 11153162337844760556082, 0);
     }
 
-
-    function test_polygon_balancer_quote_exact_out_cpool() external {
-
+    function test_polygon_balancer_quote_csp_exact_out_cpool() external {
         BalancerQuoter q = new BalancerQuoter();
-        address user = testUser;
         uint256 amount = 10_000.0e18;
 
         address assetIn = MaticX;
         address assetOut = WMATIC;
-        deal(assetIn, user, 1e23);
 
         uint gas = gasleft();
         uint256 quoted = q.getAmountInCSP(cs_pool_id, assetIn, assetOut, amount);
@@ -187,6 +183,21 @@ contract CurveTestPolygon is DeltaSetup {
         assertApproxEqAbs(quoted, 8966060311066461950276, 0);
     }
 
+    function test_polygon_balancer_quote_wp_exact_out() external {
+        BalancerQuoter q = new BalancerQuoter();
+
+        uint256 amount = 0.1e8;
+
+        address assetIn = WETH;
+        address assetOut = WBTC;
+
+        uint gas = gasleft();
+        uint256 quoted = q.getAmountInWP(three_pool_id, assetIn, assetOut, amount);
+        gas = gas - gasleft();
+
+        console.log("gas for WP quoting", gas);
+        console.log("quoted", quoted);
+    }
 
     function getSpotExactOutBalancer(address tokenIn, address tokenOut, bytes32 pId, uint8 preActionFlag) internal view returns (bytes memory data) {
         uint8 action = 0;

@@ -4,7 +4,9 @@ pragma solidity 0.8.26;
 
 import {IVault} from "./interfaces/IVault.sol";
 import "./interfaces/ICSP.sol";
+import "./interfaces/IWP.sol";
 import "./balancer-math/StableMath.sol";
+import "./balancer-math/WeightedMath.sol";
 
 /** Balancer quoter unchecked form - will run into overflows - needs additional checks*/
 contract BalancerQuoter {
@@ -22,12 +24,56 @@ contract BalancerQuoter {
         address pool = address(uint160(uint256(poolId) >> (12 * 8)));
 
         return
-            _swapGivenOut(
+            _swapGivenOutCSP(
                 amountOut,
                 balances,
                 indexIn,
                 indexOut,
-                getScalingFactors(pool), //
+                getCSPScalingFactors(pool), //
+                pool
+            );
+    }
+
+    function getAmountInWP(bytes32 poolId, address tokenIn, address tokenOut, uint amountOut) external view returns (uint256) {
+        address pool = address(uint160(uint256(poolId) >> (12 * 8)));
+        uint scalingFactorIn;
+        uint scalingFactorOut;
+        uint weightIn;
+        uint weightOut;
+        uint balanceIn;
+        uint balanceOut;
+        {
+            (
+                address[] memory tokens,
+                uint256[] memory balances, //
+
+            ) = IVault(BALANCER_V2_VAULT).getPoolTokens(poolId);
+
+            (
+                scalingFactorIn,
+                scalingFactorOut,
+                weightIn, //
+                weightOut,
+                balanceIn,
+                balanceOut
+            ) = getWPScalingFactorsWeightsAndBalances(
+                tokens,
+                balances, //
+                tokenIn,
+                tokenOut,
+                pool
+            );
+        }
+
+        return
+            _swapGivenOutWP(
+                balanceIn,
+                weightIn,
+                scalingFactorIn,
+                balanceOut,
+                weightOut,
+                amountOut,
+                scalingFactorOut, //
                 pool
             );
     }
@@ -68,8 +114,31 @@ contract BalancerQuoter {
         }
     }
 
-    function getScalingFactors(address pool) internal view returns (uint[] memory sf) {
+    function getCSPScalingFactors(address pool) internal view returns (uint[] memory sf) {
         sf = ICSP(pool).getScalingFactors();
+    }
+
+    function getWPScalingFactorsWeightsAndBalances(
+        address[] memory tokens,
+        uint256[] memory balances,
+        address tokenIn,
+        address tokenOut,
+        address pool
+    ) internal view returns (uint scalingFactorIn, uint scalingFactorOut, uint weightIn, uint weightOut, uint balanceIn, uint balanceOut) {
+        uint256[] memory weights = IWP(pool).getNormalizedWeights();
+
+        for (uint256 i; i < tokens.length; i++) {
+            address t = tokens[i];
+            if (tokenIn == t) {
+                scalingFactorIn = _computeScalingFactor(t);
+                weightIn = weights[i];
+                balanceIn = balances[i];
+            } else if (tokenOut == t) {
+                scalingFactorOut = _computeScalingFactor(t);
+                weightOut = weights[i];
+                balanceOut = balances[i];
+            }
+        }
     }
 
     /**
@@ -155,7 +224,7 @@ contract BalancerQuoter {
         return amount.divUp(ICSP(pool).getSwapFeePercentage().complement());
     }
 
-    function _swapGivenOut(
+    function _swapGivenOutCSP(
         uint amount,
         uint256[] memory balances,
         uint256 indexIn,
@@ -166,7 +235,7 @@ contract BalancerQuoter {
         _upscaleArray(balances, scalingFactors);
         amount = _upscale(amount, scalingFactors[indexOut]);
 
-        uint256 amountIn = _onSwapGivenOut(
+        uint256 amountIn = _onSwapGivenOutCSP(
             amount,
             balances,
             indexIn,
@@ -190,11 +259,11 @@ contract BalancerQuoter {
     }
 
     /**
-     * @dev This is called from the base class `_swapGivenOut`, so at this point the amount has been adjusted
+     * @dev This is called from the base class `_swapGivenOutCSP`, so at this point the amount has been adjusted
      * for swap fees, and balances have had scaling applied. This will only be called for regular (non-BPT) swaps,
      * so forward to `onRegularSwap`.
      */
-    function _onSwapGivenOut(
+    function _onSwapGivenOutCSP(
         uint amountGiven,
         uint256[] memory registeredBalances,
         uint256 registeredIndexIn,
@@ -204,16 +273,41 @@ contract BalancerQuoter {
     ) internal view returns (uint256) {
         uint bptIdnex = ICSP(pool).getBptIndex();
         // Adjust indices and balances for BPT token
-        uint256[] memory balances = _dropBptItem(registeredBalances, bptIdnex);
+        registeredBalances = _dropBptItem(registeredBalances, bptIdnex);
 
         return
             StableMath._calcInGivenOut(
                 currentAmp,
-                balances, //
+                registeredBalances, //
                 _skipBptIndex(registeredIndexIn, bptIdnex),
                 _skipBptIndex(registeredIndexOut, bptIdnex),
                 amountGiven,
-                StableMath._calculateInvariant(currentAmp, balances)
+                StableMath._calculateInvariant(currentAmp, registeredBalances)
             );
+    }
+
+    function _swapGivenOutWP(
+        uint256 balanceIn,
+        uint256 weightIn,
+        uint256 scalingIn,
+        uint256 balanceOut,
+        uint256 weightOut,
+        uint256 amountOut,
+        uint256 scalingOut,
+        address pool
+    ) internal view returns (uint256) {
+        uint256 amountIn = WeightedMath._calcInGivenOut(
+            _upscale(balanceIn, scalingIn),
+            weightIn,
+            _upscale(balanceOut, scalingOut),
+            weightOut,
+            _upscale(amountOut, scalingOut) //
+        );
+
+        // amountIn tokens are entering the Pool, so we round up.
+        amountIn = _downscaleUp(amountIn, scalingIn);
+
+        // Fees are added after scaling happens, to reduce the complexity of the rounding direction analysis.
+        return _addSwapFeeAmount(amountIn, pool);
     }
 }

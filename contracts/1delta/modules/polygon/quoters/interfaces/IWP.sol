@@ -18,17 +18,8 @@ pragma solidity >=0.8.0 <0.9.0;
  * @dev Full external interface for the Vault core contract - no external or public methods exist in the contract that
  * don't override one of these declarations.
  */
-interface ICSP {
-    function getAmplificationParameter()
-        external
-        view
-        returns (
-            uint256 value,
-            bool isUpdating, //
-            uint256 precision
-        );
-
-    function getBptIndex() external view returns (uint256);
+interface IWP {
+    function getNormalizedWeights() external view returns (uint256[] memory);
 
     function getSwapFeePercentage() external view returns (uint256);
 
