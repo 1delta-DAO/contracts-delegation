@@ -198,10 +198,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
                     mstore(add(ptr, 0x24), amountOut)
                     let success := call(
                         gas(),
-                        and(
-                            ADDRESS_MASK,
-                            shr(96, calldataload(add(pathOffset, 44))) // tokenIn, added 2x addr + 4x uint8
-                        ),
+                        shr(96, calldataload(add(pathOffset, 44))), // tokenIn, added 2x addr + 4x uint8
                         0,
                         ptr,
                         0x44,

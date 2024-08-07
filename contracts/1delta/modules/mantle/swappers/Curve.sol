@@ -248,10 +248,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
 
                 let success := call(
                     gas(),
-                    and(
-                        ADDRESS_MASK,
-                        shr(96, calldataload(pathOffset)) // tokenIn
-                    ), 
+                    shr(96, calldataload(pathOffset)), // tokenIn
                     0,
                     ptr,
                     0x64,
