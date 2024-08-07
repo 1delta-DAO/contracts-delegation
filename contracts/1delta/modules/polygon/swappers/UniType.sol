@@ -24,7 +24,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
 
     /// @dev selector for getReserves()
     bytes32 private constant UNI_V2_GET_RESERVES = 0x0902f1ac00000000000000000000000000000000000000000000000000000000;
-    
+
     /// @dev selector for swap(...)
     bytes32 private constant UNI_V2_SWAP = 0x022c0d9f00000000000000000000000000000000000000000000000000000000;
 
@@ -473,7 +473,6 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
 
                     buyAmount := mload(ptr)
                 }
-                
 
                 ////////////////////////////////////////////////////
                 // Prepare the swap tx
@@ -569,11 +568,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
      * @param amountIn sell amount
      * @return buyAmount output amount
      */
-    function swapUniV2ExactInFOT(
-        uint256 amountIn, 
-        address receiver, 
-        uint256 pathOffset
-    ) internal returns (uint256 buyAmount) {
+    function swapUniV2ExactInFOT(uint256 amountIn, address receiver, uint256 pathOffset) internal returns (uint256 buyAmount) {
         assembly {
             let ptr := mload(0x40) // free memory pointer
             ////////////////////////////////////////////////////
@@ -626,7 +621,6 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                 // adjustment via denominator
                 poolFeeDenom := mul(amountIn, poolFeeDenom)
                 buyAmount := div(mul(poolFeeDenom, buyAmount), add(poolFeeDenom, mul(sellReserve, 10000)))
-            
 
                 ////////////////////////////////////////////////////
                 // Prepare the swap tx

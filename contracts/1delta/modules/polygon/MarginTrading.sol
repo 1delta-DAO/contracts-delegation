@@ -1046,7 +1046,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
             assembly {
                 tokenIn := shr(96, calldataload(add(pathOffset, 45)))
                 let indexesAndPool := calldataload(add(pathOffset, 22))
-                pool := and(shr(96, indexesAndPool), ADDRESS_MASK)
+                pool := shr(96, indexesAndPool)
                 indexIn := and(shr(88, indexesAndPool), 0xff)
                 indexOut := and(shr(80, indexesAndPool), 0xff)
             }
