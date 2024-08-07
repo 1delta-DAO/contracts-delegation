@@ -5,6 +5,7 @@ import "../../contracts/1delta/modules/shared/Commands.sol";
 import "../shared/interfaces/ICurvePool.sol";
 import "./DeltaSetup.f.sol";
 import "./utils/BalancerCaller.sol";
+import {BalancerQuoter} from "../../contracts/1delta/modules/polygon/quoters/BalanacerQuoter.sol";
 
 contract CurveTestPolygon is DeltaSetup {
     // WETH / WBTC / USDC 3-pool
@@ -127,6 +128,65 @@ contract CurveTestPolygon is DeltaSetup {
         assertApproxEqAbs(balanceIn, 8966060311066461950276, 0);
         assertApproxEqAbs(balanceOut, amount, 0);
     }
+
+   function test_polygon_balancer_exact_in_cpool() external {
+        address user = testUser;
+        uint256 amount = 10_000.0e18;
+        uint256 minOut = 11_100.0e18;
+
+        address assetIn = MaticX;
+        address assetOut = WMATIC;
+        deal(assetIn, user, 1e23);
+
+        bytes memory dataBalancer = getSpotExactInBalancer(assetIn, assetOut, cs_pool_id, 1);
+
+        bytes memory data = abi.encodePacked(
+            uint8(Commands.SWAP_EXACT_IN),
+            user,
+            encodeSwapAmountParams(amount, minOut, false, dataBalancer.length),
+            dataBalancer
+        );
+
+        vm.prank(user);
+        IERC20All(assetIn).approve(address(brokerProxyAddress), amount);
+
+        uint256 balanceOut = IERC20All(assetOut).balanceOf(user);
+        uint256 balanceIn = IERC20All(assetIn).balanceOf(user);
+
+        vm.prank(user);
+        uint gas = gasleft();
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
+        gas = gas - gasleft();
+        console.log("gas", gas);
+
+        balanceOut = IERC20All(assetOut).balanceOf(user) - balanceOut;
+        balanceIn = balanceIn - IERC20All(assetIn).balanceOf(user);
+
+        // expect 11153k wMATIC for 10k MaticX
+        assertApproxEqAbs(balanceIn, amount, 0);
+        assertApproxEqAbs(balanceOut, 11153162337844760556082, 0);
+    }
+
+
+    function test_polygon_balancer_quote_exact_out_cpool() external {
+
+        BalancerQuoter q = new BalancerQuoter();
+        address user = testUser;
+        uint256 amount = 10_000.0e18;
+
+        address assetIn = MaticX;
+        address assetOut = WMATIC;
+        deal(assetIn, user, 1e23);
+
+        uint gas = gasleft();
+        uint256 quoted = q.getAmountInCSP(cs_pool_id, assetIn, assetOut, amount);
+        gas = gas - gasleft();
+
+        console.log("gas for CSP quoting", gas);
+        console.log("quoted", quoted);
+        assertApproxEqAbs(quoted, 8966060311066461950276, 0);
+    }
+
 
     function getSpotExactOutBalancer(address tokenIn, address tokenOut, bytes32 pId, uint8 preActionFlag) internal view returns (bytes memory data) {
         uint8 action = 0;
