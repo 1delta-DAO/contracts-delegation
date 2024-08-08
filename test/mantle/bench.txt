@@ -1,7 +1,7 @@
 Ran 2 tests for test/mantle/Access.t.sol:AccessTests
 [PASS] test_mantle_flash_loan_operation_gatekeep() (gas: 100059)
 [PASS] test_mantle_v2_gatekeep() (gas: 167780)
-Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 181.67ms (8.71ms CPU time)
+Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 316.25ms (1.23ms CPU time)
 
 Ran 2 tests for test/mantle/MetaAggregator.t.sol:LendingTest
 [PASS] test_mantle_meta_aggregator() (gas: 1014195)
@@ -12,111 +12,245 @@ Logs:
 Logs:
   gas 56119
 
-Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 182.62ms (7.36ms CPU time)
+Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 317.35ms (1.84ms CPU time)
 
-Ran 2 tests for test/mantle/SwapFOT.t.sol:SwapGen2Test
-[PASS] test_mantle_gen_2_buy_FOT() (gas: 3261612)
-Logs:
-  supplied fot token 0xd5fC063Cb3F6964A00A42309aaa7cbF0297A2D22
-  gas 125667
+Ran 4 tests for test/mantle/Sweep.t.sol:SweepTests
+[PASS] test_mantle_sweep_correct_when_zero() (gas: 196235)
+[PASS] test_mantle_sweep_fails() (gas: 175720)
+[PASS] test_mantle_sweep_works() (gas: 193364)
+[PASS] test_mantle_sweep_works_balance() (gas: 194939)
+Suite result: ok. 4 passed; 0 failed; 0 skipped; finished in 318.13ms (2.62ms CPU time)
 
-[PASS] test_mantle_gen_2_sell_FOT() (gas: 3260338)
-Logs:
-  supplied fot token 0xd5fC063Cb3F6964A00A42309aaa7cbF0297A2D22
-  gas 124474
-
-Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 185.86ms (13.36ms CPU time)
+Ran 2 tests for test/mantle/UniV3s.t.sol:GeneralMoeLBTest
+[PASS] test_mantle_puff_spot_exact_in() (gas: 359580)
+[PASS] test_mantle_uni_v3_spot_exact_in() (gas: 321007)
+Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 319.59ms (3.48ms CPU time)
 
 Ran 4 tests for test/mantle/MoeLBQuoting.t.sol:MoeLBQuotingTest
 [PASS] test_mantle_lb_quote_spot_exact_in_reverts() (gas: 162465)
 [PASS] test_mantle_lb_quote_spot_exact_in_works() (gas: 174780)
 [PASS] test_mantle_lb_quote_spot_exact_out_reverts() (gas: 177080)
 [PASS] test_mantle_lb_quote_spot_exact_out_works() (gas: 224397)
-Suite result: ok. 4 passed; 0 failed; 0 skipped; finished in 186.07ms (7.27ms CPU time)
+Suite result: ok. 4 passed; 0 failed; 0 skipped; finished in 321.48ms (4.62ms CPU time)
 
-Ran 4 tests for test/mantle/SpotCases.t.sol:MarginOpenTest
-[PASS] test_margin_mantle_spot_exact_in_izi() (gas: 297510)
-[PASS] test_margin_mantle_spot_exact_in_izi_reverted() (gas: 297061)
-[PASS] test_margin_mantle_spot_exact_out_izi() (gas: 298353)
-[PASS] test_margin_mantle_spot_exact_out_izi_reverted() (gas: 281315)
-Suite result: ok. 4 passed; 0 failed; 0 skipped; finished in 186.66ms (13.94ms CPU time)
+Ran 2 tests for test/mantle/SwapFOT.t.sol:SwapGen2Test
+[PASS] test_mantle_gen_2_buy_FOT() (gas: 3261608)
+Logs:
+  supplied fot token 0xd5fC063Cb3F6964A00A42309aaa7cbF0297A2D22
+  gas 125663
+
+[PASS] test_mantle_gen_2_sell_FOT() (gas: 3260324)
+Logs:
+  supplied fot token 0xd5fC063Cb3F6964A00A42309aaa7cbF0297A2D22
+  gas 124460
+
+Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 321.89ms (6.09ms CPU time)
 
 Ran 3 tests for test/mantle/Dodo.t.sol:DodoTest
 [PASS] test_mantle_dodo_spot_exact_in() (gas: 270191)
 Logs:
   quoted 999400
 
-[PASS] test_mantle_dodo_spot_exact_in_multi() (gas: 350251)
+[PASS] test_mantle_dodo_spot_exact_in_multi() (gas: 350246)
 [PASS] test_mantle_dodo_spot_exact_in_sell_quote() (gas: 454951)
-Suite result: ok. 3 passed; 0 failed; 0 skipped; finished in 194.46ms (11.55ms CPU time)
+Suite result: ok. 3 passed; 0 failed; 0 skipped; finished in 322.54ms (6.24ms CPU time)
+
+Ran 3 tests for test/mantle/Stratum.t.sol:StratumCurveTest
+[PASS] test_mantle_stratum_spot_exact_in() (gas: 444673)
+[PASS] test_mantle_stratum_spot_exact_in_reverse() (gas: 475591)
+[PASS] test_mantle_stratum_spot_exact_in_usd() (gas: 518323)
+Suite result: ok. 3 passed; 0 failed; 0 skipped; finished in 327.14ms (11.72ms CPU time)
+
+Ran 6 tests for test/mantle/FlashSwapEI.sol:FlashSwapExacInTest
+[PASS] test_mantle_stratum_arb_exact_in() (gas: 507669)
+Logs:
+  gas 309987
+
+[PASS] test_mantle_stratum_arb_exact_in_v2() (gas: 492785)
+Logs:
+  gas 278881
+
+[PASS] test_mantle_stratum_arb_exact_in_v2_3_pools() (gas: 658063)
+Logs:
+  gas 376556
+
+[PASS] test_mantle_stratum_arb_exact_in_v2_3_pools_V3Last() (gas: 662122)
+Logs:
+  gas 381722
+
+[PASS] test_mantle_stratum_arb_exact_in_v2_3_pools_V3Last_spot() (gas: 662104)
+Logs:
+  gas 381722
+
+[PASS] test_mantle_stratum_arb_exact_in_v2_3_pools_spot() (gas: 658064)
+Logs:
+  gas 376556
+
+Suite result: ok. 6 passed; 0 failed; 0 skipped; finished in 334.05ms (25.53ms CPU time)
+
+Ran 13 tests for test/mantle/SwapGen2.t.sol:SwapGen2Test
+[PASS] test_mantle_gen_2_spot_exact_in() (gas: 308037)
+Logs:
+  gas 104810
+
+[PASS] test_mantle_gen_2_spot_exact_in_V2() (gas: 299304)
+Logs:
+  gas 88620
+
+[PASS] test_mantle_gen_2_spot_exact_in_V2_all() (gas: 300381)
+Logs:
+  gas 90011
+
+[PASS] test_mantle_gen_2_spot_exact_in_multi() (gas: 486938)
+Logs:
+  gas 316232
+
+[PASS] test_mantle_gen_2_spot_exact_in_multi_mixed() (gas: 460246)
+Logs:
+  gas 275352
+
+[PASS] test_mantle_gen_2_spot_exact_in_multi_mixed_exotic() (gas: 775100)
+Logs:
+  path
+  gas 619815
+
+[PASS] test_mantle_gen_2_spot_exact_in_solidly() (gas: 454236)
+Logs:
+  ts
+  gas 258808
+
+[PASS] test_mantle_gen_2_spot_exact_in_v2_fusion_pure() (gas: 252773)
+Logs:
+  gas 82497
+
+[PASS] test_mantle_gen_2_spot_exact_out() (gas: 307461)
+Logs:
+  gas 104144
+
+[PASS] test_mantle_gen_2_spot_exact_out_multi() (gas: 643670)
+Logs:
+  gas 473159
+
+[PASS] test_mantle_gen_2_spot_exact_out_multi_mixed() (gas: 407591)
+Logs:
+  gas 229477
+
+[PASS] test_mantle_gen_2_spot_exact_out_solidly() (gas: 469662)
+Logs:
+  gas 255043
+
+[PASS] test_mantle_gen_2_spot_exact_out_v2() (gas: 299646)
+Logs:
+  gas 88583
+
+Suite result: ok. 13 passed; 0 failed; 0 skipped; finished in 337.66ms (33.58ms CPU time)
+
+Ran 5 tests for test/mantle/MarginSwapGen2.t.sol:SwapGen2Test
+[PASS] test_mantle_gen_2_open_exact_in() (gas: 826415)
+Logs:
+  gas-open-exactIn-single 404413
+
+[PASS] test_mantle_gen_2_open_exact_in_composer() (gas: 826391)
+Logs:
+  gas-open-exactIn-single-composer 404413
+
+[PASS] test_mantle_gen_2_open_exact_in_multi() (gas: 1094390)
+Logs:
+  gas 724790 144771
+
+[PASS] test_mantle_gen_2_open_exact_in_multi_mixed() (gas: 986911)
+Logs:
+  gas 582884 144771
+
+[PASS] test_mantle_gen_2_open_exact_in_multi_mixed_double_v2() (gas: 956148)
+Logs:
+  gas 541451 144771
+
+Suite result: ok. 5 passed; 0 failed; 0 skipped; finished in 337.69ms (32.34ms CPU time)
+
+Ran 4 tests for test/mantle/MoeLB.t.sol:GeneralMoeLBTest
+[PASS] test_mantle_lb_spot_exact_in() (gas: 260724)
+[PASS] test_mantle_lb_spot_exact_out() (gas: 264940)
+[PASS] test_mantle_lb_spot_exact_out_multi() (gas: 373073)
+[PASS] test_mantle_lb_spot_exact_out_multi_end() (gas: 338066)
+Suite result: ok. 4 passed; 0 failed; 0 skipped; finished in 337.69ms (8.74ms CPU time)
 
 Ran 4 tests for test/mantle/KTX.t.sol:KTXTest
 [PASS] test_mantle_ktx_spot_exact_in() (gas: 526043)
 [PASS] test_mantle_ktx_spot_exact_in_low_balance() (gas: 299931)
 [PASS] test_mantle_ktx_spot_exact_in_stable_in() (gas: 527981)
 [PASS] test_mantle_ktx_spot_exact_in_stable_out() (gas: 520134)
-Suite result: ok. 4 passed; 0 failed; 0 skipped; finished in 206.45ms (31.37ms CPU time)
+Suite result: ok. 4 passed; 0 failed; 0 skipped; finished in 381.08ms (17.93ms CPU time)
 
-Ran 8 tests for test/mantle/MoeLB.t.sol:GeneralMoeLBTest
-[PASS] test_mantle_lb_spot_exact_in() (gas: 260724)
-[PASS] test_mantle_lb_spot_exact_out() (gas: 264940)
-[PASS] test_mantle_lb_spot_exact_out_multi() (gas: 373073)
-[PASS] test_mantle_lb_spot_exact_out_multi_end() (gas: 338066)
-[PASS] test_margin_mantle_lb_close_exact_in_multi() (gas: 1035286)
-[PASS] test_margin_mantle_lb_close_exact_out_multi() (gas: 1005932)
-[PASS] test_margin_mantle_lb_open_exact_in_multi() (gas: 824226)
-[PASS] test_margin_mantle_lb_open_exact_out_multi() (gas: 868512)
-Suite result: ok. 8 passed; 0 failed; 0 skipped; finished in 231.76ms (50.17ms CPU time)
+Ran 6 tests for test/mantle/IzumiQuoting.t.sol:IzumiQuotingTest
+[PASS] test_mantle_izumi_quote_spot_exact_in_double() (gas: 6435777)
+[PASS] test_mantle_izumi_quote_spot_exact_in_double_reverse() (gas: 279145)
+[PASS] test_mantle_izumi_quote_spot_exact_in_works() (gas: 6415108)
+[PASS] test_mantle_izumi_quote_spot_exact_out_double() (gas: 293098)
+[PASS] test_mantle_izumi_quote_spot_exact_out_double_reverse() (gas: 3708760)
+[PASS] test_mantle_izumi_quote_spot_exact_out_works() (gas: 13292995)
+Suite result: ok. 6 passed; 0 failed; 0 skipped; finished in 381.08ms (148.58ms CPU time)
+
+Ran 4 tests for test/mantle/V2Quoting.sol:IzumiQuotingTest
+[PASS] test_mantle_V2_quote_spot_exact_in_works() (gas: 167063)
+[PASS] test_mantle_V2_quote_spot_exact_out_works() (gas: 166829)
+[PASS] test_mantle_V2_solidly_quote_spot_exact_in_works() (gas: 225525)
+[PASS] test_mantle_V2_solidly_quote_spot_exact_out_works() (gas: 218784)
+Suite result: ok. 4 passed; 0 failed; 0 skipped; finished in 231.72ms (2.61ms CPU time)
+
+Ran 1 test for test/mantle/Woo.t.sol:WooFiTest
+[PASS] test_mantle_woo_spot_exact_in() (gas: 433922)
+Suite result: ok. 1 passed; 0 failed; 0 skipped; finished in 234.10ms (2.14ms CPU time)
 
 Ran 13 tests for test/mantle/Composer.t.sol:ComposerTestMantle
-[PASS] test_mantle_composer_borrow() (gas: 913726)
+[PASS] test_mantle_composer_borrow() (gas: 913717)
 Logs:
   gas 378343
-  gas 432262
+  gas 432253
 
 [PASS] test_mantle_composer_depo() (gas: 368921)
 Logs:
   gas 248570
 
-[PASS] test_mantle_composer_multi_route_exact_in() (gas: 370980)
+[PASS] test_mantle_composer_multi_route_exact_in() (gas: 370970)
 Logs:
-  gas 191206
+  gas 191194
 
-[PASS] test_mantle_composer_multi_route_exact_in_native() (gas: 363642)
+[PASS] test_mantle_composer_multi_route_exact_in_native() (gas: 363624)
 Logs:
-  gas 373088
+  gas 373070
 
-[PASS] test_mantle_composer_multi_route_exact_in_native_out() (gas: 628164)
+[PASS] test_mantle_composer_multi_route_exact_in_native_out() (gas: 628156)
 Logs:
-  gas-exactIn-native-out-2 split 546260
+  gas-exactIn-native-out-2 split 546250
 
-[PASS] test_mantle_composer_multi_route_exact_in_self() (gas: 393046)
+[PASS] test_mantle_composer_multi_route_exact_in_self() (gas: 393036)
 Logs:
-  gas 218369
+  gas 218357
 
-[PASS] test_mantle_composer_multi_route_exact_out() (gas: 382917)
+[PASS] test_mantle_composer_multi_route_exact_out() (gas: 382905)
 Logs:
-  gas 189880
+  gas 189868
 
-[PASS] test_mantle_composer_multi_route_exact_out_native_in() (gas: 403481)
+[PASS] test_mantle_composer_multi_route_exact_out_native_in() (gas: 403471)
 Logs:
-  gas-exactOut-native-in-2 split 384250
+  gas-exactOut-native-in-2 split 384240
 
-[PASS] test_mantle_composer_multi_route_exact_out_native_out() (gas: 552022)
+[PASS] test_mantle_composer_multi_route_exact_out_native_out() (gas: 552012)
 Logs:
-  gas-exactOut-native-out-2 split 411982
+  gas-exactOut-native-out-2 split 411972
 
-[PASS] test_mantle_composer_repay() (gas: 982099)
+[PASS] test_mantle_composer_repay() (gas: 982081)
 Logs:
   gas 378343
-  gas 432263
-  gas 101930
+  gas 432254
+  gas 101921
 
-[PASS] test_mantle_composer_repay_too_much() (gas: 1135656)
+[PASS] test_mantle_composer_repay_too_much() (gas: 1135648)
 Logs:
   gas 378343
-  gas 432263
-  gas 129313
+  gas 432254
+  gas 129312
   7500000
 
 [PASS] test_mantle_composer_withdraw() (gas: 699519)
@@ -129,220 +263,17 @@ Logs:
   gas 378343
   gas 258935
 
-Suite result: ok. 13 passed; 0 failed; 0 skipped; finished in 239.59ms (66.81ms CPU time)
-
-Ran 4 tests for test/mantle/Sweep.t.sol:SweepTests
-[PASS] test_mantle_sweep_correct_when_zero() (gas: 196222)
-[PASS] test_mantle_sweep_fails() (gas: 175713)
-[PASS] test_mantle_sweep_works() (gas: 193358)
-[PASS] test_mantle_sweep_works_balance() (gas: 194932)
-Suite result: ok. 4 passed; 0 failed; 0 skipped; finished in 116.02ms (1.52ms CPU time)
-
-Ran 3 tests for test/mantle/Stratum.t.sol:StratumCurveTest
-[PASS] test_mantle_stratum_spot_exact_in() (gas: 444683)
-[PASS] test_mantle_stratum_spot_exact_in_reverse() (gas: 475600)
-[PASS] test_mantle_stratum_spot_exact_in_usd() (gas: 518323)
-Suite result: ok. 3 passed; 0 failed; 0 skipped; finished in 372.58ms (13.76ms CPU time)
-
-Ran 1 test for test/mantle/Fork.t.sol:ForkTestMantle
-[PASS] test_permit_mantle() (gas: 103785)
-Logs:
-  quoted 5652
-
-Suite result: ok. 1 passed; 0 failed; 0 skipped; finished in 229.23ms (2.23ms CPU time)
-
-Ran 2 tests for test/mantle/UniV3s.t.sol:GeneralMoeLBTest
-[PASS] test_mantle_puff_spot_exact_in() (gas: 359580)
-[PASS] test_mantle_uni_v3_spot_exact_in() (gas: 321008)
-Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 203.36ms (3.65ms CPU time)
-
-Ran 4 tests for test/mantle/V2Quoting.sol:IzumiQuotingTest
-[PASS] test_mantle_V2_quote_spot_exact_in_works() (gas: 167063)
-[PASS] test_mantle_V2_quote_spot_exact_out_works() (gas: 166829)
-[PASS] test_mantle_V2_solidly_quote_spot_exact_in_works() (gas: 225525)
-[PASS] test_mantle_V2_solidly_quote_spot_exact_out_works() (gas: 218784)
-Suite result: ok. 4 passed; 0 failed; 0 skipped; finished in 196.90ms (4.28ms CPU time)
-
-Ran 6 tests for test/mantle/FlashSwapEI.sol:FlashSwapExacInTest
-[PASS] test_mantle_stratum_arb_exact_in() (gas: 507673)
-Logs:
-  gas 309991
-
-[PASS] test_mantle_stratum_arb_exact_in_v2() (gas: 492785)
-Logs:
-  gas 278881
-
-[PASS] test_mantle_stratum_arb_exact_in_v2_3_pools() (gas: 658072)
-Logs:
-  gas 376568
-
-[PASS] test_mantle_stratum_arb_exact_in_v2_3_pools_V3Last() (gas: 662127)
-Logs:
-  gas 381728
-
-[PASS] test_mantle_stratum_arb_exact_in_v2_3_pools_V3Last_spot() (gas: 662109)
-Logs:
-  gas 381728
-
-[PASS] test_mantle_stratum_arb_exact_in_v2_3_pools_spot() (gas: 658073)
-Logs:
-  gas 376568
-
-Suite result: ok. 6 passed; 0 failed; 0 skipped; finished in 260.43ms (24.18ms CPU time)
-
-Ran 1 test for test/mantle/Woo.t.sol:WooFiTest
-[PASS] test_mantle_woo_spot_exact_in() (gas: 433922)
-Suite result: ok. 1 passed; 0 failed; 0 skipped; finished in 122.64ms (3.89ms CPU time)
-
-Ran 6 tests for test/mantle/IzumiQuoting.t.sol:IzumiQuotingTest
-[PASS] test_mantle_izumi_quote_spot_exact_in_double() (gas: 6435777)
-[PASS] test_mantle_izumi_quote_spot_exact_in_double_reverse() (gas: 279145)
-[PASS] test_mantle_izumi_quote_spot_exact_in_works() (gas: 6415108)
-[PASS] test_mantle_izumi_quote_spot_exact_out_double() (gas: 293098)
-[PASS] test_mantle_izumi_quote_spot_exact_out_double_reverse() (gas: 3708760)
-[PASS] test_mantle_izumi_quote_spot_exact_out_works() (gas: 13292995)
-Suite result: ok. 6 passed; 0 failed; 0 skipped; finished in 3.72s (298.61ms CPU time)
-
-Ran 13 tests for test/mantle/SwapGen2.t.sol:SwapGen2Test
-[PASS] test_mantle_gen_2_spot_exact_in() (gas: 308042)
-Logs:
-  gas 104816
-
-[PASS] test_mantle_gen_2_spot_exact_in_V2() (gas: 299305)
-Logs:
-  gas 88622
-
-[PASS] test_mantle_gen_2_spot_exact_in_V2_all() (gas: 300383)
-Logs:
-  gas 90013
-
-[PASS] test_mantle_gen_2_spot_exact_in_multi() (gas: 486952)
-Logs:
-  gas 316250
-
-[PASS] test_mantle_gen_2_spot_exact_in_multi_mixed() (gas: 460257)
-Logs:
-  gas 275366
-
-[PASS] test_mantle_gen_2_spot_exact_in_multi_mixed_exotic() (gas: 775104)
-Logs:
-  path
-  gas 619819
-
-[PASS] test_mantle_gen_2_spot_exact_in_solidly() (gas: 454238)
-Logs:
-  ts
-  gas 258810
-
-[PASS] test_mantle_gen_2_spot_exact_in_v2_fusion_pure() (gas: 252775)
-Logs:
-  gas 82499
-
-[PASS] test_mantle_gen_2_spot_exact_out() (gas: 307466)
-Logs:
-  gas 104150
-
-[PASS] test_mantle_gen_2_spot_exact_out_multi() (gas: 643688)
-Logs:
-  gas 473177
-
-[PASS] test_mantle_gen_2_spot_exact_out_multi_mixed() (gas: 407603)
-Logs:
-  gas 229489
-
-[PASS] test_mantle_gen_2_spot_exact_out_solidly() (gas: 469662)
-Logs:
-  gas 255043
-
-[PASS] test_mantle_gen_2_spot_exact_out_v2() (gas: 299646)
-Logs:
-  gas 88583
-
-Suite result: ok. 13 passed; 0 failed; 0 skipped; finished in 3.70s (28.15ms CPU time)
-
-Ran 10 tests for test/mantle/MarginClose.t.sol:MarginCloseTest
-[PASS] test_margin_mantle_close_all_in(uint8) (runs: 258, μ: 1627716, ~: 1782126)
-[PASS] test_margin_mantle_close_all_out(uint8) (runs: 258, μ: 1265092, ~: 1372124)
-[PASS] test_margin_mantle_close_all_out_v2(uint8) (runs: 258, μ: 1276444, ~: 1380355)
-[PASS] test_margin_mantle_close_exact_in(uint8) (runs: 258, μ: 1265489, ~: 1391559)
-[PASS] test_margin_mantle_close_exact_in_multi(uint8) (runs: 258, μ: 1391493, ~: 1520352)
-[PASS] test_margin_mantle_close_exact_in_multi_v2(uint8) (runs: 258, μ: 1368851, ~: 1477374)
-[PASS] test_margin_mantle_close_exact_in_v2(uint8) (runs: 258, μ: 1296641, ~: 1416291)
-[PASS] test_margin_mantle_close_exact_out(uint8) (runs: 258, μ: 1296424, ~: 1414928)
-[PASS] test_margin_mantle_close_exact_out_multi(uint8) (runs: 258, μ: 1467631, ~: 1580379)
-[PASS] test_margin_mantle_close_exact_out_v2(uint8) (runs: 258, μ: 1305983, ~: 1438289)
-Suite result: ok. 10 passed; 0 failed; 0 skipped; finished in 9.26s (29.74s CPU time)
+Suite result: ok. 13 passed; 0 failed; 0 skipped; finished in 560.70ms (47.66ms CPU time)
 
 Ran 3 tests for test/mantle/ComposedFlashLoan.t.sol:ComposedFlashLoanTest
-[PASS] test_mantle_composed_flash_loan_close() (gas: 1670213)
+[PASS] test_mantle_composed_flash_loan_close() (gas: 1670182)
 Logs:
-  gas-flash-loan-close 444627
+  gas-flash-loan-close 444594
 
-[PASS] test_mantle_composed_flash_loan_open(uint8) (runs: 257, μ: 1068043, ~: 1177608)
+[PASS] test_mantle_composed_flash_loan_open(uint8) (runs: 257, μ: 1070032, ~: 1177587)
 [PASS] test_mantle_ext_call() (gas: 44756)
 Logs:
   true
 
-Suite result: ok. 3 passed; 0 failed; 0 skipped; finished in 9.26s (2.43s CPU time)
-
-Ran 10 tests for test/mantle/MarginDebtSwap.t.sol:MarginDebtSwapTest
-[PASS] test_margin_mantle_debt_all_out(uint8) (runs: 257, μ: 1483565, ~: 1615132)
-[PASS] test_margin_mantle_debt_all_out_v2(uint8) (runs: 257, μ: 1434512, ~: 1578978)
-[PASS] test_margin_mantle_debt_exact_in(uint8) (runs: 257, μ: 1495378, ~: 1644454)
-[PASS] test_margin_mantle_debt_exact_in_multi(uint8) (runs: 257, μ: 1552071, ~: 1699685)
-[PASS] test_margin_mantle_debt_exact_in_multi_v2(uint8) (runs: 257, μ: 1550000, ~: 1706383)
-[PASS] test_margin_mantle_debt_exact_in_v2(uint8) (runs: 257, μ: 1474485, ~: 1636714)
-[PASS] test_margin_mantle_debt_exact_out(uint8) (runs: 257, μ: 1499482, ~: 1664630)
-[PASS] test_margin_mantle_debt_exact_out_multi(uint8) (runs: 257, μ: 1564224, ~: 1713295)
-[PASS] test_margin_mantle_debt_exact_out_multi_v2(uint8) (runs: 257, μ: 1552172, ~: 1720243)
-[PASS] test_margin_mantle_debt_exact_out_v2(uint8) (runs: 257, μ: 1509594, ~: 1658670)
-Suite result: ok. 10 passed; 0 failed; 0 skipped; finished in 9.26s (34.71s CPU time)
-
-Ran 5 tests for test/mantle/MarginSwapGen2.t.sol:SwapGen2Test
-[PASS] test_mantle_gen_2_open_exact_in() (gas: 826420)
-Logs:
-  gas-open-exactIn-single 404419
-
-[PASS] test_mantle_gen_2_open_exact_in_composer() (gas: 826396)
-Logs:
-  gas-open-exactIn-single-composer 404419
-
-[PASS] test_mantle_gen_2_open_exact_in_multi() (gas: 1094404)
-Logs:
-  gas 724808 144771
-
-[PASS] test_mantle_gen_2_open_exact_in_multi_mixed() (gas: 986922)
-Logs:
-  gas 582898 144771
-
-[PASS] test_mantle_gen_2_open_exact_in_multi_mixed_double_v2() (gas: 956156)
-Logs:
-  gas 541461 144771
-
-Suite result: ok. 5 passed; 0 failed; 0 skipped; finished in 9.26s (54.98ms CPU time)
-
-Ran 9 tests for test/mantle/MarginOpen.t.sol:MarginOpenTest
-[PASS] test_margin_mantle_open_exact_in(uint8) (runs: 260, μ: 1063165, ~: 1150590)
-[PASS] test_margin_mantle_open_exact_in_izi(uint8) (runs: 260, μ: 982468, ~: 1071688)
-[PASS] test_margin_mantle_open_exact_in_multi(uint8) (runs: 260, μ: 1403880, ~: 1517102)
-[PASS] test_margin_mantle_open_exact_in_multi_v2(uint8) (runs: 260, μ: 1050905, ~: 1136452)
-[PASS] test_margin_mantle_open_exact_in_v2(uint8) (runs: 260, μ: 983887, ~: 1069433)
-[PASS] test_margin_mantle_open_exact_out(uint8) (runs: 260, μ: 1082857, ~: 1193238)
-[PASS] test_margin_mantle_open_exact_out_multi(uint8) (runs: 260, μ: 1404796, ~: 1505438)
-[PASS] test_margin_mantle_open_exact_out_multi_v2(uint8) (runs: 260, μ: 1038866, ~: 1137910)
-[PASS] test_margin_mantle_open_exact_out_v2(uint8) (runs: 260, μ: 989056, ~: 1082676)
-Suite result: ok. 9 passed; 0 failed; 0 skipped; finished in 9.11s (21.04s CPU time)
-
-Ran 10 tests for test/mantle/MarginCollateralSwap.t.sol:MarginCollateralSwapTest
-[PASS] test_margin_mantle_collateral_all_in(uint8) (runs: 258, μ: 1483405, ~: 1626856)
-[PASS] test_margin_mantle_collateral_all_in_v2(uint8) (runs: 258, μ: 1458563, ~: 1619058)
-[PASS] test_margin_mantle_collateral_exact_in(uint8) (runs: 258, μ: 1494296, ~: 1661638)
-[PASS] test_margin_mantle_collateral_exact_in_multi(uint8) (runs: 258, μ: 1596298, ~: 1768332)
-[PASS] test_margin_mantle_collateral_exact_in_multi_v2(uint8) (runs: 258, μ: 1549116, ~: 1722714)
-[PASS] test_margin_mantle_collateral_exact_in_v2(uint8) (runs: 258, μ: 1466934, ~: 1653043)
-[PASS] test_margin_mantle_collateral_exact_out(uint8) (runs: 258, μ: 1524485, ~: 1680879)
-[PASS] test_margin_mantle_collateral_exact_out_multi(uint8) (runs: 258, μ: 1610205, ~: 1758784)
-[PASS] test_margin_mantle_collateral_exact_out_multi_v2(uint8) (runs: 258, μ: 1577047, ~: 1736574)
-[PASS] test_margin_mantle_collateral_exact_out_v2(uint8) (runs: 258, μ: 1520120, ~: 1674955)
-Suite result: ok. 10 passed; 0 failed; 0 skipped; finished in 9.29s (34.38s CPU time)
+Suite result: ok. 3 passed; 0 failed; 0 skipped; finished in 1.50s (1.19s CPU time)
 

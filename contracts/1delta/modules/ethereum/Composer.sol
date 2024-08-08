@@ -17,8 +17,8 @@ contract OneDeltaComposerEthereum is MarginTrading {
     /// @dev The second bit signals whether the input token is a FOT token
     ///      Only used for SWAP_EXACT_IN
     uint256 private constant _FEE_ON_TRANSFER = 1 << 254;
-    /// @dev We use uint112-encoded ammounts to typically fit one bit flag, one path length (uint16)
-    ///      add 2 amounts (2xuint112) into 32bytes, as such we use this mask for extractinng those
+    /// @dev We use uint112-encoded amounts to typically fit one bit flag, one path length (uint16)
+    ///      add 2 amounts (2xuint112) into 32bytes, as such we use this mask for extracting those
     uint256 private constant _UINT112_MASK = 0x000000000000000000000000000000000000ffffffffffffffffffffffffffff;
     /// @dev we need USDCE and USDT to identify Compound V3's selectors
     address internal constant USDCE = 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174;
