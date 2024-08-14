@@ -407,15 +407,12 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
             // We extract all relevant data from the path bytes blob
             ////////////////////////////////////////////////////
             let pair := calldataload(add(pathOffset, 22))
-            // this is expected to be 10000 - x, where x is the poolfee in bps
-            let poolFeeDenom := and(UINT16_MASK, shr(80, pair))
-            pair := shr(96, pair)
             // we define this as token in and later re-assign this to
             // reserve in to prevent stack too deep errors
             let tokenIn_reserveIn := calldataload(pathOffset)
 
             let pId := and(shr(80, tokenIn_reserveIn), UINT8_MASK)
-            tokenIn_reserveIn := shr(96, calldataload(pathOffset))
+            tokenIn_reserveIn := shr(96, tokenIn_reserveIn)
 
             // Compute the buy amount based on the pair reserves.
             {
@@ -428,6 +425,11 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                 //     (pairSellAmount * feeAm + sellReserve * 1000);
                 switch lt(pId, 120)
                 case 1 {
+                    // this is expected to be 10000 - x, where x is the poolfee in bps
+                    let poolFeeDenom := and(UINT16_MASK, shr(80, pair))
+                    // we shift the pair
+                    pair := shr(96, pair)
+
                     // Call pair.getReserves(), store the results in scrap space
                     mstore(0x0, UNI_V2_GET_RESERVES)
                     if iszero(staticcall(gas(), pair, 0x0, 0x4, 0x0, 0x40)) {
@@ -448,6 +450,8 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                         tokenIn_reserveIn := mload(0x20)
                         buyAmount := mload(0x0)
                     }
+
+                    // compute out amount
                     poolFeeDenom := mul(amountIn, poolFeeDenom)
                     buyAmount := div(
                         mul(poolFeeDenom, buyAmount),
@@ -456,6 +460,8 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                 }
                 // all solidly-based protocols (velo, cleo V1, stratum)
                 default {
+                    // we ignore the fee denominator for solidly type DEXs
+                    pair := shr(96, pair)
                     // selector for getAmountOut(uint256,address)
                     mstore(ptr, 0xf140a35a00000000000000000000000000000000000000000000000000000000)
                     mstore(add(ptr, 0x4), amountIn)

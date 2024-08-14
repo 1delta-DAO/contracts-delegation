@@ -595,6 +595,16 @@ const config: HardhatUserConfig = {
       }
     ],
     overrides: {
+      "contracts/1delta/modules/polygon/Composer.sol": {
+        version: '0.8.26',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 10_000,
+          },
+          evmVersion: 'london',
+        },
+      },
       "contracts/external-protocols/aave-v3-core/protocol/pool/Pool.sol": {
         version: '0.8.10',
         settings: {
