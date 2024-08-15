@@ -6,8 +6,7 @@ pragma solidity 0.8.26;
 * Author: Achthar | 1delta 
 /******************************************************************************/
 
-import {TokenTransfer} from "./TokenTransfer.sol";
-import {ExoticSwapper} from "./swappers/Exotic.sol";
+import {BaseLending} from "./BaseLending.sol";
 
 // solhint-disable max-line-length
 
@@ -20,7 +19,7 @@ import {ExoticSwapper} from "./swappers/Exotic.sol";
  *             Uni V2: 100 - 110
  *             Solidly:121 - 130
  */
-abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
+abstract contract BaseSwapper is BaseLending {
 
     /**
      * Fund the first pool for self funded DEXs like Uni V2, GMX, LB, WooFi and Solidly V2 (dexId >= 100) 

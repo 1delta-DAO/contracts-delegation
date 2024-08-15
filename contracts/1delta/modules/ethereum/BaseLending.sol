@@ -3,6 +3,7 @@
 pragma solidity ^0.8.26;
 
 import {Slots} from "./storage/Slots.sol";
+import {BalancerSwapper} from "./swappers/Balancer.sol";
 
 /******************************************************************************\
 * Author: Achthar | 1delta 
@@ -13,10 +14,13 @@ import {Slots} from "./storage/Slots.sol";
 /**
  * @notice Lending base contract that wraps multiple lender types.
  */
-abstract contract BaseLending is Slots {
+abstract contract BaseLending is Slots, BalancerSwapper {
     // errors
     error BadLender();
-
+    
+    // wNative
+    address internal constant WRAPPED_NATIVE = 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270;
+    
     // aave type lender pool addresses
     address internal constant AAVE_V3 = 0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2;
     address internal constant SPARK = 0xC13e21B648A5Ee794902342038FF3aDAB66BE987;
@@ -631,7 +635,7 @@ abstract contract BaseLending is Slots {
                     // 2) GET BALANCE OF COLLATERAL TOKEN
 
                     // selector for balanceOf(address)
-                    mstore(0x0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+                    mstore(0x0, ERC20_BALANCE_OF)
                     // add this address as parameter
                     mstore(0x4, address())
 
@@ -645,7 +649,7 @@ abstract contract BaseLending is Slots {
                     if xor(address(), _to) {
                         // 3) TRANSFER TOKENS TO RECEIVER
                         // selector for transfer(address,uint256)
-                        mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+                        mstore(ptr, ERC20_TRANSFER)
                         mstore(add(ptr, 0x04), _to)
                         mstore(add(ptr, 0x24), collateralTokenAmount)
 

@@ -501,7 +501,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
 
     /**
      * Gets the input amount for a curve NG swap
-     * Note that this has an adjustment of 0.5 bps for the poutput amount to account for inaccuracies
+     * Note that this has an adjustment of 0.5 bps for the output amount to account for inaccuracies
      * when swapping using `exchange` or `exchange_received`
      */
     function _getNGAmountIn(address pool, uint256 indexIn, uint256 indexOut, uint256 amountOut) internal view returns (uint256 amountIn) {
@@ -517,7 +517,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
                 div(
                     // we upscale to avoid insufficient amount received
                     mul(
-                        10000050, // 0.50bp = 10_0000_50
+                        10000050, // 0.05bp = 10_000_0_50
                         amountOut
                     ),
                     10000000

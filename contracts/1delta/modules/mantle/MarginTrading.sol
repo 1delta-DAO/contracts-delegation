@@ -7,13 +7,12 @@ pragma solidity 0.8.26;
 /******************************************************************************/
 
 import {BaseSwapper} from "./BaseSwapper.sol";
-import {BaseLending} from "./BaseLending.sol";
 
 /**
  * @title Contract Module for general Margin Trading on an borrow delegation compatible Lender
  * @notice Contains main logic for uniswap-type callbacks and initiator functions
  */
-abstract contract MarginTrading is BaseSwapper, BaseLending {
+abstract contract MarginTrading is BaseSwapper {
     // errors
     error NoBalance();
 
@@ -24,7 +23,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
 
     uint256 internal constant UINT128_MASK = 0x00000000000000000000000000000000ffffffffffffffffffffffffffffffff;
 
-    constructor() BaseSwapper() BaseLending() {}
+    constructor() BaseSwapper() {}
 
     // fusionx
     function fusionXV3SwapCallback(

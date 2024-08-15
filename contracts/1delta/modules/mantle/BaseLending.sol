@@ -3,6 +3,7 @@
 pragma solidity ^0.8.26;
 
 import {Slots} from "./storage/Slots.sol";
+import {ExoticSwapper} from "./swappers/Exotic.sol";
 
 /******************************************************************************\
 * Author: Achthar | 1delta 
@@ -13,7 +14,11 @@ import {Slots} from "./storage/Slots.sol";
 /**
  * @notice Lending base contract that wraps multiple lender types.
  */
-abstract contract BaseLending is Slots {
+abstract contract BaseLending is Slots, ExoticSwapper {
+
+    // wNative
+    address internal constant WRAPPED_NATIVE = 0x78c1b0C915c4FAA5FffA6CAbf0219DA63d7f4cb8;
+
     // lender pool addresses
     address internal constant AURELIUS_POOL = 0x7c9C6F5BEd9Cfe5B9070C7D3322CF39eAD2F9492;
     address internal constant LENDLE_POOL = 0xCFa5aE7c2CE8Fadc6426C1ff872cA45378Fb7cF3;
@@ -32,7 +37,7 @@ abstract contract BaseLending is Slots {
             /** PREPARE TRANSFER_FROM USER */
 
             // selector for transferFrom(address,address,uint256)
-            mstore(ptr, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
+            mstore(ptr, ERC20_TRANSFER_FROM)
             mstore(add(ptr, 0x04), _from)
             mstore(add(ptr, 0x24), address())
             mstore(add(ptr, 0x44), _amount)
@@ -109,7 +114,7 @@ abstract contract BaseLending is Slots {
             //  transfer underlying if needed
             if xor(_to, address()) {
                 // selector for transfer(address,uint256)
-                mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+                mstore(ptr, ERC20_TRANSFER)
                 mstore(add(ptr, 0x04), _to)
                 mstore(add(ptr, 0x24), _amount)
 
