@@ -263,20 +263,16 @@ contract OneDeltaComposerMantle is MarginTrading, PermitUtils {
                         // `lenderId`   is at the end of the path
                         ////////////////////////////////////////////////////
                         if iszero(amountIn) {
-                            let tokenIn := shr(96, calldataload(opdataOffset))
                             let lenderId := and(
-                                shr(
-                                    8,
-                                    calldataload(
-                                        sub(
-                                            add(opdataLength, opdataOffset), //
-                                            32
-                                        )
+                                calldataload(
+                                    sub(
+                                        add(opdataLength, opdataOffset), //
+                                        33
                                     )
                                 ),
                                 UINT8_MASK
                             )
-                            mstore(0x0, tokenIn)
+                            mstore(0x0, shr(96, calldataload(opdataOffset))) // tokenIn
                             mstore8(0x0, lenderId)
                             mstore(0x20, COLLATERAL_TOKENS_SLOT)
                             let collateralToken := sload(keccak256(0x0, 0x40))
@@ -340,8 +336,7 @@ contract OneDeltaComposerMantle is MarginTrading, PermitUtils {
                             tokenIn := shr(96, tokenIn)
 
                             // last 32 bytes
-                            let lastWord := calldataload(sub(add(opdataLength, opdataOffset), 32))
-                            let lenderId := and(shr(8, lastWord), UINT8_MASK)
+                            let lenderId := and(calldataload(sub(add(opdataLength, opdataOffset), 33)), UINT8_MASK)
                             mstore(0x0, tokenIn)
                             mstore8(0x0, lenderId)
                             switch mode
@@ -405,7 +400,7 @@ contract OneDeltaComposerMantle is MarginTrading, PermitUtils {
                         // get amount to check allowance
                         let amount := calldataload(add(currentOffset, 60))
                         let dataLength := and(UINT16_MASK, shr(128, amount))
-                        amount := and(_UINT112_MASK, shr(144, amount))
+                        amount := shr(144, amount) // shr will already mask correctly
 
                         // free memo ptr for populating the tx
                         let ptr := mload(0x40)
@@ -828,7 +823,7 @@ contract OneDeltaComposerMantle is MarginTrading, PermitUtils {
                     // Wrap native, only uses amount as uint112
                     ////////////////////////////////////////////////////
                     assembly {
-                        let amount := and(_UINT112_MASK, shr(144, calldataload(currentOffset)))
+                        let amount := shr(144, calldataload(currentOffset))
                         if iszero(
                             call(
                                 gas(),
@@ -990,12 +985,12 @@ contract OneDeltaComposerMantle is MarginTrading, PermitUtils {
                     assembly {
                         // first slice, including poolId, refCode, asset
                         let slice := calldataload(currentOffset)
-                        let source := shr(248, slice) // last byte
+                        let source := shr(248, slice) // already masks uint8 as last byte
                         // get token to loan
                         let token := and(ADDRESS_MASK, shr(88, slice))
                         // second calldata slice including amount annd params length
                         slice := calldataload(add(currentOffset, 21))
-                        let amount := and(_UINT112_MASK, shr(144, slice))
+                        let amount := shr(144, slice) // shr will already mask uint112 here
                         // length of params
                         let calldataLength := and(UINT16_MASK, shr(128, slice))
 
