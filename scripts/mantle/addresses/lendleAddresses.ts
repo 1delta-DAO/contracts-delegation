@@ -10,7 +10,8 @@ export const LENDLE_A_TOKENS: { [key: string]: string } = {
     WMNT: '0x683696523512636b46a826a7e3d1b0658e8e2e1c',
     WBTC: '0x44cccbbd7a5a9e2202076ea80c185da0058f1715',
     METH: '0x0e927aa52a38783c1fd5dfa5c8873cbdbd01d2ca',
-    USDE: '0x2cfa1e69c8a8083aa52cfcf22d8caff7521e1e7e'
+    USDE: '0x2cfa1e69c8a8083aa52cfcf22d8caff7521e1e7e',
+    FBTC: '0xdef3542bb1b2969c1966dd91ebc504f4b37462fe'
 }
 
 export const LENDLE_V_TOKENS: { [key: string]: string } = {
@@ -20,7 +21,8 @@ export const LENDLE_V_TOKENS: { [key: string]: string } = {
     WMNT: '0x18d3e4f9951fedcddd806538857ebed2f5f423b7',
     WBTC: '0x42f9f9202d5f4412148662cf3bc68d704c8e354f',
     METH: '0xd739fb7a3b652306d00f92b20439afc637650254',
-    USDE: '0x08c830f79917205ff1605325fcfbb3efc0c16cb5'
+    USDE: '0x08c830f79917205ff1605325fcfbb3efc0c16cb5',
+    FBTC: '0x874712c653aaaa7cfb201317f46e00238c2649bb'
 }
 
 export const LENDLE_S_TOKENS: { [key: string]: string } = {
@@ -30,5 +32,6 @@ export const LENDLE_S_TOKENS: { [key: string]: string } = {
     WMNT: '0xafefc53be7e32c7510f054abb1ec5e44c03fccab',
     WBTC: '0x1817cde5cd6423c3b87039e1cb000bb2ac4e05c7',
     METH: '0x614110493ceae1171532eb635242e4ca71ccbba2',
-    USDE: '0x10475947aba834a0dbe60910ee787968b3e14917'
+    USDE: '0x10475947aba834a0dbe60910ee787968b3e14917',
+    FBTC: '0x08fc23af290d538647aa2836c5b3cf2fb3313759'
 }
