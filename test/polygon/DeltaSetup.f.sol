@@ -71,7 +71,7 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
     }
 
     function flashAggregatorSelectors() internal pure returns (bytes4[] memory selectors) {
-        selectors = new bytes4[](24);
+        selectors = new bytes4[](26);
         /** margin */
         selectors[0] = IFlashAggregator.flashSwapExactIn.selector;
         selectors[1] = IFlashAggregator.flashSwapExactOut.selector;
@@ -100,6 +100,8 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
         selectors[21] = IFlashAggregator.deltaCompose.selector;
         selectors[22] = IFlashLoanReceiver.executeOperation.selector;
         selectors[23] = IFlashLoanReceiver.receiveFlashLoan.selector;
+        selectors[24] = IFlashAggregator.waultSwapCall.selector;
+        selectors[25] = IFlashAggregator.apeCall.selector;
         return selectors;
     }
 

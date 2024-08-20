@@ -932,18 +932,17 @@ contract OneDeltaComposerMantle is MarginTrading, PermitUtils {
                     //      bytes 20-22:                 permit length
                     //      bytes 22-(22+permit length): permit data
                     ////////////////////////////////////////////////////
-                    bytes calldata permitData;
+                    uint256 permitOffset;
+                    uint256 permitLength;
                     address token;
                     assembly {
                         token := calldataload(currentOffset)
-                        let permitLength := and(UINT16_MASK, shr(80, token))
+                        permitLength := and(UINT16_MASK, shr(80, token))
                         token := shr(96, token)
-                        permitData.offset := add(currentOffset, 22)
-                        permitData.length := permitLength
-                        permitLength := add(22, permitLength)
-                        currentOffset := add(currentOffset, permitLength)
+                        permitOffset := add(currentOffset, 22)
+                        currentOffset := add(permitOffset, permitLength)
                     }
-                    _tryPermit(token, permitData);
+                    _tryPermit(token, permitOffset, permitLength);
                 } else if (operation == Commands.EXEC_CREDIT_PERMIT) {
                     ////////////////////////////////////////////////////
                     // Execute credit delegation permit.
@@ -954,18 +953,17 @@ contract OneDeltaComposerMantle is MarginTrading, PermitUtils {
                     //      bytes 20-22:                 permit length
                     //      bytes 22-(22+permit length): permit data
                     ////////////////////////////////////////////////////
-                    bytes calldata permitData;
+                    uint256 permitOffset;
+                    uint256 permitLength;
                     address token;
                     assembly {
                         token := calldataload(currentOffset)
-                        let permitLength := and(UINT16_MASK, shr(80, token))
+                        permitLength := and(UINT16_MASK, shr(80, token))
                         token := shr(96, token)
-                        permitData.offset := add(currentOffset, 22)
-                        permitData.length := permitLength
-                        permitLength := add(22, permitLength)
-                        currentOffset := add(currentOffset, permitLength)
+                        permitOffset := add(currentOffset, 22)
+                        currentOffset := add(permitOffset, permitLength)
                     }
-                    _tryCreditPermit(token, permitData);
+                    _tryCreditPermit(token, permitOffset, permitLength);
                 } else if (operation == Commands.FLASH_LOAN) {
                     ////////////////////////////////////////////////////
                     // Execute single asset flash loan

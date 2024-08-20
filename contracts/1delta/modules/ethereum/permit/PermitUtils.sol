@@ -43,14 +43,15 @@ abstract contract PermitUtils {
      * Note that the implementation does not perform dirty bits cleaning, so it is the responsibility of
      * the caller to make sure that the higher 96 bits of the `owner` and `spender` parameters are clean.
      * @param token The address of the ERC20 token on which to call the permit function.
-     * @param permit The off-chain permit data, containing different fields depending on the type of permit function.
+     * @param permitOffset The off-chain permit data, containing different fields depending on the type of permit function.
+     * @param permitLength Length of the permit calldata.
      */
-    function _tryPermit(address token, bytes calldata permit) internal {
+    function _tryPermit(address token, uint256 permitOffset, uint permitLength) internal {
         assembly ("memory-safe") { // solhint-disable-line no-inline-assembly
             let ptr := mload(0x40)
             let success
             // Switch case for different permit lengths, indicating different permit standards
-            switch permit.length
+            switch permitLength
             // Compact IERC20Permit
             case 100 {
                 mstore(ptr, ERC20_PERMIT)     // store selector
@@ -59,13 +60,13 @@ abstract contract PermitUtils {
 
                 // Compact IERC20Permit.permit(uint256 value, uint32 deadline, uint256 r, uint256 vs)
                 {  // stack too deep
-                    let deadline := shr(224, calldataload(add(permit.offset, 0x20))) // loads permit.offset 0x20..0x23
-                    let vs := calldataload(add(permit.offset, 0x44))                 // loads permit.offset 0x44..0x63
+                    let deadline := shr(224, calldataload(add(permitOffset, 0x20))) // loads permitOffset 0x20..0x23
+                    let vs := calldataload(add(permitOffset, 0x44))                 // loads permitOffset 0x44..0x63
 
-                    calldatacopy(add(ptr, 0x44), permit.offset, 0x20)            // store value     = copy permit.offset 0x00..0x19
+                    calldatacopy(add(ptr, 0x44), permitOffset, 0x20)            // store value     = copy permitOffset 0x00..0x19
                     mstore(add(ptr, 0x64), sub(deadline, 1))                     // store deadline  = deadline - 1
                     mstore(add(ptr, 0x84), add(27, shr(255, vs)))                // store v         = most significant bit of vs + 27 (27 or 28)
-                    calldatacopy(add(ptr, 0xa4), add(permit.offset, 0x24), 0x20) // store r         = copy permit.offset 0x24..0x43
+                    calldatacopy(add(ptr, 0xa4), add(permitOffset, 0x24), 0x20) // store r         = copy permitOffset 0x24..0x43
                     mstore(add(ptr, 0xc4), shr(1, shl(1, vs)))                   // store s         = vs without most significant bit
                 }
                 // IERC20Permit.permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
@@ -79,14 +80,14 @@ abstract contract PermitUtils {
 
                 // Compact IDaiLikePermit.permit(uint32 nonce, uint32 expiry, uint256 r, uint256 vs)
                 {  // stack too deep
-                    let expiry := shr(224, calldataload(add(permit.offset, 0x04))) // loads permit.offset 0x04..0x07
-                    let vs := calldataload(add(permit.offset, 0x28))               // loads permit.offset 0x28..0x47
+                    let expiry := shr(224, calldataload(add(permitOffset, 0x04))) // loads permitOffset 0x04..0x07
+                    let vs := calldataload(add(permitOffset, 0x28))               // loads permitOffset 0x28..0x47
 
-                    mstore(add(ptr, 0x44), shr(224, calldataload(permit.offset))) // store nonce   = copy permit.offset 0x00..0x03
+                    mstore(add(ptr, 0x44), shr(224, calldataload(permitOffset))) // store nonce   = copy permitOffset 0x00..0x03
                     mstore(add(ptr, 0x64), sub(expiry, 1))                        // store expiry  = expiry - 1
                     mstore(add(ptr, 0x84), true)                                  // store allowed = true
                     mstore(add(ptr, 0xa4), add(27, shr(255, vs)))                 // store v       = most significant bit of vs + 27 (27 or 28)
-                    calldatacopy(add(ptr, 0xc4), add(permit.offset, 0x08), 0x20)  // store r       = copy permit.offset 0x08..0x27
+                    calldatacopy(add(ptr, 0xc4), add(permitOffset, 0x08), 0x20)  // store r       = copy permitOffset 0x08..0x27
                     mstore(add(ptr, 0xe4), shr(1, shl(1, vs)))                    // store s       = vs without most significant bit
                 }
                 // IDaiLikePermit.permit(address holder, address spender, uint256 nonce, uint256 expiry, bool allowed, uint8 v, bytes32 r, bytes32 s)
@@ -95,14 +96,14 @@ abstract contract PermitUtils {
             // IERC20Permit
             case 224 {
                 mstore(ptr, ERC20_PERMIT)
-                calldatacopy(add(ptr, 0x04), permit.offset, permit.length) // copy permit calldata
+                calldatacopy(add(ptr, 0x04), permitOffset, permitLength) // copy permit calldata
                 // IERC20Permit.permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
                 success := call(gas(), token, 0, ptr, 0xe4, 0, 0)
             }
             // IDaiLikePermit
             case 256 {
                 mstore(ptr, DAI_PERMIT)
-                calldatacopy(add(ptr, 0x04), permit.offset, permit.length) // copy permit calldata
+                calldatacopy(add(ptr, 0x04), permitOffset, permitLength) // copy permit calldata
                 // IDaiLikePermit.permit(address holder, address spender, uint256 nonce, uint256 expiry, bool allowed, uint8 v, bytes32 r, bytes32 s)
                 success := call(gas(), token, 0, ptr, 0x104, 0, 0)
             }
@@ -113,24 +114,24 @@ abstract contract PermitUtils {
                 mstore(add(ptr, 0x04), caller()) // store owner
                 mstore(add(ptr, 0x24), token) // store token
 
-                calldatacopy(add(ptr, 0x50), permit.offset, 0x14)             // store amount = copy permit.offset 0x00..0x13
+                calldatacopy(add(ptr, 0x50), permitOffset, 0x14)             // store amount = copy permitOffset 0x00..0x13
                 // and(0xffffffffffff, ...) - conversion to uint48
-                mstore(add(ptr, 0x64), and(0xffffffffffff, sub(shr(224, calldataload(add(permit.offset, 0x14))), 1))) // store expiration = ((permit.offset 0x14..0x17 - 1) & 0xffffffffffff)
-                mstore(add(ptr, 0x84), shr(224, calldataload(add(permit.offset, 0x18)))) // store nonce = copy permit.offset 0x18..0x1b
+                mstore(add(ptr, 0x64), and(0xffffffffffff, sub(shr(224, calldataload(add(permitOffset, 0x14))), 1))) // store expiration = ((permitOffset 0x14..0x17 - 1) & 0xffffffffffff)
+                mstore(add(ptr, 0x84), shr(224, calldataload(add(permitOffset, 0x18)))) // store nonce = copy permitOffset 0x18..0x1b
                 mstore(add(ptr, 0xa4), address())                               // store spender
                 // and(0xffffffffffff, ...) - conversion to uint48
-                mstore(add(ptr, 0xc4), and(0xffffffffffff, sub(shr(224, calldataload(add(permit.offset, 0x1c))), 1))) // store sigDeadline = ((permit.offset 0x1c..0x1f - 1) & 0xffffffffffff)
+                mstore(add(ptr, 0xc4), and(0xffffffffffff, sub(shr(224, calldataload(add(permitOffset, 0x1c))), 1))) // store sigDeadline = ((permitOffset 0x1c..0x1f - 1) & 0xffffffffffff)
                 mstore(add(ptr, 0xe4), 0x100)                                 // store offset = 256
                 mstore(add(ptr, 0x104), 0x40)                                 // store length = 64
-                calldatacopy(add(ptr, 0x124), add(permit.offset, 0x20), 0x20) // store r      = copy permit.offset 0x20..0x3f
-                calldatacopy(add(ptr, 0x144), add(permit.offset, 0x40), 0x20) // store vs     = copy permit.offset 0x40..0x5f
+                calldatacopy(add(ptr, 0x124), add(permitOffset, 0x20), 0x20) // store r      = copy permitOffset 0x20..0x3f
+                calldatacopy(add(ptr, 0x144), add(permitOffset, 0x40), 0x20) // store vs     = copy permitOffset 0x40..0x5f
                 // IPermit2.permit(address owner, PermitSingle calldata permitSingle, bytes calldata signature)
                 success := call(gas(), PERMIT2, 0, ptr, 0x164, 0, 0)
             }
             // IPermit2
             case 352 {
                 mstore(ptr, PERMIT2_PERMIT)
-                calldatacopy(add(ptr, 0x04), permit.offset, permit.length) // copy permit calldata
+                calldatacopy(add(ptr, 0x04), permitOffset, permitLength) // copy permit calldata
                 // IPermit2.permit(address owner, PermitSingle calldata permitSingle, bytes calldata signature)
                 success := call(gas(), PERMIT2, 0, ptr, 0x164, 0, 0)
             }
@@ -154,13 +155,13 @@ abstract contract PermitUtils {
      * be the respective debt token and NOT the underlying
      * Others like compound will not use it at all.
      * @param token asset to permit / delegate
-     * @param permit calldata
+     * @param permitOffset calldata
      */
-    function _tryCreditPermit(address token, bytes calldata permit) internal {
+    function _tryCreditPermit(address token, uint256 permitOffset, uint permitLength) internal {
         assembly {
             let success
             let ptr := mload(0x40)
-            switch permit.length
+            switch permitLength
             // Compact IERC20Permit
             case 100 {
                 mstore(ptr, CREDIT_PERMIT)     // store selector
@@ -169,13 +170,13 @@ abstract contract PermitUtils {
 
                 // Compact ICreditPermit.delegationWithSig(uint256 value, uint32 deadline, uint256 r, uint256 vs)
                 {  // stack too deep
-                    let deadline := shr(224, calldataload(add(permit.offset, 0x20))) // loads permit.offset 0x20..0x23
-                    let vs := calldataload(add(permit.offset, 0x44))                 // loads permit.offset 0x44..0x63
+                    let deadline := shr(224, calldataload(add(permitOffset, 0x20))) // loads permitOffset 0x20..0x23
+                    let vs := calldataload(add(permitOffset, 0x44))                 // loads permitOffset 0x44..0x63
 
-                    calldatacopy(add(ptr, 0x44), permit.offset, 0x20)            // store value     = copy permit.offset 0x00..0x19
+                    calldatacopy(add(ptr, 0x44), permitOffset, 0x20)            // store value     = copy permitOffset 0x00..0x19
                     mstore(add(ptr, 0x64), sub(deadline, 1))                     // store deadline  = deadline - 1
                     mstore(add(ptr, 0x84), add(27, shr(255, vs)))                // store v         = most significant bit of vs + 27 (27 or 28)
-                    calldatacopy(add(ptr, 0xa4), add(permit.offset, 0x24), 0x20) // store r         = copy permit.offset 0x24..0x43
+                    calldatacopy(add(ptr, 0xa4), add(permitOffset, 0x24), 0x20) // store r         = copy permitOffset 0x24..0x43
                     mstore(add(ptr, 0xc4), shr(1, shl(1, vs)))                   // store s         = vs without most significant bit
                 }
                 // ICreditPermit.delegationWithSig(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
@@ -184,7 +185,7 @@ abstract contract PermitUtils {
                         // ICreditPermit
             case 224 {
                 mstore(ptr, CREDIT_PERMIT)
-                calldatacopy(add(ptr, 0x04), permit.offset, permit.length) // copy permit calldata
+                calldatacopy(add(ptr, 0x04), permitOffset, permitLength) // copy permit calldata
                 // ICreditPermit.delegationWithSig(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
                 success := call(gas(), token, 0, ptr, 0xe4, 0, 0)
             }
