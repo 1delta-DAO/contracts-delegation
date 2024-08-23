@@ -1,6 +1,7 @@
 [profile.default]
 solc-version = "0.8.26"
-optimizer_runs = 1_000_000
+evm_version="paris"
+optimizer_runs = 9_950
 src = "contracts/1delta"
 out = "out"
 libs = ["lib"]

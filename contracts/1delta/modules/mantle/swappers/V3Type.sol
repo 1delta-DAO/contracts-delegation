@@ -3,6 +3,7 @@
 pragma solidity 0.8.26;
 
 import {DeltaErrors} from "./Errors.sol";
+import {ERC20Selectors} from "../selectors/ERC20Selectors.sol";
 
 /******************************************************************************\
 * Author: Achthar | 1delta 
@@ -11,10 +12,10 @@ import {DeltaErrors} from "./Errors.sol";
 // solhint-disable max-line-length
 
 /**
- * @title Base swapper contract
- * @notice Contains basic logic for swap executions with DEXs
+ * @title Uniswap V3 type swapper contract
+ * @notice Executes Cl swaps and pushing data to the callbacks
  */
-abstract contract V3TypeSwapper is DeltaErrors {
+abstract contract V3TypeSwapper is DeltaErrors, ERC20Selectors {
     ////////////////////////////////////////////////////
     // Masks
     ////////////////////////////////////////////////////
@@ -29,9 +30,9 @@ abstract contract V3TypeSwapper is DeltaErrors {
     uint160 internal constant MIN_SQRT_RATIO = 4295128740;
     /// @dev MAX_SQRT_RATIO - 1 from Uniswap's TickMath
     uint160 internal constant MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970341;
-    /// @dev Mask of lower 1 byte.
+    /// @dev Maximum Uint256 value
     uint256 internal constant MAX_UINT256 = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
-
+    
     ////////////////////////////////////////////////////
     // param lengths
     ////////////////////////////////////////////////////
@@ -93,7 +94,7 @@ abstract contract V3TypeSwapper is DeltaErrors {
             )
             // Return amount0 or amount1 depending on direction
             let zeroForOne := lt(
-                and(ADDRESS_MASK, shr(96, calldataload(pathOffset))), // tokenIn
+                shr(96, calldataload(pathOffset)), // tokenIn
                 and(ADDRESS_MASK, calldataload(add(pathOffset, 32))) // tokenOut
             )
 
@@ -176,7 +177,7 @@ abstract contract V3TypeSwapper is DeltaErrors {
             )
             // Return amount0 or amount1 depending on direction
             switch lt(
-                and(ADDRESS_MASK, shr(96, calldataload(pathOffset))), // tokenIn
+                shr(96, calldataload(pathOffset)), // tokenIn
                 and(ADDRESS_MASK, calldataload(add(pathOffset, 32))) // tokenOut
             )
             case 0 {
@@ -273,7 +274,7 @@ abstract contract V3TypeSwapper is DeltaErrors {
             // Return amount0 or amount1 depending on direction
             switch lt(
                 and(ADDRESS_MASK, calldataload(add(pathOffset, 32))), // tokenIn
-                and(ADDRESS_MASK, shr(96, calldataload(pathOffset))) // tokenOut
+                shr(96, calldataload(pathOffset)) // tokenOut
             )
             case 0 {
                 // Prepare external call data
@@ -369,7 +370,7 @@ abstract contract V3TypeSwapper is DeltaErrors {
             // Return amount0 or amount1 depending on direction
             let zeroForOne := lt(
                 and(ADDRESS_MASK, calldataload(add(pathOffset, 32))), // tokenIn
-                and(ADDRESS_MASK, shr(96, calldataload(pathOffset))) // tokenOut
+                shr(96, calldataload(pathOffset)) // tokenOut
             )
 
             // Return amount0 or amount1 depending on direction

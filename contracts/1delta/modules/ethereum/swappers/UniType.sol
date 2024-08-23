@@ -11,12 +11,22 @@ import {V3TypeSwapper} from "./V3Type.sol";
 // solhint-disable max-line-length
 
 /**
- * @title Base swapper contract
- * @notice Contains basic logic for swap executions with DEXs
+ * @title Uniswap V2 type swapper contract
+ * @notice We do everything UniV2 here, incl Solidly, FoT, exactIn and -Out
  */
 abstract contract UniTypeSwapper is V3TypeSwapper {
     /// @dev used for some of the denominators in solidly calculations
     uint256 private constant SCALE_18 = 1.0e18;
+
+    ////////////////////////////////////////////////////
+    // Uni V2 type selctors
+    ////////////////////////////////////////////////////
+
+    /// @dev selector for getReserves()
+    bytes32 private constant UNI_V2_GET_RESERVES = 0x0902f1ac00000000000000000000000000000000000000000000000000000000;
+
+    /// @dev selector for swap(...)
+    bytes32 private constant UNI_V2_SWAP = 0x022c0d9f00000000000000000000000000000000000000000000000000000000;
 
     ////////////////////////////////////////////////////
     // dex references
@@ -27,29 +37,14 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
     bytes32 internal constant UNI_V2_FF_FACTORY = 0xff9e5A52f57b3038F1B8EeE45F28b3C1967e22799C0000000000000000000000;
     bytes32 internal constant CODE_HASH_UNI_V2 = 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f;
 
-    bytes32 internal constant FRAX_SWAP_FF_FACTORY = 0xff54F454D747e037Da288dB568D4121117EAb34e790000000000000000000000;
+    bytes32 internal constant FRAX_SWAP_FF_FACTORY = 0xff43eC799eAdd63848443E2347C49f5f52e8Fe0F6f0000000000000000000000;
     bytes32 internal constant CODE_HASH_FRAX_SWAP = 0x4ce0b4ab368f39e4bd03ec712dfc405eb5a36cdb0294b3887b441cd1c743ced3;
 
-    bytes32 internal constant SUSHI_V2_FF_FACTORY = 0xffc35DADB65012eC5796536bD9864eD8773aBc74C40000000000000000000000;
+    bytes32 internal constant SUSHI_V2_FF_FACTORY = 0xffC0AEe478e3658e2610c5F7A4A2E1777cE9e4f2Ac0000000000000000000000;
     bytes32 internal constant CODE_HASH_SUSHI_V2 = 0xe18a34eb0e04b04f7a0ac29a6e80748dca96319b42c54d679cb821dca90c6303;
 
-    bytes32 internal constant DFYN_FF_FACTORY = 0xffE7Fb3e833eFE5F9c441105EB65Ef8b261266423B0000000000000000000000;
-    bytes32 internal constant CODE_HASH_DFYN = 0xf187ed688403aa4f7acfada758d8d53698753b998a3071b06f1b777f4330eaf3;
-
-    bytes32 internal constant POLYCAT_FF_FACTORY = 0xff477Ce834Ae6b7aB003cCe4BC4d8697763FF456FA0000000000000000000000;
-    bytes32 internal constant CODE_HASH_POLYCAT = 0x3cad6f9e70e13835b4f07e5dd475f25a109450b22811d0437da51e66c161255a;
-
-    bytes32 internal constant APESWAP_FF_FACTORY = 0xffCf083Be4164828f00cAE704EC15a36D7114912840000000000000000000000;
-    bytes32 internal constant CODE_HASH_APESWAP = 0x511f0f358fe530cda0859ec20becf391718fdf5a329be02f4c95361f3d6a42d8;
-
-    bytes32 internal constant COMETH_FF_FACTORY = 0xff800b052609c355cA8103E06F022aA30647eAd60a0000000000000000000000;
-    bytes32 internal constant CODE_HASH_COMETH = 0x499154cad90a3563f914a25c3710ed01b9a43b8471a35ba8a66a056f37638542;
-
-    bytes32 internal constant WAULTSWAP_FF_FACTORY = 0xffa98ea6356A316b44Bf710D5f9b6b4eA0081409Ef0000000000000000000000;
-    bytes32 internal constant CODE_HASH_WAULTSWAP = 0x1cdc2246d318ab84d8bc7ae2a3d81c235f3db4e113f4c6fdc1e2211a9291be47;
-
-    bytes32 internal constant DYSTOPIA_FF_FACTORY = 0xff1d21Db6cde1b18c7E47B0F7F42f4b3F68b9beeC90000000000000000000000;
-    bytes32 internal constant CODE_HASH_DYSTOPIA = 0x009bce6d7eb00d3d075e5bd9851068137f44bba159f1cde806a268e20baaf2e8;
+    bytes32 internal constant SOLIDLY_V2_FF_FACTORY = 0xff1d21Db6cde1b18c7E47B0F7F42f4b3F68b9beeC90000000000000000000000;
+    bytes32 internal constant SOLIDLY_V2_CODE_HASH = 0x413d36e4ab9e83cf39b8064a3b5c98253a9e46a6cf02c8efd185314c866d656b;
 
     constructor() {}
 
@@ -64,8 +59,8 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
      * @param useFlashSwap if true, we assume payment in callback
      */
     function _swapV2StyleExactOut(
-        address tokenA,
-        address tokenB,
+        address tokenIn,
+        address tokenOut,
         address pair,
         uint256 amountOut,
         uint256 maxIn,
@@ -79,9 +74,9 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
         assembly {
             let ptr := mload(0x40)
             // selector for swap(...)
-            mstore(ptr, 0x022c0d9f00000000000000000000000000000000000000000000000000000000)
+            mstore(ptr, UNI_V2_SWAP)
 
-            switch lt(tokenA, tokenB)
+            switch lt(tokenIn, tokenOut)
             case 1 {
                 mstore(add(ptr, 0x4), 0x0)
                 mstore(add(ptr, 0x24), amountOut)
@@ -130,11 +125,11 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                     // Populate tx for transfer to receiver
                     ////////////////////////////////////////////////////
                     // selector for transfer(address,uint256)
-                    mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+                    mstore(ptr, ERC20_TRANSFER)
                     mstore(add(ptr, 0x04), receiver)
                     mstore(add(ptr, 0x24), amountOut)
 
-                    let success := call(gas(), tokenB, 0, ptr, 0x44, ptr, 32)
+                    let success := call(gas(), tokenOut, 0, ptr, 0x44, ptr, 32)
 
                     let rdsize := returndatasize()
 
@@ -211,7 +206,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
         assembly {
             let ptr := mload(0x40)
             // Call pair.getReserves(), store the results at `scrap space`
-            mstore(0x0, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
+            mstore(0x0, UNI_V2_GET_RESERVES)
             if iszero(staticcall(gas(), pair, 0x0, 0x4, 0x0, 0x40)) {
                 returndatacopy(0, 0, returndatasize())
                 revert(0, returndatasize())
@@ -253,6 +248,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                     )
                 }
                 // covers solidly forks for stable pools (>=135)
+                /// @dev this will be ugly
                 default {
                     let _decimalsIn
                     let _decimalsOut_xy_fee
@@ -272,7 +268,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                         _decimalsOut_xy_fee := exp(10, mload(0x4))
 
                         // Call pair.getReserves(), store the results in scrap space
-                        mstore(0x0, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
+                        mstore(0x0, UNI_V2_GET_RESERVES)
                         if iszero(staticcall(gas(), pair, 0x0, 0x4, 0x0, 0x40)) {
                             returndatacopy(0, 0, returndatasize())
                             revert(0, returndatasize())
@@ -402,15 +398,12 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
             // We extract all relevant data from the path bytes blob
             ////////////////////////////////////////////////////
             let pair := calldataload(add(pathOffset, 22))
-            // this is expected to be 10000 - x, where x is the poolfee in bps
-            let poolFeeDenom := and(shr(80, pair), UINT16_MASK)
-            pair := and(ADDRESS_MASK, shr(96, pair))
             // we define this as token in and later re-assign this to
             // reserve in to prevent stack too deep errors
             let tokenIn_reserveIn := calldataload(pathOffset)
 
             let pId := and(shr(80, tokenIn_reserveIn), UINT8_MASK)
-            tokenIn_reserveIn := and(ADDRESS_MASK, shr(96, calldataload(pathOffset)))
+            tokenIn_reserveIn := shr(96, tokenIn_reserveIn)
 
             // Compute the buy amount based on the pair reserves.
             {
@@ -423,8 +416,12 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                 //     (pairSellAmount * feeAm + sellReserve * 1000);
                 switch lt(pId, 120)
                 case 1 {
+                    // this is expected to be 10000 - x, where x is the poolfee in bps
+                    let poolFeeDenom := and(shr(80, pair), UINT16_MASK)
+                    pair := shr(96, pair)
+
                     // Call pair.getReserves(), store the results in scrap space
-                    mstore(0x0, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
+                    mstore(0x0, UNI_V2_GET_RESERVES)
                     if iszero(staticcall(gas(), pair, 0x0, 0x4, 0x0, 0x40)) {
                         returndatacopy(0, 0, returndatasize())
                         revert(0, returndatasize())
@@ -443,6 +440,8 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                         tokenIn_reserveIn := mload(0x20)
                         buyAmount := mload(0x0)
                     }
+
+                    // compute out amount
                     poolFeeDenom := mul(amountIn, poolFeeDenom)
                     buyAmount := div(
                         mul(poolFeeDenom, buyAmount),
@@ -451,6 +450,8 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                 }
                 // all solidly-based protocols
                 default {
+                    // we ignore the fee denominator for solidly type DEXs
+                    pair := shr(96, pair)
                     // selector for getAmountOut(uint256,address)
                     mstore(ptr, 0xf140a35a00000000000000000000000000000000000000000000000000000000)
                     mstore(add(ptr, 0x4), amountIn)
@@ -462,14 +463,13 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
 
                     buyAmount := mload(ptr)
                 }
-                
 
                 ////////////////////////////////////////////////////
                 // Prepare the swap tx
                 ////////////////////////////////////////////////////
 
                 // selector for swap(...)
-                mstore(ptr, 0x022c0d9f00000000000000000000000000000000000000000000000000000000)
+                mstore(ptr, UNI_V2_SWAP)
 
                 switch zeroForOne
                 case 0 {
@@ -558,11 +558,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
      * @param amountIn sell amount
      * @return buyAmount output amount
      */
-    function swapUniV2ExactInFOT(
-        uint256 amountIn, 
-        address receiver, 
-        uint256 pathOffset
-    ) internal returns (uint256 buyAmount) {
+    function swapUniV2ExactInFOT(uint256 amountIn, address receiver, uint256 pathOffset) internal returns (uint256 buyAmount) {
         assembly {
             let ptr := mload(0x40) // free memory pointer
             ////////////////////////////////////////////////////
@@ -571,11 +567,10 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
             let pair := calldataload(add(pathOffset, 22))
             // this is expected to be 10000 - x, where x is the poolfee in bps
             let poolFeeDenom := and(shr(80, pair), UINT16_MASK)
-            pair := and(ADDRESS_MASK, shr(96, pair))
+            pair := shr(96, pair)
             // we define this as token in and later re-assign this to
             // reserve in to prevent stack too deep errors
-            let tokenIn := calldataload(pathOffset)
-            tokenIn := and(ADDRESS_MASK, shr(96, tokenIn))
+            let tokenIn := shr(96, calldataload(pathOffset))
             // Compute the buy amount based on the pair reserves.
             {
                 let zeroForOne := lt(
@@ -586,7 +581,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                 // buyAmount = (pairSellAmount * feeAm * buyReserve) /
                 //     (pairSellAmount * feeAm + sellReserve * 1000);
                 // Call pair.getReserves(), store the results in scrap space
-                mstore(0x0, 0x0902f1ac00000000000000000000000000000000000000000000000000000000)
+                mstore(0x0, UNI_V2_GET_RESERVES)
                 if iszero(staticcall(gas(), pair, 0x0, 0x4, 0x0, 0x40)) {
                     returndatacopy(0, 0, returndatasize())
                     revert(0, returndatasize())
@@ -607,7 +602,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                     buyAmount := mload(0x0)
                 }
                 // call tokenIn.balanceOf(pair)
-                mstore(0x0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+                mstore(0x0, ERC20_BALANCE_OF)
                 mstore(0x4, pair)
                 // we store the result
                 pop(staticcall(gas(), tokenIn, 0x0, 0x24, 0x0, 0x20))
@@ -616,14 +611,13 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
                 // adjustment via denominator
                 poolFeeDenom := mul(amountIn, poolFeeDenom)
                 buyAmount := div(mul(poolFeeDenom, buyAmount), add(poolFeeDenom, mul(sellReserve, 10000)))
-            
 
                 ////////////////////////////////////////////////////
                 // Prepare the swap tx
                 ////////////////////////////////////////////////////
 
                 // selector for swap(...)
-                mstore(ptr, 0x022c0d9f00000000000000000000000000000000000000000000000000000000)
+                mstore(ptr, UNI_V2_SWAP)
 
                 switch zeroForOne
                 case 0 {

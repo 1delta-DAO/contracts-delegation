@@ -3,6 +3,7 @@
 pragma solidity 0.8.26;
 
 import {DeltaErrors} from "./Errors.sol";
+import {ERC20Selectors} from "../selectors/ERC20Selectors.sol";
 
 /******************************************************************************\
 * Author: Achthar | 1delta 
@@ -11,10 +12,10 @@ import {DeltaErrors} from "./Errors.sol";
 // solhint-disable max-line-length
 
 /**
- * @title Base swapper contract
- * @notice Contains basic logic for swap executions with DEXs
+ * @title Uniswap V3 type swapper contract
+ * @notice Executes Cl swaps and pushing data to the callbacks
  */
-abstract contract V3TypeSwapper is DeltaErrors {
+abstract contract V3TypeSwapper is DeltaErrors, ERC20Selectors {
     ////////////////////////////////////////////////////
     // Masks
     ////////////////////////////////////////////////////
@@ -29,8 +30,9 @@ abstract contract V3TypeSwapper is DeltaErrors {
     uint160 internal constant MIN_SQRT_RATIO = 4295128740;
     /// @dev MAX_SQRT_RATIO - 1 from Uniswap's TickMath
     uint160 internal constant MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970341;
-
-
+    /// @dev Maximum Uint256 value
+    uint256 internal constant MAX_UINT256 = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
+    
     ////////////////////////////////////////////////////
     // param lengths
     ////////////////////////////////////////////////////
@@ -38,29 +40,21 @@ abstract contract V3TypeSwapper is DeltaErrors {
     uint256 internal constant MAX_SINGLE_LENGTH_UNOSWAP = 66;
     uint256 internal constant SKIP_LENGTH_UNOSWAP = 44; // = 20+1+1+20+2
 
-
     ////////////////////////////////////////////////////
     // dex references
     ////////////////////////////////////////////////////
 
-    bytes32 internal constant SMARDEX_FF_FACTORY = 0xff9A1e1681f6D59Ca051776410465AfAda6384398f0000000000000000000000;
-    bytes32 internal constant CODE_HASH_SMARDEX = 0x33bee911475f015247aeb1eebe149d1c6d2669be54126c29d85df6b0abb4c4e9;
+    bytes32 internal constant UNISWAP_V3_FF_FACTORY = 0xff0d922Fb1Bc191F64970ac40376643808b4B74Df90000000000000000000000;
+    bytes32 internal constant UNISWAP_V3_INIT_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
 
-    bytes32 internal constant UNI_V3_FF_FACTORY = 0xff1f98431c8ad98523631ae4a59f267346ea31f9840000000000000000000000;
-    bytes32 internal constant UNI_POOL_INIT_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
+    bytes32 internal constant SUSHI_V3_FF_FACTORY = 0xffbACEB8eC6b9355Dfc0269C18bac9d6E2Bdc29C4F0000000000000000000000;
+    bytes32 internal constant SUSHI_V3_INIT_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
 
-    bytes32 internal constant RETRO_FF_FACTORY = 0xff91e1B99072f238352f59e58de875691e20Dc19c10000000000000000000000;
-    bytes32 internal constant RETRO_POOL_INIT_CODE_HASH = 0x817e07951f93017a93327ac8cc31e946540203a19e1ecc37bc1761965c2d1090;
+    bytes32 internal constant PANCAKE_V3_FF_FACTORY = 0xff41ff9AA7e16B8B1a8a8dc4f0eFacd93D02d071c90000000000000000000000;
+    bytes32 internal constant PANCAKE_V3_INIT_CODE_HASH = 0x6ce8eb472fa82df5469c6ab6d485f17c3ad13c8cd7af59b3d4a8026c5ce0f7e2;
 
-    bytes32 internal constant IZI_FF_FACTORY = 0xffcA7e21764CD8f7c1Ec40e651E25Da68AeD0960370000000000000000000000;
-    bytes32 internal constant IZI_POOL_INIT_CODE_HASH = 0xbe0bfe068cdd78cafa3ddd44e214cfa4e412c15d7148e932f8043fe883865e40;
-
-    bytes32 internal constant ALGEBRA_V3_FF_DEPLOYER = 0xff2d98e2fa9da15aa6dc9581ab097ced7af697cb920000000000000000000000;
-    bytes32 internal constant ALGEBRA_POOL_INIT_CODE_HASH = 0x6ec6c9c8091d160c0aa74b2b14ba9c1717e95093bd3ac085cee99a49aab294a4;
-
-    bytes32 internal constant SUSHI_V3_FF_DEPLOYER = 0xff917933899c6a5F8E37F31E19f92CdBFF7e8FF0e20000000000000000000000;
-    bytes32 internal constant SUSHI_POOL_INIT_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
-
+    address internal constant SOLIDLY_V3_FACTORY = 0x70Fe4a44EA505cFa3A57b95cF2862D4fd5F0f687;
+    
     constructor() {}
 
     uint256 internal constant UINT16_MASK = 0xffff;
@@ -87,7 +81,7 @@ abstract contract V3TypeSwapper is DeltaErrors {
             )
             // Return amount0 or amount1 depending on direction
             let zeroForOne := lt(
-                and(ADDRESS_MASK, shr(96, calldataload(pathOffset))), // tokenIn
+                shr(96, calldataload(pathOffset)), // tokenIn
                 and(ADDRESS_MASK, calldataload(add(pathOffset, 32))) // tokenOut
             )
 
@@ -146,7 +140,7 @@ abstract contract V3TypeSwapper is DeltaErrors {
                 // If direction is 1, return amount1
                 receivedAmount := mload(add(ptr, 32))
             }
-            // fromAmount = -fromAmount
+            // receivedAmount = -receivedAmount
             receivedAmount := sub(0, receivedAmount)
         }
     }
@@ -170,7 +164,7 @@ abstract contract V3TypeSwapper is DeltaErrors {
             )
             // Return amount0 or amount1 depending on direction
             switch lt(
-                and(ADDRESS_MASK, shr(96, calldataload(pathOffset))), // tokenIn
+                shr(96, calldataload(pathOffset)), // tokenIn
                 and(ADDRESS_MASK, calldataload(add(pathOffset, 32))) // tokenOut
             )
             case 0 {
@@ -267,7 +261,7 @@ abstract contract V3TypeSwapper is DeltaErrors {
             // Return amount0 or amount1 depending on direction
             switch lt(
                 and(ADDRESS_MASK, calldataload(add(pathOffset, 32))), // tokenIn
-                and(ADDRESS_MASK, shr(96, calldataload(pathOffset))) // tokenOut
+                shr(96, calldataload(pathOffset)) // tokenOut
             )
             case 0 {
                 // Prepare external call data
@@ -363,7 +357,7 @@ abstract contract V3TypeSwapper is DeltaErrors {
             // Return amount0 or amount1 depending on direction
             let zeroForOne := lt(
                 and(ADDRESS_MASK, calldataload(add(pathOffset, 32))), // tokenIn
-                and(ADDRESS_MASK, shr(96, calldataload(pathOffset))) // tokenOut
+                shr(96, calldataload(pathOffset)) // tokenOut
             )
 
             // Return amount0 or amount1 depending on direction

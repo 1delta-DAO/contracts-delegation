@@ -7,13 +7,12 @@ pragma solidity 0.8.26;
 /******************************************************************************/
 
 import {BaseSwapper} from "./BaseSwapper.sol";
-import {BaseLending} from "./BaseLending.sol";
 
 /**
  * @title Contract Module for general Margin Trading on an borrow delegation compatible Lender
  * @notice Contains main logic for uniswap-type callbacks and initiator functions
  */
-abstract contract MarginTrading is BaseSwapper, BaseLending {
+abstract contract MarginTrading is BaseSwapper {
     // errors
     error NoBalance();
 
@@ -24,7 +23,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
 
     uint256 internal constant UINT128_MASK = 0x00000000000000000000000000000000ffffffffffffffffffffffffffffffff;
 
-    constructor() BaseSwapper() BaseLending() {}
+    constructor() BaseSwapper() {}
 
     // fusionx
     function fusionXV3SwapCallback(
@@ -1276,7 +1275,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 );
             } 
             ////////////////////////////////////////////////////
-            // Otherwise, we6 pay the funds to the pair
+            // Otherwise, we pay the funds to the pair
             // according to the parametrization
             // at the end of the path
             ////////////////////////////////////////////////////
@@ -1351,7 +1350,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 );
             } 
             ////////////////////////////////////////////////////
-            // Otherwise, we6 pay the funds to the pair
+            // Otherwise, we pay the funds to the pair
             // according to the parametrization
             // at the end of the path
             ////////////////////////////////////////////////////
@@ -1630,7 +1629,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 let ptr := mload(0x40) // free memory pointer
 
                 // selector for transferFrom(address,address,uint256)
-                mstore(ptr, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
+                mstore(ptr, ERC20_TRANSFER_FROM)
                 mstore(add(ptr, 0x04), payer)
                 mstore(add(ptr, 0x24), receiver)
                 mstore(add(ptr, 0x44), amount)
@@ -1662,7 +1661,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 let ptr := mload(0x40) // free memory pointer
 
                 // selector for transfer(address,uint256)
-                mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+                mstore(ptr, ERC20_TRANSFER)
                 mstore(add(ptr, 0x04), receiver)
                 mstore(add(ptr, 0x24), amount)
 

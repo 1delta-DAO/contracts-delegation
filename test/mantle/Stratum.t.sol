@@ -9,8 +9,7 @@ import "./DeltaSetup.f.sol";
 contract StratumCurveTest is DeltaSetup {
     function setUp() public virtual override {
         vm.createSelectFork({blockNumber: 63740637, urlOrAlias: "https://mantle-mainnet.public.blastapi.io"});
-        deployDelta();
-        initializeDelta();
+        intitializeFullDelta();
     }
 
     function test_mantle_stratum_spot_exact_in() external {

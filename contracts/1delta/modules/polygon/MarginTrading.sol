@@ -7,13 +7,12 @@ pragma solidity 0.8.26;
 /******************************************************************************/
 
 import {BaseSwapper} from "./BaseSwapper.sol";
-import {BaseLending} from "./BaseLending.sol";
 
 /**
  * @title Contract Module for general Margin Trading on an borrow delegation compatible Lender
  * @notice Contains main logic for uniswap-type callbacks and initiator functions
  */
-abstract contract MarginTrading is BaseSwapper, BaseLending {
+abstract contract MarginTrading is BaseSwapper {
     // errors
     error NoBalance();
 
@@ -24,9 +23,9 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
 
     uint256 internal constant UINT128_MASK = 0x00000000000000000000000000000000ffffffffffffffffffffffffffffffff;
 
-    constructor() BaseSwapper() BaseLending() {}
+    constructor() BaseSwapper() {}
 
-    // swapsicle
+    // quickswap
     function algebraSwapCallback(
         int256 amount0Delta,
         int256 amount1Delta,
@@ -38,7 +37,6 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
         assembly {
             pathLength := path.length
             let firstWord := calldataload(PATH_OFFSET_CALLBACK_V3)
-            
             tokenIn := shr(96, firstWord)
             // second word
             firstWord := calldataload(164) // PATH_OFFSET_CALLBACK_V3 + 32
@@ -971,8 +969,140 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 pathOffset,
                 pathLength
             );
+        }
+        // Balancer V2
+        else if (poolId == 50) {
+            address tokenIn;
+            uint256 amountIn;
+            bytes32 balancerPoolId;
+            address tokenOut;
+            assembly {
+                tokenOut := shr(96, calldataload(pathOffset))
+                tokenIn := shr(96, calldataload(add(pathOffset, SKIP_LENGTH_BALANCER_V2)))
+                balancerPoolId := calldataload(add(pathOffset, 22))
+            }
+            ////////////////////////////////////////////////////
+            // We calculate the required amount for the next swap
+            ////////////////////////////////////////////////////
+            amountIn = _getBalancerAmountIn(balancerPoolId, tokenIn, tokenOut, amountOut);
+
+            if(pathLength > MAX_SINGLE_LENGTH_BALANCER_V2) {
+                // remove the last token from the path
+                assembly {
+                    pathOffset := add(pathOffset, SKIP_LENGTH_BALANCER_V2)
+                    pathLength := sub(pathLength, SKIP_LENGTH_BALANCER_V2)
+                }
+                swapExactOutInternal(
+                    amountIn,
+                    maxIn,
+                    payer,
+                    address(this), // balancer pulls from this address
+                    pathOffset,
+                    pathLength
+                );
+            }
+            ////////////////////////////////////////////////////
+            // Otherwise, we pay the funds to the pair
+            // according to the parametrization
+            // at the end of the path
+            ////////////////////////////////////////////////////
+            else {
+                (uint256 payType, uint8 lenderId) = getPayConfigFromCalldata(pathOffset, pathLength);
+                // pay the pool
+                handlePayPool(
+                    tokenIn,
+                    payer, // prevents sload if desired
+                    address(this), // balancer pulls from this address
+                    payType,
+                    amountIn,
+                    lenderId
+                );
+                // if(maxIn < amountIn) revert Slippage();
+                assembly {
+                    if lt(maxIn, amountIn) {
+                        mstore(0, SLIPPAGE)
+                        revert (0, 0x4)
+                    }
+                }
+            }
+            _swapBalancerExactOut(
+                balancerPoolId,
+                tokenIn,
+                tokenOut,
+                receiver,
+                amountOut,
+                pathOffset
+            );
+        }
+        // Curve NG
+        else if (poolId == 151) {
+            address tokenIn;
+            uint256 amountIn;
+            uint256 indexIn;
+            uint256 indexOut;
+            address pool;
+            assembly {
+                tokenIn := shr(96, calldataload(add(pathOffset, 45)))
+                let indexesAndPool := calldataload(add(pathOffset, 22))
+                pool := shr(96, indexesAndPool)
+                indexIn := and(shr(88, indexesAndPool), 0xff)
+                indexOut := and(shr(80, indexesAndPool), 0xff)
+            }
+            ////////////////////////////////////////////////////
+            // We calculate the required amount for the next swap
+            ////////////////////////////////////////////////////
+            amountIn = _getNGAmountIn(pool, indexIn, indexOut, amountOut);
+            if(pathLength > MAX_SINGLE_LENGTH_CURVE_NG) {
+                // remove the last token from the path
+                assembly {
+                    pathOffset := add(pathOffset, SKIP_LENGTH_CURVE_NG)
+                    pathLength := sub(pathLength, SKIP_LENGTH_CURVE_NG)
+                }
+                swapExactOutInternal(
+                    amountIn,
+                    maxIn,
+                    payer,
+                    pool, // ng is pre-funded
+                    pathOffset,
+                    pathLength
+                );
+            }
+            ////////////////////////////////////////////////////
+            // Otherwise, we pay the funds to the pair
+            // according to the parametrization
+            // at the end of the path
+            ////////////////////////////////////////////////////
+            else {
+                (uint256 payType, uint8 lenderId) = getPayConfigFromCalldata(pathOffset, pathLength);
+                // pay the pool
+                handlePayPool(
+                    tokenIn,
+                    payer, // prevents sload if desired
+                    pool, // ng is pre-funded
+                    payType,
+                    amountIn,
+                    lenderId
+                );
+                // if(maxIn < amountIn) revert Slippage();
+                assembly {
+                    if lt(maxIn, amountIn) {
+                        mstore(0, SLIPPAGE)
+                        revert (0, 0x4)
+                    }
+                }
+            }
+            
+            _swapCurveNGExactOut(
+                pool,
+                pathOffset,
+                indexIn,
+                indexOut,
+                amountIn,
+                receiver
+            );
+        }
         // uniswapV2 style
-        } else if (poolId < 150) {
+        else if (poolId < 150) {
             address tokenIn;
             uint256 amountIn;
             address pair;
@@ -1013,7 +1143,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 );
             } 
             ////////////////////////////////////////////////////
-            // Otherwise, we6 pay the funds to the pair
+            // Otherwise, we pay the funds to the pair
             // according to the parametrization
             // at the end of the path
             ////////////////////////////////////////////////////
@@ -1300,7 +1430,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 let ptr := mload(0x40) // free memory pointer
 
                 // selector for transferFrom(address,address,uint256)
-                mstore(ptr, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
+                mstore(ptr, ERC20_TRANSFER_FROM)
                 mstore(add(ptr, 0x04), payer)
                 mstore(add(ptr, 0x24), receiver)
                 mstore(add(ptr, 0x44), amount)
@@ -1332,7 +1462,7 @@ abstract contract MarginTrading is BaseSwapper, BaseLending {
                 let ptr := mload(0x40) // free memory pointer
 
                 // selector for transfer(address,uint256)
-                mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+                mstore(ptr, ERC20_TRANSFER)
                 mstore(add(ptr, 0x04), receiver)
                 mstore(add(ptr, 0x24), amount)
 

@@ -3,6 +3,7 @@
 pragma solidity ^0.8.26;
 
 import {Slots} from "./storage/Slots.sol";
+import {BalancerSwapper} from "./swappers/Balancer.sol";
 
 /******************************************************************************\
 * Author: Achthar | 1delta 
@@ -13,10 +14,13 @@ import {Slots} from "./storage/Slots.sol";
 /**
  * @notice Lending base contract that wraps multiple lender types.
  */
-abstract contract BaseLending is Slots {
+abstract contract BaseLending is Slots, BalancerSwapper {
     // errors
     error BadLender();
-
+    
+    // wNative
+    address internal constant WRAPPED_NATIVE = 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270;
+    
     // aave type lender pool addresses
     address internal constant AAVE_V3 = 0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2;
     address internal constant SPARK = 0xC13e21B648A5Ee794902342038FF3aDAB66BE987;
@@ -50,7 +54,7 @@ abstract contract BaseLending is Slots {
                 /** PREPARE TRANSFER_FROM USER */
 
                 // selector for transferFrom(address,address,uint256)
-                mstore(ptr, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
+                mstore(ptr, ERC20_TRANSFER_FROM)
                 mstore(add(ptr, 0x04), _from)
                 mstore(add(ptr, 0x24), address())
                 mstore(add(ptr, 0x44), _amount)
@@ -116,9 +120,8 @@ abstract contract BaseLending is Slots {
                 }
                 // call pool
                 if iszero(call(gas(), pool, 0x0, ptr, 0x64, 0x0, 0x0)) {
-                    rdsize := returndatasize()
-                    returndatacopy(0x0, 0x0, rdsize)
-                    revert(0x0, rdsize)
+                    returndatacopy(0x0, 0x0, returndatasize())
+                    revert(0x0, returndatasize())
                 }
             }
             case 0 {
@@ -155,9 +158,8 @@ abstract contract BaseLending is Slots {
                     mstore(add(ptr, 0x64), _amount)
                     // call pool
                     if iszero(call(gas(), cometPool, 0x0, ptr, 0x84, 0x0, 0x0)) {
-                        let rdsize := returndatasize()
-                        returndatacopy(0x0, 0x0, rdsize)
-                        revert(0x0, rdsize)
+                        returndatacopy(0x0, 0x0, returndatasize())
+                        revert(0x0, returndatasize())
                     }
                 }
                 // Venus market ids
@@ -202,7 +204,7 @@ abstract contract BaseLending is Slots {
                     )
                     // FETCH BALANCE
                     // selector for balanceOf(address)
-                    mstore(0x0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+                    mstore(0x0, ERC20_APPROVE)
                     // add this address as parameter
                     mstore(0x4, _to)
 
@@ -220,7 +222,7 @@ abstract contract BaseLending is Slots {
                     // 2) TRANSFER VTOKENS
 
                     // selector for transferFrom(address,address,uint256)
-                    mstore(ptr, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
+                    mstore(ptr, ERC20_TRANSFER_FROM)
                     mstore(add(ptr, 0x04), _to) // from user
                     mstore(add(ptr, 0x24), address()) // to this address
                     mstore(add(ptr, 0x44), transferAmount)
@@ -256,7 +258,7 @@ abstract contract BaseLending is Slots {
                     if xor(address(), _to) {
                         // 4) TRANSFER TO RECIPIENT
                         // selector for transfer(address,uint256)
-                        mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+                        mstore(ptr, ERC20_TRANSFER)
                         mstore(add(ptr, 0x04), _to)
                         mstore(add(ptr, 0x24), _amount)
 
@@ -305,9 +307,8 @@ abstract contract BaseLending is Slots {
                     mstore(add(ptr, 0x64), _from)
                     // call pool
                     if iszero(call(gas(), YLDR, 0x0, ptr, 0x84, 0x0, 0x0)) {
-                        let rdsize := returndatasize()
-                        returndatacopy(0x0, 0x0, rdsize)
-                        revert(0x0, rdsize)
+                        returndatacopy(0x0, 0x0, returndatasize())
+                        revert(0x0, returndatasize())
                     }
                 }
                 default {
@@ -349,16 +350,15 @@ abstract contract BaseLending is Slots {
                     mstore(add(ptr, 0x84), _from)
                     // call pool
                     if iszero(call(gas(), pool, 0x0, ptr, 0xA4, 0x0, 0x0)) {
-                        let rdsize := returndatasize()
-                        returndatacopy(0x0, 0x0, rdsize)
-                        revert(0x0, rdsize)
+                        returndatacopy(0x0, 0x0, returndatasize())
+                        revert(0x0, returndatasize())
                     }
                 }
 
                 //  transfer underlying if needed
                 if xor(_to, address()) {
                     // selector for transfer(address,uint256)
-                    mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+                    mstore(ptr, ERC20_TRANSFER)
                     mstore(add(ptr, 0x04), _to)
                     mstore(add(ptr, 0x24), _amount)
 
@@ -419,9 +419,8 @@ abstract contract BaseLending is Slots {
                     mstore(add(ptr, 0x64), _amount)
                     // call pool
                     if iszero(call(gas(), cometPool, 0x0, ptr, 0x84, 0x0, 0x0)) {
-                        let rdsize := returndatasize()
-                        returndatacopy(0x0, 0x0, rdsize)
-                        revert(0x0, rdsize)
+                        returndatacopy(0x0, 0x0, returndatasize())
+                        revert(0x0, returndatasize())
                     }
                 }
                 // Venus
@@ -451,7 +450,7 @@ abstract contract BaseLending is Slots {
                     if xor(address(), _to) {
                         // 4) TRANSFER TO RECIPIENT
                         // selector for transfer(address,uint256)
-                        mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+                        mstore(ptr, ERC20_TRANSFER)
                         mstore(add(ptr, 0x04), _to)
                         mstore(add(ptr, 0x24), _amount)
 
@@ -523,9 +522,8 @@ abstract contract BaseLending is Slots {
                     }
                     // call pool
                     if iszero(call(gas(), pool, 0x0, ptr, 0x84, 0x0, 0x0)) {
-                        let rdsize := returndatasize()
-                        returndatacopy(0x0, 0x0, rdsize)
-                        revert(0x0, rdsize)
+                        returndatacopy(0x0, 0x0, returndatasize())
+                        revert(0x0, returndatasize())
                     }
                 }
                 case 0 {
@@ -557,9 +555,8 @@ abstract contract BaseLending is Slots {
                     mstore(add(ptr, 0x64), 0x0)
                     // call pool
                     if iszero(call(gas(), pool, 0x0, ptr, 0x84, 0x0, 0x0)) {
-                        let rdsize := returndatasize()
-                        returndatacopy(0x0, 0x0, rdsize)
-                        revert(0x0, rdsize)
+                        returndatacopy(0x0, 0x0, returndatasize())
+                        revert(0x0, returndatasize())
                     }
                 }
             }
@@ -631,7 +628,7 @@ abstract contract BaseLending is Slots {
                     // 2) GET BALANCE OF COLLATERAL TOKEN
 
                     // selector for balanceOf(address)
-                    mstore(0x0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+                    mstore(0x0, ERC20_BALANCE_OF)
                     // add this address as parameter
                     mstore(0x4, address())
 
@@ -645,7 +642,7 @@ abstract contract BaseLending is Slots {
                     if xor(address(), _to) {
                         // 3) TRANSFER TOKENS TO RECEIVER
                         // selector for transfer(address,uint256)
-                        mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+                        mstore(ptr, ERC20_TRANSFER)
                         mstore(add(ptr, 0x04), _to)
                         mstore(add(ptr, 0x24), collateralTokenAmount)
 
@@ -694,9 +691,8 @@ abstract contract BaseLending is Slots {
                     mstore(add(ptr, 0x44), _to)
                     // call pool
                     if iszero(call(gas(), YLDR, 0x0, ptr, 0x64, 0x0, 0x0)) {
-                        let rdsize := returndatasize()
-                        returndatacopy(0x0, 0x0, rdsize)
-                        revert(0x0, rdsize)
+                        returndatacopy(0x0, 0x0, returndatasize())
+                        revert(0x0, returndatasize())
                     }
                 }
                 default {
@@ -737,9 +733,8 @@ abstract contract BaseLending is Slots {
                     mstore(add(ptr, 0x64), _to)
                     // call pool
                     if iszero(call(gas(), pool, 0x0, ptr, 0x84, 0x0, 0x0)) {
-                        let rdsize := returndatasize()
-                        returndatacopy(0x0, 0x0, rdsize)
-                        revert(0x0, rdsize)
+                        returndatacopy(0x0, 0x0, returndatasize())
+                        revert(0x0, returndatasize())
                     }
                 }
             }

@@ -14,8 +14,7 @@ contract FlashSwapExacInTest is DeltaSetup {
     function setUp() public virtual override {
         vm.createSelectFork({blockNumber: 63740637, urlOrAlias: "https://mantle-mainnet.public.blastapi.io"});
 
-        deployDelta();
-        initializeDelta();
+        intitializeFullDelta();
     }
 
     ////////////////////////////////////////////////////
@@ -396,7 +395,7 @@ contract FlashSwapExacInTest is DeltaSetup {
         return
             abi.encodePacked(
                 getSpotExactInAgni(token, METH),
-                ZERO_8, 
+                ZERO_8,
                 STRATUM_CURVE,
                 abi.encodePacked(STRATUM_ETH_POOL, getTokenIdEth(METH), getTokenIdEth(token)),
                 token,

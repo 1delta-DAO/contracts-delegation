@@ -6,8 +6,7 @@ pragma solidity 0.8.26;
 * Author: Achthar | 1delta 
 /******************************************************************************/
 
-import {TokenTransfer} from "./TokenTransfer.sol";
-import {ExoticSwapper} from "./swappers/Exotic.sol";
+import {BaseLending} from "./BaseLending.sol";
 
 // solhint-disable max-line-length
 
@@ -20,7 +19,7 @@ import {ExoticSwapper} from "./swappers/Exotic.sol";
  *             Uni V2: 100 - 110
  *             Solidly:121 - 130
  */
-abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
+abstract contract BaseSwapper is BaseLending {
 
     /**
      * Fund the first pool for self funded DEXs like Uni V2, GMX, LB, WooFi and Solidly V2 (dexId >= 100) 
@@ -53,7 +52,7 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
                     let ptr := mload(0x40) // free memory pointer
 
                     // selector for transferFrom(address,address,uint256)
-                    mstore(ptr, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
+                    mstore(ptr, ERC20_TRANSFER_FROM)
                     mstore(add(ptr, 0x04), payer)
                     mstore(add(ptr, 0x24), nextPool)
                     mstore(add(ptr, 0x44), amountIn)
@@ -85,7 +84,7 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
                     let ptr := mload(0x40) // free memory pointer
 
                     // selector for transfer(address,uint256)
-                    mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+                    mstore(ptr, ERC20_TRANSFER)
                     mstore(add(ptr, 0x04), nextPool)
                     mstore(add(ptr, 0x24), amountIn)
 
@@ -524,7 +523,7 @@ abstract contract BaseSwapper is TokenTransfer, ExoticSwapper {
             switch lt(pathLength, 67)
             case 1 { currentReceiver := receiver}
             default {
-                dexId := and(shr(80, calldataload(add(pathOffset, SKIP_LENGTH_UNOSWAP))), UINT8_MASK)
+                dexId := and(calldataload(add(pathOffset, 34)), UINT8_MASK) // SKIP_LENGTH_UNOSWAP - 10
                 switch gt(dexId, 99) 
                 case 1 {
                     currentReceiver := shr(

@@ -4,6 +4,7 @@ pragma solidity 0.8.26;
 
 import {MarginTrading} from "./MarginTrading.sol";
 import {Commands} from "../shared/Commands.sol";
+import {PermitUtils} from "./permit/PermitUtils.sol";
 
 /**
  * @title Universal aggregator contract.
@@ -11,14 +12,14 @@ import {Commands} from "../shared/Commands.sol";
  *        Efficient baching through compact calldata usage.
  * @author 1delta Labs AG
  */
-contract OneDeltaComposerPolygon is MarginTrading {
+contract OneDeltaComposerPolygon is MarginTrading, PermitUtils {
     /// @dev The highest bit signals whether the swap is internal (the payer is this contract)
     uint256 private constant _PAY_SELF = 1 << 255;
     /// @dev The second bit signals whether the input token is a FOT token
     ///      Only used for SWAP_EXACT_IN
     uint256 private constant _FEE_ON_TRANSFER = 1 << 254;
-    /// @dev We use uint112-encoded ammounts to typically fit one bit flag, one path length (uint16)
-    ///      add 2 amounts (2xuint112) into 32bytes, as such we use this mask for extractinng those
+    /// @dev We use uint112-encoded amounts to typically fit one bit flag, one path length (uint16)
+    ///      add 2 amounts (2xuint112) into 32bytes, as such we use this mask for extracting those
     uint256 private constant _UINT112_MASK = 0x000000000000000000000000000000000000ffffffffffffffffffffffffffff;
     /// @dev we need USDCE and USDT to identify Compound V3's selectors
     address internal constant USDCE = 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174;
@@ -65,7 +66,7 @@ contract OneDeltaComposerPolygon is MarginTrading {
             uint256 operation;
             // fetch op metadata
             assembly {
-                operation := and(shr(248, calldataload(currentOffset)), UINT8_MASK)
+                operation := shr(248, calldataload(currentOffset)) // last byte
                 // we increment the current offset to skip the operation
                 currentOffset := add(1, currentOffset)
             }
@@ -96,7 +97,7 @@ contract OneDeltaComposerPolygon is MarginTrading {
                         // the path starts after the path length
                         opdataOffset := add(currentOffset, 52) // 20 + 32 (address + amountBitmap)
                         // the first 20 bytes are the receiver address
-                        receiver := and(ADDRESS_MASK, shr(96, calldataload(currentOffset)))
+                        receiver := shr(96, calldataload(currentOffset))
                         // assign the entire 32 bytes of amounts data
                         amountIn := calldataload(add(currentOffset, 20))
                         // this is the path data length
@@ -117,7 +118,7 @@ contract OneDeltaComposerPolygon is MarginTrading {
                         // fetch balance if needed
                         if iszero(amountIn) {
                             // selector for balanceOf(address)
-                            mstore(0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+                            mstore(0, ERC20_BALANCE_OF)
                             // add payer address as parameter
                             mstore(0x04, payer)
                             // call to token
@@ -170,7 +171,7 @@ contract OneDeltaComposerPolygon is MarginTrading {
                     uint256 amountInMaximum;
                     assembly {
                         opdataOffset := add(currentOffset, 52) // 20 + 32 (address + amountBitmap)
-                        receiver := and(ADDRESS_MASK, shr(96, calldataload(currentOffset)))
+                        receiver := shr(96, calldataload(currentOffset))
                         // get the number parameters
                         amountOut := calldataload(add(currentOffset, 20))
                         // we get the calldatalength of the path
@@ -190,7 +191,7 @@ contract OneDeltaComposerPolygon is MarginTrading {
                         amountOut := and(_UINT112_MASK, shr(16, amountOut))
                         if iszero(amountOut) {
                             // selector for balanceOf(address)
-                            mstore(0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+                            mstore(0, ERC20_BALANCE_OF)
                             // add this address as parameter
                             mstore(0x04, payer)
                             // call to token
@@ -239,16 +240,16 @@ contract OneDeltaComposerPolygon is MarginTrading {
                     assembly {
                         // the path starts after the path length
                         opdataOffset := add(currentOffset, 32) // 32
-                        // lastparam includes receiver address and pathlength
-                        let firstParam := calldataload(currentOffset)
+                        // temp includes receiver address and pathlength
+                        let temp := calldataload(currentOffset)
                         // this is the path data length
                         // included in lowest 2 bytes
-                        opdataLength := and(firstParam, UINT16_MASK)
+                        opdataLength := and(temp, UINT16_MASK)
                         // extract lowr 112 bits shifted by 16
-                        minimumAmountOut := and(_UINT112_MASK, shr(128, firstParam))
+                        minimumAmountOut := and(_UINT112_MASK, shr(128, temp))
 
                         // upper bit signals whether to pay self
-                        switch iszero(and(_PAY_SELF, firstParam))
+                        switch iszero(and(_PAY_SELF, temp))
                         case 0 {
                             payer := address()
                         }
@@ -256,7 +257,7 @@ contract OneDeltaComposerPolygon is MarginTrading {
                             payer := callerAddress
                         }
                         // mask input amount
-                        amountIn := and(_UINT112_MASK, shr(16, firstParam))
+                        amountIn := and(_UINT112_MASK, shr(16, temp))
                         ////////////////////////////////////////////////////
                         // Fetching the balance here is a bit trickier here
                         // We have to fetch the lender-specific collateral
@@ -265,31 +266,113 @@ contract OneDeltaComposerPolygon is MarginTrading {
                         // `lenderId`   is at the end of the path
                         ////////////////////////////////////////////////////
                         if iszero(amountIn) {
-                            let tokenIn := and(ADDRESS_MASK, shr(96, calldataload(opdataOffset)))
-                            let lenderId := and(
-                                shr(
-                                    8,
-                                    calldataload(
-                                        sub(
-                                            add(opdataLength, opdataOffset), //
-                                            32
-                                        )
+                            // first we assign lenderId
+                            let lenderId_tokenIn := and(
+                                calldataload(
+                                    sub(
+                                        add(opdataLength, opdataOffset), //
+                                        33
                                     )
                                 ),
                                 UINT8_MASK
                             )
-                            mstore(0x0, tokenIn)
-                            mstore8(0x0, lenderId)
-                            mstore(0x20, COLLATERAL_TOKENS_SLOT)
-                            let collateralToken := sload(keccak256(0x0, 0x40))
-                            // selector for balanceOf(address)
-                            mstore(0x0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
-                            // add caller address as parameter
-                            mstore(add(0x0, 0x4), callerAddress)
-                            // call to collateralToken
-                            pop(staticcall(gas(), collateralToken, 0x0, 0x24, 0x0, 0x20))
-                            // load the retrieved balance
-                            amountIn := mload(0x0)
+                            switch lt(lenderId_tokenIn, 50)
+                            // Aave types
+                            case 1 {
+                                mstore(0x0, shr(96, calldataload(opdataOffset))) // tokenIn
+                                mstore8(0x0, lenderId_tokenIn)
+                                mstore(0x20, COLLATERAL_TOKENS_SLOT)
+                                let collateralToken := sload(keccak256(0x0, 0x40))
+                                // selector for balanceOf(address)
+                                mstore(0x0, ERC20_BALANCE_OF)
+                                // add caller address as parameter
+                                mstore(0x4, callerAddress)
+                                // call to collateralToken
+                                pop(staticcall(gas(), collateralToken, 0x0, 0x24, 0x0, 0x20))
+                                // load the retrieved balance
+                                amountIn := mload(0x0)
+                            }
+                            // Compound V3
+                            default {
+                                let cometPool
+                                // temp will now become the var for comet ccy
+                                switch lenderId_tokenIn
+                                // Compound V3 USDC.e
+                                case 50 {
+                                    cometPool := COMET_USDC
+                                    temp := USDCE
+                                }
+                                case 51 {
+                                    cometPool := COMET_USDT
+                                    temp := USDT
+                                }
+                                // default: load comet from storage
+                                // if it is not provided directly
+                                // note that the debt token is stored as
+                                // variable debt token
+                                default {
+                                    mstore(0x0, lenderId_tokenIn)
+                                    mstore(0x20, LENDING_POOL_SLOT)
+                                    cometPool := sload(keccak256(0x0, 0x40))
+                                    if iszero(cometPool) {
+                                        mstore(0, BAD_LENDER)
+                                        revert(0, 0x4)
+                                    }
+
+                                    mstore(0x0, cometPool)
+                                    mstore8(0x0, lenderId_tokenIn)
+                                    mstore(0x20, VARIABLE_DEBT_TOKENS_SLOT)
+                                    temp := sload(keccak256(0x0, 0x40))
+                                }
+                                // asign tokenIn to transitioning variable
+                                lenderId_tokenIn := shr(96, calldataload(opdataOffset))
+
+                                // token is baseToken
+                                switch eq(lenderId_tokenIn, temp)
+                                case 1 {
+                                    // selector for balanceOf(address)
+                                    mstore(0, ERC20_BALANCE_OF)
+                                    // add caller address as parameter
+                                    mstore(0x04, callerAddress)
+                                    // call to token
+                                    pop(
+                                        staticcall(
+                                            gas(),
+                                            cometPool, // collateral token
+                                            0x0,
+                                            0x24,
+                                            0x0,
+                                            0x20
+                                        )
+                                    )
+                                    // load the retrieved balance
+                                    amountIn := mload(0x0)
+                                }
+                                // token is collateral
+                                default {
+                                    // assign ptr to transition var
+                                    temp := mload(0x40)
+                                    // selector for userCollateral(address,address)
+                                    mstore(temp, 0x2b92a07d00000000000000000000000000000000000000000000000000000000)
+                                    // add caller address as parameter
+                                    mstore(add(temp, 0x04), callerAddress)
+                                    // add underlying address
+                                    mstore(add(temp, 0x24), lenderId_tokenIn)
+                                    // call to token
+                                    pop(
+                                        staticcall(
+                                            gas(),
+                                            cometPool, // collateral token
+                                            temp,
+                                            0x44,
+                                            temp,
+                                            0x20
+                                        )
+                                    )
+                                    // load the retrieved balance (lower 128 bits)
+                                    amountIn := and(UINT128_MASK, mload(temp))
+                                }
+                            }
                         }
                         currentOffset := add(currentOffset, add(32, opdataLength)) // 32 args plus path
                     }
@@ -337,35 +420,65 @@ contract OneDeltaComposerPolygon is MarginTrading {
                         // Fetch the debt balance in case amountOut is zero
                         ////////////////////////////////////////////////////
                         if iszero(amountOut) {
-                            let tokenIn := calldataload(opdataOffset)
-                            let mode := and(UINT8_MASK, shr(88, tokenIn))
-                            tokenIn := and(ADDRESS_MASK, shr(96, tokenIn))
-
                             // last 32 bytes
-                            let lastWord := calldataload(sub(add(opdataLength, opdataOffset), 32))
-                            let lenderId := and(shr(8, lastWord), UINT8_MASK)
-                            mstore(0x0, tokenIn)
-                            mstore8(0x0, lenderId)
-                            switch mode
-                            case 2 {
-                                mstore(0x20, VARIABLE_DEBT_TOKENS_SLOT)
-                            }
+                            let lenderId := and(calldataload(sub(add(opdataLength, opdataOffset), 33)), UINT8_MASK)
+                            switch lt(lenderId, 50)
                             case 1 {
-                                mstore(0x20, STABLE_DEBT_TOKENS_SLOT)
+                                let tokenIn := calldataload(opdataOffset)
+                                let mode := and(UINT8_MASK, shr(88, tokenIn))
+                                mstore(0x0, shr(96, tokenIn)) // tokenIn
+                                mstore8(0x0, lenderId)
+                                switch mode
+                                case 2 {
+                                    mstore(0x20, VARIABLE_DEBT_TOKENS_SLOT)
+                                }
+                                case 1 {
+                                    mstore(0x20, STABLE_DEBT_TOKENS_SLOT)
+                                }
+                                default {
+                                    revert(0, 0)
+                                }
+
+                                let debtToken := sload(keccak256(0x0, 0x40))
+                                // selector for balanceOf(address)
+                                mstore(0x0, ERC20_BALANCE_OF)
+                                // add caller address as parameter
+                                mstore(0x4, callerAddress)
+                                // call to debtToken
+                                pop(staticcall(gas(), debtToken, 0x0, 0x24, 0x0, 0x20))
+                                // load the retrieved balance
+                                amountOut := mload(0x0)
                             }
                             default {
-                                revert(0, 0)
-                            }
+                                let cometPool
+                                switch lenderId
+                                case 50 {
+                                    cometPool := COMET_USDC
+                                }
+                                case 51 {
+                                    cometPool := COMET_USDT
+                                }
+                                // default: load comet from storage
+                                // if it is not provided directly
+                                default {
+                                    mstore(0x0, lenderId)
+                                    mstore(0x20, LENDING_POOL_SLOT)
+                                    cometPool := sload(keccak256(0x0, 0x40))
+                                    if iszero(cometPool) {
+                                        mstore(0, BAD_LENDER)
+                                        revert(0, 0x4)
+                                    }
+                                }
 
-                            let debtToken := sload(keccak256(0x0, 0x40))
-                            // selector for balanceOf(address)
-                            mstore(0x0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
-                            // add caller address as parameter
-                            mstore(0x4, callerAddress)
-                            // call to debtToken
-                            pop(staticcall(gas(), debtToken, 0x0, 0x24, 0x0, 0x20))
-                            // load the retrieved balance
-                            amountOut := mload(0x0)
+                                // borrowBalanceOf(address)
+                                mstore(0x0, 0x374c49b400000000000000000000000000000000000000000000000000000000)
+                                // add caller address as parameter
+                                mstore(0x4, callerAddress)
+                                // call to debtToken
+                                pop(staticcall(gas(), cometPool, 0x0, 0x24, 0x0, 0x20))
+                                // load the retrieved balance
+                                amountOut := mload(0x0)
+                            }
                         }
                         currentOffset := add(currentOffset, add(32, opdataLength))
                     }
@@ -390,9 +503,9 @@ contract OneDeltaComposerPolygon is MarginTrading {
                     ////////////////////////////////////////////////////
                     assembly {
                         // get first three addresses
-                        let token := and(ADDRESS_MASK, shr(96, calldataload(currentOffset)))
-                        let approvalTarget := and(ADDRESS_MASK, shr(96, calldataload(add(currentOffset, 20))))
-                        let aggregator := and(ADDRESS_MASK, shr(96, calldataload(add(currentOffset, 40))))
+                        let token := shr(96, calldataload(currentOffset))
+                        let approvalTarget := shr(96, calldataload(add(currentOffset, 20)))
+                        let aggregator := shr(96, calldataload(add(currentOffset, 40)))
 
                         // get slot isValidApproveAndCallTarget[approvalTarget][aggregator]
                         mstore(0x0, approvalTarget)
@@ -422,7 +535,7 @@ contract OneDeltaComposerPolygon is MarginTrading {
                             ////////////////////////////////////////////////////
                             // get allowance and check if we have to approve
                             ////////////////////////////////////////////////////
-                            mstore(ptr, 0xdd62ed3e00000000000000000000000000000000000000000000000000000000)
+                            mstore(ptr, ERC20_ALLOWANCE)
                             mstore(add(ptr, 0x4), address())
                             mstore(add(ptr, 0x24), approvalTarget)
 
@@ -438,9 +551,9 @@ contract OneDeltaComposerPolygon is MarginTrading {
                                 // is whitelisted
                                 ////////////////////////////////////////////////////
                                 // selector for approve(address,uint256)
-                                mstore(ptr, 0x095ea7b300000000000000000000000000000000000000000000000000000000)
+                                mstore(ptr, ERC20_APPROVE)
                                 mstore(add(ptr, 0x04), approvalTarget)
-                                mstore(add(ptr, 0x24), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff)
+                                mstore(add(ptr, 0x24), MAX_UINT256)
 
                                 if iszero(call(gas(), token, 0x0, ptr, 0x44, ptr, 32)) {
                                     revert(0x0, 0x0)
@@ -481,14 +594,14 @@ contract OneDeltaComposerPolygon is MarginTrading {
                     uint256 amount;
                     uint256 lenderId;
                     assembly {
-                        underlying := and(ADDRESS_MASK, shr(96, calldataload(currentOffset)))
+                        underlying := shr(96, calldataload(currentOffset))
                         receiver := and(ADDRESS_MASK, calldataload(add(currentOffset, 8)))
                         let lastBytes := calldataload(add(currentOffset, 40))
                         amount := and(_UINT112_MASK, shr(136, lastBytes))
-                        lenderId := and(UINT8_MASK, shr(248, lastBytes))
+                        lenderId := shr(248, lastBytes) // last byte
                         if iszero(amount) {
                             // selector for balanceOf(address)
-                            mstore(0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+                            mstore(0, ERC20_BALANCE_OF)
                             // add this address as parameter
                             mstore(0x04, address())
                             // call to token
@@ -515,11 +628,11 @@ contract OneDeltaComposerPolygon is MarginTrading {
                     uint256 lenderId;
                     uint256 mode;
                     assembly {
-                        underlying := and(ADDRESS_MASK, shr(96, calldataload(currentOffset)))
+                        underlying := shr(96, calldataload(currentOffset))
                         receiver := and(ADDRESS_MASK, calldataload(add(currentOffset, 8)))
                         let lastBytes := calldataload(add(currentOffset, 40))
                         amount := and(_UINT112_MASK, shr(128, lastBytes))
-                        lenderId := and(UINT8_MASK, shr(248, lastBytes))
+                        lenderId := shr(248, lastBytes) // last byte
                         mode := and(UINT8_MASK, shr(240, lastBytes))
                         currentOffset := add(currentOffset, 56)
                     }
@@ -537,13 +650,13 @@ contract OneDeltaComposerPolygon is MarginTrading {
                         let lastBytes := calldataload(add(offset, 40))
                         amount := and(_UINT112_MASK, shr(128, lastBytes))
                         mode := and(UINT8_MASK, shr(240, lastBytes))
-                        lenderId := and(UINT8_MASK, shr(248, lastBytes))
+                        lenderId := shr(248, lastBytes) // last byte
                         // zero means that we repay whatever is in this contract
                         switch amount
                         // conract balance
                         case 0 {
                             // selector for balanceOf(address)
-                            mstore(0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+                            mstore(0, ERC20_BALANCE_OF)
                             // add this address as parameter
                             mstore(0x04, address())
                             // call to token
@@ -604,17 +717,17 @@ contract OneDeltaComposerPolygon is MarginTrading {
                     uint256 amount;
                     uint256 lenderId;
                     assembly {
-                        underlying := and(ADDRESS_MASK, shr(96, calldataload(currentOffset)))
+                        underlying := shr(96, calldataload(currentOffset))
                         receiver := and(ADDRESS_MASK, calldataload(add(currentOffset, 8)))
                         let lastBytes := calldataload(add(currentOffset, 40))
                         amount := and(_UINT112_MASK, shr(136, lastBytes))
-                        lenderId := and(UINT8_MASK, shr(248, lastBytes))
+                        lenderId := shr(248, lastBytes) // last byte
 
                         switch amount
                         // case contract underlying balance
                         case 0 {
                             // selector for balanceOf(address)
-                            mstore(0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+                            mstore(0, ERC20_BALANCE_OF)
                             // add this address as parameter
                             mstore(0x04, address())
                             // call to token
@@ -642,7 +755,7 @@ contract OneDeltaComposerPolygon is MarginTrading {
                                 mstore(0x20, COLLATERAL_TOKENS_SLOT)
                                 let collateralToken := sload(keccak256(0x0, 0x40))
                                 // selector for balanceOf(address)
-                                mstore(0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+                                mstore(0, ERC20_BALANCE_OF)
                                 // add caller address as parameter
                                 mstore(0x04, callerAddress)
                                 // call to token
@@ -674,7 +787,7 @@ contract OneDeltaComposerPolygon is MarginTrading {
                                 }
                                 // default: load comet from storage
                                 // if it is not provided directly
-                                // note that the debt token is stored as 
+                                // note that the debt token is stored as
                                 // variable debt token
                                 default {
                                     mstore(0x0, lenderId)
@@ -694,7 +807,7 @@ contract OneDeltaComposerPolygon is MarginTrading {
                                 switch eq(underlying, cometCcy)
                                 case 1 {
                                     // selector for balanceOf(address)
-                                    mstore(0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+                                    mstore(0, ERC20_BALANCE_OF)
                                     // add caller address as parameter
                                     mstore(0x04, callerAddress)
                                     // call to token
@@ -746,13 +859,13 @@ contract OneDeltaComposerPolygon is MarginTrading {
                     // zero amount flags that the entire balance is sent
                     ////////////////////////////////////////////////////
                     assembly {
-                        let underlying := and(ADDRESS_MASK, shr(96, calldataload(currentOffset)))
+                        let underlying := shr(96, calldataload(currentOffset))
                         let receiver := and(ADDRESS_MASK, calldataload(add(currentOffset, 8)))
                         let amount := and(_UINT112_MASK, calldataload(add(currentOffset, 22)))
                         // when entering 0 as amount, use the callwe balance
                         if iszero(amount) {
                             // selector for balanceOf(address)
-                            mstore(0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+                            mstore(0, ERC20_BALANCE_OF)
                             // add this address as parameter
                             mstore(0x04, callerAddress)
                             // call to token
@@ -772,7 +885,7 @@ contract OneDeltaComposerPolygon is MarginTrading {
                         let ptr := mload(0x40) // free memory pointer
 
                         // selector for transferFrom(address,address,uint256)
-                        mstore(ptr, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
+                        mstore(ptr, ERC20_TRANSFER_FROM)
                         mstore(add(ptr, 0x04), callerAddress)
                         mstore(add(ptr, 0x24), receiver)
                         mstore(add(ptr, 0x44), amount)
@@ -818,7 +931,7 @@ contract OneDeltaComposerPolygon is MarginTrading {
                     //      bytes 41-55:                 amount, either validation or transfer amount
                     ////////////////////////////////////////////////////
                     assembly {
-                        let underlying := and(ADDRESS_MASK, shr(96, calldataload(currentOffset)))
+                        let underlying := shr(96, calldataload(currentOffset))
                         // we skip shr by loading the address to the lower bytes
                         let receiver := and(ADDRESS_MASK, calldataload(add(currentOffset, 8)))
                         // load so that amount is in the lower 14 bytes already
@@ -841,7 +954,7 @@ contract OneDeltaComposerPolygon is MarginTrading {
                             switch config
                             case 0 {
                                 // selector for balanceOf(address)
-                                mstore(0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+                                mstore(0, ERC20_BALANCE_OF)
                                 // add this address as parameter
                                 mstore(0x04, address())
                                 // call to token
@@ -870,7 +983,7 @@ contract OneDeltaComposerPolygon is MarginTrading {
                                 let ptr := mload(0x40) // free memory pointer
 
                                 // selector for transfer(address,uint256)
-                                mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+                                mstore(ptr, ERC20_TRANSFER)
                                 mstore(add(ptr, 0x04), receiver)
                                 mstore(add(ptr, 0x24), transferAmount)
 
@@ -938,7 +1051,7 @@ contract OneDeltaComposerPolygon is MarginTrading {
                     // Wrap native, only uses amount as uint112
                     ////////////////////////////////////////////////////
                     assembly {
-                        let amount := and(_UINT112_MASK, shr(144, calldataload(currentOffset)))
+                        let amount := shr(144, calldataload(currentOffset))
                         if iszero(
                             call(
                                 gas(),
@@ -970,7 +1083,7 @@ contract OneDeltaComposerPolygon is MarginTrading {
                     //      bytes 21-35:                 amount, either validation or transfer amount
                     ////////////////////////////////////////////////////
                     assembly {
-                        let receiver := and(ADDRESS_MASK, shr(96, calldataload(currentOffset)))
+                        let receiver := shr(96, calldataload(currentOffset))
                         let providedAmount := calldataload(add(currentOffset, 3))
                         // load config
                         let config := and(UINT8_MASK, shr(112, providedAmount))
@@ -981,7 +1094,7 @@ contract OneDeltaComposerPolygon is MarginTrading {
                         switch config
                         case 0 {
                             // selector for balanceOf(address)
-                            mstore(0x0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+                            mstore(0x0, ERC20_BALANCE_OF)
                             // add this address as parameter
                             mstore(0x4, address())
 
@@ -1047,18 +1160,17 @@ contract OneDeltaComposerPolygon is MarginTrading {
                     //      bytes 20-22:                 permit length
                     //      bytes 22-(22+permit length): permit data
                     ////////////////////////////////////////////////////
-                    bytes calldata permitData;
+                    uint256 permitOffset;
+                    uint256 permitLength;
                     address token;
                     assembly {
                         token := calldataload(currentOffset)
-                        let permitLength := and(UINT16_MASK, shr(80, token))
-                        token := and(ADDRESS_MASK, shr(96, token))
-                        permitData.offset := add(currentOffset, 22)
-                        permitData.length := permitLength
-                        permitLength := add(22, permitLength)
-                        currentOffset := add(currentOffset, permitLength)
+                        permitLength := and(UINT16_MASK, shr(80, token))
+                        token := shr(96, token)
+                        permitOffset := add(currentOffset, 22)
+                        currentOffset := add(permitOffset, permitLength)
                     }
-                    _tryPermit(token, permitData);
+                    _tryPermit(token, permitOffset, permitLength);
                 } else if (operation == Commands.EXEC_CREDIT_PERMIT) {
                     ////////////////////////////////////////////////////
                     // Execute credit delegation permit.
@@ -1069,18 +1181,17 @@ contract OneDeltaComposerPolygon is MarginTrading {
                     //      bytes 20-22:                 permit length
                     //      bytes 22-(22+permit length): permit data
                     ////////////////////////////////////////////////////
-                    bytes calldata permitData;
+                    uint256 permitOffset;
+                    uint256 permitLength;
                     address token;
                     assembly {
                         token := calldataload(currentOffset)
-                        let permitLength := and(UINT16_MASK, shr(80, token))
-                        token := and(ADDRESS_MASK, shr(96, token))
-                        permitData.offset := add(currentOffset, 22)
-                        permitData.length := permitLength
-                        permitLength := add(22, permitLength)
-                        currentOffset := add(currentOffset, permitLength)
+                        permitLength := and(UINT16_MASK, shr(80, token))
+                        token := shr(96, token)
+                        permitOffset := add(currentOffset, 22)
+                        currentOffset := add(permitOffset, permitLength)
                     }
-                    _tryCreditPermit(token, permitData);
+                    _tryCreditPermit(token, permitOffset, permitLength);
                 } else if (operation == Commands.FLASH_LOAN) {
                     ////////////////////////////////////////////////////
                     // Execute single asset flash loan
@@ -1100,12 +1211,12 @@ contract OneDeltaComposerPolygon is MarginTrading {
                     assembly {
                         // first slice, including poolId, refCode, asset
                         let slice := calldataload(currentOffset)
-                        let source := and(UINT8_MASK, shr(248, slice))
+                        let source := shr(248, slice) // already masks uint8 as last byte
                         // get token to loan
                         let token := and(ADDRESS_MASK, shr(88, slice))
                         // second calldata slice including amount annd params length
                         slice := calldataload(add(currentOffset, 21))
-                        let amount := and(_UINT112_MASK, shr(144, slice))
+                        let amount := shr(144, slice) // shr will already mask uint112 here
                         // length of params
                         let calldataLength := and(UINT16_MASK, shr(128, slice))
                         switch source

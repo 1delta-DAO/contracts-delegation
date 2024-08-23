@@ -71,7 +71,7 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
     }
 
     function flashAggregatorSelectors() internal pure returns (bytes4[] memory selectors) {
-        selectors = new bytes4[](24);
+        selectors = new bytes4[](26);
         /** margin */
         selectors[0] = IFlashAggregator.flashSwapExactIn.selector;
         selectors[1] = IFlashAggregator.flashSwapExactOut.selector;
@@ -100,35 +100,8 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
         selectors[21] = IFlashAggregator.deltaCompose.selector;
         selectors[22] = IFlashLoanReceiver.executeOperation.selector;
         selectors[23] = IFlashLoanReceiver.receiveFlashLoan.selector;
-        return selectors;
-    }
-
-    function lendingSelectors() internal pure returns (bytes4[] memory selectors) {
-        selectors = new bytes4[](18);
-        // baseline
-        selectors[0] = ILending.deposit.selector;
-        selectors[1] = ILending.withdraw.selector;
-        selectors[2] = ILending.borrow.selector;
-        selectors[3] = ILending.repay.selector;
-        selectors[4] = ILending.callTarget.selector;
-        // permits
-        selectors[5] = ILending.selfPermit.selector;
-        selectors[6] = ILending.selfPermitAllowed.selector;
-        selectors[7] = ILending.selfCreditDelegate.selector;
-        // erc20
-        selectors[8] = ILending.transferERC20In.selector;
-        selectors[9] = ILending.transferERC20AllIn.selector;
-        // weth txns
-        selectors[10] = ILending.wrap.selector;
-        selectors[11] = ILending.unwrap.selector;
-        selectors[12] = ILending.unwrapTo.selector;
-        selectors[13] = ILending.refundNativeTo.selector;
-        // transfers
-        selectors[14] = ILending.sweep.selector;
-        selectors[15] = ILending.sweepTo.selector;
-        selectors[16] = ILending.refundNative.selector;
-        selectors[17] = ILending.wrapTo.selector;
-
+        selectors[24] = IFlashAggregator.waultSwapCall.selector;
+        selectors[25] = IFlashAggregator.apeCall.selector;
         return selectors;
     }
 
@@ -159,13 +132,16 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
 
     /** ADD AND APPROVE LENDER TOKENS */
 
-    function initializeDelta() internal virtual {
-        // quoter
+    function intitializeFullDelta() internal virtual {
+        deployDelta();
+        initializeDeltaBase();
+        initializeDeltaAave();
+        initializeDeltaYldr();
+        initializeDeltaCompound();
+    }
 
-        testQuoter = new TestQuoterPolygon();
-        management.clearCache();
-
-        // lendle
+    function initializeDeltaAave() internal virtual {
+        // aave
         management.addGeneralLenderTokens(USDC, USDC_A_TOKEN_AAVE_V3, USDC_V_TOKEN_AAVE_V3, USDC_S_TOKEN_AAVE_V3, AAVE_V3);
         management.addGeneralLenderTokens(USDT, USDT_A_TOKEN_AAVE_V3, USDT_V_TOKEN_AAVE_V3, USDT_S_TOKEN_AAVE_V3, AAVE_V3);
         management.addGeneralLenderTokens(WBTC, WBTC_A_TOKEN_AAVE_V3, WBTC_V_TOKEN_AAVE_V3, WBTC_S_TOKEN_AAVE_V3, AAVE_V3);
@@ -184,7 +160,19 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
         debtTokens[WETH][AAVE_V3] = WETH_V_TOKEN_AAVE_V3;
         debtTokens[WMATIC][AAVE_V3] = WMATIC_V_TOKEN_AAVE_V3;
 
-        // aurelius
+        // approve pools
+        address[] memory assets = new address[](5);
+        assets[0] = USDC;
+        assets[1] = WBTC;
+        assets[2] = WETH;
+        assets[3] = USDT;
+        assets[4] = WMATIC;
+
+        management.approveAddress(assets, AAVE_POOL);
+    }
+
+    function initializeDeltaYldr() internal virtual {
+        // yldr
         management.addGeneralLenderTokens(USDC, USDC_A_TOKEN_YLDR, USDC_V_TOKEN_YLDR, address(0), YLDR);
         management.addGeneralLenderTokens(USDT, USDT_A_TOKEN_YLDR, USDT_V_TOKEN_YLDR, address(0), YLDR);
         management.addGeneralLenderTokens(WBTC, WBTC_A_TOKEN_YLDR, WBTC_V_TOKEN_YLDR, address(0), YLDR);
@@ -211,11 +199,29 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
         assets[3] = USDT;
         assets[4] = WMATIC;
 
+        management.approveAddress(assets, YLDR_POOL);
+    }
+
+    function initializeDeltaCompound() internal virtual {
+        // approve pools
+        address[] memory assets = new address[](5);
+        assets[0] = USDC;
+        assets[1] = WBTC;
+        assets[2] = WETH;
+        assets[3] = USDT;
+        assets[4] = WMATIC;
+
         management.approveAddress(assets, AAVE_POOL);
         management.approveAddress(assets, YLDR_POOL);
         management.approveAddress(assets, COMET_USDC);
-        management.approveAddress(assets, CRV_3_USD_AAVE_POOL);
         management.approveAddress(assets, COMET_USDT);
+    }
+
+    function initializeDeltaBase() internal virtual {
+        // quoter
+
+        testQuoter = new TestQuoterPolygon();
+        management.clearCache();
     }
 
     function upgradeExistingDelta(address proxy, address admin, address oldModule) internal virtual {
@@ -253,8 +259,7 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
     function setUp() public virtual {
         vm.createSelectFork({blockNumber: 58645304, urlOrAlias: "https://polygon-rpc.com"});
         router = new MockRouter(1.0e18, 12);
-        deployDelta();
-        initializeDelta();
+        intitializeFullDelta();
         management.setValidTarget(address(router), address(router), true);
     }
 
@@ -419,8 +424,8 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
         if (lenderId < 50) {
             IERC20All(debtTokens[asset][lenderId]).approveDelegation(address(brokerProxyAddress), amount);
         } else {
-           if (lenderId == 50)  IComet(COMET_USDC).allow(brokerProxyAddress, true);
-           if (lenderId == 51)  IComet(COMET_USDT).allow(brokerProxyAddress, true);
+            if (lenderId == 50) IComet(COMET_USDC).allow(brokerProxyAddress, true);
+            if (lenderId == 51) IComet(COMET_USDT).allow(brokerProxyAddress, true);
         }
     }
 

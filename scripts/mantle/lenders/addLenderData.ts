@@ -1,12 +1,12 @@
-import { ManagementModule__factory, MantleManagementModule } from "../../../types";
+import { MantleManagementModule__factory, MantleManagementModule } from "../../../types";
 import { LENDLE_A_TOKENS, LENDLE_S_TOKENS, LENDLE_V_TOKENS } from "../addresses/lendleAddresses";
 import { constants } from "ethers";
 import { AURELIUS_A_TOKENS, AURELIUS_S_TOKENS, AURELIUS_V_TOKENS } from "../addresses/aureliusAddresses";
 import { TOKENS_MANTLE } from "../addresses/tokens";
-import { MANTLE_CONFIGS, getMantleConfig } from "../utils";
+import { getMantleConfig } from "../utils";
 
 
-const managementInterface = ManagementModule__factory.createInterface()
+const managementInterface = MantleManagementModule__factory.createInterface()
 
 export function getAddLendleTokens() {
     const tokenKeys = Object.keys(LENDLE_A_TOKENS)

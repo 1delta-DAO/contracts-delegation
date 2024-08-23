@@ -10,8 +10,7 @@ contract WooFiTest is DeltaSetup {
     function setUp() public virtual override {
         vm.createSelectFork({blockNumber: 64033576, urlOrAlias: "https://mantle-mainnet.public.blastapi.io"});
 
-        deployDelta();
-        initializeDelta();
+        intitializeFullDelta();
     }
 
     function test_mantle_woo_spot_exact_in() external {

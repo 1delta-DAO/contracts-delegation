@@ -33,5 +33,5 @@ module.exports = [
 
 
 // npx hardhat verify --network mantle 0x9bc92bF848FaF2355c429c54d1edE3e767bDd790 --contract contracts/1delta/proxy/DeltaBrokerGen2.sol:DeltaBrokerProxyGen2 --constructor-args scripts/verify_mantle.js
-// npx hardhat verify --network mantle 0xe186f4614c5108425ceB64d4411F86B365f12b07 --contract contracts/1delta/modules/mantle/Composer.sol:OneDeltaComposerMantle 
+// npx hardhat verify --network mantle 0xeb041dF806F5Cb1769CF0297040aAce73E6597b6 --contract contracts/1delta/modules/mantle/Composer.sol:OneDeltaComposerMantle 
 // npx hardhat verify --network mantle 0xAaBeD4BCDd26e968b70c30011c96a4DC4bB75771 --contract contracts/1delta/modules/mantle/storage/ManagementModule.sol:MantleManagementModule 

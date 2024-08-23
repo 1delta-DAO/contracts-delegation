@@ -12,8 +12,7 @@ contract DodoTest is DeltaSetup {
     function setUp() public virtual override {
         vm.createSelectFork({blockNumber: 66900822, urlOrAlias: "https://mantle-mainnet.public.blastapi.io"});
 
-        deployDelta();
-        initializeDelta();
+        intitializeFullDelta();
     }
 
     function test_mantle_dodo_spot_exact_in() external {

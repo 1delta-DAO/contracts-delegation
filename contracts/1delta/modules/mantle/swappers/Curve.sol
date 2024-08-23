@@ -11,8 +11,8 @@ import {UniTypeSwapper} from "./UniType.sol";
 // solhint-disable max-line-length
 
 /**
- * @title Base swapper contract
- * @notice Contains basic logic for swap executions with DEXs
+ * @title Curve swapper contract
+ * @notice We do Curve & Fork stuff here
  */
 abstract contract CurveSwapper is UniTypeSwapper {
 
@@ -50,7 +50,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
             ////////////////////////////////////////////////////
             if xor(payer, address()) {
                 // selector for transferFrom(address,address,uint256)
-                mstore(ptr, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
+                mstore(ptr, ERC20_TRANSFER_FROM)
                 mstore(add(ptr, 0x04), payer)
                 mstore(add(ptr, 0x24), address())
                 mstore(add(ptr, 0x44), amountIn)
@@ -92,12 +92,11 @@ abstract contract CurveSwapper is UniTypeSwapper {
 
                 // execute USDY->mUSD wrap
                 // selector for wrap(uint256)
-                mstore(0xB00, 0xea598cb000000000000000000000000000000000000000000000000000000000)
-                mstore(0xB04, amountIn)
-                if iszero(call(gas(), MUSD, 0x0, 0xB00, 0x24, 0xB00, 0x0)) {
-                    let rdsize := returndatasize()
-                    returndatacopy(0xB00, 0, rdsize)
-                    revert(0xB00, rdsize)
+                mstore(0x0, 0xea598c00000000000000000000000000000000000000000000000000000000)
+                mstore(0x4, amountIn)
+                if iszero(call(gas(), MUSD, 0x0, 0x0, 0x24, 0x0, 0x0)) {
+                    returndatacopy(0x0, 0, returndatasize())
+                    revert(0x0, returndatasize())
                 }
 
                 ////////////////////////////////////////////////////
@@ -105,15 +104,15 @@ abstract contract CurveSwapper is UniTypeSwapper {
                 ////////////////////////////////////////////////////
 
                 // selector for balanceOf(address)
-                mstore(0xB00, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+                mstore(0x0, ERC20_BALANCE_OF)
                 // add this address as parameter
-                mstore(0xB04, address())
+                mstore(0x04, address())
                 
                 // call to token
-                pop(staticcall(gas(), MUSD, 0xB00, 0x24, 0xB00, 0x20))
+                pop(staticcall(gas(), MUSD, 0x0, 0x24, 0x0, 0x20))
 
                 // load the retrieved balance
-                amountIn := mload(0xB00)
+                amountIn := mload(0x0)
                 indexIn := 0
             }
             // MUSD
@@ -158,19 +157,18 @@ abstract contract CurveSwapper is UniTypeSwapper {
             ////////////////////////////////////////////////////
 
             // selector for swap(uint8,uint8,uint256,uint256,uint256)
-            mstore(0xB00, 0x9169558600000000000000000000000000000000000000000000000000000000)
-            mstore(0xB04, indexIn)
-            mstore(0xB24, indexOut)
-            mstore(0xB44, amountIn)
-            mstore(0xB64, 0) // min out is zero, we validate slippage at the end
-            mstore(0xB84, MAX_UINT256) // no deadline
-            if iszero(call(gas(), STRATUM_3POOL, 0x0, 0xB00, 0xA4, 0xB00, 0x20)) {
-                let rdsize := returndatasize()
-                returndatacopy(0xB00, 0, rdsize)
-                revert(0xB00, rdsize)
+            mstore(ptr, 0x9169558600000000000000000000000000000000000000000000000000000000)
+            mstore(add(ptr, 0x04), indexIn)
+            mstore(add(ptr, 0x24), indexOut)
+            mstore(add(ptr, 0x44), amountIn)
+            mstore(add(ptr, 0x64), 0) // min out is zero, we validate slippage at the end
+            mstore(add(ptr, 0x84), MAX_UINT256) // no deadline
+            if iszero(call(gas(), STRATUM_3POOL, 0x0, ptr, 0xA4, ptr, 0x20)) {
+                returndatacopy(0x0, 0, returndatasize())
+                revert(0x0, returndatasize())
             }
 
-            amountOut := mload(0xB00)
+            amountOut := mload(ptr)
 
             if eq(tokenOut, USDY) {
 
@@ -180,21 +178,20 @@ abstract contract CurveSwapper is UniTypeSwapper {
 
                 // calculate mUSD->USDY unwrap
                 // selector for unwrap(uint256)
-                mstore(0xB00, 0xde0e9a3e00000000000000000000000000000000000000000000000000000000)
-                mstore(0xB04, amountOut)
-                if iszero(call(gas(), MUSD, 0x0, 0xB00, 0x24, 0xB00, 0x20)) {
-                    let rdsize := returndatasize()
-                    returndatacopy(0xB00, 0, rdsize)
-                    revert(0xB00, rdsize)
+                mstore(0x0, 0xde0e9a3e00000000000000000000000000000000000000000000000000000000)
+                mstore(0x4, amountOut)
+                if iszero(call(gas(), MUSD, 0x0, 0x0, 0x24, 0x0, 0x20)) {
+                    returndatacopy(0x0, 0, returndatasize())
+                    revert(0x0, returndatasize())
                 }
                 // selector for balanceOf(address)
-                mstore(0xB00, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+                mstore(0x0, ERC20_BALANCE_OF)
                 // add this address as parameter
-                mstore(add(0xB00, 0x4), address())
+                mstore(0x4, address())
                 // call to token
-                pop(staticcall(5000, USDY, 0xB00, 0x24, 0xB00, 0x20))
+                pop(staticcall(gas(), USDY, 0x0, 0x24, 0x0, 0x20))
                 // load the retrieved balance
-                amountOut := mload(0xB00)
+                amountOut := mload(0x0)
             }
 
             ////////////////////////////////////////////////////
@@ -202,7 +199,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
             ////////////////////////////////////////////////////
             if xor(receiver, address()) {
                 // selector for transfer(address,uint256)
-                mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+                mstore(ptr, ERC20_TRANSFER)
                 mstore(add(ptr, 0x04), receiver)
                 mstore(add(ptr, 0x24), amountOut)
                 let success := call(gas(), tokenOut, 0, ptr, 0x44, ptr, 32)
@@ -244,17 +241,14 @@ abstract contract CurveSwapper is UniTypeSwapper {
             ////////////////////////////////////////////////////
             if xor(payer, address()) {
                 // selector for transferFrom(address,address,uint256)
-                mstore(ptr, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
+                mstore(ptr, ERC20_TRANSFER_FROM)
                 mstore(add(ptr, 0x04), payer)
                 mstore(add(ptr, 0x24), address())
                 mstore(add(ptr, 0x44), amountIn)
 
                 let success := call(
                     gas(),
-                    and(
-                        ADDRESS_MASK,
-                        shr(96, calldataload(pathOffset)) // tokenIn
-                    ), 
+                    shr(96, calldataload(pathOffset)), // tokenIn
                     0,
                     ptr,
                     0x64,
@@ -285,7 +279,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
             }
             
             let indexData := calldataload(add(pathOffset, 22))
-            let pool := and(shr(96, indexData), ADDRESS_MASK)
+            let pool := shr(96, indexData)
             let indexIn := and(shr(88, indexData), 0xff)
             let indexOut := and(shr(80, indexData), 0xff)
             ////////////////////////////////////////////////////
@@ -300,9 +294,8 @@ abstract contract CurveSwapper is UniTypeSwapper {
             mstore(add(ptr, 0x64), 0) // min out is zero, we validate slippage at the end
             mstore(add(ptr, 0x84), MAX_UINT256) // no deadline
             if iszero(call(gas(), pool, 0x0, ptr, 0xA4, ptr, 0x20)) {
-                let rdsize := returndatasize()
-                returndatacopy(0, 0, rdsize)
-                revert(0, rdsize)
+                returndatacopy(0, 0, returndatasize())
+                revert(0, returndatasize())
             }
 
             amountOut := mload(ptr)
@@ -312,15 +305,12 @@ abstract contract CurveSwapper is UniTypeSwapper {
             ////////////////////////////////////////////////////
             if xor(receiver, address()) {
                 // selector for transfer(address,uint256)
-                mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+                mstore(ptr, ERC20_TRANSFER)
                 mstore(add(ptr, 0x04), receiver)
                 mstore(add(ptr, 0x24), amountOut)
                 let success := call(
                     gas(),
-                    and(
-                        ADDRESS_MASK,
-                        shr(96, calldataload(add(pathOffset, 44))) // tokenIn, added 2x addr + 4x uint8
-                    ), 
+                    shr(96, calldataload(add(pathOffset, 44))), // tokenIn, added 2x addr + 4x uint8 
                     0,
                     ptr,
                     0x44,
