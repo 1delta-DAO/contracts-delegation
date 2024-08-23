@@ -4,12 +4,12 @@ pragma solidity ^0.8.19;
 import "./DeltaSetup.f.sol";
 import {MockRouter} from "../../contracts/mocks/MockRouter.sol";
 
-contract ComposedFlashLoanTest is DeltaSetup {
+contract ComposedFlashLoanTestTaiko is DeltaSetup {
     uint256 DEFAULT_IR_MODE = 2; // variable
     MockRouter router;
 
     function setUp() public virtual override {
-        vm.createSelectFork({blockNumber: 62219594, urlOrAlias: "https://mantle-mainnet.public.blastapi.io"});
+        vm.createSelectFork({blockNumber: 62219594, urlOrAlias: "https://taiko-mainnet.public.blastapi.io"});
 
         router = new MockRouter(1.0e18, 12);
 
@@ -27,7 +27,7 @@ contract ComposedFlashLoanTest is DeltaSetup {
      *  borrow
      *  payback
      */
-    function test_mantle_composed_flash_loan_open(uint8 lenderId) external /** address user, uint8 lenderId */ {
+    function test_taiko_composed_flash_loan_open(uint8 lenderId) external /** address user, uint8 lenderId */ {
         TestParamsOpen memory params;
         address user = testUser;
         vm.assume(user != address(0) && lenderId < 2);
@@ -122,7 +122,7 @@ contract ComposedFlashLoanTest is DeltaSetup {
         assertApproxEqAbs(borrowBalance, 20018000000000000000, 1);
     }
 
-    function test_mantle_ext_call() external {
+    function test_taiko_ext_call() external {
         address someAddr = vm.addr(0x324);
         address someOtherAddr = vm.addr(0x324);
 
@@ -132,7 +132,7 @@ contract ComposedFlashLoanTest is DeltaSetup {
         console.log(val);
     }
 
-    function test_mantle_composed_flash_loan_close() external {
+    function test_taiko_composed_flash_loan_close() external {
         uint8 lenderId = 0;
         address user = testUser;
         vm.assume(user != address(0) && lenderId < 2);

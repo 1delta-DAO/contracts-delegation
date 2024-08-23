@@ -62,7 +62,16 @@ contract EthereumManagementModule is WithEthereumStorage, ERC20Selectors {
 
     function decreaseAllowance(address[] memory assets, address target) external onlyOwner {
         for (uint256 i = 0; i < assets.length; i++) {
-            IERC20(assets[i]).approve(target, 0);
+            address token = assets[i];
+            assembly {
+                let ptr := mload(0x40)
+                mstore(ptr, ERC20_APPROVE)
+                mstore(add(ptr, 0x4), target)
+                mstore(add(ptr, 0x24), 0x0)
+                if iszero(call(gas(), token, 0x0, ptr, 0x44, ptr, 32)) {
+                    revert(0x0, 0x0)
+                }
+            }
         }
     }
 

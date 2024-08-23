@@ -165,7 +165,7 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
     }
 
     function initializeDeltaHana() internal virtual {
-        // lendle
+        // hana
         management.addGeneralLenderTokens(USDC, HANA_A_USDC, HANA_V_USDC, HANA_S_USDC, 0);
         management.addGeneralLenderTokens(TAIKO, HANA_A_TAIKO, HANA_V_TAIKO, HANA_S_TAIKO, 0);
         management.addGeneralLenderTokens(WETH, HANA_A_WETH, HANA_V_WETH, HANA_S_WETH, 0);
@@ -179,7 +179,7 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
         debtTokens[WETH][0] = HANA_V_WETH;
 
         // approve pools
-        address[] memory assets = new address[](5);
+        address[] memory assets = new address[](3);
         assets[0] = USDC;
         assets[1] = WETH;
         assets[2] = TAIKO;
@@ -187,7 +187,7 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
     }
 
     function initializeDeltaMeridian() internal virtual {
-        // aurelius
+        // meridian
         management.addGeneralLenderTokens(USDC, MERIDIAN_A_USDC, MERIDIAN_V_USDC, MERIDIAN_S_USDC, 1);
         management.addGeneralLenderTokens(TAIKO, MERIDIAN_A_TAIKO, MERIDIAN_V_TAIKO, MERIDIAN_S_TAIKO, 1);
         management.addGeneralLenderTokens(WETH, MERIDIAN_A_WETH, MERIDIAN_V_WETH, MERIDIAN_S_WETH, 1);
@@ -201,10 +201,10 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
         debtTokens[WETH][1] = MERIDIAN_V_WETH;
 
         // approve pools
-        address[] memory assets = new address[](5);
+        address[] memory assets = new address[](3);
         assets[0] = USDC;
-        assets[2] = WETH;
-        assets[3] = TAIKO;
+        assets[1] = WETH;
+        assets[2] = TAIKO;
         management.approveAddress(assets, MERIDIAN_POOL);
     }
 
@@ -217,7 +217,7 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
     }
 
     function setUp() public virtual {
-        vm.createSelectFork({blockNumber: 319809, urlOrAlias: "https://rpc.ankr.com/taiko"});
+        vm.createSelectFork({blockNumber: 319996, urlOrAlias: "https://rpc.ankr.com/taiko"});
 
         intitializeFullDelta();
     }
