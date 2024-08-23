@@ -25,31 +25,30 @@ abstract contract MarginTrading is BaseSwapper {
 
     constructor() BaseSwapper() {}
 
-    // swapsicle
-    function algebraSwapCallback(
+    // pancake
+    function pancakeV3SwapCallback(
         int256 amount0Delta,
         int256 amount1Delta,
         bytes calldata path
     ) external {
         address tokenIn;
         address tokenOut;
-        uint256 tradeId;
         uint256 pathLength;
         assembly {
             pathLength := path.length
             let firstWord := calldataload(PATH_OFFSET_CALLBACK_V3)
             
-            tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
-            tradeId := and(UINT8_MASK, shr(80, firstWord)) // poolId
+            tokenIn := shr(96, firstWord)
             // second word
             firstWord := calldataload(164) // PATH_OFFSET_CALLBACK_V3 + 32
+            
             tokenOut := and(ADDRESS_MASK, firstWord)
 
             ////////////////////////////////////////////////////
             // Compute and validate pool address
             ////////////////////////////////////////////////////
             let s := mload(0x40)
-            mstore(s, ALGEBRA_V3_FF_DEPLOYER)
+            mstore(s, PANCAKE_V3_FF_FACTORY)
             let p := add(s, 21)
             // Compute the inner hash in-place
             switch lt(tokenIn, tokenOut)
@@ -61,9 +60,10 @@ abstract contract MarginTrading is BaseSwapper {
                 mstore(p, tokenIn)
                 mstore(add(p, 32), tokenOut)
             }
-            mstore(p, keccak256(p, 64))
+            mstore(add(p, 64), and(UINT16_MASK, shr(160, firstWord)))
+            mstore(p, keccak256(p, 96))
             p := add(p, 32)
-            mstore(p, ALGEBRA_POOL_INIT_CODE_HASH)
+            mstore(p, PANCAKE_V3_INIT_CODE_HASH)
         
             ////////////////////////////////////////////////////
             // If the caller is not the calculated pool, we revert
@@ -76,7 +76,7 @@ abstract contract MarginTrading is BaseSwapper {
         clSwapCallback(amount0Delta, amount1Delta, tokenIn, tokenOut, pathLength);
     }
 
-    // uniswap, retro, sushi
+    // sushi, uniswap V3
     function uniswapV3SwapCallback(
         int256 amount0Delta,
         int256 amount1Delta,
@@ -84,14 +84,12 @@ abstract contract MarginTrading is BaseSwapper {
     ) external {
         address tokenIn;
         address tokenOut;
-        uint256 tradeId;
         uint256 pathLength;
         assembly {
             pathLength := path.length
             let firstWord := calldataload(PATH_OFFSET_CALLBACK_V3)
             let dexId := and(UINT8_MASK, shr(80, firstWord))
-            tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
-            tradeId := and(UINT8_MASK, shr(80, firstWord)) // poolId
+            tokenIn := shr(96, firstWord)
             // second word
             firstWord := calldataload(164) // PATH_OFFSET_CALLBACK_V3 + 32
             tokenOut := and(ADDRESS_MASK, firstWord)
@@ -101,8 +99,8 @@ abstract contract MarginTrading is BaseSwapper {
             ////////////////////////////////////////////////////
             let s := mload(0x40)
             switch dexId
-            case 0 {
-                mstore(s, UNI_V3_FF_FACTORY)
+            case 6 {
+                mstore(s, UNISWAP_V3_FF_FACTORY)
                 let p := add(s, 21)
                 // Compute the inner hash in-place
                 switch lt(tokenIn, tokenOut)
@@ -117,10 +115,10 @@ abstract contract MarginTrading is BaseSwapper {
                 mstore(add(p, 64), and(UINT16_MASK, shr(160, firstWord)))
                 mstore(p, keccak256(p, 96))
                 p := add(p, 32)
-                mstore(p, UNI_POOL_INIT_CODE_HASH)
+                mstore(p, UNISWAP_V3_INIT_CODE_HASH)
             }
-            case 1 {
-                mstore(s, RETRO_FF_FACTORY)
+            case 5 {
+                mstore(s, SUSHI_V3_FF_FACTORY)
                 let p := add(s, 21)
                 // Compute the inner hash in-place
                 switch lt(tokenIn, tokenOut)
@@ -135,25 +133,7 @@ abstract contract MarginTrading is BaseSwapper {
                 mstore(add(p, 64), and(UINT16_MASK, shr(160, firstWord)))
                 mstore(p, keccak256(p, 96))
                 p := add(p, 32)
-                mstore(p, RETRO_POOL_INIT_CODE_HASH)
-            }
-            case 2 {
-                mstore(s, SUSHI_V3_FF_DEPLOYER)
-                let p := add(s, 21)
-                // Compute the inner hash in-place
-                switch lt(tokenIn, tokenOut)
-                case 0 {
-                    mstore(p, tokenOut)
-                    mstore(add(p, 32), tokenIn)
-                }
-                default {
-                    mstore(p, tokenIn)
-                    mstore(add(p, 32), tokenOut)
-                }
-                mstore(add(p, 64), and(UINT16_MASK, shr(160, firstWord)))
-                mstore(p, keccak256(p, 96))
-                p := add(p, 32)
-                mstore(p, SUSHI_POOL_INIT_CODE_HASH)
+                mstore(p, SUSHI_V3_INIT_CODE_HASH)
             }
             default {
                 revert(0, 0)
@@ -167,116 +147,6 @@ abstract contract MarginTrading is BaseSwapper {
             }
         }
         clSwapCallback(amount0Delta, amount1Delta, tokenIn, tokenOut, pathLength);
-    }
-
-    // iZi callbacks
-    
-    // zeroForOne = true
-    function swapY2XCallback(uint256 x, uint256 y, bytes calldata path) external {
-        address tokenIn;
-        address tokenOut;
-        uint256 tradeId;
-        uint256 pathLength;
-        assembly {
-            pathLength := path.length
-            let firstWord := calldataload(PATH_OFFSET_CALLBACK_V3)
-            tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
-            tradeId := and(UINT8_MASK, shr(80, firstWord)) // poolId
-            // second word
-            firstWord := calldataload(164) // PATH_OFFSET_CALLBACK_V3 + 32
-            
-            tokenOut := and(ADDRESS_MASK, firstWord)
-
-            ////////////////////////////////////////////////////
-            // Compute and validate pool address
-            ////////////////////////////////////////////////////
-            let s := mload(0x40)
-            mstore(s, IZI_FF_FACTORY)
-            let p := add(s, 21)
-            // Compute the inner hash in-place
-            switch lt(tokenIn, tokenOut)
-            case 0 {
-                mstore(p, tokenOut)
-                mstore(add(p, 32), tokenIn)
-            }
-            default {
-                mstore(p, tokenIn)
-                mstore(add(p, 32), tokenOut)
-            }
-            mstore(add(p, 64), and(UINT16_MASK, shr(160, firstWord)))
-            mstore(p, keccak256(p, 96))
-            p := add(p, 32)
-            mstore(p, IZI_POOL_INIT_CODE_HASH)
-        
-            ////////////////////////////////////////////////////
-            // If the caller is not the calculated pool, we revert
-            ////////////////////////////////////////////////////
-            if xor(caller(), and(ADDRESS_MASK, keccak256(s, 85))) {
-                mstore(0x0, BAD_POOL)
-                revert(0x0, 0x4)
-            }
-        }
-        clSwapCallback(
-            -int256(x),
-            int256(y),
-            tokenIn,
-            tokenOut,
-            pathLength
-        );
-    }
-
-    // zeroForOne = false
-    function swapX2YCallback(uint256 x, uint256 y, bytes calldata path) external {
-        address tokenIn;
-        address tokenOut;
-        uint256 tradeId;
-        uint256 pathLength;
-        assembly {
-            pathLength := path.length
-            let firstWord := calldataload(PATH_OFFSET_CALLBACK_V3)
-            tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
-            tradeId := and(UINT8_MASK, shr(80, firstWord)) // poolId
-            // second word
-            firstWord := calldataload(164) // PATH_OFFSET_CALLBACK_V3 + 32
-            tokenOut := and(ADDRESS_MASK, firstWord)
-
-            ////////////////////////////////////////////////////
-            // Compute and validate pool address
-            ////////////////////////////////////////////////////
-            let s := mload(0x40)
-            let p := s
-            mstore(p, IZI_FF_FACTORY)
-            p := add(p, 21)
-            // Compute the inner hash in-place
-            switch lt(tokenIn, tokenOut)
-            case 0 {
-                mstore(p, tokenOut)
-                mstore(add(p, 32), tokenIn)
-            }
-            default {
-                mstore(p, tokenIn)
-                mstore(add(p, 32), tokenOut)
-            }
-            mstore(add(p, 64), and(UINT16_MASK, shr(160, firstWord)))
-            mstore(p, keccak256(p, 96))
-            p := add(p, 32)
-            mstore(p, IZI_POOL_INIT_CODE_HASH)
-        
-            ////////////////////////////////////////////////////
-            // If the caller is not the calculated pool, we revert
-            ////////////////////////////////////////////////////
-            if xor(caller(), and(ADDRESS_MASK, keccak256(s, 85))) {
-                mstore(0x0, BAD_POOL)
-                revert(0x0, 0x4)
-            }
-        }
-        clSwapCallback(
-            int256(x),
-            -int256(y),
-            tokenIn,
-            tokenOut,
-            pathLength
-        );
     }
 
    /**
@@ -354,7 +224,7 @@ abstract contract MarginTrading is BaseSwapper {
             // skim address from calldata
             pathLength := sub(pathLength, 36)
             // assume a multihop if the calldata is longer than 66
-            multihop := gt(pathLength, 66)
+            multihop := gt(pathLength, MAX_SINGLE_LENGTH_UNOSWAP)
             // use tradeId as tradetype
             tradeId := and(
                 calldataload(121), // PATH_OFFSET_CALLBACK_V3 - 11
@@ -484,203 +354,15 @@ abstract contract MarginTrading is BaseSwapper {
         }
     }
 
-    // The uniswapV2 style callback for exact forks
-    function uniswapV2Call(
-        address sender,
-        uint256 amount0,
-        uint256 amount1,
-        bytes calldata path
-    ) external {
-        address tokenIn;
-        address tokenOut;
-        uint256 pathLength;
-        // the fee parameter in the path can be ignored for validating a V2 pool
-        assembly {
-            pathLength := path.length
-            // revert if sender param is not this address
-            if xor(sender, address()) { 
-                mstore(0, INVALID_FLASH_LOAN)
-                revert (0, 0x4)
-            }
-            // fetch tokens
-            let firstWord := calldataload(PATH_OFFSET_CALLBACK_V2)
-            let pId := and(UINT8_MASK, shr(80, firstWord)) 
-            tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
-            tokenOut := and(ADDRESS_MASK, calldataload(196)) // PATH_OFFSET_CALLBACK_V2 + 32
-            let ptr := mload(0x40)
-            switch lt(tokenIn, tokenOut)
-            case 0 {
-                mstore(add(ptr, 0x14), tokenIn)
-                mstore(ptr, tokenOut)
-            }
-            default {
-                mstore(add(ptr, 0x14), tokenOut)
-                mstore(ptr, tokenIn)
-            }
-            let salt := keccak256(add(ptr, 0x0C), 0x28)
-            // validate callback
-            switch pId
-            case 100 {
-                mstore(ptr, UNI_V2_FF_FACTORY)
-                mstore(add(ptr, 0x15), salt)
-                mstore(add(ptr, 0x35), CODE_HASH_UNI_V2)
-            }
-            case 101 {
-                mstore(ptr, QUICK_V2_FF_FACTORY)
-                mstore(add(ptr, 0x15), salt)
-                mstore(add(ptr, 0x35), CODE_HASH_UNI_V2)
-            }
-            case 102 {
-                mstore(ptr, SUSHI_V2_FF_FACTORY)
-                mstore(add(ptr, 0x15), salt)
-                mstore(add(ptr, 0x35), CODE_HASH_SUSHI_V2)
-            }
-            case 103 {
-                mstore(ptr, DFYN_FF_FACTORY)
-                mstore(add(ptr, 0x15), salt)
-                mstore(add(ptr, 0x35), CODE_HASH_DFYN)
-            }
-            case 104 {
-                mstore(ptr, POLYCAT_FF_FACTORY)
-                mstore(add(ptr, 0x15), salt)
-                mstore(add(ptr, 0x35), CODE_HASH_POLYCAT)
-            }
-            case 106 {
-                mstore(ptr, COMETH_FF_FACTORY)
-                mstore(add(ptr, 0x15), salt)
-                mstore(add(ptr, 0x35), CODE_HASH_COMETH)
-            }
-            default {
-                mstore(0x0, BAD_POOL)
-                revert(0x0, 0x4)
-            }
-            // verify that the caller is a v2 type pool
-            if xor(and(ADDRESS_MASK, keccak256(ptr, 0x55)), caller()) {
-                mstore(0x0, BAD_POOL)
-                revert(0x0, 0x4)
-            }
-            // revert if sender param is not this address
-            // this occurs if someone sends valid
-            // calldata with this contract as recipient
-            if xor(sender, address()) { 
-                mstore(0, INVALID_CALLER)
-                revert (0, 0x4)
-            }
-        }
-        _v2StyleCallback(amount0, amount1, tokenIn, tokenOut, pathLength);
-    }
-
-
-    // The uniswapV2 style callback for waultswap
-    function waultSwapCall(
-        address sender,
-        uint256 amount0,
-        uint256 amount1,
-        bytes calldata path
-    ) external {
-        address tokenIn;
-        address tokenOut;
-        uint256 pathLength;
-        // the fee parameter in the path can be ignored for validating a V2 pool
-        assembly {
-            pathLength := path.length
-            // revert if sender param is not this address
-            if xor(sender, address()) { 
-                mstore(0, INVALID_FLASH_LOAN)
-                revert (0, 0x4)
-            }
-            // fetch tokens
-            tokenIn := and(ADDRESS_MASK, calldataload(152)) // PATH_OFFSET_CALLBACK_V2 - 12
-            tokenOut := and(ADDRESS_MASK, calldataload(196)) // PATH_OFFSET_CALLBACK_V2 + 32
-            let ptr := mload(0x40)
-            switch lt(tokenIn, tokenOut)
-            case 0 {
-                mstore(add(ptr, 0x14), tokenIn)
-                mstore(ptr, tokenOut)
-            }
-            default {
-                mstore(add(ptr, 0x14), tokenOut)
-                mstore(ptr, tokenIn)
-            }
-            let salt := keccak256(add(ptr, 0x0C), 0x28)
-            mstore(ptr, WAULTSWAP_FF_FACTORY)
-            mstore(add(ptr, 0x15), salt)
-            mstore(add(ptr, 0x35), CODE_HASH_WAULTSWAP)
-
-            // verify that the caller is a v2 type pool
-            if xor(and(ADDRESS_MASK, keccak256(ptr, 0x55)), caller()) {
-                mstore(0x0, BAD_POOL)
-                revert(0x0, 0x4)
-            }
-            // revert if sender param is not this address
-            if xor(sender, address()) { 
-                mstore(0, INVALID_CALLER)
-                revert (0, 0x4)
-            }
-        }
-        _v2StyleCallback(amount0, amount1, tokenIn, tokenOut, pathLength);
-    }
-
-    // The uniswapV2 style callback for apeswap
-    function apeCall(
-        address sender,
-        uint256 amount0,
-        uint256 amount1,
-        bytes calldata path
-    ) external {
-        address tokenIn;
-        address tokenOut;
-        uint256 pathLength;
-        // the fee parameter in the path can be ignored for validating a V2 pool
-        assembly {
-            pathLength := path.length
-            // revert if sender param is not this address
-            if xor(sender, address()) { 
-                mstore(0, INVALID_FLASH_LOAN)
-                revert (0, 0x4)
-            }
-            // fetch tokens
-            tokenIn := and(ADDRESS_MASK, calldataload(152)) // PATH_OFFSET_CALLBACK_V2 - 12
-            tokenOut := and(ADDRESS_MASK, calldataload(196)) // PATH_OFFSET_CALLBACK_V2 + 32
-            let ptr := mload(0x40)
-            switch lt(tokenIn, tokenOut)
-            case 0 {
-                mstore(add(ptr, 0x14), tokenIn)
-                mstore(ptr, tokenOut)
-            }
-            default {
-                mstore(add(ptr, 0x14), tokenOut)
-                mstore(ptr, tokenIn)
-            }
-            let salt := keccak256(add(ptr, 0x0C), 0x28)
-            mstore(ptr, APESWAP_FF_FACTORY)
-            mstore(add(ptr, 0x15), salt)
-            mstore(add(ptr, 0x35), CODE_HASH_APESWAP)
-
-            // verify that the caller is a v2 type pool
-            if xor(and(ADDRESS_MASK, keccak256(ptr, 0x55)), caller()) {
-                mstore(0x0, BAD_POOL)
-                revert(0x0, 0x4)
-            }
-            // revert if sender param is not this address
-            if xor(sender, address()) { 
-                mstore(0, INVALID_CALLER)
-                revert (0, 0x4)
-            }
-        }
-        _v2StyleCallback(amount0, amount1, tokenIn, tokenOut, pathLength);
-    }
-
-    // The uniswapV2 style callback for solidly forks
+    // The uniswapV2 style callback for Solidly V2
     function hook(
         address sender,
         uint256 amount0,
         uint256 amount1,
         bytes calldata path
     ) external {
-        uint256 tradeId;
         address tokenIn;
-        address tokenOut;  
+        address tokenOut;
         uint256 pathLength;
         // the fee parameter in the path can be ignored for validating a V2 pool
         assembly {
@@ -692,65 +374,30 @@ abstract contract MarginTrading is BaseSwapper {
             }
             // fetch tokens
             let firstWord := calldataload(PATH_OFFSET_CALLBACK_V2)
-            tokenIn := and(ADDRESS_MASK, shr(96, firstWord))
+            tokenIn := shr(96, firstWord)
             let dexId := and(shr(80, firstWord), UINT8_MASK) // swap pool dexId
-            tradeId := and(shr(88, firstWord), UINT8_MASK) // interaction dexId
             tokenOut := and(ADDRESS_MASK, calldataload(196)) // PATH_OFFSET_CALLBACK_V2 + 32
+
             let ptr := mload(0x40)
-            let pair
-            switch dexId
-            // Dystopia Volatile
-            case 120 {
-                switch lt(tokenIn, tokenOut)
-                case 0 {
-                    mstore(add(ptr, 0x14), tokenIn)
-                    mstore(ptr, tokenOut)
-                }
-                default {
-                    mstore(add(ptr, 0x14), tokenOut)
-                    mstore(ptr, tokenIn)
-                }
-                mstore8(add(ptr, 0x34), 0)
-                let salt := keccak256(add(ptr, 0x0C), 0x29)
-                mstore(ptr, DYSTOPIA_FF_FACTORY)
-                mstore(add(ptr, 0x15), salt)
-                mstore(add(ptr, 0x35), CODE_HASH_DYSTOPIA)
-
-                pair := and(ADDRESS_MASK, keccak256(ptr, 0x55))
-            }
-            // Dystopia Stable
-            case 135 {
-                switch lt(tokenIn, tokenOut)
-                case 0 {
-                    mstore(add(ptr, 0x14), tokenIn)
-                    mstore(ptr, tokenOut)
-                }
-                default {
-                    mstore(add(ptr, 0x14), tokenOut)
-                    mstore(ptr, tokenIn)
-                }
-                mstore8(add(ptr, 0x34), 1)
-                let salt := keccak256(add(ptr, 0x0C), 0x29)
-                mstore(ptr, DYSTOPIA_FF_FACTORY)
-                mstore(add(ptr, 0x15), salt)
-                mstore(add(ptr, 0x35), CODE_HASH_DYSTOPIA)
-
-                pair := and(ADDRESS_MASK, keccak256(ptr, 0x55))
+            switch lt(tokenIn, tokenOut)
+            case 0 {
+                mstore(add(ptr, 0x14), tokenIn)
+                mstore(ptr, tokenOut)
             }
             default {
-                mstore(0x0, BAD_POOL)
-                revert(0x0, 0x4)
+                mstore(add(ptr, 0x14), tokenOut)
+                mstore(ptr, tokenIn)
             }
+            mstore8(add(ptr, 0x34), 0)
+            let salt := keccak256(add(ptr, 0x0C), 0x29)
+            mstore(ptr, SOLIDLY_V2_FF_FACTORY)
+            mstore(add(ptr, 0x15), salt)
+            mstore(add(ptr, 0x35), SOLIDLY_V2_CODE_HASH)
 
             // verify that the caller is a v2 type pool
-            if xor(pair, caller()) {
+            if xor(and(ADDRESS_MASK, keccak256(ptr, 0x55)), caller()) {
                 mstore(0x0, BAD_POOL)
                 revert(0x0, 0x4)
-            }
-            // revert if sender param is not this address
-            if xor(sender, address()) { 
-                mstore(0, INVALID_CALLER)
-                revert (0, 0x4)
             }
         }
         _v2StyleCallback(amount0, amount1, tokenIn, tokenOut, pathLength);
@@ -776,8 +423,7 @@ abstract contract MarginTrading is BaseSwapper {
         uint256 amountToPay;
         // the fee parameter in the path can be ignored for validating a V2 pool
         assembly {
-            let firstWord := calldataload(PATH_OFFSET_CALLBACK_V2)
-            tradeId := and(shr(88, firstWord), UINT8_MASK) // interaction identifier
+            tradeId := and(calldataload(153), UINT8_MASK) // interaction identifier at PATH_OFFSET_CALLBACK_V2 - 11
             ////////////////////////////////////////////////////
             // We fetch the original initiator of the swap function
             // It is represented by the last 20 bytes of the path
@@ -813,7 +459,7 @@ abstract contract MarginTrading is BaseSwapper {
             maxAmount := shr(128, maxAmount)
             // skim address from calldatas
             pathLength := sub(pathLength, 52)
-            // assume a multihop if the calldata is longer than 64
+            // assume a multihop if the calldata is longer than 66
             multihop := gt(pathLength, MAX_SINGLE_LENGTH_UNOSWAP)
             // assign amount received
             switch iszero(amount0)
@@ -834,7 +480,7 @@ abstract contract MarginTrading is BaseSwapper {
                 // the router returns the amount received that we can validate against
                 // throught the `maxAmount`
                 assembly {
-                    pathOffset := add(pathOffset, SKIP_LENGTH_UNOSWAP)
+                    pathOffset := NEXT_SWAP_V2_OFFSET
                     pathLength := sub(pathLength, SKIP_LENGTH_UNOSWAP)
                 }
                 ////////////////////////////////////////////////////
@@ -970,31 +616,20 @@ abstract contract MarginTrading is BaseSwapper {
                 pathOffset,
                 pathLength
             );
-        }
-        // iZi
-        else if (poolId == 49) {
-            _swapIZIPoolExactOut(
-                uint128(amountOut),
-                maxIn,
-                payer,
-                receiver,
-                pathOffset,
-                pathLength
-            );
         // uniswapV2 style
         } else if (poolId < 150) {
             address tokenIn;
             uint256 amountIn;
             address pair;
             address tokenOut;
-            // this will stack too deep
-            {            
+            // prevent stack too deep
+            {
                 uint256 feeDenom;
                 assembly {
                     tokenOut := shr(96, calldataload(pathOffset))
                     tokenIn := shr(96, calldataload(add(pathOffset, SKIP_LENGTH_UNOSWAP)))
                     pair := shr(96, calldataload(add(pathOffset, 22)))
-                    feeDenom := and(UINT16_MASK, shr(80, calldataload(add(pathOffset, 22))))
+                    feeDenom := and(UINT16_MASK, calldataload(add(pathOffset, 12)))
                 }
                 ////////////////////////////////////////////////////
                 // We calculate the required amount for the next swap
@@ -1023,7 +658,7 @@ abstract contract MarginTrading is BaseSwapper {
                 );
             } 
             ////////////////////////////////////////////////////
-            // Otherwise, we6 pay the funds to the pair
+            // Otherwise, we pay the funds to the pair
             // according to the parametrization
             // at the end of the path
             ////////////////////////////////////////////////////
@@ -1059,6 +694,73 @@ abstract contract MarginTrading is BaseSwapper {
                 pathLength
             );
         // special case: Moe LB, no flash swaps, recursive nesting is applied
+        } else if (poolId == 151) {
+            address tokenIn;
+            uint256 amountIn;
+            bool swapForY;
+            address pair;
+            {
+                address tokenOut;
+                assembly {
+                    tokenOut := shr(96, calldataload(pathOffset))
+                    tokenIn := shr(96, calldataload(add(pathOffset, 42)))
+                    pair := shr(96, calldataload(add(pathOffset, 22)))
+                }
+                ////////////////////////////////////////////////////
+                // We calculate the required amount for the next swap
+                ////////////////////////////////////////////////////
+                (amountIn, swapForY) = getLBAmountIn(tokenOut, pair, amountOut);
+            }
+            ////////////////////////////////////////////////////
+            // If the path includes more pairs, we nest another exact out swap
+            // The funds of this exact out swap are sent to the LB pair
+            // This is done by re-calling this same function after skimming the
+            // data parameter by the leading token config 
+            ////////////////////////////////////////////////////
+            if(pathLength > 65) { // limit is 20+1+1+20+20+2
+                // remove the last token from the path
+                assembly {
+                    pathOffset := add(pathOffset, 42)
+                    pathLength := sub(pathLength, 42)
+                }
+                swapExactOutInternal(
+                    amountIn,
+                    maxIn,
+                    payer,
+                    pair,
+                    pathOffset,
+                    pathLength
+                );
+            } 
+            ////////////////////////////////////////////////////
+            // Otherwise, we pay the funds to the pair
+            // according to the parametrization
+            // at the end of the path
+            ////////////////////////////////////////////////////
+            else {
+                (uint256 payType, uint8 lenderId) = getPayConfigFromCalldata(pathOffset, pathLength);
+                // pay the pool
+                handlePayPool(
+                    tokenIn,
+                    payer, // prevents sload if desired
+                    pair,
+                    payType,
+                    amountIn,
+                    lenderId
+                );
+                // if(maxIn < amountIn) revert Slippage();
+                assembly {
+                    if lt(maxIn, amountIn) {
+                        mstore(0, SLIPPAGE)
+                        revert (0, 0x4)
+                    }
+                }
+            }
+            ////////////////////////////////////////////////////
+            // The swap is executed at the end and sends 
+            // the funds to the receiver addresss
+            ////////////////////////////////////////////////////
+            swapLBexactOut(pair, swapForY, amountOut, receiver);
         } else {
             assembly {
                 mstore(0, INVALID_DEX)
@@ -1081,7 +783,7 @@ abstract contract MarginTrading is BaseSwapper {
         uint256 maxIn,
         address payer,
         uint256 pathOffset,
-        uint256 pathLength 
+        uint256 pathLength
     ) internal {
         // fetch the pool identifier from the path
         uint256 poolId;
@@ -1098,26 +800,15 @@ abstract contract MarginTrading is BaseSwapper {
                 pathOffset,
                 pathLength
             );
-        }
-        // iZi
-        else if (poolId == 49) {
-            _swapIZIPoolExactOut(
-                uint128(amountOut),
-                maxIn,
-                payer,
-                address(this),
-                pathOffset,
-                pathLength
-            );
         // uniswapV2 style
         } else if (poolId < 150) {
             address tokenOut;
             address tokenIn;
             address pair;
             assembly {
-                tokenOut := and(ADDRESS_MASK, shr(96, calldataload(pathOffset)))
-                tokenIn := and(ADDRESS_MASK, shr(96, calldataload(add(pathOffset, SKIP_LENGTH_UNOSWAP))))
-                pair := and(ADDRESS_MASK, shr(96, calldataload(add(pathOffset, 22))))
+                tokenOut := shr(96, calldataload(pathOffset))
+                tokenIn := shr(96, calldataload(add(pathOffset, SKIP_LENGTH_UNOSWAP)))
+                pair := shr(96, calldataload(add(pathOffset, 22)))
             }
             _swapV2StyleExactOut(
                 tokenIn,
@@ -1145,7 +836,7 @@ abstract contract MarginTrading is BaseSwapper {
         uint256 amountOutMinimum,
         address payer,
         uint256 pathOffset,
-        uint256 pathLength 
+        uint256 pathLength
     ) internal {
         // fetch the pool poolId from the path
         uint256 poolId;
@@ -1159,16 +850,10 @@ abstract contract MarginTrading is BaseSwapper {
                 switch lt(pathLength, 67) // see swapExactIn
                 case 1 { reciever := address()}
                 default {
-                    let nextId := and(
-                        shr(80, 
-                        calldataload(add(pathOffset, SKIP_LENGTH_UNOSWAP))), //
-                        UINT8_MASK
-                    )
+                    let nextId := and(calldataload(add(pathOffset, 34)), UINT8_MASK) // SKIP_LENGTH_UNISWAP - 10
                     switch gt(nextId, 99) 
                     case 1 {
-                        reciever := and(
-                            ADDRESS_MASK,
-                            shr(
+                        reciever := shr(
                                 96,
                                 calldataload(
                                     add(
@@ -1177,7 +862,6 @@ abstract contract MarginTrading is BaseSwapper {
                                     )
                                 ) // poolAddress
                             )
-                        )
                     }
                     default {
                         reciever := address()
@@ -1186,47 +870,6 @@ abstract contract MarginTrading is BaseSwapper {
             }
             _swapUniswapV3PoolExactIn(
                 amountIn,
-                amountOutMinimum,
-                payer,
-                reciever,
-                pathOffset,
-                pathLength
-            );
-        }
-        // iZi
-        else if (poolId == 49) {
-            address reciever;
-            assembly {
-                switch lt(pathLength, 67) // see swapExactIn
-                case 1 { reciever := address()}
-                default {
-                    let nextId := and(
-                        shr(80, 
-                        calldataload(add(pathOffset, SKIP_LENGTH_UNOSWAP))), //
-                        UINT8_MASK
-                    )
-                    switch gt(nextId, 99) 
-                    case 1 {
-                        reciever := and(
-                            ADDRESS_MASK,
-                            shr(
-                                96,
-                                calldataload(
-                                    add(
-                                        pathOffset,
-                                        MAX_SINGLE_LENGTH_UNOSWAP // 20 + 2 + 20 + 2 + 20 + 2 [poolAddress starts here]
-                                    )
-                                ) // poolAddress
-                            )
-                        )
-                    }
-                    default {
-                        reciever := address()
-                    }
-                }
-            }
-            _swapIZIPoolExactIn(
-                uint128(amountIn),
                 amountOutMinimum,
                 payer,
                 reciever,
@@ -1292,7 +935,7 @@ abstract contract MarginTrading is BaseSwapper {
         if(paymentType < 8) {
             if (paymentType < 3) {
                 // borrow and repay pool - tradeId matches interest rate mode (reverts within Aave when 0 is selected)
-                _borrow(token, payer,  receiver, value, paymentType, lenderId);
+                _borrow(token, payer, receiver, value, paymentType, lenderId);
             } else {
                 // ids 3-7 are reserved
                 _withdraw(token, payer, receiver, value, lenderId);
@@ -1324,7 +967,7 @@ abstract contract MarginTrading is BaseSwapper {
                 let ptr := mload(0x40) // free memory pointer
 
                 // selector for transferFrom(address,address,uint256)
-                mstore(ptr, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
+                mstore(ptr, ERC20_TRANSFER_FROM)
                 mstore(add(ptr, 0x04), payer)
                 mstore(add(ptr, 0x24), receiver)
                 mstore(add(ptr, 0x44), amount)
@@ -1348,15 +991,15 @@ abstract contract MarginTrading is BaseSwapper {
                 )
 
                 if iszero(success) {
-                    returndatacopy(ptr, 0, rdsize)
-                    revert(ptr, rdsize)
+                    returndatacopy(0, 0, rdsize)
+                    revert(0, rdsize)
                 }
             }
             default {
                 let ptr := mload(0x40) // free memory pointer
 
                 // selector for transfer(address,uint256)
-                mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+                mstore(ptr, ERC20_TRANSFER)
                 mstore(add(ptr, 0x04), receiver)
                 mstore(add(ptr, 0x24), amount)
 
@@ -1379,8 +1022,8 @@ abstract contract MarginTrading is BaseSwapper {
                 )
 
                 if iszero(success) {
-                    returndatacopy(ptr, 0, rdsize)
-                    revert(ptr, rdsize)
+                    returndatacopy(0, 0, rdsize)
+                    revert(0, rdsize)
                 }
             }
         }

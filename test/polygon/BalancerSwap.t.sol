@@ -2,12 +2,11 @@
 pragma solidity ^0.8.19;
 
 import "../../contracts/1delta/modules/shared/Commands.sol";
-import "../shared/interfaces/ICurvePool.sol";
 import "./DeltaSetup.f.sol";
 import "./utils/BalancerCaller.sol";
 import {BalancerQuoter} from "../../contracts/1delta/modules/polygon/quoters/BalanacerQuoter.sol";
 
-contract CurveTestPolygon is DeltaSetup {
+contract BalancerTestPolygon is DeltaSetup {
     // WETH / WBTC / USDC 3-pool
     address internal constant three_pool = 0x03cD191F589d12b0582a99808cf19851E468E6B5;
     bytes32 internal constant three_pool_id = 0x03cd191f589d12b0582a99808cf19851e468e6b500010000000000000000000a;

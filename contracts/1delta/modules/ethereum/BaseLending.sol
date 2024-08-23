@@ -54,7 +54,7 @@ abstract contract BaseLending is Slots, BalancerSwapper {
                 /** PREPARE TRANSFER_FROM USER */
 
                 // selector for transferFrom(address,address,uint256)
-                mstore(ptr, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
+                mstore(ptr, ERC20_TRANSFER_FROM)
                 mstore(add(ptr, 0x04), _from)
                 mstore(add(ptr, 0x24), address())
                 mstore(add(ptr, 0x44), _amount)
@@ -206,7 +206,7 @@ abstract contract BaseLending is Slots, BalancerSwapper {
                     )
                     // FETCH BALANCE
                     // selector for balanceOf(address)
-                    mstore(0x0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+                    mstore(0x0, ERC20_APPROVE)
                     // add this address as parameter
                     mstore(0x4, _to)
 
@@ -224,7 +224,7 @@ abstract contract BaseLending is Slots, BalancerSwapper {
                     // 2) TRANSFER VTOKENS
 
                     // selector for transferFrom(address,address,uint256)
-                    mstore(ptr, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
+                    mstore(ptr, ERC20_TRANSFER_FROM)
                     mstore(add(ptr, 0x04), _to) // from user
                     mstore(add(ptr, 0x24), address()) // to this address
                     mstore(add(ptr, 0x44), transferAmount)
@@ -260,7 +260,7 @@ abstract contract BaseLending is Slots, BalancerSwapper {
                     if xor(address(), _to) {
                         // 4) TRANSFER TO RECIPIENT
                         // selector for transfer(address,uint256)
-                        mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+                        mstore(ptr, ERC20_TRANSFER)
                         mstore(add(ptr, 0x04), _to)
                         mstore(add(ptr, 0x24), _amount)
 
@@ -362,7 +362,7 @@ abstract contract BaseLending is Slots, BalancerSwapper {
                 //  transfer underlying if needed
                 if xor(_to, address()) {
                     // selector for transfer(address,uint256)
-                    mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+                    mstore(ptr, ERC20_TRANSFER)
                     mstore(add(ptr, 0x04), _to)
                     mstore(add(ptr, 0x24), _amount)
 
@@ -455,7 +455,7 @@ abstract contract BaseLending is Slots, BalancerSwapper {
                     if xor(address(), _to) {
                         // 4) TRANSFER TO RECIPIENT
                         // selector for transfer(address,uint256)
-                        mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+                        mstore(ptr, ERC20_TRANSFER)
                         mstore(add(ptr, 0x04), _to)
                         mstore(add(ptr, 0x24), _amount)
 
