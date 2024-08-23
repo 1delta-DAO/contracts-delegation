@@ -21,7 +21,7 @@ contract ComposedFlashLoanTestEthereum is DeltaSetup {
         vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
         vm.deal(user, 1.0e18);
         {
-            address asset = WMATIC;
+            address asset = WETH;
 
             address borrowAsset = USDC;
 
@@ -132,7 +132,7 @@ contract ComposedFlashLoanTestEthereum is DeltaSetup {
     function test_ethereum_composed_flash_loan_close(uint8 lenderId) external {
         address user = testUser;
         vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
-        address asset = WMATIC;
+        address asset = WETH;
         uint8 flashSource = BALANCER_V2;
         address borrowAsset = USDC;
 

@@ -120,9 +120,8 @@ abstract contract BaseLending is Slots, BalancerSwapper {
                 }
                 // call pool
                 if iszero(call(gas(), pool, 0x0, ptr, 0x64, 0x0, 0x0)) {
-                    rdsize := returndatasize()
-                    returndatacopy(0x0, 0x0, rdsize)
-                    revert(0x0, rdsize)
+                    returndatacopy(0x0, 0x0, returndatasize())
+                    revert(0x0, returndatasize())
                 }
             }
             case 0 {
@@ -159,9 +158,8 @@ abstract contract BaseLending is Slots, BalancerSwapper {
                     mstore(add(ptr, 0x64), _amount)
                     // call pool
                     if iszero(call(gas(), cometPool, 0x0, ptr, 0x84, 0x0, 0x0)) {
-                        let rdsize := returndatasize()
-                        returndatacopy(0x0, 0x0, rdsize)
-                        revert(0x0, rdsize)
+                        returndatacopy(0x0, 0x0, returndatasize())
+                        revert(0x0, returndatasize())
                     }
                 }
                 // Venus market ids
@@ -309,9 +307,8 @@ abstract contract BaseLending is Slots, BalancerSwapper {
                     mstore(add(ptr, 0x64), _from)
                     // call pool
                     if iszero(call(gas(), YLDR, 0x0, ptr, 0x84, 0x0, 0x0)) {
-                        let rdsize := returndatasize()
-                        returndatacopy(0x0, 0x0, rdsize)
-                        revert(0x0, rdsize)
+                        returndatacopy(0x0, 0x0, returndatasize())
+                        revert(0x0, returndatasize())
                     }
                 }
                 default {
@@ -353,9 +350,8 @@ abstract contract BaseLending is Slots, BalancerSwapper {
                     mstore(add(ptr, 0x84), _from)
                     // call pool
                     if iszero(call(gas(), pool, 0x0, ptr, 0xA4, 0x0, 0x0)) {
-                        let rdsize := returndatasize()
-                        returndatacopy(0x0, 0x0, rdsize)
-                        revert(0x0, rdsize)
+                        returndatacopy(0x0, 0x0, returndatasize())
+                        revert(0x0, returndatasize())
                     }
                 }
 
@@ -423,9 +419,8 @@ abstract contract BaseLending is Slots, BalancerSwapper {
                     mstore(add(ptr, 0x64), _amount)
                     // call pool
                     if iszero(call(gas(), cometPool, 0x0, ptr, 0x84, 0x0, 0x0)) {
-                        let rdsize := returndatasize()
-                        returndatacopy(0x0, 0x0, rdsize)
-                        revert(0x0, rdsize)
+                        returndatacopy(0x0, 0x0, returndatasize())
+                        revert(0x0, returndatasize())
                     }
                 }
                 // Venus
@@ -527,9 +522,8 @@ abstract contract BaseLending is Slots, BalancerSwapper {
                     }
                     // call pool
                     if iszero(call(gas(), pool, 0x0, ptr, 0x84, 0x0, 0x0)) {
-                        let rdsize := returndatasize()
-                        returndatacopy(0x0, 0x0, rdsize)
-                        revert(0x0, rdsize)
+                        returndatacopy(0x0, 0x0, returndatasize())
+                        revert(0x0, returndatasize())
                     }
                 }
                 case 0 {
@@ -561,9 +555,8 @@ abstract contract BaseLending is Slots, BalancerSwapper {
                     mstore(add(ptr, 0x64), 0x0)
                     // call pool
                     if iszero(call(gas(), pool, 0x0, ptr, 0x84, 0x0, 0x0)) {
-                        let rdsize := returndatasize()
-                        returndatacopy(0x0, 0x0, rdsize)
-                        revert(0x0, rdsize)
+                        returndatacopy(0x0, 0x0, returndatasize())
+                        revert(0x0, returndatasize())
                     }
                 }
             }
@@ -698,9 +691,8 @@ abstract contract BaseLending is Slots, BalancerSwapper {
                     mstore(add(ptr, 0x44), _to)
                     // call pool
                     if iszero(call(gas(), YLDR, 0x0, ptr, 0x64, 0x0, 0x0)) {
-                        let rdsize := returndatasize()
-                        returndatacopy(0x0, 0x0, rdsize)
-                        revert(0x0, rdsize)
+                        returndatacopy(0x0, 0x0, returndatasize())
+                        revert(0x0, returndatasize())
                     }
                 }
                 default {
@@ -741,9 +733,8 @@ abstract contract BaseLending is Slots, BalancerSwapper {
                     mstore(add(ptr, 0x64), _to)
                     // call pool
                     if iszero(call(gas(), pool, 0x0, ptr, 0x84, 0x0, 0x0)) {
-                        let rdsize := returndatasize()
-                        returndatacopy(0x0, 0x0, rdsize)
-                        revert(0x0, rdsize)
+                        returndatacopy(0x0, 0x0, returndatasize())
+                        revert(0x0, returndatasize())
                     }
                 }
             }

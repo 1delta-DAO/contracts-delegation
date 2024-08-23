@@ -6,9 +6,7 @@ import "./DeltaSetup.f.sol";
 contract Debug is DeltaSetup {
     function setUp() public virtual override {
         vm.createSelectFork({blockNumber: 65602486, urlOrAlias: "https://mantle-mainnet.public.blastapi.io"});
-
-        deployDelta();
-        initializeDelta();
+        intitializeFullDelta();
     }
 
     function test_debug() external {

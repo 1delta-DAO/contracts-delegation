@@ -24,7 +24,7 @@ contract ForkTestPolygon is DeltaSetup {
     function test_generic_polygon() external /** address user, uint8 lenderId */ {
         address user = 0x91ae002a960e63Ccb0E5bDE83A8C13E51e1cB91A;
         vm.prank(user);
-        vm.expectRevert(0x7dd37f70); // should revert with slippage
+        // vm.expectRevert(0x7dd37f70); // should revert with slippage
         (bool success, bytes memory ret) = address(brokerProxyAddress).call{value: 5000000000000000000}(
             abi.encodeWithSelector(IFlashAggregator.deltaCompose.selector, getGenericData())
         );

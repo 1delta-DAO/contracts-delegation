@@ -28,8 +28,8 @@ import {DeltaBrokerProxyGen2} from "../../contracts/1delta/proxy/DeltaBrokerGen2
 // initializer
 
 // core modules
-import {PolygonManagementModule} from "../../contracts/1delta/modules/polygon/storage/ManagementModule.sol";
-import {OneDeltaComposerPolygon} from "../../contracts/1delta/modules/polygon/Composer.sol";
+import {EthereumManagementModule} from "../../contracts/1delta/modules/ethereum/storage/ManagementModule.sol";
+import {OneDeltaComposerEthereum} from "../../contracts/1delta/modules/ethereum/Composer.sol";
 
 // forge
 import {Script, console2} from "forge-std/Script.sol";
@@ -37,6 +37,7 @@ import {console} from "forge-std/console.sol";
 import {Test} from "forge-std/Test.sol";
 
 import {AaveV3EthereumAssets, AaveV3Ethereum} from "./utils/lender/aaveAddresses.sol";
+import {SparkAddresses} from "./utils/lender/sparkAddresses.sol";
 
 abstract contract DeltaSetup is AddressesEthereum, ComposerUtils, Script, Test {
     address internal brokerProxyAddress;
@@ -44,7 +45,7 @@ abstract contract DeltaSetup is AddressesEthereum, ComposerUtils, Script, Test {
     IModuleConfig internal deltaConfig;
     IManagement internal management;
     TestQuoterPolygon testQuoter;
-    OneDeltaComposerPolygon internal aggregator;
+    OneDeltaComposerEthereum internal aggregator;
     MockRouter router;
 
     mapping(address => mapping(uint8 => address)) internal collateralTokens;
@@ -113,35 +114,6 @@ abstract contract DeltaSetup is AddressesEthereum, ComposerUtils, Script, Test {
         return selectors;
     }
 
-    function lendingSelectors() internal pure returns (bytes4[] memory selectors) {
-        selectors = new bytes4[](18);
-        // baseline
-        selectors[0] = ILending.deposit.selector;
-        selectors[1] = ILending.withdraw.selector;
-        selectors[2] = ILending.borrow.selector;
-        selectors[3] = ILending.repay.selector;
-        selectors[4] = ILending.callTarget.selector;
-        // permits
-        selectors[5] = ILending.selfPermit.selector;
-        selectors[6] = ILending.selfPermitAllowed.selector;
-        selectors[7] = ILending.selfCreditDelegate.selector;
-        // erc20
-        selectors[8] = ILending.transferERC20In.selector;
-        selectors[9] = ILending.transferERC20AllIn.selector;
-        // weth txns
-        selectors[10] = ILending.wrap.selector;
-        selectors[11] = ILending.unwrap.selector;
-        selectors[12] = ILending.unwrapTo.selector;
-        selectors[13] = ILending.refundNativeTo.selector;
-        // transfers
-        selectors[14] = ILending.sweep.selector;
-        selectors[15] = ILending.sweepTo.selector;
-        selectors[16] = ILending.refundNative.selector;
-        selectors[17] = ILending.wrapTo.selector;
-
-        return selectors;
-    }
-
     /** DEPLOY PROZY AND MODULES */
 
     function deployDelta() internal virtual {
@@ -150,8 +122,8 @@ abstract contract DeltaSetup is AddressesEthereum, ComposerUtils, Script, Test {
 
         brokerProxy = IBrokerProxy(brokerProxyAddress);
 
-        PolygonManagementModule _management = new PolygonManagementModule();
-        OneDeltaComposerPolygon _aggregator = new OneDeltaComposerPolygon();
+        EthereumManagementModule _management = new EthereumManagementModule();
+        OneDeltaComposerEthereum _aggregator = new OneDeltaComposerEthereum();
 
         management = IManagement(brokerProxyAddress);
         deltaConfig = IModuleConfig(brokerProxyAddress);
@@ -169,13 +141,15 @@ abstract contract DeltaSetup is AddressesEthereum, ComposerUtils, Script, Test {
 
     /** ADD AND APPROVE LENDER TOKENS */
 
-    function initializeDeltaAaveV3() internal virtual {
+    function initializeDeltaBase() internal virtual {
         // quoter
 
         testQuoter = new TestQuoterPolygon();
         management.clearCache();
+    }
 
-        // lendle
+    function initializeDeltaAaveV3() internal virtual {
+        // aave v3
         management.addGeneralLenderTokens(
             AaveV3EthereumAssets.USDC_UNDERLYING,
             AaveV3EthereumAssets.USDC_A_TOKEN,
@@ -223,10 +197,71 @@ abstract contract DeltaSetup is AddressesEthereum, ComposerUtils, Script, Test {
         assets[3] = AaveV3EthereumAssets.USDT_UNDERLYING;
 
         management.approveAddress(assets, AaveV3Ethereum.POOL);
+    }
 
-        // management.approveAddress(assets, CRV_3_USD_AAVE_POOL);
-        // management.approveAddress(assets, CRV_TRICRYPTO_ZAP);
-        // management.approveAddress(assets, CRV_FACTORY_ZAP);
+    function initializeDeltaSpark() internal virtual {
+        // aave v3
+        management.addGeneralLenderTokens(
+            SparkAddresses.USDC_token,
+            SparkAddresses.USDC_aToken,
+            SparkAddresses.USDC_variableDebtToken,
+            SparkAddresses.USDC_stableDebtToken,
+            SPARK
+        );
+        management.addGeneralLenderTokens(
+            SparkAddresses.DAI_token,
+            SparkAddresses.DAI_aToken,
+            SparkAddresses.DAI_variableDebtToken,
+            SparkAddresses.DAI_stableDebtToken,
+            SPARK
+        );
+        management.addGeneralLenderTokens(
+            SparkAddresses.WBTC_token,
+            SparkAddresses.WBTC_aToken,
+            SparkAddresses.WBTC_variableDebtToken,
+            SparkAddresses.WBTC_stableDebtToken,
+            SPARK
+        );
+        management.addGeneralLenderTokens(
+            SparkAddresses.WETH_token,
+            SparkAddresses.WETH_aToken,
+            SparkAddresses.WETH_variableDebtToken,
+            SparkAddresses.WETH_stableDebtToken,
+            SPARK
+        );
+
+        collateralTokens[SparkAddresses.USDC_token][SPARK] = SparkAddresses.USDC_aToken;
+        collateralTokens[SparkAddresses.DAI_token][SPARK] = SparkAddresses.DAI_aToken;
+        collateralTokens[SparkAddresses.WBTC_token][SPARK] = SparkAddresses.WBTC_aToken;
+        collateralTokens[SparkAddresses.WETH_token][SPARK] = SparkAddresses.WETH_aToken;
+
+        debtTokens[SparkAddresses.USDC_token][SPARK] = SparkAddresses.USDC_variableDebtToken;
+        debtTokens[SparkAddresses.DAI_token][SPARK] = SparkAddresses.DAI_variableDebtToken;
+        debtTokens[SparkAddresses.WBTC_token][SPARK] = SparkAddresses.WBTC_variableDebtToken;
+        debtTokens[SparkAddresses.WETH_token][SPARK] = SparkAddresses.WETH_variableDebtToken;
+
+        // approve pools
+        address[] memory assets = new address[](4);
+        assets[0] = SparkAddresses.USDC_token;
+        assets[1] = SparkAddresses.WBTC_token;
+        assets[2] = SparkAddresses.WETH_token;
+        assets[3] = SparkAddresses.DAI_token;
+
+        management.approveAddress(assets, SparkAddresses.POOL);
+    }
+
+
+
+    function initializeDeltaCompound() internal virtual {
+        // approve pools
+        address[] memory assets = new address[](4);
+        assets[0] = USDC;
+        assets[1] = WBTC;
+        assets[2] = WETH;
+        assets[3] = USDT;
+
+        management.approveAddress(assets, COMET_USDC);
+        management.approveAddress(assets, COMET_USDT);
     }
 
     function upgradeExistingDelta(address proxy, address admin, address oldModule) internal virtual {
@@ -234,7 +269,7 @@ abstract contract DeltaSetup is AddressesEthereum, ComposerUtils, Script, Test {
 
         brokerProxy = IBrokerProxy(brokerProxyAddress);
 
-        OneDeltaComposerPolygon _aggregator = new OneDeltaComposerPolygon();
+        OneDeltaComposerEthereum _aggregator = new OneDeltaComposerEthereum();
 
         management = IManagement(brokerProxyAddress);
         deltaConfig = IModuleConfig(brokerProxyAddress);
@@ -262,10 +297,15 @@ abstract contract DeltaSetup is AddressesEthereum, ComposerUtils, Script, Test {
     }
 
     function setUp() public virtual {
-        vm.createSelectFork({blockNumber: 58645304, urlOrAlias: "https://polygon-rpc.com"});
+        vm.createSelectFork({blockNumber: 20581600, urlOrAlias: "https://rpc.ankr.com/eth"});
         router = new MockRouter(1.0e18, 12);
+
         deployDelta();
+        initializeDeltaBase();
+        initializeDeltaCompound();
         initializeDeltaAaveV3();
+        initializeDeltaSpark();
+
         management.setValidTarget(address(router), address(router), true);
     }
 

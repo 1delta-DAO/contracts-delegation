@@ -13,8 +13,7 @@ contract ComposedFlashLoanTest is DeltaSetup {
 
         router = new MockRouter(1.0e18, 12);
 
-        deployDelta();
-        initializeDelta();
+        intitializeFullDelta();
 
         management.approveAddress(getAssets(), address(router));
         management.setValidTarget(address(router), address(router), true);

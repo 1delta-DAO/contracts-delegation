@@ -13,8 +13,7 @@ contract IzumiQuotingTest is DeltaSetup {
     function setUp() public virtual override {
         vm.createSelectFork({blockNumber: 63134243, urlOrAlias: "https://mantle-mainnet.public.blastapi.io"});
 
-        deployDelta();
-        initializeDelta();
+        intitializeFullDelta();
     }
 
     function test_mantle_V2_quote_spot_exact_in_works() external {

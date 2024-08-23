@@ -3,6 +3,7 @@
 pragma solidity 0.8.26;
 
 import {DeltaErrors} from "./Errors.sol";
+import {ERC20Selectors} from "../selectors/ERC20Selectors.sol";
 
 /******************************************************************************\
 * Author: Achthar | 1delta 
@@ -14,7 +15,7 @@ import {DeltaErrors} from "./Errors.sol";
  * @title Uniswap V3 type swapper contract
  * @notice Executes Cl swaps and pushing data to the callbacks
  */
-abstract contract V3TypeSwapper is DeltaErrors {
+abstract contract V3TypeSwapper is DeltaErrors, ERC20Selectors {
     ////////////////////////////////////////////////////
     // Masks
     ////////////////////////////////////////////////////
@@ -31,25 +32,6 @@ abstract contract V3TypeSwapper is DeltaErrors {
     uint160 internal constant MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970341;
     /// @dev Maximum Uint256 value
     uint256 internal constant MAX_UINT256 = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
-    
-    ////////////////////////////////////////////////////
-    // ERC20 selectors
-    ////////////////////////////////////////////////////
-
-    /// @dev selector for approve(address,uint256)
-    bytes32 internal constant ERC20_APPROVE = 0x095ea7b300000000000000000000000000000000000000000000000000000000;
-
-    /// @dev selector for transferFrom(address,address,uint256)
-    bytes32 internal constant ERC20_TRANSFER_FROM = 0x23b872dd00000000000000000000000000000000000000000000000000000000;
-
-    /// @dev selector for transfer(address,uint256)
-    bytes32 internal constant ERC20_TRANSFER = 0xa9059cbb00000000000000000000000000000000000000000000000000000000;
-
-    /// @dev selector for allowance(address,address)
-    bytes32 internal constant ERC20_ALLOWANCE = 0xdd62ed3e00000000000000000000000000000000000000000000000000000000;
-    
-    /// @dev selector for allowance(address,address)
-    bytes32 internal constant ERC20_BALANCE_OF = 0x70a0823100000000000000000000000000000000000000000000000000000000;
     
     ////////////////////////////////////////////////////
     // param lengths

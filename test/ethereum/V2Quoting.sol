@@ -113,7 +113,7 @@ contract EthereumQuotingTest is DeltaSetup {
         vm.assume(user != address(0));
         address assetOut = USDT;
         address mid = WETH;
-        address assetIn = WMATIC;
+        address assetIn = WBTC;
 
         deal(assetIn, user, 1e30);
 
@@ -183,7 +183,7 @@ contract EthereumQuotingTest is DeltaSetup {
         address user = testUser;
         vm.assume(user != address(0));
         address assetOut = USDT;
-        address assetIn = WMATIC;
+        address assetIn = WETH;
 
         deal(assetIn, user, 1e30);
 

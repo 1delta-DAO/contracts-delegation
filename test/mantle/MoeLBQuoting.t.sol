@@ -24,8 +24,7 @@ contract MoeLBQuotingTest is DeltaSetup {
     function setUp() public virtual override {
         vm.createSelectFork({blockNumber: 63129000, urlOrAlias: "https://mantle-mainnet.public.blastapi.io"});
 
-        deployDelta();
-        initializeDelta();
+        intitializeFullDelta();
     }
 
     function test_mantle_lb_quote_spot_exact_out_reverts() external {

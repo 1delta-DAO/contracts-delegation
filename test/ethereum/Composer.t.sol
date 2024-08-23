@@ -6,11 +6,12 @@ import "../shared/interfaces/ICurvePool.sol";
 import "./DeltaSetup.f.sol";
 
 contract ComposerTestEthereum is DeltaSetup {
-    function test_ethereum_composer_depo(uint8 lenderId) external {
+    function test_ethereum_composer_depo_t() external {
+        uint8 lenderId = 1;
         address user = testUser;
         vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
-        uint256 amount = 10.0e6;
-        address asset = WMATIC;
+        uint256 amount = 10.0e18;
+        address asset = WETH;
         deal(asset, user, 1e23);
 
         vm.prank(user);
@@ -28,6 +29,7 @@ contract ComposerTestEthereum is DeltaSetup {
             lenderId //
         );
         data = abi.encodePacked(transfer, data);
+
         vm.prank(user);
         uint gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
@@ -41,7 +43,7 @@ contract ComposerTestEthereum is DeltaSetup {
         address user = testUser;
         uint8 lenderId = 50;
         // vm.assume(user != address(0) && (lenderId == 50));
-        uint256 amount = 0.000000001e18;
+        uint256 amount = 1.0e18;
         address asset = WETH;
         deal(asset, user, 1e23);
 
@@ -74,7 +76,7 @@ contract ComposerTestEthereum is DeltaSetup {
         address user = testUser;
         vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
         uint256 amount = 500.0e18;
-        address asset = WMATIC;
+        address asset = WETH;
 
         _deposit(asset, user, amount, lenderId);
 
@@ -102,7 +104,7 @@ contract ComposerTestEthereum is DeltaSetup {
         vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
 
         uint256 amount = 500.0e18;
-        address asset = WMATIC;
+        address asset = WETH;
 
         uint256 borrowAmount = 100.0e6;
         address borrowAsset = USDC;
@@ -145,7 +147,7 @@ contract ComposerTestEthereum is DeltaSetup {
         vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
 
         uint256 amount = 500.0e18;
-        address asset = WMATIC;
+        address asset = WETH;
 
         uint256 borrowAmount = 100.0e6;
         address borrowAsset = USDC;
@@ -188,7 +190,7 @@ contract ComposerTestEthereum is DeltaSetup {
         vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
 
         uint256 amount = 10.0e18;
-        address asset = WMATIC;
+        address asset = WETH;
 
         _deposit(asset, user, amount, lenderId);
 
@@ -211,7 +213,7 @@ contract ComposerTestEthereum is DeltaSetup {
         vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
 
         uint256 amount = 500.0e18;
-        address asset = WMATIC;
+        address asset = WETH;
 
         _deposit(asset, user, amount, lenderId);
 
@@ -282,7 +284,7 @@ contract ComposerTestEthereum is DeltaSetup {
         )
     {
         tks = new address[](3);
-        tks[0] = WMATIC;
+        tks[0] = WETH;
         tks[1] = USDC;
         tks[2] = WETH;
         fees = new uint16[](2);
@@ -305,7 +307,7 @@ contract ComposerTestEthereum is DeltaSetup {
         tks = new address[](3);
         tks[0] = WETH;
         tks[1] = USDC;
-        tks[2] = WMATIC;
+        tks[2] = WETH;
         fees = new uint16[](2);
         fees[0] = uint16(500);
         fees[1] = uint16(500);
@@ -319,7 +321,7 @@ contract ComposerTestEthereum is DeltaSetup {
         uint256 amount = 4000.0e18;
         uint256 amountMin = 0.10e18;
 
-        address assetIn = WMATIC;
+        address assetIn = WETH;
         address assetOut = WETH;
         vm.deal(user, amount);
 
@@ -363,7 +365,7 @@ contract ComposerTestEthereum is DeltaSetup {
         uint256 amountMax = 7.0e18;
 
         address assetIn = WETH;
-        address assetOut = WMATIC;
+        address assetOut = WETH;
         deal(assetIn, user, amountMax);
 
         bytes memory dataAgni = getSpotExactOutSingleGen2(
@@ -418,7 +420,7 @@ contract ComposerTestEthereum is DeltaSetup {
         uint256 amount = 1.0e18;
         uint256 amountMax = 7500.0e18;
 
-        address assetIn = WMATIC;
+        address assetIn = WETH;
         address assetOut = WETH;
         vm.deal(user, amountMax);
 
@@ -472,7 +474,7 @@ contract ComposerTestEthereum is DeltaSetup {
         uint256 amountMin = 4000.0e18;
 
         address assetIn = WETH;
-        address assetOut = WMATIC;
+        address assetOut = WETH;
         deal(assetIn, user, amount);
 
         bytes memory dataAgni = getSpotExactInSingleGen2(

@@ -30,8 +30,7 @@ contract GeneralMoeLBTest is DeltaSetup {
     function setUp() public virtual override {
         vm.createSelectFork({blockNumber: 62267594, urlOrAlias: "https://mantle-mainnet.public.blastapi.io"});
 
-        deployDelta();
-        initializeDelta();
+        intitializeFullDelta();
     }
 
     function test_mantle_lb_spot_exact_in() external {

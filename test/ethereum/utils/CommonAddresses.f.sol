@@ -3,9 +3,7 @@ pragma solidity ^0.8.19;
 
 contract AddressesEthereum {
     // assets
-
-    address internal WMATIC = 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270;
-
+    
     // users
     address internal testUser = 0x5f6f935A9a69F886Dc0147904D0F455ABaC67e14;
 

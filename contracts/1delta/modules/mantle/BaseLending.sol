@@ -165,9 +165,8 @@ abstract contract BaseLending is Slots, ExoticSwapper {
             }
             // call pool
             if iszero(call(gas(), pool, 0x0, ptr, 0x84, 0x0, 0x0)) {
-                let rdsize := returndatasize()
-                returndatacopy(0x0, 0x0, rdsize)
-                revert(0x0, rdsize)
+                returndatacopy(0x0, 0x0, returndatasize())
+                revert(0x0, returndatasize())
             }
         }
     }
@@ -193,9 +192,8 @@ abstract contract BaseLending is Slots, ExoticSwapper {
             }
             // call pool
             if iszero(call(gas(), pool, 0x0, ptr, 0x84, 0x0, 0x0)) {
-                let rdsize := returndatasize()
-                returndatacopy(0x0, 0x0, rdsize)
-                revert(0x0, rdsize)
+                returndatacopy(0x0, 0x0, returndatasize())
+                revert(0x0, returndatasize())
             }
         }
     }

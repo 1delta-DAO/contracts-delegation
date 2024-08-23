@@ -105,35 +105,6 @@ contract DeltaSetup is AddressesMantle, ComposerUtils, Script, Test {
         return selectors;
     }
 
-    function lendingSelectors() internal pure returns (bytes4[] memory selectors) {
-        selectors = new bytes4[](18);
-        // baseline
-        selectors[0] = ILending.deposit.selector;
-        selectors[1] = ILending.withdraw.selector;
-        selectors[2] = ILending.borrow.selector;
-        selectors[3] = ILending.repay.selector;
-        selectors[4] = ILending.callTarget.selector;
-        // permits
-        selectors[5] = ILending.selfPermit.selector;
-        selectors[6] = ILending.selfPermitAllowed.selector;
-        selectors[7] = ILending.selfCreditDelegate.selector;
-        // erc20
-        selectors[8] = ILending.transferERC20In.selector;
-        selectors[9] = ILending.transferERC20AllIn.selector;
-        // weth txns
-        selectors[10] = ILending.wrap.selector;
-        selectors[11] = ILending.unwrap.selector;
-        selectors[12] = ILending.unwrapTo.selector;
-        selectors[13] = ILending.refundNativeTo.selector;
-        // transfers
-        selectors[14] = ILending.sweep.selector;
-        selectors[15] = ILending.sweepTo.selector;
-        selectors[16] = ILending.refundNative.selector;
-        selectors[17] = ILending.wrapTo.selector;
-
-        return selectors;
-    }
-
     /** DEPLOY PROZY AND MODULES */
 
     function deployDelta() internal virtual {
@@ -158,7 +129,6 @@ contract DeltaSetup is AddressesMantle, ComposerUtils, Script, Test {
         aggregator = _aggregator;
         management = IManagement(brokerProxyAddress);
     }
-
 
     function upgradeExistingDelta(address proxy, address admin, address oldModule) internal virtual {
         brokerProxyAddress = proxy;
@@ -186,13 +156,15 @@ contract DeltaSetup is AddressesMantle, ComposerUtils, Script, Test {
 
     /** ADD AND APPROVE LENDER TOKENS */
 
-    function initializeDelta() internal virtual {
+    function initializeDeltaBase() internal virtual {
         // quoter
 
         testQuoter = new TestQuoterMantle();
 
         management.clearCache();
+    }
 
+    function initializeDeltaLendle() internal virtual {
         // lendle
         management.addGeneralLenderTokens(USDC, LENDLE_A_USDC, LENDLE_V_USDC, LENDLE_S_USDC, 0);
         management.addGeneralLenderTokens(USDT, LENDLE_A_USDT, LENDLE_V_USDT, LENDLE_S_USDT, 0);
@@ -212,6 +184,17 @@ contract DeltaSetup is AddressesMantle, ComposerUtils, Script, Test {
         debtTokens[WETH][0] = LENDLE_V_WETH;
         debtTokens[WMNT][0] = LENDLE_V_WMNT;
 
+        // approve pools
+        address[] memory assets = new address[](5);
+        assets[0] = USDC;
+        assets[1] = WBTC;
+        assets[2] = WETH;
+        assets[3] = WMNT;
+        assets[4] = USDT;
+        management.approveAddress(assets, LENDLE_POOL);
+    }
+
+    function initializeDeltaAurelius() internal virtual {
         // aurelius
         management.addGeneralLenderTokens(USDC, AURELIUS_A_USDC, AURELIUS_V_USDC, AURELIUS_S_USDC, 1);
         management.addGeneralLenderTokens(USDT, AURELIUS_A_USDT, AURELIUS_V_USDT, AURELIUS_S_USDT, 1);
@@ -238,9 +221,14 @@ contract DeltaSetup is AddressesMantle, ComposerUtils, Script, Test {
         assets[2] = WETH;
         assets[3] = WMNT;
         assets[4] = USDT;
-        management.approveAddress(assets, LENDLE_POOL);
         management.approveAddress(assets, AURELIUS_POOL);
 
+        address[] memory usdyAssets = new address[](1);
+        usdyAssets[0] = USDY;
+        management.approveAddress(usdyAssets, mUSD);
+    }
+
+    function initializeDeltaStratum() internal virtual {
         address[] memory stratumAssets = new address[](6);
         stratumAssets[0] = USDC;
         stratumAssets[1] = USDT;
@@ -269,8 +257,15 @@ contract DeltaSetup is AddressesMantle, ComposerUtils, Script, Test {
     function setUp() public virtual {
         vm.createSelectFork({blockNumber: 62219594, urlOrAlias: "https://mantle-mainnet.public.blastapi.io"});
 
+        intitializeFullDelta();
+    }
+
+    function intitializeFullDelta() internal virtual {
         deployDelta();
-        initializeDelta();
+        initializeDeltaLendle();
+        initializeDeltaAurelius();
+        initializeDeltaStratum();
+        initializeDeltaBase();
     }
 
     /** DEPOSIT AND OPEN TO SPIN UP POSITIONS */
@@ -361,7 +356,6 @@ contract DeltaSetup is AddressesMantle, ComposerUtils, Script, Test {
         vm.prank(user);
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
     }
-
 
     function openExactOut(
         address user,
