@@ -3,7 +3,7 @@
 pragma solidity 0.8.26;
 
 import {DeltaErrors} from "./Errors.sol";
-import {ERC20Selectors} from "../selectors/ERC20Selectors.sol";
+import {ERC20Selectors} from "../../shared//selectors/ERC20Selectors.sol";
 
 /******************************************************************************\
 * Author: Achthar | 1delta 

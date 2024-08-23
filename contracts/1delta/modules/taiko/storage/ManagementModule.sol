@@ -3,8 +3,7 @@
 pragma solidity ^0.8.26;
 
 import {IERC20} from "../../../../interfaces/IERC20.sol";
-import {WithEthereumStorage} from "./BrokerStorage.sol";
-import {ERC20Selectors} from "../../shared//selectors/ERC20Selectors.sol";
+import {WithMantleStorage} from "./BrokerStorage.sol";
 
 // solhint-disable max-line-length
 
@@ -13,7 +12,7 @@ import {ERC20Selectors} from "../../shared//selectors/ERC20Selectors.sol";
  * @notice Allows the owner to insert token and lending protocol data
  *         Due to contract size limitations this is a separate contract
  */
-contract EthereumManagementModule is WithEthereumStorage, ERC20Selectors {
+contract MantleManagementModule is WithMantleStorage {
     modifier onlyOwner() {
         require(ms().contractOwner == msg.sender, "Only owner can interact.");
         _;
@@ -47,16 +46,7 @@ contract EthereumManagementModule is WithEthereumStorage, ERC20Selectors {
 
     function approveAddress(address[] memory assets, address target) external onlyOwner {
         for (uint256 i = 0; i < assets.length; i++) {
-            address token = assets[i];
-            assembly {
-                let ptr := mload(0x40)
-                mstore(ptr, ERC20_APPROVE)
-                mstore(add(ptr, 0x4), target)
-                mstore(add(ptr, 0x24), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff)
-                if iszero(call(gas(), token, 0x0, ptr, 0x44, ptr, 32)) {
-                    revert(0x0, 0x0)
-                }
-            }
+            IERC20(assets[i]).approve(target, type(uint256).max);
         }
     }
 
