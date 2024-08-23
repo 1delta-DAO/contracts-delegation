@@ -29,17 +29,14 @@ abstract contract PoolGetterTaiko {
     bytes32 internal constant FUSION_V2_FF_FACTORY = 0xffE5020961fA51ffd3662CDf307dEf18F9a87Cce7c0000000000000000000000;
     bytes32 internal constant CODE_HASH_FUSION_V2 = 0x58c684aeb03fe49c8a3080db88e425fae262c5ef5bf0e8acffc0526c6e3c03a0;
 
-    bytes32 internal constant IZI_FF_FACTORY = 0xff45e5F26451CDB01B0fA1f8582E0aAD9A6F27C2180000000000000000000000;
+    bytes32 internal constant IZI_FF_FACTORY = 0xff8c7d3063579BdB0b90997e18A770eaE32E1eBb080000000000000000000000;
     bytes32 internal constant IZI_POOL_INIT_CODE_HASH = 0xbe0bfe068cdd78cafa3ddd44e214cfa4e412c15d7148e932f8043fe883865e40;
 
     bytes32 internal constant ALGEBRA_V3_FF_DEPLOYER = 0xff9dE2dEA5c68898eb4cb2DeaFf357DFB26255a4aa0000000000000000000000;
     bytes32 internal constant ALGEBRA_POOL_INIT_CODE_HASH = 0x177d5fbf994f4d130c008797563306f1a168dc689f81b2fa23b4396931014d91;
 
-    bytes32 internal constant BUTTER_FF_FACTORY = 0xffeeca0a86431a7b42ca2ee5f479832c3d4a4c26440000000000000000000000;
-    bytes32 internal constant BUTTER_POOL_INIT_CODE_HASH = 0xc7d06444331e4f63b0764bb53c88788882395aa31961eed3c2768cc9568323ee;
-
-    bytes32 internal constant CLEO_FF_FACTORY = 0xffAAA32926fcE6bE95ea2c51cB4Fcb60836D320C420000000000000000000000;
-    bytes32 internal constant CLEO_POOL_INIT_CODE_HASH = 0x1565b129f2d1790f12d45301b9b084335626f0c92410bc43130763b69971135d;
+    bytes32 internal constant DTX_FF_FACTORY = 0xfffCA1AEf282A99390B62Ca8416a68F5747716260c0000000000000000000000;
+    bytes32 internal constant DTX_POOL_INIT_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
 
     address internal constant MERCHANT_MOE_FACTORY = 0x5bEf015CA9424A7C07B68490616a4C1F094BEdEc;
     address internal constant MERCHANT_MOE_LB_FACTORY = 0xa6630671775c4EA2743840F9A5016dCf2A104054;
@@ -47,7 +44,7 @@ abstract contract PoolGetterTaiko {
     bytes32 internal constant METHLAB_FF_FACTORY = 0xff8f140fc3e9211b8dc2fc1d7ee3292f6817c5dd5d0000000000000000000000;
     bytes32 internal constant METHLAB_INIT_CODE_HASH = 0xacd26fbb15704ae5e5fe7342ea8ebace020e4fa5ad4a03122ce1678278cf382b;
 
-    bytes32 internal constant UNISWAP_V3_FF_FACTORY = 0xff0d922Fb1Bc191F64970ac40376643808b4B74Df90000000000000000000000;
+    bytes32 internal constant UNISWAP_V3_FF_FACTORY = 0xff75FC67473A91335B5b8F8821277262a13B38c9b30000000000000000000000;
     bytes32 internal constant UNISWAP_V3_INIT_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
 
     bytes32 internal constant VELO_FF_FACTORY = 0xff99F9a4A96549342546f9DAE5B2738EDDcD43Bf4C0000000000000000000000;
@@ -86,7 +83,7 @@ abstract contract PoolGetterTaiko {
             switch _pId
             // FusionX
             case 0 {
-                mstore(p, FUSION_V3_FF_FACTORY)
+                mstore(p, UNISWAP_V3_FF_FACTORY)
                 p := add(p, 21)
                 // Compute the inner hash in-place
                 switch lt(tokenA, tokenB)
@@ -101,12 +98,11 @@ abstract contract PoolGetterTaiko {
                 mstore(add(p, 64), and(UINT24_MASK, fee))
                 mstore(p, keccak256(p, 96))
                 p := add(p, 32)
-                mstore(p, FUSION_POOL_INIT_CODE_HASH)
+                mstore(p, UNISWAP_V3_INIT_CODE_HASH)
                 pool := and(ADDRESS_MASK, keccak256(s, 85))
             }
-            // Agni
             case 1 {
-                mstore(p, AGNI_V3_FF_FACTORY)
+                mstore(p, DTX_FF_FACTORY)
                 p := add(p, 21)
                 // Compute the inner hash in-place
                 switch lt(tokenA, tokenB)
@@ -121,7 +117,7 @@ abstract contract PoolGetterTaiko {
                 mstore(add(p, 64), and(UINT24_MASK, fee))
                 mstore(p, keccak256(p, 96))
                 p := add(p, 32)
-                mstore(p, AGNI_POOL_INIT_CODE_HASH)
+                mstore(p, DTX_POOL_INIT_CODE_HASH)
                 pool := and(ADDRESS_MASK, keccak256(s, 85))
             }
             // Algebra / Swapsicle
@@ -143,11 +139,9 @@ abstract contract PoolGetterTaiko {
                 mstore(p, ALGEBRA_POOL_INIT_CODE_HASH)
                 pool := and(ADDRESS_MASK, keccak256(s, 85))
             }
-            // Butter
-            case 3 {
-                mstore(p, BUTTER_FF_FACTORY)
+            case 49 {
+                mstore(p, IZI_FF_FACTORY)
                 p := add(p, 21)
-                // Compute the inner hash in-place
                 switch lt(tokenA, tokenB)
                 case 0 {
                     mstore(p, tokenB)
@@ -160,47 +154,7 @@ abstract contract PoolGetterTaiko {
                 mstore(add(p, 64), and(UINT24_MASK, fee))
                 mstore(p, keccak256(p, 96))
                 p := add(p, 32)
-                mstore(p, BUTTER_POOL_INIT_CODE_HASH)
-                pool := and(ADDRESS_MASK, keccak256(s, 85))
-            }
-            // Cleo
-            case 4 {
-                mstore(p, CLEO_FF_FACTORY)
-                p := add(p, 21)
-                // Compute the inner hash in-place
-                switch lt(tokenA, tokenB)
-                case 0 {
-                    mstore(p, tokenB)
-                    mstore(add(p, 32), tokenA)
-                }
-                default {
-                    mstore(p, tokenA)
-                    mstore(add(p, 32), tokenB)
-                }
-                mstore(add(p, 64), and(UINT24_MASK, fee))
-                mstore(p, keccak256(p, 96))
-                p := add(p, 32)
-                mstore(p, CLEO_POOL_INIT_CODE_HASH)
-                pool := and(ADDRESS_MASK, keccak256(s, 85))
-            }
-            // MethLab
-            case 5 {
-                mstore(p, METHLAB_FF_FACTORY)
-                p := add(p, 21)
-                // Compute the inner hash in-place
-                switch lt(tokenA, tokenB)
-                case 0 {
-                    mstore(p, tokenB)
-                    mstore(add(p, 32), tokenA)
-                }
-                default {
-                    mstore(p, tokenA)
-                    mstore(add(p, 32), tokenB)
-                }
-                mstore(add(p, 64), and(UINT24_MASK, fee))
-                mstore(p, keccak256(p, 96))
-                p := add(p, 32)
-                mstore(p, METHLAB_INIT_CODE_HASH)
+                mstore(p, IZI_POOL_INIT_CODE_HASH)
                 pool := and(ADDRESS_MASK, keccak256(s, 85))
             }
             default {

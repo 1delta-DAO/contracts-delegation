@@ -98,7 +98,8 @@ contract AddressesTaiko {
     uint16 internal BIN_STEP_LOW = 10;
 
     uint8 internal AGNI = 1;
-    uint8 internal FUSION_X = 0;
+    uint8 internal DTX = 1;
+    uint8 internal UNI_V3 = 0;
     uint8 internal BUTTER = 3;
     uint8 internal CLEOPATRA_CL = 4;
     uint8 internal IZUMI = 49;

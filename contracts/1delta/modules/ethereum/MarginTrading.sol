@@ -76,6 +76,56 @@ abstract contract MarginTrading is BaseSwapper {
         clSwapCallback(amount0Delta, amount1Delta, tokenIn, tokenOut, pathLength);
     }
 
+    function solidlyV3SwapCallback(
+        int256 amount0Delta,
+        int256 amount1Delta,
+        bytes calldata data
+        ) external {
+        address tokenIn;
+        address tokenOut;
+        uint256 pathLength;
+        assembly {
+            pathLength := data.length
+            let firstWord := calldataload(PATH_OFFSET_CALLBACK_V3)
+            
+            tokenIn := shr(96, firstWord)
+            // second word
+            firstWord := calldataload(164) // PATH_OFFSET_CALLBACK_V3 + 32
+            
+            tokenOut := and(ADDRESS_MASK, firstWord)
+
+            ////////////////////////////////////////////////////
+            // Compute and validate pool address
+            ////////////////////////////////////////////////////
+            let s := mload(0x40)
+            mstore(s, SOLIDLY_V3_FF_FACTORY)
+            let p := add(s, 21)
+            // Compute the inner hash in-place
+            switch lt(tokenIn, tokenOut)
+            case 0 {
+                mstore(p, tokenOut)
+                mstore(add(p, 32), tokenIn)
+            }
+            default {
+                mstore(p, tokenIn)
+                mstore(add(p, 32), tokenOut)
+            }
+            mstore(add(p, 64), and(UINT16_MASK, shr(160, firstWord)))
+            mstore(p, keccak256(p, 96))
+            p := add(p, 32)
+            mstore(p, SOLIDLY_V3_INIT_CODE_HASH)
+        
+            ////////////////////////////////////////////////////
+            // If the caller is not the calculated pool, we revert
+            ////////////////////////////////////////////////////
+            if xor(caller(), and(ADDRESS_MASK, keccak256(s, 85))) {
+                mstore(0x0, BAD_POOL)
+                revert(0x0, 0x4)
+            }
+        }
+        clSwapCallback(amount0Delta, amount1Delta, tokenIn, tokenOut, pathLength);
+    }
+
     // sushi, uniswap V3
     function uniswapV3SwapCallback(
         int256 amount0Delta,

@@ -217,7 +217,7 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
     }
 
     function setUp() public virtual {
-        vm.createSelectFork({blockNumber: 319996, urlOrAlias: "https://rpc.ankr.com/taiko"});
+        vm.createSelectFork({blockNumber: 319996, urlOrAlias: "https://rpc.mainnet.taiko.xyz"});
 
         intitializeFullDelta();
     }
@@ -406,7 +406,7 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
         address pool = testQuoter._getiZiPool(tokenIn, TAIKO, fee);
         bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, fee, TAIKO);
         fee = uint16(DEX_FEE_STABLES);
-        poolId = FUSION_X;
+        poolId = UNI_V3;
         pool = testQuoter._v3TypePool(TAIKO, tokenOut, fee, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenOut, lenderId, endId);
     }
@@ -414,7 +414,7 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
     function getOpenExactOutMulti(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_STABLES);
         (uint8 actionId, uint8 midId, uint8 endId) = getOpenExactOutFlags();
-        uint8 poolId = FUSION_X;
+        uint8 poolId = UNI_V3;
         address pool = testQuoter._v3TypePool(tokenOut, TAIKO, fee, poolId);
         bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, fee, TAIKO);
         fee = uint16(DEX_FEE_LOW);
@@ -448,7 +448,7 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
         address pool = testQuoter._getiZiPool(TAIKO, tokenIn, fee);
         bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, fee, TAIKO);
         fee = uint16(DEX_FEE_STABLES);
-        poolId = FUSION_X;
+        poolId = UNI_V3;
         pool = testQuoter._v3TypePool(TAIKO, tokenOut, fee, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenOut, lenderId, endId);
     }
@@ -456,7 +456,7 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
     function getCloseExactOutMulti(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_STABLES);
         (uint8 actionId, uint8 midId, uint8 endId) = getCloseExactOutFlags();
-        uint8 poolId = FUSION_X;
+        uint8 poolId = UNI_V3;
         address pool = testQuoter._v3TypePool(TAIKO, tokenOut, fee, poolId);
         bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, fee, TAIKO);
         fee = uint16(DEX_FEE_LOW);
@@ -490,7 +490,7 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
         address pool = testQuoter._v3TypePool(tokenIn, WETH, fee, poolId);
         bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, fee, WETH);
         fee = uint16(DEX_FEE_LOW);
-        poolId = FUSION_X;
+        poolId = UNI_V3;
         pool = testQuoter._v3TypePool(tokenOut, WETH, fee, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenOut, lenderId, endId);
     }
@@ -502,7 +502,7 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
         address pool = testQuoter._v3TypePool(tokenOut, WETH, fee, poolId);
         bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, fee, WETH);
         fee = uint16(DEX_FEE_LOW);
-        poolId = FUSION_X;
+        poolId = UNI_V3;
         pool = testQuoter._v3TypePool(tokenIn, WETH, fee, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenIn, lenderId, endId);
     }

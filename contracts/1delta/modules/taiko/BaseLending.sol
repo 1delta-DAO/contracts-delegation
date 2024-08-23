@@ -3,7 +3,7 @@
 pragma solidity ^0.8.26;
 
 import {Slots} from "./storage/Slots.sol";
-import {ExoticSwapper} from "./swappers/Exotic.sol";
+import {UniTypeSwapper} from "./swappers/UniType.sol";
 
 /******************************************************************************\
 * Author: Achthar | 1delta 
@@ -14,7 +14,7 @@ import {ExoticSwapper} from "./swappers/Exotic.sol";
 /**
  * @notice Lending base contract that wraps multiple lender types.
  */
-abstract contract BaseLending is Slots, ExoticSwapper {
+abstract contract BaseLending is Slots, UniTypeSwapper {
 
     // wNative
     address internal constant WRAPPED_NATIVE = 0xA51894664A773981C6C112C43ce576f315d5b1B6;

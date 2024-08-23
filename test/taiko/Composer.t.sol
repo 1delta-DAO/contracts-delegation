@@ -67,8 +67,8 @@ contract ComposerTestTaiko is DeltaSetup {
         uint8 lenderId = 0;
         address user = testUser;
 
-        uint256 amount = 10.0e6;
-        address asset = USDT;
+        uint256 amount = 40.0e18;
+        address asset = TAIKO;
 
         uint256 borrowAmount = 5.0e6;
         address borrowAsset = USDC;
@@ -108,8 +108,8 @@ contract ComposerTestTaiko is DeltaSetup {
         uint8 lenderId = 0;
         address user = testUser;
 
-        uint256 amount = 10.0e6;
-        address asset = USDT;
+        uint256 amount = 40.0e18;
+        address asset = TAIKO;
 
         uint256 borrowAmount = 5.0e6;
         address borrowAsset = USDC;
@@ -150,12 +150,12 @@ contract ComposerTestTaiko is DeltaSetup {
         uint8 lenderId = 0;
         address user = testUser;
 
-        uint256 amount = 10.0e6;
-        address asset = USDT;
+        uint256 amount = 40.0e18;
+        address asset = TAIKO;
 
         _deposit(asset, user, amount, lenderId);
 
-        uint256 withdrawAmount = 2.50e6;
+        uint256 withdrawAmount = 2.50e18;
 
         bytes memory data = withdraw(asset, user, withdrawAmount, lenderId);
 
@@ -173,8 +173,8 @@ contract ComposerTestTaiko is DeltaSetup {
         uint8 lenderId = 0;
         address user = testUser;
 
-        uint256 amount = 10.0e6;
-        address asset = USDT;
+        uint256 amount = 40.0e18;
+        address asset = TAIKO;
 
         _deposit(asset, user, amount, lenderId);
 
@@ -197,30 +197,30 @@ contract ComposerTestTaiko is DeltaSetup {
     function test_taiko_composer_multi_route_exact_in() external {
         address user = testUser;
         uint256 amount = 2000.0e6;
-        uint256 amountMin = 900.0e6;
+        uint256 amountMin = 0.3e18;
 
         address assetIn = USDC;
-        address assetOut = USDT;
+        address assetOut = WETH;
         deal(assetIn, user, 1e23);
 
-        bytes memory dataAgni = getSpotExactInSingleGen2(
+        bytes memory dataUniswap = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
-            AGNI,
-            uint16(DEX_FEE_STABLES) //
+            UNI_V3,
+            uint16(DEX_FEE_LOW) //
         );
         bytes memory dataFusion = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
-            FUSION_X,
-            uint16(DEX_FEE_STABLES) //
+            IZUMI,
+            uint16(DEX_FEE_LOW_HIGH) //
         );
 
         bytes memory data = abi.encodePacked(
             uint8(Commands.SWAP_EXACT_IN),
             user,
-            encodeSwapAmountParams(amount / 2, amountMin, false, dataAgni.length),
-            dataAgni,
+            encodeSwapAmountParams(amount / 2, amountMin, false, dataUniswap.length),
+            dataUniswap,
             uint8(Commands.SWAP_EXACT_IN),
             user,
             encodeSwapAmountParams(amount / 2, amountMin, false, dataFusion.length),
@@ -230,11 +230,17 @@ contract ComposerTestTaiko is DeltaSetup {
         vm.prank(user);
         IERC20All(assetIn).approve(address(brokerProxyAddress), amount);
 
+        uint received = IERC20All(assetOut).balanceOf(user);
+
         vm.prank(user);
         uint gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
-        console.log("gas", gas);
+        console.log("gas", gas, WETH);
+
+        received = IERC20All(assetOut).balanceOf(user) - received;
+        // expect 0.74 WETH
+        assertApproxEqAbs(746079848470781434, received, 1);
     }
 
     function getNativeToWeth()
@@ -505,7 +511,7 @@ contract ComposerTestTaiko is DeltaSetup {
         bytes memory dataFusion = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
-            FUSION_X,
+            UNI_V3,
             uint16(DEX_FEE_STABLES) //
         );
 
@@ -536,26 +542,26 @@ contract ComposerTestTaiko is DeltaSetup {
         console.log("gas", gas);
     }
 
-    function test_taiko_composer_multi_route_exact_out() external {
+    function test_taiko_composer_multi_route_exact_out_x() external {
         address user = testUser;
-        uint256 amount = 2000.0e6;
-        uint256 maxIn = 1040.0e6;
+        uint256 amount = 0.0010e18;
+        uint256 maxIn = 40.0e6;
 
         address assetIn = USDC;
-        address assetOut = USDT;
+        address assetOut = WETH;
         deal(assetIn, user, 1e23);
 
         bytes memory dataAgni = getSpotExactOutSingleGen2(
             assetIn,
             assetOut,
-            AGNI,
-            uint16(DEX_FEE_STABLES) //
+            DTX,
+            uint16(DEX_FEE_LOW_HIGH) //
         );
         bytes memory dataFusion = getSpotExactOutSingleGen2(
             assetIn,
             assetOut,
-            FUSION_X,
-            uint16(DEX_FEE_STABLES) //
+            UNI_V3,
+            uint16(DEX_FEE_LOW_HIGH) //
         );
 
         bytes memory data = abi.encodePacked(
@@ -572,11 +578,21 @@ contract ComposerTestTaiko is DeltaSetup {
         vm.prank(user);
         IERC20All(assetIn).approve(address(brokerProxyAddress), maxIn * 2);
 
+        uint balanceOutBefore =IERC20All(assetOut).balanceOf(user);
+        uint balanceInBefore = IERC20All(assetIn).balanceOf(user);
+
         vm.prank(user);
         uint gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
+
+        uint balanceOutAfter =IERC20All(assetOut).balanceOf(user);
+        uint balanceInAfter = IERC20All(assetIn).balanceOf(user);
+
+
+        assertApproxEqAbs(balanceOutAfter - balanceOutBefore, amount, 1);
+        assertApproxEqAbs(balanceInBefore - balanceInAfter, 2670544, 1);
     }
 
     function getSpotExactInMultiGen2(address[] memory tokens, uint8[] memory pids, uint16[] memory fees) internal view returns (bytes memory data) {
@@ -610,12 +626,14 @@ contract ComposerTestTaiko is DeltaSetup {
     function getSpotExactInSingleGen2(address tokenIn, address tokenOut, uint8 poolId, uint16 fee) internal view returns (bytes memory data) {
         address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
         uint8 action = 0;
+        console.log("pool", pool, poolId);
         return abi.encodePacked(tokenIn, action, poolId, pool, fee, tokenOut);
     }
 
     function getSpotExactOutSingleGen2(address tokenIn, address tokenOut, uint8 poolId, uint16 fee) internal view returns (bytes memory data) {
         address pool = testQuoter._v3TypePool(tokenOut, tokenIn, fee, poolId);
         uint8 action = 0;
+        console.log("pool", pool, poolId);
         return abi.encodePacked(tokenOut, action, poolId, pool, fee, tokenIn, uint8(99));
     }
 
