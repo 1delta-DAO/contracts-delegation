@@ -257,10 +257,10 @@ abstract contract BaseSwapper is BaseLending {
         // syncSwap style
         else if (dexId == 150) {
             assembly {
-                switch lt(pathLength, 69)
+                switch lt(pathLength, 65)
                 case 1 { currentReceiver := receiver}
                 default {
-                    dexId := and(calldataload(add(pathOffset, 36)), UINT8_MASK) // SKIP_LENGTH_SYNCSWAP - 10
+                    dexId := and(calldataload(add(pathOffset, 32)), UINT8_MASK) // SKIP_LENGTH_SYNCSWAP - 10
                     switch gt(dexId, 99) 
                     case 1 {
                         currentReceiver := shr(
@@ -268,7 +268,7 @@ abstract contract BaseSwapper is BaseLending {
                                 calldataload(
                                     add(
                                         pathOffset,
-                                        MAX_SINGLE_LENGTH_SYNCSWAP // 20 + 2 + 20 + 20 + 4 [poolAddress starts here]
+                                        MAX_SINGLE_LENGTH_SYNCSWAP // 20 + 2 + 20 + 20 [poolAddress starts here]
                                     )
                                 ) // poolAddress
                             )
@@ -278,14 +278,9 @@ abstract contract BaseSwapper is BaseLending {
                     }
                 }
             }
-            amountIn = swapSyncExactInComplete(
-                amountIn,
-                0,
-                payer,
+            amountIn = swapSyncExactIn(
                 currentReceiver,
-                false,
-                pathOffset, // we do not slice the path since we deterministically prevent flash swaps
-                pathLength
+                pathOffset // only needs the offset
             );
             assembly {
                 pathOffset := add(pathOffset, SKIP_LENGTH_SYNCSWAP)

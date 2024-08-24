@@ -68,150 +68,6 @@ contract OneDeltaQuoterTaiko is PoolGetterTaiko {
     uint256 internal constant CURVE_PARAM_LENGTH = CL_PARAM_LENGTH; // token + id + pool + idIn + idOut
     uint256 internal constant CURVE_CUSTOM_PARAM_LENGTH = 21; // no pool address provided
 
-    function quoteDodoV2ExactIn(address pair, uint256 sellQuote, uint256 amountIn) internal view returns (uint256 amountOut) {
-        assembly {
-            let ptr := mload(0x40)
-            // get selector
-            switch sellQuote
-            case 0 {
-                // querySellBase(address,uint256)
-                mstore(ptr, 0x79a0487600000000000000000000000000000000000000000000000000000000)
-            }
-            default {
-                // querySellQuote(address,uint256)
-                mstore(ptr, 0x66410a2100000000000000000000000000000000000000000000000000000000)
-            }
-            mstore(add(ptr, 0x4), 0) // trader is zero
-            mstore(add(ptr, 0x24), amountIn)
-            // call pool
-            if iszero(
-                staticcall(
-                    gas(),
-                    pair,
-                    ptr,
-                    0x44, //
-                    ptr,
-                    0x20
-                )
-            ) {
-                returndatacopy(0, 0, returndatasize())
-                revert(0, returndatasize())
-            }
-            amountOut := mload(ptr)
-        }
-    }
-
-    function quoteKTXExactIn(address _tokenIn, address _tokenOut, uint256 amountIn) internal view returns (uint256 amountOut) {
-        assembly {
-            let ptr := mload(0x40)
-            let ptrPlus4 := add(ptr, 0x4)
-            ////////////////////////////////////////////////////
-            // Step 1: get prices
-            ////////////////////////////////////////////////////
-
-            // getPrice(address,bool,bool,bool)
-            mstore(ptr, 0x2fc3a70a00000000000000000000000000000000000000000000000000000000)
-            // get maxPrice
-            mstore(ptrPlus4, _tokenOut)
-            mstore(add(ptr, 0x24), 0x1)
-            mstore(add(ptr, 0x44), 0x1)
-            mstore(add(ptr, 0x64), 0x1)
-            pop(
-                staticcall(
-                    gas(),
-                    KTX_VAULT_PRICE_FEED, // this goes to the oracle
-                    ptr,
-                    0x84,
-                    ptrPlus4, // do NOT override the selector
-                    0x20
-                )
-            )
-            let priceOut := mload(ptrPlus4)
-            // get minPrice
-            mstore(ptrPlus4, _tokenIn)
-            mstore(add(ptr, 0x24), 0x0)
-            // the other vars are stored from the prior call
-            pop(
-                staticcall(
-                    gas(),
-                    KTX_VAULT_PRICE_FEED, // this goes to the oracle
-                    ptr,
-                    0x84,
-                    ptr,
-                    0x20
-                )
-            )
-            let priceIn := mload(ptr)
-
-            ////////////////////////////////////////////////////
-            // Step 2: get amountOut by prices
-            ////////////////////////////////////////////////////
-
-            // get gross amountOut unscaled
-            amountOut := div(mul(amountIn, priceIn), priceOut)
-
-            ////////////////////////////////////////////////////
-            // Step 3: get token decimals and adjust amountOut
-            ////////////////////////////////////////////////////
-
-            // selector for decimals()
-            mstore(ptr, 0x313ce56700000000000000000000000000000000000000000000000000000000)
-            pop(staticcall(gas(), _tokenIn, ptr, 0x4, ptrPlus4, 0x20))
-            let decsIn := exp(10, mload(ptrPlus4))
-            pop(staticcall(gas(), _tokenOut, ptr, 0x4, ptrPlus4, 0x20))
-            let decsOut := exp(10, mload(ptrPlus4))
-            // adjust amountOut for correct decimals
-            amountOut := div(mul(amountOut, decsOut), decsIn)
-
-            ////////////////////////////////////////////////////
-            // Step 4: calculate fees
-            //      4.1: get usdg amount
-            //      4.2: get getSwapFeeBasisPoints
-            ////////////////////////////////////////////////////
-            let usdgAmount := div(
-                mul(
-                    div(
-                        mul(amountIn, priceIn), // price adj
-                        PRICE_PRECISION
-                    ),
-                    1000000000000000000 // 1e18
-                ),
-                decsIn
-            )
-            // getSwapFeeBasisPoints(address,address,uint256)
-            mstore(ptr, 0xda13381600000000000000000000000000000000000000000000000000000000)
-            mstore(ptrPlus4, _tokenIn)
-            mstore(add(ptr, 0x24), _tokenOut)
-            mstore(add(ptr, 0x44), usdgAmount)
-
-            pop(staticcall(gas(), KTX_VAULT_UTILS, ptr, 0x64, ptr, 0x20))
-            ////////////////////////////////////////////////////
-            // Step 5: get net return amount and validate vs. vault balance
-            ////////////////////////////////////////////////////
-            amountOut := div(
-                mul(
-                    amountOut, //  * decsOut / decsIn
-                    sub(10000, mload(ptr))
-                ),
-                10000
-            )
-
-            // selector for balanceOf(address)
-            mstore(0x0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
-            // add this address as parameter
-            mstore(0x4, KTX_VAULT)
-
-            // call to tokenOut to fetch balance
-            if iszero(staticcall(gas(), _tokenOut, 0x0, 0x24, 0x0, 0x20)) {
-                revert(0, 0)
-            }
-            // vault must have enough liquidity
-            if lt(mload(0x0), amountOut) {
-                revert(0, 0)
-            }
-        }
-    }
-
     constructor() {}
 
     // uniswap V3 type callback
@@ -552,7 +408,6 @@ contract OneDeltaQuoterTaiko is PoolGetterTaiko {
                 poolId := shr(88, firstWord) //
                 pair := calldataload(add(path.offset, 9)) // pool starts at 21st byte
             }
-
             // v3 types
             if (poolId < 49) {
                 assembly {
@@ -570,23 +425,6 @@ contract OneDeltaQuoterTaiko is PoolGetterTaiko {
                 }
                 amountIn = quoteExactInputSingle_iZi(tokenIn, tokenOut, pair, uint128(amountIn));
                 path = path[CL_PARAM_LENGTH:];
-            } else if (poolId == 50) {
-                assembly {
-                    // need to re-assign token out for stratum
-                    tokenOut := shr(96, calldataload(add(path.offset, 21)))
-                }
-                amountIn = quoteStratum3(tokenIn, tokenOut, amountIn);
-                path = path[CURVE_CUSTOM_PARAM_LENGTH:];
-            } else if (poolId == 51) {
-                uint8 indexIn;
-                uint8 indexOut;
-                assembly {
-                    let indexData := calldataload(add(path.offset, 21))
-                    indexIn := and(shr(88, indexData), 0xff)
-                    indexOut := and(shr(80, indexData), 0xff)
-                }
-                amountIn = quoteStratumGeneral(indexIn, indexOut, pair, amountIn);
-                path = path[CURVE_PARAM_LENGTH:];
             }
             // v2 types
             else if (poolId < 150) {
@@ -599,34 +437,8 @@ contract OneDeltaQuoterTaiko is PoolGetterTaiko {
                 amountIn = getAmountOutUniV2Type(pair, tokenIn, tokenOut, amountIn, feeDenom, poolId);
                 path = path[V2_PARAM_LENGTH:];
             } else if (poolId == 150) {
-                assembly {
-                    // tokenOut starts at 41st byte
-                    tokenOut := shr(96, calldataload(add(path.offset, 41)))
-                }
-                amountIn = quoteWOO(tokenIn, tokenOut, amountIn);
+                amountIn = quoteSyncSwapExactIn(pair, tokenIn, amountIn);
                 path = path[EXOTIC_PARAM_LENGTH:];
-            } else if (poolId == 151) {
-                assembly {
-                    // tokenOut starts at 41st byte
-                    tokenOut := shr(96, calldataload(add(path.offset, 41)))
-                }
-                amountIn = getLBAmountOut(tokenOut, amountIn, pair);
-                path = path[EXOTIC_PARAM_LENGTH:];
-            } else if (poolId == 152) {
-                assembly {
-                    // tokenOut starts at 41st byte
-                    tokenOut := shr(96, calldataload(add(path.offset, 41)))
-                }
-                amountIn = quoteKTXExactIn(tokenIn, tokenOut, amountIn);
-                path = path[EXOTIC_PARAM_LENGTH:];
-            } else if (poolId == 153) {
-                uint256 sellQuote;
-                assembly {
-                    // sellQuote starts after the pair
-                    sellQuote := and(UINT8_MASK, calldataload(add(path.offset, 10)))
-                }
-                amountIn = quoteDodoV2ExactIn(pair, sellQuote, amountIn);
-                path = path[DODO_PARAM_LENGTH:];
             } else {
                 revert invalidDexId();
             }
@@ -681,13 +493,6 @@ contract OneDeltaQuoterTaiko is PoolGetterTaiko {
                 }
                 amountOut = getV2AmountInDirect(pair, tokenIn, tokenOut, amountOut, feeDenom, poolId);
                 path = path[V2_PARAM_LENGTH:];
-            } else if (poolId == 151) {
-                assembly {
-                    // tokenIn starts at 41st byte for CL
-                    tokenIn := shr(96, calldataload(add(path.offset, 41)))
-                }
-                amountOut = getLBAmountIn(tokenOut, amountOut, pair);
-                path = path[EXOTIC_PARAM_LENGTH:];
             } else {
                 revert invalidDexId();
             }
@@ -758,111 +563,20 @@ contract OneDeltaQuoterTaiko is PoolGetterTaiko {
         }
     }
 
-    function quoteWOO(address tokenIn, address tokenOut, uint256 amountIn) internal view returns (uint256 amountOut) {
+    function quoteSyncSwapExactIn(address pair, address tokenIn, uint256 amountIn) internal view returns (uint256 amountOut) {
         assembly {
-            // selector for querySwap(address,address,uint256)
-            mstore(0xB00, 0xe94803f400000000000000000000000000000000000000000000000000000000)
-            mstore(0xB04, tokenIn)
-            mstore(0xB24, tokenOut)
-            mstore(0xB44, amountIn)
-            if iszero(staticcall(gas(), WOO_ROUTER, 0xB00, 0x64, 0xB00, 0x20)) {
-                revert(0, 0)
+            let ptr := mload(0x40)
+            // selector for getAmountOut(address,uint256,address)
+            mstore(ptr, 0xff9c8ac600000000000000000000000000000000000000000000000000000000)
+            mstore(add(ptr, 0x04), tokenIn)
+            mstore(add(ptr, 0x24), amountIn)
+            mstore(add(ptr, 0x44), 0x0)
+            if iszero(staticcall(gas(), pair, ptr, 0x64, ptr, 0x20)) {
+                returndatacopy(0, 0, returndatasize())
+                revert(0, returndatasize())
             }
 
-            amountOut := mload(0xB00)
-        }
-    }
-
-    function quoteStratum3(address tokenIn, address tokenOut, uint256 amountIn) internal view returns (uint256 amountOut) {
-        assembly {
-            let indexIn
-            let indexOut
-            switch tokenIn
-            // USDY
-            case 0x5bE26527e817998A7206475496fDE1E68957c5A6 {
-                // calculate USDY->mUSD wrap
-                // selector for getRUSDYByShares(uint256)
-                mstore(0xB00, 0xbc0ca91500000000000000000000000000000000000000000000000000000000)
-
-                mstore(0xB04, amountIn)
-                if iszero(staticcall(gas(), MUSD, 0xB00, 0x24, 0xB00, 0x20)) {
-                    revert(0, 0)
-                }
-                amountIn := mul(mload(0xB00), 10000)
-                indexIn := 0
-            }
-            // MUSD
-            case 0xab575258d37EaA5C8956EfABe71F4eE8F6397cF3 {
-                indexIn := 0
-            }
-            // USDC
-            case 0x09Bc4E0D864854c6aFB6eB9A9cdF58aC190D0dF9 {
-                indexIn := 1
-            }
-            // USDT
-            case 0x201EBa5CC46D216Ce6DC03F6a759e8E766e956aE {
-                indexIn := 2
-            }
-            default {
-                revert(0, 0)
-            }
-
-            switch tokenOut
-            // USDY
-            case 0x5bE26527e817998A7206475496fDE1E68957c5A6 {
-                indexOut := 0
-            }
-            // MUSD
-            case 0xab575258d37EaA5C8956EfABe71F4eE8F6397cF3 {
-                indexOut := 0
-            }
-            // USDC
-            case 0x09Bc4E0D864854c6aFB6eB9A9cdF58aC190D0dF9 {
-                indexOut := 1
-            }
-            // USDT
-            case 0x201EBa5CC46D216Ce6DC03F6a759e8E766e956aE {
-                indexOut := 2
-            }
-            default {
-                revert(0, 0)
-            }
-            // selector for calculateSwap(uint8,uint8,uint256)
-            mstore(0xB00, 0xa95b089f00000000000000000000000000000000000000000000000000000000)
-            mstore(0xB04, indexIn)
-            mstore(0xB24, indexOut)
-            mstore(0xB44, amountIn)
-            if iszero(staticcall(gas(), STRATUM_3POOL, 0xB00, 0x64, 0xB00, 0x20)) {
-                revert(0, 0)
-            }
-
-            amountOut := mload(0xB00)
-
-            if eq(tokenOut, USDY) {
-                // calculate mUSD->USDY unwrap
-                // selector for getSharesByRUSDY(uint256)
-                mstore(0xB00, 0xb15f291e00000000000000000000000000000000000000000000000000000000)
-                mstore(0xB04, amountOut)
-                if iszero(staticcall(gas(), MUSD, 0xB00, 0x24, 0xB00, 0x20)) {
-                    revert(0, 0)
-                }
-                amountOut := div(mload(0xB00), 10000)
-            }
-        }
-    }
-
-    function quoteStratumGeneral(uint256 indexIn, uint256 indexOut, address pool, uint256 amountIn) internal view returns (uint256 amountOut) {
-        assembly {
-            // selector for calculateSwap(uint8,uint8,uint256)
-            mstore(0xB00, 0xa95b089f00000000000000000000000000000000000000000000000000000000)
-            mstore(0xB04, indexIn)
-            mstore(0xB24, indexOut)
-            mstore(0xB44, amountIn)
-            if iszero(staticcall(gas(), pool, 0xB00, 0x64, 0xB00, 0x20)) {
-                revert(0, 0)
-            }
-
-            amountOut := mload(0xB00)
+            amountOut := mload(ptr)
         }
     }
 

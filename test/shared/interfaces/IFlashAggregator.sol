@@ -95,4 +95,26 @@ interface IFlashAggregator {
         address initiator,
         bytes calldata params
     ) external returns (bool);
+
+    struct BaseSwapCallbackParams {
+        address sender;
+        address to;
+        address tokenIn;
+        address tokenOut;
+        uint reserve0;
+        uint reserve1;
+        uint balance0;
+        uint balance1;
+        uint amountIn;
+        uint amountOut;
+        uint feeIn;
+        uint24 swapFee;
+        uint8 withdrawMode;
+        bytes callbackData;
+    }
+
+    /// @dev Note the `tokenIn` parameter can be decided by the caller, and the correctness is not guaranteed.
+    /// Additional checks MUST be performed in callback to ensure the `tokenIn` is one of the pools tokens if the sender
+    /// is not a trusted source to avoid potential issues.
+    function syncSwapBaseSwapCallback(BaseSwapCallbackParams calldata params) external;
 }

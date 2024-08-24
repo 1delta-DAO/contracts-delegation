@@ -32,8 +32,8 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
     // this one needs to be backchecked
     bytes32 internal constant CODE_HASH_DTX_V2 = 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f;
 
-    bytes32 internal constant KODO_FF_FACTORY = 0xff99F9a4A96549342546f9DAE5B2738EDDcD43Bf4C0000000000000000000000;
-    bytes32 constant KODO_CODE_HASH = 0x0ccd005ee58d5fb11632ef5c2e0866256b240965c62c8e990c0f84a97f311879;
+    bytes32 internal constant KODO_FF_FACTORY = 0xff535E02960574d8155596a73c7Ad66e87e37Eb6Bc0000000000000000000000;
+    bytes32 constant KODO_CODE_HASH = 0x24364b5d47cc9af524ff2ae89d98c1c10f4a388556279eecb00622b5d727c99a;
 
     constructor() {}
 

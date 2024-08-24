@@ -74,7 +74,7 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
     }
 
     function flashAggregatorSelectors() internal pure returns (bytes4[] memory selectors) {
-        selectors = new bytes4[](23);
+        selectors = new bytes4[](24);
         /** margin */
         selectors[0] = IFlashAggregator.flashSwapExactIn.selector;
         selectors[1] = IFlashAggregator.flashSwapExactOut.selector;
@@ -102,6 +102,7 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
         selectors[21] = IFlashAggregator.swapExactInSpotSelf.selector;
         selectors[21] = IFlashAggregator.deltaCompose.selector;
         selectors[22] = IFlashLoanReceiver.executeOperation.selector;
+        selectors[23] = IFlashAggregator.syncSwapBaseSwapCallback.selector;
         return selectors;
     }
 

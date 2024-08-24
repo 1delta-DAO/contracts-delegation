@@ -8,18 +8,6 @@ pragma solidity ^0.8.26;
  * Test quoter contract - exposes all internal functions
  */
 contract TestQuoterTaiko is OneDeltaQuoterTaiko {
-    function _quoteKTXExactIn(address _tokenIn, address _tokenOut, uint256 amountIn) public view returns (uint256 amountOut) {
-        return super.quoteKTXExactIn(_tokenIn, _tokenOut, amountIn);
-    }
-
-    function _quoteWooFiExactIn(address _tokenIn, address _tokenOut, uint256 amountIn) public view returns (uint256 amountOut) {
-        return super.quoteWOO(_tokenIn, _tokenOut, amountIn);
-    }
-
-    function _quoteStratumGeneral(uint256 indexIn, uint256 indexOut, address pool, uint256 amountIn) public view returns (uint256 amountOut) {
-        return super.quoteStratumGeneral(indexIn, indexOut, pool, amountIn);
-    }
-
     /// @dev Returns the pool for the given token pair and fee.
     /// The pool contract may or may not exist.
     function _v3TypePool(address tokenA, address tokenB, uint24 fee, uint256 _pId) public pure returns (address pool) {
@@ -32,15 +20,19 @@ contract TestQuoterTaiko is OneDeltaQuoterTaiko {
     }
 
     /// @dev gets uniswapV2 (and fork) pair addresses
-    function _v2TypePairAddress(address tokenA, address tokenB, uint256 _pId) public view returns (address pair) {
+    function _v2TypePairAddress(address tokenA, address tokenB, uint256 _pId) public pure returns (address pair) {
         return super.v2TypePairAddress(tokenA, tokenB, _pId);
     }
 
-    function _quoteWOO(address tokenIn, address tokenOut, uint256 amountIn) public view returns (uint256 amountOut) {
-        return super.quoteWOO(tokenIn, tokenOut, amountIn);
+    function _syncClassicPairAddress(address tokenA, address tokenB) public view returns (address pair) {
+        pair = super.syncClassicPairAddress(tokenA, tokenB);
     }
 
-    function _quoteStratum3(address tokenIn, address tokenOut, uint256 amountIn) public view returns (uint256 amountOut) {
-        return super.quoteStratum3(tokenIn, tokenOut, amountIn);
+    function _syncStablePairAddress(address tokenA, address tokenB) public view returns (address pair) {
+        pair = super.syncStablePairAddress(tokenA, tokenB);
+    }
+
+    function _syncBasePairAddress(address tokenA, address tokenB) public view returns (address pair) {
+        pair = super.syncBasePairAddress(tokenA, tokenB);
     }
 }

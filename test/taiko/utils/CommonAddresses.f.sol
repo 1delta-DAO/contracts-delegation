@@ -85,6 +85,7 @@ contract AddressesTaiko {
     /** DEFAULTS */
 
     uint8 DEFAULT_LENDER = 1;
+    uint8 HANA_ID = 0;
 
     /** DEX CONFIG */
 
@@ -110,13 +111,19 @@ contract AddressesTaiko {
     uint8 internal MERCHANT_MOE = 101;
     // Solidly STable
     uint8 internal CLEO_V1_STABLE = 135;
+    uint8 internal KODO_STABLE = 135;
     uint8 internal STRATUM_STABLE = 136;
     uint8 internal VELO_STABLE = 137;
 
     // Solidly Volatile
     uint8 internal CLEO_V1_VOLAT = 120;
+    uint8 internal KODO_VOLAT = 120;
     uint8 internal STRATUM_VOLAT = 121;
     uint8 internal VELO_VOLAT = 122;
+
+
+    uint16 internal KODO_VOLAT_FEE_DENOM = 10000 - 20;
+    uint16 internal KODO_STABLE_FEE_DENOM = 10000 - 2;
 
     uint16 internal FUSION_X_V2_FEE_DENOM = 10000 - 20;
     uint16 internal MERCHANT_MOE_FEE_DENOM = 10000 - 30;
