@@ -18,11 +18,22 @@ interface ISwap {
     ) external view returns (uint _amountOut);
 
     function master() external view returns (address);
+
+    function symbol() external view returns (string memory);
+
+    function getReserves() external view returns (uint _reserve0, uint _reserve1);
+
+    function getSwapFee(
+        address _sender,
+        address _tokenIn,
+        address _tokenOut, //
+        bytes memory data
+    ) external view returns (uint24 _swapFee);
 }
 
-contract ComposerTestTaiko is DeltaSetup {
+contract TitsuTestTaiko is DeltaSetup {
     uint8 internal constant RITSU = 150;
-    address internal constant USDC_WETH_RITSU_POOL = 0xeF4a016F3E54c4520220adE7a496842ECbF83E09;
+    address internal constant USDC_WETH_RITSU_POOL = 0x424Fab7bfA3E3Dd0e5BB96771fFAa72fe566200e;
     address internal constant USDC_sgUSDC_RITSU_POOL = 0x6c7839E0CE8AdA360a865E18a111A462d08DC15a;
 
     function test_taiko_composer_ritsu_exact_in() external {
@@ -33,11 +44,11 @@ contract ComposerTestTaiko is DeltaSetup {
         address assetIn = USDC;
         address assetOut = WETH;
         deal(assetIn, user, 1e23);
-
-        uint expectedOut = ISwap(USDC_WETH_RITSU_POOL).getAmountOut(assetIn, amount, address(0));
+        address pool = USDC_WETH_RITSU_POOL;
+        uint expectedOut = ISwap(pool).getAmountOut(assetIn, amount, address(0));
         console.log("ISwap.master f", testQuoter._syncClassicPairAddress(assetIn, assetOut));
 
-        bytes memory dataRitsu = getSpotExactInSingleGen2(assetIn, assetOut, RITSU);
+        bytes memory dataRitsu = getSpotExactInSingleGen2(assetIn, assetOut, RITSU, pool);
 
         bytes memory data = abi.encodePacked(
             uint8(Commands.SWAP_EXACT_IN),
@@ -60,6 +71,7 @@ contract ComposerTestTaiko is DeltaSetup {
         received = IERC20All(assetOut).balanceOf(user) - received;
         // expect 0.7369 WETH
         assertApproxEqAbs(expectedOut, received, 1);
+        assertApproxEqAbs(expectedOut, 736925511614964287, 1);
     }
 
     function test_taiko_composer_ritsu_multi_exact_in() external {
@@ -70,7 +82,6 @@ contract ComposerTestTaiko is DeltaSetup {
         address assetIn = USDC;
         address assetOut = TAIKO;
         deal(assetIn, user, 1e23);
-
 
         bytes memory dataRitsu = getSpotExactInMultiGen2(assetIn, assetOut);
 
@@ -104,8 +115,53 @@ contract ComposerTestTaiko is DeltaSetup {
         assertApproxEqAbs(expectedOut, 10572763709453061122, 1);
     }
 
-    function getSpotExactInSingleGen2(address tokenIn, address tokenOut, uint8 poolId) internal pure returns (bytes memory data) {
-        address pool = USDC_WETH_RITSU_POOL;
+    function test_taiko_composer_ritsu_exact_in_stable() external {
+        address user = testUser;
+        uint256 amount = 2000.0e6;
+        uint256 amountMin = 1900.3e6;
+
+        address assetIn = USDC;
+        address assetOut = sgUSDC;
+        deal(assetIn, user, 1e23);
+        address pool = USDC_sgUSDC_RITSU_POOL;
+        uint expectedOut = ISwap(pool).getAmountOut(assetIn, amount, address(0));
+        console.log("ISwap.master f", testQuoter._syncStablePairAddress(assetIn, assetOut));
+
+        bytes memory dataRitsu = getSpotExactInSingleGen2(assetIn, assetOut, RITSU, pool);
+
+        bytes memory data = abi.encodePacked(
+            uint8(Commands.SWAP_EXACT_IN),
+            user,
+            encodeSwapAmountParams(amount, amountMin, false, dataRitsu.length),
+            dataRitsu
+        );
+
+        vm.prank(user);
+        IERC20All(assetIn).approve(address(brokerProxyAddress), amount);
+
+        uint received = IERC20All(assetOut).balanceOf(user);
+
+        vm.prank(user);
+        uint gas = gasleft();
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
+        gas = gas - gasleft();
+        console.log("gas", gas);
+
+        received = IERC20All(assetOut).balanceOf(user) - received;
+        // expect 1998.436046 sgUSDC
+        assertApproxEqAbs(expectedOut, received, 1);
+        assertApproxEqAbs(expectedOut, 1998436046, 1);
+    }
+
+    function getSpotExactInSingleGen2(address tokenIn, address tokenOut, uint8 poolId, address pool) internal view returns (bytes memory data) {
+        {
+            (uint r0, uint r1) = ISwap(pool).getReserves();
+            uint sf = ISwap(pool).getSwapFee(tokenIn, tokenOut, address(0), "");
+            console.log("reserve0:", r0);
+            console.log("reserve1:", r1);
+            console.log("swapFee:", sf);
+            console.log("symb:", ISwap(pool).symbol());
+        }
         uint8 action = 0;
         return abi.encodePacked(tokenIn, action, poolId, pool, tokenOut);
     }

@@ -39,54 +39,6 @@ const LOW_OPTIMIZER_COMPILER_SETTINGS = {
   },
 }
 
-const HIGHEST_OPTIMIZER_COMPILER_SETTINGS = {
-  version: '0.8.17',
-  settings: {
-    optimizer: {
-      enabled: true,
-      runs: 1_000_000,
-    },
-    metadata: {
-      bytecodeHash: 'none',
-    },
-  },
-}
-
-const DEFAULT_COMPILER_SETTINGS = {
-  version: '0.8.17',
-  settings: {
-    optimizer: {
-      enabled: true,
-      runs: 200,
-    },
-    metadata: {
-      bytecodeHash: 'none',
-    },
-  },
-}
-
-
-const IZI_COMPILER_SETTINGS = {
-  version: "0.8.4",
-  settings: {
-    optimizer: {
-      enabled: true,
-      runs: 100
-    },
-    outputSelection: {
-      "*": {
-        "*": [
-          "abi",
-          "evm.bytecode",
-          "evm.deployedBytecode",
-          "evm.methodIdentifiers",
-          "metadata"
-        ],
-      }
-    }
-  }
-}
-
 const LOWEST_OPTIMIZER_COMPILER_SETTINGS = {
   version: '0.8.17',
   settings: {
@@ -138,12 +90,21 @@ const config: HardhatUserConfig = {
           apiURL: "https://explorer.mantle.xyz/api",
           browserURL: "https://explorer.mantle.xyz/"
         }
+      },
+      {
+        network: "taiko",
+        chainId: 167000,
+        urls: {
+          apiURL: "https://api.taikoscan.io/api" ,
+          browserURL: "https://taikoscan.io"
+        }
       }
     ],
     apiKey: {
       mantle: 'abc',
       mainnet: process.env.ETHERSCAN_API_KEY ?? '',
-      polygon: process.env.POLYGONSCAN_API_KEY ?? ''
+      polygon: process.env.POLYGONSCAN_API_KEY ?? '',
+      taiko: process.env.TAIKOSCAN_API_KEY ?? '',
     }
   },
   gasReporter: {
@@ -227,17 +188,10 @@ const config: HardhatUserConfig = {
       gasPrice: 5000000000,
       gasMultiplier: 2,
     },
-    goerli: {
-      url: 'https://rpc.ankr.com/eth_goerli',
-      // url: "https://goerli.blockpi.network/v1/rpc/public", //
-      // url: `https://goerli.infura.io/v3/${process.env.INFURA_API_KEY}`,
-      accounts: [pk2],
-      chainId: 5,
-      // live: true,
-      // saveDeployments: true,
-      // tags: ['staging'],
-      // gasPrice: 5000000000,
-      // gasMultiplier: 2,
+    taiko: {
+      url: 'https://rpc.ankr.com/taiko',
+      accounts: [pk5, pk1],
+      chainId: 167000,
     },
     moonbase: {
       url: 'https://rpc.testnet.moonbeam.network',
@@ -509,7 +463,7 @@ const config: HardhatUserConfig = {
             enabled: true,
             runs: 1_000_000,
           },
-          evmVersion: 'paris',
+          evmVersion: 'shanghai',
         },
       },
       // algebra
@@ -668,31 +622,6 @@ const config: HardhatUserConfig = {
           },
         },
       },
-      // izi
-      "contracts/external-protocols/iZi/core/iZiSwapFactory.sol": IZI_COMPILER_SETTINGS,
-      "contracts/external-protocols/iZi/periphery/LiquidityManager.sol": IZI_COMPILER_SETTINGS,
-      // algebra settings
-      "contracts/external-protocols/algebra/core/base/AlgebraPoolBase.sol": DEFAULT_COMPILER_SETTINGS,
-      "contracts/external-protocols/algebra/core/base/DerivedState.sol": DEFAULT_COMPILER_SETTINGS,
-      "contracts/external-protocols/algebra/core/base/ReentrancyGuard.sol": DEFAULT_COMPILER_SETTINGS,
-      "contracts/external-protocols/algebra/core/base/common/Timestamp.sol": DEFAULT_COMPILER_SETTINGS,
-      "contracts/external-protocols/algebra/core/libraries/Constants.sol": DEFAULT_COMPILER_SETTINGS,
-      "contracts/external-protocols/algebra/core/libraries/LimitOrderManagement.sol": DEFAULT_COMPILER_SETTINGS,
-      "contracts/external-protocols/algebra/core/libraries/PriceMovementMath.sol": DEFAULT_COMPILER_SETTINGS,
-      "contracts/external-protocols/algebra/core/libraries/TickManagement.sol": DEFAULT_COMPILER_SETTINGS,
-      "contracts/external-protocols/algebra/core/libraries/TokenDeltaMath.sol": DEFAULT_COMPILER_SETTINGS,
-      "contracts/external-protocols/algebra/core/test/PriceMovementMathEchidnaTest.sol": DEFAULT_COMPILER_SETTINGS,
-      "contracts/external-protocols/algebra/core/test/PriceMovementMathTest.sol": DEFAULT_COMPILER_SETTINGS,
-      "contracts/external-protocols/algebra/core/test/SafeMathTest.sol": DEFAULT_COMPILER_SETTINGS,
-      "contracts/external-protocols/algebra/core/test/TestAlgebraRouter.sol": DEFAULT_COMPILER_SETTINGS,
-      "contracts/external-protocols/algebra/core/test/TickOverflowSafetyEchidnaTest.sol": DEFAULT_COMPILER_SETTINGS,
-      "contracts/external-protocols/algebra/core/test/TickTest.sol": DEFAULT_COMPILER_SETTINGS,
-      "contracts/external-protocols/algebra/periphery/test/TestAlgebraCallee.sol": DEFAULT_COMPILER_SETTINGS,
-      "contracts/external-protocols/algebra/core/test/TokenDeltaMathEchidnaTest.sol": DEFAULT_COMPILER_SETTINGS,
-      // core
-      'contracts/external-protocols/algebra/core/AlgebraFactory.sol': HIGHEST_OPTIMIZER_COMPILER_SETTINGS,
-      'contracts/external-protocols/algebra/core/DataStorageOperator.sol': HIGHEST_OPTIMIZER_COMPILER_SETTINGS,
-      'contracts/external-protocols/algebra/core/AlgebraPoolDeployer.sol': DEFAULT_COMPILER_SETTINGS,
       // periphery
       'contracts/external-protocols/algebra/periphery/NonfungiblePositionManager.sol': LOW_OPTIMIZER_COMPILER_SETTINGS,
       'contracts/external-protocols/algebra/periphery/LimitOrderManager.sol': LOW_OPTIMIZER_COMPILER_SETTINGS,

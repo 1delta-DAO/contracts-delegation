@@ -22,8 +22,8 @@ abstract contract PermitUtils {
                                 CONSTANTS
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev Permit2 address on mantle
-    address internal constant PERMIT2 = 0x9b13cf0C98315b6e85E28630417050093A7086Aa; // solhint-disable-line var-name-mixedcase
+    /// @dev Permit2 address on taiko
+    address internal constant PERMIT2 = 0x1b35fbA9357fD9bda7ed0429C8BbAbe1e8CC88fc; // solhint-disable-line var-name-mixedcase
 
     /*//////////////////////////////////////////////////////////////
                                 CONSTRUCTOR

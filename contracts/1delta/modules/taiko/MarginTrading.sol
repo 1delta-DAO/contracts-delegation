@@ -490,9 +490,9 @@ abstract contract MarginTrading is BaseSwapper {
                 mstore(ptr, tokenIn)
             }
             let salt := keccak256(add(ptr, 0x0C), 0x28)
-            mstore(ptr, DTX_V2_FF_FACTORY)
+            mstore(ptr, DTX_UNI_V2_FF_FACTORY)
             mstore(add(ptr, 0x15), salt)
-            mstore(add(ptr, 0x35), CODE_HASH_DTX_V2)
+            mstore(add(ptr, 0x35), CODE_HASH_DTX_UNI_V2)
 
             // verify that the caller is a v2 type pool
             if xor(and(ADDRESS_MASK, keccak256(ptr, 0x55)), caller()) {
