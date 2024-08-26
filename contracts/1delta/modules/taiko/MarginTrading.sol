@@ -535,7 +535,7 @@ abstract contract MarginTrading is BaseSwapper {
             let pair
             switch dexId
             // Kodo Volatile
-            case 122 {
+            case 120 {
                 switch lt(tokenIn, tokenOut)
                 case 0 {
                     mstore(add(ptr, 0x14), tokenIn)
@@ -554,7 +554,7 @@ abstract contract MarginTrading is BaseSwapper {
                 pair := and(ADDRESS_MASK, keccak256(ptr, 0x55))
             }
             // Kodo Stable
-            case 137 {
+            case 135 {
                 switch lt(tokenIn, tokenOut)
                 case 0 {
                     mstore(add(ptr, 0x14), tokenIn)

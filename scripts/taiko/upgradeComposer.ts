@@ -2,7 +2,7 @@
 import { ethers } from "hardhat";
 import {
     ConfigModule__factory,
-    OneDeltaComposerMantle__factory,
+    OneDeltaComposerTaiko__factory,
     LensModule__factory,
 } from "../../types";
 import { getTaikoConfig } from "./utils";
@@ -16,7 +16,7 @@ async function main() {
     const chainId = await operator.getChainId();
     const proxyAddress = ONE_DELTA_GEN2_ADDRESSES_TAIKO.proxy
     const oldComposer = ONE_DELTA_GEN2_ADDRESSES_TAIKO.composerImplementation
-    if (chainId !== 5000) throw new Error("invalid chainId")
+    if (chainId !== 167000) throw new Error("invalid chainId")
     console.log("operator", operator.address, "on", chainId)
 
     // we manually increment the nonce
@@ -24,7 +24,7 @@ async function main() {
 
     // deploy module
     // composer
-    const newComposer = await new OneDeltaComposerMantle__factory(operator).deploy(getTaikoConfig(nonce++))
+    const newComposer = await new OneDeltaComposerTaiko__factory(operator).deploy(getTaikoConfig(nonce++))
     await newComposer.deployed()
 
 
