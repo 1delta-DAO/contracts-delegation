@@ -3,7 +3,7 @@
 pragma solidity 0.8.26;
 
 import {DeltaErrors} from "./Errors.sol";
-import {ERC20Selectors} from "../selectors/ERC20Selectors.sol";
+import {ERC20Selectors} from "../../shared//selectors/ERC20Selectors.sol";
 
 /******************************************************************************\
 * Author: Achthar | 1delta 
@@ -191,7 +191,7 @@ abstract contract V3TypeSwapper is DeltaErrors, ERC20Selectors {
                 // Store highPt
                 mstore(add(ptr, 68), 799999)
                 // Store data offset
-                mstore(add(ptr, 100), sub(0xa0, 0x20))
+                mstore(add(ptr, 100), 0x80)
 
                 // Store path
                 calldatacopy(add(ptr, 164), pathOffset, pathLength)
@@ -227,7 +227,7 @@ abstract contract V3TypeSwapper is DeltaErrors, ERC20Selectors {
                 // Store sqrtPriceLimitX96
                 mstore(add(ptr, 68), sub(0, 799999))
                 // Store data offset
-                mstore(add(ptr, 100), sub(0xa0, 0x20))
+                mstore(add(ptr, 100), 0x80)
 
                 // Store path
                 calldatacopy(add(ptr, 164), pathOffset, pathLength)
@@ -287,7 +287,7 @@ abstract contract V3TypeSwapper is DeltaErrors, ERC20Selectors {
                 // Store highPt
                 mstore(add(ptr, 68), 800001)
                 // Store data offset
-                mstore(add(ptr, 100), sub(0xa0, 0x20))
+                mstore(add(ptr, 100), 0x80)
                 /// Store data length
                 mstore(add(ptr, 132), pathLength)
                 // Store path
@@ -324,7 +324,7 @@ abstract contract V3TypeSwapper is DeltaErrors, ERC20Selectors {
                 // Store sqrtPriceLimitX96
                 mstore(add(ptr, 68), sub(0, 800001))
                 // Store data offset
-                mstore(add(ptr, 100), sub(0xa0, 0x20))
+                mstore(add(ptr, 100), 0x80)
                 // Store path
                 calldatacopy(add(ptr, 164), pathOffset, pathLength)
 
