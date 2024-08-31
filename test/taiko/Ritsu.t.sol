@@ -29,12 +29,15 @@ interface ISwap {
         address _tokenOut, //
         bytes memory data
     ) external view returns (uint24 _swapFee);
+
+    function getA() external view returns (uint64);
 }
 
 contract TitsuTestTaiko is DeltaSetup {
     uint8 internal constant RITSU = 150;
     address internal constant USDC_WETH_RITSU_POOL = 0x424Fab7bfA3E3Dd0e5BB96771fFAa72fe566200e;
     address internal constant USDC_sgUSDC_RITSU_POOL = 0x6c7839E0CE8AdA360a865E18a111A462d08DC15a;
+    address internal constant USDC_TAIKO_RYTHM_POOL = 0xB4F80b81a82184D754F933b0A6C2Ba8D5495567C;
 
     function test_taiko_composer_ritsu_exact_in() external {
         address user = testUser;
@@ -126,6 +129,7 @@ contract TitsuTestTaiko is DeltaSetup {
         address pool = USDC_sgUSDC_RITSU_POOL;
         uint expectedOut = ISwap(pool).getAmountOut(assetIn, amount, address(0));
         console.log("ISwap.master f", testQuoter._syncStablePairAddress(assetIn, assetOut));
+        console.log("a", ISwap(pool).getA());
 
         bytes memory dataRitsu = getSpotExactInSingleGen2(assetIn, assetOut, RITSU, pool);
 
@@ -151,6 +155,44 @@ contract TitsuTestTaiko is DeltaSetup {
         // expect 1998.436046 sgUSDC
         assertApproxEqAbs(expectedOut, received, 1);
         assertApproxEqAbs(expectedOut, 1998436046, 1);
+    }
+
+    function test_taiko_composer_ritsu_exact_in_rythm() external {
+        address user = testUser;
+        uint256 amount = 2000.0e6;
+        uint256 amountMin = 1900.3e6;
+
+        address assetIn = USDC;
+        address assetOut = TAIKO;
+        deal(assetIn, user, 1e23);
+        address pool = USDC_TAIKO_RYTHM_POOL;
+        uint expectedOut = ISwap(pool).getAmountOut(assetIn, amount, address(0));
+        console.log("ISwap.master f", testQuoter._syncStablePairAddress(assetIn, assetOut));
+
+        bytes memory dataRitsu = getSpotExactInSingleGen2(assetIn, assetOut, RITSU, pool);
+
+        bytes memory data = abi.encodePacked(
+            uint8(Commands.SWAP_EXACT_IN),
+            user,
+            encodeSwapAmountParams(amount, amountMin, false, dataRitsu.length),
+            dataRitsu
+        );
+
+        vm.prank(user);
+        IERC20All(assetIn).approve(address(brokerProxyAddress), amount);
+
+        uint received = IERC20All(assetOut).balanceOf(user);
+
+        vm.prank(user);
+        uint gas = gasleft();
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
+        gas = gas - gasleft();
+        console.log("gas", gas);
+
+        received = IERC20All(assetOut).balanceOf(user) - received;
+        // expect 1998.436046 sgUSDC
+        assertApproxEqAbs(expectedOut, received, 1);
+        assertApproxEqAbs(expectedOut, 361210884239374586108, 1);
     }
 
     function getSpotExactInSingleGen2(address tokenIn, address tokenOut, uint8 poolId, address pool) internal view returns (bytes memory data) {
