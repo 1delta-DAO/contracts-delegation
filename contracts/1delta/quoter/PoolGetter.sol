@@ -50,17 +50,20 @@ abstract contract PoolGetter {
     bytes32 internal constant UNISWAP_V3_FF_FACTORY = 0xff0d922Fb1Bc191F64970ac40376643808b4B74Df90000000000000000000000;
     bytes32 internal constant UNISWAP_V3_INIT_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
 
+    bytes32 internal constant CRUST_FF_FACTORY = 0xffEaD128BDF9Cff441eF401Ec8D18a96b4A2d252520000000000000000000000;
+    bytes32 internal constant CRUST_INIT_CODE_HASH = 0x55664e1b1a13929bcf29e892daf029637225ec5c85a385091b8b31dcca255627;
+
     bytes32 internal constant VELO_FF_FACTORY = 0xff99F9a4A96549342546f9DAE5B2738EDDcD43Bf4C0000000000000000000000;
     bytes32 constant VELO_CODE_HASH = 0x0ccd005ee58d5fb11632ef5c2e0866256b240965c62c8e990c0f84a97f311879;
-    address internal constant VELO_FACTORY = 0x99F9a4A96549342546f9DAE5B2738EDDcD43Bf4C;
 
     bytes32 internal constant CLEO_V1_FF_FACTORY = 0xffAAA16c016BF556fcD620328f0759252E29b1AB570000000000000000000000;
     bytes32 constant CLEO_V1_CODE_HASH = 0xbf2404274de2b11f05e5aebd49e508de933034cb5fa2d0ac3de8cbd4bcef47dc;
-    address internal constant CLEO_V1_FACTORY = 0xAAA16c016BF556fcD620328f0759252E29b1AB57;
 
     bytes32 internal constant STRATUM_FF_FACTORY = 0xff061FFE84B0F9E1669A6bf24548E5390DBf1e03b20000000000000000000000;
     bytes32 constant STRATUM_CODE_HASH = 0xeb675862e19b0846fd47f7db0e8f2bf8f8da0dcd0c9aa75603248566f3faa805;
-    address internal constant STRATUM_FACTORY = 0x061FFE84B0F9E1669A6bf24548E5390DBf1e03b2;
+
+    bytes32 internal constant CRUST_V1_FF_FACTORY = 0xff62DbCa39067f99C9D788a253cB325c6BA50e51cE0000000000000000000000;
+    bytes32 constant CRUST_V1_CODE_HASH = 0x7bc86d3461c6b25a75205e3bcd8e9815e8477f2af410ccbe931d784a528143fd;
 
     address internal constant WOO_ROUTER = 0x4c4AF8DBc524681930a27b2F1Af5bcC8062E6fB7;
 
@@ -201,6 +204,26 @@ abstract contract PoolGetter {
                 mstore(p, keccak256(p, 96))
                 p := add(p, 32)
                 mstore(p, METHLAB_INIT_CODE_HASH)
+                pool := and(ADDRESS_MASK, keccak256(s, 85))
+            }
+            // Crust
+            case 7 {
+                mstore(p, CRUST_FF_FACTORY)
+                p := add(p, 21)
+                // Compute the inner hash in-place
+                switch lt(tokenA, tokenB)
+                case 0 {
+                    mstore(p, tokenB)
+                    mstore(add(p, 32), tokenA)
+                }
+                default {
+                    mstore(p, tokenA)
+                    mstore(add(p, 32), tokenB)
+                }
+                mstore(add(p, 64), and(UINT24_MASK, fee))
+                mstore(p, keccak256(p, 96))
+                p := add(p, 32)
+                mstore(p, CRUST_INIT_CODE_HASH)
                 pool := and(ADDRESS_MASK, keccak256(s, 85))
             }
             default {
@@ -380,7 +403,7 @@ abstract contract PoolGetter {
                 pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
             }
             // 137: Stratum Stable
-            default {
+            case 137 {
                 switch lt(tokenA, tokenB)
                 case 0 {
                     mstore(0xB14, tokenA)
@@ -395,6 +418,44 @@ abstract contract PoolGetter {
                 mstore(0xB00, STRATUM_FF_FACTORY)
                 mstore(0xB15, salt)
                 mstore(0xB35, STRATUM_CODE_HASH)
+
+                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+            }
+            // Crust Volatile
+            case 123 {
+                switch lt(tokenA, tokenB)
+                case 0 {
+                    mstore(0xB14, tokenA)
+                    mstore(0xB00, tokenB)
+                }
+                default {
+                    mstore(0xB14, tokenB)
+                    mstore(0xB00, tokenA)
+                }
+                mstore8(0xB34, 0)
+                let salt := keccak256(0xB0C, 0x29)
+                mstore(0xB00, CRUST_V1_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, CRUST_V1_CODE_HASH)
+
+                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+            }
+            // 138: Crust Stable
+            default {
+                switch lt(tokenA, tokenB)
+                case 0 {
+                    mstore(0xB14, tokenA)
+                    mstore(0xB00, tokenB)
+                }
+                default {
+                    mstore(0xB14, tokenB)
+                    mstore(0xB00, tokenA)
+                }
+                mstore8(0xB34, 1)
+                let salt := keccak256(0xB0C, 0x29)
+                mstore(0xB00, CRUST_V1_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, CRUST_V1_CODE_HASH)
 
                 pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
             }
