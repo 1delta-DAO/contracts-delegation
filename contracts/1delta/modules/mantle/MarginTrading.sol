@@ -355,7 +355,8 @@ abstract contract MarginTrading is BaseSwapper {
                 mstore(p, CRUST_INIT_CODE_HASH)
             }
             default {
-                revert(0, 0)
+                mstore(0x0, BAD_POOL)
+                revert(0x0, 0x4)
             }
             ////////////////////////////////////////////////////
             // If the caller is not the calculated pool, we revert
