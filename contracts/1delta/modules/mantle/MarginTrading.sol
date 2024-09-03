@@ -336,6 +336,24 @@ abstract contract MarginTrading is BaseSwapper {
                 p := add(p, 32)
                 mstore(p, METHLAB_INIT_CODE_HASH)
             }
+            case 7 {
+                mstore(s, CRUST_FF_FACTORY)
+                let p := add(s, 21)
+                // Compute the inner hash in-place
+                switch lt(tokenIn, tokenOut)
+                case 0 {
+                    mstore(p, tokenOut)
+                    mstore(add(p, 32), tokenIn)
+                }
+                default {
+                    mstore(p, tokenIn)
+                    mstore(add(p, 32), tokenOut)
+                }
+                mstore(add(p, 64), and(UINT16_MASK, shr(160, firstWord)))
+                mstore(p, keccak256(p, 96))
+                p := add(p, 32)
+                mstore(p, CRUST_INIT_CODE_HASH)
+            }
             default {
                 revert(0, 0)
             }
@@ -992,6 +1010,44 @@ abstract contract MarginTrading is BaseSwapper {
                 mstore(ptr, STRATUM_FF_FACTORY)
                 mstore(add(ptr, 0x15), salt)
                 mstore(add(ptr, 0x35), STRATUM_CODE_HASH)
+
+                pair := and(ADDRESS_MASK, keccak256(ptr, 0x55))
+            }
+            // Crust V1 Volatile
+            case 123 {
+                switch lt(tokenIn, tokenOut)
+                case 0 {
+                    mstore(add(ptr, 0x14), tokenIn)
+                    mstore(ptr, tokenOut)
+                }
+                default {
+                    mstore(add(ptr, 0x14), tokenOut)
+                    mstore(ptr, tokenIn)
+                }
+                mstore8(add(ptr, 0x34), 0)
+                let salt := keccak256(add(ptr, 0x0C), 0x29)
+                mstore(ptr, CRUST_V1_FF_FACTORY)
+                mstore(add(ptr, 0x15), salt)
+                mstore(add(ptr, 0x35), CRUST_V1_CODE_HASH)
+
+                pair := and(ADDRESS_MASK, keccak256(ptr, 0x55))
+            }
+            // 138: Crust V1 Stable
+            case 138 {
+                switch lt(tokenIn, tokenOut)
+                case 0 {
+                    mstore(add(ptr, 0x14), tokenIn)
+                    mstore(ptr, tokenOut)
+                }
+                default {
+                    mstore(add(ptr, 0x14), tokenOut)
+                    mstore(ptr, tokenIn)
+                }
+                mstore8(add(ptr, 0x34), 1)
+                let salt := keccak256(add(ptr, 0x0C), 0x29)
+                mstore(ptr, CRUST_V1_FF_FACTORY)
+                mstore(add(ptr, 0x15), salt)
+                mstore(add(ptr, 0x35), CRUST_V1_CODE_HASH)
 
                 pair := and(ADDRESS_MASK, keccak256(ptr, 0x55))
             }
