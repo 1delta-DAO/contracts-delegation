@@ -569,6 +569,16 @@ const config: HardhatUserConfig = {
           evmVersion: 'paris',
         },
       },
+      "contracts/1delta/quoter/MoeJoeLens.sol" : {
+        version: '0.8.26',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1_000_000,
+          },
+          evmVersion: 'paris',
+        },
+      },
       "contracts/external-protocols/aave-v3-core/protocol/pool/Pool.sol": {
         version: '0.8.10',
         settings: {
