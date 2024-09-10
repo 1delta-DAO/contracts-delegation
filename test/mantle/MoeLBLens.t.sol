@@ -22,9 +22,10 @@ interface ILBFactory {
 contract MoeLBQuotingTest is DeltaSetup {
     uint256 DEFAULT_IR_MODE = 2; // variable
     MoeJoeLens lens;
+    address POOL_WITH_NO_BINS = 0x37Ce36DB1d4DA489E4c95eAd59D9018CCDb21698;
 
     function setUp() public virtual override {
-        vm.createSelectFork({blockNumber: 63129000, urlOrAlias: "https://mantle-mainnet.public.blastapi.io"});
+        vm.createSelectFork({blockNumber: 68932371, urlOrAlias: "https://mantle-mainnet.public.blastapi.io"});
 
         lens = new MoeJoeLens();
     }
@@ -34,7 +35,7 @@ contract MoeLBQuotingTest is DeltaSetup {
         address pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(USDe, USDT, fee).LBPair;
         uint24 activeId = IMoeJoePair(pool).getActiveId();
         console.log("active", activeId);
-        uint256[] memory data = lens.getMoeJoeBins(pool, activeId, 10, 10);
+        uint256[] memory data = lens.getMoeJoeBins(pool, activeId, 15, 15);
 
         for (uint i; i < data.length; i++) {
             uint entry = data[i];
@@ -51,6 +52,23 @@ contract MoeLBQuotingTest is DeltaSetup {
         uint24 fee = BIN_STEP_LOWEST;
         address pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(USDe, USDT, fee).LBPair;
 
+        uint256[] memory data = lens.getMoeJoeBinsWithActiveId(pool, 15, 15);
+
+        for (uint i; i < data.length; i++) {
+            uint entry = data[i];
+            uint reserveY = uint112(entry);
+            uint reserveX = uint112(entry >> 112);
+            uint24 bin = uint24(entry >> 232);
+            console.log("reserveX", reserveX);
+            console.log("reserveY", reserveY);
+            console.log("bin", bin);
+        }
+    }
+
+
+    function test_mantle_get_bins_with_active_no_bins() external view {
+        address pool = POOL_WITH_NO_BINS;
+
         uint256[] memory data = lens.getMoeJoeBinsWithActiveId(pool, 10, 10);
 
         for (uint i; i < data.length; i++) {
@@ -64,6 +82,7 @@ contract MoeLBQuotingTest is DeltaSetup {
         }
     }
 
+
     function test_exp() external view {
         uint x = 340316395157630557309720944892511388277;
         int y = 1;
@@ -73,6 +92,8 @@ contract MoeLBQuotingTest is DeltaSetup {
        uint mpy =  340282366920938463463374607431768211456;
        (uint dd, uint ee) = _getMulProds(mpx, mpy);
        console.log("prod0, prod1", dd, ee);
+       uint denominator = 74982764324320;
+       console.log("uint256 lpotdod = denominator & (~denominator + 1);", denominator & (~denominator + 1));
     }
 
     uint8 internal constant SCALE_OFFSET = 128;

@@ -46,6 +46,7 @@ contract MoeJoeLens {
     uint256 private constant UINT24_MASK_U = 0xffffff0000000000000000000000000000000000000000000000000000000000;
 
     // gets the bin data for a Moe/Joe pair assuming we already know activeId
+    // uses fixed size array
     function getMoeJoeBins(address pair, uint24 activeId, uint24 maxEnvX, uint24 maxEnvY) external view returns (uint256[] memory data) {
         uint256 maxIndex = maxEnvX + maxEnvY;
         data = new uint256[](maxIndex);
@@ -67,8 +68,9 @@ contract MoeJoeLens {
     // first index includes current active id with reserves data
     // from there on it continues like `getMoeJoeBins`
     function getMoeJoeBinsWithActiveId(address pair, uint24 maxEnvX, uint24 maxEnvY) external view returns (uint256[] memory data) {
-        uint256 maxIndex = maxEnvX + maxEnvY + 1;
-        data = new uint256[](maxIndex);
+        // we allocate the maximum space needed
+        uint256 maxLength = maxEnvX + maxEnvY + 1;
+        data = new uint256[](maxLength);
         // get current active
         uint24 activeId = IMoeJoePair(pair).getActiveId();
         {
@@ -78,16 +80,33 @@ contract MoeJoeLens {
 
         // then continue as above
         uint24 currentBin = activeId;
+
+        // we track everything through a current index
+        uint256 currentIndex = 1;
+
+        maxLength = currentIndex + maxEnvX;
         // populate Y direction
-        for (uint256 i = 1; i < maxEnvX; i++) {
+        for (; currentIndex < maxLength; ) {
             currentBin = IMoeJoePair(pair).getNextNonEmptyBin(false, currentBin);
-            data[i] = getAndEncodeReserves(pair, currentBin);
+            data[currentIndex] = getAndEncodeReserves(pair, currentBin);
+            currentIndex++;
+            if (currentBin == 0) break;
         }
+
         // populate X direction
         currentBin = activeId;
-        for (uint256 i = maxEnvX; i < maxIndex; i++) {
+        // max length will be current index plus maximum desired Y entries
+        maxLength = currentIndex + maxEnvY;
+        for (; currentIndex < maxLength; ) {
             currentBin = IMoeJoePair(pair).getNextNonEmptyBin(true, currentBin);
-            data[i] = getAndEncodeReserves(pair, currentBin);
+            data[currentIndex] = getAndEncodeReserves(pair, currentBin);
+            currentIndex++;
+            if (currentBin == MAX_UINT24) break;
+        }
+
+        // set length to current index as we increment before the break
+        assembly {
+            mstore(data, currentIndex)
         }
     }
 
