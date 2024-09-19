@@ -12,6 +12,7 @@ export const AURELIUS_A_TOKENS: { [key: string]: string } = {
     METH: '0xbb406187c01cc1c9eaf9d4b5c924b7fa37aecefd',
     USDE: '0x7bdb0095429f8eff1efb718aabc912b2489ba5b3',
     USDY: '0xfdd2ebc184b4ff6df14562715452e970c82fe49a',
+    FBTC: '0x491F8FBC6b9a5db31c959a702aB6A0dCBEA73a48',
 }
 
 export const AURELIUS_V_TOKENS: { [key: string]: string } = {
@@ -23,6 +24,7 @@ export const AURELIUS_V_TOKENS: { [key: string]: string } = {
     METH: '0x00dfd5f920ccf08eb0581d605bab413d289c21b4',
     USDE: '0xcbe019c9c44954d388602a99a45a1d7da61321cf',
     USDY: '0x2d55f5558aea4c25fcc1ff78b10265755aff3856',
+    FBTC: '0xd2ea6612f6c7c11626F7D5D801D08B53BCe52511'
 }
 
 export const AURELIUS_S_TOKENS: { [key: string]: string } = {
@@ -34,4 +36,5 @@ export const AURELIUS_S_TOKENS: { [key: string]: string } = {
     METH: '0x2d422c5ead5fa3c26aec97d070343353e2086a1d',
     USDE: '0x7f9c39386be3f6a8c1753b5fbe8c96f7eaef88e1',
     USDY: '0xe0ae10fb6cb1a366c56204afe1ae2a94a0ed9a11',
+    FBTC: '0x88140812eE16B48447eAF7BA9A5649D1F9A2d949'
 }

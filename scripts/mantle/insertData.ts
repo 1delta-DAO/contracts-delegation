@@ -3,8 +3,8 @@ import { ethers } from "hardhat";
 import {
     MantleManagementModule__factory,
 } from "../../types";
-import {  addLendleTokens } from "./lenders/addLenderData";
-import {  execLendleApproves } from "./approvals/approveAddress";
+import { addAureliusTokens, addLendleTokens } from "./lenders/addLenderData";
+import { execAureliusApproves, execLendleApproves } from "./approvals/approveAddress";
 import { ONE_DELTA_GEN2_ADDRESSES } from "./addresses/oneDeltaAddresses";
 
 async function main() {
@@ -23,9 +23,14 @@ async function main() {
 
     // add lender data
     nonce = await addLendleTokens(oneDeltaManagement, nonce)
-
     // approve targets
     nonce = await execLendleApproves(oneDeltaManagement, nonce)
+
+    // add lender data
+    nonce = await addAureliusTokens(oneDeltaManagement, nonce)
+    // approve targets
+    nonce = await execAureliusApproves(oneDeltaManagement, nonce)
+
 
     console.log("insertion completed")
 }

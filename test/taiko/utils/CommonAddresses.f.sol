@@ -24,7 +24,7 @@ contract AddressesTaiko {
     address internal USDC = 0x07d83526730c7438048D55A4fc0b850e2aaB6f0b;
     address internal sgUSDC = 0x19e26B0638bf63aa9fa4d14c6baF8D52eBE86C5C;
     address internal TAIKO = 0xA9d23408b9bA935c230493c40C73824Df71A0975;
-    address internal USDT = 0x19e26B0638bf63aa9fa4d14c6baF8D52eBE86C5C;
+    address internal USDT = 0x2DEF195713CF4a606B49D07E520e22C17899a736;
 
     // users
     address internal testUser = 0xaaaa4a3F69b6DB76889bDfa4edBe1c0BB57BAA5c;

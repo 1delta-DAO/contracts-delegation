@@ -99,12 +99,7 @@ contract OneDeltaQuoterTaiko is PoolGetterTaiko {
         }
     }
 
-    // fusionx v3
-    function fusionXV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata path) external view {
-        _v3SwapCallback(amount0Delta, amount1Delta, path);
-    }
-
-    // methlab
+    // uniswap & DTX
     function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata path) external view {
         _v3SwapCallback(amount0Delta, amount1Delta, path);
     }

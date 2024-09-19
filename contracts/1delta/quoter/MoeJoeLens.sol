@@ -12,6 +12,8 @@ interface IMoeJoePair {
 
     function getBin(uint24 id) external view returns (uint128 binReserveX, uint128 binReserveY);
 
+    function getBinStep() external pure returns (uint16);
+
     function getNextNonEmptyBin(bool swapForY, uint24 id) external view returns (uint24 nextId);
 
     function getStaticFeeParameters()
@@ -36,6 +38,18 @@ interface IMoeJoePair {
             uint24 idReference,
             uint40 timeOfLastUpdate //
         );
+
+    function getSwapOut(
+        uint128 amountIn,
+        bool swapForY
+    )
+        external
+        view
+        returns (
+            uint128 amountInLeft, //
+            uint128 amountOut,
+            uint128 fee
+        );
 }
 
 // TraderJoe/Moe bin lens contract
@@ -44,6 +58,7 @@ contract MoeJoeLens {
     uint256 private constant MAX_UINT24 = 16777215;
     uint256 private constant UINT112_MASK_U = 0x00000000ffffffffffffffffffffffffffff0000000000000000000000000000;
     uint256 private constant UINT24_MASK_U = 0xffffff0000000000000000000000000000000000000000000000000000000000;
+    uint256 private constant UINT112_MASK = 0x000000000000000000000000000000000000ffffffffffffffffffffffffffff;
 
     // gets the bin data for a Moe/Joe pair assuming we already know activeId
     // uses fixed size array
@@ -69,20 +84,24 @@ contract MoeJoeLens {
     // from there on it continues like `getMoeJoeBins`
     function getMoeJoeBinsWithActiveId(address pair, uint24 maxEnvX, uint24 maxEnvY) external view returns (uint256[] memory data) {
         // we allocate the maximum space needed
-        uint256 maxLength = maxEnvX + maxEnvY + 1;
+        uint256 maxLength = maxEnvX + maxEnvY + 2;
         data = new uint256[](maxLength);
+
+        {
+            // total reserves are the first element => bin is set to 0, encoding is the same
+            (uint128 binReserveX, uint128 binReserveY) = IMoeJoePair(pair).getReserves();
+            data[0] = encodeReservesAndBin(binReserveX, binReserveY, 0);
+        }
+
         // get current active
         uint24 activeId = IMoeJoePair(pair).getActiveId();
-        {
-            (uint128 binReserveX, uint128 binReserveY) = IMoeJoePair(pair).getReserves();
-            data[0] = encodeReservesAndBin(binReserveX, binReserveY, activeId);
-        }
+        data[1] = getAndEncodeReserves(pair, activeId);
 
         // then continue as above
         uint24 currentBin = activeId;
 
         // we track everything through a current index
-        uint256 currentIndex = 1;
+        uint256 currentIndex = 2;
 
         maxLength = currentIndex + maxEnvX;
         // populate Y direction
@@ -116,7 +135,7 @@ contract MoeJoeLens {
     }
 
     // encode bin data into single uint
-    function encodeReservesAndBin(uint128 binReserveX, uint128 binReserveY, uint24 bin) private pure returns (uint256) {
+    function encodeReservesAndBin(uint256 binReserveX, uint256 binReserveY, uint24 bin) private pure returns (uint256) {
         uint256 data = uint112(binReserveY);
         data = (data & ~UINT112_MASK_U) | (uint256(binReserveX) << 112);
         data = (data & ~UINT24_MASK_U) | (uint256(bin) << 232);

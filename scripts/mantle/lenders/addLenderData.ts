@@ -4,7 +4,7 @@ import { constants } from "ethers";
 import { AURELIUS_A_TOKENS, AURELIUS_S_TOKENS, AURELIUS_V_TOKENS } from "../addresses/aureliusAddresses";
 import { TOKENS_MANTLE } from "../addresses/tokens";
 import { getMantleConfig } from "../utils";
-
+import { MantleLenderId } from "../addresses/lenderIds";
 
 const managementInterface = MantleManagementModule__factory.createInterface()
 
@@ -20,7 +20,7 @@ export function getAddLendleTokens() {
                 LENDLE_A_TOKENS[k],
                 LENDLE_V_TOKENS[k],
                 LENDLE_S_TOKENS?.[k] ?? constants.AddressZero,
-                0
+                MantleLenderId.LENDLE
             ]
             )
         )
@@ -40,7 +40,7 @@ export function getAddAureliusTokens() {
                 AURELIUS_A_TOKENS[k],
                 AURELIUS_V_TOKENS[k],
                 AURELIUS_S_TOKENS?.[k] ?? constants.AddressZero,
-                1
+                MantleLenderId.AURELIUS
             ]
             )
         )
@@ -58,7 +58,7 @@ export async function addLendleTokens(manager: MantleManagementModule, nonce: nu
             LENDLE_A_TOKENS[k],
             LENDLE_V_TOKENS[k],
             LENDLE_S_TOKENS?.[k] ?? constants.AddressZero,
-            0,
+            MantleLenderId.LENDLE,
             getMantleConfig(nonce++)
         )
         await tx.wait()
@@ -76,7 +76,7 @@ export async function addAureliusTokens(manager: MantleManagementModule, nonce: 
             AURELIUS_A_TOKENS[k],
             AURELIUS_V_TOKENS[k],
             AURELIUS_S_TOKENS?.[k] ?? constants.AddressZero,
-            1,
+            MantleLenderId.AURELIUS,
             getMantleConfig(nonce++)
         )
         await tx.wait()
