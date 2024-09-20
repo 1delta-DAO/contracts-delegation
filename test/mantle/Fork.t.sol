@@ -32,7 +32,6 @@ contract ForkTestMantle is DeltaSetup {
         return abi.encodePacked(WBTC, DODO, FBTC_WBTC_POOL, sellQuote, FBTC);
     }
 
-
     function getSwapWithPermit() internal pure returns (bytes memory data) {
         // this data is incorrect
         data = hex"0091ae002a960e63ccb0e5bde83a8c13e51e1cb91a0000000000000000000000000000160300000000000000000000000016160041cabae6f6ea1ecab08ad02fe02ce9a44f09aebfa20099d39dfbfba9e7eccd813918ffbda10b783ea3b3c600c96de26018a54d51c097160568752c4e3bd6c364ff09";
