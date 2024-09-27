@@ -19,7 +19,7 @@ contract DeltaMetaAggregatorWithPermit is PermitUtils {
     // Errors
     ////////////////////////////////////////////////////
     error SimulationResults(bool success, uint256 amountReceived, string data);
-    error InvalidTarget();
+    error InvalidSwapCall();
     error NotOwner();
     error Paused();
     error HasMsgValue();
@@ -38,8 +38,24 @@ contract DeltaMetaAggregatorWithPermit is PermitUtils {
     ////////////////////////////////////////////////////
     // Constants
     ////////////////////////////////////////////////////
-    uint256 private constant MAX_UINT = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
-    uint256 internal constant UINT16_MASK = 0xffff;
+    
+    /// @dev maximum uint256 - used for approvals
+    uint256 private constant MAX_UINT_256 = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
+
+    /// @dev mask for selector in calldata
+    bytes32 internal constant SELECTOR_MASK = 0xffffffff00000000000000000000000000000000000000000000000000000000;
+
+    /// @dev selector for approve(address,uint256)
+    bytes32 internal constant ERC20_APPROVE = 0x095ea7b300000000000000000000000000000000000000000000000000000000;
+
+    /// @dev selector for transferFrom(address,address,uint256)
+    bytes32 internal constant ERC20_TRANSFER_FROM = 0x23b872dd00000000000000000000000000000000000000000000000000000000;
+
+    /// @dev selector for allowance(address,address)
+    bytes32 internal constant ERC20_ALLOWANCE = 0xdd62ed3e00000000000000000000000000000000000000000000000000000000;
+
+    /// @dev selector for balanceOf(address)
+    bytes32 internal constant ERC20_BALANCE_OF = 0x70a0823100000000000000000000000000000000000000000000000000000000;
 
     ////////////////////////////////////////////////////
     // Constructor, assigns initial owner
@@ -128,17 +144,19 @@ contract DeltaMetaAggregatorWithPermit is PermitUtils {
 
                 // pull balance
                 if (permitData.length == 96 || permitData.length == 352) {
-                    _transferFromPermit2(assetIn, msg.sender, address(this), amountIn);
+                    _transferFromPermit2(assetIn, address(this), amountIn);
                 } else {
                     _transferERC20TokensFrom(assetIn, amountIn);
                 }
             }
             // approve if no allowance
+            // we actually do not care what we approve as this
+            // contract is not supposed to hold balances
             _approveIfNot(assetIn, approvalTarget);
         }
 
-        // validate approval- and swap target
-        _validateCall(approvalTarget, swapTarget);
+        // validate swap call
+        _validateCalldata(swapTarget, swapData);
 
         (bool success, bytes memory returnData) = swapTarget.call{value: msg.value}(swapData);
         if (!success) {
@@ -223,9 +241,25 @@ contract DeltaMetaAggregatorWithPermit is PermitUtils {
     // Internals
     ////////////////////////////////////////////////////
 
-    /// @dev chcecks whether both addresses are validTargets
-    function _validateCall(address approvalTarget, address swapTarget) private view {
-        if (!_validTargets[approvalTarget][swapTarget]) revert InvalidTarget();
+    /// @dev checks that
+    ///     - Permit2 cannot be arbitrarily called
+    ///     - the selector cannot be ERC20 transferFrom
+    function _validateCalldata(address swapTarget, bytes calldata data) private pure {
+        bool hasError;
+        assembly {
+            // extract the selector from the calldata
+            let selector := and(SELECTOR_MASK, calldataload(data.offset))
+
+            // check if it is `transferFrom`
+            if eq(selector, ERC20_TRANSFER_FROM) {
+                hasError := true
+            }
+            // check if the target is permit2
+            if eq(swapTarget, PERMIT2) {
+                hasError := true
+            }
+        }
+        if (hasError) revert InvalidSwapCall();
     }
 
     /// @dev Checks approvals in storage and sets the allowance to the
@@ -242,9 +276,9 @@ contract DeltaMetaAggregatorWithPermit is PermitUtils {
                 // Approve, at this point it is clear that the target is nonzero
                 ////////////////////////////////////////////////////
                 // selector for approve(address,uint256)
-                mstore(ptr, 0x095ea7b300000000000000000000000000000000000000000000000000000000)
+                mstore(ptr, ERC20_APPROVE)
                 mstore(add(ptr, 0x04), spender)
-                mstore(add(ptr, 0x24), MAX_UINT)
+                mstore(add(ptr, 0x24), MAX_UINT_256)
 
                 if iszero(call(gas(), token, 0x0, ptr, 0x44, ptr, 32)) {
                     revert(0x0, 0x0)
@@ -267,7 +301,7 @@ contract DeltaMetaAggregatorWithPermit is PermitUtils {
                 ////////////////////////////////////////////////////
 
                 // selector for balanceOf(address)
-                mstore(0x0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+                mstore(0x0, ERC20_BALANCE_OF)
                 // add this address as parameter
                 mstore(0x4, entity)
 
@@ -327,7 +361,7 @@ contract DeltaMetaAggregatorWithPermit is PermitUtils {
             let ptr := mload(0x40) // free memory pointer
 
             // selector for transferFrom(address,address,uint256)
-            mstore(ptr, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
+            mstore(ptr, ERC20_TRANSFER_FROM)
             mstore(add(ptr, 0x04), caller())
             mstore(add(ptr, 0x24), address())
             mstore(add(ptr, 0x44), amount)
