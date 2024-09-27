@@ -119,15 +119,20 @@ contract DeltaMetaAggregatorWithPermit is PermitUtils {
             if (msg.value != 0) revert HasMsgValue();
 
             // permit
-            if (permitData.length > 0) _tryPermit(assetIn, 0, permitData.length);
+            if (permitData.length > 0) {
+                uint256 permitOffset;
+                assembly {
+                    permitOffset := permitData.offset
+                }
+                _tryPermit(assetIn, permitOffset, permitData.length);
 
-            // pull balance
-            if (permitData.length == 96 || permitData.length == 352) {
-                _transferFromPermit2(assetIn, msg.sender, address(this), amountIn);
-            } else {
-                _transferERC20TokensFrom(assetIn, amountIn);
+                // pull balance
+                if (permitData.length == 96 || permitData.length == 352) {
+                    _transferFromPermit2(assetIn, msg.sender, address(this), amountIn);
+                } else {
+                    _transferERC20TokensFrom(assetIn, amountIn);
+                }
             }
-
             // approve if no allowance
             _approveIfNot(assetIn, approvalTarget);
         }
