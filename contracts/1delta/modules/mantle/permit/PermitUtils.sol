@@ -17,6 +17,8 @@ abstract contract PermitUtils {
     //////////////////////////////////////////////////////////////*/
 
     error SafePermitBadLength();
+    error SafeTransferFromFailed();
+    error Permit2TransferAmountTooHigh();
 
     /*//////////////////////////////////////////////////////////////
                                 CONSTANTS
@@ -220,5 +222,39 @@ abstract contract PermitUtils {
                 revert(0, returndatasize())
             }
         }
+    }
+
+        /**
+     * @notice Attempts to safely transfer tokens from one address to another using the Permit2 standard.
+     * @dev Either requires `true` in return data, or requires target to be smart-contract and empty return data.
+     * Note that the implementation does not perform dirty bits cleaning, so it is the responsibility of
+     * the caller to make sure that the higher 96 bits of the `from` and `to` parameters are clean.
+     * @param token The IERC20 token contract from which the tokens will be transferred.
+     * @param from The address from which the tokens will be transferred.
+     * @param to The address to which the tokens will be transferred.
+     * @param amount The amount of tokens to transfer.
+     */
+    function _safeTransferFromPermit2(
+        address token,
+        address from,
+        address to,
+        uint256 amount
+    ) internal {
+        if (amount > type(uint160).max) revert Permit2TransferAmountTooHigh();
+        bool success;
+        assembly ("memory-safe") { // solhint-disable-line no-inline-assembly
+            let data := mload(0x40)
+
+            mstore(data, PERMIT2_TRANSFER_FROM)
+            mstore(add(data, 0x04), from)
+            mstore(add(data, 0x24), to)
+            mstore(add(data, 0x44), amount)
+            mstore(add(data, 0x64), token)
+            success := call(gas(), PERMIT2, 0, data, 0x84, 0x0, 0x0)
+            if success {
+                success := gt(extcodesize(PERMIT2), 0)
+            }
+        }
+        if (!success) revert SafeTransferFromFailed();
     }
 }
