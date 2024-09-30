@@ -141,14 +141,14 @@ contract DeltaMetaAggregatorWithPermit is PermitUtils {
                     permitOffset := permitData.offset
                 }
                 _tryPermit(assetIn, permitOffset, permitData.length);
-
-                // pull balance
-                if (permitData.length == 96 || permitData.length == 352) {
-                    _transferFromPermit2(assetIn, address(this), amountIn);
-                } else {
-                    _transferERC20TokensFrom(assetIn, amountIn);
-                }
             }
+
+            if (permitData.length == 96 || permitData.length == 352) {
+                _transferFromPermit2(assetIn, address(this), amountIn);
+            } else {
+                _transferERC20TokensFrom(assetIn, amountIn);
+            }
+
             // approve if no allowance
             // we actually do not care what we approve as this
             // contract is not supposed to hold balances
@@ -198,16 +198,24 @@ contract DeltaMetaAggregatorWithPermit is PermitUtils {
             if (msg.value != 0) revert HasMsgValue();
 
             // permit
-            if (permitData.length > 0) _tryPermit(assetIn, 0, permitData.length);
-
+            if (permitData.length > 0) {
+                uint256 permitOffset;
+                assembly {
+                    permitOffset := permitData.offset
+                }
+                _tryPermit(assetIn, permitOffset, permitData.length);
+            }
+            
             // pull balance
             if (permitData.length == 96 || permitData.length == 352) {
-                _safeTransferFromPermit2(assetIn, msg.sender, address(this), amountIn);
+                _transferFromPermit2(assetIn, address(this), amountIn);
             } else {
                 _transferERC20TokensFrom(assetIn, amountIn);
             }
 
             // approve if no allowance
+            // we actually do not care what we approve as this
+            // contract is not supposed to hold balances
             _approveIfNot(assetIn, approvalTarget);
         }
 
