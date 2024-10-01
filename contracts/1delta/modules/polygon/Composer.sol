@@ -4,7 +4,6 @@ pragma solidity 0.8.26;
 
 import {MarginTrading} from "./MarginTrading.sol";
 import {Commands} from "../shared/Commands.sol";
-import {PermitUtils} from "./permit/PermitUtils.sol";
 
 /**
  * @title Universal aggregator contract.
@@ -12,7 +11,7 @@ import {PermitUtils} from "./permit/PermitUtils.sol";
  *        Efficient baching through compact calldata usage.
  * @author 1delta Labs AG
  */
-contract OneDeltaComposerPolygon is MarginTrading, PermitUtils {
+contract OneDeltaComposerPolygon is MarginTrading {
     /// @dev The highest bit signals whether the swap is internal (the payer is this contract)
     uint256 private constant _PAY_SELF = 1 << 255;
     /// @dev The second bit signals whether the input token is a FOT token
@@ -1147,6 +1146,49 @@ contract OneDeltaComposerPolygon is MarginTrading, PermitUtils {
                             }
                         }
                         currentOffset := add(currentOffset, 35)
+                    }
+                } else if (operation == Commands.PERMIT2_TRANSFER_FROM) {
+                    ////////////////////////////////////////////////////
+                    // Transfers tokens froom caller to this address
+                    // zero amount flags that the entire balance is sent
+                    ////////////////////////////////////////////////////
+                    assembly {
+                        let underlying := shr(96, calldataload(currentOffset))
+                        let receiver := and(ADDRESS_MASK, calldataload(add(currentOffset, 8)))
+                        let amount := and(_UINT112_MASK, calldataload(add(currentOffset, 22)))
+                        // when entering 0 as amount, use the callwe balance
+                        if iszero(amount) {
+                            // selector for balanceOf(address)
+                            mstore(0, ERC20_BALANCE_OF)
+                            // add this address as parameter
+                            mstore(0x04, callerAddress)
+                            // call to token
+                            pop(
+                                staticcall(
+                                    gas(),
+                                    underlying, // token
+                                    0x0,
+                                    0x24,
+                                    0x0,
+                                    0x20
+                                )
+                            )
+                            // load the retrieved balance
+                            amount := mload(0x0)
+                        }
+
+                        let ptr := mload(0x40)
+
+                        mstore(ptr, PERMIT2_TRANSFER_FROM)
+                        mstore(add(ptr, 0x04), caller())
+                        mstore(add(ptr, 0x24), receiver)
+                        mstore(add(ptr, 0x44), amount)
+                        mstore(add(ptr, 0x64), underlying)
+                        if iszero(call(gas(), PERMIT2, 0, ptr, 0x84, 0x0, 0x0)) {
+                            returndatacopy(0, 0, returndatasize())
+                            revert(0, returndatasize())
+                        }
+                        currentOffset := add(currentOffset, 54)
                     }
                 }
             } else {
