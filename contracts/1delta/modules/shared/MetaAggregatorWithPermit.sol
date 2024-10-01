@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.25;
 
-import {PermitUtils} from "./permit/PermitUtils.sol";
+import {PermitUtils} from "../shared/PermitUtils.sol";
 
 ////////////////////////////////////////////////////
 // Minimal meta swap aggregation contract
@@ -177,7 +177,7 @@ contract DeltaMetaAggregatorWithPermit is PermitUtils {
         }
 
         if (sweep) {
-            _sweepToken(assetIn, msg.sender);
+            _sweepToken(assetIn);
         }
     }
 
@@ -248,7 +248,7 @@ contract DeltaMetaAggregatorWithPermit is PermitUtils {
         }
 
         if (sweep) {
-            _sweepToken(assetIn, msg.sender);
+            _sweepToken(assetIn);
         }
 
         // get net amount received
@@ -419,8 +419,7 @@ contract DeltaMetaAggregatorWithPermit is PermitUtils {
     }
 
     function _sweepToken(
-        address token,
-        address receiver
+        address token
     ) public payable {
         // initialize transferAmount
         if (token == address(0)) {
@@ -430,7 +429,7 @@ contract DeltaMetaAggregatorWithPermit is PermitUtils {
                     if iszero(
                         call(
                             gas(),
-                            receiver,
+                            caller(),
                             transferAmount,
                             0x0, // input = empty for fallback/receive
                             0x0, // input size = zero
@@ -468,7 +467,7 @@ contract DeltaMetaAggregatorWithPermit is PermitUtils {
 
                     // selector for transfer(address,uint256)
                     mstore(ptr, ERC20_TRANSFER)
-                    mstore(add(ptr, 0x04), receiver)
+                    mstore(add(ptr, 0x04), caller())
                     mstore(add(ptr, 0x24), transferAmount)
 
                     let success := call(gas(), token, 0, ptr, 0x44, ptr, 32)

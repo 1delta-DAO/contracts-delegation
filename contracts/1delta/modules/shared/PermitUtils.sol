@@ -22,7 +22,7 @@ abstract contract PermitUtils {
                                 CONSTANTS
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev Permit2 address on mantle
+    /// @dev default Permit2 address
     address internal constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3; // solhint-disable-line var-name-mixedcase
 
     /*//////////////////////////////////////////////////////////////
@@ -204,14 +204,14 @@ abstract contract PermitUtils {
      }
 
     /// @notice transferERC20from version using permit2
-    function _transferFromPermit2(address token, address owner, address to, uint256 amount) internal {
+    function _transferFromPermit2(address token, address to, uint256 amount) internal {
         assembly {
             let ptr := mload(0x40)
             ////////////////////////////////////////////////////
             // transferFrom through permit2
             ////////////////////////////////////////////////////
             mstore(ptr, PERMIT2_TRANSFER_FROM)
-            mstore(add(ptr, 0x04), owner)
+            mstore(add(ptr, 0x04), caller())
             mstore(add(ptr, 0x24), to)
             mstore(add(ptr, 0x44), amount)
             mstore(add(ptr, 0x64), token)
