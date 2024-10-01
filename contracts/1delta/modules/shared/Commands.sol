@@ -22,6 +22,7 @@ library Commands {
     uint256 constant SWEEP = 0x22;
     uint256 constant WRAP_NATIVE = 0x23;
     uint256 constant UNWRAP_WNATIVE = 0x24;
+    uint256 constant PERMIT2_TRANSFER_FROM = 0x25;
 
     // Command Types where 0x30<=value<0x40, executed in the fourth nested-if block
     uint256 constant CALL_ON_VALID_TARGET = 0x31;
