@@ -31,8 +31,6 @@ contract DeltaMetaAggregatorWithPermit is PermitUtils {
     // State
     ////////////////////////////////////////////////////
 
-    /// @notice maps approvalTarget to swapTarget to bool
-    mapping(address => mapping(address => bool)) private _validTargets;
     /// @notice maps token to approvalTarget to bool
     mapping(address => mapping(address => bool)) private _approvedTargets;
     /// @notice contract owner
@@ -92,10 +90,6 @@ contract DeltaMetaAggregatorWithPermit is PermitUtils {
 
     function transferOwnership(address newOwner) external onlyOwner {
         OWNER = newOwner;
-    }
-
-    function setValidTarget(address approvalTarget, address swapTarget, bool value) external onlyOwner {
-        _validTargets[approvalTarget][swapTarget] = value;
     }
 
     function rescueFunds(address asset) external onlyOwner {
@@ -254,14 +248,6 @@ contract DeltaMetaAggregatorWithPermit is PermitUtils {
         // get net amount received
         amountReceived = _balanceOf(assetOut, receiver) - before;
         revert SimulationResults(success, amountReceived, "");
-    }
-
-    ////////////////////////////////////////////////////
-    // Read functions
-    ////////////////////////////////////////////////////
-
-    function isValidTarget(address approvalTarget, address swapTarget) external view returns (bool) {
-        return _validTargets[approvalTarget][swapTarget];
     }
 
     ////////////////////////////////////////////////////
