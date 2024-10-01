@@ -24,6 +24,9 @@ contract DeltaMetaAggregatorWithPermit is PermitUtils {
     error Paused();
     error HasMsgValue();
 
+    // NativeTransferFailed()
+    bytes4 internal constant NATIVE_TRANSFER = 0xf4b3b1bc;
+
     ////////////////////////////////////////////////////
     // State
     ////////////////////////////////////////////////////
@@ -47,6 +50,9 @@ contract DeltaMetaAggregatorWithPermit is PermitUtils {
 
     /// @dev selector for approve(address,uint256)
     bytes32 internal constant ERC20_APPROVE = 0x095ea7b300000000000000000000000000000000000000000000000000000000;
+
+    /// @dev selector for transfer(address,uint256)
+    bytes32 internal constant ERC20_TRANSFER = 0xa9059cbb00000000000000000000000000000000000000000000000000000000;
 
     /// @dev selector for transferFrom(address,address,uint256)
     bytes32 internal constant ERC20_TRANSFER_FROM = 0x23b872dd00000000000000000000000000000000000000000000000000000000;
@@ -121,6 +127,7 @@ contract DeltaMetaAggregatorWithPermit is PermitUtils {
      * @param amountIn input amount, ignored for native transfer
      * @param approvalTarget approve this target when swapping (only if allowance too low)
      * @param swapTarget swap aggregation executor
+     * @param sweep sweep input token for exactOut
      */
     function swapMeta(
         bytes calldata permitData,
@@ -128,7 +135,8 @@ contract DeltaMetaAggregatorWithPermit is PermitUtils {
         address assetIn,
         uint256 amountIn,
         address approvalTarget,
-        address swapTarget
+        address swapTarget,
+        bool sweep
     ) external payable {
         // zero address assumes native transfer
         if (assetIn != address(0)) {
@@ -167,7 +175,12 @@ contract DeltaMetaAggregatorWithPermit is PermitUtils {
             }
             revert(abi.decode(returnData, (string)));
         }
+
+        if (sweep) {
+            _sweepToken(assetIn, msg.sender);
+        }
     }
+
 
     /**
      * Simulates the swap aggregation. Should be called before `swapMeta`
@@ -182,6 +195,7 @@ contract DeltaMetaAggregatorWithPermit is PermitUtils {
      * @param receiver recipient of swap
      * @param approvalTarget address to be approved
      * @param swapTarget swap aggregator
+     * @param sweep sweep input token for exactOut
      */
     function simSwapMeta(
         bytes calldata permitData,
@@ -191,7 +205,8 @@ contract DeltaMetaAggregatorWithPermit is PermitUtils {
         address assetOut,
         address receiver,
         address approvalTarget,
-        address swapTarget
+        address swapTarget,
+        bool sweep
     ) external payable returns (uint256 amountReceived) {
         // zero address assumes native transfer
         if (assetIn != address(0)) {
@@ -230,6 +245,10 @@ contract DeltaMetaAggregatorWithPermit is PermitUtils {
                 returnData := add(returnData, 0x04)
             }
             revert SimulationResults(false, 0, abi.decode(returnData, (string)));
+        }
+
+        if (sweep) {
+            _sweepToken(assetIn, msg.sender);
         }
 
         // get net amount received
@@ -395,6 +414,86 @@ contract DeltaMetaAggregatorWithPermit is PermitUtils {
             if iszero(success) {
                 returndatacopy(ptr, 0x0, rdsize)
                 revert(ptr, rdsize)
+            }
+        }
+    }
+
+    function _sweepToken(
+        address token,
+        address receiver
+    ) public payable {
+        // initialize transferAmount
+        if (token == address(0)) {
+            assembly {
+                let transferAmount := selfbalance()
+                if gt(transferAmount, 0) {
+                    if iszero(
+                        call(
+                            gas(),
+                            receiver,
+                            transferAmount,
+                            0x0, // input = empty for fallback/receive
+                            0x0, // input size = zero
+                            0x0, // output = empty
+                            0x0 // output size = zero
+                        )
+                    ) {
+                        mstore(0, NATIVE_TRANSFER)
+                        revert(0, 0x4) // revert when native transfer fails
+                    }
+                }
+            }
+        } else {
+            assembly {
+                // selector for balanceOf(address)
+                mstore(0, ERC20_BALANCE_OF)
+                // add this address as parameter
+                mstore(0x04, address())
+                // call to token
+                pop(
+                    staticcall(
+                        gas(),
+                        token,
+                        0x0,
+                        0x24,
+                        0x0,
+                        0x20 //
+                    )
+                )
+                // load the retrieved balance
+                let transferAmount := mload(0x0)
+
+                if gt(transferAmount, 0) {
+                    let ptr := mload(0x40) // free memory pointer
+
+                    // selector for transfer(address,uint256)
+                    mstore(ptr, ERC20_TRANSFER)
+                    mstore(add(ptr, 0x04), receiver)
+                    mstore(add(ptr, 0x24), transferAmount)
+
+                    let success := call(gas(), token, 0, ptr, 0x44, ptr, 32)
+
+                    let rdsize := returndatasize()
+
+                    // Check for ERC20 success. ERC20 tokens should return a boolean,
+                    // but some don't. We accept 0-length return data as success, or at
+                    // least 32 bytes that starts with a 32-byte boolean true.
+                    success := and(
+                        success, // call itself succeeded
+                        or(
+                            iszero(rdsize), // no return data, or
+                            and(
+                                iszero(lt(rdsize, 32)), // at least 32 bytes
+                                eq(mload(ptr), 1) // starts with uint256(1)
+                            )
+                        )
+                    )
+
+                    if iszero(success) {
+                        returndatacopy(ptr, 0, rdsize)
+                        revert(ptr, rdsize)
+                    }
+                }
             }
         }
     }
