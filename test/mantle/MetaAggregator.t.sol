@@ -2,7 +2,7 @@
 pragma solidity ^0.8.19;
 
 import "./DeltaSetup.f.sol";
-import "../../contracts/1delta/modules/mantle/MetaAggregator.sol";
+import "../../contracts/1delta/modules/shared/MetaAggregator.sol";
 
 contract Nothing {
     function call() external {}
@@ -15,7 +15,7 @@ contract LendingTest is DeltaSetup {
         address user = testUser;
         vm.assume(user != address(0));
 
-        DeltaMetaAggregator aggr = new DeltaMetaAggregator();
+        DeltaMetaAggregatorLegacy aggr = new DeltaMetaAggregatorLegacy();
         Nothing _swapTarget = new Nothing();
         address swapTarget = address(_swapTarget);
         address token = USDT;
@@ -46,7 +46,7 @@ contract LendingTest is DeltaSetup {
         address user = testUser;
         vm.assume(user != address(0));
 
-        DeltaMetaAggregator aggr = new DeltaMetaAggregator();
+        DeltaMetaAggregatorLegacy aggr = new DeltaMetaAggregatorLegacy();
         Nothing _swapTarget = new Nothing();
         Nothing _approvalTarget = new Nothing();
         address swapTarget = address(_swapTarget);
