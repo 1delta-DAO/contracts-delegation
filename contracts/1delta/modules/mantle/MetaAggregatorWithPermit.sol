@@ -127,6 +127,7 @@ contract DeltaMetaAggregatorWithPermit is PermitUtils {
      * @param amountIn input amount, ignored for native transfer
      * @param approvalTarget approve this target when swapping (only if allowance too low)
      * @param swapTarget swap aggregation executor
+     * @param sweep sweep input token for exactOut
      */
     function swapMeta(
         bytes calldata permitData,
@@ -134,7 +135,8 @@ contract DeltaMetaAggregatorWithPermit is PermitUtils {
         address assetIn,
         uint256 amountIn,
         address approvalTarget,
-        address swapTarget
+        address swapTarget,
+        bool sweep
     ) external payable {
         // zero address assumes native transfer
         if (assetIn != address(0)) {
@@ -173,7 +175,12 @@ contract DeltaMetaAggregatorWithPermit is PermitUtils {
             }
             revert(abi.decode(returnData, (string)));
         }
+
+        if (sweep) {
+            _sweepToken(assetIn, msg.sender);
+        }
     }
+
 
     /**
      * Simulates the swap aggregation. Should be called before `swapMeta`
@@ -188,6 +195,7 @@ contract DeltaMetaAggregatorWithPermit is PermitUtils {
      * @param receiver recipient of swap
      * @param approvalTarget address to be approved
      * @param swapTarget swap aggregator
+     * @param sweep sweep input token for exactOut
      */
     function simSwapMeta(
         bytes calldata permitData,
@@ -197,7 +205,8 @@ contract DeltaMetaAggregatorWithPermit is PermitUtils {
         address assetOut,
         address receiver,
         address approvalTarget,
-        address swapTarget
+        address swapTarget,
+        bool sweep
     ) external payable returns (uint256 amountReceived) {
         // zero address assumes native transfer
         if (assetIn != address(0)) {
@@ -236,6 +245,10 @@ contract DeltaMetaAggregatorWithPermit is PermitUtils {
                 returnData := add(returnData, 0x04)
             }
             revert SimulationResults(false, 0, abi.decode(returnData, (string)));
+        }
+
+        if (sweep) {
+            _sweepToken(assetIn, msg.sender);
         }
 
         // get net amount received
