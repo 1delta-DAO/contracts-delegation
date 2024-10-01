@@ -8,6 +8,6 @@ module.exports = [
 // npx hardhat verify --network matic 0xFc7c0Deb7012EF6e930bF681D7C7cF854eC8E528 --contract contracts/1delta/proxy/modules/ConfigModule.sol:ConfigModule
 // npx hardhat verify --network matic 0xAC694778b869e2a4c1702C5BADf2B192Cfe83750 --contract contracts/1delta/proxy/modules/LensModule.sol:LensModule
 // npx hardhat verify --network matic 0x6A6faa54B9238f0F079C8e6CBa08a7b9776C7fE4 --contract contracts/1delta/proxy/DeltaBrokerGen2.sol:DeltaBrokerProxyGen2 --constructor-args scripts/verify_polygon.js
-// npx hardhat verify --network matic 0x5F82874a9e2bf4509FcE3b845a3862897eff276a --contract contracts/1delta/modules/polygon/Composer.sol:OneDeltaComposerPolygon 
+// npx hardhat verify --network matic 0x8d07e9f698452AA2169bE3339478345fe2A64AC8 --contract contracts/1delta/modules/polygon/Composer.sol:OneDeltaComposerPolygon 
 // npx hardhat verify --network matic 0x025fD6E2e235329daFf6b29DD6DA7CDD38b22De5 --contract contracts/1delta/modules/polygon/storage/ManagementModule.sol:PolygonManagementModule 
 // npx hardhat verify --network matic 0x7B82C37776Ff8ffe239cE4B6bBa3bAa2Bb2d72E0 --contract contracts/1delta/modules/polygon/MetaAggregatorWithPermit.sol:DeltaMetaAggregatorWithPermit

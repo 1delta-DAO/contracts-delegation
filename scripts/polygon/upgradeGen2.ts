@@ -2,7 +2,6 @@
 import { ethers } from "hardhat";
 import {
     ConfigModule__factory,
-    PolygonManagementModule__factory,
     OneDeltaComposerPolygon__factory,
     LensModule__factory,
 } from "../../types";
@@ -23,10 +22,8 @@ async function main() {
     let nonce = await operator.getTransactionCount()
 
     // deploy modules
-
     const lens = await new LensModule__factory(operator).attach(proxy)
 
-    // const managementSelectors = await lens.moduleFunctionSelectors(ONE_DELTA_GEN2_ADDRESSES_POLYGON.managementImplementation)
     const composerSelectors = await lens.moduleFunctionSelectors(ONE_DELTA_GEN2_ADDRESSES_POLYGON.composerImplementation)
 
     const cut: {
@@ -35,15 +32,6 @@ async function main() {
         functionSelectors: any[]
     }[] = []
 
-
-    // // remove old
-    // cut.push({
-    //     moduleAddress: ethers.constants.AddressZero,
-    //     action: ModuleConfigAction.Remove,
-    //     functionSelectors: managementSelectors
-    // })
-
-
     // remove old
     cut.push({
         moduleAddress: ethers.constants.AddressZero,
@@ -51,10 +39,7 @@ async function main() {
         functionSelectors: composerSelectors
     })
 
-    // // management
-    // const management = await new PolygonManagementModule__factory(operator).deploy(getPolygonConfig(nonce++))
-    // await management.deployed()
-
+    console.log("deploy new composer")
     // composer
     const composer = await new OneDeltaComposerPolygon__factory(operator).deploy(getPolygonConfig(nonce++))
     await composer.deployed()
@@ -64,7 +49,6 @@ async function main() {
 
 
     const modules: any = []
-    // modules.push(management)
     modules.push(composer)
 
     console.log("Having", modules.length, "additions")
@@ -86,7 +70,6 @@ async function main() {
     console.log("deployment complete")
     console.log("======== Addresses =======")
     console.log("composerImplementation:", composer.address)
-    // console.log("managementImplementation:", management.address)
     console.log("==========================")
 }
 
