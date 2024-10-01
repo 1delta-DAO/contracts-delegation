@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.25;
 
-import {PermitUtils} from "../shared/PermitUtils.sol";
+import {PermitUtils} from "./PermitUtils.sol";
 
 ////////////////////////////////////////////////////
 // Minimal meta swap aggregation contract
@@ -14,7 +14,7 @@ import {PermitUtils} from "../shared/PermitUtils.sol";
 // - Owner can rescue funds in case the aggregator has
 //   this contract as receiver address
 ////////////////////////////////////////////////////
-contract DeltaMetaAggregatorWithPermit is PermitUtils {
+contract DeltaMetaAggregator is PermitUtils {
     ////////////////////////////////////////////////////
     // Errors
     ////////////////////////////////////////////////////

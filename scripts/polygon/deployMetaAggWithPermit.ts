@@ -1,7 +1,7 @@
 
 import { ethers } from "hardhat";
 import {
-    DeltaMetaAggregatorWithPermit__factory,
+    DeltaMetaAggregator__factory,
 } from "../../types";
 import { getPolygonConfig } from "./utils";
 
@@ -15,7 +15,7 @@ async function main() {
     // we manually increment the nonce
     let nonce = await operator.getTransactionCount()
 
-    const magwp = await new DeltaMetaAggregatorWithPermit__factory(operator).deploy(getPolygonConfig(nonce++))
+    const magwp = await new DeltaMetaAggregator__factory(operator).deploy(getPolygonConfig(nonce++))
     await magwp.deployed()
     console.log("magwp deployed")
 

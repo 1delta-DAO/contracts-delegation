@@ -1,7 +1,7 @@
 
 import { ethers } from "hardhat";
 import {
-    DeltaMetaAggregatorWithPermit__factory,
+    DeltaMetaAggregator__factory,
 } from "../../types";
 import { MANTLE_CONFIGS } from "./utils";
 
@@ -12,7 +12,7 @@ async function main() {
     if (chainId !== 5000) throw new Error("invalid chainId")
     console.log("operator", operator.address, "on", chainId)
 
-    const magwp = await new DeltaMetaAggregatorWithPermit__factory(operator).deploy(MANTLE_CONFIGS)
+    const magwp = await new DeltaMetaAggregator__factory(operator).deploy(MANTLE_CONFIGS)
     await magwp.deployed()
     console.log("magwp deployed")
 
