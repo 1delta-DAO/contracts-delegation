@@ -3,16 +3,19 @@ import { ethers } from "hardhat";
 import {
     DeltaMetaAggregatorWithPermit__factory,
 } from "../../types";
-import { MANTLE_CONFIGS } from "./utils";
+import { getPolygonConfig } from "./utils";
 
 async function main() {
     const accounts = await ethers.getSigners()
     const operator = accounts[0]
     const chainId = await operator.getChainId();
-    if (chainId !== 5000) throw new Error("invalid chainId")
+    if (chainId !== 137) throw new Error("invalid chainId")
     console.log("operator", operator.address, "on", chainId)
 
-    const magwp = await new DeltaMetaAggregatorWithPermit__factory(operator).deploy(MANTLE_CONFIGS)
+    // we manually increment the nonce
+    let nonce = await operator.getTransactionCount()
+
+    const magwp = await new DeltaMetaAggregatorWithPermit__factory(operator).deploy(getPolygonConfig(nonce++))
     await magwp.deployed()
     console.log("magwp deployed")
 
