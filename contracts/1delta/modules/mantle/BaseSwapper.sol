@@ -7,6 +7,7 @@ pragma solidity 0.8.26;
 /******************************************************************************/
 
 import {BaseLending} from "./BaseLending.sol";
+import {PermitUtils} from "./permit/PermitUtils.sol";
 
 // solhint-disable max-line-length
 
@@ -19,7 +20,7 @@ import {BaseLending} from "./BaseLending.sol";
  *             Uni V2: 100 - 110
  *             Solidly:121 - 130
  */
-abstract contract BaseSwapper is BaseLending {
+abstract contract BaseSwapper is BaseLending, PermitUtils {
 
     /**
      * Fund the first pool for self funded DEXs like Uni V2, GMX, LB, WooFi and Solidly V2 (dexId >= 100) 
