@@ -952,7 +952,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                         let ptr := mload(0x40)
 
                         mstore(ptr, PERMIT2_TRANSFER_FROM)
-                        mstore(add(ptr, 0x04), caller())
+                        mstore(add(ptr, 0x04), callerAddress)
                         mstore(add(ptr, 0x24), receiver)
                         mstore(add(ptr, 0x44), amount)
                         mstore(add(ptr, 0x64), underlying)
