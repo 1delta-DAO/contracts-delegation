@@ -9,7 +9,7 @@ abstract contract PermitUtils {
     bytes32 private constant DAI_PERMIT = 0x8fcbaf0c00000000000000000000000000000000000000000000000000000000;
     bytes32 private constant PERMIT2_PERMIT = 0x2b67b57000000000000000000000000000000000000000000000000000000000;
     bytes32 private constant CREDIT_PERMIT = 0x0b52d55800000000000000000000000000000000000000000000000000000000;
-    bytes32 private constant PERMIT2_TRANSFER_FROM = 0x36c7851600000000000000000000000000000000000000000000000000000000;
+    bytes32 internal constant PERMIT2_TRANSFER_FROM = 0x36c7851600000000000000000000000000000000000000000000000000000000;
 
     bytes4 private constant _PERMIT_LENGTH_ERROR = 0x68275857;  // SafePermitBadLength.selector
     /*//////////////////////////////////////////////////////////////
@@ -25,7 +25,7 @@ abstract contract PermitUtils {
     //////////////////////////////////////////////////////////////*/
 
     /// @dev Permit2 address on mantle
-    address internal constant PERMIT2 = 0x9b13cf0C98315b6e85E28630417050093A7086Aa; // solhint-disable-line var-name-mixedcase
+    address internal constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3; // solhint-disable-line var-name-mixedcase
 
     /*//////////////////////////////////////////////////////////////
                                 CONSTRUCTOR
