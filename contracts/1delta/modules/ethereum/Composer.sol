@@ -458,9 +458,8 @@ contract OneDeltaComposerEthereum is MarginTrading {
                                 0x0 // output size = zero
                             )
                         ) {
-                            let rdsize := returndatasize()
-                            returndatacopy(0, 0, rdsize)
-                            revert(0, rdsize)
+                            returndatacopy(0, 0, returndatasize())
+                            revert(0, returndatasize())
                         }
                         // increment offset by data length
                         currentOffset := add(currentOffset, dataLength)

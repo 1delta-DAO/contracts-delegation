@@ -18,14 +18,14 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
     ////////////////////////////////////////////////////
     // Errors
     ////////////////////////////////////////////////////
-    error SimulationResults(bool success, uint256 amountReceived, string data);
+    error SimulationResults(bool success, uint256 amountReceived, bytes data);
     error InvalidSwapCall();
     error NotOwner();
-    error Paused();
-    error HasMsgValue();
+    error NativeTransferFailed();
 
     // NativeTransferFailed()
     bytes4 internal constant NATIVE_TRANSFER = 0xf4b3b1bc;
+    bytes4 internal constant INVALID_SWAP_CALL = 0xee68db59;
 
     ////////////////////////////////////////////////////
     // State
@@ -39,27 +39,12 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
     ////////////////////////////////////////////////////
     // Constants
     ////////////////////////////////////////////////////
-    
+
     /// @dev maximum uint256 - used for approvals
     uint256 private constant MAX_UINT_256 = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
 
     /// @dev mask for selector in calldata
     bytes32 internal constant SELECTOR_MASK = 0xffffffff00000000000000000000000000000000000000000000000000000000;
-
-    /// @dev selector for approve(address,uint256)
-    bytes32 internal constant ERC20_APPROVE = 0x095ea7b300000000000000000000000000000000000000000000000000000000;
-
-    /// @dev selector for transfer(address,uint256)
-    bytes32 internal constant ERC20_TRANSFER = 0xa9059cbb00000000000000000000000000000000000000000000000000000000;
-
-    /// @dev selector for transferFrom(address,address,uint256)
-    bytes32 internal constant ERC20_TRANSFER_FROM = 0x23b872dd00000000000000000000000000000000000000000000000000000000;
-
-    /// @dev selector for allowance(address,address)
-    bytes32 internal constant ERC20_ALLOWANCE = 0xdd62ed3e00000000000000000000000000000000000000000000000000000000;
-
-    /// @dev selector for balanceOf(address)
-    bytes32 internal constant ERC20_BALANCE_OF = 0x70a0823100000000000000000000000000000000000000000000000000000000;
 
     ////////////////////////////////////////////////////
     // Constructor, assigns initial owner
@@ -134,22 +119,8 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
     ) external payable {
         // zero address assumes native transfer
         if (assetIn != address(0)) {
-            if (msg.value != 0) revert HasMsgValue();
-
-            // permit
-            if (permitData.length > 0) {
-                uint256 permitOffset;
-                assembly {
-                    permitOffset := permitData.offset
-                }
-                _tryPermit(assetIn, permitOffset, permitData.length);
-            }
-
-            if (permitData.length == 96 || permitData.length == 352) {
-                _transferFromPermit2(assetIn, address(this), amountIn);
-            } else {
-                _transferERC20TokensFrom(assetIn, amountIn);
-            }
+            // permit and pull - checks that no native is attached
+            _permitAndPull(assetIn, amountIn, permitData);
 
             // approve if no allowance
             // we actually do not care what we approve as this
@@ -160,21 +131,10 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
         // validate swap call
         _validateCalldata(swapTarget, swapData);
 
-        (bool success, bytes memory returnData) = swapTarget.call{value: msg.value}(swapData);
-        if (!success) {
-            // Next 5 lines from https://ethereum.stackexchange.com/a/83577
-            if (returnData.length < 68) revert();
-            assembly {
-                returnData := add(returnData, 0x04)
-            }
-            revert(abi.decode(returnData, (string)));
-        }
+        _executeExternalCall(swapData, swapTarget);
 
-        if (sweep) {
-            _sweepToken(assetIn);
-        }
+        _sweepToken(sweep, assetIn);
     }
-
 
     /**
      * Simulates the swap aggregation. Should be called before `swapMeta`
@@ -202,49 +162,24 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
         address swapTarget,
         bool sweep
     ) external payable returns (uint256 amountReceived) {
-        // zero address assumes native transfer
-        if (assetIn != address(0)) {
-            if (msg.value != 0) revert HasMsgValue();
-
-            // permit
-            if (permitData.length > 0) {
-                uint256 permitOffset;
-                assembly {
-                    permitOffset := permitData.offset
-                }
-                _tryPermit(assetIn, permitOffset, permitData.length);
-            }
-            
-            // pull balance
-            if (permitData.length == 96 || permitData.length == 352) {
-                _transferFromPermit2(assetIn, address(this), amountIn);
-            } else {
-                _transferERC20TokensFrom(assetIn, amountIn);
-            }
-
-            // approve if no allowance
-            // we actually do not care what we approve as this
-            // contract is not supposed to hold balances
-            _approveIfNot(assetIn, approvalTarget);
-        }
-
         // get initial balane of receiver
         uint256 before = _balanceOf(assetOut, receiver);
 
-        (bool success, bytes memory returnData) = swapTarget.call{value: msg.value}(swapData);
+        (bool success, bytes memory returnData) = address(this).delegatecall(
+            abi.encodeWithSelector(
+                DeltaMetaAggregator.swapMeta.selector, // call swap meta on sel
+                permitData,
+                swapData,
+                assetIn,
+                amountIn,
+                approvalTarget,
+                swapTarget,
+                sweep
+            )
+        );
         if (!success) {
-            // Next 5 lines from https://ethereum.stackexchange.com/a/83577
-            if (returnData.length < 68) revert();
-            assembly {
-                returnData := add(returnData, 0x04)
-            }
-            revert SimulationResults(false, 0, abi.decode(returnData, (string)));
+            revert SimulationResults(false, 0, returnData);
         }
-
-        if (sweep) {
-            _sweepToken(assetIn);
-        }
-
         // get net amount received
         amountReceived = _balanceOf(assetOut, receiver) - before;
         revert SimulationResults(success, amountReceived, "");
@@ -254,25 +189,50 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
     // Internals
     ////////////////////////////////////////////////////
 
+    /// @dev executes call on target with data
+    ///      -> MUST validate the selector and target first
+    /// @param data calldata
+    /// @param target target address
+    function _executeExternalCall(bytes calldata data, address target) private {
+        assembly {
+            let ptr := mload(0x40)
+            calldatacopy(ptr, data.offset, data.length) // copy permit calldata
+            if iszero(
+                call(
+                    gas(),
+                    target,
+                    callvalue(),
+                    ptr, //
+                    data.length, // the length must be correct or the call will fail
+                    0x0, // output = empty
+                    0x0 // output size = zero
+                )
+            ) {
+                returndatacopy(0, 0, returndatasize())
+                revert(0, returndatasize())
+            }
+        }
+    }
+
     /// @dev checks that
     ///     - Permit2 cannot be arbitrarily called
     ///     - the selector cannot be ERC20 transferFrom
     function _validateCalldata(address swapTarget, bytes calldata data) private pure {
-        bool hasError;
         assembly {
             // extract the selector from the calldata
             let selector := and(SELECTOR_MASK, calldataload(data.offset))
 
             // check if it is `transferFrom`
             if eq(selector, ERC20_TRANSFER_FROM) {
-                hasError := true
+                mstore(0x0, INVALID_SWAP_CALL)
+                revert(0x0, 0x4)
             }
             // check if the target is permit2
             if eq(swapTarget, PERMIT2) {
-                hasError := true
+                mstore(0x0, INVALID_SWAP_CALL)
+                revert(0x0, 0x4)
             }
         }
-        if (hasError) revert InvalidSwapCall();
     }
 
     /// @dev Checks approvals in storage and sets the allowance to the
@@ -337,7 +297,7 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
             let ptr := mload(0x40) // free memory pointer
 
             // selector for transfer(address,uint256)
-            mstore(ptr, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
+            mstore(ptr, ERC20_TRANSFER)
             mstore(add(ptr, 0x04), to)
             mstore(add(ptr, 0x24), amount)
 
@@ -366,117 +326,79 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
         }
     }
 
-    /// @dev Transfers ERC20 tokens from msg.sender to address(this).
-    /// @param token The token to spend.
-    /// @param amount The amount of `token` to transfer.
-    function _transferERC20TokensFrom(address token, uint256 amount) private {
+    function _sweepToken(bool sweep, address token) public payable {
         assembly {
-            let ptr := mload(0x40) // free memory pointer
-
-            // selector for transferFrom(address,address,uint256)
-            mstore(ptr, ERC20_TRANSFER_FROM)
-            mstore(add(ptr, 0x04), caller())
-            mstore(add(ptr, 0x24), address())
-            mstore(add(ptr, 0x44), amount)
-
-            let success := call(gas(), token, 0x0, ptr, 0x64, ptr, 32)
-
-            let rdsize := returndatasize()
-
-            // Check for ERC20 success. ERC20 tokens should return a boolean,
-            // but some don't. We accept 0-length return data as success, or at
-            // least 32 bytes that starts with a 32-byte boolean true.
-            success := and(
-                success, // call itself succeeded
-                or(
-                    iszero(rdsize), // no return data, or
-                    and(
-                        iszero(lt(rdsize, 32)), // at least 32 bytes
-                        eq(mload(ptr), 1) // starts with uint256(1)
-                    )
-                )
-            )
-
-            if iszero(success) {
-                returndatacopy(ptr, 0x0, rdsize)
-                revert(ptr, rdsize)
-            }
-        }
-    }
-
-    function _sweepToken(
-        address token
-    ) public payable {
-        // initialize transferAmount
-        if (token == address(0)) {
-            assembly {
-                let transferAmount := selfbalance()
-                if gt(transferAmount, 0) {
-                    if iszero(
-                        call(
-                            gas(),
-                            caller(),
-                            transferAmount,
-                            0x0, // input = empty for fallback/receive
-                            0x0, // input size = zero
-                            0x0, // output = empty
-                            0x0 // output size = zero
-                        )
-                    ) {
-                        mstore(0, NATIVE_TRANSFER)
-                        revert(0, 0x4) // revert when native transfer fails
+            if sweep {
+                // initialize transferAmount
+                switch iszero(token)
+                case 1 {
+                    let transferAmount := selfbalance()
+                    if gt(transferAmount, 0) {
+                        if iszero(
+                            call(
+                                gas(),
+                                caller(),
+                                transferAmount,
+                                0x0, // input = empty for fallback/receive
+                                0x0, // input size = zero
+                                0x0, // output = empty
+                                0x0 // output size = zero
+                            )
+                        ) {
+                            mstore(0, NATIVE_TRANSFER)
+                            revert(0, 0x4) // revert when native transfer fails
+                        }
                     }
                 }
-            }
-        } else {
-            assembly {
-                // selector for balanceOf(address)
-                mstore(0, ERC20_BALANCE_OF)
-                // add this address as parameter
-                mstore(0x04, address())
-                // call to token
-                pop(
-                    staticcall(
-                        gas(),
-                        token,
-                        0x0,
-                        0x24,
-                        0x0,
-                        0x20 //
-                    )
-                )
-                // load the retrieved balance
-                let transferAmount := mload(0x0)
-
-                if gt(transferAmount, 0) {
-                    let ptr := mload(0x40) // free memory pointer
-
-                    // selector for transfer(address,uint256)
-                    mstore(ptr, ERC20_TRANSFER)
-                    mstore(add(ptr, 0x04), caller())
-                    mstore(add(ptr, 0x24), transferAmount)
-
-                    let success := call(gas(), token, 0, ptr, 0x44, ptr, 32)
-
-                    let rdsize := returndatasize()
-
-                    // Check for ERC20 success. ERC20 tokens should return a boolean,
-                    // but some don't. We accept 0-length return data as success, or at
-                    // least 32 bytes that starts with a 32-byte boolean true.
-                    success := and(
-                        success, // call itself succeeded
-                        or(
-                            iszero(rdsize), // no return data, or
-                            and(
-                                iszero(lt(rdsize, 32)), // at least 32 bytes
-                                eq(mload(ptr), 1) // starts with uint256(1)
-                            )
+                default {
+                    // selector for balanceOf(address)
+                    mstore(0, ERC20_BALANCE_OF)
+                    // add this address as parameter
+                    mstore(0x04, address())
+                    // call to token
+                    pop(
+                        staticcall(
+                            gas(),
+                            token,
+                            0x0,
+                            0x24,
+                            0x0,
+                            0x20 //
                         )
                     )
+                    // load the retrieved balance
+                    let transferAmount := mload(0x0)
 
-                    if iszero(success) {
-                        returndatacopy(ptr, 0, rdsize)
-                        revert(ptr, rdsize)
+                    if gt(transferAmount, 0) {
+                        let ptr := mload(0x40) // free memory pointer
+
+                        // selector for transfer(address,uint256)
+                        mstore(ptr, ERC20_TRANSFER)
+                        mstore(add(ptr, 0x04), caller())
+                        mstore(add(ptr, 0x24), transferAmount)
+
+                        let success := call(gas(), token, 0, ptr, 0x44, ptr, 32)
+
+                        let rdsize := returndatasize()
+
+                        // Check for ERC20 success. ERC20 tokens should return a boolean,
+                        // but some don't. We accept 0-length return data as success, or at
+                        // least 32 bytes that starts with a 32-byte boolean true.
+                        success := and(
+                            success, // call itself succeeded
+                            or(
+                                iszero(rdsize), // no return data, or
+                                and(
+                                    iszero(lt(rdsize, 32)), // at least 32 bytes
+                                    eq(mload(ptr), 1) // starts with uint256(1)
+                                )
+                            )
+                        )
+
+                        if iszero(success) {
+                            returndatacopy(ptr, 0, rdsize)
+                            revert(ptr, rdsize)
+                        }
                     }
                 }
             }
