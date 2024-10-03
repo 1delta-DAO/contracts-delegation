@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity 0.8.26;
+pragma solidity 0.8.27;
 
 /******************************************************************************\
 * Author: Achthar | 1delta 
 /******************************************************************************/
 
 import {BaseLending} from "./BaseLending.sol";
-import {PermitUtils} from "../shared/PermitUtils.sol";
+import {PermitUtils} from "../shared/permit/PermitUtils.sol";
 
 // solhint-disable max-line-length
 

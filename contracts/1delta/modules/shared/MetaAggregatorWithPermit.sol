@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.25;
+pragma solidity ^0.8.27;
 
-import {PermitUtils} from "./PermitUtils.sol";
+import {PermitUtilsSlim} from "./permit/PermitUtilsSlim.sol";
 
 ////////////////////////////////////////////////////
 // Minimal meta swap aggregation contract
@@ -14,7 +14,7 @@ import {PermitUtils} from "./PermitUtils.sol";
 // - Owner can rescue funds in case the aggregator has
 //   this contract as receiver address
 ////////////////////////////////////////////////////
-contract DeltaMetaAggregator is PermitUtils {
+contract DeltaMetaAggregator is PermitUtilsSlim {
     ////////////////////////////////////////////////////
     // Errors
     ////////////////////////////////////////////////////

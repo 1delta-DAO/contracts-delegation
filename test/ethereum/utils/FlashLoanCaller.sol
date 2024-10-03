@@ -2,7 +2,7 @@
 
 import {console} from "forge-std/console.sol";
 
-pragma solidity 0.8.26;
+pragma solidity 0.8.27;
 
 interface IAllFlashLoans {
     function flashLoan(address recipient, address[] memory tokens, uint256[] memory amounts, bytes memory userData) external;

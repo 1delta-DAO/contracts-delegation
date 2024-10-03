@@ -1,29 +1,17 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.25;
+pragma solidity ^0.8.27;
 
-/// @title PermitUtils
-/// @notice A contract containing common utilities for Permit2
-abstract contract PermitUtils {
-    
-    bytes32 private constant ERC20_PERMIT = 0xd505accf00000000000000000000000000000000000000000000000000000000;
-    bytes32 private constant DAI_PERMIT = 0x8fcbaf0c00000000000000000000000000000000000000000000000000000000;
-    bytes32 private constant PERMIT2_PERMIT = 0x2b67b57000000000000000000000000000000000000000000000000000000000;
-    bytes32 private constant CREDIT_PERMIT = 0x0b52d55800000000000000000000000000000000000000000000000000000000;
-    bytes32 internal constant PERMIT2_TRANSFER_FROM = 0x36c7851600000000000000000000000000000000000000000000000000000000;
+import {PermitConstants} from "./PermitConstants.sol";
 
-    bytes4 private constant _PERMIT_LENGTH_ERROR = 0x68275857;  // SafePermitBadLength.selector
+/// @title PermitUtilsSlim
+/// @notice A contract containing utilities for Permits
+abstract contract PermitUtilsSlim is PermitConstants{
+
     /*//////////////////////////////////////////////////////////////
                                  ERRORS
     //////////////////////////////////////////////////////////////*/
 
     error SafePermitBadLength();
-
-    /*//////////////////////////////////////////////////////////////
-                                CONSTANTS
-    //////////////////////////////////////////////////////////////*/
-
-    /// @dev default Permit2 address
-    address internal constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3; // solhint-disable-line var-name-mixedcase
 
     /*//////////////////////////////////////////////////////////////
                                 CONSTRUCTOR
@@ -148,60 +136,6 @@ abstract contract PermitUtils {
             }
         }
     }
-
-    /**
-     * Executes credit delegation on given tokens / lenders
-     * Note that for lenders like Aave V3, the token needs to
-     * be the respective debt token and NOT the underlying
-     * Others like compound will not use it at all.
-     * @param token asset to permit / delegate
-     * @param permitOffset calldata
-     */
-    function _tryCreditPermit(address token, uint256 permitOffset, uint permitLength) internal {
-        assembly {
-            let success
-            let ptr := mload(0x40)
-            switch permitLength
-            // Compact IERC20Permit
-            case 100 {
-                mstore(ptr, CREDIT_PERMIT)     // store selector
-                mstore(add(ptr, 0x04), caller())   // store owner
-                mstore(add(ptr, 0x24), address()) // store spender
-
-                // Compact ICreditPermit.delegationWithSig(uint256 value, uint32 deadline, uint256 r, uint256 vs)
-                {  // stack too deep
-                    let deadline := shr(224, calldataload(add(permitOffset, 0x20))) // loads permitOffset 0x20..0x23
-                    let vs := calldataload(add(permitOffset, 0x44))                 // loads permitOffset 0x44..0x63
-
-                    calldatacopy(add(ptr, 0x44), permitOffset, 0x20)            // store value     = copy permitOffset 0x00..0x19
-                    mstore(add(ptr, 0x64), sub(deadline, 1))                     // store deadline  = deadline - 1
-                    mstore(add(ptr, 0x84), add(27, shr(255, vs)))                // store v         = most significant bit of vs + 27 (27 or 28)
-                    calldatacopy(add(ptr, 0xa4), add(permitOffset, 0x24), 0x20) // store r         = copy permitOffset 0x24..0x43
-                    mstore(add(ptr, 0xc4), shr(1, shl(1, vs)))                   // store s         = vs without most significant bit
-                }
-                // ICreditPermit.delegationWithSig(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
-                success := call(gas(), token, 0, ptr, 0xe4, 0, 0)
-            }
-                        // ICreditPermit
-            case 224 {
-                mstore(ptr, CREDIT_PERMIT)
-                calldatacopy(add(ptr, 0x04), permitOffset, permitLength) // copy permit calldata
-                // ICreditPermit.delegationWithSig(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
-                success := call(gas(), token, 0, ptr, 0xe4, 0, 0)
-            }
-            // Unknown
-            default {
-                mstore(ptr, _PERMIT_LENGTH_ERROR)
-                revert(ptr, 4)
-            }
-
-            // revert if not successful
-            if iszero(success) {
-                returndatacopy(0, 0, returndatasize())
-                revert(0, returndatasize())
-            }
-        }
-     }
 
     /// @notice transferERC20from version using permit2
     function _transferFromPermit2(address token, address to, uint256 amount) internal {
