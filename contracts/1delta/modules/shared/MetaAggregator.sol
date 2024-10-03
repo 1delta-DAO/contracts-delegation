@@ -42,7 +42,7 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
     // Constructor
     ////////////////////////////////////////////////////
 
-    constructor() { }
+    constructor() {}
 
     ////////////////////////////////////////////////////
     // Receive function for native swaps
@@ -96,6 +96,11 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
         _sweepToken(sweep, assetIn);
     }
 
+    struct SimAmounts {
+        uint256 amountReceived;
+        uint256 amountPaid;
+    }
+
     /**
      * Simulates the swap aggregation. Should be called before `swapMeta`
      * Always reverts.
@@ -121,30 +126,32 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
         address approvalTarget,
         address swapTarget,
         bool sweep
-    ) external payable returns (uint256 amountReceived, uint256 amountPaid) {
+    ) external payable returns (SimAmounts memory simAmounts) {
         // get initial balane of receiver
-        amountReceived = _balanceOf(assetOut, receiver);
-        amountPaid = _balanceOf(assetIn, msg.sender);
+        simAmounts.amountReceived = _balanceOf(assetOut, receiver);
+        simAmounts.amountPaid = _balanceOf(assetIn, msg.sender);
 
-        (bool success, bytes memory returnData) = address(this).delegatecall(
-            abi.encodeWithSelector(
-                DeltaMetaAggregator.swapMeta.selector, // call swap meta on sel
-                permitData,
-                swapData,
-                assetIn,
-                amountIn,
-                approvalTarget,
-                swapTarget,
-                sweep
-            )
-        );
-        if (!success) {
-            revert SimulationResults(false, 0, 0, returnData);
+        {
+            (bool success, bytes memory returnData) = address(this).delegatecall(
+                abi.encodeWithSelector(
+                    DeltaMetaAggregator.swapMeta.selector, // call swap meta on sel
+                    permitData,
+                    swapData,
+                    assetIn,
+                    amountIn,
+                    approvalTarget,
+                    swapTarget,
+                    sweep
+                )
+            );
+            if (!success) {
+                revert SimulationResults(false, 0, 0, returnData);
+            }
         }
         // get net amount received
-        amountReceived = _balanceOf(assetOut, receiver) - amountReceived;
-        amountPaid = amountPaid - _balanceOf(assetIn, msg.sender);
-        revert SimulationResults(success, amountReceived, amountPaid, "");
+        simAmounts.amountReceived = _balanceOf(assetOut, receiver) - simAmounts.amountReceived;
+        simAmounts.amountPaid = simAmounts.amountPaid - _balanceOf(assetIn, msg.sender);
+        revert SimulationResults(true, simAmounts.amountReceived, simAmounts.amountPaid, "");
     }
 
     ////////////////////////////////////////////////////
