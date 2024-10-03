@@ -7,21 +7,15 @@ import {PermitUtilsSlim} from "./permit/PermitUtilsSlim.sol";
 ////////////////////////////////////////////////////
 // Minimal meta swap aggregation contract
 // - Allows simulation to validate receiver amount
-// - Owner can enable/disable valid swap targets
 // - Swap aggregation calls are assumed to already
 //   check for slippage and send funds directly to the
 //   user-defined receiver
-// - Owner can rescue funds in case the aggregator has
-//   this contract as receiver address
 ////////////////////////////////////////////////////
 contract DeltaMetaAggregator is PermitUtilsSlim {
     ////////////////////////////////////////////////////
     // Errors
     ////////////////////////////////////////////////////
     error SimulationResults(bool success, uint256 amountReceived, bytes data);
-    error InvalidSwapCall();
-    error NotOwner();
-    error NativeTransferFailed();
 
     // NativeTransferFailed()
     bytes4 internal constant NATIVE_TRANSFER = 0xf4b3b1bc;
@@ -33,8 +27,6 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
 
     /// @notice maps token to approvalTarget to bool
     mapping(address => mapping(address => bool)) private _approvedTargets;
-    /// @notice contract owner
-    address public OWNER;
 
     ////////////////////////////////////////////////////
     // Constants
@@ -47,48 +39,16 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
     bytes32 internal constant SELECTOR_MASK = 0xffffffff00000000000000000000000000000000000000000000000000000000;
 
     ////////////////////////////////////////////////////
-    // Constructor, assigns initial owner
+    // Constructor
     ////////////////////////////////////////////////////
 
-    constructor() {
-        OWNER = msg.sender;
-    }
+    constructor() { }
 
     ////////////////////////////////////////////////////
     // Receive function for native swaps
     ////////////////////////////////////////////////////
 
     receive() external payable {}
-
-    ////////////////////////////////////////////////////
-    // Modifier
-    ////////////////////////////////////////////////////
-
-    modifier onlyOwner() {
-        if (msg.sender != OWNER) revert NotOwner();
-        _;
-    }
-
-    ////////////////////////////////////////////////////
-    // Owner functions
-    ////////////////////////////////////////////////////
-
-    function transferOwnership(address newOwner) external onlyOwner {
-        OWNER = newOwner;
-    }
-
-    function rescueFunds(address asset) external onlyOwner {
-        if (asset == address(0)) {
-            uint256 balance = address(this).balance;
-            if (balance != 0) {
-                (bool success, ) = payable(msg.sender).call{value: balance}("");
-                if (!success) revert();
-            }
-        } else {
-            uint256 balance = _balanceOf(asset, address(this));
-            if (balance != 0) _transferERC20Tokens(asset, msg.sender, balance);
-        }
-    }
 
     ////////////////////////////////////////////////////
     // Swap functions
