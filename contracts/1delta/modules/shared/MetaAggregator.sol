@@ -123,8 +123,8 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
         bool sweep
     ) external payable returns (uint256 amountReceived, uint256 amountPaid) {
         // get initial balane of receiver
-        uint256 beforeOut = _balanceOf(assetOut, receiver);
-        uint256 beforeIn = _balanceOf(assetIn, msg.sender);
+        amountReceived = _balanceOf(assetOut, receiver);
+        amountPaid = _balanceOf(assetIn, msg.sender);
 
         (bool success, bytes memory returnData) = address(this).delegatecall(
             abi.encodeWithSelector(
@@ -142,8 +142,8 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
             revert SimulationResults(false, 0, 0, returnData);
         }
         // get net amount received
-        amountReceived = _balanceOf(assetOut, receiver) - beforeOut;
-        amountPaid = beforeIn - _balanceOf(assetIn, msg.sender);
+        amountReceived = _balanceOf(assetOut, receiver) - amountReceived;
+        amountPaid = amountPaid - _balanceOf(assetIn, msg.sender);
         revert SimulationResults(success, amountReceived, amountPaid, "");
     }
 
