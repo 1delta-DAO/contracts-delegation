@@ -15,7 +15,7 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
     ////////////////////////////////////////////////////
     // Errors
     ////////////////////////////////////////////////////
-    error SimulationResults(bool success, uint256 amountReceived, bytes data);
+    error SimulationResults(bool success, uint256 amountReceived, uint256 amountPaid, bytes data);
 
     // NativeTransferFailed()
     bytes4 internal constant NATIVE_TRANSFER = 0xf4b3b1bc;
@@ -123,7 +123,7 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
         bool sweep
     ) external payable returns (uint256 amountReceived, uint256 amountPaid) {
         // get initial balane of receiver
-        uint256 before = _balanceOf(assetOut, receiver);
+        uint256 beforeOut = _balanceOf(assetOut, receiver);
         uint256 beforeIn = _balanceOf(assetIn, msg.sender);
 
         (bool success, bytes memory returnData) = address(this).delegatecall(
@@ -139,12 +139,12 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
             )
         );
         if (!success) {
-            revert SimulationResults(false, 0, returnData);
+            revert SimulationResults(false, 0, 0, returnData);
         }
         // get net amount received
-        amountReceived = _balanceOf(assetOut, receiver) - before;
+        amountReceived = _balanceOf(assetOut, receiver) - beforeOut;
         amountPaid = beforeIn - _balanceOf(assetIn, msg.sender);
-        revert SimulationResults(success, amountReceived, "");
+        revert SimulationResults(success, amountReceived, amountPaid, "");
     }
 
     ////////////////////////////////////////////////////
