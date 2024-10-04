@@ -13,6 +13,8 @@ contract Nothing {
 contract MetaAggregatorTest is DeltaSetup {
     uint256 constant ERC20_PERMIT_LENGTH = 224;
     uint256 constant COMPACT_ERC20_PERMIT_LENGTH = 100;
+    uint256 constant DAI_LIKE_PERMIT_LENGTH = 256;
+    uint256 constant COMPACT_DAI_LIKE_PERMIT_LENGTH = 72;
 
     function test_meta_aggregator() external /** address user, uint8 lenderId */ {
         address user = testUser;
@@ -80,7 +82,7 @@ contract MetaAggregatorTest is DeltaSetup {
         console.log("gas", gas);
     }
 
-    function test_meta_aggregator_erc20permit() external /** address user, uint8 lenderId */ {
+    function test_meta_aggregator_erc20_permit() external /** address user, uint8 lenderId */ {
         address user = testUser;
         vm.assume(user != address(0));
 
@@ -126,7 +128,7 @@ contract MetaAggregatorTest is DeltaSetup {
         assertEq(IERC20All(assetOut).balanceOf(address(aggr)), 0);
     }
 
-    function test_meta_aggregator_erc20permit_compact() external /** address user, uint8 lenderId */ {
+    function test_meta_aggregator_erc20_permit_compact() external /** address user, uint8 lenderId */ {
         address user = testUser;
         vm.assume(user != address(0));
 
@@ -149,6 +151,98 @@ contract MetaAggregatorTest is DeltaSetup {
         bytes memory swapData = router.encodeSwap(address(tokenIn), amountIn, user);
 
         assertEq(permitData.length, COMPACT_ERC20_PERMIT_LENGTH);
+
+        vm.startPrank(user);
+        aggr.swapMeta(
+            permitData,
+            swapData,
+            address(tokenIn),
+            amountIn,
+            swapTarget,
+            swapTarget,
+            false
+        );
+        vm.stopPrank();
+
+        assertEq(tokenIn.balanceOf(user), 0);
+        assertEq(IERC20All(assetOut).balanceOf(address(user)), amountOut);
+
+        assertEq(tokenIn.balanceOf(address(router)), amountIn);
+        assertEq(IERC20All(assetOut).balanceOf(address(router)), 0);
+
+        assertEq(tokenIn.balanceOf(address(aggr)), 0);
+        assertEq(IERC20All(assetOut).balanceOf(address(aggr)), 0);
+    }
+
+    function test_meta_aggregator_dai_like_permit() external /** address user, uint8 lenderId */ {
+        address user = testUser;
+        vm.assume(user != address(0));
+
+        MockERC20 tokenIn = new MockERC20("Mock", "MCK", 18);
+        address assetOut = USDT;
+
+        MockRouter router = new MockRouter(assetOut);
+        DeltaMetaAggregator aggr = new DeltaMetaAggregator();
+
+        address swapTarget = address(router);
+
+        uint256 amountIn = 1e18;
+        uint256 amountOut = 1e6;
+
+        deal(address(tokenIn), user, amountIn);
+        deal(assetOut, address(router), amountOut);
+        router.setPayout(amountOut);
+
+        bytes memory permitData = tokenIn.encodeDaiLikePermit(user, address(aggr));
+        bytes memory swapData = router.encodeSwap(address(tokenIn), amountIn, user);
+
+        assertEq(permitData.length, DAI_LIKE_PERMIT_LENGTH);
+
+        vm.startPrank(user);
+        aggr.swapMeta(
+            permitData,
+            swapData,
+            address(tokenIn),
+            amountIn,
+            swapTarget,
+            swapTarget,
+            false
+        );
+        vm.stopPrank();
+
+        assertEq(tokenIn.balanceOf(user), 0);
+        assertEq(IERC20All(assetOut).balanceOf(address(user)), amountOut);
+
+        assertEq(tokenIn.balanceOf(address(router)), amountIn);
+        assertEq(IERC20All(assetOut).balanceOf(address(router)), 0);
+
+        assertEq(tokenIn.balanceOf(address(aggr)), 0);
+        assertEq(IERC20All(assetOut).balanceOf(address(aggr)), 0);
+    }
+
+    function test_meta_aggregator_dai_like_permit_compact() external /** address user, uint8 lenderId */ {
+        address user = testUser;
+        vm.assume(user != address(0));
+
+        MockERC20 tokenIn = new MockERC20("Mock", "MCK", 18);
+        address assetOut = USDT;
+
+        MockRouter router = new MockRouter(assetOut);
+        DeltaMetaAggregator aggr = new DeltaMetaAggregator();
+
+        address swapTarget = address(router);
+
+        uint256 amountIn = 1e18;
+        uint256 amountOut = 1e6;
+
+        deal(address(tokenIn), user, amountIn);
+        deal(assetOut, address(router), amountOut);
+        router.setPayout(amountOut);
+
+        bytes memory permitData = tokenIn.encodeCompactDaiLikePermit();
+        bytes memory swapData = router.encodeSwap(address(tokenIn), amountIn, user);
+
+        assertEq(permitData.length, COMPACT_DAI_LIKE_PERMIT_LENGTH);
 
         vm.startPrank(user);
         aggr.swapMeta(
