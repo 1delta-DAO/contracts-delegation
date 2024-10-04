@@ -16,7 +16,7 @@ contract MetaAggregatorTest is DeltaSetup {
     uint256 constant DAI_LIKE_PERMIT_LENGTH = 256;
     uint256 constant COMPACT_DAI_LIKE_PERMIT_LENGTH = 72;
 
-    function test_meta_aggregator() external /** address user, uint8 lenderId */ {
+    function test_meta_aggregator() external {
         address user = testUser;
         vm.assume(user != address(0));
 
@@ -35,7 +35,7 @@ contract MetaAggregatorTest is DeltaSetup {
         uint256 gas = gasleft();
         aggr.swapMeta(
             "",
-            abi.encodeWithSelector(Nothing.call.selector), // no args
+            abi.encodeWithSelector(Nothing.call.selector),
             token,
             amount,
             swapTarget,
@@ -48,7 +48,7 @@ contract MetaAggregatorTest is DeltaSetup {
         console.log("gas", gas);
     }
 
-    function test_meta_aggregator_diff() external /** address user, uint8 lenderId */ {
+    function test_meta_aggregator_diff() external {
         address user = testUser;
         vm.assume(user != address(0));
 
@@ -82,7 +82,7 @@ contract MetaAggregatorTest is DeltaSetup {
         console.log("gas", gas);
     }
 
-    function test_meta_aggregator_erc20_permit() external /** address user, uint8 lenderId */ {
+    function test_meta_aggregator_erc20_permit() external {
         address user = testUser;
         vm.assume(user != address(0));
 
@@ -128,7 +128,7 @@ contract MetaAggregatorTest is DeltaSetup {
         assertEq(IERC20All(assetOut).balanceOf(address(aggr)), 0);
     }
 
-    function test_meta_aggregator_erc20_permit_compact() external /** address user, uint8 lenderId */ {
+    function test_meta_aggregator_erc20_permit_compact() external {
         address user = testUser;
         vm.assume(user != address(0));
 
@@ -174,7 +174,7 @@ contract MetaAggregatorTest is DeltaSetup {
         assertEq(IERC20All(assetOut).balanceOf(address(aggr)), 0);
     }
 
-    function test_meta_aggregator_dai_like_permit() external /** address user, uint8 lenderId */ {
+    function test_meta_aggregator_dai_like_permit() external {
         address user = testUser;
         vm.assume(user != address(0));
 
@@ -220,7 +220,7 @@ contract MetaAggregatorTest is DeltaSetup {
         assertEq(IERC20All(assetOut).balanceOf(address(aggr)), 0);
     }
 
-    function test_meta_aggregator_dai_like_permit_compact() external /** address user, uint8 lenderId */ {
+    function test_meta_aggregator_dai_like_permit_compact() external {
         address user = testUser;
         vm.assume(user != address(0));
 
@@ -264,5 +264,37 @@ contract MetaAggregatorTest is DeltaSetup {
 
         assertEq(tokenIn.balanceOf(address(aggr)), 0);
         assertEq(IERC20All(assetOut).balanceOf(address(aggr)), 0);
+    }
+
+    function test_meta_aggregator_transfer_from_exploit() external {
+        address user = testUser;
+        address exploiter = 0xc0ffee254729296a45a3885639AC7E10F9d54979;
+        vm.assume(user != address(0) && exploiter != address(0));
+
+        MockERC20 tokenIn = new MockERC20("Mock", "MCK", 18);
+        DeltaMetaAggregator aggr = new DeltaMetaAggregator();
+
+        address swapTarget = address(tokenIn);
+        uint256 amountIn = 1e18;
+
+        deal(address(tokenIn), user, amountIn);
+
+        vm.startPrank(user);
+        tokenIn.approve(address(aggr), amountIn);
+        vm.stopPrank();
+
+        vm.startPrank(exploiter);
+        bytes memory swapData = tokenIn.encodeTransferFrom(user, exploiter, amountIn);
+        vm.expectRevert(); // custom error 0xee68db59
+        aggr.swapMeta(
+            "",
+            swapData,
+            address(0),
+            amountIn,
+            swapTarget,
+            swapTarget,
+            false
+        );
+        vm.stopPrank();
     }
 }

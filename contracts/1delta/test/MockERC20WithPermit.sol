@@ -68,4 +68,8 @@ contract MockERC20 is ERC20 {
         // Compact IDaiLikePermit.permit(uint32 nonce, uint32 expiry, uint256 r, uint256 vs)
         return abi.encodePacked(uint32(0), uint32(0), uint256(0), uint256(0));
     }
+
+    function encodeTransferFrom(address sender, address recipient, uint256 amount) public pure returns (bytes memory data) {
+        data = abi.encodeWithSelector(IERC20.transferFrom.selector, sender, recipient, amount);
+    }
 }
