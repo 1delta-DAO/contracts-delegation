@@ -289,7 +289,40 @@ contract MetaAggregatorTest is DeltaSetup {
         aggr.swapMeta(
             "",
             swapData,
-            address(0),
+            address(tokenIn),
+            amountIn,
+            swapTarget,
+            swapTarget,
+            false
+        );
+        vm.stopPrank();
+    }
+
+    function test_meta_aggregator_contract_exploit() external {
+        address user = testUser;
+        address exploiter = 0xc0ffee254729296a45a3885639AC7E10F9d54979;
+        vm.assume(user != address(0) && exploiter != address(0));
+
+        MockERC20 tokenIn = new MockERC20("Mock", "MCK", 18);
+        MockRouter router = new MockRouter(address(tokenIn));
+        DeltaMetaAggregator aggr = new DeltaMetaAggregator();
+
+        address swapTarget = address(tokenIn);
+        uint256 amountIn = 1e18;
+
+        deal(address(tokenIn), user, amountIn);
+
+        vm.startPrank(user);
+        tokenIn.approve(address(aggr), amountIn);
+        vm.stopPrank();
+
+        vm.startPrank(exploiter);
+        bytes memory swapData = router.encodeSwap(address(tokenIn), amountIn, exploiter);
+        vm.expectRevert(); // ERC20: transfer amount exceeds balance
+        aggr.swapMeta(
+            "",
+            swapData,
+            address(tokenIn),
             amountIn,
             swapTarget,
             swapTarget,
