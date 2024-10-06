@@ -23,21 +23,4 @@ contract MockRouter {
     function encodeSwap(address assetIn, uint amountIn, address to) public pure returns (bytes memory data) {
         data = abi.encodeWithSelector(this.swap.selector, assetIn, amountIn, to);
     }
-
-    function encodePermit1inch(
-        address owner,
-        address spender,
-        uint256 value,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) public pure returns (bytes memory data) {
-        data = abi.encode(owner, spender, value, deadline, v, r, s);
-    }
-
-    function encodeCompactPermit(uint256 value, uint32 deadline, uint256 r, uint256 vs) external pure returns (bytes memory data) {
-        // Compact IERC20Permit.permit(uint256 value, uint32 deadline, uint256 r, uint256 vs)
-        return abi.encodePacked(value, deadline, r, vs);
-    }
 }
