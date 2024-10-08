@@ -15,7 +15,15 @@ contract MetaAggregatorTest is DeltaSetup {
     uint256 constant COMPACT_ERC20_PERMIT_LENGTH = 100;
     uint256 constant DAI_LIKE_PERMIT_LENGTH = 256;
     uint256 constant COMPACT_DAI_LIKE_PERMIT_LENGTH = 72;
+    uint256 constant PERMIT2_LENGTH = 352;
+    uint256 constant COMPACT_PERMIT2_LENGTH = 96;
     address constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
+
+    function setUp() public override {
+        vm.createSelectFork({blockNumber: 70125992, urlOrAlias: "https://mantle-mainnet.public.blastapi.io"});
+
+        intitializeFullDelta();
+    }
 
     function test_meta_aggregator() external {
         address user = testUser;
@@ -264,6 +272,108 @@ contract MetaAggregatorTest is DeltaSetup {
         assertEq(IERC20All(assetOut).balanceOf(address(router)), 0);
 
         assertEq(tokenIn.balanceOf(address(aggr)), 0);
+        assertEq(IERC20All(assetOut).balanceOf(address(aggr)), 0);
+    }
+
+    function test_meta_aggregator_permit2() external {
+        setUp();
+        address user = 0x334d52E24d452fa20489f07Bd943b7cF943Cb881;
+        vm.assume(user != address(0));
+
+        address assetIn = WMNT;
+        address assetOut = USDT;
+
+        MockRouter router = new MockRouter(assetOut);
+        DeltaMetaAggregator aggr = DeltaMetaAggregator(payable(0x12bb99c93D6A72b49a4E090be0721B98E6d2Af99));
+        address swapTarget = address(router);
+
+        uint256 amountIn = 1e16;
+        uint256 amountOut = 1e6;
+
+        deal(assetIn, user, amountIn);
+        deal(assetOut, address(router), amountOut);
+        router.setPayout(amountOut);
+
+        uint256 assetInBalanceBefore = IERC20All(assetIn).balanceOf(user);
+        uint256 assetOutBalanceBefore = IERC20All(assetOut).balanceOf(user);
+
+        // solhint-disable-next-line max-line-length
+        bytes memory permitData = hex"000000000000000000000000334d52e24d452fa20489f07bd943b7cf943cb88100000000000000000000000078c1b0c915c4faa5fffa6cabf0219da63d7f4cb8000000000000000000000000000000000000000000000000002386f26fc100000000000000000000000000000000000000000000000000000000000067051096000000000000000000000000000000000000000000000000000000000000000000000000000000000000000012bb99c93d6a72b49a4e090be0721b98e6d2af990000000000000000000000000000000000000000000000000000000067051096000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000403c9491b4c75f294dccefcdd06ddb79594091042e4e3ac8706df8178aac49e4e96fff87b395daa59b287b81e6c827652c58cfadbd9a6c3f5b18f5dae4323394f8";
+        bytes memory swapData = router.encodeSwap(assetIn, amountIn, user);
+
+        assertEq(permitData.length, PERMIT2_LENGTH);
+
+        vm.startPrank(user);
+        IERC20All(assetIn).approve(PERMIT2, type(uint256).max);
+        aggr.swapMeta(
+            permitData,
+            swapData,
+            assetIn,
+            amountIn,
+            swapTarget,
+            swapTarget,
+            false
+        );
+        vm.stopPrank();
+
+        assertEq(IERC20All(assetIn).balanceOf(user), assetInBalanceBefore - amountIn);
+        assertEq(IERC20All(assetOut).balanceOf(user), amountOut + assetOutBalanceBefore);
+
+        assertEq(IERC20All(assetIn).balanceOf(address(router)), amountIn);
+        assertEq(IERC20All(assetOut).balanceOf(address(router)), 0);
+
+        assertEq(IERC20All(assetIn).balanceOf(address(aggr)), 0);
+        assertEq(IERC20All(assetOut).balanceOf(address(aggr)), 0);
+    }
+
+    function test_meta_aggregator_permit2_compact() external {
+        setUp();
+        address user = 0x334d52E24d452fa20489f07Bd943b7cF943Cb881;
+        vm.assume(user != address(0));
+
+        address assetIn = WMNT;
+        address assetOut = USDT;
+
+        MockRouter router = new MockRouter(assetOut);
+        DeltaMetaAggregator aggr = DeltaMetaAggregator(payable(0x12bb99c93D6A72b49a4E090be0721B98E6d2Af99));
+        address swapTarget = address(router);
+
+        uint256 amountIn = 1e16;
+        uint256 amountOut = 1e6;
+
+        deal(assetIn, user, amountIn);
+        deal(assetOut, address(router), amountOut);
+        router.setPayout(amountOut);
+
+        uint256 assetInBalanceBefore = IERC20All(assetIn).balanceOf(user);
+        uint256 assetOutBalanceBefore = IERC20All(assetOut).balanceOf(user);
+
+        // solhint-disable-next-line max-line-length
+        bytes memory permitData = hex"000000000000000000000000002386f26fc100006705116900000000670511691229c02fa9f78e03729e2f404ffc69f245cba2f1f21c5b85c429d2944e98e4b326f559a7a30a09e7afbed8032d68d1e2c6f594c231c9e817ccd48e695a89a9ac";
+        bytes memory swapData = router.encodeSwap(assetIn, amountIn, user);
+
+        assertEq(permitData.length, COMPACT_PERMIT2_LENGTH);
+
+        vm.startPrank(user);
+        IERC20All(assetIn).approve(PERMIT2, type(uint256).max);
+        aggr.swapMeta(
+            permitData,
+            swapData,
+            assetIn,
+            amountIn,
+            swapTarget,
+            swapTarget,
+            false
+        );
+        vm.stopPrank();
+
+        assertEq(IERC20All(assetIn).balanceOf(user), assetInBalanceBefore - amountIn);
+        assertEq(IERC20All(assetOut).balanceOf(user), amountOut + assetOutBalanceBefore);
+
+        assertEq(IERC20All(assetIn).balanceOf(address(router)), amountIn);
+        assertEq(IERC20All(assetOut).balanceOf(address(router)), 0);
+
+        assertEq(IERC20All(assetIn).balanceOf(address(aggr)), 0);
         assertEq(IERC20All(assetOut).balanceOf(address(aggr)), 0);
     }
 
