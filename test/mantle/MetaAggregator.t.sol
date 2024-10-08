@@ -15,6 +15,7 @@ contract MetaAggregatorTest is DeltaSetup {
     uint256 constant COMPACT_ERC20_PERMIT_LENGTH = 100;
     uint256 constant DAI_LIKE_PERMIT_LENGTH = 256;
     uint256 constant COMPACT_DAI_LIKE_PERMIT_LENGTH = 72;
+    address constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
 
     function test_meta_aggregator() external {
         address user = testUser;
@@ -291,6 +292,32 @@ contract MetaAggregatorTest is DeltaSetup {
             swapData,
             address(tokenIn),
             amountIn,
+            swapTarget,
+            swapTarget,
+            false
+        );
+        vm.stopPrank();
+    }
+
+    function test_meta_aggregator_permit2_exploit() external {
+        address user = testUser;
+        address exploiter = 0xc0ffee254729296a45a3885639AC7E10F9d54979;
+        vm.assume(user != address(0) && exploiter != address(0));
+
+        MockERC20 tokenIn = new MockERC20("Mock", "MCK", 18);
+        DeltaMetaAggregator aggr = new DeltaMetaAggregator();
+
+        address swapTarget = PERMIT2;
+        uint256 amountIn = 1e18;
+
+        vm.startPrank(exploiter);
+        bytes memory swapData = tokenIn.encodePermit2TransferFrom(user, exploiter, amountIn, address(tokenIn));
+        vm.expectRevert(); // custom error 0xee68db59
+        aggr.swapMeta(
+            "",
+            swapData,
+            address(0),
+            0,
             swapTarget,
             swapTarget,
             false
