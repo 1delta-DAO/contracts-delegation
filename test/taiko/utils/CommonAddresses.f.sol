@@ -51,6 +51,7 @@ contract AddressesTaiko {
 
     address internal constant MERIDIAN_POOL = 0x1697A950a67d9040464287b88fCa6cb5FbEC09BA;
     address internal constant HANA_POOL = 0x4aB85Bf9EA548410023b25a13031E91B4c4f3b91;
+    address internal constant TAKOTAKO_POOL = 0x3A2Fd8a16030fFa8D66E47C3f1C0507c673C841e;
 
     address internal constant MERIDIAN_A_TAIKO = 0xc2aB0FE37dB900ed7b7d3E0bc6a194cB78E33FB4;
     address internal constant MERIDIAN_A_USDC = 0x3807A7D65D82784E91Fb4eaD75044C7B4F03A462;
@@ -76,6 +77,18 @@ contract AddressesTaiko {
     address internal constant HANA_S_USDC = address(0);
     address internal constant HANA_S_WETH = address(0);
 
+    address internal constant TAKOTAKO_A_TAIKO = 0xbbFa45a92d9d071554B59D2d29174584D9b06bc3;
+    address internal constant TAKOTAKO_A_USDC = 0x79a741EBFE9c323CF63180c405c050cdD98c21d8;
+    address internal constant TAKOTAKO_A_WETH = 0x6Afa285ab05657f7102F66F1B384347aEF3Ef6Aa;
+
+    address internal constant TAKOTAKO_V_TAIKO = 0x0f0244337f1215E6D8e13Af1b5ae639244d8a6f6;
+    address internal constant TAKOTAKO_V_USDC = 0x72C6bDf69952b6bc8aCc18c178d9E03EAc5eaD50;
+    address internal constant TAKOTAKO_V_WETH = 0x19871b9911ddbd422e06F66427768f9B65d36F81;
+
+    address internal constant TAKOTAKO_S_TAIKO = address(0);
+    address internal constant TAKOTAKO_S_USDC = address(0);
+    address internal constant TAKOTAKO_S_WETH = address(0);
+
     /// @dev Mask of lower 20 bytes.
     uint256 internal constant ADDRESS_MASK = 0x00ffffffffffffffffffffffffffffffffffffffff;
     /// @dev Mask of upper 20 bytes.
@@ -85,8 +98,9 @@ contract AddressesTaiko {
 
     /** DEFAULTS */
 
-    uint8 DEFAULT_LENDER = 1;
     uint8 HANA_ID = 0;
+    uint8 MERIDIAN_ID = 1;
+    uint8 TAKOTAKO_ID = 2;
 
     /** DEX CONFIG */
 
