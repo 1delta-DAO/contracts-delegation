@@ -2,6 +2,7 @@ import { MantleManagementModule } from "../../../types";
 import { TOKENS_TAIKO } from "../addresses/tokens";
 import { HANA_A_TOKENS, HANA_POOL } from "../addresses/hanaAddresses";
 import { MERIDIAN_A_TOKENS, MERIDIAN_POOL } from "../addresses/meridianAddresses";
+import { TAKOTAKO_A_TOKENS, TAKOTAKO_POOL } from "../addresses/takotakoAddresses";
 import { getTaikoConfig } from "../utils";
 
 
@@ -13,13 +14,22 @@ export async function execMeridianApproves(manager: MantleManagementModule, nonc
     )
     await tx.wait()
     return nonce
-
 }
 
 export async function execHanaApproves(manager: MantleManagementModule, nonce: number) {
     const tx = await manager.approveAddress(
         Object.keys(HANA_A_TOKENS).map(name=> TOKENS_TAIKO[name]),
         HANA_POOL,
+        getTaikoConfig(nonce++)
+    )
+    await tx.wait()
+    return nonce
+}
+
+export async function execTakoTakoApproves(manager: MantleManagementModule, nonce: number) {
+    const tx = await manager.approveAddress(
+        Object.keys(TAKOTAKO_A_TOKENS).map(name=> TOKENS_TAIKO[name]),
+        TAKOTAKO_POOL,
         getTaikoConfig(nonce++)
     )
     await tx.wait()
