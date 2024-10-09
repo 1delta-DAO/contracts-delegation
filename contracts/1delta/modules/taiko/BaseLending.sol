@@ -22,6 +22,7 @@ abstract contract BaseLending is Slots, SyncSwapper {
     // lender pool addresses
     address internal constant HANA_POOL = 0x4aB85Bf9EA548410023b25a13031E91B4c4f3b91;
     address internal constant MERIDIAN_POOL = 0x1697A950a67d9040464287b88fCa6cb5FbEC09BA;
+    address internal constant TAKOTAKO_POOL = 0x3A2Fd8a16030fFa8D66E47C3f1C0507c673C841e;
 
     /// @notice Withdraw from lender given user address and lender Id from cache
     function _withdraw(address _underlying, address _from, address _to, uint256 _amount, uint256 _lenderId) internal {
@@ -73,6 +74,9 @@ abstract contract BaseLending is Slots, SyncSwapper {
             case 0 {
                 pool := HANA_POOL
             }
+            case 2 {
+                pool := TAKOTAKO_POOL
+            }
             default {
                 pool := MERIDIAN_POOL
             }
@@ -101,6 +105,9 @@ abstract contract BaseLending is Slots, SyncSwapper {
             switch _lenderId
             case 0 {
                 pool := HANA_POOL
+            }
+            case 2 {
+                pool := TAKOTAKO_POOL
             }
             default {
                 pool := MERIDIAN_POOL
@@ -160,6 +167,9 @@ abstract contract BaseLending is Slots, SyncSwapper {
             case 0 {
                 pool := HANA_POOL
             }
+            case 2 {
+                pool := TAKOTAKO_POOL
+            }
             default {
                 pool := MERIDIAN_POOL
             }
@@ -186,6 +196,9 @@ abstract contract BaseLending is Slots, SyncSwapper {
             switch _lenderId
             case 0 {
                 pool := HANA_POOL
+            }
+            case 2 {
+                pool := TAKOTAKO_POOL
             }
             default {
                 pool := MERIDIAN_POOL
