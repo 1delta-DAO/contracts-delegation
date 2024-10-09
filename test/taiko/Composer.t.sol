@@ -79,13 +79,10 @@ contract ComposerTestTaiko is DeltaSetup {
         for (uint8 index = 0; index < lenderIds.length; index++) {
             uint8 lenderId = lenderIds[index];
             address user = testUser;
-            uint256 amount = 20.0e18;
-            address asset = TAIKO;
+            uint256 amount = 1e18;
+            address asset = WETH;
 
             _deposit(asset, user, amount, lenderId);
-
-            vm.prank(user);
-            IERC20All(asset).approve(address(brokerProxyAddress), amount);
 
             uint256 borrowAmount = 5.0e6;
 
@@ -111,8 +108,8 @@ contract ComposerTestTaiko is DeltaSetup {
             uint8 lenderId = lenderIds[index];
             address user = testUser;
 
-            uint256 amount = 40.0e18;
-            address asset = TAIKO;
+            uint256 amount = 1e18;
+            address asset = WETH;
 
             uint256 borrowAmount = 5.0e6;
             address borrowAsset = USDC;
@@ -154,8 +151,8 @@ contract ComposerTestTaiko is DeltaSetup {
             uint8 lenderId = lenderIds[index];
             address user = testUser;
 
-            uint256 amount = 40.0e18;
-            address asset = TAIKO;
+            uint256 amount = 1e18;
+            address asset = WETH;
 
             uint256 borrowAmount = 5.0e6;
             address borrowAsset = USDC;
@@ -198,12 +195,12 @@ contract ComposerTestTaiko is DeltaSetup {
             uint8 lenderId = lenderIds[index];
             address user = testUser;
 
-            uint256 amount = 40.0e18;
-            address asset = TAIKO;
+            uint256 amount = 1e18;
+            address asset = WETH;
 
             _deposit(asset, user, amount, lenderId);
 
-            uint256 withdrawAmount = 2.50e18;
+            uint256 withdrawAmount = 0.50e18;
 
             bytes memory data = withdraw(asset, user, withdrawAmount, lenderId);
 
@@ -223,8 +220,8 @@ contract ComposerTestTaiko is DeltaSetup {
             uint8 lenderId = lenderIds[index];        
             address user = testUser;
 
-            uint256 amount = 40.0e18;
-            address asset = TAIKO;
+            uint256 amount = 1e18;
+            address asset = WETH;
 
             _deposit(asset, user, amount, lenderId);
 
