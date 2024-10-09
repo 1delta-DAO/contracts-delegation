@@ -13,6 +13,37 @@ contract ComposerTestTaiko is DeltaSetup {
         intitializeFullDelta();
     }
 
+    function test_taiko_invalid_lender() external {
+        uint8 lenderId = 10;
+        address user = testUser;
+        uint256 amount = 10.0e6;
+        address assetIn = USDC;
+        deal(assetIn, user, 1e23);
+
+        vm.prank(user);
+        IERC20All(assetIn).approve(address(brokerProxyAddress), amount);
+
+        bytes memory transfer = transferIn(
+            assetIn,
+            brokerProxyAddress,
+            amount //
+        );
+        bytes memory data = deposit(
+            assetIn,
+            user,
+            amount,
+            lenderId //
+        );
+        data = abi.encodePacked(transfer, data);
+        vm.startPrank(user);
+        uint gas = gasleft();
+        vm.expectRevert();
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
+        gas = gas - gasleft();
+        console.log("gas", gas);
+        vm.stopPrank();
+    }
+
     function test_taiko_composer_depo() external {
         for (uint8 index = 0; index < lenderIds.length; index++) {
             uint8 lenderId = lenderIds[index];
