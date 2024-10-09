@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.27;
 
 interface IComet {
     function getSupplyRate(uint256 utilization) external view returns (uint64);

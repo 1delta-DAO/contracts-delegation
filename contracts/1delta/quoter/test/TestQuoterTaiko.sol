@@ -2,7 +2,7 @@
 
 import "../AggregationQuoterTaiko.sol";
 
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.27;
 
 /**
  * Test quoter contract - exposes all internal functions
