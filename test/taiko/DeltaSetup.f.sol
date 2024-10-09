@@ -211,9 +211,9 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
 
     function initializeDeltaTakoTako() internal virtual {
         // takotako
-        management.addGeneralLenderTokens(USDC, TAKOTAKO_A_USDC, TAKOTAKO_V_USDC, TAKOTAKO_S_USDC, 0);
-        management.addGeneralLenderTokens(TAIKO, TAKOTAKO_A_TAIKO, TAKOTAKO_V_TAIKO, TAKOTAKO_S_TAIKO, 0);
-        management.addGeneralLenderTokens(WETH, TAKOTAKO_A_WETH, TAKOTAKO_V_WETH, TAKOTAKO_S_WETH, 0);
+        management.addGeneralLenderTokens(USDC, TAKOTAKO_A_USDC, TAKOTAKO_V_USDC, TAKOTAKO_S_USDC, 2);
+        management.addGeneralLenderTokens(TAIKO, TAKOTAKO_A_TAIKO, TAKOTAKO_V_TAIKO, TAKOTAKO_S_TAIKO, 2);
+        management.addGeneralLenderTokens(WETH, TAKOTAKO_A_WETH, TAKOTAKO_V_WETH, TAKOTAKO_S_WETH, 2);
 
         collateralTokens[USDC][2] = TAKOTAKO_A_USDC;
         collateralTokens[TAIKO][2] = TAKOTAKO_A_TAIKO;
