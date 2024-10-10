@@ -16,11 +16,17 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
     ////////////////////////////////////////////////////
     // Errors
     ////////////////////////////////////////////////////
-    error SimulationResults(bool success, uint256 amountReceived, uint256 amountPaid, bytes data);
+    error SimulationResults(bool success, uint256 amountReceived, uint256 amountPaid, bytes data);    
+    error InvalidSwapCall();
+    error NativeTransferFailed();
+    error HasNoMsgValue();
 
     // NativeTransferFailed()
     bytes4 internal constant NATIVE_TRANSFER = 0xf4b3b1bc;
+    // InvalidSwapCall()
     bytes4 internal constant INVALID_SWAP_CALL = 0xee68db59;
+    // HasNoMsgValue()
+    bytes4 internal constant HAS_NO_MSG_VALUE = 0x07270ad5;
 
     ////////////////////////////////////////////////////
     // State
@@ -88,6 +94,10 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
             // we actually do not care what we approve as this
             // contract is not supposed to hold balances
             _approveIfNot(assetIn, approvalTarget);
+        } else {
+            // if native is the input asset, 
+            // we enforce that msg.value is attached
+            _requireHasMsgValue();
         }
 
         // validate swap call
@@ -96,6 +106,7 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
         // execute external call
         _executeExternalCall(swapData, swapTarget);
 
+        // execute sweep if desired
         _sweepTokenIfNeeded(sweep, assetIn);
     }
 
@@ -202,6 +213,16 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
             // check if the target is permit2
             if eq(swapTarget, PERMIT2) {
                 mstore(0x0, INVALID_SWAP_CALL)
+                revert(0x0, 0x4)
+            }
+        }
+    }
+
+    /// @dev enforce that msg.value is provided
+    function _requireHasMsgValue() private view {
+        assembly {
+            if iszero(callvalue()) {
+                mstore(0x0, HAS_NO_MSG_VALUE)
                 revert(0x0, 0x4)
             }
         }
