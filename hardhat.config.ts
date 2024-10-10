@@ -178,6 +178,11 @@ const config: HardhatUserConfig = {
       accounts,
       chainId: 137,
     },
+    base: {
+      url: 'https://mainnet.base.org',
+      accounts,
+      live: true,
+    },
     mantle: {
       url: 'https://rpc.mantle.xyz',
       accounts,
