@@ -57,15 +57,16 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
 
     /**
      * Executes meta aggregation swap.
-     * Can only be executed on valid approval- and swap target combo.
-     * Note that the receiver address has to be manually set in
-     * the aggregation call, otherwise, the funds might remain in this contract
+     * Can only be executed any address but Permit2.
+     * Calldata is validated to prevent illegitimate `transferFrom`
+     * Note that the receiver address must be manually set in
+     * the aggregation call, otherwise, the funds will remain in this contract
      * Ideally this function is executed after an simulation via `simSwapMeta`
-     * @param permitData permit calldata
+     * @param permitData permit calldata (use empty data for plai transfers)
      * @param swapData swap calldata
      * @param assetIn token input address, user zero address for native
      * @param amountIn input amount, ignored for native transfer
-     * @param approvalTarget approve this target when swapping (only if allowance too low)
+     * @param approvalTarget contract approves this target when swapping (only if allowance too low)
      * @param swapTarget swap aggregation executor
      * @param sweep sweep input token for exactOut
      */
@@ -90,7 +91,7 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
         }
 
         // validate swap call
-        _validateCalldata(swapTarget, swapData);
+        _validateCalldata(swapData, swapTarget);
 
         // execute external call
         _executeExternalCall(swapData, swapTarget);
@@ -129,7 +130,7 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
         address swapTarget,
         bool sweep
     ) external payable returns (SimAmounts memory simAmounts) {
-        // get initial balane of receiver
+        // get initial balances of receiver
         simAmounts.amountReceived = _balanceOf(assetOut, receiver);
         simAmounts.amountPaid = _balanceOf(assetIn, msg.sender);
 
@@ -150,7 +151,7 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
                 revert SimulationResults(false, 0, 0, returnData);
             }
         }
-        // get net amount received
+        // get post swap balances
         simAmounts.amountReceived = _balanceOf(assetOut, receiver) - simAmounts.amountReceived;
         simAmounts.amountPaid = simAmounts.amountPaid - _balanceOf(assetIn, msg.sender);
         revert SimulationResults(true, simAmounts.amountReceived, simAmounts.amountPaid, "");
@@ -186,9 +187,9 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
     }
 
     /// @dev checks that
-    ///     - Permit2 cannot be arbitrarily called
-    ///     - the selector cannot be ERC20 transferFrom
-    function _validateCalldata(address swapTarget, bytes calldata data) private pure {
+    ///     - Permit2 cannot be called
+    ///     - the selector cannot be IERC20.transferFrom
+    function _validateCalldata(bytes calldata data, address swapTarget) private pure {
         assembly {
             // extract the selector from the calldata
             let selector := and(SELECTOR_MASK, calldataload(data.offset))
@@ -232,7 +233,7 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
         }
     }
 
-    /// @dev balanceOf call in assembly, compatible for both native (user address zero for underlying) and ERC20
+    /// @dev balanceOf call in assembly, compatible for both native (use address zero for underlying) and ERC20
     function _balanceOf(address underlying, address entity) private view returns (uint256 entityBalance) {
         assembly {
             switch iszero(underlying)
