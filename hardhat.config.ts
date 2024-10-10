@@ -457,7 +457,7 @@ const config: HardhatUserConfig = {
       },
       // 1delta
       {
-        version: '0.8.26',
+        version: '0.8.27',
         settings: {
           optimizer: {
             enabled: true,
@@ -550,7 +550,7 @@ const config: HardhatUserConfig = {
     ],
     overrides: {
       "contracts/1delta/modules/polygon/Composer.sol": {
-        version: '0.8.26',
+        version: '0.8.27',
         settings: {
           optimizer: {
             enabled: true,
@@ -560,7 +560,7 @@ const config: HardhatUserConfig = {
         },
       },
       "contracts/1delta/modules/mantle/Composer.sol": {
-        version: '0.8.26',
+        version: '0.8.27',
         settings: {
           optimizer: {
             enabled: true,
@@ -570,7 +570,7 @@ const config: HardhatUserConfig = {
         },
       },
       "contracts/1delta/quoter/MoeJoeLens.sol" : {
-        version: '0.8.26',
+        version: '0.8.27',
         settings: {
           optimizer: {
             enabled: true,

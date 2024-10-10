@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity 0.8.26;
+pragma solidity 0.8.27;
 
 abstract contract ERC20Selectors {
     ////////////////////////////////////////////////////
@@ -19,6 +19,6 @@ abstract contract ERC20Selectors {
     /// @dev selector for allowance(address,address)
     bytes32 internal constant ERC20_ALLOWANCE = 0xdd62ed3e00000000000000000000000000000000000000000000000000000000;
 
-    /// @dev selector for allowance(address,address)
+    /// @dev selector for balanceOf(address)
     bytes32 internal constant ERC20_BALANCE_OF = 0x70a0823100000000000000000000000000000000000000000000000000000000;
 }

@@ -29,9 +29,8 @@ module.exports = [
 
 // npx hardhat verify --network mantle 0xA453ba397c61B0c292EA3959A858821145B2707F --contract contracts/1delta/initializers/MarginTraderInit.sol:MarginTraderInit --constructor-args scripts/verify_mantle.js
 
-// npx hardhat verify --network mantle 0xCc0264D9235756950613C770455424f9F7294A1f --contract contracts/1delta/modules/deploy/mantle/MetaAggregator.sol:DeltaMetaAggregator 
-
+// npx hardhat verify --network mantle 0x8c29f4CBF42b1DC5e8D452982679A3BDdce66921 --contract contracts/1delta/modules/shared/MetaAggregator.sol:DeltaMetaAggregator 
 
 // npx hardhat verify --network mantle 0x9bc92bF848FaF2355c429c54d1edE3e767bDd790 --contract contracts/1delta/proxy/DeltaBrokerGen2.sol:DeltaBrokerProxyGen2 --constructor-args scripts/verify_mantle.js
-// npx hardhat verify --network mantle 0xDF7B09AB08fE996617D3d3c30b3505AD7D35db57 --contract contracts/1delta/modules/mantle/Composer.sol:OneDeltaComposerMantle 
+// npx hardhat verify --network mantle 0xCB9FF5D38285CFfd44ba0DA269f26cF8a22baDDB --contract contracts/1delta/modules/mantle/Composer.sol:OneDeltaComposerMantle 
 // npx hardhat verify --network mantle 0xAaBeD4BCDd26e968b70c30011c96a4DC4bB75771 --contract contracts/1delta/modules/mantle/storage/ManagementModule.sol:MantleManagementModule 

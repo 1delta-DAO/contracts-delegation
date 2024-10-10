@@ -9,7 +9,7 @@ abstract contract PermitUtils {
     bytes32 private constant DAI_PERMIT = 0x8fcbaf0c00000000000000000000000000000000000000000000000000000000;
     bytes32 private constant PERMIT2_PERMIT = 0x2b67b57000000000000000000000000000000000000000000000000000000000;
     bytes32 private constant CREDIT_PERMIT = 0x0b52d55800000000000000000000000000000000000000000000000000000000;
-    bytes32 private constant PERMIT2_TRANSFER_FROM = 0x36c7851600000000000000000000000000000000000000000000000000000000;
+    bytes32 internal constant PERMIT2_TRANSFER_FROM = 0x36c7851600000000000000000000000000000000000000000000000000000000;
 
     bytes4 private constant _PERMIT_LENGTH_ERROR = 0x68275857;  // SafePermitBadLength.selector
     /*//////////////////////////////////////////////////////////////
@@ -22,7 +22,7 @@ abstract contract PermitUtils {
                                 CONSTANTS
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev Permit2 address on mantle
+    /// @dev default Permit2 address
     address internal constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3; // solhint-disable-line var-name-mixedcase
 
     /*//////////////////////////////////////////////////////////////
@@ -204,14 +204,14 @@ abstract contract PermitUtils {
      }
 
     /// @notice transferERC20from version using permit2
-    function _transferFromPermit2(address token, address owner, address to, uint256 amount) internal {
+    function _transferFromPermit2(address token, address to, uint256 amount) internal {
         assembly {
             let ptr := mload(0x40)
             ////////////////////////////////////////////////////
             // transferFrom through permit2
             ////////////////////////////////////////////////////
             mstore(ptr, PERMIT2_TRANSFER_FROM)
-            mstore(add(ptr, 0x04), owner)
+            mstore(add(ptr, 0x04), caller())
             mstore(add(ptr, 0x24), to)
             mstore(add(ptr, 0x44), amount)
             mstore(add(ptr, 0x64), token)

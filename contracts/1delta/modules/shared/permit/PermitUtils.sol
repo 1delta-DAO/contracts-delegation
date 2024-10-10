@@ -1,29 +1,17 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.25;
+pragma solidity ^0.8.27;
+
+import {PermitConstants} from "./PermitConstants.sol";
 
 /// @title PermitUtils
-/// @notice A contract containing common utilities for Permit2
-abstract contract PermitUtils {
+/// @notice A contract containing utilities for Permits
+abstract contract PermitUtils is PermitConstants {
     
-    bytes32 private constant ERC20_PERMIT = 0xd505accf00000000000000000000000000000000000000000000000000000000;
-    bytes32 private constant DAI_PERMIT = 0x8fcbaf0c00000000000000000000000000000000000000000000000000000000;
-    bytes32 private constant PERMIT2_PERMIT = 0x2b67b57000000000000000000000000000000000000000000000000000000000;
-    bytes32 private constant CREDIT_PERMIT = 0x0b52d55800000000000000000000000000000000000000000000000000000000;
-    bytes32 private constant PERMIT2_TRANSFER_FROM = 0x36c7851600000000000000000000000000000000000000000000000000000000;
-
-    bytes4 private constant _PERMIT_LENGTH_ERROR = 0x68275857;  // SafePermitBadLength.selector
     /*//////////////////////////////////////////////////////////////
                                  ERRORS
     //////////////////////////////////////////////////////////////*/
 
     error SafePermitBadLength();
-
-    /*//////////////////////////////////////////////////////////////
-                                CONSTANTS
-    //////////////////////////////////////////////////////////////*/
-
-    /// @dev Permit2 address on mantle
-    address internal constant PERMIT2 = 0x9b13cf0C98315b6e85E28630417050093A7086Aa; // solhint-disable-line var-name-mixedcase
 
     /*//////////////////////////////////////////////////////////////
                                 CONSTRUCTOR
@@ -182,7 +170,7 @@ abstract contract PermitUtils {
                 // ICreditPermit.delegationWithSig(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
                 success := call(gas(), token, 0, ptr, 0xe4, 0, 0)
             }
-                        // ICreditPermit
+            // ICreditPermit
             case 224 {
                 mstore(ptr, CREDIT_PERMIT)
                 calldatacopy(add(ptr, 0x04), permitOffset, permitLength) // copy permit calldata
@@ -204,14 +192,14 @@ abstract contract PermitUtils {
      }
 
     /// @notice transferERC20from version using permit2
-    function _transferFromPermit2(address token, address owner, address to, uint256 amount) internal {
+    function _transferFromPermit2(address token, address to, uint256 amount) internal {
         assembly {
             let ptr := mload(0x40)
             ////////////////////////////////////////////////////
             // transferFrom through permit2
             ////////////////////////////////////////////////////
             mstore(ptr, PERMIT2_TRANSFER_FROM)
-            mstore(add(ptr, 0x04), owner)
+            mstore(add(ptr, 0x04), caller())
             mstore(add(ptr, 0x24), to)
             mstore(add(ptr, 0x44), amount)
             mstore(add(ptr, 0x64), token)

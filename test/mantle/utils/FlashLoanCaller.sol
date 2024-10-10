@@ -2,7 +2,7 @@
 
 import {console} from "forge-std/console.sol";
 
-pragma solidity 0.8.26;
+pragma solidity 0.8.27;
 
 interface IFL {
     function flashLoan(
