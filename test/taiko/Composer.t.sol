@@ -5,8 +5,16 @@ import "../../contracts/1delta/modules/shared/Commands.sol";
 import "./DeltaSetup.f.sol";
 
 contract ComposerTestTaiko is DeltaSetup {
-    function test_taiko_composer_depo() external {
-        uint8 lenderId = 1;
+    uint8[] lenderIds = [HANA_ID, MERIDIAN_ID, TAKOTAKO_ID];
+
+    function setUp() public override {
+        vm.createSelectFork({blockNumber: 447511, urlOrAlias: "https://rpc.mainnet.taiko.xyz"});
+
+        intitializeFullDelta();
+    }
+
+    function test_taiko_invalid_lender() external {
+        uint8 lenderId = 10;
         address user = testUser;
         uint256 amount = 10.0e6;
         address assetIn = USDC;
@@ -27,171 +35,211 @@ contract ComposerTestTaiko is DeltaSetup {
             lenderId //
         );
         data = abi.encodePacked(transfer, data);
-        vm.prank(user);
+        vm.startPrank(user);
         uint gas = gasleft();
+        vm.expectRevert();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
+        vm.stopPrank();
+    }
+
+    function test_taiko_composer_depo() external {
+        for (uint8 index = 0; index < lenderIds.length; index++) {
+            uint8 lenderId = lenderIds[index];
+            address user = testUser;
+            uint256 amount = 10.0e6;
+            address assetIn = USDC;
+            deal(assetIn, user, 1e23);
+
+            vm.prank(user);
+            IERC20All(assetIn).approve(address(brokerProxyAddress), amount);
+
+            bytes memory transfer = transferIn(
+                assetIn,
+                brokerProxyAddress,
+                amount //
+            );
+            bytes memory data = deposit(
+                assetIn,
+                user,
+                amount,
+                lenderId //
+            );
+            data = abi.encodePacked(transfer, data);
+            vm.prank(user);
+            uint gas = gasleft();
+            IFlashAggregator(brokerProxyAddress).deltaCompose(data);
+            gas = gas - gasleft();
+            console.log("gas", gas);
+        }
     }
 
     function test_taiko_composer_borrow() external {
-        uint8 lenderId = 0;
-        address user = testUser;
-        uint256 amount = 20.0e18;
-        address asset = TAIKO;
+        for (uint8 index = 0; index < lenderIds.length; index++) {
+            uint8 lenderId = lenderIds[index];
+            address user = testUser;
+            uint256 amount = 1e18;
+            address asset = WETH;
 
-        _deposit(asset, user, amount, lenderId);
+            _deposit(asset, user, amount, lenderId);
 
-        vm.prank(user);
-        IERC20All(asset).approve(address(brokerProxyAddress), amount);
+            uint256 borrowAmount = 5.0e6;
 
-        uint256 borrowAmount = 5.0e6;
+            address borrowAsset = USDC;
+            vm.prank(user);
+            IERC20All(debtTokens[borrowAsset][lenderId]).approveDelegation(
+                address(brokerProxyAddress), //
+                borrowAmount
+            );
 
-        address borrowAsset = USDC;
-        vm.prank(user);
-        IERC20All(debtTokens[borrowAsset][lenderId]).approveDelegation(
-            address(brokerProxyAddress), //
-            borrowAmount
-        );
+            bytes memory data = borrow(borrowAsset, user, borrowAmount, lenderId, DEFAULT_MODE);
+            vm.prank(user);
 
-        bytes memory data = borrow(borrowAsset, user, borrowAmount, lenderId, DEFAULT_MODE);
-        vm.prank(user);
-
-        uint gas = gasleft();
-        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
-        gas = gas - gasleft();
-        console.log("gas", gas);
+            uint gas = gasleft();
+            IFlashAggregator(brokerProxyAddress).deltaCompose(data);
+            gas = gas - gasleft();
+            console.log("gas", gas);
+        }
     }
 
     function test_taiko_composer_repay() external {
-        uint8 lenderId = 0;
-        address user = testUser;
+        for (uint8 index = 0; index < lenderIds.length; index++) {
+            uint8 lenderId = lenderIds[index];
+            address user = testUser;
 
-        uint256 amount = 40.0e18;
-        address asset = TAIKO;
+            uint256 amount = 1e18;
+            address asset = WETH;
 
-        uint256 borrowAmount = 5.0e6;
-        address borrowAsset = USDC;
+            uint256 borrowAmount = 5.0e6;
+            address borrowAsset = USDC;
 
-        _deposit(asset, user, amount, lenderId);
+            _deposit(asset, user, amount, lenderId);
 
-        _borrow(borrowAsset, user, borrowAmount, lenderId);
+            _borrow(borrowAsset, user, borrowAmount, lenderId);
 
-        uint256 repayAmount = 2.50e6;
+            uint256 repayAmount = 2.50e6;
 
-        bytes memory transfer = transferIn(
-            borrowAsset,
-            brokerProxyAddress,
-            repayAmount //
-        );
+            bytes memory transfer = transferIn(
+                borrowAsset,
+                brokerProxyAddress,
+                repayAmount //
+            );
 
-        bytes memory data = repay(
-            borrowAsset,
-            user,
-            repayAmount,
-            lenderId, //
-            DEFAULT_MODE
-        );
-        data = abi.encodePacked(transfer, data);
+            bytes memory data = repay(
+                borrowAsset,
+                user,
+                repayAmount,
+                lenderId, //
+                DEFAULT_MODE
+            );
+            data = abi.encodePacked(transfer, data);
 
-        vm.prank(user);
-        IERC20All(borrowAsset).approve(address(brokerProxyAddress), repayAmount);
+            vm.prank(user);
+            IERC20All(borrowAsset).approve(address(brokerProxyAddress), repayAmount);
 
-        vm.prank(user);
-        uint gas = gasleft();
-        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
-        gas = gas - gasleft();
-        console.log("gas", gas);
+            vm.prank(user);
+            uint gas = gasleft();
+            IFlashAggregator(brokerProxyAddress).deltaCompose(data);
+            gas = gas - gasleft();
+            console.log("gas", gas);
+        }
     }
 
     function test_taiko_composer_repay_too_much() external {
-        uint8 lenderId = 0;
-        address user = testUser;
+        for (uint8 index = 0; index < lenderIds.length; index++) {
+            uint8 lenderId = lenderIds[index];
+            address user = testUser;
 
-        uint256 amount = 40.0e18;
-        address asset = TAIKO;
+            uint256 amount = 1e18;
+            address asset = WETH;
 
-        uint256 borrowAmount = 5.0e6;
-        address borrowAsset = USDC;
+            uint256 borrowAmount = 5.0e6;
+            address borrowAsset = USDC;
 
-        _deposit(asset, user, amount, lenderId);
+            _deposit(asset, user, amount, lenderId);
 
-        _borrow(borrowAsset, user, borrowAmount, lenderId);
+            _borrow(borrowAsset, user, borrowAmount, lenderId);
 
-        uint256 repayAmount = 12.50e6;
-        deal(borrowAsset, user, repayAmount);
-        bytes memory transfer = transferIn(
-            borrowAsset,
-            brokerProxyAddress,
-            repayAmount //
-        );
-        bytes memory data = repay(
-            borrowAsset,
-            user,
-            type(uint112).max,
-            lenderId, //
-            DEFAULT_MODE
-        );
-        data = abi.encodePacked(transfer, data, sweep(borrowAsset, user, 0, SweepType.VALIDATE));
+            uint256 repayAmount = 12.50e6;
+            deal(borrowAsset, user, repayAmount);
+            bytes memory transfer = transferIn(
+                borrowAsset,
+                brokerProxyAddress,
+                repayAmount //
+            );
+            bytes memory data = repay(
+                borrowAsset,
+                user,
+                type(uint112).max,
+                lenderId, //
+                DEFAULT_MODE
+            );
+            data = abi.encodePacked(transfer, data, sweep(borrowAsset, user, 0, SweepType.VALIDATE));
 
-        vm.prank(user);
-        IERC20All(borrowAsset).approve(address(brokerProxyAddress), repayAmount);
+            vm.prank(user);
+            IERC20All(borrowAsset).approve(address(brokerProxyAddress), repayAmount);
 
-        vm.prank(user);
-        uint gas = gasleft();
-        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
-        gas = gas - gasleft();
-        console.log("gas", gas);
+            vm.prank(user);
+            uint gas = gasleft();
+            IFlashAggregator(brokerProxyAddress).deltaCompose(data);
+            gas = gas - gasleft();
+            console.log("gas", gas);
 
-        console.log(IERC20All(borrowAsset).balanceOf(user));
+            console.log(IERC20All(borrowAsset).balanceOf(user));
+        }
     }
 
     function test_taiko_composer_withdraw() external {
-        uint8 lenderId = 0;
-        address user = testUser;
+        for (uint8 index = 0; index < lenderIds.length; index++) {
+            uint8 lenderId = lenderIds[index];
+            address user = testUser;
 
-        uint256 amount = 40.0e18;
-        address asset = TAIKO;
+            uint256 amount = 1e18;
+            address asset = WETH;
 
-        _deposit(asset, user, amount, lenderId);
+            _deposit(asset, user, amount, lenderId);
 
-        uint256 withdrawAmount = 2.50e18;
+            uint256 withdrawAmount = 0.50e18;
 
-        bytes memory data = withdraw(asset, user, withdrawAmount, lenderId);
+            bytes memory data = withdraw(asset, user, withdrawAmount, lenderId);
 
-        vm.prank(user);
-        IERC20All(collateralTokens[asset][lenderId]).approve(address(brokerProxyAddress), withdrawAmount);
+            vm.prank(user);
+            IERC20All(collateralTokens[asset][lenderId]).approve(address(brokerProxyAddress), withdrawAmount);
 
-        vm.prank(user);
-        uint gas = gasleft();
-        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
-        gas = gas - gasleft();
-        console.log("gas", gas);
+            vm.prank(user);
+            uint gas = gasleft();
+            IFlashAggregator(brokerProxyAddress).deltaCompose(data);
+            gas = gas - gasleft();
+            console.log("gas", gas);
+        }
     }
 
     function test_taiko_composer_withdraw_all() external {
-        uint8 lenderId = 0;
-        address user = testUser;
+        for (uint8 index = 0; index < lenderIds.length; index++) {
+            uint8 lenderId = lenderIds[index];        
+            address user = testUser;
 
-        uint256 amount = 40.0e18;
-        address asset = TAIKO;
+            uint256 amount = 1e18;
+            address asset = WETH;
 
-        _deposit(asset, user, amount, lenderId);
+            _deposit(asset, user, amount, lenderId);
 
-        uint256 withdrawAmount = type(uint112).max;
+            uint256 withdrawAmount = type(uint112).max;
 
-        bytes memory data = withdraw(asset, user, withdrawAmount, lenderId);
+            bytes memory data = withdraw(asset, user, withdrawAmount, lenderId);
 
-        vm.prank(user);
-        IERC20All(collateralTokens[asset][lenderId]).approve(address(brokerProxyAddress), withdrawAmount);
+            vm.prank(user);
+            IERC20All(collateralTokens[asset][lenderId]).approve(address(brokerProxyAddress), withdrawAmount);
 
-        vm.prank(user);
-        uint gas = gasleft();
-        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
-        gas = gas - gasleft();
-        console.log("gas", gas);
+            vm.prank(user);
+            uint gas = gasleft();
+            IFlashAggregator(brokerProxyAddress).deltaCompose(data);
+            gas = gas - gasleft();
+            console.log("gas", gas);
 
-        assert(IERC20All(collateralTokens[asset][lenderId]).balanceOf(user) == 0);
+            assert(IERC20All(collateralTokens[asset][lenderId]).balanceOf(user) == 0);
+        }
     }
 
     function test_taiko_composer_multi_route_exact_in() external {

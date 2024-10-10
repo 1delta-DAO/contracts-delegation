@@ -53,11 +53,6 @@ const LOWEST_OPTIMIZER_COMPILER_SETTINGS = {
   },
 }
 
-const accounts = {
-  mnemonic:
-    'test test test test test test test test test test test junk',
-  accountsBalance: "990000000000000000000",
-};
 
 const pk1: string = process.env.PK_1 || '';
 const pk2: string = process.env.PK_2 || '';
@@ -65,12 +60,7 @@ const pk3: string = process.env.PK_3 || '';
 const pk4: string = process.env.PK_3 || '';
 const pk5: string = process.env.PK_5 || '';
 
-// fetch wallet addresses from env
-const address1: string = process.env.ADDRESS_1 || '';
-const address2: string = process.env.ADDRESS_2 || '';
-const address3: string = process.env.ADDRESS_3 || '';
-const address4: string = process.env.ADDRESS_3 || '';
-const address5: string = process.env.ADDRESS_5 || '';
+const accounts = [pk5, pk1, pk3]
 
 const config: HardhatUserConfig = {
   abiExporter: {
@@ -98,6 +88,14 @@ const config: HardhatUserConfig = {
           apiURL: "https://api.taikoscan.io/api" ,
           browserURL: "https://taikoscan.io"
         }
+      },
+      {
+        network: "blast",
+        chainId: 81457,
+        urls: {
+          apiURL: "https://api.routescan.io/v2/network/mainnet/evm/81457/etherscan",
+          browserURL: "https://blastexplorer.io"
+        }
       }
     ],
     apiKey: {
@@ -116,42 +114,15 @@ const config: HardhatUserConfig = {
   mocha: {
     timeout: 500000,
   },
-  namedAccounts: {
-    operator: address1,
-    deployer: {
-      default: address2,
-      localhost: address3,
-      ropsten: address2,
-      'bsc-testnet': address2,
-      kovan: address2,
-      mumbai: address2,
-      fuji: address2,
-      goerli: address2,
-      matic: address5
-    },
-    localhost: {
-      default: address3,
-    },
-    user: {
-      default: address4,
-    },
-    dev: {
-      default: address2,
-      localhost: address3,
-    },
-  },
   networks: {
     mainnet: {
       url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
       accounts,
-      gasPrice: 120 * 1000000000,
       chainId: 1,
     },
     localhost: {
       url: 'http://localhost:8545',
       live: false,
-      saveDeployments: true,
-      tags: ['local'],
       accounts
     },
     hardhat: {
@@ -183,14 +154,10 @@ const config: HardhatUserConfig = {
       accounts,
       chainId: 4,
       live: true,
-      saveDeployments: true,
-      tags: ['staging'],
-      gasPrice: 5000000000,
-      gasMultiplier: 2,
     },
     taiko: {
       url: 'https://rpc.ankr.com/taiko',
-      accounts: [pk5, pk1],
+      accounts,
       chainId: 167000,
     },
     moonbase: {
@@ -198,184 +165,99 @@ const config: HardhatUserConfig = {
       accounts,
       chainId: 1287,
       live: true,
-      saveDeployments: true,
-      tags: ['staging'],
       gas: 5198000,
-      gasMultiplier: 2,
     },
     fantom: {
       url: 'https://rpcapi.fantom.network',
       accounts,
       chainId: 250,
       live: true,
-      saveDeployments: true,
-      gasPrice: 22000000000,
-    },
-    'fantom-testnet': {
-      url: 'https://rpc.testnet.fantom.network',
-      accounts,
-      chainId: 4002,
-      live: true,
-      saveDeployments: true,
-      tags: ['staging'],
-      gasMultiplier: 2,
     },
     matic: {
-      // url: 'https://matic-mainnet.chainstacklabs.com',
-      // url: 'https://rpc-mainnet.maticvigil.com',
       url: 'https://rpc.ankr.com/polygon',
-      // url:  `https://polygon-mainnet.public.blastapi.io`,
-      accounts: [pk5, pk1],
+      accounts,
       chainId: 137,
+    },
+    base: {
+      url: 'https://mainnet.base.org',
+      accounts,
+      live: true,
     },
     mantle: {
       url: 'https://rpc.mantle.xyz',
-      accounts: [pk5, pk1],
+      accounts,
       chainId: 5000,
-    },
-    mumbai: {
-      url: 'https://rpc-mumbai.maticvigil.com/',
-      accounts: [pk3, pk2],
-      chainId: 80001,
-      live: true,
-      saveDeployments: true,
-      tags: ['staging'],
-      gasMultiplier: 2,
     },
     xdai: {
       url: 'https://rpc.xdaichain.com',
       accounts,
       chainId: 100,
       live: true,
-      saveDeployments: true,
     },
     bsc: {
       url: 'https://bsc-dataseed.binance.org',
-      accounts,
       chainId: 56,
       live: true,
-      saveDeployments: true,
-    },
-    'bsc-testnet': {
-      url: 'https://data-seed-prebsc-2-s3.binance.org:8545',
-      //accounts,
-      chainId: 97,
-      live: true,
-      saveDeployments: true,
-      tags: ['staging'],
-      gasMultiplier: 1,
-      accounts: [pk1, pk2],
-      gas: 2100000,
-      gasPrice: 10000000000,
-      // blockGasLimit: 900000000,
+      accounts,
     },
     heco: {
       url: 'https://http-mainnet.hecochain.com',
       accounts,
       chainId: 128,
       live: true,
-      saveDeployments: true,
-    },
-    'heco-testnet': {
-      url: 'https://http-testnet.hecochain.com',
-      accounts,
-      chainId: 256,
-      live: true,
-      saveDeployments: true,
-      tags: ['staging'],
-      gasMultiplier: 2,
     },
     avalanche: {
       url: 'https://api.avax.network/ext/bc/C/rpc',
       accounts,
       chainId: 43114,
       live: true,
-      saveDeployments: true,
-      gasPrice: 470000000000,
-    },
-    fuji: {
-      url: 'https://api.avax-test.network/ext/bc/C/rpc',
-      accounts: [pk1, pk2],
-      chainId: 43113,
-      live: true,
-      saveDeployments: true,
-      // tags: ['staging'],
-      // gasMultiplier: 4,
-      // gas: 800000000,
-      // gasPrice: 25000000000,
     },
     harmony: {
       url: 'https://api.s0.t.hmny.io',
       accounts,
       chainId: 1666600000,
       live: true,
-      saveDeployments: true,
-    },
-    'harmony-testnet': {
-      url: 'https://api.s0.b.hmny.io',
-      accounts,
-      chainId: 1666700000,
-      live: true,
-      saveDeployments: true,
-      tags: ['staging'],
-      gasMultiplier: 2,
     },
     okex: {
       url: 'https://exchainrpc.okex.org',
       accounts,
       chainId: 66,
       live: true,
-      saveDeployments: true,
-    },
-    'okex-testnet': {
-      url: 'https://exchaintestrpc.okex.org',
-      accounts,
-      chainId: 65,
-      live: true,
-      saveDeployments: true,
-      tags: ['staging'],
-      gasMultiplier: 2,
     },
     arbitrum: {
       url: 'https://arb1.arbitrum.io/rpc',
-      accounts,
       chainId: 42161,
       live: true,
-      saveDeployments: true,
       blockGasLimit: 700000,
-    },
-    'arbitrum-testnet': {
-      url: 'https://kovan3.arbitrum.io/rpc',
       accounts,
-      chainId: 79377087078960,
+    },
+    blast: {
+      url: 'https://rpc.blast.io',
       live: true,
-      saveDeployments: true,
-      tags: ['staging'],
-      gasMultiplier: 2,
+      accounts,
     },
     celo: {
       url: 'https://forno.celo.org',
       accounts,
       chainId: 42220,
       live: true,
-      saveDeployments: true,
     },
     palm: {
       url: 'https://palm-mainnet.infura.io/v3/da5fbfafcca14b109e2665290681e267',
       accounts,
       chainId: 11297108109,
       live: true,
-      saveDeployments: true,
     },
-    'palm-testnet': {
-      url: 'https://palm-testnet.infura.io/v3/da5fbfafcca14b109e2665290681e267',
-      accounts,
-      chainId: 11297108099,
+    optimism: {
+      url: "https://rpc.ankr.com/optimism",
       live: true,
-      saveDeployments: true,
-      tags: ['staging'],
-      gasMultiplier: 2,
+      accounts,
     },
+    linea: {
+      url: "https://1rpc.io/linea	",
+      live: true,
+      accounts,
+    }
   },
   paths: {
     artifacts: 'artifacts',

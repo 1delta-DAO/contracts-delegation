@@ -7,6 +7,7 @@ import {PermitUtilsSlim} from "./permit/PermitUtilsSlim.sol";
 ////////////////////////////////////////////////////
 // Minimal meta swap aggregation contract
 // - Allows simulation to validate receiver amount
+// - Supports permits, exact in & out swaps
 // - Swap aggregation calls are assumed to already
 //   check for slippage and send funds directly to the
 //   user-defined receiver
@@ -15,11 +16,17 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
     ////////////////////////////////////////////////////
     // Errors
     ////////////////////////////////////////////////////
-    error SimulationResults(bool success, uint256 amountReceived, uint256 amountPaid, bytes data);
+    error SimulationResults(bool success, uint256 amountReceived, uint256 amountPaid, bytes data);    
+    error InvalidSwapCall();
+    error NativeTransferFailed();
+    error HasNoMsgValue();
 
     // NativeTransferFailed()
     bytes4 internal constant NATIVE_TRANSFER = 0xf4b3b1bc;
+    // InvalidSwapCall()
     bytes4 internal constant INVALID_SWAP_CALL = 0xee68db59;
+    // HasNoMsgValue()
+    bytes4 internal constant HAS_NO_MSG_VALUE = 0x07270ad5;
 
     ////////////////////////////////////////////////////
     // State
@@ -56,15 +63,16 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
 
     /**
      * Executes meta aggregation swap.
-     * Can only be executed on valid approval- and swap target combo.
-     * Note that the receiver address has to be manually set in
-     * the aggregation call, otherwise, the funds might remain in this contract
+     * Can only be executed any address but Permit2.
+     * Calldata is validated to prevent illegitimate `transferFrom`
+     * Note that the receiver address must be manually set in
+     * the aggregation call, otherwise, the funds will remain in this contract
      * Ideally this function is executed after an simulation via `simSwapMeta`
-     * @param permitData permit calldata
+     * @param permitData permit calldata (use empty data for plai transfers)
      * @param swapData swap calldata
      * @param assetIn token input address, user zero address for native
      * @param amountIn input amount, ignored for native transfer
-     * @param approvalTarget approve this target when swapping (only if allowance too low)
+     * @param approvalTarget contract approves this target when swapping (only if allowance too low)
      * @param swapTarget swap aggregation executor
      * @param sweep sweep input token for exactOut
      */
@@ -86,14 +94,20 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
             // we actually do not care what we approve as this
             // contract is not supposed to hold balances
             _approveIfNot(assetIn, approvalTarget);
+        } else {
+            // if native is the input asset, 
+            // we enforce that msg.value is attached
+            _requireHasMsgValue();
         }
 
         // validate swap call
-        _validateCalldata(swapTarget, swapData);
+        _validateCalldata(swapData, swapTarget);
 
+        // execute external call
         _executeExternalCall(swapData, swapTarget);
 
-        _sweepToken(sweep, assetIn);
+        // execute sweep if desired
+        _sweepTokenIfNeeded(sweep, assetIn);
     }
 
     struct SimAmounts {
@@ -127,7 +141,7 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
         address swapTarget,
         bool sweep
     ) external payable returns (SimAmounts memory simAmounts) {
-        // get initial balane of receiver
+        // get initial balances of receiver
         simAmounts.amountReceived = _balanceOf(assetOut, receiver);
         simAmounts.amountPaid = _balanceOf(assetIn, msg.sender);
 
@@ -148,7 +162,7 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
                 revert SimulationResults(false, 0, 0, returnData);
             }
         }
-        // get net amount received
+        // get post swap balances
         simAmounts.amountReceived = _balanceOf(assetOut, receiver) - simAmounts.amountReceived;
         simAmounts.amountPaid = simAmounts.amountPaid - _balanceOf(assetIn, msg.sender);
         revert SimulationResults(true, simAmounts.amountReceived, simAmounts.amountPaid, "");
@@ -184,9 +198,9 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
     }
 
     /// @dev checks that
-    ///     - Permit2 cannot be arbitrarily called
-    ///     - the selector cannot be ERC20 transferFrom
-    function _validateCalldata(address swapTarget, bytes calldata data) private pure {
+    ///     - Permit2 cannot be called
+    ///     - the selector cannot be IERC20.transferFrom
+    function _validateCalldata(bytes calldata data, address swapTarget) private pure {
         assembly {
             // extract the selector from the calldata
             let selector := and(SELECTOR_MASK, calldataload(data.offset))
@@ -199,6 +213,16 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
             // check if the target is permit2
             if eq(swapTarget, PERMIT2) {
                 mstore(0x0, INVALID_SWAP_CALL)
+                revert(0x0, 0x4)
+            }
+        }
+    }
+
+    /// @dev enforce that msg.value is provided
+    function _requireHasMsgValue() private view {
+        assembly {
+            if iszero(callvalue()) {
+                mstore(0x0, HAS_NO_MSG_VALUE)
                 revert(0x0, 0x4)
             }
         }
@@ -230,7 +254,7 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
         }
     }
 
-    /// @dev balanceOf call in assembly, compatible for both native (user address zero for underlying) and ERC20
+    /// @dev balanceOf call in assembly, compatible for both native (use address zero for underlying) and ERC20
     function _balanceOf(address underlying, address entity) private view returns (uint256 entityBalance) {
         assembly {
             switch iszero(underlying)
@@ -257,45 +281,7 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
         }
     }
 
-    /// @dev Transfers ERC20 tokens from ourselves to `to`.
-    /// @param token The token to spend.
-    /// @param to The recipient of the tokens.
-    /// @param amount The amount of `token` to transfer.
-    function _transferERC20Tokens(address token, address to, uint256 amount) private {
-        assembly {
-            let ptr := mload(0x40) // free memory pointer
-
-            // selector for transfer(address,uint256)
-            mstore(ptr, ERC20_TRANSFER)
-            mstore(add(ptr, 0x04), to)
-            mstore(add(ptr, 0x24), amount)
-
-            let success := call(gas(), token, 0x0, ptr, 0x44, ptr, 32)
-
-            let rdsize := returndatasize()
-
-            // Check for ERC20 success. ERC20 tokens should return a boolean,
-            // but some don't. We accept 0-length return data as success, or at
-            // least 32 bytes that starts with a 32-byte boolean true.
-            success := and(
-                success, // call itself succeeded
-                or(
-                    iszero(rdsize), // no return data, or
-                    and(
-                        iszero(lt(rdsize, 32)), // at least 32 bytes
-                        eq(mload(ptr), 1) // starts with uint256(1)
-                    )
-                )
-            )
-
-            if iszero(success) {
-                returndatacopy(ptr, 0x0, rdsize)
-                revert(ptr, rdsize)
-            }
-        }
-    }
-
-    function _sweepToken(bool sweep, address token) public payable {
+    function _sweepTokenIfNeeded(bool sweep, address token) public payable {
         assembly {
             if sweep {
                 // initialize transferAmount

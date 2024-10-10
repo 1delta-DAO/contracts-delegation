@@ -4,6 +4,7 @@ pragma solidity ^0.8.27;
 
 import {IERC20} from "../../../../interfaces/IERC20.sol";
 import {WithMantleStorage} from "./BrokerStorage.sol";
+import {Slots} from "./Slots.sol";
 
 // solhint-disable max-line-length
 
@@ -12,7 +13,7 @@ import {WithMantleStorage} from "./BrokerStorage.sol";
  * @notice Allows the owner to insert token and lending protocol data
  *         Due to contract size limitations this is a separate contract
  */
-contract MantleManagementModule is WithMantleStorage {
+contract MantleManagementModule is WithMantleStorage, Slots {
     modifier onlyOwner() {
         require(ms().contractOwner == msg.sender, "Only owner can interact.");
         _;
@@ -38,6 +39,13 @@ contract MantleManagementModule is WithMantleStorage {
         ls().debtTokens[key] = _vToken;
         ls().stableDebtTokens[key] = _sToken;
         ls().collateralTokens[key] = _aToken;
+    }
+
+    function addLendingPool(
+        address _poolAddress,
+        uint8 _lenderId //
+    ) external onlyOwner {
+        ls().lendingPools[_lenderId] = _poolAddress;
     }
 
     function setValidTarget(address _approvalTarget, address _target, bool value) external onlyOwner {
@@ -74,8 +82,6 @@ contract MantleManagementModule is WithMantleStorage {
 
     /** TARGET FOR SWAPPING */
 
-    bytes32 internal constant EXTERNAL_CALLS_SLOT = 0x9985cdfd7652aca37435f47bfd247a768d7f8206ef9518f447bfe8914bf4c668;
-
     function getIsValidTarget(address _approvalTarget, address _target) external view returns (bool val) {
         // equivalent to
         // return es().isValidApproveAndCallTarget[_approvalTarget][_target];
@@ -85,6 +91,16 @@ contract MantleManagementModule is WithMantleStorage {
             mstore(0x20, keccak256(0x0, 0x40))
             mstore(0x0, _target)
             val := sload(keccak256(0x0, 0x40))
+        }
+    }
+
+    function getLendingPool(uint8 _lenderId) external view returns (address pool) {
+        // equivalent to
+        // return ls().lendingPools[_lenderId];
+        assembly {
+            mstore(0x0, _lenderId)
+            mstore(0x20, LENDING_POOL_SLOT)
+            pool := sload(keccak256(0x0, 0x40))
         }
     }
 }

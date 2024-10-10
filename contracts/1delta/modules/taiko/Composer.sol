@@ -1038,8 +1038,11 @@ contract OneDeltaComposerTaiko is MarginTrading {
                         case 0 {
                             pool := HANA_POOL
                         }
-                        default {
+                        case 1 {
                             pool := MERIDIAN_POOL
+                        }
+                        default {
+                            pool := TAKOTAKO_POOL
                         }
                         // call flash loan
                         let ptr := mload(0x40)
@@ -1147,6 +1150,12 @@ contract OneDeltaComposerTaiko is MarginTrading {
             }
             case 1 {
                 if xor(caller(), MERIDIAN_POOL) {
+                    mstore(0, INVALID_FLASH_LOAN)
+                    revert(0, 0x4)
+                }
+            }
+            case 2 {
+                if xor(caller(), TAKOTAKO_POOL) {
                     mstore(0, INVALID_FLASH_LOAN)
                     revert(0, 0x4)
                 }
