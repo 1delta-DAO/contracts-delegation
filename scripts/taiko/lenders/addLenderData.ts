@@ -53,7 +53,7 @@ export async function addTakoTakoTokens(manager: TaikoManagementModule, nonce: n
             TAKOTAKO_A_TOKENS[k],
             TAKOTAKO_V_TOKENS[k],
             TAKOTAKO_S_TOKENS?.[k] ?? constants.AddressZero,
-            TaikoLenderId.HANA,
+            TaikoLenderId.TAKOTAKO,
             getTaikoConfig(nonce++)
         )
         await tx.wait()

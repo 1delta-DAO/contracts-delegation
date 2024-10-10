@@ -3,8 +3,8 @@ import { ethers } from "hardhat";
 import {
     TaikoManagementModule__factory,
 } from "../../types";
-import { addHanaTokens, addMeridianTokens } from "./lenders/addLenderData";
-import { execHanaApproves, execMeridianApproves } from "./approvals/approveAddress";
+import { addHanaTokens, addMeridianTokens, addTakoTakoTokens } from "./lenders/addLenderData";
+import { execHanaApproves, execMeridianApproves, execTakoTakoApproves } from "./approvals/approveAddress";
 import { ONE_DELTA_GEN2_ADDRESSES_TAIKO } from "./addresses/oneDeltaAddresses";
 
 async function main() {
@@ -20,12 +20,14 @@ async function main() {
     const oneDeltaManagement = await new TaikoManagementModule__factory(operator).attach(ONE_DELTA_GEN2_ADDRESSES_TAIKO.proxy)
 
     // add lender data
-    nonce = await addHanaTokens(oneDeltaManagement, nonce)
-    nonce = await addMeridianTokens(oneDeltaManagement, nonce)
+    // nonce = await addHanaTokens(oneDeltaManagement, nonce)
+    // nonce = await addMeridianTokens(oneDeltaManagement, nonce)
+    nonce = await addTakoTakoTokens(oneDeltaManagement, nonce)
 
     // approve targets
-    nonce = await execHanaApproves(oneDeltaManagement, nonce)
-    nonce = await execMeridianApproves(oneDeltaManagement, nonce)
+    // nonce = await execHanaApproves(oneDeltaManagement, nonce)
+    // nonce = await execMeridianApproves(oneDeltaManagement, nonce)
+    nonce = await execTakoTakoApproves(oneDeltaManagement, nonce)
 
     console.log("insert complete")
 
