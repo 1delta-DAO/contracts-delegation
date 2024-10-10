@@ -22,11 +22,11 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
     error HasNoMsgValue();
 
     // NativeTransferFailed()
-    bytes4 internal constant NATIVE_TRANSFER_FAILED = 0xf4b3b1bc;
+    bytes4 private constant NATIVE_TRANSFER_FAILED = 0xf4b3b1bc;
     // InvalidSwapCall()
-    bytes4 internal constant INVALID_SWAP_CALL = 0xee68db59;
+    bytes4 private constant INVALID_SWAP_CALL = 0xee68db59;
     // HasNoMsgValue()
-    bytes4 internal constant HAS_NO_MSG_VALUE = 0x07270ad5;
+    bytes4 private constant HAS_NO_MSG_VALUE = 0x07270ad5;
 
     ////////////////////////////////////////////////////
     // State
@@ -43,7 +43,7 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
     uint256 private constant MAX_UINT_256 = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
 
     /// @dev mask for selector in calldata
-    bytes32 internal constant SELECTOR_MASK = 0xffffffff00000000000000000000000000000000000000000000000000000000;
+    bytes32 private constant SELECTOR_MASK = 0xffffffff00000000000000000000000000000000000000000000000000000000;
 
     /// @dev mask for address in encoded input data
     uint256 private constant ADDRESS_MASK = 0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff;
