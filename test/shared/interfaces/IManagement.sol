@@ -28,7 +28,7 @@ interface IManagement {
 
     function decreaseAllowance(address[] memory assets, address target) external;
 
-    function getLendingPool() external view returns (address pool);
+    function getLendingPool(uint8 _lenderId) external view returns (address pool);
 
     function getAToken(address _underlying) external view returns (address);
 
@@ -43,4 +43,9 @@ interface IManagement {
     function getStableDebtToken(address _underlying, uint8 _lenderId) external view returns (address);
 
     function getDebtToken(address _underlying, uint8 _lenderId) external view returns (address);
+
+    function addLendingPool(
+        address _poolAddress,
+        uint8 _lenderId //
+    ) external;
 }

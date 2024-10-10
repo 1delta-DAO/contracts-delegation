@@ -21,8 +21,6 @@ contract MetaAggregatorTest is DeltaSetup {
 
     function setUp() public override {
         vm.createSelectFork({blockNumber: 70125992, urlOrAlias: "https://mantle-mainnet.public.blastapi.io"});
-
-        intitializeFullDelta();
     }
 
     function test_meta_aggregator() external {
@@ -395,13 +393,13 @@ contract MetaAggregatorTest is DeltaSetup {
         vm.stopPrank();
 
         vm.startPrank(exploiter);
-        bytes memory swapData = tokenIn.encodeTransferFrom(user, exploiter, amountIn);
+        bytes memory maliciousTransferData = tokenIn.encodeTransferFrom(user, exploiter, amountIn);
         vm.expectRevert(0xee68db59); // custom error 0xee68db59
         aggr.swapMeta(
             "",
-            swapData,
-            address(tokenIn),
-            amountIn,
+            maliciousTransferData, // send transferFrom
+            address(tokenIn), // to token
+            0, // do not pull balance from the exploiter
             swapTarget,
             swapTarget,
             false

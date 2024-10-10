@@ -7,6 +7,7 @@ import {PermitUtilsSlim} from "./permit/PermitUtilsSlim.sol";
 ////////////////////////////////////////////////////
 // Minimal meta swap aggregation contract
 // - Allows simulation to validate receiver amount
+// - Supports permits, exact in & out swaps
 // - Swap aggregation calls are assumed to already
 //   check for slippage and send funds directly to the
 //   user-defined receiver
@@ -91,9 +92,10 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
         // validate swap call
         _validateCalldata(swapTarget, swapData);
 
+        // execute external call
         _executeExternalCall(swapData, swapTarget);
 
-        _sweepToken(sweep, assetIn);
+        _sweepTokenIfNeeded(sweep, assetIn);
     }
 
     struct SimAmounts {
@@ -257,45 +259,7 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
         }
     }
 
-    /// @dev Transfers ERC20 tokens from ourselves to `to`.
-    /// @param token The token to spend.
-    /// @param to The recipient of the tokens.
-    /// @param amount The amount of `token` to transfer.
-    function _transferERC20Tokens(address token, address to, uint256 amount) private {
-        assembly {
-            let ptr := mload(0x40) // free memory pointer
-
-            // selector for transfer(address,uint256)
-            mstore(ptr, ERC20_TRANSFER)
-            mstore(add(ptr, 0x04), to)
-            mstore(add(ptr, 0x24), amount)
-
-            let success := call(gas(), token, 0x0, ptr, 0x44, ptr, 32)
-
-            let rdsize := returndatasize()
-
-            // Check for ERC20 success. ERC20 tokens should return a boolean,
-            // but some don't. We accept 0-length return data as success, or at
-            // least 32 bytes that starts with a 32-byte boolean true.
-            success := and(
-                success, // call itself succeeded
-                or(
-                    iszero(rdsize), // no return data, or
-                    and(
-                        iszero(lt(rdsize, 32)), // at least 32 bytes
-                        eq(mload(ptr), 1) // starts with uint256(1)
-                    )
-                )
-            )
-
-            if iszero(success) {
-                returndatacopy(ptr, 0x0, rdsize)
-                revert(ptr, rdsize)
-            }
-        }
-    }
-
-    function _sweepToken(bool sweep, address token) public payable {
+    function _sweepTokenIfNeeded(bool sweep, address token) public payable {
         assembly {
             if sweep {
                 // initialize transferAmount

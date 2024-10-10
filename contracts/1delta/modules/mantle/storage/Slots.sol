@@ -3,7 +3,7 @@
 pragma solidity ^0.8.27;
 
 /**
- * Contract holding diamond slot references for use in assembly 
+ * Contract holding diamond slot references for use in assembly
  */
 contract Slots {
     // ext call mapping slot
@@ -12,4 +12,6 @@ contract Slots {
     bytes32 internal constant COLLATERAL_TOKENS_SLOT = 0xff0471b67e4632a86905e3993f5377c608866007c59224eed7731408a9f3f8b3;
     bytes32 internal constant VARIABLE_DEBT_TOKENS_SLOT = 0xff0471b67e4632a86905e3993f5377c608866007c59224eed7731408a9f3f8b4;
     bytes32 internal constant STABLE_DEBT_TOKENS_SLOT = 0xff0471b67e4632a86905e3993f5377c608866007c59224eed7731408a9f3f8b5;
+    // lending pool slot
+    bytes32 internal constant LENDING_POOL_SLOT = 0xff0471b67e4632a86905e3993f5377c608866007c59224eed7731408a9f3f8b6;
 }
