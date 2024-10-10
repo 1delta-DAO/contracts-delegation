@@ -3,16 +3,13 @@ import { ethers } from "hardhat";
 import {
     DeltaMetaAggregator__factory,
 } from "../../types";
-import { getPolygonConfig } from "../polygon/utils";
 import { formatEther } from "ethers/lib/utils";
 import { BigNumber } from "ethers";
-
-const FIXED_NONCE = 111111;
 
 async function main() {
 
     const accounts = await ethers.getSigners()
-    const operator = accounts[0]
+    const operator = accounts[2]
     const chainId = await operator.getChainId();
     let nonce = await operator.getTransactionCount()
     console.log("operator", operator.address, "on", chainId, "with nonce", nonce)
@@ -20,7 +17,7 @@ async function main() {
     const gasData = await operator.getFeeData()
     console.log("gasData", gasData)
 
-    const magwp = await new DeltaMetaAggregator__factory(operator).deploy({ ...getConfig(gasData), nonce: FIXED_NONCE })
+    const magwp = await new DeltaMetaAggregator__factory(operator).deploy({ ...getConfig(gasData), nonce })
     await magwp.deployed()
     console.log("magwp deployed")
 
@@ -47,8 +44,8 @@ function getConfig(gasData: any) {
     // }
     if (gasData.gasPrice) {
         returnMap['gasPrice'] = addMargin(gasData.gasPrice)
+        console.log("returnMap['gasPrice']", formatEther(returnMap['gasPrice']))
     }
-    console.log("returnMap['gasPrice']", formatEther(returnMap['gasPrice']))
     return returnMap
 }
 
