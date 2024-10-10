@@ -16,7 +16,7 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
     ////////////////////////////////////////////////////
     // Errors
     ////////////////////////////////////////////////////
-    error SimulationResults(bool success, uint256 amountReceived, uint256 amountPaid, bytes data);
+    error SimulationResults(uint256 amountPaid, uint256 amountReceived, bytes errorData);
     error InvalidSwapCall();
     error NativeTransferFailed();
     error HasNoMsgValue();
@@ -76,12 +76,12 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
      * Ideally this function is executed after an simulation via `simSwapMeta`
      * @param permitData permit calldata (use empty data for plai transfers)
      * @param swapData swap calldata
-     * @param assetInData token input address, user zero address for native - high but signals that we have too sweep
-     * @param assetOutData token input address, user zero address for native
+     * @param assetInData token input address, user zero address for native - high bit signals that we have too sweep
+     * @param assetOutData token output address, user zero address for native, the address is ignored if sweep flag is not set
      * @param amountIn input amount, ignored for native transfer
      * @param approvalTarget contract approves this target when swapping (only if allowance too low)
      * @param swapTarget swap aggregation executor
-     * @param receiver receiver -> signals that assetOut has to be sent to this address - use zero address to skip sweep
+     * @param receiver of assetOut - ignored if assetOut sweep flag is nset to false
      */
     function swapMeta(
         bytes calldata permitData,
@@ -131,15 +131,10 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
 
     /**
      * Simulates the swap aggregation. Should be called before `swapMeta`
-     * Always reverts.
+     * Always reverts with simulation results in custom error.
      * Ideally called via staticcall, the return object contains
      * the balance change of the `receiver` address.
-     * @param permitData permit calldata
-     * @param swapData swap calldata
-     * @param amountIn input amount
-     * @param receiver recipient of swap
-     * @param approvalTarget address to be approved
-     * @param swapTarget swap aggregator
+     * Parameters are otherwise identical to `swapMeta`.
      */
     function simSwapMeta(
         bytes calldata permitData,
@@ -150,13 +145,18 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
         address approvalTarget,
         address swapTarget,
         address receiver
-    ) external payable returns (SimAmounts memory simAmounts) {
+    ) external payable {
+        // we use a struct to avoid stack too deep
+        SimAmounts memory simAmounts;
+        // read asset data
         (simAmounts.payAsset, ) = _decodeAssetData(assetInData);
         (simAmounts.receiveAsset, ) = _decodeAssetData(assetOutData);
+
         // get initial balances of receiver
         simAmounts.amountReceived = _balanceOf(simAmounts.receiveAsset, receiver);
         simAmounts.amountPaid = _balanceOf(simAmounts.payAsset, msg.sender);
 
+        // narrow scope for stack too deep
         {
             (bool success, bytes memory returnData) = address(this).delegatecall(
                 abi.encodeWithSelector(
@@ -172,13 +172,14 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
                 )
             );
             if (!success) {
-                revert SimulationResults(false, 0, 0, returnData);
+                revert SimulationResults(0, 0, returnData);
             }
         }
+
         // get post swap balances
         simAmounts.amountReceived = _balanceOf(simAmounts.receiveAsset, receiver) - simAmounts.amountReceived;
         simAmounts.amountPaid = simAmounts.amountPaid - _balanceOf(simAmounts.payAsset, msg.sender);
-        revert SimulationResults(true, simAmounts.amountReceived, simAmounts.amountPaid, "");
+        revert SimulationResults(simAmounts.amountPaid, simAmounts.amountReceived, "");
     }
 
     ////////////////////////////////////////////////////
