@@ -209,6 +209,27 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
         management.approveAddress(assets, MERIDIAN_POOL);
     }
 
+    function initializeDeltaTakoTako() internal virtual {
+        // takotako
+        management.addGeneralLenderTokens(USDC, TAKOTAKO_A_USDC, TAKOTAKO_V_USDC, TAKOTAKO_S_USDC, 2);
+        management.addGeneralLenderTokens(TAIKO, TAKOTAKO_A_TAIKO, TAKOTAKO_V_TAIKO, TAKOTAKO_S_TAIKO, 2);
+        management.addGeneralLenderTokens(WETH, TAKOTAKO_A_WETH, TAKOTAKO_V_WETH, TAKOTAKO_S_WETH, 2);
+
+        collateralTokens[USDC][2] = TAKOTAKO_A_USDC;
+        collateralTokens[TAIKO][2] = TAKOTAKO_A_TAIKO;
+        collateralTokens[WETH][2] = TAKOTAKO_A_WETH;
+
+        debtTokens[USDC][2] = TAKOTAKO_V_USDC;
+        debtTokens[TAIKO][2] = TAKOTAKO_V_TAIKO;
+        debtTokens[WETH][2] = TAKOTAKO_V_WETH;
+
+        // approve pools
+        address[] memory assets = new address[](3);
+        assets[0] = USDC;
+        assets[1] = WETH;
+        assets[2] = TAIKO;
+        management.approveAddress(assets, TAKOTAKO_POOL);
+    }
 
     function getAssets() internal view returns (address[] memory assetList) {
         assetList = new address[](3);
@@ -227,6 +248,7 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
         deployDelta();
         initializeDeltaHana();
         initializeDeltaMeridian();
+        initializeDeltaTakoTako();
         initializeDeltaBase();
     }
 

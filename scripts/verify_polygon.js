@@ -10,4 +10,4 @@ module.exports = [
 // npx hardhat verify --network matic 0x6A6faa54B9238f0F079C8e6CBa08a7b9776C7fE4 --contract contracts/1delta/proxy/DeltaBrokerGen2.sol:DeltaBrokerProxyGen2 --constructor-args scripts/verify_polygon.js
 // npx hardhat verify --network matic 0x8d07e9f698452AA2169bE3339478345fe2A64AC8 --contract contracts/1delta/modules/polygon/Composer.sol:OneDeltaComposerPolygon 
 // npx hardhat verify --network matic 0x025fD6E2e235329daFf6b29DD6DA7CDD38b22De5 --contract contracts/1delta/modules/polygon/storage/ManagementModule.sol:PolygonManagementModule 
-// npx hardhat verify --network matic 0x7B82C37776Ff8ffe239cE4B6bBa3bAa2Bb2d72E0 --contract contracts/1delta/modules/polygon/MetaAggregatorWithPermit.sol:DeltaMetaAggregatorWithPermit
+// npx hardhat verify --network matic 0xCdFAAf881359C61DCF8BF4fd87622330246633DA --contract contracts/1delta/modules/shared/MetaAggregator.sol:DeltaMetaAggregator

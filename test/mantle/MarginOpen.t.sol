@@ -6,6 +6,13 @@ import "./DeltaSetup.f.sol";
 contract MarginOpenTest is DeltaSetup {
     uint256 DEFAULT_IR_MODE = 2; // variable
 
+    function test_margin_mantle_set_pool() external {
+        address pool = address(326434632);
+        uint8 id = 5;
+        management.addLendingPool(pool, id);
+        assert(management.getLendingPool(id) == pool);
+    }
+
     function test_margin_mantle_open_exact_in(uint8 lenderId) external /** address user, uint8 lenderId */ {
         TestParamsOpen memory params;
         address user = testUser;

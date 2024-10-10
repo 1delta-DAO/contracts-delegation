@@ -14,7 +14,7 @@ struct GeneralLenderStorage {
     // map lender id to lender pool
     // typically used for lenders with multiple pools
     // like Compound V3 or Venus
-    mapping(bytes32 => address) lendingPools;
+    mapping(uint256 => address) lendingPools;
 }
 
 // allows storing anything into a bytes32
