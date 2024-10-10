@@ -3,7 +3,7 @@ pragma solidity >=0.8.0;
 
 import "./ERC20.sol";
 
-contract MockRouter {
+contract TrivialMockRouter {
     uint payoutAmount;
     address token;
 
@@ -17,7 +17,8 @@ contract MockRouter {
 
     function swap(address assetIn, uint amountIn, address to) public {
         ERC20(assetIn).transferFrom(msg.sender, address(this), amountIn);
-        ERC20(token).transfer(to, payoutAmount);
+        if (token != address(0)) ERC20(token).transfer(to, payoutAmount);
+        else payable(to).call{value: payoutAmount}("");
     }
 
     function encodeSwap(address assetIn, uint amountIn, address to) public pure returns (bytes memory data) {
