@@ -24,4 +24,6 @@ contract TrivialMockRouter {
     function encodeSwap(address assetIn, uint amountIn, address to) public pure returns (bytes memory data) {
         data = abi.encodeWithSelector(this.swap.selector, assetIn, amountIn, to);
     }
+
+    receive() external payable {}
 }
