@@ -35,6 +35,7 @@ abstract contract PermitUtilsSlim is PermitConstants, ERC20Selectors {
      * Note that the implementation does not perform dirty bits cleaning, so it is the responsibility of
      * the caller to make sure that the higher 96 bits of the `owner` and `spender` parameters are clean.
      * @param token The address of the ERC20 token on which to call the permit function.
+     * @param amount Amount to pull from the caller - should be less than or equal the permit amount
      * @param permit The off-chain permit data, containing different fields depending on the type of permit function.
      */
     function _permitAndPull(address token, uint256 amount, bytes calldata permit) internal {
@@ -52,8 +53,8 @@ abstract contract PermitUtilsSlim is PermitConstants, ERC20Selectors {
             // Compact IERC20Permit
             case 100 {
                 mstore(ptr, ERC20_PERMIT)     // store selector
-                mstore(add(ptr, 0x04), caller())   // store owner
-                mstore(add(ptr, 0x24), address()) // store spender
+                mstore(add(ptr, 0x04), caller())    // store owner
+                mstore(add(ptr, 0x24), address())   // store spender
 
                 // Compact IERC20Permit.permit(uint256 value, uint32 deadline, uint256 r, uint256 vs)
                 {  // stack too deep
@@ -77,9 +78,9 @@ abstract contract PermitUtilsSlim is PermitConstants, ERC20Selectors {
                 ////////////////////////////////////////////////////
                 // selector for transferFrom(address,address,uint256)
                 mstore(ptr, ERC20_TRANSFER_FROM)
-                mstore(add(ptr, 0x04), caller())   // store owner
-                // spender is still in the correct slot
-                // value is also in the correct spot
+                mstore(add(ptr, 0x04), caller())    // store owner
+                // spender still in place
+                mstore(add(ptr, 0x44), amount)      // store amount (we do not want to take the same as the permit one)
 
                 success := call(gas(), token, 0x0, ptr, 0x64, ptr, 32)
 
@@ -107,8 +108,8 @@ abstract contract PermitUtilsSlim is PermitConstants, ERC20Selectors {
             // Compact IDaiLikePermit
             case 72 {
                 mstore(ptr, DAI_PERMIT)  // store selector
-                mstore(add(ptr, 0x04), caller())   // store owner
-                mstore(add(ptr, 0x24), address()) // store spender
+                mstore(add(ptr, 0x04), caller())    // store owner
+                mstore(add(ptr, 0x24), address())   // store spender
 
                 // Compact IDaiLikePermit.permit(uint32 nonce, uint32 expiry, uint256 r, uint256 vs)
                 {  // stack too deep
@@ -133,9 +134,9 @@ abstract contract PermitUtilsSlim is PermitConstants, ERC20Selectors {
                 ////////////////////////////////////////////////////
                 // selector for transferFrom(address,address,uint256)
                 mstore(ptr, ERC20_TRANSFER_FROM)
-                mstore(add(ptr, 0x04), caller())   // store owner
-                // spender is still in the correct slot
-                mstore(add(ptr, 0x44), amount)
+                mstore(add(ptr, 0x04), caller())    // store owner
+                // spender still in place
+                mstore(add(ptr, 0x44), amount)      // store amount
 
                 success := call(gas(), token, 0x0, ptr, 0x64, ptr, 32)
 
@@ -175,9 +176,9 @@ abstract contract PermitUtilsSlim is PermitConstants, ERC20Selectors {
                 ////////////////////////////////////////////////////
                 // selector for transferFrom(address,address,uint256)
                 mstore(ptr, ERC20_TRANSFER_FROM)
-                mstore(add(ptr, 0x04), caller())   // store owner
-                // spender is still in the correct slot
-                // value is also in the correct spot
+                mstore(add(ptr, 0x04), caller())    // store owner
+                // spender still in place
+                mstore(add(ptr, 0x44), amount)      // store amount (we do not want to take the same as the permit one)
 
                 success := call(gas(), token, 0x0, ptr, 0x64, ptr, 32)
 
@@ -217,8 +218,8 @@ abstract contract PermitUtilsSlim is PermitConstants, ERC20Selectors {
                 ////////////////////////////////////////////////////
                 // selector for transferFrom(address,address,uint256)
                 mstore(ptr, ERC20_TRANSFER_FROM)
-                mstore(add(ptr, 0x04), caller())   // store owner
-                // spender is still in the correct slot
+                mstore(add(ptr, 0x04), caller())    // store owner
+                // spender still in place
                 mstore(add(ptr, 0x44), amount)
 
                 success := call(gas(), token, 0x0, ptr, 0x64, ptr, 32)
