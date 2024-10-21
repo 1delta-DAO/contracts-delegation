@@ -616,6 +616,54 @@ contract MetaAggregatorTest is DeltaSetup {
         vm.stopPrank();
     }
 
+    function test_meta_aggregator_erc20_permit_amount_mismatch() external {
+        address user = testUser;
+        vm.assume(user != address(0));
+
+        MockERC20 tokenIn = new MockERC20("Mock", "MCK", 18);
+        address assetOut = USDT;
+
+        TrivialMockRouter router = new TrivialMockRouter(assetOut);
+        DeltaMetaAggregator aggr = new DeltaMetaAggregator();
+
+        address swapTarget = address(router);
+
+        uint256 amountIn = 1e18;
+        uint256 amountOut = 1e6;
+
+        deal(address(tokenIn), user, amountIn);
+        deal(assetOut, address(router), amountOut);
+        router.setPayout(amountOut);
+
+        // Attempt to pull more so that it gets stuck in contract, we can extract it afterwards
+        bytes memory permitData = tokenIn.encodeERC20Permit(user, address(aggr), amountIn * 2);
+        bytes memory swapData = router.encodeSwap(address(tokenIn), amountIn, user);
+
+        assertEq(permitData.length, ERC20_PERMIT_LENGTH);
+
+        vm.startPrank(user);
+        aggr.swapMeta(
+            permitData,
+            swapData,
+            encodeAsset(address(tokenIn), false), //
+            encodeAsset(assetOut, false),
+            amountIn,
+            swapTarget,
+            swapTarget,
+            address(0)
+        );
+        vm.stopPrank();
+
+        assertEq(tokenIn.balanceOf(user), 0);
+        assertEq(IERC20All(assetOut).balanceOf(address(user)), amountOut);
+
+        assertEq(tokenIn.balanceOf(address(router)), amountIn);
+        assertEq(IERC20All(assetOut).balanceOf(address(router)), 0);
+
+        assertEq(tokenIn.balanceOf(address(aggr)), 0);
+        assertEq(IERC20All(assetOut).balanceOf(address(aggr)), 0);
+    }
+
     uint256 internal constant SWEEP = 1 << 255;
 
     function encodeAsset(address asset, bool sweep) private pure returns (bytes32 data) {
