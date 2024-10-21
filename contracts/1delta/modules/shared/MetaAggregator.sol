@@ -76,12 +76,12 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
      * Ideally this function is executed after an simulation via `simSwapMeta`
      * @param permitData permit calldata (use empty data for plai transfers)
      * @param swapData swap calldata
-     * @param assetInData token input address, user zero address for native - high bit signals that we have too sweep
-     * @param assetOutData token output address, user zero address for native, the address is ignored if sweep flag is not set
+     * @param assetInData token input address, use zero address for native - high bit signals that we have to sweep
+     * @param assetOutData token output address, use zero address for native - high bit signals that we have to sweep, the address is ignored if sweep flag is not set
      * @param amountIn input amount, ignored for native transfer
      * @param approvalTarget contract approves this target when swapping (only if allowance too low)
      * @param swapTarget swap aggregation executor
-     * @param receiver of assetOut - ignored if assetOut sweep flag is nset to false
+     * @param receiver of assetOut - ignored if assetOut sweep flag is set to false
      */
     function swapMeta(
         bytes calldata permitData,
