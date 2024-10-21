@@ -1,2 +1,2 @@
 
-// npx hardhat verify --network avalanche 0x6127DeA6036F1512b213E6AD46E54141eCd99cd9 --contract contracts/1delta/modules/shared/MetaAggregator.sol:DeltaMetaAggregator
+// npx hardhat verify --network mantle 0x0A2a11f3Be0dEF528213C033412EC76CfBd184F3 --contract contracts/1delta/modules/shared/MetaAggregator.sol:DeltaMetaAggregator
