@@ -16,17 +16,17 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
     ////////////////////////////////////////////////////
     // Errors
     ////////////////////////////////////////////////////
-    error SimulationResults(bool success, uint256 amountReceived, uint256 amountPaid, bytes data);    
+    error SimulationResults(uint256 amountPaid, uint256 amountReceived, bytes errorData);
     error InvalidSwapCall();
     error NativeTransferFailed();
     error HasNoMsgValue();
 
     // NativeTransferFailed()
-    bytes4 internal constant NATIVE_TRANSFER = 0xf4b3b1bc;
+    bytes4 private constant NATIVE_TRANSFER_FAILED = 0xf4b3b1bc;
     // InvalidSwapCall()
-    bytes4 internal constant INVALID_SWAP_CALL = 0xee68db59;
+    bytes4 private constant INVALID_SWAP_CALL = 0xee68db59;
     // HasNoMsgValue()
-    bytes4 internal constant HAS_NO_MSG_VALUE = 0x07270ad5;
+    bytes4 private constant HAS_NO_MSG_VALUE = 0x07270ad5;
 
     ////////////////////////////////////////////////////
     // State
@@ -43,7 +43,13 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
     uint256 private constant MAX_UINT_256 = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
 
     /// @dev mask for selector in calldata
-    bytes32 internal constant SELECTOR_MASK = 0xffffffff00000000000000000000000000000000000000000000000000000000;
+    bytes32 private constant SELECTOR_MASK = 0xffffffff00000000000000000000000000000000000000000000000000000000;
+
+    /// @dev mask for address in encoded input data
+    uint256 private constant ADDRESS_MASK = 0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff;
+
+    /// @dev high bit for sweep flag
+    uint256 private constant SWEEP_MASK = 1 << 255;
 
     ////////////////////////////////////////////////////
     // Constructor
@@ -70,32 +76,35 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
      * Ideally this function is executed after an simulation via `simSwapMeta`
      * @param permitData permit calldata (use empty data for plai transfers)
      * @param swapData swap calldata
-     * @param assetIn token input address, user zero address for native
+     * @param assetInData token input address, use zero address for native - high bit signals that we have to sweep
+     * @param assetOutData token output address, use zero address for native - high bit signals that we have to sweep, the address is ignored if sweep flag is not set
      * @param amountIn input amount, ignored for native transfer
      * @param approvalTarget contract approves this target when swapping (only if allowance too low)
      * @param swapTarget swap aggregation executor
-     * @param sweep sweep input token for exactOut
+     * @param receiver of assetOut - ignored if assetOut sweep flag is set to false
      */
     function swapMeta(
         bytes calldata permitData,
         bytes calldata swapData,
-        address assetIn,
+        bytes32 assetInData,
+        bytes32 assetOutData,
         uint256 amountIn,
         address approvalTarget,
         address swapTarget,
-        bool sweep
+        address receiver
     ) external payable {
+        (address asset, bool sweep) = _decodeAssetData(assetInData);
         // zero address assumes native transfer
-        if (assetIn != address(0)) {
+        if (asset != address(0)) {
             // permit and pull - checks that no native is attached
-            _permitAndPull(assetIn, amountIn, permitData);
+            _permitAndPull(asset, amountIn, permitData);
 
             // approve if no allowance
             // we actually do not care what we approve as this
             // contract is not supposed to hold balances
-            _approveIfNot(assetIn, approvalTarget);
+            _approveIfNot(asset, approvalTarget);
         } else {
-            // if native is the input asset, 
+            // if native is the input asset,
             // we enforce that msg.value is attached
             _requireHasMsgValue();
         }
@@ -106,66 +115,71 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
         // execute external call
         _executeExternalCall(swapData, swapTarget);
 
-        // execute sweep if desired
-        _sweepTokenIfNeeded(sweep, assetIn);
+        // execute sweep of input asset if desired
+        _sweepTokenIfNeeded(sweep, asset);
+
+        // execute sweep of output asset if desired
+        _handleOutputAsset(assetOutData, receiver);
     }
 
     struct SimAmounts {
+        address payAsset;
+        address receiveAsset;
         uint256 amountReceived;
         uint256 amountPaid;
     }
 
     /**
      * Simulates the swap aggregation. Should be called before `swapMeta`
-     * Always reverts.
+     * Always reverts with simulation results in custom error.
      * Ideally called via staticcall, the return object contains
      * the balance change of the `receiver` address.
-     * @param permitData permit calldata
-     * @param swapData swap calldata
-     * @param assetIn token in address, zero address for native
-     * @param amountIn input amount
-     * @param assetOut token out, zero address for native
-     * @param receiver recipient of swap
-     * @param approvalTarget address to be approved
-     * @param swapTarget swap aggregator
-     * @param sweep sweep input token for exactOut
+     * Parameters are otherwise identical to `swapMeta`.
      */
     function simSwapMeta(
         bytes calldata permitData,
         bytes calldata swapData,
-        address assetIn,
+        bytes32 assetInData,
+        bytes32 assetOutData,
         uint256 amountIn,
-        address assetOut,
-        address receiver,
         address approvalTarget,
         address swapTarget,
-        bool sweep
-    ) external payable returns (SimAmounts memory simAmounts) {
-        // get initial balances of receiver
-        simAmounts.amountReceived = _balanceOf(assetOut, receiver);
-        simAmounts.amountPaid = _balanceOf(assetIn, msg.sender);
+        address receiver
+    ) external payable {
+        // we use a struct to avoid stack too deep
+        SimAmounts memory simAmounts;
+        // read asset data
+        (simAmounts.payAsset, ) = _decodeAssetData(assetInData);
+        (simAmounts.receiveAsset, ) = _decodeAssetData(assetOutData);
 
+        // get initial balances of receiver
+        simAmounts.amountReceived = _balanceOf(simAmounts.receiveAsset, receiver);
+        simAmounts.amountPaid = _balanceOf(simAmounts.payAsset, msg.sender);
+
+        // narrow scope for stack too deep
         {
             (bool success, bytes memory returnData) = address(this).delegatecall(
                 abi.encodeWithSelector(
                     DeltaMetaAggregator.swapMeta.selector, // call swap meta on sel
                     permitData,
                     swapData,
-                    assetIn,
+                    assetInData,
+                    assetOutData,
                     amountIn,
                     approvalTarget,
                     swapTarget,
-                    sweep
+                    receiver
                 )
             );
             if (!success) {
-                revert SimulationResults(false, 0, 0, returnData);
+                revert SimulationResults(0, 0, returnData);
             }
         }
+
         // get post swap balances
-        simAmounts.amountReceived = _balanceOf(assetOut, receiver) - simAmounts.amountReceived;
-        simAmounts.amountPaid = simAmounts.amountPaid - _balanceOf(assetIn, msg.sender);
-        revert SimulationResults(true, simAmounts.amountReceived, simAmounts.amountPaid, "");
+        simAmounts.amountReceived = _balanceOf(simAmounts.receiveAsset, receiver) - simAmounts.amountReceived;
+        simAmounts.amountPaid = simAmounts.amountPaid - _balanceOf(simAmounts.payAsset, msg.sender);
+        revert SimulationResults(simAmounts.amountPaid, simAmounts.amountReceived, "");
     }
 
     ////////////////////////////////////////////////////
@@ -228,6 +242,14 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
         }
     }
 
+    /// @dev decode asset data to asset address and sweep flag
+    function _decodeAssetData(bytes32 data) private pure returns (address asset, bool sweep) {
+        assembly {
+            asset := and(ADDRESS_MASK, data)
+            sweep := and(SWEEP_MASK, data)
+        }
+    }
+
     /// @dev Checks approvals in storage and sets the allowance to the
     ///      maximum if the current approval is not already >= an amount.
     ///      Reverts if the return data is invalid or the call reverts.
@@ -281,6 +303,7 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
         }
     }
 
+    /// @dev sweep asset to caller if sweep=true
     function _sweepTokenIfNeeded(bool sweep, address token) public payable {
         assembly {
             if sweep {
@@ -300,7 +323,7 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
                                 0x0 // output size = zero
                             )
                         ) {
-                            mstore(0, NATIVE_TRANSFER)
+                            mstore(0, NATIVE_TRANSFER_FAILED)
                             revert(0, 0x4) // revert when native transfer fails
                         }
                     }
@@ -330,6 +353,87 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
                         // selector for transfer(address,uint256)
                         mstore(ptr, ERC20_TRANSFER)
                         mstore(add(ptr, 0x04), caller())
+                        mstore(add(ptr, 0x24), transferAmount)
+
+                        let success := call(gas(), token, 0, ptr, 0x44, ptr, 32)
+
+                        let rdsize := returndatasize()
+
+                        // Check for ERC20 success. ERC20 tokens should return a boolean,
+                        // but some don't. We accept 0-length return data as success, or at
+                        // least 32 bytes that starts with a 32-byte boolean true.
+                        success := and(
+                            success, // call itself succeeded
+                            or(
+                                iszero(rdsize), // no return data, or
+                                and(
+                                    iszero(lt(rdsize, 32)), // at least 32 bytes
+                                    eq(mload(ptr), 1) // starts with uint256(1)
+                                )
+                            )
+                        )
+
+                        if iszero(success) {
+                            returndatacopy(ptr, 0, rdsize)
+                            revert(ptr, rdsize)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// @dev sweep asset to receiver if sweep=true
+    function _handleOutputAsset(bytes32 data, address receiver) public payable {
+        assembly {
+            if and(SWEEP_MASK, data) {
+                let token := and(ADDRESS_MASK, data)
+                // initialize transferAmount
+                switch iszero(token)
+                case 1 {
+                    let transferAmount := selfbalance()
+                    if gt(transferAmount, 0) {
+                        if iszero(
+                            call(
+                                gas(),
+                                receiver,
+                                transferAmount,
+                                0x0, // input = empty for fallback/receive
+                                0x0, // input size = zero
+                                0x0, // output = empty
+                                0x0 // output size = zero
+                            )
+                        ) {
+                            mstore(0, NATIVE_TRANSFER_FAILED)
+                            revert(0, 0x4) // revert when native transfer fails
+                        }
+                    }
+                }
+                default {
+                    // selector for balanceOf(address)
+                    mstore(0, ERC20_BALANCE_OF)
+                    // add this address as parameter
+                    mstore(0x04, address())
+                    // call to token
+                    pop(
+                        staticcall(
+                            gas(),
+                            token,
+                            0x0,
+                            0x24,
+                            0x0,
+                            0x20 //
+                        )
+                    )
+                    // load the retrieved balance
+                    let transferAmount := mload(0x0)
+
+                    if gt(transferAmount, 0) {
+                        let ptr := mload(0x40) // free memory pointer
+
+                        // selector for transfer(address,uint256)
+                        mstore(ptr, ERC20_TRANSFER)
+                        mstore(add(ptr, 0x04), receiver)
                         mstore(add(ptr, 0x24), transferAmount)
 
                         let success := call(gas(), token, 0, ptr, 0x44, ptr, 32)
