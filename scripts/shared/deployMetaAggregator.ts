@@ -6,12 +6,14 @@ import {
 import { formatEther } from "ethers/lib/utils";
 import { BigNumber } from "ethers";
 
+const current_nonce = 6;
+
 async function main() {
 
     const accounts = await ethers.getSigners()
     const operator = accounts[2]
     const chainId = await operator.getChainId();
-    let nonce = await operator.getTransactionCount()
+    let nonce = current_nonce // await operator.getTransactionCount()
     console.log("operator", operator.address, "on", chainId, "with nonce", nonce)
 
     const gasData = await operator.getFeeData()
