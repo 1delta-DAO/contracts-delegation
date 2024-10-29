@@ -2,7 +2,7 @@
 
 import "../AggregationQuoterPolygon.sol";
 
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.28;
 
 /**
  * Test quoter contract - exposes all internal functions

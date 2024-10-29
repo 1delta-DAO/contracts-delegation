@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.28;
 
 import {PermitConstants} from "./PermitConstants.sol";
 import {ERC20Selectors} from "../selectors/ERC20Selectors.sol";

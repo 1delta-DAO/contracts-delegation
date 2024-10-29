@@ -1,5 +1,5 @@
 [profile.default]
-solc-version = "0.8.27"
+solc-version = "0.8.28"
 evm_version="shanghai"
 optimizer_runs = 9_950
 src = "contracts/1delta"

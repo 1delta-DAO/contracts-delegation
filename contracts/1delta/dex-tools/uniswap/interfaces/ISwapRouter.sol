@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.27;
+pragma solidity 0.8.28;
 
 /// @title Router token swapping functionality
 /// @notice Functions for swapping tokens via Uniswap V3

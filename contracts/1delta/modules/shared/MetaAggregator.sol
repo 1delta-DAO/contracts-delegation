@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.28;
 
 import {PermitUtilsSlim} from "./permit/PermitUtilsSlim.sol";
 
@@ -304,7 +304,7 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
     }
 
     /// @dev sweep asset to caller if sweep=true
-    function _sweepTokenIfNeeded(bool sweep, address token) public payable {
+    function _sweepTokenIfNeeded(bool sweep, address token) private {
         assembly {
             if sweep {
                 // initialize transferAmount
@@ -384,7 +384,7 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
     }
 
     /// @dev sweep asset to receiver if sweep=true
-    function _handleOutputAsset(bytes32 data, address receiver) public payable {
+    function _handleOutputAsset(bytes32 data, address receiver) private {
         assembly {
             if and(SWEEP_MASK, data) {
                 let token := and(ADDRESS_MASK, data)
