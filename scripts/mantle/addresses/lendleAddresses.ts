@@ -11,7 +11,9 @@ export const LENDLE_A_TOKENS: { [key: string]: string } = {
     WBTC: '0x44cccbbd7a5a9e2202076ea80c185da0058f1715',
     METH: '0x0e927aa52a38783c1fd5dfa5c8873cbdbd01d2ca',
     USDE: '0x2cfa1e69c8a8083aa52cfcf22d8caff7521e1e7e',
-    FBTC: '0xdef3542bb1b2969c1966dd91ebc504f4b37462fe'
+    FBTC: '0xdef3542bb1b2969c1966dd91ebc504f4b37462fe',
+    CMETH: '0x68a1b2756b41ce837d73a801e18a06e13eac50e1',
+    AUSD: '0x90f22aa619217765c8ea84b18130ff60ad0d5de1'
 }
 
 export const LENDLE_V_TOKENS: { [key: string]: string } = {
@@ -22,7 +24,9 @@ export const LENDLE_V_TOKENS: { [key: string]: string } = {
     WBTC: '0x42f9f9202d5f4412148662cf3bc68d704c8e354f',
     METH: '0xd739fb7a3b652306d00f92b20439afc637650254',
     USDE: '0x08c830f79917205ff1605325fcfbb3efc0c16cb5',
-    FBTC: '0x874712c653aaaa7cfb201317f46e00238c2649bb'
+    FBTC: '0x874712c653aaaa7cfb201317f46e00238c2649bb',
+    CMETH: '0x880a809ca9dc0a35f5015d31f1f2273a489695eb',
+    AUSD: '0xa1d2e7033d691a2b87a92f95c6735fdbc2032b9a'
 }
 
 export const LENDLE_S_TOKENS: { [key: string]: string } = {
@@ -33,5 +37,7 @@ export const LENDLE_S_TOKENS: { [key: string]: string } = {
     WBTC: '0x1817cde5cd6423c3b87039e1cb000bb2ac4e05c7',
     METH: '0x614110493ceae1171532eb635242e4ca71ccbba2',
     USDE: '0x10475947aba834a0dbe60910ee787968b3e14917',
-    FBTC: '0x08fc23af290d538647aa2836c5b3cf2fb3313759'
+    FBTC: '0x08fc23af290d538647aa2836c5b3cf2fb3313759',
+    CMETH: '0x0000000000000000000000000000000000000000',
+    AUSD: '0x0000000000000000000000000000000000000000',
 }
