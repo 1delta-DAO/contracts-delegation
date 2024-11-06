@@ -26,7 +26,7 @@ contract UniV3TypeTest is DeltaSetup {
         testQuoter1 = new TestQuoterTaiko();
     }
 
-    function test_panko_v3_usdc_spot_exact_in() external {
+    function test_taiko_panko_v3_usdc_spot_exact_in() external {
         address user = testUser;
         vm.assume(user != address(0));
         address assetIn = USDC;
@@ -67,7 +67,7 @@ contract UniV3TypeTest is DeltaSetup {
         assertApproxEqAbs(balanceIn, amountIn, 0);
     }
 
-    function test_panko_stable_usdc_spot_exact_in() external {
+    function test_taiko_panko_stable_usdc_spot_exact_in() external {
         address user = testUser;
         vm.assume(user != address(0));
         address assetIn = USDC;
@@ -108,7 +108,7 @@ contract UniV3TypeTest is DeltaSetup {
         assertApproxEqAbs(balanceIn, amountIn, 0);
     }
 
-    function test_panko_usdc_spot_exact_in_multi() external {
+    function test_taiko_panko_usdc_spot_exact_in_multi() external {
         address user = testUser;
         vm.assume(user != address(0));
         address assetIn = USDT;
