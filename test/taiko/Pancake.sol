@@ -117,10 +117,10 @@ contract UniV3TypeTest is DeltaSetup {
 
         deal(assetIn, user, 1e20);
 
-        uint256 amountIn = 20.0e6;
+        uint256 amountIn = 400.0e6;
 
         uint256 quote = testQuoter1.quoteExactInput(getQuoterExactInMultiSgUSDC(assetIn, assetMid, assetOut), amountIn);
-        console.log("quote", quote);
+
         bytes memory swapPath = getSpotExactInMultiSgUSDC(assetIn, assetMid, assetOut);
         uint256 minimumOut = 0.03e8;
 
@@ -144,9 +144,9 @@ contract UniV3TypeTest is DeltaSetup {
         balanceOut = IERC20All(assetOut).balanceOf(user) - balanceOut;
         balanceIn = balanceIn - IERC20All(assetIn).balanceOf(user);
 
-        // swap 10, receive approx 10, but in 18 decs
-        assertApproxEqAbs(7463941885477735, balanceOut, 1);
-        assertApproxEqAbs(quote, balanceOut, 0);
+        // swap 400, receive approx 10, but in 18 decs
+        assertApproxEqAbs(149125344889034608, balanceOut, 373976482);
+        assertApproxEqAbs(quote, balanceOut, 373976482);
         assertApproxEqAbs(balanceIn, amountIn, 0);
     }
 
@@ -202,7 +202,7 @@ contract UniV3TypeTest is DeltaSetup {
         data = abi.encodePacked(tokenIn, uint8(0), poolId, pool, indexIn, indexOut, uint8(0), mid);
         uint16 fee = 2500;
         poolId = PANKO_DEX_ID;
-        pool = testQuoter._v3TypePool(tokenOut, mid, fee, poolId);
+        pool = testQuoter._v3TypePool(mid, tokenOut, fee, poolId);
         return abi.encodePacked(data, abi.encodePacked(uint8(0), poolId, pool, fee, tokenOut));
     }
 
