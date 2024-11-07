@@ -150,6 +150,47 @@ contract UniV3TypeTest is DeltaSetup {
         assertApproxEqAbs(balanceIn, amountIn, 0);
     }
 
+    function test_taiko_panko_usdc_spot_exact_in_multi_reverse() external {
+        address user = testUser;
+        vm.assume(user != address(0));
+        address assetIn = WETH;
+        address assetMid = USDC;
+        address assetOut = USDT;
+
+        deal(assetIn, user, 1e20);
+
+        uint256 amountIn = 1.0e18;
+
+        uint256 quote = testQuoter1.quoteExactInput(getQuoterExactInMultiSgETH(assetIn, assetMid, assetOut), amountIn);
+        bytes memory swapPath = getSpotExactInMultiSgETH(assetIn, assetMid, assetOut);
+        uint256 minimumOut = 0.03e8;
+
+        vm.prank(user);
+        IERC20All(assetIn).approve(brokerProxyAddress, amountIn);
+
+        uint256 balanceIn = IERC20All(assetIn).balanceOf(user);
+        uint256 balanceOut = IERC20All(assetOut).balanceOf(user);
+        bytes memory data = encodeSwap(
+            Commands.SWAP_EXACT_IN,
+            user,
+            amountIn, //
+            minimumOut,
+            false,
+            swapPath
+        );
+
+        vm.prank(user);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
+
+        balanceOut = IERC20All(assetOut).balanceOf(user) - balanceOut;
+        balanceIn = balanceIn - IERC20All(assetIn).balanceOf(user);
+
+        // swap 400, receive approx 10, but in 18 decs
+        assertApproxEqAbs(2644228403, balanceOut, 1);
+        assertApproxEqAbs(quote, balanceOut, 1);
+        assertApproxEqAbs(balanceIn, amountIn, 0);
+    }
+
     /** UNISWAP FORK PATH BUILDERS */
 
     function getSpotExactInSingleSgUSDC(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
@@ -216,5 +257,29 @@ contract UniV3TypeTest is DeltaSetup {
         poolId = PANKO_DEX_ID;
         pool = testQuoter._v3TypePool(mid, tokenOut, fee, poolId);
         return abi.encodePacked(data, abi.encodePacked(poolId, pool, fee, tokenOut));
+    }
+
+    function getSpotExactInMultiSgETH(address tokenIn, address mid, address tokenOut) internal view returns (bytes memory data) {
+        uint16 fee = 2500;
+        uint8 poolId = PANKO_DEX_ID;
+        address pool = testQuoter._v3TypePool(mid, tokenIn, fee, poolId);
+        data = abi.encodePacked(tokenIn, uint8(0), poolId, pool, fee, mid);
+        poolId = PANKO_STABLE_DEX_ID;
+        uint8 indexIn = uint8(getPankoStableIndex(mid));
+        uint8 indexOut = uint8(getPankoStableIndex(tokenOut));
+        pool = PANKO_STABLE_USDT_USDC_POOl;
+        return abi.encodePacked(data, abi.encodePacked(uint8(0), poolId, pool, indexIn, indexOut, uint8(0), tokenOut));
+    }
+
+    function getQuoterExactInMultiSgETH(address tokenIn, address mid, address tokenOut) internal view returns (bytes memory data) {
+        uint16 fee = 2500;
+        uint8 poolId = PANKO_DEX_ID;
+        address pool = testQuoter._v3TypePool(mid, tokenIn, fee, poolId);
+        data = abi.encodePacked(tokenIn, poolId, pool, fee, mid);
+        poolId = PANKO_STABLE_DEX_ID;
+        uint8 indexIn = uint8(getPankoStableIndex(mid));
+        uint8 indexOut = uint8(getPankoStableIndex(tokenOut));
+        pool = PANKO_STABLE_USDT_USDC_POOl;
+        return abi.encodePacked(data, abi.encodePacked(poolId, pool, indexIn, indexOut, uint8(0), tokenOut));
     }
 }
