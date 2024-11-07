@@ -3,20 +3,15 @@ pragma solidity ^0.8.19;
 
 import "./DeltaSetup.f.sol";
 
-interface IHasFactory {
-    function factory() external view returns (address);
-}
-
 /**
- * Tests Uni V3 style DEX
+ * Tests Pancake V3 style DEX
  */
-contract UniV3TypeTest is DeltaSetup {
+contract PancakeTypeTest is DeltaSetup {
     uint8 internal constant PANKO_DEX_ID = 3;
     uint8 internal constant PANKO_STABLE_DEX_ID = 60;
     address internal constant PANKO_STABLE_USDT_USDC_POOl = 0x3136Ef69a9E55d7769cFED39700799Bb328d9B46;
 
     TestQuoterTaiko testQuoter1;
-    address internal router = 0x38be8Bc0cDfF59eF9B9Feb0d949B2052359e97d9;
 
     function setUp() public virtual override {
         vm.createSelectFork({blockNumber: 536078, urlOrAlias: "https://rpc.mainnet.taiko.xyz"});
