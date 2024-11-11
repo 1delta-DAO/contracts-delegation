@@ -64,6 +64,7 @@ contract OneDeltaQuoterTaiko is PoolGetterTaiko {
     uint256 internal constant CL_PARAM_LENGTH = 43; // token + id + pool + fee
     uint256 internal constant V2_PARAM_LENGTH = CL_PARAM_LENGTH; // token + id + pool
     uint256 internal constant EXOTIC_PARAM_LENGTH = 41; // token + id + pool
+    uint256 internal constant CURVE_PARAM_LENGTH = CL_PARAM_LENGTH + 1; // token + id + pool + idIn + idOut + empty_u8
 
     constructor() {}
 
@@ -101,6 +102,11 @@ contract OneDeltaQuoterTaiko is PoolGetterTaiko {
 
     // uniswap & DTX
     function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata path) external view {
+        _v3SwapCallback(amount0Delta, amount1Delta, path);
+    }
+
+    // pancakes
+    function pancakeV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata path) external view {
         _v3SwapCallback(amount0Delta, amount1Delta, path);
     }
 
@@ -319,6 +325,18 @@ contract OneDeltaQuoterTaiko is PoolGetterTaiko {
                 amountIn = quoteExactInputSingle_iZi(tokenIn, tokenOut, pair, uint128(amountIn));
                 path = path[CL_PARAM_LENGTH:];
             }
+            // curve
+            else if (poolId == 60) {
+                uint8 indexIn;
+                uint8 indexOut;
+                assembly {
+                    let indexData := calldataload(add(path.offset, 21))
+                    indexIn := and(shr(88, indexData), 0xff)
+                    indexOut := and(shr(80, indexData), 0xff)
+                }
+                amountIn = quoteCurveGeneral(indexIn, indexOut, pair, amountIn);
+                path = path[CURVE_PARAM_LENGTH:];
+            }
             // v2 types
             else if (poolId < 150) {
                 uint256 feeDenom;
@@ -453,6 +471,21 @@ contract OneDeltaQuoterTaiko is PoolGetterTaiko {
                     buyAmount := mload(0xB00)
                 }
             }
+        }
+    }
+
+    function quoteCurveGeneral(uint256 indexIn, uint256 indexOut, address pool, uint256 amountIn) internal view returns (uint256 amountOut) {
+        assembly {
+            // selector for get_dy(uint256,uint256,uint256)
+            mstore(0xB00, 0x556d6e9f00000000000000000000000000000000000000000000000000000000)
+            mstore(0xB04, indexIn)
+            mstore(0xB24, indexOut)
+            mstore(0xB44, amountIn)
+            if iszero(staticcall(gas(), pool, 0xB00, 0x64, 0xB00, 0x20)) {
+                revert(0, 0)
+            }
+
+            amountOut := mload(0xB00)
         }
     }
 

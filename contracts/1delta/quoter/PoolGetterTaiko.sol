@@ -39,6 +39,9 @@ abstract contract PoolGetterTaiko {
     bytes32 internal constant UNISWAP_V3_FF_FACTORY = 0xff75FC67473A91335B5b8F8821277262a13B38c9b30000000000000000000000;
     bytes32 internal constant UNISWAP_V3_INIT_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
 
+    bytes32 internal constant PANKO_FF_FACTORY = 0xff7DD105453D0AEf177743F5461d7472cC779e63f70000000000000000000000;
+    bytes32 internal constant PANKO_INIT_CODE_HASH = 0x72390f3f9e3d8044b0b3a9836ba01a85bb91416ad47a08360a78788e9602bd5e;
+
     // v2s
 
     bytes32 internal constant DTX_UNI_V2_FF_FACTORY = 0xff2ea9051d5a48ea2350b26306f2b959d262cf67e10000000000000000000000;
@@ -60,7 +63,7 @@ abstract contract PoolGetterTaiko {
             let s := mload(0x40)
             let p := s
             switch _pId
-            // FusionX
+            // Uni
             case 0 {
                 mstore(p, UNISWAP_V3_FF_FACTORY)
                 p := add(p, 21)
@@ -78,6 +81,25 @@ abstract contract PoolGetterTaiko {
                 mstore(p, keccak256(p, 96))
                 p := add(p, 32)
                 mstore(p, UNISWAP_V3_INIT_CODE_HASH)
+                pool := and(ADDRESS_MASK, keccak256(s, 85))
+            }
+            case 3 {
+                mstore(p, PANKO_FF_FACTORY)
+                p := add(p, 21)
+                // Compute the inner hash in-place
+                switch lt(tokenA, tokenB)
+                case 0 {
+                    mstore(p, tokenB)
+                    mstore(add(p, 32), tokenA)
+                }
+                default {
+                    mstore(p, tokenA)
+                    mstore(add(p, 32), tokenB)
+                }
+                mstore(add(p, 64), and(UINT24_MASK, fee))
+                mstore(p, keccak256(p, 96))
+                p := add(p, 32)
+                mstore(p, PANKO_INIT_CODE_HASH)
                 pool := and(ADDRESS_MASK, keccak256(s, 85))
             }
             case 1 {

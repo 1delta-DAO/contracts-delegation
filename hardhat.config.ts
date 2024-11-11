@@ -156,7 +156,7 @@ const config: HardhatUserConfig = {
       live: true,
     },
     taiko: {
-      url: 'https://rpc.ankr.com/taiko',
+      url: 'https://rpc.taiko.xyz',
       accounts,
       chainId: 167000,
     },

@@ -1,7 +1,7 @@
 
 export const TAIKO_CONFIGS = {
-    maxFeePerGas: 50000001,
-    maxPriorityFeePerGas: 50000001
+    maxFeePerGas: 150000001,
+    maxPriorityFeePerGas: 150000001
 }
 
 export function getTaikoConfig(n: number) {

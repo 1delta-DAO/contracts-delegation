@@ -57,6 +57,9 @@ abstract contract V3TypeSwapper is DeltaErrors, ERC20Selectors {
     bytes32 internal constant UNISWAP_V3_FF_FACTORY = 0xff75FC67473A91335B5b8F8821277262a13B38c9b30000000000000000000000;
     bytes32 internal constant UNISWAP_V3_INIT_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
 
+    bytes32 internal constant PANKO_FF_FACTORY = 0xff7DD105453D0AEf177743F5461d7472cC779e63f70000000000000000000000;
+    bytes32 internal constant PANKO_INIT_CODE_HASH = 0x72390f3f9e3d8044b0b3a9836ba01a85bb91416ad47a08360a78788e9602bd5e;
+
     constructor() {}
 
     uint256 internal constant UINT16_MASK = 0xffff;

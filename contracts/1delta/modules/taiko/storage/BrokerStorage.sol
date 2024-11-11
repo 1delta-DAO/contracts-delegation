@@ -28,6 +28,11 @@ struct ExternalCallStorage {
     mapping(address => mapping(address => bool)) isValidApproveAndCallTarget;
 }
 
+// it is typically linked to an approval call
+struct ApprovalMap {
+    mapping(address => bool) isApproved;
+}
+
 library LibStorage {
     // this is the core diamond storage location
     bytes32 constant MODULE_STORAGE_POSITION = keccak256("diamond.standard.module.storage");
@@ -35,6 +40,7 @@ library LibStorage {
     bytes32 constant LENDER_STORAGE = keccak256("broker.storage.lender");
     bytes32 constant GENERAL_CACHE = keccak256("broker.storage.cache.general");
     bytes32 constant EXTERNAL_CALL_STORAGE = keccak256("broker.storage.externalCalls");
+    bytes32 constant APPROVAL_MAP_STORAGE = keccak256("broker.storage.approvals");
 
     function lenderStorage() internal pure returns (GeneralLenderStorage storage ls) {
         bytes32 position = LENDER_STORAGE;

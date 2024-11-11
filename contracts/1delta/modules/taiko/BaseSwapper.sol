@@ -216,6 +216,34 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
                 pathOffset := add(pathOffset, SKIP_LENGTH_UNOSWAP)
                 pathLength := sub(pathLength, SKIP_LENGTH_UNOSWAP)
             }
+        } else if (dexId == 60) {
+            assembly {
+                switch lt(pathLength, 68) // MAX_SINGLE_LENGTH_CURVE + 1
+                case 1 { currentReceiver := receiver}
+                default {
+                    dexId := and(calldataload(add(pathOffset, 35)), UINT8_MASK)
+                    switch gt(dexId, 99) 
+                    case 1 {
+                        currentReceiver := shr(
+                                96,
+                                calldataload(
+                                    add(
+                                        pathOffset,
+                                        MAX_SINGLE_LENGTH_CURVE // 20 + 2 + 20 + 2 + 20 + 2 [poolAddress starts here]
+                                    )
+                                ) // poolAddress
+                            )
+                    }
+                    default {
+                        currentReceiver := address()
+                    }
+                }
+            }
+            amountIn = _swapCurveGeneral(pathOffset, amountIn, payer, currentReceiver);
+            assembly {
+                pathOffset := add(pathOffset, SKIP_LENGTH_CURVE)
+                pathLength := sub(pathLength, SKIP_LENGTH_CURVE)
+            }
         }
         // uniswapV2 style
         else if (dexId < 150) {
