@@ -82,6 +82,8 @@ interface IFlashAggregator {
     // The uniswapV2 style callback for Velocimeter, Cleopatra V and Stratum
     function hook(address, uint256 amount0, uint256 amount1, bytes calldata data) external;
 
+    function bitCall(address sender, uint256 amount0, uint256 amount1, bytes calldata path) external;
+
     // iZi callbacks
 
     // zeroForOne = true
