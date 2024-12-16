@@ -230,22 +230,22 @@ abstract contract PermitUtils {
                     let vs := calldataload(add(permitOffset, 0x44))                 // loads permitOffset 0x44..0x63
                     let allowedAndNonce := calldataload(permitOffset) // load [allowed nonce] as single bit and number
                     // check if high bit is pupulated
-                    mstore(add(ptr, 0x44), not(iszero(and(HIGH_BIT,allowedAndNonce))))
-                    mstore(add(ptr, 0x64), and(LOWER_BITS, allowedAndNonce))
+                    mstore(add(ptr, 0x44), iszero(iszero(and(HIGH_BIT,allowedAndNonce))))
+                    mstore(add(ptr, 0x64), and(LOWER_BITS, allowedAndNonce)) // nonce
                     mstore(add(ptr, 0x84), sub(expiry, 1))                     // store expiry  = expiry - 1
                     mstore(add(ptr, 0xA4), add(27, shr(255, vs)))                // store v         = most significant bit of vs + 27 (27 or 28)
                     calldatacopy(add(ptr, 0xC4), add(permitOffset, 0x24), 0x20) // store r         = copy permitOffset 0x24..0x43
                     mstore(add(ptr, 0xE4), shr(1, shl(1, vs)))                   // store s         = vs without most significant bit
                 }
                 // ICreditPermit.allowBySig(address owner, address manager, bool isAllowed, uint256 value, uint256 expiry, uint8 v, bytes32 r, bytes32 s)
-                success := call(gas(), comet, 0, ptr, 0xF4, 0, 0)
+                success := call(gas(), comet, 0, ptr, 0x104, 0, 0)
             }
             // ICreditPermit
             case 256 {
                 mstore(ptr, COMPOUND_V3_CREDIT_PERMIT)
                 calldatacopy(add(ptr, 0x04), permitOffset, permitLength) // copy permit calldata
-                // ICreditPermit.delegationWithSig(address owner, address spender, bool isAllowe, uint256 nonce, uint256 expiry, uint8 v, bytes32 r, bytes32 s)
-                success := call(gas(), comet, 0, ptr, 0xe4, 0, 0)
+                // ICreditPermit.allowBySig(address owner, address spender, bool isAllowed, uint256 nonce, uint256 expiry, uint8 v, bytes32 r, bytes32 s)
+                success := call(gas(), comet, 0, ptr, 0x104, 0, 0)
             }
             // Unknown
             default {
