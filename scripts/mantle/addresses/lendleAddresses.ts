@@ -13,7 +13,8 @@ export const LENDLE_A_TOKENS: { [key: string]: string } = {
     USDE: '0x2cfa1e69c8a8083aa52cfcf22d8caff7521e1e7e',
     FBTC: '0xdef3542bb1b2969c1966dd91ebc504f4b37462fe',
     CMETH: '0x68a1b2756b41ce837d73a801e18a06e13eac50e1',
-    AUSD: '0x90f22aa619217765c8ea84b18130ff60ad0d5de1'
+    AUSD: '0x90f22aa619217765c8ea84b18130ff60ad0d5de1',
+    SUSDE: '0x8e3f5e745a030a384fbd19c97a56da5337147376'
 }
 
 export const LENDLE_V_TOKENS: { [key: string]: string } = {
@@ -26,7 +27,8 @@ export const LENDLE_V_TOKENS: { [key: string]: string } = {
     USDE: '0x08c830f79917205ff1605325fcfbb3efc0c16cb5',
     FBTC: '0x874712c653aaaa7cfb201317f46e00238c2649bb',
     CMETH: '0x880a809ca9dc0a35f5015d31f1f2273a489695eb',
-    AUSD: '0xa1d2e7033d691a2b87a92f95c6735fdbc2032b9a'
+    AUSD: '0xa1d2e7033d691a2b87a92f95c6735fdbc2032b9a',
+    SUSDE: '0x48b6c9ad51009061f02ba36cddc4bf5ffd08519e'
 }
 
 export const LENDLE_S_TOKENS: { [key: string]: string } = {
@@ -40,4 +42,5 @@ export const LENDLE_S_TOKENS: { [key: string]: string } = {
     FBTC: '0x08fc23af290d538647aa2836c5b3cf2fb3313759',
     CMETH: '0x0000000000000000000000000000000000000000',
     AUSD: '0x0000000000000000000000000000000000000000',
+    SUSDE: '0x0000000000000000000000000000000000000000',
 }
