@@ -8,7 +8,7 @@ contract ForkTestPolygon is DeltaSetup {
         vm.createSelectFork({blockNumber: 65569405, urlOrAlias: "https://polygon.api.onfinality.io/public"});
         address admin = 0x999999833d965c275A2C102a4Ebf222ca938546f;
         address proxy = 0x6A6faa54B9238f0F079C8e6CBa08a7b9776C7fE4;
-        address oldModule = 0x8d07e9f698452AA2169bE3339478345fe2A64AC8;
+        address oldModule = 0x1bD60a4b301C28A03501a1A5F909890489EF616B;
         upgradeExistingDelta(proxy, admin, oldModule);
     }
 
