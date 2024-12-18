@@ -6,4 +6,5 @@ export const TOKENS_TAIKO: { [key: string]: string } = {
     // stargate bridged tokens
     USDCE: '0x19e26B0638bf63aa9fa4d14c6baF8D52eBE86C5C',
     USDTE: '0x9c2dc7377717603eB92b2655c5f2E7997a4945BD',
+    MBTC: '0xf7fb2df9280eb0a76427dc3b34761db8b1441a49',
 }

@@ -438,7 +438,7 @@ const config: HardhatUserConfig = {
             enabled: true,
             runs: 9_950,
           },
-          evmVersion: 'london',
+          evmVersion: 'cancun',
         },
       },
       "contracts/1delta/modules/mantle/Composer.sol": {

@@ -674,7 +674,7 @@ contract OneDeltaComposerPolygon is MarginTrading {
                         // full user debt balance
                         // only used for Compound V3. Overpaying results into the residual
                         // being converted to collateral
-                        // Aave V2/3s allow higher amounts than the balance and will correclty adapt
+                        // Aave V2/3s allow higher amounts than the balance and will correctly adapt
                         case 0xffffffffffffffffffffffffffff {
                             let cometPool
                             switch lenderId
@@ -721,29 +721,9 @@ contract OneDeltaComposerPolygon is MarginTrading {
                         amount := and(_UINT112_MASK, shr(136, lastBytes))
                         lenderId := shr(248, lastBytes) // last byte
 
-                        switch amount
-                        // case contract underlying balance
-                        case 0 {
-                            // selector for balanceOf(address)
-                            mstore(0, ERC20_BALANCE_OF)
-                            // add this address as parameter
-                            mstore(0x04, address())
-                            // call to token
-                            pop(
-                                staticcall(
-                                    gas(),
-                                    underlying, // token
-                                    0x0,
-                                    0x24,
-                                    0x0,
-                                    0x20
-                                )
-                            )
-                            // load the retrieved balance
-                            amount := mload(0x0)
-                        }
-                        // case user collateral balance
-                        case 0xffffffffffffffffffffffffffff {
+                        // maximum uint112 has a special meaning
+                        // for using the user collateral balance
+                        if eq(amount, 0xffffffffffffffffffffffffffff) {
                             switch lt(lenderId, 50)
                             // get aave type user collateral balance
                             case 1 {
@@ -1233,6 +1213,25 @@ contract OneDeltaComposerPolygon is MarginTrading {
                         currentOffset := add(permitOffset, permitLength)
                     }
                     _tryCreditPermit(token, permitOffset, permitLength);
+                } else if (operation == Commands.EXEC_COMPOUND_V3_PERMIT) {
+                    ////////////////////////////////////////////////////
+                    // Execute lending delegation based on Compound V3.
+                    // Data layout:
+                    //      bytes 0-20:                  token
+                    //      bytes 20-22:                 permit length
+                    //      bytes 22-(22+permit length): permit data
+                    ////////////////////////////////////////////////////
+                    uint256 permitOffset;
+                    uint256 permitLength;
+                    address comet;
+                    assembly {
+                        comet := calldataload(currentOffset)
+                        permitLength := and(UINT16_MASK, shr(80, comet))
+                        comet := shr(96, comet)
+                        permitOffset := add(currentOffset, 22)
+                        currentOffset := add(permitOffset, permitLength)
+                    }
+                    _tryCompoundV3Permit(comet, permitOffset, permitLength);
                 } else if (operation == Commands.FLASH_LOAN) {
                     ////////////////////////////////////////////////////
                     // Execute single asset flash loan
