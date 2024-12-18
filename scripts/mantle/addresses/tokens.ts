@@ -11,4 +11,5 @@ export const TOKENS_MANTLE: { [key: string]: string } = {
     FBTC: '0xc96de26018a54d51c097160568752c4e3bd6c364',
     CMETH: '0xe6829d9a7ee3040e1276fa75293bde931859e8fa',
     AUSD: '0x00000000efe302beaa2b3e6e1b18d08d69a9012a',
+    SUSDE: '0x211cc4dd073734da055fbf44a2b4667d5e5fe5d2',
 }
