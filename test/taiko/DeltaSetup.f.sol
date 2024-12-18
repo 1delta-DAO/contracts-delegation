@@ -74,7 +74,7 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
     }
 
     function flashAggregatorSelectors() internal pure returns (bytes4[] memory selectors) {
-        selectors = new bytes4[](24);
+        selectors = new bytes4[](25);
         /** margin */
         selectors[0] = IFlashAggregator.flashSwapExactIn.selector;
         selectors[1] = IFlashAggregator.flashSwapExactOut.selector;
@@ -103,6 +103,7 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
         selectors[21] = IFlashAggregator.deltaCompose.selector;
         selectors[22] = IFlashLoanReceiver.executeOperation.selector;
         selectors[23] = IFlashAggregator.syncSwapBaseSwapCallback.selector;
+        selectors[24] = IFlashAggregator.pancakeV3SwapCallback.selector;
         return selectors;
     }
 
@@ -211,17 +212,17 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
 
     function initializeDeltaTakoTako() internal virtual {
         // takotako
-        management.addGeneralLenderTokens(USDC, TAKOTAKO_A_USDC, TAKOTAKO_V_USDC, TAKOTAKO_S_USDC, 2);
-        management.addGeneralLenderTokens(TAIKO, TAKOTAKO_A_TAIKO, TAKOTAKO_V_TAIKO, TAKOTAKO_S_TAIKO, 2);
-        management.addGeneralLenderTokens(WETH, TAKOTAKO_A_WETH, TAKOTAKO_V_WETH, TAKOTAKO_S_WETH, 2);
+        management.addGeneralLenderTokens(USDC, TAKOTAKO_A_USDC, TAKOTAKO_V_USDC, TAKOTAKO_S_USDC, TAKOTAKO_ID);
+        management.addGeneralLenderTokens(TAIKO, TAKOTAKO_A_TAIKO, TAKOTAKO_V_TAIKO, TAKOTAKO_S_TAIKO, TAKOTAKO_ID);
+        management.addGeneralLenderTokens(WETH, TAKOTAKO_A_WETH, TAKOTAKO_V_WETH, TAKOTAKO_S_WETH, TAKOTAKO_ID);
 
-        collateralTokens[USDC][2] = TAKOTAKO_A_USDC;
-        collateralTokens[TAIKO][2] = TAKOTAKO_A_TAIKO;
-        collateralTokens[WETH][2] = TAKOTAKO_A_WETH;
+        collateralTokens[USDC][TAKOTAKO_ID] = TAKOTAKO_A_USDC;
+        collateralTokens[TAIKO][TAKOTAKO_ID] = TAKOTAKO_A_TAIKO;
+        collateralTokens[WETH][TAKOTAKO_ID] = TAKOTAKO_A_WETH;
 
-        debtTokens[USDC][2] = TAKOTAKO_V_USDC;
-        debtTokens[TAIKO][2] = TAKOTAKO_V_TAIKO;
-        debtTokens[WETH][2] = TAKOTAKO_V_WETH;
+        debtTokens[USDC][TAKOTAKO_ID] = TAKOTAKO_V_USDC;
+        debtTokens[TAIKO][TAKOTAKO_ID] = TAKOTAKO_V_TAIKO;
+        debtTokens[WETH][TAKOTAKO_ID] = TAKOTAKO_V_WETH;
 
         // approve pools
         address[] memory assets = new address[](3);
@@ -229,6 +230,24 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
         assets[1] = WETH;
         assets[2] = TAIKO;
         management.approveAddress(assets, TAKOTAKO_POOL);
+    }
+
+    function initializeDeltaAvalon() internal virtual {
+        // takotako
+        management.addGeneralLenderTokens(SOLV_BTC, AVALON_A_SOLV_BTC, AVALON_V_SOLV_BTC, AVALON_S_SOLV_BTC, AVALON_ID);
+        management.addGeneralLenderTokens(TAIKO, AVALON_A_SOLV_BTC_BBN, AVALON_V_SOLV_BTC_BBN, AVALON_S_SOLV_BTC_BBN, AVALON_ID);
+
+        collateralTokens[SOLV_BTC][AVALON_ID] = AVALON_A_SOLV_BTC;
+        collateralTokens[SOLV_BTC_BBN][AVALON_ID] = AVALON_A_SOLV_BTC_BBN;
+
+        debtTokens[SOLV_BTC][AVALON_ID] = AVALON_V_SOLV_BTC;
+        debtTokens[SOLV_BTC_BBN][AVALON_ID] = AVALON_V_SOLV_BTC_BBN;
+
+        // approve pools
+        address[] memory assets = new address[](2);
+        assets[0] = SOLV_BTC;
+        assets[1] = SOLV_BTC_BBN;
+        management.approveAddress(assets, AVALON_POOL);
     }
 
     function getAssets() internal view returns (address[] memory assetList) {
@@ -249,6 +268,7 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
         initializeDeltaHana();
         initializeDeltaMeridian();
         initializeDeltaTakoTako();
+        initializeDeltaAvalon();
         initializeDeltaBase();
     }
 
