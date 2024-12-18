@@ -23,6 +23,7 @@ abstract contract BaseLending is Slots, SyncSwapper {
     address internal constant HANA_POOL = 0x4aB85Bf9EA548410023b25a13031E91B4c4f3b91;
     address internal constant MERIDIAN_POOL = 0x1697A950a67d9040464287b88fCa6cb5FbEC09BA;
     address internal constant TAKOTAKO_POOL = 0x3A2Fd8a16030fFa8D66E47C3f1C0507c673C841e;
+    address internal constant AVALON_POOL = 0x9dd29AA2BD662E6b569524ba00C55be39e7B00fB;
 
     // BadLender()
     bytes4 internal constant BAD_LENDER = 0x603b7f3e;
@@ -83,6 +84,9 @@ abstract contract BaseLending is Slots, SyncSwapper {
             case 2 {
                 pool := TAKOTAKO_POOL
             }
+            case 25 {
+                pool := AVALON_POOL
+            }
             default {
                 mstore(0x0, _lenderId)
                 mstore(0x20, LENDING_POOL_SLOT)
@@ -124,6 +128,9 @@ abstract contract BaseLending is Slots, SyncSwapper {
             case 2 {
                 pool := TAKOTAKO_POOL
             }
+            case 25 {
+                pool := AVALON_POOL
+            }
             default {
                 mstore(0x0, _lenderId)
                 mstore(0x20, LENDING_POOL_SLOT)
@@ -131,7 +138,7 @@ abstract contract BaseLending is Slots, SyncSwapper {
                 if iszero(pool) {
                     mstore(0, BAD_LENDER)
                     revert(0, 0x4)
-                }            
+                }
             }
             // call pool
             if iszero(call(gas(), pool, 0x0, ptr, 0xA4, 0x0, 0x0)) {
@@ -176,37 +183,69 @@ abstract contract BaseLending is Slots, SyncSwapper {
     function _deposit(address _underlying, address _to, uint256 _amount, uint256 _lenderId) internal {
         assembly {
             let ptr := mload(0x40)
-            // selector deposit(address,uint256,address,uint16)
-            mstore(ptr, 0xe8eda9df00000000000000000000000000000000000000000000000000000000)
-            mstore(add(ptr, 0x04), _underlying)
-            mstore(add(ptr, 0x24), _amount)
-            mstore(add(ptr, 0x44), _to)
-            mstore(add(ptr, 0x64), 0x0)
-            let pool
-            // assign lending pool
-            switch _lenderId
-            case 0 {
-                pool := HANA_POOL
-            }
+            // aave v2s first
+            switch lt(_lenderId, 25)
             case 1 {
-                pool := MERIDIAN_POOL
-            }
-            case 2 {
-                pool := TAKOTAKO_POOL
-            }
-            default {
-                mstore(0x0, _lenderId)
-                mstore(0x20, LENDING_POOL_SLOT)
-                pool := sload(keccak256(0x0, 0x40))
-                if iszero(pool) {
-                    mstore(0, BAD_LENDER)
-                    revert(0, 0x4)
+                // selector deposit(address,uint256,address,uint16)
+                mstore(ptr, 0xe8eda9df00000000000000000000000000000000000000000000000000000000)
+                mstore(add(ptr, 0x04), _underlying)
+                mstore(add(ptr, 0x24), _amount)
+                mstore(add(ptr, 0x44), _to)
+                mstore(add(ptr, 0x64), 0x0)
+                let pool
+                // assign lending pool
+                switch _lenderId
+                case 0 {
+                    pool := HANA_POOL
+                }
+                case 1 {
+                    pool := MERIDIAN_POOL
+                }
+                case 2 {
+                    pool := TAKOTAKO_POOL
+                }
+                default {
+                    mstore(0x0, _lenderId)
+                    mstore(0x20, LENDING_POOL_SLOT)
+                    pool := sload(keccak256(0x0, 0x40))
+                    if iszero(pool) {
+                        mstore(0, BAD_LENDER)
+                        revert(0, 0x4)
+                    }
+                }
+                // call pool
+                if iszero(call(gas(), pool, 0x0, ptr, 0x84, 0x0, 0x0)) {
+                    returndatacopy(0x0, 0x0, returndatasize())
+                    revert(0x0, returndatasize())
                 }
             }
-            // call pool
-            if iszero(call(gas(), pool, 0x0, ptr, 0x84, 0x0, 0x0)) {
-                returndatacopy(0x0, 0x0, returndatasize())
-                revert(0x0, returndatasize())
+            default {
+                // selector supply(address,uint256,address,uint16)
+                mstore(ptr, 0x617ba03700000000000000000000000000000000000000000000000000000000)
+                mstore(add(ptr, 0x04), _underlying)
+                mstore(add(ptr, 0x24), _amount)
+                mstore(add(ptr, 0x44), _to)
+                mstore(add(ptr, 0x64), 0x0)
+                let pool
+                // assign lending pool
+                switch _lenderId
+                case 25 {
+                    pool := AVALON_POOL
+                }
+                default {
+                    mstore(0x0, _lenderId)
+                    mstore(0x20, LENDING_POOL_SLOT)
+                    pool := sload(keccak256(0x0, 0x40))
+                    if iszero(pool) {
+                        mstore(0, BAD_LENDER)
+                        revert(0, 0x4)
+                    }
+                }
+                // call pool
+                if iszero(call(gas(), pool, 0x0, ptr, 0x84, 0x0, 0x0)) {
+                    returndatacopy(0x0, 0x0, returndatasize())
+                    revert(0x0, returndatasize())
+                }
             }
         }
     }
@@ -232,6 +271,9 @@ abstract contract BaseLending is Slots, SyncSwapper {
             }
             case 2 {
                 pool := TAKOTAKO_POOL
+            }
+            case 25 {
+                pool := AVALON_POOL
             }
             default {
                 mstore(0x0, _lenderId)

@@ -21,6 +21,8 @@ contract AddressesTaiko {
     // assets
 
     address internal WETH = 0xA51894664A773981C6C112C43ce576f315d5b1B6;
+    address internal SOLV_BTC_BBN = 0xCC0966D8418d412c599A6421b760a847eB169A8c;
+    address internal SOLV_BTC = 0x541FD749419CA806a8bc7da8ac23D346f2dF8B77;
     address internal USDC = 0x07d83526730c7438048D55A4fc0b850e2aaB6f0b;
     address internal sgUSDC = 0x19e26B0638bf63aa9fa4d14c6baF8D52eBE86C5C;
     address internal TAIKO = 0xA9d23408b9bA935c230493c40C73824Df71A0975;
@@ -52,6 +54,7 @@ contract AddressesTaiko {
     address internal constant MERIDIAN_POOL = 0x1697A950a67d9040464287b88fCa6cb5FbEC09BA;
     address internal constant HANA_POOL = 0x4aB85Bf9EA548410023b25a13031E91B4c4f3b91;
     address internal constant TAKOTAKO_POOL = 0x3A2Fd8a16030fFa8D66E47C3f1C0507c673C841e;
+    address internal constant AVALON_POOL = 0x9dd29AA2BD662E6b569524ba00C55be39e7B00fB;
 
     address internal constant MERIDIAN_A_TAIKO = 0xc2aB0FE37dB900ed7b7d3E0bc6a194cB78E33FB4;
     address internal constant MERIDIAN_A_USDC = 0x3807A7D65D82784E91Fb4eaD75044C7B4F03A462;
@@ -89,6 +92,15 @@ contract AddressesTaiko {
     address internal constant TAKOTAKO_S_USDC = address(0);
     address internal constant TAKOTAKO_S_WETH = address(0);
 
+    address internal constant AVALON_A_SOLV_BTC = 0x8C9510db49b00F44e9C358016E95C8103b362bDe;
+    address internal constant AVALON_A_SOLV_BTC_BBN = 0x2e7dc6260112F2d496A9Ff7D0A5CC38B3eaddDba;
+
+    address internal constant AVALON_V_SOLV_BTC = 0xF8B03861429336D592225a404360EE96C7Cbc411;
+    address internal constant AVALON_V_SOLV_BTC_BBN = 0xaE28c4d9EC1F095aE9151c13B29c58c74e020141;
+
+    address internal constant AVALON_S_SOLV_BTC = address(0);
+    address internal constant AVALON_S_SOLV_BTC_BBN = address(0);
+
     /// @dev Mask of lower 20 bytes.
     uint256 internal constant ADDRESS_MASK = 0x00ffffffffffffffffffffffffffffffffffffffff;
     /// @dev Mask of upper 20 bytes.
@@ -101,6 +113,7 @@ contract AddressesTaiko {
     uint8 HANA_ID = 0;
     uint8 MERIDIAN_ID = 1;
     uint8 TAKOTAKO_ID = 2;
+    uint8 AVALON_ID = 25;
 
     /** DEX CONFIG */
 

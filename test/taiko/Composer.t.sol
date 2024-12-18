@@ -6,9 +6,14 @@ import "./DeltaSetup.f.sol";
 
 contract ComposerTestTaiko is DeltaSetup {
     uint8[] lenderIds = [HANA_ID, MERIDIAN_ID, TAKOTAKO_ID];
+    uint8[] extendedLenderIds = [HANA_ID, MERIDIAN_ID, TAKOTAKO_ID, AVALON_ID];
+
+    function getProperLenderAsset(uint8 lenderId, address origAsset) internal view returns (address) {
+        return lenderId == AVALON_ID ? SOLV_BTC : origAsset;
+    }
 
     function setUp() public override {
-        vm.createSelectFork({blockNumber: 447511, urlOrAlias: "https://rpc.mainnet.taiko.xyz"});
+        vm.createSelectFork({blockNumber: 536157, urlOrAlias: "https://rpc.mainnet.taiko.xyz"});
 
         intitializeFullDelta();
     }
@@ -45,11 +50,11 @@ contract ComposerTestTaiko is DeltaSetup {
     }
 
     function test_taiko_composer_depo() external {
-        for (uint8 index = 0; index < lenderIds.length; index++) {
-            uint8 lenderId = lenderIds[index];
+        for (uint8 index = 0; index < extendedLenderIds.length; index++) {
+            uint8 lenderId = extendedLenderIds[index];
             address user = testUser;
             uint256 amount = 10.0e6;
-            address assetIn = USDC;
+            address assetIn = getProperLenderAsset(lenderId, USDC);
             deal(assetIn, user, 1e23);
 
             vm.prank(user);
@@ -80,13 +85,13 @@ contract ComposerTestTaiko is DeltaSetup {
             uint8 lenderId = lenderIds[index];
             address user = testUser;
             uint256 amount = 1e18;
-            address asset = WETH;
+            address asset = getProperLenderAsset(lenderId, WETH);
 
             _deposit(asset, user, amount, lenderId);
 
             uint256 borrowAmount = 5.0e6;
 
-            address borrowAsset = USDC;
+            address borrowAsset = getProperLenderAsset(lenderId, USDC);
             vm.prank(user);
             IERC20All(debtTokens[borrowAsset][lenderId]).approveDelegation(
                 address(brokerProxyAddress), //
@@ -191,12 +196,12 @@ contract ComposerTestTaiko is DeltaSetup {
     }
 
     function test_taiko_composer_withdraw() external {
-        for (uint8 index = 0; index < lenderIds.length; index++) {
-            uint8 lenderId = lenderIds[index];
+        for (uint8 index = 0; index < extendedLenderIds.length; index++) {
+            uint8 lenderId = extendedLenderIds[index];
             address user = testUser;
 
             uint256 amount = 1e18;
-            address asset = WETH;
+            address asset = getProperLenderAsset(lenderId, WETH);
 
             _deposit(asset, user, amount, lenderId);
 
@@ -217,7 +222,7 @@ contract ComposerTestTaiko is DeltaSetup {
 
     function test_taiko_composer_withdraw_all() external {
         for (uint8 index = 0; index < lenderIds.length; index++) {
-            uint8 lenderId = lenderIds[index];        
+            uint8 lenderId = lenderIds[index];
             address user = testUser;
 
             uint256 amount = 1e18;
@@ -626,7 +631,7 @@ contract ComposerTestTaiko is DeltaSetup {
         vm.prank(user);
         IERC20All(assetIn).approve(address(brokerProxyAddress), maxIn * 2);
 
-        uint balanceOutBefore =IERC20All(assetOut).balanceOf(user);
+        uint balanceOutBefore = IERC20All(assetOut).balanceOf(user);
         uint balanceInBefore = IERC20All(assetIn).balanceOf(user);
 
         vm.prank(user);
@@ -635,9 +640,8 @@ contract ComposerTestTaiko is DeltaSetup {
         gas = gas - gasleft();
         console.log("gas", gas);
 
-        uint balanceOutAfter =IERC20All(assetOut).balanceOf(user);
+        uint balanceOutAfter = IERC20All(assetOut).balanceOf(user);
         uint balanceInAfter = IERC20All(assetIn).balanceOf(user);
-
 
         assertApproxEqAbs(balanceOutAfter - balanceOutBefore, amount, 1);
         assertApproxEqAbs(balanceInBefore - balanceInAfter, 2670544, 1);
