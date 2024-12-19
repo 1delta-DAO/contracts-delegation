@@ -8,7 +8,7 @@ contract ForkTestMantle is DeltaSetup {
         vm.createSelectFork({blockNumber: 73160008, urlOrAlias: "https://mantle-mainnet.public.blastapi.io"});
         address admin = 0x999999833d965c275A2C102a4Ebf222ca938546f;
         address proxy = 0x9bc92bF848FaF2355c429c54d1edE3e767bDd790;
-        address oldModule = 0x74E95F3Ec71372756a01eB9317864e3fdde1AC53;
+        address oldModule = 0xCB9FF5D38285CFfd44ba0DA269f26cF8a22baDDB; // 0x74E95F3Ec71372756a01eB9317864e3fdde1AC53;
         upgradeExistingDelta(proxy, admin, oldModule);
         testQuoter = new TestQuoterMantle();
     }
