@@ -1201,6 +1201,25 @@ contract OneDeltaComposerMantle is MarginTrading {
                         currentOffset := add(permitOffset, permitLength)
                     }
                     _tryCreditPermit(token, permitOffset, permitLength);
+                } else if (operation == Commands.EXEC_COMPOUND_V3_PERMIT) {
+                    ////////////////////////////////////////////////////
+                    // Execute lending delegation based on Compound V3.
+                    // Data layout:
+                    //      bytes 0-20:                  token
+                    //      bytes 20-22:                 permit length
+                    //      bytes 22-(22+permit length): permit data
+                    ////////////////////////////////////////////////////
+                    uint256 permitOffset;
+                    uint256 permitLength;
+                    address comet;
+                    assembly {
+                        comet := calldataload(currentOffset)
+                        permitLength := and(UINT16_MASK, shr(80, comet))
+                        comet := shr(96, comet)
+                        permitOffset := add(currentOffset, 22)
+                        currentOffset := add(permitOffset, permitLength)
+                    }
+                    _tryCompoundV3Permit(comet, permitOffset, permitLength);
                 } else if (operation == Commands.FLASH_LOAN) {
                     ////////////////////////////////////////////////////
                     // Execute single asset flash loan
