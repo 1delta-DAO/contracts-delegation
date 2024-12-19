@@ -126,7 +126,7 @@ contract ComposerTestMantle is DeltaSetup {
         bytes memory data = repay(
             borrowAsset,
             user,
-            type(uint112).max,
+            0,
             lenderId, //
             DEFAULT_MODE
         );

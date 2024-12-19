@@ -4,7 +4,7 @@ import {
     MantleManagementModule__factory,
 } from "../../types";
 import { addAureliusTokens, addLendleTokens } from "./lenders/addLenderData";
-import { execAureliusApproves, execLendleApproves } from "./approvals/approveAddress";
+import { execAureliusApproves, execCompoundV3USDEApproves, execLendleApproves } from "./approvals/approveAddress";
 import { ONE_DELTA_GEN2_ADDRESSES } from "./addresses/oneDeltaAddresses";
 
 async function main() {
@@ -31,6 +31,8 @@ async function main() {
     // approve targets
     nonce = await execAureliusApproves(oneDeltaManagement, nonce)
 
+    // approve comet USDE
+    nonce = await execCompoundV3USDEApproves(oneDeltaManagement, nonce)
 
     console.log("insertion completed")
 }

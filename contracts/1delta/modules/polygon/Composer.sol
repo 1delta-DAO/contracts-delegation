@@ -705,7 +705,6 @@ contract OneDeltaComposerPolygon is MarginTrading {
                             // load the retrieved balance
                             amount := mload(0x0)
                         }
-
                         currentOffset := add(currentOffset, 56)
                     }
                     _repay(underlying, receiver, amount, mode, lenderId);

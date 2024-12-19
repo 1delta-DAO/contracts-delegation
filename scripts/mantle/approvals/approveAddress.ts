@@ -3,6 +3,7 @@ import { TOKENS_MANTLE } from "../addresses/tokens";
 import { AURELIUS_POOL } from "../addresses/aureliusAddresses";
 import { LENDLE_POOL } from "../addresses/lendleAddresses";
 import { getMantleConfig } from "../utils";
+import { COMET_USDE, COMET_USDE_UNDERLYINGS } from "../addresses/compoundV3Addresses";
 
 const STRATUM_USD = [
     TOKENS_MANTLE.USDC,
@@ -73,6 +74,17 @@ export async function execMUSDApproves(manager: MantleManagementModule, nonce: n
     const tx = await manager.approveAddress(
         [TOKENS_MANTLE.USDY],
         TOKENS_MANTLE.mUSD,
+        getMantleConfig(nonce++)
+    )
+    await tx.wait()
+    return nonce
+}
+
+
+export async function execCompoundV3USDEApproves(manager: MantleManagementModule, nonce: number) {
+    const tx = await manager.approveAddress(
+        Object.values(COMET_USDE_UNDERLYINGS),
+        COMET_USDE,
         getMantleConfig(nonce++)
     )
     await tx.wait()

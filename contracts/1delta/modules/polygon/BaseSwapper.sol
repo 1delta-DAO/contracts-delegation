@@ -7,7 +7,7 @@ pragma solidity 0.8.28;
 /******************************************************************************/
 
 import {BaseLending} from "./BaseLending.sol";
-import {PermitUtils} from "./permit/PermitUtils.sol";
+import {PermitUtils} from "../shared/permit/PermitUtils.sol";
 
 // solhint-disable max-line-length
 

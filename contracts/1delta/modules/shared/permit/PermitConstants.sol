@@ -15,7 +15,12 @@ abstract contract PermitConstants {
     bytes32 internal constant DAI_PERMIT = 0x8fcbaf0c00000000000000000000000000000000000000000000000000000000;
     bytes32 internal constant PERMIT2_PERMIT = 0x2b67b57000000000000000000000000000000000000000000000000000000000;
     bytes32 internal constant CREDIT_PERMIT = 0x0b52d55800000000000000000000000000000000000000000000000000000000;
+    bytes32 internal constant COMPOUND_V3_CREDIT_PERMIT = 0xbb24d99400000000000000000000000000000000000000000000000000000000;
     bytes32 internal constant PERMIT2_TRANSFER_FROM = 0x36c7851600000000000000000000000000000000000000000000000000000000;
 
     bytes4 internal constant _PERMIT_LENGTH_ERROR = 0x68275857; // SafePermitBadLength.selector
+
+    // bitmap padding
+    uint256 internal constant HIGH_BIT = 1 << 255;
+    uint256 internal constant LOWER_BITS = 0x00ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
 }

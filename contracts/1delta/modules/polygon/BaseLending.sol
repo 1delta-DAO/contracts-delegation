@@ -26,7 +26,7 @@ abstract contract BaseLending is Slots, BalancerSwapper {
     address internal constant AAVE_V2 = 0x8dFf5E27EA6b7AC08EbFdf9eB090F32ee9a30fcf;
     address internal constant YLDR = 0x8183D4e0561cBdc6acC0Bdb963c352606A2Fa76F;
 
-    // Compoun V3 addresses
+    // Compound V3 addresses
     address internal constant COMET_USDC = 0xF25212E676D1F7F89Cd72fFEe66158f541246445;
     address internal constant COMET_USDT = 0xaeB318360f27748Acb200CE616E389A6C9409a07;
 
@@ -107,7 +107,7 @@ abstract contract BaseLending is Slots, BalancerSwapper {
                     revert(0x0, returndatasize())
                 }
             }
-            case 0 {
+            default {
                 let cometPool
                 switch _lenderId
                 case 50 {
