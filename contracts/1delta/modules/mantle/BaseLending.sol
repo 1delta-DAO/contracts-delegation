@@ -79,8 +79,17 @@ abstract contract BaseLending is Slots, ExoticSwapper {
                 case 0 {
                     pool := LENDLE_POOL
                 }
-                default {
+                case 1 {
                     pool := AURELIUS_POOL
+                }
+                default {
+                    mstore(0x0, _lenderId)
+                    mstore(0x20, LENDING_POOL_SLOT)
+                    pool := sload(keccak256(0x0, 0x40))
+                    if iszero(pool) {
+                        mstore(0, BAD_LENDER)
+                        revert(0, 0x4)
+                    }
                 }
                 // call pool
                 if iszero(call(gas(), pool, 0x0, ptr, 0x64, 0x0, 0x0)) {
@@ -140,8 +149,17 @@ abstract contract BaseLending is Slots, ExoticSwapper {
                 case 0 {
                     pool := LENDLE_POOL
                 }
-                default {
+                case 1 {
                     pool := AURELIUS_POOL
+                }
+                default {
+                    mstore(0x0, _lenderId)
+                    mstore(0x20, LENDING_POOL_SLOT)
+                    pool := sload(keccak256(0x0, 0x40))
+                    if iszero(pool) {
+                        mstore(0, BAD_LENDER)
+                        revert(0, 0x4)
+                    }
                 }
                 // call pool
                 if iszero(call(gas(), pool, 0x0, ptr, 0xA4, 0x0, 0x0)) {
@@ -230,8 +248,17 @@ abstract contract BaseLending is Slots, ExoticSwapper {
                 case 0 {
                     pool := LENDLE_POOL
                 }
-                default {
+                case 1 {
                     pool := AURELIUS_POOL
+                }
+                default {
+                    mstore(0x0, _lenderId)
+                    mstore(0x20, LENDING_POOL_SLOT)
+                    pool := sload(keccak256(0x0, 0x40))
+                    if iszero(pool) {
+                        mstore(0, BAD_LENDER)
+                        revert(0, 0x4)
+                    }
                 }
                 // call pool
                 if iszero(call(gas(), pool, 0x0, ptr, 0x84, 0x0, 0x0)) {
@@ -288,8 +315,17 @@ abstract contract BaseLending is Slots, ExoticSwapper {
                 case 0 {
                     pool := LENDLE_POOL
                 }
-                default {
+                case 1 {
                     pool := AURELIUS_POOL
+                }
+                default {
+                    mstore(0x0, _lenderId)
+                    mstore(0x20, LENDING_POOL_SLOT)
+                    pool := sload(keccak256(0x0, 0x40))
+                    if iszero(pool) {
+                        mstore(0, BAD_LENDER)
+                        revert(0, 0x4)
+                    }
                 }
                 // call pool
                 if iszero(call(gas(), pool, 0x0, ptr, 0x84, 0x0, 0x0)) {

@@ -1234,8 +1234,13 @@ contract OneDeltaComposerMantle is MarginTrading {
                         case 0 {
                             pool := LENDLE_POOL
                         }
-                        default {
+                        case 1 {
                             pool := AURELIUS_POOL
+                        }
+                        // We revert on any other id
+                        default {
+                            mstore(0, INVALID_FLASH_LOAN)
+                            revert(0, 0x4)
                         }
                         // call flash loan
                         let ptr := mload(0x40)
