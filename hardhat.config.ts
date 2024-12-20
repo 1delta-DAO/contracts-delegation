@@ -446,9 +446,9 @@ const config: HardhatUserConfig = {
         settings: {
           optimizer: {
             enabled: true,
-            runs: 1_000_000,
+            runs: 10_000,
           },
-          evmVersion: 'paris',
+          evmVersion: 'shanghai',
         },
       },
       "contracts/1delta/quoter/MoeJoeLens.sol" : {
