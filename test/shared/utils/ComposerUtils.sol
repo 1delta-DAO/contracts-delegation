@@ -54,7 +54,7 @@ contract ComposerUtils {
         ); // 14 bytes
     }
 
-    function deposit(address asset, address receiver, uint256 amount, uint8 lenderId) internal pure returns (bytes memory) {
+    function deposit(address asset, address receiver, uint256 amount, uint16 lenderId) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
                 uint8(Commands.DEPOSIT), // 1
@@ -64,7 +64,7 @@ contract ComposerUtils {
             );
     }
 
-    function withdraw(address asset, address receiver, uint256 amount, uint8 lenderId) internal pure returns (bytes memory) {
+    function withdraw(address asset, address receiver, uint256 amount, uint16 lenderId) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
                 uint8(Commands.WITHDRAW), // 1
@@ -74,7 +74,7 @@ contract ComposerUtils {
             );
     }
 
-    function repay(address asset, address receiver, uint256 amount, uint8 lenderId, uint8 mode) internal pure returns (bytes memory) {
+    function repay(address asset, address receiver, uint256 amount, uint16 lenderId, uint8 mode) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
                 uint8(Commands.REPAY), // 1
@@ -84,7 +84,7 @@ contract ComposerUtils {
             );
     }
 
-    function borrow(address asset, address receiver, uint256 amount, uint8 lenderId, uint8 mode) internal pure returns (bytes memory) {
+    function borrow(address asset, address receiver, uint256 amount, uint16 lenderId, uint8 mode) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
                 uint8(Commands.BORROW), // 1
@@ -94,19 +94,19 @@ contract ComposerUtils {
             );
     }
 
-    function populateAmountDeposit(uint8 lender, uint256 amount) internal pure returns (bytes memory data) {
+    function populateAmountDeposit(uint16 lender, uint256 amount) internal pure returns (bytes memory data) {
         data = abi.encodePacked(uint16(lender), uint112(amount)); // 14 + 1 byte
     }
 
-    function populateAmountBorrow(uint8 lender, uint8 mode, uint256 amount) internal pure returns (bytes memory data) {
+    function populateAmountBorrow(uint16 lender, uint8 mode, uint256 amount) internal pure returns (bytes memory data) {
         data = abi.encodePacked(uint16(lender), mode, uint112(amount)); // 14 + 2 byte
     }
 
-    function populateAmountRepay(uint8 lender, uint8 mode, uint256 amount) internal pure returns (bytes memory data) {
+    function populateAmountRepay(uint16 lender, uint8 mode, uint256 amount) internal pure returns (bytes memory data) {
         data = abi.encodePacked(uint16(lender), mode, uint112(amount)); // 14 + 2 byte
     }
 
-    function populateAmountWithdraw(uint8 lender, uint256 amount) internal pure returns (bytes memory data) {
+    function populateAmountWithdraw(uint16 lender, uint256 amount) internal pure returns (bytes memory data) {
         data = abi.encodePacked(uint16(lender), uint112(amount)); // 14 + 1 byte
     }
 
