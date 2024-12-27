@@ -3,7 +3,7 @@
 pragma solidity ^0.8.28;
 
 import {IERC20} from "../../../../interfaces/IERC20.sol";
-import {WithMantleStorage} from "./BrokerStorage.sol";
+import {WithBrokerStorage} from "./BrokerStorage.sol";
 import {Slots} from "./Slots.sol";
 
 // solhint-disable max-line-length
@@ -13,7 +13,7 @@ import {Slots} from "./Slots.sol";
  * @notice Allows the owner to insert token and lending protocol data
  *         Due to contract size limitations this is a separate contract
  */
-contract MantleManagementModule is WithMantleStorage, Slots {
+contract ManagementModule is WithBrokerStorage, Slots {
     modifier onlyOwner() {
         require(ms().contractOwner == msg.sender, "Only owner can interact.");
         _;
@@ -50,6 +50,10 @@ contract MantleManagementModule is WithMantleStorage, Slots {
 
     function setValidTarget(address _approvalTarget, address _target, bool value) external onlyOwner {
         es().isValidApproveAndCallTarget[_approvalTarget][_target] = value;
+    }
+
+    function setValidSingleTarget(address _target, bool value) external onlyOwner {
+        cms().isValid[_target] = value;
     }
 
     function approveAddress(address[] memory assets, address target) external onlyOwner {

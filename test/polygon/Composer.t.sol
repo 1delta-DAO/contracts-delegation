@@ -6,7 +6,7 @@ import "../shared/interfaces/ICurvePool.sol";
 import "./DeltaSetup.f.sol";
 
 contract ComposerTestPolygon is DeltaSetup {
-    function test_polygon_composer_depo(uint8 lenderId) external {
+    function test_polygon_composer_depo(uint16 lenderId) external {
         address user = testUser;
         vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
         uint256 amount = 10.0e6;
@@ -39,7 +39,7 @@ contract ComposerTestPolygon is DeltaSetup {
 
     function test_polygon_composer_depo_comet() external {
         address user = testUser;
-        uint8 lenderId = 50;
+        uint16 lenderId = 50;
         // vm.assume(user != address(0) && (lenderId == 50));
         uint256 amount = 0.000000001e18;
         address asset = WETH;
@@ -70,7 +70,7 @@ contract ComposerTestPolygon is DeltaSetup {
     }
 
 
-    function test_polygon_composer_borrow(uint8 lenderId) external {
+    function test_polygon_composer_borrow(uint16 lenderId) external {
         address user = testUser;
         vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
         uint256 amount = 500.0e18;
@@ -96,7 +96,7 @@ contract ComposerTestPolygon is DeltaSetup {
         assertApproxEqAbs(borrowAmount, getBorrowBalance(user, borrowAsset, lenderId), 1);
     }
 
-    function test_polygon_composer_repay(uint8 lenderId) external {
+    function test_polygon_composer_repay(uint16 lenderId) external {
         address user = testUser;
 
         vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
@@ -140,7 +140,7 @@ contract ComposerTestPolygon is DeltaSetup {
         assertApproxEqAbs(borrowAmount - repayAmount, getBorrowBalance(user, borrowAsset, lenderId), 2);
     }
 
-    function test_polygon_composer_repay_too_much(uint8 lenderId) external {
+    function test_polygon_composer_repay_too_much(uint16 lenderId) external {
         address user = testUser;
         vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
 
@@ -183,7 +183,7 @@ contract ComposerTestPolygon is DeltaSetup {
     }
 
     function test_polygon_composer_withdraw() external {
-        uint8 lenderId = 50;
+        uint16 lenderId = 50;
         address user = testUser;
         vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
 
@@ -205,7 +205,7 @@ contract ComposerTestPolygon is DeltaSetup {
         assertApproxEqAbs(amount - withdrawAmount, getCollateralBalance(user, asset, lenderId), 2);
     }
 
-    function test_polygon_composer_withdraw_all(uint8 lenderId) external {
+    function test_polygon_composer_withdraw_all(uint16 lenderId) external {
         address user = testUser;
 
         vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
@@ -654,7 +654,7 @@ contract ComposerTestPolygon is DeltaSetup {
         return abi.encodePacked(tokenOut, action, poolId, pool, fee, tokenIn, uint8(99));
     }
 
-    function _deposit(address asset, address user, uint256 amount, uint8 lenderId) internal {
+    function _deposit(address asset, address user, uint256 amount, uint16 lenderId) internal {
         deal(asset, user, amount);
 
         vm.prank(user);
@@ -680,7 +680,7 @@ contract ComposerTestPolygon is DeltaSetup {
         console.log("gas", gas);
     }
 
-    function _borrow(address borrowAsset, address user, uint256 borrowAmount, uint8 lenderId) internal {
+    function _borrow(address borrowAsset, address user, uint256 borrowAmount, uint16 lenderId) internal {
         approveBorrowDelegation(user, borrowAsset, borrowAmount, lenderId);
 
         bytes memory data = borrow(

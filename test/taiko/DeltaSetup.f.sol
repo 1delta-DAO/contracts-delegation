@@ -26,7 +26,7 @@ import {DeltaBrokerProxyGen2} from "../../contracts/1delta/proxy/DeltaBrokerGen2
 // initializer
 
 // core modules
-import {TaikoManagementModule} from "../../contracts/1delta/modules/taiko/storage/ManagementModule.sol";
+import {ManagementModule} from "../../contracts/1delta/modules/shared/storage/ManagementModule.sol";
 import {OneDeltaComposerTaiko} from "../../contracts/1delta/modules/taiko/Composer.sol";
 
 // forge
@@ -115,7 +115,7 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
 
         brokerProxy = IBrokerProxy(brokerProxyAddress);
 
-        TaikoManagementModule _management = new TaikoManagementModule();
+        ManagementModule _management = new ManagementModule();
         OneDeltaComposerTaiko _aggregator = new OneDeltaComposerTaiko();
 
         management = IManagement(brokerProxyAddress);

@@ -12,8 +12,6 @@ struct GeneralLenderStorage {
     mapping(bytes32 => address) debtTokens;
     mapping(bytes32 => address) stableDebtTokens;
     // map lender id to lender pool
-    // typically used for lenders with multiple pools
-    // like Compound V3 or Venus
     mapping(uint256 => address) lendingPools;
 }
 
@@ -23,21 +21,16 @@ struct GeneralCache {
     bytes32 cache;
 }
 
-// storage for external calls 
+// a validation apping that ensures that an external call can
+// be executed on an address
+// it is typically linked to an approval call
 struct ExternalCallStorage {
-    // a validation apping that ensures that an external call can
-    // be executed on an address
-    // it is typically linked to an approval call
     mapping(address => mapping(address => bool)) isValidApproveAndCallTarget;
-    // simple record that checks whether an address is ERC20-approved
-    // will prevent external allowance call
-    // typically used for curve style pools and dex aggregators
-    mapping(address => mapping(address => bool)) isApproved;
 }
 
-// controls access to balancer-type flash loans
-struct FlashLoanGateway {
-    uint256 entryState;
+struct CallManagerStorage {
+    mapping(address => bool) isValid;
+    mapping(address => mapping(address => bool)) isApproved;
 }
 
 library LibStorage {
@@ -47,7 +40,7 @@ library LibStorage {
     bytes32 constant LENDER_STORAGE = keccak256("broker.storage.lender");
     bytes32 constant GENERAL_CACHE = keccak256("broker.storage.cache.general");
     bytes32 constant EXTERNAL_CALL_STORAGE = keccak256("broker.storage.externalCalls");
-    bytes32 constant FLASH_LOAN_GATEWAY = keccak256("broker.storage.flashLoanGateway");
+    bytes32 constant CALL_MANAGER_STORAGE = keccak256("broker.storage.callManager");
 
     function lenderStorage() internal pure returns (GeneralLenderStorage storage ls) {
         bytes32 position = LENDER_STORAGE;
@@ -70,17 +63,17 @@ library LibStorage {
         }
     }
 
+    function callManagerStorage() internal pure returns (CallManagerStorage storage es) {
+        bytes32 position = CALL_MANAGER_STORAGE;
+        assembly {
+            es.slot := position
+        }
+    }
+
     function moduleStorage() internal pure returns (LibModules.ModuleStorage storage ds) {
         bytes32 position = MODULE_STORAGE_POSITION;
         assembly {
             ds.slot := position
-        }
-    }
-
-    function flashLoanGatewayStorage() internal pure returns (FlashLoanGateway storage fgs) {
-        bytes32 position = FLASH_LOAN_GATEWAY;
-        assembly {
-            fgs.slot := position
         }
     }
 }
@@ -88,7 +81,7 @@ library LibStorage {
 /**
  * The `WithStorage` contract provides a base contract for Module contracts to inherit.
  */
-contract WithPolygonStorage {
+contract WithBrokerStorage {
     function ls() internal pure returns (GeneralLenderStorage storage) {
         return LibStorage.lenderStorage();
     }
@@ -105,46 +98,15 @@ contract WithPolygonStorage {
         return LibStorage.moduleStorage();
     }
 
+    function cms() internal pure returns (CallManagerStorage storage) {
+        return LibStorage.callManagerStorage();
+    }
+
     /** TOKEN GETTERS */
 
-    function _getCollateralToken(address _underlying, uint8 _lenderId) internal view returns (address collateralToken) {
-        mapping(bytes32 => address) storage collateralTokens = LibStorage.lenderStorage().collateralTokens;
+    function _getLenderTokenKey(address _underlying, uint16 _lenderId) internal pure returns (bytes32 key) {
         assembly {
-            // Slot for collateralTokens[target] is keccak256(target . collateralTokens.slot).
-            mstore(0x0, _underlying)
-            mstore8(0x0, _lenderId)
-            mstore(0x20, collateralTokens.slot)
-            collateralToken := sload(keccak256(0x0, 0x40))
-        }
-    }
-
-    function _getDebtToken(address _underlying, uint8 _lenderId) internal view returns (address debtToken) {
-        mapping(bytes32 => address) storage debtTokens = LibStorage.lenderStorage().debtTokens;
-        assembly {
-            // Slot for debtTokens[target] is keccak256(target . debtTokens.slot).
-            mstore(0x0, _underlying)
-            mstore8(0x0, _lenderId)
-            mstore(0x20, debtTokens.slot)
-            debtToken := sload(keccak256(0x0, 0x40))
-        }
-    }
-
-    function _getStableDebtToken(address _underlying, uint8 _lenderId) internal view returns (address stableDebtToken) {
-        mapping(bytes32 => address) storage stableDebtTokens = LibStorage.lenderStorage().stableDebtTokens;
-        assembly {
-            // Slot for stableDebtTokens[target] is keccak256(target . stableDebtTokens.slot).
-            mstore(0x0, _underlying)
-            mstore8(0x0, _lenderId)
-            mstore(0x20, stableDebtTokens.slot)
-            stableDebtToken := sload(keccak256(0x0, 0x40))
-        }
-    }
-
-    function _getLenderTokenKey(address _underlying, uint8 _lenderId) internal pure returns (bytes32 key) {
-        assembly {
-            mstore(0x0, _underlying)
-            mstore8(0x0, _lenderId)
-            key := mload(0x0)
+            key := or(shl(240, _lenderId), _underlying)
         }
     }
 

@@ -15,8 +15,7 @@ contract ComposedFlashLoanTest is DeltaSetup {
 
         intitializeFullDelta();
 
-        management.approveAddress(getAssets(), address(router));
-        management.setValidTarget(address(router), address(router), true);
+        management.setValidSingleTarget(address(router), true);
     }
 
     /**
@@ -184,7 +183,6 @@ contract ComposedFlashLoanTest is DeltaSetup {
                         asset,
                         borrowAsset,
                         address(router),
-                        address(router),
                         amountToFlashWithdraw //
                     ),
                     data, // repay
@@ -226,13 +224,12 @@ contract ComposedFlashLoanTest is DeltaSetup {
         deal(b, address(router), 1e20);
     }
 
-    function encodeExtCall(address token, address tokenOut, address approveTarget, address target, uint amount) internal pure returns (bytes memory) {
+    function encodeExtCall(address token, address tokenOut, address target, uint amount) internal pure returns (bytes memory) {
         bytes memory data = abi.encodeWithSelector(MockRouter.swapExactIn.selector, token, tokenOut, amount);
         return
             abi.encodePacked(
                 uint8(Commands.EXTERNAL_CALL), //
                 token,
-                approveTarget,
                 target,
                 uint112(amount),
                 uint16(data.length),

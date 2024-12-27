@@ -20,6 +20,8 @@ interface IManagement {
         uint16 _lenderId //
     ) external;
 
+    function setValidSingleTarget(address _target, bool value) external;
+
     function approveLendingPool(address[] memory assets) external;
 
     function setValidTarget(address approvalTarget, address target, bool value) external;

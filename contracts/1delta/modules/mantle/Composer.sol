@@ -313,7 +313,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                                         revert(0, 0x4)
                                     }
 
-                                    mstore(0x0, or(shl(240,lenderId_tokenIn), cometPool))
+                                    mstore(0x0, or(shl(240, lenderId_tokenIn), cometPool))
                                     mstore(0x20, VARIABLE_DEBT_TOKENS_SLOT)
                                     temp := sload(keccak256(0x0, 0x40))
                                 }
@@ -420,7 +420,6 @@ contract OneDeltaComposerMantle is MarginTrading {
                                 let tokenIn := calldataload(opdataOffset)
                                 let mode := and(UINT8_MASK, shr(88, tokenIn))
                                 mstore(0x0, or(shl(240, lenderId), shr(96, tokenIn)))
-                                
                                 switch mode
                                 case 2 {
                                     mstore(0x20, VARIABLE_DEBT_TOKENS_SLOT)
@@ -485,30 +484,26 @@ contract OneDeltaComposerMantle is MarginTrading {
                     // `transferFrom` on target
                     // Data layout:
                     //      bytes 0-20:                  token
-                    //      bytes 20-40:                 approvalTarget
-                    //      bytes 40-60:                 target
-                    //      bytes 60-74:                 amount
-                    //      bytes 74-76:                 calldata length
-                    //      bytes 76-(76+data length):   data
+                    //      bytes 20-40:                 target
+                    //      bytes 40-54:                 amount
+                    //      bytes 54-56:                 calldata length
+                    //      bytes 56-(56+data length):   data
                     ////////////////////////////////////////////////////
                     assembly {
                         // get first three addresses
                         let token := shr(96, calldataload(currentOffset))
-                        let approvalTarget := shr(96, calldataload(add(currentOffset, 20)))
-                        let aggregator := shr(96, calldataload(add(currentOffset, 40)))
+                        let target := shr(96, calldataload(add(currentOffset, 20)))
 
-                        // get slot isValidApproveAndCallTarget[approvalTarget][aggregator]
-                        mstore(0x0, approvalTarget)
-                        mstore(0x20, EXTERNAL_CALLS_SLOT)
-                        mstore(0x20, keccak256(0x0, 0x40))
-                        mstore(0x0, aggregator)
-                        // validate approvalTarget / target combo
+                        // get slot isValidApproveAndCallTarget[target][aggregator]
+                        mstore(0x0, target)
+                        mstore(0x20, CALL_MANAGEMENT_VALID)
+                        // validate target
                         if iszero(sload(keccak256(0x0, 0x40))) {
                             mstore(0, INVALID_TARGET)
                             revert(0, 0x4)
                         }
                         // get amount to check allowance
-                        let amount := calldataload(add(currentOffset, 60))
+                        let amount := calldataload(add(currentOffset, 40))
                         let dataLength := and(UINT16_MASK, shr(128, amount))
                         amount := shr(144, amount) // shr will already mask correctly
 
@@ -522,27 +517,19 @@ contract OneDeltaComposerMantle is MarginTrading {
                         let nativeValue
                         switch iszero(token)
                         case 0 {
-                            ////////////////////////////////////////////////////
-                            // get allowance and check if we have to approve
-                            ////////////////////////////////////////////////////
-                            mstore(ptr, ERC20_ALLOWANCE)
-                            mstore(add(ptr, 0x4), address())
-                            mstore(add(ptr, 0x24), approvalTarget)
-
-                            // call to token
-                            // success is false or return data not provided
-                            if iszero(staticcall(gas(), token, ptr, 0x44, ptr, 0x20)) {
-                                revert(0x0, 0x0)
-                            }
-                            // approve if necessary
-                            if lt(mload(ptr), amount) {
+                            mstore(0x0, token)
+                            mstore(0x20, CALL_MANAGEMENT_APPROVALS)
+                            mstore(0x20, keccak256(0x0, 0x40))
+                            mstore(0x0, target)
+                            // check if already approved
+                            if iszero(sload(keccak256(0x0, 0x40))) {
                                 ////////////////////////////////////////////////////
                                 // Approve, at this point it is clear that the target
                                 // is whitelisted
                                 ////////////////////////////////////////////////////
                                 // selector for approve(address,uint256)
                                 mstore(ptr, ERC20_APPROVE)
-                                mstore(add(ptr, 0x04), approvalTarget)
+                                mstore(add(ptr, 0x04), target)
                                 mstore(add(ptr, 0x24), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff)
 
                                 if iszero(call(gas(), token, 0x0, ptr, 0x44, ptr, 32)) {
@@ -555,13 +542,13 @@ contract OneDeltaComposerMantle is MarginTrading {
                             nativeValue := amount
                         }
                         // increment offset to calldata start
-                        currentOffset := add(76, currentOffset)
+                        currentOffset := add(56, currentOffset)
                         // copy calldata
                         calldatacopy(ptr, currentOffset, dataLength)
                         if iszero(
                             call(
                                 gas(),
-                                aggregator,
+                                target,
                                 nativeValue,
                                 ptr, //
                                 dataLength, // the length must be correct or the call will fail

@@ -7,7 +7,7 @@ import "./DeltaSetup.f.sol";
 
 contract CustomDataTestPolygon is DeltaSetup {
     function test_polygon_custom_open() external {
-        uint8 lenderId = 0;
+        uint16 lenderId = 0;
         address user = testUser;
 
         uint256 amount = 500.0e18;
@@ -28,7 +28,7 @@ contract CustomDataTestPolygon is DeltaSetup {
         console.log("gas", gas);
     }
 
-    function _deposit(address asset, address user, uint256 amount, uint8 lenderId) internal {
+    function _deposit(address asset, address user, uint256 amount, uint16 lenderId) internal {
         deal(asset, user, amount);
 
         vm.prank(user);

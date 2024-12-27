@@ -22,6 +22,9 @@ import {PermitUtils} from "../shared/permit/PermitUtils.sol";
  */
 abstract contract BaseSwapper is BaseLending, PermitUtils {
 
+    // offset for receiver address for most DEX types (uniswap, curve etc.)
+    uint256 internal constant RECEIVER_OFFSET_UNOSWAP = 66;
+
     /**
      * Fund the first pool for self funded DEXs like Uni V2, GMX, LB, WooFi and Solidly V2 (dexId >= 100) 
      * Extracts and returns the first dexId of the path 
@@ -146,7 +149,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
         // uniswapV3 style
         if (dexId < 49) {
             assembly {
-                switch lt(pathLength, 67) // MAX_SINGLE_LENGTH_UNOSWAP + 1
+                switch lt(pathLength, 67) // RECEIVER_OFFSET_UNOSWAP + 1
                 case 1 { currentReceiver := receiver}
                 default {
                     dexId := and(calldataload(add(pathOffset, 34)), UINT8_MASK) // SKIP_LENGTH_UNOSWAP - 10
@@ -157,7 +160,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
                                 calldataload(
                                     add(
                                         pathOffset,
-                                        MAX_SINGLE_LENGTH_UNOSWAP // 20 + 2 + 20 + 2 + 20 + 2 [poolAddress starts here]
+                                        RECEIVER_OFFSET_UNOSWAP // 20 + 2 + 20 + 2 + 20 + 2 [poolAddress starts here]
                                     )
                                 ) // poolAddress
                             )
@@ -183,7 +186,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
         // iZi
         else if (dexId == 49) {
             assembly {
-                switch lt(pathLength, 67) // MAX_SINGLE_LENGTH_UNOSWAP + 1
+                switch lt(pathLength, 67) // RECEIVER_OFFSET_UNOSWAP + 1
                 case 1 { currentReceiver := receiver}
                 default {
                     dexId := and(calldataload(add(pathOffset, 34)), UINT8_MASK) // SKIP_LENGTH_UNOSWAP - 10
@@ -194,7 +197,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
                                 calldataload(
                                     add(
                                         pathOffset,
-                                        MAX_SINGLE_LENGTH_UNOSWAP // 20 + 2 + 20 + 2 + 20 + 2 [poolAddress starts here]
+                                        RECEIVER_OFFSET_UNOSWAP // 20 + 2 + 20 + 2 + 20 + 2 [poolAddress starts here]
                                     )
                                 ) // poolAddress
                             )
@@ -329,7 +332,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
                                 calldataload(
                                     add(
                                         pathOffset,
-                                        MAX_SINGLE_LENGTH_UNOSWAP // 20 + 2 + 20 + 20 + 2 [poolAddress starts here]
+                                        RECEIVER_OFFSET_UNOSWAP // 20 + 2 + 20 + 20 + 2 [poolAddress starts here]
                                     )
                                 ) // poolAddress
                             )
@@ -514,7 +517,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
                             calldataload(
                                 add(
                                     pathOffset,
-                                    MAX_SINGLE_LENGTH_UNOSWAP // 20 + 2 + 20 + 20 + 2 [poolAddress starts here]
+                                    RECEIVER_OFFSET_UNOSWAP // 20 + 2 + 20 + 20 + 2 [poolAddress starts here]
                                 )
                             ) // poolAddress
                         )

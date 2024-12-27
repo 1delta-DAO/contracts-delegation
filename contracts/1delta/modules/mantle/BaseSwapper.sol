@@ -22,7 +22,8 @@ import {PermitUtils} from "../shared/permit/PermitUtils.sol";
  */
 abstract contract BaseSwapper is BaseLending, PermitUtils {
 
-    uint256 internal constant RECEIVER_OFFSET_UNOSWAP = 66; 
+    // offset for receiver address for most DEX types (uniswap, curve etc.)
+    uint256 internal constant RECEIVER_OFFSET_UNOSWAP = 66;
 
     /**
      * Fund the first pool for self funded DEXs like Uni V2, GMX, LB, WooFi and Solidly V2 (dexId >= 100) 

@@ -273,13 +273,12 @@ contract OneDeltaComposerPolygon is MarginTrading {
                                         33
                                     )
                                 ),
-                                UINT8_MASK
+                                UINT16_MASK
                             )
                             switch lt(lenderId_tokenIn, 50)
                             // Aave types
                             case 1 {
-                                mstore(0x0, shr(96, calldataload(opdataOffset))) // tokenIn
-                                mstore8(0x0, lenderId_tokenIn)
+                                mstore(0x0, or(shl(240, lenderId_tokenIn), shr(96, calldataload(opdataOffset))))
                                 mstore(0x20, COLLATERAL_TOKENS_SLOT)
                                 let collateralToken := sload(keccak256(0x0, 0x40))
                                 // selector for balanceOf(address)
@@ -318,8 +317,7 @@ contract OneDeltaComposerPolygon is MarginTrading {
                                         revert(0, 0x4)
                                     }
 
-                                    mstore(0x0, cometPool)
-                                    mstore8(0x0, lenderId_tokenIn)
+                                    mstore(0x0, or(shl(240, lenderId_tokenIn), cometPool))
                                     mstore(0x20, VARIABLE_DEBT_TOKENS_SLOT)
                                     temp := sload(keccak256(0x0, 0x40))
                                 }
@@ -425,8 +423,8 @@ contract OneDeltaComposerPolygon is MarginTrading {
                             case 1 {
                                 let tokenIn := calldataload(opdataOffset)
                                 let mode := and(UINT8_MASK, shr(88, tokenIn))
-                                mstore(0x0, shr(96, tokenIn)) // tokenIn
-                                mstore8(0x0, lenderId)
+                                mstore(0x0, or(shl(240, lenderId), shr(96, tokenIn)))
+
                                 switch mode
                                 case 2 {
                                     mstore(0x20, VARIABLE_DEBT_TOKENS_SLOT)

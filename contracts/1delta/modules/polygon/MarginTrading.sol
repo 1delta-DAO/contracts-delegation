@@ -399,7 +399,7 @@ abstract contract MarginTrading is BaseSwapper {
                 assembly {
                     switch multihop
                     case 1 {
-                        tokenOut := shr(96, calldataload(add(pathOffset, sub(pathLength, 22))))
+                        tokenOut := shr(96, calldataload(add(pathOffset, sub(pathLength, 23))))
                     }
                     default {
                         // slippage check since we do not do a nested swap in this case
@@ -856,7 +856,7 @@ abstract contract MarginTrading is BaseSwapper {
                         // get tokenOut
                         // note that for multihops this is required as the tokenOut at the
                         // beginning of this call is just one in a swap step
-                        tokenOut := shr(96, calldataload(add(pathOffset, sub(pathLength, 22))))
+                        tokenOut := shr(96, calldataload(add(pathOffset, sub(pathLength, 23))))
                     }
                     default {
                         // we check the slippage here since we skip it 

@@ -3,7 +3,7 @@
 pragma solidity ^0.8.28;
 
 import {BalancerSwapper} from "./swappers/Balancer.sol";
-import {Slots} from "./storage/Slots.sol";
+import {Slots} from "../shared/storage/Slots.sol";
 
 /******************************************************************************\
 * Author: Achthar | 1delta 

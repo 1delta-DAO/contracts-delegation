@@ -14,7 +14,7 @@ contract ComposedFlashLoanTestPolygon is DeltaSetup {
      *  borrow
      *  payback
      */
-    function test_polygon_composed_flash_loan_open(uint8 lenderId) external /** address user, uint8 lenderId */ {
+    function test_polygon_composed_flash_loan_open(uint16 lenderId) external /** address user, uint16 lenderId */ {
         TestParamsOpen memory params;
         address user = testUser;
 
@@ -129,7 +129,7 @@ contract ComposedFlashLoanTestPolygon is DeltaSetup {
         console.log(val);
     }
 
-    function test_polygon_composed_flash_loan_close(uint8 lenderId) external {
+    function test_polygon_composed_flash_loan_close(uint16 lenderId) external {
         address user = testUser;
         vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
         address asset = WMATIC;
@@ -178,7 +178,6 @@ contract ComposedFlashLoanTestPolygon is DeltaSetup {
                         asset,
                         borrowAsset,
                         address(router),
-                        address(router),
                         amountToFlashWithdraw //
                     ),
                     data // repay
@@ -221,13 +220,12 @@ contract ComposedFlashLoanTestPolygon is DeltaSetup {
         deal(b, address(router), 1e20);
     }
 
-    function encodeExtCall(address token, address tokenOut, address approveTarget, address target, uint amount) internal pure returns (bytes memory) {
+    function encodeExtCall(address token, address tokenOut, address target, uint amount) internal pure returns (bytes memory) {
         bytes memory data = abi.encodeWithSelector(MockRouter.swapExactIn.selector, token, tokenOut, amount);
         return
             abi.encodePacked(
                 uint8(Commands.EXTERNAL_CALL), //
                 token,
-                approveTarget,
                 target,
                 uint112(amount),
                 uint16(data.length),

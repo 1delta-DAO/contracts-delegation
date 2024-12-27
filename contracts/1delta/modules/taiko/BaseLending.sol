@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.28;
 
-import {Slots} from "./storage/Slots.sol";
+import {Slots} from "../shared/storage/Slots.sol";
 import {SyncSwapper} from "./swappers/SyncType.sol";
 
 /******************************************************************************\
