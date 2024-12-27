@@ -17,7 +17,7 @@ interface IManagement {
         address _aToken,
         address _vToken,
         address _sToken,
-        uint8 _lenderId //
+        uint16 _lenderId //
     ) external;
 
     function approveLendingPool(address[] memory assets) external;
@@ -28,7 +28,7 @@ interface IManagement {
 
     function decreaseAllowance(address[] memory assets, address target) external;
 
-    function getLendingPool(uint8 _lenderId) external view returns (address pool);
+    function getLendingPool(uint16 _lenderId) external view returns (address pool);
 
     function getAToken(address _underlying) external view returns (address);
 
@@ -38,14 +38,14 @@ interface IManagement {
 
     function getIsValidTarget(address _approvalTarget, address _target) external view returns (bool);
 
-    function getCollateralToken(address _underlying, uint8 _lenderId) external view returns (address);
+    function getCollateralToken(address _underlying, uint16 _lenderId) external view returns (address);
 
-    function getStableDebtToken(address _underlying, uint8 _lenderId) external view returns (address);
+    function getStableDebtToken(address _underlying, uint16 _lenderId) external view returns (address);
 
-    function getDebtToken(address _underlying, uint8 _lenderId) external view returns (address);
+    function getDebtToken(address _underlying, uint16 _lenderId) external view returns (address);
 
     function addLendingPool(
         address _poolAddress,
-        uint8 _lenderId //
+        uint16 _lenderId //
     ) external;
 }

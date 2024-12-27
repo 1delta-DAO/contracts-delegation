@@ -273,13 +273,12 @@ contract OneDeltaComposerMantle is MarginTrading {
                                         33
                                     )
                                 ),
-                                UINT8_MASK
+                                UINT16_MASK
                             )
                             switch lt(lenderId_tokenIn, 50)
                             // Aave types
                             case 1 {
-                                mstore(0x0, shr(96, calldataload(opdataOffset))) // tokenIn
-                                mstore8(0x0, lenderId_tokenIn)
+                                mstore(0x0, or(shl(240, lenderId_tokenIn), shr(96, calldataload(opdataOffset))))
                                 mstore(0x20, COLLATERAL_TOKENS_SLOT)
                                 let collateralToken := sload(keccak256(0x0, 0x40))
                                 // selector for balanceOf(address)
@@ -314,8 +313,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                                         revert(0, 0x4)
                                     }
 
-                                    mstore(0x0, cometPool)
-                                    mstore8(0x0, lenderId_tokenIn)
+                                    mstore(0x0, or(shl(240,lenderId_tokenIn), cometPool))
                                     mstore(0x20, VARIABLE_DEBT_TOKENS_SLOT)
                                     temp := sload(keccak256(0x0, 0x40))
                                 }
@@ -416,13 +414,13 @@ contract OneDeltaComposerMantle is MarginTrading {
                         ////////////////////////////////////////////////////
                         if iszero(amountOut) {
                             // last 32 bytes
-                            let lenderId := and(calldataload(sub(add(opdataLength, opdataOffset), 33)), UINT8_MASK)
+                            let lenderId := and(calldataload(sub(add(opdataLength, opdataOffset), 33)), UINT16_MASK)
                             switch lt(lenderId, 50)
                             case 1 {
                                 let tokenIn := calldataload(opdataOffset)
                                 let mode := and(UINT8_MASK, shr(88, tokenIn))
-                                mstore(0x0, shr(96, tokenIn)) // tokenIn
-                                mstore8(0x0, lenderId)
+                                mstore(0x0, or(shl(240, lenderId), shr(96, tokenIn)))
+                                
                                 switch mode
                                 case 2 {
                                     mstore(0x20, VARIABLE_DEBT_TOKENS_SLOT)
@@ -580,6 +578,14 @@ contract OneDeltaComposerMantle is MarginTrading {
                 }
             } else if (operation < 0x20) {
                 if (operation == Commands.DEPOSIT) {
+                    ////////////////////////////////////////////////////
+                    // Executes deposit to lender
+                    // Data layout:
+                    //      bytes 0-20:                  underlying
+                    //      bytes 20-40:                 receiver
+                    //      bytes 40-52:                 amount
+                    //      bytes 52-54:                 lenderId
+                    ////////////////////////////////////////////////////
                     address underlying;
                     address receiver;
                     uint256 amount;
@@ -588,8 +594,8 @@ contract OneDeltaComposerMantle is MarginTrading {
                         underlying := shr(96, calldataload(currentOffset))
                         receiver := and(ADDRESS_MASK, calldataload(add(currentOffset, 8)))
                         let lastBytes := calldataload(add(currentOffset, 40))
-                        amount := and(_UINT112_MASK, shr(136, lastBytes))
-                        lenderId := shr(248, lastBytes) // last byte
+                        amount := and(_UINT112_MASK, shr(128, lastBytes))
+                        lenderId := shr(240, lastBytes) // last 2 bytes
                         if iszero(amount) {
                             // selector for balanceOf(address)
                             mstore(0, ERC20_BALANCE_OF)
@@ -609,10 +615,19 @@ contract OneDeltaComposerMantle is MarginTrading {
                             // load the retrieved balance
                             amount := mload(0x0)
                         }
-                        currentOffset := add(currentOffset, 55)
+                        currentOffset := add(currentOffset, 56)
                     }
                     _deposit(underlying, receiver, amount, lenderId);
                 } else if (operation == Commands.BORROW) {
+                    ////////////////////////////////////////////////////
+                    // Executes delegated borrow from lender
+                    // Data layout:
+                    //      bytes 0-20:                  underlying
+                    //      bytes 20-40:                 receiver
+                    //      bytes 40-42:                 lenderId
+                    //      bytes 42-54:                 amount
+                    //      bytes 54-55:                 mode
+                    ////////////////////////////////////////////////////
                     address underlying;
                     address receiver;
                     uint256 amount;
@@ -622,10 +637,10 @@ contract OneDeltaComposerMantle is MarginTrading {
                         underlying := shr(96, calldataload(currentOffset))
                         receiver := and(ADDRESS_MASK, calldataload(add(currentOffset, 8)))
                         let lastBytes := calldataload(add(currentOffset, 40))
-                        amount := and(_UINT112_MASK, shr(128, lastBytes))
-                        lenderId := shr(248, lastBytes) // last byte
-                        mode := and(UINT8_MASK, shr(240, lastBytes))
-                        currentOffset := add(currentOffset, 56)
+                        amount := and(_UINT112_MASK, shr(120, lastBytes))
+                        lenderId := shr(240, lastBytes) // last 2 bytes
+                        mode := and(UINT8_MASK, shr(232, lastBytes))
+                        currentOffset := add(currentOffset, 57)
                     }
                     _borrow(underlying, callerAddress, receiver, amount, mode, lenderId);
                 } else if (operation == Commands.REPAY) {
@@ -640,8 +655,8 @@ contract OneDeltaComposerMantle is MarginTrading {
                         receiver := and(ADDRESS_MASK, calldataload(add(offset, 8)))
                         let lastBytes := calldataload(add(offset, 40))
                         lenderId := shr(248, lastBytes) // last byte
-                        mode := and(UINT8_MASK, shr(240, lastBytes))
-                        amount := and(_UINT112_MASK, shr(128, lastBytes))
+                        mode := and(UINT8_MASK, shr(232, lastBytes))
+                        amount := and(_UINT112_MASK, shr(120, lastBytes))
                         // zero means that we repay whatever is in this contract
                         // Note that Aave protocols allow repayments, even if amount > borrow balance
                         // in that case, the protocol will pull the desired amount
@@ -698,7 +713,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                             // load the retrieved balance
                             amount := mload(0x0)
                         }
-                        currentOffset := add(currentOffset, 56)
+                        currentOffset := add(currentOffset, 57)
                     }
                     _repay(underlying, receiver, amount, mode, lenderId);
                 } else if (operation == Commands.WITHDRAW) {
@@ -710,8 +725,8 @@ contract OneDeltaComposerMantle is MarginTrading {
                         underlying := shr(96, calldataload(currentOffset))
                         receiver := and(ADDRESS_MASK, calldataload(add(currentOffset, 8)))
                         let lastBytes := calldataload(add(currentOffset, 40))
-                        amount := and(_UINT112_MASK, shr(136, lastBytes))
-                        lenderId := shr(248, lastBytes) // last byte
+                        amount := and(_UINT112_MASK, shr(128, lastBytes))
+                        lenderId := shr(240, lastBytes) // last byte
 
                         // maximum uint112 has a special meaning
                         // for using the user collateral balance
@@ -720,8 +735,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                             // get aave type user collateral balance
                             case 1 {
                                 // Slot for collateralTokens[target] is keccak256(target . collateralTokens.slot).
-                                mstore(0x0, underlying)
-                                mstore8(0x0, lenderId)
+                                mstore(0x0, or(shl(240, lenderId), underlying))
                                 mstore(0x20, COLLATERAL_TOKENS_SLOT)
                                 let collateralToken := sload(keccak256(0x0, 0x40))
                                 // selector for balanceOf(address)
@@ -764,8 +778,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                                         revert(0, 0x4)
                                     }
 
-                                    mstore(0x0, cometPool)
-                                    mstore8(0x0, lenderId)
+                                    mstore(0x0, or(shl(240, lenderId), cometPool))
                                     mstore(0x20, VARIABLE_DEBT_TOKENS_SLOT)
                                     cometCcy := sload(keccak256(0x0, 0x40))
                                 }
@@ -814,7 +827,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                                 }
                             }
                         }
-                        currentOffset := add(currentOffset, 55)
+                        currentOffset := add(currentOffset, 56)
                     }
                     _withdraw(underlying, callerAddress, receiver, amount, lenderId);
                 }

@@ -383,7 +383,7 @@ contract GeneralMoeLBTest is DeltaSetup {
         bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, MERCHANT_MOE_FEE_DENOM, USDe);
         poolId = MERCHANT_MOE_LB;
         pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenOut, USDe, BIN_STEP_LOWEST).LBPair;
-        return abi.encodePacked(firstPart, midId, poolId, pool, tokenOut, DEFAULT_LENDER, endId);
+        return abi.encodePacked(firstPart, midId, poolId, pool, tokenOut, uint16(DEFAULT_LENDER), endId);
     }
 
     function getSpotExactInSingleLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
@@ -433,7 +433,7 @@ contract GeneralMoeLBTest is DeltaSetup {
         address pool = testQuoter._v2TypePairAddress(USDe, tokenOut, MERCHANT_MOE);
         bytes memory firstPart = abi.encodePacked(tokenOut, actionId, MERCHANT_MOE, pool, MERCHANT_MOE_FEE_DENOM, USDe);
         pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenIn, USDe, BIN_STEP_LOWEST).LBPair;
-        return abi.encodePacked(firstPart, midId, MERCHANT_MOE_LB, pool, tokenIn, DEFAULT_LENDER, endId);
+        return abi.encodePacked(firstPart, midId, MERCHANT_MOE_LB, pool, tokenIn, uint16(DEFAULT_LENDER), endId);
     }
 
     function getCloseExactOutMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
@@ -441,7 +441,7 @@ contract GeneralMoeLBTest is DeltaSetup {
         address pool = testQuoter._v2TypePairAddress(USDe, tokenOut, MERCHANT_MOE);
         bytes memory firstPart = abi.encodePacked(tokenOut, actionId, MERCHANT_MOE, pool, MERCHANT_MOE_FEE_DENOM, USDe);
         pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenIn, USDe, BIN_STEP_LOWEST).LBPair;
-        return abi.encodePacked(firstPart, midId, MERCHANT_MOE_LB, pool, tokenIn, DEFAULT_LENDER, endId);
+        return abi.encodePacked(firstPart, midId, MERCHANT_MOE_LB, pool, tokenIn, uint16(DEFAULT_LENDER), endId);
     }
 
     function getCloseExactInMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
@@ -449,7 +449,7 @@ contract GeneralMoeLBTest is DeltaSetup {
         address pool = testQuoter._v2TypePairAddress(USDe, tokenIn, MERCHANT_MOE);
         bytes memory firstPart = abi.encodePacked(tokenIn, actionId, MERCHANT_MOE, pool, MERCHANT_MOE_FEE_DENOM, USDe);
         pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenOut, USDe, BIN_STEP_LOWEST).LBPair;
-        return abi.encodePacked(firstPart, midId, MERCHANT_MOE_LB, pool, tokenOut, DEFAULT_LENDER, endId);
+        return abi.encodePacked(firstPart, midId, MERCHANT_MOE_LB, pool, tokenOut, uint16(DEFAULT_LENDER), endId);
     }
 
     /** DEPO AND BORROW HELPER */

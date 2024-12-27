@@ -387,7 +387,7 @@ contract SwapGen2Test is DeltaSetup {
         uint256 amountToSwap = 1.0e6;
 
         (address assetFrom, address assetTo, bytes memory swapPath) = getPathAndTokensMixedExotic();
-console.log("path");
+
         deal(assetFrom, user, 1.0e20);
 
         uint256 minimumOut = 0.9e6;

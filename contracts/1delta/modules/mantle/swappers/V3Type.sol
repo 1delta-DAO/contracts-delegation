@@ -26,6 +26,8 @@ abstract contract V3TypeSwapper is DeltaErrors, ERC20Selectors {
     uint256 internal constant UINT24_MASK = 0xffffff;
     /// @dev Mask of lower 1 byte.
     uint256 internal constant UINT8_MASK = 0xff;
+    /// @dev Mask of lower 2 byte.
+    uint256 internal constant UINT16_MASK = 0xffff;
     /// @dev MIN_SQRT_RATIO + 1 from Uniswap's TickMath
     uint160 internal constant MIN_SQRT_RATIO = 4295128740;
     /// @dev MAX_SQRT_RATIO - 1 from Uniswap's TickMath
@@ -37,7 +39,7 @@ abstract contract V3TypeSwapper is DeltaErrors, ERC20Selectors {
     // param lengths
     ////////////////////////////////////////////////////
 
-    uint256 internal constant MAX_SINGLE_LENGTH_UNOSWAP = 66;
+    uint256 internal constant MAX_SINGLE_LENGTH_UNOSWAP = 67;
     uint256 internal constant SKIP_LENGTH_UNOSWAP = 44; // = 20+1+1+20+2
 
     ////////////////////////////////////////////////////
@@ -72,8 +74,6 @@ abstract contract V3TypeSwapper is DeltaErrors, ERC20Selectors {
     bytes32 internal constant CRUST_INIT_CODE_HASH = 0x55664e1b1a13929bcf29e892daf029637225ec5c85a385091b8b31dcca255627;
 
     constructor() {}
-
-    uint256 internal constant UINT16_MASK = 0xffff;
 
     /// @dev Swap Uniswap V3 style exact in
     /// the calldata arrives as

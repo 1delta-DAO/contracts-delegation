@@ -604,7 +604,7 @@ abstract contract MarginTrading is BaseSwapper {
                 assembly {
                     switch multihop
                     case 1 {
-                        tokenOut := shr(96, calldataload(add(pathOffset, sub(pathLength, 22))))
+                        tokenOut := shr(96, calldataload(add(pathOffset, sub(pathLength, 23))))
                     }
                     default {
                         // slippage check since we do not do a nested swap in this case
@@ -615,7 +615,7 @@ abstract contract MarginTrading is BaseSwapper {
                     }
                 }
                 // slice out the end flag, paymentId overrides maximum amount
-                uint8 lenderId;
+                uint256 lenderId;
                 (maximumAmount, lenderId) = getPayConfigFromCalldata(pathOffset, pathLength);
                 payToLender(tokenOut, payer, amountReceived, tradeId, lenderId);
                 // pay the pool
@@ -635,7 +635,7 @@ abstract contract MarginTrading is BaseSwapper {
         // Exact output swap
         ////////////////////////////////////////////////////
         else {
-            (uint256 payType, uint8 lenderId) = getPayConfigFromCalldata(PATH_OFFSET_CALLBACK_V3, pathLength);
+            (uint256 payType, uint256 lenderId) = getPayConfigFromCalldata(PATH_OFFSET_CALLBACK_V3, pathLength);
             // we check if we have to deposit or repay in the callback
             if(tradeId != 0) {
                 payToLender(tokenIn, payer, amountReceived, tradeId, lenderId);
@@ -1177,7 +1177,7 @@ abstract contract MarginTrading is BaseSwapper {
                         // get tokenOut
                         // note that for multihops this is required as the tokenOut at the
                         // beginning of this call is just one in a swap step
-                        tokenOut := shr(96, calldataload(add(pathOffset, sub(pathLength, 22))))
+                        tokenOut := shr(96, calldataload(add(pathOffset, sub(pathLength, 23))))
                     }
                     default {
                         // we check the slippage here since we skip it 
@@ -1188,7 +1188,7 @@ abstract contract MarginTrading is BaseSwapper {
                         }
                     }
                 }
-                (uint256 payType, uint8 lenderId) = getPayConfigFromCalldata(pathOffset, pathLength);
+                (uint256 payType, uint256 lenderId) = getPayConfigFromCalldata(pathOffset, pathLength);
                 // pay lender
                 payToLender(tokenOut, payer, amountReceived, tradeId, lenderId);
                 // pay the pool
@@ -1204,7 +1204,7 @@ abstract contract MarginTrading is BaseSwapper {
                 payConventional(tokenIn, payer, msg.sender, amountToPay);
              }
         } else {
-            (uint256 payType, uint8 lenderId) = getPayConfigFromCalldata(PATH_OFFSET_CALLBACK_V2, pathLength);
+            (uint256 payType, uint256 lenderId) = getPayConfigFromCalldata(PATH_OFFSET_CALLBACK_V2, pathLength);
             if(tradeId != 0) {
                 // pay lender
                 payToLender(tokenIn, payer, amountReceived, tradeId, lenderId);
@@ -1337,7 +1337,7 @@ abstract contract MarginTrading is BaseSwapper {
             // at the end of the path
             ////////////////////////////////////////////////////
             else {
-                (uint256 payType, uint8 lenderId) = getPayConfigFromCalldata(pathOffset, pathLength);
+                (uint256 payType, uint256 lenderId) = getPayConfigFromCalldata(pathOffset, pathLength);
                 // pay the pool
                 handlePayPool(
                     tokenIn,
@@ -1412,7 +1412,7 @@ abstract contract MarginTrading is BaseSwapper {
             // at the end of the path
             ////////////////////////////////////////////////////
             else {
-                (uint256 payType, uint8 lenderId) = getPayConfigFromCalldata(pathOffset, pathLength);
+                (uint256 payType, uint256 lenderId) = getPayConfigFromCalldata(pathOffset, pathLength);
                 // pay the pool
                 handlePayPool(
                     tokenIn,
@@ -1533,7 +1533,7 @@ abstract contract MarginTrading is BaseSwapper {
             address reciever;
             assembly {
                 switch lt(pathLength, 67) // see swapExactIn
-                case 1 { reciever := address()}
+                case 1 { reciever := address() }
                 default {
                     let nextId := and(calldataload(add(pathOffset, 34)), UINT8_MASK) // SKIP_LENGTH_UNISWAP - 10
                     switch gt(nextId, 99) 
@@ -1577,7 +1577,7 @@ abstract contract MarginTrading is BaseSwapper {
                                 calldataload(
                                     add(
                                         pathOffset,
-                                        MAX_SINGLE_LENGTH_UNOSWAP // 20 + 2 + 20 + 2 + 20 + 2 [poolAddress starts here]
+                                        MAX_SINGLE_LENGTH_UNOSWAP // 20 + 2 + 20 + 2 + 20 + 2 + 1[poolAddress starts here]
                                     )
                                 ) // poolAddress
                             )
@@ -1618,7 +1618,7 @@ abstract contract MarginTrading is BaseSwapper {
 
     /// @dev gets leder and pay config - the assumption is that the last byte is the payType
     ///      and the second last is the lenderId
-    function getPayConfigFromCalldata(uint256 offset, uint256 length) internal pure returns(uint256 payType, uint8 lenderId){
+    function getPayConfigFromCalldata(uint256 offset, uint256 length) internal pure returns(uint256 payType, uint256 lenderId){
         assembly {
             let lastWord := calldataload(
                 sub(
@@ -1626,7 +1626,7 @@ abstract contract MarginTrading is BaseSwapper {
                     32
                 )
             )
-            lenderId := and(shr(8, lastWord), UINT8_MASK)
+            lenderId := and(shr(8, lastWord), UINT16_MASK)
             payType := and(lastWord, UINT8_MASK)
         }
     }
@@ -1649,7 +1649,7 @@ abstract contract MarginTrading is BaseSwapper {
         address receiver,
         uint256 paymentType,
         uint256 value,
-        uint8 lenderId
+        uint256 lenderId
     ) internal {
         if(paymentType < 8) {
             if (paymentType < 3) {
@@ -1669,7 +1669,7 @@ abstract contract MarginTrading is BaseSwapper {
         address user,
         uint256 amount,
         uint256 payId,
-        uint8 lenderId
+        uint256 lenderId
      ) internal {
         if (payId == 3) {
             _deposit(token, user, amount, lenderId);

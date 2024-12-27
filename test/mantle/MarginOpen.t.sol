@@ -13,7 +13,7 @@ contract MarginOpenTest is DeltaSetup {
         assert(management.getLendingPool(id) == pool);
     }
 
-    function test_margin_mantle_open_exact_in(uint8 lenderId) external /** address user, uint8 lenderId */ {
+    function test_margin_mantle_open_exact_in0(uint8 lenderId) external /** address user, uint8 lenderId */ {
         TestParamsOpen memory params;
         address user = testUser;
         vm.assume(user != address(0) && lenderId < 2);

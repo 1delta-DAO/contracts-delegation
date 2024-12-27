@@ -257,7 +257,7 @@ contract SwapGen2Test is DeltaSetup {
         uint16 fee = uint16(DEX_FEE_STABLES);
         uint8 poolId = AGNI;
         address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
-        return abi.encodePacked(tokenIn, uint8(3), poolId, pool, fee, tokenOut, lenderId, uint8(2));
+        return abi.encodePacked(tokenIn, uint8(3), poolId, pool, fee, tokenOut, uint16(lenderId), uint8(2));
     }
 
     function getPathDataV3() internal view returns (address[] memory tokens, uint8[] memory actions, uint8[] memory pIds, uint16[] memory fees) {
@@ -356,7 +356,7 @@ contract SwapGen2Test is DeltaSetup {
                 );
             }
         }
-        path = abi.encodePacked(path, lenderId, endId);
+        path = abi.encodePacked(path, uint16(lenderId), endId);
     }
 
     function getPathAndTokensMixed(uint8 lenderId) internal view returns (address tokenIn, address tokenOut, bytes memory path) {

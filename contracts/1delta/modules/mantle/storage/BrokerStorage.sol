@@ -87,44 +87,9 @@ contract WithMantleStorage {
 
     /** TOKEN GETTERS */
 
-    function _getCollateralToken(address _underlying, uint8 _lenderId) internal view returns (address collateralToken) {
-        mapping(bytes32 => address) storage collateralTokens = LibStorage.lenderStorage().collateralTokens;
+    function _getLenderTokenKey(address _underlying, uint16 _lenderId) internal pure returns (bytes32 key) {
         assembly {
-            // Slot for collateralTokens[target] is keccak256(target . collateralTokens.slot).
-            mstore(0x0, _underlying)
-            mstore8(0x0, _lenderId)
-            mstore(0x20, collateralTokens.slot)
-            collateralToken := sload(keccak256(0x0, 0x40))
-        }
-    }
-
-    function _getDebtToken(address _underlying, uint8 _lenderId) internal view returns (address debtToken) {
-        mapping(bytes32 => address) storage debtTokens = LibStorage.lenderStorage().debtTokens;
-        assembly {
-            // Slot for debtTokens[target] is keccak256(target . debtTokens.slot).
-            mstore(0x0, _underlying)
-            mstore8(0x0, _lenderId)
-            mstore(0x20, debtTokens.slot)
-            debtToken := sload(keccak256(0x0, 0x40))
-        }
-    }
-
-    function _getStableDebtToken(address _underlying, uint8 _lenderId) internal view returns (address stableDebtToken) {
-        mapping(bytes32 => address) storage stableDebtTokens = LibStorage.lenderStorage().stableDebtTokens;
-        assembly {
-            // Slot for stableDebtTokens[target] is keccak256(target . stableDebtTokens.slot).
-            mstore(0x0, _underlying)
-            mstore8(0x0, _lenderId)
-            mstore(0x20, stableDebtTokens.slot)
-            stableDebtToken := sload(keccak256(0x0, 0x40))
-        }
-    }
-
-    function _getLenderTokenKey(address _underlying, uint8 _lenderId) internal pure returns (bytes32 key) {
-        assembly {
-            mstore(0x0, _underlying)
-            mstore8(0x0, _lenderId)
-            key := mload(0x0)
+            key := or(shl(240, _lenderId), _underlying)
         }
     }
 

@@ -126,6 +126,7 @@ contract MarginCloseTest is DeltaSetup {
             false,
             swapPath
         );
+        console.log("test");
         vm.prank(user);
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
 
@@ -218,6 +219,7 @@ contract MarginCloseTest is DeltaSetup {
             swapPath
         );
 
+console.log("------------a");
         vm.prank(user);
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
 

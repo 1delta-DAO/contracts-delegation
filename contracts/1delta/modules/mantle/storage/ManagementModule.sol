@@ -33,7 +33,7 @@ contract MantleManagementModule is WithMantleStorage, Slots {
         address _aToken,
         address _vToken,
         address _sToken,
-        uint8 _lenderId //
+        uint16 _lenderId //
     ) external onlyOwner {
         bytes32 key = _getLenderTokenKey(_underlying, _lenderId);
         ls().debtTokens[key] = _vToken;
@@ -43,7 +43,7 @@ contract MantleManagementModule is WithMantleStorage, Slots {
 
     function addLendingPool(
         address _poolAddress,
-        uint8 _lenderId //
+        uint16 _lenderId //
     ) external onlyOwner {
         ls().lendingPools[_lenderId] = _poolAddress;
     }
@@ -68,15 +68,15 @@ contract MantleManagementModule is WithMantleStorage, Slots {
 
     /** NEW GETTERS */
 
-    function getCollateralToken(address _underlying, uint8 _lenderId) external view returns (address) {
+    function getCollateralToken(address _underlying, uint16 _lenderId) external view returns (address) {
         return ls().collateralTokens[_getLenderTokenKey(_underlying, _lenderId)];
     }
 
-    function getStableDebtToken(address _underlying, uint8 _lenderId) external view returns (address) {
+    function getStableDebtToken(address _underlying, uint16 _lenderId) external view returns (address) {
         return ls().stableDebtTokens[_getLenderTokenKey(_underlying, _lenderId)];
     }
 
-    function getDebtToken(address _underlying, uint8 _lenderId) external view returns (address) {
+    function getDebtToken(address _underlying, uint16 _lenderId) external view returns (address) {
         return ls().debtTokens[_getLenderTokenKey(_underlying, _lenderId)];
     }
 
@@ -94,7 +94,7 @@ contract MantleManagementModule is WithMantleStorage, Slots {
         }
     }
 
-    function getLendingPool(uint8 _lenderId) external view returns (address pool) {
+    function getLendingPool(uint16 _lenderId) external view returns (address pool) {
         // equivalent to
         // return ls().lendingPools[_lenderId];
         assembly {
