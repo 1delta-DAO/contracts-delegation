@@ -261,7 +261,7 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
         vm.createSelectFork({blockNumber: 58645304, urlOrAlias: "https://polygon-rpc.com"});
         router = new MockRouter(1.0e18, 12);
         intitializeFullDelta();
-        management.setValidTarget(address(router), address(router), true);
+        management.setValidSingleTarget(address(router), true);
     }
 
     /** DEPOSIT AND OPEN TO SPIN UP POSITIONS */

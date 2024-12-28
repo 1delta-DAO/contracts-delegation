@@ -142,7 +142,7 @@ contract ComposedFlashLoanTestPolygon is DeltaSetup {
             uint256 amountToDeposit = 200.0e18;
             uint256 amountToLeverage = 100.0e6;
 
-            openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
+            openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);        
         }
 
         uint256 amountToFlashWithdraw = 50.0e18;
@@ -183,7 +183,6 @@ contract ComposedFlashLoanTestPolygon is DeltaSetup {
                     data // repay
                 ) //
             );
-
             vm.prank(user);
             uint gas = gasleft();
             IFlashAggregator(brokerProxyAddress).deltaCompose(data);
@@ -202,17 +201,15 @@ contract ComposedFlashLoanTestPolygon is DeltaSetup {
     function getOpenExactInInternal(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_LOW);
         uint8 poolId = ALGEBRA;
-        console.log("t");
         address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
-        console.log("t", pool);
-        return abi.encodePacked(tokenIn, uint8(0), poolId, pool, fee, tokenOut, uint8(0), uint8(0));
+        return abi.encodePacked(tokenIn, uint8(0), poolId, pool, fee, tokenOut, uint16(0), uint8(0));
     }
 
     function getCloseExactInInternal(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_LOW);
         uint8 poolId = ALGEBRA;
         address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
-        return abi.encodePacked(tokenIn, uint8(0), poolId, pool, fee, tokenOut, uint8(0), uint8(0));
+        return abi.encodePacked(tokenIn, uint8(0), poolId, pool, fee, tokenOut, uint16(0), uint8(0));
     }
 
     function fundRouter(address a, address b) internal {

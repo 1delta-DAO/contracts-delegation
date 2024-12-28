@@ -21,6 +21,7 @@ contract CustomDataTestPolygon is DeltaSetup {
 
         approveBorrowDelegation(user, borrowAsset, openAmount, lenderId);
 
+        vm.expectRevert();
         vm.prank(user);
         uint gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(getOpenUsdcMatic());

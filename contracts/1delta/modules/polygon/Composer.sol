@@ -730,8 +730,7 @@ contract OneDeltaComposerPolygon is MarginTrading {
                             // get aave type user collateral balance
                             case 1 {
                                 // Slot for collateralTokens[target] is keccak256(target . collateralTokens.slot).
-                                mstore(0x0, underlying)
-                                mstore8(0x0, lenderId)
+                                mstore(0x0, or(shl(240, lenderId), underlying))
                                 mstore(0x20, COLLATERAL_TOKENS_SLOT)
                                 let collateralToken := sload(keccak256(0x0, 0x40))
                                 // selector for balanceOf(address)

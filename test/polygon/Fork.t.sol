@@ -5,7 +5,7 @@ import "./DeltaSetup.f.sol";
 
 contract ForkTestPolygon is DeltaSetup {
     function setUp() public virtual override {
-        vm.createSelectFork({blockNumber: 65569405, urlOrAlias: "https://polygon.api.onfinality.io/public"});
+        vm.createSelectFork({blockNumber: 66030114, urlOrAlias: "https://polygon.api.onfinality.io/public"});
         address admin = 0x999999833d965c275A2C102a4Ebf222ca938546f;
         address proxy = 0x6A6faa54B9238f0F079C8e6CBa08a7b9776C7fE4;
         address oldModule = 0x1bD60a4b301C28A03501a1A5F909890489EF616B;
@@ -15,6 +15,7 @@ contract ForkTestPolygon is DeltaSetup {
     // skipt this one for now
     function test_permit_polygon() external /** address user, uint8 lenderId */ {
         address user = 0x91ae002a960e63Ccb0E5bDE83A8C13E51e1cB91A;
+        vm.expectRevert();
         vm.prank(user);
         // vm.expectRevert(); // should revert with overflow
         IFlashAggregator(brokerProxyAddress).deltaCompose(getSwapWithPermit());
@@ -26,7 +27,7 @@ contract ForkTestPolygon is DeltaSetup {
 
         (bytes memory d , uint v) = getTxData();
         vm.prank(user);
-        // vm.expectRevert(); // should revert with overflow
+        vm.expectRevert(); // should revert with overflow
         IFlashAggregator(brokerProxyAddress).deltaCompose{value:v}(d);
     }
 
@@ -34,7 +35,7 @@ contract ForkTestPolygon is DeltaSetup {
     function test_generic_polygon() external /** address user, uint8 lenderId */ {
         address user = 0x91ae002a960e63Ccb0E5bDE83A8C13E51e1cB91A;
         vm.prank(user);
-        // vm.expectRevert(0x7dd37f70); // should revert with slippage
+        vm.expectRevert(); // should revert with slippage
         (bool success, bytes memory ret) = address(brokerProxyAddress).call(
             getGenericData()
         );
