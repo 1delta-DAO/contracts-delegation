@@ -95,19 +95,19 @@ contract ComposerUtils {
     }
 
     function populateAmountDeposit(uint16 lender, uint256 amount) internal pure returns (bytes memory data) {
-        data = abi.encodePacked(uint16(lender), uint112(amount)); // 14 + 1 byte
+        data = abi.encodePacked(lender, uint112(amount)); // 14 + 1 byte
     }
 
     function populateAmountBorrow(uint16 lender, uint8 mode, uint256 amount) internal pure returns (bytes memory data) {
-        data = abi.encodePacked(uint16(lender), mode, uint112(amount)); // 14 + 2 byte
+        data = abi.encodePacked(lender, mode, uint112(amount)); // 14 + 2 byte
     }
 
     function populateAmountRepay(uint16 lender, uint8 mode, uint256 amount) internal pure returns (bytes memory data) {
-        data = abi.encodePacked(uint16(lender), mode, uint112(amount)); // 14 + 2 byte
+        data = abi.encodePacked(lender, mode, uint112(amount)); // 14 + 2 byte
     }
 
     function populateAmountWithdraw(uint16 lender, uint256 amount) internal pure returns (bytes memory data) {
-        data = abi.encodePacked(uint16(lender), uint112(amount)); // 14 + 1 byte
+        data = abi.encodePacked(lender, uint112(amount)); // 14 + 1 byte
     }
 
     function encodeSwapAmountParams(uint256 amount, uint256 validate, bool paySelf, uint256 pathLength) internal pure returns (uint256) {

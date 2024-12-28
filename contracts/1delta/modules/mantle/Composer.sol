@@ -641,7 +641,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                         underlying := shr(96, calldataload(offset))
                         receiver := and(ADDRESS_MASK, calldataload(add(offset, 8)))
                         let lastBytes := calldataload(add(offset, 40))
-                        lenderId := shr(248, lastBytes) // last byte
+                        lenderId := shr(240, lastBytes) // last 2 bytes
                         mode := and(UINT8_MASK, shr(232, lastBytes))
                         amount := and(_UINT112_MASK, shr(120, lastBytes))
                         // zero means that we repay whatever is in this contract
@@ -713,7 +713,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                         receiver := and(ADDRESS_MASK, calldataload(add(currentOffset, 8)))
                         let lastBytes := calldataload(add(currentOffset, 40))
                         amount := and(_UINT112_MASK, shr(128, lastBytes))
-                        lenderId := shr(240, lastBytes) // last byte
+                        lenderId := shr(240, lastBytes) // last 2 bytes
 
                         // maximum uint112 has a special meaning
                         // for using the user collateral balance
