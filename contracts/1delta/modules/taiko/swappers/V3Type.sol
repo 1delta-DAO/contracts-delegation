@@ -37,7 +37,7 @@ abstract contract V3TypeSwapper is DeltaErrors, ERC20Selectors {
     // param lengths
     ////////////////////////////////////////////////////
 
-    uint256 internal constant MAX_SINGLE_LENGTH_UNOSWAP = 66;
+    uint256 internal constant MAX_SINGLE_LENGTH_UNOSWAP = 67;
     uint256 internal constant SKIP_LENGTH_UNOSWAP = 44; // = 20+1+1+20+2
 
     ////////////////////////////////////////////////////

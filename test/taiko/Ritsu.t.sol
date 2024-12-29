@@ -33,7 +33,7 @@ interface ISwap {
     function getA() external view returns (uint64);
 }
 
-contract TitsuTestTaiko is DeltaSetup {
+contract RitsuTestTaiko is DeltaSetup {
     uint8 internal constant RITSU = 150;
     address internal constant USDC_WETH_RITSU_POOL = 0x424Fab7bfA3E3Dd0e5BB96771fFAa72fe566200e;
     address internal constant USDC_sgUSDC_RITSU_POOL = 0x6c7839E0CE8AdA360a865E18a111A462d08DC15a;

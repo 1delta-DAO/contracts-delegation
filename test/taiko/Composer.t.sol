@@ -651,7 +651,8 @@ contract ComposerTestTaiko is DeltaSetup {
         uint8[] memory actions = new uint8[](pids.length);
         data = abi.encodePacked(tokens[0]);
         for (uint i; i < pids.length; i++) {
-            address pool = testQuoter._v3TypePool(tokens[i], tokens[i + 1], fees[i], pids[i]);
+            address pool;
+            pool = testQuoter._v3TypePool(tokens[i], tokens[i + 1], fees[i], pids[i]);
             data = abi.encodePacked(
                 data,
                 actions[i], // action id

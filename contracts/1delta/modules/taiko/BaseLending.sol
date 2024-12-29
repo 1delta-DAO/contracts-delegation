@@ -34,8 +34,7 @@ abstract contract BaseLending is Slots, SyncSwapper {
             let ptr := mload(0x40)
 
             // Slot for collateralTokens[target] is keccak256(target . collateralTokens.slot).
-            mstore(0x0, _underlying)
-            mstore8(0x0, _lenderId)
+            mstore(0x0, or(shl(240, _lenderId), _underlying))
             mstore(0x20, COLLATERAL_TOKENS_SLOT)
             let collateralToken := sload(keccak256(0x0, 0x40))
 

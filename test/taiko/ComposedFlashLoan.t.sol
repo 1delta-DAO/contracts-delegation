@@ -9,7 +9,7 @@ contract ComposedFlashLoanTestTaiko is DeltaSetup {
     MockRouter router;
 
     function setUp() public virtual override {
-        vm.createSelectFork({blockNumber: 62219594, urlOrAlias: "https://taiko-mainnet.public.blastapi.io"});
+        vm.createSelectFork({blockNumber: 536078, urlOrAlias: "https://rpc.mainnet.taiko.xyz"});
 
         router = new MockRouter(1.0e18, 12);
 
