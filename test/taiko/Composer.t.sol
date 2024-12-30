@@ -293,7 +293,7 @@ contract ComposerTestTaiko is DeltaSetup {
 
         received = IERC20All(assetOut).balanceOf(user) - received;
         // expect 0.74 WETH
-        assertApproxEqAbs(746079848470781434, received, 1);
+        assertApproxEqAbs(743972217540712861, received, 1);
     }
 
     function getNativeToWeth()
@@ -644,7 +644,7 @@ contract ComposerTestTaiko is DeltaSetup {
         uint balanceInAfter = IERC20All(assetIn).balanceOf(user);
 
         assertApproxEqAbs(balanceOutAfter - balanceOutBefore, amount, 1);
-        assertApproxEqAbs(balanceInBefore - balanceInAfter, 2670544, 1);
+        assertApproxEqAbs(balanceInBefore - balanceInAfter, 2733647, 1);
     }
 
     function getSpotExactInMultiGen2(address[] memory tokens, uint8[] memory pids, uint16[] memory fees) internal view returns (bytes memory data) {

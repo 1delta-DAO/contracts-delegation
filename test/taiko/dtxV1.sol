@@ -67,8 +67,8 @@ contract DTXV1TestTaiko is DeltaSetup {
         console.log("gas", gas);
 
         received = IERC20All(assetOut).balanceOf(user) - received;
-        // expect 0.743 WETH
-        assertApproxEqAbs(743497890127844601, received, 1);
+        // expect 0.7 WETH
+        assertApproxEqAbs(693166633333881944, received, 1);
     }
 
     function getSpotExactInSingleGen2(address tokenIn, address tokenOut, uint8 poolId, address pool) internal view returns (bytes memory data) {

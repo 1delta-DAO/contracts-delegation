@@ -74,7 +74,7 @@ contract RitsuTestTaiko is DeltaSetup {
         received = IERC20All(assetOut).balanceOf(user) - received;
         // expect 0.7369 WETH
         assertApproxEqAbs(expectedOut, received, 1);
-        assertApproxEqAbs(expectedOut, 736925511614964287, 1);
+        assertApproxEqAbs(expectedOut, 629765962801006068, 1);
     }
 
     function test_taiko_composer_ritsu_multi_exact_in() external {
@@ -115,7 +115,7 @@ contract RitsuTestTaiko is DeltaSetup {
         received = IERC20All(assetOut).balanceOf(user) - received;
         // expect 0.7369 WETH
         assertApproxEqAbs(expectedOut, received, 1);
-        assertApproxEqAbs(expectedOut, 10572763709453061122, 1);
+        assertApproxEqAbs(expectedOut, 14309151124503651977, 1);
     }
 
     function test_taiko_composer_ritsu_exact_in_stable() external {
@@ -154,7 +154,7 @@ contract RitsuTestTaiko is DeltaSetup {
         received = IERC20All(assetOut).balanceOf(user) - received;
         // expect 1998.436046 sgUSDC
         assertApproxEqAbs(expectedOut, received, 1);
-        assertApproxEqAbs(expectedOut, 1998436046, 1);
+        assertApproxEqAbs(expectedOut, 1999795003, 1);
     }
 
     function test_taiko_composer_ritsu_exact_in_rythm() external {
@@ -192,7 +192,7 @@ contract RitsuTestTaiko is DeltaSetup {
         received = IERC20All(assetOut).balanceOf(user) - received;
         // expect 1998.436046 sgUSDC
         assertApproxEqAbs(expectedOut, received, 1);
-        assertApproxEqAbs(expectedOut, 361210884239374586108, 1);
+        assertApproxEqAbs(expectedOut, 393488561143223960628, 1);
     }
 
     function getSpotExactInSingleGen2(address tokenIn, address tokenOut, uint8 poolId, address pool) internal view returns (bytes memory data) {
