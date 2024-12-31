@@ -120,6 +120,7 @@ contract AddressesTaiko {
     uint16 internal DEX_FEE_STABLES = 100;
     uint16 internal DEX_FEE_LOW_MEDIUM = 2500;
     uint16 internal DEX_FEE_LOW_HIGH = 3000;
+    uint16 internal DEX_FEE_HIGHEST = 10000;
     uint16 internal DEX_FEE_LOW = 500;
     uint16 internal DEX_FEE_NONE = 0;
 
