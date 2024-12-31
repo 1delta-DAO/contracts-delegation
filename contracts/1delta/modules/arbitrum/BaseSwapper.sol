@@ -468,7 +468,86 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
                 pathOffset := add(pathOffset, 42)
                 pathLength := sub(pathLength, 42)
             }
-        } 
+        }
+        // DODO V2
+        else if(dexId == 153) {
+            address pair;
+            uint8 sellQuote;
+            assembly {
+                switch lt(pathLength, 66) // same as V2
+                case 1 { currentReceiver := receiver}
+                default {
+                    dexId := and(calldataload(add(pathOffset, 33)), UINT8_MASK)
+                    switch gt(dexId, 99) 
+                    case 1 {
+                        currentReceiver := shr(
+                                96,
+                                calldataload(
+                                    add(
+                                        pathOffset,
+                                        65 // 20 + 2 + 20 + 1 + 20 + 2 [poolAddress starts here]
+                                    )
+                                ) // poolAddress
+                            )
+                    }
+                    default {
+                        currentReceiver := address()
+                    }
+                }
+                let params := calldataload(add(pathOffset, 11))
+                pair := shr(8, params)
+                sellQuote := and(UINT8_MASK, params)
+            }
+            amountIn = swapDodoV2ExactIn(
+                sellQuote,
+                pair,
+                currentReceiver
+            );
+            assembly {
+                pathOffset := add(pathOffset, 43)
+                pathLength := sub(pathLength, 43)
+            }
+        }
+        // Moe LB
+        else if (dexId == 154) {
+            address tokenIn;
+            address tokenOut;
+            address pair;
+            assembly {
+                switch lt(pathLength, 65) // same as V2
+                case 1 { currentReceiver := receiver}
+                default {
+                    dexId := and(calldataload(add(pathOffset, 32)), UINT8_MASK)
+                    switch gt(dexId, 99) 
+                    case 1 {
+                        currentReceiver := shr(
+                                96,
+                                calldataload(
+                                    add(
+                                        pathOffset,
+                                        64 // 20 + 2 + 20 + 20 + 2 [poolAddress starts here]
+                                    )
+                                ) // poolAddress
+                            )
+                    }
+                    default {
+                        currentReceiver := address()
+                    }
+                }
+                tokenIn := shr(96, calldataload(pathOffset))
+                tokenOut := shr(96, calldataload(add(pathOffset, 42)))
+                pair := shr(96, calldataload(add(pathOffset, 22)))
+            }
+            amountIn = swapLBexactIn(
+                tokenOut,
+                pair,
+                currentReceiver
+            );
+            assembly {
+                pathOffset := add(pathOffset, 42)
+                pathLength := sub(pathLength, 42)
+            }
+        }
         else {
             assembly {
                 mstore(0, INVALID_DEX)

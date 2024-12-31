@@ -405,7 +405,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
                 pathOffset := add(pathOffset, 42)
                 pathLength := sub(pathLength, 42)
             }
-        } 
+        }
         // GMX
         else if(dexId == 152) {
             address tokenIn;
@@ -485,7 +485,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
                 pathOffset := add(pathOffset, 43)
                 pathLength := sub(pathLength, 43)
             }
-        } 
+        }
          else {
             assembly {
                 mstore(0, INVALID_DEX)

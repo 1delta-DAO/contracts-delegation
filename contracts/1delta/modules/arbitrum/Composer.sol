@@ -20,9 +20,11 @@ contract OneDeltaComposerArbitrum is MarginTrading {
     /// @dev We use uint112-encoded amounts to typically fit one bit flag, one path length (uint16)
     ///      add 2 amounts (2xuint112) into 32bytes, as such we use this mask for extracting those
     uint256 private constant _UINT112_MASK = 0x000000000000000000000000000000000000ffffffffffffffffffffffffffff;
-    /// @dev we need USDCE and USDT to identify Compound V3's selectors
-    address internal constant USDCE = 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174;
-    address internal constant USDT = 0xc2132D05D31c914a87C6611C10748AEb04B58e8F;
+    
+    /// @dev we need base tokens to identify Compound V3's selectors
+    address internal constant USDCE = 0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8;
+    address internal constant USDT = 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9;
+    address internal constant USDC = 0xaf88d065e77c8cC2239327C5EDb3A432268e5831;
 
     /**
      * Batch-executes a series of operations
@@ -275,7 +277,7 @@ contract OneDeltaComposerArbitrum is MarginTrading {
                                 ),
                                 UINT16_MASK
                             )
-                            switch lt(lenderId_tokenIn, 50)
+                            switch lt(lenderId_tokenIn, MAX_ID_AAVE_V2)
                             // Aave types
                             case 1 {
                                 mstore(0x0, or(shl(240, lenderId_tokenIn), shr(96, calldataload(opdataOffset))))
@@ -296,13 +298,21 @@ contract OneDeltaComposerArbitrum is MarginTrading {
                                 // temp will now become the var for comet ccy
                                 switch lenderId_tokenIn
                                 // Compound V3 USDC.e
-                                case 50 {
+                                case 2000 {
                                     cometPool := COMET_USDC
-                                    temp := USDCE
+                                    temp := USDC
                                 }
-                                case 51 {
+                                case 2001 {
+                                    cometPool := COMET_WETH
+                                    temp := WRAPPED_NATIVE
+                                }
+                                case 2002 {
                                     cometPool := COMET_USDT
                                     temp := USDT
+                                }
+                                case 2003 {
+                                    cometPool := COMET_USDCE
+                                    temp := USDCE
                                 }
                                 // default: load comet from storage
                                 // if it is not provided directly
@@ -419,7 +429,7 @@ contract OneDeltaComposerArbitrum is MarginTrading {
                         if iszero(amountOut) {
                             // last 32 bytes
                             let lenderId := and(calldataload(sub(add(opdataLength, opdataOffset), 33)), UINT8_MASK)
-                            switch lt(lenderId, 50)
+                            switch lt(lenderId, MAX_ID_AAVE_V2)
                             case 1 {
                                 let tokenIn := calldataload(opdataOffset)
                                 let mode := and(UINT8_MASK, shr(88, tokenIn))
@@ -449,11 +459,17 @@ contract OneDeltaComposerArbitrum is MarginTrading {
                             default {
                                 let cometPool
                                 switch lenderId
-                                case 50 {
+                                case 2000 {
                                     cometPool := COMET_USDC
                                 }
-                                case 51 {
+                                case 2001 {
+                                    cometPool := COMET_WETH
+                                }
+                                case 2002 {
                                     cometPool := COMET_USDT
+                                }
+                                case 2003 {
+                                    cometPool := COMET_USDCE
                                 }
                                 // default: load comet from storage
                                 // if it is not provided directly
@@ -681,11 +697,17 @@ contract OneDeltaComposerArbitrum is MarginTrading {
                         case 0xffffffffffffffffffffffffffff {
                             let cometPool
                             switch lenderId
-                            case 50 {
+                            case 2000 {
                                 cometPool := COMET_USDC
                             }
-                            case 51 {
+                            case 2001 {
+                                cometPool := COMET_WETH
+                            }
+                            case 2002 {
                                 cometPool := COMET_USDT
+                            }
+                            case 2003 {
+                                cometPool := COMET_USDCE
                             }
                             // default: load comet from storage
                             // if it is not provided directly
@@ -726,7 +748,7 @@ contract OneDeltaComposerArbitrum is MarginTrading {
                         // maximum uint112 has a special meaning
                         // for using the user collateral balance
                         if eq(amount, 0xffffffffffffffffffffffffffff) {
-                            switch lt(lenderId, 50)
+                            switch lt(lenderId, MAX_ID_AAVE_V2)
                             // get aave type user collateral balance
                             case 1 {
                                 // Slot for collateralTokens[target] is keccak256(target . collateralTokens.slot).
@@ -756,13 +778,17 @@ contract OneDeltaComposerArbitrum is MarginTrading {
                                 let cometCcy
                                 switch lenderId
                                 // Compound V3 USDC.e
-                                case 50 {
+                                case 2000 {
                                     cometPool := COMET_USDC
-                                    cometCcy := USDCE
                                 }
-                                case 51 {
+                                case 2001 {
+                                    cometPool := COMET_WETH
+                                }
+                                case 2002 {
                                     cometPool := COMET_USDT
-                                    cometCcy := USDT
+                                }
+                                case 2003 {
+                                    cometPool := COMET_USDCE
                                 }
                                 // default: load comet from storage
                                 // if it is not provided directly
@@ -777,8 +803,7 @@ contract OneDeltaComposerArbitrum is MarginTrading {
                                         revert(0, 0x4)
                                     }
 
-                                    mstore(0x0, cometPool)
-                                    mstore8(0x0, lenderId)
+                                    mstore(0x0, or(shl(240, lenderId), cometPool))
                                     mstore(0x20, VARIABLE_DEBT_TOKENS_SLOT)
                                     cometCcy := sload(keccak256(0x0, 0x40))
                                 }

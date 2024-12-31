@@ -777,8 +777,7 @@ contract OneDeltaComposerPolygon is MarginTrading {
                                         revert(0, 0x4)
                                     }
 
-                                    mstore(0x0, cometPool)
-                                    mstore8(0x0, lenderId)
+                                    mstore(0x0, or(shl(240, lenderId), cometPool))
                                     mstore(0x20, VARIABLE_DEBT_TOKENS_SLOT)
                                     cometCcy := sload(keccak256(0x0, 0x40))
                                 }

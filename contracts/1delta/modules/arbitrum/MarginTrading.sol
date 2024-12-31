@@ -115,7 +115,7 @@ abstract contract MarginTrading is BaseSwapper {
                 mstore(p, UNI_POOL_INIT_CODE_HASH)
             }
             case 1 {
-                mstore(s, RETRO_FF_FACTORY)
+                mstore(s, RAMSES_FF_FACTORY)
                 let p := add(s, 21)
                 // Compute the inner hash in-place
                 switch lt(tokenIn, tokenOut)
@@ -130,7 +130,7 @@ abstract contract MarginTrading is BaseSwapper {
                 mstore(add(p, 64), and(UINT16_MASK, shr(160, firstWord)))
                 mstore(p, keccak256(p, 96))
                 p := add(p, 32)
-                mstore(p, RETRO_POOL_INIT_CODE_HASH)
+                mstore(p, RAMSES_POOL_INIT_CODE_HASH)
             }
             case 2 {
                 mstore(s, SUSHI_V3_FF_DEPLOYER)
@@ -517,29 +517,14 @@ abstract contract MarginTrading is BaseSwapper {
                 mstore(add(ptr, 0x35), CODE_HASH_UNI_V2)
             }
             case 101 {
-                mstore(ptr, QUICK_V2_FF_FACTORY)
+                mstore(ptr, CAMELOT_V2_FF_FACTORY)
                 mstore(add(ptr, 0x15), salt)
-                mstore(add(ptr, 0x35), CODE_HASH_UNI_V2)
+                mstore(add(ptr, 0x35), CODE_HASH_CAMELOT_V2)
             }
             case 102 {
                 mstore(ptr, SUSHI_V2_FF_FACTORY)
                 mstore(add(ptr, 0x15), salt)
                 mstore(add(ptr, 0x35), CODE_HASH_SUSHI_V2)
-            }
-            case 103 {
-                mstore(ptr, DFYN_FF_FACTORY)
-                mstore(add(ptr, 0x15), salt)
-                mstore(add(ptr, 0x35), CODE_HASH_DFYN)
-            }
-            case 104 {
-                mstore(ptr, POLYCAT_FF_FACTORY)
-                mstore(add(ptr, 0x15), salt)
-                mstore(add(ptr, 0x35), CODE_HASH_POLYCAT)
-            }
-            case 106 {
-                mstore(ptr, COMETH_FF_FACTORY)
-                mstore(add(ptr, 0x15), salt)
-                mstore(add(ptr, 0x35), CODE_HASH_COMETH)
             }
             default {
                 mstore(0x0, BAD_POOL)
@@ -561,56 +546,6 @@ abstract contract MarginTrading is BaseSwapper {
         _v2StyleCallback(amount0, amount1, tokenIn, tokenOut, pathLength);
     }
 
-
-    // The uniswapV2 style callback for waultswap
-    function waultSwapCall(
-        address sender,
-        uint256 amount0,
-        uint256 amount1,
-        bytes calldata path
-    ) external {
-        address tokenIn;
-        address tokenOut;
-        uint256 pathLength;
-        // the fee parameter in the path can be ignored for validating a V2 pool
-        assembly {
-            pathLength := path.length
-            // revert if sender param is not this address
-            if xor(sender, address()) { 
-                mstore(0, INVALID_FLASH_LOAN)
-                revert (0, 0x4)
-            }
-            // fetch tokens
-            tokenIn := and(ADDRESS_MASK, calldataload(152)) // PATH_OFFSET_CALLBACK_V2 - 12
-            tokenOut := and(ADDRESS_MASK, calldataload(196)) // PATH_OFFSET_CALLBACK_V2 + 32
-            let ptr := mload(0x40)
-            switch lt(tokenIn, tokenOut)
-            case 0 {
-                mstore(add(ptr, 0x14), tokenIn)
-                mstore(ptr, tokenOut)
-            }
-            default {
-                mstore(add(ptr, 0x14), tokenOut)
-                mstore(ptr, tokenIn)
-            }
-            let salt := keccak256(add(ptr, 0x0C), 0x28)
-            mstore(ptr, WAULTSWAP_FF_FACTORY)
-            mstore(add(ptr, 0x15), salt)
-            mstore(add(ptr, 0x35), CODE_HASH_WAULTSWAP)
-
-            // verify that the caller is a v2 type pool
-            if xor(and(ADDRESS_MASK, keccak256(ptr, 0x55)), caller()) {
-                mstore(0x0, BAD_POOL)
-                revert(0x0, 0x4)
-            }
-            // revert if sender param is not this address
-            if xor(sender, address()) { 
-                mstore(0, INVALID_CALLER)
-                revert (0, 0x4)
-            }
-        }
-        _v2StyleCallback(amount0, amount1, tokenIn, tokenOut, pathLength);
-    }
 
     // The uniswapV2 style callback for apeswap
     function apeCall(
@@ -650,89 +585,6 @@ abstract contract MarginTrading is BaseSwapper {
 
             // verify that the caller is a v2 type pool
             if xor(and(ADDRESS_MASK, keccak256(ptr, 0x55)), caller()) {
-                mstore(0x0, BAD_POOL)
-                revert(0x0, 0x4)
-            }
-            // revert if sender param is not this address
-            if xor(sender, address()) { 
-                mstore(0, INVALID_CALLER)
-                revert (0, 0x4)
-            }
-        }
-        _v2StyleCallback(amount0, amount1, tokenIn, tokenOut, pathLength);
-    }
-
-    // The uniswapV2 style callback for solidly forks
-    function hook(
-        address sender,
-        uint256 amount0,
-        uint256 amount1,
-        bytes calldata path
-    ) external {
-        address tokenIn;
-        address tokenOut;  
-        uint256 pathLength;
-        // the fee parameter in the path can be ignored for validating a V2 pool
-        assembly {
-            pathLength := path.length
-            // revert if sender param is not this address
-            if xor(sender, address()) { 
-                mstore(0, INVALID_FLASH_LOAN)
-                revert (0, 0x4)
-            }
-            // fetch tokens
-            let firstWord := calldataload(PATH_OFFSET_CALLBACK_V2)
-            tokenIn := shr(96, firstWord)
-            let dexId := and(shr(80, firstWord), UINT8_MASK) // swap pool dexId
-            tokenOut := and(ADDRESS_MASK, calldataload(196)) // PATH_OFFSET_CALLBACK_V2 + 32
-            let ptr := mload(0x40)
-            let pair
-            switch dexId
-            // Dystopia Volatile
-            case 120 {
-                switch lt(tokenIn, tokenOut)
-                case 0 {
-                    mstore(add(ptr, 0x14), tokenIn)
-                    mstore(ptr, tokenOut)
-                }
-                default {
-                    mstore(add(ptr, 0x14), tokenOut)
-                    mstore(ptr, tokenIn)
-                }
-                mstore8(add(ptr, 0x34), 0)
-                let salt := keccak256(add(ptr, 0x0C), 0x29)
-                mstore(ptr, DYSTOPIA_FF_FACTORY)
-                mstore(add(ptr, 0x15), salt)
-                mstore(add(ptr, 0x35), CODE_HASH_DYSTOPIA)
-
-                pair := and(ADDRESS_MASK, keccak256(ptr, 0x55))
-            }
-            // Dystopia Stable
-            case 135 {
-                switch lt(tokenIn, tokenOut)
-                case 0 {
-                    mstore(add(ptr, 0x14), tokenIn)
-                    mstore(ptr, tokenOut)
-                }
-                default {
-                    mstore(add(ptr, 0x14), tokenOut)
-                    mstore(ptr, tokenIn)
-                }
-                mstore8(add(ptr, 0x34), 1)
-                let salt := keccak256(add(ptr, 0x0C), 0x29)
-                mstore(ptr, DYSTOPIA_FF_FACTORY)
-                mstore(add(ptr, 0x15), salt)
-                mstore(add(ptr, 0x35), CODE_HASH_DYSTOPIA)
-
-                pair := and(ADDRESS_MASK, keccak256(ptr, 0x55))
-            }
-            default {
-                mstore(0x0, BAD_POOL)
-                revert(0x0, 0x4)
-            }
-
-            // verify that the caller is a v2 type pool
-            if xor(pair, caller()) {
                 mstore(0x0, BAD_POOL)
                 revert(0x0, 0x4)
             }
