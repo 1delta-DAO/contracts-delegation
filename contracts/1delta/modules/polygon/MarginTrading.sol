@@ -1030,8 +1030,7 @@ abstract contract MarginTrading is BaseSwapper {
                 tokenIn,
                 tokenOut,
                 receiver,
-                amountOut,
-                pathOffset
+                amountOut
             );
         }
         // Curve NG

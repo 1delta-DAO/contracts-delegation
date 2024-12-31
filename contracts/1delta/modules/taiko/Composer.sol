@@ -409,8 +409,9 @@ contract OneDeltaComposerTaiko is MarginTrading {
                             mstore(0x20, CALL_MANAGEMENT_APPROVALS)
                             mstore(0x20, keccak256(0x0, 0x40))
                             mstore(0x0, target)
+                            let key := keccak256(0x0, 0x40)
                             // check if already approved
-                            if iszero(sload(keccak256(0x0, 0x40))) {
+                            if iszero(sload(key)) {
                                 ////////////////////////////////////////////////////
                                 // Approve, at this point it is clear that the target
                                 // is whitelisted
@@ -423,6 +424,7 @@ contract OneDeltaComposerTaiko is MarginTrading {
                                 if iszero(call(gas(), token, 0x0, ptr, 0x44, ptr, 32)) {
                                     revert(0x0, 0x0)
                                 }
+                                sstore(key, 1)
                             }
                             nativeValue := 0
                         }

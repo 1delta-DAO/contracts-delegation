@@ -22,8 +22,8 @@ abstract contract BalancerSwapper is ExoticSwapper {
     bytes32 private constant BALANCER_SWAP = 0x52bbbe2900000000000000000000000000000000000000000000000000000000;
 
     /// @dev Balancer parameter lengths
-    uint256 internal constant MAX_SINGLE_LENGTH_BALANCER_V2 = 77;
-    uint256 internal constant SKIP_LENGTH_BALANCER_V2 = 55; // = 20+1+1+32
+    uint256 internal constant MAX_SINGLE_LENGTH_BALANCER_V2 = 76;
+    uint256 internal constant SKIP_LENGTH_BALANCER_V2 = 54; // = 20+1+32
 
     /** Call queryBatchSwap on the Balancer V2 vault.
      *  Should be avoided if possible as it executes (but reverts) state changes in the balancer vault
@@ -131,12 +131,19 @@ abstract contract BalancerSwapper is ExoticSwapper {
             ////////////////////////////////////////////////////
             // Approve vault if needed
             ////////////////////////////////////////////////////
-            if and(calldataload(add(offset, 9)), 0xff) {
+            mstore(0x0, tokenIn)
+            mstore(0x20, 0x1aae13105d9b6581c36534caba5708726e5ea1e03175e823c989a5756966d1f3) // CALL_MANAGEMENT_APPROVALS
+            mstore(0x20, keccak256(0x0, 0x40))
+            mstore(0x0, BALANCER_V2_VAULT)
+            let key := keccak256(0x0, 0x40)
+            // check if already approved
+            if iszero(sload(key)) {
                 // selector for approve(address,uint256)
                 mstore(ptr, ERC20_APPROVE)
                 mstore(add(ptr, 0x04), BALANCER_V2_VAULT)
                 mstore(add(ptr, 0x24), MAX_UINT256)
                 pop(call(gas(), tokenIn, 0, ptr, 0x44, ptr, 32))
+                sstore(key, 1)
             }
 
             ////////////////////////////////////////////////////
@@ -183,8 +190,7 @@ abstract contract BalancerSwapper is ExoticSwapper {
         address tokenIn,
         address tokenOut,
         address receiver,
-        uint256 amountOut,
-        uint256 offset
+        uint256 amountOut
     ) internal {
         assembly {
             let ptr := mload(0x40)
@@ -192,12 +198,19 @@ abstract contract BalancerSwapper is ExoticSwapper {
             ////////////////////////////////////////////////////
             // Approve vault if needed
             ////////////////////////////////////////////////////
-            if and(calldataload(add(offset, 9)), 0xff) {
+            mstore(0x0, tokenIn)
+            mstore(0x20, 0x1aae13105d9b6581c36534caba5708726e5ea1e03175e823c989a5756966d1f3) // CALL_MANAGEMENT_APPROVALS
+            mstore(0x20, keccak256(0x0, 0x40))
+            mstore(0x0, BALANCER_V2_VAULT)
+            let key := keccak256(0x0, 0x40)
+            // check if already approved
+            if iszero(sload(key)) {
                 // selector for approve(address,uint256)
                 mstore(ptr, ERC20_APPROVE)
                 mstore(add(ptr, 0x04), BALANCER_V2_VAULT)
                 mstore(add(ptr, 0x24), MAX_UINT256)
                 pop(call(gas(), tokenIn, 0, ptr, 0x44, ptr, 32))
+                sstore(key, 1)
             }
 
             ////////////////////////////////////////////////////
