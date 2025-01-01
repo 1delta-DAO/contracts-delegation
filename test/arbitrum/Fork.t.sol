@@ -3,7 +3,7 @@ pragma solidity ^0.8.19;
 
 import "./DeltaSetup.f.sol";
 
-contract ForkTestPolygon is DeltaSetup {
+contract ForkTestArbitrum is DeltaSetup {
     function setUp() public virtual override {
         vm.createSelectFork({blockNumber: 66030114, urlOrAlias: "https://polygon.api.onfinality.io/public"});
         address admin = 0x999999833d965c275A2C102a4Ebf222ca938546f;
@@ -13,7 +13,7 @@ contract ForkTestPolygon is DeltaSetup {
     }
 
     // skipt this one for now
-    function test_permit_polygon() external /** address user, uint8 lenderId */ {
+    function test_permit_arbitrum() external /** address user, uint8 lenderId */ {
         address user = 0x91ae002a960e63Ccb0E5bDE83A8C13E51e1cB91A;
         vm.expectRevert();
         vm.prank(user);
@@ -22,7 +22,7 @@ contract ForkTestPolygon is DeltaSetup {
     }
 
     // skipt this one for now
-    function test_repay_polygon() external /** address user, uint8 lenderId */ {
+    function test_repay_arbitrum() external /** address user, uint8 lenderId */ {
         address user = 0x91ae002a960e63Ccb0E5bDE83A8C13E51e1cB91A;
 
         (bytes memory d , uint v) = getTxData();
@@ -32,7 +32,7 @@ contract ForkTestPolygon is DeltaSetup {
     }
 
     // skipt this one for now
-    function test_generic_polygon() external /** address user, uint8 lenderId */ {
+    function test_generic_arbitrum() external /** address user, uint8 lenderId */ {
         address user = 0x91ae002a960e63Ccb0E5bDE83A8C13E51e1cB91A;
         vm.prank(user);
         vm.expectRevert(); // should revert with slippage

@@ -6,7 +6,7 @@ import "./DeltaSetup.f.sol";
 import "./utils/BalancerCaller.sol";
 import {BalancerQuoter} from "../../contracts/1delta/modules/polygon/quoters/BalanacerQuoter.sol";
 
-contract BalancerTestPolygon is DeltaSetup {
+contract BalancerTestArbitrum is DeltaSetup {
     // WETH / WBTC / USDC 3-pool
     address internal constant three_pool = 0x03cD191F589d12b0582a99808cf19851E468E6B5;
     bytes32 internal constant three_pool_id = 0x03cd191f589d12b0582a99808cf19851e468e6b500010000000000000000000a;
@@ -15,13 +15,13 @@ contract BalancerTestPolygon is DeltaSetup {
     address internal constant cs_pool = 0xcd78A20c597E367A4e478a2411cEB790604D7c8F;
     bytes32 internal constant cs_pool_id = 0xcd78a20c597e367a4e478a2411ceb790604d7c8f000000000000000000000c22;
 
-    function test_polygon_balancer_exact_out() external {
+    function test_arbitrum_balancer_exact_out() external {
         address user = testUser;
         uint256 amount = 0.1e8;
         uint256 maxIn = 10.0e18;
         uint gas;
-        address assetIn = WETH;
-        address assetOut = WBTC;
+        address assetIn = TokensArbitrum.WETH;
+        address assetOut = TokensArbitrum.WBTC;
         deal(assetIn, user, 1e23);
 
         bytes memory dataBalancer = getSpotExactOutBalancer(assetIn, assetOut, three_pool_id, 1);
@@ -54,13 +54,13 @@ contract BalancerTestPolygon is DeltaSetup {
     }
 
     /** Balancer first */
-    function test_polygon_balancer_exact_out_multi() external {
+    function test_arbitrum_balancer_exact_out_multi() external {
         address user = testUser;
         uint256 amount = 0.1e8;
         uint256 maxIn = 20000.0e18;
         uint gas;
-        address assetIn = WMATIC;
-        address assetOut = WBTC;
+        address assetIn = TokensArbitrum.WETH;
+        address assetOut = TokensArbitrum.WBTC;
         deal(assetIn, user, 1e23);
 
         bytes memory dataBalancer = getSpotExactOutBalancerMulti(assetIn, assetOut, three_pool_id, 1);
@@ -93,13 +93,13 @@ contract BalancerTestPolygon is DeltaSetup {
     }
 
     /** Balancer last */
-    function test_polygon_balancer_exact_out_multi_reverse() external {
+    function test_arbitrum_balancer_exact_out_multi_reverse() external {
         address user = testUser;
         uint256 amount = 20000.0e18;
         uint256 maxIn = 0.2e8;
         uint gas;
-        address assetIn = WBTC;
-        address assetOut = WMATIC;
+        address assetIn = TokensArbitrum.WBTC;
+        address assetOut = TokensArbitrum.WETH;
         deal(assetIn, user, 1e23);
 
         bytes memory dataBalancer = getSpotExactOutBalancerMultiReverse(assetIn, assetOut, three_pool_id, 1);
@@ -131,13 +131,13 @@ contract BalancerTestPolygon is DeltaSetup {
         assertApproxEqAbs(balanceOut, amount, 0);
     }
 
-    function test_polygon_balancer_exact_In() external {
+    function test_arbitrum_balancer_exact_In() external {
         address user = testUser;
         uint256 amount = 0.1e8;
         uint256 minOut = 1.50e18;
         uint gas;
-        address assetIn = WBTC;
-        address assetOut = WETH;
+        address assetIn = TokensArbitrum.WBTC;
+        address assetOut = TokensArbitrum.WETH;
         deal(assetIn, user, 1e23);
 
         bytes memory dataBalancer = getSpotExactInBalancer(assetIn, assetOut, three_pool_id, 1);
@@ -168,13 +168,13 @@ contract BalancerTestPolygon is DeltaSetup {
         assertApproxEqAbs(balanceOut, 1774720067908037858, 0);
     }
 
-    function test_polygon_balancer_exact_out_cpool() external {
+    function test_arbitrum_balancer_exact_out_cpool() external {
         address user = testUser;
         uint256 amount = 10_000.0e18;
         uint256 maxIn = 10_100.0e18;
 
-        address assetIn = MaticX;
-        address assetOut = WMATIC;
+        address assetIn = TokensArbitrum.WSTETH;
+        address assetOut = TokensArbitrum.WETH;
         deal(assetIn, user, 1e23);
 
         bytes memory dataBalancer = getSpotExactOutBalancer(assetIn, assetOut, cs_pool_id, 1);
@@ -206,13 +206,13 @@ contract BalancerTestPolygon is DeltaSetup {
         assertApproxEqAbs(balanceOut, amount, 0);
     }
 
-    function test_polygon_balancer_exact_out_multi_cpool() external {
+    function test_arbitrum_balancer_exact_out_multi_cpool() external {
         address user = testUser;
         uint256 amount = 10_000.0e18;
         uint256 maxIn = 4.0e18;
 
-        address assetIn = WETH;
-        address assetOut = MaticX;
+        address assetIn = TokensArbitrum.WETH;
+        address assetOut = TokensArbitrum.WSTETH;
         deal(assetIn, user, 1e23);
 
         bytes memory dataBalancer = getSpotExactOutBalancerMultiCSP(assetIn, assetOut, cs_pool_id, 1);
@@ -244,13 +244,13 @@ contract BalancerTestPolygon is DeltaSetup {
         assertApproxEqAbs(balanceOut, amount, 0);
     }
 
-    function test_polygon_balancer_exact_in_cpool() external {
+    function test_arbitrum_balancer_exact_in_cpool() external {
         address user = testUser;
         uint256 amount = 10_000.0e18;
         uint256 minOut = 11_100.0e18;
 
-        address assetIn = MaticX;
-        address assetOut = WMATIC;
+        address assetIn = TokensArbitrum.WSTETH;
+        address assetOut = TokensArbitrum.WETH;
         deal(assetIn, user, 1e23);
 
         bytes memory dataBalancer = getSpotExactInBalancer(assetIn, assetOut, cs_pool_id, 1);
@@ -283,13 +283,13 @@ contract BalancerTestPolygon is DeltaSetup {
     }
 
     /** Exact in MaticX -> WMATIC -> WETH */
-    function test_polygon_balancer_exact_in_cpool_multi() external {
+    function test_arbitrum_balancer_exact_in_cpool_multi() external {
         address user = testUser;
         uint256 amount = 10_000.0e18;
         uint256 minOut = 1.8e18;
 
-        address assetIn = MaticX;
-        address assetOut = WETH;
+        address assetIn = TokensArbitrum.WSTETH;
+        address assetOut = TokensArbitrum.WETH;
         deal(assetIn, user, 1e23);
 
         bytes memory dataBalancer = getSpotExactInBalancerMulti(assetIn, assetOut, cs_pool_id, 1);
@@ -322,13 +322,13 @@ contract BalancerTestPolygon is DeltaSetup {
     }
 
     /** Exact in MaticX -> WMATIC -> WETH */
-    function test_polygon_balancer_exact_in_cpool_multi_reverse() external {
+    function test_arbitrum_balancer_exact_in_cpool_multi_reverse() external {
         address user = testUser;
         uint256 amount = 1.80e18;
         uint256 minOut = 9_770.0e18;
 
-        address assetIn = WETH;
-        address assetOut = MaticX;
+        address assetIn = TokensArbitrum.WETH;
+        address assetOut = TokensArbitrum.WSTETH;
         deal(assetIn, user, 1e23);
 
         bytes memory dataBalancer = getSpotExactInBalancerMultiReverse(assetIn, assetOut, cs_pool_id, 1);
@@ -360,12 +360,12 @@ contract BalancerTestPolygon is DeltaSetup {
         assertApproxEqAbs(balanceOut, 9775768444742263707409, 0);
     }
 
-    function test_polygon_balancer_quote_csp_exact_out_cpool() external {
+    function test_arbitrum_balancer_quote_csp_exact_out_cpool() external {
         BalancerQuoter q = new BalancerQuoter();
         uint256 amount = 10_000.0e18;
 
-        address assetIn = MaticX;
-        address assetOut = WMATIC;
+        address assetIn = TokensArbitrum.WSTETH;
+        address assetOut = TokensArbitrum.WETH;
 
         uint gas = gasleft();
         uint256 quoted = q.getAmountInCSP(cs_pool_id, assetIn, assetOut, amount);
@@ -376,13 +376,13 @@ contract BalancerTestPolygon is DeltaSetup {
         assertApproxEqAbs(quoted, 8966060311066461950276, 0);
     }
 
-    function test_polygon_balancer_quote_wp_exact_out() external {
+    function test_arbitrum_balancer_quote_wp_exact_out() external {
         BalancerQuoter q = new BalancerQuoter();
 
         uint256 amount = 0.1e8;
 
-        address assetIn = WETH;
-        address assetOut = WBTC;
+        address assetIn = TokensArbitrum.WETH;
+        address assetOut = TokensArbitrum.WBTC;
 
         uint gas = gasleft();
         uint256 quoted = q.getAmountInWP(three_pool_id, assetIn, assetOut, amount);
@@ -411,11 +411,11 @@ contract BalancerTestPolygon is DeltaSetup {
     ) internal view returns (bytes memory data) {
         uint8 action = 0;
         uint16 fee = 500;
-        address pool = testQuoter._v3TypePool(tokenIn, WETH, fee, UNI_V3);
+        address pool = testQuoter._v3TypePool(tokenIn, TokensArbitrum.WETH, fee, UNI_V3);
 
         bytes memory firstPart;
         {
-            firstPart = abi.encodePacked(tokenOut, action, BALANCER_V2_DEXID, pId, preActionFlag, WETH);
+            firstPart = abi.encodePacked(tokenOut, action, BALANCER_V2_DEXID, pId, preActionFlag, TokensArbitrum.WETH);
         }
         return abi.encodePacked(firstPart, action, UNI_V3, pool, fee, tokenIn, uint8(99), uint8(99));
     }
@@ -465,11 +465,11 @@ contract BalancerTestPolygon is DeltaSetup {
     ) internal view returns (bytes memory data) {
         uint8 action = 0;
         uint16 fee = 3000;
-        address pool = testQuoter._v3TypePool(tokenOut, WETH, fee, UNI_V3);
+        address pool = testQuoter._v3TypePool(tokenOut, TokensArbitrum.WETH, fee, UNI_V3);
 
         bytes memory firstPart;
         {
-            firstPart = abi.encodePacked(tokenOut, action, UNI_V3, pool, fee, WETH);
+            firstPart = abi.encodePacked(tokenOut, action, UNI_V3, pool, fee, TokensArbitrum.WETH);
         }
         return abi.encodePacked(firstPart, action, BALANCER_V2_DEXID, pId, preActionFlag, tokenIn, uint8(99), uint8(99));
     }

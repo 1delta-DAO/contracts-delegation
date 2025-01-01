@@ -7,7 +7,7 @@ import {AvalonArbitrumAssets, AvalonArbitrum} from "./utils/lender/avalonAddress
 import {CompoundV3Arbitrum} from "./utils/lender/compoundAddresses.sol";
 import {YLDRArbitrumAssets, YLDRArbitrum} from "./utils/lender/yldrAddresses.sol";
 import {TokensArbitrum} from "./utils/tokens.sol";
-import "../../contracts/1delta/quoter/test/TestQuoterPolygon.sol";
+import "../../contracts/1delta/quoter/test/TestQuoterArbitrum.sol";
 import {MockRouter} from "../../contracts/mocks/MockRouter.sol";
 import {ComposerUtils, Commands} from "../shared/utils/ComposerUtils.sol";
 
@@ -46,7 +46,7 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
     IBrokerProxy internal brokerProxy;
     IModuleConfig internal deltaConfig;
     IManagement internal management;
-    TestQuoterPolygon testQuoter;
+    TestQuoterArbitrum testQuoter;
     OneDeltaComposerArbitrum internal aggregator;
     MockRouter router;
 
@@ -295,7 +295,7 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
     function initializeDeltaBase() internal virtual {
         // quoter
 
-        testQuoter = new TestQuoterPolygon();
+        testQuoter = new TestQuoterArbitrum();
         management.clearCache();
     }
 
@@ -560,7 +560,7 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
         bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, fee, TokensArbitrum.USDT);
         fee = uint16(DEX_FEE_STABLES);
         poolId = SUSHI_V3;
-        pool = testQuoter._v3TypePool(USDT, tokenOut, fee, poolId);
+        pool = testQuoter._v3TypePool(TokensArbitrum.USDT, tokenOut, fee, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenOut, lenderId, endId);
     }
 
@@ -572,7 +572,7 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
         bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, fee, TokensArbitrum.USDT);
         fee = uint16(DEX_FEE_LOW);
         poolId = IZUMI;
-        pool = testQuoter._getiZiPool(USDT, tokenIn, fee);
+        pool = testQuoter._getiZiPool(TokensArbitrum.USDT, tokenIn, fee);
         return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenIn, lenderId, endId);
     }
 
@@ -598,11 +598,11 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
         uint16 fee = uint16(DEX_FEE_LOW);
         (uint8 actionId, uint8 midId, uint8 endId) = getCloseExactInFlags();
         uint8 poolId = IZUMI;
-        address pool = testQuoter._getiZiPool(USDT, tokenIn, fee);
+        address pool = testQuoter._getiZiPool(TokensArbitrum.USDT, tokenIn, fee);
         bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, fee, TokensArbitrum.USDT);
         fee = uint16(DEX_FEE_STABLES);
         poolId = SUSHI_V3;
-        pool = testQuoter._v3TypePool(USDT, tokenOut, fee, poolId);
+        pool = testQuoter._v3TypePool(TokensArbitrum.USDT, tokenOut, fee, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenOut, lenderId, endId);
     }
 
@@ -610,11 +610,11 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
         uint16 fee = uint16(DEX_FEE_STABLES);
         (uint8 actionId, uint8 midId, uint8 endId) = getCloseExactOutFlags();
         uint8 poolId = SUSHI_V3;
-        address pool = testQuoter._v3TypePool(USDT, tokenOut, fee, poolId);
+        address pool = testQuoter._v3TypePool(TokensArbitrum.USDT, tokenOut, fee, poolId);
         bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, fee, TokensArbitrum.USDT);
         fee = uint16(DEX_FEE_LOW);
         poolId = IZUMI;
-        pool = testQuoter._getiZiPool(USDT, tokenIn, fee);
+        pool = testQuoter._getiZiPool(TokensArbitrum.USDT, tokenIn, fee);
         return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenIn, lenderId, endId);
     }
 
@@ -640,11 +640,11 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
         uint16 fee = uint16(DEX_FEE_LOW_MEDIUM);
         (uint8 actionId, uint8 midId, uint8 endId) = getCollateralSwapExactInFlags();
         uint8 poolId = UNI_V3;
-        address pool = testQuoter._v3TypePool(tokenIn, WETH, fee, poolId);
-        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, fee, WETH);
+        address pool = testQuoter._v3TypePool(tokenIn, TokensArbitrum.WETH, fee, poolId);
+        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, fee, TokensArbitrum.WETH);
         fee = uint16(DEX_FEE_LOW);
         poolId = SUSHI_V3;
-        pool = testQuoter._v3TypePool(tokenOut, WETH, fee, poolId);
+        pool = testQuoter._v3TypePool(tokenOut, TokensArbitrum.WETH, fee, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenOut, lenderId, endId);
     }
 
@@ -652,11 +652,11 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
         uint16 fee = uint16(DEX_FEE_LOW_MEDIUM);
         (uint8 actionId, uint8 midId, uint8 endId) = getCollateralSwapExactOutFlags();
         uint8 poolId = UNI_V3;
-        address pool = testQuoter._v3TypePool(tokenOut, WETH, fee, poolId);
-        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, fee, WETH);
+        address pool = testQuoter._v3TypePool(tokenOut, TokensArbitrum.WETH, fee, poolId);
+        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, fee, TokensArbitrum.WETH);
         fee = uint16(DEX_FEE_LOW);
         poolId = SUSHI_V3;
-        pool = testQuoter._v3TypePool(tokenIn, WETH, fee, poolId);
+        pool = testQuoter._v3TypePool(tokenIn, TokensArbitrum.WETH, fee, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenIn, lenderId, endId);
     }
 
@@ -681,11 +681,11 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
     function getDebtSwapExactInMulti(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_LOW);
         (uint8 actionId, uint8 midId, uint8 endId) = getDebtSwapExactInFlags();
-        uint8 poolId = RETRO;
+        uint8 poolId = RAMSES;
         address pool = testQuoter._v3TypePool(tokenIn, TokensArbitrum.USDT, fee, poolId);
         bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, fee, TokensArbitrum.USDT);
         fee = uint16(DEX_FEE_LOW);
-        poolId = RETRO;
+        poolId = RAMSES;
         pool = testQuoter._v3TypePool(tokenOut, TokensArbitrum.USDT, fee, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenOut, lenderId, endId);
     }
@@ -693,11 +693,11 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
     function getDebtSwapExactOutMulti(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_LOW);
         (uint8 actionId, uint8 midId, uint8 endId) = getDebtSwapExactOutFlags();
-        uint8 poolId = RETRO;
+        uint8 poolId = RAMSES;
         address pool = testQuoter._v3TypePool(tokenOut, TokensArbitrum.USDT, fee, poolId);
         bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, fee, TokensArbitrum.USDT);
         fee = uint16(DEX_FEE_LOW);
-        poolId = RETRO;
+        poolId = RAMSES;
         pool = testQuoter._v3TypePool(tokenIn, TokensArbitrum.USDT, fee, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenIn, lenderId, endId);
     }
@@ -705,14 +705,14 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
     /** OPEN */
 
     function getOpenExactInSingleV2(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
-        uint8 poolId = QUICK_V2;
+        uint8 poolId = CAMELOT_V2;
         (uint8 actionId, , uint8 endId) = getOpenExactInFlags();
         address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
         return abi.encodePacked(tokenIn, actionId, poolId, pool, tokenOut, lenderId, endId);
     }
 
     function getOpenExactOutSingleV2(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
-        uint8 poolId = QUICK_V2;
+        uint8 poolId = CAMELOT_V2;
         (uint8 actionId, , uint8 endId) = getOpenExactOutFlags();
         address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
         return abi.encodePacked(tokenOut, actionId, poolId, pool, tokenIn, lenderId, endId);
@@ -720,18 +720,18 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
 
     function getOpenExactInMultiV2(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
         (uint8 actionId, uint8 midId, uint8 endId) = getOpenExactInFlags();
-        uint8 poolId = QUICK_V2;
+        uint8 poolId = CAMELOT_V2;
         address pool = testQuoter._v2TypePairAddress(tokenIn, TokensArbitrum.USDT, poolId);
         bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, TokensArbitrum.USDT);
-        poolId = QUICK_V2;
-        pool = testQuoter._v2TypePairAddress(USDT, tokenOut, poolId);
+        poolId = CAMELOT_V2;
+        pool = testQuoter._v2TypePairAddress(TokensArbitrum.USDT, tokenOut, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, tokenOut, lenderId, endId);
     }
 
     function getOpenExactOutMultiV2(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
         (uint8 actionId, uint8 midId, uint8 endId) = getOpenExactOutFlags();
-        uint8 poolId = QUICK_V2;
-        address pool = testQuoter._v2TypePairAddress(USDT, tokenOut, poolId);
+        uint8 poolId = CAMELOT_V2;
+        address pool = testQuoter._v2TypePairAddress(TokensArbitrum.USDT, tokenOut, poolId);
         bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, TokensArbitrum.USDT);
         pool = testQuoter._v2TypePairAddress(tokenIn, TokensArbitrum.USDT, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, tokenIn, lenderId, endId);
@@ -740,14 +740,14 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
     /** CLOSE */
 
     function getCloseExactOutSingleV2(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
-        uint8 poolId = QUICK_V2;
+        uint8 poolId = CAMELOT_V2;
         address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
         (uint8 actionId, , uint8 endId) = getCloseExactOutFlags();
         return abi.encodePacked(tokenOut, actionId, poolId, pool, tokenIn, lenderId, endId);
     }
 
     function getCloseExactInSingleV2(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
-        uint8 poolId = QUICK_V2;
+        uint8 poolId = CAMELOT_V2;
         address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
         (uint8 actionId, , uint8 endId) = getCloseExactInFlags();
         return abi.encodePacked(tokenIn, actionId, poolId, pool, tokenOut, lenderId, endId);
@@ -755,20 +755,20 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
 
     function getCloseExactInMultiV2(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
         (uint8 actionId, uint8 midId, uint8 endId) = getCloseExactInFlags();
-        uint8 poolId = QUICK_V2;
+        uint8 poolId = CAMELOT_V2;
         address pool = testQuoter._v2TypePairAddress(tokenIn, TokensArbitrum.USDT, poolId);
         bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, TokensArbitrum.USDT);
-        poolId = QUICK_V2;
+        poolId = CAMELOT_V2;
         pool = testQuoter._v2TypePairAddress(tokenOut, TokensArbitrum.USDT, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, tokenOut, lenderId, endId);
     }
 
     function getCloseExactOutMultiV2(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
         (uint8 actionId, uint8 midId, uint8 endId) = getCloseExactOutFlags();
-        uint8 poolId = QUICK_V2;
+        uint8 poolId = CAMELOT_V2;
         address pool = testQuoter._v2TypePairAddress(tokenOut, TokensArbitrum.USDT, poolId);
         bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, TokensArbitrum.USDT);
-        poolId = QUICK_V2;
+        poolId = CAMELOT_V2;
         pool = testQuoter._v2TypePairAddress(tokenIn, TokensArbitrum.USDT, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, tokenIn, lenderId, endId);
     }
@@ -776,14 +776,14 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
     /** COLLATERAL SWAP */
 
     function getCollateralSwapExactInSingleV2(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
-        uint8 poolId = QUICK_V2;
+        uint8 poolId = CAMELOT_V2;
         address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
         (uint8 actionId, , uint8 endId) = getCollateralSwapExactInFlags();
         return abi.encodePacked(tokenIn, actionId, poolId, pool, tokenOut, lenderId, endId);
     }
 
     function getCollateralSwapExactOutSingleV2(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
-        uint8 poolId = QUICK_V2;
+        uint8 poolId = CAMELOT_V2;
         address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
         (uint8 actionId, , uint8 endId) = getCollateralSwapExactOutFlags();
         return abi.encodePacked(tokenOut, actionId, poolId, pool, tokenIn, lenderId, endId);
@@ -791,35 +791,35 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
 
     function getCollateralSwapExactInMultiV2(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
         (uint8 actionId, uint8 midId, uint8 endId) = getCollateralSwapExactInFlags();
-        uint8 poolId = QUICK_V2;
-        address pool = testQuoter._v2TypePairAddress(tokenIn, WETH, poolId);
-        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, WETH);
-        poolId = QUICK_V2;
-        pool = testQuoter._v2TypePairAddress(tokenOut, WETH, poolId);
+        uint8 poolId = CAMELOT_V2;
+        address pool = testQuoter._v2TypePairAddress(tokenIn, TokensArbitrum.WETH, poolId);
+        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, TokensArbitrum.WETH);
+        poolId = CAMELOT_V2;
+        pool = testQuoter._v2TypePairAddress(tokenOut, TokensArbitrum.WETH, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, tokenOut, lenderId, endId);
     }
 
     function getCollateralSwapExactOutMultiV2(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
         (uint8 actionId, uint8 midId, uint8 endId) = getCollateralSwapExactOutFlags();
-        uint8 poolId = QUICK_V2;
-        address pool = testQuoter._v2TypePairAddress(tokenOut, WETH, poolId);
-        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, WETH);
-        poolId = QUICK_V2;
-        pool = testQuoter._v2TypePairAddress(tokenIn, WETH, poolId);
+        uint8 poolId = CAMELOT_V2;
+        address pool = testQuoter._v2TypePairAddress(tokenOut, TokensArbitrum.WETH, poolId);
+        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, TokensArbitrum.WETH);
+        poolId = CAMELOT_V2;
+        pool = testQuoter._v2TypePairAddress(tokenIn, TokensArbitrum.WETH, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, tokenIn, lenderId, endId);
     }
 
     /** DEBT SWAP */
 
     function getDebtSwapExactInSingleV2(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
-        uint8 poolId = QUICK_V2;
+        uint8 poolId = CAMELOT_V2;
         address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
         (uint8 actionId, , uint8 endId) = getDebtSwapExactInFlags();
         return abi.encodePacked(tokenIn, actionId, poolId, pool, tokenOut, lenderId, endId);
     }
 
     function getDebtSwapExactOutSingleV2(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
-        uint8 poolId = QUICK_V2;
+        uint8 poolId = CAMELOT_V2;
         address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
         (uint8 actionId, , uint8 endId) = getDebtSwapExactOutFlags();
         return abi.encodePacked(tokenOut, actionId, poolId, pool, tokenIn, lenderId, endId);
@@ -827,21 +827,21 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
 
     function getDebtSwapExactInMultiV2(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
         (uint8 actionId, uint8 midId, uint8 endId) = getDebtSwapExactInFlags();
-        uint8 poolId = QUICK_V2;
-        address pool = testQuoter._v2TypePairAddress(tokenIn, WETH, poolId);
-        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, WETH);
-        poolId = QUICK_V2;
-        pool = testQuoter._v2TypePairAddress(tokenOut, WETH, poolId);
+        uint8 poolId = CAMELOT_V2;
+        address pool = testQuoter._v2TypePairAddress(tokenIn, TokensArbitrum.WETH, poolId);
+        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, TokensArbitrum.WETH);
+        poolId = CAMELOT_V2;
+        pool = testQuoter._v2TypePairAddress(tokenOut, TokensArbitrum.WETH, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, tokenOut, lenderId, endId);
     }
 
     function getDebtSwapExactOutMultiV2(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
         (uint8 actionId, uint8 midId, uint8 endId) = getDebtSwapExactOutFlags();
-        uint8 poolId = QUICK_V2;
-        address pool = testQuoter._v2TypePairAddress(tokenOut, WETH, poolId);
-        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, WETH);
-        poolId = QUICK_V2;
-        pool = testQuoter._v2TypePairAddress(tokenIn, WETH, poolId);
+        uint8 poolId = CAMELOT_V2;
+        address pool = testQuoter._v2TypePairAddress(tokenOut, TokensArbitrum.WETH, poolId);
+        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, TokensArbitrum.WETH);
+        poolId = CAMELOT_V2;
+        pool = testQuoter._v2TypePairAddress(tokenIn, TokensArbitrum.WETH, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, tokenIn, lenderId, endId);
     }
 
@@ -875,6 +875,10 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
     }
 
     function validAaveLender(uint16 id) internal pure returns (bool a) {
-        a = id == 0 || id == 1 || id == 900 || id == 2000;
+        a = id == 0 || id == 1 || id == 900;
+    }
+
+    function validCompoundLender(uint16 id) internal pure returns (bool a) {
+        a = id == 2000 || id == 2001 || id == 2002 || id == 2003;
     }
 }

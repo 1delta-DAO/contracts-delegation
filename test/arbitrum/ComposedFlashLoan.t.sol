@@ -21,9 +21,9 @@ contract ComposedFlashLoanTestPolygon is DeltaSetup {
         vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
         vm.deal(user, 1.0e18);
         {
-            address asset = WMATIC;
+            address asset = TokensArbitrum.WETH;
 
-            address borrowAsset = USDC;
+            address borrowAsset = TokensArbitrum.USDC;
 
             uint256 amountToDeposit = 200.0e18;
             deal(asset, user, amountToDeposit);
@@ -132,9 +132,9 @@ contract ComposedFlashLoanTestPolygon is DeltaSetup {
     function test_polygon_composed_flash_loan_close(uint16 lenderId) external {
         address user = testUser;
         vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
-        address asset = WMATIC;
+        address asset = TokensArbitrum.WETH;
         uint8 flashSource = BALANCER_V2;
-        address borrowAsset = USDC;
+        address borrowAsset = TokensArbitrum.USDC;
 
         fundRouter(asset, borrowAsset);
         router.setRate(1e6);
@@ -231,6 +231,6 @@ contract ComposedFlashLoanTestPolygon is DeltaSetup {
     }
 
     function getFlashFee(uint8 source) internal view returns (uint) {
-        return source == BALANCER_V2 ? 0 : ILendingPool(AAVE_POOL).FLASHLOAN_PREMIUM_TOTAL();
+        return source == BALANCER_V2 ? 0 : ILendingPool(AaveV3Arbitrum.POOL).FLASHLOAN_PREMIUM_TOTAL();
     }
 }

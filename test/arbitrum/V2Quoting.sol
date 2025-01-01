@@ -7,74 +7,44 @@ import "./DeltaSetup.f.sol";
  * Tests Merchant Moe's LB Quoting for exact out to make sure that incomplete swaps
  * revert.
  */
-contract PolygonQuotingTest is DeltaSetup {
+contract ArbitrumQuotingTest is DeltaSetup {
     address wbpg = 0xc0f14C88250E680eCd70224B7fBa82b7C6560d12;
 
-    function test_polygon_V2_quote_spot_exact_in_works() external {
+    function test_arbitrum_V2_quote_spot_exact_in_works() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetOut = USDC;
-        address assetIn = WETH;
+        address assetOut = TokensArbitrum.USDC;
+        address assetIn = TokensArbitrum.WETH;
 
         deal(assetIn, user, 1e30);
 
         uint256 amountIn = 1.0005e18;
 
-        bytes memory quotePath = getSpotQuotePathSingle(assetIn, assetOut, QUICK_V2, QUICK_V2_FEE_DENOM);
+        bytes memory quotePath = getSpotQuotePathSingle(assetIn, assetOut, CAMELOT_V2, CAMELOT_V2_FEE_DENOM);
         uint256 quote = testQuoter.quoteExactInput(quotePath, amountIn);
         assertApproxEqAbs(3373724906, quote, 0);
     }
 
-    function test_polygon_V2_polycat_quote_spot_exact_in_works() external {
+    function test_arbitrum_V2_quote_spot_exact_out_works() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetOut = WBTC;
-        address assetIn = DAI;
-
-        deal(assetIn, user, 1e30);
-
-        uint256 amountIn = 100.0005e18;
-
-        bytes memory quotePath = getSpotQuotePathSingle(assetIn, assetOut, POLYCAT, POLYCAT_FEE_DENOM);
-        uint256 quote = testQuoter.quoteExactInput(quotePath, amountIn);
-        assertApproxEqAbs(163152, quote, 0);
-    }
-
-    function test_polygon_V2_quote_spot_exact_out_works() external {
-        address user = testUser;
-        vm.assume(user != address(0));
-        address assetOut = USDC;
-        address assetIn = WETH;
+        address assetOut = TokensArbitrum.USDC;
+        address assetIn = TokensArbitrum.WETH;
 
         deal(assetIn, user, 1e30);
 
         uint256 amountOut = 3100.0005e6;
 
-        bytes memory quotePath = getSpotQuotePathSingle(assetOut, assetIn, QUICK_V2, QUICK_V2_FEE_DENOM);
+        bytes memory quotePath = getSpotQuotePathSingle(assetOut, assetIn, CAMELOT_V2, CAMELOT_V2_FEE_DENOM);
         uint256 quote = testQuoter.quoteExactOutput(quotePath, amountOut);
         assertApproxEqAbs(919125098675979978, quote, 0);
     }
 
-    function test_polygon_V2_quote_spot_exact_out_cometh() external {
+    function test_arbitrum_V2_quote_spot_exact_out_ape() external {
         address user = testUser;
         vm.assume(user != address(0));
         address assetOut = WMATIC;
-        address assetIn = wbpg;
-
-        deal(assetIn, user, 1e30);
-
-        uint256 amountOut = 1.0005e18;
-
-        bytes memory quotePath = getSpotQuotePathSingle(assetOut, assetIn, COMETH, COMETH_FEE_DENOM);
-        uint256 quote = testQuoter.quoteExactOutput(quotePath, amountOut);
-        assertApproxEqAbs(9345139087034618630261, quote, 0);
-    }
-
-    function test_polygon_V2_quote_spot_exact_out_ape() external {
-        address user = testUser;
-        vm.assume(user != address(0));
-        address assetOut = WMATIC;
-        address assetIn = WBTC;
+        address assetIn = TokensArbitrum.WBTC;
 
         deal(assetIn, user, 1e30);
 
@@ -102,11 +72,11 @@ contract PolygonQuotingTest is DeltaSetup {
         console.log("gas", gas);
     }
 
-    function test_polygon_V3_quote_spot_exact_in() external {
+    function test_arbitrum_V3_quote_spot_exact_in() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetOut = USDC;
-        address assetIn = USDT;
+        address assetOut = TokensArbitrum.USDC;
+        address assetIn = TokensArbitrum.USDT;
 
         deal(assetIn, user, 1e30);
 
@@ -136,11 +106,11 @@ contract PolygonQuotingTest is DeltaSetup {
         assertApproxEqAbs(bal, quote, 0);
     }
 
-    function test_polygon_quick_V3_quote_spot_exact_in() external {
+    function test_arbitrum_quick_V3_quote_spot_exact_in() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetOut = USDC;
-        address assetIn = USDT;
+        address assetOut = TokensArbitrum.USDC;
+        address assetIn = TokensArbitrum.USDT;
 
         deal(assetIn, user, 1e30);
 
@@ -170,11 +140,11 @@ contract PolygonQuotingTest is DeltaSetup {
         assertApproxEqAbs(bal, quote, 0);
     }
 
-    function test_polygon_sushi_quick_V2_quote_spot_exact_in() external {
+    function test_arbitrum_sushi_CAMELOT_V2_quote_spot_exact_in() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetOut = USDT;
-        address mid = WETH;
+        address assetOut = TokensArbitrum.USDT;
+        address mid = TokensArbitrum.WETH;
         address assetIn = WMATIC;
 
         deal(assetIn, user, 1e30);
@@ -205,12 +175,12 @@ contract PolygonQuotingTest is DeltaSetup {
         assertApproxEqAbs(bal, quote, 0);
     }
 
-    function test_polygon_quick_V3_quote_spot_exact_in_dual() external {
+    function test_arbitrum_quick_V3_quote_spot_exact_in_dual() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetOut = USDC;
-        address mid = DAI;
-        address assetIn = USDT;
+        address assetOut = TokensArbitrum.USDC;
+        address mid = TokensArbitrum.DAI;
+        address assetIn = TokensArbitrum.USDT;
 
         deal(assetIn, user, 1e30);
 
@@ -244,7 +214,7 @@ contract PolygonQuotingTest is DeltaSetup {
     function test_izi_quote_spot_exact_out_works() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetOut = USDT;
+        address assetOut = TokensArbitrum.USDT;
         address assetIn = WMATIC;
 
         deal(assetIn, user, 1e30);
@@ -309,14 +279,14 @@ contract PolygonQuotingTest is DeltaSetup {
 
     function getSpotQuotePathDual(address tokenIn, address mid, address tokenOut, uint8 id, uint16 fee) internal view returns (bytes memory data) {
         address pool = testQuoter._v3TypePool(tokenIn, mid, fee, id);
-        address pool2 = testQuoter._v2TypePairAddress(mid, tokenOut, QUICK_V2);
-        return abi.encodePacked(tokenIn, id, pool, fee, mid, QUICK_V2, pool2, QUICK_V2_FEE_DENOM, tokenOut);
+        address pool2 = testQuoter._v2TypePairAddress(mid, tokenOut, CAMELOT_V2);
+        return abi.encodePacked(tokenIn, id, pool, fee, mid, CAMELOT_V2, pool2, CAMELOT_V2_FEE_DENOM, tokenOut);
     }
 
     function getSpotSwapPathDual(address tokenIn, address mid, address tokenOut, uint8 id, uint16 fee) internal view returns (bytes memory data) {
         address pool = testQuoter._v3TypePool(tokenIn, mid, fee, id);
-        address pool2 = testQuoter._v2TypePairAddress(mid, tokenOut, QUICK_V2);
-        return abi.encodePacked(tokenIn, uint8(0), id, pool, fee, mid, uint8(0), QUICK_V2, pool2, QUICK_V2_FEE_DENOM, tokenOut);
+        address pool2 = testQuoter._v2TypePairAddress(mid, tokenOut, CAMELOT_V2);
+        return abi.encodePacked(tokenIn, uint8(0), id, pool, fee, mid, uint8(0), CAMELOT_V2, pool2, CAMELOT_V2_FEE_DENOM, tokenOut);
     }
 
     function getData() internal pure returns (bytes memory path, uint256 amount) {

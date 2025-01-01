@@ -287,34 +287,10 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
                     pathLength := sub(pathLength, SKIP_LENGTH_CURVE)
                 }
             }
-            // curve metapool
             else {
                 assembly {
-                    switch lt(pathLength, 89) // lengthFull = 20+1+1+20+1+1+1+20 = 65
-                    case 1 { currentReceiver := receiver}
-                    default {
-                        dexId := and(calldataload(add(pathOffset, 55)), UINT8_MASK)
-                        switch gt(dexId, 99) 
-                        case 1 {
-                            currentReceiver := shr(
-                                    96,
-                                    calldataload(
-                                        add(
-                                            pathOffset,
-                                            88 // 20 + 2 + 20 + 2 + 20 + 2 [poolAddress starts here]
-                                        )
-                                    ) // poolAddress
-                                )
-                        }
-                        default {
-                            currentReceiver := address()
-                        }
-                    }
-                }
-                amountIn = _swapCurveMeta(pathOffset, amountIn, payer, currentReceiver);
-                assembly {
-                    pathOffset := add(pathOffset, 65)
-                    pathLength := sub(pathLength, 65)
+                    mstore(0, INVALID_DEX)
+                    revert (0, 0x4)
                 }
             }
         }

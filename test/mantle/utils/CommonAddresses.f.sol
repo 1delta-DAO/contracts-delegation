@@ -145,7 +145,7 @@ contract AddressesMantle {
 
     uint8 internal FUSION_X_V2 = 100;
     uint8 internal MERCHANT_MOE = 101;
-    // Solidly STable
+    // Solidly Stable
     uint8 internal CLEO_V1_STABLE = 135;
     uint8 internal STRATUM_STABLE = 136;
     uint8 internal VELO_STABLE = 137;

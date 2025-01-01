@@ -13,7 +13,6 @@ contract ComposerTestArbitrum is DeltaSetup {
         address asset = TokensArbitrum.USDC;
         deal(asset, user, 1e23);
 
-
         vm.prank(user);
         IERC20All(asset).approve(address(brokerProxyAddress), amount);
 
@@ -70,21 +69,20 @@ contract ComposerTestArbitrum is DeltaSetup {
         assertApproxEqAbs(amount, getCollateralBalance(user, asset, lenderId), 0);
     }
 
-
     function test_arbitrum_composer_borrow(uint16 lenderId) external {
         address user = testUser;
-        vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
-        uint256 amount = 500.0e18;
-        address asset = USDC;
+        vm.assume(user != address(0) && validAaveLender(lenderId));
+        uint256 amount = 1.0e8;
+        address asset = TokensArbitrum.WBTC;
 
         _deposit(asset, user, amount, lenderId);
 
         vm.prank(user);
         IERC20All(asset).approve(address(brokerProxyAddress), amount);
 
-        uint256 borrowAmount = 100.0e6;
+        uint256 borrowAmount = 0.01e8;
 
-        address borrowAsset = USDC;
+        address borrowAsset = TokensArbitrum.WBTC;
         approveBorrowDelegation(user, borrowAsset, borrowAmount, lenderId);
 
         bytes memory data = borrow(borrowAsset, user, borrowAmount, lenderId, DEFAULT_MODE);
@@ -100,19 +98,19 @@ contract ComposerTestArbitrum is DeltaSetup {
     function test_arbitrum_composer_repay(uint16 lenderId) external {
         address user = testUser;
 
-        vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
+        vm.assume(user != address(0) && validAaveLender(lenderId));
 
-        uint256 amount = 500.0e18;
-        address asset = USDC;
+        uint256 amount = 1.0e8;
+        address asset = TokensArbitrum.WBTC;
 
-        uint256 borrowAmount = 100.0e6;
-        address borrowAsset = USDC;
+        uint256 borrowAmount = 0.01e8;
+        address borrowAsset = TokensArbitrum.WBTC;
 
         _deposit(asset, user, amount, lenderId);
 
         _borrow(borrowAsset, user, borrowAmount, lenderId);
 
-        uint256 repayAmount = 20.50e6;
+        uint256 repayAmount = 0.005e8;
 
         bytes memory transfer = transferIn(
             borrowAsset,
@@ -143,19 +141,19 @@ contract ComposerTestArbitrum is DeltaSetup {
 
     function test_arbitrum_composer_repay_too_much(uint16 lenderId) external {
         address user = testUser;
-        vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
+        vm.assume(user != address(0) && validAaveLender(lenderId));
 
-        uint256 amount = 500.0e18;
-        address asset = USDC;
+        uint256 amount = 1.0e8;
+        address asset = TokensArbitrum.WBTC;
 
-        uint256 borrowAmount = 100.0e6;
-        address borrowAsset = USDC;
+        uint256 borrowAmount = 0.01e8;
+        address borrowAsset = TokensArbitrum.WBTC;
 
         _deposit(asset, user, amount, lenderId);
 
         _borrow(borrowAsset, user, borrowAmount, lenderId);
 
-        uint256 repayAmount = 120.50e6;
+        uint256 repayAmount = 0.015e8;
         deal(borrowAsset, user, repayAmount);
         bytes memory transfer = transferIn(
             borrowAsset,
@@ -165,7 +163,7 @@ contract ComposerTestArbitrum is DeltaSetup {
         bytes memory data = repay(
             borrowAsset,
             user,
-            lenderId > 49 ? type(uint112).max : repayAmount,
+            repayAmount,
             lenderId, //
             DEFAULT_MODE
         );
@@ -183,13 +181,12 @@ contract ComposerTestArbitrum is DeltaSetup {
         console.log(IERC20All(borrowAsset).balanceOf(user));
     }
 
-    function test_arbitrum_composer_withdraw() external {
-        uint16 lenderId = 50;
+    function test_arbitrum_composer_withdraw(uint16 lenderId) external {
         address user = testUser;
-        vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
+        vm.assume(user != address(0) && (validAaveLender(lenderId) || lenderId == COMPOUND_V3_USDC));
 
         uint256 amount = 10.0e18;
-        address asset = USDC;
+        address asset = TokensArbitrum.USDC;
 
         _deposit(asset, user, amount, lenderId);
 
@@ -209,10 +206,10 @@ contract ComposerTestArbitrum is DeltaSetup {
     function test_arbitrum_composer_withdraw_all(uint16 lenderId) external {
         address user = testUser;
 
-        vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
+        vm.assume(user != address(0) && validAaveLender(lenderId));
 
         uint256 amount = 500.0e18;
-        address asset = USDC;
+        address asset = TokensArbitrum.USDC;
 
         _deposit(asset, user, amount, lenderId);
 
@@ -235,11 +232,11 @@ contract ComposerTestArbitrum is DeltaSetup {
         uint256 amount = 2000.0e6;
         uint256 amountMin = 900.0e6;
 
-        address assetIn = USDC;
-        address assetOut = USDT;
+        address assetIn = TokensArbitrum.USDC;
+        address assetOut = TokensArbitrum.USDT;
         deal(assetIn, user, 1e23);
 
-        bytes memory dataAgni = getSpotExactInSingleGen2(
+        bytes memory swapData = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
             UNI_V3,
@@ -255,8 +252,8 @@ contract ComposerTestArbitrum is DeltaSetup {
         bytes memory data = abi.encodePacked(
             uint8(Commands.SWAP_EXACT_IN),
             user,
-            encodeSwapAmountParams(amount / 2, amountMin, false, dataAgni.length),
-            dataAgni,
+            encodeSwapAmountParams(amount / 2, amountMin, false, swapData.length),
+            swapData,
             uint8(Commands.SWAP_EXACT_IN),
             user,
             encodeSwapAmountParams(amount / 2, amountMin, false, dataFusion.length),
@@ -283,9 +280,9 @@ contract ComposerTestArbitrum is DeltaSetup {
         )
     {
         tks = new address[](3);
-        tks[0] = USDC;
-        tks[1] = USDC;
-        tks[2] = WETH;
+        tks[0] = TokensArbitrum.USDC;
+        tks[1] = TokensArbitrum.USDC;
+        tks[2] = TokensArbitrum.WETH;
         fees = new uint16[](2);
         fees[0] = uint16(500);
         fees[1] = uint16(500);
@@ -304,9 +301,9 @@ contract ComposerTestArbitrum is DeltaSetup {
         )
     {
         tks = new address[](3);
-        tks[0] = WETH;
-        tks[1] = USDC;
-        tks[2] = USDC;
+        tks[0] = TokensArbitrum.WETH;
+        tks[1] = TokensArbitrum.USDC;
+        tks[2] = TokensArbitrum.USDC;
         fees = new uint16[](2);
         fees[0] = uint16(500);
         fees[1] = uint16(500);
@@ -320,11 +317,11 @@ contract ComposerTestArbitrum is DeltaSetup {
         uint256 amount = 4000.0e18;
         uint256 amountMin = 0.10e18;
 
-        address assetIn = USDC;
-        address assetOut = WETH;
+        address assetIn = TokensArbitrum.USDC;
+        address assetOut = TokensArbitrum.WETH;
         vm.deal(user, amount);
 
-        bytes memory dataAgni = getSpotExactInSingleGen2(
+        bytes memory swapData = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
             UNI_V3,
@@ -342,8 +339,8 @@ contract ComposerTestArbitrum is DeltaSetup {
         bytes memory data = abi.encodePacked(
             uint8(Commands.SWAP_EXACT_IN),
             user,
-            encodeSwapAmountParams(amount / 2, amountMin, true, dataAgni.length),
-            dataAgni,
+            encodeSwapAmountParams(amount / 2, amountMin, true, swapData.length),
+            swapData,
             uint8(Commands.SWAP_EXACT_IN),
             user,
             encodeSwapAmountParams(amount / 2, amountMin, true, dataFusion.length),
@@ -363,11 +360,11 @@ contract ComposerTestArbitrum is DeltaSetup {
         uint256 amount = 4000.0e18;
         uint256 amountMax = 7.0e18;
 
-        address assetIn = WETH;
-        address assetOut = USDC;
+        address assetIn = TokensArbitrum.WETH;
+        address assetOut = TokensArbitrum.USDC;
         deal(assetIn, user, amountMax);
 
-        bytes memory dataAgni = getSpotExactOutSingleGen2(
+        bytes memory swapData = getSpotExactOutSingleGen2(
             assetIn,
             assetOut,
             UNI_V3,
@@ -385,8 +382,8 @@ contract ComposerTestArbitrum is DeltaSetup {
         bytes memory data = abi.encodePacked(
             uint8(Commands.SWAP_EXACT_OUT),
             brokerProxyAddress,
-            encodeSwapAmountParams(amount / 2, amountMax / 2, false, dataAgni.length),
-            dataAgni,
+            encodeSwapAmountParams(amount / 2, amountMax / 2, false, swapData.length),
+            swapData,
             uint8(Commands.SWAP_EXACT_OUT),
             brokerProxyAddress,
             encodeSwapAmountParams(amount / 2, amountMax / 2, false, dataFusion.length),
@@ -419,11 +416,11 @@ contract ComposerTestArbitrum is DeltaSetup {
         uint256 amount = 1.0e18;
         uint256 amountMax = 7500.0e18;
 
-        address assetIn = USDC;
-        address assetOut = WETH;
+        address assetIn = TokensArbitrum.USDC;
+        address assetOut = TokensArbitrum.WETH;
         vm.deal(user, amountMax);
 
-        bytes memory dataAgni = getSpotExactOutSingleGen2(
+        bytes memory swapData = getSpotExactOutSingleGen2(
             assetIn,
             assetOut,
             UNI_V3,
@@ -441,8 +438,8 @@ contract ComposerTestArbitrum is DeltaSetup {
         bytes memory data = abi.encodePacked(
             uint8(Commands.SWAP_EXACT_OUT),
             user,
-            encodeSwapAmountParams(amount / 2, amountMax / 2, true, dataAgni.length),
-            dataAgni,
+            encodeSwapAmountParams(amount / 2, amountMax / 2, true, swapData.length),
+            swapData,
             uint8(Commands.SWAP_EXACT_OUT),
             user,
             encodeSwapAmountParams(amount / 2, amountMax / 2, true, dataFusion.length),
@@ -472,11 +469,11 @@ contract ComposerTestArbitrum is DeltaSetup {
         uint256 amount = 2.0e18;
         uint256 amountMin = 4000.0e18;
 
-        address assetIn = WETH;
-        address assetOut = USDC;
+        address assetIn = TokensArbitrum.WETH;
+        address assetOut = TokensArbitrum.USDC;
         deal(assetIn, user, amount);
 
-        bytes memory dataAgni = getSpotExactInSingleGen2(
+        bytes memory swapData = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
             UNI_V3,
@@ -494,8 +491,8 @@ contract ComposerTestArbitrum is DeltaSetup {
         bytes memory data = abi.encodePacked(
             uint8(Commands.SWAP_EXACT_IN),
             brokerProxyAddress,
-            encodeSwapAmountParams(amount / 2, 0, false, dataAgni.length),
-            dataAgni,
+            encodeSwapAmountParams(amount / 2, 0, false, swapData.length),
+            swapData,
             uint8(Commands.SWAP_EXACT_IN),
             brokerProxyAddress,
             encodeSwapAmountParams(amount / 2, 0, false, dataFusion.length),
@@ -528,11 +525,11 @@ contract ComposerTestArbitrum is DeltaSetup {
         uint256 amount = 2000.0e6;
         uint256 amountMin = 900.0e6;
 
-        address assetIn = USDC;
-        address assetOut = USDT;
+        address assetIn = TokensArbitrum.USDC;
+        address assetOut = TokensArbitrum.USDT;
         deal(assetIn, user, 1e23);
 
-        bytes memory dataAgni = getSpotExactInSingleGen2(
+        bytes memory swapData = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
             UNI_V3,
@@ -554,8 +551,8 @@ contract ComposerTestArbitrum is DeltaSetup {
         bytes memory data = abi.encodePacked(
             uint8(Commands.SWAP_EXACT_IN),
             user,
-            encodeSwapAmountParams(amount / 2, amountMin, true, dataAgni.length),
-            dataAgni,
+            encodeSwapAmountParams(amount / 2, amountMin, true, swapData.length),
+            swapData,
             uint8(Commands.SWAP_EXACT_IN),
             user,
             encodeSwapAmountParams(amount / 2, amountMin, true, dataFusion.length),
@@ -577,11 +574,11 @@ contract ComposerTestArbitrum is DeltaSetup {
         uint256 amount = 2000.0e6;
         uint256 maxIn = 1140.0e6;
 
-        address assetIn = USDC;
-        address assetOut = USDT;
+        address assetIn = TokensArbitrum.USDC;
+        address assetOut = TokensArbitrum.USDT;
         deal(assetIn, user, 1e23);
 
-        bytes memory dataAgni = getSpotExactOutSingleGen2(
+        bytes memory swapData = getSpotExactOutSingleGen2(
             assetIn,
             assetOut,
             UNI_V3,
@@ -597,8 +594,8 @@ contract ComposerTestArbitrum is DeltaSetup {
         bytes memory data = abi.encodePacked(
             uint8(Commands.SWAP_EXACT_OUT),
             user,
-            encodeSwapAmountParams(amount / 2, maxIn, false, dataAgni.length),
-            dataAgni,
+            encodeSwapAmountParams(amount / 2, maxIn, false, swapData.length),
+            swapData,
             uint8(Commands.SWAP_EXACT_OUT),
             user,
             encodeSwapAmountParams(amount / 2, maxIn, false, dataFusion.length),
