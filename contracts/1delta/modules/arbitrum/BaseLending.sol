@@ -26,14 +26,13 @@ abstract contract BaseLending is Slots, BalancerSwapper {
     // wNative
     address internal constant WRAPPED_NATIVE = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
 
-    // lender pool addresses
+    // Aave V3 style lender pool addresses
     address internal constant AAVE_V3 = 0x794a61358D6845594F94dc1DB02A252b5b4814aD;
-    address internal constant AVALON = 0x794a61358D6845594F94dc1DB02A252b5b4814aD;
-    address internal constant AVALON_PUMP_BTC = 0x794a61358D6845594F94dc1DB02A252b5b4814aD;
-    address internal constant YLDR = 0x8183D4e0561cBdc6acC0Bdb963c352606A2Fa76F;
+    address internal constant AVALON = 0xe1ee45DB12ac98d16F1342a03c93673d74527b55;
+    address internal constant AVALON_PUMP_BTC = 0x4B801fb6f0830D070f40aff9ADFC8f6939Cc1F8D;
+    address internal constant YLDR = 0x54aD657851b6Ae95bA3380704996CAAd4b7751A3;
 
-    // aave v2s
-    address internal constant RADIANT = 0x54aD657851b6Ae95bA3380704996CAAd4b7751A3;
+    // no Aave v2s
 
     // Compound V3 addresses
     address internal constant COMET_USDT = 0xd98Be00b5D27fc98112BdE293e487f8D4cA57d07;
@@ -104,9 +103,6 @@ abstract contract BaseLending is Slots, BalancerSwapper {
                 }
                 case 3 {
                     pool := AVALON_PUMP_BTC
-                }
-                case 1000 {
-                    pool := RADIANT
                 }
                 default {
                     mstore(0x0, _lenderId)
@@ -199,9 +195,6 @@ abstract contract BaseLending is Slots, BalancerSwapper {
                     }
                     case 3 {
                         pool := AVALON_PUMP_BTC
-                    }
-                    case 1000 {
-                        pool := RADIANT
                     }
                     default {
                         mstore(0x0, _lenderId)
@@ -343,20 +336,14 @@ abstract contract BaseLending is Slots, BalancerSwapper {
                     }
                 }
                 case 0 {
-                    let pool
-                    switch _lenderId
-                    case 1000 {
-                        pool := RADIANT
+                    mstore(0x0, _lenderId)
+                    mstore(0x20, LENDING_POOL_SLOT)
+                    let pool := sload(keccak256(0x0, 0x40))
+                    if iszero(pool) {
+                        mstore(0, BAD_LENDER)
+                        revert(0, 0x4)
                     }
-                    default {
-                        mstore(0x0, _lenderId)
-                        mstore(0x20, LENDING_POOL_SLOT)
-                        pool := sload(keccak256(0x0, 0x40))
-                        if iszero(pool) {
-                            mstore(0, BAD_LENDER)
-                            revert(0, 0x4)
-                        }
-                    }
+
                     // selector deposit(address,uint256,address,uint16)
                     mstore(ptr, 0xe8eda9df00000000000000000000000000000000000000000000000000000000)
                     mstore(add(ptr, 0x04), _underlying)
@@ -442,9 +429,6 @@ abstract contract BaseLending is Slots, BalancerSwapper {
                     }
                     case 3 {
                         pool := AVALON_PUMP_BTC
-                    }
-                    case 1000 {
-                        pool := RADIANT
                     }
                     default {
                         mstore(0x0, _lenderId)
