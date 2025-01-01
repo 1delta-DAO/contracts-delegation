@@ -145,6 +145,7 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
         initializeDeltaAvalon();
         initializeDeltaYldr();
         initializeDeltaCompound();
+        // console.log("--- initialized lenders ---");
     }
 
     function initializeDeltaAaveV3() internal virtual {
@@ -198,7 +199,6 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
         management.approveAddress(assets, AaveV3Arbitrum.POOL);
     }
 
-
     function initializeDeltaAvalon() internal virtual {
         // aave v3
         management.addGeneralLenderTokens(
@@ -249,7 +249,6 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
 
         management.approveAddress(assets, AvalonArbitrum.POOL);
     }
-
 
     function initializeDeltaYldr() internal virtual {
         // aave v3
@@ -337,6 +336,8 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
         router = new MockRouter(1.0e18, 12);
         intitializeFullDelta();
         management.setValidSingleTarget(address(router), true);
+        // ensure test user to have native
+        vm.deal(testUser, 1e18);
     }
 
     /** DEPOSIT AND OPEN TO SPIN UP POSITIONS */
@@ -468,40 +469,44 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
     }
 
     function getBorrowBalance(address user, address asset, uint16 lenderId) internal view returns (uint256) {
-        if (lenderId < 50) {
+        if (lenderId < MAX_AAVE_V2_ID) {
             return IERC20All(debtTokens[asset][lenderId]).balanceOf(user);
         } else {
-            if (lenderId == 50) return IComet(COMET_USDC).borrowBalanceOf(user);
-            else return IComet(COMET_USDT).borrowBalanceOf(user);
+            if (lenderId == COMPOUND_V3_USDC) return IComet(CompoundV3Arbitrum.COMET_USDC).borrowBalanceOf(user);
+            else return IComet(CompoundV3Arbitrum.COMET_USDT).borrowBalanceOf(user);
         }
     }
 
     function getCollateralBalance(address user, address asset, uint16 lenderId) internal view returns (uint256) {
-        if (lenderId < 50) {
+        if (lenderId < MAX_AAVE_V2_ID) {
             return IERC20All(collateralTokens[asset][lenderId]).balanceOf(user);
         } else {
-            if (lenderId == 50) return IComet(COMET_USDC).userCollateral(user, asset).balance;
-            else return IComet(COMET_USDT).userCollateral(user, asset).balance;
+            if (lenderId == COMPOUND_V3_USDC) return IComet(CompoundV3Arbitrum.COMET_USDC).userCollateral(user, asset).balance;
+            if (lenderId == COMPOUND_V3_USDT) return IComet(CompoundV3Arbitrum.COMET_USDT).userCollateral(user, asset).balance;
+            if (lenderId == COMPOUND_V3_WETH) return IComet(CompoundV3Arbitrum.COMET_WETH).userCollateral(user, asset).balance;
         }
+        return 0;
     }
 
     function approveWithdrawal(address user, address asset, uint256 amount, uint16 lenderId) internal {
         vm.prank(user);
-        if (lenderId < 50) {
+        if (lenderId < MAX_AAVE_V2_ID) {
             IERC20All(collateralTokens[asset][lenderId]).approve(address(brokerProxyAddress), amount);
         } else {
-            if (lenderId == 50) IComet(COMET_USDC).allow(brokerProxyAddress, true);
-            if (lenderId == 51) IComet(COMET_USDT).allow(brokerProxyAddress, true);
+            if (lenderId == COMPOUND_V3_USDC) IComet(CompoundV3Arbitrum.COMET_USDC).allow(brokerProxyAddress, true);
+            if (lenderId == COMPOUND_V3_USDT) IComet(CompoundV3Arbitrum.COMET_USDT).allow(brokerProxyAddress, true);
+            if (lenderId == COMPOUND_V3_WETH) IComet(CompoundV3Arbitrum.COMET_WETH).allow(brokerProxyAddress, true);
         }
     }
 
     function approveBorrowDelegation(address user, address asset, uint256 amount, uint16 lenderId) internal {
         vm.prank(user);
-        if (lenderId < 50) {
+        if (lenderId < MAX_AAVE_V2_ID) {
             IERC20All(debtTokens[asset][lenderId]).approveDelegation(address(brokerProxyAddress), amount);
         } else {
-            if (lenderId == 50) IComet(COMET_USDC).allow(brokerProxyAddress, true);
-            if (lenderId == 51) IComet(COMET_USDT).allow(brokerProxyAddress, true);
+            if (lenderId == COMPOUND_V3_USDC) IComet(CompoundV3Arbitrum.COMET_USDC).allow(brokerProxyAddress, true);
+            if (lenderId == COMPOUND_V3_USDT) IComet(CompoundV3Arbitrum.COMET_USDT).allow(brokerProxyAddress, true);
+            if (lenderId == COMPOUND_V3_WETH) IComet(CompoundV3Arbitrum.COMET_WETH).allow(brokerProxyAddress, true);
         }
     }
 
@@ -867,5 +872,9 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
             swapAmount,
             checkAmount
         );
+    }
+
+    function validAaveLender(uint16 id) internal pure returns (bool a) {
+        a = id == 0 || id == 1 || id == 900 || id == 2000;
     }
 }

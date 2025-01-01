@@ -5,13 +5,14 @@ import "../../contracts/1delta/modules/shared/Commands.sol";
 import "../shared/interfaces/ICurvePool.sol";
 import "./DeltaSetup.f.sol";
 
-contract ComposerTestPolygon is DeltaSetup {
-    function test_polygon_composer_depo(uint16 lenderId) external {
+contract ComposerTestArbitrum is DeltaSetup {
+    function test_arbitrum_composer_depo(uint16 lenderId) external {
         address user = testUser;
-        vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
+        vm.assume(user != address(0) && validAaveLender(lenderId));
         uint256 amount = 10.0e6;
-        address asset = WMATIC;
+        address asset = TokensArbitrum.USDC;
         deal(asset, user, 1e23);
+
 
         vm.prank(user);
         IERC20All(asset).approve(address(brokerProxyAddress), amount);
@@ -37,12 +38,12 @@ contract ComposerTestPolygon is DeltaSetup {
         assertApproxEqAbs(amount, getCollateralBalance(user, asset, lenderId), 0);
     }
 
-    function test_polygon_composer_depo_comet() external {
+    function test_arbitrum_composer_depo_comet() external {
         address user = testUser;
-        uint16 lenderId = 50;
+        uint16 lenderId = 2000;
         // vm.assume(user != address(0) && (lenderId == 50));
         uint256 amount = 0.000000001e18;
-        address asset = WETH;
+        address asset = TokensArbitrum.WETH;
         deal(asset, user, 1e23);
 
         vm.prank(user);
@@ -70,11 +71,11 @@ contract ComposerTestPolygon is DeltaSetup {
     }
 
 
-    function test_polygon_composer_borrow(uint16 lenderId) external {
+    function test_arbitrum_composer_borrow(uint16 lenderId) external {
         address user = testUser;
         vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
         uint256 amount = 500.0e18;
-        address asset = WMATIC;
+        address asset = USDC;
 
         _deposit(asset, user, amount, lenderId);
 
@@ -96,13 +97,13 @@ contract ComposerTestPolygon is DeltaSetup {
         assertApproxEqAbs(borrowAmount, getBorrowBalance(user, borrowAsset, lenderId), 1);
     }
 
-    function test_polygon_composer_repay(uint16 lenderId) external {
+    function test_arbitrum_composer_repay(uint16 lenderId) external {
         address user = testUser;
 
         vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
 
         uint256 amount = 500.0e18;
-        address asset = WMATIC;
+        address asset = USDC;
 
         uint256 borrowAmount = 100.0e6;
         address borrowAsset = USDC;
@@ -140,12 +141,12 @@ contract ComposerTestPolygon is DeltaSetup {
         assertApproxEqAbs(borrowAmount - repayAmount, getBorrowBalance(user, borrowAsset, lenderId), 2);
     }
 
-    function test_polygon_composer_repay_too_much(uint16 lenderId) external {
+    function test_arbitrum_composer_repay_too_much(uint16 lenderId) external {
         address user = testUser;
         vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
 
         uint256 amount = 500.0e18;
-        address asset = WMATIC;
+        address asset = USDC;
 
         uint256 borrowAmount = 100.0e6;
         address borrowAsset = USDC;
@@ -182,13 +183,13 @@ contract ComposerTestPolygon is DeltaSetup {
         console.log(IERC20All(borrowAsset).balanceOf(user));
     }
 
-    function test_polygon_composer_withdraw() external {
+    function test_arbitrum_composer_withdraw() external {
         uint16 lenderId = 50;
         address user = testUser;
         vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
 
         uint256 amount = 10.0e18;
-        address asset = WMATIC;
+        address asset = USDC;
 
         _deposit(asset, user, amount, lenderId);
 
@@ -205,13 +206,13 @@ contract ComposerTestPolygon is DeltaSetup {
         assertApproxEqAbs(amount - withdrawAmount, getCollateralBalance(user, asset, lenderId), 2);
     }
 
-    function test_polygon_composer_withdraw_all(uint16 lenderId) external {
+    function test_arbitrum_composer_withdraw_all(uint16 lenderId) external {
         address user = testUser;
 
         vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
 
         uint256 amount = 500.0e18;
-        address asset = WMATIC;
+        address asset = USDC;
 
         _deposit(asset, user, amount, lenderId);
 
@@ -229,7 +230,7 @@ contract ComposerTestPolygon is DeltaSetup {
         assertApproxEqAbs(0, getCollateralBalance(user, asset, lenderId), 2);
     }
 
-    function test_polygon_composer_multi_route_exact_in() external {
+    function test_arbitrum_composer_multi_route_exact_in() external {
         address user = testUser;
         uint256 amount = 2000.0e6;
         uint256 amountMin = 900.0e6;
@@ -282,7 +283,7 @@ contract ComposerTestPolygon is DeltaSetup {
         )
     {
         tks = new address[](3);
-        tks[0] = WMATIC;
+        tks[0] = USDC;
         tks[1] = USDC;
         tks[2] = WETH;
         fees = new uint16[](2);
@@ -305,7 +306,7 @@ contract ComposerTestPolygon is DeltaSetup {
         tks = new address[](3);
         tks[0] = WETH;
         tks[1] = USDC;
-        tks[2] = WMATIC;
+        tks[2] = USDC;
         fees = new uint16[](2);
         fees[0] = uint16(500);
         fees[1] = uint16(500);
@@ -314,12 +315,12 @@ contract ComposerTestPolygon is DeltaSetup {
         pids[1] = SUSHI_V3;
     }
 
-    function test_polygon_composer_multi_route_exact_in_native() external {
+    function test_arbitrum_composer_multi_route_exact_in_native() external {
         address user = testUser;
         uint256 amount = 4000.0e18;
         uint256 amountMin = 0.10e18;
 
-        address assetIn = WMATIC;
+        address assetIn = USDC;
         address assetOut = WETH;
         vm.deal(user, amount);
 
@@ -357,13 +358,13 @@ contract ComposerTestPolygon is DeltaSetup {
         console.log("gas", gas);
     }
 
-    function test_polygon_composer_multi_route_exact_out_native_out() external {
+    function test_arbitrum_composer_multi_route_exact_out_native_out() external {
         address user = testUser;
         uint256 amount = 4000.0e18;
         uint256 amountMax = 7.0e18;
 
         address assetIn = WETH;
-        address assetOut = WMATIC;
+        address assetOut = USDC;
         deal(assetIn, user, amountMax);
 
         bytes memory dataAgni = getSpotExactOutSingleGen2(
@@ -413,12 +414,12 @@ contract ComposerTestPolygon is DeltaSetup {
         assertApproxEqAbs(balanceInBefore - balanceInAfter, 665692566352012255, 0);
     }
 
-    function test_polygon_composer_multi_route_exact_out_native_in() external {
+    function test_arbitrum_composer_multi_route_exact_out_native_in() external {
         address user = testUser;
         uint256 amount = 1.0e18;
         uint256 amountMax = 7500.0e18;
 
-        address assetIn = WMATIC;
+        address assetIn = USDC;
         address assetOut = WETH;
         vm.deal(user, amountMax);
 
@@ -466,13 +467,13 @@ contract ComposerTestPolygon is DeltaSetup {
         assertApproxEqAbs(balanceInBefore - balanceInAfter, 6303318979812611491310, 0);
     }
 
-    function test_polygon_composer_multi_route_exact_in_native_out() external {
+    function test_arbitrum_composer_multi_route_exact_in_native_out() external {
         address user = testUser;
         uint256 amount = 2.0e18;
         uint256 amountMin = 4000.0e18;
 
         address assetIn = WETH;
-        address assetOut = WMATIC;
+        address assetOut = USDC;
         deal(assetIn, user, amount);
 
         bytes memory dataAgni = getSpotExactInSingleGen2(
@@ -522,7 +523,7 @@ contract ComposerTestPolygon is DeltaSetup {
         assertApproxEqAbs(balanceInBefore - balanceInAfter, amount, 0);
     }
 
-    function test_polygon_composer_multi_route_exact_in_self() external {
+    function test_arbitrum_composer_multi_route_exact_in_self() external {
         address user = testUser;
         uint256 amount = 2000.0e6;
         uint256 amountMin = 900.0e6;
@@ -571,7 +572,7 @@ contract ComposerTestPolygon is DeltaSetup {
         console.log("gas", gas);
     }
 
-    function test_polygon_composer_multi_route_exact_out() external {
+    function test_arbitrum_composer_multi_route_exact_out() external {
         address user = testUser;
         uint256 amount = 2000.0e6;
         uint256 maxIn = 1140.0e6;
@@ -698,54 +699,3 @@ contract ComposerTestPolygon is DeltaSetup {
         console.log("gas", gas);
     }
 }
-
-// Ran 11 tests for test/mantle/Composer.t.sol:ComposerTest
-// [PASS] test_polygon_composer_borrow() (gas: 917038)
-// Logs:
-//   gas 378730
-//   gas 432645
-
-// [PASS] test_polygon_composer_depo() (gas: 371016)
-// Logs:
-//   gas 248957
-
-// [PASS] test_polygon_composer_multi_route_exact_in() (gas: 377134)
-// Logs:
-//   gas 192095
-
-// [PASS] test_polygon_composer_multi_route_exact_in_native() (gas: 368206)
-// Logs:
-//   gas 374361
-
-// [PASS] test_polygon_composer_multi_route_exact_in_native_out() (gas: 633199)
-// Logs:
-//   gas-exactIn-native-out-2 split 547586
-
-// [PASS] test_polygon_composer_multi_route_exact_in_self() (gas: 399348)
-// Logs:
-//   gas 219240
-
-// [PASS] test_polygon_composer_multi_route_exact_out() (gas: 390674)
-// Logs:
-//   gas 190957
-
-// [PASS] test_polygon_composer_multi_route_exact_out_native_in() (gas: 408213)
-// Logs:
-//   gas-exactOut-native-in-2 split 385726
-
-// [PASS] test_polygon_composer_multi_route_exact_out_native_out() (gas: 558685)
-// Logs:
-//   gas-exactOut-native-out-2 split 413439
-
-// [PASS] test_polygon_composer_repay() (gas: 985744)
-// Logs:
-//   gas 378730
-//   gas 432646
-//   gas 102301
-
-// [PASS] test_polygon_composer_withdraw() (gas: 702003)
-// Logs:
-//   gas 378730
-//   gas 253948
-
-// Suite result: ok. 11 passed; 0 failed; 0 skipped; finished in 319.97ms (40.41ms CPU time)

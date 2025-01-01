@@ -43,7 +43,13 @@ contract AddressesArbitrum {
     uint16 AAVE_V3 = 0;
     uint16 AVALON = 1;
     uint16 YLDR = 900;
+
+
+    uint16 MAX_AAVE_V2_ID = 2000;
     uint16 COMPOUND_V3_USDC = 2000;
+    uint16 COMPOUND_V3_WETH = 2001;
+    uint16 COMPOUND_V3_USDT = 2002;
+    uint16 COMPOUND_V3_USDCE = 2003;
     
     // Flash loans
     uint8 AAVE_V3_FL = 0;

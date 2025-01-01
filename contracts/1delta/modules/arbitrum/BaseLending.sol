@@ -98,10 +98,10 @@ abstract contract BaseLending is Slots, BalancerSwapper {
                 case 900 {
                     pool := YLDR
                 }
-                case 2 {
+                case 1 {
                     pool := AVALON
                 }
-                case 3 {
+                case 2 {
                     pool := AVALON_PUMP_BTC
                 }
                 default {
@@ -190,10 +190,10 @@ abstract contract BaseLending is Slots, BalancerSwapper {
                     case 900 {
                         pool := YLDR
                     }
-                    case 2 {
+                    case 1 {
                         pool := AVALON
                     }
-                    case 3 {
+                    case 2 {
                         pool := AVALON_PUMP_BTC
                     }
                     default {
@@ -314,10 +314,10 @@ abstract contract BaseLending is Slots, BalancerSwapper {
                     case 900 {
                         pool := YLDR
                     }
-                    case 2 {
+                    case 1 {
                         pool := AVALON
                     }
-                    case 3 {
+                    case 2 {
                         pool := AVALON_PUMP_BTC
                     }
                     default {
@@ -424,10 +424,10 @@ abstract contract BaseLending is Slots, BalancerSwapper {
                     case 0 {
                         pool := AAVE_V3
                     }
-                    case 2 {
+                    case 1 {
                         pool := AVALON
                     }
-                    case 3 {
+                    case 2 {
                         pool := AVALON_PUMP_BTC
                     }
                     default {
