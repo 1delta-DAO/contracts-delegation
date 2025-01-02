@@ -317,7 +317,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                                     mstore(0x20, VARIABLE_DEBT_TOKENS_SLOT)
                                     temp := sload(keccak256(0x0, 0x40))
                                 }
-                                // asign tokenIn to transitioning variable
+                                // assign tokenIn to transitioning variable
                                 lenderId_tokenIn := shr(96, calldataload(opdataOffset))
 
                                 // token is baseToken

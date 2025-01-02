@@ -321,7 +321,7 @@ contract OneDeltaComposerPolygon is MarginTrading {
                                     mstore(0x20, VARIABLE_DEBT_TOKENS_SLOT)
                                     temp := sload(keccak256(0x0, 0x40))
                                 }
-                                // asign tokenIn to transitioning variable
+                                // assign tokenIn to transitioning variable
                                 lenderId_tokenIn := shr(96, calldataload(opdataOffset))
 
                                 // token is baseToken
@@ -418,7 +418,7 @@ contract OneDeltaComposerPolygon is MarginTrading {
                         ////////////////////////////////////////////////////
                         if iszero(amountOut) {
                             // last 32 bytes
-                            let lenderId := and(calldataload(sub(add(opdataLength, opdataOffset), 33)), UINT8_MASK)
+                            let lenderId := and(calldataload(sub(add(opdataLength, opdataOffset), 33)), UINT16_MASK)
                             switch lt(lenderId, 50)
                             case 1 {
                                 let tokenIn := calldataload(opdataOffset)

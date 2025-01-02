@@ -282,70 +282,127 @@ contract OneDeltaComposerArbitrum is MarginTrading {
                             case 1 {
                                 mstore(0x0, or(shl(240, lenderId_tokenIn), shr(96, calldataload(opdataOffset))))
                                 mstore(0x20, COLLATERAL_TOKENS_SLOT)
-                                let collateralToken := sload(keccak256(0x0, 0x40))
+                                lenderId_tokenIn := sload(keccak256(0x0, 0x40))
                                 // selector for balanceOf(address)
                                 mstore(0x0, ERC20_BALANCE_OF)
                                 // add caller address as parameter
                                 mstore(0x4, callerAddress)
                                 // call to collateralToken
-                                pop(staticcall(gas(), collateralToken, 0x0, 0x24, 0x0, 0x20))
+                                pop(staticcall(gas(), lenderId_tokenIn, 0x0, 0x24, 0x0, 0x20))
                                 // load the retrieved balance
                                 amountIn := mload(0x0)
                             }
-                            // Compound V3
                             default {
-                                let cometPool
-                                // temp will now become the var for comet ccy
-                                switch lenderId_tokenIn
-                                // Compound V3 USDC.e
-                                case 2000 {
-                                    cometPool := COMET_USDC
-                                    temp := USDC
+                                switch lt(lenderId_tokenIn, MAX_ID_COMPOUND_V3)
+                                // Compound V3
+                                case 1 {
+                                    let cometPool
+                                    // temp will now become the var for comet ccy
+                                    switch lenderId_tokenIn
+                                    // Compound V3 Markets
+                                    case 2000 {
+                                        cometPool := COMET_USDC
+                                        temp := USDC
+                                    }
+                                    case 2001 {
+                                        cometPool := COMET_WETH
+                                        temp := WRAPPED_NATIVE
+                                    }
+                                    case 2002 {
+                                        cometPool := COMET_USDT
+                                        temp := USDT
+                                    }
+                                    case 2003 {
+                                        cometPool := COMET_USDCE
+                                        temp := USDCE
+                                    }
+                                    // default: load comet from storage
+                                    // if it is not provided directly
+                                    // note that the debt token is stored as
+                                    // variable debt token
+                                    default {
+                                        mstore(0x0, lenderId_tokenIn)
+                                        mstore(0x20, LENDING_POOL_SLOT)
+                                        cometPool := sload(keccak256(0x0, 0x40))
+                                        if iszero(cometPool) {
+                                            mstore(0, BAD_LENDER)
+                                            revert(0, 0x4)
+                                        }
+
+                                        mstore(0x0, or(shl(240, lenderId_tokenIn), cometPool))
+                                        mstore(0x20, VARIABLE_DEBT_TOKENS_SLOT)
+                                        temp := sload(keccak256(0x0, 0x40))
+                                    }
+                                    // assign tokenIn to transitioning variable
+                                    lenderId_tokenIn := shr(96, calldataload(opdataOffset))
+
+                                    // token is baseToken
+                                    switch eq(lenderId_tokenIn, temp)
+                                    case 1 {
+                                        // selector for balanceOf(address)
+                                        mstore(0, ERC20_BALANCE_OF)
+                                        // add caller address as parameter
+                                        mstore(0x04, callerAddress)
+                                        // call to token
+                                        pop(
+                                            staticcall(
+                                                gas(),
+                                                cometPool, // collateral token
+                                                0x0,
+                                                0x24,
+                                                0x0,
+                                                0x20
+                                            )
+                                        )
+                                        // load the retrieved balance
+                                        amountIn := mload(0x0)
+                                    }
+                                    // token is collateral
+                                    default {
+                                        // assign ptr to transition var
+                                        temp := mload(0x40)
+                                        // selector for userCollateral(address,address)
+                                        mstore(temp, 0x2b92a07d00000000000000000000000000000000000000000000000000000000)
+                                        // add caller address as parameter
+                                        mstore(add(temp, 0x04), callerAddress)
+                                        // add underlying address
+                                        mstore(add(temp, 0x24), lenderId_tokenIn)
+                                        // call to token
+                                        pop(
+                                            staticcall(
+                                                gas(),
+                                                cometPool, // collateral token
+                                                temp,
+                                                0x44,
+                                                temp,
+                                                0x20
+                                            )
+                                        )
+                                        // load the retrieved balance (lower 128 bits)
+                                        amountIn := and(UINT128_MASK, mload(temp))
+                                    }
                                 }
-                                case 2001 {
-                                    cometPool := COMET_WETH
-                                    temp := WRAPPED_NATIVE
-                                }
-                                case 2002 {
-                                    cometPool := COMET_USDT
-                                    temp := USDT
-                                }
-                                case 2003 {
-                                    cometPool := COMET_USDCE
-                                    temp := USDCE
-                                }
-                                // default: load comet from storage
-                                // if it is not provided directly
-                                // note that the debt token is stored as
-                                // variable debt token
                                 default {
-                                    mstore(0x0, lenderId_tokenIn)
-                                    mstore(0x20, LENDING_POOL_SLOT)
-                                    cometPool := sload(keccak256(0x0, 0x40))
-                                    if iszero(cometPool) {
+                                    // Slot for collateralTokens[target] is keccak256(target . collateralTokens.slot).
+                                    mstore(0x0, or(shl(240, lenderId_tokenIn), shr(96, calldataload(opdataOffset))))
+                                    mstore(0x20, COLLATERAL_TOKENS_SLOT)
+                                    // override to prevent stack error
+                                    lenderId_tokenIn := sload(keccak256(0x0, 0x40))
+                                    // revert if token not defined
+                                    if iszero(lenderId_tokenIn) {
                                         mstore(0, BAD_LENDER)
                                         revert(0, 0x4)
                                     }
-
-                                    mstore(0x0, or(shl(240, lenderId_tokenIn), cometPool))
-                                    mstore(0x20, VARIABLE_DEBT_TOKENS_SLOT)
-                                    temp := sload(keccak256(0x0, 0x40))
-                                }
-                                // asign tokenIn to transitioning variable
-                                lenderId_tokenIn := shr(96, calldataload(opdataOffset))
-
-                                // token is baseToken
-                                switch eq(lenderId_tokenIn, temp)
-                                case 1 {
-                                    // selector for balanceOf(address)
-                                    mstore(0, ERC20_BALANCE_OF)
+                                    // selector for balanceOfUnderlying(address)
+                                    mstore(0, 0x3af9e66900000000000000000000000000000000000000000000000000000000)
                                     // add caller address as parameter
                                     mstore(0x04, callerAddress)
                                     // call to token
                                     pop(
-                                        staticcall(
+                                        call(
                                             gas(),
-                                            cometPool, // collateral token
+                                            lenderId_tokenIn, // collateral token
+                                            0x0,
                                             0x0,
                                             0x24,
                                             0x0,
@@ -354,30 +411,6 @@ contract OneDeltaComposerArbitrum is MarginTrading {
                                     )
                                     // load the retrieved balance
                                     amountIn := mload(0x0)
-                                }
-                                // token is collateral
-                                default {
-                                    // assign ptr to transition var
-                                    temp := mload(0x40)
-                                    // selector for userCollateral(address,address)
-                                    mstore(temp, 0x2b92a07d00000000000000000000000000000000000000000000000000000000)
-                                    // add caller address as parameter
-                                    mstore(add(temp, 0x04), callerAddress)
-                                    // add underlying address
-                                    mstore(add(temp, 0x24), lenderId_tokenIn)
-                                    // call to token
-                                    pop(
-                                        staticcall(
-                                            gas(),
-                                            cometPool, // collateral token
-                                            temp,
-                                            0x44,
-                                            temp,
-                                            0x20
-                                        )
-                                    )
-                                    // load the retrieved balance (lower 128 bits)
-                                    amountIn := and(UINT128_MASK, mload(temp))
                                 }
                             }
                         }
@@ -428,12 +461,12 @@ contract OneDeltaComposerArbitrum is MarginTrading {
                         ////////////////////////////////////////////////////
                         if iszero(amountOut) {
                             // last 32 bytes
-                            let lenderId := and(calldataload(sub(add(opdataLength, opdataOffset), 33)), UINT8_MASK)
+                            let lenderId := and(calldataload(sub(add(opdataLength, opdataOffset), 33)), UINT16_MASK)
                             switch lt(lenderId, MAX_ID_AAVE_V2)
                             case 1 {
-                                let tokenIn := calldataload(opdataOffset)
-                                let mode := and(UINT8_MASK, shr(88, tokenIn))
-                                mstore(0x0, or(shl(240, lenderId), shr(96, tokenIn)))
+                                let tokenOut := calldataload(opdataOffset)
+                                let mode := and(UINT8_MASK, shr(88, tokenOut))
+                                mstore(0x0, or(shl(240, lenderId), shr(96, tokenOut)))
 
                                 switch mode
                                 case 2 {
@@ -447,6 +480,10 @@ contract OneDeltaComposerArbitrum is MarginTrading {
                                 }
 
                                 let debtToken := sload(keccak256(0x0, 0x40))
+                                if iszero(debtToken) {
+                                    mstore(0, BAD_LENDER)
+                                    revert(0, 0x4)
+                                }
                                 // selector for balanceOf(address)
                                 mstore(0x0, ERC20_BALANCE_OF)
                                 // add caller address as parameter
@@ -457,40 +494,73 @@ contract OneDeltaComposerArbitrum is MarginTrading {
                                 amountOut := mload(0x0)
                             }
                             default {
-                                let cometPool
-                                switch lenderId
-                                case 2000 {
-                                    cometPool := COMET_USDC
+                                switch lt(lenderId, MAX_ID_COMPOUND_V3)
+                                // Compound V3
+                                case 1 {
+                                    let cometPool
+                                    switch lenderId
+                                    case 2000 {
+                                        cometPool := COMET_USDC
+                                    }
+                                    case 2001 {
+                                        cometPool := COMET_WETH
+                                    }
+                                    case 2002 {
+                                        cometPool := COMET_USDT
+                                    }
+                                    case 2003 {
+                                        cometPool := COMET_USDCE
+                                    }
+                                    // default: load comet from storage
+                                    // if it is not provided directly
+                                    default {
+                                        mstore(0x0, lenderId)
+                                        mstore(0x20, LENDING_POOL_SLOT)
+                                        cometPool := sload(keccak256(0x0, 0x40))
+                                        if iszero(cometPool) {
+                                            mstore(0, BAD_LENDER)
+                                            revert(0, 0x4)
+                                        }
+                                    }
+
+                                    // borrowBalanceOf(address)
+                                    mstore(0x0, 0x374c49b400000000000000000000000000000000000000000000000000000000)
+                                    // add caller address as parameter
+                                    mstore(0x4, callerAddress)
+                                    // call to debtToken
+                                    pop(staticcall(gas(), cometPool, 0x0, 0x24, 0x0, 0x20))
+                                    // load the retrieved balance
+                                    amountOut := mload(0x0)
                                 }
-                                case 2001 {
-                                    cometPool := COMET_WETH
-                                }
-                                case 2002 {
-                                    cometPool := COMET_USDT
-                                }
-                                case 2003 {
-                                    cometPool := COMET_USDCE
-                                }
-                                // default: load comet from storage
-                                // if it is not provided directly
                                 default {
-                                    mstore(0x0, lenderId)
-                                    mstore(0x20, LENDING_POOL_SLOT)
-                                    cometPool := sload(keccak256(0x0, 0x40))
-                                    if iszero(cometPool) {
+                                    // Slot for collateralTokens[target] is keccak256(target . collateralTokens.slot).
+                                    mstore(0x0, or(shl(240, lenderId), shr(96, calldataload(opdataOffset))))
+                                    mstore(0x20, COLLATERAL_TOKENS_SLOT)
+                                    let collateralToken := sload(keccak256(0x0, 0x40))
+                                    // revert if token not defined
+                                    if iszero(collateralToken) {
                                         mstore(0, BAD_LENDER)
                                         revert(0, 0x4)
                                     }
+                                    // selector for borrowBalanceCurrent(address)
+                                    mstore(0, 0x17bfdfbc00000000000000000000000000000000000000000000000000000000)
+                                    // add caller address as parameter
+                                    mstore(0x04, callerAddress)
+                                    // call to token
+                                    pop(
+                                        call(
+                                            gas(),
+                                            collateralToken, // collateral token
+                                            0x0,
+                                            0x0,
+                                            0x24,
+                                            0x0,
+                                            0x20
+                                        )
+                                    )
+                                    // load the retrieved balance
+                                    amountOut := mload(0x0)
                                 }
-
-                                // borrowBalanceOf(address)
-                                mstore(0x0, 0x374c49b400000000000000000000000000000000000000000000000000000000)
-                                // add caller address as parameter
-                                mstore(0x4, callerAddress)
-                                // call to debtToken
-                                pop(staticcall(gas(), cometPool, 0x0, 0x24, 0x0, 0x20))
-                                // load the retrieved balance
-                                amountOut := mload(0x0)
                             }
                         }
                         currentOffset := add(currentOffset, add(32, opdataLength))
@@ -697,40 +767,48 @@ contract OneDeltaComposerArbitrum is MarginTrading {
                         // being converted to collateral
                         // Aave V2/3s allow higher amounts than the balance and will correctly adapt
                         case 0xffffffffffffffffffffffffffff {
-                            let cometPool
-                            switch lenderId
-                            case 2000 {
-                                cometPool := COMET_USDC
-                            }
-                            case 2001 {
-                                cometPool := COMET_WETH
-                            }
-                            case 2002 {
-                                cometPool := COMET_USDT
-                            }
-                            case 2003 {
-                                cometPool := COMET_USDCE
-                            }
-                            // default: load comet from storage
-                            // if it is not provided directly
-                            default {
-                                mstore(0x0, lenderId)
-                                mstore(0x20, LENDING_POOL_SLOT)
-                                cometPool := sload(keccak256(0x0, 0x40))
-                                if iszero(cometPool) {
-                                    mstore(0, BAD_LENDER)
-                                    revert(0, 0x4)
+                            switch lt(lenderId, MAX_ID_COMPOUND_V3)
+                            // Compound V3
+                            case 1 {
+                                let cometPool
+                                switch lenderId
+                                case 2000 {
+                                    cometPool := COMET_USDC
                                 }
-                            }
+                                case 2001 {
+                                    cometPool := COMET_WETH
+                                }
+                                case 2002 {
+                                    cometPool := COMET_USDT
+                                }
+                                case 2003 {
+                                    cometPool := COMET_USDCE
+                                }
+                                // default: load comet from storage
+                                // if it is not provided directly
+                                default {
+                                    mstore(0x0, lenderId)
+                                    mstore(0x20, LENDING_POOL_SLOT)
+                                    cometPool := sload(keccak256(0x0, 0x40))
+                                    if iszero(cometPool) {
+                                        mstore(0, BAD_LENDER)
+                                        revert(0, 0x4)
+                                    }
+                                }
 
-                            // borrowBalanceOf(address)
-                            mstore(0x0, 0x374c49b400000000000000000000000000000000000000000000000000000000)
-                            // add caller address as parameter
-                            mstore(0x4, callerAddress)
-                            // call to debtToken
-                            pop(staticcall(gas(), cometPool, 0x0, 0x24, 0x0, 0x20))
-                            // load the retrieved balance
-                            amount := mload(0x0)
+                                // borrowBalanceOf(address)
+                                mstore(0x0, 0x374c49b400000000000000000000000000000000000000000000000000000000)
+                                // add caller address as parameter
+                                mstore(0x4, callerAddress)
+                                // call to debtToken
+                                pop(staticcall(gas(), cometPool, 0x0, 0x24, 0x0, 0x20))
+                                // load the retrieved balance
+                                amount := mload(0x0)
+                            }
+                            default {
+                                // venus uses max(uint) as flag
+                                amount := 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+                            }
                         }
                         currentOffset := add(currentOffset, 57)
                     }
@@ -860,6 +938,11 @@ contract OneDeltaComposerArbitrum is MarginTrading {
                                     mstore(0x0, or(shl(240, lenderId), underlying))
                                     mstore(0x20, COLLATERAL_TOKENS_SLOT)
                                     let collateralToken := sload(keccak256(0x0, 0x40))
+                                    // revert if token not defined
+                                    if iszero(collateralToken) {
+                                        mstore(0, BAD_LENDER)
+                                        revert(0, 0x4)
+                                    }
                                     // selector for balanceOfUnderlying(address)
                                     mstore(0, 0x3af9e66900000000000000000000000000000000000000000000000000000000)
                                     // add caller address as parameter
