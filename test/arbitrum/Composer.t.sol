@@ -240,13 +240,13 @@ contract ComposerTestArbitrum is DeltaSetup {
             assetIn,
             assetOut,
             UNI_V3,
-            uint16(DEX_FEE_STABLES) //
+            DEX_FEE_STABLES //
         );
         bytes memory dataFusion = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
             SUSHI_V3,
-            uint16(DEX_FEE_STABLES) //
+            DEX_FEE_STABLES //
         );
 
         bytes memory data = abi.encodePacked(
@@ -281,14 +281,14 @@ contract ComposerTestArbitrum is DeltaSetup {
     {
         tks = new address[](3);
         tks[0] = TokensArbitrum.USDC;
-        tks[1] = TokensArbitrum.USDC;
+        tks[1] = TokensArbitrum.USDT;
         tks[2] = TokensArbitrum.WETH;
         fees = new uint16[](2);
-        fees[0] = uint16(500);
-        fees[1] = uint16(500);
+        fees[0] = 100;
+        fees[1] = 0;
         pids = new uint8[](2);
-        pids[0] = SUSHI_V3;
-        pids[1] = UNI_V3;
+        pids[0] = PANCAKE;
+        pids[1] = ALGEBRA;
     }
 
     function getWethToNative()
@@ -302,30 +302,30 @@ contract ComposerTestArbitrum is DeltaSetup {
     {
         tks = new address[](3);
         tks[0] = TokensArbitrum.WETH;
-        tks[1] = TokensArbitrum.USDC;
+        tks[1] = TokensArbitrum.USDT;
         tks[2] = TokensArbitrum.USDC;
         fees = new uint16[](2);
-        fees[0] = uint16(500);
-        fees[1] = uint16(500);
+        fees[0] = 0;
+        fees[1] = 100;
         pids = new uint8[](2);
-        pids[0] = UNI_V3;
-        pids[1] = SUSHI_V3;
+        pids[0] = ALGEBRA;
+        pids[1] = PANCAKE;
     }
 
     function test_arbitrum_composer_multi_route_exact_in_native() external {
         address user = testUser;
-        uint256 amount = 4000.0e18;
-        uint256 amountMin = 0.10e18;
+        uint256 amount = 1.0e18;
+        uint256 amountMin = 1000.0e6;
 
-        address assetIn = TokensArbitrum.USDC;
-        address assetOut = TokensArbitrum.WETH;
+        address assetIn = TokensArbitrum.WETH;
+        address assetOut = TokensArbitrum.USDT;
         vm.deal(user, amount);
 
         bytes memory swapData = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
-            UNI_V3,
-            uint16(DEX_FEE_LOW) //
+            PANCAKE,
+            DEX_FEE_STABLES //
         );
         bytes memory dataFusion;
         {
@@ -333,7 +333,7 @@ contract ComposerTestArbitrum is DeltaSetup {
                 address[] memory tks,
                 uint8[] memory pids, //
                 uint16[] memory fees
-            ) = getNativeToWeth();
+            ) = getWethToNative();
             dataFusion = getSpotExactInMultiGen2(tks, pids, fees);
         }
         bytes memory data = abi.encodePacked(
@@ -357,18 +357,18 @@ contract ComposerTestArbitrum is DeltaSetup {
 
     function test_arbitrum_composer_multi_route_exact_out_native_out() external {
         address user = testUser;
-        uint256 amount = 4000.0e18;
-        uint256 amountMax = 7.0e18;
+        uint256 amount = 1.0e18;
+        uint256 amountMax = 3000.0e6;
 
-        address assetIn = TokensArbitrum.WETH;
-        address assetOut = TokensArbitrum.USDC;
+        address assetIn = TokensArbitrum.USDC;
+        address assetOut = TokensArbitrum.WETH;
         deal(assetIn, user, amountMax);
 
         bytes memory swapData = getSpotExactOutSingleGen2(
             assetIn,
             assetOut,
-            UNI_V3,
-            uint16(500) //
+            PANCAKE,
+            DEX_FEE_STABLES //
         );
         bytes memory dataFusion;
         {
@@ -416,15 +416,15 @@ contract ComposerTestArbitrum is DeltaSetup {
         uint256 amount = 1.0e18;
         uint256 amountMax = 7500.0e18;
 
-        address assetIn = TokensArbitrum.USDC;
+        address assetIn = TokensArbitrum.USDT;
         address assetOut = TokensArbitrum.WETH;
         vm.deal(user, amountMax);
 
         bytes memory swapData = getSpotExactOutSingleGen2(
             assetIn,
             assetOut,
-            UNI_V3,
-            uint16(500) //
+            PANCAKE,
+            DEX_FEE_LOW //
         );
         bytes memory dataFusion;
         {
@@ -466,18 +466,18 @@ contract ComposerTestArbitrum is DeltaSetup {
 
     function test_arbitrum_composer_multi_route_exact_in_native_out() external {
         address user = testUser;
-        uint256 amount = 2.0e18;
-        uint256 amountMin = 4000.0e18;
+        uint256 amount = 1.0e18;
+        uint256 amountMin = 1000.0e18;
 
-        address assetIn = TokensArbitrum.WETH;
-        address assetOut = TokensArbitrum.USDC;
+        address assetIn = TokensArbitrum.USDT;
+        address assetOut = TokensArbitrum.WETH;
         deal(assetIn, user, amount);
 
         bytes memory swapData = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
-            UNI_V3,
-            uint16(DEX_FEE_LOW) //
+            PANCAKE,
+            DEX_FEE_LOW //
         );
         bytes memory dataFusion;
         {
@@ -533,13 +533,13 @@ contract ComposerTestArbitrum is DeltaSetup {
             assetIn,
             assetOut,
             UNI_V3,
-            uint16(DEX_FEE_STABLES) //
+            DEX_FEE_STABLES //
         );
         bytes memory dataFusion = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
             SUSHI_V3,
-            uint16(DEX_FEE_STABLES) //
+            DEX_FEE_STABLES //
         );
 
         bytes memory transfer = transferIn(
@@ -582,13 +582,13 @@ contract ComposerTestArbitrum is DeltaSetup {
             assetIn,
             assetOut,
             UNI_V3,
-            uint16(DEX_FEE_STABLES) //
+            DEX_FEE_STABLES //
         );
         bytes memory dataFusion = getSpotExactOutSingleGen2(
             assetIn,
             assetOut,
             SUSHI_V3,
-            uint16(DEX_FEE_STABLES) //
+            DEX_FEE_STABLES //
         );
 
         bytes memory data = abi.encodePacked(
@@ -617,6 +617,8 @@ contract ComposerTestArbitrum is DeltaSetup {
         data = abi.encodePacked(tokens[0]);
         for (uint i; i < pids.length; i++) {
             address pool = testQuoter._v3TypePool(tokens[i], tokens[i + 1], fees[i], pids[i]);
+            console.log("pool:", pool, pids[i]);
+            console.log("tokens:", tokens[i], tokens[i + 1]);
             data = abi.encodePacked(
                 data,
                 actions[i], // action id
@@ -635,6 +637,7 @@ contract ComposerTestArbitrum is DeltaSetup {
         for (uint i; i < pids.length; i++) {
             actions[i] = 0;
             address pool = testQuoter._v3TypePool(tokens[i], tokens[i + 1], fees[i], pids[i]);
+            console.log("poo1l:", pool);
             data = abi.encodePacked(data, actions[i], pids[i], pool, fees[i], tokens[i + 1]);
         }
         return abi.encodePacked(data, uint8(99));

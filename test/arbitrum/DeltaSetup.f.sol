@@ -77,7 +77,7 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
     }
 
     function flashAggregatorSelectors() internal pure returns (bytes4[] memory selectors) {
-        selectors = new bytes4[](26);
+        selectors = new bytes4[](27);
         /** margin */
         selectors[0] = IFlashAggregator.flashSwapExactIn.selector;
         selectors[1] = IFlashAggregator.flashSwapExactOut.selector;
@@ -108,6 +108,7 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
         selectors[23] = IFlashLoanReceiver.receiveFlashLoan.selector;
         selectors[24] = IFlashAggregator.waultSwapCall.selector;
         selectors[25] = IFlashAggregator.apeCall.selector;
+        selectors[26] = IFlashAggregator.pancakeV3SwapCallback.selector;
         return selectors;
     }
 
@@ -332,7 +333,7 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
     }
 
     function setUp() public virtual {
-        vm.createSelectFork({blockNumber: 290875500, urlOrAlias: "https://arbitrum.drpc.org"});
+        vm.createSelectFork({blockNumber: 290934482, urlOrAlias: "https://arbitrum.drpc.org"});
         router = new MockRouter(1.0e18, 12);
         intitializeFullDelta();
         management.setValidSingleTarget(address(router), true);

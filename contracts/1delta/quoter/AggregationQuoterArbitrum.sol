@@ -64,6 +64,7 @@ contract OneDeltaQuoterArbitrum is PoolGetterArbitrum {
     uint256 internal constant V2_PARAM_LENGTH = CL_PARAM_LENGTH; // token + id + pool + denom
     uint256 internal constant CURVE_PARAM_LENGTH = CL_PARAM_LENGTH; // token + id + pool + idIn + idOut
     uint256 internal constant CURVE_CUSTOM_PARAM_LENGTH = 21; // no pool address provided
+    uint256 internal constant DODO_PARAM_LENGTH = 42; // token + id + pool + uint8
 
     constructor() {}
 
@@ -313,7 +314,7 @@ contract OneDeltaQuoterArbitrum is PoolGetterArbitrum {
             }
 
             // v3 types
-            if (poolId < 49) {
+            if (poolId < UNISWAP_V3_MAX_ID) {
                 assembly {
                     // tokenOut starts at 43th byte for CL
                     tokenOut := shr(96, calldataload(add(path.offset, CL_PARAM_LENGTH)))
@@ -322,14 +323,19 @@ contract OneDeltaQuoterArbitrum is PoolGetterArbitrum {
                 path = path[CL_PARAM_LENGTH:];
             }
             // iZi
-            else if (poolId == 49) {
+            else if (poolId == IZI_ID) {
                 assembly {
                     // tokenOut starts at 43th byte for CL
                     tokenOut := shr(96, calldataload(add(path.offset, CL_PARAM_LENGTH)))
                 }
                 amountIn = quoteExactInputSingle_iZi(tokenIn, tokenOut, pair, uint128(amountIn));
                 path = path[CL_PARAM_LENGTH:];
-            } else if (poolId == 50) {
+            } else if (poolId == BALANCER_V2_ID) {
+                // balancer not yet available
+                assembly {
+                   revert(0, 0)
+                }
+            } else if (poolId < CURVE_V1_MAX_ID) {
                 uint8 indexIn;
                 uint8 indexOut;
                 assembly {
@@ -341,7 +347,7 @@ contract OneDeltaQuoterArbitrum is PoolGetterArbitrum {
                 path = path[CURVE_PARAM_LENGTH:];
             }
             // v2 types
-            else if (poolId < 150) {
+            else if (poolId < UNISWAP_V2_MAX_ID) {
                 uint256 feeDenom;
                 assembly {
                     // tokenOut starts at 41st byte
@@ -350,12 +356,41 @@ contract OneDeltaQuoterArbitrum is PoolGetterArbitrum {
                 }
                 amountIn = getAmountOutUniV2Type(pair, tokenIn, tokenOut, amountIn, feeDenom, poolId);
                 path = path[V2_PARAM_LENGTH:];
-            } else if (poolId == 150) {
+            } else if (poolId == WOO_FI_ID) {
                 assembly {
                     // tokenOut starts at 41st byte
                     tokenOut := shr(96, calldataload(add(path.offset, EXOTIC_PARAM_LENGTH)))
                 }
                 amountIn = quoteWOO(tokenIn, tokenOut, amountIn);
+                path = path[EXOTIC_PARAM_LENGTH:];
+            } else if (poolId == LB_ID) {
+                assembly {
+                    // tokenOut starts at 41st byte
+                    tokenOut := shr(96, calldataload(add(path.offset, 41)))
+                }
+                amountIn = getLBAmountOut(tokenOut, amountIn, pair);
+                path = path[EXOTIC_PARAM_LENGTH:];
+            } else if (poolId == DODO_ID) {
+                uint256 sellQuote;
+                assembly {
+                    // sellQuote starts after the pair
+                    sellQuote := and(UINT8_MASK, calldataload(add(path.offset, 10)))
+                }
+                amountIn = quoteDodoV2ExactIn(pair, sellQuote, amountIn);
+                path = path[DODO_PARAM_LENGTH:];
+            } else if (poolId == KTX_ID) {
+                assembly {
+                    // tokenOut starts at 41st byte
+                    tokenOut := shr(96, calldataload(add(path.offset, 41)))
+                }
+                amountIn = quoteKTXExactIn(tokenIn, tokenOut, amountIn);
+                path = path[EXOTIC_PARAM_LENGTH:];
+            } else if (poolId == GMX_ID) {
+                assembly {
+                    // tokenOut starts at 41st byte
+                    tokenOut := shr(96, calldataload(add(path.offset, 41)))
+                }
+                amountIn = quoteGMXExactIn(tokenIn, tokenOut, amountIn);
                 path = path[EXOTIC_PARAM_LENGTH:];
             } else {
                 revert invalidDexId();
@@ -386,23 +421,28 @@ contract OneDeltaQuoterArbitrum is PoolGetterArbitrum {
             }
 
             // v3 types
-            if (poolId < 49) {
+            if (poolId < UNISWAP_V3_MAX_ID) {
                 assembly {
                     // tokenIn starts at 43th byte for CL
                     tokenIn := shr(96, calldataload(add(path.offset, CL_PARAM_LENGTH)))
                 }
                 amountOut = quoteExactOutputSingleV3(tokenIn, tokenOut, pair, amountOut);
                 path = path[CL_PARAM_LENGTH:];
-            } else if (poolId == 49) {
+            } else if (poolId == IZI_ID) {
                 assembly {
                     // tokenIn starts at 43th byte for CL
                     tokenIn := shr(96, calldataload(add(path.offset, CL_PARAM_LENGTH)))
                 }
                 amountOut = quoteExactOutputSingle_iZi(tokenIn, tokenOut, pair, uint128(amountOut));
                 path = path[CL_PARAM_LENGTH:];
+            } else if (poolId == BALANCER_V2_ID) {
+                // balancer not yet available
+                assembly {
+                   revert(0, 0)
+                }
             }
             // v2 types
-            else if (poolId < 150) {
+            else if (poolId < UNISWAP_V2_MAX_ID) {
                 uint256 feeDenom;
                 assembly {
                     // tokenIn starts at 43th byte for CL
@@ -411,6 +451,13 @@ contract OneDeltaQuoterArbitrum is PoolGetterArbitrum {
                 }
                 amountOut = getV2AmountInDirect(pair, tokenIn, tokenOut, amountOut, feeDenom, poolId);
                 path = path[V2_PARAM_LENGTH:];
+            } else if (poolId == LB_ID) {
+                assembly {
+                    // tokenIn starts at 41st byte for CL
+                    tokenIn := shr(96, calldataload(add(path.offset, 41)))
+                }
+                amountOut = getLBAmountIn(tokenOut, amountOut, pair);
+                path = path[EXOTIC_PARAM_LENGTH:];
             } else {
                 revert invalidDexId();
             }
@@ -715,6 +762,262 @@ contract OneDeltaQuoterArbitrum is PoolGetterArbitrum {
                         1 // rounding up
                     )
                 }
+            }
+        }
+    }
+
+    address internal constant GMX_READER = 0x22199a49A999c351eF7927602CFB187ec3cae489;
+
+    function quoteGMXExactIn(address _tokenIn, address _tokenOut, uint256 amountIn) internal view returns (uint256 amountOut) {
+        assembly {
+            let ptr := mload(0x40)
+            // getAmountOut(address,address,address,uint256)
+            mstore(ptr, 0xd7176ca900000000000000000000000000000000000000000000000000000000)
+            // get maxPrice
+            mstore(add(ptr, 0x4), 0x489ee077994B6658eAfA855C308275EAd8097C4A) // vault
+            mstore(add(ptr, 0x24), _tokenIn)
+            mstore(add(ptr, 0x44), _tokenOut)
+            mstore(add(ptr, 0x64), amountIn)
+            pop(
+                staticcall(
+                    gas(),
+                    GMX_READER, // this goes to the oracle
+                    ptr,
+                    0x84,
+                    0x0, // do NOT override the selector
+                    0x20
+                )
+            )
+            amountOut := mload(0x0)
+        }
+    }
+
+    function quoteKTXExactIn(address _tokenIn, address _tokenOut, uint256 amountIn) internal view returns (uint256 amountOut) {
+        assembly {
+            let ptr := mload(0x40)
+            let ptrPlus4 := add(ptr, 0x4)
+            ////////////////////////////////////////////////////
+            // Step 1: get prices
+            ////////////////////////////////////////////////////
+
+            // getPrice(address,bool,bool,bool)
+            mstore(ptr, 0x2fc3a70a00000000000000000000000000000000000000000000000000000000)
+            // get maxPrice
+            mstore(ptrPlus4, _tokenOut)
+            mstore(add(ptr, 0x24), 0x1)
+            mstore(add(ptr, 0x44), 0x1)
+            mstore(add(ptr, 0x64), 0x1)
+            pop(
+                staticcall(
+                    gas(),
+                    KTX_VAULT_PRICE_FEED, // this goes to the oracle
+                    ptr,
+                    0x84,
+                    ptrPlus4, // do NOT override the selector
+                    0x20
+                )
+            )
+            let priceOut := mload(ptrPlus4)
+            // get minPrice
+            mstore(ptrPlus4, _tokenIn)
+            mstore(add(ptr, 0x24), 0x0)
+            // the other vars are stored from the prior call
+            pop(
+                staticcall(
+                    gas(),
+                    KTX_VAULT_PRICE_FEED, // this goes to the oracle
+                    ptr,
+                    0x84,
+                    ptr,
+                    0x20
+                )
+            )
+            let priceIn := mload(ptr)
+
+            ////////////////////////////////////////////////////
+            // Step 2: get amountOut by prices
+            ////////////////////////////////////////////////////
+
+            // get gross amountOut unscaled
+            amountOut := div(mul(amountIn, priceIn), priceOut)
+
+            ////////////////////////////////////////////////////
+            // Step 3: get token decimals and adjust amountOut
+            ////////////////////////////////////////////////////
+
+            // selector for decimals()
+            mstore(ptr, 0x313ce56700000000000000000000000000000000000000000000000000000000)
+            pop(staticcall(gas(), _tokenIn, ptr, 0x4, ptrPlus4, 0x20))
+            let decsIn := exp(10, mload(ptrPlus4))
+            pop(staticcall(gas(), _tokenOut, ptr, 0x4, ptrPlus4, 0x20))
+            let decsOut := exp(10, mload(ptrPlus4))
+            // adjust amountOut for correct decimals
+            amountOut := div(mul(amountOut, decsOut), decsIn)
+
+            ////////////////////////////////////////////////////
+            // Step 4: calculate fees
+            //      4.1: get usdg amount
+            //      4.2: get getSwapFeeBasisPoints
+            ////////////////////////////////////////////////////
+            let usdgAmount := div(
+                mul(
+                    div(
+                        mul(amountIn, priceIn), // price adj
+                        PRICE_PRECISION
+                    ),
+                    1000000000000000000 // 1e18
+                ),
+                decsIn
+            )
+            // getSwapFeeBasisPoints(address,address,uint256)
+            mstore(ptr, 0xda13381600000000000000000000000000000000000000000000000000000000)
+            mstore(ptrPlus4, _tokenIn)
+            mstore(add(ptr, 0x24), _tokenOut)
+            mstore(add(ptr, 0x44), usdgAmount)
+
+            pop(staticcall(gas(), KTX_VAULT_UTILS, ptr, 0x64, ptr, 0x20))
+            ////////////////////////////////////////////////////
+            // Step 5: get net return amount and validate vs. vault balance
+            ////////////////////////////////////////////////////
+            amountOut := div(
+                mul(
+                    amountOut, //  * decsOut / decsIn
+                    sub(10000, mload(ptr))
+                ),
+                10000
+            )
+
+            // selector for balanceOf(address)
+            mstore(0x0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+            // add this address as parameter
+            mstore(0x4, KTX_VAULT)
+
+            // call to tokenOut to fetch balance
+            if iszero(staticcall(gas(), _tokenOut, 0x0, 0x24, 0x0, 0x20)) {
+                revert(0, 0)
+            }
+            // vault must have enough liquidity
+            if lt(mload(0x0), amountOut) {
+                revert(0, 0)
+            }
+        }
+    }
+
+    function quoteDodoV2ExactIn(address pair, uint256 sellQuote, uint256 amountIn) internal view returns (uint256 amountOut) {
+        assembly {
+            let ptr := mload(0x40)
+            // get selector
+            switch sellQuote
+            case 0 {
+                // querySellBase(address,uint256)
+                mstore(ptr, 0x79a0487600000000000000000000000000000000000000000000000000000000)
+            }
+            default {
+                // querySellQuote(address,uint256)
+                mstore(ptr, 0x66410a2100000000000000000000000000000000000000000000000000000000)
+            }
+            mstore(add(ptr, 0x4), 0) // trader is zero
+            mstore(add(ptr, 0x24), amountIn)
+            // call pool
+            if iszero(
+                staticcall(
+                    gas(),
+                    pair,
+                    ptr,
+                    0x44, //
+                    ptr,
+                    0x20
+                )
+            ) {
+                returndatacopy(0, 0, returndatasize())
+                revert(0, returndatasize())
+            }
+            amountOut := mload(ptr)
+        }
+    }
+
+    // TraderJoe / MerchantMoe LB
+
+    function getLBAmountOut(
+        address tokenOut,
+        uint256 amountIn,
+        address pair // identifies the exact pair address
+    ) internal view returns (uint256 amountOut) {
+        assembly {
+            let ptr := mload(0x40)
+            // getTokenY()
+            mstore(ptr, 0xda10610c00000000000000000000000000000000000000000000000000000000)
+            if iszero(
+                // invalid pairs will make it fail here
+                staticcall(gas(), pair, ptr, 0x4, ptr, 0x20)
+            ) {
+                revert(0, 0)
+            }
+            // override swapForY
+            let swapForY := eq(tokenOut, mload(ptr))
+            // getSwapOut(uint128,bool)
+            mstore(ptr, 0xe77366f800000000000000000000000000000000000000000000000000000000)
+            mstore(add(ptr, 0x4), amountIn)
+            mstore(add(ptr, 0x24), swapForY)
+            // call swap simulator, revert if invalid/undefined pair
+            if iszero(staticcall(gas(), pair, ptr, 0x44, ptr, 0x40)) {
+                revert(0, 0)
+            }
+            amountOut := and(
+                0x00000000000000000000000000000000ffffffffffffffffffffffffffffffff, // mask uint128
+                mload(add(ptr, 0x20))
+            )
+            // the first slot returns amount in left, if positive, we revert
+            if gt(mload(ptr), 0) {
+                revert(0, 0)
+            }
+        }
+    }
+
+    function getLBAmountIn(
+        address tokenOut,
+        uint256 amountOut,
+        address pair // this param identifies the pair
+    ) internal view returns (uint256 amountIn) {
+        assembly {
+            // selector for balanceOf(address)
+            mstore(0x0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
+            // add this address as parameter
+            mstore(0x4, pair)
+
+            // call to underlying
+            if iszero(staticcall(gas(), tokenOut, 0x0, 0x24, 0x0, 0x20)) {
+                revert(0, 0)
+            }
+            // pair must have enough liquidity
+            if lt(mload(0x0), amountOut) {
+                revert(0, 0)
+            }
+
+            let ptr := mload(0x40)
+            // getTokenY()
+            mstore(ptr, 0xda10610c00000000000000000000000000000000000000000000000000000000)
+            pop(
+                // the call will always succeed due to the pair being nonzero
+                staticcall(gas(), pair, ptr, 0x4, ptr, 0x20)
+            )
+            // override swapForY
+            let swapForY := eq(tokenOut, mload(ptr))
+            // getSwapIn(uint128,bool)
+            mstore(ptr, 0xabcd783000000000000000000000000000000000000000000000000000000000)
+            mstore(add(ptr, 0x4), amountOut)
+            mstore(add(ptr, 0x24), swapForY)
+            // call swap simulator, revert if invalid/undefined pair
+            if iszero(staticcall(gas(), pair, ptr, 0x44, ptr, 0x40)) {
+                revert(0, 0)
+            }
+            amountIn := and(
+                0x00000000000000000000000000000000ffffffffffffffffffffffffffffffff, // mask uint128
+                mload(ptr)
+            )
+            // the second slot returns amount out left, if positive, we revert
+            if gt(mload(add(ptr, 0x20)), 0) {
+                revert(0, 0)
             }
         }
     }

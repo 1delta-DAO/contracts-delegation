@@ -22,6 +22,26 @@ import {PermitUtils} from "../shared/permit/PermitUtils.sol";
  */
 abstract contract BaseSwapper is BaseLending, PermitUtils {
 
+    // MAX_ID values are the maximum plus 1
+
+    // non-pre-fundeds
+    uint256 internal constant UNISWAP_V3_MAX_ID = 49;
+    uint256 internal constant IZI_ID = UNISWAP_V3_MAX_ID;
+    uint256 internal constant BALANCER_V2_ID = 50;
+    uint256 internal constant CURVE_V1_MAX_ID = 70;
+    uint256 internal constant CURVE_V1_STANDARD_ID = 60;
+    
+    // pre-fundeds
+    uint256 internal constant UNISWAP_V2_MAX_ID = 150;
+
+    // exotics
+    uint256 internal constant WOO_FI_ID = UNISWAP_V2_MAX_ID;
+    uint256 internal constant CURVE_NG_ID = 151;
+    uint256 internal constant LB_ID = 152;
+    uint256 internal constant DODO_ID = 153;
+    uint256 internal constant GMX_ID = 160;
+    uint256 internal constant KTX_ID = 161;
+
     // offset for receiver address for most DEX types (uniswap, curve etc.)
     uint256 internal constant RECEIVER_OFFSET_UNOSWAP = 66;
 
@@ -147,7 +167,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
         // execution step if we are not yet at the final pool
         ////////////////////////////////////////////////////
         // uniswapV3 style
-        if (dexId < 49) {
+        if (dexId < UNISWAP_V3_MAX_ID) {
             assembly {
                 switch lt(pathLength, 67) // RECEIVER_OFFSET_UNOSWAP + 1
                 case 1 { currentReceiver := receiver}
@@ -184,7 +204,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
             }
         }
         // iZi
-        else if (dexId == 49) {
+        else if (dexId == IZI_ID) {
             assembly {
                 switch lt(pathLength, 67) // RECEIVER_OFFSET_UNOSWAP + 1
                 case 1 { currentReceiver := receiver}
@@ -221,7 +241,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
             }
         }
         // Balancer V2
-        else if (dexId == 50) {
+        else if (dexId == BALANCER_V2_ID) {
             assembly {
                 switch lt(pathLength, 78) // MAX_SINGLE_LENGTH_BALANCER_V2 + 1
                 case 1 { currentReceiver := receiver}
@@ -256,9 +276,9 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
             }
         }
         // Curve pool types
-        else if(dexId < 70){
+        else if(dexId < CURVE_V1_MAX_ID){
             // Curve standard pool
-            if (dexId == 60) {
+            if (dexId == CURVE_V1_STANDARD_ID) {
                 assembly {
                     switch lt(pathLength, 69) // MAX_SINGLE_LENGTH_CURVE + 1
                     case 1 { currentReceiver := receiver}
@@ -295,7 +315,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
             }
         }
         // uniswapV2 style
-        else if (dexId < 150) {
+        else if (dexId < UNISWAP_V2_MAX_ID) {
             assembly {
                 switch lt(pathLength, 67)
                 case 1 { currentReceiver := receiver}
@@ -333,7 +353,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
             }
         }
         // WOO Fi
-        else if (dexId == 150) {
+        else if (dexId == WOO_FI_ID) {
             address tokenIn;
             address tokenOut;
             address pool;
@@ -375,7 +395,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
             }
         }
         // Curve NG
-        else if (dexId == 151) {
+        else if (dexId == CURVE_NG_ID) {
             assembly {
                 switch lt(pathLength, 68) // 
                 case 1 { currentReceiver := receiver}
@@ -405,7 +425,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
             }
         }
         // GMX
-        else if(dexId == 152) {
+        else if(dexId == GMX_ID || dexId == KTX_ID) {
             address tokenIn;
             address tokenOut;
             address vault;
@@ -446,7 +466,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
             }
         }
         // DODO V2
-        else if(dexId == 153) {
+        else if(dexId == DODO_ID) {
             address pair;
             uint8 sellQuote;
             assembly {
@@ -485,7 +505,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
             }
         }
         // Moe LB
-        else if (dexId == 154) {
+        else if (dexId == LB_ID) {
             address tokenIn;
             address tokenOut;
             address pair;

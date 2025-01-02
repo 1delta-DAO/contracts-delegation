@@ -13,10 +13,30 @@ abstract contract PoolGetterArbitrum {
     uint256 internal constant ADDRESS_MASK = 0x00ffffffffffffffffffffffffffffffffffffffff;
     /// @dev Mask of lower 3 bytes.
     uint256 internal constant UINT24_MASK = 0xffffff;
+    /// @dev Mask of lower 1 byte.
+    uint256 internal constant UINT8_MASK = 0xff;
     /// @dev MIN_SQRT_RATIO + 1 from Uniswap's TickMath
     uint160 internal immutable MIN_SQRT_RATIO = 4295128740;
     /// @dev MAX_SQRT_RATIO - 1 from Uniswap's TickMath
     uint160 internal immutable MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970341;
+
+    // non-pre-fundeds
+    uint256 internal constant UNISWAP_V3_MAX_ID = 49;
+    uint256 internal constant IZI_ID = UNISWAP_V3_MAX_ID;
+    uint256 internal constant BALANCER_V2_ID = 50;
+    uint256 internal constant CURVE_V1_MAX_ID = 70;
+    uint256 internal constant CURVE_V1_STANDARD_ID = 60;
+    
+    // pre-fundeds
+    uint256 internal constant UNISWAP_V2_MAX_ID = 150;
+
+    // exotics
+    uint256 internal constant WOO_FI_ID = 150;
+    uint256 internal constant CURVE_NG_ID = 151;
+    uint256 internal constant LB_ID = 152;
+    uint256 internal constant DODO_ID = 153;
+    uint256 internal constant GMX_ID = 160;
+    uint256 internal constant KTX_ID = 161;
 
     // _FF_ is given as follows: bytes32((uint256(0xff) << 248) | (uint256(uint160(address)) << 88));
 
@@ -62,18 +82,14 @@ abstract contract PoolGetterArbitrum {
 
     address internal constant WOO_ROUTER = 0x4c4AF8DBc524681930a27b2F1Af5bcC8062E6fB7;
 
-    address internal constant GMX_VAULT = 0x2e488D7ED78171793FA91fAd5352Be423A50Dae1;
-    address internal constant GMX_VAULT_UTILS = 0x25e71a6b45598213E95F9a718e3FE0523e9d9E34;
-    address internal constant GMX_VAULT_PRICE_FEED = 0xEdd1E8aACF7652aD8c015C4A403A9aE36F3Fe4B7;
-    address internal constant USDG = 0x1Ca85898619cF01eDD8bE6ef7f8989da03D6B694;
+
+    address internal constant KTX_VAULT = 0xc657A1440d266dD21ec3c299A8B9098065f663Bb;
+    address internal constant KTX_VAULT_UTILS = 0xbde9c699e719bb44811252FDb3B37E6D3eDa5a28;
+    address internal constant KTX_VAULT_PRICE_FEED = 0x28403B8668Db61De7484A2EAafB65b950a21a2fb;
+
+    address internal constant USDG = 0x01F28e368dFd0ef184eDA005142650d0B877d645;
+
     uint256 internal constant PRICE_PRECISION = 10 ** 30;
-
-    address internal constant STRATUM_3POOL = 0xD6F312AA90Ad4C92224436a7A4a648d69482e47e;
-    address internal constant STRATUM_3POOL_2 = 0x7d3621aCA02B711F5f738C9f21C1bFE294df094d;
-    address internal constant STRATUM_ETH_POOL = 0xe8792eD86872FD6D8b74d0668E383454cbA15AFc;
-
-    address internal constant USDY = 0x5bE26527e817998A7206475496fDE1E68957c5A6;
-    address internal constant MUSD = 0xab575258d37EaA5C8956EfABe71F4eE8F6397cF3;
 
     /// @dev Returns the pool for the given token pair and fee.
     /// The pool contract may or may not exist.
@@ -82,7 +98,7 @@ abstract contract PoolGetterArbitrum {
             let s := mload(0x40)
             let p := s
             switch _pId
-            // FusionX
+            // Uniswap
             case 0 {
                 mstore(p, UNI_V3_FF_FACTORY)
                 p := add(p, 21)
@@ -103,7 +119,7 @@ abstract contract PoolGetterArbitrum {
                 pool := and(ADDRESS_MASK, keccak256(s, 85))
             }
             // Sushi
-            case 1 {
+            case 2 {
                 mstore(p, SUSHI_V3_FF_DEPLOYER)
                 p := add(p, 21)
                 // Compute the inner hash in-place
@@ -122,8 +138,8 @@ abstract contract PoolGetterArbitrum {
                 mstore(p, SUSHI_POOL_INIT_CODE_HASH)
                 pool := and(ADDRESS_MASK, keccak256(s, 85))
             }
-            // Algebra / Camel0t
-            case 2 {
+            // Algebra / Camelot
+            case 3 {
                 mstore(p, ALGEBRA_V3_FF_DEPLOYER)
                 p := add(p, 21)
                 // Compute the inner hash in-place
@@ -142,7 +158,7 @@ abstract contract PoolGetterArbitrum {
                 pool := and(ADDRESS_MASK, keccak256(s, 85))
             }
             // Pancake
-            case 3 {
+            case 4 {
                 mstore(p, PANCAKE_FF_FACTORY)
                 p := add(p, 21)
                 // Compute the inner hash in-place
@@ -161,8 +177,8 @@ abstract contract PoolGetterArbitrum {
                 mstore(p, PANCAKE_INIT_CODE_HASH)
                 pool := and(ADDRESS_MASK, keccak256(s, 85))
             }
-            // Ramnses
-            case 4 {
+            // Ramses
+            case 1 {
                 mstore(p, RAMSES_FF_FACTORY)
                 p := add(p, 21)
                 // Compute the inner hash in-place

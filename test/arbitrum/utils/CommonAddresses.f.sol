@@ -63,6 +63,7 @@ contract AddressesArbitrum {
     uint8 internal RAMSES = 1;
     uint8 internal SUSHI_V3 = 2;
     uint8 internal ALGEBRA = 3;
+    uint8 internal PANCAKE = 4;
     uint8 internal IZUMI = 49;
 
     uint8 internal CURVE = 60;
