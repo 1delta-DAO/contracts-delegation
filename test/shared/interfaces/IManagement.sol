@@ -28,6 +28,25 @@ interface IManagement {
 
     function approveAddress(address[] memory assets, address target) external;
 
+    struct BatchAddLenderTokensParams {
+        address underlying;
+        address collateralToken;
+        address debtToken;
+        address stableDebtToken;
+        uint16 lenderId;
+    }
+
+    function batchAddGeneralLenderTokens(
+        BatchAddLenderTokensParams[] memory lenderParams //
+    ) external;
+
+    struct ApproveParams {
+        address token;
+        address target;
+    }
+
+    function batchApprove(ApproveParams[] memory assets) external;
+
     function decreaseAllowance(address[] memory assets, address target) external;
 
     function getLendingPool(uint16 _lenderId) external view returns (address pool);

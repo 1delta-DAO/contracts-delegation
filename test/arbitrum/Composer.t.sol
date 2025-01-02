@@ -37,6 +37,38 @@ contract ComposerTestArbitrum is DeltaSetup {
         assertApproxEqAbs(amount, getCollateralBalance(user, asset, lenderId), 0);
     }
 
+    function test_arbitrum_composer_depo_venus() external {
+        uint16 lenderId = VENUS;
+        address user = testUser;
+        vm.assume(user != address(0) && validVenusLender(lenderId));
+        uint256 amount = 10.0e6;
+        address asset = TokensArbitrum.USDC;
+        deal(asset, user, 1e23);
+
+        vm.prank(user);
+        IERC20All(asset).approve(address(brokerProxyAddress), amount);
+
+        bytes memory transfer = transferIn(
+            asset,
+            brokerProxyAddress,
+            amount //
+        );
+        bytes memory data = deposit(
+            asset,
+            user,
+            amount,
+            lenderId //
+        );
+        data = abi.encodePacked(transfer, data);
+        vm.prank(user);
+        uint gas = gasleft();
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
+        gas = gas - gasleft();
+        console.log("gas", gas);
+
+        assertApproxEqAbs(amount, getCollateralBalance(user, asset, lenderId), 1);
+    }
+
     function test_arbitrum_composer_depo_comet() external {
         address user = testUser;
         uint16 lenderId = 2000;
@@ -72,6 +104,33 @@ contract ComposerTestArbitrum is DeltaSetup {
     function test_arbitrum_composer_borrow(uint16 lenderId) external {
         address user = testUser;
         vm.assume(user != address(0) && validAaveLender(lenderId));
+        uint256 amount = 1.0e8;
+        address asset = TokensArbitrum.WBTC;
+
+        _deposit(asset, user, amount, lenderId);
+
+        vm.prank(user);
+        IERC20All(asset).approve(address(brokerProxyAddress), amount);
+
+        uint256 borrowAmount = 0.01e8;
+
+        address borrowAsset = TokensArbitrum.WBTC;
+        approveBorrowDelegation(user, borrowAsset, borrowAmount, lenderId);
+
+        bytes memory data = borrow(borrowAsset, user, borrowAmount, lenderId, DEFAULT_MODE);
+        vm.prank(user);
+        uint gas = gasleft();
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
+        gas = gas - gasleft();
+        console.log("gas", gas);
+
+        assertApproxEqAbs(borrowAmount, getBorrowBalance(user, borrowAsset, lenderId), 1);
+    }
+
+    function test_arbitrum_composer_borrow_venus() external {
+        uint16 lenderId = VENUS;
+        address user = testUser;
+        vm.assume(user != address(0) && validVenusLender(lenderId));
         uint256 amount = 1.0e8;
         address asset = TokensArbitrum.WBTC;
 
@@ -172,25 +231,80 @@ contract ComposerTestArbitrum is DeltaSetup {
         vm.prank(user);
         IERC20All(borrowAsset).approve(address(brokerProxyAddress), repayAmount);
 
-        vm.prank(user);
-        uint gas = gasleft();
-        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
-        gas = gas - gasleft();
-        console.log("gas", gas);
+        uint256 borrowAssetBalance = IERC20All(borrowAsset).balanceOf(user);
 
-        console.log(IERC20All(borrowAsset).balanceOf(user));
+        {
+            uint gas = gasleft();
+            vm.prank(user);
+            IFlashAggregator(brokerProxyAddress).deltaCompose(data);
+            gas = gas - gasleft();
+            console.log("gas", gas);
+        }
+        uint256 borrowAssetBalanceAfter = IERC20All(borrowAsset).balanceOf(user);
+
+        assertApproxEqAbs(borrowAmount, borrowAssetBalance - borrowAssetBalanceAfter, 1);
+        assertApproxEqAbs(0, getBorrowBalance(user, borrowAsset, lenderId), 0);
+    }
+
+    function test_arbitrum_composer_repay_too_much_venus() external {
+        uint16 lenderId = VENUS;
+        address user = testUser;
+        vm.assume(user != address(0) && validVenusLender(lenderId));
+
+        uint256 amount = 1.0e18;
+        address asset = TokensArbitrum.WETH;
+
+        uint256 borrowAmount = 0.01e18;
+        address borrowAsset = TokensArbitrum.WETH;
+
+        _deposit(asset, user, amount, lenderId);
+
+        _borrow(borrowAsset, user, borrowAmount, lenderId);
+
+        uint256 repayAmount = 0.015e18;
+        deal(borrowAsset, user, repayAmount);
+        bytes memory transfer = transferIn(
+            borrowAsset,
+            brokerProxyAddress,
+            repayAmount //
+        );
+        bytes memory data = repay(
+            borrowAsset,
+            user,
+            repayAmount,
+            lenderId, //
+            DEFAULT_MODE
+        );
+        data = abi.encodePacked(transfer, data, sweep(borrowAsset, user, lenderId, SweepType.VALIDATE));
+
+        vm.prank(user);
+        IERC20All(borrowAsset).approve(address(brokerProxyAddress), repayAmount);
+
+        uint256 borrowAssetBalance = IERC20All(borrowAsset).balanceOf(user);
+
+        {
+            uint gas = gasleft();
+            vm.prank(user);
+            IFlashAggregator(brokerProxyAddress).deltaCompose(data);
+            gas = gas - gasleft();
+            console.log("gas", gas);
+        }
+        uint256 borrowAssetBalanceAfter = IERC20All(borrowAsset).balanceOf(user);
+
+        assertApproxEqAbs(borrowAmount, borrowAssetBalance - borrowAssetBalanceAfter, 0);
+        assertApproxEqAbs(0, getBorrowBalance(user, borrowAsset, lenderId), 0);
     }
 
     function test_arbitrum_composer_withdraw(uint16 lenderId) external {
         address user = testUser;
-        vm.assume(user != address(0) && (validAaveLender(lenderId) || lenderId == COMPOUND_V3_USDC));
+        vm.assume(user != address(0) && (validAaveLender(lenderId) || lenderId == COMPOUND_V3_USDC || lenderId == VENUS));
 
-        uint256 amount = 10.0e18;
+        uint256 amount = 10.0e6;
         address asset = TokensArbitrum.USDC;
 
         _deposit(asset, user, amount, lenderId);
 
-        uint256 withdrawAmount = 2.50e18;
+        uint256 withdrawAmount = 2.50e6;
 
         bytes memory data = withdraw(asset, user, withdrawAmount, lenderId);
         approveWithdrawal(user, asset, withdrawAmount, lenderId);
@@ -206,9 +320,9 @@ contract ComposerTestArbitrum is DeltaSetup {
     function test_arbitrum_composer_withdraw_all(uint16 lenderId) external {
         address user = testUser;
 
-        vm.assume(user != address(0) && validAaveLender(lenderId));
+        vm.assume(user != address(0) && (validAaveLender(lenderId) || lenderId == VENUS));
 
-        uint256 amount = 500.0e18;
+        uint256 amount = 500.0e6;
         address asset = TokensArbitrum.USDC;
 
         _deposit(asset, user, amount, lenderId);
@@ -679,6 +793,8 @@ contract ComposerTestArbitrum is DeltaSetup {
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
+
+        enterMarket(user, asset, lenderId);
     }
 
     function _borrow(address borrowAsset, address user, uint256 borrowAmount, uint16 lenderId) internal {

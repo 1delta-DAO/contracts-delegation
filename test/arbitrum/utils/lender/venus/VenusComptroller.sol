@@ -42,6 +42,8 @@ interface ComptrollerInterface {
         uint256 repayAmount,
         bool skipLiquidityCheck
     ) external;
+    
+    function updateDelegate(address delegate, bool allowBorrows) external;
 
     function preSeizeHook(
         address vTokenCollateral,

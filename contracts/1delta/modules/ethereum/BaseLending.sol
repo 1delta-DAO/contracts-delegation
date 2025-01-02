@@ -204,9 +204,9 @@ abstract contract BaseLending is Slots, BalancerSwapper {
                     )
                     // FETCH BALANCE
                     // selector for balanceOf(address)
-                    mstore(0x0, ERC20_APPROVE)
-                    // add this address as parameter
-                    mstore(0x4, _to)
+                    mstore(0x0, ERC20_BALANCE_OF)
+                    // add _from address as parameter
+                    mstore(0x4, _from)
 
                     // call to collateralToken
                     pop(staticcall(gas(), collateralToken, 0x0, 0x24, 0x0, 0x20))

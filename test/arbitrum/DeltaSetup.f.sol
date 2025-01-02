@@ -4,12 +4,15 @@ pragma solidity ^0.8.19;
 import {AddressesArbitrum} from "./utils/CommonAddresses.f.sol";
 import {AaveV3ArbitrumAssets, AaveV3Arbitrum} from "./utils/lender/aaveAddresses.sol";
 import {AvalonArbitrumAssets, AvalonArbitrum} from "./utils/lender/avalonAddresses.sol";
+import {VenusCoreArbitrum, VenusEtherArbitrum} from "./utils/lender/venusAddresses.sol";
 import {CompoundV3Arbitrum} from "./utils/lender/compoundAddresses.sol";
 import {YLDRArbitrumAssets, YLDRArbitrum} from "./utils/lender/yldrAddresses.sol";
 import {TokensArbitrum} from "./utils/tokens.sol";
 import "../../contracts/1delta/quoter/test/TestQuoterArbitrum.sol";
 import {MockRouter} from "../../contracts/mocks/MockRouter.sol";
 import {ComposerUtils, Commands} from "../shared/utils/ComposerUtils.sol";
+
+import {ComptrollerInterface} from "./utils/lender/venus/VenusComptroller.sol";
 
 // interfaces
 import {IFlashAggregator} from "../shared/interfaces/IFlashAggregator.sol";
@@ -56,7 +59,7 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
     /** SELECTOR GETTERS */
 
     function managementSelectors() internal pure returns (bytes4[] memory selectors) {
-        selectors = new bytes4[](13);
+        selectors = new bytes4[](15);
         // setters
         selectors[0] = IManagement.addAToken.selector;
         selectors[1] = IManagement.setValidTarget.selector;
@@ -73,6 +76,8 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
         selectors[10] = IManagement.getDebtToken.selector;
         selectors[11] = IManagement.clearCache.selector;
         selectors[12] = IManagement.setValidSingleTarget.selector;
+        selectors[13] = IManagement.batchApprove.selector;
+        selectors[14] = IManagement.batchAddGeneralLenderTokens.selector;
         return selectors;
     }
 
@@ -146,6 +151,7 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
         initializeDeltaAvalon();
         initializeDeltaYldr();
         initializeDeltaCompound();
+        initializeDeltaVenus();
         // console.log("--- initialized lenders ---");
     }
 
@@ -249,6 +255,30 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
         assets[3] = TokensArbitrum.USDT;
 
         management.approveAddress(assets, AvalonArbitrum.POOL);
+    }
+
+    function initializeDeltaVenus() internal virtual {
+        collateralTokens[TokensArbitrum.USDC][VENUS] = VenusCoreArbitrum.USDC_A_TOKEN;
+        collateralTokens[TokensArbitrum.USDT][VENUS] = VenusCoreArbitrum.USDT_A_TOKEN;
+        collateralTokens[TokensArbitrum.WBTC][VENUS] = VenusCoreArbitrum.WBTC_A_TOKEN;
+        collateralTokens[TokensArbitrum.WETH][VENUS] = VenusCoreArbitrum.WETH_A_TOKEN;
+
+        // approve pools
+        IManagement.BatchAddLenderTokensParams[] memory assets = new IManagement.BatchAddLenderTokensParams[](4);
+        assets[0] = IManagement.BatchAddLenderTokensParams(TokensArbitrum.USDC, VenusCoreArbitrum.USDC_A_TOKEN, address(0), address(0), VENUS);
+        assets[1] = IManagement.BatchAddLenderTokensParams(TokensArbitrum.WBTC, VenusCoreArbitrum.WBTC_A_TOKEN, address(0), address(0), VENUS);
+        assets[2] = IManagement.BatchAddLenderTokensParams(TokensArbitrum.WETH, VenusCoreArbitrum.WETH_A_TOKEN, address(0), address(0), VENUS);
+        assets[3] = IManagement.BatchAddLenderTokensParams(TokensArbitrum.USDT, VenusCoreArbitrum.USDT_A_TOKEN, address(0), address(0), VENUS);
+
+        management.batchAddGeneralLenderTokens(assets);
+
+        IManagement.ApproveParams[] memory approves = new IManagement.ApproveParams[](4);
+        approves[0] = IManagement.ApproveParams(TokensArbitrum.USDC, VenusCoreArbitrum.USDC_A_TOKEN);
+        approves[1] = IManagement.ApproveParams(TokensArbitrum.WBTC, VenusCoreArbitrum.WBTC_A_TOKEN);
+        approves[2] = IManagement.ApproveParams(TokensArbitrum.WETH, VenusCoreArbitrum.WETH_A_TOKEN);
+        approves[3] = IManagement.ApproveParams(TokensArbitrum.USDT, VenusCoreArbitrum.USDT_A_TOKEN);
+
+        management.batchApprove(approves);
     }
 
     function initializeDeltaYldr() internal virtual {
@@ -469,22 +499,29 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
     }
 
-    function getBorrowBalance(address user, address asset, uint16 lenderId) internal view returns (uint256) {
+    function getBorrowBalance(address user, address asset, uint16 lenderId) internal returns (uint256) {
         if (lenderId < MAX_AAVE_V2_ID) {
             return IERC20All(debtTokens[asset][lenderId]).balanceOf(user);
-        } else {
+        } else if (lenderId < MAX_ID_COMPOUND_V3) {
             if (lenderId == COMPOUND_V3_USDC) return IComet(CompoundV3Arbitrum.COMET_USDC).borrowBalanceOf(user);
-            else return IComet(CompoundV3Arbitrum.COMET_USDT).borrowBalanceOf(user);
+            if (lenderId == COMPOUND_V3_USDT) return IComet(CompoundV3Arbitrum.COMET_USDT).borrowBalanceOf(user);
+            if (lenderId == COMPOUND_V3_USDCE) return IComet(CompoundV3Arbitrum.COMET_USDCE).borrowBalanceOf(user);
+            if (lenderId == COMPOUND_V3_WETH) return IComet(CompoundV3Arbitrum.COMET_WETH).borrowBalanceOf(user);
+        } else {
+            if (lenderId == VENUS) return IERC20All(collateralTokens[asset][lenderId]).borrowBalanceCurrent(user);
         }
+        return 0;
     }
 
-    function getCollateralBalance(address user, address asset, uint16 lenderId) internal view returns (uint256) {
+    function getCollateralBalance(address user, address asset, uint16 lenderId) internal returns (uint256) {
         if (lenderId < MAX_AAVE_V2_ID) {
             return IERC20All(collateralTokens[asset][lenderId]).balanceOf(user);
-        } else {
+        } else if (lenderId < MAX_ID_COMPOUND_V3) {
             if (lenderId == COMPOUND_V3_USDC) return IComet(CompoundV3Arbitrum.COMET_USDC).userCollateral(user, asset).balance;
             if (lenderId == COMPOUND_V3_USDT) return IComet(CompoundV3Arbitrum.COMET_USDT).userCollateral(user, asset).balance;
             if (lenderId == COMPOUND_V3_WETH) return IComet(CompoundV3Arbitrum.COMET_WETH).userCollateral(user, asset).balance;
+        } else {
+            if (lenderId == VENUS) return IERC20All(collateralTokens[asset][lenderId]).balanceOfUnderlying(user);
         }
         return 0;
     }
@@ -492,22 +529,39 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
     function approveWithdrawal(address user, address asset, uint256 amount, uint16 lenderId) internal {
         vm.prank(user);
         if (lenderId < MAX_AAVE_V2_ID) {
-            IERC20All(collateralTokens[asset][lenderId]).approve(address(brokerProxyAddress), amount);
-        } else {
+            IERC20All(collateralTokens[asset][lenderId]).approve(brokerProxyAddress, amount);
+        } else if (lenderId < MAX_ID_COMPOUND_V3) {
             if (lenderId == COMPOUND_V3_USDC) IComet(CompoundV3Arbitrum.COMET_USDC).allow(brokerProxyAddress, true);
             if (lenderId == COMPOUND_V3_USDT) IComet(CompoundV3Arbitrum.COMET_USDT).allow(brokerProxyAddress, true);
             if (lenderId == COMPOUND_V3_WETH) IComet(CompoundV3Arbitrum.COMET_WETH).allow(brokerProxyAddress, true);
+        } else {
+            // need to approve max as we approve the collateral token adjusted for exchange rate
+            if (lenderId == VENUS) IERC20All(collateralTokens[asset][lenderId]).approve(brokerProxyAddress, type(uint256).max);
         }
+    }
+
+    function enterMarket(address user, address asset, uint16 lenderId) internal {
+        vm.startPrank(user);
+        if (lenderId == VENUS) {
+            address[] memory enter = new address[](1);
+            enter[0] = collateralTokens[asset][lenderId];
+            ComptrollerInterface(VenusCoreArbitrum.COMPTROLLER).enterMarkets(enter);
+        }
+        vm.stopPrank();
     }
 
     function approveBorrowDelegation(address user, address asset, uint256 amount, uint16 lenderId) internal {
         vm.prank(user);
         if (lenderId < MAX_AAVE_V2_ID) {
-            IERC20All(debtTokens[asset][lenderId]).approveDelegation(address(brokerProxyAddress), amount);
-        } else {
+            IERC20All(debtTokens[asset][lenderId]).approveDelegation(brokerProxyAddress, amount);
+        } else if (lenderId < MAX_ID_COMPOUND_V3) {
             if (lenderId == COMPOUND_V3_USDC) IComet(CompoundV3Arbitrum.COMET_USDC).allow(brokerProxyAddress, true);
             if (lenderId == COMPOUND_V3_USDT) IComet(CompoundV3Arbitrum.COMET_USDT).allow(brokerProxyAddress, true);
             if (lenderId == COMPOUND_V3_WETH) IComet(CompoundV3Arbitrum.COMET_WETH).allow(brokerProxyAddress, true);
+        } else {
+            if (lenderId == VENUS) {
+                ComptrollerInterface(VenusCoreArbitrum.COMPTROLLER).updateDelegate(brokerProxyAddress, true);
+            }
         }
     }
 
@@ -877,6 +931,10 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
 
     function validAaveLender(uint16 id) internal pure returns (bool a) {
         a = id == 0 || id == 1 || id == 900;
+    }
+
+    function validVenusLender(uint16 id) internal pure returns (bool a) {
+        a = id == 3000;
     }
 
     function validCompoundLender(uint16 id) internal pure returns (bool a) {

@@ -28,6 +28,27 @@ contract ManagementModule is WithBrokerStorage, Slots {
 
     /** ADD TOKEN SET FOR A LENDER */
 
+    struct BatchAddLenderTokensParams {
+        address underlying;
+        address collateralToken;
+        address debtToken;
+        address stableDebtToken;
+        uint16 lenderId;
+    }
+
+    // add lender tokens in batch
+    function batchAddGeneralLenderTokens(
+        BatchAddLenderTokensParams[] memory lenderParams //
+    ) external onlyOwner {
+        for (uint256 i = 0; i < lenderParams.length; i++) {
+            BatchAddLenderTokensParams memory params = lenderParams[i];
+            bytes32 key = _getLenderTokenKey(params.underlying, params.lenderId);
+            if (params.collateralToken != address(0)) ls().collateralTokens[key] = params.collateralToken;
+            if (params.debtToken != address(0)) ls().debtTokens[key] = params.debtToken;
+            if (params.stableDebtToken != address(0)) ls().stableDebtTokens[key] = params.stableDebtToken;
+        }
+    }
+
     function addGeneralLenderTokens(
         address _underlying,
         address _aToken,
@@ -39,6 +60,18 @@ contract ManagementModule is WithBrokerStorage, Slots {
         ls().debtTokens[key] = _vToken;
         ls().stableDebtTokens[key] = _sToken;
         ls().collateralTokens[key] = _aToken;
+    }
+
+    struct ApproveParams {
+        address token;
+        address target;
+    }
+
+    // approve tokens and targets
+    function batchApprove(ApproveParams[] memory approveParams) external onlyOwner {
+        for (uint256 i = 0; i < approveParams.length; i++) {
+            IERC20(approveParams[i].token).approve(approveParams[i].target, type(uint256).max);
+        }
     }
 
     function addLendingPool(

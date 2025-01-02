@@ -20,7 +20,7 @@ contract OneDeltaComposerArbitrum is MarginTrading {
     /// @dev We use uint112-encoded amounts to typically fit one bit flag, one path length (uint16)
     ///      add 2 amounts (2xuint112) into 32bytes, as such we use this mask for extracting those
     uint256 private constant _UINT112_MASK = 0x000000000000000000000000000000000000ffffffffffffffffffffffffffff;
-    
+
     /// @dev we need base tokens to identify Compound V3's selectors
     address internal constant USDCE = 0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8;
     address internal constant USDT = 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9;
@@ -776,51 +776,100 @@ contract OneDeltaComposerArbitrum is MarginTrading {
                                 amount := mload(0x0)
                             }
                             case 0 {
-                                let cometPool
-                                let cometCcy
-                                switch lenderId
-                                // Compound V3 USDC.e
-                                case 2000 {
-                                    cometPool := COMET_USDC
-                                }
-                                case 2001 {
-                                    cometPool := COMET_WETH
-                                }
-                                case 2002 {
-                                    cometPool := COMET_USDT
-                                }
-                                case 2003 {
-                                    cometPool := COMET_USDCE
-                                }
-                                // default: load comet from storage
-                                // if it is not provided directly
-                                // note that the debt token is stored as
-                                // variable debt token
-                                default {
-                                    mstore(0x0, lenderId)
-                                    mstore(0x20, LENDING_POOL_SLOT)
-                                    cometPool := sload(keccak256(0x0, 0x40))
-                                    if iszero(cometPool) {
-                                        mstore(0, BAD_LENDER)
-                                        revert(0, 0x4)
+                                switch lt(lenderId, MAX_ID_COMPOUND_V3)
+                                case 1 {
+                                    let cometPool
+                                    let cometCcy
+                                    switch lenderId
+                                    // Compound V3 USDC.e
+                                    case 2000 {
+                                        cometPool := COMET_USDC
+                                    }
+                                    case 2001 {
+                                        cometPool := COMET_WETH
+                                    }
+                                    case 2002 {
+                                        cometPool := COMET_USDT
+                                    }
+                                    case 2003 {
+                                        cometPool := COMET_USDCE
+                                    }
+                                    // default: load comet from storage
+                                    // if it is not provided directly
+                                    // note that the debt token is stored as
+                                    // variable debt token
+                                    default {
+                                        mstore(0x0, lenderId)
+                                        mstore(0x20, LENDING_POOL_SLOT)
+                                        cometPool := sload(keccak256(0x0, 0x40))
+                                        if iszero(cometPool) {
+                                            mstore(0, BAD_LENDER)
+                                            revert(0, 0x4)
+                                        }
+
+                                        mstore(0x0, or(shl(240, lenderId), cometPool))
+                                        mstore(0x20, VARIABLE_DEBT_TOKENS_SLOT)
+                                        cometCcy := sload(keccak256(0x0, 0x40))
                                     }
 
-                                    mstore(0x0, or(shl(240, lenderId), cometPool))
-                                    mstore(0x20, VARIABLE_DEBT_TOKENS_SLOT)
-                                    cometCcy := sload(keccak256(0x0, 0x40))
+                                    switch eq(underlying, cometCcy)
+                                    case 1 {
+                                        // selector for balanceOf(address)
+                                        mstore(0, ERC20_BALANCE_OF)
+                                        // add caller address as parameter
+                                        mstore(0x04, callerAddress)
+                                        // call to token
+                                        pop(
+                                            staticcall(
+                                                gas(),
+                                                cometPool, // collateral token
+                                                0x0,
+                                                0x24,
+                                                0x0,
+                                                0x20
+                                            )
+                                        )
+                                        // load the retrieved balance
+                                        amount := mload(0x0)
+                                    }
+                                    default {
+                                        let ptr := mload(0x40)
+                                        // selector for userCollateral(address,address)
+                                        mstore(ptr, 0x2b92a07d00000000000000000000000000000000000000000000000000000000)
+                                        // add caller address as parameter
+                                        mstore(add(ptr, 0x04), callerAddress)
+                                        // add underlying address
+                                        mstore(add(ptr, 0x24), underlying)
+                                        // call to token
+                                        pop(
+                                            staticcall(
+                                                gas(),
+                                                cometPool, // collateral token
+                                                ptr,
+                                                0x44,
+                                                ptr,
+                                                0x20
+                                            )
+                                        )
+                                        // load the retrieved balance (lower 128 bits)
+                                        amount := and(UINT128_MASK, mload(ptr))
+                                    }
                                 }
-
-                                switch eq(underlying, cometCcy)
-                                case 1 {
-                                    // selector for balanceOf(address)
-                                    mstore(0, ERC20_BALANCE_OF)
+                                default {
+                                    // Slot for collateralTokens[target] is keccak256(target . collateralTokens.slot).
+                                    mstore(0x0, or(shl(240, lenderId), underlying))
+                                    mstore(0x20, COLLATERAL_TOKENS_SLOT)
+                                    let collateralToken := sload(keccak256(0x0, 0x40))
+                                    // selector for balanceOfUnderlying(address)
+                                    mstore(0, 0x3af9e66900000000000000000000000000000000000000000000000000000000)
                                     // add caller address as parameter
                                     mstore(0x04, callerAddress)
                                     // call to token
                                     pop(
-                                        staticcall(
+                                        call(
                                             gas(),
-                                            cometPool, // collateral token
+                                            collateralToken, // collateral token
+                                            0x0,
                                             0x0,
                                             0x24,
                                             0x0,
@@ -829,28 +878,6 @@ contract OneDeltaComposerArbitrum is MarginTrading {
                                     )
                                     // load the retrieved balance
                                     amount := mload(0x0)
-                                }
-                                default {
-                                    let ptr := mload(0x40)
-                                    // selector for userCollateral(address,address)
-                                    mstore(ptr, 0x2b92a07d00000000000000000000000000000000000000000000000000000000)
-                                    // add caller address as parameter
-                                    mstore(add(ptr, 0x04), callerAddress)
-                                    // add underlying address
-                                    mstore(add(ptr, 0x24), underlying)
-                                    // call to token
-                                    pop(
-                                        staticcall(
-                                            gas(),
-                                            cometPool, // collateral token
-                                            ptr,
-                                            0x44,
-                                            ptr,
-                                            0x20
-                                        )
-                                    )
-                                    // load the retrieved balance (lower 128 bits)
-                                    amount := and(UINT128_MASK, mload(ptr))
                                 }
                             }
                         }

@@ -35,9 +35,12 @@ contract AddressesArbitrum {
     uint16 AAVE_V3 = 0;
     uint16 AVALON = 1;
     uint16 YLDR = 900;
+    uint16 VENUS = 3000;
+    uint16 VENUS_ETH = 3001;
 
 
     uint16 MAX_AAVE_V2_ID = 2000;
+    uint16 MAX_ID_COMPOUND_V3 = 3000;
     uint16 COMPOUND_V3_USDC = 2000;
     uint16 COMPOUND_V3_WETH = 2001;
     uint16 COMPOUND_V3_USDT = 2002;
