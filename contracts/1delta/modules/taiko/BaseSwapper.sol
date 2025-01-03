@@ -22,6 +22,19 @@ import {PermitUtils} from "../shared/permit/PermitUtils.sol";
  */
 abstract contract BaseSwapper is BaseLending, PermitUtils {
 
+    // MAX_ID values are the maximum plus 1
+
+    // non-pre-fundeds
+    uint256 internal constant UNISWAP_V3_MAX_ID = 49;
+    uint256 internal constant IZI_ID = UNISWAP_V3_MAX_ID;
+    uint256 internal constant CURVE_V1_STANDARD_ID = 60;
+    
+    // pre-fundeds
+    uint256 internal constant UNISWAP_V2_MAX_ID = 150;
+
+    // exotics
+    uint256 internal constant SYNC_SWAP_ID = UNISWAP_V2_MAX_ID;
+
     // offset for receiver address for most DEX types (uniswap, curve etc.)
     uint256 internal constant RECEIVER_OFFSET_UNOSWAP = 66;
 
@@ -147,7 +160,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
         // execution step if we are not yet at the final pool
         ////////////////////////////////////////////////////
         // uniswapV3 style
-        if (dexId < 49) {
+        if (dexId < UNISWAP_V3_MAX_ID) {
             assembly {
                 switch lt(pathLength, 67) // maxLength = 66 for single path
                 case 1 { currentReceiver := receiver}
@@ -184,7 +197,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
             }
         }
         // iZi
-        else if (dexId == 49) {
+        else if (dexId == IZI_ID) {
             assembly {
                 switch lt(pathLength, 67) // same as for Uni V3 CL
                 case 1 { currentReceiver := receiver}
@@ -219,7 +232,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
                 pathOffset := add(pathOffset, SKIP_LENGTH_UNOSWAP)
                 pathLength := sub(pathLength, SKIP_LENGTH_UNOSWAP)
             }
-        } else if (dexId == 60) {
+        } else if (dexId == CURVE_V1_STANDARD_ID) {
             assembly {
                 switch lt(pathLength, 68) // MAX_SINGLE_LENGTH_CURVE + 1
                 case 1 { currentReceiver := receiver}
@@ -249,7 +262,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
             }
         }
         // uniswapV2 style
-        else if (dexId < 150) {
+        else if (dexId < UNISWAP_V2_MAX_ID) {
             assembly {
                 switch lt(pathLength, 67)
                 case 1 { currentReceiver := receiver}
@@ -287,7 +300,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
             }
         }
         // syncSwap style
-        else if (dexId == 150) {
+        else if (dexId == SYNC_SWAP_ID) {
             assembly {
                 switch lt(pathLength, 65)
                 case 1 { currentReceiver := receiver}

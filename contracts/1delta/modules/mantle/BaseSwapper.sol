@@ -22,6 +22,23 @@ import {PermitUtils} from "../shared/permit/PermitUtils.sol";
  */
 abstract contract BaseSwapper is BaseLending, PermitUtils {
 
+    // MAX_ID values are the maximum plus 1
+
+    // non-pre-fundeds
+    uint256 internal constant UNISWAP_V3_MAX_ID = 49;
+    uint256 internal constant IZI_ID = UNISWAP_V3_MAX_ID;
+    uint256 internal constant STRATUM3_WRAPPER_ID = 50;
+    uint256 internal constant CURVE_V1_STANDARD_ID = 51;
+    
+    // pre-fundeds
+    uint256 internal constant UNISWAP_V2_MAX_ID = 150;
+
+    // exotics
+    uint256 internal constant WOO_FI_ID = UNISWAP_V2_MAX_ID;
+    uint256 internal constant MOE_LB_ID = 151;
+    uint256 internal constant GMX_ID = 152;
+    uint256 internal constant DODO_ID = 153;
+
     // offset for receiver address for most DEX types (uniswap, curve etc.)
     uint256 internal constant RECEIVER_OFFSET_UNOSWAP = 66;
 
@@ -147,9 +164,9 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
         // execution step if we are not yet at the final pool
         ////////////////////////////////////////////////////
         // uniswapV3 style
-        if (dexId < 49) {
+        if (dexId < UNISWAP_V3_MAX_ID) {
             assembly {
-                switch lt(pathLength, 67) // maxLength = 66 for single path
+                switch lt(pathLength, MAX_SINGLE_LENGTH_UNOSWAP) // maxLength = 67 for single path
                 case 1 { currentReceiver := receiver}
                 default {
                     dexId := and(calldataload(add(pathOffset, 34)), UINT8_MASK) // SKIP_LENGTH_UNOSWAP - 10
@@ -184,9 +201,9 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
             }
         }
         // iZi
-        else if (dexId == 49) {
+        else if (dexId == IZI_ID) {
             assembly {
-                switch lt(pathLength, 67) // same as for Uni V3 CL
+                switch lt(pathLength, MAX_SINGLE_LENGTH_UNOSWAP) // same as for Uni V3 CL
                 case 1 { currentReceiver := receiver}
                 default {
                     dexId := and(calldataload(add(pathOffset, 34)), UINT8_MASK) // SKIP_LENGTH_UNOSWAP - 10
@@ -221,7 +238,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
             }
         }
         // Stratum 3USD with wrapper
-        else if (dexId == 50) {
+        else if (dexId == STRATUM3_WRAPPER_ID) {
             assembly {
                 switch lt(pathLength, 45) // maxLength = 20+1+1+20+2=44
                 case 1 { currentReceiver := receiver}
@@ -257,9 +274,9 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
             }
         }
         // Curve stable general
-        else if (dexId == 51) {
+        else if (dexId == CURVE_V1_STANDARD_ID) {
             assembly {
-                switch lt(pathLength, 67) // lengthFull = 20+1+1+20+1+1+20 = 64
+                switch lt(pathLength, 67) // lengthFull = 20+1+1+20+1+1+20+3 = 67
                 case 1 { currentReceiver := receiver}
                 default {
                     dexId := and(calldataload(add(pathOffset, 34)), UINT8_MASK) // SKIP_LENGTH_UNOSWAP - 10
@@ -287,9 +304,9 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
             }
         }
         // uniswapV2 style
-        else if (dexId < 150) {
+        else if (dexId < UNISWAP_V2_MAX_ID) {
             assembly {
-                switch lt(pathLength, 67)
+                switch lt(pathLength, MAX_SINGLE_LENGTH_UNOSWAP)
                 case 1 { currentReceiver := receiver}
                 default {
                     dexId := and(calldataload(add(pathOffset, 34)), UINT8_MASK) // SKIP_LENGTH_UNOSWAP - 10
@@ -325,7 +342,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
             }
         }
         // WOO Fi
-        else if (dexId == 150) {
+        else if (dexId == WOO_FI_ID) {
             address tokenIn;
             address tokenOut;
             address pool;
@@ -367,7 +384,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
             }
         }
         // Moe LB
-        else if (dexId == 151) {
+        else if (dexId == MOE_LB_ID) {
             address tokenIn;
             address tokenOut;
             address pair;
@@ -407,7 +424,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
             }
         }
         // GMX
-        else if(dexId == 152) {
+        else if(dexId == GMX_ID) {
             address tokenIn;
             address tokenOut;
             address vault;
@@ -448,7 +465,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
             }
         } 
         // DODO V2
-        else if(dexId == 153) {
+        else if(dexId == DODO_ID) {
             address pair;
             uint8 sellQuote;
             assembly {
@@ -524,7 +541,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
     ) internal returns (uint256 amountOut) {
         address currentReceiver;
         assembly {
-            switch lt(pathLength, 67)
+            switch lt(pathLength, MAX_SINGLE_LENGTH_UNOSWAP)
             case 1 { currentReceiver := receiver}
             default {
                 dexId := and(calldataload(add(pathOffset, 34)), UINT8_MASK) // SKIP_LENGTH_UNOSWAP - 10

@@ -169,7 +169,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
         // uniswapV3 style
         if (dexId < UNISWAP_V3_MAX_ID) {
             assembly {
-                switch lt(pathLength, 67) // RECEIVER_OFFSET_UNOSWAP + 1
+                switch lt(pathLength, MAX_SINGLE_LENGTH_UNOSWAP) // RECEIVER_OFFSET_UNOSWAP + 1
                 case 1 { currentReceiver := receiver}
                 default {
                     dexId := and(calldataload(add(pathOffset, 34)), UINT8_MASK) // SKIP_LENGTH_UNOSWAP - 10
@@ -206,7 +206,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
         // iZi
         else if (dexId == IZI_ID) {
             assembly {
-                switch lt(pathLength, 67) // RECEIVER_OFFSET_UNOSWAP + 1
+                switch lt(pathLength, MAX_SINGLE_LENGTH_UNOSWAP) // RECEIVER_OFFSET_UNOSWAP + 1
                 case 1 { currentReceiver := receiver}
                 default {
                     dexId := and(calldataload(add(pathOffset, 34)), UINT8_MASK) // SKIP_LENGTH_UNOSWAP - 10
@@ -317,7 +317,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
         // uniswapV2 style
         else if (dexId < UNISWAP_V2_MAX_ID) {
             assembly {
-                switch lt(pathLength, 67)
+                switch lt(pathLength, MAX_SINGLE_LENGTH_UNOSWAP)
                 case 1 { currentReceiver := receiver}
                 default {
                     dexId := and(calldataload(add(pathOffset, 34)), UINT8_MASK) // SKIP_LENGTH_UNOSWAP - 10
@@ -582,7 +582,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
     ) internal returns (uint256 amountOut) {
         address currentReceiver;
         assembly {
-            switch lt(pathLength, 67)
+            switch lt(pathLength, MAX_SINGLE_LENGTH_UNOSWAP)
             case 1 { currentReceiver := receiver}
             default {dexId := and(calldataload(add(pathOffset, 34)), UINT8_MASK) // SKIP_LENGTH_UNOSWAP - 10
                 switch gt(dexId, 99) 

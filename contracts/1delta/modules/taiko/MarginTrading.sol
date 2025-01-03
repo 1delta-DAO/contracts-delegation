@@ -840,7 +840,7 @@ abstract contract MarginTrading is BaseSwapper {
             poolId := and(shr(80, calldataload(pathOffset)), UINT8_MASK)
         }
         // uniswapV3 style
-        if (poolId < 49) {
+        if (poolId < UNISWAP_V3_MAX_ID) {
             _swapUniswapV3PoolExactOut(
                 amountOut,
                 maxIn,
@@ -851,7 +851,7 @@ abstract contract MarginTrading is BaseSwapper {
             );
         }
         // iZi
-        else if (poolId == 49) {
+        else if (poolId == IZI_ID) {
             _swapIZIPoolExactOut(
                 amountOut,
                 maxIn,
@@ -861,7 +861,7 @@ abstract contract MarginTrading is BaseSwapper {
                 pathLength
             );
         // uniswapV2 style
-        } else if (poolId < 150) {
+        } else if (poolId < UNISWAP_V2_MAX_ID) {
             address tokenIn;
             uint256 amountIn;
             address pair;
@@ -968,7 +968,7 @@ abstract contract MarginTrading is BaseSwapper {
             poolId := and(shr(80, calldataload(pathOffset)), UINT8_MASK)
         }
         // uniswapV3 style
-        if (poolId < 49) {
+        if (poolId < UNISWAP_V3_MAX_ID) {
             _swapUniswapV3PoolExactOut(
                 amountOut,
                 maxIn,
@@ -979,7 +979,7 @@ abstract contract MarginTrading is BaseSwapper {
             );
         }
         // iZi
-        else if (poolId == 49) {
+        else if (poolId == IZI_ID) {
             _swapIZIPoolExactOut(
                 amountOut,
                 maxIn,
@@ -989,7 +989,7 @@ abstract contract MarginTrading is BaseSwapper {
                 pathLength
             );
         // uniswapV2 style
-        } else if (poolId < 150) {
+        } else if (poolId < UNISWAP_V2_MAX_ID) {
             address tokenOut;
             address tokenIn;
             address pair;
@@ -1032,7 +1032,7 @@ abstract contract MarginTrading is BaseSwapper {
             poolId := and(shr(80, calldataload(pathOffset)), UINT8_MASK)
         }
         // uniswapV3 types
-        if (poolId < 49) {
+        if (poolId < UNISWAP_V3_MAX_ID) {
             address reciever;
             assembly {
                 switch lt(pathLength, 68) // see swapExactIn
@@ -1066,7 +1066,7 @@ abstract contract MarginTrading is BaseSwapper {
             );
         }
         // iZi
-        else if (poolId == 49) {
+        else if (poolId == IZI_ID) {
             address reciever;
             assembly {
                 switch lt(pathLength, 68) // see swapExactIn
@@ -1100,7 +1100,7 @@ abstract contract MarginTrading is BaseSwapper {
             );
         }
         // uniswapV2 types
-        else if (poolId < 150) {
+        else if (poolId < UNISWAP_V2_MAX_ID) {
             swapUniV2ExactInComplete(
                 amountIn,
                 amountOutMinimum, // we need to forward the amountMin
