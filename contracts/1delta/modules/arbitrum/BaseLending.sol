@@ -583,18 +583,17 @@ abstract contract BaseLending is Slots, BalancerSwapper {
                     mstore(0x20, COLLATERAL_TOKENS_SLOT) // add pointer to slot
                     let collateralToken := sload(keccak256(0x0, 0x40)) // acces element
 
-                    // 1) DEPOSIT
-
-                    // selector for mint(uint256)
-                    mstore(0x0, 0xa0712d6800000000000000000000000000000000000000000000000000000000)
-                    mstore(0x4, _amount)
+                    // selector for mintBehalf(address,uint256)
+                    mstore(ptr, 0x23323e0300000000000000000000000000000000000000000000000000000000)
+                    mstore(add(ptr, 0x04), _to)
+                    mstore(add(ptr, 0x24), _amount)
 
                     let success := call(
                         gas(),
                         collateralToken,
                         0x0,
-                        0x0, // input = selector and data
-                        0x24, // input size = 4 + 32
+                        ptr, // input = selector and data
+                        0x44, // input size = 4 + 64
                         0x0, // output
                         0x0 // output size = zero
                     )
@@ -602,53 +601,6 @@ abstract contract BaseLending is Slots, BalancerSwapper {
                     if iszero(success) {
                         returndatacopy(ptr, 0, returndatasize())
                         revert(ptr, returndatasize())
-                    }
-
-                    // transfer the collateral tokens
-
-                    // 2) GET BALANCE OF COLLATERAL TOKEN
-
-                    // selector for balanceOf(address)
-                    mstore(0x0, ERC20_BALANCE_OF)
-                    // add this address as parameter
-                    mstore(0x4, address())
-
-                    // call to collateralToken
-                    pop(staticcall(gas(), collateralToken, 0x0, 0x24, 0x0, 0x20))
-
-                    // load the retrieved balance
-                    let collateralTokenAmount := mload(0x0)
-
-                    // transfer to receiver if needed
-                    if xor(address(), _to) {
-                        // 3) TRANSFER TOKENS TO RECEIVER
-                        // selector for transfer(address,uint256)
-                        mstore(ptr, ERC20_TRANSFER)
-                        mstore(add(ptr, 0x04), _to)
-                        mstore(add(ptr, 0x24), collateralTokenAmount)
-
-                        success := call(gas(), collateralToken, 0, ptr, 0x44, ptr, 32)
-
-                        let rdsize := returndatasize()
-
-                        // Check for ERC20 success. ERC20 tokens should return a boolean,
-                        // but some don't. We accept 0-length return data as success, or at
-                        // least 32 bytes that starts with a 32-byte boolean true.
-                        success := and(
-                            success, // call itself succeeded
-                            or(
-                                iszero(rdsize), // no return data, or
-                                and(
-                                    iszero(lt(rdsize, 32)), // at least 32 bytes
-                                    eq(mload(ptr), 1) // starts with uint256(1)
-                                )
-                            )
-                        )
-
-                        if iszero(success) {
-                            returndatacopy(ptr, 0, rdsize)
-                            revert(ptr, rdsize)
-                        }
                     }
                 }
             }

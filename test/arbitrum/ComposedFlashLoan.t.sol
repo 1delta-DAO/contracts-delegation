@@ -3,7 +3,7 @@ pragma solidity ^0.8.19;
 
 import "./DeltaSetup.f.sol";
 
-contract ComposedFlashLoanTestPolygon is DeltaSetup {
+contract ComposedFlashLoanTestArbitrum is DeltaSetup {
     uint256 DEFAULT_IR_MODE = 2; // variable
 
     /**
@@ -14,7 +14,7 @@ contract ComposedFlashLoanTestPolygon is DeltaSetup {
      *  borrow
      *  payback
      */
-    function test_polygon_composed_flash_loan_open(uint16 lenderId) external /** address user, uint16 lenderId */ {
+    function test_arbitrum_composed_flash_loan_open(uint16 lenderId) external /** address user, uint16 lenderId */ {
         TestParamsOpen memory params;
         address user = testUser;
 
@@ -119,7 +119,7 @@ contract ComposedFlashLoanTestPolygon is DeltaSetup {
         }
     }
 
-    function test_polygon_ext_call() external {
+    function test_arbitrum_ext_call() external {
         address someAddr = vm.addr(0x324);
         address someOtherAddr = vm.addr(0x324);
 
@@ -129,7 +129,7 @@ contract ComposedFlashLoanTestPolygon is DeltaSetup {
         console.log(val);
     }
 
-    function test_polygon_composed_flash_loan_close(uint16 lenderId) external {
+    function test_arbitrum_composed_flash_loan_close(uint16 lenderId) external {
         address user = testUser;
         vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
         address asset = TokensArbitrum.WETH;

@@ -296,24 +296,25 @@ contract OneDeltaComposerArbitrum is MarginTrading {
                                 switch lt(lenderId_tokenIn, MAX_ID_COMPOUND_V3)
                                 // Compound V3
                                 case 1 {
-                                    let cometPool
+                                    // abuse amountIn for cometPool variable
+                                    // it will be overridden at the end
                                     // temp will now become the var for comet ccy
                                     switch lenderId_tokenIn
                                     // Compound V3 Markets
                                     case 2000 {
-                                        cometPool := COMET_USDC
+                                        amountIn := COMET_USDC
                                         temp := USDC
                                     }
                                     case 2001 {
-                                        cometPool := COMET_WETH
+                                        amountIn := COMET_WETH
                                         temp := WRAPPED_NATIVE
                                     }
                                     case 2002 {
-                                        cometPool := COMET_USDT
+                                        amountIn := COMET_USDT
                                         temp := USDT
                                     }
                                     case 2003 {
-                                        cometPool := COMET_USDCE
+                                        amountIn := COMET_USDCE
                                         temp := USDCE
                                     }
                                     // default: load comet from storage
@@ -323,13 +324,13 @@ contract OneDeltaComposerArbitrum is MarginTrading {
                                     default {
                                         mstore(0x0, lenderId_tokenIn)
                                         mstore(0x20, LENDING_POOL_SLOT)
-                                        cometPool := sload(keccak256(0x0, 0x40))
-                                        if iszero(cometPool) {
+                                        amountIn := sload(keccak256(0x0, 0x40))
+                                        if iszero(amountIn) {
                                             mstore(0, BAD_LENDER)
                                             revert(0, 0x4)
                                         }
 
-                                        mstore(0x0, or(shl(240, lenderId_tokenIn), cometPool))
+                                        mstore(0x0, or(shl(240, lenderId_tokenIn), amountIn))
                                         mstore(0x20, VARIABLE_DEBT_TOKENS_SLOT)
                                         temp := sload(keccak256(0x0, 0x40))
                                     }
@@ -347,7 +348,7 @@ contract OneDeltaComposerArbitrum is MarginTrading {
                                         pop(
                                             staticcall(
                                                 gas(),
-                                                cometPool, // collateral token
+                                                amountIn, // collateral token
                                                 0x0,
                                                 0x24,
                                                 0x0,
@@ -371,7 +372,7 @@ contract OneDeltaComposerArbitrum is MarginTrading {
                                         pop(
                                             staticcall(
                                                 gas(),
-                                                cometPool, // collateral token
+                                                amountIn, // collateral token
                                                 temp,
                                                 0x44,
                                                 temp,

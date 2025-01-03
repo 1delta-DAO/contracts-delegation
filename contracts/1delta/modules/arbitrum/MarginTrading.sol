@@ -446,7 +446,7 @@ abstract contract MarginTrading is BaseSwapper {
             // skim address from calldata
             pathLength := sub(pathLength, 36)
             // assume a multihop if the calldata is longer than 67
-            multihop := gt(pathLength, 67)
+            multihop := gt(pathLength, MAX_SINGLE_LENGTH_UNOSWAP)
             // use tradeId as tradetype
             tradeId := and(
                 calldataload(121), // PATH_OFFSET_CALLBACK_V3 - 11
@@ -513,6 +513,7 @@ abstract contract MarginTrading is BaseSwapper {
                 // slice out the end flag, paymentId overrides maximum amount
                 uint256 lenderId;
                 (maximumAmount, lenderId) = getPayConfigFromCalldata(pathOffset, pathLength);
+                
                 payToLender(tokenOut, payer, amountReceived, tradeId, lenderId);
                 // pay the pool
                 handlePayPool(
@@ -1374,7 +1375,7 @@ abstract contract MarginTrading is BaseSwapper {
         if (poolId < UNISWAP_V3_MAX_ID) {
             address reciever;
             assembly {
-                switch lt(pathLength, 67) // see swapExactIn
+                switch lt(pathLength, 68) // see swapExactIn
                 case 1 { reciever := address()}
                 default {
                     let nextId := and(calldataload(add(pathOffset, 34)), UINT8_MASK) // SKIP_LENGTH_UNISWAP - 10
@@ -1408,7 +1409,7 @@ abstract contract MarginTrading is BaseSwapper {
         else if (poolId == IZI_ID) {
             address reciever;
             assembly {
-                switch lt(pathLength, 67) // see swapExactIn
+                switch lt(pathLength, 68) // see swapExactIn
                 case 1 { reciever := address()}
                 default {
                     let nextId := and(calldataload(add(pathOffset, 34)), UINT8_MASK) // SKIP_LENGTH_UNISWAP - 10

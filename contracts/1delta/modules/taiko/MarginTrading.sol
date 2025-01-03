@@ -1035,7 +1035,7 @@ abstract contract MarginTrading is BaseSwapper {
         if (poolId < 49) {
             address reciever;
             assembly {
-                switch lt(pathLength, 67) // see swapExactIn
+                switch lt(pathLength, 68) // see swapExactIn
                 case 1 { reciever := address()}
                 default {
                     let nextId := and(calldataload(add(pathOffset, 34)), UINT8_MASK) // SKIP_LENGTH_UNISWAP - 10
@@ -1069,7 +1069,7 @@ abstract contract MarginTrading is BaseSwapper {
         else if (poolId == 49) {
             address reciever;
             assembly {
-                switch lt(pathLength, 67) // see swapExactIn
+                switch lt(pathLength, 68) // see swapExactIn
                 case 1 { reciever := address()}
                 default {
                     let nextId := and(calldataload(add(pathOffset, 34)), UINT8_MASK) // SKIP_LENGTH_UNISWAP - 10

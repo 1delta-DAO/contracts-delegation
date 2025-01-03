@@ -203,9 +203,7 @@ contract ComposedFlashLoanTestEthereum is DeltaSetup {
     function getOpenExactInInternal(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_LOW);
         uint8 poolId = UNI_V3;
-        console.log("t");
         address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
-        console.log("t", pool);
         return abi.encodePacked(tokenIn, uint8(0), poolId, pool, fee, tokenOut, uint8(0), uint8(0));
     }
 

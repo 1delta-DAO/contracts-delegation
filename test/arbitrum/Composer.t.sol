@@ -304,7 +304,7 @@ contract ComposerTestArbitrum is DeltaSetup {
 
         _deposit(asset, user, amount, lenderId);
 
-        uint256 withdrawAmount = 2.50e6;
+        uint256 withdrawAmount = 5.0e6;
 
         bytes memory data = withdraw(asset, user, withdrawAmount, lenderId);
         approveWithdrawal(user, asset, withdrawAmount, lenderId);
@@ -769,49 +769,4 @@ contract ComposerTestArbitrum is DeltaSetup {
         return abi.encodePacked(tokenOut, action, poolId, pool, fee, tokenIn, uint8(99));
     }
 
-    function _deposit(address asset, address user, uint256 amount, uint16 lenderId) internal {
-        deal(asset, user, amount);
-
-        vm.prank(user);
-        IERC20All(asset).approve(address(brokerProxyAddress), amount);
-
-        bytes memory transfer = transferIn(
-            asset,
-            brokerProxyAddress,
-            amount //
-        );
-        bytes memory data = deposit(
-            asset,
-            user,
-            amount,
-            lenderId //
-        );
-        data = abi.encodePacked(transfer, data);
-
-        vm.prank(user);
-        uint gas = gasleft();
-        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
-        gas = gas - gasleft();
-        console.log("gas", gas);
-
-        enterMarket(user, asset, lenderId);
-    }
-
-    function _borrow(address borrowAsset, address user, uint256 borrowAmount, uint16 lenderId) internal {
-        approveBorrowDelegation(user, borrowAsset, borrowAmount, lenderId);
-
-        bytes memory data = borrow(
-            borrowAsset,
-            user,
-            borrowAmount,
-            lenderId, //
-            DEFAULT_MODE
-        );
-
-        vm.prank(user);
-        uint gas = gasleft();
-        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
-        gas = gas - gasleft();
-        console.log("gas", gas);
-    }
 }

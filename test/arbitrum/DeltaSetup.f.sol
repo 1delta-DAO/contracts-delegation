@@ -570,7 +570,7 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
     /** OPEN */
 
     function getOpenExactInSingle(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
-        uint16 fee = uint16(DEX_FEE_LOW);
+        uint16 fee = uint16(DEX_FEE_STABLES);
         uint8 poolId = UNI_V3;
         address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
         (uint8 actionId, , uint8 endId) = getOpenExactInFlags();
@@ -939,5 +939,51 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
 
     function validCompoundLender(uint16 id) internal pure returns (bool a) {
         a = id == 2000 || id == 2001 || id == 2002 || id == 2003;
+    }
+
+    function _deposit(address asset, address user, uint256 amount, uint16 lenderId) internal {
+        deal(asset, user, amount);
+
+        vm.prank(user);
+        IERC20All(asset).approve(address(brokerProxyAddress), amount);
+
+        bytes memory transfer = transferIn(
+            asset,
+            brokerProxyAddress,
+            amount //
+        );
+        bytes memory data = deposit(
+            asset,
+            user,
+            amount,
+            lenderId //
+        );
+        data = abi.encodePacked(transfer, data);
+
+        vm.prank(user);
+        uint gas = gasleft();
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
+        gas = gas - gasleft();
+        console.log("gas", gas);
+
+        enterMarket(user, asset, lenderId);
+    }
+
+    function _borrow(address borrowAsset, address user, uint256 borrowAmount, uint16 lenderId) internal {
+        approveBorrowDelegation(user, borrowAsset, borrowAmount, lenderId);
+
+        bytes memory data = borrow(
+            borrowAsset,
+            user,
+            borrowAmount,
+            lenderId, //
+            DEFAULT_MODE
+        );
+
+        vm.prank(user);
+        uint gas = gasleft();
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
+        gas = gas - gasleft();
+        console.log("gas", gas);
     }
 }
