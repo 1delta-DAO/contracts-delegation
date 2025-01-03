@@ -527,7 +527,7 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
     }
 
     function approveWithdrawal(address user, address asset, uint256 amount, uint16 lenderId) internal {
-        vm.prank(user);
+        vm.startPrank(user);
         if (lenderId < MAX_AAVE_V2_ID) {
             IERC20All(collateralTokens[asset][lenderId]).approve(brokerProxyAddress, amount);
         } else if (lenderId < MAX_ID_COMPOUND_V3) {
@@ -538,6 +538,7 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
             // need to approve max as we approve the collateral token adjusted for exchange rate
             if (lenderId == VENUS) IERC20All(collateralTokens[asset][lenderId]).approve(brokerProxyAddress, type(uint256).max);
         }
+        vm.stopPrank();
     }
 
     function enterMarket(address user, address asset, uint16 lenderId) internal {
@@ -551,7 +552,7 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
     }
 
     function approveBorrowDelegation(address user, address asset, uint256 amount, uint16 lenderId) internal {
-        vm.prank(user);
+         vm.startPrank(user);
         if (lenderId < MAX_AAVE_V2_ID) {
             IERC20All(debtTokens[asset][lenderId]).approveDelegation(brokerProxyAddress, amount);
         } else if (lenderId < MAX_ID_COMPOUND_V3) {
@@ -563,6 +564,7 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
                 ComptrollerInterface(VenusCoreArbitrum.COMPTROLLER).updateDelegate(brokerProxyAddress, true);
             }
         }
+        vm.stopPrank();
     }
 
     /** HELPER FUNCTIONS */

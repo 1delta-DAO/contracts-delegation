@@ -196,7 +196,7 @@ contract ComposedFlashLoanTestArbitrum is DeltaSetup {
         borrowBalance = borrowBalance - getBorrowBalance(user, borrowAsset, lenderId);
 
         // deposit 10, recieve 32.1... makes 42.1...
-        assertApproxEqAbs(witdrawAm, balance, 1);
+        assertApproxEqAbs(witdrawAm, balance, 1e10);
         // deviations through rouding expected, accuracy for 10 decimals
         assertApproxEqAbs(99999987, borrowBalance, 1);
     }

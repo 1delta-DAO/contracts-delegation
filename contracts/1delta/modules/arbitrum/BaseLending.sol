@@ -219,7 +219,7 @@ abstract contract BaseLending is Slots, BalancerSwapper {
 
                     // selector for transferFrom(address,address,uint256)
                     mstore(ptr, ERC20_TRANSFER_FROM)
-                    mstore(add(ptr, 0x04), _to) // from user
+                    mstore(add(ptr, 0x04), _from) // from user
                     mstore(add(ptr, 0x24), address()) // to this address
                     mstore(add(ptr, 0x44), transferAmount)
 
