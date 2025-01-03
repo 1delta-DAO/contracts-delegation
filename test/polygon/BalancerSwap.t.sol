@@ -24,7 +24,7 @@ contract BalancerTestPolygon is DeltaSetup {
         address assetOut = WBTC;
         deal(assetIn, user, 1e23);
 
-        bytes memory dataBalancer = getSpotExactOutBalancer(assetIn, assetOut, three_pool_id, 1);
+        bytes memory dataBalancer = getSpotExactOutBalancer(assetIn, assetOut, three_pool_id);
 
         bytes memory data = abi.encodePacked(
             uint8(Commands.SWAP_EXACT_OUT),
@@ -63,7 +63,7 @@ contract BalancerTestPolygon is DeltaSetup {
         address assetOut = WBTC;
         deal(assetIn, user, 1e23);
 
-        bytes memory dataBalancer = getSpotExactOutBalancerMulti(assetIn, assetOut, three_pool_id, 1);
+        bytes memory dataBalancer = getSpotExactOutBalancerMulti(assetIn, assetOut, three_pool_id);
 
         bytes memory data = abi.encodePacked(
             uint8(Commands.SWAP_EXACT_OUT),
@@ -102,7 +102,7 @@ contract BalancerTestPolygon is DeltaSetup {
         address assetOut = WMATIC;
         deal(assetIn, user, 1e23);
 
-        bytes memory dataBalancer = getSpotExactOutBalancerMultiReverse(assetIn, assetOut, three_pool_id, 1);
+        bytes memory dataBalancer = getSpotExactOutBalancerMultiReverse(assetIn, assetOut, three_pool_id);
 
         bytes memory data = abi.encodePacked(
             uint8(Commands.SWAP_EXACT_OUT),
@@ -140,7 +140,7 @@ contract BalancerTestPolygon is DeltaSetup {
         address assetOut = WETH;
         deal(assetIn, user, 1e23);
 
-        bytes memory dataBalancer = getSpotExactInBalancer(assetIn, assetOut, three_pool_id, 1);
+        bytes memory dataBalancer = getSpotExactInBalancer(assetIn, assetOut, three_pool_id);
 
         bytes memory data = abi.encodePacked(
             uint8(Commands.SWAP_EXACT_IN),
@@ -177,7 +177,7 @@ contract BalancerTestPolygon is DeltaSetup {
         address assetOut = WMATIC;
         deal(assetIn, user, 1e23);
 
-        bytes memory dataBalancer = getSpotExactOutBalancer(assetIn, assetOut, cs_pool_id, 1);
+        bytes memory dataBalancer = getSpotExactOutBalancer(assetIn, assetOut, cs_pool_id);
 
         bytes memory data = abi.encodePacked(
             uint8(Commands.SWAP_EXACT_OUT),
@@ -215,7 +215,7 @@ contract BalancerTestPolygon is DeltaSetup {
         address assetOut = MaticX;
         deal(assetIn, user, 1e23);
 
-        bytes memory dataBalancer = getSpotExactOutBalancerMultiCSP(assetIn, assetOut, cs_pool_id, 1);
+        bytes memory dataBalancer = getSpotExactOutBalancerMultiCSP(assetIn, assetOut, cs_pool_id);
 
         bytes memory data = abi.encodePacked(
             uint8(Commands.SWAP_EXACT_OUT),
@@ -253,7 +253,7 @@ contract BalancerTestPolygon is DeltaSetup {
         address assetOut = WMATIC;
         deal(assetIn, user, 1e23);
 
-        bytes memory dataBalancer = getSpotExactInBalancer(assetIn, assetOut, cs_pool_id, 1);
+        bytes memory dataBalancer = getSpotExactInBalancer(assetIn, assetOut, cs_pool_id);
 
         bytes memory data = abi.encodePacked(
             uint8(Commands.SWAP_EXACT_IN),
@@ -292,7 +292,7 @@ contract BalancerTestPolygon is DeltaSetup {
         address assetOut = WETH;
         deal(assetIn, user, 1e23);
 
-        bytes memory dataBalancer = getSpotExactInBalancerMulti(assetIn, assetOut, cs_pool_id, 1);
+        bytes memory dataBalancer = getSpotExactInBalancerMulti(assetIn, assetOut, cs_pool_id);
 
         bytes memory data = abi.encodePacked(
             uint8(Commands.SWAP_EXACT_IN),
@@ -331,7 +331,7 @@ contract BalancerTestPolygon is DeltaSetup {
         address assetOut = MaticX;
         deal(assetIn, user, 1e23);
 
-        bytes memory dataBalancer = getSpotExactInBalancerMultiReverse(assetIn, assetOut, cs_pool_id, 1);
+        bytes memory dataBalancer = getSpotExactInBalancerMultiReverse(assetIn, assetOut, cs_pool_id);
 
         bytes memory data = abi.encodePacked(
             uint8(Commands.SWAP_EXACT_IN),
@@ -392,22 +392,21 @@ contract BalancerTestPolygon is DeltaSetup {
         console.log("quoted", quoted);
     }
 
-    function getSpotExactOutBalancer(address tokenIn, address tokenOut, bytes32 pId, uint8 preActionFlag) internal view returns (bytes memory data) {
+    function getSpotExactOutBalancer(address tokenIn, address tokenOut, bytes32 pId) internal view returns (bytes memory data) {
         uint8 action = 0;
-        return abi.encodePacked(tokenOut, action, BALANCER_V2_DEXID, pId, preActionFlag, tokenIn, uint8(99), uint8(99));
+        return abi.encodePacked(tokenOut, action, BALANCER_V2_DEXID, pId, tokenIn, uint8(99), uint8(99));
     }
 
-    function getSpotExactInBalancer(address tokenIn, address tokenOut, bytes32 pId, uint8 preActionFlag) internal view returns (bytes memory data) {
+    function getSpotExactInBalancer(address tokenIn, address tokenOut, bytes32 pId) internal view returns (bytes memory data) {
         uint8 action = 0;
-        return abi.encodePacked(tokenIn, action, BALANCER_V2_DEXID, pId, preActionFlag, tokenOut, uint8(99), uint8(99));
+        return abi.encodePacked(tokenIn, action, BALANCER_V2_DEXID, pId, tokenOut, uint8(99), uint8(99));
     }
 
     /** UniswapV3 -> BalancerV2 WP exactOut */
     function getSpotExactOutBalancerMulti(
         address tokenIn,
         address tokenOut,
-        bytes32 pId,
-        uint8 preActionFlag
+        bytes32 pId
     ) internal view returns (bytes memory data) {
         uint8 action = 0;
         uint16 fee = 500;
@@ -415,7 +414,7 @@ contract BalancerTestPolygon is DeltaSetup {
 
         bytes memory firstPart;
         {
-            firstPart = abi.encodePacked(tokenOut, action, BALANCER_V2_DEXID, pId, preActionFlag, WETH);
+            firstPart = abi.encodePacked(tokenOut, action, BALANCER_V2_DEXID, pId, WETH);
         }
         return abi.encodePacked(firstPart, action, UNI_V3, pool, fee, tokenIn, uint8(99), uint8(99));
     }
@@ -424,8 +423,7 @@ contract BalancerTestPolygon is DeltaSetup {
     function getSpotExactInBalancerMulti(
         address tokenIn,
         address tokenOut,
-        bytes32 pId,
-        uint8 preActionFlag
+        bytes32 pId
     ) internal view returns (bytes memory data) {
         uint8 action = 0;
         uint16 fee = 3000;
@@ -433,7 +431,7 @@ contract BalancerTestPolygon is DeltaSetup {
 
         bytes memory firstPart;
         {
-            firstPart = abi.encodePacked(tokenIn, action, BALANCER_V2_DEXID, pId, preActionFlag, WMATIC);
+            firstPart = abi.encodePacked(tokenIn, action, BALANCER_V2_DEXID, pId, WMATIC);
         }
         return abi.encodePacked(firstPart, action, UNI_V3, pool, fee, tokenOut, uint8(99), uint8(99));
     }
@@ -442,8 +440,7 @@ contract BalancerTestPolygon is DeltaSetup {
     function getSpotExactInBalancerMultiReverse(
         address tokenIn,
         address tokenOut,
-        bytes32 pId,
-        uint8 preActionFlag
+        bytes32 pId
     ) internal view returns (bytes memory data) {
         uint8 action = 0;
         uint16 fee = 3000;
@@ -453,15 +450,14 @@ contract BalancerTestPolygon is DeltaSetup {
         {
             firstPart = abi.encodePacked(tokenIn, action, UNI_V3, pool, fee, WMATIC);
         }
-        return abi.encodePacked(firstPart, action, BALANCER_V2_DEXID, pId, preActionFlag, tokenOut, uint8(99), uint8(99));
+        return abi.encodePacked(firstPart, action, BALANCER_V2_DEXID, pId, tokenOut, uint8(99), uint8(99));
     }
 
     /** BalancerV2 WP -> UniswapV3  exactOut */
     function getSpotExactOutBalancerMultiReverse(
         address tokenIn,
         address tokenOut,
-        bytes32 pId,
-        uint8 preActionFlag
+        bytes32 pId
     ) internal view returns (bytes memory data) {
         uint8 action = 0;
         uint16 fee = 3000;
@@ -471,15 +467,14 @@ contract BalancerTestPolygon is DeltaSetup {
         {
             firstPart = abi.encodePacked(tokenOut, action, UNI_V3, pool, fee, WETH);
         }
-        return abi.encodePacked(firstPart, action, BALANCER_V2_DEXID, pId, preActionFlag, tokenIn, uint8(99), uint8(99));
+        return abi.encodePacked(firstPart, action, BALANCER_V2_DEXID, pId, tokenIn, uint8(99), uint8(99));
     }
 
     /** UniswapV3 -> BalancerV2 CSP exactOut */
     function getSpotExactOutBalancerMultiCSP(
         address tokenIn,
         address tokenOut,
-        bytes32 pId,
-        uint8 preActionFlag
+        bytes32 pId
     ) internal view returns (bytes memory data) {
         uint8 action = 0;
         uint16 fee = 500;
@@ -487,7 +482,7 @@ contract BalancerTestPolygon is DeltaSetup {
 
         bytes memory firstPart;
         {
-            firstPart = abi.encodePacked(tokenOut, action, BALANCER_V2_DEXID, pId, preActionFlag, WMATIC);
+            firstPart = abi.encodePacked(tokenOut, action, BALANCER_V2_DEXID, pId, WMATIC);
         }
         return abi.encodePacked(firstPart, action, UNI_V3, pool, fee, tokenIn, uint8(99), uint8(99));
     }

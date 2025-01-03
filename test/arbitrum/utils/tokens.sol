@@ -11,6 +11,7 @@ library TokensArbitrum {
     address internal constant ARB = 0x912CE59144191C1204E64559FE8253a0e49E6548;
     address internal constant WBTC = 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f;
     address internal constant DAI = 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1;
+    address internal constant EZETH = 0x2416092f143378750bb29b79eD961ab195CcEea5;
 
     address internal constant SolvBTC = 0x3647c54c4c2C65bC7a2D63c0Da2809B399DBBDC0;
     address internal constant SolvBTC_ENA = 0xaFAfd68AFe3fe65d376eEC9Eab1802616cFacCb8;

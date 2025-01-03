@@ -13,6 +13,9 @@ import {UniTypeSwapper} from "./UniType.sol";
  * @notice We do Curve stuff here
  */
 abstract contract CurveSwapper is UniTypeSwapper {
+    // approval slot
+    bytes32 private constant CALL_MANAGEMENT_APPROVALS = 0x1aae13105d9b6581c36534caba5708726e5ea1e03175e823c989a5756966d1f3;
+
     /** Standard curve pool selectors */
 
     /// @notice selector exchange(uint256,uint256,uint256,uint256)
@@ -34,7 +37,6 @@ abstract contract CurveSwapper is UniTypeSwapper {
 
     /// @notice selector exchange(address,uint256,uint256,uint256,uint256,bool,address)
     bytes32 private constant EXCHANGE_META_RECEIVER = 0xb837cc6900000000000000000000000000000000000000000000000000000000;
-
 
     /// @notice Curve params lengths
     uint256 internal constant SKIP_LENGTH_CURVE = 46; // = 20+1+1+20+1+1+1
@@ -64,6 +66,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
     ) internal returns (uint256 amountOut) {
         assembly {
             let ptr := mload(0x40)
+            let tokenIn := shr(96, calldataload(pathOffset))
             ////////////////////////////////////////////////////
             // Pull funds if needed
             ////////////////////////////////////////////////////
@@ -74,15 +77,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
                 mstore(add(ptr, 0x24), address())
                 mstore(add(ptr, 0x44), amountIn)
 
-                let success := call(
-                    gas(),
-                    shr(96, calldataload(pathOffset)), // tokenIn
-                    0,
-                    ptr,
-                    0x64,
-                    ptr,
-                    32
-                )
+                let success := call(gas(), tokenIn, 0, ptr, 0x64, ptr, 32)
 
                 let rdsize := returndatasize()
 
@@ -108,26 +103,25 @@ abstract contract CurveSwapper is UniTypeSwapper {
 
             let indexData := calldataload(add(pathOffset, 42))
 
+            let target := shr(96, calldataload(add(pathOffset, 22)))
+
             ////////////////////////////////////////////////////
             // Approve zap factory funds if needed
             ////////////////////////////////////////////////////
-            if and(shr(64, indexData), 0xff) {
+            mstore(0x0, tokenIn)
+            mstore(0x20, CALL_MANAGEMENT_APPROVALS)
+            mstore(0x20, keccak256(0x0, 0x40))
+            mstore(0x0, target)
+            let key := keccak256(0x0, 0x40)
+            // check if already approved
+            if iszero(sload(key)) {
                 // approveFlag
                 // selector for approve(address,uint256)
                 mstore(ptr, ERC20_APPROVE)
-                mstore(add(ptr, 0x04), shr(96, calldataload(add(pathOffset, 22)))) // zap factory
+                mstore(add(ptr, 0x04), target)
                 mstore(add(ptr, 0x24), MAX_UINT256)
-                pop(
-                    call(
-                        gas(),
-                        shr(96, calldataload(pathOffset)), // tokenIn
-                        0,
-                        ptr,
-                        0x44,
-                        ptr,
-                        32
-                    )
-                )
+                pop(call(gas(), tokenIn, 0, ptr, 0x44, ptr, 32))
+                sstore(key, 1)
             }
 
             let selectorId := and(shr(72, indexData), 0xff)
@@ -247,6 +241,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
     ) internal returns (uint256 amountOut) {
         assembly {
             let ptr := mload(0x40)
+            let tokenIn := shr(96, calldataload(pathOffset))
             ////////////////////////////////////////////////////
             // Pull funds if needed
             ////////////////////////////////////////////////////
@@ -257,15 +252,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
                 mstore(add(ptr, 0x24), address())
                 mstore(add(ptr, 0x44), amountIn)
 
-                let success := call(
-                    gas(),
-                    shr(96, calldataload(pathOffset)), // tokenIn
-                    0,
-                    ptr,
-                    0x64,
-                    ptr,
-                    32
-                )
+                let success := call(gas(), tokenIn, 0, ptr, 0x64, ptr, 32)
 
                 let rdsize := returndatasize()
 
@@ -295,7 +282,13 @@ abstract contract CurveSwapper is UniTypeSwapper {
             ////////////////////////////////////////////////////
             // Approve pool if needed
             ////////////////////////////////////////////////////
-            if and(shr(64, indexData), 0xff) {
+            mstore(0x0, tokenIn)
+            mstore(0x20, CALL_MANAGEMENT_APPROVALS)
+            mstore(0x20, keccak256(0x0, 0x40))
+            mstore(0x0, pool)
+            let key := keccak256(0x0, 0x40)
+            // check if already approved
+            if iszero(sload(key)) {
                 // approveFlag
                 // selector for approve(address,uint256)
                 mstore(ptr, ERC20_APPROVE)
@@ -312,6 +305,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
                         32
                     )
                 )
+                sstore(key, 1)
             }
 
             ////////////////////////////////////////////////////
@@ -373,7 +367,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
                 mstore(add(ptr, 0x24), amountOut)
                 let success := call(
                     gas(),
-                    shr(96, calldataload(add(pathOffset, 46))), // tokenIn, pool + 6x uint8 (i,j,s,a)
+                    shr(96, calldataload(add(pathOffset, 45))), // tokenIn, pool + 5x uint8 (i,j,s,a)
                     0,
                     ptr,
                     0x44,

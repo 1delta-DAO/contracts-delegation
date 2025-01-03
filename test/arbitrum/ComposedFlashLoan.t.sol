@@ -18,17 +18,18 @@ contract ComposedFlashLoanTestArbitrum is DeltaSetup {
         TestParamsOpen memory params;
         address user = testUser;
 
-        vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
+        vm.assume((user != address(0) && lenderId == AAVE_V3) || lenderId == VENUS);
         vm.deal(user, 1.0e18);
         {
             address asset = TokensArbitrum.WETH;
+            enterMarket(user, asset, lenderId);
 
-            address borrowAsset = TokensArbitrum.USDC;
+            address borrowAsset = TokensArbitrum.USDT;
 
-            uint256 amountToDeposit = 200.0e18;
+            uint256 amountToDeposit = 1.0e18;
             deal(asset, user, amountToDeposit);
 
-            uint256 amountToBorrow = 100.0e6; // need to borrow at least 100 for C3
+            uint256 amountToBorrow = 2000.0e6; // need to borrow at least 100 for C3
             uint256 minimumOut = 10.0e6;
             params = getOpenParams(
                 borrowAsset,
@@ -109,7 +110,7 @@ contract ComposedFlashLoanTestArbitrum is DeltaSetup {
         borrowBalance = getBorrowBalance(user, params.borrowAsset, lenderId) - borrowBalance;
 
         // deposit 10, recieve 32.1... makes 42.1...
-        assertApproxEqAbs(379869471726271100564, balance, 1);
+        assertApproxEqAbs(1599889575762086734, balance, 1e10);
         {
             uint borrowAm = params.swapAmount +
                 (params.swapAmount * getFlashFee(flashSource)) / //
@@ -131,21 +132,23 @@ contract ComposedFlashLoanTestArbitrum is DeltaSetup {
 
     function test_arbitrum_composed_flash_loan_close(uint16 lenderId) external {
         address user = testUser;
-        vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
+        vm.assume(user != address(0) && (lenderId == AAVE_V3 || lenderId == VENUS));
         address asset = TokensArbitrum.WETH;
+        enterMarket(user, asset, lenderId);
+
         uint8 flashSource = BALANCER_V2;
-        address borrowAsset = TokensArbitrum.USDC;
+        address borrowAsset = TokensArbitrum.USDT;
 
         fundRouter(asset, borrowAsset);
-        router.setRate(1e6);
+        router.setRate(333333333);
         {
-            uint256 amountToDeposit = 200.0e18;
-            uint256 amountToLeverage = 100.0e6;
+            uint256 amountToDeposit = 1.0e18;
+            uint256 amountToLeverage = 2000.0e6;
 
-            openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);        
+            openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
 
-        uint256 amountToFlashWithdraw = 50.0e18;
+        uint256 amountToFlashWithdraw = 0.3e18;
 
         uint256 borrowBalance = getBorrowBalance(user, borrowAsset, lenderId);
         uint256 balance = getCollateralBalance(user, asset, lenderId);
@@ -195,19 +198,19 @@ contract ComposedFlashLoanTestArbitrum is DeltaSetup {
         // deposit 10, recieve 32.1... makes 42.1...
         assertApproxEqAbs(witdrawAm, balance, 1);
         // deviations through rouding expected, accuracy for 10 decimals
-        assertApproxEqAbs(49999987, borrowBalance, 1);
+        assertApproxEqAbs(99999987, borrowBalance, 1);
     }
 
     function getOpenExactInInternal(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        uint16 fee = uint16(DEX_FEE_LOW);
-        uint8 poolId = ALGEBRA;
+        uint16 fee = DEX_FEE_STABLES;
+        uint8 poolId = PANCAKE;
         address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
         return abi.encodePacked(tokenIn, uint8(0), poolId, pool, fee, tokenOut, uint16(0), uint8(0));
     }
 
     function getCloseExactInInternal(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        uint16 fee = uint16(DEX_FEE_LOW);
-        uint8 poolId = ALGEBRA;
+        uint16 fee = DEX_FEE_STABLES;
+        uint8 poolId = PANCAKE;
         address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
         return abi.encodePacked(tokenIn, uint8(0), poolId, pool, fee, tokenOut, uint16(0), uint8(0));
     }

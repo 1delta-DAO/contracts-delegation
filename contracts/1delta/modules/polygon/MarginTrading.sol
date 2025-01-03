@@ -801,7 +801,7 @@ abstract contract MarginTrading is BaseSwapper {
             maxAmount := shr(128, maxAmount)
             // skim address from calldatas
             pathLength := sub(pathLength, 52)
-            // assume a multihop if the calldata is longer than 64
+            // assume a multihop if the calldata is longer than 67
             multihop := gt(pathLength, MAX_SINGLE_LENGTH_UNOSWAP)
             // assign amount received
             switch iszero(amount0)

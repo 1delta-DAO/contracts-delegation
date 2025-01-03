@@ -22,7 +22,6 @@ contract CurveTestPolygon is DeltaSetup {
             assetOut,
             CURVE,
             1,
-            APPROVE_FLAG,
             getCurveIndexes(assetIn, assetOut) //
         );
         bytes memory dataFusion = getSpotExactInSingleGen2(
@@ -72,7 +71,6 @@ contract CurveTestPolygon is DeltaSetup {
             assetOut,
             CURVE_NG,
             0,
-            APPROVE_FLAG,
             getCurveNGIndexes(assetIn) //
         );
 
@@ -191,7 +189,6 @@ contract CurveTestPolygon is DeltaSetup {
             assetOut,
             CURVE_META,
             0,
-            APPROVE_FLAG,
             dataSwapFirst //
         );
 
@@ -232,7 +229,6 @@ contract CurveTestPolygon is DeltaSetup {
             assetOut,
             CURVE,
             2,
-            APPROVE_FLAG,
             dataSwapFirst //
         );
 
@@ -309,11 +305,10 @@ contract CurveTestPolygon is DeltaSetup {
         address tokenOut,
         uint8 pId,
         uint8 selectorId,
-        uint8 preActionFlag,
         bytes memory data
     ) internal pure returns (bytes memory) {
         uint8 action = 0;
-        return abi.encodePacked(tokenIn, action, pId, data, selectorId, preActionFlag, tokenOut);
+        return abi.encodePacked(tokenIn, action, pId, data, selectorId, tokenOut);
     }
 
     function getSpotExactInSingleGenCurveNG(
@@ -342,11 +337,10 @@ contract CurveTestPolygon is DeltaSetup {
         address tokenIn, //
         address tokenOut,
         uint8 pId,
-        uint8 preActionFlag,
         bytes memory data
     ) internal pure returns (bytes memory) {
         uint8 action = 0;
-        return abi.encodePacked(tokenIn, action, pId, data, uint8(1), preActionFlag, tokenOut);
+        return abi.encodePacked(tokenIn, action, pId, data, uint8(1), tokenOut);
     }
 }
 
