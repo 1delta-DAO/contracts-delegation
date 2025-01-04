@@ -41,9 +41,6 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
     uint256 internal constant DODO_ID = 153;
     uint256 internal constant CURVE_NG_ID = 154;
 
-    // offset for receiver address for most DEX types (uniswap, curve etc.)
-    uint256 internal constant RECEIVER_OFFSET_UNOSWAP = 66;
-
     /**
      * Fund the first pool for self funded DEXs like Uni V2, GMX, LB, WooFi and Solidly V2 (dexId >= 100) 
      * Extracts and returns the first dexId of the path 
@@ -168,7 +165,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
         // uniswapV3 style
         if (dexId < UNISWAP_V3_MAX_ID) {
             assembly {
-                switch lt(pathLength, MAX_SINGLE_LENGTH_UNOSWAP) // maxLength = 67 for single path
+                switch lt(pathLength, MAX_SINGLE_LENGTH_UNOSWAP_HIGH) // maxLength = 67 for single path
                 case 1 { currentReceiver := receiver}
                 default {
                     dexId := and(calldataload(add(pathOffset, 34)), UINT8_MASK) // SKIP_LENGTH_UNOSWAP - 10
@@ -205,7 +202,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
         // iZi
         else if (dexId == IZI_ID) {
             assembly {
-                switch lt(pathLength, MAX_SINGLE_LENGTH_UNOSWAP) // same as for Uni V3 CL
+                switch lt(pathLength, MAX_SINGLE_LENGTH_UNOSWAP_HIGH) // same as for Uni V3 CL
                 case 1 { currentReceiver := receiver}
                 default {
                     dexId := and(calldataload(add(pathOffset, 34)), UINT8_MASK) // SKIP_LENGTH_UNOSWAP - 10
@@ -244,7 +241,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
             // Curve standard pool
             if (dexId == CURVE_V1_STANDARD_ID) {
                 assembly {
-                    switch lt(pathLength, 69) // lengthFull = 20+1+1+20+1+1+20+3 = 67
+                    switch lt(pathLength, MAX_SINGLE_LENGTH_CURVE_HIGH) // lengthFull = 20+1+1+20+1+1+20+3 = 67
                     case 1 { currentReceiver := receiver}
                     default {
                         dexId := and(calldataload(add(pathOffset, 35)), UINT8_MASK) // SKIP_LENGTH_UNOSWAP - 10
@@ -255,7 +252,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
                                     calldataload(
                                         add(
                                             pathOffset,
-                                            MAX_SINGLE_LENGTH_CURVE // 20 + 2 + 20 + 2 + 20 + 2 [poolAddress starts here]
+                                            RECEIVER_OFFSET_CURVE // 20 + 2 + 20 + 2 + 20 + 2 [poolAddress starts here]
                                         )
                                     ) // poolAddress
                                 )
@@ -281,7 +278,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
         // uniswapV2 style
         else if (dexId < UNISWAP_V2_MAX_ID) {
             assembly {
-                switch lt(pathLength, MAX_SINGLE_LENGTH_UNOSWAP)
+                switch lt(pathLength, MAX_SINGLE_LENGTH_UNOSWAP_HIGH)
                 case 1 { currentReceiver := receiver}
                 default {
                     dexId := and(calldataload(add(pathOffset, 34)), UINT8_MASK) // SKIP_LENGTH_UNOSWAP - 10
@@ -322,7 +319,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
             address tokenOut;
             address pool;
             assembly {
-                switch lt(pathLength, 65) // same as V2
+                switch lt(pathLength, MAX_SINGLE_LENGTH_ADDRESS_HIGH) // 
                 case 1 { currentReceiver := receiver}
                 default {
                     dexId := and(calldataload(add(pathOffset, 32)), UINT8_MASK)
@@ -333,7 +330,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
                                 calldataload(
                                     add(
                                         pathOffset,
-                                        64 // 20 + 2 + 20 + 20 + 2 [poolAddress starts here]
+                                        RECEIVER_OFFSET_SINGLE_LENGTH_ADDRESS // 20 + 2 + 20 + 20 + 2 [poolAddress starts here]
                                     )
                                 ) // poolAddress
                             )
@@ -354,8 +351,8 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
                 currentReceiver
             );
             assembly {
-                pathOffset := add(pathOffset, 42)
-                pathLength := sub(pathLength, 42)
+                pathOffset := add(pathOffset, SKIP_LENGTH_ADDRESS)
+                pathLength := sub(pathLength, SKIP_LENGTH_ADDRESS)
             }
         }
         // Moe LB
@@ -364,7 +361,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
             address tokenOut;
             address pair;
             assembly {
-                switch lt(pathLength, 65) // same as V2
+                switch lt(pathLength, MAX_SINGLE_LENGTH_ADDRESS_HIGH) // 
                 case 1 { currentReceiver := receiver}
                 default {
                     dexId := and(calldataload(add(pathOffset, 32)), UINT8_MASK)
@@ -375,7 +372,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
                                 calldataload(
                                     add(
                                         pathOffset,
-                                        64 // 20 + 2 + 20 + 20 + 2 [poolAddress starts here]
+                                        RECEIVER_OFFSET_SINGLE_LENGTH_ADDRESS // 20 + 2 + 20 + 20 + 2 [poolAddress starts here]
                                     )
                                 ) // poolAddress
                             )
@@ -394,14 +391,14 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
                 currentReceiver
             );
             assembly {
-                pathOffset := add(pathOffset, 42)
-                pathLength := sub(pathLength, 42)
+                pathOffset := add(pathOffset, SKIP_LENGTH_ADDRESS)
+                pathLength := sub(pathLength, SKIP_LENGTH_ADDRESS)
             }
         }
         // Curve NG
         else if (dexId == CURVE_NG_ID) {
             assembly {
-                switch lt(pathLength, 68) // 
+                switch lt(pathLength, MAX_SINGLE_LENGTH_CURVE_HIGH) // 
                 case 1 { currentReceiver := receiver}
                 default {
                     dexId := and(calldataload(add(pathOffset, 35)), UINT8_MASK)
@@ -412,7 +409,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
                                 calldataload(
                                     add(
                                         pathOffset,
-                                        MAX_SINGLE_LENGTH_CURVE_NG // 20 + 2 + 20 + 2 + 20 + 2 [poolAddress starts here]
+                                        RECEIVER_OFFSET_CURVE // 20 + 2 + 20 + 2 + 20 + 2 [poolAddress starts here]
                                     )
                                 ) // poolAddress
                             )
@@ -424,8 +421,8 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
             }
             amountIn = _swapCurveNG(pathOffset, amountIn, currentReceiver);
             assembly {
-                pathOffset := add(pathOffset, SKIP_LENGTH_CURVE_NG)
-                pathLength := sub(pathLength, SKIP_LENGTH_CURVE_NG)
+                pathOffset := add(pathOffset, SKIP_LENGTH_CURVE)
+                pathLength := sub(pathLength, SKIP_LENGTH_CURVE)
             }
         }
         // GMX
@@ -434,7 +431,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
             address tokenOut;
             address vault;
             assembly {
-                switch lt(pathLength, 65) // same as V2
+                switch lt(pathLength, MAX_SINGLE_LENGTH_ADDRESS_HIGH) // 
                 case 1 { currentReceiver := receiver}
                 default {
                     dexId := and(calldataload(add(pathOffset, 32)), UINT8_MASK)
@@ -445,7 +442,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
                                 calldataload(
                                     add(
                                         pathOffset,
-                                        64 // 20 + 2 + 20 + 20 + 2 [poolAddress starts here]
+                                        RECEIVER_OFFSET_SINGLE_LENGTH_ADDRESS // 20 + 2 + 20 + 20 + 2 [poolAddress starts here]
                                     )
                                 ) // poolAddress
                             )
@@ -465,8 +462,8 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
                 currentReceiver
             );
             assembly {
-                pathOffset := add(pathOffset, 42)
-                pathLength := sub(pathLength, 42)
+                pathOffset := add(pathOffset, SKIP_LENGTH_ADDRESS)
+                pathLength := sub(pathLength, SKIP_LENGTH_ADDRESS)
             }
         } 
         // DODO V2
@@ -474,7 +471,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
             address pair;
             uint8 sellQuote;
             assembly {
-                switch lt(pathLength, 66) // same as V2
+                switch lt(pathLength, MAX_SINGLE_LENGTH_ADDRESS_AND_PARAM_HIGH) // same as V2
                 case 1 { currentReceiver := receiver}
                 default {
                     dexId := and(calldataload(add(pathOffset, 33)), UINT8_MASK)
@@ -485,7 +482,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
                                 calldataload(
                                     add(
                                         pathOffset,
-                                        65 // 20 + 2 + 20 + 1 + 20 + 2 [poolAddress starts here]
+                                        RECEIVER_OFFSET_SINGLE_LENGTH_ADDRESS_AND_PARAM // 20 + 2 + 20 + 1 + 20 + 2 [poolAddress starts here]
                                     )
                                 ) // poolAddress
                             )
@@ -504,8 +501,8 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
                 currentReceiver
             );
             assembly {
-                pathOffset := add(pathOffset, 43)
-                pathLength := sub(pathLength, 43)
+                pathOffset := add(pathOffset, SKIP_LENGTH_ADDRESS_AND_PARAM)
+                pathLength := sub(pathLength, SKIP_LENGTH_ADDRESS_AND_PARAM)
             }
         }
          else {
@@ -546,7 +543,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
     ) internal returns (uint256 amountOut) {
         address currentReceiver;
         assembly {
-            switch lt(pathLength, MAX_SINGLE_LENGTH_UNOSWAP)
+            switch lt(pathLength, MAX_SINGLE_LENGTH_UNOSWAP_HIGH)
             case 1 { currentReceiver := receiver}
             default {
                 dexId := and(calldataload(add(pathOffset, 34)), UINT8_MASK) // SKIP_LENGTH_UNOSWAP - 10

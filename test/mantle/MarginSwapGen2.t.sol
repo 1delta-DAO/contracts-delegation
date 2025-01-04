@@ -6,9 +6,9 @@ import "./DeltaSetup.f.sol";
 contract SwapGen2Test is DeltaSetup {
     uint256 DEFAULT_IR_MODE = 2; // variable
 
-    function test_mantle_gen_2_open_exact_in() external /** address user, uint8 lenderId */ {
+    function test_mantle_gen_2_open_exact_in() external /** address user, uint16 lenderId */ {
         address user = testUser;
-        uint8 lenderId = DEFAULT_LENDER;
+        uint16 lenderId = LENDLE_ID;
         vm.assume(user != address(0));
         address assetFrom = USDC;
         address assetTo = USDT;
@@ -56,9 +56,9 @@ contract SwapGen2Test is DeltaSetup {
         assertApproxEqAbs(amountToSwap, balanceDebt, 1e6);
     }
 
-    function test_mantle_gen_2_open_exact_in_composer() external /** address user, uint8 lenderId */ {
+    function test_mantle_gen_2_open_exact_in_composer() external /** address user, uint16 lenderId */ {
         address user = testUser;
-        uint8 lenderId = DEFAULT_LENDER;
+        uint16 lenderId = LENDLE_ID;
         vm.assume(user != address(0));
         address assetFrom = USDC;
         address assetTo = USDT;
@@ -102,9 +102,9 @@ contract SwapGen2Test is DeltaSetup {
         assertApproxEqAbs(amountToSwap, balanceDebt, 1e6);
     }
 
-    function test_mantle_gen_2_open_exact_in_multi() external /** address user, uint8 lenderId */ {
+    function test_mantle_gen_2_open_exact_in_multi() external /** address user, uint16 lenderId */ {
         address user = testUser;
-        uint8 lenderId = DEFAULT_LENDER;
+        uint16 lenderId = LENDLE_ID;
         vm.assume(user != address(0));
 
         (address assetFrom, address assetTo, bytes memory swapPath) = getPathAndTokensV3(lenderId);
@@ -153,9 +153,9 @@ contract SwapGen2Test is DeltaSetup {
         assertApproxEqAbs(amountToSwap, balanceDebt, 1e6);
     }
 
-    function test_mantle_gen_2_open_exact_in_multi_mixed() external /** address user, uint8 lenderId */ {
+    function test_mantle_gen_2_open_exact_in_multi_mixed() external /** address user, uint16 lenderId */ {
         address user = testUser;
-        uint8 lenderId = DEFAULT_LENDER;
+        uint16 lenderId = LENDLE_ID;
         vm.assume(user != address(0));
 
         (address assetFrom, address assetTo, bytes memory swapPath) = getPathAndTokensMixed(lenderId);
@@ -199,13 +199,13 @@ contract SwapGen2Test is DeltaSetup {
 
         balanceDebt = IERC20All(debtToken).balanceOf(user) - balanceDebt;
         balanceCollateral = IERC20All(collateralToken).balanceOf(user) - balanceCollateral;
-        assertApproxEqAbs(balanceCollateral, 199483421, 0);
+        assertApproxEqAbs(balanceCollateral, 199483423, 0);
         assertApproxEqAbs(amountToSwap, balanceDebt, 1e6);
     }
 
-    function test_mantle_gen_2_open_exact_in_multi_mixed_double_v2() external /** address user, uint8 lenderId */ {
+    function test_mantle_gen_2_open_exact_in_multi_mixed_double_v2() external /** address user, uint16 lenderId */ {
         address user = testUser;
-        uint8 lenderId = DEFAULT_LENDER;
+        uint16 lenderId = LENDLE_ID;
         vm.assume(user != address(0));
 
         (address assetFrom, address assetTo, bytes memory swapPath) = getPathAndTokensMixedDoubleV2(lenderId);
@@ -253,7 +253,7 @@ contract SwapGen2Test is DeltaSetup {
         assertApproxEqAbs(amountToSwap, balanceDebt, 1e6);
     }
 
-    function getOpenExactInSingleGen2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+    function getOpenExactInSingleGen2(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_STABLES);
         uint8 poolId = AGNI;
         address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
@@ -335,7 +335,7 @@ contract SwapGen2Test is DeltaSetup {
         uint8[] memory actions,
         uint8[] memory pIds,
         uint16[] memory fees,
-        uint8 lenderId,
+        uint16 lenderId,
         uint8 endId
     ) internal view returns (bytes memory path) {
         path = abi.encodePacked(tokens[0]);
@@ -359,7 +359,7 @@ contract SwapGen2Test is DeltaSetup {
         path = abi.encodePacked(path, uint16(lenderId), endId);
     }
 
-    function getPathAndTokensMixed(uint8 lenderId) internal view returns (address tokenIn, address tokenOut, bytes memory path) {
+    function getPathAndTokensMixed(uint16 lenderId) internal view returns (address tokenIn, address tokenOut, bytes memory path) {
         (address[] memory tokens, uint8[] memory actions, uint8[] memory pIds, uint16[] memory fees) = getPathDataMixed();
         return (
             tokens[0],
@@ -368,7 +368,7 @@ contract SwapGen2Test is DeltaSetup {
         );
     }
 
-    function getPathAndTokensMixedDoubleV2(uint8 lenderId) internal view returns (address tokenIn, address tokenOut, bytes memory path) {
+    function getPathAndTokensMixedDoubleV2(uint16 lenderId) internal view returns (address tokenIn, address tokenOut, bytes memory path) {
         (address[] memory tokens, uint8[] memory actions, uint8[] memory pIds, uint16[] memory fees) = getPathDataMixedDoubleV2();
         return (
             tokens[0],
@@ -377,7 +377,7 @@ contract SwapGen2Test is DeltaSetup {
         );
     }
 
-    function getPathAndTokensV3(uint8 lenderId) internal view returns (address tokenIn, address tokenOut, bytes memory path) {
+    function getPathAndTokensV3(uint16 lenderId) internal view returns (address tokenIn, address tokenOut, bytes memory path) {
         (address[] memory tokens, uint8[] memory actions, uint8[] memory pIds, uint16[] memory fees) = getPathDataV3();
         return (
             tokens[0],

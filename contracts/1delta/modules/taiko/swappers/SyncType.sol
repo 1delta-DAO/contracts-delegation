@@ -16,9 +16,6 @@ abstract contract SyncSwapper is CurveSwapper {
     /// @dev selector for swap(bytes,address,address,bytes)
     bytes32 internal constant SYNCSWAP_SELECTOR = 0x7132bb7f00000000000000000000000000000000000000000000000000000000;
 
-    uint256 internal constant MAX_SINGLE_LENGTH_SYNCSWAP = 64;
-    uint256 internal constant SKIP_LENGTH_SYNCSWAP = 42; // = 20+1+1+20
-
     constructor() {}
 
     /**

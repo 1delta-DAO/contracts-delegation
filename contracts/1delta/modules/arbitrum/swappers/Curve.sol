@@ -37,22 +37,19 @@ abstract contract CurveSwapper is UniTypeSwapper {
     bytes32 private constant EXCHANGE_RECEIVED_INT = 0xddc1f59d00000000000000000000000000000000000000000000000000000000;
 
     /// @notice Curve params lengths
-    uint256 internal constant SKIP_LENGTH_CURVE = 46; // = 20+1+1+20+1+1+1
-    uint256 internal constant MAX_SINGLE_LENGTH_CURVE = 68; // = SKIP_LENGTH_CURVE+20+1+1
-
-    /// @notice Curve NG param lengths match Curve
-    uint256 internal constant SKIP_LENGTH_CURVE_NG = SKIP_LENGTH_CURVE;
-    uint256 internal constant MAX_SINGLE_LENGTH_CURVE_NG = MAX_SINGLE_LENGTH_CURVE;
+    uint256 internal constant SKIP_LENGTH_CURVE = 45; // = 20+1+1+20+1+1+1
+    uint256 internal constant RECEIVER_OFFSET_CURVE = 67; // = SKIP_LENGTH_CURVE+20+2
+    uint256 internal constant MAX_SINGLE_LENGTH_CURVE = 68; // = SKIP_LENGTH_CURVE+20+1+2
+    uint256 internal constant MAX_SINGLE_LENGTH_CURVE_HIGH = 69; // = SKIP_LENGTH_CURVE+20+1+2+1
 
     constructor() {}
 
     /**
      * Swaps using a standard curve pool
      * Data is supposed to be packed as follows
-     * tokenIn | actionId | dexId | pool | i | j | sm | a | tokenOut
-     * sm is the selecor,
+     * tokenIn | actionId | dexId | pool | i | j | sm | tokenOut
+     * sm is the selector,
      * i,j are the swap indexes for the pool
-     * a is the approval flag (also uint8)
      */
     function _swapCurveGeneral(
         uint256 pathOffset,
@@ -259,7 +256,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
      * Swaps using a NG pool that allows for pre-funded swaps
      * Data is supposed to be packed as follows
      * tokenIn | actionId | dexId | pool | sm | i | j | tokenOut
-     * sm is the selecor,
+     * sm is the selector,
      * i,j are the swap indexes for the pool
      */
     function _swapCurveNG(
@@ -311,7 +308,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
      * Swaps using a NG pool that allows for pre-funded swaps
      * Data is supposed to be packed as follows
      * tokenIn | actionId | dexId | pool | sm | i | j | tokenOut
-     * sm is the selecor,
+     * sm is the selector,
      * i,j are the swap indexes for the pool
      */
     function _swapCurveNGExactOut(

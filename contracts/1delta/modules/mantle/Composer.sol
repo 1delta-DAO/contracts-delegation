@@ -275,7 +275,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                                 ),
                                 UINT16_MASK
                             )
-                            switch lt(lenderId_tokenIn, 50)
+                            switch lt(lenderId_tokenIn, MAX_ID_AAVE_V2)
                             // Aave types
                             case 1 {
                                 mstore(0x0, or(shl(240, lenderId_tokenIn), shr(96, calldataload(opdataOffset))))
@@ -296,7 +296,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                                 // temp will now become the var for comet ccy
                                 switch lenderId_tokenIn
                                 // Compound V3 USDe
-                                case 50 {
+                                case 2000 {
                                     cometPool := COMET_USDE
                                     temp := USDE
                                 }
@@ -415,7 +415,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                         if iszero(amountOut) {
                             // last 32 bytes
                             let lenderId := and(calldataload(sub(add(opdataLength, opdataOffset), 33)), UINT16_MASK)
-                            switch lt(lenderId, 50)
+                            switch lt(lenderId, MAX_ID_AAVE_V2)
                             case 1 {
                                 let tokenIn := calldataload(opdataOffset)
                                 let mode := and(UINT8_MASK, shr(88, tokenIn))
@@ -444,7 +444,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                             default {
                                 let cometPool
                                 switch lenderId
-                                case 50 {
+                                case 2000 {
                                     cometPool := COMET_USDE
                                 }
                                 // default: load comet from storage
@@ -678,7 +678,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                         case 0xffffffffffffffffffffffffffff {
                             let cometPool
                             switch lenderId
-                            case 50 {
+                            case 2000 {
                                 cometPool := COMET_USDE
                             }
                             // default: load comet from storage
@@ -720,7 +720,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                         // maximum uint112 has a special meaning
                         // for using the user collateral balance
                         if eq(amount, 0xffffffffffffffffffffffffffff) {
-                            switch lt(lenderId, 50)
+                            switch lt(lenderId, MAX_ID_AAVE_V2)
                             // get aave type user collateral balance
                             case 1 {
                                 // Slot for collateralTokens[target] is keccak256(target . collateralTokens.slot).
@@ -750,7 +750,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                                 let cometCcy
                                 switch lenderId
                                 // Compound V3 USDC.e
-                                case 50 {
+                                case 2000 {
                                     cometPool := COMET_USDE
                                     cometCcy := USDE
                                 }

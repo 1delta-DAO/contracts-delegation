@@ -393,41 +393,45 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
     }
 
     function getBorrowBalance(address user, address asset, uint16 lenderId) internal view returns (uint256) {
-        if (lenderId < 50) {
+        if (lenderId < MAX_AAVE_V2_ID) {
             return IERC20All(debtTokens[asset][lenderId]).balanceOf(user);
         } else {
-            if (lenderId == 50) return IComet(COMET_USDC).borrowBalanceOf(user);
-            else return IComet(COMET_USDT).borrowBalanceOf(user);
+            if (lenderId == COMPOUND_V3_USDCE) return IComet(COMET_USDC).borrowBalanceOf(user);
+            if (lenderId == COMPOUND_V3_USDT) return IComet(COMET_USDT).borrowBalanceOf(user);
         }
+        return 0;
     }
 
     function getCollateralBalance(address user, address asset, uint16 lenderId) internal view returns (uint256) {
-        if (lenderId < 50) {
+        if (lenderId < MAX_AAVE_V2_ID) {
             return IERC20All(collateralTokens[asset][lenderId]).balanceOf(user);
         } else {
-            if (lenderId == 50) return IComet(COMET_USDC).userCollateral(user, asset).balance;
-            else return IComet(COMET_USDT).userCollateral(user, asset).balance;
+            if (lenderId == COMPOUND_V3_USDCE) return IComet(COMET_USDC).userCollateral(user, asset).balance;
+            if (lenderId == COMPOUND_V3_USDT) return IComet(COMET_USDT).userCollateral(user, asset).balance;
         }
+        return 0;
     }
 
     function approveWithdrawal(address user, address asset, uint256 amount, uint16 lenderId) internal {
-        vm.prank(user);
-        if (lenderId < 50) {
+        vm.startPrank(user);
+        if (lenderId < MAX_AAVE_V2_ID) {
             IERC20All(collateralTokens[asset][lenderId]).approve(address(brokerProxyAddress), amount);
         } else {
-            if (lenderId == 50) IComet(COMET_USDC).allow(brokerProxyAddress, true);
-            if (lenderId == 51) IComet(COMET_USDT).allow(brokerProxyAddress, true);
+            if (lenderId == COMPOUND_V3_USDCE) IComet(COMET_USDC).allow(brokerProxyAddress, true);
+            if (lenderId == COMPOUND_V3_USDT) IComet(COMET_USDT).allow(brokerProxyAddress, true);
         }
+        vm.stopPrank();
     }
 
     function approveBorrowDelegation(address user, address asset, uint256 amount, uint16 lenderId) internal {
-        vm.prank(user);
-        if (lenderId < 50) {
+        vm.startPrank(user);
+        if (lenderId < MAX_AAVE_V2_ID) {
             IERC20All(debtTokens[asset][lenderId]).approveDelegation(address(brokerProxyAddress), amount);
         } else {
-            if (lenderId == 50) IComet(COMET_USDC).allow(brokerProxyAddress, true);
-            if (lenderId == 51) IComet(COMET_USDT).allow(brokerProxyAddress, true);
+            if (lenderId == COMPOUND_V3_USDCE) IComet(COMET_USDC).allow(brokerProxyAddress, true);
+            if (lenderId == COMPOUND_V3_USDT) IComet(COMET_USDT).allow(brokerProxyAddress, true);
         }
+        vm.stopPrank();
     }
 
     /** HELPER FUNCTIONS */
@@ -792,5 +796,9 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
             swapAmount,
             checkAmount
         );
+    }
+
+    function compoundUSDCEOrAave(uint16 lenderId) internal view returns (bool a) {
+        return lenderId == YLDR || lenderId == AAVE_V3 || lenderId == COMPOUND_V3_USDCE;
     }
 }

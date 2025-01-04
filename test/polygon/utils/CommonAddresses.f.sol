@@ -36,10 +36,17 @@ contract AddressesPolygon {
 
     /** DEFAULTS */
 
-    uint8 DEFAULT_LENDER = 1;
-    uint8 AAVE_V3 = 0;
-    uint8 YLDR = 1;
-    uint8 COMPOUND_V3_USDC = 10;
+    uint16 DEFAULT_LENDER = 1;
+    uint16 AAVE_V3 = 0;
+    uint16 AAVE_V2 = 1000;
+    uint16 YLDR = 900;
+    uint16 COMPOUND_V3_USDCE = 2000;
+    
+    uint16 MAX_AAVE_V2_ID = 2000;
+    uint16 MAX_ID_COMPOUND_V3 = 3000;
+    uint16 COMPOUND_V3_USDT = 2001;
+    
+
     uint8 BALANCER_V2 = 0xff;
     uint8 BALANCER_V2_DEXID = 50;
 

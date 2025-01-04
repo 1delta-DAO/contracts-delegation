@@ -7,7 +7,7 @@ contract SwapGen2Test is DeltaSetup {
     uint256 DEFAULT_IR_MODE = 2; // variable
     address internal LEND = 0x25356aeca4210eF7553140edb9b8026089E49396;
 
-    function test_mantle_gen_2_spot_exact_in() external /** address user, uint8 lenderId */ {
+    function test_mantle_gen_2_spot_exact_in() external {
         address user = testUser;
         vm.assume(user != address(0));
         address assetFrom = USDC;
@@ -44,7 +44,7 @@ contract SwapGen2Test is DeltaSetup {
         assertApproxEqAbs(amountToSwap, balanceOut, 1e6);
     }
 
-    function test_mantle_gen_2_spot_exact_in_v2_fusion_pure() external /** address user, uint8 lenderId */ {
+    function test_mantle_gen_2_spot_exact_in_v2_fusion_pure() external {
         address user = testUser;
         vm.assume(user != address(0));
         address assetFrom = WMNT;
@@ -81,7 +81,7 @@ contract SwapGen2Test is DeltaSetup {
         assertApproxEqAbs(178522773, balanceOut, 1e6);
     }
 
-    function test_mantle_gen_2_spot_exact_out() external /** address user, uint8 lenderId */ {
+    function test_mantle_gen_2_spot_exact_out() external {
         address user = testUser;
         vm.assume(user != address(0));
         address assetFrom = USDC;
@@ -118,7 +118,7 @@ contract SwapGen2Test is DeltaSetup {
         assertApproxEqAbs(amountToReceive, balanceOut, 1e6);
     }
 
-    function test_mantle_gen_2_spot_exact_out_v2() external /** address user, uint8 lenderId */ {
+    function test_mantle_gen_2_spot_exact_out_v2() external {
         address user = testUser;
         vm.assume(user != address(0));
         address assetFrom = USDC;
@@ -155,7 +155,7 @@ contract SwapGen2Test is DeltaSetup {
         assertApproxEqAbs(amountToReceive, balanceOut, 1e6);
     }
 
-    function test_mantle_gen_2_spot_exact_in_solidly() external /** address user, uint8 lenderId */ {
+    function test_mantle_gen_2_spot_exact_in_solidly() external {
         address user = testUser;
         vm.assume(user != address(0));
         address assetFrom = USDC;
@@ -193,7 +193,7 @@ contract SwapGen2Test is DeltaSetup {
         assertApproxEqAbs(1976074699820208374246, balanceOut, 1e6);
     }
 
-    function test_mantle_gen_2_spot_exact_out_solidly() external /** address user, uint8 lenderId */ {
+    function test_mantle_gen_2_spot_exact_out_solidly() external {
         address user = testUser;
         vm.assume(user != address(0));
         address assetFrom = USDC;
@@ -230,7 +230,7 @@ contract SwapGen2Test is DeltaSetup {
         assertApproxEqAbs(amountToReceive, balanceOut, 1e6);
     }
 
-    function test_mantle_gen_2_spot_exact_out_multi() external /** address user, uint8 lenderId */ {
+    function test_mantle_gen_2_spot_exact_out_multi() external {
         address user = testUser;
         vm.assume(user != address(0));
 
@@ -266,7 +266,7 @@ contract SwapGen2Test is DeltaSetup {
         assertApproxEqAbs(amountToReceive, balanceOut, 1e6);
     }
 
-    function test_mantle_gen_2_spot_exact_out_multi_mixed() external /** address user, uint8 lenderId */ {
+    function test_mantle_gen_2_spot_exact_out_multi_mixed() external {
         address user = testUser;
         vm.assume(user != address(0));
 
@@ -302,7 +302,7 @@ contract SwapGen2Test is DeltaSetup {
         assertApproxEqAbs(amountToReceive, balanceOut, 1e6);
     }
 
-    function test_mantle_gen_2_spot_exact_in_multi() external /** address user, uint8 lenderId */ {
+    function test_mantle_gen_2_spot_exact_in_multi() external {
         address user = testUser;
         vm.assume(user != address(0));
 
@@ -341,7 +341,7 @@ contract SwapGen2Test is DeltaSetup {
         assertApproxEqAbs(1993355, balanceOut, 1);
     }
 
-    function test_mantle_gen_2_spot_exact_in_multi_mixed() external /** address user, uint8 lenderId */ {
+    function test_mantle_gen_2_spot_exact_in_multi_mixed() external {
         address user = testUser;
         vm.assume(user != address(0));
 
@@ -380,7 +380,7 @@ contract SwapGen2Test is DeltaSetup {
         assertApproxEqAbs(1990518, balanceOut, 1);
     }
 
-    function test_mantle_gen_2_spot_exact_in_multi_mixed_exotic() external /** address user, uint8 lenderId */ {
+    function test_mantle_gen_2_spot_exact_in_multi_mixed_exotic() external {
         address user = testUser;
         vm.assume(user != address(0));
 
@@ -416,10 +416,10 @@ contract SwapGen2Test is DeltaSetup {
         balanceIn = balanceIn - IERC20All(assetFrom).balanceOf(user);
         assertApproxEqAbs(balanceIn, amountToSwap, 0);
         // swaps 1 USDT for 0.98 USDT
-        assertApproxEqAbs(986007, balanceOut, 1);
+        assertApproxEqAbs(986191, balanceOut, 1);
     }
 
-    function test_mantle_gen_2_spot_exact_in_V2() external /** address user, uint8 lenderId */ {
+    function test_mantle_gen_2_spot_exact_in_V2() external {
         address user = testUser;
         vm.assume(user != address(0));
         address assetFrom = USDC;
@@ -456,7 +456,7 @@ contract SwapGen2Test is DeltaSetup {
         assertApproxEqAbs(198751420, balanceOut, 1);
     }
 
-    function test_mantle_gen_2_spot_exact_in_V2_all() external /** address user, uint8 lenderId */ {
+    function test_mantle_gen_2_spot_exact_in_V2_all() external {
         address user = testUser;
         vm.assume(user != address(0));
         address assetFrom = USDC;
@@ -644,7 +644,7 @@ contract SwapGen2Test is DeltaSetup {
         tokens[2] = WMNT;
         tokens[3] = WETH;
         tokens[4] = USDT;
-        pIds[0] = STRATUM_USD;
+        pIds[0] = AGNI;
         pIds[1] = KTX;
         pIds[2] = MERCHANT_MOE;
         pIds[3] = MERCHANT_MOE;
@@ -652,7 +652,7 @@ contract SwapGen2Test is DeltaSetup {
         actions[1] = 0;
         actions[2] = 0;
         actions[3] = 0;
-        fees[0] = 0;
+        fees[0] = 100;
         fees[1] = 0;
         fees[2] = 500;
         fees[3] = 500;

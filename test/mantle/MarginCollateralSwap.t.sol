@@ -6,9 +6,10 @@ import "./DeltaSetup.f.sol";
 contract MarginCollateralSwapTest is DeltaSetup {
     uint256 DEFAULT_IR_MODE = 2; // variable
 
-    function test_margin_mantle_collateral_exact_in(uint16 lenderId) external /** address user, uint16 lenderId */ {
+    function test_margin_mantle_collateral_exact_in(uint8 lenderIndex) external {
         address user = testUser;
-        vm.assume(user != address(0) && lenderId < 2);
+        vm.assume(user != address(0) && validLenderIndex(lenderIndex));
+        uint16 lenderId = getLenderByIndex(lenderIndex);
         address asset = USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
 
@@ -50,9 +51,10 @@ contract MarginCollateralSwapTest is DeltaSetup {
         assertApproxEqAbs(14984996, balance, 1);
     }
 
-    function test_margin_mantle_collateral_exact_in_multi(uint16 lenderId) external {
+    function test_margin_mantle_collateral_exact_in_multi(uint8 lenderIndex) external {
         address user = testUser;
-        vm.assume(user != address(0) && lenderId < 2);
+        vm.assume(user != address(0) && validLenderIndex(lenderIndex));
+        uint16 lenderId = getLenderByIndex(lenderIndex);
         address asset = USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
 
@@ -94,9 +96,10 @@ contract MarginCollateralSwapTest is DeltaSetup {
         assertApproxEqAbs(14945822, balance, 1);
     }
 
-    function test_margin_mantle_collateral_exact_out(uint16 lenderId) external {
+    function test_margin_mantle_collateral_exact_out(uint8 lenderIndex) external {
         address user = testUser;
-        vm.assume(user != address(0) && lenderId < 2);
+        vm.assume(user != address(0) && validLenderIndex(lenderIndex));
+        uint16 lenderId = getLenderByIndex(lenderIndex);
         address asset = USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
 
@@ -138,9 +141,10 @@ contract MarginCollateralSwapTest is DeltaSetup {
         assertApproxEqAbs(amountOut, balance, 1);
     }
 
-    function test_margin_mantle_collateral_exact_out_multi(uint16 lenderId) external {
+    function test_margin_mantle_collateral_exact_out_multi(uint8 lenderIndex) external {
         address user = testUser;
-        vm.assume(user != address(0) && lenderId < 2);
+        vm.assume(user != address(0) && validLenderIndex(lenderIndex));
+        uint16 lenderId = getLenderByIndex(lenderIndex);
         address asset = USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
 
@@ -182,9 +186,10 @@ contract MarginCollateralSwapTest is DeltaSetup {
         assertApproxEqAbs(amountOut, balance, 1);
     }
 
-    function test_margin_mantle_collateral_all_in(uint16 lenderId) external {
+    function test_margin_mantle_collateral_all_in(uint8 lenderIndex) external {
         address user = testUser;
-        vm.assume(user != address(0) && lenderId < 2);
+        vm.assume(user != address(0) && validLenderIndex(lenderIndex));
+        uint16 lenderId = getLenderByIndex(lenderIndex);
         address asset = USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
 
@@ -231,9 +236,10 @@ contract MarginCollateralSwapTest is DeltaSetup {
 
     /** TEST FOR V2 CALLBACKS */
 
-    function test_margin_mantle_collateral_exact_in_v2(uint16 lenderId) external /** address user, uint16 lenderId */ {
+    function test_margin_mantle_collateral_exact_in_v2(uint8 lenderIndex) external {
         address user = testUser;
-        vm.assume(user != address(0) && lenderId < 2);
+        vm.assume(user != address(0) && validLenderIndex(lenderIndex));
+        uint16 lenderId = getLenderByIndex(lenderIndex);
         address asset = USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
 
@@ -275,9 +281,10 @@ contract MarginCollateralSwapTest is DeltaSetup {
         assertApproxEqAbs(14909728, balance, 1);
     }
 
-    function test_margin_mantle_collateral_exact_in_multi_v2(uint16 lenderId) external {
+    function test_margin_mantle_collateral_exact_in_multi_v2(uint8 lenderIndex) external {
         address user = testUser;
-        vm.assume(user != address(0) && lenderId < 2);
+        vm.assume(user != address(0) && validLenderIndex(lenderIndex));
+        uint16 lenderId = getLenderByIndex(lenderIndex);
         address asset = USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
 
@@ -319,9 +326,10 @@ contract MarginCollateralSwapTest is DeltaSetup {
         assertApproxEqAbs(14884120, balance, 1);
     }
 
-    function test_margin_mantle_collateral_exact_out_v2(uint16 lenderId) external {
+    function test_margin_mantle_collateral_exact_out_v2(uint8 lenderIndex) external {
         address user = testUser;
-        vm.assume(user != address(0) && lenderId < 2);
+        vm.assume(user != address(0) && validLenderIndex(lenderIndex));
+        uint16 lenderId = getLenderByIndex(lenderIndex);
         address asset = USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
 
@@ -363,9 +371,10 @@ contract MarginCollateralSwapTest is DeltaSetup {
         assertApproxEqAbs(amountOut, balance, 1);
     }
 
-    function test_margin_mantle_collateral_exact_out_multi_v2(uint16 lenderId) external {
+    function test_margin_mantle_collateral_exact_out_multi_v2(uint8 lenderIndex) external {
         address user = testUser;
-        vm.assume(user != address(0) && lenderId < 2);
+        vm.assume(user != address(0) && validLenderIndex(lenderIndex));
+        uint16 lenderId = getLenderByIndex(lenderIndex);
         address asset = USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
 
@@ -407,9 +416,10 @@ contract MarginCollateralSwapTest is DeltaSetup {
         assertApproxEqAbs(amountOut, balance, 1);
     }
 
-    function test_margin_mantle_collateral_all_in_v2(uint16 lenderId) external {
+    function test_margin_mantle_collateral_all_in_v2(uint8 lenderIndex) external {
         address user = testUser;
-        vm.assume(user != address(0) && lenderId < 2);
+        vm.assume(user != address(0) && validLenderIndex(lenderIndex));
+        uint16 lenderId = getLenderByIndex(lenderIndex);
         address asset = USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
 

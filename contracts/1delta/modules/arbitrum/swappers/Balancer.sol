@@ -22,8 +22,10 @@ abstract contract BalancerSwapper is ExoticSwapper {
     bytes32 private constant BALANCER_SWAP = 0x52bbbe2900000000000000000000000000000000000000000000000000000000;
 
     /// @dev Balancer parameter lengths
-    uint256 internal constant MAX_SINGLE_LENGTH_BALANCER_V2 = 76;
-    uint256 internal constant SKIP_LENGTH_BALANCER_V2 = 54; // = 20+1+32
+    uint256 internal constant SKIP_LENGTH_BALANCER_V2 = 54; // = 20+1+1+32
+    uint256 internal constant RECEIVER_OFFSET_BALANCER_V2 = 76;
+    uint256 internal constant MAX_SINGLE_LENGTH_BALANCER_V2 = 77;
+    uint256 internal constant MAX_SINGLE_LENGTH_BALANCER_V2_HIGH = 78;
 
     /** Call queryBatchSwap on the Balancer V2 vault.
      *  Should be avoided if possible as it executes (but reverts) state changes in the balancer vault

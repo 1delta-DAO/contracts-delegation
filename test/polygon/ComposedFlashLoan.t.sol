@@ -18,7 +18,7 @@ contract ComposedFlashLoanTestPolygon is DeltaSetup {
         TestParamsOpen memory params;
         address user = testUser;
 
-        vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
+        vm.assume(user != address(0) &&  compoundUSDCEOrAave(lenderId));
         vm.deal(user, 1.0e18);
         {
             address asset = WMATIC;
@@ -131,7 +131,7 @@ contract ComposedFlashLoanTestPolygon is DeltaSetup {
 
     function test_polygon_composed_flash_loan_close(uint16 lenderId) external {
         address user = testUser;
-        vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
+        vm.assume(user != address(0) &&  compoundUSDCEOrAave(lenderId));
         address asset = WMATIC;
         uint8 flashSource = BALANCER_V2;
         address borrowAsset = USDC;

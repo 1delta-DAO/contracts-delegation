@@ -18,6 +18,16 @@ interface IFactoryFeeGetter {
 }
 
 contract AddressesMantle {
+    // lenders
+    uint16 internal constant LENDLE_ID = 1000;
+    uint16 internal constant AURELIUS_ID = 1001;
+    uint16 internal constant COMPOUND_V3_USDE_ID = 2000;
+
+    uint16 internal constant MAX_AAVE_V3_ID =1000;
+    uint16 internal constant MAX_AAVE_V2_ID = 2000;
+    uint16 internal constant MAX_ID_COMPOUND_V3 = 3000;
+    uint16 internal constant COMPOUND_V3_USDT = 2001;
+
     // assets
 
     address internal WETH = 0xdEAddEaDdeadDEadDEADDEAddEADDEAddead1111;
@@ -130,10 +140,13 @@ contract AddressesMantle {
     uint16 internal BIN_STEP_LOWEST = 1;
     uint16 internal BIN_STEP_LOW = 10;
 
-
     address internal FBTC_WBTC_POOL = 0xD39DFbfBA9E7eccd813918FfbDa10B783EA3b3C6;
     address internal FBTC = 0xC96dE26018A54D51c097160568752c4E3BD6C364;
-    uint8 DODO = 153;
+    
+    
+    // DEX IDS
+
+    uint8 internal DODO = 153;
 
     uint8 internal AGNI = 1;
     uint8 internal FUSION_X = 0;
@@ -216,13 +229,5 @@ contract AddressesMantle {
 
     function getDebtSwapExactOutFlags() internal pure returns (uint8 flagStart, uint8 flagMiddle, uint8 flagEnd) {
         return (2, 0, 2);
-    }
-
-    /** we can use a pair struct to identify a functional path */
-    struct Pair {
-        address token0;
-        address token1;
-        uint24 fee;
-        uint8 dex;
     }
 }

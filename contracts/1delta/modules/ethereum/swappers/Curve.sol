@@ -50,7 +50,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
      * Swaps using a meta pool (i.e. a curve pool that has another one as underlying)
      * Data is supposed to be packed as follows
      * tokenIn | actionId | dexId | zapFactory | i | j | sm | a | metaPool | tokenOut
-     * sm is the selecor,
+     * sm is the selector,
      * i,j are the swap indexes for the meta pool
      * sp is the selector for for the regular pool
      * a is the approval flag (also uint8)
@@ -235,7 +235,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
      * Swaps using a standard curve pool
      * Data is supposed to be packed as follows
      * tokenIn | actionId | dexId | pool | i | j | sm | a | tokenOut
-     * sm is the selecor,
+     * sm is the selector,
      * i,j are the swap indexes for the pool
      * a is the approval flag (also uint8)
      */
@@ -409,7 +409,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
      * Swaps using a NG pool that allows for pre-funded swaps
      * Data is supposed to be packed as follows
      * tokenIn | actionId | dexId | pool | sm | i | j | tokenOut
-     * sm is the selecor,
+     * sm is the selector,
      * i,j are the swap indexes for the pool
      */
     function _swapCurveNG(
@@ -461,7 +461,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
      * Swaps using a NG pool that allows for pre-funded swaps
      * Data is supposed to be packed as follows
      * tokenIn | actionId | dexId | pool | sm | i | j | tokenOut
-     * sm is the selecor,
+     * sm is the selector,
      * i,j are the swap indexes for the pool
      */
     function _swapCurveNGExactOut(

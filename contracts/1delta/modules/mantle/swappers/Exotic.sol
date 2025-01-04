@@ -15,6 +15,21 @@ import {CurveSwapper} from "./Curve.sol";
  * @notice Typically includes DEXs that do not fall into a broader category
  */
 abstract contract ExoticSwapper is CurveSwapper {
+    /// @dev Maximum high path length of a dex that only has a pool address reference
+    uint256 internal constant RECEIVER_OFFSET_SINGLE_LENGTH_ADDRESS = 64;
+    uint256 internal constant MAX_SINGLE_LENGTH_ADDRESS = 65;
+    uint256 internal constant MAX_SINGLE_LENGTH_ADDRESS_HIGH = 66;
+    
+    /// @dev Length of a swap that only has a pool address reference
+    uint256 internal constant SKIP_LENGTH_ADDRESS = 42; // = 20+1+1+20
+
+    /// @dev Maximum high path length for pool address and param (u8)
+    uint256 internal constant RECEIVER_OFFSET_SINGLE_LENGTH_ADDRESS_AND_PARAM = 65;
+    uint256 internal constant MAX_SINGLE_LENGTH_ADDRESS_AND_PARAM = 66;
+    uint256 internal constant MAX_SINGLE_LENGTH_ADDRESS_AND_PARAM_HIGH = 67;
+    
+    /// @dev Length of a swap that only has a pool address an param (u8)
+    uint256 internal constant SKIP_LENGTH_ADDRESS_AND_PARAM = 43; // = 20+1+1+20
 
     /// @dev WooFi rebate receiver
     address internal constant REBATE_RECIPIENT = 0xC95eED7F6E8334611765F84CEb8ED6270F08907E;

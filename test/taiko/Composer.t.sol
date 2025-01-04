@@ -5,10 +5,10 @@ import "../../contracts/1delta/modules/shared/Commands.sol";
 import "./DeltaSetup.f.sol";
 
 contract ComposerTestTaiko is DeltaSetup {
-    uint8[] lenderIds = [HANA_ID, MERIDIAN_ID, TAKOTAKO_ID];
-    uint8[] extendedLenderIds = [HANA_ID, MERIDIAN_ID, TAKOTAKO_ID, AVALON_ID];
+    uint16[] lenderIds = [HANA_ID, MERIDIAN_ID, TAKOTAKO_ID];
+    uint16[] extendedLenderIds = [HANA_ID, MERIDIAN_ID, TAKOTAKO_ID, AVALON_ID];
 
-    function getProperLenderAsset(uint8 lenderId, address origAsset) internal view returns (address) {
+    function getProperLenderAsset(uint16 lenderId, address origAsset) internal view returns (address) {
         return lenderId == AVALON_ID ? SOLV_BTC : origAsset;
     }
 
@@ -19,7 +19,7 @@ contract ComposerTestTaiko is DeltaSetup {
     }
 
     function test_taiko_invalid_lender() external {
-        uint8 lenderId = 10;
+        uint16 lenderId = 10;
         address user = testUser;
         uint256 amount = 10.0e6;
         address assetIn = USDC;
@@ -51,7 +51,8 @@ contract ComposerTestTaiko is DeltaSetup {
 
     function test_taiko_composer_depo() external {
         for (uint8 index = 0; index < extendedLenderIds.length; index++) {
-            uint8 lenderId = extendedLenderIds[index];
+            uint16 lenderId = extendedLenderIds[index];
+            console.log("lenderId", lenderId);
             address user = testUser;
             uint256 amount = 10.0e6;
             address assetIn = getProperLenderAsset(lenderId, USDC);
@@ -82,7 +83,7 @@ contract ComposerTestTaiko is DeltaSetup {
 
     function test_taiko_composer_borrow() external {
         for (uint8 index = 0; index < lenderIds.length; index++) {
-            uint8 lenderId = lenderIds[index];
+            uint16 lenderId = lenderIds[index];
             address user = testUser;
             uint256 amount = 1e18;
             address asset = getProperLenderAsset(lenderId, WETH);
@@ -110,7 +111,7 @@ contract ComposerTestTaiko is DeltaSetup {
 
     function test_taiko_composer_repay() external {
         for (uint8 index = 0; index < lenderIds.length; index++) {
-            uint8 lenderId = lenderIds[index];
+            uint16 lenderId = lenderIds[index];
             address user = testUser;
 
             uint256 amount = 1e18;
@@ -153,7 +154,7 @@ contract ComposerTestTaiko is DeltaSetup {
 
     function test_taiko_composer_repay_too_much() external {
         for (uint8 index = 0; index < lenderIds.length; index++) {
-            uint8 lenderId = lenderIds[index];
+            uint16 lenderId = lenderIds[index];
             address user = testUser;
 
             uint256 amount = 1e18;
@@ -197,7 +198,7 @@ contract ComposerTestTaiko is DeltaSetup {
 
     function test_taiko_composer_withdraw() external {
         for (uint8 index = 0; index < extendedLenderIds.length; index++) {
-            uint8 lenderId = extendedLenderIds[index];
+            uint16 lenderId = extendedLenderIds[index];
             address user = testUser;
 
             uint256 amount = 1e18;
@@ -222,7 +223,7 @@ contract ComposerTestTaiko is DeltaSetup {
 
     function test_taiko_composer_withdraw_all() external {
         for (uint8 index = 0; index < lenderIds.length; index++) {
-            uint8 lenderId = lenderIds[index];
+            uint16 lenderId = lenderIds[index];
             address user = testUser;
 
             uint256 amount = 1e18;
@@ -296,7 +297,7 @@ contract ComposerTestTaiko is DeltaSetup {
         assertApproxEqAbs(743972217540712861, received, 1);
     }
 
-    function getNativeToWeth()
+    function getTokenToWeth()
         internal
         view
         returns (
@@ -317,7 +318,7 @@ contract ComposerTestTaiko is DeltaSetup {
         pids[1] = AGNI;
     }
 
-    function getWethToNative()
+    function getWethToToken()
         internal
         view
         returns (
@@ -359,7 +360,7 @@ contract ComposerTestTaiko is DeltaSetup {
                 address[] memory tks,
                 uint8[] memory pids, //
                 uint16[] memory fees
-            ) = getNativeToWeth();
+            ) = getTokenToWeth();
             dataFusion = getSpotExactInMultiGen2(tks, pids, fees);
         }
         bytes memory data = abi.encodePacked(
@@ -402,7 +403,7 @@ contract ComposerTestTaiko is DeltaSetup {
                 address[] memory tks,
                 uint8[] memory pids, //
                 uint16[] memory fees
-            ) = getNativeToWeth();
+            ) = getTokenToWeth();
             dataFusion = getSpotExactOutMultiGen2(tks, pids, fees);
         }
         bytes memory data = abi.encodePacked(
@@ -458,7 +459,7 @@ contract ComposerTestTaiko is DeltaSetup {
                 address[] memory tks,
                 uint8[] memory pids, //
                 uint16[] memory fees
-            ) = getWethToNative();
+            ) = getWethToToken();
             dataFusion = getSpotExactOutMultiGen2(tks, pids, fees);
         }
         bytes memory data = abi.encodePacked(
@@ -511,7 +512,7 @@ contract ComposerTestTaiko is DeltaSetup {
                 address[] memory tks,
                 uint8[] memory pids, //
                 uint16[] memory fees
-            ) = getWethToNative();
+            ) = getWethToToken();
             dataFusion = getSpotExactInMultiGen2(tks, pids, fees);
         }
         bytes memory data = abi.encodePacked(
@@ -690,7 +691,7 @@ contract ComposerTestTaiko is DeltaSetup {
         return abi.encodePacked(tokenOut, action, poolId, pool, fee, tokenIn, uint8(99));
     }
 
-    function _deposit(address asset, address user, uint256 amount, uint8 lenderId) internal {
+    function _deposit(address asset, address user, uint256 amount, uint16 lenderId) internal {
         deal(asset, user, amount);
 
         vm.prank(user);
@@ -716,7 +717,7 @@ contract ComposerTestTaiko is DeltaSetup {
         console.log("gas", gas);
     }
 
-    function _borrow(address borrowAsset, address user, uint256 borrowAmount, uint8 lenderId) internal {
+    function _borrow(address borrowAsset, address user, uint256 borrowAmount, uint16 lenderId) internal {
         vm.prank(user);
         IERC20All(debtTokens[borrowAsset][lenderId]).approveDelegation(
             address(brokerProxyAddress), //

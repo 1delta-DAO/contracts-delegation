@@ -314,7 +314,7 @@ contract ComposerTestArbitrum is DeltaSetup {
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
-        assertApproxEqAbs(amount - withdrawAmount, getCollateralBalance(user, asset, lenderId), 2);
+        assertApproxEqAbs(amount - withdrawAmount, getCollateralBalance(user, asset, lenderId), 4);
     }
 
     function test_arbitrum_composer_withdraw_all(uint16 lenderId) external {

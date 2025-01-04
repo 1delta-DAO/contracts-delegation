@@ -575,7 +575,7 @@ contract OneDeltaComposerTaiko is MarginTrading {
                         // maximum uint112 has a special meaning
                         // for using the user collateral balance
                         if eq(amount, 0xffffffffffffffffffffffffffff) {
-                            switch lt(lenderId, 50)
+                            switch lt(lenderId, MAX_ID_AAVE_V2)
                             // get aave type user collateral balance
                             case 1 {
                                 // Slot for collateralTokens[target] is keccak256(target . collateralTokens.slot).

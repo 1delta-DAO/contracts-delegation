@@ -8,7 +8,7 @@ import "./DeltaSetup.f.sol";
 contract ComposerTestPolygon is DeltaSetup {
     function test_polygon_composer_depo(uint16 lenderId) external {
         address user = testUser;
-        vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
+        vm.assume(user != address(0) && compoundUSDCEOrAave(lenderId));
         uint256 amount = 10.0e6;
         address asset = WMATIC;
         deal(asset, user, 1e23);
@@ -39,7 +39,7 @@ contract ComposerTestPolygon is DeltaSetup {
 
     function test_polygon_composer_depo_comet() external {
         address user = testUser;
-        uint16 lenderId = 50;
+        uint16 lenderId = COMPOUND_V3_USDCE;
         // vm.assume(user != address(0) && (lenderId == 50));
         uint256 amount = 0.000000001e18;
         address asset = WETH;
@@ -72,7 +72,7 @@ contract ComposerTestPolygon is DeltaSetup {
 
     function test_polygon_composer_borrow(uint16 lenderId) external {
         address user = testUser;
-        vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
+        vm.assume(user != address(0) && compoundUSDCEOrAave(lenderId));
         uint256 amount = 500.0e18;
         address asset = WMATIC;
 
@@ -99,7 +99,7 @@ contract ComposerTestPolygon is DeltaSetup {
     function test_polygon_composer_repay(uint16 lenderId) external {
         address user = testUser;
 
-        vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
+        vm.assume(user != address(0) && compoundUSDCEOrAave(lenderId));
 
         uint256 amount = 500.0e18;
         address asset = WMATIC;
@@ -142,7 +142,7 @@ contract ComposerTestPolygon is DeltaSetup {
 
     function test_polygon_composer_repay_too_much(uint16 lenderId) external {
         address user = testUser;
-        vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
+        vm.assume(user != address(0) && compoundUSDCEOrAave(lenderId));
 
         uint256 amount = 500.0e18;
         address asset = WMATIC;
@@ -164,7 +164,7 @@ contract ComposerTestPolygon is DeltaSetup {
         bytes memory data = repay(
             borrowAsset,
             user,
-            lenderId > 49 ? type(uint112).max : repayAmount,
+            lenderId >= MAX_AAVE_V2_ID ? type(uint112).max : repayAmount,
             lenderId, //
             DEFAULT_MODE
         );
@@ -183,9 +183,9 @@ contract ComposerTestPolygon is DeltaSetup {
     }
 
     function test_polygon_composer_withdraw() external {
-        uint16 lenderId = 50;
+        uint16 lenderId = COMPOUND_V3_USDCE;
         address user = testUser;
-        vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
+        vm.assume(user != address(0) );
 
         uint256 amount = 10.0e18;
         address asset = WMATIC;
@@ -208,7 +208,7 @@ contract ComposerTestPolygon is DeltaSetup {
     function test_polygon_composer_withdraw_all(uint16 lenderId) external {
         address user = testUser;
 
-        vm.assume(user != address(0) && (lenderId < 2 || lenderId == 50));
+        vm.assume(user != address(0) && compoundUSDCEOrAave(lenderId));
 
         uint256 amount = 500.0e18;
         address asset = WMATIC;

@@ -169,17 +169,17 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
 
     function initializeDeltaHana() internal virtual {
         // hana
-        management.addGeneralLenderTokens(USDC, HANA_A_USDC, HANA_V_USDC, HANA_S_USDC, 0);
-        management.addGeneralLenderTokens(TAIKO, HANA_A_TAIKO, HANA_V_TAIKO, HANA_S_TAIKO, 0);
-        management.addGeneralLenderTokens(WETH, HANA_A_WETH, HANA_V_WETH, HANA_S_WETH, 0);
+        management.addGeneralLenderTokens(USDC, HANA_A_USDC, HANA_V_USDC, HANA_S_USDC, HANA_ID);
+        management.addGeneralLenderTokens(TAIKO, HANA_A_TAIKO, HANA_V_TAIKO, HANA_S_TAIKO, HANA_ID);
+        management.addGeneralLenderTokens(WETH, HANA_A_WETH, HANA_V_WETH, HANA_S_WETH, HANA_ID);
 
-        collateralTokens[USDC][0] = HANA_A_USDC;
-        collateralTokens[TAIKO][0] = HANA_A_TAIKO;
-        collateralTokens[WETH][0] = HANA_A_WETH;
+        collateralTokens[USDC][HANA_ID] = HANA_A_USDC;
+        collateralTokens[TAIKO][HANA_ID] = HANA_A_TAIKO;
+        collateralTokens[WETH][HANA_ID] = HANA_A_WETH;
 
-        debtTokens[USDC][0] = HANA_V_USDC;
-        debtTokens[TAIKO][0] = HANA_V_TAIKO;
-        debtTokens[WETH][0] = HANA_V_WETH;
+        debtTokens[USDC][HANA_ID] = HANA_V_USDC;
+        debtTokens[TAIKO][HANA_ID] = HANA_V_TAIKO;
+        debtTokens[WETH][HANA_ID] = HANA_V_WETH;
 
         // approve pools
         address[] memory assets = new address[](3);
@@ -191,17 +191,17 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
 
     function initializeDeltaMeridian() internal virtual {
         // meridian
-        management.addGeneralLenderTokens(USDC, MERIDIAN_A_USDC, MERIDIAN_V_USDC, MERIDIAN_S_USDC, 1);
-        management.addGeneralLenderTokens(TAIKO, MERIDIAN_A_TAIKO, MERIDIAN_V_TAIKO, MERIDIAN_S_TAIKO, 1);
-        management.addGeneralLenderTokens(WETH, MERIDIAN_A_WETH, MERIDIAN_V_WETH, MERIDIAN_S_WETH, 1);
+        management.addGeneralLenderTokens(USDC, MERIDIAN_A_USDC, MERIDIAN_V_USDC, MERIDIAN_S_USDC, MERIDIAN_ID);
+        management.addGeneralLenderTokens(TAIKO, MERIDIAN_A_TAIKO, MERIDIAN_V_TAIKO, MERIDIAN_S_TAIKO, MERIDIAN_ID);
+        management.addGeneralLenderTokens(WETH, MERIDIAN_A_WETH, MERIDIAN_V_WETH, MERIDIAN_S_WETH, MERIDIAN_ID);
 
-        collateralTokens[USDC][1] = MERIDIAN_A_USDC;
-        collateralTokens[TAIKO][1] = MERIDIAN_A_TAIKO;
-        collateralTokens[WETH][1] = MERIDIAN_A_WETH;
+        collateralTokens[USDC][MERIDIAN_ID] = MERIDIAN_A_USDC;
+        collateralTokens[TAIKO][MERIDIAN_ID] = MERIDIAN_A_TAIKO;
+        collateralTokens[WETH][MERIDIAN_ID] = MERIDIAN_A_WETH;
 
-        debtTokens[USDC][1] = MERIDIAN_V_USDC;
-        debtTokens[TAIKO][1] = MERIDIAN_V_TAIKO;
-        debtTokens[WETH][1] = MERIDIAN_V_WETH;
+        debtTokens[USDC][MERIDIAN_ID] = MERIDIAN_V_USDC;
+        debtTokens[TAIKO][MERIDIAN_ID] = MERIDIAN_V_TAIKO;
+        debtTokens[WETH][MERIDIAN_ID] = MERIDIAN_V_WETH;
 
         // approve pools
         address[] memory assets = new address[](3);

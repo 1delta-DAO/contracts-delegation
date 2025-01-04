@@ -1051,11 +1051,11 @@ abstract contract MarginTrading is BaseSwapper {
             // We calculate the required amount for the next swap
             ////////////////////////////////////////////////////
             amountIn = _getNGAmountIn(pool, indexIn, indexOut, amountOut);
-            if(pathLength > MAX_SINGLE_LENGTH_CURVE_NG) {
+            if(pathLength > MAX_SINGLE_LENGTH_CURVE) {
                 // remove the last token from the path
                 assembly {
-                    pathOffset := add(pathOffset, SKIP_LENGTH_CURVE_NG)
-                    pathLength := sub(pathLength, SKIP_LENGTH_CURVE_NG)
+                    pathOffset := add(pathOffset, SKIP_LENGTH_CURVE)
+                    pathLength := sub(pathLength, SKIP_LENGTH_CURVE)
                 }
                 swapExactOutInternal(
                     amountIn,
@@ -1275,7 +1275,7 @@ abstract contract MarginTrading is BaseSwapper {
         if (poolId < UNISWAP_V3_MAX_ID) {
             address reciever;
             assembly {
-                switch lt(pathLength, 68) // see swapExactIn
+                switch lt(pathLength, MAX_SINGLE_LENGTH_UNOSWAP_HIGH) // see swapExactIn
                 case 1 { reciever := address()}
                 default {
                     let nextId := and(calldataload(add(pathOffset, 34)), UINT8_MASK) // SKIP_LENGTH_UNISWAP - 10
@@ -1309,7 +1309,7 @@ abstract contract MarginTrading is BaseSwapper {
         else if (poolId == IZI_ID) {
             address reciever;
             assembly {
-                switch lt(pathLength, 68) // see swapExactIn
+                switch lt(pathLength, MAX_SINGLE_LENGTH_UNOSWAP_HIGH) // see swapExactIn
                 case 1 { reciever := address()}
                 default {
                     let nextId := and(calldataload(add(pathOffset, 34)), UINT8_MASK) // SKIP_LENGTH_UNISWAP - 10

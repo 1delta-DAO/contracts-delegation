@@ -202,7 +202,7 @@ contract GeneralMoeLBTest is DeltaSetup {
     }
 
     function test_margin_mantle_lb_open_exact_in_multi() external {
-        uint8 lenderId = DEFAULT_LENDER;
+        uint16 lenderId = LENDLE_ID;
         address user = testUser;
         vm.assume(user != address(0));
         address asset = USDT;
@@ -243,7 +243,7 @@ contract GeneralMoeLBTest is DeltaSetup {
     }
 
     function test_margin_mantle_lb_open_exact_out_multi() external {
-        uint8 lenderId = DEFAULT_LENDER;
+        uint16 lenderId = LENDLE_ID;
         address user = testUser;
         vm.assume(user != address(0));
         address asset = USDC;
@@ -284,9 +284,9 @@ contract GeneralMoeLBTest is DeltaSetup {
     }
 
     function test_margin_mantle_lb_close_exact_in_multi() external {
-        uint8 lenderId = DEFAULT_LENDER;
+        uint16 lenderId = LENDLE_ID;
         address user = testUser;
-        vm.assume(user != address(0) && lenderId < 2);
+        vm.assume(user != address(0));
         address asset = USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
 
@@ -328,9 +328,9 @@ contract GeneralMoeLBTest is DeltaSetup {
     }
 
     function test_margin_mantle_lb_close_exact_out_multi() external {
-        uint8 lenderId = DEFAULT_LENDER;
+        uint16 lenderId = LENDLE_ID;
         address user = testUser;
-        vm.assume(user != address(0) && lenderId < 2);
+        vm.assume(user != address(0));
         address asset = USDT;
         address collateralAsset = collateralTokens[asset][lenderId];
 
@@ -383,7 +383,7 @@ contract GeneralMoeLBTest is DeltaSetup {
         bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, MERCHANT_MOE_FEE_DENOM, USDe);
         poolId = MERCHANT_MOE_LB;
         pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenOut, USDe, BIN_STEP_LOWEST).LBPair;
-        return abi.encodePacked(firstPart, midId, poolId, pool, tokenOut, uint16(DEFAULT_LENDER), endId);
+        return abi.encodePacked(firstPart, midId, poolId, pool, tokenOut, LENDLE_ID, endId);
     }
 
     function getSpotExactInSingleLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
@@ -433,7 +433,7 @@ contract GeneralMoeLBTest is DeltaSetup {
         address pool = testQuoter._v2TypePairAddress(USDe, tokenOut, MERCHANT_MOE);
         bytes memory firstPart = abi.encodePacked(tokenOut, actionId, MERCHANT_MOE, pool, MERCHANT_MOE_FEE_DENOM, USDe);
         pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenIn, USDe, BIN_STEP_LOWEST).LBPair;
-        return abi.encodePacked(firstPart, midId, MERCHANT_MOE_LB, pool, tokenIn, uint16(DEFAULT_LENDER), endId);
+        return abi.encodePacked(firstPart, midId, MERCHANT_MOE_LB, pool, tokenIn, LENDLE_ID, endId);
     }
 
     function getCloseExactOutMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
@@ -441,7 +441,7 @@ contract GeneralMoeLBTest is DeltaSetup {
         address pool = testQuoter._v2TypePairAddress(USDe, tokenOut, MERCHANT_MOE);
         bytes memory firstPart = abi.encodePacked(tokenOut, actionId, MERCHANT_MOE, pool, MERCHANT_MOE_FEE_DENOM, USDe);
         pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenIn, USDe, BIN_STEP_LOWEST).LBPair;
-        return abi.encodePacked(firstPart, midId, MERCHANT_MOE_LB, pool, tokenIn, uint16(DEFAULT_LENDER), endId);
+        return abi.encodePacked(firstPart, midId, MERCHANT_MOE_LB, pool, tokenIn, LENDLE_ID, endId);
     }
 
     function getCloseExactInMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
@@ -449,7 +449,7 @@ contract GeneralMoeLBTest is DeltaSetup {
         address pool = testQuoter._v2TypePairAddress(USDe, tokenIn, MERCHANT_MOE);
         bytes memory firstPart = abi.encodePacked(tokenIn, actionId, MERCHANT_MOE, pool, MERCHANT_MOE_FEE_DENOM, USDe);
         pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenOut, USDe, BIN_STEP_LOWEST).LBPair;
-        return abi.encodePacked(firstPart, midId, MERCHANT_MOE_LB, pool, tokenOut, uint16(DEFAULT_LENDER), endId);
+        return abi.encodePacked(firstPart, midId, MERCHANT_MOE_LB, pool, tokenOut, LENDLE_ID, endId);
     }
 
     /** DEPO AND BORROW HELPER */
@@ -459,16 +459,16 @@ contract GeneralMoeLBTest is DeltaSetup {
         vm.prank(user);
         IERC20All(asset).approve(brokerProxyAddress, amount);
         bytes memory t = transferIn(asset, brokerProxyAddress, amount);
-        bytes memory d = deposit(asset, user, amount, DEFAULT_LENDER);
+        bytes memory d = deposit(asset, user, amount, LENDLE_ID);
         vm.prank(user);
         IFlashAggregator(brokerProxyAddress).deltaCompose(abi.encodePacked(t, d));
     }
 
     function _borrow(address user, address asset, uint256 amount) internal {
-        address debtAsset = debtTokens[asset][DEFAULT_LENDER];
+        address debtAsset = debtTokens[asset][LENDLE_ID];
         vm.prank(user);
         IERC20All(debtAsset).approveDelegation(brokerProxyAddress, amount);
         vm.prank(user);
-        IFlashAggregator(brokerProxyAddress).deltaCompose(borrow(asset, user, amount, DEFAULT_LENDER, DEFAULT_MODE));
+        IFlashAggregator(brokerProxyAddress).deltaCompose(borrow(asset, user, amount, LENDLE_ID, DEFAULT_MODE));
     }
 }

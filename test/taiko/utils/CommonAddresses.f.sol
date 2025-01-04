@@ -110,10 +110,10 @@ contract AddressesTaiko {
 
     /** DEFAULTS */
 
-    uint8 HANA_ID = 0;
-    uint8 MERIDIAN_ID = 1;
-    uint8 TAKOTAKO_ID = 2;
-    uint8 AVALON_ID = 25;
+    uint16 HANA_ID = 0;
+    uint16 MERIDIAN_ID = 1000;
+    uint16 TAKOTAKO_ID = 1001;
+    uint16 AVALON_ID = 1;
 
     /** DEX CONFIG */
 

@@ -13,10 +13,11 @@ contract MarginOpenTest is DeltaSetup {
         assert(management.getLendingPool(id) == pool);
     }
 
-    function test_margin_mantle_open_exact_in0(uint8 lenderId) external /** address user, uint8 lenderId */ {
+    function test_margin_mantle_open_exact_in(uint8 lenderIndex) external {
         TestParamsOpen memory params;
         address user = testUser;
-        vm.assume(user != address(0) && lenderId < 2);
+        vm.assume(user != address(0) && validLenderIndex(lenderIndex));
+        uint16 lenderId = getLenderByIndex(lenderIndex);
         {
             address asset = USDC;
 
@@ -59,10 +60,11 @@ contract MarginOpenTest is DeltaSetup {
         assertApproxEqAbs(borrowBalance, params.amountToDeposit + params.swapAmount, 1.0e8);
     }
 
-    function test_margin_mantle_open_exact_in_izi(uint8 lenderId) external /** address user, uint8 lenderId */ {
+    function test_margin_mantle_open_exact_in_izi(uint8 lenderIndex) external {
         TestParamsOpen memory params;
         address user = testUser;
-        vm.assume(user != address(0) && lenderId < 2);
+        vm.assume(user != address(0) && validLenderIndex(lenderIndex));
+        uint16 lenderId = getLenderByIndex(lenderIndex);
         {
             address asset = USDT;
 
@@ -105,10 +107,11 @@ contract MarginOpenTest is DeltaSetup {
         assertApproxEqAbs(borrowBalance, params.amountToDeposit + params.swapAmount, 1.0e8);
     }
 
-    function test_margin_mantle_open_exact_in_multi(uint8 lenderId) external /** address user, uint8 lenderId */ {
+    function test_margin_mantle_open_exact_in_multi(uint8 lenderIndex) external {
         TestParamsOpen memory params;
         address user = testUser;
-        vm.assume(user != address(0) && lenderId < 2);
+        vm.assume(user != address(0) && validLenderIndex(lenderIndex));
+        uint16 lenderId = getLenderByIndex(lenderIndex);
         {
             address asset = USDC;
 
@@ -151,10 +154,11 @@ contract MarginOpenTest is DeltaSetup {
         assertApproxEqAbs(borrowBalance, params.amountToDeposit + params.swapAmount, 1.0e8);
     }
 
-    function test_margin_mantle_open_exact_out(uint8 lenderId) external {
+    function test_margin_mantle_open_exact_out(uint8 lenderIndex) external {
         TestParamsOpen memory params;
         address user = testUser;
-        vm.assume(user != address(0) && lenderId < 2);
+        vm.assume(user != address(0) && validLenderIndex(lenderIndex));
+        uint16 lenderId = getLenderByIndex(lenderIndex);
         {
             address asset = USDC;
             address borrowAsset = WMNT;
@@ -196,10 +200,11 @@ contract MarginOpenTest is DeltaSetup {
         assertApproxEqAbs(balance, params.amountToDeposit + params.swapAmount, 0);
     }
 
-    function test_margin_mantle_open_exact_out_multi(uint8 lenderId) external {
+    function test_margin_mantle_open_exact_out_multi(uint8 lenderIndex) external {
         TestParamsOpen memory params;
         address user = testUser;
-        vm.assume(user != address(0) && lenderId < 2);
+        vm.assume(user != address(0) && validLenderIndex(lenderIndex));
+        uint16 lenderId = getLenderByIndex(lenderIndex);
         {
             address asset = USDC;
             address borrowAsset = WMNT;
@@ -243,10 +248,11 @@ contract MarginOpenTest is DeltaSetup {
 
     /** THE FOLLOWING TESTS CHECK THE CALLBACK FOR V2 */
 
-    function test_margin_mantle_open_exact_in_v2(uint8 lenderId) external /** address user, uint8 lenderId */ {
+    function test_margin_mantle_open_exact_in_v2(uint8 lenderIndex) external {
         TestParamsOpen memory params;
         address user = testUser;
-        vm.assume(user != address(0) && lenderId < 2);
+        vm.assume(user != address(0) && validLenderIndex(lenderIndex));
+        uint16 lenderId = getLenderByIndex(lenderIndex);
         {
             address asset = USDC;
 
@@ -289,10 +295,11 @@ contract MarginOpenTest is DeltaSetup {
         assertApproxEqAbs(borrowBalance, params.amountToDeposit + params.swapAmount, 1.0e8);
     }
 
-    function test_margin_mantle_open_exact_in_multi_v2(uint8 lenderId) external /** address user, uint8 lenderId */ {
+    function test_margin_mantle_open_exact_in_multi_v2(uint8 lenderIndex) external {
         TestParamsOpen memory params;
         address user = testUser;
-        vm.assume(user != address(0) && lenderId < 2);
+        vm.assume(user != address(0) && validLenderIndex(lenderIndex));
+        uint16 lenderId = getLenderByIndex(lenderIndex);
         {
             address asset = USDC;
 
@@ -335,10 +342,11 @@ contract MarginOpenTest is DeltaSetup {
         assertApproxEqAbs(borrowBalance, params.amountToDeposit + params.swapAmount, 1.0e8);
     }
 
-    function test_margin_mantle_open_exact_out_v2(uint8 lenderId) external {
+    function test_margin_mantle_open_exact_out_v2(uint8 lenderIndex) external {
         TestParamsOpen memory params;
         address user = testUser;
-        vm.assume(user != address(0) && lenderId < 2);
+        vm.assume(user != address(0) && validLenderIndex(lenderIndex));
+        uint16 lenderId = getLenderByIndex(lenderIndex);
         {
             address asset = USDC;
             address borrowAsset = WMNT;
@@ -380,10 +388,11 @@ contract MarginOpenTest is DeltaSetup {
         assertApproxEqAbs(balance, params.amountToDeposit + params.swapAmount, 0);
     }
 
-    function test_margin_mantle_open_exact_out_multi_v2(uint8 lenderId) external {
+    function test_margin_mantle_open_exact_out_multi_v2(uint8 lenderIndex) external {
         TestParamsOpen memory params;
         address user = testUser;
-        vm.assume(user != address(0) && lenderId < 2);
+        vm.assume(user != address(0) && validLenderIndex(lenderIndex));
+        uint16 lenderId = getLenderByIndex(lenderIndex);
         {
             address asset = USDC;
             address borrowAsset = WMNT;

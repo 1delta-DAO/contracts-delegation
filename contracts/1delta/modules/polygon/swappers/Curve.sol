@@ -40,23 +40,24 @@ abstract contract CurveSwapper is UniTypeSwapper {
 
     /// @notice Curve params lengths
     uint256 internal constant SKIP_LENGTH_CURVE = 45; // = 20+1+1+20+1+1
-    uint256 internal constant MAX_SINGLE_LENGTH_CURVE = 67; // = SKIP_LENGTH_CURVE+20+2
-    
-    /// @notice Curve NG param lengths match Curve
-    uint256 internal constant SKIP_LENGTH_CURVE_NG = SKIP_LENGTH_CURVE;
-    uint256 internal constant MAX_SINGLE_LENGTH_CURVE_NG = MAX_SINGLE_LENGTH_CURVE;
+    uint256 internal constant RECEIVER_OFFSET_CURVE = 67; // = SKIP_LENGTH_CURVE+20+2
+    uint256 internal constant MAX_SINGLE_LENGTH_CURVE = 68; // = SKIP_LENGTH_CURVE+20+1+2+1
+    uint256 internal constant MAX_SINGLE_LENGTH_CURVE_HIGH = 69; // = SKIP_LENGTH_CURVE+20+1+2+1
+
+    /// @notice Curve meta params lengths
+    uint256 internal constant SKIP_LENGTH_CURVE_META = 65; // = 20+1+1+20+1+1
+    uint256 internal constant RECEIVER_OFFSET_CURVE_META = 87; // = SKIP_LENGTH_CURVE_META+20+2
+    uint256 internal constant MAX_SINGLE_LENGTH_CURVE_META = 88; // = SKIP_LENGTH_CURVE_META+20+1+2
+    uint256 internal constant MAX_SINGLE_LENGTH_CURVE_META_HIGH = 89; // = SKIP_LENGTH_CURVE_META+20+1+2+1
 
     constructor() {}
 
     /**
      * Swaps using a meta pool (i.e. a curve pool that has another one as underlying)
      * Data is supposed to be packed as follows
-     * tokenIn | actionId | dexId | zapFactory | i | j | sm | a | metaPool | tokenOut
-     * sm is the selecor,
+     * tokenIn | actionId | dexId | zapFactory | i | j | sm | metaPool | tokenOut
+     * sm is the selector,
      * i,j are the swap indexes for the meta pool
-     * sp is the selector for for the regular pool
-     * a is the approval flag (also uint8)
-     * k is the withdraw index for the regular pool
      */
     function _swapCurveMeta(
         uint256 pathOffset,
@@ -228,10 +229,9 @@ abstract contract CurveSwapper is UniTypeSwapper {
     /**
      * Swaps using a standard curve pool
      * Data is supposed to be packed as follows
-     * tokenIn | actionId | dexId | pool | i | j | sm | a | tokenOut
-     * sm is the selecor,
+     * tokenIn | actionId | dexId | pool | i | j | sm | tokenOut
+     * sm is the selector,
      * i,j are the swap indexes for the pool
-     * a is the approval flag (also uint8)
      */
     function _swapCurveGeneral(
         uint256 pathOffset,
@@ -403,7 +403,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
      * Swaps using a NG pool that allows for pre-funded swaps
      * Data is supposed to be packed as follows
      * tokenIn | actionId | dexId | pool | sm | i | j | tokenOut
-     * sm is the selecor,
+     * sm is the selector,
      * i,j are the swap indexes for the pool
      */
     function _swapCurveNG(
@@ -455,7 +455,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
      * Swaps using a NG pool that allows for pre-funded swaps
      * Data is supposed to be packed as follows
      * tokenIn | actionId | dexId | pool | sm | i | j | tokenOut
-     * sm is the selecor,
+     * sm is the selector,
      * i,j are the swap indexes for the pool
      */
     function _swapCurveNGExactOut(
@@ -474,7 +474,6 @@ abstract contract CurveSwapper is UniTypeSwapper {
             ////////////////////////////////////////////////////
             switch and(shr(72, calldataload(add(pathOffset, 22))), 0xff) // selectorId
             case 0 {
-                // indexData := 0xf
                 // selector for exchange_received(uint256,uint256,uint256,uint256,address)
                 mstore(ptr, EXCHANGE_RECEIVED)
                 mstore(add(ptr, 0x4), indexIn)

@@ -6,9 +6,10 @@ import "./DeltaSetup.f.sol";
 contract MarginDebtSwapTest is DeltaSetup {
     uint256 DEFAULT_IR_MODE = 2; // variable
 
-    function test_margin_mantle_debt_exact_in(uint8 lenderId) external /** address user, uint8 lenderId */ {
+    function test_margin_mantle_debt_exact_in(uint8 lenderIndex) external {
         address user = testUser;
-        vm.assume(user != address(0) && lenderId < 2);
+        vm.assume(user != address(0) && validLenderIndex(lenderIndex));
+        uint16 lenderId = getLenderByIndex(lenderIndex);
         address borrowAsset = WMNT;
         address debtAsset = debtTokens[borrowAsset][lenderId];
 
@@ -50,9 +51,10 @@ contract MarginDebtSwapTest is DeltaSetup {
         assertApproxEqAbs(2398640388832552493, balance, 1);
     }
 
-    function test_margin_mantle_debt_exact_in_multi(uint8 lenderId) external {
+    function test_margin_mantle_debt_exact_in_multi(uint8 lenderIndex) external {
         address user = testUser;
-        vm.assume(user != address(0) && lenderId < 2);
+        vm.assume(user != address(0) && validLenderIndex(lenderIndex));
+        uint16 lenderId = getLenderByIndex(lenderIndex);
         address borrowAsset = WMNT;
         address debtAsset = debtTokens[borrowAsset][lenderId];
 
@@ -94,9 +96,10 @@ contract MarginDebtSwapTest is DeltaSetup {
         assertApproxEqAbs(2399864542910992641, balance, 1);
     }
 
-    function test_margin_mantle_debt_exact_out(uint8 lenderId) external {
+    function test_margin_mantle_debt_exact_out(uint8 lenderIndex) external {
         address user = testUser;
-        vm.assume(user != address(0) && lenderId < 2);
+        vm.assume(user != address(0) && validLenderIndex(lenderIndex));
+        uint16 lenderId = getLenderByIndex(lenderIndex);
         address borrowAsset = WMNT;
         address debtAsset = debtTokens[borrowAsset][lenderId];
 
@@ -138,9 +141,10 @@ contract MarginDebtSwapTest is DeltaSetup {
         assertApproxEqAbs(amountOut, balance, 1);
     }
 
-    function test_margin_mantle_debt_exact_out_multi(uint8 lenderId) external {
+    function test_margin_mantle_debt_exact_out_multi(uint8 lenderIndex) external {
         address user = testUser;
-        vm.assume(user != address(0) && lenderId < 2);
+        vm.assume(user != address(0) && validLenderIndex(lenderIndex));
+        uint16 lenderId = getLenderByIndex(lenderIndex);
         address borrowAsset = WMNT;
         address debtAsset = debtTokens[borrowAsset][lenderId];
 
@@ -182,9 +186,10 @@ contract MarginDebtSwapTest is DeltaSetup {
         assertApproxEqAbs(amountOut, balance, 1);
     }
 
-    function test_margin_mantle_debt_all_out(uint8 lenderId) external {
+    function test_margin_mantle_debt_all_out(uint8 lenderIndex) external {
         address user = testUser;
-        vm.assume(user != address(0) && lenderId < 2);
+        vm.assume(user != address(0) && validLenderIndex(lenderIndex));
+        uint16 lenderId = getLenderByIndex(lenderIndex);
         address borrowAsset = WMNT;
         address debtAsset = debtTokens[borrowAsset][lenderId];
         uint256 amountToLeverage = 20.0e18;
@@ -229,9 +234,10 @@ contract MarginDebtSwapTest is DeltaSetup {
 
     /** TEST V2 CALLBACKS */
 
-    function test_margin_mantle_debt_exact_in_v2(uint8 lenderId) external /** address user, uint8 lenderId */ {
+    function test_margin_mantle_debt_exact_in_v2(uint8 lenderIndex) external {
         address user = testUser;
-        vm.assume(user != address(0) && lenderId < 2);
+        vm.assume(user != address(0) && validLenderIndex(lenderIndex));
+        uint16 lenderId = getLenderByIndex(lenderIndex);
         address borrowAsset = WMNT;
         address debtAsset = debtTokens[borrowAsset][lenderId];
 
@@ -273,9 +279,10 @@ contract MarginDebtSwapTest is DeltaSetup {
         assertApproxEqAbs(2395237686677368449, balance, 1);
     }
 
-    function test_margin_mantle_debt_exact_in_multi_v2(uint8 lenderId) external {
+    function test_margin_mantle_debt_exact_in_multi_v2(uint8 lenderIndex) external {
         address user = testUser;
-        vm.assume(user != address(0) && lenderId < 2);
+        vm.assume(user != address(0) && validLenderIndex(lenderIndex));
+        uint16 lenderId = getLenderByIndex(lenderIndex);
         address borrowAsset = WMNT;
         address debtAsset = debtTokens[borrowAsset][lenderId];
 
@@ -317,9 +324,10 @@ contract MarginDebtSwapTest is DeltaSetup {
         assertApproxEqAbs(2391067037304473942, balance, 1);
     }
 
-    function test_margin_mantle_debt_exact_out_v2(uint8 lenderId) external {
+    function test_margin_mantle_debt_exact_out_v2(uint8 lenderIndex) external {
         address user = testUser;
-        vm.assume(user != address(0) && lenderId < 2);
+        vm.assume(user != address(0) && validLenderIndex(lenderIndex));
+        uint16 lenderId = getLenderByIndex(lenderIndex);
         address borrowAsset = WMNT;
         address debtAsset = debtTokens[borrowAsset][lenderId];
 
@@ -361,9 +369,10 @@ contract MarginDebtSwapTest is DeltaSetup {
         assertApproxEqAbs(amountOut, balance, 1);
     }
 
-    function test_margin_mantle_debt_exact_out_multi_v2(uint8 lenderId) external {
+    function test_margin_mantle_debt_exact_out_multi_v2(uint8 lenderIndex) external {
         address user = testUser;
-        vm.assume(user != address(0) && lenderId < 2);
+        vm.assume(user != address(0) && validLenderIndex(lenderIndex));
+        uint16 lenderId = getLenderByIndex(lenderIndex);
         address borrowAsset = WMNT;
         address debtAsset = debtTokens[borrowAsset][lenderId];
 
@@ -405,9 +414,10 @@ contract MarginDebtSwapTest is DeltaSetup {
         assertApproxEqAbs(amountOut, balance, 1);
     }
 
-    function test_margin_mantle_debt_all_out_v2(uint8 lenderId) external {
+    function test_margin_mantle_debt_all_out_v2(uint8 lenderIndex) external {
         address user = testUser;
-        vm.assume(user != address(0) && lenderId < 2);
+        vm.assume(user != address(0) && validLenderIndex(lenderIndex));
+        uint16 lenderId = getLenderByIndex(lenderIndex);
         address borrowAsset = WMNT;
         address debtAsset = debtTokens[borrowAsset][lenderId];
         uint256 amountToLeverage = 20.0e18;

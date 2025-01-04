@@ -517,7 +517,10 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
         if (lenderId < MAX_AAVE_V2_ID) {
             return IERC20All(collateralTokens[asset][lenderId]).balanceOf(user);
         } else if (lenderId < MAX_ID_COMPOUND_V3) {
-            if (lenderId == COMPOUND_V3_USDC) return IComet(CompoundV3Arbitrum.COMET_USDC).userCollateral(user, asset).balance;
+            if (lenderId == COMPOUND_V3_USDC) {
+                if (asset == TokensArbitrum.USDC) return IComet(CompoundV3Arbitrum.COMET_USDC).balanceOf(user);
+                return IComet(CompoundV3Arbitrum.COMET_USDC).userCollateral(user, asset).balance;
+            }
             if (lenderId == COMPOUND_V3_USDT) return IComet(CompoundV3Arbitrum.COMET_USDT).userCollateral(user, asset).balance;
             if (lenderId == COMPOUND_V3_WETH) return IComet(CompoundV3Arbitrum.COMET_WETH).userCollateral(user, asset).balance;
         } else {
@@ -552,7 +555,7 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
     }
 
     function approveBorrowDelegation(address user, address asset, uint256 amount, uint16 lenderId) internal {
-         vm.startPrank(user);
+        vm.startPrank(user);
         if (lenderId < MAX_AAVE_V2_ID) {
             IERC20All(debtTokens[asset][lenderId]).approveDelegation(brokerProxyAddress, amount);
         } else if (lenderId < MAX_ID_COMPOUND_V3) {

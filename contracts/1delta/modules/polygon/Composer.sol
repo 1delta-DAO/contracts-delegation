@@ -683,10 +683,10 @@ contract OneDeltaComposerPolygon is MarginTrading {
                         case 0xffffffffffffffffffffffffffff {
                             let cometPool
                             switch lenderId
-                            case 50 {
+                            case 2000 {
                                 cometPool := COMET_USDC
                             }
-                            case 51 {
+                            case 2001 {
                                 cometPool := COMET_USDT
                             }
                             // default: load comet from storage
@@ -728,7 +728,7 @@ contract OneDeltaComposerPolygon is MarginTrading {
                         // maximum uint112 has a special meaning
                         // for using the user collateral balance
                         if eq(amount, 0xffffffffffffffffffffffffffff) {
-                            switch lt(lenderId, 50)
+                            switch lt(lenderId, MAX_ID_AAVE_V2)
                             // get aave type user collateral balance
                             case 1 {
                                 // Slot for collateralTokens[target] is keccak256(target . collateralTokens.slot).
@@ -758,11 +758,11 @@ contract OneDeltaComposerPolygon is MarginTrading {
                                 let cometCcy
                                 switch lenderId
                                 // Compound V3 USDC.e
-                                case 50 {
+                                case 2000 {
                                     cometPool := COMET_USDC
                                     cometCcy := USDCE
                                 }
-                                case 51 {
+                                case 2001 {
                                     cometPool := COMET_USDT
                                     cometCcy := USDT
                                 }

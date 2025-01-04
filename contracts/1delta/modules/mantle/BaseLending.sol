@@ -15,6 +15,14 @@ import {ExoticSwapper} from "./swappers/Exotic.sol";
  * @notice Lending base contract that wraps multiple lender types.
  */
 abstract contract BaseLending is Slots, ExoticSwapper {
+    // errors
+    error BadLender();
+
+    // id thresholds
+    uint256 internal constant MAX_ID_AAVE_V3 = 1000; // 0-1000
+    uint256 internal constant MAX_ID_AAVE_V2 = 2000; // 1000-2000
+    uint256 internal constant MAX_ID_COMPOUND_V3 = 3000; // 2000-3000
+
     // wNative
     address internal constant WRAPPED_NATIVE = 0x78c1b0C915c4FAA5FffA6CAbf0219DA63d7f4cb8;
 
@@ -32,7 +40,7 @@ abstract contract BaseLending is Slots, ExoticSwapper {
     function _withdraw(address _underlying, address _from, address _to, uint256 _amount, uint256 _lenderId) internal {
         assembly {
             let ptr := mload(0x40)
-            switch lt(_lenderId, 50)
+            switch lt(_lenderId, MAX_ID_AAVE_V2)
             case 1 {
                 // Slot for collateralTokens[target] is keccak256(target . collateralTokens.slot).
                 mstore(0x0, or(shl(240, _lenderId), _underlying))
@@ -75,10 +83,10 @@ abstract contract BaseLending is Slots, ExoticSwapper {
                 let pool
                 // assign lending pool
                 switch _lenderId
-                case 0 {
+                case 1000 {
                     pool := LENDLE_POOL
                 }
-                case 1 {
+                case 1001 {
                     pool := AURELIUS_POOL
                 }
                 default {
@@ -100,7 +108,7 @@ abstract contract BaseLending is Slots, ExoticSwapper {
             default {
                 let cometPool
                 switch _lenderId
-                case 50 {
+                case 2000 {
                     cometPool := COMET_USDE
                 }
                 // default: load comet from storage
@@ -133,7 +141,7 @@ abstract contract BaseLending is Slots, ExoticSwapper {
     function _borrow(address _underlying, address _from, address _to, uint256 _amount, uint256 _mode, uint256 _lenderId) internal {
         assembly {
             let ptr := mload(0x40)
-            switch lt(_lenderId, 50)
+            switch lt(_lenderId, MAX_ID_AAVE_V2)
             case 1 {
                 // selector borrow(address,uint256,uint256,uint16,address)
                 mstore(ptr, 0xa415bcad00000000000000000000000000000000000000000000000000000000)
@@ -145,10 +153,10 @@ abstract contract BaseLending is Slots, ExoticSwapper {
                 let pool
                 // assign lending pool
                 switch _lenderId
-                case 0 {
+                case 1000 {
                     pool := LENDLE_POOL
                 }
-                case 1 {
+                case 1001 {
                     pool := AURELIUS_POOL
                 }
                 default {
@@ -200,7 +208,7 @@ abstract contract BaseLending is Slots, ExoticSwapper {
             default {
                 let cometPool
                 switch _lenderId
-                case 50 {
+                case 2000 {
                     cometPool := COMET_USDE
                 }
                 // default: load comet from storage
@@ -233,7 +241,7 @@ abstract contract BaseLending is Slots, ExoticSwapper {
     function _deposit(address _underlying, address _to, uint256 _amount, uint256 _lenderId) internal {
         assembly {
             let ptr := mload(0x40)
-            switch lt(_lenderId, 50)
+            switch lt(_lenderId, MAX_ID_AAVE_V2)
             case 1 {
                 // selector deposit(address,uint256,address,uint16)
                 mstore(ptr, 0xe8eda9df00000000000000000000000000000000000000000000000000000000)
@@ -244,10 +252,10 @@ abstract contract BaseLending is Slots, ExoticSwapper {
                 let pool
                 // assign lending pool
                 switch _lenderId
-                case 0 {
+                case 1000 {
                     pool := LENDLE_POOL
                 }
-                case 1 {
+                case 1001 {
                     pool := AURELIUS_POOL
                 }
                 default {
@@ -268,7 +276,7 @@ abstract contract BaseLending is Slots, ExoticSwapper {
             default {
                 let cometPool
                 switch _lenderId
-                case 50 {
+                case 2000 {
                     cometPool := COMET_USDE
                 }
                 // default: load comet from storage
@@ -300,7 +308,7 @@ abstract contract BaseLending is Slots, ExoticSwapper {
     function _repay(address _underlying, address _to, uint256 _amount, uint256 mode, uint256 _lenderId) internal {
         assembly {
             let ptr := mload(0x40)
-            switch lt(_lenderId, 50)
+            switch lt(_lenderId, MAX_ID_AAVE_V2)
             case 1 {
                 // selector repay(address,uint256,uint256,address)
                 mstore(ptr, 0x573ade8100000000000000000000000000000000000000000000000000000000)
@@ -311,10 +319,10 @@ abstract contract BaseLending is Slots, ExoticSwapper {
                 let pool
                 // assign lending pool
                 switch _lenderId
-                case 0 {
+                case 1000 {
                     pool := LENDLE_POOL
                 }
-                case 1 {
+                case 1001 {
                     pool := AURELIUS_POOL
                 }
                 default {
@@ -335,7 +343,7 @@ abstract contract BaseLending is Slots, ExoticSwapper {
             default {
                 let cometPool
                 switch _lenderId
-                case 50 {
+                case 2000 {
                     cometPool := COMET_USDE
                 }
                 // default: load comet from storage

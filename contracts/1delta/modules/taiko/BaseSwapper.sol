@@ -34,9 +34,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
 
     // exotics
     uint256 internal constant SYNC_SWAP_ID = UNISWAP_V2_MAX_ID;
-
-    // offset for receiver address for most DEX types (uniswap, curve etc.)
-    uint256 internal constant RECEIVER_OFFSET_UNOSWAP = 66;
+    uint256 internal constant DODO_ID = 153;
 
     /**
      * Fund the first pool for self funded DEXs like Uni V2, GMX, LB, WooFi and Solidly V2 (dexId >= 100) 
@@ -162,7 +160,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
         // uniswapV3 style
         if (dexId < UNISWAP_V3_MAX_ID) {
             assembly {
-                switch lt(pathLength, 67) // maxLength = 66 for single path
+                switch lt(pathLength, MAX_SINGLE_LENGTH_UNOSWAP_HIGH) // maxLength = 66 for single path
                 case 1 { currentReceiver := receiver}
                 default {
                     dexId := and(calldataload(add(pathOffset, 34)), UINT8_MASK) // SKIP_LENGTH_UNOSWAP - 10
@@ -199,7 +197,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
         // iZi
         else if (dexId == IZI_ID) {
             assembly {
-                switch lt(pathLength, 67) // same as for Uni V3 CL
+                switch lt(pathLength, MAX_SINGLE_LENGTH_UNOSWAP_HIGH) // same as for Uni V3 CL
                 case 1 { currentReceiver := receiver}
                 default {
                     dexId := and(calldataload(add(pathOffset, 34)), UINT8_MASK) // SKIP_LENGTH_UNOSWAP - 10
@@ -245,7 +243,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
                                 calldataload(
                                     add(
                                         pathOffset,
-                                        MAX_SINGLE_LENGTH_CURVE // 20 + 2 + 20 + 2 + 20 + 2 [poolAddress starts here]
+                                        RECEIVER_OFFSET_CURVE // 20 + 2 + 20 + 2 + 20 + 2 [poolAddress starts here]
                                     )
                                 ) // poolAddress
                             )
@@ -264,7 +262,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
         // uniswapV2 style
         else if (dexId < UNISWAP_V2_MAX_ID) {
             assembly {
-                switch lt(pathLength, 67)
+                switch lt(pathLength, MAX_SINGLE_LENGTH_UNOSWAP_HIGH)
                 case 1 { currentReceiver := receiver}
                 default {
                     dexId := and(calldataload(add(pathOffset, 34)), UINT8_MASK) // SKIP_LENGTH_UNOSWAP - 10
@@ -302,7 +300,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
         // syncSwap style
         else if (dexId == SYNC_SWAP_ID) {
             assembly {
-                switch lt(pathLength, 65)
+                switch lt(pathLength, MAX_SINGLE_LENGTH_ADDRESS)
                 case 1 { currentReceiver := receiver}
                 default {
                     dexId := and(calldataload(add(pathOffset, 32)), UINT8_MASK) // SKIP_LENGTH_SYNCSWAP - 10
@@ -313,7 +311,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
                                 calldataload(
                                     add(
                                         pathOffset,
-                                        MAX_SINGLE_LENGTH_SYNCSWAP // 20 + 2 + 20 + 20 [poolAddress starts here]
+                                        RECEIVER_OFFSET_SINGLE_LENGTH_ADDRESS // 20 + 2 + 20 + 20 [poolAddress starts here]
                                     )
                                 ) // poolAddress
                             )
@@ -328,8 +326,47 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
                 pathOffset // only needs the offset
             );
             assembly {
-                pathOffset := add(pathOffset, SKIP_LENGTH_SYNCSWAP)
-                pathLength := sub(pathLength, SKIP_LENGTH_SYNCSWAP)
+                pathOffset := add(pathOffset, SKIP_LENGTH_ADDRESS)
+                pathLength := sub(pathLength, SKIP_LENGTH_ADDRESS)
+            }
+        }
+        // DODO V2
+        else if(dexId == DODO_ID) {
+            address pair;
+            uint8 sellQuote;
+            assembly {
+                switch lt(pathLength, MAX_SINGLE_LENGTH_ADDRESS_AND_PARAM_HIGH) // same as V2
+                case 1 { currentReceiver := receiver}
+                default {
+                    dexId := and(calldataload(add(pathOffset, 33)), UINT8_MASK)
+                    switch gt(dexId, 99) 
+                    case 1 {
+                        currentReceiver := shr(
+                                96,
+                                calldataload(
+                                    add(
+                                        pathOffset,
+                                        RECEIVER_OFFSET_SINGLE_LENGTH_ADDRESS_AND_PARAM // 20 + 2 + 20 + 1 + 20 + 2 [poolAddress starts here]
+                                    )
+                                ) // poolAddress
+                            )
+                    }
+                    default {
+                        currentReceiver := address()
+                    }
+                }
+                let params := calldataload(add(pathOffset, 11))
+                pair := shr(8, params)
+                sellQuote := and(UINT8_MASK, params)
+            }
+            amountIn = swapDodoV2ExactIn(
+                sellQuote,
+                pair,
+                currentReceiver
+            );
+            assembly {
+                pathOffset := add(pathOffset, SKIP_LENGTH_ADDRESS_AND_PARAM)
+                pathLength := sub(pathLength, SKIP_LENGTH_ADDRESS_AND_PARAM)
             }
         }
         else {
@@ -370,7 +407,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
     ) internal returns (uint256 amountOut) {
         address currentReceiver;
         assembly {
-            switch lt(pathLength, 67)
+            switch lt(pathLength, MAX_SINGLE_LENGTH_UNOSWAP_HIGH)
             case 1 { currentReceiver := receiver}
             default {
                 dexId := and(calldataload(add(pathOffset, 34)), UINT8_MASK) // SKIP_LENGTH_UNOSWAP - 10
