@@ -8,234 +8,63 @@ pragma solidity 0.8.28;
 
 import {UniTypeSwapper} from "./UniType.sol";
 
-// solhint-disable max-line-length
-
 /**
  * @title Curve swapper contract
- * @notice We do Curve & Fork stuff here
+ * @notice We do Curve stuff here
  */
 abstract contract CurveSwapper is UniTypeSwapper {
+    // slot to track approvals
+    bytes32 internal constant APPROVAL_SLOT = 0xf92cf179e3ab8e843f6d42d0191a950808c083864fd707bf1142aab5c60b560b;
 
-    address internal constant STRATUM_3POOL = 0xD6F312AA90Ad4C92224436a7A4a648d69482e47e;
-    address internal constant STRATUM_3POOL_2 = 0x7d3621aCA02B711F5f738C9f21C1bFE294df094d;
-    address internal constant STRATUM_ETH_POOL = 0xe8792eD86872FD6D8b74d0668E383454cbA15AFc;
+    /** Standard curve pool selectors */
 
-    address internal constant MUSD = 0xab575258d37EaA5C8956EfABe71F4eE8F6397cF3;
-    address internal constant USDY = 0x5bE26527e817998A7206475496fDE1E68957c5A6;
+    /// @notice selector exchange(uint256,uint256,uint256,uint256)
+    bytes32 private constant EXCHANGE = 0x5b41b90800000000000000000000000000000000000000000000000000000000;
+
+    /// @notice selector exchange(int128,int128,uint256,uint256)
+    bytes32 private constant EXCHANGE_INT = 0x3df0212400000000000000000000000000000000000000000000000000000000;
+
+    /// @notice selector exchange_underlying(uint256,uint256,uint256,uint256)
+    bytes32 private constant EXCHANGE_UNDERLYING = 0xa6417ed600000000000000000000000000000000000000000000000000000000;
+
+    /// @notice selector exchange_underlying(uint256,uint256,uint256,uint256,address)
+    bytes32 private constant EXCHANGE_UNDERLYING_RECEIVER = 0xe2ad025a00000000000000000000000000000000000000000000000000000000;
+
+    /// @notice selector exchange_received(int128,int128,uint256,uint256,address)
+    bytes32 private constant EXCHANGE_RECEIVED = 0xafb4301200000000000000000000000000000000000000000000000000000000;
+
+    /// @notice selector exchange(int128,int128,uint256,uint256,address)
+    bytes32 private constant EXCHANGE_RECEIVED_INT = 0xddc1f59d00000000000000000000000000000000000000000000000000000000;
+
+    /// @notice selector for cuve forks usibng solidity swap(uint8,uint8,uint256,uint256,uint256)
+    bytes32 private constant SWAP = 0x9169558600000000000000000000000000000000000000000000000000000000;
+
+    /// @notice Curve params lengths
+    uint256 internal constant SKIP_LENGTH_CURVE = 45; // = 20+1+1+20+1+1+1
+    uint256 internal constant MAX_SINGLE_LENGTH_CURVE = 67; // = SKIP_LENGTH_CURVE+20+1+2
+
+    /// @notice Curve NG param lengths match Curve
+    uint256 internal constant SKIP_LENGTH_CURVE_NG = SKIP_LENGTH_CURVE;
+    uint256 internal constant MAX_SINGLE_LENGTH_CURVE_NG = MAX_SINGLE_LENGTH_CURVE;
 
     constructor() {}
 
     /**
-     * Swaps Stratums Curve fork exact in internally and handles wrapping/unwrapping of mUSD->USDY
-     * This one has a dedicated implementation as this pool has a rebasing asset which can be unwrapped
-     * The rebasing asset is rarely ever used in other types of swap pools, as such,w e auto wrap / unwrap in case we 
-     * use the unwrapped asset as input or output 
-     * @param tokenIn input
-     * @param tokenOut output
-     * @param amountIn sell amount
-     * @return amountOut buy amount
+     * Swaps using a standard curve pool
+     * Data is supposed to be packed as follows
+     * tokenIn | actionId | dexId | pool | i | j | sm | tokenOut
+     * sm is the selecor,
+     * i,j are the swap indexes for the pool
      */
-    function swapStratum3(
-        address tokenIn, 
-        address tokenOut, 
-        uint256 amountIn, 
-        address payer,
-        address receiver
-    ) internal returns (uint256 amountOut) {
-        assembly {
-            let ptr := mload(0x40)
-
-            ////////////////////////////////////////////////////
-            // Pull funds if needed
-            ////////////////////////////////////////////////////
-            if xor(payer, address()) {
-                // selector for transferFrom(address,address,uint256)
-                mstore(ptr, ERC20_TRANSFER_FROM)
-                mstore(add(ptr, 0x04), payer)
-                mstore(add(ptr, 0x24), address())
-                mstore(add(ptr, 0x44), amountIn)
-
-                let success := call(gas(), tokenIn, 0, ptr, 0x64, ptr, 32)
-
-                let rdsize := returndatasize()
-
-                // Check for ERC20 success. ERC20 tokens should return a boolean,
-                // but some don't. We accept 0-length return data as success, or at
-                // least 32 bytes that starts with a 32-byte boolean true.
-                success := and(
-                    success, // call itself succeeded
-                    or(
-                        iszero(rdsize), // no return data, or
-                        and(
-                            iszero(lt(rdsize, 32)), // at least 32 bytes
-                            eq(mload(ptr), 1) // starts with uint256(1)
-                        )
-                    )
-                )
-
-                if iszero(success) {
-                    returndatacopy(0, 0, rdsize)
-                    revert(0, rdsize)
-                }
-            }
-        
-            // curve forks work with indices, we determine these below
-            let indexIn
-            let indexOut
-            switch tokenIn
-            // USDY
-            case 0x5bE26527e817998A7206475496fDE1E68957c5A6 {
-
-                ////////////////////////////////////////////////////
-                // Wrap USDY->mUSD before the swap
-                ////////////////////////////////////////////////////
-
-                // execute USDY->mUSD wrap
-                // selector for wrap(uint256)
-                mstore(0x0, 0xea598c00000000000000000000000000000000000000000000000000000000)
-                mstore(0x4, amountIn)
-                if iszero(call(gas(), MUSD, 0x0, 0x0, 0x24, 0x0, 0x0)) {
-                    returndatacopy(0x0, 0, returndatasize())
-                    revert(0x0, returndatasize())
-                }
-
-                ////////////////////////////////////////////////////
-                // Fetch mUSD balance of this contract 
-                ////////////////////////////////////////////////////
-
-                // selector for balanceOf(address)
-                mstore(0x0, ERC20_BALANCE_OF)
-                // add this address as parameter
-                mstore(0x04, address())
-                
-                // call to token
-                pop(staticcall(gas(), MUSD, 0x0, 0x24, 0x0, 0x20))
-
-                // load the retrieved balance
-                amountIn := mload(0x0)
-                indexIn := 0
-            }
-            // MUSD
-            case 0xab575258d37EaA5C8956EfABe71F4eE8F6397cF3 {
-                indexIn := 0
-            }
-            // USDC
-            case 0x09Bc4E0D864854c6aFB6eB9A9cdF58aC190D0dF9 {
-                indexIn := 1
-            }
-            // USDT
-            case 0x201EBa5CC46D216Ce6DC03F6a759e8E766e956aE {
-                indexIn := 2
-            }
-            default {
-                revert(0, 0)
-            }
-
-            switch tokenOut
-            // USDY
-            case 0x5bE26527e817998A7206475496fDE1E68957c5A6 {
-                indexOut := 0
-            }
-            // MUSD
-            case 0xab575258d37EaA5C8956EfABe71F4eE8F6397cF3 {
-                indexOut := 0
-            }
-            // USDC
-            case 0x09Bc4E0D864854c6aFB6eB9A9cdF58aC190D0dF9 {
-                indexOut := 1
-            }
-            // USDT
-            case 0x201EBa5CC46D216Ce6DC03F6a759e8E766e956aE {
-                indexOut := 2
-            }
-            default {
-                revert(0, 0)
-            }
-
-            ////////////////////////////////////////////////////
-            // Execute swap function 
-            ////////////////////////////////////////////////////
-
-            // selector for swap(uint8,uint8,uint256,uint256,uint256)
-            mstore(ptr, 0x9169558600000000000000000000000000000000000000000000000000000000)
-            mstore(add(ptr, 0x04), indexIn)
-            mstore(add(ptr, 0x24), indexOut)
-            mstore(add(ptr, 0x44), amountIn)
-            mstore(add(ptr, 0x64), 0) // min out is zero, we validate slippage at the end
-            mstore(add(ptr, 0x84), MAX_UINT256) // no deadline
-            if iszero(call(gas(), STRATUM_3POOL, 0x0, ptr, 0xA4, ptr, 0x20)) {
-                returndatacopy(0x0, 0, returndatasize())
-                revert(0x0, returndatasize())
-            }
-
-            amountOut := mload(ptr)
-
-            if eq(tokenOut, USDY) {
-
-                ////////////////////////////////////////////////////
-                // tokenOut is USDY, as such, we unwrap mUSD to SUDY
-                ////////////////////////////////////////////////////
-
-                // calculate mUSD->USDY unwrap
-                // selector for unwrap(uint256)
-                mstore(0x0, 0xde0e9a3e00000000000000000000000000000000000000000000000000000000)
-                mstore(0x4, amountOut)
-                if iszero(call(gas(), MUSD, 0x0, 0x0, 0x24, 0x0, 0x20)) {
-                    returndatacopy(0x0, 0, returndatasize())
-                    revert(0x0, returndatasize())
-                }
-                // selector for balanceOf(address)
-                mstore(0x0, ERC20_BALANCE_OF)
-                // add this address as parameter
-                mstore(0x4, address())
-                // call to token
-                pop(staticcall(gas(), USDY, 0x0, 0x24, 0x0, 0x20))
-                // load the retrieved balance
-                amountOut := mload(0x0)
-            }
-
-            ////////////////////////////////////////////////////
-            // Send funds to receiver if needed
-            ////////////////////////////////////////////////////
-            if xor(receiver, address()) {
-                // selector for transfer(address,uint256)
-                mstore(ptr, ERC20_TRANSFER)
-                mstore(add(ptr, 0x04), receiver)
-                mstore(add(ptr, 0x24), amountOut)
-                let success := call(gas(), tokenOut, 0, ptr, 0x44, ptr, 32)
-
-                let rdsize := returndatasize()
-
-                // Check for ERC20 success. ERC20 tokens should return a boolean,
-                // but some don't. We accept 0-length return data as success, or at
-                // least 32 bytes that starts with a 32-byte boolean true.
-                success := and(
-                    success, // call itself succeeded
-                    or(
-                        iszero(rdsize), // no return data, or
-                        and(
-                            iszero(lt(rdsize, 32)), // at least 32 bytes
-                            eq(mload(ptr), 1) // starts with uint256(1)
-                        )
-                    )
-                )
-
-                if iszero(success) {
-                    returndatacopy(0, 0, rdsize)
-                    revert(0, rdsize)
-                }
-            }
-        }
-    }
-
-    function swapCurveGeneral(
+    function _swapCurveGeneral(
+        uint256 pathOffset,
         uint256 amountIn,
         address payer,
-        address receiver,
-        uint256 pathOffset
+        address receiver //
     ) internal returns (uint256 amountOut) {
         assembly {
             let ptr := mload(0x40)
+            let token := shr(96, calldataload(pathOffset))
             ////////////////////////////////////////////////////
             // Pull funds if needed
             ////////////////////////////////////////////////////
@@ -248,7 +77,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
 
                 let success := call(
                     gas(),
-                    shr(96, calldataload(pathOffset)), // tokenIn
+                    token, //
                     0,
                     ptr,
                     0x64,
@@ -277,40 +106,148 @@ abstract contract CurveSwapper is UniTypeSwapper {
                     revert(0, rdsize)
                 }
             }
-            
+
+            // this one contains [pool | i | j | s | ...]
             let indexData := calldataload(add(pathOffset, 22))
-            let pool := shr(96, indexData)
-            let indexIn := and(shr(88, indexData), 0xff)
-            let indexOut := and(shr(80, indexData), 0xff)
+            let pool := shr(96, indexData) // pool is first param
+
             ////////////////////////////////////////////////////
-            // Execute swap function 
+            // Approve pool if needed
             ////////////////////////////////////////////////////
 
-            // selector for swap(uint8,uint8,uint256,uint256,uint256)
-            mstore(ptr, 0x9169558600000000000000000000000000000000000000000000000000000000)
-            mstore(add(ptr, 0x4), indexIn)
-            mstore(add(ptr, 0x24), indexOut)
-            mstore(add(ptr, 0x44), amountIn)
-            mstore(add(ptr, 0x64), 0) // min out is zero, we validate slippage at the end
-            mstore(add(ptr, 0x84), MAX_UINT256) // no deadline
-            if iszero(call(gas(), pool, 0x0, ptr, 0xA4, ptr, 0x20)) {
-                returndatacopy(0, 0, returndatasize())
-                revert(0, returndatasize())
+            // get the approval flag slot first
+            mstore(0x0, token) // store tokenIn in scrap
+            mstore(0x20, APPROVAL_SLOT) // add slot after
+            let slot := keccak256(0x0, 0x40)
+
+            // check if approval flag is zero
+            if iszero(sload(slot)) {
+                // selector for approve(address,uint256)
+                mstore(ptr, ERC20_APPROVE)
+                mstore(add(ptr, 0x04), pool)
+                mstore(add(ptr, 0x24), MAX_UINT256)
+                pop(
+                    call(
+                        gas(),
+                        token, // tokenIn
+                        0,
+                        ptr,
+                        0x44,
+                        ptr,
+                        32
+                    )
+                )
+                sstore(slot, 1) // set flag in approval slot
             }
 
+            ////////////////////////////////////////////////////
+            // Execute swap function
+            ////////////////////////////////////////////////////
+            switch and(shr(72, indexData), 0xff) // selectorId
+            case 0 {
+                // selector for exchange(int128,int128,uint256,uint256)
+                mstore(ptr, EXCHANGE_INT)
+                mstore(add(ptr, 0x4), and(shr(88, indexData), 0xff))
+                mstore(add(ptr, 0x24), and(shr(80, indexData), 0xff))
+                mstore(add(ptr, 0x44), amountIn)
+                mstore(add(ptr, 0x64), 0) // min out is zero, we validate slippage at the end
+                if iszero(call(gas(), pool, 0x0, ptr, 0x84, ptr, 0x20)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
+                indexData := 0xf
+            }
+            case 1 {
+                // exchange(int128,int128,uint256,uint256,address)
+                mstore(ptr, EXCHANGE_RECEIVED_INT)
+                mstore(add(ptr, 0x4), and(shr(88, indexData), 0xff))
+                mstore(add(ptr, 0x24), and(shr(80, indexData), 0xff))
+                mstore(add(ptr, 0x44), amountIn)
+                mstore(add(ptr, 0x64), 0) // min out is zero, we validate slippage at the end
+                mstore(add(ptr, 0x84), receiver)
+                if iszero(call(gas(), pool, 0x0, ptr, 0xA4, ptr, 0x20)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
+                indexData := 0
+            }
+            case 2 {
+                // selector for exchange(uint256,uint256,uint256,uint256)
+                mstore(ptr, EXCHANGE)
+                mstore(add(ptr, 0x4), and(shr(88, indexData), 0xff))
+                mstore(add(ptr, 0x24), and(shr(80, indexData), 0xff))
+                mstore(add(ptr, 0x44), amountIn)
+                mstore(add(ptr, 0x64), 0) // min out is zero, we validate slippage at the end
+                if iszero(call(gas(), pool, 0x0, ptr, 0x84, ptr, 0x20)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
+                indexData := 0xf
+            }
+            case 3 {
+                // selector for exchange_underlying(uint256,uint256,uint256,uint256)
+                mstore(ptr, EXCHANGE_UNDERLYING)
+                mstore(add(ptr, 0x4), and(shr(88, indexData), 0xff))
+                mstore(add(ptr, 0x24), and(shr(80, indexData), 0xff))
+                mstore(add(ptr, 0x44), amountIn)
+                mstore(add(ptr, 0x64), 0) // min out is zero, we validate slippage at the end
+                if iszero(call(gas(), pool, 0x0, ptr, 0x84, ptr, 0x20)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
+                indexData := 0xf
+            }
+            case 4 {
+                // exchange_underlying(uint256,uint256,uint256,uint256,address)
+                mstore(ptr, EXCHANGE_UNDERLYING_RECEIVER)
+                mstore(add(ptr, 0x4), and(shr(88, indexData), 0xff))
+                mstore(add(ptr, 0x24), and(shr(80, indexData), 0xff))
+                mstore(add(ptr, 0x44), amountIn)
+                mstore(add(ptr, 0x64), 0) // min out is zero, we validate slippage at the end
+                mstore(add(ptr, 0x84), receiver)
+                if iszero(call(gas(), pool, 0x0, ptr, 0xA4, ptr, 0x20)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
+                indexData := 0
+            }
+            case 5 {
+                // selector for swap(uint8,uint8,uint256,uint256,uint256)
+                mstore(ptr, SWAP)
+                mstore(add(ptr, 0x4), and(shr(88, indexData), 0xff))
+                mstore(add(ptr, 0x24), and(shr(80, indexData), 0xff))
+                mstore(add(ptr, 0x44), amountIn)
+                mstore(add(ptr, 0x64), 0) // min out is zero, we validate slippage at the end
+                mstore(add(ptr, 0x84), MAX_UINT256)
+                if iszero(call(gas(), pool, 0x0, ptr, 0xA4, ptr, 0x20)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
+                indexData := 0xf
+            }
+            default {
+                revert(0, 0)
+            }
+
+            // we need to get the output amount as these cuve forks
+            // might not return amountOut - assign tokenOut to `token`
+            token := shr(96, calldataload(add(pathOffset, 45))) // tokenIn, pool + 5x uint8 (i,j,s)
+            // load the retrieved balance
             amountOut := mload(ptr)
 
             ////////////////////////////////////////////////////
             // Send funds to receiver if needed
+            // indexData is now the flag for manually
+            // transferuing to the receiver
             ////////////////////////////////////////////////////
-            if xor(receiver, address()) {
+            if and(indexData, xor(receiver, address())) {
                 // selector for transfer(address,uint256)
                 mstore(ptr, ERC20_TRANSFER)
                 mstore(add(ptr, 0x04), receiver)
                 mstore(add(ptr, 0x24), amountOut)
                 let success := call(
                     gas(),
-                    shr(96, calldataload(add(pathOffset, 44))), // tokenIn, added 2x addr + 4x uint8 
+                    token, // tokenIn, pool + 5x uint8 (i,j,s)
                     0,
                     ptr,
                     0x44,
@@ -339,6 +276,58 @@ abstract contract CurveSwapper is UniTypeSwapper {
                     revert(0, rdsize)
                 }
             }
+        }
+    }
+
+    /**
+     * Swaps using a NG pool that allows for pre-funded swaps
+     * Data is supposed to be packed as follows
+     * tokenIn | actionId | dexId | pool | sm | i | j | tokenOut
+     * sm is the selecor,
+     * i,j are the swap indexes for the pool
+     */
+    function _swapCurveNG(
+        uint256 pathOffset,
+        uint256 amountIn,
+        address receiver //
+    ) internal returns (uint256 amountOut) {
+        assembly {
+            let ptr := mload(0x40)
+            let indexData := calldataload(add(pathOffset, 22))
+
+            ////////////////////////////////////////////////////
+            // Execute swap function
+            ////////////////////////////////////////////////////
+            switch and(shr(72, indexData), 0xff)
+            case 0 {
+                // selector for exchange_received(uint256,uint256,uint256,uint256,address)
+                mstore(ptr, EXCHANGE_RECEIVED)
+                mstore(add(ptr, 0x4), and(shr(88, indexData), 0xff)) // indexIn
+                mstore(add(ptr, 0x24), and(shr(80, indexData), 0xff)) // indexOut
+                mstore(add(ptr, 0x44), amountIn)
+                mstore(add(ptr, 0x64), 0) // min out is zero, we validate slippage at the end
+                mstore(add(ptr, 0x84), receiver)
+                if iszero(
+                    call(
+                        gas(),
+                        shr(96, indexData), // pool
+                        0x0,
+                        ptr,
+                        0xA4,
+                        ptr,
+                        0x20
+                    )
+                ) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
+                indexData := 0xf
+            }
+            default {
+                revert(0, 0)
+            }
+
+            amountOut := mload(ptr)
         }
     }
 }

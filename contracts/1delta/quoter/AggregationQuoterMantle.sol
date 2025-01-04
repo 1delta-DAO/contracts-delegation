@@ -65,7 +65,7 @@ contract OneDeltaQuoterMantle is PoolGetter {
     uint256 internal constant V2_PARAM_LENGTH = CL_PARAM_LENGTH; // token + id + pool
     uint256 internal constant EXOTIC_PARAM_LENGTH = 41; // token + id + pool
     uint256 internal constant DODO_PARAM_LENGTH = 42; // token + id + pool + uint8
-    uint256 internal constant CURVE_PARAM_LENGTH = CL_PARAM_LENGTH; // token + id + pool + idIn + idOut
+    uint256 internal constant CURVE_PARAM_LENGTH = CL_PARAM_LENGTH + 1; // token + id + pool + idIn + idOut + selectorId
     uint256 internal constant CURVE_CUSTOM_PARAM_LENGTH = 21; // no pool address provided
 
     function quoteDodoV2ExactIn(address pair, uint256 sellQuote, uint256 amountIn) internal view returns (uint256 amountOut) {
@@ -570,22 +570,17 @@ contract OneDeltaQuoterMantle is PoolGetter {
                 }
                 amountIn = quoteExactInputSingle_iZi(tokenIn, tokenOut, pair, uint128(amountIn));
                 path = path[CL_PARAM_LENGTH:];
-            } else if (poolId == 50) {
-                assembly {
-                    // need to re-assign token out for stratum
-                    tokenOut := shr(96, calldataload(add(path.offset, 21)))
-                }
-                amountIn = quoteStratum3(tokenIn, tokenOut, amountIn);
-                path = path[CURVE_CUSTOM_PARAM_LENGTH:];
             } else if (poolId == 51) {
                 uint8 indexIn;
                 uint8 indexOut;
+                uint8 selectorId;
                 assembly {
                     let indexData := calldataload(add(path.offset, 21))
                     indexIn := and(shr(88, indexData), 0xff)
                     indexOut := and(shr(80, indexData), 0xff)
+                    selectorId := and(shr(72, indexData), 0xff)
                 }
-                amountIn = quoteStratumGeneral(indexIn, indexOut, pair, amountIn);
+                amountIn = quoteCurveGeneral(indexIn, indexOut, selectorId, pair, amountIn);
                 path = path[CURVE_PARAM_LENGTH:];
             }
             // v2 types
@@ -627,6 +622,18 @@ contract OneDeltaQuoterMantle is PoolGetter {
                 }
                 amountIn = quoteDodoV2ExactIn(pair, sellQuote, amountIn);
                 path = path[DODO_PARAM_LENGTH:];
+            } else if (poolId == 154) {
+                uint8 indexIn;
+                uint8 indexOut;
+                uint8 selectorId;
+                assembly {
+                    let indexData := calldataload(add(path.offset, 21))
+                    indexIn := and(shr(88, indexData), 0xff)
+                    indexOut := and(shr(80, indexData), 0xff)
+                    selectorId := and(shr(72, indexData), 0xff)
+                }
+                amountIn = quoteCurveNG(indexIn, indexOut, selectorId, pair, amountIn);
+                path = path[CURVE_PARAM_LENGTH:];
             } else {
                 revert invalidDexId();
             }
@@ -773,96 +780,84 @@ contract OneDeltaQuoterMantle is PoolGetter {
         }
     }
 
-    function quoteStratum3(address tokenIn, address tokenOut, uint256 amountIn) internal view returns (uint256 amountOut) {
+    bytes32 internal constant CURVE_FORK_CALCULATE_SWAP = 0xa95b089f00000000000000000000000000000000000000000000000000000000;
+
+    bytes32 internal constant CURVE_GET_DY = 0x556d6e9f00000000000000000000000000000000000000000000000000000000;
+
+    bytes32 internal constant CURVE_GET_DY_128 = 0x5e0d443f00000000000000000000000000000000000000000000000000000000;
+
+    function quoteCurveGeneral(
+        uint256 indexIn,
+        uint256 indexOut,
+        uint256 selectorId,
+        address pool,
+        uint256 amountIn
+    ) internal view returns (uint256 amountOut) {
         assembly {
-            let indexIn
-            let indexOut
-            switch tokenIn
-            // USDY
-            case 0x5bE26527e817998A7206475496fDE1E68957c5A6 {
-                // calculate USDY->mUSD wrap
-                // selector for getRUSDYByShares(uint256)
-                mstore(0xB00, 0xbc0ca91500000000000000000000000000000000000000000000000000000000)
-
-                mstore(0xB04, amountIn)
-                if iszero(staticcall(gas(), MUSD, 0xB00, 0x24, 0xB00, 0x20)) {
-                    revert(0, 0)
-                }
-                amountIn := mul(mload(0xB00), 10000)
-                indexIn := 0
+            let ptr := mload(0x40)
+            switch selectorId
+            case 0 {
+                // selector for get_dy(int128,int128,uint256)
+                mstore(ptr, CURVE_GET_DY_128)
             }
-            // MUSD
-            case 0xab575258d37EaA5C8956EfABe71F4eE8F6397cF3 {
-                indexIn := 0
+            case 1 {
+                // selector for get_dy(int128,int128,uint256)
+                mstore(ptr, CURVE_GET_DY_128)
             }
-            // USDC
-            case 0x09Bc4E0D864854c6aFB6eB9A9cdF58aC190D0dF9 {
-                indexIn := 1
+            case 2 {
+                // selector for get_dy(uint256,uint256,uint256)
+                mstore(ptr, CURVE_GET_DY)
             }
-            // USDT
-            case 0x201EBa5CC46D216Ce6DC03F6a759e8E766e956aE {
-                indexIn := 2
+            case 3 {
+                // selector for get_dy(uint256,uint256,uint256)
+                mstore(ptr, CURVE_GET_DY)
+            }
+            case 4 {
+                // selector for get_dy(uint256,uint256,uint256)
+                mstore(ptr, CURVE_GET_DY)
+            }
+            case 5 {
+                // selector for calculateSwap(uint8,uint8,uint256)
+                mstore(ptr, CURVE_FORK_CALCULATE_SWAP)
             }
             default {
                 revert(0, 0)
             }
-
-            switch tokenOut
-            // USDY
-            case 0x5bE26527e817998A7206475496fDE1E68957c5A6 {
-                indexOut := 0
-            }
-            // MUSD
-            case 0xab575258d37EaA5C8956EfABe71F4eE8F6397cF3 {
-                indexOut := 0
-            }
-            // USDC
-            case 0x09Bc4E0D864854c6aFB6eB9A9cdF58aC190D0dF9 {
-                indexOut := 1
-            }
-            // USDT
-            case 0x201EBa5CC46D216Ce6DC03F6a759e8E766e956aE {
-                indexOut := 2
-            }
-            default {
+            mstore(add(ptr, 0x04), indexIn)
+            mstore(add(ptr, 0x24), indexOut)
+            mstore(add(ptr, 0x44), amountIn)
+            if iszero(staticcall(gas(), pool, ptr, 0x64, 0x0, 0x20)) {
                 revert(0, 0)
             }
-            // selector for calculateSwap(uint8,uint8,uint256)
-            mstore(0xB00, 0xa95b089f00000000000000000000000000000000000000000000000000000000)
-            mstore(0xB04, indexIn)
-            mstore(0xB24, indexOut)
-            mstore(0xB44, amountIn)
-            if iszero(staticcall(gas(), STRATUM_3POOL, 0xB00, 0x64, 0xB00, 0x20)) {
-                revert(0, 0)
-            }
-
-            amountOut := mload(0xB00)
-
-            if eq(tokenOut, USDY) {
-                // calculate mUSD->USDY unwrap
-                // selector for getSharesByRUSDY(uint256)
-                mstore(0xB00, 0xb15f291e00000000000000000000000000000000000000000000000000000000)
-                mstore(0xB04, amountOut)
-                if iszero(staticcall(gas(), MUSD, 0xB00, 0x24, 0xB00, 0x20)) {
-                    revert(0, 0)
-                }
-                amountOut := div(mload(0xB00), 10000)
-            }
+            amountOut := mload(0x0)
         }
     }
 
-    function quoteStratumGeneral(uint256 indexIn, uint256 indexOut, address pool, uint256 amountIn) internal view returns (uint256 amountOut) {
+    function quoteCurveNG(
+        uint256 indexIn,
+        uint256 indexOut,
+        uint256 selectorId,
+        address pool,
+        uint256 amountIn
+    ) internal view returns (uint256 amountOut) {
         assembly {
-            // selector for calculateSwap(uint8,uint8,uint256)
-            mstore(0xB00, 0xa95b089f00000000000000000000000000000000000000000000000000000000)
-            mstore(0xB04, indexIn)
-            mstore(0xB24, indexOut)
-            mstore(0xB44, amountIn)
-            if iszero(staticcall(gas(), pool, 0xB00, 0x64, 0xB00, 0x20)) {
+            let ptr := mload(0x40)
+            switch selectorId
+            case 0 {
+                // selector for get_dy(int128,int128,uint256)
+                mstore(ptr, CURVE_GET_DY_128)
+                mstore(add(ptr, 0x04), indexIn)
+                mstore(add(ptr, 0x24), indexOut)
+                mstore(add(ptr, 0x44), amountIn)
+                if iszero(staticcall(gas(), pool, ptr, 0x64, 0x0, 0x20)) {
+                    revert(0, 0)
+                }
+            }
+            default {
                 revert(0, 0)
             }
 
-            amountOut := mload(0xB00)
+            amountOut := mload(0x0)
         }
     }
 

@@ -549,7 +549,7 @@ abstract contract MarginTrading is BaseSwapper {
             )
             // skim address from calldata
             pathLength := sub(pathLength, 36)
-            // assume a multihop if the calldata is longer than 66
+            // assume a multihop if the calldata is longer than 67
             multihop := gt(pathLength, MAX_SINGLE_LENGTH_UNOSWAP)
             // use tradeId as tradetype
             tradeId := and(

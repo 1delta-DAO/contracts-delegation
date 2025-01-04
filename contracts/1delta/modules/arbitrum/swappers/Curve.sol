@@ -30,7 +30,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
     /// @notice selector exchange_underlying(uint256,uint256,uint256,uint256,address)
     bytes32 private constant EXCHANGE_UNDERLYING_RECEIVER = 0xe2ad025a00000000000000000000000000000000000000000000000000000000;
 
-    /// @notice selector exchange_received(uint256,uint256,uint256,uint256,address)
+    /// @notice selector exchange_received(int128,int128,uint256,uint256,address)
     bytes32 private constant EXCHANGE_RECEIVED = 0xafb4301200000000000000000000000000000000000000000000000000000000;
 
     /// @notice selector exchange(int128,int128,uint256,uint256,address)
@@ -40,9 +40,9 @@ abstract contract CurveSwapper is UniTypeSwapper {
     uint256 internal constant SKIP_LENGTH_CURVE = 46; // = 20+1+1+20+1+1+1
     uint256 internal constant MAX_SINGLE_LENGTH_CURVE = 68; // = SKIP_LENGTH_CURVE+20+1+1
 
-    /// @notice Curve NG param lengths (has no approvals)
-    uint256 internal constant SKIP_LENGTH_CURVE_NG = 45; // = 20+1+1+20+1+1+1
-    uint256 internal constant MAX_SINGLE_LENGTH_CURVE_NG = 67; // = SKIP_LENGTH_CURVE+20+1+1
+    /// @notice Curve NG param lengths match Curve
+    uint256 internal constant SKIP_LENGTH_CURVE_NG = SKIP_LENGTH_CURVE;
+    uint256 internal constant MAX_SINGLE_LENGTH_CURVE_NG = MAX_SINGLE_LENGTH_CURVE;
 
     constructor() {}
 
@@ -276,7 +276,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
             ////////////////////////////////////////////////////
             switch and(shr(72, indexData), 0xff)
             case 0 {
-                // selector for exchange_received(uint256,uint256,uint256,uint256,address)
+                // selector for exchange_received(int128,int128,uint256,uint256,address)
                 mstore(ptr, EXCHANGE_RECEIVED)
                 mstore(add(ptr, 0x4), and(shr(88, indexData), 0xff)) // indexIn
                 mstore(add(ptr, 0x24), and(shr(80, indexData), 0xff)) // indexOut

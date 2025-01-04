@@ -29,6 +29,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
     uint256 internal constant IZI_ID = UNISWAP_V3_MAX_ID;
     uint256 internal constant STRATUM3_WRAPPER_ID = 50;
     uint256 internal constant CURVE_V1_STANDARD_ID = 51;
+    uint256 internal constant CURVE_V1_MAX_ID = 70;
     
     // pre-fundeds
     uint256 internal constant UNISWAP_V2_MAX_ID = 150;
@@ -38,6 +39,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
     uint256 internal constant MOE_LB_ID = 151;
     uint256 internal constant GMX_ID = 152;
     uint256 internal constant DODO_ID = 153;
+    uint256 internal constant CURVE_NG_ID = 154;
 
     // offset for receiver address for most DEX types (uniswap, curve etc.)
     uint256 internal constant RECEIVER_OFFSET_UNOSWAP = 66;
@@ -237,70 +239,43 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
                 pathLength := sub(pathLength, SKIP_LENGTH_UNOSWAP)
             }
         }
-        // Stratum 3USD with wrapper
-        else if (dexId == STRATUM3_WRAPPER_ID) {
-            assembly {
-                switch lt(pathLength, 45) // maxLength = 20+1+1+20+2=44
-                case 1 { currentReceiver := receiver}
-                default {
-                    dexId := and(calldataload(add(pathOffset, 12)), UINT8_MASK)
-                    switch gt(dexId, 99) 
-                    case 1 {
-                        currentReceiver := shr(
-                                96,
-                                calldataload(
-                                    add(
-                                        pathOffset,
-                                        44 // 20 + 2 + 20 + 2 [poolAddress starts here]
-                                    )
-                                ) // poolAddress
-                            )
-                    }
+          // Curve pool types
+        else if(dexId < CURVE_V1_MAX_ID){
+            // Curve standard pool
+            if (dexId == CURVE_V1_STANDARD_ID) {
+                assembly {
+                    switch lt(pathLength, 69) // lengthFull = 20+1+1+20+1+1+20+3 = 67
+                    case 1 { currentReceiver := receiver}
                     default {
-                        currentReceiver := address()
+                        dexId := and(calldataload(add(pathOffset, 35)), UINT8_MASK) // SKIP_LENGTH_UNOSWAP - 10
+                        switch gt(dexId, 99) 
+                        case 1 {
+                            currentReceiver := shr(
+                                    96,
+                                    calldataload(
+                                        add(
+                                            pathOffset,
+                                            MAX_SINGLE_LENGTH_CURVE // 20 + 2 + 20 + 2 + 20 + 2 [poolAddress starts here]
+                                        )
+                                    ) // poolAddress
+                                )
+                        }
+                        default {
+                            currentReceiver := address()
+                        }
                     }
                 }
-            }
-            address tokenIn;
-            address tokenOut;
-            assembly {
-                tokenIn := shr(96, calldataload(pathOffset))
-                tokenOut := shr(96, calldataload(add(pathOffset, 22)))
-            }
-            amountIn = swapStratum3(tokenIn, tokenOut, amountIn, payer, currentReceiver);
-            assembly {
-                pathOffset := add(pathOffset, 22)
-                pathLength := sub(pathLength, 22)
-            }
-        }
-        // Curve stable general
-        else if (dexId == CURVE_V1_STANDARD_ID) {
-            assembly {
-                switch lt(pathLength, 67) // lengthFull = 20+1+1+20+1+1+20+3 = 67
-                case 1 { currentReceiver := receiver}
-                default {
-                    dexId := and(calldataload(add(pathOffset, 34)), UINT8_MASK) // SKIP_LENGTH_UNOSWAP - 10
-                    switch gt(dexId, 99) 
-                    case 1 {
-                        currentReceiver := shr(
-                                96,
-                                calldataload(
-                                    add(
-                                        pathOffset,
-                                        RECEIVER_OFFSET_UNOSWAP // 20 + 2 + 20 + 2 + 20 + 2 [poolAddress starts here]
-                                    )
-                                ) // poolAddress
-                            )
-                    }
-                    default {
-                        currentReceiver := address()
-                    }
+                amountIn = _swapCurveGeneral(pathOffset, amountIn, payer, currentReceiver);
+                assembly {
+                    pathOffset := add(pathOffset, SKIP_LENGTH_CURVE)
+                    pathLength := sub(pathLength, SKIP_LENGTH_CURVE)
                 }
             }
-            amountIn = swapCurveGeneral(amountIn, payer, currentReceiver, pathOffset);
-            assembly {
-                pathOffset := add(pathOffset, SKIP_LENGTH_UNOSWAP)
-                pathLength := sub(pathLength, SKIP_LENGTH_UNOSWAP)
+            else {
+                assembly {
+                    mstore(0, INVALID_DEX)
+                    revert (0, 0x4)
+                }
             }
         }
         // uniswapV2 style
@@ -421,6 +396,36 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
             assembly {
                 pathOffset := add(pathOffset, 42)
                 pathLength := sub(pathLength, 42)
+            }
+        }
+        // Curve NG
+        else if (dexId == CURVE_NG_ID) {
+            assembly {
+                switch lt(pathLength, 68) // 
+                case 1 { currentReceiver := receiver}
+                default {
+                    dexId := and(calldataload(add(pathOffset, 35)), UINT8_MASK)
+                    switch gt(dexId, 99) 
+                    case 1 {
+                        currentReceiver := shr(
+                                96,
+                                calldataload(
+                                    add(
+                                        pathOffset,
+                                        MAX_SINGLE_LENGTH_CURVE_NG // 20 + 2 + 20 + 2 + 20 + 2 [poolAddress starts here]
+                                    )
+                                ) // poolAddress
+                            )
+                    }
+                    default {
+                        currentReceiver := address()
+                    }
+                }
+            }
+            amountIn = _swapCurveNG(pathOffset, amountIn, currentReceiver);
+            assembly {
+                pathOffset := add(pathOffset, SKIP_LENGTH_CURVE_NG)
+                pathLength := sub(pathLength, SKIP_LENGTH_CURVE_NG)
             }
         }
         // GMX

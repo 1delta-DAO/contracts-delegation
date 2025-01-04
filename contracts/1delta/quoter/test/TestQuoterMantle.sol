@@ -17,7 +17,7 @@ contract TestQuoterMantle is OneDeltaQuoterMantle {
     }
 
     function _quoteStratumGeneral(uint256 indexIn, uint256 indexOut, address pool, uint256 amountIn) public view returns (uint256 amountOut) {
-        return super.quoteStratumGeneral(indexIn, indexOut, pool, amountIn);
+        return super.quoteCurveGeneral(indexIn, indexOut, 5, pool, amountIn);
     }
 
     /// @dev Returns the pool for the given token pair and fee.
@@ -38,9 +38,5 @@ contract TestQuoterMantle is OneDeltaQuoterMantle {
 
     function _quoteWOO(address tokenIn, address tokenOut, uint256 amountIn) public view returns (uint256 amountOut) {
         return super.quoteWOO(tokenIn, tokenOut, amountIn);
-    }
-
-    function _quoteStratum3(address tokenIn, address tokenOut, uint256 amountIn) public view returns (uint256 amountOut) {
-        return super.quoteStratum3(tokenIn, tokenOut, amountIn);
     }
 }

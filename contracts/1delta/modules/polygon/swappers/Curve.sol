@@ -39,12 +39,12 @@ abstract contract CurveSwapper is UniTypeSwapper {
     bytes32 private constant EXCHANGE_META_RECEIVER = 0xb837cc6900000000000000000000000000000000000000000000000000000000;
 
     /// @notice Curve params lengths
-    uint256 internal constant SKIP_LENGTH_CURVE = 46; // = 20+1+1+20+1+1+1
-    uint256 internal constant MAX_SINGLE_LENGTH_CURVE = 68; // = SKIP_LENGTH_CURVE+20+1+1
-
-    /// @notice Curve NG param lengths (has no approvals)
-    uint256 internal constant SKIP_LENGTH_CURVE_NG = 45; // = 20+1+1+20+1+1+1
-    uint256 internal constant MAX_SINGLE_LENGTH_CURVE_NG = 67; // = SKIP_LENGTH_CURVE+20+1+1
+    uint256 internal constant SKIP_LENGTH_CURVE = 45; // = 20+1+1+20+1+1
+    uint256 internal constant MAX_SINGLE_LENGTH_CURVE = 67; // = SKIP_LENGTH_CURVE+20+2
+    
+    /// @notice Curve NG param lengths match Curve
+    uint256 internal constant SKIP_LENGTH_CURVE_NG = SKIP_LENGTH_CURVE;
+    uint256 internal constant MAX_SINGLE_LENGTH_CURVE_NG = MAX_SINGLE_LENGTH_CURVE;
 
     constructor() {}
 
