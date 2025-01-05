@@ -145,7 +145,6 @@ abstract contract DeltaSetup is AddressesEthereum, ComposerUtils, Script, Test {
         // quoter
 
         testQuoter = new TestQuoterPolygon();
-        management.clearCache();
     }
 
     function initializeDeltaAaveV3() internal virtual {

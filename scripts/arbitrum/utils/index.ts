@@ -1,13 +1,13 @@
 
-export const MANTLE_CONFIGS = {
+export const ARBITRUM_CONFIGS = {
     maxFeePerGas: 0.02 * 1e9,
     maxPriorityFeePerGas: 0.02 * 1e9
 }
 
 
-export function getMantleConfig(n: number) {
+export function getArbitrumConfig(n: number) {
     return {
         nonce: n,
-        ...MANTLE_CONFIGS
+        ...ARBITRUM_CONFIGS
     }
 }

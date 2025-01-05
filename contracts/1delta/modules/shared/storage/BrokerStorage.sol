@@ -15,11 +15,6 @@ struct GeneralLenderStorage {
     mapping(uint256 => address) lendingPools;
 }
 
-// allows storing anything into a bytes32
-// typically used for transient storage variables
-struct GeneralCache {
-    bytes32 cache;
-}
 
 // a validation apping that ensures that an external call can
 // be executed on an address
@@ -46,13 +41,6 @@ library LibStorage {
         bytes32 position = LENDER_STORAGE;
         assembly {
             ls.slot := position
-        }
-    }
-
-    function generalCacheStorage() internal pure returns (GeneralCache storage gcs) {
-        bytes32 position = GENERAL_CACHE;
-        assembly {
-            gcs.slot := position
         }
     }
 
@@ -86,10 +74,6 @@ contract WithBrokerStorage {
         return LibStorage.lenderStorage();
     }
 
-    function gcs() internal pure returns (GeneralCache storage) {
-        return LibStorage.generalCacheStorage();
-    }
-
     function es() internal pure returns (ExternalCallStorage storage) {
         return LibStorage.externalCallsStorage();
     }
@@ -108,16 +92,5 @@ contract WithBrokerStorage {
         assembly {
             key := or(shl(240, _lenderId), _underlying)
         }
-    }
-
-    /** CACHING */
-
-    function _cacheCaller() internal {
-        bytes32 encoded;
-        assembly {
-            mstore(0x0, caller())
-            encoded := mload(0x0)
-        }
-        gcs().cache = encoded;
     }
 }

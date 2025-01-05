@@ -2,7 +2,7 @@
 import { ethers } from "hardhat";
 import { OneDeltaComposerMantle__factory } from "../../types";
 import { ONE_DELTA_GEN2_ADDRESSES } from "./addresses/oneDeltaAddresses";
-import { getMantleConfig } from "./utils";
+import { getArbitrumConfig } from "./utils";
 
 async function main() {
 
@@ -44,7 +44,7 @@ async function main() {
     console.log("sweepCall", sweepCall)
     const gasLimit = await composer.estimateGas.deltaCompose(sweepCall)
     console.log("GL", gasLimit)
-    const tx = await composer.deltaCompose(sweepCall, { ...getMantleConfig(nonce++), gasLimit: gasLimit.mul(11).div(10) })
+    const tx = await composer.deltaCompose(sweepCall, { ...getArbitrumConfig(nonce++), gasLimit: gasLimit.mul(11).div(10) })
     console.log("hash", tx.hash)
     await tx.wait()
 }

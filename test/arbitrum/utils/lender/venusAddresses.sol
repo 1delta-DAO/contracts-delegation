@@ -19,7 +19,7 @@ library VenusCoreArbitrum {
 }
 
 library VenusEtherArbitrum {
-    address internal constant COMPTROLLER = 0x317c1A5739F39046E20b08ac9BeEa3f10fD43326;
+    address internal constant COMPTROLLER = 0x52bAB1aF7Ff770551BD05b9FC2329a0Bf5E23F16;
 
     // tokens
 

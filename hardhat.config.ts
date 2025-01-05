@@ -431,12 +431,33 @@ const config: HardhatUserConfig = {
       }
     ],
     overrides: {
+      // proxy
+      "contracts/1delta/proxy/DeltaBrokerGen2.sol": {
+        version: '0.8.28',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1_000_000,
+          },
+          evmVersion: 'cancun',
+        },
+      },
       "contracts/1delta/modules/polygon/Composer.sol": {
         version: '0.8.28',
         settings: {
           optimizer: {
             enabled: true,
             runs: 9_950,
+          },
+          evmVersion: 'cancun',
+        },
+      },
+      "contracts/1delta/modules/arbitrum/Composer.sol": {
+        version: '0.8.28',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1_000,
           },
           evmVersion: 'cancun',
         },

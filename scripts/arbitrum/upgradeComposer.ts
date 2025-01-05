@@ -5,8 +5,8 @@ import {
     OneDeltaComposerMantle__factory,
     LensModule__factory,
 } from "../../types";
-import { getMantleConfig } from "./utils";
-import { ModuleConfigAction, getContractSelectors } from "../../test-ts/libraries/diamond";
+import { getArbitrumConfig } from "./utils";
+import { ModuleConfigAction, getContractSelectors } from "../_utils/diamond";
 import { ONE_DELTA_GEN2_ADDRESSES } from "./addresses/oneDeltaAddresses";
 
 
@@ -24,7 +24,7 @@ async function main() {
 
     // deploy module
     // composer
-    const newComposer = await new OneDeltaComposerMantle__factory(operator).deploy(getMantleConfig(nonce++))
+    const newComposer = await new OneDeltaComposerMantle__factory(operator).deploy(getArbitrumConfig(nonce++))
     await newComposer.deployed()
 
 
@@ -57,7 +57,7 @@ async function main() {
 
     const oneDeltaModuleConfig = await new ConfigModule__factory(operator).attach(proxyAddress)
 
-    let tx = await oneDeltaModuleConfig.configureModules(cut, getMantleConfig(nonce++))
+    let tx = await oneDeltaModuleConfig.configureModules(cut, getArbitrumConfig(nonce++))
     await tx.wait()
     console.log("modules added")
 

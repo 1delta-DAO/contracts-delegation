@@ -21,11 +21,6 @@ contract ManagementModule is WithBrokerStorage, Slots {
 
     // STATE CHANGING FUNCTION
 
-    // sets the initial cache
-    function clearCache() external onlyOwner {
-        gcs().cache = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
-    }
-
     /** ADD TOKEN SET FOR A LENDER */
 
     struct BatchAddLenderTokensParams {
@@ -43,9 +38,9 @@ contract ManagementModule is WithBrokerStorage, Slots {
         for (uint256 i = 0; i < lenderParams.length; i++) {
             BatchAddLenderTokensParams memory params = lenderParams[i];
             bytes32 key = _getLenderTokenKey(params.underlying, params.lenderId);
-            if (params.collateralToken != address(0)) ls().collateralTokens[key] = params.collateralToken;
-            if (params.debtToken != address(0)) ls().debtTokens[key] = params.debtToken;
-            if (params.stableDebtToken != address(0)) ls().stableDebtTokens[key] = params.stableDebtToken;
+            ls().collateralTokens[key] = params.collateralToken;
+            ls().debtTokens[key] = params.debtToken;
+            ls().stableDebtTokens[key] = params.stableDebtToken;
         }
     }
 
@@ -71,6 +66,18 @@ contract ManagementModule is WithBrokerStorage, Slots {
     function batchApprove(ApproveParams[] memory approveParams) external onlyOwner {
         for (uint256 i = 0; i < approveParams.length; i++) {
             IERC20(approveParams[i].token).approve(approveParams[i].target, type(uint256).max);
+        }
+    }
+
+    struct TargetParams {
+        address target;
+        bool value;
+    }
+
+    // approve tokens and targets
+    function batchSetSingleTarget(TargetParams[] memory targetParams) external onlyOwner {
+        for (uint256 i = 0; i < targetParams.length; i++) {
+            cms().isValid[targetParams[i].target] = targetParams[i].value;
         }
     }
 
@@ -118,18 +125,6 @@ contract ManagementModule is WithBrokerStorage, Slots {
     }
 
     /** TARGET FOR SWAPPING */
-
-    function getIsValidTarget(address _approvalTarget, address _target) external view returns (bool val) {
-        // equivalent to
-        // return es().isValidApproveAndCallTarget[_approvalTarget][_target];
-        assembly {
-            mstore(0x0, _approvalTarget)
-            mstore(0x20, EXTERNAL_CALLS_SLOT)
-            mstore(0x20, keccak256(0x0, 0x40))
-            mstore(0x0, _target)
-            val := sload(keccak256(0x0, 0x40))
-        }
-    }
 
     function getLendingPool(uint16 _lenderId) external view returns (address pool) {
         // equivalent to

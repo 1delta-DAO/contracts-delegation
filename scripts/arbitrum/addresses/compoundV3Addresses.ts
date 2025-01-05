@@ -1,10 +1,14 @@
 import { AddressMap } from "../../shared"
+export namespace CompoundV3Arbitrum {
+    export const COMET_USDT = '0xd98Be00b5D27fc98112BdE293e487f8D4cA57d07'
+    export const COMET_USDC = '0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf'
+    export const COMET_WETH = '0x6f7D514bbD4aFf3BcD1140B7344b32f063dEe486'
+    export const COMET_USDCE = '0xA5EDBDD9646f8dFF606d7448e414884C7d905dCA'
 
-export const COMET_USDE = '0x606174f62cd968d8e684c645080fa694c1D7786E'
-
-export const COMET_USDE_UNDERLYINGS:AddressMap = {
-    USDE: '0x5d3a1Ff2b6BAb83b63cd9AD0787074081a52ef34',
-    METH: '0xcDA86A272531e8640cD7F1a92c01839911B90bb0',
-    WETH: '0xdEAddEaDdeadDEadDEADDEAddEADDEAddead1111',
-    FBTC: '0xc96de26018a54d51c097160568752c4e3bd6c364',
+    export const COMET_USDC_UNDERLYINGS = [
+        "USDC",
+        "USDCE",
+        "USDT",
+        "WETH",
+    ]
 }

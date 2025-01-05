@@ -164,7 +164,6 @@ contract DeltaSetup is AddressesMantle, ComposerUtils, Script, Test {
 
         testQuoter = new TestQuoterMantle();
 
-        management.clearCache();
     }
 
     function initializeDeltaLendle() internal virtual {

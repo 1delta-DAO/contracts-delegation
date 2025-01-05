@@ -164,7 +164,6 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
 
         testQuoter = new TestQuoterTaiko();
 
-        management.clearCache();
     }
 
     function initializeDeltaHana() internal virtual {

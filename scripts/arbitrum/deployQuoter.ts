@@ -1,7 +1,7 @@
 
 import { ethers } from "hardhat";
 import { OneDeltaQuoterMantle__factory } from "../../types";
-import { MANTLE_CONFIGS } from "./utils";
+import { ARBITRUM_CONFIGS } from "./utils";
 
 async function main() {
     const accounts = await ethers.getSigners()
@@ -11,7 +11,7 @@ async function main() {
     console.log("operator", operator.address, "on", chainId)
 
     console.log("modules added")
-    const oneDeltaManagement = await new OneDeltaQuoterMantle__factory(operator).deploy(MANTLE_CONFIGS)
+    const oneDeltaManagement = await new OneDeltaQuoterMantle__factory(operator).deploy(ARBITRUM_CONFIGS)
 
     console.log("quoter:", oneDeltaManagement.address)
 }

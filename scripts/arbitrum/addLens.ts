@@ -4,8 +4,8 @@ import {
     ConfigModule__factory,
     LensModule__factory,
 } from "../../types";
-import { getMantleConfig } from "./utils";
-import { ModuleConfigAction, getContractSelectors } from "../../test-ts/libraries/diamond";
+import { getArbitrumConfig } from "./utils";
+import { ModuleConfigAction, getContractSelectors } from "../_utils/diamond";
 import { ONE_DELTA_GEN2_ADDRESSES } from "./addresses/oneDeltaAddresses";
 
 
@@ -22,7 +22,7 @@ async function main() {
 
     // deploy module
     // composer
-    const lens = await new LensModule__factory(operator).deploy(getMantleConfig(nonce++))
+    const lens = await new LensModule__factory(operator).deploy(getArbitrumConfig(nonce++))
     await lens.deployed()
 
 

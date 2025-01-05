@@ -222,7 +222,6 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
         // quoter
 
         testQuoter = new TestQuoterPolygon();
-        management.clearCache();
     }
 
     function upgradeExistingDelta(address proxy, address admin, address oldModule) internal virtual {

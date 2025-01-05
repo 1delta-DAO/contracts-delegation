@@ -327,7 +327,6 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
         // quoter
 
         testQuoter = new TestQuoterArbitrum();
-        management.clearCache();
     }
 
     function upgradeExistingDelta(address proxy, address admin, address oldModule) internal virtual {
