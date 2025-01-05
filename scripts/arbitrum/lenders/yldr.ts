@@ -10,6 +10,7 @@ export function getYldrDatas() {
     let params: BatchAddLenderTokensParamsStruct[] = []
     for (let k of tokenKeys) {
         const token = TOKENS_ARBITRUM[k]
+        if(!token) throw new Error("token not defined:" + k)
         params.push({
             underlying: token,
             collateralToken: YldrArbitrum.A_TOKENS[k],
@@ -26,6 +27,7 @@ export function getYldrApproveDatas() {
     let params: ApproveParamsStruct[] = []
     for (let k of tokenKeys) {
         const token = TOKENS_ARBITRUM[k]
+        if(!token) throw new Error("token not defined:" + k)
         params.push({
              token,
             target: YldrArbitrum.POOL,

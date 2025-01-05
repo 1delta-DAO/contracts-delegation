@@ -21,7 +21,7 @@ export namespace AaveV3Arbitrum {
         FRAX: '0x38d693cE1dF5AaDF7bC62595A37D667aD57922e5',
         ARB: '0x6533afac2E7BCCB20dca161449A13A32D391fb00',
         WEETH: '0x8437d7C167dFB82ED4Cb79CD44B7a32A1dd95c77',
-        GHO: '0xeBe517846d0F36eCEd99C735cbF6131e1fEB775',
+        GHO: '0xeBe517846d0F36eCEd99C735cbF6131e1fEB775D',
     }
 
     export const V_TOKENS: { [key: string]: string } = {

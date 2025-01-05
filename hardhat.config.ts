@@ -100,6 +100,7 @@ const config: HardhatUserConfig = {
     ],
     apiKey: {
       mantle: 'abc',
+      arbitrumOne: process.env.ARBISCAN_API_KEY ?? "",
       mainnet: process.env.ETHERSCAN_API_KEY ?? '',
       polygon: process.env.POLYGONSCAN_API_KEY ?? '',
       taiko: process.env.TAIKOSCAN_API_KEY ?? '',
@@ -225,7 +226,7 @@ const config: HardhatUserConfig = {
       live: true,
     },
     arbitrum: {
-      url: 'https://arb1.arbitrum.io/rpc',
+      url: 'https://arbitrum.drpc.org',
       chainId: 42161,
       live: true,
       blockGasLimit: 700000,
@@ -345,7 +346,7 @@ const config: HardhatUserConfig = {
             enabled: true,
             runs: 1_000_000,
           },
-          evmVersion: 'shanghai',
+          evmVersion: 'cancun',
         },
       },
       // algebra

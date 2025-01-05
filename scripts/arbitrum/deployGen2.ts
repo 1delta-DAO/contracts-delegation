@@ -13,11 +13,12 @@ async function main() {
     const accounts = await ethers.getSigners()
     const operator = accounts[1]
     const chainId = await operator.getChainId();
-    if (chainId !== 5000) throw new Error("invalid chainId")
+    if (chainId !== 42161) throw new Error("invalid chainId")
     console.log("operator", operator.address, "on", chainId)
 
     // we manually increment the nonce
     let nonce = await operator.getTransactionCount()
+
     // deploy module config
     const moduleConfig = await new ConfigModule__factory(operator).deploy(getArbitrumConfig(nonce++))
     await moduleConfig.deployed()
@@ -30,6 +31,7 @@ async function main() {
         moduleConfig.address,
         getArbitrumConfig(nonce++)
     )
+    
     await proxy.deployed()
 
     console.log("proxy deployed")

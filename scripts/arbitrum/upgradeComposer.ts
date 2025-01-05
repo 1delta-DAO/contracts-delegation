@@ -2,7 +2,7 @@
 import { ethers } from "hardhat";
 import {
     ConfigModule__factory,
-    OneDeltaComposerMantle__factory,
+    OneDeltaComposerArbitrum__factory,
     LensModule__factory,
 } from "../../types";
 import { getArbitrumConfig } from "./utils";
@@ -16,7 +16,7 @@ async function main() {
     const chainId = await operator.getChainId();
     const proxyAddress = ONE_DELTA_GEN2_ADDRESSES.proxy
     const oldComposer = ONE_DELTA_GEN2_ADDRESSES.composerImplementation
-    if (chainId !== 5000) throw new Error("invalid chainId")
+    if (chainId !== 42161) throw new Error("invalid chainId")
     console.log("operator", operator.address, "on", chainId)
 
     // we manually increment the nonce
@@ -24,7 +24,7 @@ async function main() {
 
     // deploy module
     // composer
-    const newComposer = await new OneDeltaComposerMantle__factory(operator).deploy(getArbitrumConfig(nonce++))
+    const newComposer = await new OneDeltaComposerArbitrum__factory(operator).deploy(getArbitrumConfig(nonce++))
     await newComposer.deployed()
 
 

@@ -10,6 +10,7 @@ export function getVenusDatas() {
     let params: BatchAddLenderTokensParamsStruct[] = []
     for (let k of tokenKeys) {
         const token = TOKENS_ARBITRUM[k]
+        if (!token) throw new Error("token not defined:" + k)
         params.push({
             underlying: token,
             collateralToken: VenusArbitrum.A_TOKENS[k],
@@ -26,6 +27,7 @@ export function getVenusApproveDatas() {
     let params: ApproveParamsStruct[] = []
     for (let k of tokenKeys) {
         const token = TOKENS_ARBITRUM[k]
+        if (!token) throw new Error("token not defined:" + k)
         params.push({
             token,
             target: VenusArbitrum.A_TOKENS[k],
@@ -40,6 +42,7 @@ export function getVenusETHDatas() {
     let params: BatchAddLenderTokensParamsStruct[] = []
     for (let k of tokenKeys) {
         const token = TOKENS_ARBITRUM[k]
+        if (!token) throw new Error("token not defined:" + k)
         params.push({
             underlying: token,
             collateralToken: VenusETHArbitrum.A_TOKENS[k],
@@ -56,6 +59,7 @@ export function getVenusETHApproveDatas() {
     let params: ApproveParamsStruct[] = []
     for (let k of tokenKeys) {
         const token = TOKENS_ARBITRUM[k]
+        if (!token) throw new Error("token not defined:" + k)
         params.push({
             token,
             target: VenusETHArbitrum.A_TOKENS[k],

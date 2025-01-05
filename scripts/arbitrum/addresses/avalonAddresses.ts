@@ -31,12 +31,12 @@ export namespace AvalonPumpBTCArbitrum {
     export const POOL = '0x4B801fb6f0830D070f40aff9ADFC8f6939Cc1F8D';
 
     export const A_TOKENS: { [key: string]: string } = {
-        PUMP_BTC: '0x9a02588DDff4d079cC5BEB1b864B12410049288a',
+        PUMPBTC: '0x9a02588DDff4d079cC5BEB1b864B12410049288a',
         WBTC: '0x0b37eE41a3b80431A444d7F3d9F0edE9023BE000',
     }
 
     export const V_TOKENS: { [key: string]: string } = {
-        PUMP_BTC: '0x0000000000000000000000000000000000000000',
+        PUMPBTC: '0x0000000000000000000000000000000000000000',
         WBTC: '0xCb4d00EaaF3562469a397994897e7384A124395a',
     }
 }

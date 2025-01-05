@@ -9,24 +9,24 @@ import { getAvalonApproveDatas, getAvalonDatas, getAvalonPumpBTCApproveDatas, ge
 import { getVenusApproveDatas, getVenusDatas, getVenusETHApproveDatas, getVenusETHDatas } from "./lenders/venus";
 import { getYldrApproveDatas, getYldrDatas } from "./lenders/yldr";
 import { getInsertAggregators } from "./aggregators/approveAll";
+import { getCompoundV3Approves } from "./lenders/compoundV3";
+import { getArbitrumConfig } from "./utils";
 
 async function main() {
     const accounts = await ethers.getSigners()
     const operator = accounts[1]
     const chainId = await operator.getChainId();
-    if (chainId !== 5000) throw new Error("invalid chainId")
+    if (chainId !== 42161) throw new Error("invalid chainId")
     console.log("operator", operator.address, "on", chainId)
+
 
     // we manually increment the nonce
     let nonce = await operator.getTransactionCount()
-
-    console.log("proxy deployed")
 
     // deploy modules
 
     // management
     const management = await new ManagementModule__factory(operator).attach(ONE_DELTA_GEN2_ADDRESSES.proxy)
-
 
     const aaveDatas = getAaveDatas()
     const avalonDatas = getAvalonDatas()
@@ -35,6 +35,7 @@ async function main() {
     const venusETHDatas = getVenusETHDatas()
     const yldrDatas = getYldrDatas()
 
+    console.log("add lender data")
 
     let tx = await management.batchAddGeneralLenderTokens(
         [
@@ -44,7 +45,8 @@ async function main() {
             ...venusDatas,
             ...venusETHDatas,
             ...yldrDatas,
-        ]
+        ],
+        getArbitrumConfig(nonce++)
     )
 
     await tx.wait()
@@ -57,17 +59,19 @@ async function main() {
     const venusApproves = getVenusApproveDatas()
     const venusETHApproves = getVenusETHApproveDatas()
     const yldrApproves = getYldrApproveDatas()
+    const compoundV3Approves = getCompoundV3Approves()
 
     tx = await management.batchApprove(
         [
-
             ...aaveApproves,
             ...avalonApproves,
             ...avalonPBTCApproves,
             ...venusApproves,
             ...venusETHApproves,
             ...yldrApproves,
-        ]
+            ...compoundV3Approves,
+        ],
+        getArbitrumConfig(nonce++)
     )
 
     await tx.wait()
@@ -80,7 +84,8 @@ async function main() {
         [
 
             ...validTargets,
-        ]
+        ],
+        getArbitrumConfig(nonce++)
     )
 
     console.log("aggregators added")

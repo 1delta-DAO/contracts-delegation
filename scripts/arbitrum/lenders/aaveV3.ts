@@ -10,6 +10,7 @@ export function getAaveDatas() {
     let params: BatchAddLenderTokensParamsStruct[] = []
     for (let k of tokenKeys) {
         const token = TOKENS_ARBITRUM[k]
+        if(!token) throw new Error("token not defined:" + k)
         params.push({
             underlying: token,
             collateralToken: AaveV3Arbitrum.A_TOKENS[k],
@@ -26,6 +27,7 @@ export function getAaveApproveDatas() {
     let params: ApproveParamsStruct[] = []
     for (let k of tokenKeys) {
         const token = TOKENS_ARBITRUM[k]
+        if(!token) throw new Error("token not defined:" + k)
         params.push({
              token,
             target: AaveV3Arbitrum.POOL,

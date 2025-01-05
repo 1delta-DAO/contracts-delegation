@@ -10,6 +10,7 @@ export function getAvalonDatas() {
     let params: BatchAddLenderTokensParamsStruct[] = []
     for (let k of tokenKeys) {
         const token = TOKENS_ARBITRUM[k]
+        if(!token) throw new Error("token not defined:" + k)
         params.push({
             underlying: token,
             collateralToken: AvalonArbitrum.A_TOKENS[k],
@@ -26,6 +27,7 @@ export function getAvalonApproveDatas() {
     let params: ApproveParamsStruct[] = []
     for (let k of tokenKeys) {
         const token = TOKENS_ARBITRUM[k]
+        if(!token) throw new Error("token not defined:" + k)
         params.push({
              token,
             target: AvalonArbitrum.POOL,
@@ -40,6 +42,7 @@ export function getAvalonPumpBTCDatas() {
     let params: BatchAddLenderTokensParamsStruct[] = []
     for (let k of tokenKeys) {
         const token = TOKENS_ARBITRUM[k]
+        if(!token) throw new Error("token not defined:" + k)
         params.push({
             underlying: token,
             collateralToken: AvalonPumpBTCArbitrum.A_TOKENS[k],
@@ -56,6 +59,7 @@ export function getAvalonPumpBTCApproveDatas() {
     let params: ApproveParamsStruct[] = []
     for (let k of tokenKeys) {
         const token = TOKENS_ARBITRUM[k]
+        if(!token) throw new Error("token not defined:" + k)
         params.push({
              token,
             target: AvalonPumpBTCArbitrum.POOL,
