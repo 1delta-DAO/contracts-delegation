@@ -20,6 +20,7 @@ contract ForkTestTaiko is DeltaSetup {
         (bool success, bytes memory ret) = address(brokerProxyAddress).call{value: value}( //
             data //
         );
+        vm.expectRevert(); // should revert "K", bug in KODO
         if (!success) {
             console.logBytes(ret);
             // Next 5 lines from https://ethereum.stackexchange.com/a/83577

@@ -250,8 +250,8 @@ contract ComposerTestTaiko is DeltaSetup {
 
     function test_taiko_composer_multi_route_exact_in() external {
         address user = testUser;
-        uint256 amount = 2000.0e6;
-        uint256 amountMin = 0.3e18;
+        uint256 amount = 20.0e6;
+        uint256 amountMin = 0.0005e18;
 
         address assetIn = USDC;
         address assetOut = WETH;
@@ -261,7 +261,7 @@ contract ComposerTestTaiko is DeltaSetup {
             assetIn,
             assetOut,
             UNI_V3,
-            uint16(DEX_FEE_LOW) //
+            DEX_FEE_LOW_HIGH //
         );
         bytes memory dataFusion = getSpotExactInSingleGen2(
             assetIn,
@@ -293,8 +293,8 @@ contract ComposerTestTaiko is DeltaSetup {
         console.log("gas", gas, WETH);
 
         received = IERC20All(assetOut).balanceOf(user) - received;
-        // expect 0.74 WETH
-        assertApproxEqAbs(743972217540712861, received, 1);
+        // expect 0.005 WETH
+        assertApproxEqAbs(5022385816918292, received, 1);
     }
 
     function getTokenToWeth()
@@ -311,11 +311,11 @@ contract ComposerTestTaiko is DeltaSetup {
         tks[1] = USDC;
         tks[2] = WETH;
         fees = new uint16[](2);
-        fees[0] = uint16(250);
-        fees[1] = uint16(DEX_FEE_STABLES);
+        fees[0] = DEX_FEE_LOW_HIGH;
+        fees[1] = DEX_FEE_LOW_HIGH;
         pids = new uint8[](2);
-        pids[0] = CLEOPATRA_CL;
-        pids[1] = AGNI;
+        pids[0] = UNI_V3;
+        pids[1] = KODO_VOLAT;
     }
 
     function getWethToToken()
@@ -332,27 +332,27 @@ contract ComposerTestTaiko is DeltaSetup {
         tks[1] = USDC;
         tks[2] = TAIKO;
         fees = new uint16[](2);
-        fees[0] = uint16(DEX_FEE_STABLES);
-        fees[1] = uint16(250);
+        fees[0] = DEX_FEE_LOW_HIGH;
+        fees[1] = DEX_FEE_LOW_HIGH;
         pids = new uint8[](2);
-        pids[0] = AGNI;
-        pids[1] = CLEOPATRA_CL;
+        pids[0] = KODO_VOLAT;
+        pids[1] = UNI_V3;
     }
 
     function test_taiko_composer_multi_route_exact_in_native() external {
         address user = testUser;
-        uint256 amount = 4000.0e18;
-        uint256 amountMin = 0.10e18;
+        uint256 amount = 0.1e18;
+        uint256 amountMin = 50.10e18;
 
-        address assetIn = TAIKO;
-        address assetOut = WETH;
+        address assetIn = WETH;
+        address assetOut = TAIKO;
         vm.deal(user, amount);
 
-        bytes memory dataAgni = getSpotExactInSingleGen2(
+        bytes memory dataUni = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
-            AGNI,
-            uint16(DEX_FEE_LOW) //
+            UNI_V3,
+            DEX_FEE_LOW_HIGH //
         );
         bytes memory dataFusion;
         {
@@ -360,14 +360,14 @@ contract ComposerTestTaiko is DeltaSetup {
                 address[] memory tks,
                 uint8[] memory pids, //
                 uint16[] memory fees
-            ) = getTokenToWeth();
-            dataFusion = getSpotExactInMultiGen2(tks, pids, fees);
+            ) = getWethToToken();
+            dataFusion = getCompactPath(tks, pids, fees);
         }
         bytes memory data = abi.encodePacked(
             uint8(Commands.SWAP_EXACT_IN),
             user,
-            encodeSwapAmountParams(amount / 2, amountMin, true, dataAgni.length),
-            dataAgni,
+            encodeSwapAmountParams(amount / 2, amountMin, true, dataUni.length),
+            dataUni,
             uint8(Commands.SWAP_EXACT_IN),
             user,
             encodeSwapAmountParams(amount / 2, amountMin, true, dataFusion.length),
@@ -384,18 +384,18 @@ contract ComposerTestTaiko is DeltaSetup {
 
     function test_taiko_composer_multi_route_exact_out_native_out() external {
         address user = testUser;
-        uint256 amount = 4000.0e18;
-        uint256 amountMax = 5.0e18;
+        uint256 amount = 0.01e18;
+        uint256 amountMax = 2000.0e18;
 
-        address assetIn = WETH;
-        address assetOut = TAIKO;
+        address assetIn = TAIKO;
+        address assetOut = WETH;
         deal(assetIn, user, amountMax);
 
-        bytes memory dataAgni = getSpotExactOutSingleGen2(
+        bytes memory dataUni = getSpotExactOutSingleGen2(
             assetIn,
             assetOut,
-            AGNI,
-            uint16(DEX_FEE_LOW) //
+            UNI_V3,
+            DEX_FEE_LOW_HIGH //
         );
         bytes memory dataFusion;
         {
@@ -403,14 +403,14 @@ contract ComposerTestTaiko is DeltaSetup {
                 address[] memory tks,
                 uint8[] memory pids, //
                 uint16[] memory fees
-            ) = getTokenToWeth();
-            dataFusion = getSpotExactOutMultiGen2(tks, pids, fees);
+            ) = getWethToToken();
+            dataFusion = getCompactPath(tks, pids, fees);
         }
         bytes memory data = abi.encodePacked(
             uint8(Commands.SWAP_EXACT_OUT),
             brokerProxyAddress,
-            encodeSwapAmountParams(amount / 2, amountMax / 2, false, dataAgni.length),
-            dataAgni,
+            encodeSwapAmountParams(amount / 2, amountMax / 2, false, dataUni.length),
+            dataUni,
             uint8(Commands.SWAP_EXACT_OUT),
             brokerProxyAddress,
             encodeSwapAmountParams(amount / 2, amountMax / 2, false, dataFusion.length),
@@ -435,23 +435,23 @@ contract ComposerTestTaiko is DeltaSetup {
         uint balanceInAfter = IERC20All(assetIn).balanceOf(user);
 
         assertApproxEqAbs(balanceOutAfter - balanceOutBefore, amount, 1);
-        assertApproxEqAbs(balanceInBefore - balanceInAfter, 1668753875334069967, 0);
+        assertApproxEqAbs(balanceInBefore - balanceInAfter, 19348096685317699468, 0);
     }
 
     function test_taiko_composer_multi_route_exact_out_native_in() external {
         address user = testUser;
-        uint256 amount = 2.0e18;
-        uint256 amountMax = 9000.0e18;
+        uint256 amount = 1000.0e18;
+        uint256 amountMax = 1.0e18;
 
-        address assetIn = TAIKO;
-        address assetOut = WETH;
+        address assetIn = WETH;
+        address assetOut = TAIKO;
         vm.deal(user, amountMax);
 
-        bytes memory dataAgni = getSpotExactOutSingleGen2(
+        bytes memory dataUni = getSpotExactOutSingleGen2(
             assetIn,
             assetOut,
-            AGNI,
-            uint16(DEX_FEE_LOW) //
+            UNI_V3,
+            DEX_FEE_LOW_HIGH //
         );
         bytes memory dataFusion;
         {
@@ -459,14 +459,14 @@ contract ComposerTestTaiko is DeltaSetup {
                 address[] memory tks,
                 uint8[] memory pids, //
                 uint16[] memory fees
-            ) = getWethToToken();
-            dataFusion = getSpotExactOutMultiGen2(tks, pids, fees);
+            ) = getTokenToWeth();
+            dataFusion = getCompactPath(tks, pids, fees);
         }
         bytes memory data = abi.encodePacked(
             uint8(Commands.SWAP_EXACT_OUT),
             user,
-            encodeSwapAmountParams(amount / 2, amountMax / 2, true, dataAgni.length),
-            dataAgni,
+            encodeSwapAmountParams(amount / 2, amountMax / 2, true, dataUni.length),
+            dataUni,
             uint8(Commands.SWAP_EXACT_OUT),
             user,
             encodeSwapAmountParams(amount / 2, amountMax / 2, true, dataFusion.length),
@@ -488,23 +488,23 @@ contract ComposerTestTaiko is DeltaSetup {
         uint balanceInAfter = user.balance;
 
         assertApproxEqAbs(balanceOutAfter - balanceOutBefore, amount, 1);
-        assertApproxEqAbs(balanceInBefore - balanceInAfter, 4825933262798723917376, 0);
+        assertApproxEqAbs(balanceInBefore - balanceInAfter, 536614779499599354, 0);
     }
 
     function test_taiko_composer_multi_route_exact_in_native_out() external {
         address user = testUser;
-        uint256 amount = 2.0e18;
-        uint256 amountMin = 4000.0e18;
+        uint256 amount = 200.0e18;
+        uint256 amountMin = 0.1e18;
 
-        address assetIn = WETH;
-        address assetOut = TAIKO;
+        address assetIn = TAIKO;
+        address assetOut = WETH;
         deal(assetIn, user, amount);
 
-        bytes memory dataAgni = getSpotExactInSingleGen2(
+        bytes memory dataUni = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
-            AGNI,
-            uint16(DEX_FEE_LOW) //
+            UNI_V3,
+            DEX_FEE_LOW_HIGH //
         );
         bytes memory dataFusion;
         {
@@ -512,14 +512,14 @@ contract ComposerTestTaiko is DeltaSetup {
                 address[] memory tks,
                 uint8[] memory pids, //
                 uint16[] memory fees
-            ) = getWethToToken();
-            dataFusion = getSpotExactInMultiGen2(tks, pids, fees);
+            ) = getTokenToWeth();
+            dataFusion = getCompactPath(tks, pids, fees);
         }
         bytes memory data = abi.encodePacked(
             uint8(Commands.SWAP_EXACT_IN),
             brokerProxyAddress,
-            encodeSwapAmountParams(amount / 2, 0, false, dataAgni.length),
-            dataAgni,
+            encodeSwapAmountParams(amount / 2, 0, false, dataUni.length),
+            dataUni,
             uint8(Commands.SWAP_EXACT_IN),
             brokerProxyAddress,
             encodeSwapAmountParams(amount / 2, 0, false, dataFusion.length),
@@ -543,30 +543,30 @@ contract ComposerTestTaiko is DeltaSetup {
         uint balanceOutAfter = user.balance;
         uint balanceInAfter = IERC20All(assetIn).balanceOf(user);
 
-        assertApproxEqAbs(balanceOutAfter - balanceOutBefore, 4791714389649651447685, 1);
+        assertApproxEqAbs(balanceOutAfter - balanceOutBefore, 102863875609968494, 1);
         assertApproxEqAbs(balanceInBefore - balanceInAfter, amount, 0);
     }
 
     function test_taiko_composer_multi_route_exact_in_self() external {
         address user = testUser;
-        uint256 amount = 2000.0e6;
-        uint256 amountMin = 900.0e6;
+        uint256 amount = 20.0e6;
+        uint256 amountMin = 19.0e6;
 
         address assetIn = USDC;
         address assetOut = USDT;
         deal(assetIn, user, 1e23);
 
-        bytes memory dataAgni = getSpotExactInSingleGen2(
+        bytes memory dataUni = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
-            AGNI,
-            uint16(DEX_FEE_STABLES) //
+            UNI_V3,
+            DEX_FEE_STABLES //
         );
         bytes memory dataFusion = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
             UNI_V3,
-            uint16(DEX_FEE_STABLES) //
+            DEX_FEE_STABLES //
         );
 
         bytes memory transfer = transferIn(
@@ -578,11 +578,11 @@ contract ComposerTestTaiko is DeltaSetup {
         bytes memory data = abi.encodePacked(
             uint8(Commands.SWAP_EXACT_IN),
             user,
-            encodeSwapAmountParams(amount / 2, amountMin, true, dataAgni.length),
-            dataAgni,
+            encodeSwapAmountParams(amount / 2, amountMin / 2, true, dataUni.length),
+            dataUni,
             uint8(Commands.SWAP_EXACT_IN),
             user,
-            encodeSwapAmountParams(amount / 2, amountMin, true, dataFusion.length),
+            encodeSwapAmountParams(amount / 2, amountMin / 2, true, dataFusion.length),
             dataFusion
         );
 
@@ -605,7 +605,7 @@ contract ComposerTestTaiko is DeltaSetup {
         address assetOut = WETH;
         deal(assetIn, user, 1e23);
 
-        bytes memory dataAgni = getSpotExactOutSingleGen2(
+        bytes memory dataUni = getSpotExactOutSingleGen2(
             assetIn,
             assetOut,
             DTX,
@@ -621,8 +621,8 @@ contract ComposerTestTaiko is DeltaSetup {
         bytes memory data = abi.encodePacked(
             uint8(Commands.SWAP_EXACT_OUT),
             user,
-            encodeSwapAmountParams(amount / 2, maxIn, false, dataAgni.length),
-            dataAgni,
+            encodeSwapAmountParams(amount / 2, maxIn, false, dataUni.length),
+            dataUni,
             uint8(Commands.SWAP_EXACT_OUT),
             user,
             encodeSwapAmountParams(amount / 2, maxIn, false, dataFusion.length),
@@ -648,31 +648,25 @@ contract ComposerTestTaiko is DeltaSetup {
         assertApproxEqAbs(balanceInBefore - balanceInAfter, 2733647, 1);
     }
 
-    function getSpotExactInMultiGen2(address[] memory tokens, uint8[] memory pids, uint16[] memory fees) internal view returns (bytes memory data) {
+    function getCompactPath(address[] memory tokens, uint8[] memory pids, uint16[] memory fees) internal view returns (bytes memory data) {
         uint8[] memory actions = new uint8[](pids.length);
         data = abi.encodePacked(tokens[0]);
-        for (uint i; i < pids.length; i++) {
-            address pool;
-            pool = testQuoter._v3TypePool(tokens[i], tokens[i + 1], fees[i], pids[i]);
-            data = abi.encodePacked(
-                data,
-                actions[i], // action id
-                pids[i], // dex identifier
-                pool, // dex param 0
-                fees[i], // dex param 1
-                tokens[i + 1]
-            );
-        }
-        return data;
-    }
-
-    function getSpotExactOutMultiGen2(address[] memory tokens, uint8[] memory pids, uint16[] memory fees) internal view returns (bytes memory data) {
-        uint8[] memory actions = new uint8[](pids.length);
-        data = abi.encodePacked(tokens[0]);
-        for (uint i; i < pids.length; i++) {
-            actions[i] = 0;
-            address pool = testQuoter._v3TypePool(tokens[i], tokens[i + 1], fees[i], pids[i]);
-            data = abi.encodePacked(data, actions[i], pids[i], pool, fees[i], tokens[i + 1]);
+        for (uint i = 1; i < tokens.length; i++) {
+            uint8 pId = pids[i - 1];
+            if (pId < 50) {
+                address pool = testQuoter._v3TypePool(tokens[i - 1], tokens[i], fees[i - 1], pId);
+                data = abi.encodePacked(data, actions[i - 1], pId, pool, fees[i - 1], tokens[i]);
+            } else {
+                address pool = testQuoter._v2TypePairAddress(tokens[i - 1], tokens[i], pId);
+                data = abi.encodePacked(
+                    data,
+                    actions[i - 1],
+                    pId,
+                    pool,
+                    getV2PairFeeDenom(pId, pool), //
+                    tokens[i]
+                );
+            }
         }
         return abi.encodePacked(data, uint8(99));
     }
@@ -680,14 +674,12 @@ contract ComposerTestTaiko is DeltaSetup {
     function getSpotExactInSingleGen2(address tokenIn, address tokenOut, uint8 poolId, uint16 fee) internal view returns (bytes memory data) {
         address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
         uint8 action = 0;
-        console.log("pool", pool, poolId);
-        return abi.encodePacked(tokenIn, action, poolId, pool, fee, tokenOut);
+        return abi.encodePacked(tokenIn, action, poolId, pool, fee, tokenOut, uint8(99));
     }
 
     function getSpotExactOutSingleGen2(address tokenIn, address tokenOut, uint8 poolId, uint16 fee) internal view returns (bytes memory data) {
         address pool = testQuoter._v3TypePool(tokenOut, tokenIn, fee, poolId);
         uint8 action = 0;
-        console.log("pool", pool, poolId);
         return abi.encodePacked(tokenOut, action, poolId, pool, fee, tokenIn, uint8(99));
     }
 
@@ -739,54 +731,3 @@ contract ComposerTestTaiko is DeltaSetup {
         console.log("gas", gas);
     }
 }
-
-// Ran 11 tests for test/mantle/Composer.t.sol:ComposerTest
-// [PASS] test_taiko_composer_borrow() (gas: 917038)
-// Logs:
-//   gas 378730
-//   gas 432645
-
-// [PASS] test_taiko_composer_depo() (gas: 371016)
-// Logs:
-//   gas 248957
-
-// [PASS] test_taiko_composer_multi_route_exact_in() (gas: 377134)
-// Logs:
-//   gas 192095
-
-// [PASS] test_taiko_composer_multi_route_exact_in_native() (gas: 368206)
-// Logs:
-//   gas 374361
-
-// [PASS] test_taiko_composer_multi_route_exact_in_native_out() (gas: 633199)
-// Logs:
-//   gas-exactIn-native-out-2 split 547586
-
-// [PASS] test_taiko_composer_multi_route_exact_in_self() (gas: 399348)
-// Logs:
-//   gas 219240
-
-// [PASS] test_taiko_composer_multi_route_exact_out() (gas: 390674)
-// Logs:
-//   gas 190957
-
-// [PASS] test_taiko_composer_multi_route_exact_out_native_in() (gas: 408213)
-// Logs:
-//   gas-exactOut-native-in-2 split 385726
-
-// [PASS] test_taiko_composer_multi_route_exact_out_native_out() (gas: 558685)
-// Logs:
-//   gas-exactOut-native-out-2 split 413439
-
-// [PASS] test_taiko_composer_repay() (gas: 985744)
-// Logs:
-//   gas 378730
-//   gas 432646
-//   gas 102301
-
-// [PASS] test_taiko_composer_withdraw() (gas: 702003)
-// Logs:
-//   gas 378730
-//   gas 253948
-
-// Suite result: ok. 11 passed; 0 failed; 0 skipped; finished in 319.97ms (40.41ms CPU time)

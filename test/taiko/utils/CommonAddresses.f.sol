@@ -127,53 +127,26 @@ contract AddressesTaiko {
     uint16 internal BIN_STEP_LOWEST = 1;
     uint16 internal BIN_STEP_LOW = 10;
 
-    uint8 internal AGNI = 1;
+    uint8 internal HENJIN = 2;
     uint8 internal DTX = 1;
     uint8 internal UNI_V3 = 0;
     uint8 internal BUTTER = 3;
-    uint8 internal CLEOPATRA_CL = 4;
     uint8 internal IZUMI = 49;
-    uint8 internal STRATUM_CURVE = 51;
-    uint8 internal STRATUM_USD = 50;
 
-    uint8 internal FUSION_X_V2 = 100;
     uint8 internal MERCHANT_MOE = 101;
     // Solidly STable
-    uint8 internal CLEO_V1_STABLE = 135;
     uint8 internal KODO_STABLE = 135;
-    uint8 internal STRATUM_STABLE = 136;
-    uint8 internal VELO_STABLE = 137;
 
     // Solidly Volatile
-    uint8 internal CLEO_V1_VOLAT = 120;
     uint8 internal KODO_VOLAT = 120;
-    uint8 internal STRATUM_VOLAT = 121;
-    uint8 internal VELO_VOLAT = 122;
 
     uint16 internal KODO_VOLAT_FEE_DENOM = 10000 - 20;
     uint16 internal KODO_STABLE_FEE_DENOM = 10000 - 2;
 
-    uint16 internal FUSION_X_V2_FEE_DENOM = 10000 - 20;
-    uint16 internal MERCHANT_MOE_FEE_DENOM = 10000 - 30;
     uint16 internal BASE_DENOM = 10000;
 
     function getV2PairFeeDenom(uint8 fork, address pool) internal view returns (uint16) {
-        if (fork == FUSION_X_V2) return FUSION_X_V2_FEE_DENOM;
-        if (fork == MERCHANT_MOE) return MERCHANT_MOE_FEE_DENOM;
-        if (fork == CLEO_V1_STABLE) {
-            uint16 pairFee = uint16(IFactoryFeeGetter(CLEO_V1_FACOTRY).pairFee(pool));
-            if (pairFee == 0) pairFee = uint16(IFactoryFeeGetter(CLEO_V1_FACOTRY).stableFee());
-            return 10000 - pairFee;
-        }
-        if (fork == CLEO_V1_VOLAT) {
-            uint16 pairFee = uint16(IFactoryFeeGetter(CLEO_V1_FACOTRY).pairFee(pool));
-            if (pairFee == 0) pairFee = uint16(IFactoryFeeGetter(CLEO_V1_FACOTRY).volatileFee());
-            return 10000 - pairFee;
-        }
-        if (fork == VELO_STABLE || fork == VELO_VOLAT) {
-            uint16 pairFee = uint16(IFactoryFeeGetter(VELO_FACOTRY).pairFee(pool));
-            return 10000 - pairFee;
-        }
+        if (fork == KODO_VOLAT) return KODO_VOLAT_FEE_DENOM;
         return 0;
     }
 
