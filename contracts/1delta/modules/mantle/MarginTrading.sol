@@ -861,7 +861,7 @@ abstract contract MarginTrading is BaseSwapper {
             mstore(add(ptr, 0x4), tokenIn)
             mstore(add(ptr, 0x24), tokenOut)
 
-            // call to collateralToken, this will always succeed due
+            // call to factory, this will always succeed due
             // to the immutable call target
             pop(staticcall(gas(), MERCHANT_MOE_FACTORY, ptr, 0x48, ptr, 0x20))
 

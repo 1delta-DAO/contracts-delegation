@@ -733,41 +733,25 @@ abstract contract MarginTrading is BaseSwapper {
             switch dexId
             // Ramses V1 Volatile
             case 120 {
-                switch lt(tokenIn, tokenOut)
-                case 0 {
-                    mstore(add(ptr, 0x14), tokenIn)
-                    mstore(ptr, tokenOut)
-                }
-                default {
-                    mstore(add(ptr, 0x14), tokenOut)
-                    mstore(ptr, tokenIn)
-                }
-                mstore8(add(ptr, 0x34), 0)
-                let salt := keccak256(add(ptr, 0x0C), 0x29)
-                mstore(ptr, RAMSES_V1_FF_FACTORY)
-                mstore(add(ptr, 0x15), salt)
-                mstore(add(ptr, 0x35), CODE_HASH_RAMSES_V1)
-
-                pair := and(ADDRESS_MASK, keccak256(ptr, 0x55))
+                // selector for getPair(address,address,bool)
+                mstore(ptr, 0x6801cc3000000000000000000000000000000000000000000000000000000000)
+                mstore(add(ptr, 0x4), tokenIn)
+                mstore(add(ptr, 0x24), tokenOut)
+                mstore(add(ptr, 0x34), 0)
+                // get pair from factory
+                pop(staticcall(gas(), RAMSES_V1_FACTORY, ptr, 0x48, ptr, 0x20))
+                pair := mload(ptr)
             }
             // Ramses V1 Stable
             case 135 {
-                switch lt(tokenIn, tokenOut)
-                case 0 {
-                    mstore(add(ptr, 0x14), tokenIn)
-                    mstore(ptr, tokenOut)
-                }
-                default {
-                    mstore(add(ptr, 0x14), tokenOut)
-                    mstore(ptr, tokenIn)
-                }
-                mstore8(add(ptr, 0x34), 1)
-                let salt := keccak256(add(ptr, 0x0C), 0x29)
-                mstore(ptr, RAMSES_V1_FF_FACTORY)
-                mstore(add(ptr, 0x15), salt)
-                mstore(add(ptr, 0x35), CODE_HASH_RAMSES_V1)
-
-                pair := and(ADDRESS_MASK, keccak256(ptr, 0x55))
+                // selector for getPair(address,address,bool)
+                mstore(ptr, 0x6801cc3000000000000000000000000000000000000000000000000000000000)
+                mstore(add(ptr, 0x4), tokenIn)
+                mstore(add(ptr, 0x24), tokenOut)
+                mstore(add(ptr, 0x34), 1)
+                // get pair from factory
+                pop(staticcall(gas(), RAMSES_V1_FACTORY, ptr, 0x48, ptr, 0x20))
+                pair := mload(ptr)
             }
             default {
                 mstore(0x0, BAD_POOL)

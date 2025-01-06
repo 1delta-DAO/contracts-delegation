@@ -47,9 +47,7 @@ abstract contract UniTypeSwapper is V3TypeSwapper {
     bytes32 internal constant APESWAP_FF_FACTORY = 0xffCf083Be4164828f00cAE704EC15a36D7114912840000000000000000000000;
     bytes32 internal constant CODE_HASH_APESWAP = 0xae7373e804a043c4c08107a81def627eeb3792e211fb4711fcfe32f0e4c45fd5;
 
-    bytes32 internal constant RAMSES_V1_FF_FACTORY = 0xffAA9B8a7430474119A442ef0C2Bf88f7c3c776F2F0000000000000000000000;
-    bytes32 internal constant CODE_HASH_RAMSES_V1 = 0xbf2404274de2b11f05e5aebd49e508de933034cb5fa2d0ac3de8cbd4bcef47dc;
-
+    address internal constant RAMSES_V1_FACTORY = 0xAA9B8a7430474119A442ef0C2Bf88f7c3c776F2F;
 
     constructor() {}
 

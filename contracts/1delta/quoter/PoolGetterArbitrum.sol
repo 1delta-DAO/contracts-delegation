@@ -77,8 +77,7 @@ abstract contract PoolGetterArbitrum {
     bytes32 internal constant APESWAP_FF_FACTORY = 0xffCf083Be4164828f00cAE704EC15a36D7114912840000000000000000000000;
     bytes32 internal constant CODE_HASH_APESWAP = 0xae7373e804a043c4c08107a81def627eeb3792e211fb4711fcfe32f0e4c45fd5;
 
-    bytes32 internal constant RAMSES_V1_FF_FACTORY = 0xffAA9B8a7430474119A442ef0C2Bf88f7c3c776F2F0000000000000000000000;
-    bytes32 internal constant CODE_HASH_RAMSES_V1 = 0xbf2404274de2b11f05e5aebd49e508de933034cb5fa2d0ac3de8cbd4bcef47dc;
+    address internal constant RAMSES_V1_FACTORY = 0xAA9B8a7430474119A442ef0C2Bf88f7c3c776F2F;
 
     address internal constant WOO_ROUTER = 0x4c4AF8DBc524681930a27b2F1Af5bcC8062E6fB7;
 
@@ -227,7 +226,7 @@ abstract contract PoolGetterArbitrum {
     }
 
     /// @dev gets uniswapV2 (and fork) pair addresses
-    function v2TypePairAddress(address tokenA, address tokenB, uint256 _pId) internal pure returns (address pair) {
+    function v2TypePairAddress(address tokenA, address tokenB, uint256 _pId) internal view returns (address pair) {
         assembly {
             switch _pId
             // Uno
@@ -286,41 +285,27 @@ abstract contract PoolGetterArbitrum {
             }
             // Ramses V1 Volatile
             case 120 {
-                switch lt(tokenA, tokenB)
-                case 0 {
-                    mstore(0xB14, tokenA)
-                    mstore(0xB00, tokenB)
-                }
-                default {
-                    mstore(0xB14, tokenB)
-                    mstore(0xB00, tokenA)
-                }
-                mstore8(0xB34, 0)
-                let salt := keccak256(0xB0C, 0x29)
-                mstore(0xB00, RAMSES_V1_FF_FACTORY)
-                mstore(0xB15, salt)
-                mstore(0xB35, CODE_HASH_RAMSES_V1)
-
-                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+                let ptr := mload(0x40)
+                // selector for getPair(address,address,bool)
+                mstore(ptr, 0x6801cc3000000000000000000000000000000000000000000000000000000000)
+                mstore(add(ptr, 0x4), tokenA)
+                mstore(add(ptr, 0x24), tokenB)
+                mstore(add(ptr, 0x34), 0)
+                // get pair from factory
+                pop(staticcall(gas(), RAMSES_V1_FACTORY, ptr, 0x48, ptr, 0x20))
+                pair := mload(ptr)
             }
             // Ramses V1 Stable
             case 135 {
-                switch lt(tokenA, tokenB)
-                case 0 {
-                    mstore(0xB14, tokenA)
-                    mstore(0xB00, tokenB)
-                }
-                default {
-                    mstore(0xB14, tokenB)
-                    mstore(0xB00, tokenA)
-                }
-                mstore8(0xB34, 1)
-                let salt := keccak256(0xB0C, 0x29)
-                mstore(0xB00, RAMSES_V1_FF_FACTORY)
-                mstore(0xB15, salt)
-                mstore(0xB35, CODE_HASH_RAMSES_V1)
-
-                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+                let ptr := mload(0x40)
+                // selector for getPair(address,address,bool)
+                mstore(ptr, 0x6801cc3000000000000000000000000000000000000000000000000000000000)
+                mstore(add(ptr, 0x4), tokenA)
+                mstore(add(ptr, 0x24), tokenB)
+                mstore(add(ptr, 0x34), 1)
+                // get pair from factory
+                pop(staticcall(gas(), RAMSES_V1_FACTORY, ptr, 0x48, ptr, 0x20))
+                pair := mload(ptr)
             }
             // Camelot V2 Volatile
             case 121 {

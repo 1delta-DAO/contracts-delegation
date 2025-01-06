@@ -1,6 +1,6 @@
 
 import { ethers } from "hardhat";
-import { OneDeltaQuoterMantle__factory } from "../../types";
+import { OneDeltaQuoterArbitrum__factory } from "../../types";
 import { ARBITRUM_CONFIGS } from "./utils";
 
 async function main() {
@@ -10,8 +10,8 @@ async function main() {
     if (chainId !== 42161) throw new Error("invalid chainId")
     console.log("operator", operator.address, "on", chainId)
 
-    console.log("modules added")
-    const oneDeltaManagement = await new OneDeltaQuoterMantle__factory(operator).deploy(ARBITRUM_CONFIGS)
+    console.log("deploy quoter")
+    const oneDeltaManagement = await new OneDeltaQuoterArbitrum__factory(operator).deploy(ARBITRUM_CONFIGS)
 
     console.log("quoter:", oneDeltaManagement.address)
 }
