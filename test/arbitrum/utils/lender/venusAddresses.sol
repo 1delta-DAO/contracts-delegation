@@ -23,9 +23,9 @@ library VenusEtherArbitrum {
 
     // tokens
 
-    address internal constant WEETH = 0x246a35E79a3a0618535A469aDaF5091cAA9f7E88;
+    address internal constant WEETH_A_TOKEN = 0x246a35E79a3a0618535A469aDaF5091cAA9f7E88;
 
-    address internal constant WETH = 0x39D6d13Ea59548637104E40e729E4aABE27FE106;
+    address internal constant WETH_A_TOKEN = 0x39D6d13Ea59548637104E40e729E4aABE27FE106;
 
-    address internal constant WSTETH = 0x9df6B5132135f14719696bBAe3C54BAb272fDb16;
+    address internal constant WSTETH_A_TOKEN = 0x9df6B5132135f14719696bBAe3C54BAb272fDb16;
 }

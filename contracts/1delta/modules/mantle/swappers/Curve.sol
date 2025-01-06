@@ -36,7 +36,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
     /// @notice selector exchange(int128,int128,uint256,uint256,address)
     bytes32 private constant EXCHANGE_RECEIVED_INT = 0xddc1f59d00000000000000000000000000000000000000000000000000000000;
 
-    /// @notice selector for cuve forks usibng solidity swap(uint8,uint8,uint256,uint256,uint256)
+    /// @notice selector for cuve forks using solidity swap(uint8,uint8,uint256,uint256,uint256)
     bytes32 private constant SWAP = 0x9169558600000000000000000000000000000000000000000000000000000000;
 
     /// @notice Curve params lengths

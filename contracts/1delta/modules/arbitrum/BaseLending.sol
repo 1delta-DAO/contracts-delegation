@@ -18,7 +18,7 @@ abstract contract BaseLending is Slots, BalancerSwapper {
     // errors
     error BadLender();
 
-    // id thresholds
+    // id thresholds, strict upper limit
     uint256 internal constant MAX_ID_AAVE_V3 = 1000; // 0-1000
     uint256 internal constant MAX_ID_AAVE_V2 = 2000; // 1000-2000
     uint256 internal constant MAX_ID_COMPOUND_V3 = 3000; // 2000-3000

@@ -44,7 +44,7 @@ abstract contract V3TypeSwapper is DeltaErrors, ERC20Selectors {
     /// @dev higher length limit for path length using lt()
     uint256 internal constant MAX_SINGLE_LENGTH_UNOSWAP_HIGH = 68;
     uint256 internal constant SKIP_LENGTH_UNOSWAP = 44; // = 20+1+1+20+2
-        // offset for receiver address for most DEX types (uniswap, curve etc.)
+    // offset for receiver address for most DEX types (uniswap, curve etc.)
     uint256 internal constant RECEIVER_OFFSET_UNOSWAP = 66;
 
     ////////////////////////////////////////////////////
