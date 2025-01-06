@@ -299,7 +299,7 @@ contract OneDeltaQuoterPolygon is PoolGetterPolygon {
                 let firstWord := calldataload(path.offset)
                 tokenIn := shr(96, firstWord) // get first token
                 poolId := shr(88, firstWord) //
-                pair := shr(96, calldataload(add(path.offset, 21))) // pool starts at 21st byte
+                pair := calldataload(add(path.offset, 9)) // pool starts at 21st byte
             }
 
             // v3 types

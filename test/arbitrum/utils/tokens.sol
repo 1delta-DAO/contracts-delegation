@@ -18,4 +18,6 @@ library TokensArbitrum {
     address internal constant SolvBTC_BBN = 0x346c574C56e1A4aAa8dc88Cda8F7EB12b39947aB;
 
     address internal constant PUMP_BTC = 0x9a02588DDff4d079cC5BEB1b864B12410049288a;
+
+    address internal constant OHM = 0xf0cb2dc0db5e6c66B9a70Ac27B06b878da017028;
 }

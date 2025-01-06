@@ -114,7 +114,7 @@ abstract contract MarginTrading is BaseSwapper {
                 p := add(p, 32)
                 mstore(p, UNI_POOL_INIT_CODE_HASH)
             }
-            case 1 {
+            case 3 {
                 mstore(s, RAMSES_FF_FACTORY)
                 let p := add(s, 21)
                 // Compute the inner hash in-place
@@ -132,7 +132,7 @@ abstract contract MarginTrading is BaseSwapper {
                 p := add(p, 32)
                 mstore(p, RAMSES_POOL_INIT_CODE_HASH)
             }
-            case 2 {
+            case 1 {
                 mstore(s, SUSHI_V3_FF_DEPLOYER)
                 let p := add(s, 21)
                 // Compute the inner hash in-place
@@ -619,14 +619,19 @@ abstract contract MarginTrading is BaseSwapper {
                 mstore(add(ptr, 0x35), CODE_HASH_UNI_V2)
             }
             case 101 {
+                mstore(ptr, SUSHI_V2_FF_FACTORY)
+                mstore(add(ptr, 0x15), salt)
+                mstore(add(ptr, 0x35), CODE_HASH_SUSHI_V2)
+            }
+            case 121 {
                 mstore(ptr, CAMELOT_V2_FF_FACTORY)
                 mstore(add(ptr, 0x15), salt)
                 mstore(add(ptr, 0x35), CODE_HASH_CAMELOT_V2)
             }
-            case 102 {
-                mstore(ptr, SUSHI_V2_FF_FACTORY)
+            case 126 {
+                mstore(ptr, CAMELOT_V2_FF_FACTORY)
                 mstore(add(ptr, 0x15), salt)
-                mstore(add(ptr, 0x35), CODE_HASH_SUSHI_V2)
+                mstore(add(ptr, 0x35), CODE_HASH_CAMELOT_V2)
             }
             default {
                 mstore(0x0, BAD_POOL)

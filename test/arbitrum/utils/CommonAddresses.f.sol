@@ -54,10 +54,10 @@ contract AddressesArbitrum {
     uint16 internal BIN_STEP_LOW = 10;
 
     uint8 internal UNI_V3 = 0;
-    uint8 internal RAMSES = 1;
-    uint8 internal SUSHI_V3 = 2;
-    uint8 internal ALGEBRA = 3;
-    uint8 internal PANCAKE = 4;
+    uint8 internal RAMSES = 3;
+    uint8 internal SUSHI_V3 = 1;
+    uint8 internal ALGEBRA = 4;
+    uint8 internal PANCAKE = 2;
     uint8 internal IZUMI = 49;
 
     uint8 internal CURVE = 60;
@@ -65,9 +65,11 @@ contract AddressesArbitrum {
     uint8 internal CURVE_META = 61;
 
     uint8 internal UNI_V2 = 100;
-    uint8 internal CAMELOT_V2 = 101;
-    uint8 internal SUSHI_V2 = 102;
-    uint8 internal APESWAP = 103;
+    uint8 internal SUSHI_V2 = 101;
+    uint8 internal APESWAP = 102;
+    
+    uint8 internal CAMELOT_V2_VOLATILE = 121;
+    uint8 internal CAMELOT_V2_STABLE = 136;
 
     uint16 internal UNI_V2_FEE_DENOM = 10000 - 30;
     uint16 internal CAMELOT_V2_FEE_DENOM = 10000 - 30;

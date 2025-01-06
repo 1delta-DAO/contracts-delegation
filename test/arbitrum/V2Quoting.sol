@@ -13,31 +13,46 @@ contract ArbitrumQuotingTest is DeltaSetup {
     function test_arbitrum_V2_quote_spot_exact_in_works() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetOut = TokensArbitrum.USDC;
+        address assetOut = TokensArbitrum.OHM;
         address assetIn = TokensArbitrum.WETH;
 
         deal(assetIn, user, 1e30);
 
-        uint256 amountIn = 0.001e18;
+        uint256 amountIn = 0.1e18;
 
-        bytes memory quotePath = getSpotQuotePathSingle(assetIn, assetOut, CAMELOT_V2, CAMELOT_V2_FEE_DENOM);
+        bytes memory quotePath = getSpotQuotePathSingle(assetIn, assetOut, CAMELOT_V2_VOLATILE, CAMELOT_V2_FEE_DENOM);
         uint256 quote = testQuoter.quoteExactInput(quotePath, amountIn);
-        assertApproxEqAbs(3262950, quote, 0);
+        assertApproxEqAbs(15672039507, quote, 0);
     }
 
     function test_arbitrum_V2_quote_spot_exact_out_works() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetOut = TokensArbitrum.USDC;
+        address assetOut = TokensArbitrum.OHM;
         address assetIn = TokensArbitrum.WETH;
 
         deal(assetIn, user, 1e30);
 
-        uint256 amountOut = 3.0005e6;
+        uint256 amountOut = 1.0e9;
 
-        bytes memory quotePath = getSpotQuotePathSingle(assetOut, assetIn, CAMELOT_V2, CAMELOT_V2_FEE_DENOM);
+        bytes memory quotePath = getSpotQuotePathSingle(assetOut, assetIn, CAMELOT_V2_VOLATILE, CAMELOT_V2_FEE_DENOM);
         uint256 quote = testQuoter.quoteExactOutput(quotePath, amountOut);
-        assertApproxEqAbs(918122651828038, quote, 0);
+        assertApproxEqAbs(6368403383400929, quote, 0);
+    }
+
+    function test_arbitrum_V3_quote_spot_exact_in_works() external {
+        address user = testUser;
+        vm.assume(user != address(0));
+        address assetOut = TokensArbitrum.ARB;
+        address assetIn = TokensArbitrum.WETH;
+
+        deal(assetIn, user, 1e30);
+
+        uint256 amountIn = 0.1e18;
+
+        bytes memory quotePath = getQuoteSwapPathSingleV3(assetIn, assetOut, RAMSES, 500);
+        uint256 quote = testQuoter.quoteExactInput(quotePath, amountIn);
+        assertApproxEqAbs(460939078352216629914, quote, 0);
     }
 
     function getSpotQuotePathSingle(address tokenIn, address tokenOut, uint8 poolId, uint16 feeDenom) internal view returns (bytes memory data) {
@@ -50,9 +65,9 @@ contract ArbitrumQuotingTest is DeltaSetup {
         return abi.encodePacked(tokenIn, uint8(0), poolId, pool, feeDenom, tokenOut, uint8(0), uint8(99));
     }
 
-    function getSpotSwapPathSingleV3(address tokenIn, address tokenOut, uint8 poolId, uint16 fee) internal view returns (bytes memory data) {
+    function getQuoteSwapPathSingleV3(address tokenIn, address tokenOut, uint8 poolId, uint16 fee) internal view returns (bytes memory data) {
         address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
-        return abi.encodePacked(tokenIn, uint8(0), poolId, pool, fee, tokenOut, uint8(0), uint8(99));
+        return abi.encodePacked(tokenIn, poolId, pool, fee, tokenOut, uint8(0), uint8(99));
     }
 
     function getSpotSwapPathDualV3(

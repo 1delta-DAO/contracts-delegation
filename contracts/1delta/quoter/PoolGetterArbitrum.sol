@@ -26,7 +26,7 @@ abstract contract PoolGetterArbitrum {
     uint256 internal constant BALANCER_V2_ID = 50;
     uint256 internal constant CURVE_V1_MAX_ID = 70;
     uint256 internal constant CURVE_V1_STANDARD_ID = 60;
-    
+
     // pre-fundeds
     uint256 internal constant UNISWAP_V2_MAX_ID = 150;
 
@@ -45,7 +45,7 @@ abstract contract PoolGetterArbitrum {
     bytes32 internal constant UNI_V3_FF_FACTORY = 0xff1f98431c8ad98523631ae4a59f267346ea31f9840000000000000000000000;
     bytes32 internal constant UNI_POOL_INIT_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
 
-    bytes32 internal constant RAMSES_FF_FACTORY = 0xffb3e423ab9cE6C03D98326A3A2a0D7D96b0829f220000000000000000000000;
+    bytes32 internal constant RAMSES_FF_FACTORY = 0xffAA2cd7477c451E703f3B9Ba5663334914763edF80000000000000000000000;
     bytes32 internal constant RAMSES_POOL_INIT_CODE_HASH = 0x1565b129f2d1790f12d45301b9b084335626f0c92410bc43130763b69971135d;
 
     bytes32 internal constant IZI_FF_FACTORY = 0xffCFD8A067e1fa03474e79Be646c5f6b6A278473990000000000000000000000;
@@ -57,7 +57,7 @@ abstract contract PoolGetterArbitrum {
     bytes32 internal constant SUSHI_V3_FF_DEPLOYER = 0xff1af415a1EbA07a4986a52B6f2e7dE7003D82231e0000000000000000000000;
     bytes32 internal constant SUSHI_POOL_INIT_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
 
-   bytes32 internal constant PANCAKE_FF_FACTORY = 0xff41ff9AA7e16B8B1a8a8dc4f0eFacd93D02d071c90000000000000000000000;
+    bytes32 internal constant PANCAKE_FF_FACTORY = 0xff41ff9AA7e16B8B1a8a8dc4f0eFacd93D02d071c90000000000000000000000;
     bytes32 internal constant PANCAKE_INIT_CODE_HASH = 0x6ce8eb472fa82df5469c6ab6d485f17c3ad13c8cd7af59b3d4a8026c5ce0f7e2;
 
     // v2s
@@ -81,7 +81,6 @@ abstract contract PoolGetterArbitrum {
     bytes32 internal constant CODE_HASH_RAMSES_V1 = 0xbf2404274de2b11f05e5aebd49e508de933034cb5fa2d0ac3de8cbd4bcef47dc;
 
     address internal constant WOO_ROUTER = 0x4c4AF8DBc524681930a27b2F1Af5bcC8062E6fB7;
-
 
     address internal constant KTX_VAULT = 0xc657A1440d266dD21ec3c299A8B9098065f663Bb;
     address internal constant KTX_VAULT_UTILS = 0xbde9c699e719bb44811252FDb3B37E6D3eDa5a28;
@@ -119,7 +118,7 @@ abstract contract PoolGetterArbitrum {
                 pool := and(ADDRESS_MASK, keccak256(s, 85))
             }
             // Sushi
-            case 2 {
+            case 1 {
                 mstore(p, SUSHI_V3_FF_DEPLOYER)
                 p := add(p, 21)
                 // Compute the inner hash in-place
@@ -139,7 +138,7 @@ abstract contract PoolGetterArbitrum {
                 pool := and(ADDRESS_MASK, keccak256(s, 85))
             }
             // Algebra / Camelot
-            case 3 {
+            case 4 {
                 mstore(p, ALGEBRA_V3_FF_DEPLOYER)
                 p := add(p, 21)
                 // Compute the inner hash in-place
@@ -158,7 +157,7 @@ abstract contract PoolGetterArbitrum {
                 pool := and(ADDRESS_MASK, keccak256(s, 85))
             }
             // Pancake
-            case 4 {
+            case 2 {
                 mstore(p, PANCAKE_FF_FACTORY)
                 p := add(p, 21)
                 // Compute the inner hash in-place
@@ -178,7 +177,7 @@ abstract contract PoolGetterArbitrum {
                 pool := and(ADDRESS_MASK, keccak256(s, 85))
             }
             // Ramses
-            case 1 {
+            case 3 {
                 mstore(p, RAMSES_FF_FACTORY)
                 p := add(p, 21)
                 // Compute the inner hash in-place
@@ -249,7 +248,7 @@ abstract contract PoolGetterArbitrum {
 
                 pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
             }
-            // 101: Camelot
+            // 101: Sushi
             case 101 {
                 switch lt(tokenA, tokenB)
                 case 0 {
@@ -261,13 +260,13 @@ abstract contract PoolGetterArbitrum {
                     mstore(0xB00, tokenA)
                 }
                 let salt := keccak256(0xB0C, 0x28)
-                mstore(0xB00, CAMELOT_V2_FF_FACTORY)
+                mstore(0xB00, SUSHI_V2_FF_FACTORY)
                 mstore(0xB15, salt)
-                mstore(0xB35, CODE_HASH_CAMELOT_V2)
+                mstore(0xB35, CODE_HASH_SUSHI_V2)
 
                 pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
             }
-            // 101: Camelot
+            // 102: Apeswap
             case 102 {
                 switch lt(tokenA, tokenB)
                 case 0 {
@@ -320,6 +319,42 @@ abstract contract PoolGetterArbitrum {
                 mstore(0xB00, RAMSES_V1_FF_FACTORY)
                 mstore(0xB15, salt)
                 mstore(0xB35, CODE_HASH_RAMSES_V1)
+
+                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+            }
+            // Camelot V2 Volatile
+            case 121 {
+                switch lt(tokenA, tokenB)
+                case 0 {
+                    mstore(0xB14, tokenA)
+                    mstore(0xB00, tokenB)
+                }
+                default {
+                    mstore(0xB14, tokenB)
+                    mstore(0xB00, tokenA)
+                }
+                let salt := keccak256(0xB0C, 0x28)
+                mstore(0xB00, CAMELOT_V2_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, CODE_HASH_CAMELOT_V2)
+
+                pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
+            }
+            // Camelot V2 Stable
+            case 136 {
+                switch lt(tokenA, tokenB)
+                case 0 {
+                    mstore(0xB14, tokenA)
+                    mstore(0xB00, tokenB)
+                }
+                default {
+                    mstore(0xB14, tokenB)
+                    mstore(0xB00, tokenA)
+                }
+                let salt := keccak256(0xB0C, 0x28)
+                mstore(0xB00, CAMELOT_V2_FF_FACTORY)
+                mstore(0xB15, salt)
+                mstore(0xB35, CODE_HASH_CAMELOT_V2)
 
                 pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
             }
