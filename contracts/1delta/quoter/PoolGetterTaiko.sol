@@ -32,6 +32,9 @@ abstract contract PoolGetterTaiko {
     // henjin
     bytes32 internal constant ALGEBRA_V3_FF_DEPLOYER = 0xff0d22b434E478386Cd3564956BFc722073B3508f60000000000000000000000;
     bytes32 internal constant ALGEBRA_POOL_INIT_CODE_HASH = 0x4b9e4a8044ce5695e06fce9421a63b6f5c3db8a561eebb30ea4c775469e36eaf;
+    // SwapSicle
+    bytes32 internal constant ALGEBRA_V3_SS_FF_DEPLOYER = 0xffb68b27a1c93A52d698EecA5a759E2E4469432C090000000000000000000000;
+    bytes32 internal constant ALGEBRA_POOL_SS_INIT_CODE_HASH = 0xf96d2474815c32e070cd63233f06af5413efc5dcb430aee4ff18cc29007c562d;
 
     bytes32 internal constant DTX_FF_FACTORY = 0xfffCA1AEf282A99390B62Ca8416a68F5747716260c0000000000000000000000;
     bytes32 internal constant DTX_POOL_INIT_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
@@ -45,7 +48,6 @@ abstract contract PoolGetterTaiko {
     // v2s
 
     bytes32 internal constant DTX_UNI_V2_FF_FACTORY = 0xff2ea9051d5a48ea2350b26306f2b959d262cf67e10000000000000000000000;
-    // this one needs to be backchecked
     bytes32 internal constant CODE_HASH_DTX_UNI_V2 = 0x8615843ab28b4b86b2382dca22cf14f0a6ba9e52cb006531eb574042a5b54a46;
 
     bytes32 internal constant KODO_FF_FACTORY = 0xff535E02960574d8155596a73c7Ad66e87e37Eb6Bc0000000000000000000000;
@@ -138,6 +140,25 @@ abstract contract PoolGetterTaiko {
                 mstore(p, keccak256(p, 64))
                 p := add(p, 32)
                 mstore(p, ALGEBRA_POOL_INIT_CODE_HASH)
+                pool := and(ADDRESS_MASK, keccak256(s, 85))
+            }
+            // Algebra / Swapsicle
+            case 5 {
+                mstore(p, ALGEBRA_V3_SS_FF_DEPLOYER)
+                p := add(p, 21)
+                // Compute the inner hash in-place
+                switch lt(tokenA, tokenB)
+                case 0 {
+                    mstore(p, tokenB)
+                    mstore(add(p, 32), tokenA)
+                }
+                default {
+                    mstore(p, tokenA)
+                    mstore(add(p, 32), tokenB)
+                }
+                mstore(p, keccak256(p, 64))
+                p := add(p, 32)
+                mstore(p, ALGEBRA_POOL_SS_INIT_CODE_HASH)
                 pool := and(ADDRESS_MASK, keccak256(s, 85))
             }
             case 49 {

@@ -8,7 +8,7 @@ library DexMappingsTaiko {
     // non-pre-fundeds
     uint256 internal constant UNISWAP_V3_MAX_ID = 49;
     uint256 internal constant IZI_ID = UNISWAP_V3_MAX_ID;
-    uint256 internal constant BALANCER_V2_ID = 50;
+    uint256 internal constant BALANCER_V2_ID = 80;
     uint256 internal constant CURVE_V1_MAX_ID = 70;
     uint256 internal constant CURVE_V1_STANDARD_ID = 60;
 
@@ -27,6 +27,7 @@ library DexMappingsTaiko {
     // Taiko Ids
 
     uint8 internal constant HENJIN = 2;
+    uint8 internal constant SWAPSICLE = 5;
     uint8 internal constant DTX = 1;
     uint8 internal constant UNI_V3 = 0;
     uint8 internal constant IZUMI = 49;

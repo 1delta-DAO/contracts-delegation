@@ -8,7 +8,7 @@ library DexMappingsMantle {
     // non-pre-fundeds
     uint256 internal constant UNISWAP_V3_MAX_ID = 49;
     uint256 internal constant IZI_ID = UNISWAP_V3_MAX_ID;
-    uint256 internal constant BALANCER_V2_ID = 50;
+    uint256 internal constant BALANCER_V2_ID = 80;
     uint256 internal constant CURVE_V1_MAX_ID = 70;
     uint256 internal constant CURVE_V1_STANDARD_ID = 60;
 

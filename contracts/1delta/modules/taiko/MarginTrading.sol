@@ -37,6 +37,7 @@ abstract contract MarginTrading is BaseSwapper {
         assembly {
             pathLength := path.length
             let firstWord := calldataload(PATH_OFFSET_CALLBACK_V3)
+            let dexId := and(UINT8_MASK, shr(80, firstWord))
             
             tokenIn := shr(96, firstWord)
             // second word
@@ -47,22 +48,43 @@ abstract contract MarginTrading is BaseSwapper {
             // Compute and validate pool address
             ////////////////////////////////////////////////////
             let s := mload(0x40)
-            mstore(s, ALGEBRA_V3_FF_DEPLOYER)
-            let p := add(s, 21)
-            // Compute the inner hash in-place
-            switch lt(tokenIn, tokenOut)
-            case 0 {
-                mstore(p, tokenOut)
-                mstore(add(p, 32), tokenIn)
+            switch dexId
+            // Henjin
+            case 2 {
+                mstore(s, ALGEBRA_V3_FF_DEPLOYER)
+                let p := add(s, 21)
+                // Compute the inner hash in-place
+                switch lt(tokenIn, tokenOut)
+                case 0 {
+                    mstore(p, tokenOut)
+                    mstore(add(p, 32), tokenIn)
+                }
+                default {
+                    mstore(p, tokenIn)
+                    mstore(add(p, 32), tokenOut)
+                }
+                mstore(p, keccak256(p, 64))
+                p := add(p, 32)
+                mstore(p, ALGEBRA_POOL_INIT_CODE_HASH)
             }
-            default {
-                mstore(p, tokenIn)
-                mstore(add(p, 32), tokenOut)
+            // SwapSicle
+            case 5 {
+                mstore(s, ALGEBRA_V3_SS_FF_DEPLOYER)
+                let p := add(s, 21)
+                // Compute the inner hash in-place
+                switch lt(tokenIn, tokenOut)
+                case 0 {
+                    mstore(p, tokenOut)
+                    mstore(add(p, 32), tokenIn)
+                }
+                default {
+                    mstore(p, tokenIn)
+                    mstore(add(p, 32), tokenOut)
+                }
+                mstore(p, keccak256(p, 64))
+                p := add(p, 32)
+                mstore(p, ALGEBRA_POOL_SS_INIT_CODE_HASH)
             }
-            mstore(p, keccak256(p, 64))
-            p := add(p, 32)
-            mstore(p, ALGEBRA_POOL_INIT_CODE_HASH)
-        
             ////////////////////////////////////////////////////
             // If the caller is not the calculated pool, we revert
             ////////////////////////////////////////////////////

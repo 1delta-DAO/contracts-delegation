@@ -8,6 +8,7 @@ import {
 import { getArbitrumConfig } from "./utils";
 import { ModuleConfigAction, getContractSelectors } from "../_utils/diamond";
 import { ONE_DELTA_GEN2_ADDRESSES } from "./addresses/oneDeltaAddresses";
+import { formatEther } from "ethers/lib/utils";
 
 
 async function main() {
@@ -24,47 +25,49 @@ async function main() {
 
     // deploy module
     // composer
-    const newComposer = await new OneDeltaComposerArbitrum__factory(operator).deploy(getArbitrumConfig(nonce++))
-    await newComposer.deployed()
+    const newComposer = await new OneDeltaComposerArbitrum__factory(operator).getDeployTransaction()
+    // await newComposer.deployed()
+    const gas = await operator.estimateGas({...newComposer, from: undefined})
 
+    const params = await operator.getFeeData() 
+    console.log("cost", formatEther(gas.mul(params.gasPrice!)))
+    // console.log("module deployed")
 
-    console.log("module deployed")
+    // const cut: {
+    //     moduleAddress: string,
+    //     action: any,
+    //     functionSelectors: any[]
+    // }[] = []
 
-    const cut: {
-        moduleAddress: string,
-        action: any,
-        functionSelectors: any[]
-    }[] = []
+    // // get lens to fetch modules
+    // const lens = await new LensModule__factory(operator).attach(proxyAddress)
 
-    // get lens to fetch modules
-    const lens = await new LensModule__factory(operator).attach(proxyAddress)
+    // const composerSelectors = await lens.moduleFunctionSelectors(oldComposer)
 
-    const composerSelectors = await lens.moduleFunctionSelectors(oldComposer)
+    // // remove old
+    // cut.push({
+    //     moduleAddress: ethers.constants.AddressZero,
+    //     action: ModuleConfigAction.Remove,
+    //     functionSelectors: composerSelectors
+    // })
 
-    // remove old
-    cut.push({
-        moduleAddress: ethers.constants.AddressZero,
-        action: ModuleConfigAction.Remove,
-        functionSelectors: composerSelectors
-    })
+    // // add new
+    // cut.push({
+    //     moduleAddress: newComposer.address,
+    //     action: ModuleConfigAction.Add,
+    //     functionSelectors: getContractSelectors(newComposer)
+    // })
 
-    // add new
-    cut.push({
-        moduleAddress: newComposer.address,
-        action: ModuleConfigAction.Add,
-        functionSelectors: getContractSelectors(newComposer)
-    })
+    // const oneDeltaModuleConfig = await new ConfigModule__factory(operator).attach(proxyAddress)
 
-    const oneDeltaModuleConfig = await new ConfigModule__factory(operator).attach(proxyAddress)
+    // let tx = await oneDeltaModuleConfig.configureModules(cut, getArbitrumConfig(nonce++))
+    // await tx.wait()
+    // console.log("modules added")
 
-    let tx = await oneDeltaModuleConfig.configureModules(cut, getArbitrumConfig(nonce++))
-    await tx.wait()
-    console.log("modules added")
-
-    console.log("upgrade complete")
-    console.log("======== Addresses =======")
-    console.log("new composer:", newComposer.address)
-    console.log("==========================")
+    // console.log("upgrade complete")
+    // console.log("======== Addresses =======")
+    // console.log("new composer:", newComposer.address)
+    // console.log("==========================")
 }
 
 main()

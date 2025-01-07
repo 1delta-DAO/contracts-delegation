@@ -8,7 +8,7 @@ library DexMappingsPolygon {
     // non-pre-fundeds
     uint256 internal constant UNISWAP_V3_MAX_ID = 49;
     uint256 internal constant IZI_ID = UNISWAP_V3_MAX_ID;
-    uint256 internal constant BALANCER_V2_ID = 50;
+    uint256 internal constant BALANCER_V2_ID = 80;
     uint256 internal constant CURVE_V1_MAX_ID = 70;
     uint256 internal constant CURVE_V1_STANDARD_ID = 60;
 
@@ -30,7 +30,7 @@ library DexMappingsPolygon {
     uint8 internal constant SUSHI_V3 = 2;
     uint8 internal constant ALGEBRA = 3;
     uint8 internal constant IZUMI = 49;
-    uint8 internal constant BALANCER = 50;
+    uint8 internal constant BALANCER = uint8(BALANCER_V2_ID);
     uint8 internal constant CURVE = 60;
     uint8 internal constant CURVE_NG = 151;
     uint8 internal constant CURVE_META = 61;
