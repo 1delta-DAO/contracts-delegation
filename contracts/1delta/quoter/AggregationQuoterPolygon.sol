@@ -3,6 +3,7 @@
 pragma solidity ^0.8.28;
 
 import {PoolGetterPolygon} from "./PoolGetterPolygon.sol";
+import {DexMappings} from "../modules/shared/swapper/DexMappings.sol";
 
 interface ISwapPool {
     function swap(
@@ -54,7 +55,7 @@ interface ISwapPool {
  * Quoter contract
  * Paths have to be encoded as follows: token0 (address) | param0 (uint24) | poolId (uint8) | token1 (address) |
  */
-contract OneDeltaQuoterPolygon is PoolGetterPolygon {
+contract OneDeltaQuoterPolygon is PoolGetterPolygon, DexMappings {
     /// @dev Transient storage variable used to check a safety condition in exact output swaps.
     uint256 private amountOutCached;
     uint256 internal constant UINT16_MASK = 0xffff;
@@ -303,7 +304,7 @@ contract OneDeltaQuoterPolygon is PoolGetterPolygon {
             }
 
             // v3 types
-            if (poolId < 49) {
+            if (poolId < UNISWAP_V3_MAX_ID) {
                 assembly {
                     // tokenOut starts at 43th byte for CL
                     tokenOut := shr(96, calldataload(add(path.offset, CL_PARAM_LENGTH)))
@@ -312,14 +313,14 @@ contract OneDeltaQuoterPolygon is PoolGetterPolygon {
                 path = path[CL_PARAM_LENGTH:];
             }
             // iZi
-            else if (poolId == 49) {
+            else if (poolId == IZI_ID) {
                 assembly {
                     // tokenOut starts at 43th byte for CL
                     tokenOut := shr(96, calldataload(add(path.offset, CL_PARAM_LENGTH)))
                 }
                 amountIn = quoteExactInputSingle_iZi(tokenIn, tokenOut, pair, uint128(amountIn));
                 path = path[CL_PARAM_LENGTH:];
-            } else if (poolId == 50) {
+            } else if (poolId == CURVE_V1_STANDARD_ID) {
                 uint8 indexIn;
                 uint8 indexOut;
                 assembly {
@@ -331,7 +332,7 @@ contract OneDeltaQuoterPolygon is PoolGetterPolygon {
                 path = path[CURVE_PARAM_LENGTH:];
             }
             // v2 types
-            else if (poolId < 150) {
+            else if (poolId < UNISWAP_V2_MAX_ID) {
                 uint256 feeDenom;
                 assembly {
                     // tokenOut starts at 41st byte
@@ -340,7 +341,7 @@ contract OneDeltaQuoterPolygon is PoolGetterPolygon {
                 }
                 amountIn = getAmountOutUniV2Type(pair, tokenIn, tokenOut, amountIn, feeDenom, poolId);
                 path = path[V2_PARAM_LENGTH:];
-            } else if (poolId == 150) {
+            } else if (poolId == WOO_FI_ID) {
                 assembly {
                     // tokenOut starts at 41st byte
                     tokenOut := shr(96, calldataload(add(path.offset, EXOTIC_PARAM_LENGTH)))
@@ -376,14 +377,14 @@ contract OneDeltaQuoterPolygon is PoolGetterPolygon {
             }
 
             // v3 types
-            if (poolId < 49) {
+            if (poolId < UNISWAP_V3_MAX_ID) {
                 assembly {
                     // tokenIn starts at 43th byte for CL
                     tokenIn := shr(96, calldataload(add(path.offset, CL_PARAM_LENGTH)))
                 }
                 amountOut = quoteExactOutputSingleV3(tokenIn, tokenOut, pair, amountOut);
                 path = path[CL_PARAM_LENGTH:];
-            } else if (poolId == 49) {
+            } else if (poolId == IZI_ID) {
                 assembly {
                     // tokenIn starts at 43th byte for CL
                     tokenIn := shr(96, calldataload(add(path.offset, CL_PARAM_LENGTH)))
@@ -392,7 +393,7 @@ contract OneDeltaQuoterPolygon is PoolGetterPolygon {
                 path = path[CL_PARAM_LENGTH:];
             }
             // v2 types
-            else if (poolId < 150) {
+            else if (poolId < UNISWAP_V2_MAX_ID) {
                 uint256 feeDenom;
                 assembly {
                     // tokenIn starts at 43th byte for CL

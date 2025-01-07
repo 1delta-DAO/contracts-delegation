@@ -10,10 +10,10 @@ contract MarginCloseTest is DeltaSetup {
         address user = testUser;
         vm.assume(user != address(0) && validLenderIndex(lenderIndex));
         uint16 lenderId = getLenderByIndex(lenderIndex);
-        address asset = USDC;
+        address asset = TokensMantle.USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
 
-        address borrowAsset = WMNT;
+        address borrowAsset = TokensMantle.WMNT;
         address debtAsset = debtTokens[borrowAsset][lenderId];
 
         {
@@ -55,10 +55,10 @@ contract MarginCloseTest is DeltaSetup {
         address user = testUser;
         vm.assume(user != address(0) && validLenderIndex(lenderIndex));
         uint16 lenderId = getLenderByIndex(lenderIndex);
-        address asset = USDC;
+        address asset = TokensMantle.USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
 
-        address borrowAsset = WMNT;
+        address borrowAsset = TokensMantle.WMNT;
         address debtAsset = debtTokens[borrowAsset][lenderId];
 
         {
@@ -100,10 +100,10 @@ contract MarginCloseTest is DeltaSetup {
         address user = testUser;
         vm.assume(user != address(0) && validLenderIndex(lenderIndex));
         uint16 lenderId = getLenderByIndex(lenderIndex);
-        address asset = USDC;
+        address asset = TokensMantle.USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
 
-        address borrowAsset = WMNT;
+        address borrowAsset = TokensMantle.WMNT;
         address debtAsset = debtTokens[borrowAsset][lenderId];
 
         {
@@ -146,10 +146,10 @@ contract MarginCloseTest is DeltaSetup {
         address user = testUser;
         vm.assume(user != address(0) && validLenderIndex(lenderIndex));
         uint16 lenderId = getLenderByIndex(lenderIndex);
-        address asset = USDC;
+        address asset = TokensMantle.USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
 
-        address borrowAsset = WMNT;
+        address borrowAsset = TokensMantle.WMNT;
         address debtAsset = debtTokens[borrowAsset][lenderId];
 
         {
@@ -193,17 +193,17 @@ contract MarginCloseTest is DeltaSetup {
         address user = testUser;
         vm.assume(user != address(0) && validLenderIndex(lenderIndex));
         uint16 lenderId = getLenderByIndex(lenderIndex);
-        address asset = USDC;
+        address asset = TokensMantle.USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
 
-        address borrowAsset = WMNT;
+        address borrowAsset = TokensMantle.WMNT;
         address debtAsset = debtTokens[borrowAsset][lenderId];
         uint256 amountIn = 15.0e6;
         {
             uint256 amountToDeposit = 10.0e6;
             uint256 amountToLeverage = 20.0e18;
             _deposit(asset, user, amountIn, lenderId);
-            openSimple(user, USDT, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
+            openSimple(user, TokensMantle.USDT, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
 
         bytes memory swapPath = getCloseExactInSingle(asset, borrowAsset, lenderId);
@@ -245,10 +245,10 @@ console.log("------------a");
         address user = testUser;
         vm.assume(user != address(0) && validLenderIndex(lenderIndex));
         uint16 lenderId = getLenderByIndex(lenderIndex);
-        address asset = USDC;
+        address asset = TokensMantle.USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
 
-        address borrowAsset = WMNT;
+        address borrowAsset = TokensMantle.WMNT;
         address debtAsset = debtTokens[borrowAsset][lenderId];
         uint256 amountToLeverage = 20.0e18;
 
@@ -297,10 +297,10 @@ console.log("------------a");
         address user = testUser;
         vm.assume(user != address(0) && validLenderIndex(lenderIndex));
         uint16 lenderId = getLenderByIndex(lenderIndex);
-        address asset = USDC;
+        address asset = TokensMantle.USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
 
-        address borrowAsset = WMNT;
+        address borrowAsset = TokensMantle.WMNT;
         address debtAsset = debtTokens[borrowAsset][lenderId];
 
         {
@@ -344,10 +344,10 @@ console.log("------------a");
         address user = testUser;
         vm.assume(user != address(0) && validLenderIndex(lenderIndex));
         uint16 lenderId = getLenderByIndex(lenderIndex);
-        address asset = USDC;
+        address asset = TokensMantle.USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
 
-        address borrowAsset = WMNT;
+        address borrowAsset = TokensMantle.WMNT;
         address debtAsset = debtTokens[borrowAsset][lenderId];
 
         {
@@ -391,10 +391,10 @@ console.log("------------a");
         address user = testUser;
         vm.assume(user != address(0) && validLenderIndex(lenderIndex));
         uint16 lenderId = getLenderByIndex(lenderIndex);
-        address asset = USDC;
+        address asset = TokensMantle.USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
 
-        address borrowAsset = WMNT;
+        address borrowAsset = TokensMantle.WMNT;
         address debtAsset = debtTokens[borrowAsset][lenderId];
 
         {
@@ -437,10 +437,10 @@ console.log("------------a");
         address user = testUser;
         vm.assume(user != address(0) && validLenderIndex(lenderIndex));
         uint16 lenderId = getLenderByIndex(lenderIndex);
-        address asset = USDC;
+        address asset = TokensMantle.USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
 
-        address borrowAsset = WMNT;
+        address borrowAsset = TokensMantle.WMNT;
         address debtAsset = debtTokens[borrowAsset][lenderId];
         uint256 amountToLeverage = 20.0e18;
 

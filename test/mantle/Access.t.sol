@@ -12,7 +12,7 @@ contract AccessTests is DeltaSetup {
         vm.assume(user != address(0));
 
         // define some valid flash loan params
-        address asset = WMNT;
+        address asset = TokensMantle.WMNT;
         address[] memory assets = new address[](1);
         assets[0] = asset;
         uint256[] memory amounts = new uint256[](1);
@@ -36,7 +36,7 @@ contract AccessTests is DeltaSetup {
         // attack from lending pool
         vm.expectRevert(0x48f5c3ed); // ("InvalidCaller()");
         vm.prank(attacker);
-        ILendingPool(LENDLE_POOL).flashLoan(
+        ILendingPool(LendleMantle.POOL).flashLoan(
             brokerProxyAddress,
             assets,
             amounts,
@@ -52,13 +52,13 @@ contract AccessTests is DeltaSetup {
         uint amount1 = 2112324324432;
 
         // some data
-        bytes memory data = abi.encodePacked(WMNT);
+        bytes memory data = abi.encodePacked(TokensMantle.WMNT);
         // direct
         vm.expectRevert(0xb2c02722); // ("BadPool()");
         vm.prank(attacker);
         IFlashAggregator(brokerProxyAddress).hook(brokerProxyAddress, amount0, amount1, data);
 
-        address pool = testQuoter._v2TypePairAddress(aUSD, USDC, CLEO_V1_STABLE);
+        address pool = testQuoter._v2TypePairAddress(TokensMantle.aUSD, TokensMantle.USDC, DexMappingsMantle.CLEO_V1_STABLE);
 
         // should error before any data is decoded
         vm.expectRevert(0xbafe1c53); // ("InvalidFlashLoan()");
@@ -67,7 +67,7 @@ contract AccessTests is DeltaSetup {
             amount0,
             amount1,
             brokerProxyAddress,
-            abi.encodePacked(aUSD,uint8(0), CLEO_V1_STABLE, pool, uint16(0), USDC) // the data here makes the `badPool` check pass
+            abi.encodePacked(TokensMantle.aUSD,uint8(0), DexMappingsMantle.CLEO_V1_STABLE, pool, uint16(0), TokensMantle.USDC) // the data here makes the `badPool` check pass
         );
     }
 }

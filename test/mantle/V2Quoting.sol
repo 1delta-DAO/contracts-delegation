@@ -19,14 +19,14 @@ contract IzumiQuotingTest is DeltaSetup {
     function test_mantle_V2_quote_spot_exact_in_works() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetOut = USDC;
-        address assetIn = WETH;
+        address assetOut = TokensMantle.USDC;
+        address assetIn = TokensMantle.WETH;
 
         deal(assetIn, user, 1e30);
 
         uint256 amountIn = 1.0005e18;
 
-        bytes memory quotePath = getSpotQuotePathSingle(assetIn, assetOut, MERCHANT_MOE);
+        bytes memory quotePath = getSpotQuotePathSingle(assetIn, assetOut, DexMappingsMantle.MERCHANT_MOE);
         uint256 quote = testQuoter.quoteExactInput(quotePath, amountIn);
         assertApproxEqAbs(3102411711, quote, 0);
     }
@@ -34,14 +34,14 @@ contract IzumiQuotingTest is DeltaSetup {
     function test_mantle_V2_solidly_quote_spot_exact_in_works() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetOut = aUSD;
-        address assetIn = USDC;
+        address assetOut = TokensMantle.aUSD;
+        address assetIn = TokensMantle.USDC;
 
         deal(assetIn, user, 1e30);
 
         uint256 amountIn = 1.0005e6;
 
-        bytes memory quotePath = getSpotQuotePathSingle(assetIn, assetOut, CLEO_V1_STABLE);
+        bytes memory quotePath = getSpotQuotePathSingle(assetIn, assetOut, DexMappingsMantle.CLEO_V1_STABLE);
         uint256 quote = testQuoter.quoteExactInput(quotePath, amountIn);
         assertApproxEqAbs(999910427647198616, quote, 0);
     }
@@ -49,14 +49,14 @@ contract IzumiQuotingTest is DeltaSetup {
     function test_mantle_V2_quote_spot_exact_out_works() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetOut = USDC;
-        address assetIn = WETH;
+        address assetOut = TokensMantle.USDC;
+        address assetIn = TokensMantle.WETH;
 
         deal(assetIn, user, 1e30);
 
         uint256 amountIn = 3100.0005e6;
 
-        bytes memory quotePath = getSpotQuotePathSingle(assetOut, assetIn, MERCHANT_MOE);
+        bytes memory quotePath = getSpotQuotePathSingle(assetOut, assetIn, DexMappingsMantle.MERCHANT_MOE);
         uint256 quote = testQuoter.quoteExactOutput(quotePath, amountIn);
         assertApproxEqAbs(999715467997505211, quote, 0);
     }
@@ -64,14 +64,14 @@ contract IzumiQuotingTest is DeltaSetup {
     function test_mantle_V2_solidly_quote_spot_exact_out_works() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetOut = aUSD;
-        address assetIn = USDC;
+        address assetOut = TokensMantle.aUSD;
+        address assetIn = TokensMantle.USDC;
 
         deal(assetIn, user, 1e30);
 
         uint256 amountOut = 1.0005e18;
 
-        bytes memory quotePath = getSpotQuotePathSingle(assetOut, assetIn, CLEO_V1_STABLE);
+        bytes memory quotePath = getSpotQuotePathSingle(assetOut, assetIn, DexMappingsMantle.CLEO_V1_STABLE);
         uint256 quote = testQuoter.quoteExactOutput(quotePath, amountOut);
         assertApproxEqAbs(1001091, quote, 0);
     }

@@ -10,18 +10,18 @@ contract ComposerTestMantle is DeltaSetup {
             uint16 lenderId = lenderIds[index];
             address user = users[index];
             uint256 amount = 10.0e6;
-            deal(USDT, user, 1e23);
+            deal(TokensMantle.USDT, user, 1e23);
 
             vm.prank(user);
-            IERC20All(USDT).approve(address(brokerProxyAddress), amount);
+            IERC20All(TokensMantle.USDT).approve(address(brokerProxyAddress), amount);
 
             bytes memory transfer = transferIn(
-                USDT,
+                TokensMantle.USDT,
                 brokerProxyAddress,
                 amount //
             );
             bytes memory data = deposit(
-                USDT,
+                TokensMantle.USDT,
                 user,
                 amount,
                 lenderId //
@@ -40,7 +40,7 @@ contract ComposerTestMantle is DeltaSetup {
             uint16 lenderId = lenderIds[index];
             address user = users[index];
             uint256 amount = 10.0e6;
-            address asset = USDT;
+            address asset = TokensMantle.USDT;
 
             _deposit(asset, user, amount, lenderId);
 
@@ -49,7 +49,7 @@ contract ComposerTestMantle is DeltaSetup {
 
             uint256 borrowAmount = 5.0e6;
 
-            address borrowAsset = USDC;
+            address borrowAsset = TokensMantle.USDC;
             vm.prank(user);
             IERC20All(debtTokens[borrowAsset][lenderId]).approveDelegation(
                 address(brokerProxyAddress), //
@@ -71,10 +71,10 @@ contract ComposerTestMantle is DeltaSetup {
             address user = users[index];
 
             uint256 amount = 10.0e6;
-            address asset = USDT;
+            address asset = TokensMantle.USDT;
 
             uint256 borrowAmount = 5.0e6;
-            address borrowAsset = USDC;
+            address borrowAsset = TokensMantle.USDC;
 
             _deposit(asset, user, amount, lenderId);
 
@@ -114,10 +114,10 @@ contract ComposerTestMantle is DeltaSetup {
             address user = users[index];
 
             uint256 amount = 10.0e6;
-            address asset = USDT;
+            address asset = TokensMantle.USDT;
 
             uint256 borrowAmount = 5.0e6;
-            address borrowAsset = USDC;
+            address borrowAsset = TokensMantle.USDC;
 
             _deposit(asset, user, amount, lenderId);
 
@@ -158,7 +158,7 @@ contract ComposerTestMantle is DeltaSetup {
             address user = users[index];
 
             uint256 amount = 10.0e6;
-            address asset = USDT;
+            address asset = TokensMantle.USDT;
 
             _deposit(asset, user, amount, lenderId);
 
@@ -183,7 +183,7 @@ contract ComposerTestMantle is DeltaSetup {
             address user = users[index];
 
             uint256 amount = 10.0e6;
-            address asset = USDT;
+            address asset = TokensMantle.USDT;
 
             _deposit(asset, user, amount, lenderId);
 
@@ -209,21 +209,21 @@ contract ComposerTestMantle is DeltaSetup {
         uint256 amount = 2000.0e6;
         uint256 amountMin = 900.0e6;
 
-        address assetIn = USDC;
-        address assetOut = USDT;
+        address assetIn = TokensMantle.USDC;
+        address assetOut = TokensMantle.USDT;
         deal(assetIn, user, 1e23);
 
         bytes memory dataAgni = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
-            AGNI,
-            uint16(DEX_FEE_STABLES) //
+            DexMappingsMantle.AGNI,
+            DEX_FEE_STABLES //
         );
         bytes memory dataFusion = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
-            FUSION_X,
-            uint16(DEX_FEE_STABLES) //
+            DexMappingsMantle.FUSION_X,
+            DEX_FEE_STABLES //
         );
 
         bytes memory data = abi.encodePacked(
@@ -257,15 +257,15 @@ contract ComposerTestMantle is DeltaSetup {
         )
     {
         tks = new address[](3);
-        tks[0] = WMNT;
-        tks[1] = METH;
-        tks[2] = WETH;
+        tks[0] = TokensMantle.WMNT;
+        tks[1] = TokensMantle.METH;
+        tks[2] = TokensMantle.WETH;
         fees = new uint16[](2);
         fees[0] = uint16(250);
-        fees[1] = uint16(DEX_FEE_STABLES);
+        fees[1] = DEX_FEE_STABLES;
         pids = new uint8[](2);
-        pids[0] = CLEOPATRA_CL;
-        pids[1] = AGNI;
+        pids[0] = DexMappingsMantle.CLEOPATRA_CL;
+        pids[1] = DexMappingsMantle.AGNI;
     }
 
     function getTokenToWNative()
@@ -278,15 +278,15 @@ contract ComposerTestMantle is DeltaSetup {
         )
     {
         tks = new address[](3);
-        tks[0] = WETH;
-        tks[1] = METH;
-        tks[2] = WMNT;
+        tks[0] = TokensMantle.WETH;
+        tks[1] = TokensMantle.METH;
+        tks[2] = TokensMantle.WMNT;
         fees = new uint16[](2);
-        fees[0] = uint16(DEX_FEE_STABLES);
+        fees[0] = DEX_FEE_STABLES;
         fees[1] = uint16(250);
         pids = new uint8[](2);
-        pids[0] = AGNI;
-        pids[1] = CLEOPATRA_CL;
+        pids[0] = DexMappingsMantle.AGNI;
+        pids[1] = DexMappingsMantle.CLEOPATRA_CL;
     }
 
     function test_mantle_composer_multi_route_exact_in_native() external {
@@ -294,14 +294,14 @@ contract ComposerTestMantle is DeltaSetup {
         uint256 amount = 4000.0e18;
         uint256 amountMin = 0.10e18;
 
-        address assetIn = WMNT;
-        address assetOut = WETH;
+        address assetIn = TokensMantle.WMNT;
+        address assetOut = TokensMantle.WETH;
         vm.deal(user, amount);
 
         bytes memory dataAgni = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
-            AGNI,
+            DexMappingsMantle.AGNI,
             uint16(DEX_FEE_LOW) //
         );
         bytes memory dataFusion;
@@ -337,14 +337,14 @@ contract ComposerTestMantle is DeltaSetup {
         uint256 amount = 4000.0e18;
         uint256 amountMax = 5.0e18;
 
-        address assetIn = WETH;
-        address assetOut = WMNT;
+        address assetIn = TokensMantle.WETH;
+        address assetOut = TokensMantle.WMNT;
         deal(assetIn, user, amountMax);
 
         bytes memory dataAgni = getSpotExactOutSingleGen2(
             assetIn,
             assetOut,
-            AGNI,
+            DexMappingsMantle.AGNI,
             uint16(DEX_FEE_LOW) //
         );
         bytes memory dataFusion;
@@ -393,14 +393,14 @@ contract ComposerTestMantle is DeltaSetup {
         uint256 amount = 2.0e18;
         uint256 amountMax = 9000.0e18;
 
-        address assetIn = WMNT;
-        address assetOut = WETH;
+        address assetIn = TokensMantle.WMNT;
+        address assetOut = TokensMantle.WETH;
         vm.deal(user, amountMax);
 
         bytes memory dataAgni = getSpotExactOutSingleGen2(
             assetIn,
             assetOut,
-            AGNI,
+            DexMappingsMantle.AGNI,
             uint16(DEX_FEE_LOW) //
         );
         bytes memory dataFusion;
@@ -446,14 +446,14 @@ contract ComposerTestMantle is DeltaSetup {
         uint256 amount = 2.0e18;
         uint256 amountMin = 4000.0e18;
 
-        address assetIn = WETH;
-        address assetOut = WMNT;
+        address assetIn = TokensMantle.WETH;
+        address assetOut = TokensMantle.WMNT;
         deal(assetIn, user, amount);
 
         bytes memory dataAgni = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
-            AGNI,
+            DexMappingsMantle.AGNI,
             uint16(DEX_FEE_LOW) //
         );
         bytes memory dataFusion;
@@ -502,21 +502,21 @@ contract ComposerTestMantle is DeltaSetup {
         uint256 amount = 2000.0e6;
         uint256 amountMin = 900.0e6;
 
-        address assetIn = USDC;
-        address assetOut = USDT;
+        address assetIn = TokensMantle.USDC;
+        address assetOut = TokensMantle.USDT;
         deal(assetIn, user, 1e23);
 
         bytes memory dataAgni = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
-            AGNI,
-            uint16(DEX_FEE_STABLES) //
+            DexMappingsMantle.AGNI,
+            DEX_FEE_STABLES //
         );
         bytes memory dataFusion = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
-            FUSION_X,
-            uint16(DEX_FEE_STABLES) //
+            DexMappingsMantle.FUSION_X,
+            DEX_FEE_STABLES //
         );
 
         bytes memory transfer = transferIn(
@@ -551,21 +551,21 @@ contract ComposerTestMantle is DeltaSetup {
         uint256 amount = 2000.0e6;
         uint256 maxIn = 1040.0e6;
 
-        address assetIn = USDC;
-        address assetOut = USDT;
+        address assetIn = TokensMantle.USDC;
+        address assetOut = TokensMantle.USDT;
         deal(assetIn, user, 1e23);
 
         bytes memory dataAgni = getSpotExactOutSingleGen2(
             assetIn,
             assetOut,
-            AGNI,
-            uint16(DEX_FEE_STABLES) //
+            DexMappingsMantle.AGNI,
+            DEX_FEE_STABLES //
         );
         bytes memory dataFusion = getSpotExactOutSingleGen2(
             assetIn,
             assetOut,
-            FUSION_X,
-            uint16(DEX_FEE_STABLES) //
+            DexMappingsMantle.FUSION_X,
+            DEX_FEE_STABLES //
         );
 
         bytes memory data = abi.encodePacked(
@@ -651,54 +651,3 @@ contract ComposerTestMantle is DeltaSetup {
         console.log("gas", gas);
     }
 }
-
-// Ran 11 tests for test/mantle/Composer.t.sol:ComposerTest
-// [PASS] test_mantle_composer_borrow() (gas: 917038)
-// Logs:
-//   gas 378730
-//   gas 432645
-
-// [PASS] test_mantle_composer_depo() (gas: 371016)
-// Logs:
-//   gas 248957
-
-// [PASS] test_mantle_composer_multi_route_exact_in() (gas: 377134)
-// Logs:
-//   gas 192095
-
-// [PASS] test_mantle_composer_multi_route_exact_in_native() (gas: 368206)
-// Logs:
-//   gas 374361
-
-// [PASS] test_mantle_composer_multi_route_exact_in_native_out() (gas: 633199)
-// Logs:
-//   gas-exactIn-native-out-2 split 547586
-
-// [PASS] test_mantle_composer_multi_route_exact_in_self() (gas: 399348)
-// Logs:
-//   gas 219240
-
-// [PASS] test_mantle_composer_multi_route_exact_out() (gas: 390674)
-// Logs:
-//   gas 190957
-
-// [PASS] test_mantle_composer_multi_route_exact_out_native_in() (gas: 408213)
-// Logs:
-//   gas-exactOut-native-in-2 split 385726
-
-// [PASS] test_mantle_composer_multi_route_exact_out_native_out() (gas: 558685)
-// Logs:
-//   gas-exactOut-native-out-2 split 413439
-
-// [PASS] test_mantle_composer_repay() (gas: 985744)
-// Logs:
-//   gas 378730
-//   gas 432646
-//   gas 102301
-
-// [PASS] test_mantle_composer_withdraw() (gas: 702003)
-// Logs:
-//   gas 378730
-//   gas 253948
-
-// Suite result: ok. 11 passed; 0 failed; 0 skipped; finished in 319.97ms (40.41ms CPU time)

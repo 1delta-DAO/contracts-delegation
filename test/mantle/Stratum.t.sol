@@ -7,8 +7,7 @@ import "./DeltaSetup.f.sol";
  * Tests Curve style DEXs exact in swaps
  */
 contract StratumCurveTest is DeltaSetup {
-
-    uint8 SWAP_ID = 5;
+    uint8 internal constant SWAP_ID = 5;
 
     function setUp() public virtual override {
         vm.createSelectFork({blockNumber: 63740637, urlOrAlias: "https://mantle-mainnet.public.blastapi.io"});
@@ -18,8 +17,8 @@ contract StratumCurveTest is DeltaSetup {
     function test_mantle_stratum_spot_exact_in() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetIn = WETH;
-        address assetOut = METH;
+        address assetIn = TokensMantle.WETH;
+        address assetOut = TokensMantle.METH;
 
         deal(assetIn, user, 1e20);
 
@@ -57,8 +56,8 @@ contract StratumCurveTest is DeltaSetup {
     function test_mantle_stratum_spot_exact_in_reverse() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetIn = METH;
-        address assetOut = WETH;
+        address assetIn = TokensMantle.METH;
+        address assetOut = TokensMantle.WETH;
 
         deal(assetIn, user, 1e20);
 
@@ -95,12 +94,12 @@ contract StratumCurveTest is DeltaSetup {
 
     /** STRATUM PATH BUILDERS */
 
-    function getSpotExactInSingleStratumEth(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
+    function getSpotExactInSingleStratumEth(address tokenIn, address tokenOut) internal pure returns (bytes memory data) {
         return
             abi.encodePacked(
                 tokenIn,
                 uint8(0),
-                STRATUM_CURVE,
+                DexMappingsMantle.STRATUM_CURVE,
                 STRATUM_ETH_POOL,
                 abi.encodePacked(getTokenIdEth(tokenIn), getTokenIdEth(tokenOut)),
                 SWAP_ID,
@@ -108,13 +107,13 @@ contract StratumCurveTest is DeltaSetup {
             );
     }
 
-    function getTokenIdEth(address t) internal view returns (uint8) {
-        if (t == METH) return 1;
+    function getTokenIdEth(address t) internal pure returns (uint8) {
+        if (t == TokensMantle.METH) return 1;
         else return 0;
     }
 
-    function getSpotExactInSingleStratumUsd(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        uint8 poolId = STRATUM_CURVE;
+    function getSpotExactInSingleStratumUsd(address tokenIn, address tokenOut) internal pure returns (bytes memory data) {
+        uint8 poolId = DexMappingsMantle.STRATUM_CURVE;
         return
             abi.encodePacked(
                 tokenIn,
@@ -129,16 +128,15 @@ contract StratumCurveTest is DeltaSetup {
             );
     }
 
-
-    function getTokenIdUSD(address t) internal view returns (uint8) {
-        if (t == USDC) return 0;
-        if (t == USDT) return 1;
+    function getTokenIdUSD(address t) internal pure returns (uint8) {
+        if (t == TokensMantle.USDC) return 0;
+        if (t == TokensMantle.USDT) return 1;
         else return 2;
     }
 
-    function getTokenIdUSDY(address t) internal view returns (uint8) {
-        if (t == USDC) return 1;
-        if (t == USDT) return 2;
+    function getTokenIdUSDY(address t) internal pure returns (uint8) {
+        if (t == TokensMantle.USDC) return 1;
+        if (t == TokensMantle.USDT) return 2;
         else return 0;
     }
 }

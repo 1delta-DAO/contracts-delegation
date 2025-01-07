@@ -3,6 +3,7 @@
 pragma solidity ^0.8.28;
 
 import {PoolGetterArbitrum} from "./PoolGetterArbitrum.sol";
+import {DexMappings} from "../modules/shared/swapper/DexMappings.sol";
 
 interface ISwapPool {
     function swap(
@@ -54,7 +55,7 @@ interface ISwapPool {
  * Quoter contract
  * Paths have to be encoded as follows: token0 (address) | param0 (uint24) | poolId (uint8) | token1 (address) |
  */
-contract OneDeltaQuoterArbitrum is PoolGetterArbitrum {
+contract OneDeltaQuoterArbitrum is PoolGetterArbitrum, DexMappings {
     /// @dev Transient storage variable used to check a safety condition in exact output swaps.
     uint256 private amountOutCached;
     uint256 internal constant UINT16_MASK = 0xffff;

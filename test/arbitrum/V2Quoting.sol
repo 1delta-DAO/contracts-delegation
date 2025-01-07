@@ -20,7 +20,7 @@ contract ArbitrumQuotingTest is DeltaSetup {
 
         uint256 amountIn = 0.1e18;
 
-        bytes memory quotePath = getSpotQuotePathSingle(assetIn, assetOut, CAMELOT_V2_VOLATILE, CAMELOT_V2_FEE_DENOM);
+        bytes memory quotePath = getSpotQuotePathSingle(assetIn, assetOut, DexMappingsArbitrum.CAMELOT_V2_VOLATILE, CAMELOT_V2_FEE_DENOM);
         uint256 quote = testQuoter.quoteExactInput(quotePath, amountIn);
         assertApproxEqAbs(15672039507, quote, 0);
     }
@@ -35,7 +35,7 @@ contract ArbitrumQuotingTest is DeltaSetup {
 
         uint256 amountOut = 1.0e9;
 
-        bytes memory quotePath = getSpotQuotePathSingle(assetOut, assetIn, CAMELOT_V2_VOLATILE, CAMELOT_V2_FEE_DENOM);
+        bytes memory quotePath = getSpotQuotePathSingle(assetOut, assetIn, DexMappingsArbitrum.CAMELOT_V2_VOLATILE, CAMELOT_V2_FEE_DENOM);
         uint256 quote = testQuoter.quoteExactOutput(quotePath, amountOut);
         assertApproxEqAbs(6368403383400929, quote, 0);
     }
@@ -50,7 +50,7 @@ contract ArbitrumQuotingTest is DeltaSetup {
 
         uint256 amountIn = 0.1e18;
 
-        bytes memory quotePath = getQuoteSwapPathSingleV3(assetIn, assetOut, RAMSES, 500);
+        bytes memory quotePath = getQuoteSwapPathSingleV3(assetIn, assetOut, DexMappingsArbitrum.RAMSES, 500);
         uint256 quote = testQuoter.quoteExactInput(quotePath, amountIn);
         assertApproxEqAbs(460939078352216629914, quote, 0);
     }

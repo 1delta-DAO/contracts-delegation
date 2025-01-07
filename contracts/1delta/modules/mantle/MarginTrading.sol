@@ -1368,7 +1368,7 @@ abstract contract MarginTrading is BaseSwapper {
                 pathLength
             );
         // special case: Moe LB, no flash swaps, recursive nesting is applied
-        } else if (poolId == MOE_LB_ID) {
+        } else if (poolId == LB_ID) {
             address tokenIn;
             uint256 amountIn;
             bool swapForY;

@@ -7,7 +7,7 @@ contract MarginTestArbitrum is DeltaSetup {
     uint256 DEFAULT_IR_MODE = 2; // variable
 
     function test_arbitrum_open_exact_in() external {
-        uint16 lenderId = VENUS;
+        uint16 lenderId = LenderMappingsArbitrum.VENUS;
         address user = testUser;
         uint256 amount = 200.0e6;
         uint256 amountMin = 190.0e6;
@@ -42,7 +42,7 @@ contract MarginTestArbitrum is DeltaSetup {
     }
 
     function test_arbitrum_cs_exact_in_all() external {
-        uint16 lenderId = VENUS;
+        uint16 lenderId = LenderMappingsArbitrum.VENUS;
         address user = testUser;
         uint256 amount = 200.0e6;
         uint256 amountMin = 190.0e6;
@@ -78,7 +78,7 @@ contract MarginTestArbitrum is DeltaSetup {
     }
 
     function test_arbitrum_cs_exact_in() external {
-        uint16 lenderId = VENUS;
+        uint16 lenderId = LenderMappingsArbitrum.VENUS;
         address user = testUser;
         uint256 amount = 200.0e6;
 

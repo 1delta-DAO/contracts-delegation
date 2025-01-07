@@ -8,10 +8,10 @@ contract SwapGen2Test is DeltaSetup {
 
     function test_mantle_gen_2_open_exact_in() external /** address user, uint16 lenderId */ {
         address user = testUser;
-        uint16 lenderId = LENDLE_ID;
+        uint16 lenderId = LenderMappingsMantle.LENDLE_ID;
         vm.assume(user != address(0));
-        address assetFrom = USDC;
-        address assetTo = USDT;
+        address assetFrom = TokensMantle.USDC;
+        address assetTo = TokensMantle.USDT;
         address debtToken = debtTokens[assetFrom][lenderId];
         address collateralToken = collateralTokens[assetTo][lenderId];
 
@@ -58,10 +58,10 @@ contract SwapGen2Test is DeltaSetup {
 
     function test_mantle_gen_2_open_exact_in_composer() external /** address user, uint16 lenderId */ {
         address user = testUser;
-        uint16 lenderId = LENDLE_ID;
+        uint16 lenderId = LenderMappingsMantle.LENDLE_ID;
         vm.assume(user != address(0));
-        address assetFrom = USDC;
-        address assetTo = USDT;
+        address assetFrom = TokensMantle.USDC;
+        address assetTo = TokensMantle.USDT;
         address debtToken = debtTokens[assetFrom][lenderId];
         address collateralToken = collateralTokens[assetTo][lenderId];
 
@@ -104,7 +104,7 @@ contract SwapGen2Test is DeltaSetup {
 
     function test_mantle_gen_2_open_exact_in_multi() external /** address user, uint16 lenderId */ {
         address user = testUser;
-        uint16 lenderId = LENDLE_ID;
+        uint16 lenderId = LenderMappingsMantle.LENDLE_ID;
         vm.assume(user != address(0));
 
         (address assetFrom, address assetTo, bytes memory swapPath) = getPathAndTokensV3(lenderId);
@@ -155,7 +155,7 @@ contract SwapGen2Test is DeltaSetup {
 
     function test_mantle_gen_2_open_exact_in_multi_mixed() external /** address user, uint16 lenderId */ {
         address user = testUser;
-        uint16 lenderId = LENDLE_ID;
+        uint16 lenderId = LenderMappingsMantle.LENDLE_ID;
         vm.assume(user != address(0));
 
         (address assetFrom, address assetTo, bytes memory swapPath) = getPathAndTokensMixed(lenderId);
@@ -205,7 +205,7 @@ contract SwapGen2Test is DeltaSetup {
 
     function test_mantle_gen_2_open_exact_in_multi_mixed_double_v2() external /** address user, uint16 lenderId */ {
         address user = testUser;
-        uint16 lenderId = LENDLE_ID;
+        uint16 lenderId = LenderMappingsMantle.LENDLE_ID;
         vm.assume(user != address(0));
 
         (address assetFrom, address assetTo, bytes memory swapPath) = getPathAndTokensMixedDoubleV2(lenderId);
@@ -255,25 +255,25 @@ contract SwapGen2Test is DeltaSetup {
 
     function getOpenExactInSingleGen2(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_STABLES);
-        uint8 poolId = AGNI;
+        uint8 poolId = DexMappingsMantle.AGNI;
         address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
         return abi.encodePacked(tokenIn, uint8(3), poolId, pool, fee, tokenOut, uint16(lenderId), uint8(2));
     }
 
-    function getPathDataV3() internal view returns (address[] memory tokens, uint8[] memory actions, uint8[] memory pIds, uint16[] memory fees) {
+    function getPathDataV3() internal pure returns (address[] memory tokens, uint8[] memory actions, uint8[] memory pIds, uint16[] memory fees) {
         uint256 length = 4;
         uint256 lengthDecreased = length - 1;
         tokens = new address[](length);
         actions = new uint8[](lengthDecreased);
         pIds = new uint8[](lengthDecreased);
         fees = new uint16[](lengthDecreased);
-        tokens[0] = USDC;
-        tokens[1] = WMNT;
-        tokens[2] = WETH;
-        tokens[3] = USDT;
-        pIds[0] = FUSION_X;
-        pIds[1] = AGNI;
-        pIds[2] = AGNI;
+        tokens[0] = TokensMantle.USDC;
+        tokens[1] = TokensMantle.WMNT;
+        tokens[2] = TokensMantle.WETH;
+        tokens[3] = TokensMantle.USDT;
+        pIds[0] = DexMappingsMantle.FUSION_X;
+        pIds[1] = DexMappingsMantle.AGNI;
+        pIds[2] = DexMappingsMantle.AGNI;
         actions[0] = 3;
         actions[1] = 0;
         actions[2] = 0;
@@ -282,20 +282,20 @@ contract SwapGen2Test is DeltaSetup {
         fees[2] = 500;
     }
 
-    function getPathDataMixed() internal view returns (address[] memory tokens, uint8[] memory actions, uint8[] memory pIds, uint16[] memory fees) {
+    function getPathDataMixed() internal pure returns (address[] memory tokens, uint8[] memory actions, uint8[] memory pIds, uint16[] memory fees) {
         uint256 length = 4;
         uint256 lengthDecreased = length - 1;
         tokens = new address[](length);
         actions = new uint8[](lengthDecreased);
         pIds = new uint8[](lengthDecreased);
         fees = new uint16[](lengthDecreased);
-        tokens[0] = USDC;
-        tokens[1] = WMNT;
-        tokens[2] = WETH;
-        tokens[3] = USDT;
-        pIds[0] = MERCHANT_MOE;
-        pIds[1] = AGNI;
-        pIds[2] = AGNI;
+        tokens[0] = TokensMantle.USDC;
+        tokens[1] = TokensMantle.WMNT;
+        tokens[2] = TokensMantle.WETH;
+        tokens[3] = TokensMantle.USDT;
+        pIds[0] = DexMappingsMantle.MERCHANT_MOE;
+        pIds[1] = DexMappingsMantle.AGNI;
+        pIds[2] = DexMappingsMantle.AGNI;
         actions[0] = 3;
         actions[1] = 0;
         actions[2] = 0;
@@ -306,7 +306,7 @@ contract SwapGen2Test is DeltaSetup {
 
     function getPathDataMixedDoubleV2()
         internal
-        view
+        pure
         returns (address[] memory tokens, uint8[] memory actions, uint8[] memory pIds, uint16[] memory fees)
     {
         uint256 length = 4;
@@ -315,13 +315,13 @@ contract SwapGen2Test is DeltaSetup {
         actions = new uint8[](lengthDecreased);
         pIds = new uint8[](lengthDecreased);
         fees = new uint16[](lengthDecreased);
-        tokens[0] = USDC;
-        tokens[1] = WMNT;
-        tokens[2] = WETH;
-        tokens[3] = USDT;
-        pIds[0] = MERCHANT_MOE;
-        pIds[1] = AGNI;
-        pIds[2] = MERCHANT_MOE;
+        tokens[0] = TokensMantle.USDC;
+        tokens[1] = TokensMantle.WMNT;
+        tokens[2] = TokensMantle.WETH;
+        tokens[3] = TokensMantle.USDT;
+        pIds[0] = DexMappingsMantle.MERCHANT_MOE;
+        pIds[1] = DexMappingsMantle.AGNI;
+        pIds[2] = DexMappingsMantle.MERCHANT_MOE;
         actions[0] = 3;
         actions[1] = 0;
         actions[2] = 0;
@@ -386,8 +386,8 @@ contract SwapGen2Test is DeltaSetup {
         );
     }
 
-    function getOpenExactInSingleGen2V2(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        uint8 poolId = MERCHANT_MOE;
+    function getOpenExactInSingleGen2V2(address tokenIn, address tokenOut) internal pure returns (bytes memory data) {
+        uint8 poolId = DexMappingsMantle.MERCHANT_MOE;
         return abi.encodePacked(tokenIn, uint8(10), poolId, tokenOut);
     }
 }

@@ -20,28 +20,6 @@ contract AddressesArbitrum {
     /// @dev Mask of lower 3 bytes.
     uint256 internal constant UINT24_MASK = 0xffffff;
 
-    /** DEFAULTS */
-
-    uint16 DEFAULT_LENDER = 1;
-    uint16 AAVE_V3 = 0;
-    uint16 AVALON = 1;
-    uint16 YLDR = 900;
-    uint16 VENUS = 3000;
-    uint16 VENUS_ETH = 3001;
-
-
-    uint16 MAX_AAVE_V2_ID = 2000;
-    uint16 MAX_ID_COMPOUND_V3 = 3000;
-    uint16 COMPOUND_V3_USDC = 2000;
-    uint16 COMPOUND_V3_WETH = 2001;
-    uint16 COMPOUND_V3_USDT = 2002;
-    uint16 COMPOUND_V3_USDCE = 2003;
-    
-    // Flash loans
-    uint8 AAVE_V3_FL = 0;
-    uint8 BALANCER_V2 = 0xff;
-    uint8 BALANCER_V2_DEXID = 50;
-
     /** DEX CONFIG */
 
     uint16 internal DEX_FEE_STABLES = 100;
@@ -53,36 +31,10 @@ contract AddressesArbitrum {
     uint16 internal BIN_STEP_LOWEST = 1;
     uint16 internal BIN_STEP_LOW = 10;
 
-    uint8 internal UNI_V3 = 0;
-    uint8 internal RAMSES = 3;
-    uint8 internal SUSHI_V3 = 1;
-    uint8 internal ALGEBRA = 4;
-    uint8 internal PANCAKE = 2;
-    uint8 internal IZUMI = 49;
-
-    uint8 internal CURVE = 60;
-    uint8 internal CURVE_NG = 151;
-    uint8 internal CURVE_META = 61;
-
-    uint8 internal UNI_V2 = 100;
-    uint8 internal SUSHI_V2 = 101;
-    uint8 internal APESWAP = 102;
-    
-    uint8 internal CAMELOT_V2_VOLATILE = 121;
-    uint8 internal CAMELOT_V2_STABLE = 136;
-
     uint16 internal UNI_V2_FEE_DENOM = 10000 - 30;
     uint16 internal CAMELOT_V2_FEE_DENOM = 10000 - 30;
     uint16 internal SUSHI_V2_FEE_DENOM = 10000 - 30;
     uint16 internal APESWAP_FEE_DENOM = 10000 - 20;
-
-    // Solidly Stable
-    uint8 internal RAMSES_V1_STABLE = 135;
-
-    // Solidly Volatile
-    uint8 internal RAMSES_V1_VOLAT = 120;
-
-    uint8 internal WOO_FI = 150;
 
     /** TRADE TYPE FLAG GETTERS */
 

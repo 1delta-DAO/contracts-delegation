@@ -38,7 +38,7 @@ contract ComposerTestArbitrum is DeltaSetup {
     }
 
     function test_arbitrum_composer_depo_venus() external {
-        uint16 lenderId = VENUS;
+        uint16 lenderId = LenderMappingsArbitrum.VENUS;
         address user = testUser;
         vm.assume(user != address(0) && validVenusLender(lenderId));
         uint256 amount = 10.0e6;
@@ -128,7 +128,7 @@ contract ComposerTestArbitrum is DeltaSetup {
     }
 
     function test_arbitrum_composer_borrow_venus() external {
-        uint16 lenderId = VENUS;
+        uint16 lenderId = LenderMappingsArbitrum.VENUS;
         address user = testUser;
         vm.assume(user != address(0) && validVenusLender(lenderId));
         uint256 amount = 1.0e8;
@@ -247,7 +247,7 @@ contract ComposerTestArbitrum is DeltaSetup {
     }
 
     function test_arbitrum_composer_repay_too_much_venus() external {
-        uint16 lenderId = VENUS;
+        uint16 lenderId = LenderMappingsArbitrum.VENUS;
         address user = testUser;
         vm.assume(user != address(0) && validVenusLender(lenderId));
 
@@ -297,7 +297,7 @@ contract ComposerTestArbitrum is DeltaSetup {
 
     function test_arbitrum_composer_withdraw(uint16 lenderId) external {
         address user = testUser;
-        vm.assume(user != address(0) && (validAaveLender(lenderId) || lenderId == COMPOUND_V3_USDC || lenderId == VENUS));
+        vm.assume(user != address(0) && (validAaveLender(lenderId) || lenderId == LenderMappingsArbitrum.COMPOUND_V3_USDC || lenderId == LenderMappingsArbitrum.VENUS));
 
         uint256 amount = 10.0e6;
         address asset = TokensArbitrum.USDC;
@@ -320,7 +320,7 @@ contract ComposerTestArbitrum is DeltaSetup {
     function test_arbitrum_composer_withdraw_all(uint16 lenderId) external {
         address user = testUser;
 
-        vm.assume(user != address(0) && (validAaveLender(lenderId) || lenderId == VENUS));
+        vm.assume(user != address(0) && (validAaveLender(lenderId) || lenderId == LenderMappingsArbitrum.VENUS));
 
         uint256 amount = 500.0e6;
         address asset = TokensArbitrum.USDC;
@@ -353,13 +353,13 @@ contract ComposerTestArbitrum is DeltaSetup {
         bytes memory swapData = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
-            UNI_V3,
+            DexMappingsArbitrum.UNI_V3,
             DEX_FEE_STABLES //
         );
         bytes memory dataFusion = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
-            SUSHI_V3,
+            DexMappingsArbitrum.SUSHI_V3,
             DEX_FEE_STABLES //
         );
 
@@ -386,7 +386,7 @@ contract ComposerTestArbitrum is DeltaSetup {
 
     function getDollarToWeth()
         internal
-        view
+        pure
         returns (
             address[] memory tks,
             uint8[] memory pids, //
@@ -401,13 +401,13 @@ contract ComposerTestArbitrum is DeltaSetup {
         fees[0] = 100;
         fees[1] = 0;
         pids = new uint8[](2);
-        pids[0] = PANCAKE;
-        pids[1] = ALGEBRA;
+        pids[0] = DexMappingsArbitrum.PANCAKE;
+        pids[1] = DexMappingsArbitrum.ALGEBRA;
     }
 
     function getWethToDollar()
         internal
-        view
+        pure
         returns (
             address[] memory tks,
             uint8[] memory pids, //
@@ -422,8 +422,8 @@ contract ComposerTestArbitrum is DeltaSetup {
         fees[0] = 0;
         fees[1] = 100;
         pids = new uint8[](2);
-        pids[0] = ALGEBRA;
-        pids[1] = PANCAKE;
+        pids[0] = DexMappingsArbitrum.ALGEBRA;
+        pids[1] = DexMappingsArbitrum.PANCAKE;
     }
 
     function test_arbitrum_composer_multi_route_exact_in_native() external {
@@ -438,7 +438,7 @@ contract ComposerTestArbitrum is DeltaSetup {
         bytes memory swapData = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
-            PANCAKE,
+            DexMappingsArbitrum.PANCAKE,
             DEX_FEE_STABLES //
         );
         bytes memory dataFusion;
@@ -481,7 +481,7 @@ contract ComposerTestArbitrum is DeltaSetup {
         bytes memory swapData = getSpotExactOutSingleGen2(
             assetIn,
             assetOut,
-            PANCAKE,
+            DexMappingsArbitrum.PANCAKE,
             DEX_FEE_STABLES //
         );
         bytes memory dataFusion;
@@ -538,7 +538,7 @@ contract ComposerTestArbitrum is DeltaSetup {
         bytes memory swapData = getSpotExactOutSingleGen2(
             assetIn,
             assetOut,
-            PANCAKE,
+            DexMappingsArbitrum.PANCAKE,
             DEX_FEE_STABLES //
         );
         bytes memory dataFusion;
@@ -592,7 +592,7 @@ contract ComposerTestArbitrum is DeltaSetup {
         bytes memory swapData = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
-            PANCAKE,
+            DexMappingsArbitrum.PANCAKE,
             DEX_FEE_STABLES //
         );
         bytes memory dataFusion;
@@ -649,13 +649,13 @@ contract ComposerTestArbitrum is DeltaSetup {
         bytes memory swapData = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
-            UNI_V3,
+            DexMappingsArbitrum.UNI_V3,
             DEX_FEE_STABLES //
         );
         bytes memory dataFusion = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
-            SUSHI_V3,
+            DexMappingsArbitrum.SUSHI_V3,
             DEX_FEE_STABLES //
         );
 
@@ -698,13 +698,13 @@ contract ComposerTestArbitrum is DeltaSetup {
         bytes memory swapData = getSpotExactOutSingleGen2(
             assetIn,
             assetOut,
-            UNI_V3,
+            DexMappingsArbitrum.UNI_V3,
             DEX_FEE_STABLES //
         );
         bytes memory dataFusion = getSpotExactOutSingleGen2(
             assetIn,
             assetOut,
-            SUSHI_V3,
+            DexMappingsArbitrum.SUSHI_V3,
             DEX_FEE_STABLES //
         );
 

@@ -18,7 +18,7 @@ contract ComposedFlashLoanTestArbitrum is DeltaSetup {
         TestParamsOpen memory params;
         address user = testUser;
 
-        vm.assume((user != address(0) && lenderId == AAVE_V3) || lenderId == VENUS);
+        vm.assume((user != address(0) && lenderId == LenderMappingsArbitrum.AAVE_V3) || lenderId == LenderMappingsArbitrum.VENUS);
         vm.deal(user, 1.0e18);
         {
             address asset = TokensArbitrum.WETH;
@@ -59,7 +59,7 @@ contract ComposedFlashLoanTestArbitrum is DeltaSetup {
             lenderId
         );
 
-        uint8 flashSource = BALANCER_V2;
+        uint8 flashSource = FlashMappingsArbitrum.BALANCER_V2;
         {
             uint borrowAm = params.swapAmount +
                 (params.swapAmount * getFlashFee(flashSource)) / //
@@ -132,11 +132,11 @@ contract ComposedFlashLoanTestArbitrum is DeltaSetup {
 
     function test_arbitrum_composed_flash_loan_close(uint16 lenderId) external {
         address user = testUser;
-        vm.assume(user != address(0) && (lenderId == AAVE_V3 || lenderId == VENUS));
+        vm.assume(user != address(0) && (lenderId == LenderMappingsArbitrum.AAVE_V3 || lenderId == LenderMappingsArbitrum.VENUS));
         address asset = TokensArbitrum.WETH;
         enterMarket(user, asset, lenderId);
 
-        uint8 flashSource = BALANCER_V2;
+        uint8 flashSource = FlashMappingsArbitrum.BALANCER_V2;
         address borrowAsset = TokensArbitrum.USDT;
 
         fundRouter(asset, borrowAsset);
@@ -203,14 +203,14 @@ contract ComposedFlashLoanTestArbitrum is DeltaSetup {
 
     function getOpenExactInInternal(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = DEX_FEE_STABLES;
-        uint8 poolId = PANCAKE;
+        uint8 poolId = DexMappingsArbitrum.PANCAKE;
         address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
         return abi.encodePacked(tokenIn, uint8(0), poolId, pool, fee, tokenOut, uint16(0), uint8(0));
     }
 
     function getCloseExactInInternal(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = DEX_FEE_STABLES;
-        uint8 poolId = PANCAKE;
+        uint8 poolId = DexMappingsArbitrum.PANCAKE;
         address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
         return abi.encodePacked(tokenIn, uint8(0), poolId, pool, fee, tokenOut, uint16(0), uint8(0));
     }
@@ -234,6 +234,6 @@ contract ComposedFlashLoanTestArbitrum is DeltaSetup {
     }
 
     function getFlashFee(uint8 source) internal view returns (uint) {
-        return source == BALANCER_V2 ? 0 : ILendingPool(AaveV3Arbitrum.POOL).FLASHLOAN_PREMIUM_TOTAL();
+        return source == FlashMappingsArbitrum.BALANCER_V2 ? 0 : ILendingPool(AaveV3Arbitrum.POOL).FLASHLOAN_PREMIUM_TOTAL();
     }
 }

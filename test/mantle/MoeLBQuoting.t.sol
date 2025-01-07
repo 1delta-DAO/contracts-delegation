@@ -30,8 +30,8 @@ contract MoeLBQuotingTest is DeltaSetup {
     function test_mantle_lb_quote_spot_exact_out_reverts() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetOut = METH;
-        address assetIn = WETH;
+        address assetOut = TokensMantle.METH;
+        address assetIn = TokensMantle.WETH;
 
         deal(assetIn, user, 1e30);
 
@@ -45,8 +45,8 @@ contract MoeLBQuotingTest is DeltaSetup {
     function test_mantle_lb_quote_spot_exact_out_works() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetOut = USDe;
-        address assetIn = USDC;
+        address assetOut = TokensMantle.USDe;
+        address assetIn = TokensMantle.USDC;
 
         deal(assetIn, user, 1e30);
 
@@ -60,8 +60,8 @@ contract MoeLBQuotingTest is DeltaSetup {
     function test_mantle_lb_quote_spot_exact_in_works() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetOut = USDe;
-        address assetIn = USDT;
+        address assetOut = TokensMantle.USDe;
+        address assetIn = TokensMantle.USDT;
 
         deal(assetIn, user, 1e30);
 
@@ -75,8 +75,8 @@ contract MoeLBQuotingTest is DeltaSetup {
     function test_mantle_lb_quote_spot_exact_in_reverts() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetOut = WETH;
-        address assetIn = WMNT;
+        address assetOut = TokensMantle.WETH;
+        address assetIn = TokensMantle.WMNT;
 
         deal(assetIn, user, 1e30);
 
@@ -91,35 +91,35 @@ contract MoeLBQuotingTest is DeltaSetup {
 
     function getQuoteExactOutMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint24 fee = BIN_STEP_LOW;
-        uint8 poolId = MERCHANT_MOE_LB;
-        address pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenOut, WMNT, BIN_STEP_LOWEST).LBPair;
-        bytes memory firstPart = abi.encodePacked(tokenOut, poolId, pool, WMNT);
+        uint8 poolId = DexMappingsMantle.MERCHANT_MOE_LB;
+        address pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenOut, TokensMantle.WMNT, BIN_STEP_LOWEST).LBPair;
+        bytes memory firstPart = abi.encodePacked(tokenOut, poolId, pool, TokensMantle.WMNT);
         fee = DEX_FEE_LOW_MEDIUM;
-        poolId = FUSION_X;
-        pool = testQuoter._v3TypePool(WMNT, tokenIn, poolId, fee);
+        poolId = DexMappingsMantle.FUSION_X;
+        pool = testQuoter._v3TypePool(TokensMantle.WMNT, tokenIn, poolId, fee);
         return abi.encodePacked(firstPart, poolId, pool, fee, tokenIn);
     }
 
     function getSpotExactOutMultiLBWorking(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint24 fee = BIN_STEP_LOWEST;
-        uint8 poolId = MERCHANT_MOE_LB;
-        address pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenOut, USDT, fee).LBPair;
-        bytes memory firstPart = abi.encodePacked(tokenOut, poolId, pool, USDT);
-        poolId = MERCHANT_MOE;
-        pool = testQuoter._v2TypePairAddress(USDT, tokenIn, poolId);
+        uint8 poolId = DexMappingsMantle.MERCHANT_MOE_LB;
+        address pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenOut, TokensMantle.USDT, fee).LBPair;
+        bytes memory firstPart = abi.encodePacked(tokenOut, poolId, pool, TokensMantle.USDT);
+        poolId = DexMappingsMantle.MERCHANT_MOE;
+        pool = testQuoter._v2TypePairAddress(TokensMantle.USDT, tokenIn, poolId);
         return abi.encodePacked(firstPart, poolId, pool, MERCHANT_MOE_FEE_DENOM, tokenIn);
     }
 
     function getSpotExactInSinglBroken(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint24 fee = BIN_STEP_LOW;
-        uint8 poolId = MERCHANT_MOE_LB;
+        uint8 poolId = DexMappingsMantle.MERCHANT_MOE_LB;
         address pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenOut, tokenIn, fee).LBPair;
         return abi.encodePacked(tokenIn, poolId, pool, tokenOut);
     }
 
     function getSpotExactInSingle(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint24 fee = BIN_STEP_LOWEST;
-        uint8 poolId = MERCHANT_MOE_LB;
+        uint8 poolId = DexMappingsMantle.MERCHANT_MOE_LB;
         address pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenOut, tokenIn, fee).LBPair;
         return abi.encodePacked(tokenIn, poolId, pool, tokenOut);
     }

@@ -25,13 +25,13 @@ contract FlashSwapExacInTest is DeltaSetup {
     function test_mantle_stratum_arb_exact_in() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address asset = WETH;
-        address assetOut = WETH;
+        address asset = TokensMantle.WETH;
+        address assetOut = TokensMantle.WETH;
 
         uint256 amountIn = 1.0e18;
         uint256 minimumOut = amountIn;
 
-        uint256 quoted = testQuoter.quoteExactInput(getSpotExactInSingleStratumMETHQuoter(WETH), amountIn);
+        uint256 quoted = testQuoter.quoteExactInput(getSpotExactInSingleStratumMETHQuoter(TokensMantle.WETH), amountIn);
 
         bytes memory swapPath = getSpotExactInSingleStratumMETH(asset);
 
@@ -73,12 +73,12 @@ contract FlashSwapExacInTest is DeltaSetup {
     function test_mantle_stratum_arb_exact_in_v2() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address asset = WETH;
-        address assetOut = WETH;
+        address asset = TokensMantle.WETH;
+        address assetOut = TokensMantle.WETH;
 
         uint256 amountIn = 1.0e18;
 
-        uint256 quoted = testQuoter.quoteExactInput(getSpotExactInDoubleStratumMETHQuoterWithV2(WETH), amountIn);
+        uint256 quoted = testQuoter.quoteExactInput(getSpotExactInDoubleStratumMETHQuoterWithV2(TokensMantle.WETH), amountIn);
         uint256 minimumOut = quoted;
 
         bytes memory swapPath = getSpotExactInDoubleStratumMETHV2(asset);
@@ -133,8 +133,8 @@ contract FlashSwapExacInTest is DeltaSetup {
     function test_mantle_stratum_arb_exact_in_v2_3_pools() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address asset = WETH;
-        address assetOut = METH;
+        address asset = TokensMantle.WETH;
+        address assetOut = TokensMantle.METH;
 
         uint256 amountIn = 1.0e18;
 
@@ -191,12 +191,12 @@ contract FlashSwapExacInTest is DeltaSetup {
     function test_mantle_stratum_arb_exact_in_v2_3_pools_V3Last() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address asset = WETH;
-        address assetOut = METH;
+        address asset = TokensMantle.WETH;
+        address assetOut = TokensMantle.METH;
 
         uint256 amountIn = 1.0e18;
 
-        uint256 quoted = testQuoter.quoteExactInput(getSpotExactInDoubleStratumMETHQuoterWithV2_3Pools_V3Last(WETH), amountIn);
+        uint256 quoted = testQuoter.quoteExactInput(getSpotExactInDoubleStratumMETHQuoterWithV2_3Pools_V3Last(TokensMantle.WETH), amountIn);
 
         bytes memory swapPath = getSpotExactInDoubleStratumMETHV2_3Pool_V3Last(asset);
 
@@ -246,12 +246,12 @@ contract FlashSwapExacInTest is DeltaSetup {
     function test_mantle_stratum_arb_exact_in_v2_3_pools_spot() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address asset = WETH;
-        address assetOut = METH;
+        address asset = TokensMantle.WETH;
+        address assetOut = TokensMantle.METH;
 
         uint256 amountIn = 1.0e18;
 
-        uint256 quoted = testQuoter.quoteExactInput(getSpotExactInDoubleStratumMETHQuoterWithV2_3Pools(WETH), amountIn);
+        uint256 quoted = testQuoter.quoteExactInput(getSpotExactInDoubleStratumMETHQuoterWithV2_3Pools(TokensMantle.WETH), amountIn);
 
         bytes memory swapPath = getSpotExactInDoubleStratumMETHV2_3Pool(asset);
 
@@ -297,8 +297,8 @@ contract FlashSwapExacInTest is DeltaSetup {
     function test_mantle_stratum_arb_exact_in_v2_3_pools_V3Last_spot() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address asset = WETH;
-        address assetOut = METH;
+        address asset = TokensMantle.WETH;
+        address assetOut = TokensMantle.METH;
 
         uint256 amountIn = 1.0e18;
 
@@ -347,14 +347,14 @@ contract FlashSwapExacInTest is DeltaSetup {
 
     /** PATH BUILDERS */
 
-    function getTokenIdEth(address t) internal view returns (uint8) {
-        if (t == METH) return 1;
+    function getTokenIdEth(address t) internal pure returns (uint8) {
+        if (t == TokensMantle.METH) return 1;
         else return 0;
     }
 
     function getSpotExactInAgni(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_STABLES);
-        uint8 poolId = AGNI;
+        uint8 poolId = DexMappingsMantle.AGNI;
         address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
         return abi.encodePacked(tokenIn, ZERO_8, poolId, pool, fee, tokenOut);
     }
@@ -362,75 +362,75 @@ contract FlashSwapExacInTest is DeltaSetup {
     function getSpotExactInSingleStratumMETH(address token) internal view returns (bytes memory data) {
         return
             abi.encodePacked(
-                getSpotExactInAgni(token, METH),
+                getSpotExactInAgni(token, TokensMantle.METH),
                 ZERO_8,
-                STRATUM_CURVE,
+                DexMappingsMantle.STRATUM_CURVE,
                 STRATUM_ETH_POOL,
-                abi.encodePacked(getTokenIdEth(METH), getTokenIdEth(token), STRATUM_SWAP_ID),
+                abi.encodePacked(getTokenIdEth(TokensMantle.METH), getTokenIdEth(token), STRATUM_SWAP_ID),
                 token
             );
     }
 
     function getSpotExactInAgniQuoter(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, DEX_FEE_STABLES, AGNI);
-        return abi.encodePacked(tokenIn, AGNI, pool, DEX_FEE_STABLES, tokenOut);
+        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, DEX_FEE_STABLES, DexMappingsMantle.AGNI);
+        return abi.encodePacked(tokenIn, DexMappingsMantle.AGNI, pool, DEX_FEE_STABLES, tokenOut);
     }
 
     function getSpotExactInMoeQuoter(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, MERCHANT_MOE);
-        return abi.encodePacked(tokenIn, MERCHANT_MOE, pool, MERCHANT_MOE_FEE_DENOM, tokenOut);
+        address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, DexMappingsMantle.MERCHANT_MOE);
+        return abi.encodePacked(tokenIn, DexMappingsMantle.MERCHANT_MOE, pool, MERCHANT_MOE_FEE_DENOM, tokenOut);
     }
 
     function getSpotExactInSingleStratumMETHQuoter(address token) internal view returns (bytes memory data) {
         return
             abi.encodePacked(
-                getSpotExactInAgniQuoter(token, METH),
-                STRATUM_CURVE,
-                abi.encodePacked(STRATUM_ETH_POOL, getTokenIdEth(METH), getTokenIdEth(token), STRATUM_SWAP_ID),
+                getSpotExactInAgniQuoter(token, TokensMantle.METH),
+                DexMappingsMantle.STRATUM_CURVE,
+                abi.encodePacked(STRATUM_ETH_POOL, getTokenIdEth(TokensMantle.METH), getTokenIdEth(token), STRATUM_SWAP_ID),
                 token
             );
     }
 
     function getSpotExactInDoubleStratumMETHV2_3Pool(address token) internal view returns (bytes memory data) {
-        uint8 poolId = MERCHANT_MOE;
-        address pool = testQuoter._v2TypePairAddress(token, METH, poolId);
+        uint8 poolId = DexMappingsMantle.MERCHANT_MOE;
+        address pool = testQuoter._v2TypePairAddress(token, TokensMantle.METH, poolId);
         return
             abi.encodePacked(
-                getSpotExactInAgni(token, METH),
+                getSpotExactInAgni(token, TokensMantle.METH),
                 ZERO_8,
-                STRATUM_CURVE,
-                abi.encodePacked(STRATUM_ETH_POOL, getTokenIdEth(METH), getTokenIdEth(token), STRATUM_SWAP_ID),
+                DexMappingsMantle.STRATUM_CURVE,
+                abi.encodePacked(STRATUM_ETH_POOL, getTokenIdEth(TokensMantle.METH), getTokenIdEth(token), STRATUM_SWAP_ID),
                 token,
-                abi.encodePacked(ZERO_8, MERCHANT_MOE, pool, MERCHANT_MOE_FEE_DENOM, METH)
+                abi.encodePacked(ZERO_8, DexMappingsMantle.MERCHANT_MOE, pool, MERCHANT_MOE_FEE_DENOM, TokensMantle.METH)
             );
     }
 
     function getSpotExactInDoubleStratumMETHV2_3Pool_V3Last(address token) internal view returns (bytes memory data) {
         return
             abi.encodePacked(
-                getSpotExactInMoe(token, METH),
+                getSpotExactInMoe(token, TokensMantle.METH),
                 ZERO_8, // action
-                STRATUM_CURVE,
+                DexMappingsMantle.STRATUM_CURVE,
                 STRATUM_ETH_POOL,
-                abi.encodePacked(getTokenIdEth(METH), getTokenIdEth(token), STRATUM_SWAP_ID),
-                getSpotExactInAgni(token, METH)
+                abi.encodePacked(getTokenIdEth(TokensMantle.METH), getTokenIdEth(token), STRATUM_SWAP_ID),
+                getSpotExactInAgni(token, TokensMantle.METH)
             );
     }
 
     function getSpotExactInDoubleStratumMETHV2(address token) internal view returns (bytes memory data) {
         return
             abi.encodePacked(
-                getSpotExactInMoe(token, METH),
+                getSpotExactInMoe(token, TokensMantle.METH),
                 ZERO_8, // action
-                STRATUM_CURVE,
+                DexMappingsMantle.STRATUM_CURVE,
                 STRATUM_ETH_POOL,
-                abi.encodePacked(getTokenIdEth(METH), getTokenIdEth(token), STRATUM_SWAP_ID),
+                abi.encodePacked(getTokenIdEth(TokensMantle.METH), getTokenIdEth(token), STRATUM_SWAP_ID),
                 token
             );
     }
 
     function getSpotExactInMoe(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        uint8 poolId = MERCHANT_MOE;
+        uint8 poolId = DexMappingsMantle.MERCHANT_MOE;
         address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
         return abi.encodePacked(tokenIn, ZERO_8, poolId, pool, MERCHANT_MOE_FEE_DENOM, tokenOut);
     }
@@ -438,9 +438,9 @@ contract FlashSwapExacInTest is DeltaSetup {
     function getSpotExactInDoubleStratumMETHQuoterWithV2(address token) internal view returns (bytes memory data) {
         return
             abi.encodePacked(
-                getSpotExactInMoeQuoter(token, METH),
-                STRATUM_CURVE,
-                abi.encodePacked(STRATUM_ETH_POOL, getTokenIdEth(METH), getTokenIdEth(token), STRATUM_SWAP_ID),
+                getSpotExactInMoeQuoter(token, TokensMantle.METH),
+                DexMappingsMantle.STRATUM_CURVE,
+                abi.encodePacked(STRATUM_ETH_POOL, getTokenIdEth(TokensMantle.METH), getTokenIdEth(token), STRATUM_SWAP_ID),
                 token
             );
     }
@@ -448,21 +448,21 @@ contract FlashSwapExacInTest is DeltaSetup {
     function getSpotExactInDoubleStratumMETHQuoterWithV2_3Pools(address token) internal view returns (bytes memory data) {
         return
             abi.encodePacked(
-                getSpotExactInAgniQuoter(token, METH),
-                STRATUM_CURVE,
-                abi.encodePacked(STRATUM_ETH_POOL, getTokenIdEth(METH), getTokenIdEth(token), STRATUM_SWAP_ID),
+                getSpotExactInAgniQuoter(token, TokensMantle.METH),
+                DexMappingsMantle.STRATUM_CURVE,
+                abi.encodePacked(STRATUM_ETH_POOL, getTokenIdEth(TokensMantle.METH), getTokenIdEth(token), STRATUM_SWAP_ID),
                 token,
-                abi.encodePacked(MERCHANT_MOE, testQuoter._v2TypePairAddress(token, METH, MERCHANT_MOE), MERCHANT_MOE_FEE_DENOM, METH)
+                abi.encodePacked(DexMappingsMantle.MERCHANT_MOE, testQuoter._v2TypePairAddress(token, TokensMantle.METH, DexMappingsMantle.MERCHANT_MOE), MERCHANT_MOE_FEE_DENOM, TokensMantle.METH)
             );
     }
 
     function getSpotExactInDoubleStratumMETHQuoterWithV2_3Pools_V3Last(address token) internal view returns (bytes memory data) {
         return
             abi.encodePacked(
-                getSpotExactInMoeQuoter(token, METH),
-                STRATUM_CURVE,
-                abi.encodePacked(STRATUM_ETH_POOL, getTokenIdEth(METH), getTokenIdEth(token), STRATUM_SWAP_ID),
-                getSpotExactInAgniQuoter(token, METH)
+                getSpotExactInMoeQuoter(token, TokensMantle.METH),
+                DexMappingsMantle.STRATUM_CURVE,
+                abi.encodePacked(STRATUM_ETH_POOL, getTokenIdEth(TokensMantle.METH), getTokenIdEth(token), STRATUM_SWAP_ID),
+                getSpotExactInAgniQuoter(token, TokensMantle.METH)
             );
     }
 }

@@ -3,6 +3,7 @@
 pragma solidity ^0.8.28;
 
 import {PoolGetterTaiko} from "./PoolGetterTaiko.sol";
+import {DexMappings} from "../modules/shared/swapper/DexMappings.sol";
 
 interface ISwapPool {
     function swap(
@@ -54,7 +55,7 @@ interface ISwapPool {
  * Quoter contract
  * Paths have to be encoded as follows: token0 (address) | param0 (uint24) | poolId (uint8) | token1 (address) |
  */
-contract OneDeltaQuoterTaiko is PoolGetterTaiko {
+contract OneDeltaQuoterTaiko is PoolGetterTaiko, DexMappings {
     /// @dev Transient storage variable used to check a safety condition in exact output swaps.
     uint256 private amountOutCached;
     uint256 internal constant UINT16_MASK = 0xffff;
@@ -309,7 +310,7 @@ contract OneDeltaQuoterTaiko is PoolGetterTaiko {
                 pair := calldataload(add(path.offset, 9)) // pool starts at 21st byte
             }
             // v3 types
-            if (poolId < 49) {
+            if (poolId < UNISWAP_V3_MAX_ID) {
                 assembly {
                     // tokenOut starts at 43th byte for CL
                     tokenOut := shr(96, calldataload(add(path.offset, CL_PARAM_LENGTH)))
@@ -318,7 +319,7 @@ contract OneDeltaQuoterTaiko is PoolGetterTaiko {
                 path = path[CL_PARAM_LENGTH:];
             }
             // iZi
-            else if (poolId == 49) {
+            else if (poolId == IZI_ID) {
                 assembly {
                     // tokenOut starts at 43th byte for CL
                     tokenOut := shr(96, calldataload(add(path.offset, CL_PARAM_LENGTH)))
@@ -327,7 +328,7 @@ contract OneDeltaQuoterTaiko is PoolGetterTaiko {
                 path = path[CL_PARAM_LENGTH:];
             }
             // curve
-            else if (poolId == 60) {
+            else if (poolId == CURVE_V1_STANDARD_ID) {
                 uint8 indexIn;
                 uint8 indexOut;
                 assembly {
@@ -339,7 +340,7 @@ contract OneDeltaQuoterTaiko is PoolGetterTaiko {
                 path = path[CURVE_PARAM_LENGTH:];
             }
             // v2 types
-            else if (poolId < 150) {
+            else if (poolId < UNISWAP_V2_MAX_ID) {
                 uint256 feeDenom;
                 assembly {
                     // tokenOut starts at 43rd byte
@@ -348,10 +349,10 @@ contract OneDeltaQuoterTaiko is PoolGetterTaiko {
                 }
                 amountIn = getAmountOutUniV2Type(pair, tokenIn, tokenOut, amountIn, feeDenom, poolId);
                 path = path[V2_PARAM_LENGTH:];
-            } else if (poolId == 150) {
+            } else if (poolId == SYNC_SWAP_ID) {
                 amountIn = quoteSyncSwapExactIn(pair, tokenIn, amountIn);
                 path = path[EXOTIC_PARAM_LENGTH:];
-            } else if (poolId == 153) {
+            } else if (poolId == DODO_ID) {
                 uint256 sellQuote;
                 assembly {
                     // sellQuote starts after the pair
@@ -388,14 +389,14 @@ contract OneDeltaQuoterTaiko is PoolGetterTaiko {
             }
 
             // v3 types
-            if (poolId < 49) {
+            if (poolId < UNISWAP_V3_MAX_ID) {
                 assembly {
                     // tokenIn starts at 43th byte for CL
                     tokenIn := shr(96, calldataload(add(path.offset, CL_PARAM_LENGTH)))
                 }
                 amountOut = quoteExactOutputSingleV3(tokenIn, tokenOut, pair, amountOut);
                 path = path[CL_PARAM_LENGTH:];
-            } else if (poolId == 49) {
+            } else if (poolId == IZI_ID) {
                 assembly {
                     // tokenIn starts at 43th byte for CL
                     tokenIn := shr(96, calldataload(add(path.offset, CL_PARAM_LENGTH)))
@@ -404,7 +405,7 @@ contract OneDeltaQuoterTaiko is PoolGetterTaiko {
                 path = path[CL_PARAM_LENGTH:];
             }
             // v2 types
-            else if (poolId < 150) {
+            else if (poolId < UNISWAP_V2_MAX_ID) {
                 uint256 feeDenom;
                 assembly {
                     // tokenIn starts at 43th byte for CL

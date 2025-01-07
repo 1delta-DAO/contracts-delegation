@@ -8,7 +8,7 @@ contract SweepTests is DeltaSetup {
     function test_mantle_sweep_fails() external {
         uint amount = 2112324324432;
         address user = testUser;
-        address asset = USDT;
+        address asset = TokensMantle.USDT;
         deal(asset, user, amount);
 
         vm.prank(user);
@@ -26,7 +26,7 @@ contract SweepTests is DeltaSetup {
     function test_mantle_sweep_correct_when_zero() external {
         uint amount = 2112324324432;
         address user = testUser;
-        address asset = USDT;
+        address asset = TokensMantle.USDT;
         deal(asset, user, amount);
 
         vm.prank(user);
@@ -47,7 +47,7 @@ contract SweepTests is DeltaSetup {
     function test_mantle_sweep_works() external {
         uint amount = 2112324324432;
         address user = testUser;
-        address asset = USDT;
+        address asset = TokensMantle.USDT;
         deal(asset, user, amount);
 
         vm.prank(user);
@@ -62,7 +62,7 @@ contract SweepTests is DeltaSetup {
     function test_mantle_sweep_works_balance() external {
         uint amount = 2112324324432;
         address user = testUser;
-        address asset = USDT;
+        address asset = TokensMantle.USDT;
         deal(asset, user, amount);
 
         amount = IERC20All(asset).balanceOf(user);

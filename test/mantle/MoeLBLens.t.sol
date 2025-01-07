@@ -47,7 +47,7 @@ contract MoeLBQuotingTest is DeltaSetup {
 
     function test_mantle_get_fees() external view {
         console.log("bt", block.timestamp);
-        console.log("WETHMET", IMoeJoePair(POOL_WETH_METH).getTokenX(), WETH < METH ? WETH : METH);
+        console.log("WETHMET", IMoeJoePair(POOL_WETH_METH).getTokenX(), TokensMantle.WETH < TokensMantle.METH ? TokensMantle.WETH : TokensMantle.METH);
         {
             (
                 uint16 baseFactor,
@@ -84,7 +84,7 @@ contract MoeLBQuotingTest is DeltaSetup {
 
     function test_mantle_get_bins() external view {
         uint24 fee = BIN_STEP_LOWEST;
-        address pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(USDe, USDT, fee).LBPair;
+        address pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(TokensMantle.USDe, TokensMantle.USDT, fee).LBPair;
         uint24 activeId = IMoeJoePair(pool).getActiveId();
         console.log("active", activeId);
         uint256[] memory data = lens.getMoeJoeBins(pool, activeId, 15, 15);
@@ -106,7 +106,7 @@ contract MoeLBQuotingTest is DeltaSetup {
 
     function test_mantle_get_bins_with_active() external view {
         uint24 fee = BIN_STEP_LOWEST;
-        address pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(USDe, USDT, fee).LBPair;
+        address pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(TokensMantle.USDe, TokensMantle.USDT, fee).LBPair;
 
         uint256[] memory data = lens.getMoeJoeBinsWithActiveId(pool, 15, 15);
 

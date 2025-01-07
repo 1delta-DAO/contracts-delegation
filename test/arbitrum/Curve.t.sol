@@ -22,14 +22,14 @@ contract CurveTestArbitrum is DeltaSetup {
         bytes memory dataSwapFirst = getSpotExactInSingleGenCurve(
             assetIn,
             assetOut,
-            CURVE,
+            DexMappingsArbitrum.CURVE,
             0,
             getCurveIndexes(assetIn, assetOut) //
         );
         bytes memory dataFusion = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
-            SUSHI_V3,
+            DexMappingsArbitrum.SUSHI_V3,
             DEX_FEE_STABLES //
         );
 
@@ -71,7 +71,7 @@ contract CurveTestArbitrum is DeltaSetup {
         bytes memory dataSwapFirst = getSpotExactInSingleGenCurve(
             assetIn,
             assetOut,
-            CURVE_NG,
+            DexMappingsArbitrum.CURVE_NG,
             0,
             getCurveNGIndexes(assetIn) //
         );

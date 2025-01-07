@@ -10,18 +10,18 @@ contract MarginCollateralSwapTest is DeltaSetup {
         address user = testUser;
         vm.assume(user != address(0) && validLenderIndex(lenderIndex));
         uint16 lenderId = getLenderByIndex(lenderIndex);
-        address asset = USDC;
+        address asset = TokensMantle.USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
 
         {
-            address borrowAsset = WMNT;
+            address borrowAsset = TokensMantle.WMNT;
             uint256 amountToDeposit = 10.0e6;
             uint256 amountToLeverage = 20.0e18;
 
             openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
 
-        address assetTo = USDT;
+        address assetTo = TokensMantle.USDT;
         address collateralAssetTo = collateralTokens[assetTo][lenderId];
 
         bytes memory swapPath = getCollateralSwapExactInSingle(asset, assetTo, lenderId);
@@ -55,18 +55,18 @@ contract MarginCollateralSwapTest is DeltaSetup {
         address user = testUser;
         vm.assume(user != address(0) && validLenderIndex(lenderIndex));
         uint16 lenderId = getLenderByIndex(lenderIndex);
-        address asset = USDC;
+        address asset = TokensMantle.USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
 
         {
-            address borrowAsset = WMNT;
+            address borrowAsset = TokensMantle.WMNT;
             uint256 amountToDeposit = 10.0e6;
             uint256 amountToLeverage = 20.0e18;
 
             openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
 
-        address assetTo = USDT;
+        address assetTo = TokensMantle.USDT;
         address collateralAssetTo = collateralTokens[assetTo][lenderId];
 
         bytes memory swapPath = getCollateralSwapExactInMulti(asset, assetTo, lenderId);
@@ -100,18 +100,18 @@ contract MarginCollateralSwapTest is DeltaSetup {
         address user = testUser;
         vm.assume(user != address(0) && validLenderIndex(lenderIndex));
         uint16 lenderId = getLenderByIndex(lenderIndex);
-        address asset = USDC;
+        address asset = TokensMantle.USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
 
         {
-            address borrowAsset = WMNT;
+            address borrowAsset = TokensMantle.WMNT;
             uint256 amountToDeposit = 10.0e6;
             uint256 amountToLeverage = 20.0e18;
 
             openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
 
-        address assetTo = USDT;
+        address assetTo = TokensMantle.USDT;
         address collateralAssetTo = collateralTokens[assetTo][lenderId];
 
         bytes memory swapPath = getCollateralSwapExactOutSingle(asset, assetTo, lenderId);
@@ -145,18 +145,18 @@ contract MarginCollateralSwapTest is DeltaSetup {
         address user = testUser;
         vm.assume(user != address(0) && validLenderIndex(lenderIndex));
         uint16 lenderId = getLenderByIndex(lenderIndex);
-        address asset = USDC;
+        address asset = TokensMantle.USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
 
         {
-            address borrowAsset = WMNT;
+            address borrowAsset = TokensMantle.WMNT;
             uint256 amountToDeposit = 10.0e6;
             uint256 amountToLeverage = 20.0e18;
 
             openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
 
-        address assetTo = USDT;
+        address assetTo = TokensMantle.USDT;
         address collateralAssetTo = collateralTokens[assetTo][lenderId];
 
         bytes memory swapPath = getCollateralSwapExactOutMulti(asset, assetTo, lenderId);
@@ -190,18 +190,18 @@ contract MarginCollateralSwapTest is DeltaSetup {
         address user = testUser;
         vm.assume(user != address(0) && validLenderIndex(lenderIndex));
         uint16 lenderId = getLenderByIndex(lenderIndex);
-        address asset = USDC;
+        address asset = TokensMantle.USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
 
         {
-            address borrowAsset = WMNT;
+            address borrowAsset = TokensMantle.WMNT;
             uint256 amountToDeposit = 10.0e6;
             uint256 amountToLeverage = 20.0e18;
 
             openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
 
-        address assetTo = USDT;
+        address assetTo = TokensMantle.USDT;
         address collateralAssetTo = collateralTokens[assetTo][lenderId];
 
         bytes memory swapPath = getCollateralSwapExactInSingle(asset, assetTo, lenderId);
@@ -240,18 +240,18 @@ contract MarginCollateralSwapTest is DeltaSetup {
         address user = testUser;
         vm.assume(user != address(0) && validLenderIndex(lenderIndex));
         uint16 lenderId = getLenderByIndex(lenderIndex);
-        address asset = USDC;
+        address asset = TokensMantle.USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
 
         {
-            address borrowAsset = WMNT;
+            address borrowAsset = TokensMantle.WMNT;
             uint256 amountToDeposit = 10.0e6;
             uint256 amountToLeverage = 20.0e18;
 
             openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
 
-        address assetTo = USDT;
+        address assetTo = TokensMantle.USDT;
         address collateralAssetTo = collateralTokens[assetTo][lenderId];
 
         bytes memory swapPath = getCollateralSwapExactInSingleV2(asset, assetTo, lenderId);
@@ -285,18 +285,18 @@ contract MarginCollateralSwapTest is DeltaSetup {
         address user = testUser;
         vm.assume(user != address(0) && validLenderIndex(lenderIndex));
         uint16 lenderId = getLenderByIndex(lenderIndex);
-        address asset = USDC;
+        address asset = TokensMantle.USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
 
         {
-            address borrowAsset = WMNT;
+            address borrowAsset = TokensMantle.WMNT;
             uint256 amountToDeposit = 10.0e6;
             uint256 amountToLeverage = 20.0e18;
 
             openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
 
-        address assetTo = USDT;
+        address assetTo = TokensMantle.USDT;
         address collateralAssetTo = collateralTokens[assetTo][lenderId];
 
         bytes memory swapPath = getCollateralSwapExactInMultiV2(asset, assetTo, lenderId);
@@ -330,18 +330,18 @@ contract MarginCollateralSwapTest is DeltaSetup {
         address user = testUser;
         vm.assume(user != address(0) && validLenderIndex(lenderIndex));
         uint16 lenderId = getLenderByIndex(lenderIndex);
-        address asset = USDC;
+        address asset = TokensMantle.USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
 
         {
-            address borrowAsset = WMNT;
+            address borrowAsset = TokensMantle.WMNT;
             uint256 amountToDeposit = 10.0e6;
             uint256 amountToLeverage = 20.0e18;
 
             openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
 
-        address assetTo = USDT;
+        address assetTo = TokensMantle.USDT;
         address collateralAssetTo = collateralTokens[assetTo][lenderId];
 
         bytes memory swapPath = getCollateralSwapExactOutSingleV2(asset, assetTo, lenderId);
@@ -375,18 +375,18 @@ contract MarginCollateralSwapTest is DeltaSetup {
         address user = testUser;
         vm.assume(user != address(0) && validLenderIndex(lenderIndex));
         uint16 lenderId = getLenderByIndex(lenderIndex);
-        address asset = USDC;
+        address asset = TokensMantle.USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
 
         {
-            address borrowAsset = WMNT;
+            address borrowAsset = TokensMantle.WMNT;
             uint256 amountToDeposit = 10.0e6;
             uint256 amountToLeverage = 20.0e18;
 
             openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
 
-        address assetTo = USDT;
+        address assetTo = TokensMantle.USDT;
         address collateralAssetTo = collateralTokens[assetTo][lenderId];
 
         bytes memory swapPath = getCollateralSwapExactOutMultiV2(asset, assetTo, lenderId);
@@ -420,18 +420,18 @@ contract MarginCollateralSwapTest is DeltaSetup {
         address user = testUser;
         vm.assume(user != address(0) && validLenderIndex(lenderIndex));
         uint16 lenderId = getLenderByIndex(lenderIndex);
-        address asset = USDC;
+        address asset = TokensMantle.USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
 
         {
-            address borrowAsset = WMNT;
+            address borrowAsset = TokensMantle.WMNT;
             uint256 amountToDeposit = 10.0e6;
             uint256 amountToLeverage = 20.0e18;
 
             openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
 
-        address assetTo = USDT;
+        address assetTo = TokensMantle.USDT;
         address collateralAssetTo = collateralTokens[assetTo][lenderId];
 
         bytes memory swapPath = getCollateralSwapExactInSingleV2(asset, assetTo, lenderId);

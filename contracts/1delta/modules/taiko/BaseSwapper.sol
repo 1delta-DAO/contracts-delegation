@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity 0.8.28;
+pragma solidity ^0.8.28;
 
 /******************************************************************************\
 * Author: Achthar | 1delta 
@@ -8,6 +8,7 @@ pragma solidity 0.8.28;
 
 import {BaseLending} from "./BaseLending.sol";
 import {PermitUtils} from "../shared/permit/PermitUtils.sol";
+import {DexMappings} from "../shared/swapper/DexMappings.sol";
 
 // solhint-disable max-line-length
 
@@ -20,21 +21,7 @@ import {PermitUtils} from "../shared/permit/PermitUtils.sol";
  *             Uni V2: 100 - 110
  *             Solidly:121 - 130
  */
-abstract contract BaseSwapper is BaseLending, PermitUtils {
-
-    // MAX_ID values are the maximum plus 1
-
-    // non-pre-fundeds
-    uint256 internal constant UNISWAP_V3_MAX_ID = 49;
-    uint256 internal constant IZI_ID = UNISWAP_V3_MAX_ID;
-    uint256 internal constant CURVE_V1_STANDARD_ID = 60;
-    
-    // pre-fundeds
-    uint256 internal constant UNISWAP_V2_MAX_ID = 150;
-
-    // exotics
-    uint256 internal constant SYNC_SWAP_ID = UNISWAP_V2_MAX_ID;
-    uint256 internal constant DODO_ID = 153;
+abstract contract BaseSwapper is BaseLending, PermitUtils, DexMappings {
 
     /**
      * Fund the first pool for self funded DEXs like Uni V2, GMX, LB, WooFi and Solidly V2 (dexId >= 100) 

@@ -30,7 +30,7 @@ contract MetaAggregatorTest is DeltaSetup {
         DeltaMetaAggregator aggr = new DeltaMetaAggregator();
         Nothing _swapTarget = new Nothing();
         address swapTarget = address(_swapTarget);
-        address token = USDT;
+        address token = TokensMantle.USDT;
 
         deal(token, user, 20e20);
 
@@ -65,7 +65,7 @@ contract MetaAggregatorTest is DeltaSetup {
         Nothing _approvalTarget = new Nothing();
         address swapTarget = address(_swapTarget);
         address approvalTarget = address(_approvalTarget);
-        address token = USDT;
+        address token = TokensMantle.USDT;
 
         deal(token, user, 20e20);
 
@@ -96,7 +96,7 @@ contract MetaAggregatorTest is DeltaSetup {
         vm.assume(user != address(0));
 
         MockERC20 tokenIn = new MockERC20("Mock", "MCK", 18);
-        address assetOut = USDT;
+        address assetOut = TokensMantle.USDT;
 
         TrivialMockRouter router = new TrivialMockRouter(assetOut);
         DeltaMetaAggregator aggr = new DeltaMetaAggregator();
@@ -143,7 +143,7 @@ contract MetaAggregatorTest is DeltaSetup {
         vm.assume(user != address(0));
 
         MockERC20 tokenIn = new MockERC20("Mock", "MCK", 18);
-        address assetOut = USDT;
+        address assetOut = TokensMantle.USDT;
 
         TrivialMockRouter router = new TrivialMockRouter(assetOut);
         DeltaMetaAggregator aggr = new DeltaMetaAggregator();
@@ -224,7 +224,7 @@ contract MetaAggregatorTest is DeltaSetup {
         vm.assume(user != address(0));
 
         MockERC20 tokenIn = new MockERC20("Mock", "MCK", 18);
-        address assetOut = USDT;
+        address assetOut = TokensMantle.USDT;
 
         TrivialMockRouter router = new TrivialMockRouter(assetOut);
         DeltaMetaAggregator aggr = new DeltaMetaAggregator();
@@ -271,7 +271,7 @@ contract MetaAggregatorTest is DeltaSetup {
         vm.assume(user != address(0));
 
         MockERC20 tokenIn = new MockERC20("Mock", "MCK", 18);
-        address assetOut = USDT;
+        address assetOut = TokensMantle.USDT;
 
         TrivialMockRouter router = new TrivialMockRouter(assetOut);
         DeltaMetaAggregator aggr = new DeltaMetaAggregator();
@@ -318,7 +318,7 @@ contract MetaAggregatorTest is DeltaSetup {
         vm.assume(user != address(0));
 
         MockERC20 tokenIn = new MockERC20("Mock", "MCK", 18);
-        address assetOut = USDT;
+        address assetOut = TokensMantle.USDT;
 
         TrivialMockRouter router = new TrivialMockRouter(assetOut);
         DeltaMetaAggregator aggr = new DeltaMetaAggregator();
@@ -366,7 +366,7 @@ contract MetaAggregatorTest is DeltaSetup {
     //     vm.assume(user != address(0));
 
     //     address assetIn = WMNT;
-    //     address assetOut = USDT;
+    //     address assetOut = TokensMantle.USDT;
 
     //     TrivialMockRouter router = new TrivialMockRouter(assetOut);
     //     DeltaMetaAggregator aggr = DeltaMetaAggregator(payable(0x12bb99c93D6A72b49a4E090be0721B98E6d2Af99));
@@ -419,7 +419,7 @@ contract MetaAggregatorTest is DeltaSetup {
     //     vm.assume(user != address(0));
 
     //     address assetIn = WMNT;
-    //     address assetOut = USDT;
+    //     address assetOut = TokensMantle.USDT;
 
     //     TrivialMockRouter router = new TrivialMockRouter(assetOut);
     //     DeltaMetaAggregator aggr = DeltaMetaAggregator(payable(0x12bb99c93D6A72b49a4E090be0721B98E6d2Af99));
@@ -621,7 +621,7 @@ contract MetaAggregatorTest is DeltaSetup {
         vm.assume(user != address(0));
 
         MockERC20 tokenIn = new MockERC20("Mock", "MCK", 18);
-        address assetOut = USDT;
+        address assetOut = TokensMantle.USDT;
 
         TrivialMockRouter router = new TrivialMockRouter(assetOut);
         DeltaMetaAggregator aggr = new DeltaMetaAggregator();

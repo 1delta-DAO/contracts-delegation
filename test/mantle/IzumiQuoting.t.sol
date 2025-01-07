@@ -20,8 +20,8 @@ contract IzumiQuotingTest is DeltaSetup {
     function test_mantle_izumi_quote_spot_exact_in_works() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetOut = USDC;
-        address assetIn = WETH;
+        address assetOut = TokensMantle.USDC;
+        address assetIn = TokensMantle.WETH;
 
         deal(assetIn, user, 1e30);
 
@@ -35,9 +35,9 @@ contract IzumiQuotingTest is DeltaSetup {
     function test_mantle_izumi_quote_spot_exact_in_double() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetIn = WETH;
-        address mid = USDC;
-        address assetOut = USDT;
+        address assetIn = TokensMantle.WETH;
+        address mid = TokensMantle.USDC;
+        address assetOut = TokensMantle.USDT;
 
         deal(assetIn, user, 1e30);
 
@@ -51,9 +51,9 @@ contract IzumiQuotingTest is DeltaSetup {
     function test_mantle_izumi_quote_spot_exact_out_double() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetIn = WETH;
-        address mid = USDC;
-        address assetOut = USDT;
+        address assetIn = TokensMantle.WETH;
+        address mid = TokensMantle.USDC;
+        address assetOut = TokensMantle.USDT;
 
         deal(assetIn, user, 1e30);
 
@@ -68,9 +68,9 @@ contract IzumiQuotingTest is DeltaSetup {
     function test_mantle_izumi_quote_spot_exact_in_double_reverse() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetIn = USDT;
-        address mid = USDC;
-        address assetOut = WETH;
+        address assetIn = TokensMantle.USDT;
+        address mid = TokensMantle.USDC;
+        address assetOut = TokensMantle.WETH;
 
         deal(assetIn, user, 1e30);
 
@@ -84,9 +84,9 @@ contract IzumiQuotingTest is DeltaSetup {
     function test_mantle_izumi_quote_spot_exact_out_double_reverse() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetIn = USDT;
-        address mid = USDC;
-        address assetOut = WETH;
+        address assetIn = TokensMantle.USDT;
+        address mid = TokensMantle.USDC;
+        address assetOut = TokensMantle.WETH;
 
         deal(assetIn, user, 1e30);
 
@@ -101,8 +101,8 @@ contract IzumiQuotingTest is DeltaSetup {
     function test_mantle_izumi_quote_spot_exact_out_works() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetOut = USDC;
-        address assetIn = WETH;
+        address assetOut = TokensMantle.USDC;
+        address assetIn = TokensMantle.WETH;
 
         deal(assetIn, user, 1e30);
 
@@ -115,26 +115,26 @@ contract IzumiQuotingTest is DeltaSetup {
 
     function getSpotQuotePathSingle(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = DEX_FEE_LOW;
-        uint8 poolId = IZUMI;
+        uint8 poolId = DexMappingsMantle.IZUMI;
         address pool = testQuoter._getiZiPool(tokenIn, tokenOut, fee);
         return abi.encodePacked(tokenIn, poolId, pool, fee, tokenOut);
     }
 
     function getSpotQuotePathDouble(address tokenIn, address mid, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = DEX_FEE_LOW;
-        uint8 poolId = IZUMI;
+        uint8 poolId = DexMappingsMantle.IZUMI;
         address pool = testQuoter._getiZiPool(tokenIn, mid, fee);
         data = abi.encodePacked(tokenIn, poolId, pool, fee, mid);
-        poolId = MERCHANT_MOE;
+        poolId = DexMappingsMantle.MERCHANT_MOE;
         pool = testQuoter._v2TypePairAddress(mid, tokenOut, poolId);
         data = abi.encodePacked(data, poolId, pool, MERCHANT_MOE_FEE_DENOM, tokenOut);
     }
 
     function getSpotQuotePathDoubleReverse(address tokenIn, address mid, address tokenOut) internal view returns (bytes memory data) {
-        uint8 poolId = MERCHANT_MOE;
+        uint8 poolId = DexMappingsMantle.MERCHANT_MOE;
         address pool = testQuoter._v2TypePairAddress(mid, tokenOut, poolId);
         data = abi.encodePacked(tokenIn, poolId, pool, MERCHANT_MOE_FEE_DENOM, mid);
-        poolId = IZUMI;
+        poolId = DexMappingsMantle.IZUMI;
         uint16 fee = DEX_FEE_LOW;
         pool = testQuoter._getiZiPool(tokenIn, mid, fee);
         data = abi.encodePacked(data, poolId, pool, fee, tokenOut);

@@ -74,7 +74,7 @@ contract ForkTestMantle is DeltaSetup {
     }
 
     function getQuoteDodoV2(uint8 sellQuote) internal view returns (bytes memory data) {
-        return abi.encodePacked(WBTC, DODO, FBTC_WBTC_POOL, sellQuote, FBTC);
+        return abi.encodePacked(TokensMantle.WBTC, DexMappingsMantle.DODO, FBTC_WBTC_POOL, sellQuote, TokensMantle.FBTC);
     }
 
     function getSwapWithPermit() internal pure returns (bytes memory data) {

@@ -202,14 +202,14 @@ contract BalancerTestArbitrum is DeltaSetup {
         assertApproxEqAbs(balanceOut, 1001876176, 0);
     }
 
-    function getSpotExactOutBalancer(address tokenIn, address tokenOut, bytes32 pId) internal view returns (bytes memory data) {
+    function getSpotExactOutBalancer(address tokenIn, address tokenOut, bytes32 pId) internal pure returns (bytes memory data) {
         uint8 action = 0;
-        return abi.encodePacked(tokenOut, action, BALANCER_V2_DEXID, pId, tokenIn, uint8(99), uint8(99));
+        return abi.encodePacked(tokenOut, action, DexMappingsArbitrum.BALANCER_V2_DEXID, pId, tokenIn, uint8(99), uint8(99));
     }
 
-    function getSpotExactInBalancer(address tokenIn, address tokenOut, bytes32 pId) internal view returns (bytes memory data) {
+    function getSpotExactInBalancer(address tokenIn, address tokenOut, bytes32 pId) internal pure returns (bytes memory data) {
         uint8 action = 0;
-        return abi.encodePacked(tokenIn, action, BALANCER_V2_DEXID, pId, tokenOut, uint8(99), uint8(99));
+        return abi.encodePacked(tokenIn, action, DexMappingsArbitrum.BALANCER_V2_DEXID, pId, tokenOut, uint8(99), uint8(99));
     }
 
     /** UniswapV3 -> BalancerV2 CSP exactOut */
@@ -220,12 +220,12 @@ contract BalancerTestArbitrum is DeltaSetup {
     ) internal view returns (bytes memory data) {
         uint8 action = 0;
         uint16 fee = DEX_FEE_STABLES;
-        address pool = testQuoter._v3TypePool(tokenIn, TokensArbitrum.USDT, fee, UNI_V3);
+        address pool = testQuoter._v3TypePool(tokenIn, TokensArbitrum.USDT, fee, DexMappingsArbitrum.UNI_V3);
 
         bytes memory firstPart;
         {
-            firstPart = abi.encodePacked(tokenOut, action, BALANCER_V2_DEXID, pId, TokensArbitrum.USDT);
+            firstPart = abi.encodePacked(tokenOut, action, DexMappingsArbitrum.BALANCER_V2_DEXID, pId, TokensArbitrum.USDT);
         }
-        return abi.encodePacked(firstPart, action, UNI_V3, pool, fee, tokenIn, uint8(99), uint8(99));
+        return abi.encodePacked(firstPart, action, DexMappingsArbitrum.UNI_V3, pool, fee, tokenIn, uint8(99), uint8(99));
     }
 }

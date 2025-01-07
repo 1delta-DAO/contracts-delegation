@@ -19,9 +19,9 @@ contract MarginOpenTest is DeltaSetup {
         vm.assume(user != address(0) && validLenderIndex(lenderIndex));
         uint16 lenderId = getLenderByIndex(lenderIndex);
         {
-            address asset = USDC;
+            address asset = TokensMantle.USDC;
 
-            address borrowAsset = WMNT;
+            address borrowAsset = TokensMantle.WMNT;
             deal(asset, user, 1e20);
 
             uint256 amountToDeposit = 10.0e6;
@@ -66,9 +66,9 @@ contract MarginOpenTest is DeltaSetup {
         vm.assume(user != address(0) && validLenderIndex(lenderIndex));
         uint16 lenderId = getLenderByIndex(lenderIndex);
         {
-            address asset = USDT;
+            address asset = TokensMantle.USDT;
 
-            address borrowAsset = WMNT;
+            address borrowAsset = TokensMantle.WMNT;
             deal(asset, user, 1e20);
 
             uint256 amountToDeposit = 10.0e6;
@@ -113,9 +113,9 @@ contract MarginOpenTest is DeltaSetup {
         vm.assume(user != address(0) && validLenderIndex(lenderIndex));
         uint16 lenderId = getLenderByIndex(lenderIndex);
         {
-            address asset = USDC;
+            address asset = TokensMantle.USDC;
 
-            address borrowAsset = WMNT;
+            address borrowAsset = TokensMantle.WMNT;
             deal(asset, user, 1e20);
 
             uint256 amountToDeposit = 10.0e6;
@@ -160,8 +160,8 @@ contract MarginOpenTest is DeltaSetup {
         vm.assume(user != address(0) && validLenderIndex(lenderIndex));
         uint16 lenderId = getLenderByIndex(lenderIndex);
         {
-            address asset = USDC;
-            address borrowAsset = WMNT;
+            address asset = TokensMantle.USDC;
+            address borrowAsset = TokensMantle.WMNT;
             deal(asset, user, 1e20);
 
             uint256 amountToDeposit = 10.0e6;
@@ -206,8 +206,8 @@ contract MarginOpenTest is DeltaSetup {
         vm.assume(user != address(0) && validLenderIndex(lenderIndex));
         uint16 lenderId = getLenderByIndex(lenderIndex);
         {
-            address asset = USDC;
-            address borrowAsset = WMNT;
+            address asset = TokensMantle.USDC;
+            address borrowAsset = TokensMantle.WMNT;
             deal(asset, user, 1e20);
 
             uint256 amountToDeposit = 10.0e6;
@@ -254,9 +254,9 @@ contract MarginOpenTest is DeltaSetup {
         vm.assume(user != address(0) && validLenderIndex(lenderIndex));
         uint16 lenderId = getLenderByIndex(lenderIndex);
         {
-            address asset = USDC;
+            address asset = TokensMantle.USDC;
 
-            address borrowAsset = WMNT;
+            address borrowAsset = TokensMantle.WMNT;
             deal(asset, user, 1e20);
 
             uint256 amountToDeposit = 10.0e6;
@@ -301,9 +301,9 @@ contract MarginOpenTest is DeltaSetup {
         vm.assume(user != address(0) && validLenderIndex(lenderIndex));
         uint16 lenderId = getLenderByIndex(lenderIndex);
         {
-            address asset = USDC;
+            address asset = TokensMantle.USDC;
 
-            address borrowAsset = WMNT;
+            address borrowAsset = TokensMantle.WMNT;
             deal(asset, user, 1e20);
 
             uint256 amountToDeposit = 10.0e6;
@@ -348,8 +348,8 @@ contract MarginOpenTest is DeltaSetup {
         vm.assume(user != address(0) && validLenderIndex(lenderIndex));
         uint16 lenderId = getLenderByIndex(lenderIndex);
         {
-            address asset = USDC;
-            address borrowAsset = WMNT;
+            address asset = TokensMantle.USDC;
+            address borrowAsset = TokensMantle.WMNT;
             deal(asset, user, 1e20);
 
             uint256 amountToDeposit = 10.0e6;
@@ -394,8 +394,8 @@ contract MarginOpenTest is DeltaSetup {
         vm.assume(user != address(0) && validLenderIndex(lenderIndex));
         uint16 lenderId = getLenderByIndex(lenderIndex);
         {
-            address asset = USDC;
-            address borrowAsset = WMNT;
+            address asset = TokensMantle.USDC;
+            address borrowAsset = TokensMantle.WMNT;
             deal(asset, user, 1e20);
 
             uint256 amountToDeposit = 10.0e6;

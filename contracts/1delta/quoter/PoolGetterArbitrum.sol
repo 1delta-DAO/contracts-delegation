@@ -20,24 +20,6 @@ abstract contract PoolGetterArbitrum {
     /// @dev MAX_SQRT_RATIO - 1 from Uniswap's TickMath
     uint160 internal immutable MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970341;
 
-    // non-pre-fundeds
-    uint256 internal constant UNISWAP_V3_MAX_ID = 49;
-    uint256 internal constant IZI_ID = UNISWAP_V3_MAX_ID;
-    uint256 internal constant BALANCER_V2_ID = 50;
-    uint256 internal constant CURVE_V1_MAX_ID = 70;
-    uint256 internal constant CURVE_V1_STANDARD_ID = 60;
-
-    // pre-fundeds
-    uint256 internal constant UNISWAP_V2_MAX_ID = 150;
-
-    // exotics
-    uint256 internal constant WOO_FI_ID = 150;
-    uint256 internal constant CURVE_NG_ID = 151;
-    uint256 internal constant LB_ID = 152;
-    uint256 internal constant DODO_ID = 153;
-    uint256 internal constant GMX_ID = 160;
-    uint256 internal constant KTX_ID = 161;
-
     // _FF_ is given as follows: bytes32((uint256(0xff) << 248) | (uint256(uint160(address)) << 88));
 
     // v3s

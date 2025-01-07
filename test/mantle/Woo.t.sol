@@ -16,8 +16,8 @@ contract WooFiTest is DeltaSetup {
     function test_mantle_woo_spot_exact_in() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetIn = USDC;
-        address assetOut = WETH;
+        address assetIn = TokensMantle.USDC;
+        address assetOut = TokensMantle.WETH;
 
         deal(assetIn, user, 1e20);
 
@@ -47,7 +47,7 @@ contract WooFiTest is DeltaSetup {
         balanceOut = IERC20All(assetOut).balanceOf(user) - balanceOut;
         balanceIn = balanceIn - IERC20All(assetIn).balanceOf(user);
 
-        // swap 1 USDC, receive approx 0.00032111343 WETH, but in 18 decs
+        // swap 1 TokensMantle.USDC, receive approx 0.00032111343 TokensMantle.WETH, but in 18 decs
         assertApproxEqAbs(321113436165101, balanceOut, 1);
         assertApproxEqAbs(quoted, balanceOut, 0);
         assertApproxEqAbs(balanceIn, amountIn, 0);
@@ -56,7 +56,7 @@ contract WooFiTest is DeltaSetup {
     /** WOO_FI PATH BUILDERS */
 
     function getSpotExactInSingleWOO_FI(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        uint8 poolId = WOO_FI;
+        uint8 poolId = DexMappingsMantle.WOO_FI;
         return abi.encodePacked(tokenIn, uint8(0), poolId, WOO_POOL, tokenOut);
     }
 }

@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.6.0;
 
-library YLDRArbitrum {
+library YldrArbitrum {
     address internal constant POOL = 0x54aD657851b6Ae95bA3380704996CAAd4b7751A3;
 }
 
-library YLDRArbitrumAssets {
+library YldrArbitrumAssets {
     address internal constant USDC_A_TOKEN = 0xAA40dcA2d69DED3Eb17991AA17D83653F1084091;
     address internal constant WETH_A_TOKEN = 0x6d7197fa1f2b9D01a25705b5558a748A2b5f0605;
     address internal constant USDCE_A_TOKEN = 0x8F46fB23d1D7e1385809bC304f979651fD374DEb;

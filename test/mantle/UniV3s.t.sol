@@ -7,9 +7,6 @@ import "./DeltaSetup.f.sol";
  * Tests Uni V3 style DEX
  */
 contract GeneralMoeLBTest is DeltaSetup {
-    uint8 internal constant METHLAB_POOL_ID = 5;
-    uint8 internal constant UNISWAP_V3_POOL_ID = 6;
-    uint8 internal constant CRUST_POOL_ID = 7;
 
     function setUp() public virtual override {
         vm.createSelectFork({blockNumber: 66756564, urlOrAlias: "https://mantle-mainnet.public.blastapi.io"});
@@ -20,8 +17,8 @@ contract GeneralMoeLBTest is DeltaSetup {
     function test_mantle_puff_spot_exact_in() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetIn = METH;
-        address assetOut = PUFF;
+        address assetIn = TokensMantle.METH;
+        address assetOut = TokensMantle.PUFF;
 
         deal(assetIn, user, 1e20);
 
@@ -60,8 +57,8 @@ contract GeneralMoeLBTest is DeltaSetup {
     function test_mantle_uni_v3_spot_exact_in() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetIn = WMNT;
-        address assetOut = USDT;
+        address assetIn = TokensMantle.WMNT;
+        address assetOut = TokensMantle.USDT;
 
         deal(assetIn, user, 1e20);
 
@@ -91,7 +88,7 @@ contract GeneralMoeLBTest is DeltaSetup {
         balanceOut = IERC20All(assetOut).balanceOf(user) - balanceOut;
         balanceIn = balanceIn - IERC20All(assetIn).balanceOf(user);
 
-        // swap 20 WMNT, receive approx 17, but in 6 decs
+        // swap 20 TokensMantle.WMNT, receive approx 17, but in 6 decs
         assertApproxEqAbs(17350954, balanceOut, 1);
         assertApproxEqAbs(quote, balanceOut, 0);
         assertApproxEqAbs(balanceIn, amountIn, 0);
@@ -100,8 +97,8 @@ contract GeneralMoeLBTest is DeltaSetup {
     function test_mantle_crust_spot_exact_in() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetIn = USDC;
-        address assetOut = USDT;
+        address assetIn = TokensMantle.USDC;
+        address assetOut = TokensMantle.USDT;
 
         deal(assetIn, user, 1e20);
 
@@ -131,7 +128,7 @@ contract GeneralMoeLBTest is DeltaSetup {
         balanceOut = IERC20All(assetOut).balanceOf(user) - balanceOut;
         balanceIn = balanceIn - IERC20All(assetIn).balanceOf(user);
 
-        // swap 20 USDC, receive approx 20, but in 6 decs
+        // swap 20 TokensMantle.USDC, receive approx 20, but in 6 decs
         assertApproxEqAbs(19983297, balanceOut, 1);
         assertApproxEqAbs(quote, balanceOut, 0);
         assertApproxEqAbs(balanceIn, amountIn, 0);
@@ -141,42 +138,42 @@ contract GeneralMoeLBTest is DeltaSetup {
 
     function getSpotExactInSinglePuff(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = 3000;
-        uint8 poolId = METHLAB_POOL_ID;
+        uint8 poolId = DexMappingsMantle.METHLAB_POOL_ID;
         address pool = testQuoter._v3TypePool(tokenOut, tokenIn, fee, poolId);
         return abi.encodePacked(tokenIn, uint8(0), poolId, pool, fee, tokenOut);
     }
 
     function getSpotExactInSingleUniswap(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = 500;
-        uint8 poolId = UNISWAP_V3_POOL_ID;
+        uint8 poolId = DexMappingsMantle.UNISWAP_V3_POOL_ID;
         address pool = testQuoter._v3TypePool(tokenOut, tokenIn, fee, poolId);
         return abi.encodePacked(tokenIn, uint8(0), poolId, pool, fee, tokenOut);
     }
 
     function getSpotExactInSingleCrust(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = 500;
-        uint8 poolId = CRUST_POOL_ID;
+        uint8 poolId = DexMappingsMantle.CRUST_POOL_ID;
         address pool = testQuoter._v3TypePool(tokenOut, tokenIn, fee, poolId);
         return abi.encodePacked(tokenIn, uint8(0), poolId, pool, fee, tokenOut);
     }
 
     function getSpotQuoteExactInSinglePuff(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint24 fee = 3000;
-        uint8 poolId = METHLAB_POOL_ID;
+        uint8 poolId = DexMappingsMantle.METHLAB_POOL_ID;
         address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
         return abi.encodePacked(tokenIn, poolId, pool, fee, tokenOut);
     }
 
     function getSpotQuoteExactInSingleUniV3(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = 500;
-        uint8 poolId = UNISWAP_V3_POOL_ID;
+        uint8 poolId = DexMappingsMantle.UNISWAP_V3_POOL_ID;
         address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
         return abi.encodePacked(tokenIn, poolId, pool, fee, tokenOut);
     }
 
     function getSpotQuoteExactInSingleCrust(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = 500;
-        uint8 poolId = CRUST_POOL_ID;
+        uint8 poolId = DexMappingsMantle.CRUST_POOL_ID;
         address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
         return abi.encodePacked(tokenIn, poolId, pool, fee, tokenOut);
     }
