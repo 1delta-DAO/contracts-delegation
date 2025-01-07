@@ -10,7 +10,7 @@ contract ComposerTestPolygon is DeltaSetup {
         address user = testUser;
         vm.assume(user != address(0) && compoundUSDCEOrAave(lenderId));
         uint256 amount = 10.0e6;
-        address asset = WMATIC;
+        address asset = TokensPolygon.WMATIC;
         deal(asset, user, 1e23);
 
         vm.prank(user);
@@ -39,10 +39,10 @@ contract ComposerTestPolygon is DeltaSetup {
 
     function test_polygon_composer_depo_comet() external {
         address user = testUser;
-        uint16 lenderId = COMPOUND_V3_USDCE;
+        uint16 lenderId = LenderMappingsPolygon.COMPOUND_V3_USDCE;
         // vm.assume(user != address(0) && (lenderId == 50));
         uint256 amount = 0.000000001e18;
-        address asset = WETH;
+        address asset = TokensPolygon.WETH;
         deal(asset, user, 1e23);
 
         vm.prank(user);
@@ -69,12 +69,11 @@ contract ComposerTestPolygon is DeltaSetup {
         assertApproxEqAbs(amount, getCollateralBalance(user, asset, lenderId), 0);
     }
 
-
     function test_polygon_composer_borrow(uint16 lenderId) external {
         address user = testUser;
         vm.assume(user != address(0) && compoundUSDCEOrAave(lenderId));
         uint256 amount = 500.0e18;
-        address asset = WMATIC;
+        address asset = TokensPolygon.WMATIC;
 
         _deposit(asset, user, amount, lenderId);
 
@@ -83,7 +82,7 @@ contract ComposerTestPolygon is DeltaSetup {
 
         uint256 borrowAmount = 100.0e6;
 
-        address borrowAsset = USDC;
+        address borrowAsset = TokensPolygon.USDC;
         approveBorrowDelegation(user, borrowAsset, borrowAmount, lenderId);
 
         bytes memory data = borrow(borrowAsset, user, borrowAmount, lenderId, DEFAULT_MODE);
@@ -102,10 +101,10 @@ contract ComposerTestPolygon is DeltaSetup {
         vm.assume(user != address(0) && compoundUSDCEOrAave(lenderId));
 
         uint256 amount = 500.0e18;
-        address asset = WMATIC;
+        address asset = TokensPolygon.WMATIC;
 
         uint256 borrowAmount = 100.0e6;
-        address borrowAsset = USDC;
+        address borrowAsset = TokensPolygon.USDC;
 
         _deposit(asset, user, amount, lenderId);
 
@@ -145,10 +144,10 @@ contract ComposerTestPolygon is DeltaSetup {
         vm.assume(user != address(0) && compoundUSDCEOrAave(lenderId));
 
         uint256 amount = 500.0e18;
-        address asset = WMATIC;
+        address asset = TokensPolygon.WMATIC;
 
         uint256 borrowAmount = 100.0e6;
-        address borrowAsset = USDC;
+        address borrowAsset = TokensPolygon.USDC;
 
         _deposit(asset, user, amount, lenderId);
 
@@ -164,7 +163,7 @@ contract ComposerTestPolygon is DeltaSetup {
         bytes memory data = repay(
             borrowAsset,
             user,
-            lenderId >= MAX_AAVE_V2_ID ? type(uint112).max : repayAmount,
+            lenderId >= LenderMappingsPolygon.MAX_AAVE_V2_ID ? type(uint112).max : repayAmount,
             lenderId, //
             DEFAULT_MODE
         );
@@ -183,12 +182,12 @@ contract ComposerTestPolygon is DeltaSetup {
     }
 
     function test_polygon_composer_withdraw() external {
-        uint16 lenderId = COMPOUND_V3_USDCE;
+        uint16 lenderId = LenderMappingsPolygon.COMPOUND_V3_USDCE;
         address user = testUser;
-        vm.assume(user != address(0) );
+        vm.assume(user != address(0));
 
         uint256 amount = 10.0e18;
-        address asset = WMATIC;
+        address asset = TokensPolygon.WMATIC;
 
         _deposit(asset, user, amount, lenderId);
 
@@ -211,7 +210,7 @@ contract ComposerTestPolygon is DeltaSetup {
         vm.assume(user != address(0) && compoundUSDCEOrAave(lenderId));
 
         uint256 amount = 500.0e18;
-        address asset = WMATIC;
+        address asset = TokensPolygon.WMATIC;
 
         _deposit(asset, user, amount, lenderId);
 
@@ -234,20 +233,20 @@ contract ComposerTestPolygon is DeltaSetup {
         uint256 amount = 2000.0e6;
         uint256 amountMin = 900.0e6;
 
-        address assetIn = USDC;
-        address assetOut = USDT;
+        address assetIn = TokensPolygon.USDC;
+        address assetOut = TokensPolygon.USDT;
         deal(assetIn, user, 1e23);
 
         bytes memory dataAgni = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
-            UNI_V3,
+            DexMappingsPolygon.UNI_V3,
             uint16(DEX_FEE_STABLES) //
         );
         bytes memory dataFusion = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
-            SUSHI_V3,
+            DexMappingsPolygon.SUSHI_V3,
             uint16(DEX_FEE_STABLES) //
         );
 
@@ -272,9 +271,9 @@ contract ComposerTestPolygon is DeltaSetup {
         console.log("gas", gas);
     }
 
-    function getNativeToWeth()
+    function getNativeToToken()
         internal
-        view
+        pure
         returns (
             address[] memory tks,
             uint8[] memory pids, //
@@ -282,20 +281,20 @@ contract ComposerTestPolygon is DeltaSetup {
         )
     {
         tks = new address[](3);
-        tks[0] = WMATIC;
-        tks[1] = USDC;
-        tks[2] = WETH;
+        tks[0] = TokensPolygon.WMATIC;
+        tks[1] = TokensPolygon.USDC;
+        tks[2] = TokensPolygon.WETH;
         fees = new uint16[](2);
         fees[0] = uint16(500);
         fees[1] = uint16(500);
         pids = new uint8[](2);
-        pids[0] = SUSHI_V3;
-        pids[1] = UNI_V3;
+        pids[0] = DexMappingsPolygon.SUSHI_V3;
+        pids[1] = DexMappingsPolygon.UNI_V3;
     }
 
-    function getWethToNative()
+    function getTokenToNative()
         internal
-        view
+        pure
         returns (
             address[] memory tks,
             uint8[] memory pids, //
@@ -303,15 +302,15 @@ contract ComposerTestPolygon is DeltaSetup {
         )
     {
         tks = new address[](3);
-        tks[0] = WETH;
-        tks[1] = USDC;
-        tks[2] = WMATIC;
+        tks[0] = TokensPolygon.WETH;
+        tks[1] = TokensPolygon.USDC;
+        tks[2] = TokensPolygon.WMATIC;
         fees = new uint16[](2);
         fees[0] = uint16(500);
         fees[1] = uint16(500);
         pids = new uint8[](2);
-        pids[0] = UNI_V3;
-        pids[1] = SUSHI_V3;
+        pids[0] = DexMappingsPolygon.UNI_V3;
+        pids[1] = DexMappingsPolygon.SUSHI_V3;
     }
 
     function test_polygon_composer_multi_route_exact_in_native() external {
@@ -319,14 +318,14 @@ contract ComposerTestPolygon is DeltaSetup {
         uint256 amount = 4000.0e18;
         uint256 amountMin = 0.10e18;
 
-        address assetIn = WMATIC;
-        address assetOut = WETH;
+        address assetIn = TokensPolygon.WMATIC;
+        address assetOut = TokensPolygon.WETH;
         vm.deal(user, amount);
 
         bytes memory dataAgni = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
-            UNI_V3,
+            DexMappingsPolygon.UNI_V3,
             uint16(DEX_FEE_LOW) //
         );
         bytes memory dataFusion;
@@ -335,7 +334,7 @@ contract ComposerTestPolygon is DeltaSetup {
                 address[] memory tks,
                 uint8[] memory pids, //
                 uint16[] memory fees
-            ) = getNativeToWeth();
+            ) = getNativeToToken();
             dataFusion = getSpotExactInMultiGen2(tks, pids, fees);
         }
         bytes memory data = abi.encodePacked(
@@ -362,14 +361,14 @@ contract ComposerTestPolygon is DeltaSetup {
         uint256 amount = 4000.0e18;
         uint256 amountMax = 7.0e18;
 
-        address assetIn = WETH;
-        address assetOut = WMATIC;
+        address assetIn = TokensPolygon.WETH;
+        address assetOut = TokensPolygon.WMATIC;
         deal(assetIn, user, amountMax);
 
         bytes memory dataAgni = getSpotExactOutSingleGen2(
             assetIn,
             assetOut,
-            UNI_V3,
+            DexMappingsPolygon.UNI_V3,
             uint16(500) //
         );
         bytes memory dataFusion;
@@ -378,7 +377,7 @@ contract ComposerTestPolygon is DeltaSetup {
                 address[] memory tks,
                 uint8[] memory pids, //
                 uint16[] memory fees
-            ) = getNativeToWeth();
+            ) = getNativeToToken();
             dataFusion = getSpotExactOutMultiGen2(tks, pids, fees);
         }
         bytes memory data = abi.encodePacked(
@@ -418,14 +417,14 @@ contract ComposerTestPolygon is DeltaSetup {
         uint256 amount = 1.0e18;
         uint256 amountMax = 7500.0e18;
 
-        address assetIn = WMATIC;
-        address assetOut = WETH;
+        address assetIn = TokensPolygon.WMATIC;
+        address assetOut = TokensPolygon.WETH;
         vm.deal(user, amountMax);
 
         bytes memory dataAgni = getSpotExactOutSingleGen2(
             assetIn,
             assetOut,
-            UNI_V3,
+            DexMappingsPolygon.UNI_V3,
             uint16(500) //
         );
         bytes memory dataFusion;
@@ -434,7 +433,7 @@ contract ComposerTestPolygon is DeltaSetup {
                 address[] memory tks,
                 uint8[] memory pids, //
                 uint16[] memory fees
-            ) = getWethToNative();
+            ) = getTokenToNative();
             dataFusion = getSpotExactOutMultiGen2(tks, pids, fees);
         }
         bytes memory data = abi.encodePacked(
@@ -471,14 +470,14 @@ contract ComposerTestPolygon is DeltaSetup {
         uint256 amount = 2.0e18;
         uint256 amountMin = 4000.0e18;
 
-        address assetIn = WETH;
-        address assetOut = WMATIC;
+        address assetIn = TokensPolygon.WETH;
+        address assetOut = TokensPolygon.WMATIC;
         deal(assetIn, user, amount);
 
         bytes memory dataAgni = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
-            UNI_V3,
+            DexMappingsPolygon.UNI_V3,
             uint16(DEX_FEE_LOW) //
         );
         bytes memory dataFusion;
@@ -487,7 +486,7 @@ contract ComposerTestPolygon is DeltaSetup {
                 address[] memory tks,
                 uint8[] memory pids, //
                 uint16[] memory fees
-            ) = getWethToNative();
+            ) = getTokenToNative();
             dataFusion = getSpotExactInMultiGen2(tks, pids, fees);
         }
         bytes memory data = abi.encodePacked(
@@ -527,20 +526,20 @@ contract ComposerTestPolygon is DeltaSetup {
         uint256 amount = 2000.0e6;
         uint256 amountMin = 900.0e6;
 
-        address assetIn = USDC;
-        address assetOut = USDT;
+        address assetIn = TokensPolygon.USDC;
+        address assetOut = TokensPolygon.USDT;
         deal(assetIn, user, 1e23);
 
         bytes memory dataAgni = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
-            UNI_V3,
+            DexMappingsPolygon.UNI_V3,
             uint16(DEX_FEE_STABLES) //
         );
         bytes memory dataFusion = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
-            SUSHI_V3,
+            DexMappingsPolygon.SUSHI_V3,
             uint16(DEX_FEE_STABLES) //
         );
 
@@ -576,20 +575,20 @@ contract ComposerTestPolygon is DeltaSetup {
         uint256 amount = 2000.0e6;
         uint256 maxIn = 1140.0e6;
 
-        address assetIn = USDC;
-        address assetOut = USDT;
+        address assetIn = TokensPolygon.USDC;
+        address assetOut = TokensPolygon.USDT;
         deal(assetIn, user, 1e23);
 
         bytes memory dataAgni = getSpotExactOutSingleGen2(
             assetIn,
             assetOut,
-            UNI_V3,
+            DexMappingsPolygon.UNI_V3,
             uint16(DEX_FEE_STABLES) //
         );
         bytes memory dataFusion = getSpotExactOutSingleGen2(
             assetIn,
             assetOut,
-            SUSHI_V3,
+            DexMappingsPolygon.SUSHI_V3,
             uint16(DEX_FEE_STABLES) //
         );
 

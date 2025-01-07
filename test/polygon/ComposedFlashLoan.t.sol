@@ -18,12 +18,12 @@ contract ComposedFlashLoanTestPolygon is DeltaSetup {
         TestParamsOpen memory params;
         address user = testUser;
 
-        vm.assume(user != address(0) &&  compoundUSDCEOrAave(lenderId));
+        vm.assume(user != address(0) && compoundUSDCEOrAave(lenderId));
         vm.deal(user, 1.0e18);
         {
-            address asset = WMATIC;
+            address asset = TokensPolygon.WMATIC;
 
-            address borrowAsset = USDC;
+            address borrowAsset = TokensPolygon.USDC;
 
             uint256 amountToDeposit = 200.0e18;
             deal(asset, user, amountToDeposit);
@@ -131,10 +131,10 @@ contract ComposedFlashLoanTestPolygon is DeltaSetup {
 
     function test_polygon_composed_flash_loan_close(uint16 lenderId) external {
         address user = testUser;
-        vm.assume(user != address(0) &&  compoundUSDCEOrAave(lenderId));
-        address asset = WMATIC;
-        uint8 flashSource = BALANCER_V2;
-        address borrowAsset = USDC;
+        vm.assume(user != address(0) && compoundUSDCEOrAave(lenderId));
+        address asset = TokensPolygon.WMATIC;
+        uint8 flashSource = FlashMappingsPolygon.BALANCER_V2;
+        address borrowAsset = TokensPolygon.USDC;
 
         fundRouter(asset, borrowAsset);
         router.setRate(1e6);
@@ -142,7 +142,7 @@ contract ComposedFlashLoanTestPolygon is DeltaSetup {
             uint256 amountToDeposit = 200.0e18;
             uint256 amountToLeverage = 100.0e6;
 
-            openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);        
+            openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
 
         uint256 amountToFlashWithdraw = 50.0e18;
@@ -199,15 +199,15 @@ contract ComposedFlashLoanTestPolygon is DeltaSetup {
     }
 
     function getOpenExactInInternal(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        uint16 fee = uint16(DEX_FEE_LOW);
-        uint8 poolId = ALGEBRA;
+        uint16 fee = DEX_FEE_LOW;
+        uint8 poolId = DexMappingsPolygon.ALGEBRA;
         address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
         return abi.encodePacked(tokenIn, uint8(0), poolId, pool, fee, tokenOut, uint16(0), uint8(0));
     }
 
     function getCloseExactInInternal(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        uint16 fee = uint16(DEX_FEE_LOW);
-        uint8 poolId = ALGEBRA;
+        uint16 fee = DEX_FEE_LOW;
+        uint8 poolId = DexMappingsPolygon.ALGEBRA;
         address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
         return abi.encodePacked(tokenIn, uint8(0), poolId, pool, fee, tokenOut, uint16(0), uint8(0));
     }
@@ -231,6 +231,6 @@ contract ComposedFlashLoanTestPolygon is DeltaSetup {
     }
 
     function getFlashFee(uint8 source) internal view returns (uint) {
-        return source == BALANCER_V2 ? 0 : ILendingPool(AAVE_POOL).FLASHLOAN_PREMIUM_TOTAL();
+        return source == FlashMappingsPolygon.BALANCER_V2 ? 0 : ILendingPool(AaveV3Polygon.POOL).FLASHLOAN_PREMIUM_TOTAL();
     }
 }

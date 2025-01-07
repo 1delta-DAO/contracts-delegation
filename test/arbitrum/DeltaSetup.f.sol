@@ -2,17 +2,20 @@
 pragma solidity ^0.8.19;
 
 import {AddressesArbitrum} from "./utils/CommonAddresses.f.sol";
-import {AaveV3ArbitrumAssets, AaveV3Arbitrum} from "./utils/lender/aaveAddresses.sol";
-import {AvalonArbitrumAssets, AvalonArbitrum} from "./utils/lender/avalonAddresses.sol";
-import {VenusCoreArbitrum, VenusEtherArbitrum} from "./utils/lender/venusAddresses.sol";
-import {CompoundV3Arbitrum} from "./utils/lender/compoundAddresses.sol";
-import {YldrArbitrumAssets, YldrArbitrum} from "./utils/lender/yldrAddresses.sol";
 import {TokensArbitrum} from "./utils/tokens.sol";
 import "../../contracts/1delta/quoter/test/TestQuoterArbitrum.sol";
 import {MockRouter} from "../../contracts/mocks/MockRouter.sol";
 import {ComposerUtils, Commands} from "../shared/utils/ComposerUtils.sol";
 
 import {ComptrollerInterface} from "./utils/lender/venus/VenusComptroller.sol";
+
+// lenders
+import {AaveV3ArbitrumAssets, AaveV3Arbitrum} from "./utils/lender/aaveAddresses.sol";
+import {AvalonArbitrumAssets, AvalonArbitrum} from "./utils/lender/avalonAddresses.sol";
+import {VenusCoreArbitrum, VenusEtherArbitrum} from "./utils/lender/venusAddresses.sol";
+import {YldrArbitrumAssets, YldrArbitrum} from "./utils/lender/yldrAddresses.sol";
+import {CompoundV3Arbitrum} from "./utils/lender/compoundAddresses.sol";
+
 // mappings
 import {DexMappingsArbitrum} from "./utils/DexMappings.sol";
 import {LenderMappingsArbitrum} from "./utils/LenderMappings.sol";

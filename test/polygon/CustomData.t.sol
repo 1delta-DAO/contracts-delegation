@@ -11,9 +11,9 @@ contract CustomDataTestPolygon is DeltaSetup {
         address user = testUser;
 
         uint256 amount = 500.0e18;
-        address asset = WMATIC;
+        address asset = TokensPolygon.WMATIC;
 
-        address borrowAsset = USDC;
+        address borrowAsset = TokensPolygon.USDC;
 
         _deposit(asset, user, amount, lenderId);
 

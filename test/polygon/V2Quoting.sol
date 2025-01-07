@@ -8,19 +8,17 @@ import "./DeltaSetup.f.sol";
  * revert.
  */
 contract PolygonQuotingTest is DeltaSetup {
-    address wbpg = 0xc0f14C88250E680eCd70224B7fBa82b7C6560d12;
-
     function test_polygon_V2_quote_spot_exact_in_works() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetOut = USDC;
-        address assetIn = WETH;
+        address assetOut = TokensPolygon.USDC;
+        address assetIn = TokensPolygon.WETH;
 
         deal(assetIn, user, 1e30);
 
         uint256 amountIn = 1.0005e18;
 
-        bytes memory quotePath = getSpotQuotePathSingle(assetIn, assetOut, QUICK_V2, QUICK_V2_FEE_DENOM);
+        bytes memory quotePath = getSpotQuotePathSingle(assetIn, assetOut, DexMappingsPolygon.QUICK_V2, QUICK_V2_FEE_DENOM);
         uint256 quote = testQuoter.quoteExactInput(quotePath, amountIn);
         assertApproxEqAbs(3373724906, quote, 0);
     }
@@ -28,14 +26,14 @@ contract PolygonQuotingTest is DeltaSetup {
     function test_polygon_V2_polycat_quote_spot_exact_in_works() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetOut = WBTC;
-        address assetIn = DAI;
+        address assetOut = TokensPolygon.WBTC;
+        address assetIn = TokensPolygon.DAI;
 
         deal(assetIn, user, 1e30);
 
         uint256 amountIn = 100.0005e18;
 
-        bytes memory quotePath = getSpotQuotePathSingle(assetIn, assetOut, POLYCAT, POLYCAT_FEE_DENOM);
+        bytes memory quotePath = getSpotQuotePathSingle(assetIn, assetOut, DexMappingsPolygon.POLYCAT, POLYCAT_FEE_DENOM);
         uint256 quote = testQuoter.quoteExactInput(quotePath, amountIn);
         assertApproxEqAbs(163152, quote, 0);
     }
@@ -43,14 +41,14 @@ contract PolygonQuotingTest is DeltaSetup {
     function test_polygon_V2_quote_spot_exact_out_works() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetOut = USDC;
-        address assetIn = WETH;
+        address assetOut = TokensPolygon.USDC;
+        address assetIn = TokensPolygon.WETH;
 
         deal(assetIn, user, 1e30);
 
         uint256 amountOut = 3100.0005e6;
 
-        bytes memory quotePath = getSpotQuotePathSingle(assetOut, assetIn, QUICK_V2, QUICK_V2_FEE_DENOM);
+        bytes memory quotePath = getSpotQuotePathSingle(assetOut, assetIn, DexMappingsPolygon.QUICK_V2, QUICK_V2_FEE_DENOM);
         uint256 quote = testQuoter.quoteExactOutput(quotePath, amountOut);
         assertApproxEqAbs(919125098675979978, quote, 0);
     }
@@ -58,14 +56,14 @@ contract PolygonQuotingTest is DeltaSetup {
     function test_polygon_V2_quote_spot_exact_out_cometh() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetOut = WMATIC;
-        address assetIn = wbpg;
+        address assetOut = TokensPolygon.WMATIC;
+        address assetIn = TokensPolygon.wbpg;
 
         deal(assetIn, user, 1e30);
 
         uint256 amountOut = 1.0005e18;
 
-        bytes memory quotePath = getSpotQuotePathSingle(assetOut, assetIn, COMETH, COMETH_FEE_DENOM);
+        bytes memory quotePath = getSpotQuotePathSingle(assetOut, assetIn, DexMappingsPolygon.COMETH, COMETH_FEE_DENOM);
         uint256 quote = testQuoter.quoteExactOutput(quotePath, amountOut);
         assertApproxEqAbs(9345139087034618630261, quote, 0);
     }
@@ -73,14 +71,14 @@ contract PolygonQuotingTest is DeltaSetup {
     function test_polygon_V2_quote_spot_exact_out_ape() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetOut = WMATIC;
-        address assetIn = WBTC;
+        address assetOut = TokensPolygon.WMATIC;
+        address assetIn = TokensPolygon.WBTC;
 
         deal(assetIn, user, 1e30);
 
         uint256 amountOut = 100.0005e18;
 
-        bytes memory quotePath = getSpotQuotePathSingle(assetOut, assetIn, APESWAP, APESWAP_FEE_DENOM);
+        bytes memory quotePath = getSpotQuotePathSingle(assetOut, assetIn, DexMappingsPolygon.APESWAP, APESWAP_FEE_DENOM);
         uint256 quote = testQuoter.quoteExactOutput(quotePath, amountOut);
         assertApproxEqAbs(91355, quote, 0);
 
@@ -90,7 +88,7 @@ contract PolygonQuotingTest is DeltaSetup {
             amountOut, //
             1e30,
             false,
-            getSpotSwapPathSingle(assetOut, assetIn, APESWAP, APESWAP_FEE_DENOM)
+            getSpotSwapPathSingle(assetOut, assetIn, DexMappingsPolygon.APESWAP, APESWAP_FEE_DENOM)
         );
         vm.prank(user);
         IERC20All(assetIn).approve(brokerProxyAddress, 1e20);
@@ -105,14 +103,14 @@ contract PolygonQuotingTest is DeltaSetup {
     function test_polygon_V3_quote_spot_exact_in() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetOut = USDC;
-        address assetIn = USDT;
+        address assetOut = TokensPolygon.USDC;
+        address assetIn = TokensPolygon.USDT;
 
         deal(assetIn, user, 1e30);
 
         uint256 amountIn = 100.0005e6;
 
-        bytes memory quotePath = getSpotQuotePathSingle_cl(assetIn, assetOut, UNI_V3, DEX_FEE_STABLES);
+        bytes memory quotePath = getSpotQuotePathSingle_cl(assetIn, assetOut, DexMappingsPolygon.UNI_V3, DEX_FEE_STABLES);
         uint256 quote = testQuoter.quoteExactInput(quotePath, amountIn);
         assertApproxEqAbs(99941589, quote, 0);
 
@@ -122,7 +120,7 @@ contract PolygonQuotingTest is DeltaSetup {
             amountIn, //
             99.0e6,
             false,
-            getSpotSwapPathSingleV3(assetIn, assetOut, UNI_V3, DEX_FEE_STABLES)
+            getSpotSwapPathSingleV3(assetIn, assetOut, DexMappingsPolygon.UNI_V3, DEX_FEE_STABLES)
         );
         vm.prank(user);
         IERC20All(assetIn).approve(brokerProxyAddress, 1e20);
@@ -139,14 +137,14 @@ contract PolygonQuotingTest is DeltaSetup {
     function test_polygon_quick_V3_quote_spot_exact_in() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetOut = USDC;
-        address assetIn = USDT;
+        address assetOut = TokensPolygon.USDC;
+        address assetIn = TokensPolygon.USDT;
 
         deal(assetIn, user, 1e30);
 
         uint256 amountIn = 100.0005e6;
 
-        bytes memory quotePath = getSpotQuotePathSingle_cl(assetIn, assetOut, ALGEBRA, DEX_FEE_STABLES);
+        bytes memory quotePath = getSpotQuotePathSingle_cl(assetIn, assetOut, DexMappingsPolygon.ALGEBRA, DEX_FEE_STABLES);
         uint256 quote = testQuoter.quoteExactInput(quotePath, amountIn);
         assertApproxEqAbs(99950729, quote, 0);
 
@@ -156,7 +154,7 @@ contract PolygonQuotingTest is DeltaSetup {
             amountIn, //
             99.0e6,
             false,
-            getSpotSwapPathSingleV3(assetIn, assetOut, ALGEBRA, DEX_FEE_STABLES)
+            getSpotSwapPathSingleV3(assetIn, assetOut, DexMappingsPolygon.ALGEBRA, DEX_FEE_STABLES)
         );
         vm.prank(user);
         IERC20All(assetIn).approve(brokerProxyAddress, 1e20);
@@ -173,15 +171,15 @@ contract PolygonQuotingTest is DeltaSetup {
     function test_polygon_sushi_quick_V2_quote_spot_exact_in() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetOut = USDT;
-        address mid = WETH;
-        address assetIn = WMATIC;
+        address assetOut = TokensPolygon.USDT;
+        address mid = TokensPolygon.WETH;
+        address assetIn = TokensPolygon.WMATIC;
 
         deal(assetIn, user, 1e30);
 
         uint256 amountIn = 20.0005e18;
 
-        bytes memory quotePath = getSpotQuotePathDual(assetIn, mid, assetOut, ALGEBRA, DEX_FEE_STABLES);
+        bytes memory quotePath = getSpotQuotePathDual(assetIn, mid, assetOut, DexMappingsPolygon.ALGEBRA, DEX_FEE_STABLES);
         uint256 quote = testQuoter.quoteExactInput(quotePath, amountIn);
         assertApproxEqAbs(11059808, quote, 0);
 
@@ -191,7 +189,7 @@ contract PolygonQuotingTest is DeltaSetup {
             amountIn, //
             9.0e6,
             false,
-            getSpotSwapPathDual(assetIn, mid, assetOut, ALGEBRA, DEX_FEE_STABLES)
+            getSpotSwapPathDual(assetIn, mid, assetOut, DexMappingsPolygon.ALGEBRA, DEX_FEE_STABLES)
         );
         vm.prank(user);
         IERC20All(assetIn).approve(brokerProxyAddress, 1e20);
@@ -208,15 +206,15 @@ contract PolygonQuotingTest is DeltaSetup {
     function test_polygon_quick_V3_quote_spot_exact_in_dual() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetOut = USDC;
-        address mid = DAI;
-        address assetIn = USDT;
+        address assetOut = TokensPolygon.USDC;
+        address mid = TokensPolygon.DAI;
+        address assetIn = TokensPolygon.USDT;
 
         deal(assetIn, user, 1e30);
 
         uint256 amountIn = 100.0005e6;
 
-        bytes memory quotePath = getSpotQuotePathDual_cl(assetIn, mid, assetOut, ALGEBRA, DEX_FEE_STABLES);
+        bytes memory quotePath = getSpotQuotePathDual_cl(assetIn, mid, assetOut, DexMappingsPolygon.ALGEBRA, DEX_FEE_STABLES);
         uint256 quote = testQuoter.quoteExactInput(quotePath, amountIn);
         console.log("sad");
         assertApproxEqAbs(99888121, quote, 0);
@@ -227,7 +225,7 @@ contract PolygonQuotingTest is DeltaSetup {
             amountIn, //
             99.0e6,
             false,
-            getSpotSwapPathDualV3(assetIn, mid, assetOut, ALGEBRA, DEX_FEE_STABLES)
+            getSpotSwapPathDualV3(assetIn, mid, assetOut, DexMappingsPolygon.ALGEBRA, DEX_FEE_STABLES)
         );
         vm.prank(user);
         IERC20All(assetIn).approve(brokerProxyAddress, 1e20);
@@ -244,8 +242,8 @@ contract PolygonQuotingTest is DeltaSetup {
     function test_izi_quote_spot_exact_out_works() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetOut = USDT;
-        address assetIn = WMATIC;
+        address assetOut = TokensPolygon.USDT;
+        address assetIn = TokensPolygon.WMATIC;
 
         deal(assetIn, user, 1e30);
 
@@ -293,7 +291,7 @@ contract PolygonQuotingTest is DeltaSetup {
 
     function getSpotQuotePathSingle_izi(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         address pool = testQuoter._getiZiPool(tokenIn, tokenOut, 400);
-        return abi.encodePacked(tokenIn, IZUMI, pool, uint16(400), tokenOut);
+        return abi.encodePacked(tokenIn, DexMappingsPolygon.IZUMI, pool, uint16(400), tokenOut);
     }
 
     function getSpotQuotePathSingle_cl(address tokenIn, address tokenOut, uint8 id, uint16 fee) internal view returns (bytes memory data) {
@@ -309,14 +307,14 @@ contract PolygonQuotingTest is DeltaSetup {
 
     function getSpotQuotePathDual(address tokenIn, address mid, address tokenOut, uint8 id, uint16 fee) internal view returns (bytes memory data) {
         address pool = testQuoter._v3TypePool(tokenIn, mid, fee, id);
-        address pool2 = testQuoter._v2TypePairAddress(mid, tokenOut, QUICK_V2);
-        return abi.encodePacked(tokenIn, id, pool, fee, mid, QUICK_V2, pool2, QUICK_V2_FEE_DENOM, tokenOut);
+        address pool2 = testQuoter._v2TypePairAddress(mid, tokenOut, DexMappingsPolygon.QUICK_V2);
+        return abi.encodePacked(tokenIn, id, pool, fee, mid, DexMappingsPolygon.QUICK_V2, pool2, QUICK_V2_FEE_DENOM, tokenOut);
     }
 
     function getSpotSwapPathDual(address tokenIn, address mid, address tokenOut, uint8 id, uint16 fee) internal view returns (bytes memory data) {
         address pool = testQuoter._v3TypePool(tokenIn, mid, fee, id);
-        address pool2 = testQuoter._v2TypePairAddress(mid, tokenOut, QUICK_V2);
-        return abi.encodePacked(tokenIn, uint8(0), id, pool, fee, mid, uint8(0), QUICK_V2, pool2, QUICK_V2_FEE_DENOM, tokenOut);
+        address pool2 = testQuoter._v2TypePairAddress(mid, tokenOut, DexMappingsPolygon.QUICK_V2);
+        return abi.encodePacked(tokenIn, uint8(0), id, pool, fee, mid, uint8(0), DexMappingsPolygon.QUICK_V2, pool2, QUICK_V2_FEE_DENOM, tokenOut);
     }
 
     function getData() internal pure returns (bytes memory path, uint256 amount) {
