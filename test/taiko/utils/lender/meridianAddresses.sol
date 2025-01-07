@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.6.0;
 
-library MeridianMantle {
+library MeridianTaiko {
     address internal constant POOL = 0x1697A950a67d9040464287b88fCa6cb5FbEC09BA;
 }
 
-library MeridianMantleAssets {
+library MeridianTaikoAssets {
     address internal constant TAIKO_A_TOKEN = 0xc2aB0FE37dB900ed7b7d3E0bc6a194cB78E33FB4;
     address internal constant USDC_A_TOKEN = 0x3807A7D65D82784E91Fb4eaD75044C7B4F03A462;
     address internal constant WETH_A_TOKEN = 0xB908808F52116380FFADCaebcab97A8cAD9409D2;
@@ -18,5 +18,4 @@ library MeridianMantleAssets {
     address internal constant TAIKO_S_TOKEN = address(0);
     address internal constant USDC_S_TOKEN = address(0);
     address internal constant WETH_S_TOKEN = address(0);
-
 }

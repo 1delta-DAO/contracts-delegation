@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.28;
 
-library LenderMappingsMantle {
+library LenderMappingsTaiko {
     // lenders
     uint16 internal constant HANA_ID = 0;
     uint16 internal constant MERIDIAN_ID = 1000;

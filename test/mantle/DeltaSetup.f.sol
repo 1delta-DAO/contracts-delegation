@@ -4,9 +4,7 @@ pragma solidity ^0.8.19;
 import {AddressesMantle, IFactoryFeeGetter} from "./utils/CommonAddresses.f.sol";
 import "../../contracts/1delta/quoter/test/TestQuoterMantle.sol";
 import {ComposerUtils, Commands} from "../shared/utils/ComposerUtils.sol";
-import {LendleMantleAssets, LendleMantle} from "./utils/lender/lendleAddresses.sol";
-import {AureliusMantleAssets, AureliusMantle} from "./utils/lender/aureliusAddresses.sol";
-import {TokensMantle} from "./utils/tokens.sol";
+
 // interfaces
 import {IFlashAggregator} from "../shared/interfaces/IFlashAggregator.sol";
 import {IFlashLoanReceiver} from "./utils/IFlashLoanReceiver.sol";
@@ -21,8 +19,12 @@ import {IERC20All} from "../shared/interfaces/IERC20All.sol";
 // lending pool for debugging
 import {ILendingPool} from "./utils/ILendingPool.sol";
 
+// lenders
+import {LendleMantleAssets, LendleMantle} from "./utils/lender/lendleAddresses.sol";
+import {AureliusMantleAssets, AureliusMantle} from "./utils/lender/aureliusAddresses.sol";
 
 // mappings
+import {TokensMantle} from "./utils/tokens.sol";
 import {DexMappingsMantle} from "./utils/DexMappings.sol";
 import {LenderMappingsMantle} from "./utils/LenderMappings.sol";
 import {FlashMappingsMantle} from "./utils/FlashMappings.sol";

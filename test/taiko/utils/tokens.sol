@@ -10,4 +10,6 @@ library TokensTaiko {
     address internal constant sgUSDC = 0x19e26B0638bf63aa9fa4d14c6baF8D52eBE86C5C;
     address internal constant TAIKO = 0xA9d23408b9bA935c230493c40C73824Df71A0975;
     address internal constant USDT = 0x2DEF195713CF4a606B49D07E520e22C17899a736;
+    address internal constant stBTC = 0xf6718b2701D4a6498eF77D7c152b2137Ab28b8A3;
+    address internal constant enzoBTC = 0x6A9A65B84843F5fD4aC9a0471C4fc11AFfFBce4a;
 }

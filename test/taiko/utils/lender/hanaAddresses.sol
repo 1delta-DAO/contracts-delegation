@@ -2,12 +2,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.6.0;
 
-library HanaMantle {
+library HanaTaiko {
     address internal constant POOL = 0x4aB85Bf9EA548410023b25a13031E91B4c4f3b91;
 }
 
-library HanaMantleAssets {
-
+library HanaTaikoAssets {
     address internal constant TAIKO_A_TOKEN = 0x67F1E0A9c9D540F61D50B974DBd63aABf636a296;
     address internal constant USDC_A_TOKEN = 0x5C9bC967E338F48535c3DF7f80F2DB0A366D36b2;
     address internal constant WETH_A_TOKEN = 0xacd2E13C933aE1EF97698f00D14117BB70C77Ef1;
@@ -19,5 +18,4 @@ library HanaMantleAssets {
     address internal constant TAIKO_S_TOKEN = address(0);
     address internal constant USDC_S_TOKEN = address(0);
     address internal constant WETH_S_TOKEN = address(0);
-
 }

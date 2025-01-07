@@ -30,9 +30,13 @@ library DexMappingsTaiko {
     uint8 internal constant DTX = 1;
     uint8 internal constant UNI_V3 = 0;
     uint8 internal constant IZUMI = 49;
+    uint8 internal constant PANKO_DEX_ID = 3;
+    uint8 internal constant PANKO_STABLE_DEX_ID = 60;
 
     uint8 internal constant KODO_STABLE = 135;
     uint8 internal constant KODO_VOLAT = 120;
+    uint8 internal constant DTXV1 = 100;
+    uint8 internal constant RITSU = uint8(SYNC_SWAP_ID);
 
     uint8 internal constant DODO = uint8(DODO_ID);
 

@@ -11,8 +11,6 @@ interface IHasFactory {
  * Tests Uni V3 style DEX
  */
 contract UniV3TypeTest is DeltaSetup {
-    uint8 internal constant DTX_DEX_ID = 1;
-    uint8 internal constant UNISWAP_V3_POOL_ID = 0;
 
     TestQuoterTaiko testQuoter1;
     address internal router = 0x38be8Bc0cDfF59eF9B9Feb0d949B2052359e97d9;
@@ -28,8 +26,8 @@ contract UniV3TypeTest is DeltaSetup {
     function test_dtx_usdc_spot_exact_in() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetIn = USDC;
-        address assetOut = WETH;
+        address assetIn = TokensTaiko.USDC;
+        address assetOut = TokensTaiko.WETH;
 
         deal(assetIn, user, 1e20);
 
@@ -71,14 +69,14 @@ contract UniV3TypeTest is DeltaSetup {
 
     function getSpotExactInSingleSgUSDC(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = 3000;
-        uint8 poolId = DTX_DEX_ID;
+        uint8 poolId = DexMappingsTaiko.DTX;
         address pool = testQuoter._v3TypePool(tokenOut, tokenIn, fee, poolId);
         return abi.encodePacked(tokenIn, uint8(0), poolId, pool, fee, tokenOut);
     }
 
     function getQuoterExactInSingleSgUSDC(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = 3000;
-        uint8 poolId = DTX_DEX_ID;
+        uint8 poolId = DexMappingsTaiko.DTX;
         address pool = testQuoter._v3TypePool(tokenOut, tokenIn, fee, poolId);
         return abi.encodePacked(tokenIn, poolId, pool, fee, tokenOut);
     }

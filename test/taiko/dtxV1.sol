@@ -32,8 +32,6 @@ interface ISwap {
 }
 
 contract DTXV1TestTaiko is DeltaSetup {
-    uint8 internal constant RITSU = 150;
-    uint8 internal constant DTXV1 = 100;
     uint16 DTXV1_FEE_DENOM = 10000 - 30;
 
     function test_taiko_composer_dtx1_exact_in() external {
@@ -41,12 +39,12 @@ contract DTXV1TestTaiko is DeltaSetup {
         uint256 amount = 2000.0e6;
         uint256 amountMin = 0.3e18;
 
-        address assetIn = USDC;
-        address assetOut = WETH;
+        address assetIn = TokensTaiko.USDC;
+        address assetOut = TokensTaiko.WETH;
         deal(assetIn, user, 1e23);
 
-        address pool = testQuoter._v2TypePairAddress(assetIn, assetOut, DTXV1);
-        bytes memory dataRitsu = getSpotExactInSingleGen2(assetIn, assetOut, DTXV1, pool);
+        address pool = testQuoter._v2TypePairAddress(assetIn, assetOut, DexMappingsTaiko.DTXV1);
+        bytes memory dataRitsu = getSpotExactInSingleGen2(assetIn, assetOut, DexMappingsTaiko.DTXV1, pool);
 
         bytes memory data = abi.encodePacked(
             uint8(Commands.SWAP_EXACT_IN),
@@ -67,7 +65,7 @@ contract DTXV1TestTaiko is DeltaSetup {
         console.log("gas", gas);
 
         received = IERC20All(assetOut).balanceOf(user) - received;
-        // expect 0.7 WETH
+        // expect 0.7 TokensTaiko.WETH
         assertApproxEqAbs(693166633333881944, received, 1);
     }
 

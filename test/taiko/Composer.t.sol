@@ -5,11 +5,16 @@ import "../../contracts/1delta/modules/shared/Commands.sol";
 import "./DeltaSetup.f.sol";
 
 contract ComposerTestTaiko is DeltaSetup {
-    uint16[] lenderIds = [HANA_ID, MERIDIAN_ID, TAKOTAKO_ID];
-    uint16[] extendedLenderIds = [HANA_ID, MERIDIAN_ID, TAKOTAKO_ID, AVALON_ID];
+    uint16[] lenderIds = [LenderMappingsTaiko.HANA_ID, LenderMappingsTaiko.MERIDIAN_ID, LenderMappingsTaiko.TAKOTAKO_ID];
+    uint16[] extendedLenderIds = [
+        LenderMappingsTaiko.HANA_ID,
+        LenderMappingsTaiko.MERIDIAN_ID,
+        LenderMappingsTaiko.TAKOTAKO_ID,
+        LenderMappingsTaiko.AVALON_ID
+    ];
 
     function getProperLenderAsset(uint16 lenderId, address origAsset) internal view returns (address) {
-        return lenderId == AVALON_ID ? SOLV_BTC : origAsset;
+        return lenderId == LenderMappingsTaiko.AVALON_ID ? TokensTaiko.SOLV_BTC : origAsset;
     }
 
     function setUp() public override {
@@ -22,7 +27,7 @@ contract ComposerTestTaiko is DeltaSetup {
         uint16 lenderId = 10;
         address user = testUser;
         uint256 amount = 10.0e6;
-        address assetIn = USDC;
+        address assetIn = TokensTaiko.USDC;
         deal(assetIn, user, 1e23);
 
         vm.prank(user);
@@ -55,7 +60,7 @@ contract ComposerTestTaiko is DeltaSetup {
             console.log("lenderId", lenderId);
             address user = testUser;
             uint256 amount = 10.0e6;
-            address assetIn = getProperLenderAsset(lenderId, USDC);
+            address assetIn = getProperLenderAsset(lenderId, TokensTaiko.USDC);
             deal(assetIn, user, 1e23);
 
             vm.prank(user);
@@ -86,13 +91,13 @@ contract ComposerTestTaiko is DeltaSetup {
             uint16 lenderId = lenderIds[index];
             address user = testUser;
             uint256 amount = 1e18;
-            address asset = getProperLenderAsset(lenderId, WETH);
+            address asset = getProperLenderAsset(lenderId, TokensTaiko.WETH);
 
             _deposit(asset, user, amount, lenderId);
 
             uint256 borrowAmount = 5.0e6;
 
-            address borrowAsset = getProperLenderAsset(lenderId, USDC);
+            address borrowAsset = getProperLenderAsset(lenderId, TokensTaiko.USDC);
             vm.prank(user);
             IERC20All(debtTokens[borrowAsset][lenderId]).approveDelegation(
                 address(brokerProxyAddress), //
@@ -115,10 +120,10 @@ contract ComposerTestTaiko is DeltaSetup {
             address user = testUser;
 
             uint256 amount = 1e18;
-            address asset = WETH;
+            address asset = TokensTaiko.WETH;
 
             uint256 borrowAmount = 5.0e6;
-            address borrowAsset = USDC;
+            address borrowAsset = TokensTaiko.USDC;
 
             _deposit(asset, user, amount, lenderId);
 
@@ -158,10 +163,10 @@ contract ComposerTestTaiko is DeltaSetup {
             address user = testUser;
 
             uint256 amount = 1e18;
-            address asset = WETH;
+            address asset = TokensTaiko.WETH;
 
             uint256 borrowAmount = 5.0e6;
-            address borrowAsset = USDC;
+            address borrowAsset = TokensTaiko.USDC;
 
             _deposit(asset, user, amount, lenderId);
 
@@ -202,7 +207,7 @@ contract ComposerTestTaiko is DeltaSetup {
             address user = testUser;
 
             uint256 amount = 1e18;
-            address asset = getProperLenderAsset(lenderId, WETH);
+            address asset = getProperLenderAsset(lenderId, TokensTaiko.WETH);
 
             _deposit(asset, user, amount, lenderId);
 
@@ -227,7 +232,7 @@ contract ComposerTestTaiko is DeltaSetup {
             address user = testUser;
 
             uint256 amount = 1e18;
-            address asset = WETH;
+            address asset = TokensTaiko.WETH;
 
             _deposit(asset, user, amount, lenderId);
 
@@ -253,21 +258,21 @@ contract ComposerTestTaiko is DeltaSetup {
         uint256 amount = 20.0e6;
         uint256 amountMin = 0.0005e18;
 
-        address assetIn = USDC;
-        address assetOut = WETH;
+        address assetIn = TokensTaiko.USDC;
+        address assetOut = TokensTaiko.WETH;
         deal(assetIn, user, 1e23);
 
         bytes memory dataUniswap = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
-            UNI_V3,
+            DexMappingsTaiko.UNI_V3,
             DEX_FEE_LOW_HIGH //
         );
         bytes memory dataFusion = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
-            IZUMI,
-            uint16(DEX_FEE_LOW_HIGH) //
+            DexMappingsTaiko.IZUMI,
+            DEX_FEE_LOW_HIGH //
         );
 
         bytes memory data = abi.encodePacked(
@@ -290,10 +295,10 @@ contract ComposerTestTaiko is DeltaSetup {
         uint gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
-        console.log("gas", gas, WETH);
+        console.log("gas", gas, TokensTaiko.WETH);
 
         received = IERC20All(assetOut).balanceOf(user) - received;
-        // expect 0.005 WETH
+        // expect 0.005 TokensTaiko.WETH
         assertApproxEqAbs(5022385816918292, received, 1);
     }
 
@@ -307,15 +312,15 @@ contract ComposerTestTaiko is DeltaSetup {
         )
     {
         tks = new address[](3);
-        tks[0] = TAIKO;
-        tks[1] = USDC;
-        tks[2] = WETH;
+        tks[0] = TokensTaiko.TAIKO;
+        tks[1] = TokensTaiko.USDC;
+        tks[2] = TokensTaiko.WETH;
         fees = new uint16[](2);
         fees[0] = DEX_FEE_LOW_HIGH;
         fees[1] = DEX_FEE_LOW_HIGH;
         pids = new uint8[](2);
-        pids[0] = UNI_V3;
-        pids[1] = KODO_VOLAT;
+        pids[0] = DexMappingsTaiko.UNI_V3;
+        pids[1] = DexMappingsTaiko.KODO_VOLAT;
     }
 
     function getWethToToken()
@@ -328,15 +333,15 @@ contract ComposerTestTaiko is DeltaSetup {
         )
     {
         tks = new address[](3);
-        tks[0] = WETH;
-        tks[1] = USDC;
-        tks[2] = TAIKO;
+        tks[0] = TokensTaiko.WETH;
+        tks[1] = TokensTaiko.USDC;
+        tks[2] = TokensTaiko.TAIKO;
         fees = new uint16[](2);
         fees[0] = DEX_FEE_LOW_HIGH;
         fees[1] = DEX_FEE_LOW_HIGH;
         pids = new uint8[](2);
-        pids[0] = KODO_VOLAT;
-        pids[1] = UNI_V3;
+        pids[0] = DexMappingsTaiko.KODO_VOLAT;
+        pids[1] = DexMappingsTaiko.UNI_V3;
     }
 
     function test_taiko_composer_multi_route_exact_in_native() external {
@@ -344,14 +349,14 @@ contract ComposerTestTaiko is DeltaSetup {
         uint256 amount = 0.1e18;
         uint256 amountMin = 50.10e18;
 
-        address assetIn = WETH;
-        address assetOut = TAIKO;
+        address assetIn = TokensTaiko.WETH;
+        address assetOut = TokensTaiko.TAIKO;
         vm.deal(user, amount);
 
         bytes memory dataUni = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
-            UNI_V3,
+            DexMappingsTaiko.UNI_V3,
             DEX_FEE_LOW_HIGH //
         );
         bytes memory dataFusion;
@@ -387,14 +392,14 @@ contract ComposerTestTaiko is DeltaSetup {
         uint256 amount = 0.01e18;
         uint256 amountMax = 2000.0e18;
 
-        address assetIn = TAIKO;
-        address assetOut = WETH;
+        address assetIn = TokensTaiko.TAIKO;
+        address assetOut = TokensTaiko.WETH;
         deal(assetIn, user, amountMax);
 
         bytes memory dataUni = getSpotExactOutSingleGen2(
             assetIn,
             assetOut,
-            UNI_V3,
+            DexMappingsTaiko.UNI_V3,
             DEX_FEE_LOW_HIGH //
         );
         bytes memory dataFusion;
@@ -443,14 +448,14 @@ contract ComposerTestTaiko is DeltaSetup {
         uint256 amount = 1000.0e18;
         uint256 amountMax = 1.0e18;
 
-        address assetIn = WETH;
-        address assetOut = TAIKO;
+        address assetIn = TokensTaiko.WETH;
+        address assetOut = TokensTaiko.TAIKO;
         vm.deal(user, amountMax);
 
         bytes memory dataUni = getSpotExactOutSingleGen2(
             assetIn,
             assetOut,
-            UNI_V3,
+            DexMappingsTaiko.UNI_V3,
             DEX_FEE_LOW_HIGH //
         );
         bytes memory dataFusion;
@@ -496,14 +501,14 @@ contract ComposerTestTaiko is DeltaSetup {
         uint256 amount = 200.0e18;
         uint256 amountMin = 0.1e18;
 
-        address assetIn = TAIKO;
-        address assetOut = WETH;
+        address assetIn = TokensTaiko.TAIKO;
+        address assetOut = TokensTaiko.WETH;
         deal(assetIn, user, amount);
 
         bytes memory dataUni = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
-            UNI_V3,
+            DexMappingsTaiko.UNI_V3,
             DEX_FEE_LOW_HIGH //
         );
         bytes memory dataFusion;
@@ -552,20 +557,20 @@ contract ComposerTestTaiko is DeltaSetup {
         uint256 amount = 20.0e6;
         uint256 amountMin = 19.0e6;
 
-        address assetIn = USDC;
-        address assetOut = USDT;
+        address assetIn = TokensTaiko.USDC;
+        address assetOut = TokensTaiko.USDT;
         deal(assetIn, user, 1e23);
 
         bytes memory dataUni = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
-            UNI_V3,
+            DexMappingsTaiko.UNI_V3,
             DEX_FEE_STABLES //
         );
         bytes memory dataFusion = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
-            UNI_V3,
+            DexMappingsTaiko.UNI_V3,
             DEX_FEE_STABLES //
         );
 
@@ -601,21 +606,21 @@ contract ComposerTestTaiko is DeltaSetup {
         uint256 amount = 0.0010e18;
         uint256 maxIn = 40.0e6;
 
-        address assetIn = USDC;
-        address assetOut = WETH;
+        address assetIn = TokensTaiko.USDC;
+        address assetOut = TokensTaiko.WETH;
         deal(assetIn, user, 1e23);
 
         bytes memory dataUni = getSpotExactOutSingleGen2(
             assetIn,
             assetOut,
-            DTX,
-            uint16(DEX_FEE_LOW_HIGH) //
+            DexMappingsTaiko.DTX,
+            DEX_FEE_LOW_HIGH //
         );
         bytes memory dataFusion = getSpotExactOutSingleGen2(
             assetIn,
             assetOut,
-            UNI_V3,
-            uint16(DEX_FEE_LOW_HIGH) //
+            DexMappingsTaiko.UNI_V3,
+            DEX_FEE_LOW_HIGH //
         );
 
         bytes memory data = abi.encodePacked(

@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.6.0;
 
-library TakoTakoMantle {
+library TakoTakoTaiko {
     address internal constant POOL = 0x3A2Fd8a16030fFa8D66E47C3f1C0507c673C841e;
 }
 
-library TakoTakoMantleAssets {
+library TakoTakoTaikoAssets {
     address internal constant TAIKO_A_TOKEN = 0xbbFa45a92d9d071554B59D2d29174584D9b06bc3;
     address internal constant USDC_A_TOKEN = 0x79a741EBFE9c323CF63180c405c050cdD98c21d8;
     address internal constant WETH_A_TOKEN = 0x6Afa285ab05657f7102F66F1B384347aEF3Ef6Aa;

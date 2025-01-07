@@ -33,12 +33,12 @@ contract ComposedFlashLoanTestTaiko is DeltaSetup {
         vm.assume(user != address(0) && lenderId == 0);
         vm.deal(user, 1.0e18);
         {
-            address asset = WETH;
+            address asset = TokensTaiko.WETH;
 
-            address borrowAsset = TAIKO;
+            address borrowAsset = TokensTaiko.TAIKO;
             deal(asset, user, 1e20);
 
-            uint256 amountToDeposit =0.001e18;
+            uint256 amountToDeposit = 0.001e18;
 
             uint256 amountToBorrow = 1.0e18;
             uint256 minimumOut = 1.0e6;
@@ -73,7 +73,7 @@ contract ComposedFlashLoanTestTaiko is DeltaSetup {
         bytes memory dataBorrow;
         {
             uint borrowAm = params.swapAmount +
-                (params.swapAmount * ILendingPool(HANA_POOL).FLASHLOAN_PREMIUM_TOTAL()) / //
+                (params.swapAmount * ILendingPool(HanaTaiko.POOL).FLASHLOAN_PREMIUM_TOTAL()) / //
                 10000;
             vm.prank(user);
             IERC20All(params.debtToken).approveDelegation(brokerProxyAddress, borrowAm);
@@ -137,10 +137,10 @@ contract ComposedFlashLoanTestTaiko is DeltaSetup {
         uint8 lenderId = 0;
         address user = testUser;
         vm.assume(user != address(0) && lenderId == 0);
-        address asset = WETH;
+        address asset = TokensTaiko.WETH;
         address collateralToken = collateralTokens[asset][lenderId];
 
-        address borrowAsset = TAIKO;
+        address borrowAsset = TokensTaiko.TAIKO;
 
         fundRouter(asset, borrowAsset);
 
@@ -160,7 +160,7 @@ contract ComposedFlashLoanTestTaiko is DeltaSetup {
         bytes memory dataWithdraw;
         uint witdrawAm;
         {
-            witdrawAm = amountToFlashWithdraw + (amountToFlashWithdraw * ILendingPool(HANA_POOL).FLASHLOAN_PREMIUM_TOTAL()) / 10000;
+            witdrawAm = amountToFlashWithdraw + (amountToFlashWithdraw * ILendingPool(HanaTaiko.POOL).FLASHLOAN_PREMIUM_TOTAL()) / 10000;
             vm.prank(user);
             IERC20All(collateralToken).approve(brokerProxyAddress, witdrawAm);
 
@@ -208,15 +208,15 @@ contract ComposedFlashLoanTestTaiko is DeltaSetup {
     }
 
     function getOpenExactInInternal(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        uint16 fee = uint16(DEX_FEE_HIGHEST);
-        uint8 poolId = IZUMI;
+        uint16 fee = DEX_FEE_HIGHEST;
+        uint8 poolId = DexMappingsTaiko.IZUMI;
         address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
         return abi.encodePacked(tokenIn, uint8(0), poolId, pool, fee, tokenOut, uint8(0), uint8(0));
     }
 
     function getCloseExactInInternal(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        uint16 fee = uint16(DEX_FEE_LOW);
-        uint8 poolId = UNI_V3;
+        uint16 fee = DEX_FEE_LOW;
+        uint8 poolId = DexMappingsTaiko.UNI_V3;
         address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
         return abi.encodePacked(tokenIn, uint8(0), poolId, pool, fee, tokenOut, uint8(0), uint8(0));
     }
@@ -271,9 +271,9 @@ contract ComposedFlashLoanTestTaiko is DeltaSetup {
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
     }
 
-        function getOpenExactInSingleIzi(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
-          uint16 fee = uint16(DEX_FEE_HIGHEST);
-        uint8 poolId = IZUMI;
+    function getOpenExactInSingleIzi(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
+        uint16 fee = DEX_FEE_HIGHEST;
+        uint8 poolId = DexMappingsTaiko.IZUMI;
         address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
         (uint8 actionId, , uint8 endId) = getOpenExactInFlags();
         return abi.encodePacked(tokenIn, actionId, poolId, pool, fee, tokenOut, lenderId, endId);
