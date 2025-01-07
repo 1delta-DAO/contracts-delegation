@@ -394,12 +394,12 @@ contract BalancerTestPolygon is DeltaSetup {
 
     function getSpotExactOutBalancer(address tokenIn, address tokenOut, bytes32 pId) internal pure returns (bytes memory data) {
         uint8 action = 0;
-        return abi.encodePacked(tokenOut, action, DexMappingsPolygon.BALANCER_V2_ID, pId, tokenIn, uint8(99), uint8(99));
+        return abi.encodePacked(tokenOut, action, DexMappingsPolygon.BALANCER, pId, tokenIn, uint8(99), uint8(99));
     }
 
     function getSpotExactInBalancer(address tokenIn, address tokenOut, bytes32 pId) internal pure returns (bytes memory data) {
         uint8 action = 0;
-        return abi.encodePacked(tokenIn, action, DexMappingsPolygon.BALANCER_V2_ID, pId, tokenOut, uint8(99), uint8(99));
+        return abi.encodePacked(tokenIn, action, DexMappingsPolygon.BALANCER, pId, tokenOut, uint8(99), uint8(99));
     }
 
     /** UniswapV3 -> BalancerV2 WP exactOut */
@@ -410,7 +410,7 @@ contract BalancerTestPolygon is DeltaSetup {
 
         bytes memory firstPart;
         {
-            firstPart = abi.encodePacked(tokenOut, action, DexMappingsPolygon.BALANCER_V2_ID, pId, TokensPolygon.WETH);
+            firstPart = abi.encodePacked(tokenOut, action, DexMappingsPolygon.BALANCER, pId, TokensPolygon.WETH);
         }
         return abi.encodePacked(firstPart, action, DexMappingsPolygon.UNI_V3, pool, fee, tokenIn, uint8(99), uint8(99));
     }
@@ -423,7 +423,7 @@ contract BalancerTestPolygon is DeltaSetup {
 
         bytes memory firstPart;
         {
-            firstPart = abi.encodePacked(tokenIn, action, DexMappingsPolygon.BALANCER_V2_ID, pId, TokensPolygon.WMATIC);
+            firstPart = abi.encodePacked(tokenIn, action, DexMappingsPolygon.BALANCER, pId, TokensPolygon.WMATIC);
         }
         return abi.encodePacked(firstPart, action, DexMappingsPolygon.UNI_V3, pool, fee, tokenOut, uint8(99), uint8(99));
     }
@@ -438,7 +438,7 @@ contract BalancerTestPolygon is DeltaSetup {
         {
             firstPart = abi.encodePacked(tokenIn, action, DexMappingsPolygon.UNI_V3, pool, fee, TokensPolygon.WMATIC);
         }
-        return abi.encodePacked(firstPart, action, DexMappingsPolygon.BALANCER_V2_ID, pId, tokenOut, uint8(99), uint8(99));
+        return abi.encodePacked(firstPart, action, DexMappingsPolygon.BALANCER, pId, tokenOut, uint8(99), uint8(99));
     }
 
     /** BalancerV2 WP -> UniswapV3  exactOut */
@@ -451,7 +451,7 @@ contract BalancerTestPolygon is DeltaSetup {
         {
             firstPart = abi.encodePacked(tokenOut, action, DexMappingsPolygon.UNI_V3, pool, fee, TokensPolygon.WETH);
         }
-        return abi.encodePacked(firstPart, action, DexMappingsPolygon.BALANCER_V2_ID, pId, tokenIn, uint8(99), uint8(99));
+        return abi.encodePacked(firstPart, action, DexMappingsPolygon.BALANCER, pId, tokenIn, uint8(99), uint8(99));
     }
 
     /** UniswapV3 -> BalancerV2 CSP exactOut */
@@ -462,7 +462,7 @@ contract BalancerTestPolygon is DeltaSetup {
 
         bytes memory firstPart;
         {
-            firstPart = abi.encodePacked(tokenOut, action, DexMappingsPolygon.BALANCER_V2_ID, pId, TokensPolygon.WMATIC);
+            firstPart = abi.encodePacked(tokenOut, action, DexMappingsPolygon.BALANCER, pId, TokensPolygon.WMATIC);
         }
         return abi.encodePacked(firstPart, action, DexMappingsPolygon.UNI_V3, pool, fee, tokenIn, uint8(99), uint8(99));
     }
