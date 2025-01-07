@@ -9,13 +9,6 @@ contract AddressesPolygon {
 
     address internal constant BALANCER_VAULT = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
 
-    /// @dev Mask of lower 20 bytes.
-    uint256 internal constant ADDRESS_MASK = 0x00ffffffffffffffffffffffffffffffffffffffff;
-    /// @dev Mask of upper 20 bytes.
-    uint256 internal constant ADDRESS_MASK_UPPER = 0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff;
-    /// @dev Mask of lower 3 bytes.
-    uint256 internal constant UINT24_MASK = 0xffffff;
-
     address internal constant CRV_3_USD_AAVE_POOL = 0x445FE580eF8d70FF569aB36e80c647af338db351;
     address internal constant CRV_TRICRYPTO_ZAP = 0x1d8b86e3D88cDb2d34688e87E72F388Cb541B7C8;
     address internal constant CRV_FACTORY_ZAP = 0x3d8EADb739D1Ef95dd53D718e4810721837c69c1;
@@ -23,22 +16,6 @@ contract AddressesPolygon {
     address internal constant CRV_TRICRYPTO_AAVE_META_POOL = 0x92215849c439E1f8612b6646060B4E3E5ef822cC;
 
     address internal constant CRV_NG_USDN_CRVUSD = 0x5225010A0AE133B357861782B0B865a48471b2C5;
-    address internal constant crvUSD = 0xc4Ce1D6F5D98D65eE25Cf85e9F2E9DcFEe6Cb5d6;
-
-    /** DEFAULTS */
-
-    uint16 DEFAULT_LENDER = 1;
-    uint16 AAVE_V3 = 0;
-    uint16 AAVE_V2 = 1000;
-    uint16 YLDR = 900;
-    uint16 COMPOUND_V3_USDCE = 2000;
-
-    uint16 MAX_AAVE_V2_ID = 2000;
-    uint16 MAX_ID_COMPOUND_V3 = 3000;
-    uint16 COMPOUND_V3_USDT = 2001;
-
-    uint8 BALANCER_V2 = 0xff;
-    uint8 BALANCER_V2_DEXID = 50;
 
     /** DEX CONFIG */
 

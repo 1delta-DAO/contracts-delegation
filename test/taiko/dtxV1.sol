@@ -32,7 +32,7 @@ interface ISwap {
 }
 
 contract DTXV1TestTaiko is DeltaSetup {
-    uint16 DTXV1_FEE_DENOM = 10000 - 30;
+    uint16 internal constant DTXV1_FEE_DENOM = 10000 - 30;
 
     function test_taiko_composer_dtx1_exact_in() external {
         address user = testUser;
@@ -69,7 +69,7 @@ contract DTXV1TestTaiko is DeltaSetup {
         assertApproxEqAbs(693166633333881944, received, 1);
     }
 
-    function getSpotExactInSingleGen2(address tokenIn, address tokenOut, uint8 poolId, address pool) internal view returns (bytes memory data) {
+    function getSpotExactInSingleGen2(address tokenIn, address tokenOut, uint8 poolId, address pool) internal pure returns (bytes memory data) {
         uint8 action = 0;
         return abi.encodePacked(tokenIn, action, poolId, pool, DTXV1_FEE_DENOM, tokenOut);
     }

@@ -23,11 +23,11 @@ contract AddressesMantle {
     // users
     address internal testUser = 0xaaaa4a3F69b6DB76889bDfa4edBe1c0BB57BAA5c;
 
-    address internal CLEO_WMNT_POOL = 0x762B916297235dc920a8c684419e41Ab0099A242;
+    address internal constant CLEO_WMNT_POOL = 0x762B916297235dc920a8c684419e41Ab0099A242;
 
-    address veloFactory = 0x99F9a4A96549342546f9DAE5B2738EDDcD43Bf4C;
+    address internal constant veloFactory = 0x99F9a4A96549342546f9DAE5B2738EDDcD43Bf4C;
 
-    address veloRouter = 0xCe30506F6c1Cea34aC704f93d51d55058791E497;
+    address internal constant veloRouter = 0xCe30506F6c1Cea34aC704f93d51d55058791E497;
 
     bytes32 internal constant VELO_FF_FACTORY = 0xff99F9a4A96549342546f9DAE5B2738EDDcD43Bf4C0000000000000000000000;
     bytes32 constant VELO_CODE_HASH = 0x0ccd005ee58d5fb11632ef5c2e0866256b240965c62c8e990c0f84a97f311879;
@@ -47,34 +47,23 @@ contract AddressesMantle {
     address internal constant STRATUM_3POOL_2 = 0x7d3621aCA02B711F5f738C9f21C1bFE294df094d;
     address internal constant STRATUM_ETH_POOL = 0xe8792eD86872FD6D8b74d0668E383454cbA15AFc;
 
-    /// @dev Mask of lower 20 bytes.
-    uint256 internal constant ADDRESS_MASK = 0x00ffffffffffffffffffffffffffffffffffffffff;
-    /// @dev Mask of upper 20 bytes.
-    uint256 internal constant ADDRESS_MASK_UPPER = 0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff;
-    /// @dev Mask of lower 3 bytes.
-    uint256 internal constant UINT24_MASK = 0xffffff;
-
-    /** DEFAULTS */
-
-    uint8 DEFAULT_LENDER = 1;
-
     /** DEX CONFIG */
 
-    uint16 internal DEX_FEE_STABLES = 100;
-    uint16 internal DEX_FEE_LOW_MEDIUM = 2500;
-    uint16 internal DEX_FEE_LOW_HIGH = 3000;
-    uint16 internal DEX_FEE_LOW = 500;
-    uint16 internal DEX_FEE_NONE = 0;
+    uint16 internal constant DEX_FEE_STABLES = 100;
+    uint16 internal constant DEX_FEE_LOW_MEDIUM = 2500;
+    uint16 internal constant DEX_FEE_LOW_HIGH = 3000;
+    uint16 internal constant DEX_FEE_LOW = 500;
+    uint16 internal constant DEX_FEE_NONE = 0;
 
-    uint16 internal BIN_STEP_LOWEST = 1;
-    uint16 internal BIN_STEP_LOW = 10;
+    uint16 internal constant BIN_STEP_LOWEST = 1;
+    uint16 internal constant BIN_STEP_LOW = 10;
 
-    address internal FBTC_WBTC_POOL = 0xD39DFbfBA9E7eccd813918FfbDa10B783EA3b3C6;
-    address internal FBTC = 0xC96dE26018A54D51c097160568752c4E3BD6C364;
+    address internal constant FBTC_WBTC_POOL = 0xD39DFbfBA9E7eccd813918FfbDa10B783EA3b3C6;
+    address internal constant FBTC = 0xC96dE26018A54D51c097160568752c4E3BD6C364;
 
-    uint16 internal FUSION_X_V2_FEE_DENOM = 10000 - 20;
-    uint16 internal MERCHANT_MOE_FEE_DENOM = 10000 - 30;
-    uint16 internal BASE_DENOM = 10000;
+    uint16 internal constant FUSION_X_V2_FEE_DENOM = 10000 - 20;
+    uint16 internal constant MERCHANT_MOE_FEE_DENOM = 10000 - 30;
+    uint16 internal constant BASE_DENOM = 10000;
 
     function getV2PairFeeDenom(uint8 fork, address pool) internal view returns (uint16) {
         if (fork == DexMappingsMantle.FUSION_X_V2) return FUSION_X_V2_FEE_DENOM;

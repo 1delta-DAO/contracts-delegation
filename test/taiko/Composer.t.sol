@@ -13,7 +13,7 @@ contract ComposerTestTaiko is DeltaSetup {
         LenderMappingsTaiko.AVALON_ID
     ];
 
-    function getProperLenderAsset(uint16 lenderId, address origAsset) internal view returns (address) {
+    function getProperLenderAsset(uint16 lenderId, address origAsset) internal pure returns (address) {
         return lenderId == LenderMappingsTaiko.AVALON_ID ? TokensTaiko.SOLV_BTC : origAsset;
     }
 
@@ -302,9 +302,9 @@ contract ComposerTestTaiko is DeltaSetup {
         assertApproxEqAbs(5022385816918292, received, 1);
     }
 
-    function getTokenToWeth()
+    function getTokenToNative()
         internal
-        view
+        pure
         returns (
             address[] memory tks,
             uint8[] memory pids, //
@@ -323,9 +323,9 @@ contract ComposerTestTaiko is DeltaSetup {
         pids[1] = DexMappingsTaiko.KODO_VOLAT;
     }
 
-    function getWethToToken()
+    function getNativeToToken()
         internal
-        view
+        pure
         returns (
             address[] memory tks,
             uint8[] memory pids, //
@@ -365,7 +365,7 @@ contract ComposerTestTaiko is DeltaSetup {
                 address[] memory tks,
                 uint8[] memory pids, //
                 uint16[] memory fees
-            ) = getWethToToken();
+            ) = getNativeToToken();
             dataFusion = getCompactPath(tks, pids, fees);
         }
         bytes memory data = abi.encodePacked(
@@ -408,7 +408,7 @@ contract ComposerTestTaiko is DeltaSetup {
                 address[] memory tks,
                 uint8[] memory pids, //
                 uint16[] memory fees
-            ) = getWethToToken();
+            ) = getNativeToToken();
             dataFusion = getCompactPath(tks, pids, fees);
         }
         bytes memory data = abi.encodePacked(
@@ -464,7 +464,7 @@ contract ComposerTestTaiko is DeltaSetup {
                 address[] memory tks,
                 uint8[] memory pids, //
                 uint16[] memory fees
-            ) = getTokenToWeth();
+            ) = getTokenToNative();
             dataFusion = getCompactPath(tks, pids, fees);
         }
         bytes memory data = abi.encodePacked(
@@ -517,7 +517,7 @@ contract ComposerTestTaiko is DeltaSetup {
                 address[] memory tks,
                 uint8[] memory pids, //
                 uint16[] memory fees
-            ) = getTokenToWeth();
+            ) = getTokenToNative();
             dataFusion = getCompactPath(tks, pids, fees);
         }
         bytes memory data = abi.encodePacked(
@@ -668,7 +668,7 @@ contract ComposerTestTaiko is DeltaSetup {
                     actions[i - 1],
                     pId,
                     pool,
-                    getV2PairFeeDenom(pId, pool), //
+                    getV2PairFeeDenom(pId), //
                     tokens[i]
                 );
             }
