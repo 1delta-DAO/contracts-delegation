@@ -510,7 +510,7 @@ contract OneDeltaQuoterArbitrum is PoolGetterArbitrum {
                     let sellAmountWithFee := mul(sellAmount, feeDenom)
                     buyAmount := div(mul(sellAmountWithFee, buyReserve), add(sellAmountWithFee, mul(sellReserve, 10000)))
                 }
-                // covers solidly: velo volatile, stable and cleo V1 volatile, stable, stratum volatile, stable
+                // covers solidlies
                 default {
                     // selector for getAmountOut(uint256,address)
                     mstore(0xB00, 0xf140a35a00000000000000000000000000000000000000000000000000000000)

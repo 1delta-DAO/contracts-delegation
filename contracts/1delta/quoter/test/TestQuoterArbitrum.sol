@@ -24,7 +24,7 @@ contract TestQuoterArbitrum is OneDeltaQuoterArbitrum {
     }
 
     /// @dev gets uniswapV2 (and fork) pair addresses
-    function _v2TypePairAddress(address tokenA, address tokenB, uint256 _pId) public pure returns (address pair) {
+    function _v2TypePairAddress(address tokenA, address tokenB, uint256 _pId) public view returns (address pair) {
         return super.v2TypePairAddress(tokenA, tokenB, _pId);
     }
 

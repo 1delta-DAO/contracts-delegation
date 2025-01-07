@@ -114,24 +114,6 @@ abstract contract MarginTrading is BaseSwapper {
                 p := add(p, 32)
                 mstore(p, UNI_POOL_INIT_CODE_HASH)
             }
-            case 3 {
-                mstore(s, RAMSES_FF_FACTORY)
-                let p := add(s, 21)
-                // Compute the inner hash in-place
-                switch lt(tokenIn, tokenOut)
-                case 0 {
-                    mstore(p, tokenOut)
-                    mstore(add(p, 32), tokenIn)
-                }
-                default {
-                    mstore(p, tokenIn)
-                    mstore(add(p, 32), tokenOut)
-                }
-                mstore(add(p, 64), and(UINT16_MASK, shr(160, firstWord)))
-                mstore(p, keccak256(p, 96))
-                p := add(p, 32)
-                mstore(p, RAMSES_POOL_INIT_CODE_HASH)
-            }
             case 1 {
                 mstore(s, SUSHI_V3_FF_DEPLOYER)
                 let p := add(s, 21)
