@@ -58,7 +58,7 @@ contract ComposedFlashLoanTestPolygon is DeltaSetup {
             lenderId
         );
 
-        uint8 flashSource = BALANCER_V2;
+        uint8 flashSource = FlashMappingsPolygon.BALANCER_V2;
         {
             uint borrowAm = params.swapAmount +
                 (params.swapAmount * getFlashFee(flashSource)) / //
