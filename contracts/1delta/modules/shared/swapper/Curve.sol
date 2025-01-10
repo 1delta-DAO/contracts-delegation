@@ -51,6 +51,12 @@ abstract contract CurveSwapper {
     /// @notice selector exchange_underlying(uint256,uint256,uint256,uint256,address)
     bytes32 private constant EXCHANGE_UNDERLYING_WITH_RECEIVER = 0xe2ad025a00000000000000000000000000000000000000000000000000000000;
 
+    /// @notice selector exchange_underlying(uint256,uint256,uint256,uint256)
+    bytes32 private constant EXCHANGE_UNDERLYING_INT = 0xa6417ed600000000000000000000000000000000000000000000000000000000;
+
+    /// @notice selector exchange_underlying(uint256,uint256,uint256,uint256,address)
+    bytes32 private constant EXCHANGE_UNDERLYING_INT_WITH_RECEIVER = 0x44ee198600000000000000000000000000000000000000000000000000000000;
+
     /// @notice selector exchange_received(uint256,uint256,uint256,uint256)
     bytes32 private constant EXCHANGE_RECEIVED = 0x29b244bb00000000000000000000000000000000000000000000000000000000;
 
@@ -143,7 +149,7 @@ abstract contract CurveSwapper {
                 pop(
                     call(
                         gas(),
-                        shr(96, calldataload(pathOffset)), // tokenIn
+                        tokenIn, //
                         0,
                         ptr,
                         0x44,
@@ -213,6 +219,33 @@ abstract contract CurveSwapper {
                 indexData := 0xf
             }
             case 4 {
+                // exchange_underlying(int128,int128,uint256,uint256,address)
+                mstore(ptr, EXCHANGE_UNDERLYING_INT_WITH_RECEIVER)
+                mstore(add(ptr, 0x4), and(shr(88, indexData), 0xff))
+                mstore(add(ptr, 0x24), and(shr(80, indexData), 0xff))
+                mstore(add(ptr, 0x44), amountIn)
+                mstore(add(ptr, 0x64), 0) // min out
+                mstore(add(ptr, 0x84), receiver)
+                if iszero(call(gas(), pool, 0x0, ptr, 0xA4, ptr, 0x20)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
+                indexData := 0
+            }
+            case 5 {
+                // selector for exchange_underlying(int128,int128,uint256,uint256)
+                mstore(ptr, EXCHANGE_UNDERLYING_INT)
+                mstore(add(ptr, 0x4), and(shr(88, indexData), 0xff))
+                mstore(add(ptr, 0x24), and(shr(80, indexData), 0xff))
+                mstore(add(ptr, 0x44), amountIn)
+                mstore(add(ptr, 0x64), 0) // min out
+                if iszero(call(gas(), pool, 0x0, ptr, 0x84, ptr, 0x20)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
+                indexData := 0xf
+            }
+            case 6 {
                 // exchange_underlying(uint256,uint256,uint256,uint256,address)
                 mstore(ptr, EXCHANGE_UNDERLYING_WITH_RECEIVER)
                 mstore(add(ptr, 0x4), and(shr(88, indexData), 0xff))
@@ -226,7 +259,7 @@ abstract contract CurveSwapper {
                 }
                 indexData := 0
             }
-            case 5 {
+            case 7 {
                 // selector for exchange_underlying(uint256,uint256,uint256,uint256)
                 mstore(ptr, EXCHANGE_UNDERLYING)
                 mstore(add(ptr, 0x4), and(shr(88, indexData), 0xff))
@@ -239,7 +272,7 @@ abstract contract CurveSwapper {
                 }
                 indexData := 0xf
             }
-            case 201 {
+            case 200 {
                 // selector for swap(uint8,uint8,uint256,uint256,uint256)
                 mstore(ptr, SWAP)
                 mstore(add(ptr, 0x4), and(shr(88, indexData), 0xff))
@@ -345,30 +378,6 @@ abstract contract CurveSwapper {
                     returndatacopy(0, 0, returndatasize())
                     revert(0, returndatasize())
                 }
-                indexData := 0xf
-            }
-            case 1 {
-                // selector for exchange_received(int128,int128,uint256,uint256)
-                mstore(ptr, EXCHANGE_RECEIVED_INT)
-                mstore(add(ptr, 0x4), and(shr(88, indexData), 0xff)) // indexIn
-                mstore(add(ptr, 0x24), and(shr(80, indexData), 0xff)) // indexOut
-                mstore(add(ptr, 0x44), amountIn)
-                mstore(add(ptr, 0x64), 0) // min out
-                if iszero(
-                    call(
-                        gas(),
-                        shr(96, indexData), // pool
-                        0x0,
-                        ptr,
-                        0x84,
-                        ptr,
-                        0x20
-                    )
-                ) {
-                    returndatacopy(0, 0, returndatasize())
-                    revert(0, returndatasize())
-                }
-                indexData := 0xf
             }
             case 2 {
                 // selector for exchange_received(uint256,uint256,uint256,uint256,address)
@@ -392,30 +401,6 @@ abstract contract CurveSwapper {
                     returndatacopy(0, 0, returndatasize())
                     revert(0, returndatasize())
                 }
-                indexData := 0xf
-            }
-            case 3 {
-                // selector for exchange_received(uint256,uint256,uint256,uint256)
-                mstore(ptr, EXCHANGE_RECEIVED)
-                mstore(add(ptr, 0x4), and(shr(88, indexData), 0xff)) // indexIn
-                mstore(add(ptr, 0x24), and(shr(80, indexData), 0xff)) // indexOut
-                mstore(add(ptr, 0x44), amountIn)
-                mstore(add(ptr, 0x64), 0) // min out
-                if iszero(
-                    call(
-                        gas(),
-                        shr(96, indexData), // pool
-                        0x0,
-                        ptr,
-                        0x84,
-                        ptr,
-                        0x20
-                    )
-                ) {
-                    returndatacopy(0, 0, returndatasize())
-                    revert(0, returndatasize())
-                }
-                indexData := 0xf
             }
             default {
                 revert(0, 0)
@@ -446,17 +431,49 @@ abstract contract CurveSwapper {
             ////////////////////////////////////////////////////
             // Execute swap function
             ////////////////////////////////////////////////////
-            switch and(shr(72, calldataload(add(pathOffset, 22))), 0xff) // selectorId
+            switch and(shr(72, calldataload(add(pathOffset, 22))), 0xff)
             case 0 {
-                // indexData := 0xf
-                // selector for exchange_received(uint256,uint256,uint256,uint256,address)
-                mstore(ptr, EXCHANGE_RECEIVED)
-                mstore(add(ptr, 0x4), indexIn)
-                mstore(add(ptr, 0x24), indexOut)
+                // selector for exchange_received(int128,int128,uint256,uint256,address)
+                mstore(ptr, EXCHANGE_RECEIVED_INT_WITH_RECEIVER)
+                mstore(add(ptr, 0x4), indexIn) // indexIn
+                mstore(add(ptr, 0x24), indexOut) // indexOut
                 mstore(add(ptr, 0x44), computedAmountIn)
-                mstore(add(ptr, 0x64), 0) // min out should be set to the expected amount
+                mstore(add(ptr, 0x64), 0) // min out
                 mstore(add(ptr, 0x84), receiver)
-                if iszero(call(gas(), pool, 0x0, ptr, 0xA4, 0x0, 0x0)) {
+                if iszero(
+                    call(
+                        gas(),
+                        pool,
+                        0x0,
+                        ptr,
+                        0xA4,
+                        ptr,
+                        0x20
+                    )
+                ) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
+            }
+            case 2 {
+                // selector for exchange_received(uint256,uint256,uint256,uint256,address)
+                mstore(ptr, EXCHANGE_RECEIVED_WITH_RECEIVER)
+                mstore(add(ptr, 0x4), indexIn) // indexIn
+                mstore(add(ptr, 0x24), indexOut) // indexOut
+                mstore(add(ptr, 0x44), computedAmountIn)
+                mstore(add(ptr, 0x64), 0) // min out
+                mstore(add(ptr, 0x84), receiver)
+                if iszero(
+                    call(
+                        gas(),
+                        pool,
+                        0x0,
+                        ptr,
+                        0xA4,
+                        ptr,
+                        0x20
+                    )
+                ) {
                     returndatacopy(0, 0, returndatasize())
                     revert(0, returndatasize())
                 }

@@ -33,7 +33,7 @@ library DexMappingsPolygon {
     uint8 internal constant BALANCER = uint8(BALANCER_V2_ID);
     uint8 internal constant CURVE = 60;
     uint8 internal constant CURVE_NG = 151;
-    uint8 internal constant CURVE_META = 61;
+    uint8 internal constant CURVE_META = 65;
 
     uint8 internal constant UNI_V2 = 100;
     uint8 internal constant QUICK_V2 = 101;

@@ -8,6 +8,18 @@ import "./DeltaSetup.f.sol";
 contract CurveTestPolygon is DeltaSetup {
     uint8 APPROVE_FLAG = 1;
 
+    uint8 internal constant EXCHANGE_META_RECEIVER_SELECTOR = 0;
+    uint8 internal constant EXCHANGE_META_SELECTOR = 1;
+
+    uint8 internal constant EXCHANGE_INT_RECEIVER_SELECTOR = 0;
+    uint8 internal constant EXCHANGE_UNDERLYING_INT_SELECTOR = 5;
+    uint8 internal constant EXCHANGE_UNDERLYING_RECEIVER_SELECTOR = 6;
+    uint8 internal constant EXCHANGE_UNDERLYING_SELECTOR = 7;
+    uint8 internal constant EXCHANGE_RECEIVER_SELECTOR = 3;
+
+    uint8 internal constant NG_EXCHANGE_INT_SELECTOR = 1;
+    uint8 internal constant NG_EXCHANGE_RECEIVER_INT_SELECTOR = 0;
+
     function test_polygon_curve_multi_route_exact_in() external {
         address user = testUser;
         uint256 amount = 2000.0e6;
@@ -21,7 +33,7 @@ contract CurveTestPolygon is DeltaSetup {
             assetIn,
             assetOut,
             DexMappingsPolygon.CURVE,
-            1,
+            EXCHANGE_UNDERLYING_INT_SELECTOR,
             getCurveIndexes(assetIn, assetOut) //
         );
         bytes memory dataFusion = getSpotExactInSingleGen2(
@@ -70,7 +82,7 @@ contract CurveTestPolygon is DeltaSetup {
             assetIn,
             assetOut,
             DexMappingsPolygon.CURVE_NG,
-            0,
+            EXCHANGE_INT_RECEIVER_SELECTOR,
             getCurveNGIndexes(assetIn) //
         );
 
@@ -110,7 +122,7 @@ contract CurveTestPolygon is DeltaSetup {
             assetIn,
             assetOut,
             DexMappingsPolygon.CURVE_NG,
-            0, //
+            NG_EXCHANGE_RECEIVER_INT_SELECTOR, //
             getCurveNGIndexes(assetIn)
         );
 
@@ -149,7 +161,7 @@ contract CurveTestPolygon is DeltaSetup {
             assetIn,
             assetOut,
             DexMappingsPolygon.CURVE_NG,
-            0, //
+            NG_EXCHANGE_RECEIVER_INT_SELECTOR, //
             getCurveNGIndexes(assetIn)
         );
 
@@ -188,7 +200,7 @@ contract CurveTestPolygon is DeltaSetup {
             assetIn,
             assetOut,
             DexMappingsPolygon.CURVE_META,
-            0,
+            EXCHANGE_META_SELECTOR,
             dataSwapFirst //
         );
 
@@ -228,7 +240,7 @@ contract CurveTestPolygon is DeltaSetup {
             assetIn,
             assetOut,
             DexMappingsPolygon.CURVE,
-            2,
+            EXCHANGE_UNDERLYING_RECEIVER_SELECTOR,
             dataSwapFirst //
         );
 
