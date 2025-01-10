@@ -48,4 +48,6 @@ library TokensPolygon {
     address internal constant wstETH = 0x03b54A6e9a984069379fae1a4fC4dBAE93B3bCCD;
 
     address internal constant USDCn = 0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359;
+
+    address internal constant PAR = 0xE2Aa7db6dA1dAE97C5f5C6914d285fBfCC32A128;
 }

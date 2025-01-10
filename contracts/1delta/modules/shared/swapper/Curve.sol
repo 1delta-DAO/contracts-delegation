@@ -33,6 +33,18 @@ abstract contract CurveSwapper {
 
     /** Standard curve pool selectors */
 
+    ////////////////////////////////////////////////////
+    // General info on the selectors for Curve:
+    // There are 5 variations
+    // 1) indexes as int128
+    // 2) indexes as uint256
+    // 3) has receiver
+    // 4) has no receiver
+    // 5) fork with solidity implementation (typically uint8 indexes)
+    // The int128 indexes are preferred and have lower indexes
+    // The ones with receiver have even indexes
+    ////////////////////////////////////////////////////
+
     /// @notice selector exchange(int128,int128,uint256,uint256)
     bytes32 private constant EXCHANGE_INT = 0x3df0212400000000000000000000000000000000000000000000000000000000;
 
@@ -57,6 +69,13 @@ abstract contract CurveSwapper {
     /// @notice selector exchange_underlying(uint256,uint256,uint256,uint256,address)
     bytes32 private constant EXCHANGE_UNDERLYING_INT_WITH_RECEIVER = 0x44ee198600000000000000000000000000000000000000000000000000000000;
 
+    ////////////////////////////////////////////////////
+    // General info on the selectors for Curve Received:
+    // They are pre-funded
+    // 1) indexes as int128 (NG) or uint256 (Some of the TriCryptos) as above
+    // 2) has always a receiver (optinally could be called without it, bet there is no utility for it)
+    ////////////////////////////////////////////////////
+
     /// @notice selector exchange_received(uint256,uint256,uint256,uint256)
     bytes32 private constant EXCHANGE_RECEIVED = 0x29b244bb00000000000000000000000000000000000000000000000000000000;
 
@@ -66,7 +85,7 @@ abstract contract CurveSwapper {
     /// @notice selector exchange(int128,int128,uint256,uint256)
     bytes32 private constant EXCHANGE_RECEIVED_INT = 0x7e3db03000000000000000000000000000000000000000000000000000000000;
 
-    /// @notice selector exchange(int128,int128,uint256,uint256,address)
+    /// @notice selector exchange_received(int128,int128,uint256,uint256,address)
     bytes32 private constant EXCHANGE_RECEIVED_INT_WITH_RECEIVER = 0xafb4301200000000000000000000000000000000000000000000000000000000;
 
     /// @notice selector for cuve forks using solidity swap(uint8,uint8,uint256,uint256,uint256)
@@ -411,11 +430,8 @@ abstract contract CurveSwapper {
     }
 
     /**
-     * Swaps using a NG pool that allows for pre-funded swaps
-     * Data is supposed to be packed as follows
-     * tokenIn | actionId | dexId | pool | sm | i | j | tokenOut
-     * sm is the selector,
-     * i,j are the swap indexes for the pool
+     * Swaps using a NG pool exact out
+     * The indexes are provided (due to the use in the calculator)
      */
     function _swapCurveReceivedExactOut(
         address pool,
@@ -446,7 +462,7 @@ abstract contract CurveSwapper {
                         pool,
                         0x0,
                         ptr,
-                        0xA4,
+                        0xA4, //
                         ptr,
                         0x20
                     )
@@ -469,7 +485,7 @@ abstract contract CurveSwapper {
                         pool,
                         0x0,
                         ptr,
-                        0xA4,
+                        0xA4, //
                         ptr,
                         0x20
                     )
@@ -501,6 +517,7 @@ abstract contract CurveSwapper {
                 add(ptr, 0x44),
                 div(
                     // we upscale to avoid insufficient amount received
+                    // tah is, becaus the feature is not accurate
                     mul(
                         10000050, // 0.05bp = 10_000_0_50
                         amountOut
