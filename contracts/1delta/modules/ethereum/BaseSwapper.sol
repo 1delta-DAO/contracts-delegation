@@ -419,7 +419,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
                     }
                 }
             }
-            amountIn = _swapCurveNG(pathOffset, amountIn, currentReceiver);
+            amountIn = _swapCurveReceived(pathOffset, amountIn, currentReceiver);
             assembly {
                 pathOffset := add(pathOffset, SKIP_LENGTH_CURVE_NG)
                 pathLength := sub(pathLength, SKIP_LENGTH_CURVE_NG)

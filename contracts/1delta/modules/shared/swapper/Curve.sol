@@ -6,43 +6,71 @@ pragma solidity 0.8.28;
 * Author: Achthar | 1delta 
 /******************************************************************************/
 
-import {UniTypeSwapper} from "./UniType.sol";
-
 /**
  * @title Curve swapper contract
  * @notice We do Curve stuff here
  */
-abstract contract CurveSwapper is UniTypeSwapper {
+abstract contract CurveSwapper {
     // approval slot
     bytes32 private constant CALL_MANAGEMENT_APPROVALS = 0x1aae13105d9b6581c36534caba5708726e5ea1e03175e823c989a5756966d1f3;
 
-    /** Standard curve pool selectors */
+    /// @dev Maximum Uint256 value
+    uint256 private constant MAX_UINT256 = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
 
-    /// @notice selector exchange(uint256,uint256,uint256,uint256)
-    bytes32 private constant EXCHANGE = 0x5b41b90800000000000000000000000000000000000000000000000000000000;
+    /** Erc20 selectors */
+
+    /// @dev selector for approve(address,uint256)
+    bytes32 private constant ERC20_APPROVE = 0x095ea7b300000000000000000000000000000000000000000000000000000000;
+
+    /// @dev selector for transferFrom(address,address,uint256)
+    bytes32 private constant ERC20_TRANSFER_FROM = 0x23b872dd00000000000000000000000000000000000000000000000000000000;
+
+    /// @dev selector for transfer(address,uint256)
+    bytes32 private constant ERC20_TRANSFER = 0xa9059cbb00000000000000000000000000000000000000000000000000000000;
+
+    /// @dev selector for balanceOf(address)
+    bytes32 private constant ERC20_BALANCE_OF = 0x70a0823100000000000000000000000000000000000000000000000000000000;
+
+    /** Standard curve pool selectors */
 
     /// @notice selector exchange(int128,int128,uint256,uint256)
     bytes32 private constant EXCHANGE_INT = 0x3df0212400000000000000000000000000000000000000000000000000000000;
 
+    /// @notice selector exchange(int128,int128,uint256,uint256,address)
+    bytes32 private constant EXCHANGE_INT_WITH_RECEIVER = 0xddc1f59d00000000000000000000000000000000000000000000000000000000;
+
+    /// @notice selector exchange(uint256,uint256,uint256,uint256)
+    bytes32 private constant EXCHANGE = 0x5b41b90800000000000000000000000000000000000000000000000000000000;
+
+    /// @notice selector exchange(uint256,uint256,uint256,uint256,address)
+    bytes32 private constant EXCHANGE_WITH_RECEIVER = 0xa64833a000000000000000000000000000000000000000000000000000000000;
+
     /// @notice selector exchange_underlying(uint256,uint256,uint256,uint256)
-    bytes32 private constant EXCHANGE_UNDERLYING = 0xa6417ed600000000000000000000000000000000000000000000000000000000;
+    bytes32 private constant EXCHANGE_UNDERLYING = 0x65b2489b00000000000000000000000000000000000000000000000000000000;
 
     /// @notice selector exchange_underlying(uint256,uint256,uint256,uint256,address)
-    bytes32 private constant EXCHANGE_UNDERLYING_RECEIVER = 0xe2ad025a00000000000000000000000000000000000000000000000000000000;
+    bytes32 private constant EXCHANGE_UNDERLYING_WITH_RECEIVER = 0xe2ad025a00000000000000000000000000000000000000000000000000000000;
 
-    /// @notice selector exchange_received(int128,int128,uint256,uint256,address)
-    bytes32 private constant EXCHANGE_RECEIVED = 0xafb4301200000000000000000000000000000000000000000000000000000000;
+    /// @notice selector exchange_received(uint256,uint256,uint256,uint256)
+    bytes32 private constant EXCHANGE_RECEIVED = 0x29b244bb00000000000000000000000000000000000000000000000000000000;
+
+    /// @notice selector exchange_received(uint256,uint256,uint256,uint256,address)
+    bytes32 private constant EXCHANGE_RECEIVED_WITH_RECEIVER = 0x767691e700000000000000000000000000000000000000000000000000000000;
+
+    /// @notice selector exchange(int128,int128,uint256,uint256)
+    bytes32 private constant EXCHANGE_RECEIVED_INT = 0x7e3db03000000000000000000000000000000000000000000000000000000000;
 
     /// @notice selector exchange(int128,int128,uint256,uint256,address)
-    bytes32 private constant EXCHANGE_RECEIVED_INT = 0xddc1f59d00000000000000000000000000000000000000000000000000000000;
+    bytes32 private constant EXCHANGE_RECEIVED_INT_WITH_RECEIVER = 0xafb4301200000000000000000000000000000000000000000000000000000000;
+
+    /// @notice selector for cuve forks using solidity swap(uint8,uint8,uint256,uint256,uint256)
+    bytes32 private constant SWAP = 0x9169558600000000000000000000000000000000000000000000000000000000;
 
     /// @notice Curve params lengths
     uint256 internal constant SKIP_LENGTH_CURVE = 45; // = 20+1+1+20+1+1+1
     uint256 internal constant RECEIVER_OFFSET_CURVE = 67; // = SKIP_LENGTH_CURVE+20+2
     uint256 internal constant MAX_SINGLE_LENGTH_CURVE = 68; // = SKIP_LENGTH_CURVE+20+1+2
     uint256 internal constant MAX_SINGLE_LENGTH_CURVE_HIGH = 69; // = SKIP_LENGTH_CURVE+20+1+2+1
-
-    constructor() {}
 
     /**
      * Swaps using a standard curve pool
@@ -70,15 +98,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
                 mstore(add(ptr, 0x24), address())
                 mstore(add(ptr, 0x44), amountIn)
 
-                let success := call(
-                    gas(),
-                    tokenIn,
-                    0,
-                    ptr,
-                    0x64,
-                    ptr,
-                    32
-                )
+                let success := call(gas(), tokenIn, 0, ptr, 0x64, ptr, 32)
 
                 let rdsize := returndatasize()
 
@@ -139,25 +159,66 @@ abstract contract CurveSwapper is UniTypeSwapper {
             ////////////////////////////////////////////////////
             switch and(shr(72, indexData), 0xff) // selectorId
             case 0 {
+                // selector for exchange(int128,int128,uint256,uint256,address)
+                mstore(ptr, EXCHANGE_INT_WITH_RECEIVER)
+                mstore(add(ptr, 0x4), and(shr(88, indexData), 0xff))
+                mstore(add(ptr, 0x24), and(shr(80, indexData), 0xff))
+                mstore(add(ptr, 0x44), amountIn)
+                mstore(add(ptr, 0x64), 0) // min out
+                mstore(add(ptr, 0x84), receiver) // receiver, set indexData accordingly
+                if iszero(call(gas(), pool, 0x0, ptr, 0xA4, ptr, 0x20)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
+                indexData := 0
+            }
+            case 1 {
                 // selector for exchange(int128,int128,uint256,uint256)
                 mstore(ptr, EXCHANGE_INT)
                 mstore(add(ptr, 0x4), and(shr(88, indexData), 0xff))
                 mstore(add(ptr, 0x24), and(shr(80, indexData), 0xff))
                 mstore(add(ptr, 0x44), amountIn)
-                mstore(add(ptr, 0x64), 0) // min out is zero, we validate slippage at the end
+                mstore(add(ptr, 0x64), 0) // min out
                 if iszero(call(gas(), pool, 0x0, ptr, 0x84, ptr, 0x20)) {
                     returndatacopy(0, 0, returndatasize())
                     revert(0, returndatasize())
                 }
                 indexData := 0xf
             }
-            case 1 {
-                // exchange(int128,int128,uint256,uint256,address)
-                mstore(ptr, EXCHANGE_RECEIVED_INT)
+            case 2 {
+                // selector for exchange(uint256,uint256,uint256,uint256,address)
+                mstore(ptr, EXCHANGE_WITH_RECEIVER)
                 mstore(add(ptr, 0x4), and(shr(88, indexData), 0xff))
                 mstore(add(ptr, 0x24), and(shr(80, indexData), 0xff))
                 mstore(add(ptr, 0x44), amountIn)
-                mstore(add(ptr, 0x64), 0) // min out is zero, we validate slippage at the end
+                mstore(add(ptr, 0x64), 0) // min out is zero, we validate slippage at the
+                mstore(add(ptr, 0x84), receiver) // receiver, set indexData accordingly
+                if iszero(call(gas(), pool, 0x0, ptr, 0xA4, ptr, 0x20)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
+                indexData := 0
+            }
+            case 3 {
+                // selector for exchange(uint256,uint256,uint256,uint256)
+                mstore(ptr, EXCHANGE)
+                mstore(add(ptr, 0x4), and(shr(88, indexData), 0xff))
+                mstore(add(ptr, 0x24), and(shr(80, indexData), 0xff))
+                mstore(add(ptr, 0x44), amountIn)
+                mstore(add(ptr, 0x64), 0) // min out
+                if iszero(call(gas(), pool, 0x0, ptr, 0x84, ptr, 0x20)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
+                indexData := 0xf
+            }
+            case 4 {
+                // exchange_underlying(uint256,uint256,uint256,uint256,address)
+                mstore(ptr, EXCHANGE_UNDERLYING_WITH_RECEIVER)
+                mstore(add(ptr, 0x4), and(shr(88, indexData), 0xff))
+                mstore(add(ptr, 0x24), and(shr(80, indexData), 0xff))
+                mstore(add(ptr, 0x44), amountIn)
+                mstore(add(ptr, 0x64), 0) // min out
                 mstore(add(ptr, 0x84), receiver)
                 if iszero(call(gas(), pool, 0x0, ptr, 0xA4, ptr, 0x20)) {
                     returndatacopy(0, 0, returndatasize())
@@ -165,45 +226,35 @@ abstract contract CurveSwapper is UniTypeSwapper {
                 }
                 indexData := 0
             }
-            case 2 {
-                // selector for exchange(uint256,uint256,uint256,uint256)
-                mstore(ptr, EXCHANGE)
+            case 5 {
+                // selector for exchange_underlying(uint256,uint256,uint256,uint256)
+                mstore(ptr, EXCHANGE_UNDERLYING)
                 mstore(add(ptr, 0x4), and(shr(88, indexData), 0xff))
                 mstore(add(ptr, 0x24), and(shr(80, indexData), 0xff))
                 mstore(add(ptr, 0x44), amountIn)
-                mstore(add(ptr, 0x64), 0) // min out is zero, we validate slippage at the end
+                mstore(add(ptr, 0x64), 0) // min out
                 if iszero(call(gas(), pool, 0x0, ptr, 0x84, ptr, 0x20)) {
                     returndatacopy(0, 0, returndatasize())
                     revert(0, returndatasize())
                 }
                 indexData := 0xf
             }
-            case 3 {
-                // selector for exchange_underlying(uint256,uint256,uint256,uint256)
-                mstore(ptr, EXCHANGE_UNDERLYING)
+            case 201 {
+                // selector for swap(uint8,uint8,uint256,uint256,uint256)
+                mstore(ptr, SWAP)
                 mstore(add(ptr, 0x4), and(shr(88, indexData), 0xff))
                 mstore(add(ptr, 0x24), and(shr(80, indexData), 0xff))
                 mstore(add(ptr, 0x44), amountIn)
-                mstore(add(ptr, 0x64), 0) // min out is zero, we validate slippage at the end
-                if iszero(call(gas(), pool, 0x0, ptr, 0x84, ptr, 0x20)) {
+                mstore(add(ptr, 0x64), 0) // min out
+                mstore(add(ptr, 0x84), MAX_UINT256) // deadline
+                if iszero(call(gas(), pool, 0x0, ptr, 0xA4, ptr, 0x20)) {
                     returndatacopy(0, 0, returndatasize())
                     revert(0, returndatasize())
                 }
                 indexData := 0xf
             }
             default {
-                // exchange_underlying(uint256,uint256,uint256,uint256,address)
-                mstore(ptr, EXCHANGE_UNDERLYING_RECEIVER)
-                mstore(add(ptr, 0x4), and(shr(88, indexData), 0xff))
-                mstore(add(ptr, 0x24), and(shr(80, indexData), 0xff))
-                mstore(add(ptr, 0x44), amountIn)
-                mstore(add(ptr, 0x64), 0) // min out is zero, we validate slippage at the end
-                mstore(add(ptr, 0x84), receiver)
-                if iszero(call(gas(), pool, 0x0, ptr, 0xA4, ptr, 0x20)) {
-                    returndatacopy(0, 0, returndatasize())
-                    revert(0, returndatasize())
-                }
-                indexData := 0
+                revert(0, 0)
             }
 
             amountOut := mload(ptr)
@@ -259,7 +310,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
      * sm is the selector,
      * i,j are the swap indexes for the pool
      */
-    function _swapCurveNG(
+    function _swapCurveReceived(
         uint256 pathOffset,
         uint256 amountIn,
         address receiver //
@@ -274,11 +325,11 @@ abstract contract CurveSwapper is UniTypeSwapper {
             switch and(shr(72, indexData), 0xff)
             case 0 {
                 // selector for exchange_received(int128,int128,uint256,uint256,address)
-                mstore(ptr, EXCHANGE_RECEIVED)
+                mstore(ptr, EXCHANGE_RECEIVED_INT_WITH_RECEIVER)
                 mstore(add(ptr, 0x4), and(shr(88, indexData), 0xff)) // indexIn
                 mstore(add(ptr, 0x24), and(shr(80, indexData), 0xff)) // indexOut
                 mstore(add(ptr, 0x44), amountIn)
-                mstore(add(ptr, 0x64), 0) // min out is zero, we validate slippage at the end
+                mstore(add(ptr, 0x64), 0) // min out
                 mstore(add(ptr, 0x84), receiver)
                 if iszero(
                     call(
@@ -287,6 +338,76 @@ abstract contract CurveSwapper is UniTypeSwapper {
                         0x0,
                         ptr,
                         0xA4,
+                        ptr,
+                        0x20
+                    )
+                ) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
+                indexData := 0xf
+            }
+            case 1 {
+                // selector for exchange_received(int128,int128,uint256,uint256)
+                mstore(ptr, EXCHANGE_RECEIVED_INT)
+                mstore(add(ptr, 0x4), and(shr(88, indexData), 0xff)) // indexIn
+                mstore(add(ptr, 0x24), and(shr(80, indexData), 0xff)) // indexOut
+                mstore(add(ptr, 0x44), amountIn)
+                mstore(add(ptr, 0x64), 0) // min out
+                if iszero(
+                    call(
+                        gas(),
+                        shr(96, indexData), // pool
+                        0x0,
+                        ptr,
+                        0x84,
+                        ptr,
+                        0x20
+                    )
+                ) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
+                indexData := 0xf
+            }
+            case 2 {
+                // selector for exchange_received(uint256,uint256,uint256,uint256,address)
+                mstore(ptr, EXCHANGE_RECEIVED_WITH_RECEIVER)
+                mstore(add(ptr, 0x4), and(shr(88, indexData), 0xff)) // indexIn
+                mstore(add(ptr, 0x24), and(shr(80, indexData), 0xff)) // indexOut
+                mstore(add(ptr, 0x44), amountIn)
+                mstore(add(ptr, 0x64), 0) // min out
+                mstore(add(ptr, 0x84), receiver)
+                if iszero(
+                    call(
+                        gas(),
+                        shr(96, indexData), // pool
+                        0x0,
+                        ptr,
+                        0xA4,
+                        ptr,
+                        0x20
+                    )
+                ) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
+                indexData := 0xf
+            }
+            case 3 {
+                // selector for exchange_received(uint256,uint256,uint256,uint256)
+                mstore(ptr, EXCHANGE_RECEIVED)
+                mstore(add(ptr, 0x4), and(shr(88, indexData), 0xff)) // indexIn
+                mstore(add(ptr, 0x24), and(shr(80, indexData), 0xff)) // indexOut
+                mstore(add(ptr, 0x44), amountIn)
+                mstore(add(ptr, 0x64), 0) // min out
+                if iszero(
+                    call(
+                        gas(),
+                        shr(96, indexData), // pool
+                        0x0,
+                        ptr,
+                        0x84,
                         ptr,
                         0x20
                     )
@@ -311,7 +432,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
      * sm is the selector,
      * i,j are the swap indexes for the pool
      */
-    function _swapCurveNGExactOut(
+    function _swapCurveReceivedExactOut(
         address pool,
         uint256 pathOffset,
         uint256 indexIn,

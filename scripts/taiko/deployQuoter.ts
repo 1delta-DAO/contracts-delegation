@@ -13,7 +13,7 @@ async function main() {
     console.log("modules added")
     const quoter = await new OneDeltaQuoterTaiko__factory(operator).deploy(TAIKO_CONFIGS)
 
-    console.log("quoter:", quoter.address) // 0xf9438f2b1c63D8dAC24311256F5483D7f7575863
+    console.log("quoter:", quoter.address) // 0xd184c5315B728c1C990f59dDD275c8155f8e255c
 }
 
 main()

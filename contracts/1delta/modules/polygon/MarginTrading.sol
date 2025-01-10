@@ -1034,7 +1034,7 @@ abstract contract MarginTrading is BaseSwapper {
             );
         }
         // Curve NG
-        else if (poolId == CURVE_NG_ID) {
+        else if (poolId == CURVE_RECEIVED_ID) {
             address tokenIn;
             uint256 amountIn;
             uint256 indexIn;
@@ -1091,7 +1091,7 @@ abstract contract MarginTrading is BaseSwapper {
                 }
             }
             
-            _swapCurveNGExactOut(
+            _swapCurveReceivedExactOut(
                 pool,
                 pathOffset,
                 indexIn,

@@ -4,6 +4,7 @@ pragma solidity 0.8.28;
 
 import {MarginTrading} from "./MarginTrading.sol";
 import {Commands} from "../shared/Commands.sol";
+import {Masks} from "../shared/masks/Masks.sol";
 
 /**
  * @title Universal aggregator contract.
@@ -11,20 +12,16 @@ import {Commands} from "../shared/Commands.sol";
  *        Efficient baching through compact calldata usage.
  * @author 1delta Labs AG
  */
-contract OneDeltaComposerArbitrum is MarginTrading {
-    /// @dev The highest bit signals whether the swap is internal (the payer is this contract)
-    uint256 private constant _PAY_SELF = 1 << 255;
-    /// @dev The second bit signals whether the input token is a FOT token
-    ///      Only used for SWAP_EXACT_IN
-    uint256 private constant _FEE_ON_TRANSFER = 1 << 254;
-    /// @dev We use uint112-encoded amounts to typically fit one bit flag, one path length (uint16)
-    ///      add 2 amounts (2xuint112) into 32bytes, as such we use this mask for extracting those
-    uint256 private constant _UINT112_MASK = 0x000000000000000000000000000000000000ffffffffffffffffffffffffffff;
+contract OneDeltaComposerArbitrum is MarginTrading, Masks {
 
     /// @dev we need base tokens to identify Compound V3's selectors
     address internal constant USDCE = 0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8;
     address internal constant USDT = 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9;
     address internal constant USDC = 0xaf88d065e77c8cC2239327C5EDb3A432268e5831;
+
+
+    /// @dev selector for approve(address,uint256)
+    bytes32 private constant ERC20_APPROVE = 0x095ea7b300000000000000000000000000000000000000000000000000000000;
 
     /**
      * Batch-executes a series of operations
@@ -589,7 +586,7 @@ contract OneDeltaComposerArbitrum is MarginTrading {
                         let token := shr(96, calldataload(currentOffset))
                         let target := shr(96, calldataload(add(currentOffset, 20)))
 
-                        // get slot isValidApproveAndCallTarget[target][aggregator]
+                        // get slot isValid[target]
                         mstore(0x0, target)
                         mstore(0x20, CALL_MANAGEMENT_VALID)
                         // validate target

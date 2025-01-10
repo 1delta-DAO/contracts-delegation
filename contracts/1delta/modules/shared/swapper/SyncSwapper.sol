@@ -2,7 +2,6 @@
 
 pragma solidity 0.8.28;
 
-import {CurveSwapper} from "./Curve.sol";
 
 /******************************************************************************\
 * Author: Achthar | 1delta 
@@ -12,7 +11,7 @@ import {CurveSwapper} from "./Curve.sol";
  * @title Uniswap V2 type swapper contract
  * @notice We do everything UniV2 here, incl Solidly, FoT, exactIn and -Out
  */
-abstract contract SyncSwapper is CurveSwapper {
+abstract contract SyncSwapper {
     /// @dev selector for swap(bytes,address,address,bytes)
     bytes32 internal constant SYNCSWAP_SELECTOR = 0x7132bb7f00000000000000000000000000000000000000000000000000000000;
 

@@ -378,7 +378,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils, DexMappings {
             }
         }
         // Curve NG
-        else if (dexId == CURVE_NG_ID) {
+        else if (dexId == CURVE_RECEIVED_ID) {
             assembly {
                 switch lt(pathLength, MAX_SINGLE_LENGTH_CURVE_HIGH) // 
                 case 1 { currentReceiver := receiver}
@@ -401,7 +401,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils, DexMappings {
                     }
                 }
             }
-            amountIn = _swapCurveNG(pathOffset, amountIn, currentReceiver);
+            amountIn = _swapCurveReceived(pathOffset, amountIn, currentReceiver);
             assembly {
                 pathOffset := add(pathOffset, SKIP_LENGTH_CURVE)
                 pathLength := sub(pathLength, SKIP_LENGTH_CURVE)

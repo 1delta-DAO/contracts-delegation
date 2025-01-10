@@ -9,6 +9,12 @@ pragma solidity ^0.8.28;
 import {BaseLending} from "./BaseLending.sol";
 import {PermitUtils} from "../shared/permit/PermitUtils.sol";
 import {DexMappings} from "../shared/swapper/DexMappings.sol";
+import {UnoSwapper} from "../shared/swapper/UnoSwapper.sol";
+import {SyncSwapper} from "../shared/swapper/SyncSwapper.sol";
+import {DodoV2Swapper} from "../shared/swapper/DodoV2Swapper.sol";
+import {ExoticOffsets} from "../shared/swapper/ExoticOffsets.sol";
+import {BalancerSwapper} from "./swappers/Balancer.sol";
+import {CurveForkSwapper} from "./swappers/CurveFork.sol";
 
 // solhint-disable max-line-length
 
@@ -21,101 +27,19 @@ import {DexMappings} from "../shared/swapper/DexMappings.sol";
  *             Uni V2: 100 - 110
  *             Solidly:121 - 130
  */
-abstract contract BaseSwapper is BaseLending, PermitUtils, DexMappings {
+abstract contract BaseSwapper is BaseLending, 
+    PermitUtils, 
+    UnoSwapper, 
+    DexMappings, 
+    DodoV2Swapper, 
+    BalancerSwapper, 
+    SyncSwapper,
+    CurveForkSwapper,
+    ExoticOffsets
+{
 
-    /**
-     * Fund the first pool for self funded DEXs like Uni V2, GMX, LB, WooFi and Solidly V2 (dexId >= 100) 
-     * Extracts and returns the first dexId of the path 
-     */
-    function _preFundTrade(address payer, uint256 amountIn, uint256 pathOffset) internal returns (uint256 dexId) {
-        assembly {
-            dexId := and(shr(80, calldataload(pathOffset)), UINT8_MASK)
-            ////////////////////////////////////////////////////
-            // dexs with ids of 100 and greater are assumed to
-            // be based on pre-funding, i.e. the funds have to
-            // be sent to the DEX before the swap call  
-            ////////////////////////////////////////////////////
-            if gt(dexId, 99) {
-                let tokenIn := shr(
-                    96,
-                    calldataload(pathOffset) // nextPoolAddress
-                )
-                let nextPool := shr(
-                    96,
-                    calldataload(add(pathOffset, 22)) // nextPoolAddress
-                )
-
-                ////////////////////////////////////////////////////
-                // if the payer is this not contract, we
-                // `transferFrom`, otherwise use `transfer`
-                ////////////////////////////////////////////////////
-                switch eq(payer, address())
-                case 0 {
-                    let ptr := mload(0x40) // free memory pointer
-
-                    // selector for transferFrom(address,address,uint256)
-                    mstore(ptr, ERC20_TRANSFER_FROM)
-                    mstore(add(ptr, 0x04), payer)
-                    mstore(add(ptr, 0x24), nextPool)
-                    mstore(add(ptr, 0x44), amountIn)
-
-                    let success := call(gas(), tokenIn, 0, ptr, 0x64, ptr, 32)
-
-                    let rdsize := returndatasize()
-
-                    // Check for ERC20 success. ERC20 tokens should return a boolean,
-                    // but some don't. We accept 0-length return data as success, or at
-                    // least 32 bytes that starts with a 32-byte boolean true.
-                    success := and(
-                        success, // call itself succeeded
-                        or(
-                            iszero(rdsize), // no return data, or
-                            and(
-                                iszero(lt(rdsize, 32)), // at least 32 bytes
-                                eq(mload(ptr), 1) // starts with uint256(1)
-                            )
-                        )
-                    )
-
-                    if iszero(success) {
-                        returndatacopy(0, 0, rdsize)
-                        revert(0, rdsize)
-                    }
-                }
-                default {
-                    let ptr := mload(0x40) // free memory pointer
-
-                    // selector for transfer(address,uint256)
-                    mstore(ptr, ERC20_TRANSFER)
-                    mstore(add(ptr, 0x04), nextPool)
-                    mstore(add(ptr, 0x24), amountIn)
-
-                    let success := call(gas(), tokenIn, 0, ptr, 0x44, ptr, 32)
-
-                    let rdsize := returndatasize()
-
-                    // Check for ERC20 success. ERC20 tokens should return a boolean,
-                    // but some don't. We accept 0-length return data as success, or at
-                    // least 32 bytes that starts with a 32-byte boolean true.
-                    success := and(
-                        success, // call itself succeeded
-                        or(
-                            iszero(rdsize), // no return data, or
-                            and(
-                                iszero(lt(rdsize, 32)), // at least 32 bytes
-                                eq(mload(ptr), 1) // starts with uint256(1)
-                            )
-                        )
-                    )
-
-                    if iszero(success) {
-                        returndatacopy(0, 0, rdsize)
-                        revert(0, rdsize)
-                    }
-                }
-            }
-        }
-    }
+    /// @dev Mask of lower 1 byte.
+    uint256 private constant UINT8_MASK = 0xff;
 
     /**
      * Swaps exact in internally using all implemented Dexs
@@ -244,6 +168,69 @@ abstract contract BaseSwapper is BaseLending, PermitUtils, DexMappings {
             assembly {
                 pathOffset := add(pathOffset, SKIP_LENGTH_CURVE)
                 pathLength := sub(pathLength, SKIP_LENGTH_CURVE)
+            }
+        } else if (dexId == CURVE_FORK_ID) {
+            assembly {
+                switch lt(pathLength, 68) // MAX_SINGLE_LENGTH_CURVE + 1
+                case 1 { currentReceiver := receiver}
+                default {
+                    dexId := and(calldataload(add(pathOffset, 35)), UINT8_MASK)
+                    switch gt(dexId, 99) 
+                    case 1 {
+                        currentReceiver := shr(
+                                96,
+                                calldataload(
+                                    add(
+                                        pathOffset,
+                                        RECEIVER_OFFSET_CURVE // 20 + 2 + 20 + 2 + 20 + 2 [poolAddress starts here]
+                                    )
+                                ) // poolAddress
+                            )
+                    }
+                    default {
+                        currentReceiver := address()
+                    }
+                }
+            }
+            amountIn = _swapCurveFork(pathOffset, amountIn, payer, currentReceiver);
+            assembly {
+                pathOffset := add(pathOffset, SKIP_LENGTH_CURVE)
+                pathLength := sub(pathLength, SKIP_LENGTH_CURVE)
+            }
+        }
+        // Balancer V2 Fork
+        else if (dexId == BALANCER_V2_FORK_ID) {
+            assembly {
+                switch lt(pathLength, MAX_SINGLE_LENGTH_BALANCER_V2_HIGH) // MAX_SINGLE_LENGTH_BALANCER_V2 + 1
+                case 1 { currentReceiver := receiver}
+                default {
+                    dexId := and(calldataload(add(pathOffset, 45)), UINT8_MASK) // SKIP_LENGTH_BALANCER_V2 - 10
+                    switch gt(dexId, 99) 
+                    case 1 {
+                        currentReceiver := shr(
+                                96,
+                                calldataload(
+                                    add(
+                                        pathOffset,
+                                        RECEIVER_OFFSET_BALANCER_V2 // 
+                                    )
+                                ) // poolAddress
+                            )
+                    }
+                    default {
+                        currentReceiver := address()
+                    }
+                }
+            }
+            amountIn = _swapBalancerExactIn(
+                payer,
+                amountIn,
+                currentReceiver,
+                pathOffset
+            );
+            assembly {
+                pathOffset := add(pathOffset, SKIP_LENGTH_BALANCER_V2)
+                pathLength := sub(pathLength, SKIP_LENGTH_BALANCER_V2)
             }
         }
         // uniswapV2 style

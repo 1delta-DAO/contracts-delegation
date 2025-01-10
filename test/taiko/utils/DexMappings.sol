@@ -17,7 +17,7 @@ library DexMappingsTaiko {
 
     // exotics
     uint256 internal constant WOO_FI_ID = 150;
-    uint256 internal constant CURVE_NG_ID = 151;
+    uint256 internal constant CURVE_RECEIVED_ID = 151;
     uint256 internal constant LB_ID = 160;
     uint256 internal constant GMX_ID = 170;
     uint256 internal constant KTX_ID = 171;
@@ -32,7 +32,7 @@ library DexMappingsTaiko {
     uint8 internal constant UNI_V3 = 0;
     uint8 internal constant IZUMI = 49;
     uint8 internal constant PANKO_DEX_ID = 3;
-    uint8 internal constant PANKO_STABLE_DEX_ID = 60;
+    uint8 internal constant PANKO_STABLE_DEX_ID = 61;
 
     uint8 internal constant KODO_STABLE = 135;
     uint8 internal constant KODO_VOLAT = 120;

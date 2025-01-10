@@ -7,14 +7,24 @@ pragma solidity 0.8.28;
 /******************************************************************************/
 
 import {BaseSwapper} from "./BaseSwapper.sol";
+import {V2ReferencesTaiko} from "./swappers/V2References.sol";
+import {V3ReferencesTaiko} from "./swappers/V3References.sol";
+import {PreFunder} from "../shared/funder/PreFunder.sol";
 
 /**
  * @title Contract Module for general Margin Trading on an borrow delegation compatible Lender
  * @notice Contains main logic for uniswap-type callbacks and initiator functions
  */
-abstract contract MarginTrading is BaseSwapper {
+abstract contract MarginTrading is BaseSwapper, V2ReferencesTaiko, V3ReferencesTaiko, PreFunder {
     // errors
     error NoBalance();
+
+    /// @dev Mask of lower 20 bytes.
+    uint256 private constant ADDRESS_MASK = 0x00ffffffffffffffffffffffffffffffffffffffff;
+    /// @dev Mask of lower 1 byte.
+    uint256 private constant UINT8_MASK = 0xff;
+    /// @dev Mask of lower 2 bytes.
+    uint256 private constant UINT16_MASK = 0xffff;
 
     uint256 internal constant PATH_OFFSET_CALLBACK_V2 = 164;
     uint256 internal constant PATH_OFFSET_CALLBACK_V3 = 132;

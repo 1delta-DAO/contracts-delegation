@@ -2,9 +2,6 @@
 
 pragma solidity 0.8.28;
 
-import {DeltaErrors} from "./Errors.sol";
-import {ERC20Selectors} from "../../shared//selectors/ERC20Selectors.sol";
-
 /******************************************************************************\
 * Author: Achthar | 1delta 
 /******************************************************************************/
@@ -15,24 +12,27 @@ import {ERC20Selectors} from "../../shared//selectors/ERC20Selectors.sol";
  * @title Uniswap V3 type swapper contract
  * @notice Executes Cl swaps and pushing data to the callbacks
  */
-abstract contract V3TypeSwapper is DeltaErrors, ERC20Selectors {
+abstract contract V3TypeSwapper {
     ////////////////////////////////////////////////////
     // Masks
     ////////////////////////////////////////////////////
 
     /// @dev Mask of lower 20 bytes.
-    uint256 internal constant ADDRESS_MASK = 0x00ffffffffffffffffffffffffffffffffffffffff;
-    /// @dev Mask of lower 3 bytes.
-    uint256 internal constant UINT24_MASK = 0xffffff;
+    uint256 private constant ADDRESS_MASK = 0x00ffffffffffffffffffffffffffffffffffffffff;
+
     /// @dev Mask of lower 1 byte.
-    uint256 internal constant UINT8_MASK = 0xff;
+    uint256 private constant UINT8_MASK = 0xff;
+    /// @dev Mask of lower 2 bytes.
+    uint256 private constant UINT16_MASK = 0xffff;
+    /// @dev Mask of lower 3 bytes.
+    uint256 private constant UINT24_MASK = 0xffffff;
     /// @dev MIN_SQRT_RATIO + 1 from Uniswap's TickMath
-    uint160 internal constant MIN_SQRT_RATIO = 4295128740;
+    uint160 private constant MIN_SQRT_RATIO = 4295128740;
     /// @dev MAX_SQRT_RATIO - 1 from Uniswap's TickMath
-    uint160 internal constant MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970341;
+    uint160 private constant MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970341;
     /// @dev Maximum Uint256 value
-    uint256 internal constant MAX_UINT256 = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
-    
+    uint256 private constant MAX_UINT256 = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
+
     ////////////////////////////////////////////////////
     // param lengths
     ////////////////////////////////////////////////////
@@ -44,33 +44,7 @@ abstract contract V3TypeSwapper is DeltaErrors, ERC20Selectors {
     uint256 internal constant MAX_SINGLE_LENGTH_UNOSWAP_HIGH = 68;
     uint256 internal constant SKIP_LENGTH_UNOSWAP = 44; // = 20+1+1+20+2
 
-    ////////////////////////////////////////////////////
-    // dex references
-    ////////////////////////////////////////////////////
-
-    bytes32 internal constant IZI_FF_FACTORY = 0xff8c7d3063579BdB0b90997e18A770eaE32E1eBb080000000000000000000000;
-    bytes32 internal constant IZI_POOL_INIT_CODE_HASH = 0xbe0bfe068cdd78cafa3ddd44e214cfa4e412c15d7148e932f8043fe883865e40;
-
-    // henjin
-    bytes32 internal constant ALGEBRA_V3_FF_DEPLOYER = 0xff0d22b434E478386Cd3564956BFc722073B3508f60000000000000000000000;
-    bytes32 internal constant ALGEBRA_POOL_INIT_CODE_HASH = 0x4b9e4a8044ce5695e06fce9421a63b6f5c3db8a561eebb30ea4c775469e36eaf;
-
-    // SwapSicle
-    bytes32 internal constant ALGEBRA_V3_SS_FF_DEPLOYER = 0xffb68b27a1c93A52d698EecA5a759E2E4469432C090000000000000000000000;
-    bytes32 internal constant ALGEBRA_POOL_SS_INIT_CODE_HASH = 0xf96d2474815c32e070cd63233f06af5413efc5dcb430aee4ff18cc29007c562d;
-
-    bytes32 internal constant DTX_FF_FACTORY = 0xfffCA1AEf282A99390B62Ca8416a68F5747716260c0000000000000000000000;
-    bytes32 internal constant DTX_POOL_INIT_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
-
-    bytes32 internal constant UNISWAP_V3_FF_FACTORY = 0xff75FC67473A91335B5b8F8821277262a13B38c9b30000000000000000000000;
-    bytes32 internal constant UNISWAP_V3_INIT_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
-
-    bytes32 internal constant PANKO_FF_FACTORY = 0xff7DD105453D0AEf177743F5461d7472cC779e63f70000000000000000000000;
-    bytes32 internal constant PANKO_INIT_CODE_HASH = 0x72390f3f9e3d8044b0b3a9836ba01a85bb91416ad47a08360a78788e9602bd5e;
-
     constructor() {}
-
-    uint256 internal constant UINT16_MASK = 0xffff;
 
     /// @dev Swap Uniswap V3 style exact in
     /// the calldata arrives as

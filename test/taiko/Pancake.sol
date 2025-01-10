@@ -9,6 +9,8 @@ import "./DeltaSetup.f.sol";
 contract PancakeTypeTest is DeltaSetup {
     address internal constant PANKO_STABLE_USDT_USDC_POOl = 0x3136Ef69a9E55d7769cFED39700799Bb328d9B46;
 
+    uint8 internal constant PANCAKE_STABLE_SELECTOR = 3;
+
     TestQuoterTaiko testQuoter1;
 
     function setUp() public virtual override {
@@ -207,7 +209,7 @@ contract PancakeTypeTest is DeltaSetup {
         uint8 indexIn = uint8(getPankoStableIndex(tokenIn));
         uint8 indexOut = uint8(getPankoStableIndex(tokenOut));
         address pool = PANKO_STABLE_USDT_USDC_POOl;
-        return abi.encodePacked(tokenIn, uint8(0), poolId, pool, indexIn, indexOut, uint8(0), tokenOut);
+        return abi.encodePacked(tokenIn, uint8(0), poolId, pool, indexIn, indexOut, PANCAKE_STABLE_SELECTOR, tokenOut);
     }
 
     /** STABLE STYLE */
@@ -217,7 +219,7 @@ contract PancakeTypeTest is DeltaSetup {
         uint8 indexIn = uint8(getPankoStableIndex(tokenIn));
         uint8 indexOut = uint8(getPankoStableIndex(tokenOut));
         address pool = PANKO_STABLE_USDT_USDC_POOl;
-        return abi.encodePacked(tokenIn, poolId, pool, indexIn, indexOut, uint8(0), tokenOut);
+        return abi.encodePacked(tokenIn, poolId, pool, indexIn, indexOut, PANCAKE_STABLE_SELECTOR, tokenOut);
     }
 
     function getPankoStableIndex(address token) internal pure returns (uint) {
@@ -233,7 +235,7 @@ contract PancakeTypeTest is DeltaSetup {
         uint8 indexIn = uint8(getPankoStableIndex(tokenIn));
         uint8 indexOut = uint8(getPankoStableIndex(mid));
         address pool = PANKO_STABLE_USDT_USDC_POOl;
-        data = abi.encodePacked(tokenIn, uint8(0), poolId, pool, indexIn, indexOut, uint8(0), mid);
+        data = abi.encodePacked(tokenIn, uint8(0), poolId, pool, indexIn, indexOut, PANCAKE_STABLE_SELECTOR, mid);
         uint16 fee = 2500;
         poolId = DexMappingsTaiko.PANKO_DEX_ID;
         pool = testQuoter._v3TypePool(mid, tokenOut, fee, poolId);
@@ -245,7 +247,7 @@ contract PancakeTypeTest is DeltaSetup {
         uint8 indexIn = uint8(getPankoStableIndex(tokenIn));
         uint8 indexOut = uint8(getPankoStableIndex(mid));
         address pool = PANKO_STABLE_USDT_USDC_POOl;
-        data = abi.encodePacked(tokenIn, poolId, pool, indexIn, indexOut, uint8(0), mid);
+        data = abi.encodePacked(tokenIn, poolId, pool, indexIn, indexOut, PANCAKE_STABLE_SELECTOR, mid);
         uint16 fee = 2500;
         poolId = DexMappingsTaiko.PANKO_DEX_ID;
         pool = testQuoter._v3TypePool(mid, tokenOut, fee, poolId);
@@ -261,7 +263,7 @@ contract PancakeTypeTest is DeltaSetup {
         uint8 indexIn = uint8(getPankoStableIndex(mid));
         uint8 indexOut = uint8(getPankoStableIndex(tokenOut));
         pool = PANKO_STABLE_USDT_USDC_POOl;
-        return abi.encodePacked(data, abi.encodePacked(uint8(0), poolId, pool, indexIn, indexOut, uint8(0), tokenOut));
+        return abi.encodePacked(data, abi.encodePacked(uint8(0), poolId, pool, indexIn, indexOut, PANCAKE_STABLE_SELECTOR, tokenOut));
     }
 
     function getQuoterExactInMultiSgETH(address tokenIn, address mid, address tokenOut) internal view returns (bytes memory data) {
@@ -273,6 +275,6 @@ contract PancakeTypeTest is DeltaSetup {
         uint8 indexIn = uint8(getPankoStableIndex(mid));
         uint8 indexOut = uint8(getPankoStableIndex(tokenOut));
         pool = PANKO_STABLE_USDT_USDC_POOl;
-        return abi.encodePacked(data, abi.encodePacked(poolId, pool, indexIn, indexOut, uint8(0), tokenOut));
+        return abi.encodePacked(data, abi.encodePacked(poolId, pool, indexIn, indexOut, PANCAKE_STABLE_SELECTOR, tokenOut));
     }
 }

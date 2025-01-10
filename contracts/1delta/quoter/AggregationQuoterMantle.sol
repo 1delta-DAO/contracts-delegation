@@ -623,7 +623,7 @@ contract OneDeltaQuoterMantle is PoolGetter, DexMappings {
                 }
                 amountIn = quoteDodoV2ExactIn(pair, sellQuote, amountIn);
                 path = path[DODO_PARAM_LENGTH:];
-            } else if (poolId == CURVE_NG_ID) {
+            } else if (poolId == CURVE_RECEIVED_ID) {
                 uint8 indexIn;
                 uint8 indexOut;
                 uint8 selectorId;

@@ -6,124 +6,12 @@ pragma solidity 0.8.28;
 * Author: Achthar | 1delta 
 /******************************************************************************/
 
-import {CurveSwapper} from "./Curve.sol";
-
 // solhint-disable max-line-length
 
 /**
- * @title Exotic swapper contract
- * @notice Typically includes DEXs that do not fall into a broader category
+ * @title LB swapper contract
  */
-abstract contract ExoticSwapper is CurveSwapper {
-    /// @dev Maximum high path length of a dex that only has a pool address reference
-    uint256 internal constant RECEIVER_OFFSET_SINGLE_LENGTH_ADDRESS = 64;
-    uint256 internal constant MAX_SINGLE_LENGTH_ADDRESS = 65;
-    uint256 internal constant MAX_SINGLE_LENGTH_ADDRESS_HIGH = 66;
-    
-    /// @dev Length of a swap that only has a pool address reference
-    uint256 internal constant SKIP_LENGTH_ADDRESS = 42; // = 20+1+1+20
-
-    /// @dev Maximum high path length for pool address and param (u8)
-    uint256 internal constant RECEIVER_OFFSET_SINGLE_LENGTH_ADDRESS_AND_PARAM = 65;
-    uint256 internal constant MAX_SINGLE_LENGTH_ADDRESS_AND_PARAM = 66;
-    uint256 internal constant MAX_SINGLE_LENGTH_ADDRESS_AND_PARAM_HIGH = 67;
-    
-    /// @dev Length of a swap that only has a pool address an param (u8)
-    uint256 internal constant SKIP_LENGTH_ADDRESS_AND_PARAM = 43; // = 20+1+1+20
-
-    /// @dev WooFi rebate receiver
-    address internal constant REBATE_RECIPIENT = 0x0000000000000000000000000000000000000000;
-
-    constructor() {}
-
-    /**
-     * Swaps exact input on WOOFi DEX
-     * @param tokenIn input
-     * @param tokenOut output
-     * @param amountIn sell amount
-     * @return amountOut buy amount
-     */
-    function swapWooFiExactIn(
-        address tokenIn,
-        address tokenOut,
-        address pool,
-        uint256 amountIn,
-        address receiver
-    ) internal returns (uint256 amountOut) {
-        assembly {
-            let ptr := mload(0x40)
-            // selector for swap(address,address,uint256,uint256,address,address)
-            mstore(
-                ptr, //
-                0x7dc2038200000000000000000000000000000000000000000000000000000000
-            )
-            mstore(add(ptr, 0x04), tokenIn)
-            mstore(add(ptr, 0x24), tokenOut)
-            mstore(add(ptr, 0x44), amountIn)
-            mstore(add(ptr, 0x64), 0x0) // amountOutMin unused
-            mstore(add(ptr, 0x84), receiver) // recipient
-            mstore(add(ptr, 0xA4), REBATE_RECIPIENT) // rebateTo
-            if iszero(
-                call(
-                    gas(),
-                    pool,
-                    0x0, // no native transfer
-                    ptr,
-                    0xC4, // input length 196
-                    ptr, // store output here
-                    0x20 // output is just uint
-                )
-            ) {
-                returndatacopy(0, 0, returndatasize())
-                revert(0, returndatasize())
-            }
-
-            amountOut := mload(ptr)
-        }
-    }
-
-    /**
-     * Swaps exact input on KTX spot DEX
-     * @param tokenIn input
-     * @param tokenOut output
-     * @param vault GMX fork vault address
-     * @return amountOut buy amount
-     */
-    function swapGMXExactIn(
-        address tokenIn, 
-        address tokenOut, 
-        address vault,
-        address receiver
-    ) internal returns (uint256 amountOut) {
-        assembly {
-            let ptr := mload(0x40)
-            // selector for swap(address,address,address)
-            mstore(
-                ptr, //
-                0x9331621200000000000000000000000000000000000000000000000000000000
-            )
-            mstore(add(ptr, 0x04), tokenIn)
-            mstore(add(ptr, 0x24), tokenOut)
-            mstore(add(ptr, 0x44), receiver)
-            if iszero(
-                call(
-                    gas(),
-                    vault,
-                    0x0, // no native transfer
-                    ptr,
-                    0x64, // input length 66 bytes
-                    ptr, // store output here
-                    0x20 // output is just uint
-                )
-            ) {
-                returndatacopy(0, 0, returndatasize())
-                revert(0, returndatasize())
-            }
-
-            amountOut := mload(ptr)
-        }
-    }
-
+abstract contract LBSwapper {
     /**
      * Executes a swap on merchant Moe's LB exact in
      * The pair address is fetched from the factory
@@ -135,7 +23,7 @@ abstract contract ExoticSwapper is CurveSwapper {
     function swapLBexactIn(
         address tokenOut,
         address pair,
-        address receiver
+        address receiver //
     ) internal returns (uint256 amountOut) {
         assembly {
             // getTokenY()
@@ -151,9 +39,9 @@ abstract contract ExoticSwapper is CurveSwapper {
                     0x20
                 )
             ) {
-                revert (0, 0)
+                revert(0, 0)
             }
-            let swapForY := eq(tokenOut, mload(0x0)) 
+            let swapForY := eq(tokenOut, mload(0x0))
             ////////////////////////////////////////////////////
             // Execute swap function
             ////////////////////////////////////////////////////
@@ -188,9 +76,9 @@ abstract contract ExoticSwapper is CurveSwapper {
      */
     function swapLBexactOut(
         address pair,
-        bool swapForY, 
-        uint256 amountOut, 
-        address receiver
+        bool swapForY,
+        uint256 amountOut,
+        address receiver //
     ) internal {
         assembly {
             let ptr := mload(0x40)
@@ -225,9 +113,9 @@ abstract contract ExoticSwapper is CurveSwapper {
             }
             // revert if we did not get enough
             if lt(amountOutReceived, amountOut) {
-                revert (0, 0)
+                revert(0, 0)
             }
-        }    
+        }
     }
 
     /**
@@ -240,7 +128,7 @@ abstract contract ExoticSwapper is CurveSwapper {
     function getLBAmountIn(
         address tokenOut,
         address pair,
-        uint256 amountOut
+        uint256 amountOut //
     ) internal view returns (uint256 amountIn, bool swapForY) {
         assembly {
             // getTokenY()
@@ -256,7 +144,7 @@ abstract contract ExoticSwapper is CurveSwapper {
                     0x20
                 )
             ) {
-                revert (0, 0)
+                revert(0, 0)
             }
             // override swapForY
             swapForY := eq(tokenOut, mload(0x0))

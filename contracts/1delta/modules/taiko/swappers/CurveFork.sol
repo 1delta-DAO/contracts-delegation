@@ -6,40 +6,46 @@ pragma solidity 0.8.28;
 * Author: Achthar | 1delta 
 /******************************************************************************/
 
-import {UniTypeSwapper} from "./UniType.sol";
-
 /**
- * @title Curve swapper contract
- * @notice We do Curve stuff here
+ * @title Curve swapper contract for forks that are very much like curve but with some
+ * minor differences
  */
-abstract contract CurveSwapper is UniTypeSwapper {
-    // slot to track approvals
-    bytes32 internal constant APPROVAL_SLOT = 0xf92cf179e3ab8e843f6d42d0191a950808c083864fd707bf1142aab5c60b560b;
+abstract contract CurveForkSwapper {
+    // approval slot
+    bytes32 private constant CALL_MANAGEMENT_APPROVALS = 0x1aae13105d9b6581c36534caba5708726e5ea1e03175e823c989a5756966d1f3;
 
-    /** Standard curve pool selectors */
+    /// @dev Maximum Uint256 value
+    uint256 private constant MAX_UINT256 = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
+
+    /** Curve Fork selectors */
 
     /// @notice selector exchange(uint256,uint256,uint256,uint256)
     bytes32 private constant EXCHANGE = 0x5b41b90800000000000000000000000000000000000000000000000000000000;
 
     /// @notice selector exchange_underlying(uint256,uint256,uint256,uint256)
-    bytes32 private constant EXCHANGE_UNDERLYING = 0xa6417ed600000000000000000000000000000000000000000000000000000000;
+    bytes32 private constant EXCHANGE_UNDERLYING = 0x65b2489b00000000000000000000000000000000000000000000000000000000;
 
-    /// @notice Curve params lengths
-    uint256 internal constant SKIP_LENGTH_CURVE = 45; // = 20+1+1+20+1+1+1
-    uint256 internal constant RECEIVER_OFFSET_CURVE = 67; // = SKIP_LENGTH_CURVE+20+2
-    uint256 internal constant MAX_SINGLE_LENGTH_CURVE = 68; // = SKIP_LENGTH_CURVE+20+1+2
-    uint256 internal constant MAX_SINGLE_LENGTH_CURVE_HIGH = 69; // = SKIP_LENGTH_CURVE+20+1+2+1
+    /** Erc20 selectors */
 
-    constructor() {}
+    /// @dev selector for approve(address,uint256)
+    bytes32 private constant ERC20_APPROVE = 0x095ea7b300000000000000000000000000000000000000000000000000000000;
+
+    /// @dev selector for transferFrom(address,address,uint256)
+    bytes32 private constant ERC20_TRANSFER_FROM = 0x23b872dd00000000000000000000000000000000000000000000000000000000;
+
+    /// @dev selector for transfer(address,uint256)
+    bytes32 private constant ERC20_TRANSFER = 0xa9059cbb00000000000000000000000000000000000000000000000000000000;
+
+    /// @dev selector for balanceOf(address)
+    bytes32 private constant ERC20_BALANCE_OF = 0x70a0823100000000000000000000000000000000000000000000000000000000;
 
     /**
-     * Swaps using a standard curve pool
-     * Data is supposed to be packed as follows
+     * Swaps using a forked curve pool tat forgot to return the output amount
      * tokenIn | actionId | dexId | pool | i | j | sm | tokenOut
      * sm is the selector,
      * i,j are the swap indexes for the pool
      */
-    function _swapCurveGeneral(
+    function _swapCurveFork(
         uint256 pathOffset,
         uint256 amountIn,
         address payer,
@@ -101,7 +107,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
 
             // get the approval flag slot first
             mstore(0x0, token) // store tokenIn in scrap
-            mstore(0x20, APPROVAL_SLOT) // add slot after
+            mstore(0x20, CALL_MANAGEMENT_APPROVALS) // add slot after
             let slot := keccak256(0x0, 0x40)
 
             // check if approval flag is zero
@@ -124,41 +130,8 @@ abstract contract CurveSwapper is UniTypeSwapper {
                 sstore(slot, 1) // set flag in approval slot
             }
 
-            ////////////////////////////////////////////////////
-            // Execute swap function
-            ////////////////////////////////////////////////////
-            switch and(shr(72, indexData), 0xff) // selectorId
-            case 0 {
-                // selector for exchange(uint256,uint256,uint256,uint256)
-                mstore(ptr, EXCHANGE)
-                mstore(add(ptr, 0x4), and(shr(88, indexData), 0xff))
-                mstore(add(ptr, 0x24), and(shr(80, indexData), 0xff))
-                mstore(add(ptr, 0x44), amountIn)
-                mstore(add(ptr, 0x64), 0) // min out is zero, we validate slippage at the end
-                if iszero(call(gas(), pool, 0x0, ptr, 0x84, ptr, 0x20)) {
-                    returndatacopy(0, 0, returndatasize())
-                    revert(0, returndatasize())
-                }
-                indexData := 0xf
-            }
-            case 1 {
-                // selector for exchange_underlying(uint256,uint256,uint256,uint256)
-                mstore(ptr, EXCHANGE_UNDERLYING)
-                mstore(add(ptr, 0x4), and(shr(88, indexData), 0xff))
-                mstore(add(ptr, 0x24), and(shr(80, indexData), 0xff))
-                mstore(add(ptr, 0x44), amountIn)
-                mstore(add(ptr, 0x64), 0) // min out is zero, we validate slippage at the end
-                if iszero(call(gas(), pool, 0x0, ptr, 0x84, ptr, 0x20)) {
-                    returndatacopy(0, 0, returndatasize())
-                    revert(0, returndatasize())
-                }
-                indexData := 0xf
-            }
-            default {
-                revert(0, 0)
-            }
-
             // we need to get the output amount as these cuve forks
+
             // might not return amountOut - assign tokenOut to `token`
             token := shr(96, calldataload(add(pathOffset, 45))) // tokenIn, pool + 5x uint8 (i,j,s)
             mstore(0x0, ERC20_BALANCE_OF)
@@ -170,12 +143,60 @@ abstract contract CurveSwapper is UniTypeSwapper {
                     token, // token
                     0x0,
                     0x24,
+                    ptr, // output to ptr, we need the stuff at 0x0 later
+                    0x20
+                )
+            )
+
+            amountOut := mload(ptr)
+
+            ////////////////////////////////////////////////////
+            // Execute swap function
+            ////////////////////////////////////////////////////
+            switch and(shr(72, indexData), 0xff) // selectorId
+            case 3 {
+                // selector for exchange(uint256,uint256,uint256,uint256)
+                mstore(ptr, EXCHANGE)
+                mstore(add(ptr, 0x4), and(shr(88, indexData), 0xff))
+                mstore(add(ptr, 0x24), and(shr(80, indexData), 0xff))
+                mstore(add(ptr, 0x44), amountIn)
+                mstore(add(ptr, 0x64), 0) // min out is zero, we validate slippage at the end
+                if iszero(call(gas(), pool, 0x0, ptr, 0x84, 0x0, 0x0)) { // no output
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
+                indexData := 0xf
+            }
+            case 5 {
+                // selector for exchange_underlying(uint256,uint256,uint256,uint256)
+                mstore(ptr, EXCHANGE_UNDERLYING)
+                mstore(add(ptr, 0x4), and(shr(88, indexData), 0xff))
+                mstore(add(ptr, 0x24), and(shr(80, indexData), 0xff))
+                mstore(add(ptr, 0x44), amountIn)
+                mstore(add(ptr, 0x64), 0) // min out is zero, we validate slippage at the end
+                if iszero(call(gas(), pool, 0x0, ptr, 0x84, 0x0, 0x0)) { // no output
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
+                indexData := 0xf
+            }
+            default {
+                revert(0, 0)
+            }
+
+            // call to token - note that 0x-0x24 still holds the respective calldata
+            pop(
+                staticcall(
+                    gas(),
+                    token, // token
                     0x0,
+                    0x24,
+                    0x0, // output to ptr
                     0x20
                 )
             )
             // load the retrieved balance
-            amountOut := mload(0x0)
+            amountOut := sub(mload(0x0), amountOut)
 
             ////////////////////////////////////////////////////
             // Send funds to receiver if needed

@@ -328,15 +328,16 @@ contract OneDeltaQuoterTaiko is PoolGetterTaiko, DexMappings {
                 path = path[CL_PARAM_LENGTH:];
             }
             // curve
-            else if (poolId == CURVE_V1_STANDARD_ID) {
-                uint8 indexIn;
-                uint8 indexOut;
+            else if (poolId < CURVE_V1_MAX_ID || poolId == CURVE_RECEIVED_ID) {
+                uint256 indexIn;
+                uint256 indexOut;
+                uint256 selectorId;
                 assembly {
                     let indexData := calldataload(add(path.offset, 21))
                     indexIn := and(shr(88, indexData), 0xff)
                     indexOut := and(shr(80, indexData), 0xff)
                 }
-                amountIn = quoteCurveGeneral(indexIn, indexOut, pair, amountIn);
+                amountIn = quoteCurveGeneralAndReceived(indexIn, indexOut, selectorId, pair, amountIn);
                 path = path[CURVE_PARAM_LENGTH:];
             }
             // v2 types
@@ -484,10 +485,23 @@ contract OneDeltaQuoterTaiko is PoolGetterTaiko, DexMappings {
         }
     }
 
-    function quoteCurveGeneral(uint256 indexIn, uint256 indexOut, address pool, uint256 amountIn) internal view returns (uint256 amountOut) {
+    function quoteCurveGeneralAndReceived(
+        uint256 indexIn,
+        uint256 indexOut,
+        uint256 selectorId,
+        address pool,
+        uint256 amountIn
+    ) internal view returns (uint256 amountOut) {
         assembly {
-            // selector for get_dy(uint256,uint256,uint256)
-            mstore(0xB00, 0x556d6e9f00000000000000000000000000000000000000000000000000000000)
+            switch lt(selectorId, 2)
+            case 0 {
+                // selector for get_dy(int128,int128,uint256)
+                mstore(0xB00, 0x5e0d443f00000000000000000000000000000000000000000000000000000000)
+            }
+            default {
+                // selector for get_dy(uint256,uint256,uint256)
+                mstore(0xB00, 0x556d6e9f00000000000000000000000000000000000000000000000000000000)
+            }
             mstore(0xB04, indexIn)
             mstore(0xB24, indexOut)
             mstore(0xB44, amountIn)

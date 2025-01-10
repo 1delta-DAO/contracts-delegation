@@ -284,7 +284,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
      * sm is the selector,
      * i,j are the swap indexes for the pool
      */
-    function _swapCurveNG(
+    function _swapCurveReceived(
         uint256 pathOffset,
         uint256 amountIn,
         address receiver //
