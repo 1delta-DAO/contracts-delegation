@@ -9,10 +9,10 @@ pragma solidity ^0.8.28;
 import {BaseLending} from "./BaseLending.sol";
 import {PermitUtils} from "../shared/permit/PermitUtils.sol";
 import {DexMappings} from "../shared/swapper/DexMappings.sol";
+import {ExoticOffsets} from "../shared/swapper/ExoticOffsets.sol";
 import {UnoSwapper} from "../shared/swapper/UnoSwapper.sol";
 import {SyncSwapper} from "../shared/swapper/SyncSwapper.sol";
 import {DodoV2Swapper} from "../shared/swapper/DodoV2Swapper.sol";
-import {ExoticOffsets} from "../shared/swapper/ExoticOffsets.sol";
 import {BalancerSwapper} from "./swappers/Balancer.sol";
 import {CurveForkSwapper} from "./swappers/CurveFork.sol";
 
@@ -30,12 +30,12 @@ import {CurveForkSwapper} from "./swappers/CurveFork.sol";
 abstract contract BaseSwapper is BaseLending, 
     PermitUtils, 
     UnoSwapper, 
-    DexMappings, 
+    DexMappings,
+    ExoticOffsets,
     DodoV2Swapper, 
     BalancerSwapper, 
     SyncSwapper,
-    CurveForkSwapper,
-    ExoticOffsets
+    CurveForkSwapper //
 {
 
     /// @dev Mask of lower 1 byte.

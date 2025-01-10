@@ -9,12 +9,12 @@ pragma solidity ^0.8.28;
 import {BaseLending} from "./BaseLending.sol";
 import {PermitUtils} from "../shared/permit/PermitUtils.sol";
 import {DexMappings} from "../shared/swapper/DexMappings.sol";
+import {ExoticOffsets} from "../shared/swapper/ExoticOffsets.sol";
 import {UnoSwapper} from "../shared/swapper/UnoSwapper.sol";
 import {GMXSwapper} from "../shared/swapper/GMXSwapper.sol";
 import {LBSwapper} from "../shared/swapper/LBSwapper.sol";
 import {BalancerSwapper} from "../shared/swapper/BalancerSwapper.sol";
 import {CurveMetaSwapper} from "../shared/swapper/CurveMetaSwapper.sol";
-import {ExoticOffsets} from "../shared/swapper/ExoticOffsets.sol";
 import {WooFiSwapper} from "./swappers/WooFi.sol";
 
 // solhint-disable max-line-length
@@ -31,14 +31,14 @@ import {WooFiSwapper} from "./swappers/WooFi.sol";
 abstract contract BaseSwapper is
     BaseLending,
     PermitUtils,
+    DexMappings,
+    ExoticOffsets,
     UnoSwapper,
     CurveMetaSwapper,
-    DexMappings,
     WooFiSwapper,
     BalancerSwapper,
     LBSwapper,
-    GMXSwapper,
-    ExoticOffsets //
+    GMXSwapper //
 {
     /// @dev Mask of lower 1 byte.
     uint256 private constant UINT8_MASK = 0xff;
