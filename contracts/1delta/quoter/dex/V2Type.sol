@@ -2,10 +2,7 @@
 
 pragma solidity ^0.8.28;
 
-/**
- * Quoter contract for Uni V2 type Dexs (incl Solidly V2)
- */
-contract V2Quoter {
+abstract contract V2TypeQuoter {
     uint256 internal constant SCALE_18 = 1e18;
 
     /// @dev calculate amountOut for uniV2 style pools - does not require overflow checks
@@ -85,7 +82,7 @@ contract V2Quoter {
      * @param pId DEX identifier
      * @return x input amount
      */
-    function getV2AmountIn(
+    function getV2TypeAmountIn(
         address pair,
         address tokenIn, // some DEXs are more efficiently queried directly
         address tokenOut,
