@@ -10,7 +10,7 @@ import "./DeltaSetup.f.sol";
  */
 contract FlashSwapExacInTest is DeltaSetup {
     uint8 ZERO_8 = 0;
-    uint8 STRATUM_SWAP_ID = 5;
+    uint8 STRATUM_SWAP_ID = 200;
 
     function setUp() public virtual override {
         vm.createSelectFork({blockNumber: 63740637, urlOrAlias: "https://mantle-mainnet.public.blastapi.io"});

@@ -134,7 +134,6 @@ contract StratumCurveTest is DeltaSetup {
         return
             abi.encodePacked(
                 tokenIn,
-                uint8(0),
                 poolId,
                 STRATUM_ETH_POOL,
                 abi.encodePacked(getTokenIdEth(tokenIn), getTokenIdEth(tokenOut)),

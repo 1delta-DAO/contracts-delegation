@@ -209,7 +209,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
                 }
                 indexData := 0
             }
-            case 5 {
+            case 200 {
                 // selector for swap(uint8,uint8,uint256,uint256,uint256)
                 mstore(ptr, SWAP)
                 mstore(add(ptr, 0x4), and(shr(88, indexData), 0xff))
