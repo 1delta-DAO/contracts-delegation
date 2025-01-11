@@ -1,6 +1,6 @@
 
 import { ethers } from "hardhat";
-import { OneDeltaQuoterArbitrum__factory } from "../../types";
+import { QuoterArbitrum__factory } from "../../types";
 import { ARBITRUM_CONFIGS } from "./utils";
 
 async function main() {
@@ -11,7 +11,7 @@ async function main() {
     console.log("operator", operator.address, "on", chainId)
 
     console.log("deploy quoter")
-    const oneDeltaManagement = await new OneDeltaQuoterArbitrum__factory(operator).deploy(ARBITRUM_CONFIGS)
+    const oneDeltaManagement = await new QuoterArbitrum__factory(operator).deploy(ARBITRUM_CONFIGS)
 
     console.log("quoter:", oneDeltaManagement.address)
 }

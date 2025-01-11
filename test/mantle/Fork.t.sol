@@ -10,7 +10,7 @@ contract ForkTestMantle is DeltaSetup {
         address proxy = 0x9bc92bF848FaF2355c429c54d1edE3e767bDd790;
         address oldModule = 0xCB9FF5D38285CFfd44ba0DA269f26cF8a22baDDB; // 0x74E95F3Ec71372756a01eB9317864e3fdde1AC53;
         upgradeExistingDelta(proxy, admin, oldModule);
-        quoter = new OneDeltaQuoter();
+        quoter = new QuoterMantle();
     }
 
     // skipt this one for now

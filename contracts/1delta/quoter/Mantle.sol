@@ -17,7 +17,7 @@ import {KTXQuoterMantle} from "./dex/KTXMantle.sol";
  * Quoter contract
  * Paths have to be encoded as follows: token0 (address) | param0 (uint24) | poolId (uint8) | token1 (address) |
  */
-contract OneDeltaQuoter is
+contract QuoterMantle is
     DodoV2Quoter,
     CurveQuoter,
     LBQuoter,

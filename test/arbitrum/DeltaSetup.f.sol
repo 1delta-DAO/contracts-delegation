@@ -3,7 +3,7 @@ pragma solidity ^0.8.19;
 
 import {AddressesArbitrum} from "./utils/CommonAddresses.f.sol";
 import {TokensArbitrum} from "./utils/tokens.sol";
-import {OneDeltaQuoter} from "../../contracts/1delta/quoter/Arbitrum.sol";
+import {QuoterArbitrum} from "../../contracts/1delta/quoter/Arbitrum.sol";
 import {PoolGetter} from "../../contracts/1delta/quoter/poolGetter/Arbitrum.sol";
 import {MockRouter} from "../../contracts/mocks/MockRouter.sol";
 import {ComposerUtils, Commands} from "../shared/utils/ComposerUtils.sol";
@@ -58,7 +58,7 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
     IModuleConfig internal deltaConfig;
     IManagement internal management;
     PoolGetter testQuoter;
-    OneDeltaQuoter quoter;
+    QuoterArbitrum quoter;
     OneDeltaComposerArbitrum internal aggregator;
     MockRouter router;
 
@@ -382,7 +382,7 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
 
     function initializeDeltaBase() internal virtual {
         testQuoter = new PoolGetter();
-        quoter = new OneDeltaQuoter();
+        quoter = new QuoterArbitrum();
     }
 
     function upgradeExistingDelta(address proxy, address admin, address oldModule) internal virtual {

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {AddressesTaiko, IFactoryFeeGetter} from "./utils/CommonAddresses.f.sol";
-import {OneDeltaQuoter} from "../../contracts/1delta/quoter/Taiko.sol";
+import {QuoterTaiko} from "../../contracts/1delta/quoter/Taiko.sol";
 import {PoolGetter} from "../../contracts/1delta/quoter/poolGetter/Taiko.sol";
 import {ComposerUtils, Commands} from "../shared/utils/ComposerUtils.sol";
 
@@ -52,7 +52,7 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
     IModuleConfig internal deltaConfig;
     IManagement internal management;
     PoolGetter testQuoter;
-    OneDeltaQuoter quoter;
+    QuoterTaiko quoter;
     OneDeltaComposerTaiko internal aggregator;
 
     mapping(address => mapping(uint16 => address)) internal collateralTokens;
@@ -174,7 +174,7 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
 
     function initializeDeltaBase() internal virtual {
         testQuoter = new PoolGetter();
-        quoter = new OneDeltaQuoter();
+        quoter = new QuoterTaiko();
     }
 
     function initializeDeltaHana() internal virtual {

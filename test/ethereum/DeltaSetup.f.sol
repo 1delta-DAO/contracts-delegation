@@ -2,7 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {AddressesEthereum} from "./utils/CommonAddresses.f.sol";
-import {OneDeltaQuoter} from "../../contracts/1delta/quoter/Polygon.sol";
+import {QuoterPolygon} from "../../contracts/1delta/quoter/Polygon.sol";
 import {PoolGetter} from "../../contracts/1delta/quoter/poolGetter/Polygon.sol";
 import {MockRouter} from "../../contracts/mocks/MockRouter.sol";
 import {ComposerUtils, Commands} from "../shared/utils/ComposerUtils.sol";
@@ -46,7 +46,7 @@ abstract contract DeltaSetup is AddressesEthereum, ComposerUtils, Script, Test {
     IModuleConfig internal deltaConfig;
     IManagement internal management;
     PoolGetter testQuoter;
-    OneDeltaQuoter quoter;
+    QuoterPolygon quoter;
     OneDeltaComposerEthereum internal aggregator;
     MockRouter router;
 
@@ -145,7 +145,7 @@ abstract contract DeltaSetup is AddressesEthereum, ComposerUtils, Script, Test {
 
     function initializeDeltaBase() internal virtual {
         testQuoter = new PoolGetter();
-        quoter = new OneDeltaQuoter();
+        quoter = new QuoterPolygon();
     }
 
     function initializeDeltaAaveV3() internal virtual {

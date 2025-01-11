@@ -18,7 +18,7 @@ contract UniV3TypeTest is DeltaSetup {
         intitializeFullDelta();
 
         testQuoter = new PoolGetter();
-        quoter = new OneDeltaQuoter();
+        quoter = new QuoterTaiko();
     }
 
     function test_algebra_taiko() external {

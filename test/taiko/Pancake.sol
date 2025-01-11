@@ -17,7 +17,7 @@ contract PancakeTypeTest is DeltaSetup {
         intitializeFullDelta();
 
         testQuoter = new PoolGetter();
-        quoter = new OneDeltaQuoter();
+        quoter = new QuoterTaiko();
     }
 
     function test_taiko_panko_v3_usdc_spot_exact_in() external {

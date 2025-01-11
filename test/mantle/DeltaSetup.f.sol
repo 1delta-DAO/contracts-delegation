@@ -2,7 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {AddressesMantle, IFactoryFeeGetter} from "./utils/CommonAddresses.f.sol";
-import {OneDeltaQuoter} from "../../contracts/1delta/quoter/Mantle.sol";
+import {QuoterMantle} from "../../contracts/1delta/quoter/Mantle.sol";
 import {PoolGetter} from "../../contracts/1delta/quoter/poolGetter/Mantle.sol";
 import {ComposerUtils, Commands} from "../shared/utils/ComposerUtils.sol";
 
@@ -51,7 +51,7 @@ contract DeltaSetup is AddressesMantle, ComposerUtils, Script, Test {
     IModuleConfig internal deltaConfig;
     IManagement internal management;
     PoolGetter testQuoter;
-    OneDeltaQuoter quoter;
+    QuoterMantle quoter;
     OneDeltaComposerMantle internal aggregator;
 
     mapping(address => mapping(uint16 => address)) internal collateralTokens;
@@ -173,7 +173,7 @@ contract DeltaSetup is AddressesMantle, ComposerUtils, Script, Test {
 
     function initializeDeltaBase() internal virtual {
         testQuoter = new PoolGetter();
-        quoter = new OneDeltaQuoter();
+        quoter = new QuoterMantle();
     }
 
     function initializeDeltaLendle() internal virtual {

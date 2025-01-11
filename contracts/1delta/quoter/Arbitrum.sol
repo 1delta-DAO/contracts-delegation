@@ -16,7 +16,7 @@ import {GMXQuoterArbitrum} from "./dex/GMXArbitrum.sol";
  * Quoter contract
  * Paths have to be encoded as follows: token0 (address) | param0 (uint24) | poolId (uint8) | token1 (address) |
  */
-contract OneDeltaQuoter is
+contract QuoterArbitrum is
     DodoV2Quoter,
     CurveQuoter,
     LBQuoter,

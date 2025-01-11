@@ -2,7 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {AddressesPolygon} from "./utils/CommonAddresses.f.sol";
-import {OneDeltaQuoter} from "../../contracts/1delta/quoter/Polygon.sol";
+import {QuoterPolygon} from "../../contracts/1delta/quoter/Polygon.sol";
 import {PoolGetter} from "../../contracts/1delta/quoter/poolGetter/Polygon.sol";
 import {MockRouter} from "../../contracts/mocks/MockRouter.sol";
 import {ComposerUtils, Commands} from "../shared/utils/ComposerUtils.sol";
@@ -54,7 +54,7 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
     IModuleConfig internal deltaConfig;
     IManagement internal management;
     PoolGetter testQuoter;
-    OneDeltaQuoter quoter;
+    QuoterPolygon quoter;
     OneDeltaComposerPolygon internal aggregator;
     MockRouter router;
 
@@ -291,7 +291,7 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
 
     function initializeDeltaBase() internal virtual {
         testQuoter = new PoolGetter();
-        quoter = new OneDeltaQuoter();
+        quoter = new QuoterPolygon();
     }
 
     function upgradeExistingDelta(address proxy, address admin, address oldModule) internal virtual {

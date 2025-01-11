@@ -19,7 +19,7 @@ contract UniV3TypeTest is DeltaSetup {
         intitializeFullDelta();
 
         testQuoter = new PoolGetter();
-        quoter = new OneDeltaQuoter();
+        quoter = new QuoterTaiko();
     }
 
     function test_dtx_usdc_spot_exact_in() external {
