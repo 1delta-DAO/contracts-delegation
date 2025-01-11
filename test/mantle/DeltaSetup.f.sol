@@ -3,6 +3,7 @@ pragma solidity ^0.8.19;
 
 import {AddressesMantle, IFactoryFeeGetter} from "./utils/CommonAddresses.f.sol";
 import "../../contracts/1delta/quoter/test/TestQuoterMantle.sol";
+import "../../contracts/1delta/quoter/AggregationQuoter.sol";
 import {ComposerUtils, Commands} from "../shared/utils/ComposerUtils.sol";
 
 // interfaces
@@ -50,6 +51,7 @@ contract DeltaSetup is AddressesMantle, ComposerUtils, Script, Test {
     IModuleConfig internal deltaConfig;
     IManagement internal management;
     TestQuoterMantle testQuoter;
+    OneDeltaQuoter quoter;
     OneDeltaComposerMantle internal aggregator;
 
     mapping(address => mapping(uint16 => address)) internal collateralTokens;
@@ -173,16 +175,46 @@ contract DeltaSetup is AddressesMantle, ComposerUtils, Script, Test {
         // quoter
 
         testQuoter = new TestQuoterMantle();
-
+        quoter = new OneDeltaQuoter();
     }
 
     function initializeDeltaLendle() internal virtual {
         // lendle
-        management.addGeneralLenderTokens(TokensMantle.USDC, LendleMantleAssets.USDC_A_TOKEN, LendleMantleAssets.USDC_V_TOKEN, LendleMantleAssets.USDC_S_TOKEN, LenderMappingsMantle.LENDLE_ID);
-        management.addGeneralLenderTokens(TokensMantle.USDT, LendleMantleAssets.USDT_A_TOKEN, LendleMantleAssets.USDT_V_TOKEN, LendleMantleAssets.USDT_S_TOKEN, LenderMappingsMantle.LENDLE_ID);
-        management.addGeneralLenderTokens(TokensMantle.WBTC, LendleMantleAssets.WBTC_A_TOKEN, LendleMantleAssets.WBTC_V_TOKEN, LendleMantleAssets.WBTC_S_TOKEN, LenderMappingsMantle.LENDLE_ID);
-        management.addGeneralLenderTokens(TokensMantle.WETH, LendleMantleAssets.WETH_A_TOKEN, LendleMantleAssets.WETH_V_TOKEN, LendleMantleAssets.WETH_S_TOKEN, LenderMappingsMantle.LENDLE_ID);
-        management.addGeneralLenderTokens(TokensMantle.WMNT, LendleMantleAssets.WMNT_A_TOKEN, LendleMantleAssets.WMNT_V_TOKEN, LendleMantleAssets.WMNT_S_TOKEN, LenderMappingsMantle.LENDLE_ID);
+        management.addGeneralLenderTokens(
+            TokensMantle.USDC,
+            LendleMantleAssets.USDC_A_TOKEN,
+            LendleMantleAssets.USDC_V_TOKEN,
+            LendleMantleAssets.USDC_S_TOKEN,
+            LenderMappingsMantle.LENDLE_ID
+        );
+        management.addGeneralLenderTokens(
+            TokensMantle.USDT,
+            LendleMantleAssets.USDT_A_TOKEN,
+            LendleMantleAssets.USDT_V_TOKEN,
+            LendleMantleAssets.USDT_S_TOKEN,
+            LenderMappingsMantle.LENDLE_ID
+        );
+        management.addGeneralLenderTokens(
+            TokensMantle.WBTC,
+            LendleMantleAssets.WBTC_A_TOKEN,
+            LendleMantleAssets.WBTC_V_TOKEN,
+            LendleMantleAssets.WBTC_S_TOKEN,
+            LenderMappingsMantle.LENDLE_ID
+        );
+        management.addGeneralLenderTokens(
+            TokensMantle.WETH,
+            LendleMantleAssets.WETH_A_TOKEN,
+            LendleMantleAssets.WETH_V_TOKEN,
+            LendleMantleAssets.WETH_S_TOKEN,
+            LenderMappingsMantle.LENDLE_ID
+        );
+        management.addGeneralLenderTokens(
+            TokensMantle.WMNT,
+            LendleMantleAssets.WMNT_A_TOKEN,
+            LendleMantleAssets.WMNT_V_TOKEN,
+            LendleMantleAssets.WMNT_S_TOKEN,
+            LenderMappingsMantle.LENDLE_ID
+        );
 
         collateralTokens[TokensMantle.USDC][LenderMappingsMantle.LENDLE_ID] = LendleMantleAssets.USDC_A_TOKEN;
         collateralTokens[TokensMantle.USDT][LenderMappingsMantle.LENDLE_ID] = LendleMantleAssets.USDT_A_TOKEN;
@@ -208,11 +240,41 @@ contract DeltaSetup is AddressesMantle, ComposerUtils, Script, Test {
 
     function initializeDeltaAurelius() internal virtual {
         // aurelius
-        management.addGeneralLenderTokens(TokensMantle.USDC, AureliusMantleAssets.USDC_A_TOKEN, AureliusMantleAssets.USDC_V_TOKEN, AureliusMantleAssets.USDC_S_TOKEN, LenderMappingsMantle.AURELIUS_ID);
-        management.addGeneralLenderTokens(TokensMantle.USDT, AureliusMantleAssets.USDT_A_TOKEN, AureliusMantleAssets.USDT_V_TOKEN, AureliusMantleAssets.USDT_S_TOKEN, LenderMappingsMantle.AURELIUS_ID);
-        management.addGeneralLenderTokens(TokensMantle.WBTC, AureliusMantleAssets.WBTC_A_TOKEN, AureliusMantleAssets.WBTC_V_TOKEN, AureliusMantleAssets.WBTC_S_TOKEN, LenderMappingsMantle.AURELIUS_ID);
-        management.addGeneralLenderTokens(TokensMantle.WETH, AureliusMantleAssets.WETH_A_TOKEN, AureliusMantleAssets.WETH_V_TOKEN, AureliusMantleAssets.WETH_S_TOKEN, LenderMappingsMantle.AURELIUS_ID);
-        management.addGeneralLenderTokens(TokensMantle.WMNT, AureliusMantleAssets.WMNT_A_TOKEN, AureliusMantleAssets.WMNT_V_TOKEN, AureliusMantleAssets.WMNT_S_TOKEN, LenderMappingsMantle.AURELIUS_ID);
+        management.addGeneralLenderTokens(
+            TokensMantle.USDC,
+            AureliusMantleAssets.USDC_A_TOKEN,
+            AureliusMantleAssets.USDC_V_TOKEN,
+            AureliusMantleAssets.USDC_S_TOKEN,
+            LenderMappingsMantle.AURELIUS_ID
+        );
+        management.addGeneralLenderTokens(
+            TokensMantle.USDT,
+            AureliusMantleAssets.USDT_A_TOKEN,
+            AureliusMantleAssets.USDT_V_TOKEN,
+            AureliusMantleAssets.USDT_S_TOKEN,
+            LenderMappingsMantle.AURELIUS_ID
+        );
+        management.addGeneralLenderTokens(
+            TokensMantle.WBTC,
+            AureliusMantleAssets.WBTC_A_TOKEN,
+            AureliusMantleAssets.WBTC_V_TOKEN,
+            AureliusMantleAssets.WBTC_S_TOKEN,
+            LenderMappingsMantle.AURELIUS_ID
+        );
+        management.addGeneralLenderTokens(
+            TokensMantle.WETH,
+            AureliusMantleAssets.WETH_A_TOKEN,
+            AureliusMantleAssets.WETH_V_TOKEN,
+            AureliusMantleAssets.WETH_S_TOKEN,
+            LenderMappingsMantle.AURELIUS_ID
+        );
+        management.addGeneralLenderTokens(
+            TokensMantle.WMNT,
+            AureliusMantleAssets.WMNT_A_TOKEN,
+            AureliusMantleAssets.WMNT_V_TOKEN,
+            AureliusMantleAssets.WMNT_S_TOKEN,
+            LenderMappingsMantle.AURELIUS_ID
+        );
 
         collateralTokens[TokensMantle.USDC][LenderMappingsMantle.AURELIUS_ID] = AureliusMantleAssets.USDC_A_TOKEN;
         collateralTokens[TokensMantle.USDT][LenderMappingsMantle.AURELIUS_ID] = AureliusMantleAssets.USDT_A_TOKEN;
@@ -757,7 +819,6 @@ contract DeltaSetup is AddressesMantle, ComposerUtils, Script, Test {
     function isAave(uint16 lenderId) internal pure returns (bool a) {
         return lenderId == LenderMappingsMantle.LENDLE_ID || lenderId == LenderMappingsMantle.AURELIUS_ID;
     }
-
 
     // lender indexes prevent forge to bug out when using parameters
 

@@ -27,7 +27,7 @@ contract IzumiQuotingTest is DeltaSetup {
         uint256 amountIn = 1.0005e18;
 
         bytes memory quotePath = getSpotQuotePathSingle(assetIn, assetOut, DexMappingsMantle.MERCHANT_MOE);
-        uint256 quote = testQuoter.quoteExactInput(quotePath, amountIn);
+        uint256 quote = quoter.quoteExactInput(quotePath, amountIn);
         assertApproxEqAbs(3102411711, quote, 0);
     }
 
@@ -42,7 +42,7 @@ contract IzumiQuotingTest is DeltaSetup {
         uint256 amountIn = 1.0005e6;
 
         bytes memory quotePath = getSpotQuotePathSingle(assetIn, assetOut, DexMappingsMantle.CLEO_V1_STABLE);
-        uint256 quote = testQuoter.quoteExactInput(quotePath, amountIn);
+        uint256 quote = quoter.quoteExactInput(quotePath, amountIn);
         assertApproxEqAbs(999910427647198616, quote, 0);
     }
 
@@ -57,7 +57,7 @@ contract IzumiQuotingTest is DeltaSetup {
         uint256 amountIn = 3100.0005e6;
 
         bytes memory quotePath = getSpotQuotePathSingle(assetOut, assetIn, DexMappingsMantle.MERCHANT_MOE);
-        uint256 quote = testQuoter.quoteExactOutput(quotePath, amountIn);
+        uint256 quote = quoter.quoteExactOutput(quotePath, amountIn);
         assertApproxEqAbs(999715467997505211, quote, 0);
     }
 
@@ -72,7 +72,7 @@ contract IzumiQuotingTest is DeltaSetup {
         uint256 amountOut = 1.0005e18;
 
         bytes memory quotePath = getSpotQuotePathSingle(assetOut, assetIn, DexMappingsMantle.CLEO_V1_STABLE);
-        uint256 quote = testQuoter.quoteExactOutput(quotePath, amountOut);
+        uint256 quote = quoter.quoteExactOutput(quotePath, amountOut);
         assertApproxEqAbs(1001091, quote, 0);
     }
 

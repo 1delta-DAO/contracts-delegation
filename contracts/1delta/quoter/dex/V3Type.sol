@@ -54,16 +54,18 @@ abstract contract V3TypeQuoter {
     /// @dev MAX_SQRT_RATIO - 1 from Uniswap's TickMath
     uint160 internal immutable MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970341;
 
-    // v3 forks goes to the fallback
+    // v3 forks go into the fallback
     fallback() external {
         bytes calldata path;
         int256 amount0Delta;
         int256 amount1Delta;
         assembly {
-            path.length := 0
-            path.offset := 0
+            amount0Delta := calldataload(0x4)
+            amount1Delta := calldataload(0x24)
+            path.length := calldataload(0x64)
+            path.offset := 132
         }
-
+        // just funnel the data to the callback
         _v3SwapCallback(amount0Delta, amount1Delta, path);
     }
 

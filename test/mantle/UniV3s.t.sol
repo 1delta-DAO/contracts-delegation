@@ -7,7 +7,6 @@ import "./DeltaSetup.f.sol";
  * Tests Uni V3 style DEX
  */
 contract GeneralMoeLBTest is DeltaSetup {
-
     function setUp() public virtual override {
         vm.createSelectFork({blockNumber: 66756564, urlOrAlias: "https://mantle-mainnet.public.blastapi.io"});
 
@@ -24,7 +23,7 @@ contract GeneralMoeLBTest is DeltaSetup {
 
         uint256 amountIn = 20.0e18;
 
-        uint256 quote = testQuoter.quoteExactInput(getSpotQuoteExactInSinglePuff(assetIn, assetOut), amountIn);
+        uint256 quote = quoter.quoteExactInput(getSpotQuoteExactInSinglePuff(assetIn, assetOut), amountIn);
 
         bytes memory swapPath = getSpotExactInSinglePuff(assetIn, assetOut);
         uint256 minimumOut = 0.03e8;
@@ -64,7 +63,7 @@ contract GeneralMoeLBTest is DeltaSetup {
 
         uint256 amountIn = 20.0e18;
 
-        uint256 quote = testQuoter.quoteExactInput(getSpotQuoteExactInSingleUniV3(assetIn, assetOut), amountIn);
+        uint256 quote = quoter.quoteExactInput(getSpotQuoteExactInSingleUniV3(assetIn, assetOut), amountIn);
 
         bytes memory swapPath = getSpotExactInSingleUniswap(assetIn, assetOut);
         uint256 minimumOut = 0.03e8;
@@ -104,7 +103,7 @@ contract GeneralMoeLBTest is DeltaSetup {
 
         uint256 amountIn = 20.0e6;
 
-        uint256 quote = testQuoter.quoteExactInput(getSpotQuoteExactInSingleCrust(assetIn, assetOut), amountIn);
+        uint256 quote = quoter.quoteExactInput(getSpotQuoteExactInSingleCrust(assetIn, assetOut), amountIn);
 
         bytes memory swapPath = getSpotExactInSingleCrust(assetIn, assetOut);
         uint256 minimumOut = 19.03e6;
