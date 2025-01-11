@@ -379,7 +379,7 @@ contract GeneralMoeLBTest is DeltaSetup {
     function getOpenExactInMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         (uint8 actionId, uint8 midId, uint8 endId) = getOpenExactInFlags();
         uint8 poolId = DexMappingsMantle.MERCHANT_MOE;
-        address pool = testQuoter._v2TypePairAddress(TokensMantle.USDe, tokenIn, DexMappingsMantle.MERCHANT_MOE);
+        address pool = testQuoter.v2TypePairAddress(TokensMantle.USDe, tokenIn, DexMappingsMantle.MERCHANT_MOE);
         bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, MERCHANT_MOE_FEE_DENOM, TokensMantle.USDe);
         poolId = DexMappingsMantle.MERCHANT_MOE_LB;
         pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenOut, TokensMantle.USDe, BIN_STEP_LOWEST).LBPair;
@@ -405,13 +405,13 @@ contract GeneralMoeLBTest is DeltaSetup {
 
         bytes memory firstPart = abi.encodePacked(tokenOut, uint8(0), poolId, pool, TokensMantle.USDT);
         poolId = DexMappingsMantle.MERCHANT_MOE;
-        pool = testQuoter._v2TypePairAddress(TokensMantle.USDT, tokenIn, DexMappingsMantle.MERCHANT_MOE);
+        pool = testQuoter.v2TypePairAddress(TokensMantle.USDT, tokenIn, DexMappingsMantle.MERCHANT_MOE);
         return abi.encodePacked(firstPart, uint8(0), poolId, pool, MERCHANT_MOE_FEE_DENOM, tokenIn);
     }
 
     function getSpotExactOutMultiLBEnd(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint8 poolId = DexMappingsMantle.MERCHANT_MOE;
-        address pool = testQuoter._v2TypePairAddress(TokensMantle.USDT, tokenOut, DexMappingsMantle.MERCHANT_MOE);
+        address pool = testQuoter.v2TypePairAddress(TokensMantle.USDT, tokenOut, DexMappingsMantle.MERCHANT_MOE);
         bytes memory firstPart = abi.encodePacked(tokenOut, uint8(0), poolId, pool, MERCHANT_MOE_FEE_DENOM, TokensMantle.USDT);
         poolId = DexMappingsMantle.MERCHANT_MOE_LB;
         pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenIn, TokensMantle.USDT, BIN_STEP_LOWEST).LBPair;
@@ -421,7 +421,7 @@ contract GeneralMoeLBTest is DeltaSetup {
     function getSpotExactInMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         (uint8 actionId, uint8 midId, uint8 endId) = getOpenExactInFlags();
         uint8 poolId = DexMappingsMantle.AGNI;
-        address pool = testQuoter._v3TypePool(TokensMantle.USDT, tokenIn, poolId, DEX_FEE_LOW);
+        address pool = testQuoter.v3TypePool(TokensMantle.USDT, tokenIn, poolId, DEX_FEE_LOW);
         bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, DEX_FEE_LOW, TokensMantle.USDT);
         poolId = DexMappingsMantle.MERCHANT_MOE_LB;
         pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenOut, TokensMantle.USDT, BIN_STEP_LOWEST).LBPair;
@@ -430,7 +430,7 @@ contract GeneralMoeLBTest is DeltaSetup {
 
     function getOpenExactOutMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         (uint8 actionId, uint8 midId, uint8 endId) = getOpenExactOutFlags();
-        address pool = testQuoter._v2TypePairAddress(TokensMantle.USDe, tokenOut, DexMappingsMantle.MERCHANT_MOE);
+        address pool = testQuoter.v2TypePairAddress(TokensMantle.USDe, tokenOut, DexMappingsMantle.MERCHANT_MOE);
         bytes memory firstPart = abi.encodePacked(tokenOut, actionId, DexMappingsMantle.MERCHANT_MOE, pool, MERCHANT_MOE_FEE_DENOM, TokensMantle.USDe);
         pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenIn, TokensMantle.USDe, BIN_STEP_LOWEST).LBPair;
         return abi.encodePacked(firstPart, midId, DexMappingsMantle.MERCHANT_MOE_LB, pool, tokenIn, LenderMappingsMantle.LENDLE_ID, endId);
@@ -438,7 +438,7 @@ contract GeneralMoeLBTest is DeltaSetup {
 
     function getCloseExactOutMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         (uint8 actionId, uint8 midId, uint8 endId) = getCloseExactOutFlags();
-        address pool = testQuoter._v2TypePairAddress(TokensMantle.USDe, tokenOut, DexMappingsMantle.MERCHANT_MOE);
+        address pool = testQuoter.v2TypePairAddress(TokensMantle.USDe, tokenOut, DexMappingsMantle.MERCHANT_MOE);
         bytes memory firstPart = abi.encodePacked(tokenOut, actionId, DexMappingsMantle.MERCHANT_MOE, pool, MERCHANT_MOE_FEE_DENOM, TokensMantle.USDe);
         pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenIn, TokensMantle.USDe, BIN_STEP_LOWEST).LBPair;
         return abi.encodePacked(firstPart, midId, DexMappingsMantle.MERCHANT_MOE_LB, pool, tokenIn, LenderMappingsMantle.LENDLE_ID, endId);
@@ -446,7 +446,7 @@ contract GeneralMoeLBTest is DeltaSetup {
 
     function getCloseExactInMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         (uint8 actionId, uint8 midId, uint8 endId) = getCloseExactInFlags();
-        address pool = testQuoter._v2TypePairAddress(TokensMantle.USDe, tokenIn, DexMappingsMantle.MERCHANT_MOE);
+        address pool = testQuoter.v2TypePairAddress(TokensMantle.USDe, tokenIn, DexMappingsMantle.MERCHANT_MOE);
         bytes memory firstPart = abi.encodePacked(tokenIn, actionId, DexMappingsMantle.MERCHANT_MOE, pool, MERCHANT_MOE_FEE_DENOM, TokensMantle.USDe);
         pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenOut, TokensMantle.USDe, BIN_STEP_LOWEST).LBPair;
         return abi.encodePacked(firstPart, midId, DexMappingsMantle.MERCHANT_MOE_LB, pool, tokenOut, LenderMappingsMantle.LENDLE_ID, endId);

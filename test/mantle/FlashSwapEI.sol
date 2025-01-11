@@ -31,7 +31,7 @@ contract FlashSwapExacInTest is DeltaSetup {
         uint256 amountIn = 1.0e18;
         uint256 minimumOut = amountIn;
 
-        uint256 quoted = testQuoter.quoteExactInput(getSpotExactInSingleStratumMETHQuoter(TokensMantle.WETH), amountIn);
+        uint256 quoted = quoter.quoteExactInput(getSpotExactInSingleStratumMETHQuoter(TokensMantle.WETH), amountIn);
 
         bytes memory swapPath = getSpotExactInSingleStratumMETH(asset);
 
@@ -78,7 +78,7 @@ contract FlashSwapExacInTest is DeltaSetup {
 
         uint256 amountIn = 1.0e18;
 
-        uint256 quoted = testQuoter.quoteExactInput(getSpotExactInDoubleStratumMETHQuoterWithV2(TokensMantle.WETH), amountIn);
+        uint256 quoted = quoter.quoteExactInput(getSpotExactInDoubleStratumMETHQuoterWithV2(TokensMantle.WETH), amountIn);
         uint256 minimumOut = quoted;
 
         bytes memory swapPath = getSpotExactInDoubleStratumMETHV2(asset);
@@ -138,7 +138,7 @@ contract FlashSwapExacInTest is DeltaSetup {
 
         uint256 amountIn = 1.0e18;
 
-        uint256 quoted = testQuoter.quoteExactInput(getSpotExactInDoubleStratumMETHQuoterWithV2_3Pools(asset), amountIn);
+        uint256 quoted = quoter.quoteExactInput(getSpotExactInDoubleStratumMETHQuoterWithV2_3Pools(asset), amountIn);
 
         bytes memory swapPath = getSpotExactInDoubleStratumMETHV2_3Pool(asset);
 
@@ -196,7 +196,7 @@ contract FlashSwapExacInTest is DeltaSetup {
 
         uint256 amountIn = 1.0e18;
 
-        uint256 quoted = testQuoter.quoteExactInput(getSpotExactInDoubleStratumMETHQuoterWithV2_3Pools_V3Last(TokensMantle.WETH), amountIn);
+        uint256 quoted = quoter.quoteExactInput(getSpotExactInDoubleStratumMETHQuoterWithV2_3Pools_V3Last(TokensMantle.WETH), amountIn);
 
         bytes memory swapPath = getSpotExactInDoubleStratumMETHV2_3Pool_V3Last(asset);
 
@@ -251,7 +251,7 @@ contract FlashSwapExacInTest is DeltaSetup {
 
         uint256 amountIn = 1.0e18;
 
-        uint256 quoted = testQuoter.quoteExactInput(getSpotExactInDoubleStratumMETHQuoterWithV2_3Pools(TokensMantle.WETH), amountIn);
+        uint256 quoted = quoter.quoteExactInput(getSpotExactInDoubleStratumMETHQuoterWithV2_3Pools(TokensMantle.WETH), amountIn);
 
         bytes memory swapPath = getSpotExactInDoubleStratumMETHV2_3Pool(asset);
 
@@ -302,7 +302,7 @@ contract FlashSwapExacInTest is DeltaSetup {
 
         uint256 amountIn = 1.0e18;
 
-        uint256 quoted = testQuoter.quoteExactInput(getSpotExactInDoubleStratumMETHQuoterWithV2_3Pools_V3Last(asset), amountIn);
+        uint256 quoted = quoter.quoteExactInput(getSpotExactInDoubleStratumMETHQuoterWithV2_3Pools_V3Last(asset), amountIn);
 
         bytes memory swapPath = getSpotExactInDoubleStratumMETHV2_3Pool_V3Last(asset);
 
@@ -355,7 +355,7 @@ contract FlashSwapExacInTest is DeltaSetup {
     function getSpotExactInAgni(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_STABLES);
         uint8 poolId = DexMappingsMantle.AGNI;
-        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
+        address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
         return abi.encodePacked(tokenIn, ZERO_8, poolId, pool, fee, tokenOut);
     }
 
@@ -372,12 +372,12 @@ contract FlashSwapExacInTest is DeltaSetup {
     }
 
     function getSpotExactInAgniQuoter(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, DEX_FEE_STABLES, DexMappingsMantle.AGNI);
+        address pool = testQuoter.v3TypePool(tokenIn, tokenOut, DEX_FEE_STABLES, DexMappingsMantle.AGNI);
         return abi.encodePacked(tokenIn, DexMappingsMantle.AGNI, pool, DEX_FEE_STABLES, tokenOut);
     }
 
     function getSpotExactInMoeQuoter(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, DexMappingsMantle.MERCHANT_MOE);
+        address pool = testQuoter.v2TypePairAddress(tokenIn, tokenOut, DexMappingsMantle.MERCHANT_MOE);
         return abi.encodePacked(tokenIn, DexMappingsMantle.MERCHANT_MOE, pool, MERCHANT_MOE_FEE_DENOM, tokenOut);
     }
 
@@ -393,7 +393,7 @@ contract FlashSwapExacInTest is DeltaSetup {
 
     function getSpotExactInDoubleStratumMETHV2_3Pool(address token) internal view returns (bytes memory data) {
         uint8 poolId = DexMappingsMantle.MERCHANT_MOE;
-        address pool = testQuoter._v2TypePairAddress(token, TokensMantle.METH, poolId);
+        address pool = testQuoter.v2TypePairAddress(token, TokensMantle.METH, poolId);
         return
             abi.encodePacked(
                 getSpotExactInAgni(token, TokensMantle.METH),
@@ -431,7 +431,7 @@ contract FlashSwapExacInTest is DeltaSetup {
 
     function getSpotExactInMoe(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint8 poolId = DexMappingsMantle.MERCHANT_MOE;
-        address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
+        address pool = testQuoter.v2TypePairAddress(tokenIn, tokenOut, poolId);
         return abi.encodePacked(tokenIn, ZERO_8, poolId, pool, MERCHANT_MOE_FEE_DENOM, tokenOut);
     }
 
@@ -452,7 +452,7 @@ contract FlashSwapExacInTest is DeltaSetup {
                 DexMappingsMantle.STRATUM_CURVE,
                 abi.encodePacked(STRATUM_ETH_POOL, getTokenIdEth(TokensMantle.METH), getTokenIdEth(token), STRATUM_SWAP_ID),
                 token,
-                abi.encodePacked(DexMappingsMantle.MERCHANT_MOE, testQuoter._v2TypePairAddress(token, TokensMantle.METH, DexMappingsMantle.MERCHANT_MOE), MERCHANT_MOE_FEE_DENOM, TokensMantle.METH)
+                abi.encodePacked(DexMappingsMantle.MERCHANT_MOE, testQuoter.v2TypePairAddress(token, TokensMantle.METH, DexMappingsMantle.MERCHANT_MOE), MERCHANT_MOE_FEE_DENOM, TokensMantle.METH)
             );
     }
 

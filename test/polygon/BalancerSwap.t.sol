@@ -406,7 +406,7 @@ contract BalancerTestPolygon is DeltaSetup {
     function getSpotExactOutBalancerMulti(address tokenIn, address tokenOut, bytes32 pId) internal view returns (bytes memory data) {
         uint8 action = 0;
         uint16 fee = 500;
-        address pool = testQuoter._v3TypePool(tokenIn, TokensPolygon.WETH, fee, DexMappingsPolygon.UNI_V3);
+        address pool = testQuoter.v3TypePool(tokenIn, TokensPolygon.WETH, fee, DexMappingsPolygon.UNI_V3);
 
         bytes memory firstPart;
         {
@@ -419,7 +419,7 @@ contract BalancerTestPolygon is DeltaSetup {
     function getSpotExactInBalancerMulti(address tokenIn, address tokenOut, bytes32 pId) internal view returns (bytes memory data) {
         uint8 action = 0;
         uint16 fee = 3000;
-        address pool = testQuoter._v3TypePool(tokenOut, TokensPolygon.WMATIC, fee, DexMappingsPolygon.UNI_V3);
+        address pool = testQuoter.v3TypePool(tokenOut, TokensPolygon.WMATIC, fee, DexMappingsPolygon.UNI_V3);
 
         bytes memory firstPart;
         {
@@ -432,7 +432,7 @@ contract BalancerTestPolygon is DeltaSetup {
     function getSpotExactInBalancerMultiReverse(address tokenIn, address tokenOut, bytes32 pId) internal view returns (bytes memory data) {
         uint8 action = 0;
         uint16 fee = 3000;
-        address pool = testQuoter._v3TypePool(tokenIn, TokensPolygon.WMATIC, fee, DexMappingsPolygon.UNI_V3);
+        address pool = testQuoter.v3TypePool(tokenIn, TokensPolygon.WMATIC, fee, DexMappingsPolygon.UNI_V3);
 
         bytes memory firstPart;
         {
@@ -445,7 +445,7 @@ contract BalancerTestPolygon is DeltaSetup {
     function getSpotExactOutBalancerMultiReverse(address tokenIn, address tokenOut, bytes32 pId) internal view returns (bytes memory data) {
         uint8 action = 0;
         uint16 fee = 3000;
-        address pool = testQuoter._v3TypePool(tokenOut, TokensPolygon.WETH, fee, DexMappingsPolygon.UNI_V3);
+        address pool = testQuoter.v3TypePool(tokenOut, TokensPolygon.WETH, fee, DexMappingsPolygon.UNI_V3);
 
         bytes memory firstPart;
         {
@@ -458,7 +458,7 @@ contract BalancerTestPolygon is DeltaSetup {
     function getSpotExactOutBalancerMultiCSP(address tokenIn, address tokenOut, bytes32 pId) internal view returns (bytes memory data) {
         uint8 action = 0;
         uint16 fee = 500;
-        address pool = testQuoter._v3TypePool(tokenIn, TokensPolygon.WMATIC, fee, DexMappingsPolygon.UNI_V3);
+        address pool = testQuoter.v3TypePool(tokenIn, TokensPolygon.WMATIC, fee, DexMappingsPolygon.UNI_V3);
 
         bytes memory firstPart;
         {

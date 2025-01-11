@@ -39,7 +39,7 @@ contract MoeLBQuotingTest is DeltaSetup {
 
         bytes memory quotePath = getQuoteExactOutMultiLB(assetIn, assetOut);
         vm.expectRevert();
-        testQuoter.quoteExactOutput(quotePath, amountOut);
+        quoter.quoteExactOutput(quotePath, amountOut);
     }
 
     function test_mantle_lb_quote_spot_exact_out_works() external {
@@ -53,7 +53,7 @@ contract MoeLBQuotingTest is DeltaSetup {
         uint256 amountOut = 10.0005e18;
 
         bytes memory quotePath = getSpotExactOutMultiLBWorking(assetIn, assetOut);
-        uint256 quote = testQuoter.quoteExactOutput(quotePath, amountOut);
+        uint256 quote = quoter.quoteExactOutput(quotePath, amountOut);
         assert(quote > 0);
     }
 
@@ -68,7 +68,7 @@ contract MoeLBQuotingTest is DeltaSetup {
         uint256 amountIn = 10.0005e6;
 
         bytes memory quotePath = getSpotExactInSingle(assetIn, assetOut);
-        uint256 quote = testQuoter.quoteExactInput(quotePath, amountIn);
+        uint256 quote = quoter.quoteExactInput(quotePath, amountIn);
         assert(quote > 0);
     }
 
@@ -84,7 +84,7 @@ contract MoeLBQuotingTest is DeltaSetup {
 
         bytes memory quotePath = getSpotExactInSinglBroken(assetIn, assetOut);
         vm.expectRevert();
-        testQuoter.quoteExactInput(quotePath, amountIn);
+        quoter.quoteExactInput(quotePath, amountIn);
     }
 
     /** MOE LB PATH BUILDERS */
@@ -96,7 +96,7 @@ contract MoeLBQuotingTest is DeltaSetup {
         bytes memory firstPart = abi.encodePacked(tokenOut, poolId, pool, TokensMantle.WMNT);
         fee = DEX_FEE_LOW_MEDIUM;
         poolId = DexMappingsMantle.FUSION_X;
-        pool = testQuoter._v3TypePool(TokensMantle.WMNT, tokenIn, poolId, fee);
+        pool = testQuoter.v3TypePool(TokensMantle.WMNT, tokenIn, poolId, fee);
         return abi.encodePacked(firstPart, poolId, pool, fee, tokenIn);
     }
 
@@ -106,7 +106,7 @@ contract MoeLBQuotingTest is DeltaSetup {
         address pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenOut, TokensMantle.USDT, fee).LBPair;
         bytes memory firstPart = abi.encodePacked(tokenOut, poolId, pool, TokensMantle.USDT);
         poolId = DexMappingsMantle.MERCHANT_MOE;
-        pool = testQuoter._v2TypePairAddress(TokensMantle.USDT, tokenIn, poolId);
+        pool = testQuoter.v2TypePairAddress(TokensMantle.USDT, tokenIn, poolId);
         return abi.encodePacked(firstPart, poolId, pool, MERCHANT_MOE_FEE_DENOM, tokenIn);
     }
 

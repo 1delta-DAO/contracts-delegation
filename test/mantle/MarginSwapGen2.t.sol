@@ -256,7 +256,7 @@ contract SwapGen2Test is DeltaSetup {
     function getOpenExactInSingleGen2(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_STABLES);
         uint8 poolId = DexMappingsMantle.AGNI;
-        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
+        address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
         return abi.encodePacked(tokenIn, uint8(3), poolId, pool, fee, tokenOut, uint16(lenderId), uint8(2));
     }
 
@@ -342,10 +342,10 @@ contract SwapGen2Test is DeltaSetup {
         for (uint i = 1; i < tokens.length; i++) {
             uint8 pId = pIds[i - 1];
             if (pId < 50) {
-                address pool = testQuoter._v3TypePool(tokens[i - 1], tokens[i], fees[i - 1], pId);
+                address pool = testQuoter.v3TypePool(tokens[i - 1], tokens[i], fees[i - 1], pId);
                 path = abi.encodePacked(path, actions[i - 1], pId, pool, fees[i - 1], tokens[i]);
             } else {
-                address pool = testQuoter._v2TypePairAddress(tokens[i - 1], tokens[i], pId);
+                address pool = testQuoter.v2TypePairAddress(tokens[i - 1], tokens[i], pId);
                 path = abi.encodePacked(
                     path,
                     actions[i - 1],

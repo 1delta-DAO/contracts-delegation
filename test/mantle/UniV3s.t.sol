@@ -138,42 +138,42 @@ contract GeneralMoeLBTest is DeltaSetup {
     function getSpotExactInSinglePuff(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = 3000;
         uint8 poolId = DexMappingsMantle.METHLAB_POOL_ID;
-        address pool = testQuoter._v3TypePool(tokenOut, tokenIn, fee, poolId);
+        address pool = testQuoter.v3TypePool(tokenOut, tokenIn, fee, poolId);
         return abi.encodePacked(tokenIn, uint8(0), poolId, pool, fee, tokenOut);
     }
 
     function getSpotExactInSingleUniswap(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = 500;
         uint8 poolId = DexMappingsMantle.UNISWAP_V3_POOL_ID;
-        address pool = testQuoter._v3TypePool(tokenOut, tokenIn, fee, poolId);
+        address pool = testQuoter.v3TypePool(tokenOut, tokenIn, fee, poolId);
         return abi.encodePacked(tokenIn, uint8(0), poolId, pool, fee, tokenOut);
     }
 
     function getSpotExactInSingleCrust(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = 500;
         uint8 poolId = DexMappingsMantle.CRUST_POOL_ID;
-        address pool = testQuoter._v3TypePool(tokenOut, tokenIn, fee, poolId);
+        address pool = testQuoter.v3TypePool(tokenOut, tokenIn, fee, poolId);
         return abi.encodePacked(tokenIn, uint8(0), poolId, pool, fee, tokenOut);
     }
 
     function getSpotQuoteExactInSinglePuff(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint24 fee = 3000;
         uint8 poolId = DexMappingsMantle.METHLAB_POOL_ID;
-        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
+        address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
         return abi.encodePacked(tokenIn, poolId, pool, fee, tokenOut);
     }
 
     function getSpotQuoteExactInSingleUniV3(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = 500;
         uint8 poolId = DexMappingsMantle.UNISWAP_V3_POOL_ID;
-        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
+        address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
         return abi.encodePacked(tokenIn, poolId, pool, fee, tokenOut);
     }
 
     function getSpotQuoteExactInSingleCrust(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = 500;
         uint8 poolId = DexMappingsMantle.CRUST_POOL_ID;
-        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
+        address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
         return abi.encodePacked(tokenIn, poolId, pool, fee, tokenOut);
     }
 }

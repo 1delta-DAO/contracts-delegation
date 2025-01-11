@@ -249,7 +249,7 @@ contract ComposerTestMantle is DeltaSetup {
 
     function getWNativeToToken()
         internal
-        view
+        pure
         returns (
             address[] memory tks,
             uint8[] memory pids, //
@@ -270,7 +270,7 @@ contract ComposerTestMantle is DeltaSetup {
 
     function getTokenToWNative()
         internal
-        view
+        pure
         returns (
             address[] memory tks,
             uint8[] memory pids, //
@@ -593,7 +593,7 @@ contract ComposerTestMantle is DeltaSetup {
         uint8[] memory actions = new uint8[](pids.length);
         data = abi.encodePacked(tokens[0]);
         for (uint i; i < pids.length; i++) {
-            address pool = testQuoter._v3TypePool(tokens[i], tokens[i + 1], fees[i], pids[i]);
+            address pool = testQuoter.v3TypePool(tokens[i], tokens[i + 1], fees[i], pids[i]);
             data = abi.encodePacked(
                 data,
                 actions[i], // action id
@@ -611,20 +611,20 @@ contract ComposerTestMantle is DeltaSetup {
         data = abi.encodePacked(tokens[0]);
         for (uint i; i < pids.length; i++) {
             actions[i] = 0;
-            address pool = testQuoter._v3TypePool(tokens[i], tokens[i + 1], fees[i], pids[i]);
+            address pool = testQuoter.v3TypePool(tokens[i], tokens[i + 1], fees[i], pids[i]);
             data = abi.encodePacked(data, actions[i], pids[i], pool, fees[i], tokens[i + 1]);
         }
         return abi.encodePacked(data, uint8(99));
     }
 
     function getSpotExactInSingleGen2(address tokenIn, address tokenOut, uint8 poolId, uint16 fee) internal view returns (bytes memory data) {
-        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
+        address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
         uint8 action = 0;
         return abi.encodePacked(tokenIn, action, poolId, pool, fee, tokenOut);
     }
 
     function getSpotExactOutSingleGen2(address tokenIn, address tokenOut, uint8 poolId, uint16 fee) internal view returns (bytes memory data) {
-        address pool = testQuoter._v3TypePool(tokenOut, tokenIn, fee, poolId);
+        address pool = testQuoter.v3TypePool(tokenOut, tokenIn, fee, poolId);
         uint8 action = 0;
         return abi.encodePacked(tokenOut, action, poolId, pool, fee, tokenIn, uint8(99));
     }

@@ -77,7 +77,7 @@ contract IzumiQuotingTest is DeltaSetup {
     }
 
     function getSpotQuotePathSingle(address tokenIn, address tokenOut, uint8 poolId) internal view returns (bytes memory data) {
-        address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
+        address pool = testQuoter.v2TypePairAddress(tokenIn, tokenOut, poolId);
         return
             abi.encodePacked(
                 tokenIn,

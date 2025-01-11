@@ -11,7 +11,6 @@ import {V3TypeQuoter} from "./dex/V3Type.sol";
 import {SyncQuoter} from "./dex/Sync.sol";
 import {WooFiQuoter} from "./dex/WooFi.sol";
 import {SyncQuoter} from "./dex/Sync.sol";
-import {KTXQuoterMantle} from "./dex/KTXMantle.sol";
 
 /**
  * Quoter contract
@@ -25,9 +24,8 @@ contract OneDeltaQuoter is
     V3TypeQuoter,
     SyncQuoter,
     WooFiQuoter,
-    KTXQuoterMantle,
     QuoterParamsLayout,
-    DexMappings
+    DexMappings //
 {
     error invalidDexId();
 
@@ -82,6 +80,16 @@ contract OneDeltaQuoter is
                 }
                 amountIn = getCurveAmountOut(indexIn, indexOut, selectorId, pair, amountIn);
                 path = path[CURVE_PARAM_LENGTH:];
+            } else if (poolId == CURVE_FORK_ID) {
+                uint8 indexIn;
+                uint8 indexOut;
+                assembly {
+                    let indexData := calldataload(add(path.offset, 21))
+                    indexIn := and(shr(88, indexData), 0xff)
+                    indexOut := and(shr(80, indexData), 0xff)
+                }
+                amountIn = getCurveAmountOut(indexIn, indexOut, 2, pair, amountIn);
+                path = path[CURVE_PARAM_LENGTH:];
             }
             // v2 types
             else if (poolId < UNISWAP_V2_MAX_ID) {
@@ -107,12 +115,8 @@ contract OneDeltaQuoter is
                 }
                 amountIn = getLBAmountOut(tokenOut, amountIn, pair);
                 path = path[EXOTIC_PARAM_LENGTH:];
-            } else if (poolId == KTX_ID) {
-                assembly {
-                    // tokenOut starts at 41st byte
-                    tokenOut := shr(96, calldataload(add(path.offset, 41)))
-                }
-                amountIn = getKTXAmountOut(tokenIn, tokenOut, amountIn);
+            } else if (poolId == SYNC_SWAP_ID) {
+                amountIn = quoteSyncSwapExactIn(pair, tokenIn, amountIn);
                 path = path[EXOTIC_PARAM_LENGTH:];
             } else if (poolId == DODO_ID) {
                 uint256 sellQuote;

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.19;
 
 import "./DeltaSetup.f.sol";
-import "../../contracts/1delta/quoter/MoeJoeLens.sol";
+import "../../contracts/1delta/quoter/lens/MoeJoeLens.sol";
 
 interface ILBFactory {
     struct LBPairInformation {

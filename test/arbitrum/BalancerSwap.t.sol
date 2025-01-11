@@ -220,7 +220,7 @@ contract BalancerTestArbitrum is DeltaSetup {
     ) internal view returns (bytes memory data) {
         uint8 action = 0;
         uint16 fee = DEX_FEE_STABLES;
-        address pool = testQuoter._v3TypePool(tokenIn, TokensArbitrum.USDT, fee, DexMappingsArbitrum.UNI_V3);
+        address pool = testQuoter.v3TypePool(tokenIn, TokensArbitrum.USDT, fee, DexMappingsArbitrum.UNI_V3);
 
         bytes memory firstPart;
         {

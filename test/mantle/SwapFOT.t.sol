@@ -123,7 +123,7 @@ contract SwapGen2Test is DeltaSetup {
 
     function getSpotExactInBuyFOT(address tokenIn, address mid, address tokenOut) internal view returns (bytes memory data) {
         uint8 poolId = DexMappingsMantle.FUSION_X_V2;
-        address pool = testQuoter._v2TypePairAddress(tokenIn, mid, poolId);
+        address pool = testQuoter.v2TypePairAddress(tokenIn, mid, poolId);
         data = abi.encodePacked(
             tokenIn,
             uint8(0),
@@ -132,7 +132,7 @@ contract SwapGen2Test is DeltaSetup {
             getV2PairFeeDenom(poolId, pool), //
             mid
         );
-        pool = testQuoter._v2TypePairAddress(tokenOut, mid, poolId);
+        pool = testQuoter.v2TypePairAddress(tokenOut, mid, poolId);
         poolId = DexMappingsMantle.FUSION_X_V2;
         return
             abi.encodePacked(
@@ -147,7 +147,7 @@ contract SwapGen2Test is DeltaSetup {
 
     function getSpotExactInSellFOT(address tokenIn, address mid, address tokenOut) internal view returns (bytes memory data) {
         uint8 poolId = DexMappingsMantle.FUSION_X_V2;
-        address pool = testQuoter._v2TypePairAddress(tokenIn, mid, poolId);
+        address pool = testQuoter.v2TypePairAddress(tokenIn, mid, poolId);
         data = abi.encodePacked(
             tokenIn,
             uint8(0),
@@ -157,7 +157,7 @@ contract SwapGen2Test is DeltaSetup {
             mid
         );
         poolId = DexMappingsMantle.FUSION_X_V2;
-        pool = testQuoter._v2TypePairAddress(tokenOut, mid, poolId);
+        pool = testQuoter.v2TypePairAddress(tokenOut, mid, poolId);
         return
             abi.encodePacked(
                 data,

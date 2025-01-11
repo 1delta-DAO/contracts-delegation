@@ -10,7 +10,7 @@ interface ISyncSwapFactory {
  * Quoter contract
  * Paths have to be encoded as follows: token0 (address) | param0 (uint24) | poolId (uint8) | token1 (address) |
  */
-abstract contract PoolGetterTaiko {
+contract PoolGetter {
     error invalidDexId();
 
     /// @dev Mask of lower 20 bytes.
@@ -60,7 +60,7 @@ abstract contract PoolGetterTaiko {
 
     /// @dev Returns the pool for the given token pair and fee.
     /// The pool contract may or may not exist.
-    function v3TypePool(address tokenA, address tokenB, uint24 fee, uint256 _pId) internal pure returns (address pool) {
+    function v3TypePool(address tokenA, address tokenB, uint24 fee, uint256 _pId) external pure returns (address pool) {
         assembly {
             let s := mload(0x40)
             let p := s
@@ -186,7 +186,7 @@ abstract contract PoolGetterTaiko {
     }
 
     /// @dev Returns the pool for the given token pair and fee. The pool contract may or may not exist.
-    function getiZiPool(address tokenA, address tokenB, uint24 fee) internal pure returns (address pool) {
+    function getiZiPool(address tokenA, address tokenB, uint24 fee) external pure returns (address pool) {
         assembly {
             let s := mload(0x40)
             let p := s
@@ -210,7 +210,7 @@ abstract contract PoolGetterTaiko {
     }
 
     /// @dev gets uniswapV2 (and fork) pair addresses
-    function v2TypePairAddress(address tokenA, address tokenB, uint256 _pId) internal pure returns (address pair) {
+    function v2TypePairAddress(address tokenA, address tokenB, uint256 _pId) external pure returns (address pair) {
         assembly {
             switch _pId
             // DTX V1
@@ -275,15 +275,15 @@ abstract contract PoolGetterTaiko {
         }
     }
 
-    function syncClassicPairAddress(address tokenA, address tokenB) internal view returns (address pair) {
+    function syncClassicPairAddress(address tokenA, address tokenB) external view returns (address pair) {
         pair = ISyncSwapFactory(RITSU_CLASSIC_FACTORY).getPool(tokenA, tokenB);
     }
 
-    function syncStablePairAddress(address tokenA, address tokenB) internal view returns (address pair) {
+    function syncStablePairAddress(address tokenA, address tokenB) external view returns (address pair) {
         pair = ISyncSwapFactory(RITSU_STABLE_FACTORY).getPool(tokenA, tokenB);
     }
 
-    function syncBasePairAddress(address tokenA, address tokenB) internal view returns (address pair) {
+    function syncBasePairAddress(address tokenA, address tokenB) external view returns (address pair) {
         pair = ISyncSwapFactory(RITSU_BASE_FACTORY).getPool(tokenA, tokenB);
     }
 }

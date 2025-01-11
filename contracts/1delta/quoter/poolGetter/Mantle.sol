@@ -6,7 +6,7 @@ pragma solidity ^0.8.28;
  * Quoter contract
  * Paths have to be encoded as follows: token0 (address) | param0 (uint24) | poolId (uint8) | token1 (address) |
  */
-abstract contract PoolGetter {
+contract PoolGetter {
     error invalidDexId();
 
     /// @dev Mask of lower 20 bytes.
@@ -82,7 +82,7 @@ abstract contract PoolGetter {
 
     /// @dev Returns the pool for the given token pair and fee.
     /// The pool contract may or may not exist.
-    function v3TypePool(address tokenA, address tokenB, uint24 fee, uint256 _pId) internal pure returns (address pool) {
+    function v3TypePool(address tokenA, address tokenB, uint24 fee, uint256 _pId) external pure returns (address pool) {
         assembly {
             let s := mload(0x40)
             let p := s
@@ -249,7 +249,7 @@ abstract contract PoolGetter {
     }
 
     /// @dev Returns the pool for the given token pair and fee. The pool contract may or may not exist.
-    function getiZiPool(address tokenA, address tokenB, uint24 fee) internal pure returns (address pool) {
+    function getiZiPool(address tokenA, address tokenB, uint24 fee) external pure returns (address pool) {
         assembly {
             let s := mload(0x40)
             let p := s
@@ -273,7 +273,7 @@ abstract contract PoolGetter {
     }
 
     /// @dev gets uniswapV2 (and fork) pair addresses
-    function v2TypePairAddress(address tokenA, address tokenB, uint256 _pId) internal view returns (address pair) {
+    function v2TypePairAddress(address tokenA, address tokenB, uint256 _pId) external view returns (address pair) {
         assembly {
             switch _pId
             // FusionX

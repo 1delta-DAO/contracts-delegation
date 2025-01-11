@@ -12,14 +12,13 @@ interface IHasFactory {
  */
 contract UniV3TypeTest is DeltaSetup {
 
-    TestQuoterTaiko testQuoter1;
-
     function setUp() public virtual override {
         vm.createSelectFork({blockNumber: 745292, urlOrAlias: "https://rpc.mainnet.taiko.xyz"});
 
         intitializeFullDelta();
 
-        testQuoter1 = new TestQuoterTaiko();
+        testQuoter = new PoolGetter();
+        quoter = new OneDeltaQuoter();
     }
 
     function test_algebra_taiko() external {
@@ -32,7 +31,7 @@ contract UniV3TypeTest is DeltaSetup {
 
         uint256 amountIn = 20.0e6;
 
-        uint256 quote = testQuoter1.quoteExactInput(getQuoterExactInSingleSgUSDC(assetIn, assetOut), amountIn);
+        uint256 quote = quoter.quoteExactInput(getQuoterExactInSingleSgUSDC(assetIn, assetOut), amountIn);
 
         bytes memory swapPath = getSpotExactInSingleSgUSDC(assetIn, assetOut);
         uint256 minimumOut = 0.03e8;
@@ -67,14 +66,14 @@ contract UniV3TypeTest is DeltaSetup {
     function getSpotExactInSingleSgUSDC(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = 0;
         uint8 poolId = DexMappingsTaiko.SWAPSICLE;
-        address pool = testQuoter._v3TypePool(tokenOut, tokenIn, fee, poolId);
+        address pool = testQuoter.v3TypePool(tokenOut, tokenIn, fee, poolId);
         return abi.encodePacked(tokenIn, uint8(0), poolId, pool, fee, tokenOut);
     }
 
     function getQuoterExactInSingleSgUSDC(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = 0;
         uint8 poolId = DexMappingsTaiko.SWAPSICLE;
-        address pool = testQuoter._v3TypePool(tokenOut, tokenIn, fee, poolId);
+        address pool = testQuoter.v3TypePool(tokenOut, tokenIn, fee, poolId);
         return abi.encodePacked(tokenIn, poolId, pool, fee, tokenOut);
     }
 }

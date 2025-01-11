@@ -10,7 +10,7 @@ contract ForkTestTaiko is DeltaSetup {
         address proxy = 0x0bd7473CbBf81d9dD936c61117eD230d95006CA2;
         address oldModule = 0x5c4F2eACBdc1EB38F839bDDD7620E250a36819D4;
         upgradeExistingDelta(proxy, admin, oldModule);
-        testQuoter = new TestQuoterTaiko();
+        testQuoter = new PoolGetter();
     }
 
     function test_generic_taiko() external /** address user, uint8 lenderId */ {

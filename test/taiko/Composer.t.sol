@@ -659,10 +659,10 @@ contract ComposerTestTaiko is DeltaSetup {
         for (uint i = 1; i < tokens.length; i++) {
             uint8 pId = pids[i - 1];
             if (pId < 50) {
-                address pool = testQuoter._v3TypePool(tokens[i - 1], tokens[i], fees[i - 1], pId);
+                address pool = testQuoter.v3TypePool(tokens[i - 1], tokens[i], fees[i - 1], pId);
                 data = abi.encodePacked(data, actions[i - 1], pId, pool, fees[i - 1], tokens[i]);
             } else {
-                address pool = testQuoter._v2TypePairAddress(tokens[i - 1], tokens[i], pId);
+                address pool = testQuoter.v2TypePairAddress(tokens[i - 1], tokens[i], pId);
                 data = abi.encodePacked(
                     data,
                     actions[i - 1],
@@ -677,13 +677,13 @@ contract ComposerTestTaiko is DeltaSetup {
     }
 
     function getSpotExactInSingleGen2(address tokenIn, address tokenOut, uint8 poolId, uint16 fee) internal view returns (bytes memory data) {
-        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
+        address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
         uint8 action = 0;
         return abi.encodePacked(tokenIn, action, poolId, pool, fee, tokenOut, uint8(99));
     }
 
     function getSpotExactOutSingleGen2(address tokenIn, address tokenOut, uint8 poolId, uint16 fee) internal view returns (bytes memory data) {
-        address pool = testQuoter._v3TypePool(tokenOut, tokenIn, fee, poolId);
+        address pool = testQuoter.v3TypePool(tokenOut, tokenIn, fee, poolId);
         uint8 action = 0;
         return abi.encodePacked(tokenOut, action, poolId, pool, fee, tokenIn, uint8(99));
     }

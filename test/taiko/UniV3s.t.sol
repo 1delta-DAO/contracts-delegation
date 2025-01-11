@@ -11,8 +11,6 @@ interface IHasFactory {
  * Tests Uni V3 style DEX
  */
 contract UniV3TypeTest is DeltaSetup {
-
-    TestQuoterTaiko testQuoter1;
     address internal router = 0x38be8Bc0cDfF59eF9B9Feb0d949B2052359e97d9;
 
     function setUp() public virtual override {
@@ -20,7 +18,8 @@ contract UniV3TypeTest is DeltaSetup {
 
         intitializeFullDelta();
 
-        testQuoter1 = new TestQuoterTaiko();
+        testQuoter = new PoolGetter();
+        quoter = new OneDeltaQuoter();
     }
 
     function test_dtx_usdc_spot_exact_in() external {
@@ -35,7 +34,7 @@ contract UniV3TypeTest is DeltaSetup {
 
         console.log("DTX factory", IHasFactory(router).factory());
 
-        uint256 quote = testQuoter1.quoteExactInput(getQuoterExactInSingleSgUSDC(assetIn, assetOut), amountIn);
+        uint256 quote = quoter.quoteExactInput(getQuoterExactInSingleSgUSDC(assetIn, assetOut), amountIn);
 
         bytes memory swapPath = getSpotExactInSingleSgUSDC(assetIn, assetOut);
         uint256 minimumOut = 0.03e8;
@@ -70,14 +69,14 @@ contract UniV3TypeTest is DeltaSetup {
     function getSpotExactInSingleSgUSDC(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = 3000;
         uint8 poolId = DexMappingsTaiko.DTX;
-        address pool = testQuoter._v3TypePool(tokenOut, tokenIn, fee, poolId);
+        address pool = testQuoter.v3TypePool(tokenOut, tokenIn, fee, poolId);
         return abi.encodePacked(tokenIn, uint8(0), poolId, pool, fee, tokenOut);
     }
 
     function getQuoterExactInSingleSgUSDC(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = 3000;
         uint8 poolId = DexMappingsTaiko.DTX;
-        address pool = testQuoter._v3TypePool(tokenOut, tokenIn, fee, poolId);
+        address pool = testQuoter.v3TypePool(tokenOut, tokenIn, fee, poolId);
         return abi.encodePacked(tokenIn, poolId, pool, fee, tokenOut);
     }
 }

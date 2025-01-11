@@ -23,7 +23,7 @@ contract DodoTestTaiko is DeltaSetup {
 
         uint256 amountIn = 0.01e18;
 
-        uint256 quoted = testQuoter.quoteExactInput(
+        uint256 quoted = quoter.quoteExactInput(
             getQuoteSpotExactInSingleDodoV2(assetIn, assetOut, 1),
             amountIn //
         );

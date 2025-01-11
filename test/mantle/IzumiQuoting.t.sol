@@ -28,7 +28,7 @@ contract IzumiQuotingTest is DeltaSetup {
         uint256 amountIn = 1.0005e18;
 
         bytes memory quotePath = getSpotQuotePathSingle(assetIn, assetOut);
-        uint256 quote = testQuoter.quoteExactInput(quotePath, amountIn);
+        uint256 quote = quoter.quoteExactInput(quotePath, amountIn);
         assertApproxEqAbs(2209316977, quote, 1);
     }
 
@@ -44,7 +44,7 @@ contract IzumiQuotingTest is DeltaSetup {
         uint256 amountIn = 1.0005e18;
 
         bytes memory quotePath = getSpotQuotePathDouble(assetIn, mid, assetOut);
-        uint256 quote = testQuoter.quoteExactInput(quotePath, amountIn);
+        uint256 quote = quoter.quoteExactInput(quotePath, amountIn);
         assertApproxEqAbs(2197292332, quote, 1);
     }
 
@@ -60,7 +60,7 @@ contract IzumiQuotingTest is DeltaSetup {
         uint256 amountOut = 3000.0005e6;
 
         bytes memory quotePath = getSpotQuotePathDouble(assetOut, mid, assetIn);
-        uint256 quote = testQuoter.quoteExactOutput(quotePath, amountOut);
+        uint256 quote = quoter.quoteExactOutput(quotePath, amountOut);
         // almost 1 (e18)
         assertApproxEqAbs(967352838013573654, quote, 1);
     }
@@ -77,7 +77,7 @@ contract IzumiQuotingTest is DeltaSetup {
         uint256 amountIn = 3000.0005e6;
 
         bytes memory quotePath = getSpotQuotePathDouble(assetIn, mid, assetOut);
-        uint256 quote = testQuoter.quoteExactInput(quotePath, amountIn);
+        uint256 quote = quoter.quoteExactInput(quotePath, amountIn);
         assertApproxEqAbs(944135636768567967, quote, 1);
     }
 
@@ -93,7 +93,7 @@ contract IzumiQuotingTest is DeltaSetup {
         uint256 amountOut = 1.0005e18;
 
         bytes memory quotePath = getSpotQuotePathDouble(assetOut, mid, assetIn);
-        uint256 quote = testQuoter.quoteExactOutput(quotePath, amountOut);
+        uint256 quote = quoter.quoteExactOutput(quotePath, amountOut);
         // almost 1 (e18)
         assertApproxEqAbs(4039560192, quote, 1);
     }
@@ -109,34 +109,34 @@ contract IzumiQuotingTest is DeltaSetup {
         uint256 amountOut = 3100.0005e18;
 
         bytes memory quotePath = getSpotQuotePathSingle(assetOut, assetIn);
-        uint256 quote = testQuoter.quoteExactInput(quotePath, amountOut);
+        uint256 quote = quoter.quoteExactInput(quotePath, amountOut);
         assertApproxEqAbs(1372871259790997279, quote, 1);
     }
 
     function getSpotQuotePathSingle(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = DEX_FEE_LOW;
         uint8 poolId = DexMappingsMantle.IZUMI;
-        address pool = testQuoter._getiZiPool(tokenIn, tokenOut, fee);
+        address pool = testQuoter.getiZiPool(tokenIn, tokenOut, fee);
         return abi.encodePacked(tokenIn, poolId, pool, fee, tokenOut);
     }
 
     function getSpotQuotePathDouble(address tokenIn, address mid, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = DEX_FEE_LOW;
         uint8 poolId = DexMappingsMantle.IZUMI;
-        address pool = testQuoter._getiZiPool(tokenIn, mid, fee);
+        address pool = testQuoter.getiZiPool(tokenIn, mid, fee);
         data = abi.encodePacked(tokenIn, poolId, pool, fee, mid);
         poolId = DexMappingsMantle.MERCHANT_MOE;
-        pool = testQuoter._v2TypePairAddress(mid, tokenOut, poolId);
+        pool = testQuoter.v2TypePairAddress(mid, tokenOut, poolId);
         data = abi.encodePacked(data, poolId, pool, MERCHANT_MOE_FEE_DENOM, tokenOut);
     }
 
     function getSpotQuotePathDoubleReverse(address tokenIn, address mid, address tokenOut) internal view returns (bytes memory data) {
         uint8 poolId = DexMappingsMantle.MERCHANT_MOE;
-        address pool = testQuoter._v2TypePairAddress(mid, tokenOut, poolId);
+        address pool = testQuoter.v2TypePairAddress(mid, tokenOut, poolId);
         data = abi.encodePacked(tokenIn, poolId, pool, MERCHANT_MOE_FEE_DENOM, mid);
         poolId = DexMappingsMantle.IZUMI;
         uint16 fee = DEX_FEE_LOW;
-        pool = testQuoter._getiZiPool(tokenIn, mid, fee);
+        pool = testQuoter.getiZiPool(tokenIn, mid, fee);
         data = abi.encodePacked(data, poolId, pool, fee, tokenOut);
     }
 }

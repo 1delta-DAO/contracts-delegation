@@ -23,7 +23,7 @@ contract KTXTest is DeltaSetup {
 
         uint256 amountIn = 20.0e18;
 
-        uint256 quoted = testQuoter.quoteExactInput(getKTXQuotePath(assetIn, assetOut), amountIn);
+        uint256 quoted = quoter.quoteExactInput(getKTXQuotePath(assetIn, assetOut), amountIn);
 
         bytes memory swapPath = getSpotExactInSingleKTX(assetIn, assetOut);
         uint256 minimumOut = 0.03e8;
@@ -66,7 +66,7 @@ contract KTXTest is DeltaSetup {
         uint256 amountIn = 20.0e18;
 
         vm.expectRevert();
-        testQuoter.quoteExactInput(getKTXQuotePath(assetIn, assetOut), amountIn);
+        quoter.quoteExactInput(getKTXQuotePath(assetIn, assetOut), amountIn);
     }
 
     function test_mantle_ktx_spot_exact_in_stable_out() external {
@@ -79,7 +79,7 @@ contract KTXTest is DeltaSetup {
 
         uint256 amountIn = 1.0e8;
 
-        uint256 quoted = testQuoter.quoteExactInput(getKTXQuotePath(assetIn, assetOut), amountIn);
+        uint256 quoted = quoter.quoteExactInput(getKTXQuotePath(assetIn, assetOut), amountIn);
 
         bytes memory swapPath = getSpotExactInSingleKTX(assetIn, assetOut);
         uint256 minimumOut = 0.03e8;
@@ -120,7 +120,7 @@ contract KTXTest is DeltaSetup {
 
         uint256 amountIn = 10000.0e6;
 
-        uint256 quoted = testQuoter.quoteExactInput(getKTXQuotePath(assetIn, assetOut), amountIn);
+        uint256 quoted = quoter.quoteExactInput(getKTXQuotePath(assetIn, assetOut), amountIn);
 
         bytes memory swapPath = getSpotExactInSingleKTX(assetIn, assetOut);
         uint256 minimumOut = 0.03e8;

@@ -43,7 +43,7 @@ contract DTXV1TestTaiko is DeltaSetup {
         address assetOut = TokensTaiko.WETH;
         deal(assetIn, user, 1e23);
 
-        address pool = testQuoter._v2TypePairAddress(assetIn, assetOut, DexMappingsTaiko.DTXV1);
+        address pool = testQuoter.v2TypePairAddress(assetIn, assetOut, DexMappingsTaiko.DTXV1);
         bytes memory dataRitsu = getSpotExactInSingleGen2(assetIn, assetOut, DexMappingsTaiko.DTXV1, pool);
 
         bytes memory data = abi.encodePacked(

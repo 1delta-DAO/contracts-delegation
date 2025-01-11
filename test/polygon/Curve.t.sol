@@ -402,7 +402,7 @@ contract CurveTestPolygon is DeltaSetup {
     }
 
     function getSpotExactInSingleGen2(address tokenIn, address tokenOut, uint8 poolId, uint16 fee) internal view returns (bytes memory data) {
-        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
+        address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
         uint8 action = 0;
         return abi.encodePacked(tokenIn, action, poolId, pool, fee, tokenOut);
     }

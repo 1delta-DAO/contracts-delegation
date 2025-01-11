@@ -255,11 +255,11 @@ contract MarginOpenTest is DeltaSetup {
     function getSpotExactOutMultiNativeIn(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = DEX_FEE_STABLES;
         uint8 poolId = DexMappingsMantle.FUSION_X;
-        address pool = testQuoter._v3TypePool(tokenOut, TokensMantle.USDT, fee, poolId);
+        address pool = testQuoter.v3TypePool(tokenOut, TokensMantle.USDT, fee, poolId);
         data = abi.encodePacked(tokenOut, uint8(0), poolId, pool, fee, TokensMantle.USDT);
         fee = DEX_FEE_LOW_HIGH;
         poolId = DexMappingsMantle.IZUMI;
-        pool = testQuoter._getiZiPool(tokenIn, TokensMantle.USDT, fee);
+        pool = testQuoter.getiZiPool(tokenIn, TokensMantle.USDT, fee);
         return abi.encodePacked(data, uint8(0), poolId, pool, fee, tokenIn, uint8(0), uint8(99));
     }
 }

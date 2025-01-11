@@ -58,7 +58,7 @@ contract AccessTests is DeltaSetup {
         vm.prank(attacker);
         IFlashAggregator(brokerProxyAddress).hook(brokerProxyAddress, amount0, amount1, data);
 
-        address pool = testQuoter._v2TypePairAddress(TokensMantle.aUSD, TokensMantle.USDC, DexMappingsMantle.CLEO_V1_STABLE);
+        address pool = testQuoter.v2TypePairAddress(TokensMantle.aUSD, TokensMantle.USDC, DexMappingsMantle.CLEO_V1_STABLE);
 
         // should error before any data is decoded
         vm.expectRevert(0xbafe1c53); // ("InvalidFlashLoan()");

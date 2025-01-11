@@ -210,14 +210,14 @@ contract ComposedFlashLoanTestTaiko is DeltaSetup {
     function getOpenExactInInternal(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = DEX_FEE_HIGHEST;
         uint8 poolId = DexMappingsTaiko.IZUMI;
-        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
+        address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
         return abi.encodePacked(tokenIn, uint8(0), poolId, pool, fee, tokenOut, uint8(0), uint8(0));
     }
 
     function getCloseExactInInternal(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = DEX_FEE_LOW;
         uint8 poolId = DexMappingsTaiko.UNI_V3;
-        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
+        address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
         return abi.encodePacked(tokenIn, uint8(0), poolId, pool, fee, tokenOut, uint8(0), uint8(0));
     }
 
@@ -274,7 +274,7 @@ contract ComposedFlashLoanTestTaiko is DeltaSetup {
     function getOpenExactInSingleIzi(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
         uint16 fee = DEX_FEE_HIGHEST;
         uint8 poolId = DexMappingsTaiko.IZUMI;
-        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
+        address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
         (uint8 actionId, , uint8 endId) = getOpenExactInFlags();
         return abi.encodePacked(tokenIn, actionId, poolId, pool, fee, tokenOut, lenderId, endId);
     }

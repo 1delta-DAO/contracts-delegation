@@ -23,7 +23,7 @@ contract WooFiTest is DeltaSetup {
 
         uint256 amountIn = 1.0e6;
 
-        uint256 quoted = testQuoter._quoteWooFiExactIn(assetIn, assetOut, amountIn);
+        uint256 quoted = quoter.quoteExactInput(getQuoteExactInSingleWOO_FI(assetIn, assetOut), amountIn);
 
         bytes memory swapPath = getSpotExactInSingleWOO_FI(assetIn, assetOut);
         uint256 minimumOut = 0.03e8;
@@ -36,7 +36,7 @@ contract WooFiTest is DeltaSetup {
         bytes memory data = encodeSwap(
             Commands.SWAP_EXACT_IN,
             user,
-            amountIn, // 
+            amountIn, //
             minimumOut,
             false,
             swapPath
@@ -55,8 +55,13 @@ contract WooFiTest is DeltaSetup {
 
     /** WOO_FI PATH BUILDERS */
 
-    function getSpotExactInSingleWOO_FI(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
+    function getSpotExactInSingleWOO_FI(address tokenIn, address tokenOut) internal pure returns (bytes memory data) {
         uint8 poolId = DexMappingsMantle.WOO_FI;
         return abi.encodePacked(tokenIn, uint8(0), poolId, WOO_POOL, tokenOut);
+    }
+
+    function getQuoteExactInSingleWOO_FI(address tokenIn, address tokenOut) internal pure returns (bytes memory data) {
+        uint8 poolId = DexMappingsMantle.WOO_FI;
+        return abi.encodePacked(tokenIn, poolId, WOO_POOL, tokenOut);
     }
 }

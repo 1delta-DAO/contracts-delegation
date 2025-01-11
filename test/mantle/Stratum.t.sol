@@ -7,7 +7,7 @@ import "./DeltaSetup.f.sol";
  * Tests Curve style DEXs exact in swaps
  */
 contract StratumCurveTest is DeltaSetup {
-    uint8 internal constant SWAP_ID = 5;
+    uint8 internal constant SWAP_ID = 200;
 
     function setUp() public virtual override {
         vm.createSelectFork({blockNumber: 63740637, urlOrAlias: "https://mantle-mainnet.public.blastapi.io"});
@@ -24,7 +24,8 @@ contract StratumCurveTest is DeltaSetup {
 
         uint256 amountIn = 5.0e18;
 
-        uint256 quoted = testQuoter._quoteStratumGeneral(getTokenIdEth(assetIn), getTokenIdEth(assetOut), STRATUM_ETH_POOL, amountIn);
+        // uint256 quoted = testQuoter._quoteStratumGeneral(getTokenIdEth(assetIn), getTokenIdEth(assetOut), STRATUM_ETH_POOL, amountIn);
+        uint256 quoted = quoter.quoteExactInput(getQuoteExactInSingleStratumEth(assetIn, assetOut), amountIn);
 
         bytes memory swapPath = getSpotExactInSingleStratumEth(assetIn, assetOut);
         uint256 minimumOut = 0.03e8;
@@ -63,8 +64,8 @@ contract StratumCurveTest is DeltaSetup {
 
         uint256 amountIn = 5.0e18;
 
-        uint256 quoted = testQuoter._quoteStratumGeneral(getTokenIdEth(assetIn), getTokenIdEth(assetOut), STRATUM_ETH_POOL, amountIn);
-
+        // uint256 quoted = testQuoter._quoteStratumGeneral(getTokenIdEth(assetIn), getTokenIdEth(assetOut), STRATUM_ETH_POOL, amountIn);
+        uint256 quoted = quoter.quoteExactInput(getQuoteExactInSingleStratumEth(assetIn, assetOut), amountIn);
         bytes memory swapPath = getSpotExactInSingleStratumEth(assetIn, assetOut);
         uint256 minimumOut = 0.03e8;
         vm.prank(user);
@@ -125,6 +126,20 @@ contract StratumCurveTest is DeltaSetup {
                 tokenOut,
                 uint8(99),
                 uint8(0)
+            );
+    }
+
+    function getQuoteExactInSingleStratumEth(address tokenIn, address tokenOut) internal pure returns (bytes memory data) {
+        uint8 poolId = DexMappingsMantle.STRATUM_CURVE;
+        return
+            abi.encodePacked(
+                tokenIn,
+                uint8(0),
+                poolId,
+                STRATUM_ETH_POOL,
+                abi.encodePacked(getTokenIdEth(tokenIn), getTokenIdEth(tokenOut)),
+                SWAP_ID,
+                tokenOut
             );
     }
 

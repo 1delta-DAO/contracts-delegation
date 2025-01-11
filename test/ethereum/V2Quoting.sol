@@ -21,7 +21,7 @@ contract EthereumQuotingTest is DeltaSetup {
         uint256 amountIn = 1.0005e18;
 
         bytes memory quotePath = getSpotQuotePathSingle(assetIn, assetOut, UNI_V2, UNI_V2_FEE_DENOM);
-        uint256 quote = testQuoter.quoteExactInput(quotePath, amountIn);
+        uint256 quote = quoter.quoteExactInput(quotePath, amountIn);
         assertApproxEqAbs(3373724906, quote, 0);
     }
 
@@ -36,7 +36,7 @@ contract EthereumQuotingTest is DeltaSetup {
         uint256 amountOut = 3100.0005e6;
 
         bytes memory quotePath = getSpotQuotePathSingle(assetOut, assetIn, UNI_V2, UNI_V2_FEE_DENOM);
-        uint256 quote = testQuoter.quoteExactOutput(quotePath, amountOut);
+        uint256 quote = quoter.quoteExactOutput(quotePath, amountOut);
         assertApproxEqAbs(919125098675979978, quote, 0);
     }
 
@@ -51,7 +51,7 @@ contract EthereumQuotingTest is DeltaSetup {
         uint256 amountIn = 100.0005e6;
 
         bytes memory quotePath = getSpotQuotePathSingle_cl(assetIn, assetOut, UNI_V3, DEX_FEE_STABLES);
-        uint256 quote = testQuoter.quoteExactInput(quotePath, amountIn);
+        uint256 quote = quoter.quoteExactInput(quotePath, amountIn);
         assertApproxEqAbs(99941589, quote, 0);
 
         bytes memory data = encodeSwap(
@@ -85,7 +85,7 @@ contract EthereumQuotingTest is DeltaSetup {
         uint256 amountIn = 100.0005e6;
 
         bytes memory quotePath = getSpotQuotePathSingle_cl(assetIn, assetOut, UNI_V3, DEX_FEE_STABLES);
-        uint256 quote = testQuoter.quoteExactInput(quotePath, amountIn);
+        uint256 quote = quoter.quoteExactInput(quotePath, amountIn);
         assertApproxEqAbs(99950729, quote, 0);
 
         bytes memory data = encodeSwap(
@@ -120,7 +120,7 @@ contract EthereumQuotingTest is DeltaSetup {
         uint256 amountIn = 20.0005e18;
 
         bytes memory quotePath = getSpotQuotePathDual(assetIn, mid, assetOut, UNI_V3, DEX_FEE_STABLES);
-        uint256 quote = testQuoter.quoteExactInput(quotePath, amountIn);
+        uint256 quote = quoter.quoteExactInput(quotePath, amountIn);
         assertApproxEqAbs(11059808, quote, 0);
 
         bytes memory data = encodeSwap(
@@ -155,7 +155,7 @@ contract EthereumQuotingTest is DeltaSetup {
         uint256 amountIn = 100.0005e6;
 
         bytes memory quotePath = getSpotQuotePathDual_cl(assetIn, mid, assetOut, UNI_V3, DEX_FEE_STABLES);
-        uint256 quote = testQuoter.quoteExactInput(quotePath, amountIn);
+        uint256 quote = quoter.quoteExactInput(quotePath, amountIn);
         console.log("sad");
         assertApproxEqAbs(99888121, quote, 0);
 
@@ -190,7 +190,7 @@ contract EthereumQuotingTest is DeltaSetup {
         uint256 amountIn = 3.0005e6;
 
         bytes memory quotePath = getSpotQuotePathSingle_izi(assetOut, assetIn);
-        uint256 quote = testQuoter.quoteExactOutput(quotePath, amountIn);
+        uint256 quote = quoter.quoteExactOutput(quotePath, amountIn);
         assertApproxEqAbs(5406712093737610130, quote, 0);
     }
 
@@ -198,22 +198,22 @@ contract EthereumQuotingTest is DeltaSetup {
         address user = testUser;
         vm.assume(user != address(0));
         (bytes memory quotePath, uint256 amountIn) = getData();
-        uint256 quote = testQuoter.quoteExactInput(quotePath, amountIn);
+        uint256 quote = quoter.quoteExactInput(quotePath, amountIn);
         assertApproxEqAbs(215136, quote, 0);
     }
 
     function getSpotQuotePathSingle(address tokenIn, address tokenOut, uint8 poolId, uint16 feeDenom) internal view returns (bytes memory data) {
-        address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
+        address pool = testQuoter.v2TypePairAddress(tokenIn, tokenOut, poolId);
         return abi.encodePacked(tokenIn, poolId, pool, feeDenom, tokenOut);
     }
 
     function getSpotSwapPathSingle(address tokenIn, address tokenOut, uint8 poolId, uint16 feeDenom) internal view returns (bytes memory data) {
-        address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
+        address pool = testQuoter.v2TypePairAddress(tokenIn, tokenOut, poolId);
         return abi.encodePacked(tokenIn, uint8(0), poolId, pool, feeDenom, tokenOut, uint8(0), uint8(99));
     }
 
     function getSpotSwapPathSingleV3(address tokenIn, address tokenOut, uint8 poolId, uint16 fee) internal view returns (bytes memory data) {
-        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
+        address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
         return abi.encodePacked(tokenIn, uint8(0), poolId, pool, fee, tokenOut, uint8(0), uint8(99));
     }
 
@@ -224,36 +224,36 @@ contract EthereumQuotingTest is DeltaSetup {
         uint8 poolId,
         uint16 fee
     ) internal view returns (bytes memory data) {
-        address pool = testQuoter._v3TypePool(tokenIn, mid, fee, poolId);
-        address pool2 = testQuoter._v3TypePool(mid, tokenOut, fee, poolId);
+        address pool = testQuoter.v3TypePool(tokenIn, mid, fee, poolId);
+        address pool2 = testQuoter.v3TypePool(mid, tokenOut, fee, poolId);
         return abi.encodePacked(tokenIn, uint8(0), poolId, pool, fee, mid, uint8(0), poolId, pool2, fee, tokenOut, uint8(0), uint8(99));
     }
 
     function getSpotQuotePathSingle_izi(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        address pool = testQuoter._getiZiPool(tokenIn, tokenOut, 400);
+        address pool = testQuoter.getiZiPool(tokenIn, tokenOut, 400);
         return abi.encodePacked(tokenIn, SOLIDLY_V3, pool, uint16(400), tokenOut);
     }
 
     function getSpotQuotePathSingle_cl(address tokenIn, address tokenOut, uint8 id, uint16 fee) internal view returns (bytes memory data) {
-        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, id);
+        address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, id);
         return abi.encodePacked(tokenIn, id, pool, fee, tokenOut);
     }
 
     function getSpotQuotePathDual_cl(address tokenIn, address mid, address tokenOut, uint8 id, uint16 fee) internal view returns (bytes memory data) {
-        address pool = testQuoter._v3TypePool(tokenIn, mid, fee, id);
-        address pool2 = testQuoter._v3TypePool(mid, tokenOut, fee, id);
+        address pool = testQuoter.v3TypePool(tokenIn, mid, fee, id);
+        address pool2 = testQuoter.v3TypePool(mid, tokenOut, fee, id);
         return abi.encodePacked(tokenIn, id, pool, fee, mid, id, pool2, fee, tokenOut);
     }
 
     function getSpotQuotePathDual(address tokenIn, address mid, address tokenOut, uint8 id, uint16 fee) internal view returns (bytes memory data) {
-        address pool = testQuoter._v3TypePool(tokenIn, mid, fee, id);
-        address pool2 = testQuoter._v2TypePairAddress(mid, tokenOut, UNI_V2);
+        address pool = testQuoter.v3TypePool(tokenIn, mid, fee, id);
+        address pool2 = testQuoter.v2TypePairAddress(mid, tokenOut, UNI_V2);
         return abi.encodePacked(tokenIn, id, pool, fee, mid, UNI_V2, pool2, UNI_V2_FEE_DENOM, tokenOut);
     }
 
     function getSpotSwapPathDual(address tokenIn, address mid, address tokenOut, uint8 id, uint16 fee) internal view returns (bytes memory data) {
-        address pool = testQuoter._v3TypePool(tokenIn, mid, fee, id);
-        address pool2 = testQuoter._v2TypePairAddress(mid, tokenOut, UNI_V2);
+        address pool = testQuoter.v3TypePool(tokenIn, mid, fee, id);
+        address pool2 = testQuoter.v2TypePairAddress(mid, tokenOut, UNI_V2);
         return abi.encodePacked(tokenIn, uint8(0), id, pool, fee, mid, uint8(0), UNI_V2, pool2, UNI_V2_FEE_DENOM, tokenOut);
     }
 

@@ -11,14 +11,13 @@ contract PancakeTypeTest is DeltaSetup {
 
     uint8 internal constant PANCAKE_STABLE_SELECTOR = 3;
 
-    TestQuoterTaiko testQuoter1;
-
     function setUp() public virtual override {
         vm.createSelectFork({blockNumber: 536078, urlOrAlias: "https://rpc.mainnet.taiko.xyz"});
 
         intitializeFullDelta();
 
-        testQuoter1 = new TestQuoterTaiko();
+        testQuoter = new PoolGetter();
+        quoter = new OneDeltaQuoter();
     }
 
     function test_taiko_panko_v3_usdc_spot_exact_in() external {
@@ -31,7 +30,7 @@ contract PancakeTypeTest is DeltaSetup {
 
         uint256 amountIn = 20.0e6;
 
-        uint256 quote = testQuoter1.quoteExactInput(getQuoterExactInSingleSgUSDC(assetIn, assetOut), amountIn);
+        uint256 quote = quoter.quoteExactInput(getQuoterExactInSingleSgUSDC(assetIn, assetOut), amountIn);
 
         bytes memory swapPath = getSpotExactInSingleSgUSDC(assetIn, assetOut);
         uint256 minimumOut = 0.03e8;
@@ -72,7 +71,7 @@ contract PancakeTypeTest is DeltaSetup {
 
         uint256 amountIn = 200.0e6;
 
-        uint256 quote = testQuoter1.quoteExactInput(getQuoterStableExactInSingleSgUSDC(assetIn, assetOut), amountIn);
+        uint256 quote = quoter.quoteExactInput(getQuoterStableExactInSingleSgUSDC(assetIn, assetOut), amountIn);
 
         bytes memory swapPath = getSpotStableExactInSingleSgUSDC(assetIn, assetOut);
         uint256 minimumOut = 198.03e6;
@@ -114,7 +113,7 @@ contract PancakeTypeTest is DeltaSetup {
 
         uint256 amountIn = 400.0e6;
 
-        uint256 quote = testQuoter1.quoteExactInput(getQuoterExactInMultiSgUSDC(assetIn, assetMid, assetOut), amountIn);
+        uint256 quote = quoter.quoteExactInput(getQuoterExactInMultiSgUSDC(assetIn, assetMid, assetOut), amountIn);
 
         bytes memory swapPath = getSpotExactInMultiSgUSDC(assetIn, assetMid, assetOut);
         uint256 minimumOut = 0.03e8;
@@ -156,7 +155,7 @@ contract PancakeTypeTest is DeltaSetup {
 
         uint256 amountIn = 1.0e18;
 
-        uint256 quote = testQuoter1.quoteExactInput(getQuoterExactInMultiSgETH(assetIn, assetMid, assetOut), amountIn);
+        uint256 quote = quoter.quoteExactInput(getQuoterExactInMultiSgETH(assetIn, assetMid, assetOut), amountIn);
         bytes memory swapPath = getSpotExactInMultiSgETH(assetIn, assetMid, assetOut);
         uint256 minimumOut = 0.03e8;
 
@@ -191,7 +190,7 @@ contract PancakeTypeTest is DeltaSetup {
     function getSpotExactInSingleSgUSDC(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = 2500;
         uint8 poolId = DexMappingsTaiko.PANKO_DEX_ID;
-        address pool = testQuoter._v3TypePool(tokenOut, tokenIn, fee, poolId);
+        address pool = testQuoter.v3TypePool(tokenOut, tokenIn, fee, poolId);
         return abi.encodePacked(tokenIn, uint8(0), poolId, pool, fee, tokenOut);
     }
 
@@ -200,7 +199,7 @@ contract PancakeTypeTest is DeltaSetup {
     function getQuoterExactInSingleSgUSDC(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = 2500;
         uint8 poolId = DexMappingsTaiko.PANKO_DEX_ID;
-        address pool = testQuoter._v3TypePool(tokenOut, tokenIn, fee, poolId);
+        address pool = testQuoter.v3TypePool(tokenOut, tokenIn, fee, poolId);
         return abi.encodePacked(tokenIn, poolId, pool, fee, tokenOut);
     }
 
@@ -238,7 +237,7 @@ contract PancakeTypeTest is DeltaSetup {
         data = abi.encodePacked(tokenIn, uint8(0), poolId, pool, indexIn, indexOut, PANCAKE_STABLE_SELECTOR, mid);
         uint16 fee = 2500;
         poolId = DexMappingsTaiko.PANKO_DEX_ID;
-        pool = testQuoter._v3TypePool(mid, tokenOut, fee, poolId);
+        pool = testQuoter.v3TypePool(mid, tokenOut, fee, poolId);
         return abi.encodePacked(data, abi.encodePacked(uint8(0), poolId, pool, fee, tokenOut));
     }
 
@@ -250,14 +249,14 @@ contract PancakeTypeTest is DeltaSetup {
         data = abi.encodePacked(tokenIn, poolId, pool, indexIn, indexOut, PANCAKE_STABLE_SELECTOR, mid);
         uint16 fee = 2500;
         poolId = DexMappingsTaiko.PANKO_DEX_ID;
-        pool = testQuoter._v3TypePool(mid, tokenOut, fee, poolId);
+        pool = testQuoter.v3TypePool(mid, tokenOut, fee, poolId);
         return abi.encodePacked(data, abi.encodePacked(poolId, pool, fee, tokenOut));
     }
 
     function getSpotExactInMultiSgETH(address tokenIn, address mid, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = 2500;
         uint8 poolId = DexMappingsTaiko.PANKO_DEX_ID;
-        address pool = testQuoter._v3TypePool(mid, tokenIn, fee, poolId);
+        address pool = testQuoter.v3TypePool(mid, tokenIn, fee, poolId);
         data = abi.encodePacked(tokenIn, uint8(0), poolId, pool, fee, mid);
         poolId = DexMappingsTaiko.PANKO_STABLE_DEX_ID;
         uint8 indexIn = uint8(getPankoStableIndex(mid));
@@ -269,7 +268,7 @@ contract PancakeTypeTest is DeltaSetup {
     function getQuoterExactInMultiSgETH(address tokenIn, address mid, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = 2500;
         uint8 poolId = DexMappingsTaiko.PANKO_DEX_ID;
-        address pool = testQuoter._v3TypePool(mid, tokenIn, fee, poolId);
+        address pool = testQuoter.v3TypePool(mid, tokenIn, fee, poolId);
         data = abi.encodePacked(tokenIn, poolId, pool, fee, mid);
         poolId = DexMappingsTaiko.PANKO_STABLE_DEX_ID;
         uint8 indexIn = uint8(getPankoStableIndex(mid));

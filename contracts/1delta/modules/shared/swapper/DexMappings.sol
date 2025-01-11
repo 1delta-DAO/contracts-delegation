@@ -3,7 +3,6 @@
 pragma solidity ^0.8.28;
 
 abstract contract DexMappings {
-
     // MAX_ID values are the maximum plus 1
 
     // non-pre-fundeds
@@ -12,9 +11,14 @@ abstract contract DexMappings {
     uint256 internal constant BALANCER_V2_ID = 80;
     uint256 internal constant BALANCER_V2_FORK_ID = 80;
     uint256 internal constant CURVE_V1_MAX_ID = 70;
+    // all DEX that behave like curve
+    // indexs as input
+    // returns out amount
     uint256 internal constant CURVE_V1_STANDARD_ID = 60;
+    // almost like curve, but slight different implementation,
+    // e.g. the function returns no output
     uint256 internal constant CURVE_FORK_ID = 61;
-    
+
     // pre-fundeds
     uint256 internal constant UNISWAP_V2_MAX_ID = 150;
 

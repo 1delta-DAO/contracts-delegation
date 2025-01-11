@@ -25,7 +25,7 @@ contract DodoTest is DeltaSetup {
 
         uint256 amountIn = 0.01e8;
 
-        uint256 quoted = testQuoter.quoteExactInput(
+        uint256 quoted = quoter.quoteExactInput(
             getQuoteSpotExactInSingleDodoV2(assetIn, assetOut, 1),
             amountIn //
         );
@@ -141,12 +141,12 @@ contract DodoTest is DeltaSetup {
 
     /** KTX PATH BUILDERS */
 
-    function getSpotExactInSingleDodoV2(address tokenIn, address tokenOut, uint8 sellQuote) internal view returns (bytes memory data) {
+    function getSpotExactInSingleDodoV2(address tokenIn, address tokenOut, uint8 sellQuote) internal pure returns (bytes memory data) {
         uint8 poolId = DexMappingsMantle.DODO;
         return abi.encodePacked(tokenIn, uint8(0), poolId, FBTC_WBTC_POOL, sellQuote, tokenOut);
     }
 
-    function getQuoteSpotExactInSingleDodoV2(address tokenIn, address tokenOut, uint8 sellQuote) internal view returns (bytes memory data) {
+    function getQuoteSpotExactInSingleDodoV2(address tokenIn, address tokenOut, uint8 sellQuote) internal pure returns (bytes memory data) {
         uint8 poolId = DexMappingsMantle.DODO;
         return abi.encodePacked(tokenIn, poolId, FBTC_WBTC_POOL, sellQuote, tokenOut);
     }
@@ -154,7 +154,7 @@ contract DodoTest is DeltaSetup {
     function getSpotExactInSingleDodoV2Multi(address tokenIn, address tokenOut, uint8 sellQuote) internal view returns (bytes memory data) {
         uint8 poolId = DexMappingsMantle.DODO;
         uint16 fee = 2500;
-        address agniPool = testQuoter._v3TypePool(TokensMantle.FBTC, tokenOut, fee, DexMappingsMantle.AGNI);
+        address agniPool = testQuoter.v3TypePool(TokensMantle.FBTC, tokenOut, fee, DexMappingsMantle.AGNI);
         return
             abi.encodePacked(
                 tokenIn,
