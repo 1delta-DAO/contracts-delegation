@@ -6,8 +6,8 @@ import {
     LensModule__factory,
 } from "../../types";
 import { getPolygonConfig } from "./utils";
-import { ModuleConfigAction, getContractSelectors } from "../../test-ts/libraries/diamond";
-import { ONE_DELTA_GEN2_ADDRESSES_POLYGON } from "./addresses/oneDeltaAddresses";
+import { OneDeltaPolygon } from "./addresses/oneDeltaAddresses";
+import { getContractSelectors, ModuleConfigAction } from "../_utils/diamond";
 
 async function main() {
     const accounts = await ethers.getSigners()
@@ -16,7 +16,8 @@ async function main() {
     if (chainId !== 137) throw new Error("invalid chainId")
     console.log("operator", operator.address, "on", chainId)
 
-    const { proxy } = ONE_DELTA_GEN2_ADDRESSES_POLYGON
+    const STAGE = OneDeltaPolygon.STAGING
+    const { proxy, composerImplementation } = STAGE
 
     // we manually increment the nonce
     let nonce = await operator.getTransactionCount()
@@ -24,7 +25,7 @@ async function main() {
     // deploy modules
     const lens = await new LensModule__factory(operator).attach(proxy)
 
-    const composerSelectors = await lens.moduleFunctionSelectors(ONE_DELTA_GEN2_ADDRESSES_POLYGON.composerImplementation)
+    const composerSelectors = await lens.moduleFunctionSelectors(composerImplementation)
 
     const cut: {
         moduleAddress: string,

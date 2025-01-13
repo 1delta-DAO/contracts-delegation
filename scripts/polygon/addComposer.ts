@@ -1,13 +1,12 @@
 
 import { ethers } from "hardhat";
 import {
-    DeltaBrokerProxyGen2__factory,
     ConfigModule__factory,
-    ManagementModule__factory,
-    LensModule__factory,
+    OneDeltaComposerPolygon__factory,
 } from "../../types";
 import { getPolygonConfig } from "./utils";
 import { ModuleConfigAction, getContractSelectors } from "../_utils/diamond";
+import { OneDeltaPolygon } from "./addresses/oneDeltaAddresses";
 
 async function main() {
     const accounts = await ethers.getSigners()
@@ -19,34 +18,14 @@ async function main() {
     // we manually increment the nonce
     let nonce = await operator.getTransactionCount()
 
-    // deploy module config
-    const moduleConfig = await new ConfigModule__factory(operator).deploy(getPolygonConfig(nonce++))
-    await moduleConfig.deployed()
-
-    console.log("moduleConfig deployed")
-
-    // deploy proxy
-    const proxy = await new DeltaBrokerProxyGen2__factory(operator).deploy(
-        operator.address,
-        moduleConfig.address,
-        getPolygonConfig(nonce++)
-    )
-    
-    await proxy.deployed()
-
-    console.log("proxy deployed")
-
     // deploy modules
 
-    // management
-    const management = await new ManagementModule__factory(operator).deploy(getPolygonConfig(nonce++))
-    await management.deployed()
-
-    const lens = await new LensModule__factory(operator).deploy(getPolygonConfig(nonce++))
-    await lens.deployed()
+    // composer
+    const composer = await new OneDeltaComposerPolygon__factory(operator).deploy(getPolygonConfig(nonce++))
+    await composer.deployed()
 
 
-    console.log("modules deployed")
+    console.log("composer deployed")
 
     const cut: {
         moduleAddress: string,
@@ -56,8 +35,7 @@ async function main() {
 
 
     const modules: any = []
-    modules.push(management)
-    modules.push(lens)
+    modules.push(composer)
 
     console.log("Having", modules.length, "additions")
 
@@ -69,18 +47,16 @@ async function main() {
         })
     }
 
-    const oneDeltaModuleConfig = await new ConfigModule__factory(operator).attach(proxy.address)
+    const oneDeltaModuleConfig = await new ConfigModule__factory(operator).attach(OneDeltaPolygon.STAGING.proxy)
 
-    let tx = await oneDeltaModuleConfig.configureModules(cut)
+    let tx = await oneDeltaModuleConfig.configureModules(cut, getPolygonConfig(nonce++))
     await tx.wait()
     console.log("modules added")
 
-    console.log("deployment complete")
+
+    console.log("addition complete")
     console.log("======== Addresses =======")
-    console.log("moduleConfig:", moduleConfig.address)
-    console.log("proxy:", proxy.address)
-    console.log("management:", management.address)
-    console.log("lens:", lens.address)
+    console.log("composer:", composer.address)
     console.log("==========================")
 }
 

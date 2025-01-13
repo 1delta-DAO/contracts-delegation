@@ -3,20 +3,19 @@ import { ethers } from "hardhat";
 import {
     ManagementModule__factory,
 } from "../../types";
-import { OneDeltaArbitrum } from "./addresses/oneDeltaAddresses";
+import { OneDeltaPolygon } from "./addresses/oneDeltaAddresses";
 import { getAaveApproveDatas, getAaveDatas } from "./lenders/aaveV3";
-import { getAvalonApproveDatas, getAvalonDatas, getAvalonPumpBTCApproveDatas, getAvalonPumpBTCDatas } from "./lenders/avalon";
-import { getVenusApproveDatas, getVenusDatas, getVenusETHApproveDatas, getVenusETHDatas } from "./lenders/venus";
 import { getYldrApproveDatas, getYldrDatas } from "./lenders/yldr";
 import { getInsertAggregators } from "./aggregators/approveAll";
 import { getCompoundV3Approves } from "./lenders/compoundV3";
-import { getArbitrumConfig } from "./utils";
+import { getPolygonConfig } from "./utils";
+import { getAaveV2ApproveDatas, getAaveV2Datas } from "./lenders/aaveV2";
 
 async function main() {
     const accounts = await ethers.getSigners()
     const operator = accounts[1]
     const chainId = await operator.getChainId();
-    if (chainId !== 42161) throw new Error("invalid chainId")
+    if (chainId !== 137) throw new Error("invalid chainId")
     console.log("operator", operator.address, "on", chainId)
 
 
@@ -26,13 +25,10 @@ async function main() {
     // deploy modules
 
     // management
-    const management = await new ManagementModule__factory(operator).attach(OneDeltaArbitrum.PRODUCTION.proxy)
+    const management = await new ManagementModule__factory(operator).attach(OneDeltaPolygon.STAGING.proxy)
 
     const aaveDatas = getAaveDatas()
-    const avalonDatas = getAvalonDatas()
-    const avalonPBTCDatas = getAvalonPumpBTCDatas()
-    const venusDatas = getVenusDatas()
-    const venusETHDatas = getVenusETHDatas()
+    const aaveV2Datas = getAaveV2Datas()
     const yldrDatas = getYldrDatas()
 
     console.log("add lender data")
@@ -40,13 +36,10 @@ async function main() {
     let tx = await management.batchAddGeneralLenderTokens(
         [
             ...aaveDatas,
-            ...avalonDatas,
-            ...avalonPBTCDatas,
-            ...venusDatas,
-            ...venusETHDatas,
+            ...aaveV2Datas,
             ...yldrDatas,
         ],
-        getArbitrumConfig(nonce++)
+        getPolygonConfig(nonce++)
     )
 
     await tx.wait()
@@ -54,24 +47,18 @@ async function main() {
     console.log("lender data added")
 
     const aaveApproves = getAaveApproveDatas()
-    const avalonApproves = getAvalonApproveDatas()
-    const avalonPBTCApproves = getAvalonPumpBTCApproveDatas()
-    const venusApproves = getVenusApproveDatas()
-    const venusETHApproves = getVenusETHApproveDatas()
+    const aaveV2Approves = getAaveV2ApproveDatas()
     const yldrApproves = getYldrApproveDatas()
     const compoundV3Approves = getCompoundV3Approves()
 
     tx = await management.batchApprove(
         [
             ...aaveApproves,
-            ...avalonApproves,
-            ...avalonPBTCApproves,
-            ...venusApproves,
-            ...venusETHApproves,
+            ...aaveV2Approves,
             ...yldrApproves,
             ...compoundV3Approves,
         ],
-        getArbitrumConfig(nonce++)
+        getPolygonConfig(nonce++)
     )
 
     await tx.wait()
@@ -85,7 +72,7 @@ async function main() {
 
             ...validTargets,
         ],
-        getArbitrumConfig(nonce++)
+        getPolygonConfig(nonce++)
     )
 
     console.log("aggregators added")

@@ -346,7 +346,7 @@ const config: HardhatUserConfig = {
             enabled: true,
             runs: 1_000_000,
           },
-          evmVersion: 'shanghai',
+          evmVersion: 'cancun',
         },
       },
       // algebra
@@ -448,7 +448,7 @@ const config: HardhatUserConfig = {
         settings: {
           optimizer: {
             enabled: true,
-            runs: 9_950,
+            runs: 500,
           },
           evmVersion: 'cancun',
         },

@@ -6,16 +6,17 @@ import {
     LensModule__factory,
 } from "../../types";
 import { getMantleConfig } from "./utils";
-import { ModuleConfigAction, getContractSelectors } from "../../test-ts/libraries/diamond";
-import { ONE_DELTA_GEN2_ADDRESSES } from "./addresses/oneDeltaAddresses";
+import { OneDeltaManlte } from "./addresses/oneDeltaAddresses";
+import { getContractSelectors, ModuleConfigAction } from "../_utils/diamond";
 
 
 async function main() {
     const accounts = await ethers.getSigners()
     const operator = accounts[1]
     const chainId = await operator.getChainId();
-    const proxyAddress = ONE_DELTA_GEN2_ADDRESSES.proxy
-    const oldComposer = ONE_DELTA_GEN2_ADDRESSES.composerImplementation
+    const STAGE = OneDeltaManlte.STAGING
+    const proxyAddress = STAGE.proxy
+    const oldComposer = STAGE.composerImplementation
     if (chainId !== 5000) throw new Error("invalid chainId")
     console.log("operator", operator.address, "on", chainId)
 

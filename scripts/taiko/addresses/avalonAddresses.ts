@@ -1,0 +1,22 @@
+
+export namespace AvalonTaiko {
+    export const POOL = '0x9dd29AA2BD662E6b569524ba00C55be39e7B00fB';
+
+    export const A_TOKENS: { [key: string]: string } = {
+        MBTC: '0x89c4e1834F4b3131f8a67F60d85E0C36f12D3fcc',
+        SOLVBTC: "0x8C9510db49b00F44e9C358016E95C8103b362bDe",
+        SOLVBTCBBN: "0x2e7dc6260112F2d496A9Ff7D0A5CC38B3eaddDba",
+    }
+
+    export const V_TOKENS: { [key: string]: string } = {
+        MBTC: '0x0000000000000000000000000000000000000000',
+        SOLVBTC: "0xF8B03861429336D592225a404360EE96C7Cbc411",
+        SOLVBTCBBN: "0x2e7dc6260112F2d496A9Ff7D0A5CC38B3eaddDba",
+    }
+
+    export const S_TOKENS: { [key: string]: string } = {
+        TAIKO: '0x0000000000000000000000000000000000000000',
+        USDC: '0x0000000000000000000000000000000000000000',
+        WETH: '0x0000000000000000000000000000000000000000',
+    }
+}

@@ -6,7 +6,7 @@ import {
 } from "../../types";
 import { getArbitrumConfig } from "./utils";
 import { ModuleConfigAction, getContractSelectors } from "../_utils/diamond";
-import { ONE_DELTA_GEN2_ADDRESSES } from "./addresses/oneDeltaAddresses";
+import { OneDeltaArbitrum } from "./addresses/oneDeltaAddresses";
 
 async function main() {
     const accounts = await ethers.getSigners()
@@ -47,7 +47,7 @@ async function main() {
         })
     }
 
-    const oneDeltaModuleConfig = await new ConfigModule__factory(operator).attach(ONE_DELTA_GEN2_ADDRESSES.proxy)
+    const oneDeltaModuleConfig = await new ConfigModule__factory(operator).attach(OneDeltaArbitrum.PRODUCTION.proxy)
 
     let tx = await oneDeltaModuleConfig.configureModules(cut, getArbitrumConfig(nonce++))
     await tx.wait()

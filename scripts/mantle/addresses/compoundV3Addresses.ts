@@ -1,10 +1,19 @@
 import { AddressMap } from "../../shared"
 
-export const COMET_USDE = '0x606174f62cd968d8e684c645080fa694c1D7786E'
+export namespace CompoundV3Mantle {
+    export const COMET_USDE = '0x606174f62cd968d8e684c645080fa694c1D7786E'
 
-export const COMET_USDE_UNDERLYINGS:AddressMap = {
-    USDE: '0x5d3a1Ff2b6BAb83b63cd9AD0787074081a52ef34',
-    METH: '0xcDA86A272531e8640cD7F1a92c01839911B90bb0',
-    WETH: '0xdEAddEaDdeadDEadDEADDEAddEADDEAddead1111',
-    FBTC: '0xc96de26018a54d51c097160568752c4e3bd6c364',
+
+    export const COMET_DATAS = {
+        USDE: {
+            comet: COMET_USDE,
+            assets: [
+                "USDE",
+                "METH",
+                "WETH",
+                "FBTC",
+            ]
+        },
+    }
+
 }

@@ -16,8 +16,8 @@ library DexMappingsArbitrum {
     uint256 internal constant UNISWAP_V2_MAX_ID = 150;
 
     // exotics
-    uint256 internal constant WOO_FI_ID = 150;
-    uint256 internal constant CURVE_RECEIVED_ID = 151;
+    uint256 internal constant WOO_FI_ID = 155;
+    uint256 internal constant CURVE_RECEIVED_ID = 150;
     uint256 internal constant LB_ID = 160;
     uint256 internal constant GMX_ID = 170;
     uint256 internal constant KTX_ID = 171;
