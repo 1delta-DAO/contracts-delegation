@@ -112,6 +112,10 @@ contract ManagementModule is WithBrokerStorage, Slots {
 
     /** NEW GETTERS */
 
+    function getIsValidTarget(address _target) external view returns (bool) {
+        return cms().isValid[_target];
+    }
+
     function getCollateralToken(address _underlying, uint16 _lenderId) external view returns (address) {
         return ls().collateralTokens[_getLenderTokenKey(_underlying, _lenderId)];
     }
