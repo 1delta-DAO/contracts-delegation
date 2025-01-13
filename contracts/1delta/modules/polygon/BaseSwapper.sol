@@ -13,6 +13,7 @@ import {ExoticOffsets} from "../shared/swapper/ExoticOffsets.sol";
 import {UnoSwapper} from "../shared/swapper/UnoSwapper.sol";
 import {GMXSwapper} from "../shared/swapper/GMXSwapper.sol";
 import {LBSwapper} from "../shared/swapper/LBSwapper.sol";
+import {DodoV2Swapper} from "../shared/swapper/DodoV2Swapper.sol";
 import {BalancerSwapper} from "../shared/swapper/BalancerSwapper.sol";
 import {CurveMetaSwapper} from "../shared/swapper/CurveMetaSwapper.sol";
 import {WooFiSwapper} from "./swappers/WooFi.sol";
@@ -38,6 +39,7 @@ abstract contract BaseSwapper is
     WooFiSwapper,
     BalancerSwapper,
     LBSwapper,
+    DodoV2Swapper,
     GMXSwapper //
 {
     /// @dev Mask of lower 1 byte.
