@@ -68,17 +68,6 @@ contract AddressesEthereum {
     uint16 internal BIN_STEP_LOWEST = 1;
     uint16 internal BIN_STEP_LOW = 10;
 
-    uint8 internal UNI_V3 = 0;
-    uint8 internal PANCAKE_V3 = 1;
-    uint8 internal SUSHI_V3 = 2;
-    uint8 internal SOLIDLY_V3 = 3;
-    uint8 internal CURVE = 60;
-    uint8 internal CURVE_NG = 151;
-    uint8 internal CURVE_META = 61;
-
-    uint8 internal UNI_V2 = 100;
-    uint8 internal SUSHI_V2 = 102;
-
     uint16 internal UNI_V2_FEE_DENOM = 10000 - 30;
     uint16 internal SUSHI_V2_FEE_DENOM = 10000 - 30;
 

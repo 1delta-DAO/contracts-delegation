@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.28;
 
-library DexMappingsArbitrum {
+library DexMappingsEthereum {
     // MAX_ID values are the maximum plus 1
 
     // non-pre-fundeds
@@ -24,23 +24,25 @@ library DexMappingsArbitrum {
     uint256 internal constant DODO_ID = 180;
     uint256 internal constant SYNC_SWAP_ID = 190;
 
-    // Arbitrum Ids
+    // Taiko Ids
+
+    uint8 internal constant PANCAKE_V3 = 2;
+    uint8 internal constant SOLIDLY_V3 = 2;
+    uint8 internal constant HENJIN = 2;
+    uint8 internal constant SUSHI_V3 = 3;
+    uint8 internal constant SWAPSICLE = 5;
+    uint8 internal constant DTX = 1;
     uint8 internal constant UNI_V3 = 0;
-    uint8 internal constant RAMSES = 3;
-    uint8 internal constant SUSHI_V3 = 1;
-    uint8 internal constant ALGEBRA = 4;
-    uint8 internal constant PANCAKE = 2;
-    uint8 internal constant IZUMI = 49;
-    uint8 internal constant BALANCER_V2_DEXID = uint8(BALANCER_V2_ID);
-    uint8 internal constant CURVE = 60;
-    uint8 internal constant CURVE_NG = 150;
-
     uint8 internal constant UNI_V2 = 100;
-    uint8 internal constant SUSHI_V2 = 101;
-    uint8 internal constant APESWAP = 102;
+    uint8 internal constant IZUMI = 49;
+    uint8 internal constant PANKO_DEX_ID = 3;
+    uint8 internal constant PANKO_STABLE_DEX_ID = 61;
 
-    uint8 internal constant CAMELOT_V2_VOLATILE = 121;
-    uint8 internal constant CAMELOT_V2_STABLE = 136;
-    uint8 internal constant RAMSES_V1_STABLE = 135;
-    uint8 internal constant RAMSES_V1_VOLAT = 120;
+    uint8 internal constant KODO_STABLE = 135;
+    uint8 internal constant KODO_VOLAT = 120;
+    uint8 internal constant DTXV1 = 100;
+    uint8 internal constant RITSU = uint8(SYNC_SWAP_ID);
+
+    uint8 internal constant DODO = uint8(DODO_ID);
+
 }
