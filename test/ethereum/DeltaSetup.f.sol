@@ -305,7 +305,7 @@ abstract contract DeltaSetup is AddressesEthereum, ComposerUtils, Script, Test {
         initializeDeltaAaveV3();
         initializeDeltaSpark();
 
-        management.setValidTarget(address(router), address(router), true);
+        management.setValidTarget(address(router), true);
     }
 
     /** DEPOSIT AND OPEN TO SPIN UP POSITIONS */
