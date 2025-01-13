@@ -6,6 +6,7 @@ pragma solidity 0.8.28;
 * Author: Achthar | 1delta 
 /******************************************************************************/
 
+import {BaseLending} from "./BaseLending.sol";
 import {BaseSwapper} from "./BaseSwapper.sol";
 import {V2ReferencesPolygon} from "./swappers/V2References.sol";
 import {V3ReferencesPolygon} from "./swappers/V3References.sol";
@@ -15,7 +16,7 @@ import {PreFunder} from "../shared/funder/PreFunder.sol";
  * @title Contract Module for general Margin Trading on an borrow delegation compatible Lender
  * @notice Contains main logic for uniswap-type callbacks and initiator functions
  */
-abstract contract MarginTrading is BaseSwapper, V2ReferencesPolygon, V3ReferencesPolygon, PreFunder {
+abstract contract MarginTrading is BaseLending, BaseSwapper, V2ReferencesPolygon, V3ReferencesPolygon, PreFunder {
     // errors
     error NoBalance();
 
