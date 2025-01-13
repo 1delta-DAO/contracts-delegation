@@ -2,7 +2,6 @@
 
 pragma solidity ^0.8.28;
 
-import {DeltaErrors} from "../shared/errors/Errors.sol";
 import {Slots} from "../shared/storage/Slots.sol";
 
 /******************************************************************************\
@@ -14,7 +13,7 @@ import {Slots} from "../shared/storage/Slots.sol";
 /**
  * @notice Lending base contract that wraps multiple lender types.
  */
-abstract contract BaseLending is Slots, DeltaErrors {
+abstract contract BaseLending is Slots {
     // errors
     error BadLender();
 

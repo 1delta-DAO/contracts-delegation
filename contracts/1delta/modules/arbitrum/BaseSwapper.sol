@@ -6,7 +6,7 @@ pragma solidity ^0.8.28;
 * Author: Achthar | 1delta 
 /******************************************************************************/
 
-import {BaseLending} from "./BaseLending.sol";
+import {DeltaErrors} from "../shared/errors/Errors.sol";
 import {PermitUtils} from "../shared/permit/PermitUtils.sol";
 import {DexMappings} from "../shared/swapper/DexMappings.sol";
 import {ExoticOffsets} from "../shared/swapper/ExoticOffsets.sol";
@@ -29,7 +29,7 @@ import {WooFiSwapper} from "./swappers/WooFi.sol";
  *             Solidly:121 - 130
  */
 abstract contract BaseSwapper is
-    BaseLending,
+    DeltaErrors,
     PermitUtils,
     DexMappings,
     ExoticOffsets,
