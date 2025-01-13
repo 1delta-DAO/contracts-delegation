@@ -19,6 +19,13 @@ abstract contract MarginTrading is BaseSwapper, V2ReferencesMantle, V3References
     // errors
     error NoBalance();
 
+    /// @dev Mask of lower 20 bytes.
+    uint256 private constant ADDRESS_MASK = 0x00ffffffffffffffffffffffffffffffffffffffff;
+    /// @dev Mask of lower 1 byte.
+    uint256 private constant UINT8_MASK = 0xff;
+    /// @dev Mask of lower 2 bytes.
+    uint256 private constant UINT16_MASK = 0xffff;
+
     uint256 internal constant PATH_OFFSET_CALLBACK_V2 = 164;
     uint256 internal constant PATH_OFFSET_CALLBACK_V3 = 132;
     uint256 internal constant NEXT_SWAP_V3_OFFSET = 176 ; //PATH_OFFSET_CALLBACK_V3 + SKIP_LENGTH_UNOSWAP;
