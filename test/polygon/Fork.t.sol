@@ -3,6 +3,8 @@ pragma solidity ^0.8.19;
 
 import "./DeltaSetup.f.sol";
 
+// solhint-disable max-line-length
+
 contract ForkTestPolygon is DeltaSetup {
     function setUp() public virtual override {
         vm.createSelectFork({blockNumber: 66030114, urlOrAlias: "https://polygon.api.onfinality.io/public"});

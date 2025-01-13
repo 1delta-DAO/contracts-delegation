@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
+// solhint-disable max-line-length
+
 import {AddressesTaiko, IFactoryFeeGetter} from "./utils/CommonAddresses.f.sol";
 import {QuoterTaiko} from "../../contracts/1delta/quoter/Taiko.sol";
 import {PoolGetter} from "../../contracts/1delta/quoter/poolGetter/Taiko.sol";

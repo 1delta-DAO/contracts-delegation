@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
+// solhint-disable max-line-length
+
 import "../../contracts/1delta/modules/shared/Commands.sol";
 import "./DeltaSetup.f.sol";
 

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
+// solhint-disable max-line-length
+
 import {AddressesPolygon} from "./utils/CommonAddresses.f.sol";
 import {QuoterPolygon} from "../../contracts/1delta/quoter/Polygon.sol";
 import {PoolGetter} from "../../contracts/1delta/quoter/poolGetter/Polygon.sol";
