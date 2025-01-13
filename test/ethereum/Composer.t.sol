@@ -243,13 +243,13 @@ contract ComposerTestEthereum is DeltaSetup {
         bytes memory dataAgni = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
-            UNI_V3,
+            DexMappingsEthereum.UNI_V3,
             uint16(DEX_FEE_STABLES) //
         );
         bytes memory dataFusion = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
-            SUSHI_V3,
+            DexMappingsEthereum.SUSHI_V3,
             uint16(DEX_FEE_STABLES) //
         );
 
@@ -291,8 +291,8 @@ contract ComposerTestEthereum is DeltaSetup {
         fees[0] = uint16(500);
         fees[1] = uint16(500);
         pids = new uint8[](2);
-        pids[0] = SUSHI_V3;
-        pids[1] = UNI_V3;
+        pids[0] = DexMappingsEthereum.SUSHI_V3;
+        pids[1] = DexMappingsEthereum.UNI_V3;
     }
 
     function getWethToNative()
@@ -312,8 +312,8 @@ contract ComposerTestEthereum is DeltaSetup {
         fees[0] = uint16(500);
         fees[1] = uint16(500);
         pids = new uint8[](2);
-        pids[0] = UNI_V3;
-        pids[1] = SUSHI_V3;
+        pids[0] = DexMappingsEthereum.UNI_V3;
+        pids[1] = DexMappingsEthereum.SUSHI_V3;
     }
 
     function test_ethereum_composer_multi_route_exact_in_native() external {
@@ -328,7 +328,7 @@ contract ComposerTestEthereum is DeltaSetup {
         bytes memory dataAgni = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
-            UNI_V3,
+            DexMappingsEthereum.UNI_V3,
             uint16(DEX_FEE_LOW) //
         );
         bytes memory dataFusion;
@@ -371,7 +371,7 @@ contract ComposerTestEthereum is DeltaSetup {
         bytes memory dataAgni = getSpotExactOutSingleGen2(
             assetIn,
             assetOut,
-            UNI_V3,
+            DexMappingsEthereum.UNI_V3,
             uint16(500) //
         );
         bytes memory dataFusion;
@@ -427,7 +427,7 @@ contract ComposerTestEthereum is DeltaSetup {
         bytes memory dataAgni = getSpotExactOutSingleGen2(
             assetIn,
             assetOut,
-            UNI_V3,
+            DexMappingsEthereum.UNI_V3,
             uint16(500) //
         );
         bytes memory dataFusion;
@@ -480,7 +480,7 @@ contract ComposerTestEthereum is DeltaSetup {
         bytes memory dataAgni = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
-            UNI_V3,
+            DexMappingsEthereum.UNI_V3,
             uint16(DEX_FEE_LOW) //
         );
         bytes memory dataFusion;
@@ -536,13 +536,13 @@ contract ComposerTestEthereum is DeltaSetup {
         bytes memory dataAgni = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
-            UNI_V3,
+            DexMappingsEthereum.UNI_V3,
             uint16(DEX_FEE_STABLES) //
         );
         bytes memory dataFusion = getSpotExactInSingleGen2(
             assetIn,
             assetOut,
-            SUSHI_V3,
+            DexMappingsEthereum.SUSHI_V3,
             uint16(DEX_FEE_STABLES) //
         );
 
@@ -585,13 +585,13 @@ contract ComposerTestEthereum is DeltaSetup {
         bytes memory dataAgni = getSpotExactOutSingleGen2(
             assetIn,
             assetOut,
-            UNI_V3,
+            DexMappingsEthereum.UNI_V3,
             uint16(DEX_FEE_STABLES) //
         );
         bytes memory dataFusion = getSpotExactOutSingleGen2(
             assetIn,
             assetOut,
-            SUSHI_V3,
+            DexMappingsEthereum.SUSHI_V3,
             uint16(DEX_FEE_STABLES) //
         );
 
