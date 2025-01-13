@@ -265,7 +265,7 @@ abstract contract CurveSwapper {
                 indexData := 0xf
             }
             case 6 {
-                // exchange_underlying(uint256,uint256,uint256,uint256,address)
+                // selector for exchange_underlying(uint256,uint256,uint256,uint256,address)
                 mstore(ptr, EXCHANGE_UNDERLYING_WITH_RECEIVER)
                 mstore(add(ptr, 0x4), and(shr(88, indexData), 0xff))
                 mstore(add(ptr, 0x24), and(shr(80, indexData), 0xff))
