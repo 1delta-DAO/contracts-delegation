@@ -7,12 +7,15 @@ pragma solidity 0.8.28;
 /******************************************************************************/
 
 import {BaseSwapper} from "./BaseSwapper.sol";
+import {V2ReferencesMantle} from "./swappers/V2References.sol";
+import {V3ReferencesMantle} from "./swappers/V3References.sol";
+import {PreFunder} from "../shared/funder/PreFunder.sol";
 
 /**
  * @title Contract Module for general Margin Trading on an borrow delegation compatible Lender
  * @notice Contains main logic for uniswap-type callbacks and initiator functions
  */
-abstract contract MarginTrading is BaseSwapper {
+abstract contract MarginTrading is BaseSwapper, V2ReferencesMantle, V3ReferencesMantle, PreFunder {
     // errors
     error NoBalance();
 
@@ -1616,21 +1619,6 @@ abstract contract MarginTrading is BaseSwapper {
         }
     }
 
-    /// @dev gets leder and pay config - the assumption is that the last byte is the payType
-    ///      and the second last is the lenderId
-    function getPayConfigFromCalldata(uint256 offset, uint256 length) internal pure returns(uint256 payType, uint256 lenderId){
-        assembly {
-            let lastWord := calldataload(
-                sub(
-                    add(offset, length),
-                    32
-                )
-            )
-            lenderId := and(shr(8, lastWord), UINT16_MASK)
-            payType := and(lastWord, UINT8_MASK)
-        }
-    }
-
     /**
      * Handle a payment from payer to receiver via different channels
      * @param token The token to pay
@@ -1677,74 +1665,4 @@ abstract contract MarginTrading is BaseSwapper {
             _repay(token, user, amount, payId, lenderId);
         }
      } 
-
-
-    function payConventional(address underlying,address payer, address receiver, uint256 amount) internal {
-        assembly {
-            switch eq(payer, address())
-            case 0 {
-                let ptr := mload(0x40) // free memory pointer
-
-                // selector for transferFrom(address,address,uint256)
-                mstore(ptr, ERC20_TRANSFER_FROM)
-                mstore(add(ptr, 0x04), payer)
-                mstore(add(ptr, 0x24), receiver)
-                mstore(add(ptr, 0x44), amount)
-
-                let success := call(gas(), underlying, 0, ptr, 0x64, ptr, 32)
-
-                let rdsize := returndatasize()
-
-                // Check for ERC20 success. ERC20 tokens should return a boolean,
-                // but some don't. We accept 0-length return data as success, or at
-                // least 32 bytes that starts with a 32-byte boolean true.
-                success := and(
-                    success, // call itself succeeded
-                    or(
-                        iszero(rdsize), // no return data, or
-                        and(
-                            iszero(lt(rdsize, 32)), // at least 32 bytes
-                            eq(mload(ptr), 1) // starts with uint256(1)
-                        )
-                    )
-                )
-
-                if iszero(success) {
-                    returndatacopy(0, 0, rdsize)
-                    revert(0, rdsize)
-                }
-            }
-            default {
-                let ptr := mload(0x40) // free memory pointer
-
-                // selector for transfer(address,uint256)
-                mstore(ptr, ERC20_TRANSFER)
-                mstore(add(ptr, 0x04), receiver)
-                mstore(add(ptr, 0x24), amount)
-
-                let success := call(gas(), underlying, 0, ptr, 0x44, ptr, 32)
-
-                let rdsize := returndatasize()
-
-                // Check for ERC20 success. ERC20 tokens should return a boolean,
-                // but some don't. We accept 0-length return data as success, or at
-                // least 32 bytes that starts with a 32-byte boolean true.
-                success := and(
-                    success, // call itself succeeded
-                    or(
-                        iszero(rdsize), // no return data, or
-                        and(
-                            iszero(lt(rdsize, 32)), // at least 32 bytes
-                            eq(mload(ptr), 1) // starts with uint256(1)
-                        )
-                    )
-                )
-
-                if iszero(success) {
-                    returndatacopy(0, 0, rdsize)
-                    revert(0, rdsize)
-                }
-            }
-        }
-    }
 }
