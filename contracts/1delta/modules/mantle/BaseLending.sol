@@ -2,8 +2,8 @@
 
 pragma solidity ^0.8.28;
 
+import {DeltaErrors} from "../shared/errors/Errors.sol";
 import {Slots} from "../shared/storage/Slots.sol";
-import {ExoticSwapper} from "./swappers/Exotic.sol";
 
 /******************************************************************************\
 * Author: Achthar | 1delta 
@@ -14,7 +14,7 @@ import {ExoticSwapper} from "./swappers/Exotic.sol";
 /**
  * @notice Lending base contract that wraps multiple lender types.
  */
-abstract contract BaseLending is Slots, ExoticSwapper {
+abstract contract BaseLending is Slots, DeltaErrors {
     // errors
     error BadLender();
 
