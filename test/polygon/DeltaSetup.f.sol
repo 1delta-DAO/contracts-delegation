@@ -82,7 +82,6 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
         selectors[9] = IManagement.getStableDebtToken.selector;
         selectors[10] = IManagement.getDebtToken.selector;
         selectors[11] = IManagement.clearCache.selector;
-        selectors[12] = IManagement.setValidSingleTarget.selector;
         return selectors;
     }
 
@@ -332,7 +331,7 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
         vm.createSelectFork({blockNumber: 58645304, urlOrAlias: "https://polygon-rpc.com"});
         router = new MockRouter(1.0e18, 12);
         intitializeFullDelta();
-        management.setValidSingleTarget(address(router), true);
+        management.setValidTarget(address(router), true);
     }
 
     /** DEPOSIT AND OPEN TO SPIN UP POSITIONS */

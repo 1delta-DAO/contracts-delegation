@@ -84,7 +84,6 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
         selectors[9] = IManagement.getStableDebtToken.selector;
         selectors[10] = IManagement.getDebtToken.selector;
         selectors[11] = IManagement.clearCache.selector;
-        selectors[12] = IManagement.setValidSingleTarget.selector;
         selectors[13] = IManagement.batchApprove.selector;
         selectors[14] = IManagement.batchAddGeneralLenderTokens.selector;
         return selectors;
@@ -421,7 +420,7 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
         vm.createSelectFork({blockNumber: 290934482, urlOrAlias: "https://arbitrum.drpc.org"});
         router = new MockRouter(1.0e18, 12);
         intitializeFullDelta();
-        management.setValidSingleTarget(address(router), true);
+        management.setValidTarget(address(router), true);
         // ensure test user to have native
         vm.deal(testUser, 1e18);
     }

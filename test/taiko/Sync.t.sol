@@ -4,57 +4,9 @@ pragma solidity ^0.8.19;
 import "../../contracts/1delta/modules/shared/Commands.sol";
 import "./DeltaSetup.f.sol";
 
-
 // solhint-disable max-line-length
 
-interface ISyncSwap {
-    function swap(bytes calldata _data, address _sender, address _callback, bytes calldata _callbackData) external;
-
-    function master() external view returns (address);
-}
-
-interface ISyncTest {
-    function swap(
-        bytes calldata _data,
-        address _sender,
-        address _callback,
-        bytes calldata _callbackData //
-    ) external;
-}
-
-contract SyncTest {
-    receive() external payable {}
-
-    fallback() external payable {
-        bytes calldata b;
-        assembly {
-            let ptr := 100000000
-            let cdlen := calldatasize()
-            // Store at 0x40, to leave 0x00-0x3F for slot calculation below.
-            calldatacopy(ptr, 0x00, cdlen)
-            b.offset := 0
-            b.length := cdlen
-        }
-        console.logBytes(b);
-    }
-}
-
 contract ComposerTestTaiko is DeltaSetup {
-    function test_taiko_sync() external {
-        SyncTest st = new SyncTest();
-                address tokenIn = address(1);
-        address to = address(2);
-        bytes memory _data = abi.encode(tokenIn, to, uint8(99));
-
-          bytes32 data32 = 0xe18a34eb0e04b04f7a0ac29a6e80748dca96319b42c54d679cb821dca90c6303;
-        bytes memory _data2 = abi.encode(data32,data32);
-              address sender = address(11);
-        address callback = address(12);
-        ISyncTest(address(st)).swap(_data, sender, callback, _data2);
-
-        console.log("test---");
-        extCall(address(st));
-    }
 
     bytes32 internal constant SYNCSWAP_SELECTOR = 0x7132bb7f00000000000000000000000000000000000000000000000000000000;
 

@@ -122,7 +122,7 @@ contract ComposedFlashLoanTestPolygon is DeltaSetup {
     function test_polygon_ext_call() external {
         address someAddr = vm.addr(0x324);
 
-        management.setValidSingleTarget(someAddr, true);
+        management.setValidTarget(someAddr, true);
 
         bool val = management.getIsValidTarget(someAddr);
         console.log(val);

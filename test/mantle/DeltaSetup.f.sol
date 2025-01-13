@@ -77,7 +77,6 @@ contract DeltaSetup is AddressesMantle, ComposerUtils, Script, Test {
         selectors[10] = IManagement.getDebtToken.selector;
         selectors[11] = IManagement.clearCache.selector;
         selectors[12] = IManagement.addLendingPool.selector;
-        selectors[13] = IManagement.setValidSingleTarget.selector;
         return selectors;
     }
 

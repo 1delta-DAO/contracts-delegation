@@ -88,11 +88,7 @@ contract ManagementModule is WithBrokerStorage, Slots {
         ls().lendingPools[_lenderId] = _poolAddress;
     }
 
-    function setValidTarget(address _approvalTarget, address _target, bool value) external onlyOwner {
-        es().isValidApproveAndCallTarget[_approvalTarget][_target] = value;
-    }
-
-    function setValidSingleTarget(address _target, bool value) external onlyOwner {
+    function setValidTarget(address _target, bool value) external onlyOwner {
         cms().isValid[_target] = value;
     }
 

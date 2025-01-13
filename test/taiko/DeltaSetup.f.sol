@@ -79,7 +79,6 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
         selectors[9] = IManagement.getStableDebtToken.selector;
         selectors[10] = IManagement.getDebtToken.selector;
         selectors[11] = IManagement.clearCache.selector;
-        selectors[12] = IManagement.setValidSingleTarget.selector;
         return selectors;
     }
 
