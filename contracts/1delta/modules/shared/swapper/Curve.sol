@@ -6,6 +6,8 @@ pragma solidity 0.8.28;
 * Author: Achthar | 1delta 
 /******************************************************************************/
 
+// solhint-disable max-line-length
+
 /**
  * @title Curve swapper contract
  * @notice We do Curve stuff here
