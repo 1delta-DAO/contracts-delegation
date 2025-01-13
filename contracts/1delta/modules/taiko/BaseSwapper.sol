@@ -143,7 +143,7 @@ abstract contract BaseSwapper is BaseLending,
             }
         } else if (dexId == CURVE_V1_STANDARD_ID) {
             assembly {
-                switch lt(pathLength, 68) // MAX_SINGLE_LENGTH_CURVE + 1
+                switch lt(pathLength, MAX_SINGLE_LENGTH_CURVE_HIGH) // MAX_SINGLE_LENGTH_CURVE + 1
                 case 1 { currentReceiver := receiver}
                 default {
                     dexId := and(calldataload(add(pathOffset, 35)), UINT8_MASK)
@@ -171,7 +171,7 @@ abstract contract BaseSwapper is BaseLending,
             }
         } else if (dexId == CURVE_FORK_ID) {
             assembly {
-                switch lt(pathLength, 68) // MAX_SINGLE_LENGTH_CURVE + 1
+                switch lt(pathLength, MAX_SINGLE_LENGTH_CURVE_HIGH) // MAX_SINGLE_LENGTH_CURVE + 1
                 case 1 { currentReceiver := receiver}
                 default {
                     dexId := and(calldataload(add(pathOffset, 35)), UINT8_MASK)
@@ -269,6 +269,36 @@ abstract contract BaseSwapper is BaseLending,
             assembly {
                 pathOffset := add(pathOffset, SKIP_LENGTH_UNOSWAP)
                 pathLength := sub(pathLength, SKIP_LENGTH_UNOSWAP)
+            }
+        }
+        // Curve NG
+        else if (dexId == CURVE_RECEIVED_ID) {
+            assembly {
+                switch lt(pathLength, MAX_SINGLE_LENGTH_CURVE_HIGH) // 
+                case 1 { currentReceiver := receiver}
+                default {
+                    dexId := and(calldataload(add(pathOffset, 35)), UINT8_MASK)
+                    switch gt(dexId, 99) 
+                    case 1 {
+                        currentReceiver := shr(
+                                96,
+                                calldataload(
+                                    add(
+                                        pathOffset,
+                                        RECEIVER_OFFSET_CURVE // 20 + 2 + 20 + 2 [poolAddress starts here]
+                                    )
+                                ) // poolAddress
+                            )
+                    }
+                    default {
+                        currentReceiver := address()
+                    }
+                }
+            }
+            amountIn = _swapCurveReceived(pathOffset, amountIn, currentReceiver);
+            assembly {
+                pathOffset := add(pathOffset, SKIP_LENGTH_CURVE)
+                pathLength := sub(pathLength, SKIP_LENGTH_CURVE)
             }
         }
         // syncSwap style

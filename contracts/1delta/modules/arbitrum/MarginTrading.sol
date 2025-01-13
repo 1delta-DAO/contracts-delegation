@@ -1354,15 +1354,15 @@ abstract contract MarginTrading is BaseSwapper, V2ReferencesArbitrum, V3Referenc
         }
         // uniswapV3 types
         if (poolId < UNISWAP_V3_MAX_ID) {
-            address reciever;
+            address receiver;
             assembly {
                 switch lt(pathLength, MAX_SINGLE_LENGTH_UNOSWAP_HIGH) // see swapExactIn
-                case 1 { reciever := address()}
+                case 1 { receiver := address()}
                 default {
                     let nextId := and(calldataload(add(pathOffset, 34)), UINT8_MASK) // SKIP_LENGTH_UNISWAP - 10
                     switch gt(nextId, 99) 
                     case 1 {
-                        reciever := shr(
+                        receiver := shr(
                                 96,
                                 calldataload(
                                     add(
@@ -1373,7 +1373,7 @@ abstract contract MarginTrading is BaseSwapper, V2ReferencesArbitrum, V3Referenc
                             )
                     }
                     default {
-                        reciever := address()
+                        receiver := address()
                     }
                 }
             }
@@ -1381,22 +1381,22 @@ abstract contract MarginTrading is BaseSwapper, V2ReferencesArbitrum, V3Referenc
                 amountIn,
                 amountOutMinimum,
                 payer,
-                reciever,
+                receiver,
                 pathOffset,
                 pathLength
             );
         }
         // iZi
         else if (poolId == IZI_ID) {
-            address reciever;
+            address receiver;
             assembly {
                 switch lt(pathLength, MAX_SINGLE_LENGTH_UNOSWAP_HIGH) // see swapExactIn
-                case 1 { reciever := address()}
+                case 1 { receiver := address()}
                 default {
                     let nextId := and(calldataload(add(pathOffset, 34)), UINT8_MASK) // SKIP_LENGTH_UNISWAP - 10
                     switch gt(nextId, 99) 
                     case 1 {
-                        reciever := shr(
+                        receiver := shr(
                                 96,
                                 calldataload(
                                     add(
@@ -1407,7 +1407,7 @@ abstract contract MarginTrading is BaseSwapper, V2ReferencesArbitrum, V3Referenc
                             )
                     }
                     default {
-                        reciever := address()
+                        receiver := address()
                     }
                 }
             }
@@ -1415,7 +1415,7 @@ abstract contract MarginTrading is BaseSwapper, V2ReferencesArbitrum, V3Referenc
                 uint128(amountIn),
                 amountOutMinimum,
                 payer,
-                reciever,
+                receiver,
                 pathOffset,
                 pathLength
             );

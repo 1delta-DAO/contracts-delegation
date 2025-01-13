@@ -13,7 +13,7 @@ export namespace OneDeltaTaiko {
         proxy: "0x164e08ACE9DAe58BEa18eF268b716f5deBD7c692",
         config: "0x61895aEB0a42679E2Df8EE64334C405a8d47D244",
         lensImplementation: "0x541548dA7985e6DAc5103e249CfBb3906156C73B",
-        composerImplementation: "0xbaEe36c9ef69b0F8454e379314c7CBA628Fc6B61",
+        composerImplementation: "0x6f064Eca024f7065b09372FEe1f8a3854843decA",
         managementImplementation: "0xfc9a330FCDC60ff4719AF3739F9f34914ae6213a"
     }
 }

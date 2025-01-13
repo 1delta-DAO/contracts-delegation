@@ -151,7 +151,7 @@ abstract contract CurveMetaSwapper {
                 amountOut := mload(ptr)
             }
             default {
-                // otherwise, the reciever is this contract
+                // otherwise, the receiver is this contract
                 mstore(ptr, EXCHANGE_META)
                 mstore(add(ptr, 0x4), shr(96, indexData))
                 mstore(add(ptr, 0x24), and(shr(88, indexData), 0xff)) // indexIn
