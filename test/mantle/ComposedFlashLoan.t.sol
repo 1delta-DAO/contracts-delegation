@@ -124,11 +124,10 @@ contract ComposedFlashLoanTest is DeltaSetup {
 
     function test_mantle_ext_call() external {
         address someAddr = vm.addr(0x324);
-        address someOtherAddr = vm.addr(0x324);
 
-        management.setValidTarget(someAddr, someOtherAddr, true);
+        management.setValidSingleTarget(someAddr, true);
 
-        bool val = management.getIsValidTarget(someAddr, someOtherAddr);
+        bool val = management.getIsValidTarget(someAddr);
         console.log(val);
     }
 

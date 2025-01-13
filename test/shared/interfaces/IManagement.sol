@@ -57,7 +57,7 @@ interface IManagement {
 
     function getVToken(address _underlying) external view returns (address);
 
-    function getIsValidTarget(address _approvalTarget, address _target) external view returns (bool);
+    function getIsValidTarget(address _target) external view returns (bool);
 
     function getCollateralToken(address _underlying, uint16 _lenderId) external view returns (address);
 
