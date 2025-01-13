@@ -1,6 +1,6 @@
 
 import { ethers } from "hardhat";
-import { QuoterTaiko__factory } from "../../types";
+import { QuoterPolygon__factory } from "../../types";
 import { getPolygonConfig } from "./utils";
 
 async function main() {
@@ -11,7 +11,7 @@ async function main() {
     console.log("operator", operator.address, "on", chainId)
 
     console.log("modules added")
-    const quoter = await new QuoterTaiko__factory(operator).deploy(getPolygonConfig())
+    const quoter = await new QuoterPolygon__factory(operator).deploy(getPolygonConfig())
 
     console.log("quoter:", quoter.address) // 0xd184c5315B728c1C990f59dDD275c8155f8e255c
 }
