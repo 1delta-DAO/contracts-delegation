@@ -69,7 +69,7 @@ async function main() {
 
     // const validTargets = getInsertAggregators()
 
-    // tx = await management.batchSetSingleTarget(
+    // tx = await management.batchSetValidTarget(
     //     [
 
     //         ...validTargets,

@@ -10,7 +10,7 @@ export namespace OneDeltaPolygon {
         proxy: "0x7cE0eE90c9fd60293B9cA6f52E278F54Af6B41c0",
         config: "0x89A759cd7b9239A43aDdbE9950240F1AdBa0f403",
         lensImplementation: "0xa19b2F2ee34f0f8428449Afd4c09Fd7307c0cD7A",
-        composerImplementation: "0x57CD0241015E001cE02EfC6885322Db575e5EEe0",
-        managementImplementation: "0x4Fa723cC950e4F8f7DC91DB6E52E4dFF9F657B01"
+        composerImplementation: "0xA018227F40c8807B50156e2f08A49B6Ed2B1fd84",
+        managementImplementation: "0xa1B95bC2b62e39d9CFD4A020EB857eFAc8A84d33"
     }
 }

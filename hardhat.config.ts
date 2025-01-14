@@ -277,67 +277,6 @@ const config: HardhatUserConfig = {
   },
   solidity: {
     compilers: [
-      // venus
-      {
-        version: "0.5.16",
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 200,
-          },
-          outputSelection: {
-            "*": {
-              "*": ["storageLayout"],
-            },
-          },
-        },
-      },
-      {
-        version: "0.8.13",
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 200,
-          },
-          outputSelection: {
-            "*": {
-              "*": ["storageLayout"],
-            },
-          },
-        },
-      },
-      // compound
-      {
-        version: '0.8.15',
-        settings: {
-          optimizer: (
-            process.env['OPTIMIZER_DISABLED'] ? { enabled: false } : {
-              enabled: true,
-              runs: 1,
-              details: {
-                yulDetails: {
-                  optimizerSteps: 'dhfoDgvulfnTUtnIf [xa[r]scLM cCTUtTOntnfDIul Lcul Vcul [j] Tpeul xa[rul] xa[r]cL gvif CTUca[r]LsTOtfDnca[r]Iulc] jmul[jul] VcTOcul jmul'
-                },
-              },
-            }
-          ),
-          outputSelection: {
-            "*": {
-              "*": ["evm.deployedBytecode.sourceMap"]
-            },
-          },
-          viaIR: process.env['OPTIMIZER_DISABLED'] ? false : true,
-        },
-      },
-      {
-        version: '0.6.12',
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 1_000_000,
-          },
-        },
-      },
       // 1delta
       {
         version: '0.8.28',
@@ -349,18 +288,16 @@ const config: HardhatUserConfig = {
           evmVersion: 'cancun',
         },
       },
-      // algebra
+      // uniswap
       {
-        version: '0.8.17',
+        version: '0.6.12',
         settings: {
           optimizer: {
             enabled: true,
             runs: 1_000_000,
           },
-          evmVersion: 'london',
         },
       },
-      // uniswap
       {
         version: '0.7.6',
         settings: {
@@ -492,69 +429,6 @@ const config: HardhatUserConfig = {
             runs: 1_000_000,
           },
           evmVersion: 'paris',
-        },
-      },
-      "contracts/external-protocols/aave-v3-core/protocol/pool/Pool.sol": {
-        version: '0.8.10',
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 100000,
-          },
-          evmVersion: 'london',
-        },
-      },
-      "contracts/external-protocols/aave-v3-core/protocol/libraries/logic/BorrowLogic.sol": {
-        version: '0.8.10',
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 100000,
-          },
-          evmVersion: 'london',
-        },
-      },
-      "contracts/external-protocols/aave-v3-core/protocol/pool/PoolConfigurator.sol": {
-        version: '0.8.10',
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 100000,
-          },
-          evmVersion: 'london',
-        },
-      },
-      "contracts/external-protocols/uniswapV3/periphery/MinimalSwapRouter.sol": {
-        version: "0.7.6",
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 1_000_000,
-          },
-          metadata: {
-            bytecodeHash: 'none',
-          },
-        },
-      },
-      // venus
-      "contracts/external-protocols/venus/test/ComptrollerHarness.sol": {
-        version: "0.5.16",
-        settings: {
-          evmVersion: 'istanbul',
-          optimizer: {
-            enabled: true,
-            runs: 0,
-          },
-        },
-      },
-      "contracts/external-protocols/venus/test/VenusBep20Harness.sol": {
-        version: "0.5.16",
-        settings: {
-          evmVersion: 'istanbul',
-          optimizer: {
-            enabled: true,
-            runs: 1,
-          },
         },
       },
       // periphery

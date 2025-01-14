@@ -2,11 +2,11 @@
 import { ethers } from "hardhat";
 import {
     ConfigModule__factory,
-    OneDeltaComposerMantle__factory,
     LensModule__factory,
+    ManagementModule__factory,
 } from "../../types";
-import { getMantleConfig } from "./utils";
-import { OneDeltaManlte } from "./addresses/oneDeltaAddresses";
+import { getTaikoConfig } from "./utils";
+import { OneDeltaTaiko } from "./addresses/oneDeltaAddresses";
 import { getContractSelectors, ModuleConfigAction } from "../_utils/diamond";
 
 
@@ -14,9 +14,11 @@ async function main() {
     const accounts = await ethers.getSigners()
     const operator = accounts[1]
     const chainId = await operator.getChainId();
-    const STAGE = OneDeltaManlte.STAGING
-    const { proxy, composerImplementation } = STAGE
-    if (chainId !== 5000) throw new Error("invalid chainId")
+    const STAGE = OneDeltaTaiko.STAGING
+    const { proxy, managementImplementation } = STAGE
+
+
+    if (chainId !== 167000) throw new Error("invalid chainId")
     console.log("operator", operator.address, "on", chainId)
 
     // we manually increment the nonce
@@ -24,8 +26,8 @@ async function main() {
 
     // deploy module
     // composer
-    const newComposer = await new OneDeltaComposerMantle__factory(operator).attach("0x1da06428982781d42bcc0a0689fc80E5109A23d3")
-    await newComposer.deployed()
+    const newManagement = await new ManagementModule__factory(operator).deploy(getTaikoConfig(nonce++))
+    await newManagement.deployed()
 
 
     console.log("module deployed")
@@ -39,7 +41,7 @@ async function main() {
     // get lens to fetch modules
     const lens = await new LensModule__factory(operator).attach(proxy)
 
-    const composerSelectors = await lens.moduleFunctionSelectors(composerImplementation)
+    const composerSelectors = await lens.moduleFunctionSelectors(managementImplementation)
 
     // remove old
     cut.push({
@@ -50,20 +52,20 @@ async function main() {
 
     // add new
     cut.push({
-        moduleAddress: newComposer.address,
+        moduleAddress: newManagement.address,
         action: ModuleConfigAction.Add,
-        functionSelectors: getContractSelectors(newComposer)
+        functionSelectors: getContractSelectors(newManagement)
     })
 
     const oneDeltaModuleConfig = await new ConfigModule__factory(operator).attach(proxy)
 
-    let tx = await oneDeltaModuleConfig.configureModules(cut, getMantleConfig(nonce++))
+    let tx = await oneDeltaModuleConfig.configureModules(cut, getTaikoConfig(nonce++))
     await tx.wait()
     console.log("modules added")
 
     console.log("upgrade complete")
     console.log("======== Addresses =======")
-    console.log("new composer:", newComposer.address)
+    console.log("new management:", newManagement.address)
     console.log("==========================")
 }
 

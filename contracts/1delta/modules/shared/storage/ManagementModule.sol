@@ -75,7 +75,7 @@ contract ManagementModule is WithBrokerStorage, Slots {
     }
 
     // approve tokens and targets
-    function batchSetSingleTarget(TargetParams[] memory targetParams) external onlyOwner {
+    function batchSetValidTarget(TargetParams[] memory targetParams) external onlyOwner {
         for (uint256 i = 0; i < targetParams.length; i++) {
             cms().isValid[targetParams[i].target] = targetParams[i].value;
         }

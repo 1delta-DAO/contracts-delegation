@@ -2,8 +2,8 @@
 import { ethers } from "hardhat";
 import {
     ConfigModule__factory,
-    OneDeltaComposerMantle__factory,
     LensModule__factory,
+    ManagementModule__factory,
 } from "../../types";
 import { getMantleConfig } from "./utils";
 import { OneDeltaManlte } from "./addresses/oneDeltaAddresses";
@@ -15,7 +15,7 @@ async function main() {
     const operator = accounts[1]
     const chainId = await operator.getChainId();
     const STAGE = OneDeltaManlte.STAGING
-    const { proxy, composerImplementation } = STAGE
+    const { proxy, managementImplementation } = STAGE
     if (chainId !== 5000) throw new Error("invalid chainId")
     console.log("operator", operator.address, "on", chainId)
 
@@ -24,8 +24,8 @@ async function main() {
 
     // deploy module
     // composer
-    const newComposer = await new OneDeltaComposerMantle__factory(operator).attach("0x1da06428982781d42bcc0a0689fc80E5109A23d3")
-    await newComposer.deployed()
+    const newManagement = await new ManagementModule__factory(operator).deploy(getMantleConfig(nonce++))
+    await newManagement.deployed()
 
 
     console.log("module deployed")
@@ -39,7 +39,7 @@ async function main() {
     // get lens to fetch modules
     const lens = await new LensModule__factory(operator).attach(proxy)
 
-    const composerSelectors = await lens.moduleFunctionSelectors(composerImplementation)
+    const composerSelectors = await lens.moduleFunctionSelectors(managementImplementation)
 
     // remove old
     cut.push({
@@ -50,9 +50,9 @@ async function main() {
 
     // add new
     cut.push({
-        moduleAddress: newComposer.address,
+        moduleAddress: newManagement.address,
         action: ModuleConfigAction.Add,
-        functionSelectors: getContractSelectors(newComposer)
+        functionSelectors: getContractSelectors(newManagement)
     })
 
     const oneDeltaModuleConfig = await new ConfigModule__factory(operator).attach(proxy)
@@ -63,7 +63,7 @@ async function main() {
 
     console.log("upgrade complete")
     console.log("======== Addresses =======")
-    console.log("new composer:", newComposer.address)
+    console.log("new management:", newManagement.address)
     console.log("==========================")
 }
 
