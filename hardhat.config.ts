@@ -443,12 +443,13 @@ const config: HardhatUserConfig = {
           evmVersion: 'cancun',
         },
       },
+      // composers
       "contracts/1delta/modules/polygon/Composer.sol": {
         version: '0.8.28',
         settings: {
           optimizer: {
             enabled: true,
-            runs: 500,
+            runs: 5_000,
           },
           evmVersion: 'cancun',
         },
@@ -458,7 +459,7 @@ const config: HardhatUserConfig = {
         settings: {
           optimizer: {
             enabled: true,
-            runs: 1_000,
+            runs: 1_500,
           },
           evmVersion: 'cancun',
         },
@@ -469,6 +470,16 @@ const config: HardhatUserConfig = {
           optimizer: {
             enabled: true,
             runs: 10_000,
+          },
+          evmVersion: 'shanghai',
+        },
+      },
+      "contracts/1delta/modules/taiko/Composer.sol": {
+        version: '0.8.28',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1_000_000,
           },
           evmVersion: 'shanghai',
         },
