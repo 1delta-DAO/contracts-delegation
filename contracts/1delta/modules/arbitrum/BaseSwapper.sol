@@ -40,10 +40,6 @@ abstract contract BaseSwapper is
     DodoV2Swapper,
     GMXSwapper //
 {
-
-    /// @dev Mask of lower 1 byte.
-    uint256 private constant UINT8_MASK = 0xff;
-
     /**
      * Swaps exact in internally using all implemented Dexs
      * Will NOT use a flash swap
