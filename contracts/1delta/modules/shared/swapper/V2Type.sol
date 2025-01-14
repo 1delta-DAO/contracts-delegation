@@ -8,31 +8,16 @@ pragma solidity 0.8.28;
 
 // solhint-disable max-line-length
 
+import { ERC20Selectors } from "../selectors/ERC20Selectors.sol";
+import { Masks } from "../masks/Masks.sol";
+
 /**
  * @title Uniswap V2 type swapper contract
  * @notice We do everything UniV2 here, incl Solidly, FoT, exactIn and -Out
  */
-abstract contract V2TypeSwapper {
-    ////////////////////////////////////////////////////
-    // Masks
-    ////////////////////////////////////////////////////
-
-    /// @dev Mask of lower 20 bytes.
-    uint256 private constant ADDRESS_MASK = 0x00ffffffffffffffffffffffffffffffffffffffff;
-    /// @dev Mask of lower 1 byte.
-    uint256 private constant UINT8_MASK = 0xff;
-    /// @dev Mask of lower 2 bytes.
-    uint256 private constant UINT16_MASK = 0xffff;
+abstract contract V2TypeSwapper is ERC20Selectors, Masks {
     /// @dev used for some of the denominators in solidly calculations
     uint256 private constant SCALE_18 = 1.0e18;
-
-    /** Erc20 selectors */
-
-    /// @dev selector for transfer(address,uint256)
-    bytes32 private constant ERC20_TRANSFER = 0xa9059cbb00000000000000000000000000000000000000000000000000000000;
-
-    /// @dev selector for balanceOf(address)
-    bytes32 private constant ERC20_BALANCE_OF = 0x70a0823100000000000000000000000000000000000000000000000000000000;
 
     ////////////////////////////////////////////////////
     // Uni V2 type selctors

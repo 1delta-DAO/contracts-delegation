@@ -8,26 +8,17 @@ pragma solidity 0.8.28;
 
 // solhint-disable max-line-length
 
+import { ERC20Selectors } from "../selectors/ERC20Selectors.sol";
+import { Masks } from "../masks/Masks.sol";
+
 /**
  * @title Balancer V2 swapper contract
  * @notice Balancer V2 is fun (mostly)
  */
-abstract contract BalancerSwapper {
-
-    /// @dev Maximum Uint256 value
-    uint256 private constant MAX_UINT256 = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
+abstract contract BalancerSwapper is ERC20Selectors, Masks {
 
     /// @dev All swaps go through the balancer vault
     address internal constant BALANCER_V2_VAULT = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
-
-    /** Erc20 selectors */
-
-    /// @dev selector for approve(address,uint256)
-    bytes32 private constant ERC20_APPROVE = 0x095ea7b300000000000000000000000000000000000000000000000000000000;
-
-    /// @dev selector for transferFrom(address,address,uint256)
-    bytes32 private constant ERC20_TRANSFER_FROM = 0x23b872dd00000000000000000000000000000000000000000000000000000000;
-
 
     /// @dev Balancer's single swap function
     bytes32 private constant BALANCER_SWAP = 0x52bbbe2900000000000000000000000000000000000000000000000000000000;

@@ -6,25 +6,16 @@ pragma solidity 0.8.28;
 * Author: Achthar | 1delta 
 /******************************************************************************/
 
+import { ERC20Selectors } from "../selectors/ERC20Selectors.sol";
+import { Masks } from "../masks/Masks.sol";
+
 /**
  * @title Curve swapper contract
  * @notice We do Curve stuff here
  */
-abstract contract CurveMetaSwapper {
+abstract contract CurveMetaSwapper is ERC20Selectors, Masks {
     // approval slot
     bytes32 private constant CALL_MANAGEMENT_APPROVALS = 0x1aae13105d9b6581c36534caba5708726e5ea1e03175e823c989a5756966d1f3;
-
-    /// @dev Maximum Uint256 value
-    uint256 private constant MAX_UINT256 = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
-
-    /// @dev selector for approve(address,uint256)
-    bytes32 private constant ERC20_APPROVE = 0x095ea7b300000000000000000000000000000000000000000000000000000000;
-
-    /// @dev selector for transferFrom(address,address,uint256)
-    bytes32 private constant ERC20_TRANSFER_FROM = 0x23b872dd00000000000000000000000000000000000000000000000000000000;
-
-    /// @dev selector for transfer(address,uint256)
-    bytes32 private constant ERC20_TRANSFER = 0xa9059cbb00000000000000000000000000000000000000000000000000000000;
 
     /** Meta pool zap selectors - first argument is another curve pool */
 

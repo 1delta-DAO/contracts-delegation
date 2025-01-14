@@ -8,31 +8,13 @@ pragma solidity 0.8.28;
 
 // solhint-disable max-line-length
 
+import { Masks } from "../masks/Masks.sol";
+
 /**
  * @title Uniswap V3 type swapper contract
  * @notice Executes Cl swaps and pushing data to the callbacks
  */
-abstract contract V3TypeSwapper {
-    ////////////////////////////////////////////////////
-    // Masks
-    ////////////////////////////////////////////////////
-
-    /// @dev Mask of lower 20 bytes.
-    uint256 private constant ADDRESS_MASK = 0x00ffffffffffffffffffffffffffffffffffffffff;
-
-    /// @dev Mask of lower 1 byte.
-    uint256 private constant UINT8_MASK = 0xff;
-    /// @dev Mask of lower 2 bytes.
-    uint256 private constant UINT16_MASK = 0xffff;
-    /// @dev Mask of lower 3 bytes.
-    uint256 private constant UINT24_MASK = 0xffffff;
-    /// @dev MIN_SQRT_RATIO + 1 from Uniswap's TickMath
-    uint160 private constant MIN_SQRT_RATIO = 4295128740;
-    /// @dev MAX_SQRT_RATIO - 1 from Uniswap's TickMath
-    uint160 private constant MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970341;
-    /// @dev Maximum Uint256 value
-    uint256 private constant MAX_UINT256 = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
-
+abstract contract V3TypeSwapper is Masks {
     ////////////////////////////////////////////////////
     // param lengths
     ////////////////////////////////////////////////////
