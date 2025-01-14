@@ -1190,7 +1190,3 @@ abstract contract MarginTrading is BaseLending, BaseSwapper, V2ReferencesTaiko, 
         }
      } 
 }
-
-interface IE {
-    function balanceOf(address) external view returns(uint);
-}
