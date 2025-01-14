@@ -4,7 +4,6 @@ pragma solidity 0.8.28;
 
 import {MarginTrading} from "./MarginTrading.sol";
 import {Commands} from "../shared/Commands.sol";
-import {Masks} from "../shared/masks/Masks.sol";
 
 /**
  * @title Universal aggregator contract.
@@ -12,13 +11,7 @@ import {Masks} from "../shared/masks/Masks.sol";
  *        Efficient baching through compact calldata usage.
  * @author 1delta Labs AG
  */
-contract OneDeltaComposerTaiko is MarginTrading, Masks {
-    /// @dev selector for balanceOf(address)
-    bytes32 internal constant ERC20_BALANCE_OF = 0x70a0823100000000000000000000000000000000000000000000000000000000;
-   
-    /// @dev selector for approve(address,uint256)
-    bytes32 private constant ERC20_APPROVE = 0x095ea7b300000000000000000000000000000000000000000000000000000000;
-
+contract OneDeltaComposerTaiko is MarginTrading {
     /**
      * Batch-executes a series of operations
      * @param data compressed instruction calldata

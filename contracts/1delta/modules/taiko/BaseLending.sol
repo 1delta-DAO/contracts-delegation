@@ -3,6 +3,7 @@
 pragma solidity ^0.8.28;
 
 import {Slots} from "../shared/storage/Slots.sol";
+import {ERC20Selectors} from "../shared/selectors/ERC20Selectors.sol";
 
 /******************************************************************************\
 * Author: Achthar | 1delta 
@@ -13,19 +14,9 @@ import {Slots} from "../shared/storage/Slots.sol";
 /**
  * @notice Lending base contract that wraps multiple lender types.
  */
-abstract contract BaseLending is Slots {
+abstract contract BaseLending is Slots, ERC20Selectors {
     // errors
     error BadLender();
-
-    ////////////////////////////////////////////////////
-    // ERC20 selectors
-    ////////////////////////////////////////////////////
-
-    /// @dev selector for transferFrom(address,address,uint256)
-    bytes32 internal constant ERC20_TRANSFER_FROM = 0x23b872dd00000000000000000000000000000000000000000000000000000000;
-
-    /// @dev selector for transfer(address,uint256)
-    bytes32 internal constant ERC20_TRANSFER = 0xa9059cbb00000000000000000000000000000000000000000000000000000000;
 
     // id thresholds
     uint256 internal constant MAX_ID_AAVE_V3 = 1000; // 0-1000
