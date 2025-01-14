@@ -4,7 +4,6 @@ pragma solidity 0.8.28;
 
 import {MarginTrading} from "./MarginTrading.sol";
 import {Commands} from "../shared/Commands.sol";
-import {Masks} from "../shared/masks/Masks.sol";
 
 /**
  * @title Universal aggregator contract.
@@ -12,15 +11,12 @@ import {Masks} from "../shared/masks/Masks.sol";
  *        Efficient baching through compact calldata usage.
  * @author 1delta Labs AG
  */
-contract OneDeltaComposerPolygon is MarginTrading, Masks {
+contract OneDeltaComposerPolygon is MarginTrading {
 
     /// @dev we need USDCE and USDT to identify Compound V3's selectors
     address internal constant USDCE = 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174;
     address internal constant USDT = 0xc2132D05D31c914a87C6611C10748AEb04B58e8F;
     
-    /// @dev selector for approve(address,uint256)
-    bytes32 private constant ERC20_APPROVE = 0x095ea7b300000000000000000000000000000000000000000000000000000000;
-
     /**
      * Batch-executes a series of operations
      * @param data compressed instruction calldata
