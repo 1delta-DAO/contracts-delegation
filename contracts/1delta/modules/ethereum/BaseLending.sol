@@ -38,7 +38,7 @@ abstract contract BaseLending is Slots, BalancerSwapper {
     // BadLender()
     bytes4 internal constant BAD_LENDER = 0x603b7f3e;
 
-    /// @notice Withdraw from lender given user address and lender Id from cache
+    /// @notice Withdraw from lender lastgiven user address and lender Id
     function _withdraw(address _underlying, address _from, address _to, uint256 _amount, uint256 _lenderId) internal {
         assembly {
             let ptr := mload(0x40)
@@ -290,7 +290,7 @@ abstract contract BaseLending is Slots, BalancerSwapper {
         }
     }
 
-    /// @notice Borrow from lender given user address and lender Id from cache
+    /// @notice Borrow from lender lastgiven user address and lender Id
     function _borrow(address _underlying, address _from, address _to, uint256 _amount, uint256 _mode, uint256 _lenderId) internal {
         assembly {
             let ptr := mload(0x40)
@@ -482,7 +482,7 @@ abstract contract BaseLending is Slots, BalancerSwapper {
         }
     }
 
-    /// @notice Deposit to lender given user address and lender Id from cache
+    /// @notice Deposit to lender lastgiven user address and lender Id
     function _deposit(address _underlying, address _to, uint256 _amount, uint256 _lenderId) internal {
         assembly {
             let ptr := mload(0x40)
@@ -674,7 +674,7 @@ abstract contract BaseLending is Slots, BalancerSwapper {
         }
     }
 
-    /// @notice Repay to lender given user address and lender Id from cache
+    /// @notice Repay to lender lastgiven user address and lender Id
     function _repay(address _underlying, address _to, uint256 _amount, uint256 mode, uint256 _lenderId) internal {
         assembly {
             let ptr := mload(0x40)

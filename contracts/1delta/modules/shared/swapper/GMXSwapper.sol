@@ -7,11 +7,11 @@ pragma solidity 0.8.28;
 /******************************************************************************/
 
 /**
- * @title GMX V1 swapper
+ * @title GMX V1 swapper, works for most forks, too
  */
 abstract contract GMXSwapper {
     /**
-     * Swaps exact input on KTX spot DEX
+     * Swaps exact input on GMX & fork spot DEX
      * @param tokenIn input
      * @param tokenOut output
      * @param vault GMX fork vault address

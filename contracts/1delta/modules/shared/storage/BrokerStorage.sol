@@ -7,20 +7,12 @@ import {LibModules} from "../../../proxy/libraries/LibModules.sol";
 // This is to avoid external contract calls to
 // proxies to get certain addresses / references
 struct GeneralLenderStorage {
-    // map encoded uint8 + underlying address to lender tokens
+    // map encoded uint16 (upper) + underlying address (lower) to lender tokens
     mapping(bytes32 => address) collateralTokens;
     mapping(bytes32 => address) debtTokens;
     mapping(bytes32 => address) stableDebtTokens;
     // map lender id to lender pool
     mapping(uint256 => address) lendingPools;
-}
-
-
-// a validation apping that ensures that an external call can
-// be executed on an address
-// it is typically linked to an approval call
-struct ExternalCallStorage {
-    mapping(address => mapping(address => bool)) isValidApproveAndCallTarget;
 }
 
 struct CallManagerStorage {
@@ -34,20 +26,12 @@ library LibStorage {
     // Storage are structs where the data gets updated throughout the lifespan of the project
     bytes32 constant LENDER_STORAGE = keccak256("broker.storage.lender");
     bytes32 constant GENERAL_CACHE = keccak256("broker.storage.cache.general");
-    bytes32 constant EXTERNAL_CALL_STORAGE = keccak256("broker.storage.externalCalls");
     bytes32 constant CALL_MANAGER_STORAGE = keccak256("broker.storage.callManager");
 
     function lenderStorage() internal pure returns (GeneralLenderStorage storage ls) {
         bytes32 position = LENDER_STORAGE;
         assembly {
             ls.slot := position
-        }
-    }
-
-    function externalCallsStorage() internal pure returns (ExternalCallStorage storage es) {
-        bytes32 position = EXTERNAL_CALL_STORAGE;
-        assembly {
-            es.slot := position
         }
     }
 
@@ -72,10 +56,6 @@ library LibStorage {
 contract WithBrokerStorage {
     function ls() internal pure returns (GeneralLenderStorage storage) {
         return LibStorage.lenderStorage();
-    }
-
-    function es() internal pure returns (ExternalCallStorage storage) {
-        return LibStorage.externalCallsStorage();
     }
 
     function ms() internal pure returns (LibModules.ModuleStorage storage) {

@@ -7,8 +7,8 @@ pragma solidity 0.8.28;
 /******************************************************************************/
 
 /**
- * @title Curve swapper contract for forks that are very much like curve but with some
- * minor differences
+ * @title Curve swapper contract for forks that are very much like curve 
+ * but with some crucial differences
  */
 abstract contract CurveForkSwapper {
     // approval slot

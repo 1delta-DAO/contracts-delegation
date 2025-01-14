@@ -7,7 +7,6 @@ import "./CommonAddresses.f.sol";
 // modules
 import {VenusFlashAggregatorBNB} from "../../contracts/1delta/modules/bnb/venus/FlashAggregator.sol";
 import {VenusManagementModule} from "../../contracts/1delta/modules/venus/ManagementModule.sol";
-import {MarginTrading} from "../../contracts/1delta/modules/bnb/venus/MarginTrading.sol";
 
 // proxy & config
 import {DeltaBrokerProxy} from "../../contracts/1delta/proxy/DeltaBroker.sol";
@@ -41,16 +40,11 @@ contract OneDeltaBNBFixture is CommonBNBAddresses, Test {
     }
 
     function aggSelectors() internal pure returns (bytes4[] memory selectors) {
-        selectors = new bytes4[](9);
+        selectors = new bytes4[](4);
         selectors[0] = VenusFlashAggregatorBNB.deposit.selector;
         selectors[1] = VenusFlashAggregatorBNB.withdraw.selector;
         selectors[2] = VenusFlashAggregatorBNB.borrow.selector;
         selectors[3] = VenusFlashAggregatorBNB.repay.selector;
-        selectors[4] = MarginTrading.flashSwapExactIn.selector;
-        selectors[5] = MarginTrading.pancakeV3SwapCallback.selector;
-        selectors[6] = MarginTrading.pancakeCall.selector;
-        selectors[7] = MarginTrading.flashSwapExactOut.selector;
-        selectors[8] = MarginTrading.BiswapCall.selector;
         return selectors;
     }
 

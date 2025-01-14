@@ -8,8 +8,7 @@ pragma solidity 0.8.28;
 /******************************************************************************/
 
 /**
- * @title Uniswap V2 type swapper contract
- * @notice We do everything UniV2 here, incl Solidly, FoT, exactIn and -Out
+ * @title SyncSwap style swapper, pre-funded, all pool variations
  */
 abstract contract SyncSwapper {
     /// @dev selector for swap(bytes,address,address,bytes)

@@ -6,7 +6,7 @@ pragma solidity ^0.8.28;
 * Author: Achthar | 1delta 
 /******************************************************************************/
 
-import {MarginTrading} from "./MarginTrading.sol";
+import {LendingOps} from "./VenusOps.sol";
 
 // solhint-disable max-line-length
 
@@ -14,11 +14,10 @@ import {MarginTrading} from "./MarginTrading.sol";
  * @title FlashAggregator for Venus
  * @notice Adds money market and default transfer functions to margin trading
  */
-contract VenusFlashAggregatorBNB is MarginTrading {
-    constructor() MarginTrading() {}
+contract VenusFlashAggregatorBNB is LendingOps {
+    constructor() LendingOps() {}
 
     function deposit(address underlying, uint amount) external {
-        _transferERC20TokensFrom(underlying, msg.sender, address(this), amount);
         _deposit(underlying, amount, msg.sender);
     }
 
@@ -31,7 +30,6 @@ contract VenusFlashAggregatorBNB is MarginTrading {
     }
 
     function repay(address underlying, uint amount) external {
-        _transferERC20TokensFrom(underlying, msg.sender, address(this), amount);
         _repay(underlying, amount, msg.sender);
     }
 }

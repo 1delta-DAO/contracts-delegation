@@ -20,7 +20,7 @@ abstract contract Masks {
     /// @dev Maximum Uint256 value
     uint256 internal constant MAX_UINT256 = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
 
-    /// @notice Composer specific masks
+    /// @notice Composer-specific masks
 
     /// @dev The highest bit signals whether the swap is internal (the payer is this contract)
     uint256 internal constant _PAY_SELF = 1 << 255;

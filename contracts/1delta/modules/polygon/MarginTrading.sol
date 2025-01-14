@@ -320,7 +320,7 @@ abstract contract MarginTrading is BaseLending, BaseSwapper, V2ReferencesPolygon
             }
             ////////////////////////////////////////////////////
             // We fetch the original initiator of the swap function
-            // It is represented by the lsat 20 bytes of the path
+            // It is represented by the last 20 bytes of the path
             ////////////////////////////////////////////////////
             payer := and(
                 ADDRESS_MASK,
