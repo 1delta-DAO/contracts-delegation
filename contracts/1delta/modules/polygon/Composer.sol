@@ -268,7 +268,7 @@ contract OneDeltaComposerPolygon is MarginTrading {
                                 ),
                                 UINT16_MASK
                             )
-                            switch lt(lenderId_tokenIn, 50)
+                            switch lt(lenderId_tokenIn, MAX_ID_AAVE_V2)
                             // Aave types
                             case 1 {
                                 mstore(0x0, or(shl(240, lenderId_tokenIn), shr(96, calldataload(opdataOffset))))
@@ -289,11 +289,11 @@ contract OneDeltaComposerPolygon is MarginTrading {
                                 // temp will now become the var for comet ccy
                                 switch lenderId_tokenIn
                                 // Compound V3 USDC.e
-                                case 50 {
+                                case 2000 {
                                     cometPool := COMET_USDC
                                     temp := USDCE
                                 }
-                                case 51 {
+                                case 2001 {
                                     cometPool := COMET_USDT
                                     temp := USDT
                                 }
@@ -412,7 +412,7 @@ contract OneDeltaComposerPolygon is MarginTrading {
                         if iszero(amountOut) {
                             // last 32 bytes
                             let lenderId := and(calldataload(sub(add(opdataLength, opdataOffset), 33)), UINT16_MASK)
-                            switch lt(lenderId, 50)
+                            switch lt(lenderId, MAX_ID_AAVE_V2)
                             case 1 {
                                 let tokenIn := calldataload(opdataOffset)
                                 let mode := and(UINT8_MASK, shr(88, tokenIn))
@@ -442,10 +442,10 @@ contract OneDeltaComposerPolygon is MarginTrading {
                             default {
                                 let cometPool
                                 switch lenderId
-                                case 50 {
+                                case 2000 {
                                     cometPool := COMET_USDC
                                 }
-                                case 51 {
+                                case 2001 {
                                     cometPool := COMET_USDT
                                 }
                                 // default: load comet from storage

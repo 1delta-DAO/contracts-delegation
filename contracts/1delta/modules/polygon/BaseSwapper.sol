@@ -432,7 +432,8 @@ abstract contract BaseSwapper is
         assembly {
             switch lt(pathLength, MAX_SINGLE_LENGTH_UNOSWAP_HIGH)
             case 1 { currentReceiver := receiver}
-            default {dexId := and(calldataload(add(pathOffset, 34)), UINT8_MASK) // SKIP_LENGTH_UNOSWAP - 10
+            default {
+                dexId := and(calldataload(add(pathOffset, 34)), UINT8_MASK) // SKIP_LENGTH_UNOSWAP - 10
                 switch gt(dexId, 99) 
                 case 1 {
                     currentReceiver := shr(

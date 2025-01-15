@@ -278,7 +278,7 @@ contract OneDeltaComposerEthereum is MarginTrading {
                             // selector for balanceOf(address)
                             mstore(0x0, ERC20_BALANCE_OF)
                             // add caller address as parameter
-                            mstore(add(0x0, 0x4), callerAddress)
+                            mstore(0x4, callerAddress)
                             // call to collateralToken
                             pop(staticcall(gas(), collateralToken, 0x0, 0x24, 0x0, 0x20))
                             // load the retrieved balance

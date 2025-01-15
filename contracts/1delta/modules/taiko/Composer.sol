@@ -268,7 +268,7 @@ contract OneDeltaComposerTaiko is MarginTrading {
                             // selector for balanceOf(address)
                             mstore(0x0, ERC20_BALANCE_OF)
                             // add caller address as parameter
-                            mstore(add(0x0, 0x4), callerAddress)
+                            mstore(0x4, callerAddress)
                             // call to collateralToken
                             pop(staticcall(gas(), collateralToken, 0x0, 0x24, 0x0, 0x20))
                             // load the retrieved balance
@@ -320,13 +320,12 @@ contract OneDeltaComposerTaiko is MarginTrading {
                         // Fetch the debt balance in case amountOut is zero
                         ////////////////////////////////////////////////////
                         if iszero(amountOut) {
-                            let tokenIn := calldataload(opdataOffset)
-                            let mode := and(UINT8_MASK, shr(88, tokenIn))
-                            tokenIn := shr(96, tokenIn)
-
                             // last 32 bytes
                             let lenderId := and(calldataload(sub(add(opdataLength, opdataOffset), 33)), UINT16_MASK)
-                            mstore(0x0, or(shl(240, lenderId), shr(96, tokenIn)))
+                            let tokenOut := calldataload(opdataOffset)
+                            let mode := and(UINT8_MASK, shr(88, tokenOut))
+                            mstore(0x0, or(shl(240, lenderId), shr(96, tokenOut)))
+
                             switch mode
                             case 2 {
                                 mstore(0x20, VARIABLE_DEBT_TOKENS_SLOT)
@@ -339,6 +338,10 @@ contract OneDeltaComposerTaiko is MarginTrading {
                             }
 
                             let debtToken := sload(keccak256(0x0, 0x40))
+                            if iszero(debtToken) {
+                                mstore(0, BAD_LENDER)
+                                revert(0, 0x4)
+                            }
                             // selector for balanceOf(address)
                             mstore(0x0, ERC20_BALANCE_OF)
                             // add caller address as parameter
