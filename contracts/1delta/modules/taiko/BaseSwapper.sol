@@ -301,7 +301,7 @@ abstract contract BaseSwapper is
         // syncSwap style
         else if (dexId == SYNC_SWAP_ID) {
             assembly {
-                switch lt(pathLength, MAX_SINGLE_LENGTH_ADDRESS)
+                switch lt(pathLength, MAX_SINGLE_LENGTH_ADDRESS_HIGH)
                 case 1 { currentReceiver := receiver}
                 default {
                     dexId := and(calldataload(add(pathOffset, 32)), UINT8_MASK) // SKIP_LENGTH_SYNCSWAP - 10

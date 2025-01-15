@@ -12,7 +12,7 @@ contract ForkTestTaiko is DeltaSetup {
         address proxy = 0x164e08ACE9DAe58BEa18eF268b716f5deBD7c692;
         // address proxy = 0x0bd7473CbBf81d9dD936c61117eD230d95006CA2;
         // address oldModule = 0x5c4F2eACBdc1EB38F839bDDD7620E250a36819D4;
-        upgradeExistingDelta(proxy, admin, oldModule);
+        // upgradeExistingDelta(proxy, admin, oldModule);
         testQuoter = new PoolGetter();
     }
 
