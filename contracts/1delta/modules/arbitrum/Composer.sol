@@ -12,7 +12,6 @@ import {Commands} from "../shared/Commands.sol";
  * @author 1delta Labs AG
  */
 contract OneDeltaComposerArbitrum is MarginTrading {
-
     /// @dev we need base tokens to identify Compound V3's selectors
     address internal constant USDCE = 0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8;
     address internal constant USDT = 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9;

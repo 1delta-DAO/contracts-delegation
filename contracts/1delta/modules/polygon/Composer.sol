@@ -12,11 +12,10 @@ import {Commands} from "../shared/Commands.sol";
  * @author 1delta Labs AG
  */
 contract OneDeltaComposerPolygon is MarginTrading {
-
     /// @dev we need USDCE and USDT to identify Compound V3's selectors
     address internal constant USDCE = 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174;
     address internal constant USDT = 0xc2132D05D31c914a87C6611C10748AEb04B58e8F;
-    
+
     /**
      * Batch-executes a series of operations
      * @param data compressed instruction calldata
@@ -414,10 +413,10 @@ contract OneDeltaComposerPolygon is MarginTrading {
                             let lenderId := and(calldataload(sub(add(opdataLength, opdataOffset), 33)), UINT16_MASK)
                             switch lt(lenderId, MAX_ID_AAVE_V2)
                             case 1 {
-                                let tokenIn := calldataload(opdataOffset)
-                                let mode := and(UINT8_MASK, shr(88, tokenIn))
-                                mstore(0x0, or(shl(240, lenderId), shr(96, tokenIn)))
-
+                                let tokenOut := calldataload(opdataOffset)
+                                let mode := and(UINT8_MASK, shr(88, tokenOut))
+                                mstore(0x0, or(shl(240, lenderId), shr(96, tokenOut)))
+                                // adjust for mode
                                 switch mode
                                 case 2 {
                                     mstore(0x20, VARIABLE_DEBT_TOKENS_SLOT)

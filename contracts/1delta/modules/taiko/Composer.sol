@@ -325,7 +325,7 @@ contract OneDeltaComposerTaiko is MarginTrading {
                             let tokenOut := calldataload(opdataOffset)
                             let mode := and(UINT8_MASK, shr(88, tokenOut))
                             mstore(0x0, or(shl(240, lenderId), shr(96, tokenOut)))
-
+                            // adjust for mode
                             switch mode
                             case 2 {
                                 mstore(0x20, VARIABLE_DEBT_TOKENS_SLOT)

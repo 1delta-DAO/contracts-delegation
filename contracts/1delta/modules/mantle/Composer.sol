@@ -12,7 +12,6 @@ import {Commands} from "../shared/Commands.sol";
  * @author 1delta Labs AG
  */
 contract OneDeltaComposerMantle is MarginTrading {
-
     /// @dev we need USDE to identify Compound V3's selectors
     address internal constant USDE = 0x5d3a1Ff2b6BAb83b63cd9AD0787074081a52ef34;
 
@@ -409,9 +408,9 @@ contract OneDeltaComposerMantle is MarginTrading {
                             let lenderId := and(calldataload(sub(add(opdataLength, opdataOffset), 33)), UINT16_MASK)
                             switch lt(lenderId, MAX_ID_AAVE_V2)
                             case 1 {
-                                let tokenIn := calldataload(opdataOffset)
-                                let mode := and(UINT8_MASK, shr(88, tokenIn))
-                                mstore(0x0, or(shl(240, lenderId), shr(96, tokenIn)))
+                                let tokenOut := calldataload(opdataOffset)
+                                let mode := and(UINT8_MASK, shr(88, tokenOut))
+                                mstore(0x0, or(shl(240, lenderId), shr(96, tokenOut)))
                                 switch mode
                                 case 2 {
                                     mstore(0x20, VARIABLE_DEBT_TOKENS_SLOT)
