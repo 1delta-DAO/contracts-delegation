@@ -77,15 +77,15 @@ const config: HardhatUserConfig = {
         network: "mantle",
         chainId: 5000,
         urls: {
-          apiURL: "https://explorer.mantle.xyz/api",
-          browserURL: "https://explorer.mantle.xyz/"
+          apiURL: "https://api.mantlescan.xyz/api",
+          browserURL: "https://mantlescan.xyz/"
         }
       },
       {
         network: "taiko",
         chainId: 167000,
         urls: {
-          apiURL: "https://api.taikoscan.io/api" ,
+          apiURL: "https://api.taikoscan.io/api",
           browserURL: "https://taikoscan.io"
         }
       },
@@ -99,7 +99,7 @@ const config: HardhatUserConfig = {
       }
     ],
     apiKey: {
-      mantle: 'abc',
+      mantle: process.env.MANTLESCAN_API_KEY ?? "abc",
       arbitrumOne: process.env.ARBISCAN_API_KEY ?? "",
       mainnet: process.env.ETHERSCAN_API_KEY ?? '',
       polygon: process.env.POLYGONSCAN_API_KEY ?? '',
@@ -421,7 +421,7 @@ const config: HardhatUserConfig = {
           evmVersion: 'shanghai',
         },
       },
-      "contracts/1delta/quoter/MoeJoeLens.sol" : {
+      "contracts/1delta/quoter/MoeJoeLens.sol": {
         version: '0.8.28',
         settings: {
           optimizer: {

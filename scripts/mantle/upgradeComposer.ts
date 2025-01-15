@@ -24,7 +24,7 @@ async function main() {
 
     // deploy module
     // composer
-    const newComposer = await new OneDeltaComposerMantle__factory(operator).attach("0x1da06428982781d42bcc0a0689fc80E5109A23d3")
+    const newComposer = await new OneDeltaComposerMantle__factory(operator).deploy(getMantleConfig(nonce++))
     await newComposer.deployed()
 
 

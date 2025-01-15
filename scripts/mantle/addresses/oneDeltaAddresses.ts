@@ -10,7 +10,7 @@ export namespace OneDeltaManlte {
         proxy: "0x5494b574bEe7aa091799ECbf3DDBFEeF5da4F720",
         config: "0x476a0D24790a88185c721eE728d18465c66e9611",
         lensImplementation: "0x2e9C883702B53c7ae3E31943D9DE4e49e43DAe71",
-        composerImplementation: "0x1da06428982781d42bcc0a0689fc80E5109A23d3",
+        composerImplementation: "0x4661D9f5b672e6968aE44eec1277d596e37B5F45",
         managementImplementation: "0x1695927f22e64f62a9ae5800d7DE30017c35697a"
     }
 }
