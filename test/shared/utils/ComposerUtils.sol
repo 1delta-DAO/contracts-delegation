@@ -33,7 +33,7 @@ contract ComposerUtils {
             uint8(Commands.SWEEP),
             asset,
             receiver,
-            sweepType,
+            uint8(sweepType),
             uint112(amount) //
         ); // 2 + 20 + 20 + 14 = 56 bytes
     }

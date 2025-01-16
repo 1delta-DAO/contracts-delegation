@@ -20,13 +20,21 @@ struct CallManagerStorage {
     mapping(address => mapping(address => bool)) isApproved;
 }
 
+// controls access to balancer-type flash loans
+// note that we bump additiobnal vars to it for more providers
+struct FlashLoanGateway {
+    uint256 entryState0; // typically balancer
+    uint256 entryState1; // typicall DodoV2
+}
+
 library LibStorage {
     // this is the core diamond storage location
-    bytes32 constant MODULE_STORAGE_POSITION = keccak256("diamond.standard.module.storage");
+    bytes32 private constant MODULE_STORAGE_POSITION = keccak256("diamond.standard.module.storage");
     // Storage are structs where the data gets updated throughout the lifespan of the project
-    bytes32 constant LENDER_STORAGE = keccak256("broker.storage.lender");
-    bytes32 constant GENERAL_CACHE = keccak256("broker.storage.cache.general");
-    bytes32 constant CALL_MANAGER_STORAGE = keccak256("broker.storage.callManager");
+    bytes32 private constant LENDER_STORAGE = keccak256("broker.storage.lender");
+    bytes32 private constant GENERAL_CACHE = keccak256("broker.storage.cache.general");
+    bytes32 private constant CALL_MANAGER_STORAGE = keccak256("broker.storage.callManager");
+    bytes32 private constant FLASH_LOAN_GATEWAY = keccak256("broker.storage.flashLoanGateway");
 
     function lenderStorage() internal pure returns (GeneralLenderStorage storage ls) {
         bytes32 position = LENDER_STORAGE;
@@ -46,6 +54,13 @@ library LibStorage {
         bytes32 position = MODULE_STORAGE_POSITION;
         assembly {
             ds.slot := position
+        }
+    }
+
+    function flashLoanGatewayStorage() internal pure returns (FlashLoanGateway storage fgs) {
+        bytes32 position = FLASH_LOAN_GATEWAY;
+        assembly {
+            fgs.slot := position            
         }
     }
 }

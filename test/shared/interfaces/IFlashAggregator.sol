@@ -122,4 +122,6 @@ interface IFlashAggregator {
     /// Additional checks MUST be performed in callback to ensure the `tokenIn` is one of the pools tokens if the sender
     /// is not a trusted source to avoid potential issues.
     function syncSwapBaseSwapCallback(BaseSwapCallbackParams calldata params) external;
+
+    function DSPFlashLoanCall(address sender, uint256 baseAmount, uint256 quoteAmount, bytes calldata data) external;
 }

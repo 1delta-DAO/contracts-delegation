@@ -22,8 +22,8 @@ abstract contract MarginTrading is BaseLending, BaseSwapper, V2ReferencesTaiko, 
 
     uint256 internal constant PATH_OFFSET_CALLBACK_V2 = 164;
     uint256 internal constant PATH_OFFSET_CALLBACK_V3 = 132;
-    uint256 internal constant NEXT_SWAP_V3_OFFSET = 176 ; //PATH_OFFSET_CALLBACK_V3 + SKIP_LENGTH_UNOSWAP;
-    uint256 internal constant NEXT_SWAP_V2_OFFSET = 208 ; //PATH_OFFSET_CALLBACK_V2 + SKIP_LENGTH_UNOSWAP;
+    uint256 internal constant NEXT_SWAP_V3_OFFSET = 176 ; // PATH_OFFSET_CALLBACK_V3 + SKIP_LENGTH_UNOSWAP;
+    uint256 internal constant NEXT_SWAP_V2_OFFSET = 208 ; // PATH_OFFSET_CALLBACK_V2 + SKIP_LENGTH_AD;
 
     constructor() BaseSwapper() {}
 
@@ -1135,6 +1135,16 @@ abstract contract MarginTrading is BaseLending, BaseSwapper, V2ReferencesTaiko, 
                 pathLength
             );
         }
+        // Dodo V2 types
+        else if (poolId == DODO_ID) {
+            flashSwapDodoV2ExactIn(
+                amountIn,
+                amountOutMinimum, // we need to forward the amountMin
+                payer,
+                pathOffset,
+                pathLength
+            );
+        }
         else {
             assembly {
                 mstore(0, INVALID_DEX)
@@ -1188,5 +1198,147 @@ abstract contract MarginTrading is BaseLending, BaseSwapper, V2ReferencesTaiko, 
         } else { // otherwise it is the repay mode
             _repay(token, user, amount, payId, lenderId);
         }
-     } 
+     }
+
+    uint256 internal constant NEXT_SWAP_DODO_V2_OFFSET = 207 ; // NEXT_SWAP_V2_OFFSET - 2;
+
+    // dodo
+    function DSPFlashLoanCall(
+        address sender,
+        uint256 baseAmount,
+        uint256 quoteAmount,
+        bytes calldata path
+    ) external {
+
+        // check call for validity
+        _validateDodoV2FlashLoan(sender);
+
+        uint256 pathLength;
+        uint256 tradeId;
+        uint256 maxAmount;
+        uint256 amountReceived;
+        uint256 amountToPay;
+        address payer;
+        address tokenIn;
+        bool multihop;
+        uint256 pathOffset = PATH_OFFSET_CALLBACK_V2;
+        // the fee parameter in the path can be ignored for validating a V2 pool
+        assembly {
+            // pathOffset := path.offset
+            tokenIn := shr(96, calldataload(pathOffset))
+            pathLength := path.length
+            tradeId := and(calldataload(153), UINT8_MASK) // interaction identifier at PATH_OFFSET_CALLBACK_V2 - 11
+            ////////////////////////////////////////////////////
+            // We fetch the original initiator of the swap function
+            // It is represented by the last 20 bytes of the path
+            ////////////////////////////////////////////////////
+            payer := and(
+                ADDRESS_MASK,
+                calldataload(
+                    add(
+                        132, // PATH_OFFSET_CALLBACK_V2 - 32
+                        pathLength
+                    ) // last 32 bytes
+                )
+            )
+            ////////////////////////////////////////////////////
+            // amount [128|128] starting at the 52th byte
+            // from the right as [maximum|amountToPay]
+            // here we fetch the entire amount and decompose it
+            ////////////////////////////////////////////////////
+            maxAmount := calldataload(
+                    add(
+                        112, // PATH_OFFSET_CALLBACK_V2 - 52
+                        pathLength
+                    ) // last 52 bytes
+            )
+            ////////////////////////////////////////////////////
+            // pay amount provided in lower 16 bytes
+            // we assume that this value is zero for 
+            // exactOut swaps as we calculate the amount in this
+            // case
+            ////////////////////////////////////////////////////
+            amountToPay := and(UINT128_MASK, maxAmount)
+            // max as upper bytes
+            maxAmount := shr(128, maxAmount)
+            // skim address from calldatas
+            pathLength := sub(pathLength, 52)
+            // assume a multihop if the calldata is longer than 66
+            multihop := gt(pathLength, MAX_SINGLE_LENGTH_UNOSWAP)
+            // assign amount received
+            switch iszero(baseAmount)
+            case 0 {
+                amountReceived := baseAmount
+            }
+            default {
+                amountReceived := quoteAmount
+            }
+        }
+        ////////////////////////////////////////////////////
+        // exactIn is used when `amountToPay` is nonzero
+        ////////////////////////////////////////////////////
+
+        if (multihop) {
+            // we need to swap to the token that we want to supply
+            // the router returns the amount received that we can validate against
+            // throught the `maxAmount`
+            assembly {
+                pathOffset := NEXT_SWAP_DODO_V2_OFFSET
+                pathLength := sub(pathLength, SKIP_LENGTH_ADDRESS_AND_PARAM)
+            }
+            
+            ////////////////////////////////////////////////////
+            // Note that for Dodo V2 flash swaps, the receiver has
+            // to be this contract. As such, we have to pre-fund 
+            // the next swap
+            ////////////////////////////////////////////////////
+            uint256 dexId = _preFundTrade(address(this), amountReceived, NEXT_SWAP_DODO_V2_OFFSET);
+            // continue swapping
+            amountReceived = swapExactIn(
+                amountReceived,
+                dexId,
+                address(this),
+                address(this),
+                NEXT_SWAP_DODO_V2_OFFSET,
+                pathLength
+            );
+            // store result in cache
+            // if(maxAmount > tradeId) revert Slippage();
+            assembly {
+                if lt(amountReceived, shr(128, maxAmount)) {
+                    mstore(0, SLIPPAGE)
+                    revert (0, 0x4)
+                }
+            }
+        }
+        if (tradeId != 0) {
+            address tokenOut;
+            assembly {
+                if iszero(multihop) {
+                    // we check the slippage here since we skip it 
+                    // in the upper block
+                    if lt(amountReceived, shr(128, maxAmount)) {
+                        mstore(0, SLIPPAGE)
+                        revert (0, 0x4)
+                    }
+                    tokenOut := shr(96, calldataload(add(pathOffset, sub(pathLength, 23))))
+                }
+            }
+            (uint256 payType, uint256 lenderId) = getPayConfigFromCalldata(pathOffset, pathLength);
+            // pay lender
+            payToLender(tokenOut, payer, amountReceived, tradeId, lenderId);
+
+            // pay the pool
+            handlePayPool(
+                tokenIn,
+                payer,
+                msg.sender,
+                payType,
+                amountToPay,
+                lenderId
+            );
+        } else {
+            payConventional(tokenIn, payer, msg.sender, amountToPay);
+        }
+    }
 }
