@@ -6,7 +6,7 @@ import {
     ManagementModule__factory,
     LensModule__factory,
 } from "../../types";
-import { getArbitrumConfig } from "./utils";
+import { getArbitrumConfig } from "../_utils/getGasConfig";
 import { ModuleConfigAction, getContractSelectors } from "../_utils/diamond";
 
 async function main() {

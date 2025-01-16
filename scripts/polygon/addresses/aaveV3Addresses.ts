@@ -1,7 +1,7 @@
 
 // ALL ADDRESSES ARE ADDRESSES ON POLYGON
 
-import { AddressMap } from "../../shared";
+import { AddressMap } from "../../_shared";
 export namespace AaveV3Polygon {
     export const POOL = '0x794a61358D6845594F94dc1DB02A252b5b4814aD';
 

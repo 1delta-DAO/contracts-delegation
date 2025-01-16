@@ -1,4 +1,4 @@
-import { AddressMap } from "../../shared"
+import { AddressMap } from "../../_shared"
 
 export namespace CompoundV3Mantle {
     export const COMET_USDE = '0x606174f62cd968d8e684c645080fa694c1D7786E'

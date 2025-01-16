@@ -2,30 +2,33 @@
 import { ethers } from "hardhat";
 import {
     ConfigModule__factory,
-    OneDeltaComposerArbitrum__factory,
+    OwnershipModule__factory,
 } from "../../types";
-import { getArbitrumConfig } from "../_utils/getGasConfig";
 import { ModuleConfigAction, getContractSelectors } from "../_utils/diamond";
-import { OneDeltaArbitrum } from "./addresses/oneDeltaAddresses";
+import { OneDeltaPolygon } from "./addresses/oneDeltaAddresses";
+import { getGasConfig } from "../_utils/getGasConfig";
 
 async function main() {
     const accounts = await ethers.getSigners()
     const operator = accounts[1]
     const chainId = await operator.getChainId();
-    if (chainId !== 42161) throw new Error("invalid chainId")
+    if (chainId !== 137) throw new Error("invalid chainId")
     console.log("operator", operator.address, "on", chainId)
+
+    const STAGE = OneDeltaPolygon.STAGING
+    const { proxy } = STAGE
 
     // we manually increment the nonce
     let nonce = await operator.getTransactionCount()
-
+    const config = await getGasConfig(operator)
     // deploy modules
 
     // composer
-    const composer = await new OneDeltaComposerArbitrum__factory(operator).deploy(getArbitrumConfig(nonce++))
-    await composer.deployed()
+    const ownership = await new OwnershipModule__factory(operator).deploy({ ...config, nonce: nonce++ })
+    await ownership.deployed()
 
 
-    console.log("composer deployed")
+    console.log("ownership deployed")
 
     const cut: {
         moduleAddress: string,
@@ -35,7 +38,7 @@ async function main() {
 
 
     const modules: any = []
-    modules.push(composer)
+    modules.push(ownership)
 
     console.log("Having", modules.length, "additions")
 
@@ -47,16 +50,16 @@ async function main() {
         })
     }
 
-    const oneDeltaModuleConfig = await new ConfigModule__factory(operator).attach(OneDeltaArbitrum.PRODUCTION.proxy)
+    const oneDeltaModuleConfig = await new ConfigModule__factory(operator).attach(proxy)
 
-    let tx = await oneDeltaModuleConfig.configureModules(cut, getArbitrumConfig(nonce++))
+    let tx = await oneDeltaModuleConfig.configureModules(cut, { ...config, nonce: nonce++ })
     await tx.wait()
     console.log("modules added")
 
 
     console.log("addition complete")
     console.log("======== Addresses =======")
-    console.log("composer:", composer.address)
+    console.log("ownership:", ownership.address)
     console.log("==========================")
 }
 

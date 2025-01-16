@@ -1,4 +1,4 @@
-import { AddressMap } from "../../shared"
+import { AddressMap } from "../../_shared"
 
 export namespace CompoundV3Polygon {
     export const COMET_USDC = '0xF25212E676D1F7F89Cd72fFEe66158f541246445'

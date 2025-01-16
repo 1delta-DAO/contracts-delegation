@@ -1,7 +1,7 @@
 
 import { ethers } from "hardhat";
 import { CometLens__factory } from "../../types";
-import { ARBITRUM_CONFIGS } from "./utils";
+import { ARBITRUM_CONFIGS } from "../_utils/getGasConfig";
 
 async function main() {
     const accounts = await ethers.getSigners()

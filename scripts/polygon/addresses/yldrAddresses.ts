@@ -1,7 +1,7 @@
 
 // ALL ADDRESSES ARE ADDRESSES ON POLYGON
 
-import { AddressMap } from "../../shared";
+import { AddressMap } from "../../_shared";
 
 export namespace YldrPolygon {
     export const POOL = '0x8183D4e0561cBdc6acC0Bdb963c352606A2Fa76F';

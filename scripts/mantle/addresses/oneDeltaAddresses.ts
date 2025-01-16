@@ -11,6 +11,7 @@ export namespace OneDeltaManlte {
         config: "0x476a0D24790a88185c721eE728d18465c66e9611",
         lensImplementation: "0x2e9C883702B53c7ae3E31943D9DE4e49e43DAe71",
         composerImplementation: "0x4661D9f5b672e6968aE44eec1277d596e37B5F45",
+        ownershipImplementation: "0x323193fe4feD2136395020B0cc5382b351E946BA",
         managementImplementation: "0x1695927f22e64f62a9ae5800d7DE30017c35697a"
     }
 }
