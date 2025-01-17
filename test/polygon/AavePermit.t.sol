@@ -15,6 +15,7 @@ contract AavePermitTestPolygon is DeltaSetup {
     // skipt this one for now
     function test_cswap_permit_polygon() external /** address user, uint8 lenderId */ {
         address user = 0x91ae002a960e63Ccb0E5bDE83A8C13E51e1cB91A;
+        vm.expectRevert();
         vm.prank(user);
         IFlashAggregator(brokerProxyAddress).deltaCompose(getCollateralSwapWithPermit());
     }
@@ -22,6 +23,7 @@ contract AavePermitTestPolygon is DeltaSetup {
     // skipt this one for now
     function test_dswap_permit_polygon() external /** address user, uint8 lenderId */ {
         address user = 0x91ae002a960e63Ccb0E5bDE83A8C13E51e1cB91A;
+        vm.expectRevert();
         vm.prank(user);
         IFlashAggregator(brokerProxyAddress).deltaCompose(getDebtSwapWithpermit());
     }

@@ -8,8 +8,8 @@ contract MarginOpenTest is DeltaSetup {
         address user = testUser;
         vm.assume(user != address(0));
 
-        address asset = USDT;
-        address assetOut = WMNT;
+        address asset = TokensMantle.USDT;
+        address assetOut = TokensMantle.WMNT;
 
         deal(asset, user, 1e20);
 
@@ -46,8 +46,8 @@ contract MarginOpenTest is DeltaSetup {
         address user = testUser;
         vm.assume(user != address(0));
 
-        address asset = USDT;
-        address assetOut = WMNT;
+        address asset = TokensMantle.USDT;
+        address assetOut = TokensMantle.WMNT;
 
         deal(asset, user, 1e30);
 
@@ -85,8 +85,8 @@ contract MarginOpenTest is DeltaSetup {
         address user = testUser;
         vm.assume(user != address(0));
 
-        address asset = WMNT;
-        address assetOut = USDT;
+        address asset = TokensMantle.WMNT;
+        address assetOut = TokensMantle.USDT;
 
         uint256 amountToSwap = 30.0e6;
         uint256 maximumIn = 30.0e18;
@@ -132,8 +132,8 @@ contract MarginOpenTest is DeltaSetup {
         address user = testUser;
         vm.assume(user != address(0));
 
-        address asset = WMNT;
-        address assetOut = USDC;
+        address asset = TokensMantle.WMNT;
+        address assetOut = TokensMantle.USDC;
 
         uint256 amountToSwap = 30.0e6;
 
@@ -179,8 +179,8 @@ contract MarginOpenTest is DeltaSetup {
         address user = testUser;
         vm.assume(user != address(0));
 
-        address asset = WMNT;
-        address assetOut = USDT;
+        address asset = TokensMantle.WMNT;
+        address assetOut = TokensMantle.USDT;
 
         deal(asset, user, 1e20);
 
@@ -217,8 +217,8 @@ contract MarginOpenTest is DeltaSetup {
         address user = testUser;
         vm.assume(user != address(0));
 
-        address asset = WMNT;
-        address assetOut = USDT;
+        address asset = TokensMantle.WMNT;
+        address assetOut = TokensMantle.USDT;
 
         deal(asset, user, 1e30);
 
@@ -254,12 +254,12 @@ contract MarginOpenTest is DeltaSetup {
 
     function getSpotExactOutMultiNativeIn(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = DEX_FEE_STABLES;
-        uint8 poolId = FUSION_X;
-        address pool = testQuoter._v3TypePool(tokenOut, USDT, fee, poolId);
-        data = abi.encodePacked(tokenOut, uint8(0), poolId, pool, fee, USDT);
+        uint8 poolId = DexMappingsMantle.FUSION_X;
+        address pool = testQuoter.v3TypePool(tokenOut, TokensMantle.USDT, fee, poolId);
+        data = abi.encodePacked(tokenOut, uint8(0), poolId, pool, fee, TokensMantle.USDT);
         fee = DEX_FEE_LOW_HIGH;
-        poolId = IZUMI;
-        pool = testQuoter._getiZiPool(tokenIn, USDT, fee);
+        poolId = DexMappingsMantle.IZUMI;
+        pool = testQuoter.getiZiPool(tokenIn, TokensMantle.USDT, fee);
         return abi.encodePacked(data, uint8(0), poolId, pool, fee, tokenIn, uint8(0), uint8(99));
     }
 }

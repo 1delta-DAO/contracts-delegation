@@ -10,7 +10,7 @@ contract ForkTestMantle is DeltaSetup {
         address proxy = 0x9bc92bF848FaF2355c429c54d1edE3e767bDd790;
         address oldModule = 0xCB9FF5D38285CFfd44ba0DA269f26cF8a22baDDB; // 0x74E95F3Ec71372756a01eB9317864e3fdde1AC53;
         upgradeExistingDelta(proxy, admin, oldModule);
-        testQuoter = new TestQuoterMantle();
+        quoter = new QuoterMantle();
     }
 
     // skipt this one for now
@@ -18,10 +18,11 @@ contract ForkTestMantle is DeltaSetup {
         address user = 0x91ae002a960e63Ccb0E5bDE83A8C13E51e1cB91A;
 
         uint256 amount = 0.00005654e8;
-        uint256 quoted = testQuoter.quoteExactInput(
+        uint256 quoted = quoter.quoteExactInput(
             getQuoteDodoV2(1),
             amount //
         );
+        console.log("quoted", quoted);
         vm.prank(user);
         vm.expectRevert();
         IFlashAggregator(brokerProxyAddress).deltaCompose(getSwapWithPermit());
@@ -73,8 +74,8 @@ contract ForkTestMantle is DeltaSetup {
         }
     }
 
-    function getQuoteDodoV2(uint8 sellQuote) internal view returns (bytes memory data) {
-        return abi.encodePacked(WBTC, DODO, FBTC_WBTC_POOL, sellQuote, FBTC);
+    function getQuoteDodoV2(uint8 sellQuote) internal pure returns (bytes memory data) {
+        return abi.encodePacked(TokensMantle.WBTC, DexMappingsMantle.DODO, FBTC_WBTC_POOL, sellQuote, TokensMantle.FBTC);
     }
 
     function getSwapWithPermit() internal pure returns (bytes memory data) {

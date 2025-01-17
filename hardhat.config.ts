@@ -60,7 +60,7 @@ const pk3: string = process.env.PK_3 || '';
 const pk4: string = process.env.PK_3 || '';
 const pk5: string = process.env.PK_5 || '';
 
-const accounts = [pk5, pk1, pk3]
+const accounts = [pk1, pk5, pk3]
 
 const config: HardhatUserConfig = {
   abiExporter: {
@@ -77,15 +77,15 @@ const config: HardhatUserConfig = {
         network: "mantle",
         chainId: 5000,
         urls: {
-          apiURL: "https://explorer.mantle.xyz/api",
-          browserURL: "https://explorer.mantle.xyz/"
+          apiURL: "https://api.mantlescan.xyz/api",
+          browserURL: "https://mantlescan.xyz/"
         }
       },
       {
         network: "taiko",
         chainId: 167000,
         urls: {
-          apiURL: "https://api.taikoscan.io/api" ,
+          apiURL: "https://api.taikoscan.io/api",
           browserURL: "https://taikoscan.io"
         }
       },
@@ -99,7 +99,8 @@ const config: HardhatUserConfig = {
       }
     ],
     apiKey: {
-      mantle: 'abc',
+      mantle: process.env.MANTLESCAN_API_KEY ?? "abc",
+      arbitrumOne: process.env.ARBISCAN_API_KEY ?? "",
       mainnet: process.env.ETHERSCAN_API_KEY ?? '',
       polygon: process.env.POLYGONSCAN_API_KEY ?? '',
       taiko: process.env.TAIKOSCAN_API_KEY ?? '',
@@ -225,7 +226,7 @@ const config: HardhatUserConfig = {
       live: true,
     },
     arbitrum: {
-      url: 'https://arb1.arbitrum.io/rpc',
+      url: 'https://arbitrum.drpc.org',
       chainId: 42161,
       live: true,
       blockGasLimit: 700000,
@@ -276,58 +277,18 @@ const config: HardhatUserConfig = {
   },
   solidity: {
     compilers: [
-      // venus
+      // 1delta
       {
-        version: "0.5.16",
+        version: '0.8.28',
         settings: {
           optimizer: {
             enabled: true,
-            runs: 200,
+            runs: 1_000_000,
           },
-          outputSelection: {
-            "*": {
-              "*": ["storageLayout"],
-            },
-          },
+          evmVersion: 'cancun',
         },
       },
-      {
-        version: "0.8.13",
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 200,
-          },
-          outputSelection: {
-            "*": {
-              "*": ["storageLayout"],
-            },
-          },
-        },
-      },
-      // compound
-      {
-        version: '0.8.15',
-        settings: {
-          optimizer: (
-            process.env['OPTIMIZER_DISABLED'] ? { enabled: false } : {
-              enabled: true,
-              runs: 1,
-              details: {
-                yulDetails: {
-                  optimizerSteps: 'dhfoDgvulfnTUtnIf [xa[r]scLM cCTUtTOntnfDIul Lcul Vcul [j] Tpeul xa[rul] xa[r]cL gvif CTUca[r]LsTOtfDnca[r]Iulc] jmul[jul] VcTOcul jmul'
-                },
-              },
-            }
-          ),
-          outputSelection: {
-            "*": {
-              "*": ["evm.deployedBytecode.sourceMap"]
-            },
-          },
-          viaIR: process.env['OPTIMIZER_DISABLED'] ? false : true,
-        },
-      },
+      // uniswap
       {
         version: '0.6.12',
         settings: {
@@ -337,29 +298,6 @@ const config: HardhatUserConfig = {
           },
         },
       },
-      // 1delta
-      {
-        version: '0.8.28',
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 1_000_000,
-          },
-          evmVersion: 'shanghai',
-        },
-      },
-      // algebra
-      {
-        version: '0.8.17',
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 1_000_000,
-          },
-          evmVersion: 'london',
-        },
-      },
-      // uniswap
       {
         version: '0.7.6',
         settings: {
@@ -431,12 +369,34 @@ const config: HardhatUserConfig = {
       }
     ],
     overrides: {
+      // proxy
+      "contracts/1delta/proxy/DeltaBrokerGen2.sol": {
+        version: '0.8.28',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1_000_000,
+          },
+          evmVersion: 'cancun',
+        },
+      },
+      // composers
       "contracts/1delta/modules/polygon/Composer.sol": {
         version: '0.8.28',
         settings: {
           optimizer: {
             enabled: true,
-            runs: 9_950,
+            runs: 5_000,
+          },
+          evmVersion: 'cancun',
+        },
+      },
+      "contracts/1delta/modules/arbitrum/Composer.sol": {
+        version: '0.8.28',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1_500,
           },
           evmVersion: 'cancun',
         },
@@ -451,7 +411,17 @@ const config: HardhatUserConfig = {
           evmVersion: 'shanghai',
         },
       },
-      "contracts/1delta/quoter/MoeJoeLens.sol" : {
+      "contracts/1delta/modules/taiko/Composer.sol": {
+        version: '0.8.28',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1_000_000,
+          },
+          evmVersion: 'shanghai',
+        },
+      },
+      "contracts/1delta/quoter/MoeJoeLens.sol": {
         version: '0.8.28',
         settings: {
           optimizer: {
@@ -459,69 +429,6 @@ const config: HardhatUserConfig = {
             runs: 1_000_000,
           },
           evmVersion: 'paris',
-        },
-      },
-      "contracts/external-protocols/aave-v3-core/protocol/pool/Pool.sol": {
-        version: '0.8.10',
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 100000,
-          },
-          evmVersion: 'london',
-        },
-      },
-      "contracts/external-protocols/aave-v3-core/protocol/libraries/logic/BorrowLogic.sol": {
-        version: '0.8.10',
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 100000,
-          },
-          evmVersion: 'london',
-        },
-      },
-      "contracts/external-protocols/aave-v3-core/protocol/pool/PoolConfigurator.sol": {
-        version: '0.8.10',
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 100000,
-          },
-          evmVersion: 'london',
-        },
-      },
-      "contracts/external-protocols/uniswapV3/periphery/MinimalSwapRouter.sol": {
-        version: "0.7.6",
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 1_000_000,
-          },
-          metadata: {
-            bytecodeHash: 'none',
-          },
-        },
-      },
-      // venus
-      "contracts/external-protocols/venus/test/ComptrollerHarness.sol": {
-        version: "0.5.16",
-        settings: {
-          evmVersion: 'istanbul',
-          optimizer: {
-            enabled: true,
-            runs: 0,
-          },
-        },
-      },
-      "contracts/external-protocols/venus/test/VenusBep20Harness.sol": {
-        version: "0.5.16",
-        settings: {
-          evmVersion: 'istanbul',
-          optimizer: {
-            enabled: true,
-            runs: 1,
-          },
         },
       },
       // periphery

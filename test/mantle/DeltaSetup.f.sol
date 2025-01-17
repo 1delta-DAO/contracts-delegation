@@ -2,7 +2,8 @@
 pragma solidity ^0.8.19;
 
 import {AddressesMantle, IFactoryFeeGetter} from "./utils/CommonAddresses.f.sol";
-import "../../contracts/1delta/quoter/test/TestQuoterMantle.sol";
+import {QuoterMantle} from "../../contracts/1delta/quoter/Mantle.sol";
+import {PoolGetter} from "../../contracts/1delta/quoter/poolGetter/Mantle.sol";
 import {ComposerUtils, Commands} from "../shared/utils/ComposerUtils.sol";
 
 // interfaces
@@ -19,6 +20,16 @@ import {IERC20All} from "../shared/interfaces/IERC20All.sol";
 // lending pool for debugging
 import {ILendingPool} from "./utils/ILendingPool.sol";
 
+// lenders
+import {LendleMantleAssets, LendleMantle} from "./utils/lender/lendleAddresses.sol";
+import {AureliusMantleAssets, AureliusMantle} from "./utils/lender/aureliusAddresses.sol";
+
+// mappings
+import {TokensMantle} from "./utils/tokens.sol";
+import {DexMappingsMantle} from "./utils/DexMappings.sol";
+import {LenderMappingsMantle} from "./utils/LenderMappings.sol";
+import {FlashMappingsMantle} from "./utils/FlashMappings.sol";
+
 // proxy and management
 import {ConfigModule} from "../../contracts/1delta/proxy/modules/ConfigModule.sol";
 import {DeltaBrokerProxyGen2} from "../../contracts/1delta/proxy/DeltaBrokerGen2.sol";
@@ -26,7 +37,7 @@ import {DeltaBrokerProxyGen2} from "../../contracts/1delta/proxy/DeltaBrokerGen2
 // initializer
 
 // core modules
-import {MantleManagementModule} from "../../contracts/1delta/modules/mantle/storage/ManagementModule.sol";
+import {ManagementModule} from "../../contracts/1delta/modules/shared/storage/ManagementModule.sol";
 import {OneDeltaComposerMantle} from "../../contracts/1delta/modules/mantle/Composer.sol";
 
 // forge
@@ -39,16 +50,17 @@ contract DeltaSetup is AddressesMantle, ComposerUtils, Script, Test {
     IBrokerProxy internal brokerProxy;
     IModuleConfig internal deltaConfig;
     IManagement internal management;
-    TestQuoterMantle testQuoter;
+    PoolGetter testQuoter;
+    QuoterMantle quoter;
     OneDeltaComposerMantle internal aggregator;
 
-    mapping(address => mapping(uint8 => address)) internal collateralTokens;
-    mapping(address => mapping(uint8 => address)) internal debtTokens;
+    mapping(address => mapping(uint16 => address)) internal collateralTokens;
+    mapping(address => mapping(uint16 => address)) internal debtTokens;
 
     /** SELECTOR GETTERS */
 
     function managementSelectors() internal pure returns (bytes4[] memory selectors) {
-        selectors = new bytes4[](13);
+        selectors = new bytes4[](14);
         // setters
         selectors[0] = IManagement.getLendingPool.selector;
         selectors[1] = IManagement.setValidTarget.selector;
@@ -115,7 +127,7 @@ contract DeltaSetup is AddressesMantle, ComposerUtils, Script, Test {
 
         brokerProxy = IBrokerProxy(brokerProxyAddress);
 
-        MantleManagementModule _management = new MantleManagementModule();
+        ManagementModule _management = new ManagementModule();
         OneDeltaComposerMantle _aggregator = new OneDeltaComposerMantle();
 
         management = IManagement(brokerProxyAddress);
@@ -159,101 +171,141 @@ contract DeltaSetup is AddressesMantle, ComposerUtils, Script, Test {
     /** ADD AND APPROVE LENDER TOKENS */
 
     function initializeDeltaBase() internal virtual {
-        // quoter
-
-        testQuoter = new TestQuoterMantle();
-
-        management.clearCache();
+        testQuoter = new PoolGetter();
+        quoter = new QuoterMantle();
     }
 
     function initializeDeltaLendle() internal virtual {
         // lendle
-        management.addGeneralLenderTokens(USDC, LENDLE_A_USDC, LENDLE_V_USDC, LENDLE_S_USDC, 0);
-        management.addGeneralLenderTokens(USDT, LENDLE_A_USDT, LENDLE_V_USDT, LENDLE_S_USDT, 0);
-        management.addGeneralLenderTokens(WBTC, LENDLE_A_WBTC, LENDLE_V_WBTC, LENDLE_S_WBTC, 0);
-        management.addGeneralLenderTokens(WETH, LENDLE_A_WETH, LENDLE_V_WETH, LENDLE_S_WETH, 0);
-        management.addGeneralLenderTokens(WMNT, LENDLE_A_WMNT, LENDLE_V_WMNT, LENDLE_S_WMNT, 0);
+        management.addGeneralLenderTokens(
+            TokensMantle.USDC,
+            LendleMantleAssets.USDC_A_TOKEN,
+            LendleMantleAssets.USDC_V_TOKEN,
+            LendleMantleAssets.USDC_S_TOKEN,
+            LenderMappingsMantle.LENDLE_ID
+        );
+        management.addGeneralLenderTokens(
+            TokensMantle.USDT,
+            LendleMantleAssets.USDT_A_TOKEN,
+            LendleMantleAssets.USDT_V_TOKEN,
+            LendleMantleAssets.USDT_S_TOKEN,
+            LenderMappingsMantle.LENDLE_ID
+        );
+        management.addGeneralLenderTokens(
+            TokensMantle.WBTC,
+            LendleMantleAssets.WBTC_A_TOKEN,
+            LendleMantleAssets.WBTC_V_TOKEN,
+            LendleMantleAssets.WBTC_S_TOKEN,
+            LenderMappingsMantle.LENDLE_ID
+        );
+        management.addGeneralLenderTokens(
+            TokensMantle.WETH,
+            LendleMantleAssets.WETH_A_TOKEN,
+            LendleMantleAssets.WETH_V_TOKEN,
+            LendleMantleAssets.WETH_S_TOKEN,
+            LenderMappingsMantle.LENDLE_ID
+        );
+        management.addGeneralLenderTokens(
+            TokensMantle.WMNT,
+            LendleMantleAssets.WMNT_A_TOKEN,
+            LendleMantleAssets.WMNT_V_TOKEN,
+            LendleMantleAssets.WMNT_S_TOKEN,
+            LenderMappingsMantle.LENDLE_ID
+        );
 
-        collateralTokens[USDC][0] = LENDLE_A_USDC;
-        collateralTokens[USDT][0] = LENDLE_A_USDT;
-        collateralTokens[WBTC][0] = LENDLE_A_WBTC;
-        collateralTokens[WETH][0] = LENDLE_A_WETH;
-        collateralTokens[WMNT][0] = LENDLE_A_WMNT;
+        collateralTokens[TokensMantle.USDC][LenderMappingsMantle.LENDLE_ID] = LendleMantleAssets.USDC_A_TOKEN;
+        collateralTokens[TokensMantle.USDT][LenderMappingsMantle.LENDLE_ID] = LendleMantleAssets.USDT_A_TOKEN;
+        collateralTokens[TokensMantle.WBTC][LenderMappingsMantle.LENDLE_ID] = LendleMantleAssets.WBTC_A_TOKEN;
+        collateralTokens[TokensMantle.WETH][LenderMappingsMantle.LENDLE_ID] = LendleMantleAssets.WETH_A_TOKEN;
+        collateralTokens[TokensMantle.WMNT][LenderMappingsMantle.LENDLE_ID] = LendleMantleAssets.WMNT_A_TOKEN;
 
-        debtTokens[USDC][0] = LENDLE_V_USDC;
-        debtTokens[USDT][0] = LENDLE_V_USDT;
-        debtTokens[WBTC][0] = LENDLE_V_WBTC;
-        debtTokens[WETH][0] = LENDLE_V_WETH;
-        debtTokens[WMNT][0] = LENDLE_V_WMNT;
+        debtTokens[TokensMantle.USDC][LenderMappingsMantle.LENDLE_ID] = LendleMantleAssets.USDC_V_TOKEN;
+        debtTokens[TokensMantle.USDT][LenderMappingsMantle.LENDLE_ID] = LendleMantleAssets.USDT_V_TOKEN;
+        debtTokens[TokensMantle.WBTC][LenderMappingsMantle.LENDLE_ID] = LendleMantleAssets.WBTC_V_TOKEN;
+        debtTokens[TokensMantle.WETH][LenderMappingsMantle.LENDLE_ID] = LendleMantleAssets.WETH_V_TOKEN;
+        debtTokens[TokensMantle.WMNT][LenderMappingsMantle.LENDLE_ID] = LendleMantleAssets.WMNT_V_TOKEN;
 
         // approve pools
         address[] memory assets = new address[](5);
-        assets[0] = USDC;
-        assets[1] = WBTC;
-        assets[2] = WETH;
-        assets[3] = WMNT;
-        assets[4] = USDT;
-        management.approveAddress(assets, LENDLE_POOL);
+        assets[0] = TokensMantle.USDC;
+        assets[1] = TokensMantle.WBTC;
+        assets[2] = TokensMantle.WETH;
+        assets[3] = TokensMantle.WMNT;
+        assets[4] = TokensMantle.USDT;
+        management.approveAddress(assets, LendleMantle.POOL);
     }
 
     function initializeDeltaAurelius() internal virtual {
         // aurelius
-        management.addGeneralLenderTokens(USDC, AURELIUS_A_USDC, AURELIUS_V_USDC, AURELIUS_S_USDC, 1);
-        management.addGeneralLenderTokens(USDT, AURELIUS_A_USDT, AURELIUS_V_USDT, AURELIUS_S_USDT, 1);
-        management.addGeneralLenderTokens(WBTC, AURELIUS_A_WBTC, AURELIUS_V_WBTC, AURELIUS_S_WBTC, 1);
-        management.addGeneralLenderTokens(WETH, AURELIUS_A_WETH, AURELIUS_V_WETH, AURELIUS_S_WETH, 1);
-        management.addGeneralLenderTokens(WMNT, AURELIUS_A_WMNT, AURELIUS_V_WMNT, AURELIUS_S_WMNT, 1);
+        management.addGeneralLenderTokens(
+            TokensMantle.USDC,
+            AureliusMantleAssets.USDC_A_TOKEN,
+            AureliusMantleAssets.USDC_V_TOKEN,
+            AureliusMantleAssets.USDC_S_TOKEN,
+            LenderMappingsMantle.AURELIUS_ID
+        );
+        management.addGeneralLenderTokens(
+            TokensMantle.USDT,
+            AureliusMantleAssets.USDT_A_TOKEN,
+            AureliusMantleAssets.USDT_V_TOKEN,
+            AureliusMantleAssets.USDT_S_TOKEN,
+            LenderMappingsMantle.AURELIUS_ID
+        );
+        management.addGeneralLenderTokens(
+            TokensMantle.WBTC,
+            AureliusMantleAssets.WBTC_A_TOKEN,
+            AureliusMantleAssets.WBTC_V_TOKEN,
+            AureliusMantleAssets.WBTC_S_TOKEN,
+            LenderMappingsMantle.AURELIUS_ID
+        );
+        management.addGeneralLenderTokens(
+            TokensMantle.WETH,
+            AureliusMantleAssets.WETH_A_TOKEN,
+            AureliusMantleAssets.WETH_V_TOKEN,
+            AureliusMantleAssets.WETH_S_TOKEN,
+            LenderMappingsMantle.AURELIUS_ID
+        );
+        management.addGeneralLenderTokens(
+            TokensMantle.WMNT,
+            AureliusMantleAssets.WMNT_A_TOKEN,
+            AureliusMantleAssets.WMNT_V_TOKEN,
+            AureliusMantleAssets.WMNT_S_TOKEN,
+            LenderMappingsMantle.AURELIUS_ID
+        );
 
-        collateralTokens[USDC][1] = AURELIUS_A_USDC;
-        collateralTokens[USDT][1] = AURELIUS_A_USDT;
-        collateralTokens[WBTC][1] = AURELIUS_A_WBTC;
-        collateralTokens[WETH][1] = AURELIUS_A_WETH;
-        collateralTokens[WMNT][1] = AURELIUS_A_WMNT;
+        collateralTokens[TokensMantle.USDC][LenderMappingsMantle.AURELIUS_ID] = AureliusMantleAssets.USDC_A_TOKEN;
+        collateralTokens[TokensMantle.USDT][LenderMappingsMantle.AURELIUS_ID] = AureliusMantleAssets.USDT_A_TOKEN;
+        collateralTokens[TokensMantle.WBTC][LenderMappingsMantle.AURELIUS_ID] = AureliusMantleAssets.WBTC_A_TOKEN;
+        collateralTokens[TokensMantle.WETH][LenderMappingsMantle.AURELIUS_ID] = AureliusMantleAssets.WETH_A_TOKEN;
+        collateralTokens[TokensMantle.WMNT][LenderMappingsMantle.AURELIUS_ID] = AureliusMantleAssets.WMNT_A_TOKEN;
 
-        debtTokens[USDC][1] = AURELIUS_V_USDC;
-        debtTokens[USDT][1] = AURELIUS_V_USDT;
-        debtTokens[WBTC][1] = AURELIUS_V_WBTC;
-        debtTokens[WETH][1] = AURELIUS_V_WETH;
-        debtTokens[WMNT][1] = AURELIUS_V_WMNT;
+        debtTokens[TokensMantle.USDC][LenderMappingsMantle.AURELIUS_ID] = AureliusMantleAssets.USDC_V_TOKEN;
+        debtTokens[TokensMantle.USDT][LenderMappingsMantle.AURELIUS_ID] = AureliusMantleAssets.USDT_V_TOKEN;
+        debtTokens[TokensMantle.WBTC][LenderMappingsMantle.AURELIUS_ID] = AureliusMantleAssets.WBTC_V_TOKEN;
+        debtTokens[TokensMantle.WETH][LenderMappingsMantle.AURELIUS_ID] = AureliusMantleAssets.WETH_V_TOKEN;
+        debtTokens[TokensMantle.WMNT][LenderMappingsMantle.AURELIUS_ID] = AureliusMantleAssets.WMNT_V_TOKEN;
 
         // approve pools
         address[] memory assets = new address[](5);
-        assets[0] = USDC;
-        assets[1] = WBTC;
-        assets[2] = WETH;
-        assets[3] = WMNT;
-        assets[4] = USDT;
-        management.approveAddress(assets, AURELIUS_POOL);
+        assets[0] = TokensMantle.USDC;
+        assets[1] = TokensMantle.WBTC;
+        assets[2] = TokensMantle.WETH;
+        assets[3] = TokensMantle.WMNT;
+        assets[4] = TokensMantle.USDT;
+        management.approveAddress(assets, AureliusMantle.POOL);
 
         address[] memory usdyAssets = new address[](1);
-        usdyAssets[0] = USDY;
-        management.approveAddress(usdyAssets, mUSD);
+        usdyAssets[0] = TokensMantle.USDY;
+        management.approveAddress(usdyAssets, TokensMantle.mUSD);
     }
 
-    function initializeDeltaStratum() internal virtual {
-        address[] memory stratumAssets = new address[](6);
-        stratumAssets[0] = USDC;
-        stratumAssets[1] = USDT;
-        stratumAssets[2] = WETH;
-        stratumAssets[3] = METH;
-        stratumAssets[4] = mUSD;
-        stratumAssets[5] = USDY;
-        management.approveAddress(stratumAssets, STRATUM_3POOL);
-        management.approveAddress(stratumAssets, STRATUM_3POOL_2);
-        management.approveAddress(stratumAssets, STRATUM_ETH_POOL);
-
-        address[] memory usdyAssets = new address[](1);
-        usdyAssets[0] = USDY;
-        management.approveAddress(usdyAssets, mUSD);
-    }
-
-    function getAssets() internal view returns (address[] memory assetList) {
+    function getAssets() internal pure returns (address[] memory assetList) {
         assetList = new address[](5);
-        assetList[0] = USDC;
-        assetList[1] = WBTC;
-        assetList[2] = WETH;
-        assetList[3] = WMNT;
-        assetList[4] = USDT;
+        assetList[0] = TokensMantle.USDC;
+        assetList[1] = TokensMantle.WBTC;
+        assetList[2] = TokensMantle.WETH;
+        assetList[3] = TokensMantle.WMNT;
+        assetList[4] = TokensMantle.USDT;
     }
 
     function setUp() public virtual {
@@ -266,13 +318,12 @@ contract DeltaSetup is AddressesMantle, ComposerUtils, Script, Test {
         deployDelta();
         initializeDeltaLendle();
         initializeDeltaAurelius();
-        initializeDeltaStratum();
         initializeDeltaBase();
     }
 
     /** DEPOSIT AND OPEN TO SPIN UP POSITIONS */
 
-    function execDeposit(address user, address asset, uint256 depositAmount, uint8 lenderId) internal {
+    function execDeposit(address user, address asset, uint256 depositAmount, uint16 lenderId) internal {
         deal(asset, user, depositAmount);
 
         bytes memory data = transferIn(asset, brokerProxyAddress, depositAmount);
@@ -288,7 +339,7 @@ contract DeltaSetup is AddressesMantle, ComposerUtils, Script, Test {
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
     }
 
-    function openSimple(address user, address asset, address borrowAsset, uint256 depositAmount, uint256 borrowAmount, uint8 lenderId) internal {
+    function openSimple(address user, address asset, address borrowAsset, uint256 depositAmount, uint256 borrowAmount, uint16 lenderId) internal {
         address debtAsset = debtTokens[borrowAsset][lenderId];
         deal(asset, user, depositAmount);
 
@@ -328,7 +379,7 @@ contract DeltaSetup is AddressesMantle, ComposerUtils, Script, Test {
         uint256 borrowAmount,
         uint256 checkAmount,
         bytes memory path, //
-        uint8 lenderId
+        uint16 lenderId
     ) internal {
         address debtAsset = debtTokens[borrowAsset][lenderId];
         deal(asset, user, depositAmount);
@@ -367,7 +418,7 @@ contract DeltaSetup is AddressesMantle, ComposerUtils, Script, Test {
         uint256 amountToReceive,
         uint256 checkAmount,
         bytes memory path, //
-        uint8 lenderId
+        uint16 lenderId
     ) internal {
         address debtAsset = debtTokens[borrowAsset][lenderId];
         deal(asset, user, depositAmount);
@@ -402,334 +453,334 @@ contract DeltaSetup is AddressesMantle, ComposerUtils, Script, Test {
 
     /** OPEN */
 
-    function getOpenExactInSingle(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint16 fee = uint16(DEX_FEE_LOW);
-        uint8 poolId = AGNI;
-        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
+    function getOpenExactInSingle(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
+        uint16 fee = DEX_FEE_LOW;
+        uint8 poolId = DexMappingsMantle.AGNI;
+        address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
         (uint8 actionId, , uint8 endId) = getOpenExactInFlags();
         return abi.encodePacked(tokenIn, actionId, poolId, pool, fee, tokenOut, lenderId, endId);
     }
 
-    function getOpenExactInSingle_izi(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+    function getOpenExactInSingle_izi(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_LOW_HIGH);
-        uint8 poolId = IZUMI;
-        address pool = testQuoter._getiZiPool(tokenIn, tokenOut, fee);
+        uint8 poolId = DexMappingsMantle.IZUMI;
+        address pool = testQuoter.getiZiPool(tokenIn, tokenOut, fee);
         (uint8 actionId, , uint8 endId) = getOpenExactInFlags();
         return abi.encodePacked(tokenIn, actionId, poolId, pool, fee, tokenOut, lenderId, endId);
     }
 
     function getSpotExactInSingle_izi(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_LOW_HIGH);
-        uint8 poolId = IZUMI;
-        address pool = testQuoter._getiZiPool(tokenIn, tokenOut, fee);
+        uint8 poolId = DexMappingsMantle.IZUMI;
+        address pool = testQuoter.getiZiPool(tokenIn, tokenOut, fee);
         return abi.encodePacked(tokenIn, uint8(0), poolId, pool, fee, tokenOut);
     }
 
     function getSpotExactOutSingle_izi(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_LOW_HIGH);
-        uint8 poolId = IZUMI;
-        address pool = testQuoter._getiZiPool(tokenIn, tokenOut, fee);
+        uint8 poolId = DexMappingsMantle.IZUMI;
+        address pool = testQuoter.getiZiPool(tokenIn, tokenOut, fee);
         return abi.encodePacked(tokenOut, uint8(0), poolId, pool, fee, tokenIn);
     }
 
-    function getOpenExactOutSingle(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint16 fee = uint16(DEX_FEE_LOW);
-        uint8 poolId = AGNI;
-        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
+    function getOpenExactOutSingle(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
+        uint16 fee = DEX_FEE_LOW;
+        uint8 poolId = DexMappingsMantle.AGNI;
+        address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
         (uint8 actionId, , uint8 endId) = getOpenExactOutFlags();
         return abi.encodePacked(tokenOut, actionId, poolId, pool, fee, tokenIn, lenderId, endId);
     }
 
-    function getOpenExactInMulti(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint16 fee = uint16(DEX_FEE_LOW);
+    function getOpenExactInMulti(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
+        uint16 fee = DEX_FEE_LOW;
         (uint8 actionId, uint8 midId, uint8 endId) = getOpenExactInFlags();
-        uint8 poolId = IZUMI;
-        address pool = testQuoter._getiZiPool(tokenIn, USDT, fee);
-        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, fee, USDT);
-        fee = uint16(DEX_FEE_STABLES);
-        poolId = FUSION_X;
-        pool = testQuoter._v3TypePool(USDT, tokenOut, fee, poolId);
+        uint8 poolId = DexMappingsMantle.IZUMI;
+        address pool = testQuoter.getiZiPool(tokenIn, TokensMantle.USDT, fee);
+        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, fee, TokensMantle.USDT);
+        fee = DEX_FEE_STABLES;
+        poolId = DexMappingsMantle.FUSION_X;
+        pool = testQuoter.v3TypePool(TokensMantle.USDT, tokenOut, fee, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenOut, lenderId, endId);
     }
 
-    function getOpenExactOutMulti(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint16 fee = uint16(DEX_FEE_STABLES);
+    function getOpenExactOutMulti(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
+        uint16 fee = DEX_FEE_STABLES;
         (uint8 actionId, uint8 midId, uint8 endId) = getOpenExactOutFlags();
-        uint8 poolId = FUSION_X;
-        address pool = testQuoter._v3TypePool(tokenOut, USDT, fee, poolId);
-        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, fee, USDT);
-        fee = uint16(DEX_FEE_LOW);
-        poolId = IZUMI;
-        pool = testQuoter._getiZiPool(USDT, tokenIn, fee);
+        uint8 poolId = DexMappingsMantle.FUSION_X;
+        address pool = testQuoter.v3TypePool(tokenOut, TokensMantle.USDT, fee, poolId);
+        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, fee, TokensMantle.USDT);
+        fee = DEX_FEE_LOW;
+        poolId = DexMappingsMantle.IZUMI;
+        pool = testQuoter.getiZiPool(TokensMantle.USDT, tokenIn, fee);
         return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenIn, lenderId, endId);
     }
 
     /** CLOSE */
 
-    function getCloseExactOutSingle(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint16 fee = uint16(DEX_FEE_LOW);
-        uint8 poolId = AGNI;
-        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
+    function getCloseExactOutSingle(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
+        uint16 fee = DEX_FEE_LOW;
+        uint8 poolId = DexMappingsMantle.AGNI;
+        address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
         (uint8 actionId, , uint8 endId) = getCloseExactOutFlags();
         return abi.encodePacked(tokenOut, actionId, poolId, pool, fee, tokenIn, lenderId, endId);
     }
 
-    function getCloseExactInSingle(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint16 fee = uint16(DEX_FEE_LOW);
-        uint8 poolId = AGNI;
-        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
+    function getCloseExactInSingle(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
+        uint16 fee = DEX_FEE_LOW;
+        uint8 poolId = DexMappingsMantle.AGNI;
+        address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
         (uint8 actionId, , uint8 endId) = getCloseExactInFlags();
         return abi.encodePacked(tokenIn, actionId, poolId, pool, fee, tokenOut, lenderId, endId);
     }
 
-    function getCloseExactInMulti(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint16 fee = uint16(DEX_FEE_LOW);
+    function getCloseExactInMulti(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
+        uint16 fee = DEX_FEE_LOW;
         (uint8 actionId, uint8 midId, uint8 endId) = getCloseExactInFlags();
-        uint8 poolId = IZUMI;
-        address pool = testQuoter._getiZiPool(USDT, tokenIn, fee);
-        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, fee, USDT);
-        fee = uint16(DEX_FEE_STABLES);
-        poolId = FUSION_X;
-        pool = testQuoter._v3TypePool(USDT, tokenOut, fee, poolId);
+        uint8 poolId = DexMappingsMantle.IZUMI;
+        address pool = testQuoter.getiZiPool(TokensMantle.USDT, tokenIn, fee);
+        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, fee, TokensMantle.USDT);
+        fee = DEX_FEE_STABLES;
+        poolId = DexMappingsMantle.FUSION_X;
+        pool = testQuoter.v3TypePool(TokensMantle.USDT, tokenOut, fee, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenOut, lenderId, endId);
     }
 
-    function getCloseExactOutMulti(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint16 fee = uint16(DEX_FEE_STABLES);
+    function getCloseExactOutMulti(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
+        uint16 fee = DEX_FEE_STABLES;
         (uint8 actionId, uint8 midId, uint8 endId) = getCloseExactOutFlags();
-        uint8 poolId = FUSION_X;
-        address pool = testQuoter._v3TypePool(USDT, tokenOut, fee, poolId);
-        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, fee, USDT);
-        fee = uint16(DEX_FEE_LOW);
-        poolId = IZUMI;
-        pool = testQuoter._getiZiPool(USDT, tokenIn, fee);
+        uint8 poolId = DexMappingsMantle.FUSION_X;
+        address pool = testQuoter.v3TypePool(TokensMantle.USDT, tokenOut, fee, poolId);
+        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, fee, TokensMantle.USDT);
+        fee = DEX_FEE_LOW;
+        poolId = DexMappingsMantle.IZUMI;
+        pool = testQuoter.getiZiPool(TokensMantle.USDT, tokenIn, fee);
         return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenIn, lenderId, endId);
     }
 
     /** COLLATERAL SWAP */
 
-    function getCollateralSwapExactInSingle(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint16 fee = uint16(DEX_FEE_LOW);
-        uint8 poolId = AGNI;
-        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
+    function getCollateralSwapExactInSingle(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
+        uint16 fee = DEX_FEE_LOW;
+        uint8 poolId = DexMappingsMantle.AGNI;
+        address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
         (uint8 actionId, , uint8 endId) = getCollateralSwapExactInFlags();
         return abi.encodePacked(tokenIn, actionId, poolId, pool, fee, tokenOut, lenderId, endId);
     }
 
-    function getCollateralSwapExactOutSingle(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint16 fee = uint16(DEX_FEE_LOW);
-        uint8 poolId = AGNI;
-        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
+    function getCollateralSwapExactOutSingle(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
+        uint16 fee = DEX_FEE_LOW;
+        uint8 poolId = DexMappingsMantle.AGNI;
+        address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
         (uint8 actionId, , uint8 endId) = getCollateralSwapExactOutFlags();
         return abi.encodePacked(tokenOut, actionId, poolId, pool, fee, tokenIn, lenderId, endId);
     }
 
-    function getCollateralSwapExactInMulti(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint16 fee = uint16(DEX_FEE_LOW_MEDIUM);
+    function getCollateralSwapExactInMulti(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
+        uint16 fee = DEX_FEE_LOW_MEDIUM;
         (uint8 actionId, uint8 midId, uint8 endId) = getCollateralSwapExactInFlags();
-        uint8 poolId = AGNI;
-        address pool = testQuoter._v3TypePool(tokenIn, WETH, fee, poolId);
-        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, fee, WETH);
-        fee = uint16(DEX_FEE_LOW);
-        poolId = FUSION_X;
-        pool = testQuoter._v3TypePool(tokenOut, WETH, fee, poolId);
+        uint8 poolId = DexMappingsMantle.AGNI;
+        address pool = testQuoter.v3TypePool(tokenIn, TokensMantle.WETH, fee, poolId);
+        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, fee, TokensMantle.WETH);
+        fee = DEX_FEE_LOW;
+        poolId = DexMappingsMantle.FUSION_X;
+        pool = testQuoter.v3TypePool(tokenOut, TokensMantle.WETH, fee, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenOut, lenderId, endId);
     }
 
-    function getCollateralSwapExactOutMulti(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint16 fee = uint16(DEX_FEE_LOW_MEDIUM);
+    function getCollateralSwapExactOutMulti(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
+        uint16 fee = DEX_FEE_LOW_MEDIUM;
         (uint8 actionId, uint8 midId, uint8 endId) = getCollateralSwapExactOutFlags();
-        uint8 poolId = AGNI;
-        address pool = testQuoter._v3TypePool(tokenOut, WETH, fee, poolId);
-        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, fee, WETH);
-        fee = uint16(DEX_FEE_LOW);
-        poolId = FUSION_X;
-        pool = testQuoter._v3TypePool(tokenIn, WETH, fee, poolId);
+        uint8 poolId = DexMappingsMantle.AGNI;
+        address pool = testQuoter.v3TypePool(tokenOut, TokensMantle.WETH, fee, poolId);
+        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, fee, TokensMantle.WETH);
+        fee = DEX_FEE_LOW;
+        poolId = DexMappingsMantle.FUSION_X;
+        pool = testQuoter.v3TypePool(tokenIn, TokensMantle.WETH, fee, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenIn, lenderId, endId);
     }
 
     /** DEBT SWAP */
 
-    function getDebtSwapExactInSingle(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint16 fee = uint16(DEX_FEE_LOW_MEDIUM);
-        uint8 poolId = AGNI;
-        address pool = testQuoter._v3TypePool(tokenOut, tokenIn, fee, poolId);
+    function getDebtSwapExactInSingle(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
+        uint16 fee = DEX_FEE_LOW_MEDIUM;
+        uint8 poolId = DexMappingsMantle.AGNI;
+        address pool = testQuoter.v3TypePool(tokenOut, tokenIn, fee, poolId);
         (uint8 actionId, , uint8 endId) = getDebtSwapExactInFlags();
         return abi.encodePacked(tokenIn, actionId, poolId, pool, fee, tokenOut, lenderId, endId);
     }
 
-    function getDebtSwapExactOutSingle(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint16 fee = uint16(DEX_FEE_LOW_MEDIUM);
-        uint8 poolId = AGNI;
-        address pool = testQuoter._v3TypePool(tokenOut, tokenIn, fee, poolId);
+    function getDebtSwapExactOutSingle(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
+        uint16 fee = DEX_FEE_LOW_MEDIUM;
+        uint8 poolId = DexMappingsMantle.AGNI;
+        address pool = testQuoter.v3TypePool(tokenOut, tokenIn, fee, poolId);
         (uint8 actionId, , uint8 endId) = getDebtSwapExactOutFlags();
         return abi.encodePacked(tokenOut, actionId, poolId, pool, fee, tokenIn, lenderId, endId);
     }
 
-    function getDebtSwapExactInMulti(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint16 fee = uint16(DEX_FEE_LOW);
+    function getDebtSwapExactInMulti(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
+        uint16 fee = DEX_FEE_LOW;
         (uint8 actionId, uint8 midId, uint8 endId) = getDebtSwapExactInFlags();
-        uint8 poolId = BUTTER;
-        address pool = testQuoter._v3TypePool(tokenIn, USDT, fee, poolId);
-        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, fee, USDT);
-        fee = uint16(DEX_FEE_LOW);
-        poolId = BUTTER;
-        pool = testQuoter._v3TypePool(tokenOut, USDT, fee, poolId);
+        uint8 poolId = DexMappingsMantle.BUTTER;
+        address pool = testQuoter.v3TypePool(tokenIn, TokensMantle.USDT, fee, poolId);
+        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, fee, TokensMantle.USDT);
+        fee = DEX_FEE_LOW;
+        poolId = DexMappingsMantle.BUTTER;
+        pool = testQuoter.v3TypePool(tokenOut, TokensMantle.USDT, fee, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenOut, lenderId, endId);
     }
 
-    function getDebtSwapExactOutMulti(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint16 fee = uint16(DEX_FEE_LOW);
+    function getDebtSwapExactOutMulti(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
+        uint16 fee = DEX_FEE_LOW;
         (uint8 actionId, uint8 midId, uint8 endId) = getDebtSwapExactOutFlags();
-        uint8 poolId = BUTTER;
-        address pool = testQuoter._v3TypePool(tokenOut, USDT, fee, poolId);
-        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, fee, USDT);
-        fee = uint16(DEX_FEE_LOW);
-        poolId = BUTTER;
-        pool = testQuoter._v3TypePool(tokenIn, USDT, fee, poolId);
+        uint8 poolId = DexMappingsMantle.BUTTER;
+        address pool = testQuoter.v3TypePool(tokenOut, TokensMantle.USDT, fee, poolId);
+        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, fee, TokensMantle.USDT);
+        fee = DEX_FEE_LOW;
+        poolId = DexMappingsMantle.BUTTER;
+        pool = testQuoter.v3TypePool(tokenIn, TokensMantle.USDT, fee, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenIn, lenderId, endId);
     }
 
     /** OPEN */
 
-    function getOpenExactInSingleV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint8 poolId = MERCHANT_MOE;
+    function getOpenExactInSingleV2(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
+        uint8 poolId = DexMappingsMantle.MERCHANT_MOE;
         (uint8 actionId, , uint8 endId) = getOpenExactInFlags();
-        address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
+        address pool = testQuoter.v2TypePairAddress(tokenIn, tokenOut, poolId);
         return abi.encodePacked(tokenIn, actionId, poolId, pool, MERCHANT_MOE_FEE_DENOM, tokenOut, lenderId, endId);
     }
 
-    function getOpenExactOutSingleV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint8 poolId = MERCHANT_MOE;
+    function getOpenExactOutSingleV2(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
+        uint8 poolId = DexMappingsMantle.MERCHANT_MOE;
         (uint8 actionId, , uint8 endId) = getOpenExactOutFlags();
-        address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
+        address pool = testQuoter.v2TypePairAddress(tokenIn, tokenOut, poolId);
         return abi.encodePacked(tokenOut, actionId, poolId, pool, MERCHANT_MOE_FEE_DENOM, tokenIn, lenderId, endId);
     }
 
-    function getOpenExactInMultiV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+    function getOpenExactInMultiV2(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
         (uint8 actionId, uint8 midId, uint8 endId) = getOpenExactInFlags();
-        uint8 poolId = MERCHANT_MOE;
-        address pool = testQuoter._v2TypePairAddress(tokenIn, USDT, poolId);
-        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, MERCHANT_MOE_FEE_DENOM, USDT);
-        poolId = MERCHANT_MOE;
-        pool = testQuoter._v2TypePairAddress(USDT, tokenOut, poolId);
+        uint8 poolId = DexMappingsMantle.MERCHANT_MOE;
+        address pool = testQuoter.v2TypePairAddress(tokenIn, TokensMantle.USDT, poolId);
+        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, MERCHANT_MOE_FEE_DENOM, TokensMantle.USDT);
+        poolId = DexMappingsMantle.MERCHANT_MOE;
+        pool = testQuoter.v2TypePairAddress(TokensMantle.USDT, tokenOut, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, MERCHANT_MOE_FEE_DENOM, tokenOut, lenderId, endId);
     }
 
-    function getOpenExactOutMultiV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+    function getOpenExactOutMultiV2(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
         (uint8 actionId, uint8 midId, uint8 endId) = getOpenExactOutFlags();
-        uint8 poolId = MERCHANT_MOE;
-        address pool = testQuoter._v2TypePairAddress(USDT, tokenOut, poolId);
-        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, MERCHANT_MOE_FEE_DENOM, USDT);
-        pool = testQuoter._v2TypePairAddress(tokenIn, USDT, poolId);
+        uint8 poolId = DexMappingsMantle.MERCHANT_MOE;
+        address pool = testQuoter.v2TypePairAddress(TokensMantle.USDT, tokenOut, poolId);
+        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, MERCHANT_MOE_FEE_DENOM, TokensMantle.USDT);
+        pool = testQuoter.v2TypePairAddress(tokenIn, TokensMantle.USDT, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, MERCHANT_MOE_FEE_DENOM, tokenIn, lenderId, endId);
     }
 
     /** CLOSE */
 
-    function getCloseExactOutSingleV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint8 poolId = MERCHANT_MOE;
-        address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
+    function getCloseExactOutSingleV2(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
+        uint8 poolId = DexMappingsMantle.MERCHANT_MOE;
+        address pool = testQuoter.v2TypePairAddress(tokenIn, tokenOut, poolId);
         (uint8 actionId, , uint8 endId) = getCloseExactOutFlags();
         return abi.encodePacked(tokenOut, actionId, poolId, pool, MERCHANT_MOE_FEE_DENOM, tokenIn, lenderId, endId);
     }
 
-    function getCloseExactInSingleV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint8 poolId = MERCHANT_MOE;
-        address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
+    function getCloseExactInSingleV2(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
+        uint8 poolId = DexMappingsMantle.MERCHANT_MOE;
+        address pool = testQuoter.v2TypePairAddress(tokenIn, tokenOut, poolId);
         (uint8 actionId, , uint8 endId) = getCloseExactInFlags();
         return abi.encodePacked(tokenIn, actionId, poolId, pool, MERCHANT_MOE_FEE_DENOM, tokenOut, lenderId, endId);
     }
 
-    function getCloseExactInMultiV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+    function getCloseExactInMultiV2(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
         (uint8 actionId, uint8 midId, uint8 endId) = getCloseExactInFlags();
-        uint8 poolId = MERCHANT_MOE;
-        address pool = testQuoter._v2TypePairAddress(tokenIn, USDT, poolId);
-        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, MERCHANT_MOE_FEE_DENOM, USDT);
-        poolId = MERCHANT_MOE;
-        pool = testQuoter._v2TypePairAddress(tokenOut, USDT, poolId);
+        uint8 poolId = DexMappingsMantle.MERCHANT_MOE;
+        address pool = testQuoter.v2TypePairAddress(tokenIn, TokensMantle.USDT, poolId);
+        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, MERCHANT_MOE_FEE_DENOM, TokensMantle.USDT);
+        poolId = DexMappingsMantle.MERCHANT_MOE;
+        pool = testQuoter.v2TypePairAddress(tokenOut, TokensMantle.USDT, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, MERCHANT_MOE_FEE_DENOM, tokenOut, lenderId, endId);
     }
 
-    function getCloseExactOutMultiV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+    function getCloseExactOutMultiV2(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
         (uint8 actionId, uint8 midId, uint8 endId) = getCloseExactOutFlags();
-        uint8 poolId = MERCHANT_MOE;
-        address pool = testQuoter._v2TypePairAddress(tokenOut, USDT, poolId);
-        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, MERCHANT_MOE_FEE_DENOM, USDT);
-        poolId = MERCHANT_MOE;
-        pool = testQuoter._v2TypePairAddress(tokenIn, USDT, poolId);
+        uint8 poolId = DexMappingsMantle.MERCHANT_MOE;
+        address pool = testQuoter.v2TypePairAddress(tokenOut, TokensMantle.USDT, poolId);
+        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, MERCHANT_MOE_FEE_DENOM, TokensMantle.USDT);
+        poolId = DexMappingsMantle.MERCHANT_MOE;
+        pool = testQuoter.v2TypePairAddress(tokenIn, TokensMantle.USDT, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, MERCHANT_MOE_FEE_DENOM, tokenIn, lenderId, endId);
     }
 
     /** COLLATERAL SWAP */
 
-    function getCollateralSwapExactInSingleV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint8 poolId = MERCHANT_MOE;
-        address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
+    function getCollateralSwapExactInSingleV2(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
+        uint8 poolId = DexMappingsMantle.MERCHANT_MOE;
+        address pool = testQuoter.v2TypePairAddress(tokenIn, tokenOut, poolId);
         (uint8 actionId, , uint8 endId) = getCollateralSwapExactInFlags();
         return abi.encodePacked(tokenIn, actionId, poolId, pool, MERCHANT_MOE_FEE_DENOM, tokenOut, lenderId, endId);
     }
 
-    function getCollateralSwapExactOutSingleV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint8 poolId = MERCHANT_MOE;
-        address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
+    function getCollateralSwapExactOutSingleV2(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
+        uint8 poolId = DexMappingsMantle.MERCHANT_MOE;
+        address pool = testQuoter.v2TypePairAddress(tokenIn, tokenOut, poolId);
         (uint8 actionId, , uint8 endId) = getCollateralSwapExactOutFlags();
         return abi.encodePacked(tokenOut, actionId, poolId, pool, MERCHANT_MOE_FEE_DENOM, tokenIn, lenderId, endId);
     }
 
-    function getCollateralSwapExactInMultiV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+    function getCollateralSwapExactInMultiV2(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
         (uint8 actionId, uint8 midId, uint8 endId) = getCollateralSwapExactInFlags();
-        uint8 poolId = MERCHANT_MOE;
-        address pool = testQuoter._v2TypePairAddress(tokenIn, METH, poolId);
-        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, MERCHANT_MOE_FEE_DENOM, METH);
-        poolId = MERCHANT_MOE;
-        pool = testQuoter._v2TypePairAddress(tokenOut, METH, poolId);
+        uint8 poolId = DexMappingsMantle.MERCHANT_MOE;
+        address pool = testQuoter.v2TypePairAddress(tokenIn, TokensMantle.METH, poolId);
+        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, MERCHANT_MOE_FEE_DENOM, TokensMantle.METH);
+        poolId = DexMappingsMantle.MERCHANT_MOE;
+        pool = testQuoter.v2TypePairAddress(tokenOut, TokensMantle.METH, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, MERCHANT_MOE_FEE_DENOM, tokenOut, lenderId, endId);
     }
 
-    function getCollateralSwapExactOutMultiV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+    function getCollateralSwapExactOutMultiV2(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
         (uint8 actionId, uint8 midId, uint8 endId) = getCollateralSwapExactOutFlags();
-        uint8 poolId = MERCHANT_MOE;
-        address pool = testQuoter._v2TypePairAddress(tokenOut, METH, poolId);
-        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, MERCHANT_MOE_FEE_DENOM, METH);
-        poolId = MERCHANT_MOE;
-        pool = testQuoter._v2TypePairAddress(tokenIn, METH, poolId);
+        uint8 poolId = DexMappingsMantle.MERCHANT_MOE;
+        address pool = testQuoter.v2TypePairAddress(tokenOut, TokensMantle.METH, poolId);
+        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, MERCHANT_MOE_FEE_DENOM, TokensMantle.METH);
+        poolId = DexMappingsMantle.MERCHANT_MOE;
+        pool = testQuoter.v2TypePairAddress(tokenIn, TokensMantle.METH, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, MERCHANT_MOE_FEE_DENOM, tokenIn, lenderId, endId);
     }
 
     /** DEBT SWAP */
 
-    function getDebtSwapExactInSingleV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint8 poolId = MERCHANT_MOE;
-        address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
+    function getDebtSwapExactInSingleV2(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
+        uint8 poolId = DexMappingsMantle.MERCHANT_MOE;
+        address pool = testQuoter.v2TypePairAddress(tokenIn, tokenOut, poolId);
         (uint8 actionId, , uint8 endId) = getDebtSwapExactInFlags();
         return abi.encodePacked(tokenIn, actionId, poolId, pool, MERCHANT_MOE_FEE_DENOM, tokenOut, lenderId, endId);
     }
 
-    function getDebtSwapExactOutSingleV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint8 poolId = MERCHANT_MOE;
-        address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
+    function getDebtSwapExactOutSingleV2(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
+        uint8 poolId = DexMappingsMantle.MERCHANT_MOE;
+        address pool = testQuoter.v2TypePairAddress(tokenIn, tokenOut, poolId);
         (uint8 actionId, , uint8 endId) = getDebtSwapExactOutFlags();
         return abi.encodePacked(tokenOut, actionId, poolId, pool, MERCHANT_MOE_FEE_DENOM, tokenIn, lenderId, endId);
     }
 
-    function getDebtSwapExactInMultiV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+    function getDebtSwapExactInMultiV2(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
         (uint8 actionId, uint8 midId, uint8 endId) = getDebtSwapExactInFlags();
-        uint8 poolId = MERCHANT_MOE;
-        address pool = testQuoter._v2TypePairAddress(tokenIn, METH, poolId);
-        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, MERCHANT_MOE_FEE_DENOM, METH);
-        poolId = MERCHANT_MOE;
-        pool = testQuoter._v2TypePairAddress(tokenOut, METH, poolId);
+        uint8 poolId = DexMappingsMantle.MERCHANT_MOE;
+        address pool = testQuoter.v2TypePairAddress(tokenIn, TokensMantle.METH, poolId);
+        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, MERCHANT_MOE_FEE_DENOM, TokensMantle.METH);
+        poolId = DexMappingsMantle.MERCHANT_MOE;
+        pool = testQuoter.v2TypePairAddress(tokenOut, TokensMantle.METH, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, MERCHANT_MOE_FEE_DENOM, tokenOut, lenderId, endId);
     }
 
-    function getDebtSwapExactOutMultiV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+    function getDebtSwapExactOutMultiV2(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
         (uint8 actionId, uint8 midId, uint8 endId) = getDebtSwapExactOutFlags();
-        uint8 poolId = MERCHANT_MOE;
-        address pool = testQuoter._v2TypePairAddress(tokenOut, METH, poolId);
-        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, MERCHANT_MOE_FEE_DENOM, METH);
-        poolId = MERCHANT_MOE;
-        pool = testQuoter._v2TypePairAddress(tokenIn, METH, poolId);
+        uint8 poolId = DexMappingsMantle.MERCHANT_MOE;
+        address pool = testQuoter.v2TypePairAddress(tokenOut, TokensMantle.METH, poolId);
+        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, MERCHANT_MOE_FEE_DENOM, TokensMantle.METH);
+        poolId = DexMappingsMantle.MERCHANT_MOE;
+        pool = testQuoter.v2TypePairAddress(tokenIn, TokensMantle.METH, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, MERCHANT_MOE_FEE_DENOM, tokenIn, lenderId, endId);
     }
 
@@ -749,7 +800,7 @@ contract DeltaSetup is AddressesMantle, ComposerUtils, Script, Test {
         uint256 amountToDeposit,
         uint256 swapAmount,
         uint256 checkAmount,
-        uint8 lenderId
+        uint16 lenderId
     ) internal view returns (TestParamsOpen memory p) {
         p = TestParamsOpen(
             borrowAsset, //
@@ -760,5 +811,39 @@ contract DeltaSetup is AddressesMantle, ComposerUtils, Script, Test {
             swapAmount,
             checkAmount
         );
+    }
+
+    function isAave(uint16 lenderId) internal pure returns (bool a) {
+        return lenderId == LenderMappingsMantle.LENDLE_ID || lenderId == LenderMappingsMantle.AURELIUS_ID;
+    }
+
+    // lender indexes prevent forge to bug out when using parameters
+
+    function validLenderIndex(uint8 i) internal pure returns (bool) {
+        return uint256(i) < 2;
+    }
+
+    function getLenderByIndex(uint8 i) internal view returns (uint16) {
+        return lenderIds[i];
+    }
+
+    function isCompoundV3(uint16 lenderId) internal pure returns (bool a) {
+        return lenderId == LenderMappingsMantle.COMPOUND_V3_USDE_ID;
+    }
+
+    uint16[] internal lenderIds = [LenderMappingsMantle.LENDLE_ID, LenderMappingsMantle.AURELIUS_ID];
+    address[] internal users = [testUser, 0xe75358526Ef4441Db03cCaEB9a87F180fAe80eb9];
+
+    /** HELPER FOR ALL IN */
+
+    function _deposit(address asset, address user, uint256 amount, uint16 lenderId) internal {
+        deal(asset, user, amount);
+
+        vm.prank(user);
+        IERC20All(asset).approve(brokerProxyAddress, amount);
+        bytes memory transferData = transferIn(asset, brokerProxyAddress, amount);
+        bytes memory data = deposit(asset, user, amount, lenderId);
+        vm.prank(user);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(abi.encodePacked(transferData, data));
     }
 }

@@ -14,7 +14,7 @@ contract FlashLoanTestPolygon is DeltaSetup {
         FCaller caller = new FCaller();
         address receiver = 0x1E5e3b014C8E307E5849371660dCd05764A2207d;
         address[] memory assets = new address[](1);
-        assets[0] = WMATIC;
+        assets[0] = TokensPolygon.WMATIC;
         uint256[] memory amounts = new uint256[](1);
         uint256 amount = 11111111111111111;
         amounts[0] = amount;
@@ -45,7 +45,7 @@ contract FlashLoanTestPolygon is DeltaSetup {
         caller.callFlash(
             address(caller),
             receiver,
-            WMATIC,
+            TokensPolygon.WMATIC,
             uint112(amount),
             params //
         );
@@ -76,7 +76,7 @@ contract FlashLoanTestPolygon is DeltaSetup {
             abi.encodeWithSelector(
                 IAllFlashLoans.flashLoanSimple.selector,
                 receiver,
-                WMATIC,
+                TokensPolygon.WMATIC,
                 amount,
                 params, //
                 refC
@@ -95,7 +95,7 @@ contract FlashLoanTestPolygon is DeltaSetup {
         caller.callFlashAave(
             address(caller),
             receiver,
-            WMATIC,
+            TokensPolygon.WMATIC,
             uint112(amount),
             refC,
             params //
@@ -117,7 +117,7 @@ contract FlashLoanTestPolygon is DeltaSetup {
     function testArr() external {
         FCaller caller = new FCaller();
         address[] memory assets = new address[](1);
-        assets[0] = WMATIC;
+        assets[0] = TokensPolygon.WMATIC;
         caller.arr(assets);
         console.log("test arr");
         caller.callArr();
@@ -127,7 +127,7 @@ contract FlashLoanTestPolygon is DeltaSetup {
         print();
         FCaller caller = new FCaller();
         address[] memory assets = new address[](1);
-        assets[0] = WMATIC;
+        assets[0] = TokensPolygon.WMATIC;
         caller.arr2(assets, assets);
         // console.log("test arr");
         uint s = 32;

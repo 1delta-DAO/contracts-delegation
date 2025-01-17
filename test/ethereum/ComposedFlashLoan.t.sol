@@ -121,11 +121,10 @@ contract ComposedFlashLoanTestEthereum is DeltaSetup {
 
     function test_ethereum_ext_call() external {
         address someAddr = vm.addr(0x324);
-        address someOtherAddr = vm.addr(0x324);
 
-        management.setValidTarget(someAddr, someOtherAddr, true);
+        management.setValidTarget(someAddr, true);
 
-        bool val = management.getIsValidTarget(someAddr, someOtherAddr);
+        bool val = management.getIsValidTarget(someAddr);
         console.log(val);
     }
 
@@ -202,17 +201,15 @@ contract ComposedFlashLoanTestEthereum is DeltaSetup {
 
     function getOpenExactInInternal(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_LOW);
-        uint8 poolId = UNI_V3;
-        console.log("t");
-        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
-        console.log("t", pool);
+        uint8 poolId = DexMappingsEthereum.UNI_V3;
+        address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
         return abi.encodePacked(tokenIn, uint8(0), poolId, pool, fee, tokenOut, uint8(0), uint8(0));
     }
 
     function getCloseExactInInternal(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_LOW);
-        uint8 poolId = UNI_V3;
-        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
+        uint8 poolId = DexMappingsEthereum.UNI_V3;
+        address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
         return abi.encodePacked(tokenIn, uint8(0), poolId, pool, fee, tokenOut, uint8(0), uint8(0));
     }
 

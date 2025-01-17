@@ -16,14 +16,14 @@ contract KTXTest is DeltaSetup {
     function test_mantle_ktx_spot_exact_in() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetIn = WETH;
-        address assetOut = WBTC;
+        address assetIn = TokensMantle.WETH;
+        address assetOut = TokensMantle.WBTC;
 
         deal(assetIn, user, 1e20);
 
         uint256 amountIn = 20.0e18;
 
-        uint256 quoted = testQuoter.quoteExactInput(getKTXQuotePath(assetIn, assetOut), amountIn);
+        uint256 quoted = quoter.quoteExactInput(getKTXQuotePath(assetIn, assetOut), amountIn);
 
         bytes memory swapPath = getSpotExactInSingleKTX(assetIn, assetOut);
         uint256 minimumOut = 0.03e8;
@@ -58,28 +58,28 @@ contract KTXTest is DeltaSetup {
     function test_mantle_ktx_spot_exact_in_low_balance() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetIn = WETH;
-        address assetOut = METH;
+        address assetIn = TokensMantle.WETH;
+        address assetOut = TokensMantle.METH;
 
         deal(assetIn, user, 1e20);
 
         uint256 amountIn = 20.0e18;
 
         vm.expectRevert();
-        testQuoter.quoteExactInput(getKTXQuotePath(assetIn, assetOut), amountIn);
+        quoter.quoteExactInput(getKTXQuotePath(assetIn, assetOut), amountIn);
     }
 
     function test_mantle_ktx_spot_exact_in_stable_out() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetIn = WBTC;
-        address assetOut = USDT;
+        address assetIn = TokensMantle.WBTC;
+        address assetOut = TokensMantle.USDT;
 
         deal(assetIn, user, 1e20);
 
         uint256 amountIn = 1.0e8;
 
-        uint256 quoted = testQuoter.quoteExactInput(getKTXQuotePath(assetIn, assetOut), amountIn);
+        uint256 quoted = quoter.quoteExactInput(getKTXQuotePath(assetIn, assetOut), amountIn);
 
         bytes memory swapPath = getSpotExactInSingleKTX(assetIn, assetOut);
         uint256 minimumOut = 0.03e8;
@@ -113,14 +113,14 @@ contract KTXTest is DeltaSetup {
     function test_mantle_ktx_spot_exact_in_stable_in() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetIn = USDT;
-        address assetOut = WBTC;
+        address assetIn = TokensMantle.USDT;
+        address assetOut = TokensMantle.WBTC;
 
         deal(assetIn, user, 1e20);
 
         uint256 amountIn = 10000.0e6;
 
-        uint256 quoted = testQuoter.quoteExactInput(getKTXQuotePath(assetIn, assetOut), amountIn);
+        uint256 quoted = quoter.quoteExactInput(getKTXQuotePath(assetIn, assetOut), amountIn);
 
         bytes memory swapPath = getSpotExactInSingleKTX(assetIn, assetOut);
         uint256 minimumOut = 0.03e8;
@@ -153,13 +153,13 @@ contract KTXTest is DeltaSetup {
 
     /** KTX PATH BUILDERS */
 
-    function getSpotExactInSingleKTX(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        uint8 poolId = KTX;
+    function getSpotExactInSingleKTX(address tokenIn, address tokenOut) internal pure returns (bytes memory data) {
+        uint8 poolId = DexMappingsMantle.KTX;
         return abi.encodePacked(tokenIn, uint8(0), poolId, KTX_VAULT, tokenOut);
     }
 
-    function getKTXQuotePath(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        uint8 poolId = KTX;
+    function getKTXQuotePath(address tokenIn, address tokenOut) internal pure returns (bytes memory data) {
+        uint8 poolId = DexMappingsMantle.KTX;
         return abi.encodePacked(tokenIn, poolId, KTX_VAULT, tokenOut);
     }
 }

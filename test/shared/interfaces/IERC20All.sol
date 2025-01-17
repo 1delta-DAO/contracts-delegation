@@ -24,4 +24,8 @@ interface IERC20All {
     function borrowAllowance(address fromUser, address toUser) external view returns (uint256);
 
     function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external;
+
+    // compound V2
+    function balanceOfUnderlying(address owner) external returns (uint);
+    function borrowBalanceCurrent(address account) external returns (uint);
 }

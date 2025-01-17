@@ -3,6 +3,8 @@ pragma solidity ^0.8.28;
 
 import {PermitConstants} from "./PermitConstants.sol";
 
+// solhint-disable max-line-length
+
 /// @title PermitUtils
 /// @notice A contract containing utilities for Permits
 abstract contract PermitUtils is PermitConstants {

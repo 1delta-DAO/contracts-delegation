@@ -50,7 +50,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
      * Swaps using a meta pool (i.e. a curve pool that has another one as underlying)
      * Data is supposed to be packed as follows
      * tokenIn | actionId | dexId | zapFactory | i | j | sm | a | metaPool | tokenOut
-     * sm is the selecor,
+     * sm is the selector,
      * i,j are the swap indexes for the meta pool
      * sp is the selector for for the regular pool
      * a is the approval flag (also uint8)
@@ -166,7 +166,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
                 amountOut := mload(ptr)
             }
             default {
-                // otherwise, the reciever is this contract
+                // otherwise, the receiver is this contract
                 mstore(ptr, EXCHANGE_META)
                 mstore(add(ptr, 0x4), shr(96, indexData))
                 mstore(add(ptr, 0x24), and(shr(88, indexData), 0xff)) // indexIn
@@ -235,7 +235,7 @@ abstract contract CurveSwapper is UniTypeSwapper {
      * Swaps using a standard curve pool
      * Data is supposed to be packed as follows
      * tokenIn | actionId | dexId | pool | i | j | sm | a | tokenOut
-     * sm is the selecor,
+     * sm is the selector,
      * i,j are the swap indexes for the pool
      * a is the approval flag (also uint8)
      */
@@ -409,10 +409,10 @@ abstract contract CurveSwapper is UniTypeSwapper {
      * Swaps using a NG pool that allows for pre-funded swaps
      * Data is supposed to be packed as follows
      * tokenIn | actionId | dexId | pool | sm | i | j | tokenOut
-     * sm is the selecor,
+     * sm is the selector,
      * i,j are the swap indexes for the pool
      */
-    function _swapCurveNG(
+    function _swapCurveReceived(
         uint256 pathOffset,
         uint256 amountIn,
         address receiver //
@@ -461,10 +461,10 @@ abstract contract CurveSwapper is UniTypeSwapper {
      * Swaps using a NG pool that allows for pre-funded swaps
      * Data is supposed to be packed as follows
      * tokenIn | actionId | dexId | pool | sm | i | j | tokenOut
-     * sm is the selecor,
+     * sm is the selector,
      * i,j are the swap indexes for the pool
      */
-    function _swapCurveNGExactOut(
+    function _swapCurveReceivedExactOut(
         address pool,
         uint256 pathOffset,
         uint256 indexIn,

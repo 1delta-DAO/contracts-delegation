@@ -1,5 +1,5 @@
 export enum MantleLenderId {
-    LENDLE = 0,
-    AURELIUS = 1,
-    COMPOUND_V3_USDE = 50
+    LENDLE = 1000,
+    AURELIUS = 1001,
+    COMPOUND_V3_USDE = 2000
 }

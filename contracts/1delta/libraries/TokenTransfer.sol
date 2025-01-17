@@ -141,7 +141,7 @@ abstract contract TokenTransfer {
             // selector for balanceOf(address)
             mstore(0x0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
             // add this address as parameter
-            mstore(add(0x0, 0x4), address())
+            mstore(0x4, address())
 
             // call to underlying
             pop(staticcall(gas(), weth, 0x0, 0x24, 0x0, 0x20))

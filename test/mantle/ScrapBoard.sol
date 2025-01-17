@@ -15,7 +15,7 @@ contract FlashLoanTest is DeltaSetup {
         address receiver = 0x1E5e3b014C8E307E5849371660dCd05764A2207d;
         address obf = 0xeaEE7EE68874218c3558b40063c42B82D3E7232a;
         address[] memory assets = new address[](1);
-        assets[0] = WMNT;
+        assets[0] = TokensMantle.WMNT;
         uint256[] memory amounts = new uint256[](1);
         uint256 amount = 11111111111111111;
         amounts[0] = amount;
@@ -52,7 +52,7 @@ contract FlashLoanTest is DeltaSetup {
             receiver,
             obf,
             modes[0],
-            WMNT,
+            TokensMantle.WMNT,
             uint112(amount),
             referralCode,
             params //
@@ -79,7 +79,7 @@ contract FlashLoanTest is DeltaSetup {
     function testArr() external {
         FCaller caller = new FCaller();
         address[] memory assets = new address[](1);
-        assets[0] = WMNT;
+        assets[0] = TokensMantle.WMNT;
         caller.arr(assets);
         console.log("test arr");
         caller.callArr();
@@ -89,7 +89,7 @@ contract FlashLoanTest is DeltaSetup {
         print();
         FCaller caller = new FCaller();
         address[] memory assets = new address[](1);
-        assets[0] = WMNT;
+        assets[0] = TokensMantle.WMNT;
         caller.arr2(assets, assets);
         // console.log("test arr");
         uint s = 32;

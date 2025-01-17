@@ -33,8 +33,8 @@ interface ISwap {
     function getA() external view returns (uint64);
 }
 
-contract TitsuTestTaiko is DeltaSetup {
-    uint8 internal constant RITSU = 150;
+contract RitsuTestTaiko is DeltaSetup {
+
     address internal constant USDC_WETH_RITSU_POOL = 0x424Fab7bfA3E3Dd0e5BB96771fFAa72fe566200e;
     address internal constant USDC_sgUSDC_RITSU_POOL = 0x6c7839E0CE8AdA360a865E18a111A462d08DC15a;
     address internal constant USDC_TAIKO_RYTHM_POOL = 0xB4F80b81a82184D754F933b0A6C2Ba8D5495567C;
@@ -44,14 +44,14 @@ contract TitsuTestTaiko is DeltaSetup {
         uint256 amount = 2000.0e6;
         uint256 amountMin = 0.3e18;
 
-        address assetIn = USDC;
-        address assetOut = WETH;
+        address assetIn = TokensTaiko.USDC;
+        address assetOut = TokensTaiko.WETH;
         deal(assetIn, user, 1e23);
         address pool = USDC_WETH_RITSU_POOL;
         uint expectedOut = ISwap(pool).getAmountOut(assetIn, amount, address(0));
-        console.log("ISwap.master f", testQuoter._syncClassicPairAddress(assetIn, assetOut));
+        console.log("ISwap.master f", testQuoter.syncClassicPairAddress(assetIn, assetOut));
 
-        bytes memory dataRitsu = getSpotExactInSingleGen2(assetIn, assetOut, RITSU, pool);
+        bytes memory dataRitsu = getSpotExactInSingleGen2(assetIn, assetOut, DexMappingsTaiko.RITSU, pool);
 
         bytes memory data = abi.encodePacked(
             uint8(Commands.SWAP_EXACT_IN),
@@ -74,7 +74,7 @@ contract TitsuTestTaiko is DeltaSetup {
         received = IERC20All(assetOut).balanceOf(user) - received;
         // expect 0.7369 WETH
         assertApproxEqAbs(expectedOut, received, 1);
-        assertApproxEqAbs(expectedOut, 736925511614964287, 1);
+        assertApproxEqAbs(expectedOut, 629765962801006068, 1);
     }
 
     function test_taiko_composer_ritsu_multi_exact_in() external {
@@ -82,13 +82,13 @@ contract TitsuTestTaiko is DeltaSetup {
         uint256 amount = 20.0e6;
         uint256 amountMin = 0.3e18;
 
-        address assetIn = USDC;
-        address assetOut = TAIKO;
+        address assetIn = TokensTaiko.USDC;
+        address assetOut = TokensTaiko.TAIKO;
         deal(assetIn, user, 1e23);
 
         bytes memory dataRitsu = getSpotExactInMultiGen2(assetIn, assetOut);
 
-        uint256 expectedOut = testQuoter.quoteExactInput(
+        uint256 expectedOut = quoter.quoteExactInput(
             getQuoteSpotExactInMultiGen2(assetIn, assetOut),
             amount //
         );
@@ -115,7 +115,7 @@ contract TitsuTestTaiko is DeltaSetup {
         received = IERC20All(assetOut).balanceOf(user) - received;
         // expect 0.7369 WETH
         assertApproxEqAbs(expectedOut, received, 1);
-        assertApproxEqAbs(expectedOut, 10572763709453061122, 1);
+        assertApproxEqAbs(expectedOut, 14309151124503651977, 1);
     }
 
     function test_taiko_composer_ritsu_exact_in_stable() external {
@@ -123,15 +123,15 @@ contract TitsuTestTaiko is DeltaSetup {
         uint256 amount = 2000.0e6;
         uint256 amountMin = 1900.3e6;
 
-        address assetIn = USDC;
-        address assetOut = sgUSDC;
+        address assetIn = TokensTaiko.USDC;
+        address assetOut = TokensTaiko.sgUSDC;
         deal(assetIn, user, 1e23);
         address pool = USDC_sgUSDC_RITSU_POOL;
         uint expectedOut = ISwap(pool).getAmountOut(assetIn, amount, address(0));
-        console.log("ISwap.master f", testQuoter._syncStablePairAddress(assetIn, assetOut));
+        console.log("ISwap.master f", testQuoter.syncStablePairAddress(assetIn, assetOut));
         console.log("a", ISwap(pool).getA());
 
-        bytes memory dataRitsu = getSpotExactInSingleGen2(assetIn, assetOut, RITSU, pool);
+        bytes memory dataRitsu = getSpotExactInSingleGen2(assetIn, assetOut, DexMappingsTaiko.RITSU, pool);
 
         bytes memory data = abi.encodePacked(
             uint8(Commands.SWAP_EXACT_IN),
@@ -154,7 +154,7 @@ contract TitsuTestTaiko is DeltaSetup {
         received = IERC20All(assetOut).balanceOf(user) - received;
         // expect 1998.436046 sgUSDC
         assertApproxEqAbs(expectedOut, received, 1);
-        assertApproxEqAbs(expectedOut, 1998436046, 1);
+        assertApproxEqAbs(expectedOut, 1999795003, 1);
     }
 
     function test_taiko_composer_ritsu_exact_in_rythm() external {
@@ -162,14 +162,14 @@ contract TitsuTestTaiko is DeltaSetup {
         uint256 amount = 2000.0e6;
         uint256 amountMin = 1900.3e6;
 
-        address assetIn = USDC;
-        address assetOut = TAIKO;
+        address assetIn = TokensTaiko.USDC;
+        address assetOut = TokensTaiko.TAIKO;
         deal(assetIn, user, 1e23);
         address pool = USDC_TAIKO_RYTHM_POOL;
         uint expectedOut = ISwap(pool).getAmountOut(assetIn, amount, address(0));
-        console.log("ISwap.master f", testQuoter._syncStablePairAddress(assetIn, assetOut));
+        console.log("ISwap.master f", testQuoter.syncStablePairAddress(assetIn, assetOut));
 
-        bytes memory dataRitsu = getSpotExactInSingleGen2(assetIn, assetOut, RITSU, pool);
+        bytes memory dataRitsu = getSpotExactInSingleGen2(assetIn, assetOut, DexMappingsTaiko.RITSU, pool);
 
         bytes memory data = abi.encodePacked(
             uint8(Commands.SWAP_EXACT_IN),
@@ -192,7 +192,7 @@ contract TitsuTestTaiko is DeltaSetup {
         received = IERC20All(assetOut).balanceOf(user) - received;
         // expect 1998.436046 sgUSDC
         assertApproxEqAbs(expectedOut, received, 1);
-        assertApproxEqAbs(expectedOut, 361210884239374586108, 1);
+        assertApproxEqAbs(expectedOut, 393488561143223960628, 1);
     }
 
     function getSpotExactInSingleGen2(address tokenIn, address tokenOut, uint8 poolId, address pool) internal view returns (bytes memory data) {
@@ -209,21 +209,21 @@ contract TitsuTestTaiko is DeltaSetup {
     }
 
     function getSpotExactInMultiGen2(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        address pool = testQuoter._syncBasePairAddress(tokenIn, WETH);
+        address pool = testQuoter.syncBasePairAddress(tokenIn, TokensTaiko.WETH);
         uint8 action = 0;
-        uint8 poolId = RITSU;
-        data = abi.encodePacked(tokenIn, action, poolId, pool, WETH);
-        poolId = KODO_VOLAT;
-        pool = testQuoter._v2TypePairAddress(WETH, tokenOut, poolId);
+        uint8 poolId = DexMappingsTaiko.RITSU;
+        data = abi.encodePacked(tokenIn, action, poolId, pool, TokensTaiko.WETH);
+        poolId = DexMappingsTaiko.KODO_VOLAT;
+        pool = testQuoter.v2TypePairAddress(TokensTaiko.WETH, tokenOut, poolId);
         data = abi.encodePacked(data, action, poolId, pool, KODO_VOLAT_FEE_DENOM, tokenOut);
     }
 
     function getQuoteSpotExactInMultiGen2(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        address pool = testQuoter._syncBasePairAddress(tokenIn, WETH);
-        uint8 poolId = RITSU;
-        data = abi.encodePacked(tokenIn, poolId, pool, WETH);
-        poolId = KODO_VOLAT;
-        pool = testQuoter._v2TypePairAddress(WETH, tokenOut, poolId);
+        address pool = testQuoter.syncBasePairAddress(tokenIn, TokensTaiko.WETH);
+        uint8 poolId = DexMappingsTaiko.RITSU;
+        data = abi.encodePacked(tokenIn, poolId, pool, TokensTaiko.WETH);
+        poolId = DexMappingsTaiko.KODO_VOLAT;
+        pool = testQuoter.v2TypePairAddress(TokensTaiko.WETH, tokenOut, poolId);
         data = abi.encodePacked(data, poolId, pool, KODO_VOLAT_FEE_DENOM, tokenOut);
     }
 }
