@@ -2,31 +2,34 @@
 import { ethers } from "hardhat";
 import {
     ConfigModule__factory,
-    LensModule__factory,
+    OwnershipModule__factory,
 } from "../../types";
-import { getMantleConfig } from "./utils";
-import { ModuleConfigAction, getContractSelectors } from "../../test-ts/libraries/diamond";
-import { ONE_DELTA_GEN2_ADDRESSES } from "./addresses/oneDeltaAddresses";
-
+import { getTaikoConfig } from "./utils";
+import { ModuleConfigAction, getContractSelectors } from "../_utils/diamond";
+import { OneDeltaTaiko } from "./addresses/oneDeltaAddresses";
 
 async function main() {
     const accounts = await ethers.getSigners()
     const operator = accounts[1]
+    console.log(accounts.map(a=> a.address))
     const chainId = await operator.getChainId();
-    const proxyAddress = ONE_DELTA_GEN2_ADDRESSES.proxy
-    if (chainId !== 5000) throw new Error("invalid chainId")
+    if (chainId !== 167000) throw new Error("invalid chainId")
     console.log("operator", operator.address, "on", chainId)
+
+    const STAGE = OneDeltaTaiko.STAGING
+    const { proxy } = STAGE
 
     // we manually increment the nonce
     let nonce = await operator.getTransactionCount()
 
-    // deploy module
+    // deploy modules
+
     // composer
-    const lens = await new LensModule__factory(operator).deploy(getMantleConfig(nonce++))
-    await lens.deployed()
+    const ownership = await new OwnershipModule__factory(operator).deploy(getTaikoConfig(nonce++))
+    await ownership.deployed()
 
 
-    console.log("module deployed")
+    console.log("ownership deployed")
 
     const cut: {
         moduleAddress: string,
@@ -34,8 +37,9 @@ async function main() {
         functionSelectors: any[]
     }[] = []
 
+
     const modules: any = []
-    modules.push(lens)
+    modules.push(ownership)
 
     console.log("Having", modules.length, "additions")
 
@@ -47,15 +51,16 @@ async function main() {
         })
     }
 
-    const oneDeltaModuleConfig = await new ConfigModule__factory(operator).attach(proxyAddress)
+    const oneDeltaModuleConfig = await new ConfigModule__factory(operator).attach(proxy)
 
-    let tx = await oneDeltaModuleConfig.configureModules(cut)
+    let tx = await oneDeltaModuleConfig.configureModules(cut, getTaikoConfig(nonce++))
     await tx.wait()
     console.log("modules added")
 
-    console.log("upgrade complete")
+
+    console.log("addition complete")
     console.log("======== Addresses =======")
-    console.log("lens:", lens.address)
+    console.log("ownership:", ownership.address)
     console.log("==========================")
 }
 

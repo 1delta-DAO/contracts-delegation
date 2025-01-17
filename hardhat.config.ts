@@ -60,7 +60,7 @@ const pk3: string = process.env.PK_3 || '';
 const pk4: string = process.env.PK_3 || '';
 const pk5: string = process.env.PK_5 || '';
 
-const accounts = [pk5, pk1, pk3, pk4, pk5]
+const accounts = [pk1, pk5, pk3]
 
 const config: HardhatUserConfig = {
   abiExporter: {

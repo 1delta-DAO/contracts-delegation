@@ -11,6 +11,7 @@ export namespace OneDeltaPolygon {
         config: "0x89A759cd7b9239A43aDdbE9950240F1AdBa0f403",
         lensImplementation: "0xa19b2F2ee34f0f8428449Afd4c09Fd7307c0cD7A",
         composerImplementation: "0x3cCe6f08B9e1707D51De7090D9ee80428279FE10",
+        ownershipImplementation: "0x75864a5d4a1c41A8766dAe30871b404F73865925",
         managementImplementation: "0xa1B95bC2b62e39d9CFD4A020EB857eFAc8A84d33"
     }
 }

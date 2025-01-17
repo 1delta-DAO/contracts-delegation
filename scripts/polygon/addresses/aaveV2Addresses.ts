@@ -1,4 +1,4 @@
-import { AddressMap } from "../../shared"
+import { AddressMap } from "../../_shared"
 
 export namespace AaveV2Polygon {
     export const POOL = '0x8dFf5E27EA6b7AC08EbFdf9eB090F32ee9a30fcf'

@@ -18,6 +18,7 @@ async function main() {
     if (chainId !== 167000) throw new Error("invalid chainId")
     console.log("operator", operator.address, "on", chainId)
 
+    const STAGE = OneDeltaTaiko.PRODUCTION
 
     // we manually increment the nonce
     let nonce = await operator.getTransactionCount()
@@ -25,7 +26,7 @@ async function main() {
     // deploy modules
 
     // management
-    const management = await new ManagementModule__factory(operator).attach(OneDeltaTaiko.STAGING.proxy)
+    const management = await new ManagementModule__factory(operator).attach(STAGE.proxy)
 
     const HanaDatas = getHanaDatas()
     const AvalonDatas = getAvalonDatas()

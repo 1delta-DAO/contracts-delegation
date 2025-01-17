@@ -10,7 +10,7 @@ import { getVenusApproveDatas, getVenusDatas, getVenusETHApproveDatas, getVenusE
 import { getYldrApproveDatas, getYldrDatas } from "./lenders/yldr";
 import { getInsertAggregators } from "./aggregators/approveAll";
 import { getCompoundV3Approves } from "./lenders/compoundV3";
-import { getArbitrumConfig } from "./utils";
+import { getGasConfig } from "../_utils/getGasConfig";
 
 async function main() {
     const accounts = await ethers.getSigners()
@@ -19,14 +19,16 @@ async function main() {
     if (chainId !== 42161) throw new Error("invalid chainId")
     console.log("operator", operator.address, "on", chainId)
 
-
+    const STAGE = OneDeltaArbitrum.PRODUCTION
+    const { proxy } = STAGE
     // we manually increment the nonce
     let nonce = await operator.getTransactionCount()
+    const config = await getGasConfig(operator)
 
     // deploy modules
 
     // management
-    const management = await new ManagementModule__factory(operator).attach(OneDeltaArbitrum.PRODUCTION.proxy)
+    const management = await new ManagementModule__factory(operator).attach(proxy)
 
     const aaveDatas = getAaveDatas()
     const avalonDatas = getAvalonDatas()
@@ -46,7 +48,7 @@ async function main() {
             ...venusETHDatas,
             ...yldrDatas,
         ],
-        getArbitrumConfig(nonce++)
+        { ...config, nonce: nonce++ }
     )
 
     await tx.wait()
@@ -71,7 +73,7 @@ async function main() {
             ...yldrApproves,
             ...compoundV3Approves,
         ],
-        getArbitrumConfig(nonce++)
+        { ...config, nonce: nonce++ }
     )
 
     await tx.wait()
@@ -85,7 +87,7 @@ async function main() {
 
             ...validTargets,
         ],
-        getArbitrumConfig(nonce++)
+        { ...config, nonce: nonce++ }
     )
 
     console.log("aggregators added")

@@ -22,7 +22,7 @@ module.exports = [
 
 // npx hardhat verify --network mantle 0x413d6a7871AF2a61B2cA398Efe33710d0d7B5B95 --contract contracts/1delta/proxy/modules/LensModule.sol:LensModule
 
-// npx hardhat verify --network mantle 0x32198Ee619fAd24169fa94A149Cb5205701C6AB1 --contract contracts/1delta/proxy/modules/OwnershipModule.sol:OwnershipModule
+// npx hardhat verify --network mantle 0x323193fe4feD2136395020B0cc5382b351E946BA --contract contracts/1delta/proxy/modules/OwnershipModule.sol:OwnershipModule
 
 
 // npx hardhat verify --network mantle 0xB2B6Bd4C88124D73dE0ea128c86267AB64Fd1069 --contract contracts/1delta/modules/aave/MarginTradeDataViewerModule.sol:MarginTradeDataViewerModule

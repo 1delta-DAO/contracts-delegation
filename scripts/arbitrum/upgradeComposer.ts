@@ -5,7 +5,7 @@ import {
     OneDeltaComposerArbitrum__factory,
     LensModule__factory,
 } from "../../types";
-import { getArbitrumConfig, getGasConfig } from "./utils";
+import { getArbitrumConfig, getGasConfig } from "../_utils/getGasConfig";
 import { ModuleConfigAction, getContractSelectors } from "../_utils/diamond";
 import { OneDeltaArbitrum } from "./addresses/oneDeltaAddresses";
 

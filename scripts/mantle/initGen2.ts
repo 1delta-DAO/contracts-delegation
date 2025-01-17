@@ -7,7 +7,7 @@ import { OneDeltaManlte } from "./addresses/oneDeltaAddresses";
 import { getLendleApproveDatas, getLendleDatas } from "./lenders/lendle";
 import { getAureliusApproveDatas, getAureliusDatas } from "./lenders/aurelius";
 import { getCompoundV3Approves } from "./lenders/compoundV3";
-import { getMantleConfig } from "./utils";
+import { delay, getMantleConfig } from "./utils";
 import { getInsertAggregators } from "./approvals/approveAll";
 
 async function main() {
@@ -17,6 +17,7 @@ async function main() {
     if (chainId !== 5000) throw new Error("invalid chainId")
     console.log("operator", operator.address, "on", chainId)
 
+    const STAGE = OneDeltaManlte.PRODUCTION
 
     // we manually increment the nonce
     let nonce = await operator.getTransactionCount()
@@ -24,7 +25,7 @@ async function main() {
     // deploy modules
 
     // management
-    const management = await new ManagementModule__factory(operator).attach(OneDeltaManlte.STAGING.proxy)
+    const management = await new ManagementModule__factory(operator).attach(STAGE.proxy)
 
     const lendleDatas = getLendleDatas()
     const aureliusDatas = getAureliusDatas()
@@ -40,6 +41,9 @@ async function main() {
     )
 
     await tx.wait()
+
+    // delay for 5s
+    await delay(5000)
 
     console.log("lender data added")
 
@@ -57,6 +61,9 @@ async function main() {
     )
 
     await tx.wait()
+
+    // delay for 5s
+    await delay(5000)
 
     console.log("apporves completed")
 

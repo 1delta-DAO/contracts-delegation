@@ -22,6 +22,7 @@ export namespace AaveV3Arbitrum {
         ARB: '0x6533afac2E7BCCB20dca161449A13A32D391fb00',
         WEETH: '0x8437d7C167dFB82ED4Cb79CD44B7a32A1dd95c77',
         GHO: '0xeBe517846d0F36eCEd99C735cbF6131e1fEB775D',
+        EZETH: '0xEA1132120ddcDDA2F119e99Fa7A27a0d036F7Ac9',
     }
 
     export const V_TOKENS: { [key: string]: string } = {
@@ -42,5 +43,6 @@ export namespace AaveV3Arbitrum {
         ARB: '0x44705f578135cC5d703b4c9c122528C73Eb87145',
         WEETH: '0x3ca5FA07689F266e907439aFd1fBB59c44fe12f6',
         GHO: '0x18248226C16BF76c032817854E7C83a2113B4f06',
+        EZETH: '0x1fFD28689DA7d0148ff0fCB669e9f9f0Fc13a219',
     }
 }
