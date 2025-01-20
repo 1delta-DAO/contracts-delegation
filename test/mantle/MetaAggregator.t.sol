@@ -23,7 +23,7 @@ contract MetaAggregatorTest is DeltaSetup {
         vm.createSelectFork({blockNumber: 70125992, urlOrAlias: "https://mantle-mainnet.public.blastapi.io"});
     }
 
-    function test_meta_aggregator() external {
+    function test_meta_aggregator1() external {
         address user = testUser;
         vm.assume(user != address(0));
 
