@@ -9,7 +9,7 @@ abstract contract DeadLogger {
     function _deadLog() internal {
         assembly {
             // selector for DeadLog()
-            mstore(0x0, 0x8bb0e1d4)
+            mstore(0x0, 0xd6250a04)
             log0(0x0, 0x4)
         }
     }
