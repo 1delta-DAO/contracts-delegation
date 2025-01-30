@@ -128,7 +128,6 @@ const config: HardhatUserConfig = {
       blast: process.env.BLASTSCAN_API_KEY ?? '',
       metis: "XX",
       avalanche: "XX",
-      mode: "XX",
     }
   },
   gasReporter: {
