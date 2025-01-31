@@ -3,6 +3,7 @@
 pragma solidity ^0.8.28;
 
 import {PermitUtilsSlim} from "./permit/PermitUtilsSlim.sol";
+import {DeadLogger} from "./logs/DeadLogger.sol";
 
 ////////////////////////////////////////////////////
 // Minimal meta swap aggregation contract
@@ -12,7 +13,7 @@ import {PermitUtilsSlim} from "./permit/PermitUtilsSlim.sol";
 //   check for slippage and send funds directly to the
 //   user-defined receiver
 ////////////////////////////////////////////////////
-contract DeltaMetaAggregator is PermitUtilsSlim {
+contract DeltaMetaAggregator is PermitUtilsSlim, DeadLogger {
     ////////////////////////////////////////////////////
     // Errors
     ////////////////////////////////////////////////////
@@ -120,6 +121,9 @@ contract DeltaMetaAggregator is PermitUtilsSlim {
 
         // execute sweep of output asset if desired
         _handleOutputAsset(assetOutData, receiver);
+
+        // log nothing
+        _deadLog();
     }
 
     struct SimAmounts {
