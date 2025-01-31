@@ -102,7 +102,7 @@ const config: HardhatUserConfig = {
         network: "linea",
         chainId: 59144,
         urls: {
-          apiURL: "https://api.routescan.io/v2/network/mainnet/evm/81457/etherscan",
+          apiURL: "https://api.routescan.io/v2/network/mainnet/evm/59144/etherscan",
           browserURL: "https://blastexplorer.io"
         }
       },
@@ -112,6 +112,14 @@ const config: HardhatUserConfig = {
         urls: {
           apiURL: "https://api.routescan.io/v2/network/mainnet/evm/1088/etherscan",
           browserURL: "https://andromeda-explorer.metis.io"
+        }
+      },
+      {
+        network: "base",
+        chainId: 8453,
+        urls: {
+          apiURL: "https://api.basescan.org/api",
+          browserURL: "https://basescan.org"
         }
       }
     ],
@@ -126,6 +134,7 @@ const config: HardhatUserConfig = {
       bsc: process.env.BSCSCAN_API_KEY ?? '',
       gnosis: process.env.GNOSISSCAN_API_KEY ?? '',
       blast: process.env.BLASTSCAN_API_KEY ?? '',
+      base: process.env.BASESCAN_API_KEY ?? '',
       metis: "XX",
       avalanche: "XX",
     }
