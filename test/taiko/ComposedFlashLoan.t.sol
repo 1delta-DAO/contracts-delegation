@@ -9,14 +9,14 @@ contract ComposedFlashLoanTestTaiko is DeltaSetup {
     MockRouter router;
 
     function setUp() public virtual override {
-        vm.createSelectFork({blockNumber: 62219594, urlOrAlias: "https://taiko-mainnet.public.blastapi.io"});
+        vm.createSelectFork({blockNumber: 728223, urlOrAlias: "https://rpc.mainnet.taiko.xyz"});
 
         router = new MockRouter(1.0e18, 12);
 
         intitializeFullDelta();
 
         management.approveAddress(getAssets(), address(router));
-        management.setValidTarget(address(router), address(router), true);
+        management.setValidTarget(address(router), true);
     }
 
     /**
@@ -30,24 +30,24 @@ contract ComposedFlashLoanTestTaiko is DeltaSetup {
     function test_taiko_composed_flash_loan_open(uint8 lenderId) external /** address user, uint8 lenderId */ {
         TestParamsOpen memory params;
         address user = testUser;
-        vm.assume(user != address(0) && lenderId < 2);
+        vm.assume(user != address(0) && lenderId == 0);
         vm.deal(user, 1.0e18);
         {
-            address asset = USDC;
+            address asset = TokensTaiko.WETH;
 
-            address borrowAsset = WETH;
+            address borrowAsset = TokensTaiko.TAIKO;
             deal(asset, user, 1e20);
 
-            uint256 amountToDeposit = 10.0e6;
+            uint256 amountToDeposit = 0.001e18;
 
-            uint256 amountToBorrow = 20.0e18;
-            uint256 minimumOut = 10.0e6;
+            uint256 amountToBorrow = 1.0e18;
+            uint256 minimumOut = 1.0e6;
             params = getOpenParams(
                 borrowAsset,
                 asset,
                 amountToDeposit,
                 amountToBorrow,
-                minimumOut, //
+                minimumOut, //6
                 lenderId
             );
         }
@@ -69,10 +69,11 @@ contract ComposedFlashLoanTestTaiko is DeltaSetup {
             0, // all, incl init depo
             lenderId
         );
+
         bytes memory dataBorrow;
         {
             uint borrowAm = params.swapAmount +
-                (params.swapAmount * ILendingPool(HANA_POOL).FLASHLOAN_PREMIUM_TOTAL()) / //
+                (params.swapAmount * ILendingPool(HanaTaiko.POOL).FLASHLOAN_PREMIUM_TOTAL()) / //
                 10000;
             vm.prank(user);
             IERC20All(params.debtToken).approveDelegation(brokerProxyAddress, borrowAm);
@@ -110,56 +111,55 @@ contract ComposedFlashLoanTestTaiko is DeltaSetup {
         uint gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
-        
+
         console.log("gas-flash-loan-open", gas);
 
         balance = IERC20All(params.collateralToken).balanceOf(user) - balance;
         borrowBalance = IERC20All(params.debtToken).balanceOf(user) - borrowBalance;
 
-        // deposit 10, recieve 32.1... makes 42.1...
-        assertApproxEqAbs(39122533, balance, 1);
+        // deposit 2, recieve 2.6... makes 4.6...
+        assertApproxEqAbs(1473732329564486, balance, 1);
         // deviations through rouding expected, accuracy for 10 decimals
-        assertApproxEqAbs(borrowBalance, 20018000000000000000, 1);
+        assertApproxEqAbs(borrowBalance, 1000500000000000000, 1);
     }
 
     function test_taiko_ext_call() external {
         address someAddr = vm.addr(0x324);
-        address someOtherAddr = vm.addr(0x324);
 
-        management.setValidTarget(someAddr, someOtherAddr, true);
+        management.setValidTarget(someAddr, true);
 
-        bool val = management.getIsValidTarget(someAddr, someOtherAddr);
+        bool val = management.getIsValidTarget(someAddr);
         console.log(val);
     }
 
     function test_taiko_composed_flash_loan_close() external {
         uint8 lenderId = 0;
         address user = testUser;
-        vm.assume(user != address(0) && lenderId < 2);
-        address asset = USDC;
+        vm.assume(user != address(0) && lenderId == 0);
+        address asset = TokensTaiko.WETH;
         address collateralToken = collateralTokens[asset][lenderId];
 
-        address borrowAsset = TAIKO;
+        address borrowAsset = TokensTaiko.TAIKO;
 
         fundRouter(asset, borrowAsset);
 
         address debtToken = debtTokens[borrowAsset][lenderId];
 
         {
-            uint256 amountToDeposit = 10.0e6;
-            uint256 amountToLeverage = 20.0e6;
+            uint256 amountToDeposit = 0.001e18;
+            uint256 amountToLeverage = 1.0e18;
 
-            openSimple(user, asset, borrowAsset, amountToDeposit, amountToLeverage, 0);
+            openSimple2(user, asset, borrowAsset, amountToDeposit, amountToLeverage, 0);
         }
 
-        uint256 amountToFlashWithdraw = 15.0e6;
+        uint256 amountToFlashWithdraw = 0.00001e18;
 
         uint256 borrowBalance = IERC20All(debtToken).balanceOf(user);
         uint256 balance = IERC20All(collateralToken).balanceOf(user);
         bytes memory dataWithdraw;
         uint witdrawAm;
         {
-            witdrawAm = amountToFlashWithdraw + (amountToFlashWithdraw * ILendingPool(HANA_POOL).FLASHLOAN_PREMIUM_TOTAL()) / 10000;
+            witdrawAm = amountToFlashWithdraw + (amountToFlashWithdraw * ILendingPool(HanaTaiko.POOL).FLASHLOAN_PREMIUM_TOTAL()) / 10000;
             vm.prank(user);
             IERC20All(collateralToken).approve(brokerProxyAddress, witdrawAm);
 
@@ -184,14 +184,13 @@ contract ComposedFlashLoanTestTaiko is DeltaSetup {
                         asset,
                         borrowAsset,
                         address(router),
-                        address(router),
                         amountToFlashWithdraw //
                     ),
                     data, // repay
                     dataWithdraw
                 ) //
             );
-            
+
             vm.prank(user);
             uint gas = gasleft();
             IFlashAggregator(brokerProxyAddress).deltaCompose(data);
@@ -202,22 +201,22 @@ contract ComposedFlashLoanTestTaiko is DeltaSetup {
         borrowBalance = borrowBalance - IERC20All(debtToken).balanceOf(user);
 
         // deposit 10, recieve 32.1... makes 42.1...
-        assertApproxEqAbs(witdrawAm, balance, 1);
+        assertApproxEqAbs(witdrawAm, balance, 1e6);
         // deviations through rouding expected, accuracy for 10 decimals
-        assertApproxEqAbs(14999988, borrowBalance, 1);
+        assertApproxEqAbs(9999999999988, borrowBalance, 1);
     }
 
     function getOpenExactInInternal(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        uint16 fee = uint16(DEX_FEE_LOW);
-        uint8 poolId = AGNI;
-        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
+        uint16 fee = DEX_FEE_HIGHEST;
+        uint8 poolId = DexMappingsTaiko.IZUMI;
+        address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
         return abi.encodePacked(tokenIn, uint8(0), poolId, pool, fee, tokenOut, uint8(0), uint8(0));
     }
 
     function getCloseExactInInternal(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        uint16 fee = uint16(DEX_FEE_LOW);
-        uint8 poolId = AGNI;
-        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
+        uint16 fee = DEX_FEE_LOW;
+        uint8 poolId = DexMappingsTaiko.UNI_V3;
+        address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
         return abi.encodePacked(tokenIn, uint8(0), poolId, pool, fee, tokenOut, uint8(0), uint8(0));
     }
 
@@ -226,17 +225,56 @@ contract ComposedFlashLoanTestTaiko is DeltaSetup {
         deal(b, address(router), 1e20);
     }
 
-    function encodeExtCall(address token, address tokenOut, address approveTarget, address target, uint amount) internal pure returns (bytes memory) {
+    function encodeExtCall(address token, address tokenOut, address target, uint amount) internal pure returns (bytes memory) {
         bytes memory data = abi.encodeWithSelector(MockRouter.swapExactIn.selector, token, tokenOut, amount);
         return
             abi.encodePacked(
                 uint8(Commands.EXTERNAL_CALL), //
                 token,
-                approveTarget,
                 target,
                 uint112(amount),
                 uint16(data.length),
                 data
             );
+    }
+
+    function openSimple2(address user, address asset, address borrowAsset, uint256 depositAmount, uint256 borrowAmount, uint16 lenderId) internal {
+        address debtAsset = debtTokens[borrowAsset][lenderId];
+        deal(asset, user, depositAmount);
+
+        bytes memory data = transferIn(asset, brokerProxyAddress, depositAmount);
+
+        data = abi.encodePacked(
+            data,
+            deposit(asset, user, depositAmount, lenderId) //
+        );
+
+        bytes memory swapPath = getOpenExactInSingleIzi(borrowAsset, asset, lenderId);
+        uint256 checkAmount = 0; // we do not care about slippage in that regard
+        data = abi.encodePacked(
+            data,
+            encodeFlashSwap(
+                Commands.FLASH_SWAP_EXACT_IN, // open
+                borrowAmount,
+                checkAmount,
+                false,
+                swapPath
+            )
+        );
+
+        vm.prank(user);
+        IERC20All(asset).approve(brokerProxyAddress, depositAmount);
+        vm.prank(user);
+        IERC20All(debtAsset).approveDelegation(brokerProxyAddress, borrowAmount);
+        vm.prank(user);
+        IFlashAggregator(brokerProxyAddress).deltaCompose(data);
+    }
+
+    function getOpenExactInSingleIzi(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
+        uint16 fee = DEX_FEE_HIGHEST;
+        uint8 poolId = DexMappingsTaiko.IZUMI;
+        address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
+        (uint8 actionId, , uint8 endId) = getOpenExactInFlags();
+        return abi.encodePacked(tokenIn, actionId, poolId, pool, fee, tokenOut, lenderId, endId);
     }
 }

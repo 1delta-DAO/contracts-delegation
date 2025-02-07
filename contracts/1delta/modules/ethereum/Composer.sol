@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity 0.8.27;
+pragma solidity 0.8.28;
 
 import {MarginTrading} from "./MarginTrading.sol";
 import {Commands} from "../shared/Commands.sol";
@@ -278,7 +278,7 @@ contract OneDeltaComposerEthereum is MarginTrading {
                             // selector for balanceOf(address)
                             mstore(0x0, ERC20_BALANCE_OF)
                             // add caller address as parameter
-                            mstore(add(0x0, 0x4), callerAddress)
+                            mstore(0x4, callerAddress)
                             // call to collateralToken
                             pop(staticcall(gas(), collateralToken, 0x0, 0x24, 0x0, 0x20))
                             // load the retrieved balance

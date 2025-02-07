@@ -6,16 +6,16 @@ import {
     LensModule__factory,
 } from "../../types";
 import { getMantleConfig } from "./utils";
-import { ModuleConfigAction, getContractSelectors } from "../../test-ts/libraries/diamond";
-import { ONE_DELTA_GEN2_ADDRESSES } from "./addresses/oneDeltaAddresses";
+import { OneDeltaManlte } from "./addresses/oneDeltaAddresses";
+import { getContractSelectors, ModuleConfigAction } from "../_utils/diamond";
 
 
 async function main() {
     const accounts = await ethers.getSigners()
     const operator = accounts[1]
     const chainId = await operator.getChainId();
-    const proxyAddress = ONE_DELTA_GEN2_ADDRESSES.proxy
-    const oldComposer = ONE_DELTA_GEN2_ADDRESSES.composerImplementation
+    const STAGE = OneDeltaManlte.STAGING
+    const { proxy, composerImplementation } = STAGE
     if (chainId !== 5000) throw new Error("invalid chainId")
     console.log("operator", operator.address, "on", chainId)
 
@@ -37,9 +37,9 @@ async function main() {
     }[] = []
 
     // get lens to fetch modules
-    const lens = await new LensModule__factory(operator).attach(proxyAddress)
+    const lens = await new LensModule__factory(operator).attach(proxy)
 
-    const composerSelectors = await lens.moduleFunctionSelectors(oldComposer)
+    const composerSelectors = await lens.moduleFunctionSelectors(composerImplementation)
 
     // remove old
     cut.push({
@@ -55,7 +55,7 @@ async function main() {
         functionSelectors: getContractSelectors(newComposer)
     })
 
-    const oneDeltaModuleConfig = await new ConfigModule__factory(operator).attach(proxyAddress)
+    const oneDeltaModuleConfig = await new ConfigModule__factory(operator).attach(proxy)
 
     let tx = await oneDeltaModuleConfig.configureModules(cut, getMantleConfig(nonce++))
     await tx.wait()

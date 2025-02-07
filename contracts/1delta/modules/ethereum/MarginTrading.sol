@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity 0.8.27;
+pragma solidity 0.8.28;
 
 /******************************************************************************\
 * Author: Achthar | 1delta 
@@ -247,7 +247,7 @@ abstract contract MarginTrading is BaseSwapper {
             }
             ////////////////////////////////////////////////////
             // We fetch the original initiator of the swap function
-            // It is represented by the lsat 20 bytes of the path
+            // It is represented by the last 20 bytes of the path
             ////////////////////////////////////////////////////
             payer := and(
                 ADDRESS_MASK,
@@ -895,15 +895,15 @@ abstract contract MarginTrading is BaseSwapper {
         }
         // uniswapV3 types
         if (poolId < 49) {
-            address reciever;
+            address receiver;
             assembly {
                 switch lt(pathLength, 67) // see swapExactIn
-                case 1 { reciever := address()}
+                case 1 { receiver := address()}
                 default {
                     let nextId := and(calldataload(add(pathOffset, 34)), UINT8_MASK) // SKIP_LENGTH_UNISWAP - 10
                     switch gt(nextId, 99) 
                     case 1 {
-                        reciever := shr(
+                        receiver := shr(
                                 96,
                                 calldataload(
                                     add(
@@ -914,7 +914,7 @@ abstract contract MarginTrading is BaseSwapper {
                             )
                     }
                     default {
-                        reciever := address()
+                        receiver := address()
                     }
                 }
             }
@@ -922,7 +922,7 @@ abstract contract MarginTrading is BaseSwapper {
                 amountIn,
                 amountOutMinimum,
                 payer,
-                reciever,
+                receiver,
                 pathOffset,
                 pathLength
             );

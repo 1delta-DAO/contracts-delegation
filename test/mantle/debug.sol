@@ -12,14 +12,14 @@ contract Debug is DeltaSetup {
     function test_debug() external {
         address user = 0x91ae002a960e63Ccb0E5bDE83A8C13E51e1cB91A;
         vm.assume(user != address(0));
-        address assetIn = WMNT;
-        address assetOut = USDC;
+        address assetIn = TokensMantle.WMNT;
+        address assetOut = TokensMantle.USDC;
 
         uint256 amountIn = 50000000000000000000;
         vm.deal(user, amountIn);
 
         bytes memory data = getCalldata();
-        bytes memory test = sweep(USDC, 0x91ae002a960e63Ccb0E5bDE83A8C13E51e1cB91A, 0, SweepType.VALIDATE);
+        bytes memory test = sweep(TokensMantle.USDC, 0x91ae002a960e63Ccb0E5bDE83A8C13E51e1cB91A, 0, SweepType.VALIDATE);
         console.logBytes(test);
         vm.prank(user);
         IERC20All(assetIn).approve(brokerProxyAddress, amountIn);
@@ -41,8 +41,8 @@ contract Debug is DeltaSetup {
     function test_debug2() external {
         address user = 0x91ae002a960e63Ccb0E5bDE83A8C13E51e1cB91A;
         vm.assume(user != address(0));
-        address assetIn = USDC;
-        address assetOut = WMNT;
+        address assetIn = TokensMantle.USDC;
+        address assetOut = TokensMantle.WMNT;
 
         uint256 amountIn = 10.0e6;
         deal(assetIn, user, amountIn);
@@ -68,8 +68,8 @@ contract Debug is DeltaSetup {
     function test_debug3() external {
         address user = 0x91ae002a960e63Ccb0E5bDE83A8C13E51e1cB91A;
         vm.assume(user != address(0));
-        address assetIn = WMNT;
-        address assetOut = USDY;
+        address assetIn = TokensMantle.WMNT;
+        address assetOut = TokensMantle.USDY;
 
         uint256 maximumIn = 8.0e18;
         vm.deal(user, maximumIn);
@@ -95,7 +95,7 @@ contract Debug is DeltaSetup {
     function test_debug4() external {
         address user = 0x91ae002a960e63Ccb0E5bDE83A8C13E51e1cB91A;
         vm.assume(user != address(0));
-        address assetIn = USDC;
+        address assetIn = TokensMantle.USDC;
 
         uint256 amount = 8.0e18;
         vm.deal(user, amount);
@@ -120,7 +120,7 @@ contract Debug is DeltaSetup {
     }
 
     function prepNativeDepo(address user, uint256 am) internal {
-        bytes memory data = deposit(WMNT, user, am, 0);
+        bytes memory data = deposit(TokensMantle.WMNT, user, am, 0);
         data = abi.encodePacked(wrap(am), data);
         vm.prank(user);
         IFlashAggregator(brokerProxyAddress).deltaCompose{value: am}(data);

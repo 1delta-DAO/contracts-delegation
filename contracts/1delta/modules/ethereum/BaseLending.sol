@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.28;
 
 import {Slots} from "./storage/Slots.sol";
 import {BalancerSwapper} from "./swappers/Balancer.sol";
@@ -38,7 +38,7 @@ abstract contract BaseLending is Slots, BalancerSwapper {
     // BadLender()
     bytes4 internal constant BAD_LENDER = 0x603b7f3e;
 
-    /// @notice Withdraw from lender given user address and lender Id from cache
+    /// @notice Withdraw from lender lastgiven user address and lender Id
     function _withdraw(address _underlying, address _from, address _to, uint256 _amount, uint256 _lenderId) internal {
         assembly {
             let ptr := mload(0x40)
@@ -204,9 +204,9 @@ abstract contract BaseLending is Slots, BalancerSwapper {
                     )
                     // FETCH BALANCE
                     // selector for balanceOf(address)
-                    mstore(0x0, ERC20_APPROVE)
-                    // add this address as parameter
-                    mstore(0x4, _to)
+                    mstore(0x0, ERC20_BALANCE_OF)
+                    // add _from address as parameter
+                    mstore(0x4, _from)
 
                     // call to collateralToken
                     pop(staticcall(gas(), collateralToken, 0x0, 0x24, 0x0, 0x20))
@@ -290,7 +290,7 @@ abstract contract BaseLending is Slots, BalancerSwapper {
         }
     }
 
-    /// @notice Borrow from lender given user address and lender Id from cache
+    /// @notice Borrow from lender lastgiven user address and lender Id
     function _borrow(address _underlying, address _from, address _to, uint256 _amount, uint256 _mode, uint256 _lenderId) internal {
         assembly {
             let ptr := mload(0x40)
@@ -482,7 +482,7 @@ abstract contract BaseLending is Slots, BalancerSwapper {
         }
     }
 
-    /// @notice Deposit to lender given user address and lender Id from cache
+    /// @notice Deposit to lender lastgiven user address and lender Id
     function _deposit(address _underlying, address _to, uint256 _amount, uint256 _lenderId) internal {
         assembly {
             let ptr := mload(0x40)
@@ -674,7 +674,7 @@ abstract contract BaseLending is Slots, BalancerSwapper {
         }
     }
 
-    /// @notice Repay to lender given user address and lender Id from cache
+    /// @notice Repay to lender lastgiven user address and lender Id
     function _repay(address _underlying, address _to, uint256 _amount, uint256 mode, uint256 _lenderId) internal {
         assembly {
             let ptr := mload(0x40)

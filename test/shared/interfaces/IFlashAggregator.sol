@@ -62,6 +62,9 @@ interface IFlashAggregator {
 
     function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata path) external;
 
+    // pancake
+    function pancakeV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata path) external;
+
     // The uniswapV2 style callback for fusionX
     function FusionXCall(address, uint256 amount0, uint256 amount1, bytes calldata data) external;
 
@@ -78,6 +81,8 @@ interface IFlashAggregator {
 
     // The uniswapV2 style callback for Velocimeter, Cleopatra V and Stratum
     function hook(address, uint256 amount0, uint256 amount1, bytes calldata data) external;
+
+    function bitCall(address sender, uint256 amount0, uint256 amount1, bytes calldata path) external;
 
     // iZi callbacks
 

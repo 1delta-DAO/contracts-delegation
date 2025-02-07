@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
+// solhint-disable max-line-length
+
 import {AddressesTaiko, IFactoryFeeGetter} from "./utils/CommonAddresses.f.sol";
-import "../../contracts/1delta/quoter/test/TestQuoterTaiko.sol";
+import {QuoterTaiko} from "../../contracts/1delta/quoter/Taiko.sol";
+import {PoolGetter} from "../../contracts/1delta/quoter/poolGetter/Taiko.sol";
 import {ComposerUtils, Commands} from "../shared/utils/ComposerUtils.sol";
 
 // interfaces
@@ -14,6 +17,7 @@ import {IInitialize} from "../shared/interfaces/IInitialize.sol";
 import {IBrokerProxy} from "../shared/interfaces/IBrokerProxy.sol";
 import {IModuleConfig} from "../../contracts/1delta/proxy/interfaces/IModuleConfig.sol";
 import {IModuleLens} from "../../contracts/1delta/proxy/interfaces/IModuleLens.sol";
+
 // universal erc20
 import {IERC20All} from "../shared/interfaces/IERC20All.sol";
 // lending pool for debugging
@@ -23,10 +27,20 @@ import {ILendingPool} from "./utils/ILendingPool.sol";
 import {ConfigModule} from "../../contracts/1delta/proxy/modules/ConfigModule.sol";
 import {DeltaBrokerProxyGen2} from "../../contracts/1delta/proxy/DeltaBrokerGen2.sol";
 
-// initializer
+// lenders
+import {HanaTaikoAssets, HanaTaiko} from "./utils/lender/hanaAddresses.sol";
+import {MeridianTaikoAssets, MeridianTaiko} from "./utils/lender/meridianAddresses.sol";
+import {AvalonTaikoAssets, AvalonTaiko} from "./utils/lender/avalonAddresses.sol";
+import {TakoTakoTaikoAssets, TakoTakoTaiko} from "./utils/lender/takoTakoAddresses.sol";
+
+// mappings
+import {TokensTaiko} from "./utils/tokens.sol";
+import {DexMappingsTaiko} from "./utils/DexMappings.sol";
+import {LenderMappingsTaiko} from "./utils/LenderMappings.sol";
+import {FlashMappingsTaiko} from "./utils/FlashMappings.sol";
 
 // core modules
-import {TaikoManagementModule} from "../../contracts/1delta/modules/taiko/storage/ManagementModule.sol";
+import {ManagementModule} from "../../contracts/1delta/modules/shared/storage/ManagementModule.sol";
 import {OneDeltaComposerTaiko} from "../../contracts/1delta/modules/taiko/Composer.sol";
 
 // forge
@@ -39,16 +53,17 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
     IBrokerProxy internal brokerProxy;
     IModuleConfig internal deltaConfig;
     IManagement internal management;
-    TestQuoterTaiko testQuoter;
+    PoolGetter testQuoter;
+    QuoterTaiko quoter;
     OneDeltaComposerTaiko internal aggregator;
 
-    mapping(address => mapping(uint8 => address)) internal collateralTokens;
-    mapping(address => mapping(uint8 => address)) internal debtTokens;
+    mapping(address => mapping(uint16 => address)) internal collateralTokens;
+    mapping(address => mapping(uint16 => address)) internal debtTokens;
 
     /** SELECTOR GETTERS */
 
     function managementSelectors() internal pure returns (bytes4[] memory selectors) {
-        selectors = new bytes4[](12);
+        selectors = new bytes4[](13);
         // setters
         selectors[0] = IManagement.addAToken.selector;
         selectors[1] = IManagement.setValidTarget.selector;
@@ -74,7 +89,7 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
     }
 
     function flashAggregatorSelectors() internal pure returns (bytes4[] memory selectors) {
-        selectors = new bytes4[](24);
+        selectors = new bytes4[](25);
         /** margin */
         selectors[0] = IFlashAggregator.flashSwapExactIn.selector;
         selectors[1] = IFlashAggregator.flashSwapExactOut.selector;
@@ -103,6 +118,7 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
         selectors[21] = IFlashAggregator.deltaCompose.selector;
         selectors[22] = IFlashLoanReceiver.executeOperation.selector;
         selectors[23] = IFlashAggregator.syncSwapBaseSwapCallback.selector;
+        selectors[24] = IFlashAggregator.pancakeV3SwapCallback.selector;
         return selectors;
     }
 
@@ -114,7 +130,7 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
 
         brokerProxy = IBrokerProxy(brokerProxyAddress);
 
-        TaikoManagementModule _management = new TaikoManagementModule();
+        ManagementModule _management = new ManagementModule();
         OneDeltaComposerTaiko _aggregator = new OneDeltaComposerTaiko();
 
         management = IManagement(brokerProxyAddress);
@@ -158,88 +174,169 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
     /** ADD AND APPROVE LENDER TOKENS */
 
     function initializeDeltaBase() internal virtual {
-        // quoter
-
-        testQuoter = new TestQuoterTaiko();
-
-        management.clearCache();
+        testQuoter = new PoolGetter();
+        quoter = new QuoterTaiko();
     }
 
     function initializeDeltaHana() internal virtual {
         // hana
-        management.addGeneralLenderTokens(USDC, HANA_A_USDC, HANA_V_USDC, HANA_S_USDC, 0);
-        management.addGeneralLenderTokens(TAIKO, HANA_A_TAIKO, HANA_V_TAIKO, HANA_S_TAIKO, 0);
-        management.addGeneralLenderTokens(WETH, HANA_A_WETH, HANA_V_WETH, HANA_S_WETH, 0);
+        management.addGeneralLenderTokens(
+            TokensTaiko.USDC,
+            HanaTaikoAssets.USDC_A_TOKEN,
+            HanaTaikoAssets.USDC_V_TOKEN,
+            HanaTaikoAssets.USDC_S_TOKEN,
+            LenderMappingsTaiko.HANA_ID
+        );
+        management.addGeneralLenderTokens(
+            TokensTaiko.TAIKO,
+            HanaTaikoAssets.TAIKO_A_TOKEN,
+            HanaTaikoAssets.TAIKO_V_TOKEN,
+            HanaTaikoAssets.TAIKO_S_TOKEN,
+            LenderMappingsTaiko.HANA_ID
+        );
+        management.addGeneralLenderTokens(
+            TokensTaiko.WETH,
+            HanaTaikoAssets.WETH_A_TOKEN,
+            HanaTaikoAssets.WETH_V_TOKEN,
+            HanaTaikoAssets.WETH_S_TOKEN,
+            LenderMappingsTaiko.HANA_ID
+        );
 
-        collateralTokens[USDC][0] = HANA_A_USDC;
-        collateralTokens[TAIKO][0] = HANA_A_TAIKO;
-        collateralTokens[WETH][0] = HANA_A_WETH;
+        collateralTokens[TokensTaiko.USDC][LenderMappingsTaiko.HANA_ID] = HanaTaikoAssets.USDC_A_TOKEN;
+        collateralTokens[TokensTaiko.TAIKO][LenderMappingsTaiko.HANA_ID] = HanaTaikoAssets.TAIKO_A_TOKEN;
+        collateralTokens[TokensTaiko.WETH][LenderMappingsTaiko.HANA_ID] = HanaTaikoAssets.WETH_A_TOKEN;
 
-        debtTokens[USDC][0] = HANA_V_USDC;
-        debtTokens[TAIKO][0] = HANA_V_TAIKO;
-        debtTokens[WETH][0] = HANA_V_WETH;
+        debtTokens[TokensTaiko.USDC][LenderMappingsTaiko.HANA_ID] = HanaTaikoAssets.USDC_V_TOKEN;
+        debtTokens[TokensTaiko.TAIKO][LenderMappingsTaiko.HANA_ID] = HanaTaikoAssets.TAIKO_V_TOKEN;
+        debtTokens[TokensTaiko.WETH][LenderMappingsTaiko.HANA_ID] = HanaTaikoAssets.WETH_V_TOKEN;
 
         // approve pools
         address[] memory assets = new address[](3);
-        assets[0] = USDC;
-        assets[1] = WETH;
-        assets[2] = TAIKO;
-        management.approveAddress(assets, HANA_POOL);
+        assets[0] = TokensTaiko.USDC;
+        assets[1] = TokensTaiko.WETH;
+        assets[2] = TokensTaiko.TAIKO;
+        management.approveAddress(assets, HanaTaiko.POOL);
     }
 
     function initializeDeltaMeridian() internal virtual {
         // meridian
-        management.addGeneralLenderTokens(USDC, MERIDIAN_A_USDC, MERIDIAN_V_USDC, MERIDIAN_S_USDC, 1);
-        management.addGeneralLenderTokens(TAIKO, MERIDIAN_A_TAIKO, MERIDIAN_V_TAIKO, MERIDIAN_S_TAIKO, 1);
-        management.addGeneralLenderTokens(WETH, MERIDIAN_A_WETH, MERIDIAN_V_WETH, MERIDIAN_S_WETH, 1);
+        management.addGeneralLenderTokens(
+            TokensTaiko.USDC,
+            MeridianTaikoAssets.USDC_A_TOKEN,
+            MeridianTaikoAssets.USDC_V_TOKEN,
+            MeridianTaikoAssets.USDC_S_TOKEN,
+            LenderMappingsTaiko.MERIDIAN_ID
+        );
+        management.addGeneralLenderTokens(
+            TokensTaiko.TAIKO,
+            MeridianTaikoAssets.TAIKO_A_TOKEN,
+            MeridianTaikoAssets.TAIKO_V_TOKEN,
+            MeridianTaikoAssets.TAIKO_S_TOKEN,
+            LenderMappingsTaiko.MERIDIAN_ID
+        );
+        management.addGeneralLenderTokens(
+            TokensTaiko.WETH,
+            MeridianTaikoAssets.WETH_A_TOKEN,
+            MeridianTaikoAssets.WETH_V_TOKEN,
+            MeridianTaikoAssets.WETH_S_TOKEN,
+            LenderMappingsTaiko.MERIDIAN_ID
+        );
 
-        collateralTokens[USDC][1] = MERIDIAN_A_USDC;
-        collateralTokens[TAIKO][1] = MERIDIAN_A_TAIKO;
-        collateralTokens[WETH][1] = MERIDIAN_A_WETH;
+        collateralTokens[TokensTaiko.USDC][LenderMappingsTaiko.MERIDIAN_ID] = MeridianTaikoAssets.USDC_A_TOKEN;
+        collateralTokens[TokensTaiko.TAIKO][LenderMappingsTaiko.MERIDIAN_ID] = MeridianTaikoAssets.TAIKO_A_TOKEN;
+        collateralTokens[TokensTaiko.WETH][LenderMappingsTaiko.MERIDIAN_ID] = MeridianTaikoAssets.WETH_A_TOKEN;
 
-        debtTokens[USDC][1] = MERIDIAN_V_USDC;
-        debtTokens[TAIKO][1] = MERIDIAN_V_TAIKO;
-        debtTokens[WETH][1] = MERIDIAN_V_WETH;
+        debtTokens[TokensTaiko.USDC][LenderMappingsTaiko.MERIDIAN_ID] = MeridianTaikoAssets.USDC_V_TOKEN;
+        debtTokens[TokensTaiko.TAIKO][LenderMappingsTaiko.MERIDIAN_ID] = MeridianTaikoAssets.TAIKO_V_TOKEN;
+        debtTokens[TokensTaiko.WETH][LenderMappingsTaiko.MERIDIAN_ID] = MeridianTaikoAssets.WETH_V_TOKEN;
 
         // approve pools
         address[] memory assets = new address[](3);
-        assets[0] = USDC;
-        assets[1] = WETH;
-        assets[2] = TAIKO;
-        management.approveAddress(assets, MERIDIAN_POOL);
+        assets[0] = TokensTaiko.USDC;
+        assets[1] = TokensTaiko.WETH;
+        assets[2] = TokensTaiko.TAIKO;
+        management.approveAddress(assets, MeridianTaiko.POOL);
     }
 
     function initializeDeltaTakoTako() internal virtual {
         // takotako
-        management.addGeneralLenderTokens(USDC, TAKOTAKO_A_USDC, TAKOTAKO_V_USDC, TAKOTAKO_S_USDC, 2);
-        management.addGeneralLenderTokens(TAIKO, TAKOTAKO_A_TAIKO, TAKOTAKO_V_TAIKO, TAKOTAKO_S_TAIKO, 2);
-        management.addGeneralLenderTokens(WETH, TAKOTAKO_A_WETH, TAKOTAKO_V_WETH, TAKOTAKO_S_WETH, 2);
+        management.addGeneralLenderTokens(
+            TokensTaiko.USDC,
+            TakoTakoTaikoAssets.USDC_A_TOKEN,
+            TakoTakoTaikoAssets.USDC_V_TOKEN,
+            TakoTakoTaikoAssets.USDC_S_TOKEN,
+            LenderMappingsTaiko.TAKOTAKO_ID
+        );
+        management.addGeneralLenderTokens(
+            TokensTaiko.TAIKO,
+            TakoTakoTaikoAssets.TAIKO_A_TOKEN,
+            TakoTakoTaikoAssets.TAIKO_V_TOKEN,
+            TakoTakoTaikoAssets.TAIKO_S_TOKEN,
+            LenderMappingsTaiko.TAKOTAKO_ID
+        );
+        management.addGeneralLenderTokens(
+            TokensTaiko.WETH,
+            TakoTakoTaikoAssets.WETH_A_TOKEN,
+            TakoTakoTaikoAssets.WETH_V_TOKEN,
+            TakoTakoTaikoAssets.WETH_S_TOKEN,
+            LenderMappingsTaiko.TAKOTAKO_ID
+        );
 
-        collateralTokens[USDC][2] = TAKOTAKO_A_USDC;
-        collateralTokens[TAIKO][2] = TAKOTAKO_A_TAIKO;
-        collateralTokens[WETH][2] = TAKOTAKO_A_WETH;
+        collateralTokens[TokensTaiko.USDC][LenderMappingsTaiko.TAKOTAKO_ID] = TakoTakoTaikoAssets.USDC_A_TOKEN;
+        collateralTokens[TokensTaiko.TAIKO][LenderMappingsTaiko.TAKOTAKO_ID] = TakoTakoTaikoAssets.TAIKO_A_TOKEN;
+        collateralTokens[TokensTaiko.WETH][LenderMappingsTaiko.TAKOTAKO_ID] = TakoTakoTaikoAssets.WETH_A_TOKEN;
 
-        debtTokens[USDC][2] = TAKOTAKO_V_USDC;
-        debtTokens[TAIKO][2] = TAKOTAKO_V_TAIKO;
-        debtTokens[WETH][2] = TAKOTAKO_V_WETH;
+        debtTokens[TokensTaiko.USDC][LenderMappingsTaiko.TAKOTAKO_ID] = TakoTakoTaikoAssets.USDC_V_TOKEN;
+        debtTokens[TokensTaiko.TAIKO][LenderMappingsTaiko.TAKOTAKO_ID] = TakoTakoTaikoAssets.TAIKO_V_TOKEN;
+        debtTokens[TokensTaiko.WETH][LenderMappingsTaiko.TAKOTAKO_ID] = TakoTakoTaikoAssets.WETH_V_TOKEN;
 
         // approve pools
         address[] memory assets = new address[](3);
-        assets[0] = USDC;
-        assets[1] = WETH;
-        assets[2] = TAIKO;
-        management.approveAddress(assets, TAKOTAKO_POOL);
+        assets[0] = TokensTaiko.USDC;
+        assets[1] = TokensTaiko.WETH;
+        assets[2] = TokensTaiko.TAIKO;
+        management.approveAddress(assets, TakoTakoTaiko.POOL);
     }
 
-    function getAssets() internal view returns (address[] memory assetList) {
+    function initializeDeltaAvalon() internal virtual {
+        // takotako
+        management.addGeneralLenderTokens(
+            TokensTaiko.SOLV_BTC,
+            AvalonTaikoAssets.SOLV_BTC_A_TOKEN,
+            AvalonTaikoAssets.SOLV_BTC_V_TOKEN,
+            AvalonTaikoAssets.SOLV_BTC_S_TOKEN,
+            LenderMappingsTaiko.AVALON_ID
+        );
+        management.addGeneralLenderTokens(
+            TokensTaiko.TAIKO,
+            AvalonTaikoAssets.SOLV_BTC_BBN_A_TOKEN,
+            AvalonTaikoAssets.SOLV_BTC_BBN_V_TOKEN,
+            AvalonTaikoAssets.SOLV_BTC_BBN_S_TOKEN,
+            LenderMappingsTaiko.AVALON_ID
+        );
+
+        collateralTokens[TokensTaiko.SOLV_BTC][LenderMappingsTaiko.AVALON_ID] = AvalonTaikoAssets.SOLV_BTC_A_TOKEN;
+        collateralTokens[TokensTaiko.SOLV_BTC_BBN][LenderMappingsTaiko.AVALON_ID] = AvalonTaikoAssets.SOLV_BTC_BBN_A_TOKEN;
+
+        debtTokens[TokensTaiko.SOLV_BTC][LenderMappingsTaiko.AVALON_ID] = AvalonTaikoAssets.SOLV_BTC_V_TOKEN;
+        debtTokens[TokensTaiko.SOLV_BTC_BBN][LenderMappingsTaiko.AVALON_ID] = AvalonTaikoAssets.SOLV_BTC_BBN_V_TOKEN;
+
+        // approve pools
+        address[] memory assets = new address[](2);
+        assets[0] = TokensTaiko.SOLV_BTC;
+        assets[1] = TokensTaiko.SOLV_BTC_BBN;
+        management.approveAddress(assets, AvalonTaiko.POOL);
+    }
+
+    function getAssets() internal pure returns (address[] memory assetList) {
         assetList = new address[](3);
-        assetList[0] = USDC;
-        assetList[1] = WETH;
-        assetList[2] = TAIKO;
+        assetList[0] = TokensTaiko.USDC;
+        assetList[1] = TokensTaiko.WETH;
+        assetList[2] = TokensTaiko.TAIKO;
     }
 
     function setUp() public virtual {
-        vm.createSelectFork({blockNumber: 319996, urlOrAlias: "https://rpc.mainnet.taiko.xyz"});
+        vm.createSelectFork({blockNumber: 536078, urlOrAlias: "https://rpc.mainnet.taiko.xyz"});
 
         intitializeFullDelta();
     }
@@ -249,12 +346,13 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
         initializeDeltaHana();
         initializeDeltaMeridian();
         initializeDeltaTakoTako();
+        initializeDeltaAvalon();
         initializeDeltaBase();
     }
 
     /** DEPOSIT AND OPEN TO SPIN UP POSITIONS */
 
-    function execDeposit(address user, address asset, uint256 depositAmount, uint8 lenderId) internal {
+    function execDeposit(address user, address asset, uint256 depositAmount, uint16 lenderId) internal {
         deal(asset, user, depositAmount);
 
         bytes memory data = transferIn(asset, brokerProxyAddress, depositAmount);
@@ -270,7 +368,7 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
     }
 
-    function openSimple(address user, address asset, address borrowAsset, uint256 depositAmount, uint256 borrowAmount, uint8 lenderId) internal {
+    function openSimple(address user, address asset, address borrowAsset, uint256 depositAmount, uint256 borrowAmount, uint16 lenderId) internal {
         address debtAsset = debtTokens[borrowAsset][lenderId];
         deal(asset, user, depositAmount);
 
@@ -310,7 +408,7 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
         uint256 borrowAmount,
         uint256 checkAmount,
         bytes memory path, //
-        uint8 lenderId
+        uint16 lenderId
     ) internal {
         address debtAsset = debtTokens[borrowAsset][lenderId];
         deal(asset, user, depositAmount);
@@ -349,7 +447,7 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
         uint256 amountToReceive,
         uint256 checkAmount,
         bytes memory path, //
-        uint8 lenderId
+        uint16 lenderId
     ) internal {
         address debtAsset = debtTokens[borrowAsset][lenderId];
         deal(asset, user, depositAmount);
@@ -384,335 +482,168 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
 
     /** OPEN */
 
-    function getOpenExactInSingle(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint16 fee = uint16(DEX_FEE_LOW);
-        uint8 poolId = AGNI;
-        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
+    function getOpenExactInSingle(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
+        uint16 fee = DEX_FEE_LOW;
+        uint8 poolId = DexMappingsTaiko.UNI_V3;
+        address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
         (uint8 actionId, , uint8 endId) = getOpenExactInFlags();
         return abi.encodePacked(tokenIn, actionId, poolId, pool, fee, tokenOut, lenderId, endId);
     }
 
-    function getOpenExactInSingle_izi(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+    function getOpenExactInSingle_izi(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_LOW_HIGH);
-        uint8 poolId = IZUMI;
-        address pool = testQuoter._getiZiPool(tokenIn, tokenOut, fee);
+        uint8 poolId = DexMappingsTaiko.IZUMI;
+        address pool = testQuoter.getiZiPool(tokenIn, tokenOut, fee);
         (uint8 actionId, , uint8 endId) = getOpenExactInFlags();
         return abi.encodePacked(tokenIn, actionId, poolId, pool, fee, tokenOut, lenderId, endId);
     }
 
     function getSpotExactInSingle_izi(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_LOW_HIGH);
-        uint8 poolId = IZUMI;
-        address pool = testQuoter._getiZiPool(tokenIn, tokenOut, fee);
+        uint8 poolId = DexMappingsTaiko.IZUMI;
+        address pool = testQuoter.getiZiPool(tokenIn, tokenOut, fee);
         return abi.encodePacked(tokenIn, uint8(0), poolId, pool, fee, tokenOut);
     }
 
     function getSpotExactOutSingle_izi(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_LOW_HIGH);
-        uint8 poolId = IZUMI;
-        address pool = testQuoter._getiZiPool(tokenIn, tokenOut, fee);
+        uint8 poolId = DexMappingsTaiko.IZUMI;
+        address pool = testQuoter.getiZiPool(tokenIn, tokenOut, fee);
         return abi.encodePacked(tokenOut, uint8(0), poolId, pool, fee, tokenIn);
     }
 
-    function getOpenExactOutSingle(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint16 fee = uint16(DEX_FEE_LOW);
-        uint8 poolId = AGNI;
-        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
+    function getOpenExactOutSingle(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
+        uint16 fee = DEX_FEE_LOW;
+        uint8 poolId = DexMappingsTaiko.UNI_V3;
+        address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
         (uint8 actionId, , uint8 endId) = getOpenExactOutFlags();
         return abi.encodePacked(tokenOut, actionId, poolId, pool, fee, tokenIn, lenderId, endId);
     }
 
-    function getOpenExactInMulti(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint16 fee = uint16(DEX_FEE_LOW);
+    function getOpenExactInMulti(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
+        uint16 fee = DEX_FEE_LOW;
         (uint8 actionId, uint8 midId, uint8 endId) = getOpenExactInFlags();
-        uint8 poolId = IZUMI;
-        address pool = testQuoter._getiZiPool(tokenIn, TAIKO, fee);
-        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, fee, TAIKO);
-        fee = uint16(DEX_FEE_STABLES);
-        poolId = UNI_V3;
-        pool = testQuoter._v3TypePool(TAIKO, tokenOut, fee, poolId);
+        uint8 poolId = DexMappingsTaiko.IZUMI;
+        address pool = testQuoter.getiZiPool(tokenIn, TokensTaiko.TAIKO, fee);
+        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, fee, TokensTaiko.TAIKO);
+        fee = DEX_FEE_STABLES;
+        poolId = DexMappingsTaiko.UNI_V3;
+        pool = testQuoter.v3TypePool(TokensTaiko.TAIKO, tokenOut, fee, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenOut, lenderId, endId);
     }
 
-    function getOpenExactOutMulti(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint16 fee = uint16(DEX_FEE_STABLES);
+    function getOpenExactOutMulti(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
+        uint16 fee = DEX_FEE_STABLES;
         (uint8 actionId, uint8 midId, uint8 endId) = getOpenExactOutFlags();
-        uint8 poolId = UNI_V3;
-        address pool = testQuoter._v3TypePool(tokenOut, TAIKO, fee, poolId);
-        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, fee, TAIKO);
-        fee = uint16(DEX_FEE_LOW);
-        poolId = IZUMI;
-        pool = testQuoter._getiZiPool(TAIKO, tokenIn, fee);
+        uint8 poolId = DexMappingsTaiko.UNI_V3;
+        address pool = testQuoter.v3TypePool(tokenOut, TokensTaiko.TAIKO, fee, poolId);
+        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, fee, TokensTaiko.TAIKO);
+        fee = DEX_FEE_LOW;
+        poolId = DexMappingsTaiko.IZUMI;
+        pool = testQuoter.getiZiPool(TokensTaiko.TAIKO, tokenIn, fee);
         return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenIn, lenderId, endId);
     }
 
     /** CLOSE */
 
-    function getCloseExactOutSingle(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint16 fee = uint16(DEX_FEE_LOW);
-        uint8 poolId = AGNI;
-        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
+    function getCloseExactOutSingle(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
+        uint16 fee = DEX_FEE_LOW;
+        uint8 poolId = DexMappingsTaiko.UNI_V3;
+        address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
         (uint8 actionId, , uint8 endId) = getCloseExactOutFlags();
         return abi.encodePacked(tokenOut, actionId, poolId, pool, fee, tokenIn, lenderId, endId);
     }
 
-    function getCloseExactInSingle(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint16 fee = uint16(DEX_FEE_LOW);
-        uint8 poolId = AGNI;
-        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
+    function getCloseExactInSingle(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
+        uint16 fee = DEX_FEE_LOW;
+        uint8 poolId = DexMappingsTaiko.UNI_V3;
+        address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
         (uint8 actionId, , uint8 endId) = getCloseExactInFlags();
         return abi.encodePacked(tokenIn, actionId, poolId, pool, fee, tokenOut, lenderId, endId);
     }
 
-    function getCloseExactInMulti(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint16 fee = uint16(DEX_FEE_LOW);
+    function getCloseExactInMulti(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
+        uint16 fee = DEX_FEE_LOW;
         (uint8 actionId, uint8 midId, uint8 endId) = getCloseExactInFlags();
-        uint8 poolId = IZUMI;
-        address pool = testQuoter._getiZiPool(TAIKO, tokenIn, fee);
-        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, fee, TAIKO);
-        fee = uint16(DEX_FEE_STABLES);
-        poolId = UNI_V3;
-        pool = testQuoter._v3TypePool(TAIKO, tokenOut, fee, poolId);
+        uint8 poolId = DexMappingsTaiko.IZUMI;
+        address pool = testQuoter.getiZiPool(TokensTaiko.TAIKO, tokenIn, fee);
+        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, fee, TokensTaiko.TAIKO);
+        fee = DEX_FEE_STABLES;
+        poolId = DexMappingsTaiko.UNI_V3;
+        pool = testQuoter.v3TypePool(TokensTaiko.TAIKO, tokenOut, fee, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenOut, lenderId, endId);
     }
 
-    function getCloseExactOutMulti(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint16 fee = uint16(DEX_FEE_STABLES);
+    function getCloseExactOutMulti(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
+        uint16 fee = DEX_FEE_STABLES;
         (uint8 actionId, uint8 midId, uint8 endId) = getCloseExactOutFlags();
-        uint8 poolId = UNI_V3;
-        address pool = testQuoter._v3TypePool(TAIKO, tokenOut, fee, poolId);
-        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, fee, TAIKO);
-        fee = uint16(DEX_FEE_LOW);
-        poolId = IZUMI;
-        pool = testQuoter._getiZiPool(TAIKO, tokenIn, fee);
+        uint8 poolId = DexMappingsTaiko.UNI_V3;
+        address pool = testQuoter.v3TypePool(TokensTaiko.TAIKO, tokenOut, fee, poolId);
+        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, fee, TokensTaiko.TAIKO);
+        fee = DEX_FEE_LOW;
+        poolId = DexMappingsTaiko.IZUMI;
+        pool = testQuoter.getiZiPool(TokensTaiko.TAIKO, tokenIn, fee);
         return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenIn, lenderId, endId);
     }
 
     /** COLLATERAL SWAP */
 
-    function getCollateralSwapExactInSingle(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint16 fee = uint16(DEX_FEE_LOW);
-        uint8 poolId = AGNI;
-        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
+    function getCollateralSwapExactInSingle(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
+        uint16 fee = DEX_FEE_LOW;
+        uint8 poolId = DexMappingsTaiko.UNI_V3;
+        address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
         (uint8 actionId, , uint8 endId) = getCollateralSwapExactInFlags();
         return abi.encodePacked(tokenIn, actionId, poolId, pool, fee, tokenOut, lenderId, endId);
     }
 
-    function getCollateralSwapExactOutSingle(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint16 fee = uint16(DEX_FEE_LOW);
-        uint8 poolId = AGNI;
-        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
+    function getCollateralSwapExactOutSingle(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
+        uint16 fee = DEX_FEE_LOW;
+        uint8 poolId = DexMappingsTaiko.UNI_V3;
+        address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
         (uint8 actionId, , uint8 endId) = getCollateralSwapExactOutFlags();
         return abi.encodePacked(tokenOut, actionId, poolId, pool, fee, tokenIn, lenderId, endId);
     }
 
-    function getCollateralSwapExactInMulti(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+    function getCollateralSwapExactInMulti(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_LOW_MEDIUM);
         (uint8 actionId, uint8 midId, uint8 endId) = getCollateralSwapExactInFlags();
-        uint8 poolId = AGNI;
-        address pool = testQuoter._v3TypePool(tokenIn, WETH, fee, poolId);
-        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, fee, WETH);
-        fee = uint16(DEX_FEE_LOW);
-        poolId = UNI_V3;
-        pool = testQuoter._v3TypePool(tokenOut, WETH, fee, poolId);
+        uint8 poolId = DexMappingsTaiko.UNI_V3;
+        address pool = testQuoter.v3TypePool(tokenIn, TokensTaiko.WETH, fee, poolId);
+        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, fee, TokensTaiko.WETH);
+        fee = DEX_FEE_LOW;
+        poolId = DexMappingsTaiko.UNI_V3;
+        pool = testQuoter.v3TypePool(tokenOut, TokensTaiko.WETH, fee, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenOut, lenderId, endId);
     }
 
-    function getCollateralSwapExactOutMulti(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+    function getCollateralSwapExactOutMulti(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_LOW_MEDIUM);
         (uint8 actionId, uint8 midId, uint8 endId) = getCollateralSwapExactOutFlags();
-        uint8 poolId = AGNI;
-        address pool = testQuoter._v3TypePool(tokenOut, WETH, fee, poolId);
-        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, fee, WETH);
-        fee = uint16(DEX_FEE_LOW);
-        poolId = UNI_V3;
-        pool = testQuoter._v3TypePool(tokenIn, WETH, fee, poolId);
+        uint8 poolId = DexMappingsTaiko.UNI_V3;
+        address pool = testQuoter.v3TypePool(tokenOut, TokensTaiko.WETH, fee, poolId);
+        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, fee, TokensTaiko.WETH);
+        fee = DEX_FEE_LOW;
+        poolId = DexMappingsTaiko.UNI_V3;
+        pool = testQuoter.v3TypePool(tokenIn, TokensTaiko.WETH, fee, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenIn, lenderId, endId);
     }
 
     /** DEBT SWAP */
 
-    function getDebtSwapExactInSingle(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+    function getDebtSwapExactInSingle(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_LOW_MEDIUM);
-        uint8 poolId = AGNI;
-        address pool = testQuoter._v3TypePool(tokenOut, tokenIn, fee, poolId);
+        uint8 poolId = DexMappingsTaiko.UNI_V3;
+        address pool = testQuoter.v3TypePool(tokenOut, tokenIn, fee, poolId);
         (uint8 actionId, , uint8 endId) = getDebtSwapExactInFlags();
         return abi.encodePacked(tokenIn, actionId, poolId, pool, fee, tokenOut, lenderId, endId);
     }
 
-    function getDebtSwapExactOutSingle(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
+    function getDebtSwapExactOutSingle(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_LOW_MEDIUM);
-        uint8 poolId = AGNI;
-        address pool = testQuoter._v3TypePool(tokenOut, tokenIn, fee, poolId);
+        uint8 poolId = DexMappingsTaiko.UNI_V3;
+        address pool = testQuoter.v3TypePool(tokenOut, tokenIn, fee, poolId);
         (uint8 actionId, , uint8 endId) = getDebtSwapExactOutFlags();
         return abi.encodePacked(tokenOut, actionId, poolId, pool, fee, tokenIn, lenderId, endId);
-    }
-
-    function getDebtSwapExactInMulti(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint16 fee = uint16(DEX_FEE_LOW);
-        (uint8 actionId, uint8 midId, uint8 endId) = getDebtSwapExactInFlags();
-        uint8 poolId = BUTTER;
-        address pool = testQuoter._v3TypePool(tokenIn, TAIKO, fee, poolId);
-        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, fee, TAIKO);
-        fee = uint16(DEX_FEE_LOW);
-        poolId = BUTTER;
-        pool = testQuoter._v3TypePool(tokenOut, TAIKO, fee, poolId);
-        return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenOut, lenderId, endId);
-    }
-
-    function getDebtSwapExactOutMulti(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint16 fee = uint16(DEX_FEE_LOW);
-        (uint8 actionId, uint8 midId, uint8 endId) = getDebtSwapExactOutFlags();
-        uint8 poolId = BUTTER;
-        address pool = testQuoter._v3TypePool(tokenOut, TAIKO, fee, poolId);
-        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, fee, TAIKO);
-        fee = uint16(DEX_FEE_LOW);
-        poolId = BUTTER;
-        pool = testQuoter._v3TypePool(tokenIn, TAIKO, fee, poolId);
-        return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenIn, lenderId, endId);
-    }
-
-    /** OPEN */
-
-    function getOpenExactInSingleV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint8 poolId = MERCHANT_MOE;
-        (uint8 actionId, , uint8 endId) = getOpenExactInFlags();
-        address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
-        return abi.encodePacked(tokenIn, actionId, poolId, pool, MERCHANT_MOE_FEE_DENOM, tokenOut, lenderId, endId);
-    }
-
-    function getOpenExactOutSingleV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint8 poolId = MERCHANT_MOE;
-        (uint8 actionId, , uint8 endId) = getOpenExactOutFlags();
-        address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
-        return abi.encodePacked(tokenOut, actionId, poolId, pool, MERCHANT_MOE_FEE_DENOM, tokenIn, lenderId, endId);
-    }
-
-    function getOpenExactInMultiV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        (uint8 actionId, uint8 midId, uint8 endId) = getOpenExactInFlags();
-        uint8 poolId = MERCHANT_MOE;
-        address pool = testQuoter._v2TypePairAddress(tokenIn, TAIKO, poolId);
-        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, MERCHANT_MOE_FEE_DENOM, TAIKO);
-        poolId = MERCHANT_MOE;
-        pool = testQuoter._v2TypePairAddress(TAIKO, tokenOut, poolId);
-        return abi.encodePacked(firstPart, midId, poolId, pool, MERCHANT_MOE_FEE_DENOM, tokenOut, lenderId, endId);
-    }
-
-    function getOpenExactOutMultiV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        (uint8 actionId, uint8 midId, uint8 endId) = getOpenExactOutFlags();
-        uint8 poolId = MERCHANT_MOE;
-        address pool = testQuoter._v2TypePairAddress(TAIKO, tokenOut, poolId);
-        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, MERCHANT_MOE_FEE_DENOM, TAIKO);
-        pool = testQuoter._v2TypePairAddress(tokenIn, TAIKO, poolId);
-        return abi.encodePacked(firstPart, midId, poolId, pool, MERCHANT_MOE_FEE_DENOM, tokenIn, lenderId, endId);
-    }
-
-    /** CLOSE */
-
-    function getCloseExactOutSingleV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint8 poolId = MERCHANT_MOE;
-        address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
-        (uint8 actionId, , uint8 endId) = getCloseExactOutFlags();
-        return abi.encodePacked(tokenOut, actionId, poolId, pool, MERCHANT_MOE_FEE_DENOM, tokenIn, lenderId, endId);
-    }
-
-    function getCloseExactInSingleV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint8 poolId = MERCHANT_MOE;
-        address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
-        (uint8 actionId, , uint8 endId) = getCloseExactInFlags();
-        return abi.encodePacked(tokenIn, actionId, poolId, pool, MERCHANT_MOE_FEE_DENOM, tokenOut, lenderId, endId);
-    }
-
-    function getCloseExactInMultiV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        (uint8 actionId, uint8 midId, uint8 endId) = getCloseExactInFlags();
-        uint8 poolId = MERCHANT_MOE;
-        address pool = testQuoter._v2TypePairAddress(tokenIn, TAIKO, poolId);
-        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, MERCHANT_MOE_FEE_DENOM, TAIKO);
-        poolId = MERCHANT_MOE;
-        pool = testQuoter._v2TypePairAddress(tokenOut, TAIKO, poolId);
-        return abi.encodePacked(firstPart, midId, poolId, pool, MERCHANT_MOE_FEE_DENOM, tokenOut, lenderId, endId);
-    }
-
-    function getCloseExactOutMultiV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        (uint8 actionId, uint8 midId, uint8 endId) = getCloseExactOutFlags();
-        uint8 poolId = MERCHANT_MOE;
-        address pool = testQuoter._v2TypePairAddress(tokenOut, TAIKO, poolId);
-        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, MERCHANT_MOE_FEE_DENOM, TAIKO);
-        poolId = MERCHANT_MOE;
-        pool = testQuoter._v2TypePairAddress(tokenIn, TAIKO, poolId);
-        return abi.encodePacked(firstPart, midId, poolId, pool, MERCHANT_MOE_FEE_DENOM, tokenIn, lenderId, endId);
-    }
-
-    /** COLLATERAL SWAP */
-
-    function getCollateralSwapExactInSingleV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint8 poolId = MERCHANT_MOE;
-        address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
-        (uint8 actionId, , uint8 endId) = getCollateralSwapExactInFlags();
-        return abi.encodePacked(tokenIn, actionId, poolId, pool, MERCHANT_MOE_FEE_DENOM, tokenOut, lenderId, endId);
-    }
-
-    function getCollateralSwapExactOutSingleV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint8 poolId = MERCHANT_MOE;
-        address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
-        (uint8 actionId, , uint8 endId) = getCollateralSwapExactOutFlags();
-        return abi.encodePacked(tokenOut, actionId, poolId, pool, MERCHANT_MOE_FEE_DENOM, tokenIn, lenderId, endId);
-    }
-
-    function getCollateralSwapExactInMultiV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        (uint8 actionId, uint8 midId, uint8 endId) = getCollateralSwapExactInFlags();
-        uint8 poolId = MERCHANT_MOE;
-        address pool = testQuoter._v2TypePairAddress(tokenIn, TAIKO, poolId);
-        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, MERCHANT_MOE_FEE_DENOM, TAIKO);
-        poolId = MERCHANT_MOE;
-        pool = testQuoter._v2TypePairAddress(tokenOut, TAIKO, poolId);
-        return abi.encodePacked(firstPart, midId, poolId, pool, MERCHANT_MOE_FEE_DENOM, tokenOut, lenderId, endId);
-    }
-
-    function getCollateralSwapExactOutMultiV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        (uint8 actionId, uint8 midId, uint8 endId) = getCollateralSwapExactOutFlags();
-        uint8 poolId = MERCHANT_MOE;
-        address pool = testQuoter._v2TypePairAddress(tokenOut, TAIKO, poolId);
-        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, MERCHANT_MOE_FEE_DENOM, TAIKO);
-        poolId = MERCHANT_MOE;
-        pool = testQuoter._v2TypePairAddress(tokenIn, TAIKO, poolId);
-        return abi.encodePacked(firstPart, midId, poolId, pool, MERCHANT_MOE_FEE_DENOM, tokenIn, lenderId, endId);
-    }
-
-    /** DEBT SWAP */
-
-    function getDebtSwapExactInSingleV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint8 poolId = MERCHANT_MOE;
-        address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
-        (uint8 actionId, , uint8 endId) = getDebtSwapExactInFlags();
-        return abi.encodePacked(tokenIn, actionId, poolId, pool, MERCHANT_MOE_FEE_DENOM, tokenOut, lenderId, endId);
-    }
-
-    function getDebtSwapExactOutSingleV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint8 poolId = MERCHANT_MOE;
-        address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
-        (uint8 actionId, , uint8 endId) = getDebtSwapExactOutFlags();
-        return abi.encodePacked(tokenOut, actionId, poolId, pool, MERCHANT_MOE_FEE_DENOM, tokenIn, lenderId, endId);
-    }
-
-    function getDebtSwapExactInMultiV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        (uint8 actionId, uint8 midId, uint8 endId) = getDebtSwapExactInFlags();
-        uint8 poolId = MERCHANT_MOE;
-        address pool = testQuoter._v2TypePairAddress(tokenIn, TAIKO, poolId);
-        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, MERCHANT_MOE_FEE_DENOM, TAIKO);
-        poolId = MERCHANT_MOE;
-        pool = testQuoter._v2TypePairAddress(tokenOut, TAIKO, poolId);
-        return abi.encodePacked(firstPart, midId, poolId, pool, MERCHANT_MOE_FEE_DENOM, tokenOut, lenderId, endId);
-    }
-
-    function getDebtSwapExactOutMultiV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        (uint8 actionId, uint8 midId, uint8 endId) = getDebtSwapExactOutFlags();
-        uint8 poolId = MERCHANT_MOE;
-        address pool = testQuoter._v2TypePairAddress(tokenOut, TAIKO, poolId);
-        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, MERCHANT_MOE_FEE_DENOM, TAIKO);
-        poolId = MERCHANT_MOE;
-        pool = testQuoter._v2TypePairAddress(tokenIn, TAIKO, poolId);
-        return abi.encodePacked(firstPart, midId, poolId, pool, MERCHANT_MOE_FEE_DENOM, tokenIn, lenderId, endId);
     }
 
     struct TestParamsOpen {
@@ -731,7 +662,7 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
         uint256 amountToDeposit,
         uint256 swapAmount,
         uint256 checkAmount,
-        uint8 lenderId
+        uint16 lenderId
     ) internal view returns (TestParamsOpen memory p) {
         p = TestParamsOpen(
             borrowAsset, //

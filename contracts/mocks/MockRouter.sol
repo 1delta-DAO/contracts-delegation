@@ -4,9 +4,6 @@ pragma solidity ^0.8.18;
 
 import "../external-protocols/openzeppelin/interfaces/IERC20.sol";
 
-/**
- * sets up Aave such that all operations can be conducted
- */
 contract MockRouter {
     uint256 public rate;
     uint256 slippage;

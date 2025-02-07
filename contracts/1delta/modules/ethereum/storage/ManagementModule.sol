@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.28;
 
 import {IERC20} from "../../../../interfaces/IERC20.sol";
 import {WithEthereumStorage} from "./BrokerStorage.sol";
@@ -49,8 +49,8 @@ contract EthereumManagementModule is WithEthereumStorage, ERC20Selectors, Slots 
         ls().lendingPools[_lenderId] = _poolAddress;
     }
 
-    function setValidTarget(address _approvalTarget, address _target, bool value) external onlyOwner {
-        es().isValidApproveAndCallTarget[_approvalTarget][_target] = value;
+    function setValidTarget(address _target, bool value) external onlyOwner {
+        es().isValidApproveAndCallTarget[_target][_target] = value;
     }
 
     function approveAddress(address[] memory assets, address target) external onlyOwner {
@@ -101,11 +101,11 @@ contract EthereumManagementModule is WithEthereumStorage, ERC20Selectors, Slots 
 
     /** TARGET FOR SWAPPING */
 
-    function getIsValidTarget(address _approvalTarget, address _target) external view returns (bool val) {
+    function getIsValidTarget(address _target) external view returns (bool val) {
         // equivalent to
         // return es().isValidApproveAndCallTarget[_approvalTarget][_target];
         assembly {
-            mstore(0x0, _approvalTarget)
+            mstore(0x0, _target)
             mstore(0x20, EXTERNAL_CALLS_SLOT)
             mstore(0x20, keccak256(0x0, 0x40))
             mstore(0x0, _target)

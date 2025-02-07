@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity 0.8.27;
+pragma solidity 0.8.28;
 
 import {MarginTrading} from "./MarginTrading.sol";
 import {Commands} from "../shared/Commands.sol";
@@ -12,15 +12,6 @@ import {Commands} from "../shared/Commands.sol";
  * @author 1delta Labs AG
  */
 contract OneDeltaComposerTaiko is MarginTrading {
-    /// @dev The highest bit signals whether the swap is internal (the payer is this contract)
-    uint256 private constant _PAY_SELF = 1 << 255;
-    /// @dev The second bit signals whether the input token is a FOT token
-    ///      Only used for SWAP_EXACT_IN
-    uint256 private constant _FEE_ON_TRANSFER = 1 << 254;
-    /// @dev We use uint112-encoded amounts to typically fit one bit flag, one path length (uint16)
-    ///      add 2 amounts (2xuint112) into 32bytes, as such we use this mask for extracting those
-    uint256 private constant _UINT112_MASK = 0x000000000000000000000000000000000000ffffffffffffffffffffffffffff;
-
     /**
      * Batch-executes a series of operations
      * @param data compressed instruction calldata
@@ -269,16 +260,15 @@ contract OneDeltaComposerTaiko is MarginTrading {
                                         33
                                     )
                                 ),
-                                UINT8_MASK
+                                UINT16_MASK
                             )
-                            mstore(0x0, shr(96, calldataload(opdataOffset))) // tokenIn
-                            mstore8(0x0, lenderId)
+                            mstore(0x0, or(shl(240, lenderId), shr(96, calldataload(opdataOffset))))
                             mstore(0x20, COLLATERAL_TOKENS_SLOT)
                             let collateralToken := sload(keccak256(0x0, 0x40))
                             // selector for balanceOf(address)
                             mstore(0x0, ERC20_BALANCE_OF)
                             // add caller address as parameter
-                            mstore(add(0x0, 0x4), callerAddress)
+                            mstore(0x4, callerAddress)
                             // call to collateralToken
                             pop(staticcall(gas(), collateralToken, 0x0, 0x24, 0x0, 0x20))
                             // load the retrieved balance
@@ -330,14 +320,12 @@ contract OneDeltaComposerTaiko is MarginTrading {
                         // Fetch the debt balance in case amountOut is zero
                         ////////////////////////////////////////////////////
                         if iszero(amountOut) {
-                            let tokenIn := calldataload(opdataOffset)
-                            let mode := and(UINT8_MASK, shr(88, tokenIn))
-                            tokenIn := shr(96, tokenIn)
-
                             // last 32 bytes
-                            let lenderId := and(calldataload(sub(add(opdataLength, opdataOffset), 33)), UINT8_MASK)
-                            mstore(0x0, tokenIn)
-                            mstore8(0x0, lenderId)
+                            let lenderId := and(calldataload(sub(add(opdataLength, opdataOffset), 33)), UINT16_MASK)
+                            let tokenOut := calldataload(opdataOffset)
+                            let mode := and(UINT8_MASK, shr(88, tokenOut))
+                            mstore(0x0, or(shl(240, lenderId), shr(96, tokenOut)))
+                            // adjust for mode
                             switch mode
                             case 2 {
                                 mstore(0x20, VARIABLE_DEBT_TOKENS_SLOT)
@@ -350,6 +338,10 @@ contract OneDeltaComposerTaiko is MarginTrading {
                             }
 
                             let debtToken := sload(keccak256(0x0, 0x40))
+                            if iszero(debtToken) {
+                                mstore(0, BAD_LENDER)
+                                revert(0, 0x4)
+                            }
                             // selector for balanceOf(address)
                             mstore(0x0, ERC20_BALANCE_OF)
                             // add caller address as parameter
@@ -374,30 +366,26 @@ contract OneDeltaComposerTaiko is MarginTrading {
                     // `transferFrom` on target
                     // Data layout:
                     //      bytes 0-20:                  token
-                    //      bytes 20-40:                 approvalTarget
-                    //      bytes 40-60:                 target
-                    //      bytes 60-74:                 amount
-                    //      bytes 74-76:                 calldata length
-                    //      bytes 76-(76+data length):   data
+                    //      bytes 20-40:                 target
+                    //      bytes 40-54:                 amount
+                    //      bytes 54-56:                 calldata length
+                    //      bytes 56-(56+data length):   data
                     ////////////////////////////////////////////////////
                     assembly {
                         // get first three addresses
                         let token := shr(96, calldataload(currentOffset))
-                        let approvalTarget := shr(96, calldataload(add(currentOffset, 20)))
-                        let aggregator := shr(96, calldataload(add(currentOffset, 40)))
+                        let target := shr(96, calldataload(add(currentOffset, 20)))
 
-                        // get slot isValidApproveAndCallTarget[approvalTarget][aggregator]
-                        mstore(0x0, approvalTarget)
-                        mstore(0x20, EXTERNAL_CALLS_SLOT)
-                        mstore(0x20, keccak256(0x0, 0x40))
-                        mstore(0x0, aggregator)
-                        // validate approvalTarget / target combo
+                        // get slot isValidApproveAndCallTarget[target][aggregator]
+                        mstore(0x0, target)
+                        mstore(0x20, CALL_MANAGEMENT_VALID)
+                        // validate target
                         if iszero(sload(keccak256(0x0, 0x40))) {
                             mstore(0, INVALID_TARGET)
                             revert(0, 0x4)
                         }
                         // get amount to check allowance
-                        let amount := calldataload(add(currentOffset, 60))
+                        let amount := calldataload(add(currentOffset, 40))
                         let dataLength := and(UINT16_MASK, shr(128, amount))
                         amount := shr(144, amount) // shr will already mask correctly
 
@@ -411,32 +399,26 @@ contract OneDeltaComposerTaiko is MarginTrading {
                         let nativeValue
                         switch iszero(token)
                         case 0 {
-                            ////////////////////////////////////////////////////
-                            // get allowance and check if we have to approve
-                            ////////////////////////////////////////////////////
-                            mstore(ptr, ERC20_ALLOWANCE)
-                            mstore(add(ptr, 0x4), address())
-                            mstore(add(ptr, 0x24), approvalTarget)
-
-                            // call to token
-                            // success is false or return data not provided
-                            if iszero(staticcall(gas(), token, ptr, 0x44, ptr, 0x20)) {
-                                revert(0x0, 0x0)
-                            }
-                            // approve if necessary
-                            if lt(mload(ptr), amount) {
+                            mstore(0x0, token)
+                            mstore(0x20, CALL_MANAGEMENT_APPROVALS)
+                            mstore(0x20, keccak256(0x0, 0x40))
+                            mstore(0x0, target)
+                            let key := keccak256(0x0, 0x40)
+                            // check if already approved
+                            if iszero(sload(key)) {
                                 ////////////////////////////////////////////////////
                                 // Approve, at this point it is clear that the target
                                 // is whitelisted
                                 ////////////////////////////////////////////////////
                                 // selector for approve(address,uint256)
                                 mstore(ptr, ERC20_APPROVE)
-                                mstore(add(ptr, 0x04), approvalTarget)
+                                mstore(add(ptr, 0x04), target)
                                 mstore(add(ptr, 0x24), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff)
 
                                 if iszero(call(gas(), token, 0x0, ptr, 0x44, ptr, 32)) {
                                     revert(0x0, 0x0)
                                 }
+                                sstore(key, 1)
                             }
                             nativeValue := 0
                         }
@@ -444,13 +426,13 @@ contract OneDeltaComposerTaiko is MarginTrading {
                             nativeValue := amount
                         }
                         // increment offset to calldata start
-                        currentOffset := add(76, currentOffset)
+                        currentOffset := add(56, currentOffset)
                         // copy calldata
                         calldatacopy(ptr, currentOffset, dataLength)
                         if iszero(
                             call(
                                 gas(),
-                                aggregator,
+                                target,
                                 nativeValue,
                                 ptr, //
                                 dataLength, // the length must be correct or the call will fail
@@ -467,6 +449,14 @@ contract OneDeltaComposerTaiko is MarginTrading {
                 }
             } else if (operation < 0x20) {
                 if (operation == Commands.DEPOSIT) {
+                    ////////////////////////////////////////////////////
+                    // Executes deposit to lender
+                    // Data layout:
+                    //      bytes 0-20:                  underlying
+                    //      bytes 20-40:                 receiver
+                    //      bytes 40-52:                 amount
+                    //      bytes 52-54:                 lenderId
+                    ////////////////////////////////////////////////////
                     address underlying;
                     address receiver;
                     uint256 amount;
@@ -475,8 +465,8 @@ contract OneDeltaComposerTaiko is MarginTrading {
                         underlying := shr(96, calldataload(currentOffset))
                         receiver := and(ADDRESS_MASK, calldataload(add(currentOffset, 8)))
                         let lastBytes := calldataload(add(currentOffset, 40))
-                        amount := and(_UINT112_MASK, shr(136, lastBytes))
-                        lenderId := shr(248, lastBytes) // last byte
+                        amount := and(_UINT112_MASK, shr(128, lastBytes))
+                        lenderId := shr(240, lastBytes) // last 2 bytes
                         if iszero(amount) {
                             // selector for balanceOf(address)
                             mstore(0, ERC20_BALANCE_OF)
@@ -496,10 +486,19 @@ contract OneDeltaComposerTaiko is MarginTrading {
                             // load the retrieved balance
                             amount := mload(0x0)
                         }
-                        currentOffset := add(currentOffset, 55)
+                        currentOffset := add(currentOffset, 56)
                     }
                     _deposit(underlying, receiver, amount, lenderId);
                 } else if (operation == Commands.BORROW) {
+                    ////////////////////////////////////////////////////
+                    // Executes delegated borrow from lender
+                    // Data layout:
+                    //      bytes 0-20:                  underlying
+                    //      bytes 20-40:                 receiver
+                    //      bytes 40-42:                 lenderId
+                    //      bytes 42-54:                 amount
+                    //      bytes 54-55:                 mode
+                    ////////////////////////////////////////////////////
                     address underlying;
                     address receiver;
                     uint256 amount;
@@ -509,10 +508,10 @@ contract OneDeltaComposerTaiko is MarginTrading {
                         underlying := shr(96, calldataload(currentOffset))
                         receiver := and(ADDRESS_MASK, calldataload(add(currentOffset, 8)))
                         let lastBytes := calldataload(add(currentOffset, 40))
-                        amount := and(_UINT112_MASK, shr(128, lastBytes))
-                        lenderId := shr(248, lastBytes) // last byte
-                        mode := and(UINT8_MASK, shr(240, lastBytes))
-                        currentOffset := add(currentOffset, 56)
+                        amount := and(_UINT112_MASK, shr(120, lastBytes))
+                        lenderId := shr(240, lastBytes) // last 2 bytes
+                        mode := and(UINT8_MASK, shr(232, lastBytes))
+                        currentOffset := add(currentOffset, 57)
                     }
                     _borrow(underlying, callerAddress, receiver, amount, mode, lenderId);
                 } else if (operation == Commands.REPAY) {
@@ -526,9 +525,9 @@ contract OneDeltaComposerTaiko is MarginTrading {
                         underlying := shr(96, calldataload(offset))
                         receiver := and(ADDRESS_MASK, calldataload(add(offset, 8)))
                         let lastBytes := calldataload(add(offset, 40))
-                        lenderId := shr(248, lastBytes) // last byte
-                        mode := and(UINT8_MASK, shr(240, lastBytes))
-                        amount := and(_UINT112_MASK, shr(128, lastBytes))
+                        lenderId := shr(240, lastBytes) // last 2 bytes
+                        mode := and(UINT8_MASK, shr(232, lastBytes))
+                        amount := and(_UINT112_MASK, shr(120, lastBytes))
                         // zero means that we repay whatever is in this contract
                         // Note that Aave protocols allow repayments, even if amount > borrow balance
                         // in that case, the protocol will pull the desired amount
@@ -552,7 +551,7 @@ contract OneDeltaComposerTaiko is MarginTrading {
                             // load the retrieved balance
                             amount := mload(0x0)
                         }
-                        currentOffset := add(currentOffset, 56)
+                        currentOffset := add(currentOffset, 57)
                     }
                     _repay(underlying, receiver, amount, mode, lenderId);
                 } else if (operation == Commands.WITHDRAW) {
@@ -564,39 +563,17 @@ contract OneDeltaComposerTaiko is MarginTrading {
                         underlying := shr(96, calldataload(currentOffset))
                         receiver := and(ADDRESS_MASK, calldataload(add(currentOffset, 8)))
                         let lastBytes := calldataload(add(currentOffset, 40))
-                        amount := and(_UINT112_MASK, shr(136, lastBytes))
-                        lenderId := shr(248, lastBytes) // last byte
+                        amount := and(_UINT112_MASK, shr(128, lastBytes))
+                        lenderId := shr(240, lastBytes) // last 2 bytes
 
-                        // amounts 0 and maximum uint112 have special meanings
-                        switch amount
-                        // case contract underlying balance
-                        case 0 {
-                            // selector for balanceOf(address)
-                            mstore(0, ERC20_BALANCE_OF)
-                            // add this address as parameter
-                            mstore(0x04, address())
-                            // call to token
-                            pop(
-                                staticcall(
-                                    gas(),
-                                    underlying, // token
-                                    0x0,
-                                    0x24,
-                                    0x0,
-                                    0x20
-                                )
-                            )
-                            // load the retrieved balance
-                            amount := mload(0x0)
-                        }
-                        // case user collateral balance
-                        case 0xffffffffffffffffffffffffffff {
-                            switch lt(lenderId, 50)
+                        // maximum uint112 has a special meaning
+                        // for using the user collateral balance
+                        if eq(amount, 0xffffffffffffffffffffffffffff) {
+                            switch lt(lenderId, MAX_ID_AAVE_V2)
                             // get aave type user collateral balance
                             case 1 {
                                 // Slot for collateralTokens[target] is keccak256(target . collateralTokens.slot).
-                                mstore(0x0, underlying)
-                                mstore8(0x0, lenderId)
+                                mstore(0x0, or(shl(240, lenderId), underlying))
                                 mstore(0x20, COLLATERAL_TOKENS_SLOT)
                                 let collateralToken := sload(keccak256(0x0, 0x40))
                                 // selector for balanceOf(address)
@@ -618,7 +595,7 @@ contract OneDeltaComposerTaiko is MarginTrading {
                                 amount := mload(0x0)
                             }
                         }
-                        currentOffset := add(currentOffset, 55)
+                        currentOffset := add(currentOffset, 56)
                     }
                     _withdraw(underlying, callerAddress, receiver, amount, lenderId);
                 }
@@ -1033,65 +1010,111 @@ contract OneDeltaComposerTaiko is MarginTrading {
                         // length of params
                         let calldataLength := and(UINT16_MASK, shr(128, slice))
 
-                        let pool
-                        switch source
-                        case 0 {
-                            pool := HANA_POOL
-                        }
+                        switch lt(source, 25)
                         case 1 {
-                            pool := MERIDIAN_POOL
+                            let pool
+                            switch source
+                            case 0 {
+                                pool := HANA_POOL
+                            }
+                            case 1 {
+                                pool := MERIDIAN_POOL
+                            }
+                            default {
+                                pool := TAKOTAKO_POOL
+                            }
+                            // call flash loan
+                            let ptr := mload(0x40)
+                            // flashLoan(...) (See Aave V2 ILendingPool)
+                            mstore(ptr, 0xab9c4b5d00000000000000000000000000000000000000000000000000000000)
+                            mstore(add(ptr, 4), address()) // receiver is this address
+                            mstore(add(ptr, 36), 0x0e0) // offset assets
+                            mstore(add(ptr, 68), 0x120) // offset amounts
+                            mstore(add(ptr, 100), 0x160) // offset modes
+                            mstore(add(ptr, 132), 0) // onBefhalfOf = 0
+                            mstore(add(ptr, 164), 0x1a0) // offset calldata
+                            mstore(add(ptr, 196), 0) // referral code = 0
+                            mstore(add(ptr, 228), 1) // length assets
+                            mstore(add(ptr, 260), token) // assets[0]
+                            mstore(add(ptr, 292), 1) // length amounts
+                            mstore(add(ptr, 324), amount) // amounts[0]
+                            mstore(add(ptr, 356), 1) // length modes
+                            mstore(add(ptr, 388), 0) // mode = 0
+                            ////////////////////////////////////////////////////
+                            // We attach [souceId | caller] as first 21 bytes
+                            // to the params
+                            ////////////////////////////////////////////////////
+                            mstore(add(ptr, 420), add(21, calldataLength)) // length calldata (plus 1 + address)
+                            mstore8(add(ptr, 452), source) // source id
+                            // caller at the beginning
+                            mstore(add(ptr, 453), shl(96, callerAddress))
+
+                            // increment offset by the preceding bytes length
+                            currentOffset := add(currentOffset, 37)
+                            // copy the calldataslice for the params
+                            calldatacopy(
+                                add(ptr, 473), // next slot
+                                currentOffset, // offset starts at 37, already incremented
+                                calldataLength // copy given length
+                            ) // calldata
+                            if iszero(
+                                call(
+                                    gas(),
+                                    pool,
+                                    0x0,
+                                    ptr,
+                                    add(calldataLength, 473), // = 14 * 32 + 4 + 20 (caller)
+                                    0x0,
+                                    0x0 //
+                                )
+                            ) {
+                                let rdlen := returndatasize()
+                                returndatacopy(0, 0, rdlen)
+                                revert(0x0, rdlen)
+                            }
+                            // increment offset
+                            currentOffset := add(currentOffset, calldataLength)
                         }
                         default {
-                            pool := TAKOTAKO_POOL
-                        }
-                        // call flash loan
-                        let ptr := mload(0x40)
-                        // flashLoan(...) (See Aave V2 ILendingPool)
-                        mstore(ptr, 0xab9c4b5d00000000000000000000000000000000000000000000000000000000)
-                        mstore(add(ptr, 4), address()) // receiver is this address
-                        mstore(add(ptr, 36), 0x0e0) // offset assets
-                        mstore(add(ptr, 68), 0x120) // offset amounts
-                        mstore(add(ptr, 100), 0x160) // offset modes
-                        mstore(add(ptr, 132), 0) // onBefhalfOf = 0
-                        mstore(add(ptr, 164), 0x1a0) // offset calldata
-                        mstore(add(ptr, 196), 0) // referral code = 0
-                        mstore(add(ptr, 228), 1) // length assets
-                        mstore(add(ptr, 260), token) // assets[0]
-                        mstore(add(ptr, 292), 1) // length amounts
-                        mstore(add(ptr, 324), amount) // amounts[0]
-                        mstore(add(ptr, 356), 1) // length modes
-                        mstore(add(ptr, 388), 0) // mode = 0
-                        ////////////////////////////////////////////////////
-                        // We attach [souceId | caller] as first 21 bytes
-                        // to the params
-                        ////////////////////////////////////////////////////
-                        mstore(add(ptr, 420), add(21, calldataLength)) // length calldata (plus 1 + address)
-                        mstore8(add(ptr, 452), source) // source id
-                        // caller at the beginning
-                        mstore(add(ptr, 453), shl(96, callerAddress))
+                            let pool
+                            switch source
+                            case 25 {
+                                pool := AVALON_POOL
+                            }
+                            default {
+                                mstore(0, INVALID_FLASH_LOAN)
+                                revert(0, 0x4)
+                            }
 
-                        // increment offset by the preceding bytes length
-                        currentOffset := add(currentOffset, 37)
-                        // copy the calldataslice for the params
-                        calldatacopy(
-                            add(ptr, 473), // next slot
-                            currentOffset, // offset starts at 37, already incremented
-                            calldataLength // copy given length
-                        ) // calldata
-                        if iszero(
-                            call(
-                                gas(),
-                                pool,
-                                0x0,
-                                ptr,
-                                add(calldataLength, 473), // = 14 * 32 + 4 + 20 (caller)
-                                0x0,
-                                0x0 //
-                            )
-                        ) {
-                            let rdlen := returndatasize()
-                            returndatacopy(0, 0, rdlen)
-                            revert(0x0, rdlen)
+                            let ptr := mload(0x40)
+                            // flashLoanSimple(...)
+                            mstore(ptr, 0x42b0b77c00000000000000000000000000000000000000000000000000000000)
+                            mstore(add(ptr, 4), address())
+                            mstore(add(ptr, 36), token) // asset
+                            mstore(add(ptr, 68), amount) // amount
+                            mstore(add(ptr, 100), 0xa0) // offset calldata
+                            mstore(add(ptr, 132), 0) // refCode
+                            mstore(add(ptr, 164), add(21, calldataLength)) // length calldata
+                            mstore8(add(ptr, 196), source) // source id
+                            // caller at the beginning
+                            mstore(add(ptr, 197), shl(96, callerAddress))
+                            currentOffset := add(currentOffset, 37)
+                            calldatacopy(add(ptr, 217), currentOffset, calldataLength) // calldata
+                            if iszero(
+                                call(
+                                    gas(),
+                                    pool,
+                                    0x0,
+                                    ptr,
+                                    add(calldataLength, 228), // = 10 * 32 + 4
+                                    0x0,
+                                    0x0 //
+                                )
+                            ) {
+                                let rdlen := returndatasize()
+                                returndatacopy(0, 0, rdlen)
+                                revert(0x0, rdlen)
+                            }
                         }
                         // increment offset
                         currentOffset := add(currentOffset, calldataLength)
@@ -1169,6 +1192,74 @@ contract OneDeltaComposerTaiko is MarginTrading {
             // this prevents caller impersonation,
             // but ONLY if the caller address is
             // an Aave V2 type lending pool
+            if xor(address(), initiator) {
+                mstore(0, INVALID_CALLER)
+                revert(0, 0x4)
+            }
+            // Slice the original caller off the beginnig of the calldata
+            // From here on we have validated that the `origCaller`
+            // was attached in the deltaCompose function
+            // Otherwise, this would be a vulnerability
+            origCaller := and(ADDRESS_MASK, shr(88, firstWord))
+            // shift / slice params
+            params.offset := add(params.offset, 21)
+            params.length := sub(params.length, 21)
+        }
+        // within the flash loan, any compose operation
+        // can be executed
+        _deltaComposeInternal(origCaller, params);
+        return true;
+    }
+
+    /**
+     * @dev When `flashLoanSimple` is called on the the Aave pool, it invokes the `executeOperation` hook on the recipient.
+     *  We assume that the flash loan fee and params have been pre-computed
+     *  We never expect more than one token to be flashed
+     *  We assume that the asset loaned is already infinite-approved (this->flashPool)
+     */
+    function executeOperation(
+        address,
+        uint256,
+        uint256,
+        address initiator,
+        bytes calldata params // user params
+    ) external returns (bool) {
+        address origCaller;
+        assembly {
+            // we expect at least an address
+            // and a sourceId (uint8)
+            // invalid params will lead to errors in the
+            // compose at the bottom
+            if lt(params.length, 21) {
+                mstore(0, INVALID_FLASH_LOAN)
+                revert(0, 0x4)
+            }
+            // validate caller
+            // - extract id from params
+            let firstWord := calldataload(params.offset)
+            // needs no uint8 masking as we shift 248 bits
+            let source := shr(248, firstWord)
+
+            // Validate the caller
+            // We check that the caller is one of the lending pools
+            // This is a crucial check since this makes
+            // the `initiator` paramter the caller of `flashLoan`
+            switch source
+            case 25 {
+                if xor(caller(), AVALON_POOL) {
+                    mstore(0, INVALID_FLASH_LOAN)
+                    revert(0, 0x4)
+                }
+            }
+            // We revert on any other id
+            default {
+                mstore(0, INVALID_FLASH_LOAN)
+                revert(0, 0x4)
+            }
+            // We require to self-initiate
+            // this prevents caller impersonation,
+            // but ONLY if the caller address is
+            // an Aave V3 type lending pool
             if xor(address(), initiator) {
                 mstore(0, INVALID_CALLER)
                 revert(0, 0x4)

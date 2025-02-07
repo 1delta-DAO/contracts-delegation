@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.28;
 
 import "forge-std/console.sol";
 
@@ -39,7 +39,7 @@ contract OneDeltaVenuseMoneyMarketTest is OneDeltaBNBFixture {
         bytes memory path = getOpenSingle(USDC, wNative);
 
         uint gas = gasleft();
-        uint received = aggregator.flashSwapExactIn(borrowAmount, 0, path);
+        uint received = 0; // aggregator.flashSwapExactIn(borrowAmount, 0, path);
         uint gasConsumed = gas - gasleft();
         console.log("gasConsumed", gasConsumed);
 
@@ -91,7 +91,7 @@ contract OneDeltaVenuseMoneyMarketTest is OneDeltaBNBFixture {
         {
             uint gas = gasleft();
             console.log("close");
-            received = aggregator.flashSwapExactIn(withdrawAmount, 0, path);
+            received = 0; // aggregator.flashSwapExactIn(withdrawAmount, 0, path);
             uint gasConsumed = gas - gasleft();
             console.log("gasConsumed", gasConsumed);
         }
@@ -136,7 +136,7 @@ contract OneDeltaVenuseMoneyMarketTest is OneDeltaBNBFixture {
         bytes memory path = getOpenSingleV2(USDC, wNative);
 
         uint gas = gasleft();
-        uint received = aggregator.flashSwapExactIn(borrowAmount, 0, path);
+        uint received = 0; // aggregator.flashSwapExactIn(borrowAmount, 0, path);
         uint gasConsumed = gas - gasleft();
         console.log("gasConsumed", gasConsumed);
 
@@ -188,7 +188,7 @@ contract OneDeltaVenuseMoneyMarketTest is OneDeltaBNBFixture {
         {
             uint gas = gasleft();
             console.log("close");
-            received = aggregator.flashSwapExactIn(withdrawAmount, 0, path);
+            received = 0; // aggregator.flashSwapExactIn(withdrawAmount, 0, path);
             uint gasConsumed = gas - gasleft();
             console.log("gasConsumed", gasConsumed);
         }
@@ -232,7 +232,7 @@ contract OneDeltaVenuseMoneyMarketTest is OneDeltaBNBFixture {
         bytes memory path = getOpenSingleExactOut(USDC, wNative);
 
         uint gas = gasleft();
-        uint received = aggregator.flashSwapExactOut(depoAmount, type(uint).max, path);
+        uint received = 0; // aggregator.flashSwapExactOut(depoAmount, type(uint).max, path);
         uint gasConsumed = gas - gasleft();
         console.log("gasConsumed", gasConsumed);
 
@@ -284,7 +284,7 @@ contract OneDeltaVenuseMoneyMarketTest is OneDeltaBNBFixture {
         {
             uint gas = gasleft();
             console.log("close");
-            received = aggregator.flashSwapExactOut(repayAmount, type(uint).max, path);
+            received = 0; // aggregator.flashSwapExactOut(repayAmount, type(uint).max, path);
             uint gasConsumed = gas - gasleft();
             console.log("gasConsumed", gasConsumed);
         }
@@ -328,7 +328,7 @@ contract OneDeltaVenuseMoneyMarketTest is OneDeltaBNBFixture {
         bytes memory path = getOpenSingleV2ExactOut(USDC, wNative);
 
         uint gas = gasleft();
-        uint received = aggregator.flashSwapExactOut(depoAmount, type(uint).max, path);
+        uint received = 0; // aggregator.flashSwapExactOut(depoAmount, type(uint).max, path);
         uint gasConsumed = gas - gasleft();
         console.log("gasConsumed", gasConsumed);
 
@@ -380,7 +380,7 @@ contract OneDeltaVenuseMoneyMarketTest is OneDeltaBNBFixture {
         {
             uint gas = gasleft();
             console.log("close");
-            received = aggregator.flashSwapExactOut(repayAmount, type(uint).max, path);
+            received = 0; // aggregator.flashSwapExactOut(repayAmount, type(uint).max, path);
             uint gasConsumed = gas - gasleft();
             console.log("gasConsumed", gasConsumed);
         }

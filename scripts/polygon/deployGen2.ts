@@ -3,28 +3,11 @@ import { ethers } from "hardhat";
 import {
     DeltaBrokerProxyGen2__factory,
     ConfigModule__factory,
-    PolygonManagementModule__factory,
-    OneDeltaComposerPolygon__factory,
+    ManagementModule__factory,
     LensModule__factory,
 } from "../../types";
 import { getPolygonConfig } from "./utils";
-import { ModuleConfigAction, getContractSelectors } from "../../test-ts/libraries/diamond";
-import { addAaveV2Tokens, addAaveV3Tokens, addYldrTokens } from "./lenders/addLenderData";
-import { execAaveV2Approves, execAaveV3Approves, execCompoundV3USDCEApproves, execYldrApproves } from "./approvals/approveAddress";
-
-const aggregatorsTargets = [
-    '0x4E3288c9ca110bCC82bf38F09A7b425c095d92Bf', // ODOS
-    '0x6131B5fae19EA4f9D964eAc0408E4408b66337b5', // KYBER
-    '0xDEF171Fe48CF0115B1d80b88dc8eAB59176FEe57', // PARASWAP,
-    '0x1111111254eeb25477b68fb85ed929f73a960582' // 1inch
-]
-
-const aggregatorsToApproves = [
-    '0x4E3288c9ca110bCC82bf38F09A7b425c095d92Bf', // ODOS
-    '0x6131B5fae19EA4f9D964eAc0408E4408b66337b5', // KYBER
-    '0x216b4b4ba9f3e719726886d34a177484278bfcae', // PARASWAP TRANSFER PTOXY
-    '0x1111111254eeb25477b68fb85ed929f73a960582' // 1inch
-]
+import { ModuleConfigAction, getContractSelectors } from "../_utils/diamond";
 
 async function main() {
     const accounts = await ethers.getSigners()
@@ -35,6 +18,7 @@ async function main() {
 
     // we manually increment the nonce
     let nonce = await operator.getTransactionCount()
+
     // deploy module config
     const moduleConfig = await new ConfigModule__factory(operator).deploy(getPolygonConfig(nonce++))
     await moduleConfig.deployed()
@@ -47,23 +31,19 @@ async function main() {
         moduleConfig.address,
         getPolygonConfig(nonce++)
     )
+    
     await proxy.deployed()
 
     console.log("proxy deployed")
 
     // deploy modules
 
-    const lens = await new LensModule__factory(operator).deploy(getPolygonConfig(nonce++))
-    await lens.deployed()
-
-
     // management
-    const management = await new PolygonManagementModule__factory(operator).deploy(getPolygonConfig(nonce++))
+    const management = await new ManagementModule__factory(operator).deploy(getPolygonConfig(nonce++))
     await management.deployed()
 
-    // composer
-    const composer = await new OneDeltaComposerPolygon__factory(operator).deploy(getPolygonConfig(nonce++))
-    await composer.deployed()
+    const lens = await new LensModule__factory(operator).deploy(getPolygonConfig(nonce++))
+    await lens.deployed()
 
 
     console.log("modules deployed")
@@ -77,7 +57,6 @@ async function main() {
 
     const modules: any = []
     modules.push(management)
-    modules.push(composer)
     modules.push(lens)
 
     console.log("Having", modules.length, "additions")
@@ -92,40 +71,16 @@ async function main() {
 
     const oneDeltaModuleConfig = await new ConfigModule__factory(operator).attach(proxy.address)
 
-    let tx = await oneDeltaModuleConfig.configureModules(cut, getPolygonConfig(nonce++))
+    let tx = await oneDeltaModuleConfig.configureModules(cut)
     await tx.wait()
     console.log("modules added")
-    const oneDeltaManagement = await new PolygonManagementModule__factory(operator).attach(proxy.address)
-
-    // add aggregators
-    tx = await oneDeltaManagement.setValidTarget(aggregatorsToApproves[0], aggregatorsTargets[0], true, getPolygonConfig(nonce++))
-    await tx.wait()
-    tx = await oneDeltaManagement.setValidTarget(aggregatorsToApproves[1], aggregatorsTargets[1], true, getPolygonConfig(nonce++))
-    await tx.wait()
-    tx = await oneDeltaManagement.setValidTarget(aggregatorsToApproves[2], aggregatorsTargets[2], true, getPolygonConfig(nonce++))
-    await tx.wait()
-    tx = await oneDeltaManagement.setValidTarget(aggregatorsToApproves[3], aggregatorsTargets[3], true, getPolygonConfig(nonce++))
-    await tx.wait()
-
-
-    // add lender data
-    nonce = await addAaveV3Tokens(oneDeltaManagement, nonce)
-    nonce = await addAaveV2Tokens(oneDeltaManagement, nonce)
-    nonce = await addYldrTokens(oneDeltaManagement, nonce)
-
-    // approve targets
-    nonce = await execAaveV2Approves(oneDeltaManagement, nonce)
-    nonce = await execAaveV3Approves(oneDeltaManagement, nonce)
-    nonce = await execYldrApproves(oneDeltaManagement, nonce)
-    nonce = await execCompoundV3USDCEApproves(oneDeltaManagement, nonce)
 
     console.log("deployment complete")
     console.log("======== Addresses =======")
     console.log("moduleConfig:", moduleConfig.address)
     console.log("proxy:", proxy.address)
-    console.log("composerImplementation:", composer.address)
-    console.log("managementImplementation:", management.address)
-    console.log("lensImplementation:", lens.address)
+    console.log("management:", management.address)
+    console.log("lens:", lens.address)
     console.log("==========================")
 }
 

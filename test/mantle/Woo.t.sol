@@ -16,14 +16,14 @@ contract WooFiTest is DeltaSetup {
     function test_mantle_woo_spot_exact_in() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetIn = USDC;
-        address assetOut = WETH;
+        address assetIn = TokensMantle.USDC;
+        address assetOut = TokensMantle.WETH;
 
         deal(assetIn, user, 1e20);
 
         uint256 amountIn = 1.0e6;
 
-        uint256 quoted = testQuoter._quoteWooFiExactIn(assetIn, assetOut, amountIn);
+        uint256 quoted = quoter.quoteExactInput(getQuoteExactInSingleWOO_FI(assetIn, assetOut), amountIn);
 
         bytes memory swapPath = getSpotExactInSingleWOO_FI(assetIn, assetOut);
         uint256 minimumOut = 0.03e8;
@@ -36,7 +36,7 @@ contract WooFiTest is DeltaSetup {
         bytes memory data = encodeSwap(
             Commands.SWAP_EXACT_IN,
             user,
-            amountIn, // 
+            amountIn, //
             minimumOut,
             false,
             swapPath
@@ -47,7 +47,7 @@ contract WooFiTest is DeltaSetup {
         balanceOut = IERC20All(assetOut).balanceOf(user) - balanceOut;
         balanceIn = balanceIn - IERC20All(assetIn).balanceOf(user);
 
-        // swap 1 USDC, receive approx 0.00032111343 WETH, but in 18 decs
+        // swap 1 TokensMantle.USDC, receive approx 0.00032111343 TokensMantle.WETH, but in 18 decs
         assertApproxEqAbs(321113436165101, balanceOut, 1);
         assertApproxEqAbs(quoted, balanceOut, 0);
         assertApproxEqAbs(balanceIn, amountIn, 0);
@@ -55,8 +55,13 @@ contract WooFiTest is DeltaSetup {
 
     /** WOO_FI PATH BUILDERS */
 
-    function getSpotExactInSingleWOO_FI(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        uint8 poolId = WOO_FI;
+    function getSpotExactInSingleWOO_FI(address tokenIn, address tokenOut) internal pure returns (bytes memory data) {
+        uint8 poolId = DexMappingsMantle.WOO_FI;
         return abi.encodePacked(tokenIn, uint8(0), poolId, WOO_POOL, tokenOut);
+    }
+
+    function getQuoteExactInSingleWOO_FI(address tokenIn, address tokenOut) internal pure returns (bytes memory data) {
+        uint8 poolId = DexMappingsMantle.WOO_FI;
+        return abi.encodePacked(tokenIn, poolId, WOO_POOL, tokenOut);
     }
 }

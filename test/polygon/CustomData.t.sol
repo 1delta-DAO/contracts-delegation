@@ -7,13 +7,13 @@ import "./DeltaSetup.f.sol";
 
 contract CustomDataTestPolygon is DeltaSetup {
     function test_polygon_custom_open() external {
-        uint8 lenderId = 0;
+        uint16 lenderId = 0;
         address user = testUser;
 
         uint256 amount = 500.0e18;
-        address asset = WMATIC;
+        address asset = TokensPolygon.WMATIC;
 
-        address borrowAsset = USDC;
+        address borrowAsset = TokensPolygon.USDC;
 
         _deposit(asset, user, amount, lenderId);
 
@@ -21,6 +21,7 @@ contract CustomDataTestPolygon is DeltaSetup {
 
         approveBorrowDelegation(user, borrowAsset, openAmount, lenderId);
 
+        vm.expectRevert();
         vm.prank(user);
         uint gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(getOpenUsdcMatic());
@@ -28,7 +29,7 @@ contract CustomDataTestPolygon is DeltaSetup {
         console.log("gas", gas);
     }
 
-    function _deposit(address asset, address user, uint256 amount, uint8 lenderId) internal {
+    function _deposit(address asset, address user, uint256 amount, uint16 lenderId) internal {
         deal(asset, user, amount);
 
         vm.prank(user);

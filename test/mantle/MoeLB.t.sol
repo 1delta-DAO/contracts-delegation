@@ -36,8 +36,8 @@ contract GeneralMoeLBTest is DeltaSetup {
     function test_mantle_lb_spot_exact_in() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetIn = USDT;
-        address assetOut = USDe;
+        address assetIn = TokensMantle.USDT;
+        address assetOut = TokensMantle.USDe;
 
         deal(assetIn, user, 1e20);
 
@@ -73,8 +73,8 @@ contract GeneralMoeLBTest is DeltaSetup {
     function test_mantle_lb_spot_exact_out() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetOut = USDT;
-        address assetIn = USDe;
+        address assetOut = TokensMantle.USDT;
+        address assetIn = TokensMantle.USDe;
 
         deal(assetIn, user, 1e30);
 
@@ -110,8 +110,8 @@ contract GeneralMoeLBTest is DeltaSetup {
     function test_mantle_lb_spot_exact_out_multi() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetOut = USDe;
-        address assetIn = USDC;
+        address assetOut = TokensMantle.USDe;
+        address assetIn = TokensMantle.USDC;
 
         deal(assetIn, user, 1e30);
 
@@ -157,8 +157,8 @@ contract GeneralMoeLBTest is DeltaSetup {
     function test_mantle_lb_spot_exact_out_multi_end() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetOut = USDC;
-        address assetIn = USDe;
+        address assetOut = TokensMantle.USDC;
+        address assetIn = TokensMantle.USDe;
 
         deal(assetIn, user, 1e30);
 
@@ -202,13 +202,13 @@ contract GeneralMoeLBTest is DeltaSetup {
     }
 
     function test_margin_mantle_lb_open_exact_in_multi() external {
-        uint8 lenderId = DEFAULT_LENDER;
+        uint16 lenderId = LenderMappingsMantle.LENDLE_ID;
         address user = testUser;
         vm.assume(user != address(0));
-        address asset = USDT;
+        address asset = TokensMantle.USDT;
         address collateralAsset = collateralTokens[asset][lenderId];
 
-        address borrowAsset = USDC;
+        address borrowAsset = TokensMantle.USDC;
         address debtAsset = debtTokens[borrowAsset][lenderId];
 
         uint256 amountToDeposit = 10.0e6;
@@ -243,13 +243,13 @@ contract GeneralMoeLBTest is DeltaSetup {
     }
 
     function test_margin_mantle_lb_open_exact_out_multi() external {
-        uint8 lenderId = DEFAULT_LENDER;
+        uint16 lenderId = LenderMappingsMantle.LENDLE_ID;
         address user = testUser;
         vm.assume(user != address(0));
-        address asset = USDC;
+        address asset = TokensMantle.USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
 
-        address borrowAsset = USDT;
+        address borrowAsset = TokensMantle.USDT;
         address debtAsset = debtTokens[borrowAsset][lenderId];
         uint256 amountToDeposit = 10.0e6;
 
@@ -284,13 +284,13 @@ contract GeneralMoeLBTest is DeltaSetup {
     }
 
     function test_margin_mantle_lb_close_exact_in_multi() external {
-        uint8 lenderId = DEFAULT_LENDER;
+        uint16 lenderId = LenderMappingsMantle.LENDLE_ID;
         address user = testUser;
-        vm.assume(user != address(0) && lenderId < 2);
-        address asset = USDC;
+        vm.assume(user != address(0));
+        address asset = TokensMantle.USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
 
-        address borrowAsset = USDT;
+        address borrowAsset = TokensMantle.USDT;
         address debtAsset = debtTokens[borrowAsset][lenderId];
 
         {
@@ -328,13 +328,13 @@ contract GeneralMoeLBTest is DeltaSetup {
     }
 
     function test_margin_mantle_lb_close_exact_out_multi() external {
-        uint8 lenderId = DEFAULT_LENDER;
+        uint16 lenderId = LenderMappingsMantle.LENDLE_ID;
         address user = testUser;
-        vm.assume(user != address(0) && lenderId < 2);
-        address asset = USDT;
+        vm.assume(user != address(0));
+        address asset = TokensMantle.USDT;
         address collateralAsset = collateralTokens[asset][lenderId];
 
-        address borrowAsset = USDC;
+        address borrowAsset = TokensMantle.USDC;
         address debtAsset = debtTokens[borrowAsset][lenderId];
 
         {
@@ -378,78 +378,78 @@ contract GeneralMoeLBTest is DeltaSetup {
 
     function getOpenExactInMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         (uint8 actionId, uint8 midId, uint8 endId) = getOpenExactInFlags();
-        uint8 poolId = MERCHANT_MOE;
-        address pool = testQuoter._v2TypePairAddress(USDe, tokenIn, MERCHANT_MOE);
-        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, MERCHANT_MOE_FEE_DENOM, USDe);
-        poolId = MERCHANT_MOE_LB;
-        pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenOut, USDe, BIN_STEP_LOWEST).LBPair;
-        return abi.encodePacked(firstPart, midId, poolId, pool, tokenOut, DEFAULT_LENDER, endId);
+        uint8 poolId = DexMappingsMantle.MERCHANT_MOE;
+        address pool = testQuoter.v2TypePairAddress(TokensMantle.USDe, tokenIn, DexMappingsMantle.MERCHANT_MOE);
+        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, MERCHANT_MOE_FEE_DENOM, TokensMantle.USDe);
+        poolId = DexMappingsMantle.MERCHANT_MOE_LB;
+        pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenOut, TokensMantle.USDe, BIN_STEP_LOWEST).LBPair;
+        return abi.encodePacked(firstPart, midId, poolId, pool, tokenOut, LenderMappingsMantle.LENDLE_ID, endId);
     }
 
     function getSpotExactInSingleLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = BIN_STEP_LOWEST;
-        uint8 poolId = MERCHANT_MOE_LB;
+        uint8 poolId = DexMappingsMantle.MERCHANT_MOE_LB;
         address pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenOut, tokenIn, fee).LBPair;
         return abi.encodePacked(tokenIn, uint8(10), poolId, pool, tokenOut, uint8(99));
     }
 
     function getSpotExactOutSingleLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        uint8 poolId = MERCHANT_MOE_LB;
+        uint8 poolId = DexMappingsMantle.MERCHANT_MOE_LB;
         address pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenOut, tokenIn, BIN_STEP_LOWEST).LBPair;
         return abi.encodePacked(tokenOut, uint8(0), poolId, pool, tokenIn);
     }
 
     function getSpotExactOutMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        uint8 poolId = MERCHANT_MOE_LB;
-        address pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenOut, USDT, BIN_STEP_LOWEST).LBPair;
+        uint8 poolId = DexMappingsMantle.MERCHANT_MOE_LB;
+        address pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenOut, TokensMantle.USDT, BIN_STEP_LOWEST).LBPair;
 
-        bytes memory firstPart = abi.encodePacked(tokenOut, uint8(0), poolId, pool, USDT);
-        poolId = MERCHANT_MOE;
-        pool = testQuoter._v2TypePairAddress(USDT, tokenIn, MERCHANT_MOE);
+        bytes memory firstPart = abi.encodePacked(tokenOut, uint8(0), poolId, pool, TokensMantle.USDT);
+        poolId = DexMappingsMantle.MERCHANT_MOE;
+        pool = testQuoter.v2TypePairAddress(TokensMantle.USDT, tokenIn, DexMappingsMantle.MERCHANT_MOE);
         return abi.encodePacked(firstPart, uint8(0), poolId, pool, MERCHANT_MOE_FEE_DENOM, tokenIn);
     }
 
     function getSpotExactOutMultiLBEnd(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
-        uint8 poolId = MERCHANT_MOE;
-        address pool = testQuoter._v2TypePairAddress(USDT, tokenOut, MERCHANT_MOE);
-        bytes memory firstPart = abi.encodePacked(tokenOut, uint8(0), poolId, pool, MERCHANT_MOE_FEE_DENOM, USDT);
-        poolId = MERCHANT_MOE_LB;
-        pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenIn, USDT, BIN_STEP_LOWEST).LBPair;
+        uint8 poolId = DexMappingsMantle.MERCHANT_MOE;
+        address pool = testQuoter.v2TypePairAddress(TokensMantle.USDT, tokenOut, DexMappingsMantle.MERCHANT_MOE);
+        bytes memory firstPart = abi.encodePacked(tokenOut, uint8(0), poolId, pool, MERCHANT_MOE_FEE_DENOM, TokensMantle.USDT);
+        poolId = DexMappingsMantle.MERCHANT_MOE_LB;
+        pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenIn, TokensMantle.USDT, BIN_STEP_LOWEST).LBPair;
         return abi.encodePacked(firstPart, uint8(0), poolId, pool, tokenIn);
     }
 
     function getSpotExactInMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         (uint8 actionId, uint8 midId, uint8 endId) = getOpenExactInFlags();
-        uint8 poolId = AGNI;
-        address pool = testQuoter._v3TypePool(USDT, tokenIn, poolId, DEX_FEE_LOW);
-        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, DEX_FEE_LOW, USDT);
-        poolId = MERCHANT_MOE_LB;
-        pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenOut, USDT, BIN_STEP_LOWEST).LBPair;
+        uint8 poolId = DexMappingsMantle.AGNI;
+        address pool = testQuoter.v3TypePool(TokensMantle.USDT, tokenIn, poolId, DEX_FEE_LOW);
+        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, DEX_FEE_LOW, TokensMantle.USDT);
+        poolId = DexMappingsMantle.MERCHANT_MOE_LB;
+        pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenOut, TokensMantle.USDT, BIN_STEP_LOWEST).LBPair;
         return abi.encodePacked(firstPart, midId, poolId, pool, tokenOut, endId);
     }
 
     function getOpenExactOutMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         (uint8 actionId, uint8 midId, uint8 endId) = getOpenExactOutFlags();
-        address pool = testQuoter._v2TypePairAddress(USDe, tokenOut, MERCHANT_MOE);
-        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, MERCHANT_MOE, pool, MERCHANT_MOE_FEE_DENOM, USDe);
-        pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenIn, USDe, BIN_STEP_LOWEST).LBPair;
-        return abi.encodePacked(firstPart, midId, MERCHANT_MOE_LB, pool, tokenIn, DEFAULT_LENDER, endId);
+        address pool = testQuoter.v2TypePairAddress(TokensMantle.USDe, tokenOut, DexMappingsMantle.MERCHANT_MOE);
+        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, DexMappingsMantle.MERCHANT_MOE, pool, MERCHANT_MOE_FEE_DENOM, TokensMantle.USDe);
+        pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenIn, TokensMantle.USDe, BIN_STEP_LOWEST).LBPair;
+        return abi.encodePacked(firstPart, midId, DexMappingsMantle.MERCHANT_MOE_LB, pool, tokenIn, LenderMappingsMantle.LENDLE_ID, endId);
     }
 
     function getCloseExactOutMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         (uint8 actionId, uint8 midId, uint8 endId) = getCloseExactOutFlags();
-        address pool = testQuoter._v2TypePairAddress(USDe, tokenOut, MERCHANT_MOE);
-        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, MERCHANT_MOE, pool, MERCHANT_MOE_FEE_DENOM, USDe);
-        pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenIn, USDe, BIN_STEP_LOWEST).LBPair;
-        return abi.encodePacked(firstPart, midId, MERCHANT_MOE_LB, pool, tokenIn, DEFAULT_LENDER, endId);
+        address pool = testQuoter.v2TypePairAddress(TokensMantle.USDe, tokenOut, DexMappingsMantle.MERCHANT_MOE);
+        bytes memory firstPart = abi.encodePacked(tokenOut, actionId, DexMappingsMantle.MERCHANT_MOE, pool, MERCHANT_MOE_FEE_DENOM, TokensMantle.USDe);
+        pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenIn, TokensMantle.USDe, BIN_STEP_LOWEST).LBPair;
+        return abi.encodePacked(firstPart, midId, DexMappingsMantle.MERCHANT_MOE_LB, pool, tokenIn, LenderMappingsMantle.LENDLE_ID, endId);
     }
 
     function getCloseExactInMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         (uint8 actionId, uint8 midId, uint8 endId) = getCloseExactInFlags();
-        address pool = testQuoter._v2TypePairAddress(USDe, tokenIn, MERCHANT_MOE);
-        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, MERCHANT_MOE, pool, MERCHANT_MOE_FEE_DENOM, USDe);
-        pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenOut, USDe, BIN_STEP_LOWEST).LBPair;
-        return abi.encodePacked(firstPart, midId, MERCHANT_MOE_LB, pool, tokenOut, DEFAULT_LENDER, endId);
+        address pool = testQuoter.v2TypePairAddress(TokensMantle.USDe, tokenIn, DexMappingsMantle.MERCHANT_MOE);
+        bytes memory firstPart = abi.encodePacked(tokenIn, actionId, DexMappingsMantle.MERCHANT_MOE, pool, MERCHANT_MOE_FEE_DENOM, TokensMantle.USDe);
+        pool = ILBFactory(MERCHANT_MOE_LB_FACTORY).getLBPairInformation(tokenOut, TokensMantle.USDe, BIN_STEP_LOWEST).LBPair;
+        return abi.encodePacked(firstPart, midId, DexMappingsMantle.MERCHANT_MOE_LB, pool, tokenOut, LenderMappingsMantle.LENDLE_ID, endId);
     }
 
     /** DEPO AND BORROW HELPER */
@@ -459,16 +459,16 @@ contract GeneralMoeLBTest is DeltaSetup {
         vm.prank(user);
         IERC20All(asset).approve(brokerProxyAddress, amount);
         bytes memory t = transferIn(asset, brokerProxyAddress, amount);
-        bytes memory d = deposit(asset, user, amount, DEFAULT_LENDER);
+        bytes memory d = deposit(asset, user, amount, LenderMappingsMantle.LENDLE_ID);
         vm.prank(user);
         IFlashAggregator(brokerProxyAddress).deltaCompose(abi.encodePacked(t, d));
     }
 
     function _borrow(address user, address asset, uint256 amount) internal {
-        address debtAsset = debtTokens[asset][DEFAULT_LENDER];
+        address debtAsset = debtTokens[asset][LenderMappingsMantle.LENDLE_ID];
         vm.prank(user);
         IERC20All(debtAsset).approveDelegation(brokerProxyAddress, amount);
         vm.prank(user);
-        IFlashAggregator(brokerProxyAddress).deltaCompose(borrow(asset, user, amount, DEFAULT_LENDER, DEFAULT_MODE));
+        IFlashAggregator(brokerProxyAddress).deltaCompose(borrow(asset, user, amount, LenderMappingsMantle.LENDLE_ID, DEFAULT_MODE));
     }
 }

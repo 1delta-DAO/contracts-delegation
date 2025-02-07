@@ -2,7 +2,8 @@
 pragma solidity ^0.8.19;
 
 import {AddressesEthereum} from "./utils/CommonAddresses.f.sol";
-import "../../contracts/1delta/quoter/test/TestQuoterPolygon.sol";
+import {QuoterPolygon} from "../../contracts/1delta/quoter/Polygon.sol";
+import {PoolGetter} from "../../contracts/1delta/quoter/poolGetter/Polygon.sol";
 import {MockRouter} from "../../contracts/mocks/MockRouter.sol";
 import {ComposerUtils, Commands} from "../shared/utils/ComposerUtils.sol";
 
@@ -38,13 +39,15 @@ import {Test} from "forge-std/Test.sol";
 
 import {AaveV3EthereumAssets, AaveV3Ethereum} from "./utils/lender/aaveAddresses.sol";
 import {SparkAddresses} from "./utils/lender/sparkAddresses.sol";
+import {DexMappingsEthereum} from "./utils/DexMappings.sol";
 
 abstract contract DeltaSetup is AddressesEthereum, ComposerUtils, Script, Test {
     address internal brokerProxyAddress;
     IBrokerProxy internal brokerProxy;
     IModuleConfig internal deltaConfig;
     IManagement internal management;
-    TestQuoterPolygon testQuoter;
+    PoolGetter testQuoter;
+    QuoterPolygon quoter;
     OneDeltaComposerEthereum internal aggregator;
     MockRouter router;
 
@@ -142,10 +145,8 @@ abstract contract DeltaSetup is AddressesEthereum, ComposerUtils, Script, Test {
     /** ADD AND APPROVE LENDER TOKENS */
 
     function initializeDeltaBase() internal virtual {
-        // quoter
-
-        testQuoter = new TestQuoterPolygon();
-        management.clearCache();
+        testQuoter = new PoolGetter();
+        quoter = new QuoterPolygon();
     }
 
     function initializeDeltaAaveV3() internal virtual {
@@ -250,8 +251,6 @@ abstract contract DeltaSetup is AddressesEthereum, ComposerUtils, Script, Test {
         management.approveAddress(assets, SparkAddresses.POOL);
     }
 
-
-
     function initializeDeltaCompound() internal virtual {
         // approve pools
         address[] memory assets = new address[](4);
@@ -306,7 +305,7 @@ abstract contract DeltaSetup is AddressesEthereum, ComposerUtils, Script, Test {
         initializeDeltaAaveV3();
         initializeDeltaSpark();
 
-        management.setValidTarget(address(router), address(router), true);
+        management.setValidTarget(address(router), true);
     }
 
     /** DEPOSIT AND OPEN TO SPIN UP POSITIONS */
@@ -481,38 +480,38 @@ abstract contract DeltaSetup is AddressesEthereum, ComposerUtils, Script, Test {
 
     function getOpenExactInSingle(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_LOW);
-        uint8 poolId = UNI_V3;
-        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
+        uint8 poolId = DexMappingsEthereum.UNI_V3;
+        address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
         (uint8 actionId, , uint8 endId) = getOpenExactInFlags();
         return abi.encodePacked(tokenIn, actionId, poolId, pool, fee, tokenOut, lenderId, endId);
     }
 
     function getOpenExactInSingle_izi(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_LOW_HIGH);
-        uint8 poolId = SOLIDLY_V3;
-        address pool = testQuoter._getiZiPool(tokenIn, tokenOut, fee);
+        uint8 poolId = DexMappingsEthereum.SOLIDLY_V3;
+        address pool = testQuoter.getiZiPool(tokenIn, tokenOut, fee);
         (uint8 actionId, , uint8 endId) = getOpenExactInFlags();
         return abi.encodePacked(tokenIn, actionId, poolId, pool, fee, tokenOut, lenderId, endId);
     }
 
     function getSpotExactInSingle_izi(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_LOW_HIGH);
-        uint8 poolId = SOLIDLY_V3;
-        address pool = testQuoter._getiZiPool(tokenIn, tokenOut, fee);
+        uint8 poolId = DexMappingsEthereum.SOLIDLY_V3;
+        address pool = testQuoter.getiZiPool(tokenIn, tokenOut, fee);
         return abi.encodePacked(tokenIn, uint8(0), poolId, pool, fee, tokenOut);
     }
 
     function getSpotExactOutSingle_izi(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_LOW_HIGH);
-        uint8 poolId = SOLIDLY_V3;
-        address pool = testQuoter._getiZiPool(tokenIn, tokenOut, fee);
+        uint8 poolId = DexMappingsEthereum.SOLIDLY_V3;
+        address pool = testQuoter.getiZiPool(tokenIn, tokenOut, fee);
         return abi.encodePacked(tokenOut, uint8(0), poolId, pool, fee, tokenIn);
     }
 
     function getOpenExactOutSingle(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_LOW);
-        uint8 poolId = UNI_V3;
-        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
+        uint8 poolId = DexMappingsEthereum.UNI_V3;
+        address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
         (uint8 actionId, , uint8 endId) = getOpenExactOutFlags();
         return abi.encodePacked(tokenOut, actionId, poolId, pool, fee, tokenIn, lenderId, endId);
     }
@@ -520,24 +519,24 @@ abstract contract DeltaSetup is AddressesEthereum, ComposerUtils, Script, Test {
     function getOpenExactInMulti(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_LOW);
         (uint8 actionId, uint8 midId, uint8 endId) = getOpenExactInFlags();
-        uint8 poolId = SOLIDLY_V3;
-        address pool = testQuoter._getiZiPool(tokenIn, USDT, fee);
+        uint8 poolId = DexMappingsEthereum.SOLIDLY_V3;
+        address pool = testQuoter.getiZiPool(tokenIn, USDT, fee);
         bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, fee, USDT);
         fee = uint16(DEX_FEE_STABLES);
-        poolId = SUSHI_V3;
-        pool = testQuoter._v3TypePool(USDT, tokenOut, fee, poolId);
+        poolId = DexMappingsEthereum.SUSHI_V3;
+        pool = testQuoter.v3TypePool(USDT, tokenOut, fee, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenOut, lenderId, endId);
     }
 
     function getOpenExactOutMulti(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_STABLES);
         (uint8 actionId, uint8 midId, uint8 endId) = getOpenExactOutFlags();
-        uint8 poolId = SUSHI_V3;
-        address pool = testQuoter._v3TypePool(tokenOut, USDT, fee, poolId);
+        uint8 poolId = DexMappingsEthereum.SUSHI_V3;
+        address pool = testQuoter.v3TypePool(tokenOut, USDT, fee, poolId);
         bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, fee, USDT);
         fee = uint16(DEX_FEE_LOW);
-        poolId = SOLIDLY_V3;
-        pool = testQuoter._getiZiPool(USDT, tokenIn, fee);
+        poolId = DexMappingsEthereum.SOLIDLY_V3;
+        pool = testQuoter.getiZiPool(USDT, tokenIn, fee);
         return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenIn, lenderId, endId);
     }
 
@@ -545,16 +544,16 @@ abstract contract DeltaSetup is AddressesEthereum, ComposerUtils, Script, Test {
 
     function getCloseExactOutSingle(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_LOW);
-        uint8 poolId = UNI_V3;
-        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
+        uint8 poolId = DexMappingsEthereum.UNI_V3;
+        address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
         (uint8 actionId, , uint8 endId) = getCloseExactOutFlags();
         return abi.encodePacked(tokenOut, actionId, poolId, pool, fee, tokenIn, lenderId, endId);
     }
 
     function getCloseExactInSingle(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_LOW);
-        uint8 poolId = UNI_V3;
-        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
+        uint8 poolId = DexMappingsEthereum.UNI_V3;
+        address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
         (uint8 actionId, , uint8 endId) = getCloseExactInFlags();
         return abi.encodePacked(tokenIn, actionId, poolId, pool, fee, tokenOut, lenderId, endId);
     }
@@ -562,24 +561,24 @@ abstract contract DeltaSetup is AddressesEthereum, ComposerUtils, Script, Test {
     function getCloseExactInMulti(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_LOW);
         (uint8 actionId, uint8 midId, uint8 endId) = getCloseExactInFlags();
-        uint8 poolId = SOLIDLY_V3;
-        address pool = testQuoter._getiZiPool(USDT, tokenIn, fee);
+        uint8 poolId = DexMappingsEthereum.SOLIDLY_V3;
+        address pool = testQuoter.getiZiPool(USDT, tokenIn, fee);
         bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, fee, USDT);
         fee = uint16(DEX_FEE_STABLES);
-        poolId = SUSHI_V3;
-        pool = testQuoter._v3TypePool(USDT, tokenOut, fee, poolId);
+        poolId = DexMappingsEthereum.SUSHI_V3;
+        pool = testQuoter.v3TypePool(USDT, tokenOut, fee, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenOut, lenderId, endId);
     }
 
     function getCloseExactOutMulti(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_STABLES);
         (uint8 actionId, uint8 midId, uint8 endId) = getCloseExactOutFlags();
-        uint8 poolId = SUSHI_V3;
-        address pool = testQuoter._v3TypePool(USDT, tokenOut, fee, poolId);
+        uint8 poolId = DexMappingsEthereum.SUSHI_V3;
+        address pool = testQuoter.v3TypePool(USDT, tokenOut, fee, poolId);
         bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, fee, USDT);
         fee = uint16(DEX_FEE_LOW);
-        poolId = SOLIDLY_V3;
-        pool = testQuoter._getiZiPool(USDT, tokenIn, fee);
+        poolId = DexMappingsEthereum.SOLIDLY_V3;
+        pool = testQuoter.getiZiPool(USDT, tokenIn, fee);
         return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenIn, lenderId, endId);
     }
 
@@ -587,16 +586,16 @@ abstract contract DeltaSetup is AddressesEthereum, ComposerUtils, Script, Test {
 
     function getCollateralSwapExactInSingle(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_LOW);
-        uint8 poolId = UNI_V3;
-        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
+        uint8 poolId = DexMappingsEthereum.UNI_V3;
+        address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
         (uint8 actionId, , uint8 endId) = getCollateralSwapExactInFlags();
         return abi.encodePacked(tokenIn, actionId, poolId, pool, fee, tokenOut, lenderId, endId);
     }
 
     function getCollateralSwapExactOutSingle(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_LOW);
-        uint8 poolId = UNI_V3;
-        address pool = testQuoter._v3TypePool(tokenIn, tokenOut, fee, poolId);
+        uint8 poolId = DexMappingsEthereum.UNI_V3;
+        address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
         (uint8 actionId, , uint8 endId) = getCollateralSwapExactOutFlags();
         return abi.encodePacked(tokenOut, actionId, poolId, pool, fee, tokenIn, lenderId, endId);
     }
@@ -604,24 +603,24 @@ abstract contract DeltaSetup is AddressesEthereum, ComposerUtils, Script, Test {
     function getCollateralSwapExactInMulti(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_LOW_MEDIUM);
         (uint8 actionId, uint8 midId, uint8 endId) = getCollateralSwapExactInFlags();
-        uint8 poolId = UNI_V3;
-        address pool = testQuoter._v3TypePool(tokenIn, WETH, fee, poolId);
+        uint8 poolId = DexMappingsEthereum.UNI_V3;
+        address pool = testQuoter.v3TypePool(tokenIn, WETH, fee, poolId);
         bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, fee, WETH);
         fee = uint16(DEX_FEE_LOW);
-        poolId = SUSHI_V3;
-        pool = testQuoter._v3TypePool(tokenOut, WETH, fee, poolId);
+        poolId = DexMappingsEthereum.SUSHI_V3;
+        pool = testQuoter.v3TypePool(tokenOut, WETH, fee, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenOut, lenderId, endId);
     }
 
     function getCollateralSwapExactOutMulti(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_LOW_MEDIUM);
         (uint8 actionId, uint8 midId, uint8 endId) = getCollateralSwapExactOutFlags();
-        uint8 poolId = UNI_V3;
-        address pool = testQuoter._v3TypePool(tokenOut, WETH, fee, poolId);
+        uint8 poolId = DexMappingsEthereum.UNI_V3;
+        address pool = testQuoter.v3TypePool(tokenOut, WETH, fee, poolId);
         bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, fee, WETH);
         fee = uint16(DEX_FEE_LOW);
-        poolId = SUSHI_V3;
-        pool = testQuoter._v3TypePool(tokenIn, WETH, fee, poolId);
+        poolId = DexMappingsEthereum.SUSHI_V3;
+        pool = testQuoter.v3TypePool(tokenIn, WETH, fee, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenIn, lenderId, endId);
     }
 
@@ -629,16 +628,16 @@ abstract contract DeltaSetup is AddressesEthereum, ComposerUtils, Script, Test {
 
     function getDebtSwapExactInSingle(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_LOW_MEDIUM);
-        uint8 poolId = UNI_V3;
-        address pool = testQuoter._v3TypePool(tokenOut, tokenIn, fee, poolId);
+        uint8 poolId = DexMappingsEthereum.UNI_V3;
+        address pool = testQuoter.v3TypePool(tokenOut, tokenIn, fee, poolId);
         (uint8 actionId, , uint8 endId) = getDebtSwapExactInFlags();
         return abi.encodePacked(tokenIn, actionId, poolId, pool, fee, tokenOut, lenderId, endId);
     }
 
     function getDebtSwapExactOutSingle(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_LOW_MEDIUM);
-        uint8 poolId = UNI_V3;
-        address pool = testQuoter._v3TypePool(tokenOut, tokenIn, fee, poolId);
+        uint8 poolId = DexMappingsEthereum.UNI_V3;
+        address pool = testQuoter.v3TypePool(tokenOut, tokenIn, fee, poolId);
         (uint8 actionId, , uint8 endId) = getDebtSwapExactOutFlags();
         return abi.encodePacked(tokenOut, actionId, poolId, pool, fee, tokenIn, lenderId, endId);
     }
@@ -646,167 +645,167 @@ abstract contract DeltaSetup is AddressesEthereum, ComposerUtils, Script, Test {
     function getDebtSwapExactInMulti(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_LOW);
         (uint8 actionId, uint8 midId, uint8 endId) = getDebtSwapExactInFlags();
-        uint8 poolId = PANCAKE_V3;
-        address pool = testQuoter._v3TypePool(tokenIn, USDT, fee, poolId);
+        uint8 poolId = DexMappingsEthereum.PANCAKE_V3;
+        address pool = testQuoter.v3TypePool(tokenIn, USDT, fee, poolId);
         bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, fee, USDT);
         fee = uint16(DEX_FEE_LOW);
-        poolId = PANCAKE_V3;
-        pool = testQuoter._v3TypePool(tokenOut, USDT, fee, poolId);
+        poolId = DexMappingsEthereum.PANCAKE_V3;
+        pool = testQuoter.v3TypePool(tokenOut, USDT, fee, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenOut, lenderId, endId);
     }
 
     function getDebtSwapExactOutMulti(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_LOW);
         (uint8 actionId, uint8 midId, uint8 endId) = getDebtSwapExactOutFlags();
-        uint8 poolId = PANCAKE_V3;
-        address pool = testQuoter._v3TypePool(tokenOut, USDT, fee, poolId);
+        uint8 poolId = DexMappingsEthereum.PANCAKE_V3;
+        address pool = testQuoter.v3TypePool(tokenOut, USDT, fee, poolId);
         bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, fee, USDT);
         fee = uint16(DEX_FEE_LOW);
-        poolId = PANCAKE_V3;
-        pool = testQuoter._v3TypePool(tokenIn, USDT, fee, poolId);
+        poolId = DexMappingsEthereum.PANCAKE_V3;
+        pool = testQuoter.v3TypePool(tokenIn, USDT, fee, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenIn, lenderId, endId);
     }
 
     /** OPEN */
 
     function getOpenExactInSingleV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint8 poolId = UNI_V2;
+        uint8 poolId = DexMappingsEthereum.UNI_V2;
         (uint8 actionId, , uint8 endId) = getOpenExactInFlags();
-        address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
+        address pool = testQuoter.v2TypePairAddress(tokenIn, tokenOut, poolId);
         return abi.encodePacked(tokenIn, actionId, poolId, pool, tokenOut, lenderId, endId);
     }
 
     function getOpenExactOutSingleV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint8 poolId = UNI_V2;
+        uint8 poolId = DexMappingsEthereum.UNI_V2;
         (uint8 actionId, , uint8 endId) = getOpenExactOutFlags();
-        address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
+        address pool = testQuoter.v2TypePairAddress(tokenIn, tokenOut, poolId);
         return abi.encodePacked(tokenOut, actionId, poolId, pool, tokenIn, lenderId, endId);
     }
 
     function getOpenExactInMultiV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
         (uint8 actionId, uint8 midId, uint8 endId) = getOpenExactInFlags();
-        uint8 poolId = UNI_V2;
-        address pool = testQuoter._v2TypePairAddress(tokenIn, USDT, poolId);
+        uint8 poolId = DexMappingsEthereum.UNI_V2;
+        address pool = testQuoter.v2TypePairAddress(tokenIn, USDT, poolId);
         bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, USDT);
-        poolId = UNI_V2;
-        pool = testQuoter._v2TypePairAddress(USDT, tokenOut, poolId);
+        poolId = DexMappingsEthereum.UNI_V2;
+        pool = testQuoter.v2TypePairAddress(USDT, tokenOut, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, tokenOut, lenderId, endId);
     }
 
     function getOpenExactOutMultiV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
         (uint8 actionId, uint8 midId, uint8 endId) = getOpenExactOutFlags();
-        uint8 poolId = UNI_V2;
-        address pool = testQuoter._v2TypePairAddress(USDT, tokenOut, poolId);
+        uint8 poolId = DexMappingsEthereum.UNI_V2;
+        address pool = testQuoter.v2TypePairAddress(USDT, tokenOut, poolId);
         bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, USDT);
-        pool = testQuoter._v2TypePairAddress(tokenIn, USDT, poolId);
+        pool = testQuoter.v2TypePairAddress(tokenIn, USDT, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, tokenIn, lenderId, endId);
     }
 
     /** CLOSE */
 
     function getCloseExactOutSingleV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint8 poolId = UNI_V2;
-        address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
+        uint8 poolId = DexMappingsEthereum.UNI_V2;
+        address pool = testQuoter.v2TypePairAddress(tokenIn, tokenOut, poolId);
         (uint8 actionId, , uint8 endId) = getCloseExactOutFlags();
         return abi.encodePacked(tokenOut, actionId, poolId, pool, tokenIn, lenderId, endId);
     }
 
     function getCloseExactInSingleV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint8 poolId = UNI_V2;
-        address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
+        uint8 poolId = DexMappingsEthereum.UNI_V2;
+        address pool = testQuoter.v2TypePairAddress(tokenIn, tokenOut, poolId);
         (uint8 actionId, , uint8 endId) = getCloseExactInFlags();
         return abi.encodePacked(tokenIn, actionId, poolId, pool, tokenOut, lenderId, endId);
     }
 
     function getCloseExactInMultiV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
         (uint8 actionId, uint8 midId, uint8 endId) = getCloseExactInFlags();
-        uint8 poolId = UNI_V2;
-        address pool = testQuoter._v2TypePairAddress(tokenIn, USDT, poolId);
+        uint8 poolId = DexMappingsEthereum.UNI_V2;
+        address pool = testQuoter.v2TypePairAddress(tokenIn, USDT, poolId);
         bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, USDT);
-        poolId = UNI_V2;
-        pool = testQuoter._v2TypePairAddress(tokenOut, USDT, poolId);
+        poolId = DexMappingsEthereum.UNI_V2;
+        pool = testQuoter.v2TypePairAddress(tokenOut, USDT, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, tokenOut, lenderId, endId);
     }
 
     function getCloseExactOutMultiV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
         (uint8 actionId, uint8 midId, uint8 endId) = getCloseExactOutFlags();
-        uint8 poolId = UNI_V2;
-        address pool = testQuoter._v2TypePairAddress(tokenOut, USDT, poolId);
+        uint8 poolId = DexMappingsEthereum.UNI_V2;
+        address pool = testQuoter.v2TypePairAddress(tokenOut, USDT, poolId);
         bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, USDT);
-        poolId = UNI_V2;
-        pool = testQuoter._v2TypePairAddress(tokenIn, USDT, poolId);
+        poolId = DexMappingsEthereum.UNI_V2;
+        pool = testQuoter.v2TypePairAddress(tokenIn, USDT, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, tokenIn, lenderId, endId);
     }
 
     /** COLLATERAL SWAP */
 
     function getCollateralSwapExactInSingleV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint8 poolId = UNI_V2;
-        address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
+        uint8 poolId = DexMappingsEthereum.UNI_V2;
+        address pool = testQuoter.v2TypePairAddress(tokenIn, tokenOut, poolId);
         (uint8 actionId, , uint8 endId) = getCollateralSwapExactInFlags();
         return abi.encodePacked(tokenIn, actionId, poolId, pool, tokenOut, lenderId, endId);
     }
 
     function getCollateralSwapExactOutSingleV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint8 poolId = UNI_V2;
-        address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
+        uint8 poolId = DexMappingsEthereum.UNI_V2;
+        address pool = testQuoter.v2TypePairAddress(tokenIn, tokenOut, poolId);
         (uint8 actionId, , uint8 endId) = getCollateralSwapExactOutFlags();
         return abi.encodePacked(tokenOut, actionId, poolId, pool, tokenIn, lenderId, endId);
     }
 
     function getCollateralSwapExactInMultiV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
         (uint8 actionId, uint8 midId, uint8 endId) = getCollateralSwapExactInFlags();
-        uint8 poolId = UNI_V2;
-        address pool = testQuoter._v2TypePairAddress(tokenIn, WETH, poolId);
+        uint8 poolId = DexMappingsEthereum.UNI_V2;
+        address pool = testQuoter.v2TypePairAddress(tokenIn, WETH, poolId);
         bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, WETH);
-        poolId = UNI_V2;
-        pool = testQuoter._v2TypePairAddress(tokenOut, WETH, poolId);
+        poolId = DexMappingsEthereum.UNI_V2;
+        pool = testQuoter.v2TypePairAddress(tokenOut, WETH, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, tokenOut, lenderId, endId);
     }
 
     function getCollateralSwapExactOutMultiV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
         (uint8 actionId, uint8 midId, uint8 endId) = getCollateralSwapExactOutFlags();
-        uint8 poolId = UNI_V2;
-        address pool = testQuoter._v2TypePairAddress(tokenOut, WETH, poolId);
+        uint8 poolId = DexMappingsEthereum.UNI_V2;
+        address pool = testQuoter.v2TypePairAddress(tokenOut, WETH, poolId);
         bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, WETH);
-        poolId = UNI_V2;
-        pool = testQuoter._v2TypePairAddress(tokenIn, WETH, poolId);
+        poolId = DexMappingsEthereum.UNI_V2;
+        pool = testQuoter.v2TypePairAddress(tokenIn, WETH, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, tokenIn, lenderId, endId);
     }
 
     /** DEBT SWAP */
 
     function getDebtSwapExactInSingleV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint8 poolId = UNI_V2;
-        address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
+        uint8 poolId = DexMappingsEthereum.UNI_V2;
+        address pool = testQuoter.v2TypePairAddress(tokenIn, tokenOut, poolId);
         (uint8 actionId, , uint8 endId) = getDebtSwapExactInFlags();
         return abi.encodePacked(tokenIn, actionId, poolId, pool, tokenOut, lenderId, endId);
     }
 
     function getDebtSwapExactOutSingleV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
-        uint8 poolId = UNI_V2;
-        address pool = testQuoter._v2TypePairAddress(tokenIn, tokenOut, poolId);
+        uint8 poolId = DexMappingsEthereum.UNI_V2;
+        address pool = testQuoter.v2TypePairAddress(tokenIn, tokenOut, poolId);
         (uint8 actionId, , uint8 endId) = getDebtSwapExactOutFlags();
         return abi.encodePacked(tokenOut, actionId, poolId, pool, tokenIn, lenderId, endId);
     }
 
     function getDebtSwapExactInMultiV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
         (uint8 actionId, uint8 midId, uint8 endId) = getDebtSwapExactInFlags();
-        uint8 poolId = UNI_V2;
-        address pool = testQuoter._v2TypePairAddress(tokenIn, WETH, poolId);
+        uint8 poolId = DexMappingsEthereum.UNI_V2;
+        address pool = testQuoter.v2TypePairAddress(tokenIn, WETH, poolId);
         bytes memory firstPart = abi.encodePacked(tokenIn, actionId, poolId, pool, WETH);
-        poolId = UNI_V2;
-        pool = testQuoter._v2TypePairAddress(tokenOut, WETH, poolId);
+        poolId = DexMappingsEthereum.UNI_V2;
+        pool = testQuoter.v2TypePairAddress(tokenOut, WETH, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, tokenOut, lenderId, endId);
     }
 
     function getDebtSwapExactOutMultiV2(address tokenIn, address tokenOut, uint8 lenderId) internal view returns (bytes memory data) {
         (uint8 actionId, uint8 midId, uint8 endId) = getDebtSwapExactOutFlags();
-        uint8 poolId = UNI_V2;
-        address pool = testQuoter._v2TypePairAddress(tokenOut, WETH, poolId);
+        uint8 poolId = DexMappingsEthereum.UNI_V2;
+        address pool = testQuoter.v2TypePairAddress(tokenOut, WETH, poolId);
         bytes memory firstPart = abi.encodePacked(tokenOut, actionId, poolId, pool, WETH);
-        poolId = UNI_V2;
-        pool = testQuoter._v2TypePairAddress(tokenIn, WETH, poolId);
+        poolId = DexMappingsEthereum.UNI_V2;
+        pool = testQuoter.v2TypePairAddress(tokenIn, WETH, poolId);
         return abi.encodePacked(firstPart, midId, poolId, pool, tokenIn, lenderId, endId);
     }
 

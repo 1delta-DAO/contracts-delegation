@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity 0.8.27;
+pragma solidity 0.8.28;
 
 /******************************************************************************\
 * Author: Achthar | 1delta 
@@ -419,7 +419,7 @@ abstract contract BaseSwapper is BaseLending, PermitUtils {
                     }
                 }
             }
-            amountIn = _swapCurveNG(pathOffset, amountIn, currentReceiver);
+            amountIn = _swapCurveReceived(pathOffset, amountIn, currentReceiver);
             assembly {
                 pathOffset := add(pathOffset, SKIP_LENGTH_CURVE_NG)
                 pathLength := sub(pathLength, SKIP_LENGTH_CURVE_NG)

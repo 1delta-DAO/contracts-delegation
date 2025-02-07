@@ -6,13 +6,14 @@ import "./DeltaSetup.f.sol";
 contract MarginCloseTest is DeltaSetup {
     uint256 DEFAULT_IR_MODE = 2; // variable
 
-    function test_margin_mantle_close_exact_in(uint8 lenderId) external /** address user, uint8 lenderId */ {
+    function test_margin_mantle_close_exact_in(uint8 lenderIndex) external {
         address user = testUser;
-        vm.assume(user != address(0) && lenderId < 2);
-        address asset = USDC;
+        vm.assume(user != address(0) && validLenderIndex(lenderIndex));
+        uint16 lenderId = getLenderByIndex(lenderIndex);
+        address asset = TokensMantle.USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
 
-        address borrowAsset = WMNT;
+        address borrowAsset = TokensMantle.WMNT;
         address debtAsset = debtTokens[borrowAsset][lenderId];
 
         {
@@ -50,13 +51,14 @@ contract MarginCloseTest is DeltaSetup {
         assertApproxEqAbs(10439645077346007110, borrowBalance, 1);
     }
 
-    function test_margin_mantle_close_exact_in_multi(uint8 lenderId) external {
+    function test_margin_mantle_close_exact_in_multi(uint8 lenderIndex) external {
         address user = testUser;
-        vm.assume(user != address(0) && lenderId < 2);
-        address asset = USDC;
+        vm.assume(user != address(0) && validLenderIndex(lenderIndex));
+        uint16 lenderId = getLenderByIndex(lenderIndex);
+        address asset = TokensMantle.USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
 
-        address borrowAsset = WMNT;
+        address borrowAsset = TokensMantle.WMNT;
         address debtAsset = debtTokens[borrowAsset][lenderId];
 
         {
@@ -94,13 +96,14 @@ contract MarginCloseTest is DeltaSetup {
         assertApproxEqAbs(952522044675599421, borrowBalance, 1);
     }
 
-    function test_margin_mantle_close_exact_out(uint8 lenderId) external {
+    function test_margin_mantle_close_exact_out(uint8 lenderIndex) external {
         address user = testUser;
-        vm.assume(user != address(0) && lenderId < 2);
-        address asset = USDC;
+        vm.assume(user != address(0) && validLenderIndex(lenderIndex));
+        uint16 lenderId = getLenderByIndex(lenderIndex);
+        address asset = TokensMantle.USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
 
-        address borrowAsset = WMNT;
+        address borrowAsset = TokensMantle.WMNT;
         address debtAsset = debtTokens[borrowAsset][lenderId];
 
         {
@@ -126,6 +129,7 @@ contract MarginCloseTest is DeltaSetup {
             false,
             swapPath
         );
+        console.log("test");
         vm.prank(user);
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
 
@@ -138,13 +142,14 @@ contract MarginCloseTest is DeltaSetup {
         assertApproxEqAbs(amountOut, borrowBalance, 1);
     }
 
-    function test_margin_mantle_close_exact_out_multi(uint8 lenderId) external /** address user, uint8 lenderId */ {
+    function test_margin_mantle_close_exact_out_multi(uint8 lenderIndex) external {
         address user = testUser;
-        vm.assume(user != address(0) && lenderId < 2);
-        address asset = USDC;
+        vm.assume(user != address(0) && validLenderIndex(lenderIndex));
+        uint16 lenderId = getLenderByIndex(lenderIndex);
+        address asset = TokensMantle.USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
 
-        address borrowAsset = WMNT;
+        address borrowAsset = TokensMantle.WMNT;
         address debtAsset = debtTokens[borrowAsset][lenderId];
 
         {
@@ -184,20 +189,21 @@ contract MarginCloseTest is DeltaSetup {
         assertApproxEqAbs(amountOut, borrowBalance, 1);
     }
 
-    function test_margin_mantle_close_all_in(uint8 lenderId) external /** address user, uint8 lenderId */ {
+    function test_margin_mantle_close_all_in(uint8 lenderIndex) external {
         address user = testUser;
-        vm.assume(user != address(0) && lenderId < 2);
-        address asset = USDC;
+        vm.assume(user != address(0) && validLenderIndex(lenderIndex));
+        uint16 lenderId = getLenderByIndex(lenderIndex);
+        address asset = TokensMantle.USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
 
-        address borrowAsset = WMNT;
+        address borrowAsset = TokensMantle.WMNT;
         address debtAsset = debtTokens[borrowAsset][lenderId];
         uint256 amountIn = 15.0e6;
         {
             uint256 amountToDeposit = 10.0e6;
             uint256 amountToLeverage = 20.0e18;
             _deposit(asset, user, amountIn, lenderId);
-            openSimple(user, USDT, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
+            openSimple(user, TokensMantle.USDT, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
 
         bytes memory swapPath = getCloseExactInSingle(asset, borrowAsset, lenderId);
@@ -218,6 +224,7 @@ contract MarginCloseTest is DeltaSetup {
             swapPath
         );
 
+console.log("------------a");
         vm.prank(user);
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
 
@@ -234,13 +241,14 @@ contract MarginCloseTest is DeltaSetup {
         assertApproxEqAbs(9839155325003132124, borrowBalance, 1);
     }
 
-    function test_margin_mantle_close_all_out(uint8 lenderId) external {
+    function test_margin_mantle_close_all_out(uint8 lenderIndex) external {
         address user = testUser;
-        vm.assume(user != address(0) && lenderId < 2);
-        address asset = USDC;
+        vm.assume(user != address(0) && validLenderIndex(lenderIndex));
+        uint16 lenderId = getLenderByIndex(lenderIndex);
+        address asset = TokensMantle.USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
 
-        address borrowAsset = WMNT;
+        address borrowAsset = TokensMantle.WMNT;
         address debtAsset = debtTokens[borrowAsset][lenderId];
         uint256 amountToLeverage = 20.0e18;
 
@@ -285,13 +293,14 @@ contract MarginCloseTest is DeltaSetup {
 
     /** TESTS FOR THE V2 CALLBACKS */
 
-    function test_margin_mantle_close_exact_in_v2(uint8 lenderId) external /** address user, uint8 lenderId */ {
+    function test_margin_mantle_close_exact_in_v2(uint8 lenderIndex) external {
         address user = testUser;
-        vm.assume(user != address(0) && lenderId < 2);
-        address asset = USDC;
+        vm.assume(user != address(0) && validLenderIndex(lenderIndex));
+        uint16 lenderId = getLenderByIndex(lenderIndex);
+        address asset = TokensMantle.USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
 
-        address borrowAsset = WMNT;
+        address borrowAsset = TokensMantle.WMNT;
         address debtAsset = debtTokens[borrowAsset][lenderId];
 
         {
@@ -331,13 +340,14 @@ contract MarginCloseTest is DeltaSetup {
         assertApproxEqAbs(9963991004524402584, borrowBalance, 1);
     }
 
-    function test_margin_mantle_close_exact_in_multi_v2(uint8 lenderId) external {
+    function test_margin_mantle_close_exact_in_multi_v2(uint8 lenderIndex) external {
         address user = testUser;
-        vm.assume(user != address(0) && lenderId < 2);
-        address asset = USDC;
+        vm.assume(user != address(0) && validLenderIndex(lenderIndex));
+        uint16 lenderId = getLenderByIndex(lenderIndex);
+        address asset = TokensMantle.USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
 
-        address borrowAsset = WMNT;
+        address borrowAsset = TokensMantle.WMNT;
         address debtAsset = debtTokens[borrowAsset][lenderId];
 
         {
@@ -377,13 +387,14 @@ contract MarginCloseTest is DeltaSetup {
         assertApproxEqAbs(9912306024486705073, borrowBalance, 1);
     }
 
-    function test_margin_mantle_close_exact_out_v2(uint8 lenderId) external {
+    function test_margin_mantle_close_exact_out_v2(uint8 lenderIndex) external {
         address user = testUser;
-        vm.assume(user != address(0) && lenderId < 2);
-        address asset = USDC;
+        vm.assume(user != address(0) && validLenderIndex(lenderIndex));
+        uint16 lenderId = getLenderByIndex(lenderIndex);
+        address asset = TokensMantle.USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
 
-        address borrowAsset = WMNT;
+        address borrowAsset = TokensMantle.WMNT;
         address debtAsset = debtTokens[borrowAsset][lenderId];
 
         {
@@ -422,13 +433,14 @@ contract MarginCloseTest is DeltaSetup {
         assertApproxEqAbs(amountOut, borrowBalance, 1);
     }
 
-    function test_margin_mantle_close_all_out_v2(uint8 lenderId) external /** address user, uint8 lenderId */ {
+    function test_margin_mantle_close_all_out_v2(uint8 lenderIndex) external {
         address user = testUser;
-        vm.assume(user != address(0) && lenderId < 2);
-        address asset = USDC;
+        vm.assume(user != address(0) && validLenderIndex(lenderIndex));
+        uint16 lenderId = getLenderByIndex(lenderIndex);
+        address asset = TokensMantle.USDC;
         address collateralAsset = collateralTokens[asset][lenderId];
 
-        address borrowAsset = WMNT;
+        address borrowAsset = TokensMantle.WMNT;
         address debtAsset = debtTokens[borrowAsset][lenderId];
         uint256 amountToLeverage = 20.0e18;
 
@@ -469,18 +481,5 @@ contract MarginCloseTest is DeltaSetup {
         assertApproxEqAbs(30109865, balance, 1);
         // deviations through rouding expected, accuracy for 10 decimals
         assertApproxEqAbs(amountToLeverage, borrowBalance, 1);
-    }
-
-    /** HELPER FOR ALL IN */
-
-    function _deposit(address asset, address user, uint256 amount, uint8 lenderId) internal {
-        deal(asset, user, amount);
-
-        vm.prank(user);
-        IERC20All(asset).approve(brokerProxyAddress, amount);
-        bytes memory transferData = transferIn(asset, brokerProxyAddress, amount);
-        bytes memory data = deposit(asset, user, amount, lenderId);
-        vm.prank(user);
-        IFlashAggregator(brokerProxyAddress).deltaCompose(abi.encodePacked(transferData, data));
     }
 }

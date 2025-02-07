@@ -18,14 +18,14 @@ contract DodoTest is DeltaSetup {
     function test_mantle_dodo_spot_exact_in() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetIn = WBTC;
-        address assetOut = FBTC;
+        address assetIn = TokensMantle.WBTC;
+        address assetOut = TokensMantle.FBTC;
 
         deal(assetIn, user, 1e20);
 
         uint256 amountIn = 0.01e8;
 
-        uint256 quoted = testQuoter.quoteExactInput(
+        uint256 quoted = quoter.quoteExactInput(
             getQuoteSpotExactInSingleDodoV2(assetIn, assetOut, 1),
             amountIn //
         );
@@ -62,8 +62,8 @@ contract DodoTest is DeltaSetup {
     function test_mantle_dodo_spot_exact_in_multi() external {
         address user = testUser;
         vm.assume(user != address(0));
-        address assetIn = WBTC;
-        address assetOut = METH;
+        address assetIn = TokensMantle.WBTC;
+        address assetOut = TokensMantle.METH;
 
         deal(assetIn, user, 1e20);
 
@@ -104,8 +104,8 @@ contract DodoTest is DeltaSetup {
         fundSwap(someOtherUser);
 
         vm.assume(user != address(0));
-        address assetIn = FBTC;
-        address assetOut = WBTC;
+        address assetIn = TokensMantle.FBTC;
+        address assetOut = TokensMantle.WBTC;
 
         deal(assetIn, user, 1e20);
 
@@ -141,20 +141,20 @@ contract DodoTest is DeltaSetup {
 
     /** KTX PATH BUILDERS */
 
-    function getSpotExactInSingleDodoV2(address tokenIn, address tokenOut, uint8 sellQuote) internal view returns (bytes memory data) {
-        uint8 poolId = DODO;
+    function getSpotExactInSingleDodoV2(address tokenIn, address tokenOut, uint8 sellQuote) internal pure returns (bytes memory data) {
+        uint8 poolId = DexMappingsMantle.DODO;
         return abi.encodePacked(tokenIn, uint8(0), poolId, FBTC_WBTC_POOL, sellQuote, tokenOut);
     }
 
-    function getQuoteSpotExactInSingleDodoV2(address tokenIn, address tokenOut, uint8 sellQuote) internal view returns (bytes memory data) {
-        uint8 poolId = DODO;
+    function getQuoteSpotExactInSingleDodoV2(address tokenIn, address tokenOut, uint8 sellQuote) internal pure returns (bytes memory data) {
+        uint8 poolId = DexMappingsMantle.DODO;
         return abi.encodePacked(tokenIn, poolId, FBTC_WBTC_POOL, sellQuote, tokenOut);
     }
 
     function getSpotExactInSingleDodoV2Multi(address tokenIn, address tokenOut, uint8 sellQuote) internal view returns (bytes memory data) {
-        uint8 poolId = DODO;
+        uint8 poolId = DexMappingsMantle.DODO;
         uint16 fee = 2500;
-        address agniPool = testQuoter._v3TypePool(FBTC, tokenOut, fee, AGNI);
+        address agniPool = testQuoter.v3TypePool(TokensMantle.FBTC, tokenOut, fee, DexMappingsMantle.AGNI);
         return
             abi.encodePacked(
                 tokenIn,
@@ -164,7 +164,7 @@ contract DodoTest is DeltaSetup {
                 sellQuote,
                 FBTC,
                 uint8(0),
-                AGNI,
+                DexMappingsMantle.AGNI,
                 agniPool,
                 fee, //
                 tokenOut,
@@ -173,8 +173,8 @@ contract DodoTest is DeltaSetup {
     }
 
     function fundSwap(address user) internal {
-        address assetIn = WBTC;
-        address assetOut = FBTC;
+        address assetIn = TokensMantle.WBTC;
+        address assetOut = TokensMantle.FBTC;
 
         deal(assetIn, user, 1e20);
 
