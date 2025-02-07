@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.23;
 
-import {ECDSA} from "../../../../../external-protocols/openzeppelin/utils/cryptography/ECDSA.sol";
-import {SignatureChecker} from "../../../../../external-protocols/openzeppelin/utils/cryptography/SignatureChecker.sol";
+import {ECDSA} from "../../../external-protocols/openzeppelin/utils/cryptography/ECDSA.sol";
+import {SignatureChecker} from "../../../external-protocols/openzeppelin/utils/cryptography/SignatureChecker.sol";
 import {SIG_VALIDATION_FAILED} from "./account-abstraction/core/Helpers.sol";
 import {IEntryPoint} from "./account-abstraction/interfaces/IEntryPoint.sol";
 import {PackedUserOperation} from "./account-abstraction/interfaces/PackedUserOperation.sol";

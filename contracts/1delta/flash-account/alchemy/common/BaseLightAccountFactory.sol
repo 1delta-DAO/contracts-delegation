@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.23;
 
-import {Ownable2Step} from "../../../../../../external-protocols/openzeppelin/access/Ownable2Step.sol";
-import {IERC20} from "../../../../../../external-protocols/openzeppelin/token/ERC20/IERC20.sol";
-import {SafeERC20} from "../../../../../../external-protocols/openzeppelin/token/ERC20/utils/SafeERC20.sol";
-import {ERC165Checker} from "../../../../../../external-protocols/openzeppelin/utils/introspection/ERC165Checker.sol";
+import {Ownable2Step} from "../../../../external-protocols/openzeppelin/access/Ownable2Step.sol";
+import {IERC20} from "../../../../external-protocols/openzeppelin/token/ERC20/IERC20.sol";
+import {SafeERC20} from "../../../../external-protocols/openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import {ERC165Checker} from "../../../../external-protocols/openzeppelin/utils/introspection/ERC165Checker.sol";
 import {IEntryPoint} from "../account-abstraction/interfaces/IEntryPoint.sol";
 
 abstract contract BaseLightAccountFactory is Ownable2Step {

@@ -15,8 +15,8 @@ import "./Helpers.sol";
 import "./NonceManager.sol";
 import "./UserOperationLib.sol";
 
-import "../../../../../../../external-protocols/openzeppelin/utils/introspection/ERC165.sol";
-import "../../../../../../../external-protocols/openzeppelin/utils/ReentrancyGuard.sol";
+import "../../../../../external-protocols/openzeppelin/utils/introspection/ERC165.sol";
+import "../../../../../external-protocols/openzeppelin/utils/ReentrancyGuard.sol";
 
 /*
  * Account-Abstraction (EIP-4337) singleton EntryPoint implementation.
