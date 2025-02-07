@@ -3,8 +3,8 @@ pragma solidity ^0.8.23;
 
 /* solhint-disable reason-string */
 
-import "../../../../../external-protocols/openzeppelin/access/Ownable.sol";
-import "../../../../../external-protocols/openzeppelin/utils/introspection/IERC165.sol";
+import "../../../../external-protocols/openzeppelin/access/Ownable.sol";
+import "../../../../external-protocols/openzeppelin/utils/introspection/IERC165.sol";
 import "../interfaces/IPaymaster.sol";
 import "../interfaces/IEntryPoint.sol";
 import "./UserOperationLib.sol";

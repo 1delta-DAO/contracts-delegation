@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.23;
 
-import {Ownable} from "../../../external-protocols/openzeppelin/access/Ownable.sol";
+import {Ownable} from "../../external-protocols/openzeppelin/access/Ownable.sol";
 import {IEntryPoint} from "./account-abstraction/interfaces/IEntryPoint.sol";
 
 import {BaseLightAccountFactory} from "./common/BaseLightAccountFactory.sol";
