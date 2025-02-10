@@ -11,7 +11,7 @@ abstract contract ExecutionLock {
     /// inExecution = 2
     /// lockerd    != 2
     /// slot to store the inExecution flag
-    bytes32 private constant _IN_EXECUTION_SLOT = 0xff0471b67e4632a86905e3993f5377c608866007c59224eed7731408a9f3f8b5;
+    bytes32 private constant _IN_EXECUTION_SLOT = 0xff0471b0004632a86905e3993f5377c608866007c59224eed7731408a9f3f8b5;
 
     error NotInExecution();
 
@@ -30,8 +30,7 @@ abstract contract ExecutionLock {
     // checks whether the account is in execution
     modifier requireInExecution() {
         assembly {
-            let inExecution := sload(_IN_EXECUTION_SLOT)
-            if xor(2, sload(inExecution)) {
+            if xor(2, sload(_IN_EXECUTION_SLOT)) {
                 mstore(0x0, 0x0024332)
                 revert(0x0, 0x4)
             }
