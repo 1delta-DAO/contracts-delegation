@@ -5,19 +5,20 @@ import {Ownable} from "../../external-protocols/openzeppelin/access/Ownable.sol"
 import {IEntryPoint} from "./account-abstraction/interfaces/IEntryPoint.sol";
 
 import {BaseLightAccountFactory} from "./common/BaseLightAccountFactory.sol";
-import {LibClone} from "./external/solady/LibClone.sol";
-import {LightAccount} from "./LightAccount.sol";
+import {LibClone} from "./proxy/LibClone.sol";
+import {IBeacon} from "./proxy/IBeacon.sol";
+import {FlashAccount} from "./FlashAccount.sol";
 
-/// @title A factory contract for LightAccount.
+/// @title A factory contract for FlashAccount, baed on LightAccountFactory by Alchemy.
 /// @dev A UserOperations "initCode" holds the address of the factory, and a method call (`createAccount`). The
 /// factory's `createAccount` returns the target account address even if it is already installed. This way,
 /// `entryPoint.getSenderAddress()` can be called either before or after the account is created.
-contract LightAccountFactory is BaseLightAccountFactory {
-    LightAccount public immutable ACCOUNT_IMPLEMENTATION;
+contract FlashAccountFactory is BaseLightAccountFactory {
+    address public immutable ACCOUNT_BEACON;
 
-    constructor(address owner, IEntryPoint entryPoint) Ownable(owner) {
+    constructor(address owner, address accountBeacon, IEntryPoint entryPoint) Ownable(owner) {
         _verifyEntryPointAddress(address(entryPoint));
-        ACCOUNT_IMPLEMENTATION = new LightAccount(entryPoint);
+        ACCOUNT_BEACON = accountBeacon;
         ENTRY_POINT = entryPoint;
     }
 
@@ -28,11 +29,11 @@ contract LightAccountFactory is BaseLightAccountFactory {
     /// @param owner The owner of the account to be created.
     /// @param salt A salt, which can be changed to create multiple accounts with the same owner.
     /// @return account The address of either the newly deployed account or an existing account with this owner and salt.
-    function createAccount(address owner, uint256 salt) external returns (LightAccount account) {
+    function createAccount(address owner, uint256 salt) external returns (FlashAccount account) {
         (bool alreadyDeployed, address accountAddress) =
-            LibClone.createDeterministicERC1967(address(ACCOUNT_IMPLEMENTATION), _getCombinedSalt(owner, salt));
+            LibClone.createDeterministicERC1967IBeaconProxy(ACCOUNT_BEACON, _getCombinedSalt(owner, salt));
 
-        account = LightAccount(payable(accountAddress));
+        account = FlashAccount(payable(accountAddress));
 
         if (!alreadyDeployed) {
             account.initialize(owner);
@@ -44,10 +45,17 @@ contract LightAccountFactory is BaseLightAccountFactory {
     /// @param salt A salt, which can be changed to create multiple accounts with the same owner.
     /// @return The address of the account that would be created with `createAccount`.
     function getAddress(address owner, uint256 salt) external view returns (address) {
-        return LibClone.predictDeterministicAddressERC1967(
-            address(ACCOUNT_IMPLEMENTATION), _getCombinedSalt(owner, salt), address(this)
+        return LibClone.predictDeterministicAddressERC1967IBeaconProxy(
+            address(ACCOUNT_BEACON), _getCombinedSalt(owner, salt), address(this)
         );
     }
+
+    /// @notice Get the account implementation provided by the beacon.
+    /// @return The address provided by the beacon.
+    function getAccountImplementation() external view returns (address) {
+        return IBeacon(ACCOUNT_BEACON).implementation();
+    }
+
 
     /// @notice Compute the hash of the owner and salt in scratch space memory.
     /// @dev The caller is responsible for cleaning the upper bits of the owner address parameter.

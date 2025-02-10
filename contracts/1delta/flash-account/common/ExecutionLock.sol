@@ -9,11 +9,13 @@ pragma solidity ^0.8.23;
 abstract contract ExecutionLock {
     /// @notice inExecution flag is stored here:
     /// inExecution = 2
-    /// lockerd    != 2
+    /// locked    != 2
     /// slot to store the inExecution flag
-    bytes32 private constant _IN_EXECUTION_SLOT = 0xff0471b0004632a86905e3993f5377c608866007c59224eed7731408a9f3f8b5;
+    /// @dev this is the slot for keccak256("flash_account.lock")
+    bytes32 private constant _IN_EXECUTION_SLOT = 0x3c25485dd7fcb5b79c6e101a51e4ac1d265adde8f4b2805851861db54821825d;
 
-    error NotInExecution();
+    /// @dev custom error for violating lok condition
+    error Locked();
 
     /// @notice All function execution user operations
     /// need to use this modifier
@@ -31,7 +33,7 @@ abstract contract ExecutionLock {
     modifier requireInExecution() {
         assembly {
             if xor(2, sload(_IN_EXECUTION_SLOT)) {
-                mstore(0x0, 0x0024332)
+                mstore(0x0, 0x0f2e5b6c) // Locked()
                 revert(0x0, 0x4)
             }
         }

@@ -1,13 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
-import {LightAccount} from "./LightAccount.sol";
+import {FlashAccountBase} from "./FlashAccountBase.sol";
 import {IEntryPoint} from "./account-abstraction/interfaces/IEntryPoint.sol";
 
-contract FlashAccount is LightAccount {
+contract FlashAccount is FlashAccountBase {
+    constructor(IEntryPoint entryPoint_) FlashAccountBase(entryPoint_) {}
 
-    constructor(IEntryPoint entryPoint_) LightAccount(entryPoint_) {}
-
+    /**
+     * @dev Explicit flash loan callback functions
+     * All of them are locked through the execution lock to prevent access outside
+     * of the `execute` functions
+     */
+  
     /** Aave simple flash loan */
     function executeOperation(
         address,
@@ -32,6 +37,8 @@ contract FlashAccount is LightAccount {
         // execute furhter operations
         _decodeAndExecute(params);
     }
+
+    /** Internal function to decode batch calldata */
 
     function _decodeAndExecute(bytes calldata params) internal {
         (

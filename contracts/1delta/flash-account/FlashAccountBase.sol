@@ -11,39 +11,25 @@ import {BaseLightAccount} from "./common/BaseLightAccount.sol";
 import {CustomSlotInitializable} from "./common/CustomSlotInitializable.sol";
 
 /// @title A simple ERC-4337 compatible smart contract account with a designated owner account.
-/// @dev Like eth-infinitism's SimpleAccount, but with the following changes:
+/// @dev Edited Alchemy `LightAccount` version, but with the following changes:
 ///
-/// 1. Instead of the default storage slots, uses namespaced storage to avoid clashes when switching implementations.
+/// 1. Remove UUPSUpgradable pattern and use the BeaconProxy pattern instead
 ///
-/// 2. Ownership can be transferred via `transferOwnership`, similar to the behavior of an `Ownable` contract. This is
-/// a simple single-step operation, so care must be taken to ensure that the ownership is being transferred to the
-/// correct address.
+/// 2. Add `ExecutionLock` to `execute`, `executeBatch` adn `create` functions that enable an unlock flag
 ///
-/// 3. Supports [ERC-1271](https://eips.ethereum.org/EIPS/eip-1271) signature validation for both validating the
-/// signature on user operations and in exposing its own `isValidSignature` method. This only works when the owner of
-/// LightAccount also support ERC-1271.
+/// 3. Add explicit flash loan receiver callbacks that are only accesible if the unlock flag is accordingly set
 ///
-/// ERC-4337's bundler validation rules limit the types of contracts that can be used as owners to validate user
-/// operation signatures. For example, the contract's `isValidSignature` function may not use any forbidden opcodes
-/// such as `TIMESTAMP` or `NUMBER`, and the contract may not be an ERC-1967 proxy as it accesses a constant
-/// implementation slot not associated with the account, violating storage access rules. This also means that the
-/// owner of a LightAccount may not be another LightAccount if you want to send user operations through a bundler.
-///
-/// 4. Event `SimpleAccountInitialized` renamed to `LightAccountInitialized`.
-///
-/// 5. Uses custom errors.
-contract LightAccount is BaseLightAccount, CustomSlotInitializable {
+contract FlashAccountBase is BaseLightAccount, CustomSlotInitializable {
     using ECDSA for bytes32;
 
-    /// @dev The version used for namespaced storage is not linked to the release version of the contract. Storage
-    /// versions will be updated only when storage layout changes are made.
-    /// keccak256(abi.encode(uint256(keccak256("light_account_v1.storage")) - 1)) & ~bytes32(uint256(0xff));
-    bytes32 internal constant _STORAGE_POSITION = 0x691ec1a18226d004c07c9f8e5c4a6ff15a7b38db267cf7e3c945aef8be512200;
-    /// @dev keccak256(abi.encode(uint256(keccak256("light_account_v1.initializable")) - 1)) & ~bytes32(uint256(0xff));
-    bytes32 internal constant _INITIALIZABLE_STORAGE_POSITION =
-        0x33e4b41198cc5b8053630ed667ea7c0c4c873f7fc8d9a478b5d7259cec0a4a00;
+    /// @dev The storage layout must stay consistent for all implementatiobns 
 
-    struct LightAccountStorage {
+    /// @dev keccak256("flash_account.storage");
+    bytes32 internal constant _STORAGE_POSITION = 0xfe43cac86d2632475e173babfc884cd7f9ce21169af8b16db096c27563e34c09;
+    /// @dev keccak256("flash_account.initializable");
+    bytes32 internal constant _INITIALIZABLE_STORAGE_POSITION = 0x5886a89854f64cffde2e739819f75451c42a85563516fe8eab2ef059d7e9f526;
+
+    struct FlashAccountStorage {
         address owner;
     }
 
@@ -102,7 +88,7 @@ contract LightAccount is BaseLightAccount, CustomSlotInitializable {
     }
 
     function _transferOwnership(address newOwner) internal virtual {
-        LightAccountStorage storage _storage = _getStorage();
+        FlashAccountStorage storage _storage = _getStorage();
         address oldOwner = _storage.owner;
         if (newOwner == oldOwner) {
             revert InvalidOwner(newOwner);
@@ -187,16 +173,16 @@ contract LightAccount is BaseLightAccount, CustomSlotInitializable {
         override
         returns (string memory name, string memory version)
     {
-        name = "LightAccount";
+        name = "FlashAccount";
         // Set to the major version of the GitHub release at which the contract was last updated.
-        version = "2";
+        version = "1";
     }
 
     function _isFromOwner() internal view virtual override returns (bool) {
         return msg.sender == owner();
     }
 
-    function _getStorage() internal pure returns (LightAccountStorage storage storageStruct) {
+    function _getStorage() internal pure returns (FlashAccountStorage storage storageStruct) {
         bytes32 position = _STORAGE_POSITION;
         assembly ("memory-safe") {
             storageStruct.slot := position

@@ -7,11 +7,10 @@ import {IEntryPoint} from "../account-abstraction/interfaces/IEntryPoint.sol";
 import {PackedUserOperation} from "../account-abstraction/interfaces/PackedUserOperation.sol";
 import {TokenCallbackHandler} from "../account-abstraction/samples/callback/TokenCallbackHandler.sol";
 
-import {UUPSUpgradeable} from "../external/solady/UUPSUpgradeable.sol";
 import {ERC1271} from "./ERC1271.sol";
 import {ExecutionLock} from "./ExecutionLock.sol";
 
-abstract contract BaseLightAccount is BaseAccount, TokenCallbackHandler, UUPSUpgradeable, ERC1271, ExecutionLock {
+abstract contract BaseLightAccount is BaseAccount, TokenCallbackHandler, ERC1271, ExecutionLock {
     IEntryPoint internal immutable _ENTRY_POINT;
 
     /// @notice Signature types used for user operation validation and ERC-1271 signature validation.
@@ -213,9 +212,5 @@ abstract contract BaseLightAccount is BaseAccount, TokenCallbackHandler, UUPSUpg
                 revert(fmp, returndatasize())
             }
         }
-    }
-
-    function _authorizeUpgrade(address newImplementation) internal view override onlyAuthorized {
-        (newImplementation);
     }
 }

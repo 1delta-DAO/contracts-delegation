@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {EIP712} from "../external/solady/EIP712.sol";
+import {EIP712} from "./EIP712.sol";
 
 abstract contract ERC1271 is EIP712 {
     /// @dev bytes4(keccak256("isValidSignature(bytes32,bytes)"))
