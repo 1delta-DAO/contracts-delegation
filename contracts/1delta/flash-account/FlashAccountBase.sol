@@ -2,6 +2,7 @@
 pragma solidity ^0.8.23;
 
 import {ECDSA} from "../../external-protocols/openzeppelin/utils/cryptography/ECDSA.sol";
+import {MessageHashUtils} from "../../external-protocols/openzeppelin/utils/cryptography/MessageHashUtils.sol";
 import {SignatureChecker} from "../../external-protocols/openzeppelin/utils/cryptography/SignatureChecker.sol";
 import {SIG_VALIDATION_FAILED} from "./account-abstraction/core/Helpers.sol";
 import {IEntryPoint} from "./account-abstraction/interfaces/IEntryPoint.sol";
@@ -21,6 +22,7 @@ import {CustomSlotInitializable} from "./common/CustomSlotInitializable.sol";
 ///
 contract FlashAccountBase is BaseLightAccount, CustomSlotInitializable {
     using ECDSA for bytes32;
+    using MessageHashUtils for bytes32;
 
     /// @dev The storage layout must stay consistent for all implementatiobns 
 
