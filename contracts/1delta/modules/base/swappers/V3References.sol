@@ -6,7 +6,7 @@ pragma solidity 0.8.28;
 * Author: Achthar | 1delta 
 /******************************************************************************/
 
-abstract contract V3ReferencesArbitrum {
+abstract contract V3ReferencesBase {
     ////////////////////////////////////////////////////
     // dex references
     ////////////////////////////////////////////////////
