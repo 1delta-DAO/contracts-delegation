@@ -13,9 +13,9 @@ import {Commands} from "../shared/Commands.sol";
  */
 contract OneDeltaComposerBase is MarginTrading {
     /// @dev we need base tokens to identify Compound V3's selectors
-    address internal constant USDCE = 0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8;
-    address internal constant USDT = 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9;
-    address internal constant USDC = 0xaf88d065e77c8cC2239327C5EDb3A432268e5831;
+    address internal constant AERO = 0x940181a94A35A4569E4529A3CDfB74e38FD98631;
+    address internal constant USDBC = 0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA;
+    address internal constant USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
 
     /**
      * Batch-executes a series of operations
@@ -301,12 +301,12 @@ contract OneDeltaComposerBase is MarginTrading {
                                         temp := WRAPPED_NATIVE
                                     }
                                     case 2002 {
-                                        amountIn := COMET_USDT
-                                        temp := USDT
+                                        amountIn := COMET_USDBC
+                                        temp := USDBC
                                     }
                                     case 2003 {
-                                        amountIn := COMET_USDCE
-                                        temp := USDCE
+                                        amountIn := COMET_AERO
+                                        temp := AERO
                                     }
                                     // default: load comet from storage
                                     // if it is not provided directly
@@ -498,10 +498,10 @@ contract OneDeltaComposerBase is MarginTrading {
                                         cometPool := COMET_WETH
                                     }
                                     case 2002 {
-                                        cometPool := COMET_USDT
+                                        cometPool := COMET_USDBC
                                     }
                                     case 2003 {
-                                        cometPool := COMET_USDCE
+                                        cometPool := COMET_AERO
                                     }
                                     // default: load comet from storage
                                     // if it is not provided directly
@@ -771,10 +771,10 @@ contract OneDeltaComposerBase is MarginTrading {
                                     cometPool := COMET_WETH
                                 }
                                 case 2002 {
-                                    cometPool := COMET_USDT
+                                    cometPool := COMET_USDBC
                                 }
                                 case 2003 {
-                                    cometPool := COMET_USDCE
+                                    cometPool := COMET_AERO
                                 }
                                 // default: load comet from storage
                                 // if it is not provided directly
@@ -859,10 +859,10 @@ contract OneDeltaComposerBase is MarginTrading {
                                         cometPool := COMET_WETH
                                     }
                                     case 2002 {
-                                        cometPool := COMET_USDT
+                                        cometPool := COMET_USDBC
                                     }
                                     case 2003 {
-                                        cometPool := COMET_USDCE
+                                        cometPool := COMET_AERO
                                     }
                                     // default: load comet from storage
                                     // if it is not provided directly
@@ -1436,9 +1436,6 @@ contract OneDeltaComposerBase is MarginTrading {
                             case 0 {
                                 pool := AAVE_V3
                             }
-                            case 1 {
-                                pool := YLDR
-                            }
                             default {
                                 mstore(0, INVALID_FLASH_LOAN)
                                 revert(0, 0x4)
@@ -1525,12 +1522,6 @@ contract OneDeltaComposerBase is MarginTrading {
             switch source
             case 0 {
                 if xor(caller(), AAVE_V3) {
-                    mstore(0, INVALID_FLASH_LOAN)
-                    revert(0, 0x4)
-                }
-            }
-            case 1 {
-                if xor(caller(), YLDR) {
                     mstore(0, INVALID_FLASH_LOAN)
                     revert(0, 0x4)
                 }
