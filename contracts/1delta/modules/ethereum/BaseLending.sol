@@ -28,18 +28,25 @@ abstract contract BaseLending is Slots, ERC20Selectors {
     address internal constant WRAPPED_NATIVE = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
 
     // Aave V3 style lender pool addresses
-    address internal constant AAVE_V3 = 0x794a61358D6845594F94dc1DB02A252b5b4814aD;
-    address internal constant AVALON = 0xe1ee45DB12ac98d16F1342a03c93673d74527b55;
-    address internal constant AVALON_PUMP_BTC = 0x4B801fb6f0830D070f40aff9ADFC8f6939Cc1F8D;
-    address internal constant YLDR = 0x54aD657851b6Ae95bA3380704996CAAd4b7751A3;
+    address internal constant AAVE_V3 = 0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2;
+    address internal constant AAVE_V3_PRIME = 0x4e033931ad43597d96D6bcc25c280717730B58B1;
+    address internal constant AAVE_V3_ETHER_FI = 0x0AA97c284e98396202b6A04024F5E2c65026F3c0;
+
+    address internal constant SPARK = 0xC13e21B648A5Ee794902342038FF3aDAB66BE987;
+
+    address internal constant AVALON_SOLV_BTC = 0xCfe357D2dE5aa5dAB5fEf255c911D150d0246423;
+    address internal constant AVALON_SWELL_BTC = 0xE0E468687703dD02BEFfB0BE13cFB109529F38e0;
+    address internal constant AVALON_PUMP_BTC = 0x1c8091b280650aFc454939450699ECAA67C902d9;
+    address internal constant AVALON_E_L_BTC = 0xCfe357D2dE5aa5dAB5fEf255c911D150d0246423;
 
     // no Aave v2s
 
     // Compound V3 addresses
-    address internal constant COMET_USDT = 0xd98Be00b5D27fc98112BdE293e487f8D4cA57d07;
-    address internal constant COMET_USDC = 0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf;
-    address internal constant COMET_WETH = 0x6f7D514bbD4aFf3BcD1140B7344b32f063dEe486;
-    address internal constant COMET_USDCE = 0xA5EDBDD9646f8dFF606d7448e414884C7d905dCA;
+    address internal constant COMET_USDT = 0x3Afdc9BCA9213A35503b077a6072F3D0d5AB0840;
+    address internal constant COMET_USDC = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
+    address internal constant COMET_WETH = 0xA17581A9E3356d9A858b789D68B4d866e593aE94;
+    address internal constant COMET_WSTETH = 0x3D0bb1ccaB520A66e607822fC55BC921738fAFE3;
+    address internal constant COMET_USDS = 0x5D409e56D886231aDAf00c8775665AD0f9897b56;
 
     // BadLender()
     bytes4 internal constant BAD_LENDER = 0x603b7f3e;
@@ -96,14 +103,26 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                 case 0 {
                     pool := AAVE_V3
                 }
-                case 900 {
-                    pool := YLDR
-                }
                 case 1 {
-                    pool := AVALON
+                    pool := AAVE_V3_PRIME
                 }
                 case 2 {
+                    pool := AAVE_V3_ETHER_FI
+                }
+                case 200 {
+                    pool := SPARK
+                }
+                case 100 {
+                    pool := AVALON_SOLV_BTC
+                }
+                case 101 {
+                    pool := AVALON_SWELL_BTC
+                }
+                case 102 {
                     pool := AVALON_PUMP_BTC
+                }
+                case 103 {
+                    pool := AVALON_E_L_BTC
                 }
                 default {
                     mstore(0x0, _lenderId)
@@ -135,7 +154,10 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                         cometPool := COMET_USDT
                     }
                     case 2003 {
-                        cometPool := COMET_USDCE
+                        cometPool := COMET_WSTETH
+                    }
+                    case 2004 {
+                        cometPool := COMET_USDS
                     }
                     // default: load comet from storage
                     // if it is not provided directly
@@ -292,57 +314,52 @@ abstract contract BaseLending is Slots, ERC20Selectors {
             let ptr := mload(0x40)
             switch lt(_lenderId, MAX_ID_AAVE_V2)
             case 1 {
+                let pool
                 switch _lenderId
-                case 900 {
-                    // YLDR has no borrow mode
-                    // selector borrow(address,uint256,uint16,address)
-                    mstore(ptr, 0x1d5d723700000000000000000000000000000000000000000000000000000000)
-                    mstore(add(ptr, 0x04), _underlying)
-                    mstore(add(ptr, 0x24), _amount)
-                    mstore(add(ptr, 0x44), 0x0)
-                    mstore(add(ptr, 0x64), _from)
-                    // call pool
-                    if iszero(call(gas(), YLDR, 0x0, ptr, 0x84, 0x0, 0x0)) {
-                        returndatacopy(0x0, 0x0, returndatasize())
-                        revert(0x0, returndatasize())
-                    }
+                case 0 {
+                    pool := AAVE_V3
+                }
+                case 1 {
+                    pool := AAVE_V3_PRIME
+                }
+                case 2 {
+                    pool := AAVE_V3_ETHER_FI
+                }
+                case 200 {
+                    pool := SPARK
+                }
+                case 100 {
+                    pool := AVALON_SOLV_BTC
+                }
+                case 101 {
+                    pool := AVALON_SWELL_BTC
+                }
+                case 102 {
+                    pool := AVALON_PUMP_BTC
+                }
+                case 103 {
+                    pool := AVALON_E_L_BTC
                 }
                 default {
-                    let pool
-                    switch _lenderId
-                    case 0 {
-                        pool := AAVE_V3
+                    mstore(0x0, _lenderId)
+                    mstore(0x20, LENDING_POOL_SLOT)
+                    pool := sload(keccak256(0x0, 0x40))
+                    if iszero(pool) {
+                        mstore(0, BAD_LENDER)
+                        revert(0, 0x4)
                     }
-                    case 900 {
-                        pool := YLDR
-                    }
-                    case 1 {
-                        pool := AVALON
-                    }
-                    case 2 {
-                        pool := AVALON_PUMP_BTC
-                    }
-                    default {
-                        mstore(0x0, _lenderId)
-                        mstore(0x20, LENDING_POOL_SLOT)
-                        pool := sload(keccak256(0x0, 0x40))
-                        if iszero(pool) {
-                            mstore(0, BAD_LENDER)
-                            revert(0, 0x4)
-                        }
-                    }
-                    // selector borrow(address,uint256,uint256,uint16,address)
-                    mstore(ptr, 0xa415bcad00000000000000000000000000000000000000000000000000000000)
-                    mstore(add(ptr, 0x04), _underlying)
-                    mstore(add(ptr, 0x24), _amount)
-                    mstore(add(ptr, 0x44), _mode)
-                    mstore(add(ptr, 0x64), 0x0)
-                    mstore(add(ptr, 0x84), _from)
-                    // call pool
-                    if iszero(call(gas(), pool, 0x0, ptr, 0xA4, 0x0, 0x0)) {
-                        returndatacopy(0x0, 0x0, returndatasize())
-                        revert(0x0, returndatasize())
-                    }
+                }
+                // selector borrow(address,uint256,uint256,uint16,address)
+                mstore(ptr, 0xa415bcad00000000000000000000000000000000000000000000000000000000)
+                mstore(add(ptr, 0x04), _underlying)
+                mstore(add(ptr, 0x24), _amount)
+                mstore(add(ptr, 0x44), _mode)
+                mstore(add(ptr, 0x64), 0x0)
+                mstore(add(ptr, 0x84), _from)
+                // call pool
+                if iszero(call(gas(), pool, 0x0, ptr, 0xA4, 0x0, 0x0)) {
+                    returndatacopy(0x0, 0x0, returndatasize())
+                    revert(0x0, returndatasize())
                 }
 
                 //  transfer underlying if needed
@@ -391,7 +408,10 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                         cometPool := COMET_USDT
                     }
                     case 2003 {
-                        cometPool := COMET_USDCE
+                        cometPool := COMET_WSTETH
+                    }
+                    case 2004 {
+                        cometPool := COMET_USDS
                     }
                     // default: load comet from storage
                     // if it is not provided directly
@@ -493,14 +513,26 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                     case 0 {
                         pool := AAVE_V3
                     }
-                    case 900 {
-                        pool := YLDR
-                    }
                     case 1 {
-                        pool := AVALON
+                        pool := AAVE_V3_PRIME
                     }
                     case 2 {
+                        pool := AAVE_V3_ETHER_FI
+                    }
+                    case 200 {
+                        pool := SPARK
+                    }
+                    case 100 {
+                        pool := AVALON_SOLV_BTC
+                    }
+                    case 101 {
+                        pool := AVALON_SWELL_BTC
+                    }
+                    case 102 {
                         pool := AVALON_PUMP_BTC
+                    }
+                    case 103 {
+                        pool := AVALON_E_L_BTC
                     }
                     default {
                         mstore(0x0, _lenderId)
@@ -554,7 +586,10 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                         cometPool := COMET_USDT
                     }
                     case 2003 {
-                        cometPool := COMET_USDCE
+                        cometPool := COMET_WSTETH
+                    }
+                    case 2004 {
+                        cometPool := COMET_USDS
                     }
                     // default: load comet from storage
                     // if it is not provided directly
@@ -613,53 +648,51 @@ abstract contract BaseLending is Slots, ERC20Selectors {
             let ptr := mload(0x40)
             switch lt(_lenderId, MAX_ID_AAVE_V2)
             case 1 {
-                // assign lending pool
+                let pool
                 switch _lenderId
-                case 900 {
-                    // same as aave V3, just no mode
-                    // selector repay(address,uint256,address)
-                    mstore(ptr, 0x5ceae9c400000000000000000000000000000000000000000000000000000000)
-                    mstore(add(ptr, 0x04), _underlying)
-                    mstore(add(ptr, 0x24), _amount)
-                    mstore(add(ptr, 0x44), _to)
-                    // call pool
-                    if iszero(call(gas(), YLDR, 0x0, ptr, 0x64, 0x0, 0x0)) {
-                        returndatacopy(0x0, 0x0, returndatasize())
-                        revert(0x0, returndatasize())
-                    }
+                case 0 {
+                    pool := AAVE_V3
+                }
+                case 1 {
+                    pool := AAVE_V3_PRIME
+                }
+                case 2 {
+                    pool := AAVE_V3_ETHER_FI
+                }
+                case 200 {
+                    pool := SPARK
+                }
+                case 100 {
+                    pool := AVALON_SOLV_BTC
+                }
+                case 101 {
+                    pool := AVALON_SWELL_BTC
+                }
+                case 102 {
+                    pool := AVALON_PUMP_BTC
+                }
+                case 103 {
+                    pool := AVALON_E_L_BTC
                 }
                 default {
-                    let pool
-                    switch _lenderId
-                    case 0 {
-                        pool := AAVE_V3
+                    mstore(0x0, _lenderId)
+                    mstore(0x20, LENDING_POOL_SLOT)
+                    pool := sload(keccak256(0x0, 0x40))
+                    if iszero(pool) {
+                        mstore(0, BAD_LENDER)
+                        revert(0, 0x4)
                     }
-                    case 1 {
-                        pool := AVALON
-                    }
-                    case 2 {
-                        pool := AVALON_PUMP_BTC
-                    }
-                    default {
-                        mstore(0x0, _lenderId)
-                        mstore(0x20, LENDING_POOL_SLOT)
-                        pool := sload(keccak256(0x0, 0x40))
-                        if iszero(pool) {
-                            mstore(0, BAD_LENDER)
-                            revert(0, 0x4)
-                        }
-                    }
-                    // selector repay(address,uint256,uint256,address)
-                    mstore(ptr, 0x573ade8100000000000000000000000000000000000000000000000000000000)
-                    mstore(add(ptr, 0x04), _underlying)
-                    mstore(add(ptr, 0x24), _amount)
-                    mstore(add(ptr, 0x44), _mode)
-                    mstore(add(ptr, 0x64), _to)
-                    // call pool
-                    if iszero(call(gas(), pool, 0x0, ptr, 0x84, 0x0, 0x0)) {
-                        returndatacopy(0x0, 0x0, returndatasize())
-                        revert(0x0, returndatasize())
-                    }
+                }
+                // selector repay(address,uint256,uint256,address)
+                mstore(ptr, 0x573ade8100000000000000000000000000000000000000000000000000000000)
+                mstore(add(ptr, 0x04), _underlying)
+                mstore(add(ptr, 0x24), _amount)
+                mstore(add(ptr, 0x44), _mode)
+                mstore(add(ptr, 0x64), _to)
+                // call pool
+                if iszero(call(gas(), pool, 0x0, ptr, 0x84, 0x0, 0x0)) {
+                    returndatacopy(0x0, 0x0, returndatasize())
+                    revert(0x0, returndatasize())
                 }
             }
             default {
@@ -677,7 +710,10 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                         cometPool := COMET_USDT
                     }
                     case 2003 {
-                        cometPool := COMET_USDCE
+                        cometPool := COMET_WSTETH
+                    }
+                    case 2004 {
+                        cometPool := COMET_USDS
                     }
                     // default: load comet from storage
                     // if it is not provided directly

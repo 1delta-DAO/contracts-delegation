@@ -11,11 +11,12 @@ import {Commands} from "../shared/Commands.sol";
  *        Efficient baching through compact calldata usage.
  * @author 1delta Labs AG
  */
-contract OneDeltaComposerArbitrum is MarginTrading {
+contract OneDeltaComposerEthereum is MarginTrading {
     /// @dev we need base tokens to identify Compound V3's selectors
-    address internal constant USDCE = 0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8;
-    address internal constant USDT = 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9;
-    address internal constant USDC = 0xaf88d065e77c8cC2239327C5EDb3A432268e5831;
+    address internal constant WSTETH = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
+    address internal constant USDT = 0xdAC17F958D2ee523a2206206994597C13D831ec7;
+    address internal constant SUSDS = 0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD;
+    address internal constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
 
     /**
      * Batch-executes a series of operations
@@ -305,8 +306,12 @@ contract OneDeltaComposerArbitrum is MarginTrading {
                                         temp := USDT
                                     }
                                     case 2003 {
-                                        amountIn := COMET_USDCE
-                                        temp := USDCE
+                                        amountIn := COMET_WSTETH
+                                        temp := WSTETH
+                                    }
+                                    case 2004 {
+                                        amountIn := COMET_USDS
+                                        temp := SUSDS
                                     }
                                     // default: load comet from storage
                                     // if it is not provided directly
@@ -501,7 +506,7 @@ contract OneDeltaComposerArbitrum is MarginTrading {
                                         cometPool := COMET_USDT
                                     }
                                     case 2003 {
-                                        cometPool := COMET_USDCE
+                                        cometPool := COMET_WSTETH
                                     }
                                     // default: load comet from storage
                                     // if it is not provided directly
@@ -774,7 +779,10 @@ contract OneDeltaComposerArbitrum is MarginTrading {
                                     cometPool := COMET_USDT
                                 }
                                 case 2003 {
-                                    cometPool := COMET_USDCE
+                                    cometPool := COMET_WSTETH
+                                }
+                                case 2004 {
+                                    cometPool := COMET_USDS
                                 }
                                 // default: load comet from storage
                                 // if it is not provided directly
@@ -862,7 +870,10 @@ contract OneDeltaComposerArbitrum is MarginTrading {
                                         cometPool := COMET_USDT
                                     }
                                     case 2003 {
-                                        cometPool := COMET_USDCE
+                                        cometPool := COMET_WSTETH
+                                    }
+                                    case 2004 {
+                                        cometPool := COMET_USDS
                                     }
                                     // default: load comet from storage
                                     // if it is not provided directly
@@ -1437,7 +1448,25 @@ contract OneDeltaComposerArbitrum is MarginTrading {
                                 pool := AAVE_V3
                             }
                             case 1 {
-                                pool := YLDR
+                                pool := AAVE_V3_PRIME
+                            }
+                            case 2 {
+                                pool := AAVE_V3_ETHER_FI
+                            }
+                            case 200 {
+                                pool := SPARK
+                            }
+                            case 100 {
+                                pool := AVALON_SOLV_BTC
+                            }
+                            case 101 {
+                                pool := AVALON_SWELL_BTC
+                            }
+                            case 102 {
+                                pool := AVALON_PUMP_BTC
+                            }
+                            case 103 {
+                                pool := AVALON_E_L_BTC
                             }
                             default {
                                 mstore(0, INVALID_FLASH_LOAN)
@@ -1530,7 +1559,43 @@ contract OneDeltaComposerArbitrum is MarginTrading {
                 }
             }
             case 1 {
-                if xor(caller(), YLDR) {
+                if xor(caller(), AAVE_V3_PRIME) {
+                    mstore(0, INVALID_FLASH_LOAN)
+                    revert(0, 0x4)
+                }
+            }
+            case 2 {
+                if xor(caller(), AAVE_V3_ETHER_FI) {
+                    mstore(0, INVALID_FLASH_LOAN)
+                    revert(0, 0x4)
+                }
+            }
+            case 200 {
+                if xor(caller(), SPARK) {
+                    mstore(0, INVALID_FLASH_LOAN)
+                    revert(0, 0x4)
+                }
+            }
+            case 100 {
+                if xor(caller(), AVALON_SOLV_BTC) {
+                    mstore(0, INVALID_FLASH_LOAN)
+                    revert(0, 0x4)
+                }
+            }
+            case 101 {
+                if xor(caller(), AVALON_SWELL_BTC) {
+                    mstore(0, INVALID_FLASH_LOAN)
+                    revert(0, 0x4)
+                }
+            }
+            case 102 {
+                if xor(caller(), AVALON_PUMP_BTC) {
+                    mstore(0, INVALID_FLASH_LOAN)
+                    revert(0, 0x4)
+                }
+            }
+            case 103 {
+                if xor(caller(), AVALON_E_L_BTC) {
                     mstore(0, INVALID_FLASH_LOAN)
                     revert(0, 0x4)
                 }
