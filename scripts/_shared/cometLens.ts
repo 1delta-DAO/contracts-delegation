@@ -1,7 +1,6 @@
 
 import { ethers } from "hardhat";
 import { CometLens__factory } from "../../types";
-import { ARBITRUM_CONFIGS } from "../_utils/getGasConfig";
 
 async function main() {
     const accounts = await ethers.getSigners()
@@ -10,7 +9,7 @@ async function main() {
     console.log("operator", operator.address, "on", chainId)
 
     console.log("Comet lens")
-    const cometLens = await new CometLens__factory(operator).deploy(ARBITRUM_CONFIGS)
+    const cometLens = await new CometLens__factory(operator).deploy()
 
     console.log("lens:", cometLens.address)
 }
