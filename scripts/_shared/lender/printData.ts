@@ -3,9 +3,9 @@ import { getAaveForkApproves, getAaveForkDatas, getCompoundV3Approves } from "./
 
 async function main() {
 
-    const apprsCompound = getCompoundV3Approves(Chain.ARBITRUM_ONE)
-    const apprsAave = getAaveForkApproves(Chain.ARBITRUM_ONE)
-    const insertsAave = getAaveForkDatas(Chain.ARBITRUM_ONE)
+    const apprsCompound = getCompoundV3Approves(Chain.OP_MAINNET)
+    const apprsAave = getAaveForkApproves(Chain.OP_MAINNET)
+    const insertsAave = getAaveForkDatas(Chain.OP_MAINNET)
 
     const allDatas = [...apprsCompound, ...apprsAave, ...insertsAave]
     allDatas.map(a => console.log(a))
