@@ -1453,24 +1453,51 @@ contract OneDeltaComposerEthereum is MarginTrading {
                             case 2 {
                                 pool := AAVE_V3_ETHER_FI
                             }
-                            case 200 {
-                                pool := SPARK
-                            }
-                            case 100 {
-                                pool := AVALON_SOLV_BTC
-                            }
-                            case 101 {
-                                pool := AVALON_SWELL_BTC
-                            }
-                            case 102 {
-                                pool := AVALON_PUMP_BTC
-                            }
-                            case 103 {
-                                pool := AVALON_E_L_BTC
-                            }
                             default {
-                                mstore(0, INVALID_FLASH_LOAN)
-                                revert(0, 0x4)
+                                switch lt(source, 200) // Check the hundred's place to categorize lenders
+                                case 1 {
+                                    // AVALON group
+                                    switch source
+                                    case 100 {
+                                        pool := AVALON_SOLV_BTC
+                                    }
+                                    case 101 {
+                                        pool := AVALON_SWELL_BTC
+                                    }
+                                    case 102 {
+                                        pool := AVALON_PUMP_BTC
+                                    }
+                                    case 103 {
+                                        pool := AVALON_EBTC_LBTC
+                                    }
+                                    default {
+                                        mstore(0, INVALID_FLASH_LOAN)
+                                        revert(0, 0x4)
+                                    }
+                                }
+                                default {
+                                    // ZEROLEND group
+                                    switch source
+                                    case 200 {
+                                        pool := SPARK
+                                    }
+                                    case 210 {
+                                        pool := ZEROLEND_STABLECOINS_RWA
+                                    }
+                                    case 211 {
+                                        pool := ZEROLEND_BTC_LRTS
+                                    }
+                                    case 212 {
+                                        pool := ZEROLEND_ETH_LRTS
+                                    }
+                                    case 250 {
+                                        pool := KINZA
+                                    }
+                                    default {
+                                        mstore(0, INVALID_FLASH_LOAN)
+                                        revert(0, 0x4)
+                                    }
+                                }
                             }
 
                             let ptr := mload(0x40)
@@ -1570,41 +1597,80 @@ contract OneDeltaComposerEthereum is MarginTrading {
                     revert(0, 0x4)
                 }
             }
-            case 200 {
-                if xor(caller(), SPARK) {
-                    mstore(0, INVALID_FLASH_LOAN)
-                    revert(0, 0x4)
-                }
-            }
-            case 100 {
-                if xor(caller(), AVALON_SOLV_BTC) {
-                    mstore(0, INVALID_FLASH_LOAN)
-                    revert(0, 0x4)
-                }
-            }
-            case 101 {
-                if xor(caller(), AVALON_SWELL_BTC) {
-                    mstore(0, INVALID_FLASH_LOAN)
-                    revert(0, 0x4)
-                }
-            }
-            case 102 {
-                if xor(caller(), AVALON_PUMP_BTC) {
-                    mstore(0, INVALID_FLASH_LOAN)
-                    revert(0, 0x4)
-                }
-            }
-            case 103 {
-                if xor(caller(), AVALON_E_L_BTC) {
-                    mstore(0, INVALID_FLASH_LOAN)
-                    revert(0, 0x4)
-                }
-            }
-            // We revert on any other id
             default {
-                mstore(0, INVALID_FLASH_LOAN)
-                revert(0, 0x4)
+                switch lt(source, 200) // Check the hundred's place to categorize lenders
+                case 1 {
+                    // AVALON group
+                    switch source
+                    case 100 {
+                        if xor(caller(), AVALON_SOLV_BTC) {
+                            mstore(0, INVALID_FLASH_LOAN)
+                            revert(0, 0x4)
+                        }
+                    }
+                    case 101 {
+                        if xor(caller(), AVALON_SWELL_BTC) {
+                            mstore(0, INVALID_FLASH_LOAN)
+                            revert(0, 0x4)
+                        }
+                    }
+                    case 102 {
+                        if xor(caller(), AVALON_PUMP_BTC) {
+                            mstore(0, INVALID_FLASH_LOAN)
+                            revert(0, 0x4)
+                        }
+                    }
+                    case 103 {
+                        if xor(caller(), AVALON_EBTC_LBTC) {
+                            mstore(0, INVALID_FLASH_LOAN)
+                            revert(0, 0x4)
+                        }
+                    }
+                    default {
+                        mstore(0, INVALID_FLASH_LOAN)
+                        revert(0, 0x4)
+                    }
+                }
+                default {
+                    // ZEROLEND & Co group
+                    switch source
+                    case 200 {
+                        if xor(caller(), SPARK) {
+                            mstore(0, INVALID_FLASH_LOAN)
+                            revert(0, 0x4)
+                        }
+                    }
+                    case 210 {
+                        if xor(caller(), ZEROLEND_STABLECOINS_RWA) {
+                            mstore(0, INVALID_FLASH_LOAN)
+                            revert(0, 0x4)
+                        }
+                    }
+                    case 211 {
+                        if xor(caller(), ZEROLEND_BTC_LRTS) {
+                            mstore(0, INVALID_FLASH_LOAN)
+                            revert(0, 0x4)
+                        }
+                    }
+                    case 212 {
+                        if xor(caller(), ZEROLEND_ETH_LRTS) {
+                            mstore(0, INVALID_FLASH_LOAN)
+                            revert(0, 0x4)
+                        }
+                    }
+                    case 250 {
+                        if xor(caller(), KINZA) {
+                            mstore(0, INVALID_FLASH_LOAN)
+                            revert(0, 0x4)
+                        }
+                    }
+                    default {
+                        mstore(0, INVALID_FLASH_LOAN)
+                        revert(0, 0x4)
+                    }
+                }
             }
+
             // We require to self-initiate
             // this prevents caller impersonation,
             // but ONLY if the caller address is

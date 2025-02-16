@@ -25,7 +25,7 @@ abstract contract BaseLending is Slots, ERC20Selectors {
     uint256 internal constant MAX_ID_VENUS = 4000; // 3000-4000
 
     // wNative
-    address internal constant WRAPPED_NATIVE = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
+    address internal constant WRAPPED_NATIVE = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
     // Aave V3 style lender pool addresses
     address internal constant AAVE_V3 = 0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2;
@@ -34,10 +34,16 @@ abstract contract BaseLending is Slots, ERC20Selectors {
 
     address internal constant SPARK = 0xC13e21B648A5Ee794902342038FF3aDAB66BE987;
 
+    address internal constant ZEROLEND_STABLECOINS_RWA = 0xD3a4DA66EC15a001466F324FA08037f3272BDbE8;
+    address internal constant ZEROLEND_BTC_LRTS = 0xCD2b31071119D7eA449a9D211AC8eBF7Ee97F987;
+    address internal constant ZEROLEND_ETH_LRTS = 0x3BC3D34C32cc98bf098D832364Df8A222bBaB4c0;
+
+    address internal constant KINZA = 0xeA14474946C59Dee1F103aD517132B3F19Cef1bE;
+
     address internal constant AVALON_SOLV_BTC = 0xCfe357D2dE5aa5dAB5fEf255c911D150d0246423;
     address internal constant AVALON_SWELL_BTC = 0xE0E468687703dD02BEFfB0BE13cFB109529F38e0;
     address internal constant AVALON_PUMP_BTC = 0x1c8091b280650aFc454939450699ECAA67C902d9;
-    address internal constant AVALON_E_L_BTC = 0xCfe357D2dE5aa5dAB5fEf255c911D150d0246423;
+    address internal constant AVALON_EBTC_LBTC = 0xCfe357D2dE5aa5dAB5fEf255c911D150d0246423;
 
     // no Aave v2s
 
@@ -109,28 +115,60 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                 case 2 {
                     pool := AAVE_V3_ETHER_FI
                 }
-                case 200 {
-                    pool := SPARK
-                }
-                case 100 {
-                    pool := AVALON_SOLV_BTC
-                }
-                case 101 {
-                    pool := AVALON_SWELL_BTC
-                }
-                case 102 {
-                    pool := AVALON_PUMP_BTC
-                }
-                case 103 {
-                    pool := AVALON_E_L_BTC
-                }
                 default {
-                    mstore(0x0, _lenderId)
-                    mstore(0x20, LENDING_POOL_SLOT)
-                    pool := sload(keccak256(0x0, 0x40))
-                    if iszero(pool) {
-                        mstore(0, BAD_LENDER)
-                        revert(0, 0x4)
+                    switch lt(_lenderId, 200) // Check the hundred's place to categorize lenders
+                    case 1 {
+                        // AVALON group
+                        switch _lenderId
+                        case 100 {
+                            pool := AVALON_SOLV_BTC
+                        }
+                        case 101 {
+                            pool := AVALON_SWELL_BTC
+                        }
+                        case 102 {
+                            pool := AVALON_PUMP_BTC
+                        }
+                        case 103 {
+                            pool := AVALON_EBTC_LBTC
+                        }
+                        default {
+                            mstore(0x0, _lenderId)
+                            mstore(0x20, LENDING_POOL_SLOT)
+                            pool := sload(keccak256(0x0, 0x40))
+                            if iszero(pool) {
+                                mstore(0, BAD_LENDER)
+                                revert(0, 0x4)
+                            }
+                        }
+                    }
+                    default {
+                        // ZEROLEND group
+                        switch _lenderId
+                        case 200 {
+                            pool := SPARK
+                        }
+                        case 210 {
+                            pool := ZEROLEND_STABLECOINS_RWA
+                        }
+                        case 211 {
+                            pool := ZEROLEND_BTC_LRTS
+                        }
+                        case 212 {
+                            pool := ZEROLEND_ETH_LRTS
+                        }
+                        case 250 {
+                            pool := KINZA
+                        }
+                        default {
+                            mstore(0x0, _lenderId)
+                            mstore(0x20, LENDING_POOL_SLOT)
+                            pool := sload(keccak256(0x0, 0x40))
+                            if iszero(pool) {
+                                mstore(0, BAD_LENDER)
+                                revert(0, 0x4)
+                            }
+                        }
                     }
                 }
                 // call pool
@@ -325,28 +363,60 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                 case 2 {
                     pool := AAVE_V3_ETHER_FI
                 }
-                case 200 {
-                    pool := SPARK
-                }
-                case 100 {
-                    pool := AVALON_SOLV_BTC
-                }
-                case 101 {
-                    pool := AVALON_SWELL_BTC
-                }
-                case 102 {
-                    pool := AVALON_PUMP_BTC
-                }
-                case 103 {
-                    pool := AVALON_E_L_BTC
-                }
                 default {
-                    mstore(0x0, _lenderId)
-                    mstore(0x20, LENDING_POOL_SLOT)
-                    pool := sload(keccak256(0x0, 0x40))
-                    if iszero(pool) {
-                        mstore(0, BAD_LENDER)
-                        revert(0, 0x4)
+                    switch lt(_lenderId, 200) // Check the hundred's place to categorize lenders
+                    case 1 {
+                        // AVALON group
+                        switch _lenderId
+                        case 100 {
+                            pool := AVALON_SOLV_BTC
+                        }
+                        case 101 {
+                            pool := AVALON_SWELL_BTC
+                        }
+                        case 102 {
+                            pool := AVALON_PUMP_BTC
+                        }
+                        case 103 {
+                            pool := AVALON_EBTC_LBTC
+                        }
+                        default {
+                            mstore(0x0, _lenderId)
+                            mstore(0x20, LENDING_POOL_SLOT)
+                            pool := sload(keccak256(0x0, 0x40))
+                            if iszero(pool) {
+                                mstore(0, BAD_LENDER)
+                                revert(0, 0x4)
+                            }
+                        }
+                    }
+                    default {
+                        // ZEROLEND group
+                        switch _lenderId
+                        case 200 {
+                            pool := SPARK
+                        }
+                        case 210 {
+                            pool := ZEROLEND_STABLECOINS_RWA
+                        }
+                        case 211 {
+                            pool := ZEROLEND_BTC_LRTS
+                        }
+                        case 212 {
+                            pool := ZEROLEND_ETH_LRTS
+                        }
+                        case 250 {
+                            pool := KINZA
+                        }
+                        default {
+                            mstore(0x0, _lenderId)
+                            mstore(0x20, LENDING_POOL_SLOT)
+                            pool := sload(keccak256(0x0, 0x40))
+                            if iszero(pool) {
+                                mstore(0, BAD_LENDER)
+                                revert(0, 0x4)
+                            }
+                        }
                     }
                 }
                 // selector borrow(address,uint256,uint256,uint16,address)
@@ -519,28 +589,60 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                     case 2 {
                         pool := AAVE_V3_ETHER_FI
                     }
-                    case 200 {
-                        pool := SPARK
-                    }
-                    case 100 {
-                        pool := AVALON_SOLV_BTC
-                    }
-                    case 101 {
-                        pool := AVALON_SWELL_BTC
-                    }
-                    case 102 {
-                        pool := AVALON_PUMP_BTC
-                    }
-                    case 103 {
-                        pool := AVALON_E_L_BTC
-                    }
                     default {
-                        mstore(0x0, _lenderId)
-                        mstore(0x20, LENDING_POOL_SLOT)
-                        pool := sload(keccak256(0x0, 0x40))
-                        if iszero(pool) {
-                            mstore(0, BAD_LENDER)
-                            revert(0, 0x4)
+                        switch lt(_lenderId, 200) // Check the hundred's place to categorize lenders
+                        case 1 {
+                            // AVALON group
+                            switch _lenderId
+                            case 100 {
+                                pool := AVALON_SOLV_BTC
+                            }
+                            case 101 {
+                                pool := AVALON_SWELL_BTC
+                            }
+                            case 102 {
+                                pool := AVALON_PUMP_BTC
+                            }
+                            case 103 {
+                                pool := AVALON_EBTC_LBTC
+                            }
+                            default {
+                                mstore(0x0, _lenderId)
+                                mstore(0x20, LENDING_POOL_SLOT)
+                                pool := sload(keccak256(0x0, 0x40))
+                                if iszero(pool) {
+                                    mstore(0, BAD_LENDER)
+                                    revert(0, 0x4)
+                                }
+                            }
+                        }
+                        default {
+                            // ZEROLEND group
+                            switch _lenderId
+                            case 200 {
+                                pool := SPARK
+                            }
+                            case 210 {
+                                pool := ZEROLEND_STABLECOINS_RWA
+                            }
+                            case 211 {
+                                pool := ZEROLEND_BTC_LRTS
+                            }
+                            case 212 {
+                                pool := ZEROLEND_ETH_LRTS
+                            }
+                            case 250 {
+                                pool := KINZA
+                            }
+                            default {
+                                mstore(0x0, _lenderId)
+                                mstore(0x20, LENDING_POOL_SLOT)
+                                pool := sload(keccak256(0x0, 0x40))
+                                if iszero(pool) {
+                                    mstore(0, BAD_LENDER)
+                                    revert(0, 0x4)
+                                }
+                            }
                         }
                     }
                     // call pool
@@ -659,28 +761,60 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                 case 2 {
                     pool := AAVE_V3_ETHER_FI
                 }
-                case 200 {
-                    pool := SPARK
-                }
-                case 100 {
-                    pool := AVALON_SOLV_BTC
-                }
-                case 101 {
-                    pool := AVALON_SWELL_BTC
-                }
-                case 102 {
-                    pool := AVALON_PUMP_BTC
-                }
-                case 103 {
-                    pool := AVALON_E_L_BTC
-                }
                 default {
-                    mstore(0x0, _lenderId)
-                    mstore(0x20, LENDING_POOL_SLOT)
-                    pool := sload(keccak256(0x0, 0x40))
-                    if iszero(pool) {
-                        mstore(0, BAD_LENDER)
-                        revert(0, 0x4)
+                    switch lt(_lenderId, 200) // Check the hundred's place to categorize lenders
+                    case 1 {
+                        // AVALON group
+                        switch _lenderId
+                        case 100 {
+                            pool := AVALON_SOLV_BTC
+                        }
+                        case 101 {
+                            pool := AVALON_SWELL_BTC
+                        }
+                        case 102 {
+                            pool := AVALON_PUMP_BTC
+                        }
+                        case 103 {
+                            pool := AVALON_EBTC_LBTC
+                        }
+                        default {
+                            mstore(0x0, _lenderId)
+                            mstore(0x20, LENDING_POOL_SLOT)
+                            pool := sload(keccak256(0x0, 0x40))
+                            if iszero(pool) {
+                                mstore(0, BAD_LENDER)
+                                revert(0, 0x4)
+                            }
+                        }
+                    }
+                    default {
+                        // ZEROLEND group
+                        switch _lenderId
+                        case 200 {
+                            pool := SPARK
+                        }
+                        case 210 {
+                            pool := ZEROLEND_STABLECOINS_RWA
+                        }
+                        case 211 {
+                            pool := ZEROLEND_BTC_LRTS
+                        }
+                        case 212 {
+                            pool := ZEROLEND_ETH_LRTS
+                        }
+                        case 250 {
+                            pool := KINZA
+                        }
+                        default {
+                            mstore(0x0, _lenderId)
+                            mstore(0x20, LENDING_POOL_SLOT)
+                            pool := sload(keccak256(0x0, 0x40))
+                            if iszero(pool) {
+                                mstore(0, BAD_LENDER)
+                                revert(0, 0x4)
+                            }
+                        }
                     }
                 }
                 // selector repay(address,uint256,uint256,address)

@@ -316,10 +316,10 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                     case 900 {
                         pool := YLDR
                     }
-                    case 1 {
+                    case 100 {
                         pool := AVALON
                     }
-                    case 2 {
+                    case 101 {
                         pool := AVALON_PUMP_BTC
                     }
                     default {
@@ -517,7 +517,7 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                         revert(0x0, returndatasize())
                     }
                 }
-                case 0 {
+                default {
                     mstore(0x0, _lenderId)
                     mstore(0x20, LENDING_POOL_SLOT)
                     let pool := sload(keccak256(0x0, 0x40))

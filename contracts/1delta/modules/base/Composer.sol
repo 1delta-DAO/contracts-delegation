@@ -1436,6 +1436,12 @@ contract OneDeltaComposerBase is MarginTrading {
                             case 0 {
                                 pool := AAVE_V3
                             }
+                            case 100 {
+                                pool := AVALON
+                            }
+                            case 210 {
+                                pool := ZEROLEND
+                            }
                             default {
                                 mstore(0, INVALID_FLASH_LOAN)
                                 revert(0, 0x4)
@@ -1487,10 +1493,7 @@ contract OneDeltaComposerBase is MarginTrading {
     }
 
     /**
-     * @dev When `flashLoanSimple` is called on the the Aave pool, it invokes the `executeOperation` hook on the recipient.
-     *  We assume that the flash loan fee and params have been pre-computed
-     *  We never expect more than one token to be flashed
-     *  We assume that the asset loaned is already infinite-approved (this->flashPool)
+     * @dev Aave V3 style flash loan callback
      */
     function executeOperation(
         address,
@@ -1522,6 +1525,18 @@ contract OneDeltaComposerBase is MarginTrading {
             switch source
             case 0 {
                 if xor(caller(), AAVE_V3) {
+                    mstore(0, INVALID_FLASH_LOAN)
+                    revert(0, 0x4)
+                }
+            }
+            case 100 {
+                if xor(caller(), AVALON) {
+                    mstore(0, INVALID_FLASH_LOAN)
+                    revert(0, 0x4)
+                }
+            }
+            case 210 {
+                if xor(caller(), ZEROLEND) {
                     mstore(0, INVALID_FLASH_LOAN)
                     revert(0, 0x4)
                 }

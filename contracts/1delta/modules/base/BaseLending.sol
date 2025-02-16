@@ -30,6 +30,9 @@ abstract contract BaseLending is Slots, ERC20Selectors {
     // Aave V3 style lender pool addresses
     address internal constant AAVE_V3 = 0xA238Dd80C259a72e81d7e4664a9801593F98d1c5;
 
+    address internal constant AVALON = 0x6374a1F384737bcCCcD8fAE13064C18F7C8392e5;
+
+    address internal constant ZEROLEND = 0x766f21277087E18967c1b10bF602d8Fe56d0c671;
     // no Aave v2s
 
     // Compound V3 addresses
@@ -92,6 +95,12 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                 switch _lenderId
                 case 0 {
                     pool := AAVE_V3
+                }
+                case 100 {
+                    pool := AVALON
+                }
+                case 210 {
+                    pool := ZEROLEND
                 }
                 default {
                     mstore(0x0, _lenderId)
@@ -285,6 +294,12 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                 case 0 {
                     pool := AAVE_V3
                 }
+                case 100 {
+                    pool := AVALON
+                }
+                case 210 {
+                    pool := ZEROLEND
+                }
                 default {
                     mstore(0x0, _lenderId)
                     mstore(0x20, LENDING_POOL_SLOT)
@@ -455,6 +470,12 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                     case 0 {
                         pool := AAVE_V3
                     }
+                    case 100 {
+                        pool := AVALON
+                    }
+                    case 210 {
+                        pool := ZEROLEND
+                    }
                     default {
                         mstore(0x0, _lenderId)
                         mstore(0x20, LENDING_POOL_SLOT)
@@ -570,6 +591,12 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                 switch _lenderId
                 case 0 {
                     pool := AAVE_V3
+                }
+                case 100 {
+                    pool := AVALON
+                }
+                case 210 {
+                    pool := ZEROLEND
                 }
                 default {
                     mstore(0x0, _lenderId)
