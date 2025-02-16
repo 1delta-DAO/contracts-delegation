@@ -468,6 +468,26 @@ const config: HardhatUserConfig = {
           evmVersion: 'cancun',
         },
       },
+      "contracts/1delta/modules/optimism/Composer.sol": {
+        version: '0.8.28',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 10_000,
+          },
+          evmVersion: 'cancun',
+        },
+      },
+      "contracts/1delta/modules/base/Composer.sol": {
+        version: '0.8.28',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 7_500,
+          },
+          evmVersion: 'cancun',
+        },
+      },
       "contracts/1delta/modules/mantle/Composer.sol": {
         version: '0.8.28',
         settings: {

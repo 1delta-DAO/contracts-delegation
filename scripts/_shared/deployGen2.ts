@@ -5,6 +5,7 @@ import {
     ConfigModule__factory,
     ManagementModule__factory,
     LensModule__factory,
+    OwnershipModule__factory,
 } from "../../types";
 import { getGasConfig } from "../_utils/getGasConfig";
 import { ModuleConfigAction, getContractSelectors } from "../_utils/diamond";
@@ -21,7 +22,8 @@ async function main() {
     // we manually increment the nonce
     let nonce = await operator.getTransactionCount()
 
-    const config = await getGasConfig(operator)
+    let config = await getGasConfig(operator, 10, true)
+    // config.gasLimit = 10_000_000
 
     // deploy module config
     const moduleConfig = await new ConfigModule__factory(operator).deploy({ ...config, nonce: nonce++ })
@@ -46,9 +48,13 @@ async function main() {
     const management = await new ManagementModule__factory(operator).deploy({ ...config, nonce: nonce++ })
     await management.deployed()
 
+    // lens
     const lens = await new LensModule__factory(operator).deploy({ ...config, nonce: nonce++ })
     await lens.deployed()
 
+    // ownership
+    const ownership = await new OwnershipModule__factory(operator).deploy({ ...config, nonce: nonce++ })
+    await ownership.deployed()
 
     console.log("modules deployed")
 
@@ -62,6 +68,7 @@ async function main() {
     const modules: any = []
     modules.push(management)
     modules.push(lens)
+    modules.push(ownership)
 
     console.log("Having", modules.length, "additions")
 
@@ -81,10 +88,11 @@ async function main() {
 
     console.log("deployment complete")
     console.log("======== Addresses =======")
-    console.log("moduleConfig:", moduleConfig.address)
+    console.log("config:", moduleConfig.address)
     console.log("proxy:", proxy.address)
-    console.log("management:", management.address)
-    console.log("lens:", lens.address)
+    console.log("managementImplementation:", management.address)
+    console.log("lensImplementation:", lens.address)
+    console.log("ownershipImplementation:", ownership.address)
     console.log("==========================")
 }
 

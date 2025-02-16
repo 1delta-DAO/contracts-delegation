@@ -203,7 +203,7 @@ export function getAaveForkDatas(chainId: number) {
     return params
 }
 
-export function getAaveForkApproveDatas(chainId: number) {
+export function getAaveForkApproves(chainId: number) {
     let params: ApproveParamsStruct[] = []
     Object.entries(AAVE_FORK_POOL_DATA).forEach(([lender, data]) => {
         const dataForChain = data[chainId]

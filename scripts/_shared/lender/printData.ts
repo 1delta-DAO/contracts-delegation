@@ -1,10 +1,10 @@
 import { Chain } from "@1delta/asset-registry";
-import { getAaveForkApproveDatas, getAaveForkDatas, getCompoundV3Approves } from "./getDatas";
+import { getAaveForkApproves, getAaveForkDatas, getCompoundV3Approves } from "./getDatas";
 
 async function main() {
 
     const apprsCompound = getCompoundV3Approves(Chain.ARBITRUM_ONE)
-    const apprsAave = getAaveForkApproveDatas(Chain.ARBITRUM_ONE)
+    const apprsAave = getAaveForkApproves(Chain.ARBITRUM_ONE)
     const insertsAave = getAaveForkDatas(Chain.ARBITRUM_ONE)
 
     const allDatas = [...apprsCompound, ...apprsAave, ...insertsAave]
