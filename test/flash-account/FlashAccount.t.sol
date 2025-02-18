@@ -404,27 +404,45 @@ contract FlashAccountTest is Test {
         assertEq(address(upgradedAccount.entryPoint()), address(newEntryPoint));
     }
 
-    // function testEntryPointCanUpgrade() public {
-    //     // Upgrade to a normal SimpleAccount with a different entry point.
-    //     IEntryPoint newEntryPoint = IEntryPoint(address(0x2000));
-    //     SimpleAccount newImplementation = new SimpleAccount(newEntryPoint);
-    //     PackedUserOperation memory op = _getSignedOp(
-    //         abi.encodeCall(
-    //             account.upgradeToAndCall,
-    //             (address(newImplementation), abi.encodeCall(SimpleAccount.initialize, (address(this))))
-    //         ),
-    //         EOA_PRIVATE_KEY
-    //     );
-    //     PackedUserOperation[] memory ops = new PackedUserOperation[](1);
-    //     ops[0] = op;
+    function testEntryPointCanUpgrade() public {
+        // transfer the ownership to beaconOwnerAccount
+        vm.prank(beaconOwner);
+        accountBeacon.transferOwnership(address(beaconOwnerAccount));
 
-    //     vm.expectEmit(true, true, false, false);
-    //     emit SimpleAccountInitialized(newEntryPoint, address(this));
-    //     entryPoint.handleOps(ops, BENEFICIARY);
+        // Create a new implementation
+        IEntryPoint newEntryPoint = IEntryPoint(address(0x2000));
+        FlashAccount newImplementation = new FlashAccount(newEntryPoint);
 
-    //     SimpleAccount upgradedAccount = SimpleAccount(payable(account));
-    //     assertEq(address(upgradedAccount.entryPoint()), address(newEntryPoint));
-    // }
+        // Fund the beacon owner account
+        vm.deal(address(beaconOwnerAccount), 1 ether);
+
+        // Create userOp to call beacon upgrade
+        bytes memory callData = abi.encodeCall(
+            BaseLightAccount.execute,
+            (address(accountBeacon), 0, abi.encodeCall(UpgradeableBeacon.upgradeTo, (address(newImplementation))))
+        );
+
+        // Create and sign the user operation using beaconOwnerAccount as sender
+        PackedUserOperation memory op = _getUnsignedOp(callData);
+        op.sender = address(beaconOwnerAccount); // Use beaconOwnerAccount as sender
+        op.signature = abi.encodePacked(
+            BaseLightAccount.SignatureType.EOA,
+            _sign(BEACON_OWNER_PRIVATE_KEY, entryPoint.getUserOpHash(op).toEthSignedMessageHash())
+        );
+
+        PackedUserOperation[] memory ops = new PackedUserOperation[](1);
+        ops[0] = op;
+
+        vm.expectEmit(true, false, false, false);
+        emit Upgraded(address(newImplementation));
+        entryPoint.handleOps(ops, BENEFICIARY);
+
+        assertEq(accountBeacon.implementation(), address(newImplementation), "Beacon implementation not updated");
+
+        // Verify the upgrade was successful
+        FlashAccount upgradedAccount = FlashAccount(payable(account));
+        assertEq(address(upgradedAccount.entryPoint()), address(newEntryPoint), "Account entryPoint not updated");
+    }
 
     // function testSelfCanUpgrade() public {
     //     // Upgrade to a normal SimpleAccount with a different entry point.
@@ -575,17 +593,6 @@ contract FlashAccountTest is Test {
 
     function _getSignedOp(bytes memory callData, uint256 privateKey) internal view returns (PackedUserOperation memory) {
         PackedUserOperation memory op = _getUnsignedOp(callData);
-        op.signature = abi.encodePacked(BaseLightAccount.SignatureType.EOA, _sign(privateKey, entryPoint.getUserOpHash(op).toEthSignedMessageHash()));
-        return op;
-    }
-
-    function _getSignedOpWithCustomSender(
-        bytes memory callData,
-        uint256 privateKey,
-        address sender
-    ) internal view returns (PackedUserOperation memory) {
-        PackedUserOperation memory op = _getUnsignedOp(callData);
-        op.sender = sender;
         op.signature = abi.encodePacked(BaseLightAccount.SignatureType.EOA, _sign(privateKey, entryPoint.getUserOpHash(op).toEthSignedMessageHash()));
         return op;
     }
