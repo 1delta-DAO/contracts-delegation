@@ -18,7 +18,7 @@ contract SweepTests is DeltaSetup {
         // some data
         bytes memory data = sweep(asset, testUser, amount + 1, SweepType.VALIDATE);
         // fails when too high
-        vm.expectRevert(0x7dd37f70); // ("Slippage()");
+        vm.expectRevert(bytes4(0x7dd37f70)); // ("Slippage()");
         vm.prank(user);
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
     }
