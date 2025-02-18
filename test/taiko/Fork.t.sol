@@ -5,7 +5,7 @@ import "./DeltaSetup.f.sol";
 
 contract ForkTestTaiko is DeltaSetup {
     function setUp() public virtual override {
-        vm.createSelectFork({blockNumber: 767247, urlOrAlias: "https://taiko.drpc.org"});
+        vm.createSelectFork({blockNumber: 876504, urlOrAlias: "https://taiko.drpc.org"});
         address admin = 0x999999833d965c275A2C102a4Ebf222ca938546f;
         // address proxy = 0x0bd7473CbBf81d9dD936c61117eD230d95006CA2;
         address oldModule = 0x790C039FCAbed1A5A91517e11F03E26720c1b368;
@@ -53,10 +53,10 @@ contract ForkTestTaiko is DeltaSetup {
         (bool success, bytes memory ret) = address(brokerProxyAddress).call( //
             data //
         );
+        vm.expectRevert();
         if (!success) {
             console.logBytes(ret);
             // Next 5 lines from https://ethereum.stackexchange.com/a/83577
-            if (ret.length < 68) revert();
             assembly {
                 ret := add(ret, 0x04)
             }
