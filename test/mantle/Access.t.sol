@@ -29,12 +29,12 @@ contract AccessTests is DeltaSetup {
         );
 
         // attack directly
-        vm.expectRevert(0xbafe1c53); // ("InvalidFlashLoan()");
+        vm.expectRevert(bytes4(0xbafe1c53)); // ("InvalidFlashLoan()");
         vm.prank(attacker);
         IFlashAggregator(brokerProxyAddress).executeOperation(assets, amounts, modes, brokerProxyAddress, params);
 
         // attack from lending pool
-        vm.expectRevert(0x48f5c3ed); // ("InvalidCaller()");
+        vm.expectRevert(bytes4(0x48f5c3ed)); // ("InvalidCaller()");
         vm.prank(attacker);
         ILendingPool(LendleMantle.POOL).flashLoan(
             brokerProxyAddress,
@@ -54,14 +54,14 @@ contract AccessTests is DeltaSetup {
         // some data
         bytes memory data = abi.encodePacked(TokensMantle.WMNT);
         // direct
-        vm.expectRevert(0xb2c02722); // ("BadPool()");
+        vm.expectRevert(bytes4(0xb2c02722)); // ("BadPool()");
         vm.prank(attacker);
         IFlashAggregator(brokerProxyAddress).hook(brokerProxyAddress, amount0, amount1, data);
 
         address pool = testQuoter.v2TypePairAddress(TokensMantle.aUSD, TokensMantle.USDC, DexMappingsMantle.CLEO_V1_STABLE);
 
         // should error before any data is decoded
-        vm.expectRevert(0xbafe1c53); // ("InvalidFlashLoan()");
+        vm.expectRevert(bytes4(0xbafe1c53)); // ("InvalidFlashLoan()");
         vm.prank(attacker);
         IERC20All(pool).swap(
             amount0,
