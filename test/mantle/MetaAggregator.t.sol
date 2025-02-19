@@ -485,7 +485,7 @@ contract MetaAggregatorTest is DeltaSetup {
 
         vm.startPrank(exploiter);
         bytes memory maliciousTransferData = tokenIn.encodeTransferFrom(user, exploiter, amountIn);
-        vm.expectRevert(0xee68db59); // custom error 0xee68db59
+        vm.expectRevert(bytes4(0xee68db59)); // custom error 0xee68db59
         aggr.swapMeta(
             "",
             maliciousTransferData, // send transferFrom
@@ -517,7 +517,7 @@ contract MetaAggregatorTest is DeltaSetup {
         vm.stopPrank();
 
         vm.startPrank(user);
-        vm.expectRevert(0xf6a73902); // custom error 0xf6a73902
+        vm.expectRevert(bytes4(0xf6a73902)); // custom error 0xf6a73902
         aggr.swapMeta{value: 1}(
             "",
             "", // send transferFrom
@@ -541,7 +541,7 @@ contract MetaAggregatorTest is DeltaSetup {
 
         vm.startPrank(user);
 
-        vm.expectRevert(0x07270ad5); // custom error 0x07270ad5
+        vm.expectRevert(bytes4(0x07270ad5)); // custom error 0x07270ad5
         aggr.swapMeta(
             "",
             "", // send transferFrom
@@ -568,7 +568,7 @@ contract MetaAggregatorTest is DeltaSetup {
 
         vm.startPrank(exploiter);
         bytes memory swapData = tokenIn.encodePermit2TransferFrom(user, exploiter, amountIn, address(tokenIn));
-        vm.expectRevert(0xee68db59); // custom error 0xee68db59
+        vm.expectRevert(bytes4(0xee68db59)); // custom error 0xee68db59
         aggr.swapMeta(
             "",
             swapData,

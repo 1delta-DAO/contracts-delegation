@@ -23,11 +23,14 @@ contract FlashAccountTest is Test {
     using MessageHashUtils for bytes32;
 
     uint256 public constant EOA_PRIVATE_KEY = 1;
+    uint256 public constant BEACON_OWNER_PRIVATE_KEY = 2;
     address payable public constant BENEFICIARY = payable(address(0xbe9ef1c1a2ee));
-    bytes32 internal constant _MESSAGE_TYPEHASH = keccak256("FlashAccountMessage(bytes message)");
+    bytes32 internal constant _MESSAGE_TYPEHASH = keccak256("LightAccountMessage(bytes message)");
     address public eoaAddress;
     FlashAccount public account;
+    FlashAccount public beaconOwnerAccount;
     EntryPoint public entryPoint;
+    FlashAccountFactory public factory;
 
     address public beaconOwner;
     address public initialAccountImplementation;
@@ -36,19 +39,29 @@ contract FlashAccountTest is Test {
     LightSwitch public lightSwitch;
     Owner public contractOwner;
 
+    uint256 public mainnetFork;
+
     event SimpleAccountInitialized(IEntryPoint indexed entryPoint, address indexed owner);
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
     event Initialized(uint64 version);
+    event Upgraded(address indexed implementation);
 
     function setUp() public {
         eoaAddress = vm.addr(EOA_PRIVATE_KEY);
         entryPoint = new EntryPoint();
+        beaconOwner = vm.addr(BEACON_OWNER_PRIVATE_KEY);
+        FlashAccount implementation = new FlashAccount(entryPoint);
+        initialAccountImplementation = address(implementation);
         accountBeacon = new UpgradeableBeacon(beaconOwner, initialAccountImplementation);
-        FlashAccountFactory factory = new FlashAccountFactory(address(this), address(accountBeacon), entryPoint);
+        factory = new FlashAccountFactory(beaconOwner, address(accountBeacon), entryPoint);
         account = factory.createAccount(eoaAddress, 1);
         vm.deal(address(account), 1 << 128);
         lightSwitch = new LightSwitch();
         contractOwner = new Owner();
+        beaconOwnerAccount = factory.createAccount(beaconOwner, 1);
+        // Initialize a mainnet fork
+        string memory rpcUrl = vm.envString("MAINNET_RPC_URL");
+        mainnetFork = vm.createFork(rpcUrl);
     }
 
     function testExecuteCanBeCalledByOwner() public {
@@ -383,41 +396,58 @@ contract FlashAccountTest is Test {
         account.isValidSignature(message, signature);
     }
 
-    // function testOwnerCanUpgrade() public {
-    //     // Upgrade to a normal SimpleAccount with a different entry point.
-    //     IEntryPoint newEntryPoint = IEntryPoint(address(0x2000));
-    //     SimpleAccount newImplementation = new SimpleAccount(newEntryPoint);
+    function testBeaconOwnerCanUpgrade() public {
+        // Upgrade to a normal FlashAccount with a different entry point.
+        IEntryPoint newEntryPoint = IEntryPoint(address(0x2000));
+        FlashAccount newImplementation = new FlashAccount(newEntryPoint);
 
-    //     vm.prank(eoaAddress);
-    //     vm.expectEmit(true, true, false, false);
-    //     emit SimpleAccountInitialized(newEntryPoint, address(this));
-    //     account.upgradeToAndCall(address(newImplementation), abi.encodeCall(SimpleAccount.initialize, (address(this))));
+        vm.prank(beaconOwner);
+        vm.expectEmit(true, false, false, false);
+        emit Upgraded(address(newImplementation));
+        accountBeacon.upgradeTo(address(newImplementation));
+        FlashAccount upgradedAccount = FlashAccount(payable(account));
+        assertEq(address(upgradedAccount.entryPoint()), address(newEntryPoint));
+    }
 
-    //     SimpleAccount upgradedAccount = SimpleAccount(payable(account));
-    //     assertEq(address(upgradedAccount.entryPoint()), address(newEntryPoint));
-    // }
+    function testEntryPointCanUpgrade() public {
+        // transfer the ownership to beaconOwnerAccount
+        vm.prank(beaconOwner);
+        accountBeacon.transferOwnership(address(beaconOwnerAccount));
 
-    // function testEntryPointCanUpgrade() public {
-    //     // Upgrade to a normal SimpleAccount with a different entry point.
-    //     IEntryPoint newEntryPoint = IEntryPoint(address(0x2000));
-    //     SimpleAccount newImplementation = new SimpleAccount(newEntryPoint);
-    //     PackedUserOperation memory op = _getSignedOp(
-    //         abi.encodeCall(
-    //             account.upgradeToAndCall,
-    //             (address(newImplementation), abi.encodeCall(SimpleAccount.initialize, (address(this))))
-    //         ),
-    //         EOA_PRIVATE_KEY
-    //     );
-    //     PackedUserOperation[] memory ops = new PackedUserOperation[](1);
-    //     ops[0] = op;
+        // Create a new implementation
+        IEntryPoint newEntryPoint = IEntryPoint(address(0x2000));
+        FlashAccount newImplementation = new FlashAccount(newEntryPoint);
 
-    //     vm.expectEmit(true, true, false, false);
-    //     emit SimpleAccountInitialized(newEntryPoint, address(this));
-    //     entryPoint.handleOps(ops, BENEFICIARY);
+        // Fund the beacon owner account
+        vm.deal(address(beaconOwnerAccount), 1 ether);
 
-    //     SimpleAccount upgradedAccount = SimpleAccount(payable(account));
-    //     assertEq(address(upgradedAccount.entryPoint()), address(newEntryPoint));
-    // }
+        // Create userOp to call beacon upgrade
+        bytes memory callData = abi.encodeCall(
+            BaseLightAccount.execute,
+            (address(accountBeacon), 0, abi.encodeCall(UpgradeableBeacon.upgradeTo, (address(newImplementation))))
+        );
+
+        // Create and sign the user operation using beaconOwnerAccount as sender
+        PackedUserOperation memory op = _getUnsignedOp(callData);
+        op.sender = address(beaconOwnerAccount); // Use beaconOwnerAccount as sender
+        op.signature = abi.encodePacked(
+            BaseLightAccount.SignatureType.EOA,
+            _sign(BEACON_OWNER_PRIVATE_KEY, entryPoint.getUserOpHash(op).toEthSignedMessageHash())
+        );
+
+        PackedUserOperation[] memory ops = new PackedUserOperation[](1);
+        ops[0] = op;
+
+        vm.expectEmit(true, false, false, false);
+        emit Upgraded(address(newImplementation));
+        entryPoint.handleOps(ops, BENEFICIARY);
+
+        assertEq(accountBeacon.implementation(), address(newImplementation), "Beacon implementation not updated");
+
+        // Verify the upgrade was successful
+        FlashAccount upgradedAccount = FlashAccount(payable(account));
+        assertEq(address(upgradedAccount.entryPoint()), address(newEntryPoint), "Account entryPoint not updated");
+    }
 
     // function testSelfCanUpgrade() public {
     //     // Upgrade to a normal SimpleAccount with a different entry point.
@@ -448,13 +478,13 @@ contract FlashAccountTest is Test {
     //     assertEq(address(upgradedAccount.entryPoint()), address(newEntryPoint));
     // }
 
-    // function testNonOwnerCannotUpgrade() public {
-    //     // Try to upgrade to a normal SimpleAccount with a different entry point.
-    //     IEntryPoint newEntryPoint = IEntryPoint(address(0x2000));
-    //     SimpleAccount newImplementation = new SimpleAccount(newEntryPoint);
-    //     vm.expectRevert(abi.encodeWithSelector(BaseLightAccount.NotAuthorized.selector, (address(this))));
-    //     account.upgradeToAndCall(address(newImplementation), abi.encodeCall(SimpleAccount.initialize, (address(this))));
-    // }
+    function testNonOwnerCannotUpgrade() public {
+        // Try to upgrade to a normal FlashAccount with a different entry point.
+        IEntryPoint newEntryPoint = IEntryPoint(address(0x2000));
+        FlashAccount newImplementation = new FlashAccount(newEntryPoint);
+        vm.expectRevert(bytes4(0x82b42900)); // Unauthorized()
+        accountBeacon.upgradeTo(address(newImplementation));
+    }
 
     function testStorageSlots() public {
         // No storage at start (slot 0).
@@ -462,11 +492,11 @@ contract FlashAccountTest is Test {
         assertEq(storageStart, 0);
 
         // Instead, storage at the chosen locations.
-        bytes32 accountSlot = keccak256(abi.encode(uint256(keccak256("light_account_v1.storage")) - 1)) & ~bytes32(uint256(0xff));
+        bytes32 accountSlot = keccak256("flash_account.storage");
         address owner = abi.decode(abi.encode(vm.load(address(account), accountSlot)), (address));
         assertEq(owner, eoaAddress);
 
-        bytes32 initializableSlot = keccak256(abi.encode(uint256(keccak256("light_account_v1.initializable")) - 1)) & ~bytes32(uint256(0xff));
+        bytes32 initializableSlot = keccak256("flash_account.initializable");
         uint8 initialized = abi.decode(abi.encode(vm.load(address(account), initializableSlot)), (uint8));
         assertEq(initialized, 1);
     }
@@ -493,53 +523,57 @@ contract FlashAccountTest is Test {
         account.performCreate2(0, hex"3d3dfd", bytes32(0));
     }
 
-    // function testCreate() public {
-    //     vm.prank(eoaAddress);
-    //     address expected = vm.computeCreateAddress(address(account), vm.getNonce(address(account)));
+    function testCreate() public {
+        address expected = vm.computeCreateAddress(address(account), vm.getNonce(address(account)));
 
-    //     address returnedAddress = account.performCreate(0, abi.encodePacked(type(FlashAccount).creationCode, abi.encode(address(entryPoint))));
-    //     assertEq(address(FlashAccount(payable(expected)).entryPoint()), address(entryPoint));
-    //     assertEq(returnedAddress, expected);
-    // }
+        vm.prank(eoaAddress);
+        address returnedAddress = account.performCreate(0, abi.encodePacked(type(FlashAccount).creationCode, abi.encode(address(entryPoint))));
+        assertEq(address(FlashAccount(payable(expected)).entryPoint()), address(entryPoint));
+        assertEq(returnedAddress, expected);
+    }
 
-    // function testCreateValue() public {
-    //     vm.prank(eoaAddress);
-    //     address expected = vm.computeCreateAddress(address(account), vm.getNonce(address(account)));
+    function testCreateValue() public {
+        vm.prank(eoaAddress);
+        address expected = vm.computeCreateAddress(address(account), vm.getNonce(address(account)));
 
-    //     uint256 value = 1 ether;
-    //     deal(address(account), value);
+        uint256 value = 1 ether;
+        vm.deal(address(account), value);
 
-    //     address returnedAddress = account.performCreate(value, "");
-    //     assertEq(returnedAddress, expected);
-    //     assertEq(returnedAddress.balance, value);
-    // }
+        address returnedAddress = account.performCreate(value, "");
 
-    // function testCreate2() public {
-    //     vm.prank(eoaAddress);
-    //     bytes memory initCode = abi.encodePacked(type(FlashAccount).creationCode, abi.encode(address(entryPoint)));
-    //     bytes32 initCodeHash = keccak256(initCode);
-    //     bytes32 salt = bytes32(hex"04546b");
-    //     address expected = vm.computeCreate2Address(salt, initCodeHash, address(account));
+        assertEq(returnedAddress, expected);
+        assertEq(returnedAddress.balance, value);
+    }
 
-    //     address returnedAddress = account.performCreate2(0, initCode, salt);
-    //     assertEq(address(FlashAccount(payable(expected)).entryPoint()), address(entryPoint));
-    //     assertEq(returnedAddress, expected);
-    // }
+    function testCreate2() public {
+        vm.prank(eoaAddress);
 
-    // function testCreate2Value() public {
-    //     vm.prank(eoaAddress);
-    //     bytes memory initCode = "";
-    //     bytes32 initCodeHash = keccak256(initCode);
-    //     bytes32 salt = bytes32(hex"04546b");
-    //     address expected = vm.computeCreate2Address(salt, initCodeHash, address(account));
+        bytes memory initCode = abi.encodePacked(type(FlashAccount).creationCode, abi.encode(address(entryPoint)));
+        bytes32 initCodeHash = keccak256(initCode);
+        bytes32 salt = bytes32(hex"04546b");
 
-    //     uint256 value = 1 ether;
-    //     deal(address(account), value);
+        address expected = vm.computeCreate2Address(salt, initCodeHash, address(account));
 
-    //     address returnedAddress = account.performCreate2(value, initCode, salt);
-    //     assertEq(returnedAddress, expected);
-    //     assertEq(returnedAddress.balance, value);
-    // }
+        address returnedAddress = account.performCreate2(0, initCode, salt);
+
+        assertEq(returnedAddress, expected);
+        assertEq(address(FlashAccount(payable(returnedAddress)).entryPoint()), address(entryPoint));
+    }
+
+    function testCreate2Value() public {
+        vm.prank(eoaAddress);
+        bytes memory initCode = "";
+        bytes32 initCodeHash = keccak256(initCode);
+        bytes32 salt = bytes32(hex"04546b");
+        address expected = vm.computeCreate2Address(salt, initCodeHash, address(account));
+
+        uint256 value = 1 ether;
+        vm.deal(address(account), value);
+
+        address returnedAddress = account.performCreate2(value, initCode, salt);
+        assertEq(returnedAddress, expected);
+        assertEq(returnedAddress.balance, value);
+    }
 
     function _useContractOwner() internal {
         vm.prank(eoaAddress);

@@ -26,6 +26,9 @@ contract FlashAccountFactoryTest is Test {
 
     function setUp() public {
         entryPoint = new EntryPoint();
+        FlashAccount implementation = new FlashAccount(entryPoint);
+        initialAccountImplementation = address(implementation);
+        beaconOwner = address(this);    
         accountBeacon = new UpgradeableBeacon(beaconOwner, initialAccountImplementation);
         factory = new FlashAccountFactory(address(this), address(accountBeacon), entryPoint);
     }
