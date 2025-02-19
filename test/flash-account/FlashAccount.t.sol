@@ -39,6 +39,8 @@ contract FlashAccountTest is Test {
     LightSwitch public lightSwitch;
     Owner public contractOwner;
 
+    uint256 public mainnetFork;
+
     event SimpleAccountInitialized(IEntryPoint indexed entryPoint, address indexed owner);
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
     event Initialized(uint64 version);
@@ -57,6 +59,9 @@ contract FlashAccountTest is Test {
         lightSwitch = new LightSwitch();
         contractOwner = new Owner();
         beaconOwnerAccount = factory.createAccount(beaconOwner, 1);
+        // Initialize a mainnet fork
+        string memory rpcUrl = vm.envString("MAINNET_RPC_URL");
+        mainnetFork = vm.createFork(rpcUrl);
     }
 
     function testExecuteCanBeCalledByOwner() public {
@@ -473,13 +478,13 @@ contract FlashAccountTest is Test {
     //     assertEq(address(upgradedAccount.entryPoint()), address(newEntryPoint));
     // }
 
-    // function testNonOwnerCannotUpgrade() public {
-    //     // Try to upgrade to a normal SimpleAccount with a different entry point.
-    //     IEntryPoint newEntryPoint = IEntryPoint(address(0x2000));
-    //     SimpleAccount newImplementation = new SimpleAccount(newEntryPoint);
-    //     vm.expectRevert(abi.encodeWithSelector(BaseLightAccount.NotAuthorized.selector, (address(this))));
-    //     account.upgradeToAndCall(address(newImplementation), abi.encodeCall(SimpleAccount.initialize, (address(this))));
-    // }
+    function testNonOwnerCannotUpgrade() public {
+        // Try to upgrade to a normal FlashAccount with a different entry point.
+        IEntryPoint newEntryPoint = IEntryPoint(address(0x2000));
+        FlashAccount newImplementation = new FlashAccount(newEntryPoint);
+        vm.expectRevert(bytes4(0x82b42900)); // Unauthorized()
+        accountBeacon.upgradeTo(address(newImplementation));
+    }
 
     function testStorageSlots() public {
         // No storage at start (slot 0).
@@ -518,54 +523,57 @@ contract FlashAccountTest is Test {
         account.performCreate2(0, hex"3d3dfd", bytes32(0));
     }
 
-    // function testCreate() public {
-    //     vm.prank(eoaAddress);
-    //     address expected = vm.computeCreateAddress(address(account), vm.getNonce(address(account)));
+    function testCreate() public {
+        address expected = vm.computeCreateAddress(address(account), vm.getNonce(address(account)));
 
-    //     address returnedAddress =
-    //      account.performCreate(0, abi.encodePacked(type(FlashAccount).creationCode, abi.encode(address(entryPoint))));
-    //     assertEq(address(FlashAccount(payable(expected)).entryPoint()), address(entryPoint));
-    //     assertEq(returnedAddress, expected);
-    // }
+        vm.prank(eoaAddress);
+        address returnedAddress = account.performCreate(0, abi.encodePacked(type(FlashAccount).creationCode, abi.encode(address(entryPoint))));
+        assertEq(address(FlashAccount(payable(expected)).entryPoint()), address(entryPoint));
+        assertEq(returnedAddress, expected);
+    }
 
-    // function testCreateValue() public {
-    //     vm.prank(eoaAddress);
-    //     address expected = vm.computeCreateAddress(address(account), vm.getNonce(address(account)));
+    function testCreateValue() public {
+        vm.prank(eoaAddress);
+        address expected = vm.computeCreateAddress(address(account), vm.getNonce(address(account)));
 
-    //     uint256 value = 1 ether;
-    //     deal(address(account), value);
+        uint256 value = 1 ether;
+        vm.deal(address(account), value);
 
-    //     address returnedAddress = account.performCreate(value, "");
-    //     assertEq(returnedAddress, expected);
-    //     assertEq(returnedAddress.balance, value);
-    // }
+        address returnedAddress = account.performCreate(value, "");
 
-    // function testCreate2() public {
-    //     vm.prank(eoaAddress);
-    //     bytes memory initCode = abi.encodePacked(type(FlashAccount).creationCode, abi.encode(address(entryPoint)));
-    //     bytes32 initCodeHash = keccak256(initCode);
-    //     bytes32 salt = bytes32(hex"04546b");
-    //     address expected = vm.computeCreate2Address(salt, initCodeHash, address(account));
+        assertEq(returnedAddress, expected);
+        assertEq(returnedAddress.balance, value);
+    }
 
-    //     address returnedAddress = account.performCreate2(0, initCode, salt);
-    //     assertEq(address(FlashAccount(payable(expected)).entryPoint()), address(entryPoint));
-    //     assertEq(returnedAddress, expected);
-    // }
+    function testCreate2() public {
+        vm.prank(eoaAddress);
 
-    // function testCreate2Value() public {
-    //     vm.prank(eoaAddress);
-    //     bytes memory initCode = "";
-    //     bytes32 initCodeHash = keccak256(initCode);
-    //     bytes32 salt = bytes32(hex"04546b");
-    //     address expected = vm.computeCreate2Address(salt, initCodeHash, address(account));
+        bytes memory initCode = abi.encodePacked(type(FlashAccount).creationCode, abi.encode(address(entryPoint)));
+        bytes32 initCodeHash = keccak256(initCode);
+        bytes32 salt = bytes32(hex"04546b");
 
-    //     uint256 value = 1 ether;
-    //     deal(address(account), value);
+        address expected = vm.computeCreate2Address(salt, initCodeHash, address(account));
 
-    //     address returnedAddress = account.performCreate2(value, initCode, salt);
-    //     assertEq(returnedAddress, expected);
-    //     assertEq(returnedAddress.balance, value);
-    // }
+        address returnedAddress = account.performCreate2(0, initCode, salt);
+
+        assertEq(returnedAddress, expected);
+        assertEq(address(FlashAccount(payable(returnedAddress)).entryPoint()), address(entryPoint));
+    }
+
+    function testCreate2Value() public {
+        vm.prank(eoaAddress);
+        bytes memory initCode = "";
+        bytes32 initCodeHash = keccak256(initCode);
+        bytes32 salt = bytes32(hex"04546b");
+        address expected = vm.computeCreate2Address(salt, initCodeHash, address(account));
+
+        uint256 value = 1 ether;
+        vm.deal(address(account), value);
+
+        address returnedAddress = account.performCreate2(value, initCode, salt);
+        assertEq(returnedAddress, expected);
+        assertEq(returnedAddress.balance, value);
+    }
 
     function _useContractOwner() internal {
         vm.prank(eoaAddress);
