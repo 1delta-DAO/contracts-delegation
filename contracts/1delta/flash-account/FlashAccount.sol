@@ -12,7 +12,7 @@ contract FlashAccount is FlashAccountBase {
      * All of them are locked through the execution lock to prevent access outside
      * of the `execute` functions
      */
-  
+
     /** Aave simple flash loan */
     function executeOperation(
         address,

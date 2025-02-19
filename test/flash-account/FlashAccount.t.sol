@@ -9,7 +9,6 @@ import {MessageHashUtils} from "../../contracts/external-protocols/openzeppelin/
 import {EntryPoint} from "../../contracts/1delta/flash-account/account-abstraction/core/EntryPoint.sol";
 import {IEntryPoint} from "../../contracts/1delta/flash-account/account-abstraction/interfaces/IEntryPoint.sol";
 import {PackedUserOperation} from "../../contracts/1delta/flash-account/account-abstraction/interfaces/PackedUserOperation.sol";
-// import {SimpleAccount} from "../../contracts/1delta/flash-account/account-abstraction/samples/SimpleAccount.sol";
 
 import {UpgradeableBeacon} from "../../contracts/1delta/flash-account//proxy/Beacon.sol";
 import {BaseLightAccount} from "../../contracts/1delta/flash-account/common/BaseLightAccount.sol";
@@ -26,20 +25,21 @@ contract FlashAccountTest is Test {
     uint256 public constant BEACON_OWNER_PRIVATE_KEY = 2;
     address payable public constant BENEFICIARY = payable(address(0xbe9ef1c1a2ee));
     bytes32 internal constant _MESSAGE_TYPEHASH = keccak256("LightAccountMessage(bytes message)");
+    uint256 public mainnetFork;
+
     address public eoaAddress;
+    address public beaconOwner;
+    address public initialAccountImplementation;
+
     FlashAccount public account;
     FlashAccount public beaconOwnerAccount;
     EntryPoint public entryPoint;
     FlashAccountFactory public factory;
 
-    address public beaconOwner;
-    address public initialAccountImplementation;
     UpgradeableBeacon public accountBeacon;
 
     LightSwitch public lightSwitch;
     Owner public contractOwner;
-
-    uint256 public mainnetFork;
 
     event SimpleAccountInitialized(IEntryPoint indexed entryPoint, address indexed owner);
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
@@ -48,8 +48,9 @@ contract FlashAccountTest is Test {
 
     function setUp() public {
         eoaAddress = vm.addr(EOA_PRIVATE_KEY);
-        entryPoint = new EntryPoint();
         beaconOwner = vm.addr(BEACON_OWNER_PRIVATE_KEY);
+
+        entryPoint = new EntryPoint();
         FlashAccount implementation = new FlashAccount(entryPoint);
         initialAccountImplementation = address(implementation);
         accountBeacon = new UpgradeableBeacon(beaconOwner, initialAccountImplementation);
@@ -59,9 +60,6 @@ contract FlashAccountTest is Test {
         lightSwitch = new LightSwitch();
         contractOwner = new Owner();
         beaconOwnerAccount = factory.createAccount(beaconOwner, 1);
-        // Initialize a mainnet fork
-        string memory rpcUrl = vm.envString("MAINNET_RPC_URL");
-        mainnetFork = vm.createFork(rpcUrl);
     }
 
     function testExecuteCanBeCalledByOwner() public {
