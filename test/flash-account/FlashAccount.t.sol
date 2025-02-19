@@ -3,12 +3,12 @@ pragma solidity ^0.8.23;
 
 import "forge-std/Test.sol";
 
-import {IERC1271} from "../../contracts/external-protocols/openzeppelin/interfaces/IERC1271.sol";
-import {ECDSA} from "../../contracts/external-protocols/openzeppelin/utils/cryptography/ECDSA.sol";
-import {MessageHashUtils} from "../../contracts/external-protocols/openzeppelin/utils/cryptography/MessageHashUtils.sol";
-import {EntryPoint} from "../../contracts/1delta/flash-account/account-abstraction/core/EntryPoint.sol";
-import {IEntryPoint} from "../../contracts/1delta/flash-account/account-abstraction/interfaces/IEntryPoint.sol";
-import {PackedUserOperation} from "../../contracts/1delta/flash-account/account-abstraction/interfaces/PackedUserOperation.sol";
+import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
+import {EntryPoint} from "account-abstraction/core/EntryPoint.sol";
+import {IEntryPoint} from "account-abstraction/interfaces/IEntryPoint.sol";
+import {PackedUserOperation} from "account-abstraction/interfaces/PackedUserOperation.sol";
 
 import {UpgradeableBeacon} from "../../contracts/1delta/flash-account//proxy/Beacon.sol";
 import {BaseLightAccount} from "../../contracts/1delta/flash-account/common/BaseLightAccount.sol";
@@ -91,7 +91,8 @@ contract FlashAccountTest is Test {
         PackedUserOperation memory op = _getUnsignedOp(
             abi.encodeCall(BaseLightAccount.execute, (address(lightSwitch), 0, abi.encodeCall(LightSwitch.turnOn, ())))
         );
-        op.signature = abi.encodePacked(BaseLightAccount.SignatureType.CONTRACT, contractOwner.sign(entryPoint.getUserOpHash(op)));
+        op.signature =
+            abi.encodePacked(BaseLightAccount.SignatureType.CONTRACT, contractOwner.sign(entryPoint.getUserOpHash(op)));
         PackedUserOperation[] memory ops = new PackedUserOperation[](1);
         ops[0] = op;
         entryPoint.handleOps(ops, BENEFICIARY);
@@ -260,7 +261,8 @@ contract FlashAccountTest is Test {
         account.addDeposit{value: 1 ether}();
         address payable withdrawalAddress = payable(address(1));
 
-        PackedUserOperation memory op = _getSignedOp(abi.encodeCall(BaseLightAccount.withdrawDepositTo, (withdrawalAddress, 5)), EOA_PRIVATE_KEY);
+        PackedUserOperation memory op =
+            _getSignedOp(abi.encodeCall(BaseLightAccount.withdrawDepositTo, (withdrawalAddress, 5)), EOA_PRIVATE_KEY);
         PackedUserOperation[] memory ops = new PackedUserOperation[](1);
         ops[0] = op;
         entryPoint.handleOps(ops, BENEFICIARY);
@@ -310,7 +312,8 @@ contract FlashAccountTest is Test {
 
     function testEntryPointCanTransferOwnership() public {
         address newOwner = address(0x100);
-        PackedUserOperation memory op = _getSignedOp(abi.encodeCall(FlashAccountBase.transferOwnership, (newOwner)), EOA_PRIVATE_KEY);
+        PackedUserOperation memory op =
+            _getSignedOp(abi.encodeCall(FlashAccountBase.transferOwnership, (newOwner)), EOA_PRIVATE_KEY);
         PackedUserOperation[] memory ops = new PackedUserOperation[](1);
         ops[0] = op;
         vm.expectEmit(true, true, false, false);
@@ -322,7 +325,10 @@ contract FlashAccountTest is Test {
     function testSelfCanTransferOwnership() public {
         address newOwner = address(0x100);
         PackedUserOperation memory op = _getSignedOp(
-            abi.encodeCall(BaseLightAccount.execute, (address(account), 0, abi.encodeCall(FlashAccountBase.transferOwnership, (newOwner)))),
+            abi.encodeCall(
+                BaseLightAccount.execute,
+                (address(account), 0, abi.encodeCall(FlashAccountBase.transferOwnership, (newOwner)))
+            ),
             EOA_PRIVATE_KEY
         );
         PackedUserOperation[] memory ops = new PackedUserOperation[](1);
@@ -362,24 +368,30 @@ contract FlashAccountTest is Test {
 
     function testIsValidSignatureForEoaOwner() public {
         bytes32 message = keccak256("hello world");
-        bytes memory signature = abi.encodePacked(BaseLightAccount.SignatureType.EOA, _sign(EOA_PRIVATE_KEY, _getMessageHash(abi.encode(message))));
+        bytes memory signature = abi.encodePacked(
+            BaseLightAccount.SignatureType.EOA, _sign(EOA_PRIVATE_KEY, _getMessageHash(abi.encode(message)))
+        );
         assertEq(account.isValidSignature(message, signature), bytes4(keccak256("isValidSignature(bytes32,bytes)")));
     }
 
     function testIsValidSignatureForContractOwner() public {
         _useContractOwner();
         bytes32 message = keccak256("hello world");
-        bytes memory signature = abi.encodePacked(BaseLightAccount.SignatureType.CONTRACT, contractOwner.sign(_getMessageHash(abi.encode(message))));
+        bytes memory signature = abi.encodePacked(
+            BaseLightAccount.SignatureType.CONTRACT, contractOwner.sign(_getMessageHash(abi.encode(message)))
+        );
         assertEq(account.isValidSignature(message, signature), bytes4(keccak256("isValidSignature(bytes32,bytes)")));
     }
 
     function testIsValidSignatureRejectsInvalid() public {
         bytes32 message = keccak256("hello world");
-        bytes memory signature = abi.encodePacked(BaseLightAccount.SignatureType.EOA, _sign(123, _getMessageHash(abi.encode(message))));
+        bytes memory signature =
+            abi.encodePacked(BaseLightAccount.SignatureType.EOA, _sign(123, _getMessageHash(abi.encode(message))));
         assertEq(account.isValidSignature(message, signature), bytes4(0xffffffff));
 
         // Invalid length
-        signature = abi.encodePacked(BaseLightAccount.SignatureType.EOA, hex"1234567890abcdef1234567890abcdef1234567890abcdef");
+        signature =
+            abi.encodePacked(BaseLightAccount.SignatureType.EOA, hex"1234567890abcdef1234567890abcdef1234567890abcdef");
         vm.expectRevert(abi.encodeWithSelector(ECDSA.ECDSAInvalidSignatureLength.selector, 24));
         account.isValidSignature(message, signature);
 
@@ -525,7 +537,8 @@ contract FlashAccountTest is Test {
         address expected = vm.computeCreateAddress(address(account), vm.getNonce(address(account)));
 
         vm.prank(eoaAddress);
-        address returnedAddress = account.performCreate(0, abi.encodePacked(type(FlashAccount).creationCode, abi.encode(address(entryPoint))));
+        address returnedAddress =
+            account.performCreate(0, abi.encodePacked(type(FlashAccount).creationCode, abi.encode(address(entryPoint))));
         assertEq(address(FlashAccount(payable(expected)).entryPoint()), address(entryPoint));
         assertEq(returnedAddress, expected);
     }
@@ -583,23 +596,28 @@ contract FlashAccountTest is Test {
         uint128 callGasLimit = 1 << 24;
         uint128 maxPriorityFeePerGas = 1 << 8;
         uint128 maxFeePerGas = 1 << 8;
-        return
-            PackedUserOperation({
-                sender: address(account),
-                nonce: 0,
-                initCode: "",
-                callData: callData,
-                accountGasLimits: bytes32((uint256(verificationGasLimit) << 128) | callGasLimit),
-                preVerificationGas: 1 << 24,
-                gasFees: bytes32((uint256(maxPriorityFeePerGas) << 128) | maxFeePerGas),
-                paymasterAndData: "",
-                signature: ""
-            });
+        return PackedUserOperation({
+            sender: address(account),
+            nonce: 0,
+            initCode: "",
+            callData: callData,
+            accountGasLimits: bytes32((uint256(verificationGasLimit) << 128) | callGasLimit),
+            preVerificationGas: 1 << 24,
+            gasFees: bytes32((uint256(maxPriorityFeePerGas) << 128) | maxFeePerGas),
+            paymasterAndData: "",
+            signature: ""
+        });
     }
 
-    function _getSignedOp(bytes memory callData, uint256 privateKey) internal view returns (PackedUserOperation memory) {
+    function _getSignedOp(bytes memory callData, uint256 privateKey)
+        internal
+        view
+        returns (PackedUserOperation memory)
+    {
         PackedUserOperation memory op = _getUnsignedOp(callData);
-        op.signature = abi.encodePacked(BaseLightAccount.SignatureType.EOA, _sign(privateKey, entryPoint.getUserOpHash(op).toEthSignedMessageHash()));
+        op.signature = abi.encodePacked(
+            BaseLightAccount.SignatureType.EOA, _sign(privateKey, entryPoint.getUserOpHash(op).toEthSignedMessageHash())
+        );
         return op;
     }
 
@@ -617,17 +635,16 @@ contract FlashAccountTest is Test {
 
     /// @dev Domain separator for the account.
     function _domainSeparator() internal view returns (bytes32) {
-        (, string memory name, string memory version, , , , ) = account.eip712Domain();
-        return
-            keccak256(
-                abi.encode(
-                    keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
-                    keccak256(bytes(name)),
-                    keccak256(bytes(version)),
-                    block.chainid,
-                    address(account)
-                )
-            );
+        (, string memory name, string memory version,,,,) = account.eip712Domain();
+        return keccak256(
+            abi.encode(
+                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
+                keccak256(bytes(name)),
+                keccak256(bytes(version)),
+                block.chainid,
+                address(account)
+            )
+        );
     }
 }
 

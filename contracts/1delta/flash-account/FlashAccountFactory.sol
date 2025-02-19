@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.23;
 
-import {Ownable} from "../../external-protocols/openzeppelin/access/Ownable.sol";
-import {IEntryPoint} from "./account-abstraction/interfaces/IEntryPoint.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {IEntryPoint} from "account-abstraction/interfaces/IEntryPoint.sol";
 
 import {BaseLightAccountFactory} from "./common/BaseLightAccountFactory.sol";
 import {LibClone} from "./proxy/LibClone.sol";
@@ -55,7 +55,6 @@ contract FlashAccountFactory is BaseLightAccountFactory {
     function getAccountImplementation() external view returns (address) {
         return IBeacon(ACCOUNT_BEACON).implementation();
     }
-
 
     /// @notice Compute the hash of the owner and salt in scratch space memory.
     /// @dev The caller is responsible for cleaning the upper bits of the owner address parameter.

@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.23;
 
-import {BaseAccount} from "../account-abstraction/core/BaseAccount.sol";
-import {SIG_VALIDATION_FAILED, SIG_VALIDATION_SUCCESS} from "../account-abstraction/core/Helpers.sol";
-import {IEntryPoint} from "../account-abstraction/interfaces/IEntryPoint.sol";
-import {PackedUserOperation} from "../account-abstraction/interfaces/PackedUserOperation.sol";
-import {TokenCallbackHandler} from "../account-abstraction/samples/callback/TokenCallbackHandler.sol";
+import {BaseAccount} from "account-abstraction/core/BaseAccount.sol";
+import {SIG_VALIDATION_FAILED, SIG_VALIDATION_SUCCESS} from "account-abstraction/core/Helpers.sol";
+import {IEntryPoint} from "account-abstraction/interfaces/IEntryPoint.sol";
+import {PackedUserOperation} from "account-abstraction/interfaces/PackedUserOperation.sol";
+import {TokenCallbackHandler} from "account-abstraction/samples/callback/TokenCallbackHandler.sol";
 
 import {ERC1271} from "./ERC1271.sol";
 import {ExecutionLock} from "./ExecutionLock.sol";
@@ -47,7 +47,12 @@ abstract contract BaseLightAccount is BaseAccount, TokenCallbackHandler, ERC1271
     /// @param dest An array of the targets for each transaction in the sequence.
     /// @param func An array of calldata for each transaction in the sequence. Must be the same length as `dest`, with
     /// corresponding elements representing the parameters for each transaction.
-    function executeBatch(address[] calldata dest, bytes[] calldata func) external virtual onlyAuthorized setInExecution  {
+    function executeBatch(address[] calldata dest, bytes[] calldata func)
+        external
+        virtual
+        onlyAuthorized
+        setInExecution
+    {
         if (dest.length != func.length) {
             revert ArrayLengthMismatch();
         }

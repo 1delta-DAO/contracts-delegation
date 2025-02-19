@@ -3,12 +3,12 @@ pragma solidity ^0.8.23;
 
 import "forge-std/Test.sol";
 
-import {IERC1271} from "../../../contracts/external-protocols/openzeppelin/interfaces/IERC1271.sol";
-import {ECDSA} from "../../../contracts/external-protocols/openzeppelin/utils/cryptography/ECDSA.sol";
-import {MessageHashUtils} from "../../../contracts/external-protocols/openzeppelin/utils/cryptography/MessageHashUtils.sol";
-import {EntryPoint} from "../../../contracts/1delta/flash-account/account-abstraction/core/EntryPoint.sol";
-import {IEntryPoint} from "../../../contracts/1delta/flash-account/account-abstraction/interfaces/IEntryPoint.sol";
-import {PackedUserOperation} from "../../../contracts/1delta/flash-account/account-abstraction/interfaces/PackedUserOperation.sol";
+import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
+import {EntryPoint} from "account-abstraction/core/EntryPoint.sol";
+import {IEntryPoint} from "account-abstraction/interfaces/IEntryPoint.sol";
+import {PackedUserOperation} from "account-abstraction/interfaces/PackedUserOperation.sol";
 
 import {UpgradeableBeacon} from "../../../contracts/1delta/flash-account//proxy/Beacon.sol";
 import {BaseLightAccount} from "../../../contracts/1delta/flash-account/common/BaseLightAccount.sol";
@@ -67,15 +67,14 @@ contract AaveFlashLoanTest is Test {
     }
 
     /**
-    function executeOperation(
-    address asset,
-    uint256 amount,
-    uint256 premium,
-    address initiator,
-    bytes calldata params
-  )
+     * function executeOperation(
+     * address asset,
+     * uint256 amount,
+     * uint256 premium,
+     * address initiator,
+     * bytes calldata params
+     *   )
      */
-
     function testCantCallexecuteOperationDirectly() public {
         //vm.prank(eoaAddress);
         vm.expectRevert(bytes4(0x0f2e5b6c)); // Locked()
