@@ -80,6 +80,41 @@ contract AaveFlashLoanTest is Test {
         contractOwner = new Owner();
     }
 
+    function testRevertIfNotInExecution() public {
+        address sender = address(0x0a1);
+        vm.deal(sender, 1e6);
+
+        address[] memory dests = new address[](1);
+        dests[0] = USDC;
+
+        uint256[] memory values = new uint256[](1);
+        values[0] = 0;
+
+        bytes[] memory calls = new bytes[](1);
+        calls[0] = abi.encodeWithSignature("transfer(address,uint256)", sender, 1e6);
+
+        bytes memory params = abi.encode(dests, values, calls);
+
+        vm.prank(sender);
+        // vm.expectRevert(bytes4(0x0f2e5b6c)); // Locked()
+        vm.expectRevert();
+        account.executeOperation(USDC, 1e9, 0, 0x120D2fDdC53467479570B2E7870d6d7A80b0f050, params);
+    }
+
+    function testRevertIfDirectlyCallPoolForLoan() public {
+        address[] memory dests = new address[](1);
+        dests[0] = USDC;
+        uint256[] memory values = new uint256[](1);
+        values[0] = 0;
+        bytes[] memory calls = new bytes[](1);
+        calls[0] = abi.encodeWithSignature("transfer(address,uint256)", address(this), 1e6);
+        bytes memory params = abi.encode(dests, values, calls);
+
+        // vm.expectRevert(bytes4(0x0f2e5b6c)); // Locked()
+        vm.expectRevert();
+        IPool(AAVEV3_POOL).flashLoanSimple(address(account), USDC, 1e9, params, 0);
+    }
+
     function testFlashLoanDirect() public {
         uint128 flashLoanPremiumTotal = IPool(AAVEV3_POOL).FLASHLOAN_PREMIUM_TOTAL();
         uint256 amountToBorrow = 1e9;
