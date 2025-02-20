@@ -11,7 +11,6 @@ import {BaseLightAccount} from "../../../../contracts/1delta/flash-account/commo
 import {FlashAccount} from "../../../../contracts/1delta/flash-account/FlashAccount.sol";
 import {FlashAccountBase} from "../../../../contracts/1delta/flash-account/FlashAccountBase.sol";
 import {FlashAccountFactory} from "../../../../contracts/1delta/flash-account/FlashAccountFactory.sol";
-import {Owner} from "../../FlashAccount.t.sol";
 
 import {IVault} from "./interfaces/IVault.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
