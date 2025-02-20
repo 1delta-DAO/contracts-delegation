@@ -3,11 +3,9 @@ pragma solidity ^0.8.23;
 
 import "forge-std/Test.sol";
 
-import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
-import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {EntryPoint} from "account-abstraction/core/EntryPoint.sol";
 import {IEntryPoint} from "account-abstraction/interfaces/IEntryPoint.sol";
+import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {PackedUserOperation} from "account-abstraction/interfaces/PackedUserOperation.sol";
 
 import {UpgradeableBeacon} from "../../../../contracts/1delta/flash-account//proxy/Beacon.sol";
@@ -15,14 +13,11 @@ import {BaseLightAccount} from "../../../../contracts/1delta/flash-account/commo
 import {FlashAccount} from "../../../../contracts/1delta/flash-account/FlashAccount.sol";
 import {FlashAccountBase} from "../../../../contracts/1delta/flash-account/FlashAccountBase.sol";
 import {FlashAccountFactory} from "../../../../contracts/1delta/flash-account/FlashAccountFactory.sol";
-import {Owner} from "../../FlashAccount.t.sol";
 
 import {IPool, DataTypes} from "./interfaces/IPool.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract AaveFlashLoanTest is Test {
-    using stdStorage for StdStorage;
-    using ECDSA for bytes32;
     using MessageHashUtils for bytes32;
 
     uint256 public constant EOA_PRIVATE_KEY = 1;
@@ -31,7 +26,6 @@ contract AaveFlashLoanTest is Test {
     address public constant AAVEV3_POOL = 0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2;
     address public constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
 
-    bytes32 internal constant _MESSAGE_TYPEHASH = keccak256("LightAccountMessage(bytes message)");
     uint256 public mainnetFork;
 
     address public eoaAddress;
@@ -44,8 +38,6 @@ contract AaveFlashLoanTest is Test {
     FlashAccountFactory public factory;
 
     UpgradeableBeacon public accountBeacon;
-
-    Owner public contractOwner;
 
     event FlashLoan(
         address indexed target,
@@ -77,7 +69,6 @@ contract AaveFlashLoanTest is Test {
 
         vm.deal(address(account), 1 << 128);
         vm.deal(eoaAddress, 1 << 128);
-        contractOwner = new Owner();
     }
 
     function testRevertIfNotInExecution() public {
@@ -115,7 +106,7 @@ contract AaveFlashLoanTest is Test {
         IPool(AAVEV3_POOL).flashLoanSimple(address(account), USDC, 1e9, params, 0);
     }
 
-    function testFlashLoanDirect() public {
+    function testAaveV3FlashLoanDirect() public {
         uint128 flashLoanPremiumTotal = IPool(AAVEV3_POOL).FLASHLOAN_PREMIUM_TOTAL();
         uint256 amountToBorrow = 1e9;
         uint256 aavePremium = percentMul(amountToBorrow, flashLoanPremiumTotal);
@@ -156,7 +147,7 @@ contract AaveFlashLoanTest is Test {
         account.execute(AAVEV3_POOL, 0, flashLoanCall);
     }
 
-    function testFlashLoanWithUserOp() public {
+    function testAaveV3FlashLoanWithUserOp() public {
         uint128 flashLoanPremiumTotal = IPool(AAVEV3_POOL).FLASHLOAN_PREMIUM_TOTAL();
         uint256 amountToBorrow = 1e9;
         uint256 aavePremium = percentMul(amountToBorrow, flashLoanPremiumTotal);
