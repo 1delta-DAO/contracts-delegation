@@ -156,6 +156,82 @@ contract AaveFlashLoanTest is Test {
         account.execute(AAVEV3_POOL, 0, flashLoanCall);
     }
 
+    function testFlashLoanWithUserOp() public {
+        uint128 flashLoanPremiumTotal = IPool(AAVEV3_POOL).FLASHLOAN_PREMIUM_TOTAL();
+        uint256 amountToBorrow = 1e9;
+        uint256 aavePremium = percentMul(amountToBorrow, flashLoanPremiumTotal);
+        uint256 totalDebt = amountToBorrow + aavePremium;
+
+        // Transfer USDC to account
+        vm.prank(0x37305B1cD40574E4C5Ce33f8e8306Be057fD7341);
+        IERC20(USDC).transfer(address(account), aavePremium);
+
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
+        userOps[0] = prepareUserOp(amountToBorrow, totalDebt, EOA_PRIVATE_KEY);
+
+        vm.expectEmit(true, true, true, true);
+        emit FlashLoan(
+            address(account),
+            address(account),
+            USDC,
+            amountToBorrow,
+            DataTypes.InterestRateMode.NONE,
+            aavePremium,
+            uint16(0)
+        );
+
+        entryPoint.handleOps(userOps, BENEFICIARY);
+    }
+
+    function _sign(uint256 privateKey, bytes32 digest) internal pure returns (bytes memory) {
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, digest);
+        return abi.encodePacked(r, s, v);
+    }
+
+    function prepareUserOp(uint256 amountToBorrow, uint256 totalDebt, uint256 privateKey)
+        private
+        returns (PackedUserOperation memory op)
+    {
+        address[] memory dests = new address[](1);
+        dests[0] = USDC;
+
+        uint256[] memory values = new uint256[](1);
+        values[0] = 0;
+
+        bytes[] memory calls = new bytes[](1);
+        calls[0] = abi.encodeWithSignature("approve(address,uint256)", AAVEV3_POOL, totalDebt);
+
+        bytes memory params = abi.encode(dests, values, calls);
+
+        bytes memory callData = abi.encodeWithSignature(
+            "flashLoanSimple(address,address,uint256,bytes,uint16)", address(account), USDC, amountToBorrow, params, 0
+        );
+
+        bytes memory executeCall = abi.encodeWithSignature("execute(address,uint256,bytes)", AAVEV3_POOL, 0, callData);
+        op = _getUnsignedOp(executeCall);
+        op.signature = abi.encodePacked(
+            BaseLightAccount.SignatureType.EOA, _sign(privateKey, entryPoint.getUserOpHash(op).toEthSignedMessageHash())
+        );
+    }
+
+    function _getUnsignedOp(bytes memory callData) internal view returns (PackedUserOperation memory) {
+        uint128 verificationGasLimit = 1 << 24;
+        uint128 callGasLimit = 1 << 24;
+        uint128 maxPriorityFeePerGas = 1 << 8;
+        uint128 maxFeePerGas = 1 << 8;
+        return PackedUserOperation({
+            sender: address(account),
+            nonce: entryPoint.getNonce(address(account), 0),
+            initCode: "",
+            callData: callData,
+            accountGasLimits: bytes32((uint256(verificationGasLimit) << 128) | callGasLimit),
+            preVerificationGas: 1 << 24,
+            gasFees: bytes32((uint256(maxPriorityFeePerGas) << 128) | maxFeePerGas),
+            paymasterAndData: "",
+            signature: ""
+        });
+    }
+
     // Maximum percentage factor (100.00%)
     uint256 internal constant PERCENTAGE_FACTOR = 1e4;
 
