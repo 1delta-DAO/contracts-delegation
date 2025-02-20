@@ -43,6 +43,14 @@ contract FlashAccount is FlashAccountBase {
     }
 
     /**
+     * Morpho flash loan
+     */
+    function onMorphoFlashLoan(uint256 assets, bytes calldata params) external requireInExecution {
+        // execute furhter operations
+        _decodeAndExecute(params);
+    }
+
+    /**
      * Internal function to decode batch calldata
      */
     function _decodeAndExecute(bytes calldata params) internal {
