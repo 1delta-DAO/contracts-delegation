@@ -759,48 +759,8 @@ contract OneDeltaComposerArbitrum is MarginTrading {
                         // being converted to collateral
                         // Aave V2/3s allow higher amounts than the balance and will correctly adapt
                         case 0xffffffffffffffffffffffffffff {
-                            switch lt(lenderId, MAX_ID_COMPOUND_V3)
-                            // Compound V3
-                            case 1 {
-                                let cometPool
-                                switch lenderId
-                                case 2000 {
-                                    cometPool := COMET_USDC
-                                }
-                                case 2001 {
-                                    cometPool := COMET_WETH
-                                }
-                                case 2002 {
-                                    cometPool := COMET_USDT
-                                }
-                                case 2003 {
-                                    cometPool := COMET_USDCE
-                                }
-                                // default: load comet from storage
-                                // if it is not provided directly
-                                default {
-                                    mstore(0x0, lenderId)
-                                    mstore(0x20, LENDING_POOL_SLOT)
-                                    cometPool := sload(keccak256(0x0, 0x40))
-                                    if iszero(cometPool) {
-                                        mstore(0, BAD_LENDER)
-                                        revert(0, 0x4)
-                                    }
-                                }
-
-                                // borrowBalanceOf(address)
-                                mstore(0x0, 0x374c49b400000000000000000000000000000000000000000000000000000000)
-                                // add caller address as parameter
-                                mstore(0x4, callerAddress)
-                                // call to debtToken
-                                pop(staticcall(gas(), cometPool, 0x0, 0x24, 0x0, 0x20))
-                                // load the retrieved balance
-                                amount := mload(0x0)
-                            }
-                            default {
-                                // venus uses max(uint) as flag
-                                amount := 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
-                            }
+                            // venus and Compound V3 use max(uint) as flag
+                            amount := 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
                         }
                         currentOffset := add(currentOffset, 57)
                     }

@@ -180,6 +180,8 @@ contract ComposerTestPolygon is DeltaSetup {
         gas = gas - gasleft();
         console.log("gas", gas);
 
+        assertApproxEqAbs(0, getBorrowBalance(user, borrowAsset, lenderId), 0);
+
         console.log(IERC20All(borrowAsset).balanceOf(user));
     }
 
