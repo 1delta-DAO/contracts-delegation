@@ -87,8 +87,7 @@ contract AaveFlashLoanTest is Test {
         bytes memory params = abi.encode(dests, values, calls);
 
         vm.prank(sender);
-        // vm.expectRevert(bytes4(0x0f2e5b6c)); // Locked()
-        vm.expectRevert();
+        vm.expectRevert(bytes4(0x0f2e5b6c)); // Locked()
         account.executeOperation(USDC, 1e9, 0, 0x120D2fDdC53467479570B2E7870d6d7A80b0f050, params);
     }
 
@@ -101,8 +100,7 @@ contract AaveFlashLoanTest is Test {
         calls[0] = abi.encodeWithSignature("transfer(address,uint256)", address(this), 1e6);
         bytes memory params = abi.encode(dests, values, calls);
 
-        // vm.expectRevert(bytes4(0x0f2e5b6c)); // Locked()
-        vm.expectRevert();
+        vm.expectRevert(bytes4(0x0f2e5b6c)); // Locked()
         IPool(AAVEV3_POOL).flashLoanSimple(address(account), USDC, 1e9, params, 0);
     }
 

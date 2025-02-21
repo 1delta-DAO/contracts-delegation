@@ -33,8 +33,8 @@ abstract contract ExecutionLock {
     modifier requireInExecution() {
         assembly {
             if xor(2, sload(_IN_EXECUTION_SLOT)) {
-                mstore(0x0, 0x0f2e5b6c) // Locked()
-                revert(0x0, 0x4)
+                mstore(0x0, 0x0f2e5b6c00000000000000000000000000000000000000000000000000000000) // 4-byte selector padded
+                revert(0x0, 0x4) // Revert with exactly 4 bytes
             }
         }
         _;
