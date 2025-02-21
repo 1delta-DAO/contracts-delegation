@@ -3,15 +3,14 @@ pragma solidity ^0.8.23;
 
 import "forge-std/Test.sol";
 
-import {EntryPoint} from "../../contracts/1delta/flash-account/account-abstraction/core/EntryPoint.sol";
-import {IEntryPoint} from "../../contracts/1delta/flash-account/account-abstraction/interfaces/IEntryPoint.sol";
+import {EntryPoint} from "account-abstraction/core/EntryPoint.sol";
+import {IEntryPoint} from "account-abstraction/interfaces/IEntryPoint.sol";
 
 import {BaseLightAccountFactory} from "../../contracts/1delta/flash-account/common/BaseLightAccountFactory.sol";
 import {FlashAccount} from "../../contracts/1delta/flash-account/FlashAccount.sol";
 import {FlashAccountFactory} from "../../contracts/1delta/flash-account/FlashAccountFactory.sol";
 
 import {UpgradeableBeacon} from "../../contracts/1delta/flash-account//proxy/Beacon.sol";
-
 
 contract FlashAccountFactoryTest is Test {
     using stdStorage for StdStorage;
@@ -28,7 +27,7 @@ contract FlashAccountFactoryTest is Test {
         entryPoint = new EntryPoint();
         FlashAccount implementation = new FlashAccount(entryPoint);
         initialAccountImplementation = address(implementation);
-        beaconOwner = address(this);    
+        beaconOwner = address(this);
         accountBeacon = new UpgradeableBeacon(beaconOwner, initialAccountImplementation);
         factory = new FlashAccountFactory(address(this), address(accountBeacon), entryPoint);
     }

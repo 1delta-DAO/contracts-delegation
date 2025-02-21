@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.23;
 
-import {ECDSA} from "../../external-protocols/openzeppelin/utils/cryptography/ECDSA.sol";
-import {MessageHashUtils} from "../../external-protocols/openzeppelin/utils/cryptography/MessageHashUtils.sol";
-import {SignatureChecker} from "../../external-protocols/openzeppelin/utils/cryptography/SignatureChecker.sol";
-import {SIG_VALIDATION_FAILED} from "./account-abstraction/core/Helpers.sol";
-import {IEntryPoint} from "./account-abstraction/interfaces/IEntryPoint.sol";
-import {PackedUserOperation} from "./account-abstraction/interfaces/PackedUserOperation.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
+import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
+import {SIG_VALIDATION_FAILED} from "account-abstraction/core/Helpers.sol";
+import {IEntryPoint} from "account-abstraction/interfaces/IEntryPoint.sol";
+import {PackedUserOperation} from "account-abstraction/interfaces/PackedUserOperation.sol";
 
 import {BaseLightAccount} from "./common/BaseLightAccount.sol";
 import {CustomSlotInitializable} from "./common/CustomSlotInitializable.sol";
@@ -24,12 +24,13 @@ contract FlashAccountBase is BaseLightAccount, CustomSlotInitializable {
     using ECDSA for bytes32;
     using MessageHashUtils for bytes32;
 
-    /// @dev The storage layout must stay consistent for all implementatiobns 
+    /// @dev The storage layout must stay consistent for all implementatiobns
 
     /// @dev keccak256("flash_account.storage");
     bytes32 internal constant _STORAGE_POSITION = 0xfe43cac86d2632475e173babfc884cd7f9ce21169af8b16db096c27563e34c09;
     /// @dev keccak256("flash_account.initializable");
-    bytes32 internal constant _INITIALIZABLE_STORAGE_POSITION = 0x5886a89854f64cffde2e739819f75451c42a85563516fe8eab2ef059d7e9f526;
+    bytes32 internal constant _INITIALIZABLE_STORAGE_POSITION =
+        0x5886a89854f64cffde2e739819f75451c42a85563516fe8eab2ef059d7e9f526;
 
     struct FlashAccountStorage {
         address owner;

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.27;
 
 import {FlashAccountBase} from "./FlashAccountBase.sol";
-import {IEntryPoint} from "./account-abstraction/interfaces/IEntryPoint.sol";
+import {IEntryPoint} from "account-abstraction/interfaces/IEntryPoint.sol";
 
 contract FlashAccount is FlashAccountBase {
     constructor(IEntryPoint entryPoint_) FlashAccountBase(entryPoint_) {}
@@ -12,8 +12,10 @@ contract FlashAccount is FlashAccountBase {
      * All of them are locked through the execution lock to prevent access outside
      * of the `execute` functions
      */
-  
-    /** Aave simple flash loan */
+
+    /**
+     * Aave simple flash loan
+     */
     function executeOperation(
         address,
         uint256,
@@ -27,7 +29,9 @@ contract FlashAccount is FlashAccountBase {
         return true;
     }
 
-    /** Balancer flash loan */
+    /**
+     * Balancer flash loan
+     */
     function receiveFlashLoan(
         address[] calldata,
         uint256[] calldata,
@@ -38,8 +42,17 @@ contract FlashAccount is FlashAccountBase {
         _decodeAndExecute(params);
     }
 
-    /** Internal function to decode batch calldata */
+    /**
+     * Morpho flash loan
+     */
+    function onMorphoFlashLoan(uint256 assets, bytes calldata params) external requireInExecution {
+        // execute furhter operations
+        _decodeAndExecute(params);
+    }
 
+    /**
+     * Internal function to decode batch calldata
+     */
     function _decodeAndExecute(bytes calldata params) internal {
         (
             address[] memory dest, //
