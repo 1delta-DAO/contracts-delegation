@@ -30,7 +30,8 @@ abstract contract BaseLending is Slots, ERC20Selectors {
     // Aave V3 style lender pool addresses
     address internal constant AAVE_V3 = 0x794a61358D6845594F94dc1DB02A252b5b4814aD;
 
-    // no Aave v2s
+    // Aave v2s
+    address internal constant GRANARY = 0x8FD4aF47E4E63d1D2D45582c3286b4BD9Bb95DfE;
 
     // Compound V3 addresses
     address internal constant COMET_USDT = 0x995E394b8B2437aC8Ce61Ee0bC610D617962B214;
@@ -91,6 +92,9 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                 switch _lenderId
                 case 0 {
                     pool := AAVE_V3
+                }
+                case 1000 {
+                    pool := GRANARY
                 }
                 default {
                     mstore(0x0, _lenderId)
@@ -281,6 +285,9 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                 case 0 {
                     pool := AAVE_V3
                 }
+                case 1000 {
+                    pool := GRANARY
+                }
                 default {
                     mstore(0x0, _lenderId)
                     mstore(0x20, LENDING_POOL_SLOT)
@@ -464,20 +471,27 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                     }
                 }
                 case 0 {
-                    mstore(0x0, _lenderId)
-                    mstore(0x20, LENDING_POOL_SLOT)
-                    let pool := sload(keccak256(0x0, 0x40))
-                    if iszero(pool) {
-                        mstore(0, BAD_LENDER)
-                        revert(0, 0x4)
-                    }
-
                     // selector deposit(address,uint256,address,uint16)
                     mstore(ptr, 0xe8eda9df00000000000000000000000000000000000000000000000000000000)
                     mstore(add(ptr, 0x04), _underlying)
                     mstore(add(ptr, 0x24), _amount)
                     mstore(add(ptr, 0x44), _to)
                     mstore(add(ptr, 0x64), 0x0)
+                    let pool
+                    // assign lending pool
+                    switch _lenderId
+                    case 1000 {
+                        pool := GRANARY
+                    }
+                    default {
+                        mstore(0x0, _lenderId)
+                        mstore(0x20, LENDING_POOL_SLOT)
+                        pool := sload(keccak256(0x0, 0x40))
+                        if iszero(pool) {
+                            mstore(0, BAD_LENDER)
+                            revert(0, 0x4)
+                        }
+                    }
                     // call pool
                     if iszero(call(gas(), pool, 0x0, ptr, 0x84, 0x0, 0x0)) {
                         returndatacopy(0x0, 0x0, returndatasize())
@@ -560,6 +574,9 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                 switch _lenderId
                 case 0 {
                     pool := AAVE_V3
+                }
+                case 1000 {
+                    pool := GRANARY
                 }
                 default {
                     mstore(0x0, _lenderId)

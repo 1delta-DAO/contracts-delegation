@@ -8,6 +8,8 @@ export enum ArbitrumLenderId {
     AVALON = 100,
     AVALON_PBTC = 101,
     YLDR = 900,
+    // aave V2s
+    GRANARY = 1000,
     // comets
     COMPOUND_V3_USDC = 2000,
     COMPOUND_V3_WETH = 2001,
@@ -23,6 +25,8 @@ export enum BaseLenderId {
     AAVE_V3 = 0,
     AVALON = 100,
     ZEROLEND = 210,
+    // aave V2s
+    GRANARY = 1000,
     // comets
     COMPOUND_V3_USDC = 2000,
     COMPOUND_V3_WETH = 2001,
@@ -35,6 +39,8 @@ export enum BaseLenderId {
 export enum OptimismLenderId {
     // aave v3s
     AAVE_V3 = 0,
+    // aave V2s
+    GRANARY = 1000,
     // comets
     COMPOUND_V3_USDT = 2000,
     COMPOUND_V3_USDC = 2001,
@@ -55,6 +61,9 @@ export enum EthereumLenderId {
     AVALON_SWELL_BTC = 101,
     AVALON_PUMP_BTC = 102,
     AVALON_EBTC_LBTC = 103,
+
+    // aave V2s
+    GRANARY = 1000,
 
     // zerolends
     ZEROLEND_STABLECOINS_RWA = 210,
@@ -92,6 +101,7 @@ export const LENDER_TO_ID: { [c: string | number]: { [k: string]: any } } = {
         [Lender.AVALON]: ArbitrumLenderId.AVALON,
         [Lender.AVALON_PUMP_BTC]: ArbitrumLenderId.AVALON_PBTC,
         [Lender.YLDR]: ArbitrumLenderId.YLDR,
+        [Lender.GRANARY]: BaseLenderId.GRANARY,
         // comets
         [Lender.COMPOUND_V3_USDC]: ArbitrumLenderId.COMPOUND_V3_USDC,
         [Lender.COMPOUND_V3_WETH]: ArbitrumLenderId.COMPOUND_V3_WETH,
@@ -105,6 +115,7 @@ export const LENDER_TO_ID: { [c: string | number]: { [k: string]: any } } = {
         [Lender.AAVE_V3]: BaseLenderId.AAVE_V3,
         [Lender.AVALON]: BaseLenderId.AVALON,
         [Lender.ZEROLEND]: BaseLenderId.ZEROLEND,
+        [Lender.GRANARY]: BaseLenderId.GRANARY,
         // comets
         [Lender.COMPOUND_V3_USDC]: BaseLenderId.COMPOUND_V3_USDC,
         [Lender.COMPOUND_V3_WETH]: BaseLenderId.COMPOUND_V3_WETH,
@@ -122,6 +133,7 @@ export const LENDER_TO_ID: { [c: string | number]: { [k: string]: any } } = {
     },
     [Chain.OP_MAINNET]: {
         [Lender.AAVE_V3]: OptimismLenderId.AAVE_V3,
+        [Lender.GRANARY]: BaseLenderId.GRANARY,
         // comets
         [Lender.COMPOUND_V3_USDC]: OptimismLenderId.COMPOUND_V3_USDC,
         [Lender.COMPOUND_V3_WETH]: OptimismLenderId.COMPOUND_V3_WETH,
@@ -144,6 +156,8 @@ export const LENDER_TO_ID: { [c: string | number]: { [k: string]: any } } = {
         [Lender.ZEROLEND_STABLECOINS_RWA]: EthereumLenderId.ZEROLEND_STABLECOINS_RWA,
         [Lender.ZEROLEND_ETH_LRTS]: EthereumLenderId.ZEROLEND_ETH_LRTS,
         [Lender.ZEROLEND_BTC_LRTS]: EthereumLenderId.ZEROLEND_BTC_LRTS,
+        // aave v2s
+        [Lender.GRANARY]: BaseLenderId.GRANARY,
         // comets
         [Lender.COMPOUND_V3_USDC]: EthereumLenderId.COMPOUND_V3_USDC,
         [Lender.COMPOUND_V3_WETH]: EthereumLenderId.COMPOUND_V3_WETH,
