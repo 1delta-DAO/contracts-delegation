@@ -463,7 +463,7 @@ const config: HardhatUserConfig = {
         settings: {
           optimizer: {
             enabled: true,
-            runs: 1_500,
+            runs: 500,
           },
           evmVersion: 'cancun',
         },
@@ -483,7 +483,17 @@ const config: HardhatUserConfig = {
         settings: {
           optimizer: {
             enabled: true,
-            runs: 7_500,
+            runs: 5_000,
+          },
+          evmVersion: 'cancun',
+        },
+      },
+      "contracts/1delta/modules/ethereum/Composer.sol": {
+        version: '0.8.28',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1_000,
           },
           evmVersion: 'cancun',
         },

@@ -194,42 +194,51 @@ export function getCompoundV3Approves(chainId: number) {
     return params
 }
 
+const specificLenders: string[] = [
+    Lender.GRANARY
+]
+
 export function getAaveForkDatas(chainId: number) {
     let params: BatchAddLenderTokensParamsStruct[] = []
     Object.entries(AAVE_FORK_POOL_DATA).forEach(([lender, data]) => {
-        const dataForChain = data[chainId]
-        if (dataForChain) {
-            const reserves = AAVE_STYLE_RESERVE_ASSETS[lender][chainId]
-            const tokens = AAVE_STYLE_TOKENS[lender][chainId]
-            reserves.forEach(underlying => {
-                const data = tokens[underlying]
-                params.push({
-                    underlying,
-                    collateralToken: data.aToken,
-                    debtToken: data.vToken,
-                    stableDebtToken: data.sToken,
-                    lenderId: LENDER_TO_ID[chainId][lender]
+        if (specificLenders.length === 0 || specificLenders.includes(lender)) {
+            const dataForChain = data[chainId]
+            if (dataForChain) {
+                const reserves = AAVE_STYLE_RESERVE_ASSETS[lender][chainId]
+                const tokens = AAVE_STYLE_TOKENS[lender][chainId]
+                reserves.forEach(underlying => {
+                    const data = tokens[underlying]
+                    params.push({
+                        underlying,
+                        collateralToken: data.aToken,
+                        debtToken: data.vToken,
+                        stableDebtToken: data.sToken,
+                        lenderId: LENDER_TO_ID[chainId][lender]
+                    })
                 })
-            })
+            }
         }
     })
 
     return params
 }
 
+
 export function getAaveForkApproves(chainId: number) {
     let params: ApproveParamsStruct[] = []
     Object.entries(AAVE_FORK_POOL_DATA).forEach(([lender, data]) => {
-        const dataForChain = data[chainId]
-        if (dataForChain) {
-            const reserves = AAVE_STYLE_RESERVE_ASSETS[lender][chainId]
-            reserves.forEach(underlying => {
-                params.push({
-                    token: underlying,
-                    target: dataForChain.pool,
+        if (specificLenders.length === 0 || specificLenders.includes(lender)) {
+            const dataForChain = data[chainId]
+            if (dataForChain) {
+                const reserves = AAVE_STYLE_RESERVE_ASSETS[lender][chainId]
+                reserves.forEach(underlying => {
+                    params.push({
+                        token: underlying,
+                        target: dataForChain.pool,
+                    })
                 })
-            })
 
+            }
         }
     })
     return params
