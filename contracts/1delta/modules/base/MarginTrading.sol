@@ -8,15 +8,15 @@ pragma solidity 0.8.28;
 
 import {BaseLending} from "./BaseLending.sol";
 import {BaseSwapper} from "./BaseSwapper.sol";
-import {V2ReferencesEthereum} from "./swappers/V2References.sol";
-import {V3ReferencesEthereum} from "./swappers/V3References.sol";
+import {V2ReferencesBase} from "./swappers/V2References.sol";
+import {V3ReferencesBase} from "./swappers/V3References.sol";
 import {PreFunder} from "../shared/funder/PreFunder.sol";
 
 /**
  * @title Contract Module for general Margin Trading on an borrow delegation compatible Lender
  * @notice Contains main logic for uniswap-type callbacks and initiator functions
  */
-abstract contract MarginTrading is BaseLending, BaseSwapper, V2ReferencesEthereum, V3ReferencesEthereum, PreFunder {
+abstract contract MarginTrading is BaseLending, BaseSwapper, V2ReferencesBase, V3ReferencesBase, PreFunder {
     // errors
     error NoBalance();
 

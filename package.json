@@ -78,6 +78,7 @@
     "build": "export NODE_OPTIONS=--openssl-legacy-provider; gatsby build"
   },
   "dependencies": {
+    "@1delta/asset-registry": "^0.0.63",
     "@chainlink/contracts": "^0.6.1",
     "@defi-wonderland/smock": "^2.0.7",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.8",
@@ -99,6 +100,5 @@
     "is-svg": "^4.3.1",
     "lodash": "^4.17.21",
     "npm": "^7.20.6"
-  },
-  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+  }
 }
