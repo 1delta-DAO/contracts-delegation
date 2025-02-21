@@ -3,20 +3,21 @@ import { ethers } from "hardhat";
 import {
     ConfigModule__factory,
     LensModule__factory,
-    OneDeltaComposerOptimism__factory,
+    OneDeltaComposerBase__factory,
 } from "../../types";
 import { getContractSelectors, ModuleConfigAction } from "../_utils/diamond";
 import { getGasConfig } from "../_utils/getGasConfig";
-import { OneDeltaOptimism } from "./oneDeltaAddresses";
+import { OneDeltaBase } from "./oneDeltaAddresses";
+import { Chain } from "@1delta/asset-registry";
 
 async function main() {
     const accounts = await ethers.getSigners()
     const operator = accounts[1]
     const chainId = await operator.getChainId();
-    if (chainId !== 10) throw new Error("invalid chainId")
+    if (chainId !== Chain.BASE) throw new Error("invalid chainId")
     console.log("operator", operator.address, "on", chainId)
 
-    const STAGE = OneDeltaOptimism.PRODUCTION
+    const STAGE = OneDeltaBase.PRODUCTION
     const { proxy, composerImplementation } = STAGE
 
     // we manually increment the nonce
@@ -42,7 +43,7 @@ async function main() {
 
     console.log("deploy new composer")
     // composer
-    const composer = await new OneDeltaComposerOptimism__factory(operator).deploy({ ...config, nonce: nonce++ })
+    const composer = await new OneDeltaComposerBase__factory(operator).deploy({ ...config, nonce: nonce++ })
     await composer.deployed()
 
 
