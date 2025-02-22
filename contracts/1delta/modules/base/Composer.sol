@@ -17,6 +17,8 @@ contract OneDeltaComposerBase is MarginTrading {
     address internal constant USDBC = 0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA;
     address internal constant USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
 
+    address internal constant MORPHO_BLUE = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
+
     /**
      * Batch-executes a series of operations
      * @param data compressed instruction calldata
@@ -1350,8 +1352,61 @@ contract OneDeltaComposerBase is MarginTrading {
                         // length of params
                         let calldataLength := and(UINT16_MASK, shr(128, slice))
                         switch source
+                        case 254 {
+                            // morpho should be the primary choice
+                            let ptr := mload(0x40)
+
+                            /** 
+                             * Approve MB beforehand for the flash amount
+                             * Similar to Aave V3, they pull funds from the caller 
+                             */
+                            mstore(0x0, token)
+                            mstore(0x20, CALL_MANAGEMENT_APPROVALS)
+                            mstore(0x20, keccak256(0x0, 0x40))
+                            mstore(0x0, MORPHO_BLUE)
+                            let key := keccak256(0x0, 0x40)
+                            // check if already approved
+                            if iszero(sload(key)) {
+                                // selector for approve(address,uint256)
+                                mstore(ptr, ERC20_APPROVE)
+                                mstore(add(ptr, 0x04), MORPHO_BLUE)
+                                mstore(add(ptr, 0x24), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff)
+
+                                if iszero(call(gas(), token, 0x0, ptr, 0x44, ptr, 32)) {
+                                    revert(0x0, 0x0)
+                                }
+                                sstore(key, 1)
+                            }
+                            
+                            /** Prepare call */
+
+                            // flashLoan(...)
+                            mstore(ptr, 0xe0232b4200000000000000000000000000000000000000000000000000000000)
+                            mstore(add(ptr, 4), token)
+                            mstore(add(ptr, 36), amount)
+                            mstore(add(ptr, 68), 0x60) // offset
+                            mstore(add(ptr, 100), add(20, calldataLength)) // data length
+                            mstore(add(ptr, 132), shl(96, callerAddress)) // caller
+                            currentOffset := add(currentOffset, 37)
+                            calldatacopy(add(ptr, 152), currentOffset, calldataLength) // calldata
+                            if iszero(
+                                call(
+                                    gas(),
+                                    MORPHO_BLUE,
+                                    0x0,
+                                    ptr,
+                                    add(calldataLength, 152), // = 10 * 32 + 4
+                                    0x0,
+                                    0x0 //
+                                )
+                            ) {
+                                let rdlen := returndatasize()
+                                returndatacopy(0, 0, rdlen)
+                                revert(0x0, rdlen)
+                            }
+                        }
                         case 0xff {
-                            // balancer should be the primary choice
+                            // balancer should be the secondary choice
                             let ptr := mload(0x40)
                             // flashLoan(...)
                             mstore(ptr, 0x5c38449e00000000000000000000000000000000000000000000000000000000)
@@ -1429,7 +1484,7 @@ contract OneDeltaComposerBase is MarginTrading {
                                         pool,
                                         0x0,
                                         ptr,
-                                        add(calldataLength, 228), // = 10 * 32 + 4
+                                        add(calldataLength, 228), // = 7 * 32 + 4
                                         0x0,
                                         0x0 //
                                     )
@@ -1713,6 +1768,39 @@ contract OneDeltaComposerBase is MarginTrading {
             // shift / slice params
             params.offset := add(params.offset, 21)
             params.length := sub(params.length, 21)
+        }
+        // within the flash loan, any compose operation
+        // can be executed
+        _deltaComposeInternal(origCaller, params);
+    }
+
+    /// @dev Morpho Blue is immutable and their flash loans are callbacks,
+    /// ergo a validation that the caller is the Morpho contract is enough
+    function onMorphoFlashLoan(uint256, bytes calldata params) external {
+        address origCaller;
+        assembly {
+            // we expect at least an address
+            // and a sourceId (uint8)
+            // invalid params will lead to errors in the
+            // compose at the bottom
+            if lt(params.length, 21) {
+                mstore(0, INVALID_FLASH_LOAN)
+                revert(0, 0x4)
+            }
+
+            // Validate the caller - MUST be morpho
+            if xor(caller(), MORPHO_BLUE) {
+                mstore(0, INVALID_FLASH_LOAN)
+                revert(0, 0x4)
+            }
+            // Slice the original caller off the beginnig of the calldata
+            // From here on we have validated that the `origCaller`
+            // was attached in the deltaCompose function
+            // Otherwise, this would be a vulnerability
+            origCaller := and(ADDRESS_MASK, shr(96, calldataload(params.offset)))
+            // shift / slice params
+            params.offset := add(params.offset, 20)
+            params.length := sub(params.length, 20)
         }
         // within the flash loan, any compose operation
         // can be executed

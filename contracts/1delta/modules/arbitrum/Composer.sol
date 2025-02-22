@@ -1404,7 +1404,7 @@ contract OneDeltaComposerArbitrum is MarginTrading {
                                 case 101 {
                                     pool := AVALON_PUMP_BTC
                                 }
-                                case 253 {
+                                case 250 {
                                     pool := YLDR
                                 }
                                 default {
@@ -1633,7 +1633,7 @@ contract OneDeltaComposerArbitrum is MarginTrading {
                     revert(0, 0x4)
                 }
             }
-            case 253 {
+            case 250 {
                 if xor(caller(), YLDR) {
                     mstore(0, INVALID_FLASH_LOAN)
                     revert(0, 0x4)

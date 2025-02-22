@@ -1301,7 +1301,7 @@ contract OneDeltaComposerPolygon is MarginTrading {
                                     pool,
                                     0x0,
                                     ptr,
-                                    add(calldataLength, 228), // = 10 * 32 + 4
+                                    add(calldataLength, 228), // = 7 * 32 + 4
                                     0x0,
                                     0x0 //
                                 )
