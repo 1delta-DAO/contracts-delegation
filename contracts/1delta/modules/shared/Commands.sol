@@ -16,6 +16,7 @@ library Commands {
     uint256 constant BORROW = 0x11;
     uint256 constant REPAY = 0x12;
     uint256 constant WITHDRAW = 0x13;
+    uint256 constant MORPH = 0x14;
 
     // Command Types where 0x20<=value<0x30, executed in the third nested-if block
     uint256 constant TRANSFER_FROM = 0x21;

@@ -921,6 +921,96 @@ contract OneDeltaComposerBase is MarginTrading {
                         currentOffset := add(currentOffset, 56)
                     }
                     _withdraw(underlying, callerAddress, receiver, amount, lenderId);
+                } else if (operation == Commands.MORPH) {
+                    assembly {
+                        // morpho should be the primary choice
+                        let ptr := mload(0x40)
+
+                        let slice := calldataload(currentOffset)
+                        let op := shr(248, slice)
+                        let calldataLength := and(UINT16_MASK,  shr(232, slice))
+                        switch lt(op, 2)
+                        case 1 {
+                            let token := shr(88, slice)
+                            /**
+                             * Approve MB beforehand for the flash amount
+                             * Similar to Aave V3, they pull funds from the caller
+                             */
+                            mstore(0x0, token)
+                            mstore(0x20, CALL_MANAGEMENT_APPROVALS)
+                            mstore(0x20, keccak256(0x0, 0x40))
+                            mstore(0x0, MORPHO_BLUE)
+                            let key := keccak256(0x0, 0x40)
+                            // check if already approved
+                            if iszero(sload(key)) {
+                                // selector for approve(address,uint256)
+                                mstore(ptr, ERC20_APPROVE)
+                                mstore(add(ptr, 0x04), MORPHO_BLUE)
+                                mstore(add(ptr, 0x24), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff)
+
+                                if iszero(call(gas(), token, 0x0, ptr, 0x44, ptr, 32)) {
+                                    revert(0x0, 0x0)
+                                }
+                                sstore(key, 1)
+                            }
+                            switch op
+                            case 0 {
+                                // flashLoan(...)
+                                mstore(ptr, 0xe0232b4200000000000000000000000000000000000000000000000000000000)
+                            }
+                            default {
+                                // flashLoan(...)
+                                mstore(ptr, 0xe0232b4200000000000000000000000000000000000000000000000000000000)
+                            }
+                            mstore(add(ptr, 4), shr(72, slice))
+
+                            currentOffset := add(currentOffset, 23)
+                            mstore(add(ptr, 36), shr(96, calldataload(currentOffset))) // MarketParams.loanToken
+
+                            currentOffset := add(currentOffset, 20)
+                            mstore(add(ptr, 68), shr(96, calldataload(currentOffset))) // MarketParams.collateralToken
+
+                            currentOffset := add(currentOffset, 20)
+                            mstore(add(ptr, 100), shr(96, calldataload(currentOffset))) // MarketParams.oracle
+
+                            currentOffset := add(currentOffset, 20)
+                            mstore(add(ptr, 132), shr(96, calldataload(currentOffset))) // MarketParams.irm
+
+                            currentOffset := add(currentOffset, 20)
+
+                            slice := calldataload(currentOffset)
+
+                            mstore(add(ptr, 164), shr(128, slice)) // assets
+                            mstore(add(ptr, 196), and(UINT128_MASK, slice)) // shares
+                            mstore(add(ptr, 228), callerAddress) // onBehalfOf
+                            mstore(add(ptr, 260), 0x120) // offset
+                            mstore(add(ptr, 292), calldataLength) // calldatalength
+                            // add calldata if needed
+                            if xor(0, calldataLength) {
+                                calldatacopy(add(ptr, 324), currentOffset, calldataLength) // calldata
+                            }
+                            if iszero(
+                                call(
+                                    gas(),
+                                    MORPHO_BLUE,
+                                    0x0,
+                                    ptr,
+                                    add(calldataLength, 324), // = 10 * 32 + 4
+                                    0x0,
+                                    0x0 //
+                                )
+                            ) {
+                                let rdlen := returndatasize()
+                                returndatacopy(0, 0, rdlen)
+                                revert(0x0, rdlen)
+                            }
+                        }
+                        default {
+
+                        }
+                        // increment offset
+                        currentOffset := add(currentOffset, calldataLength)
+                    }
                 }
             } else if (operation < 0x30) {
                 if (operation == Commands.TRANSFER_FROM) {
@@ -1356,9 +1446,9 @@ contract OneDeltaComposerBase is MarginTrading {
                             // morpho should be the primary choice
                             let ptr := mload(0x40)
 
-                            /** 
+                            /**
                              * Approve MB beforehand for the flash amount
-                             * Similar to Aave V3, they pull funds from the caller 
+                             * Similar to Aave V3, they pull funds from the caller
                              */
                             mstore(0x0, token)
                             mstore(0x20, CALL_MANAGEMENT_APPROVALS)
@@ -1377,7 +1467,7 @@ contract OneDeltaComposerBase is MarginTrading {
                                 }
                                 sstore(key, 1)
                             }
-                            
+
                             /** Prepare call */
 
                             // flashLoan(...)
@@ -1774,9 +1864,32 @@ contract OneDeltaComposerBase is MarginTrading {
         _deltaComposeInternal(origCaller, params);
     }
 
-    /// @dev Morpho Blue is immutable and their flash loans are callbacks,
-    /// ergo a validation that the caller is the Morpho contract is enough
+    /** Morpho blue callbacks */
+
+    /// @dev Morpho Blue flash loan
     function onMorphoFlashLoan(uint256, bytes calldata params) external {
+        _onMorphoCallback(params);
+    }
+
+    /// @dev Morpho Blue supply callback
+    function onMorphoSupply(uint256, bytes calldata params) external {
+        _onMorphoCallback(params);
+    }
+
+    /// @dev Morpho Blue repay callback
+    function onMorphoRepay(uint256, bytes calldata params) external {
+        _onMorphoCallback(params);
+    }
+
+    /// @dev Morpho Blue supply collateral callback
+    function onMorphoSupplyCollateral(uint256, bytes calldata params) external {
+        _onMorphoCallback(params);
+    }
+
+    /// @dev Morpho Blue is immutable and their flash loans are callbacks,
+    /// Since it is universal batching and the same validation for all
+    /// Morpho callbacks, we can use the same logic everywhere
+    function _onMorphoCallback(bytes calldata params) internal {
         address origCaller;
         assembly {
             // we expect at least an address
