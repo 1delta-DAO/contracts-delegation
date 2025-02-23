@@ -126,6 +126,23 @@ contract ComposerUtils {
             );
     }
 
+    function morphoRepay(
+        bytes memory market,
+        bool isShares, //
+        uint assets,
+        bytes memory data
+    ) internal pure returns (bytes memory) {
+        return
+            abi.encodePacked(
+                uint8(Commands.MORPH), // 1
+                uint8(2), // 1
+                market, // 4 * 20 + 16
+                abi.encodePacked(isShares ? uint8(1) : uint8(0), uint120(assets)),
+                uint16(data.length), // 2 @ 1 + 4*20
+                data
+            );
+    }
+
     function borrow(address asset, address receiver, uint256 amount, uint16 lenderId, uint8 mode) internal pure returns (bytes memory) {
         return
             abi.encodePacked(

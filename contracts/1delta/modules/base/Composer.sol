@@ -947,7 +947,7 @@ contract OneDeltaComposerBase is MarginTrading, Morpho {
                                 mstore(add(ptr, 0x24), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff)
 
                                 if iszero(call(gas(), token, 0x0, ptr, 0x44, ptr, 32)) {
-                                    // revert(0x0, 0x0)
+                                    revert(0x0, 0x0)
                                 }
                                 sstore(key, 1)
                             }
@@ -957,6 +957,8 @@ contract OneDeltaComposerBase is MarginTrading, Morpho {
                     /** Morphgo borrow */
                     else if (morphoOperation == 1) {
                         currentOffset = _morphoBorrow(currentOffset, callerAddress);
+                    } else if (morphoOperation == 2) {
+                        currentOffset = _morphoRepay(currentOffset, callerAddress);
                     } else revert();
                 }
             } else if (operation < 0x30) {

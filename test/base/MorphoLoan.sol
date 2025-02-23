@@ -154,6 +154,54 @@ contract FlashLoanTestMorpho is Test, ComposerUtils {
         // (, , uint128 collateralAmount) = IMorphoFlashLoanCallback(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
     }
 
+    function test_morpho_repay() external {
+        deal(LBTC, user, 30.0e8);
+        deal(USDC, user, 300_000.0e6);
+
+        uint assets = 1.0e8;
+
+        address borrowAsset = USDC;
+        uint borrowAssets = 30_000.0e6;
+        depositToMorpho(user, assets);
+
+        bytes memory borrowCall = morphoBorrow(
+            encodeMarket(LBTC_USDC_MARKET),
+            false,
+            borrowAssets, //
+            user,
+            hex""
+        );
+
+        vm.prank(user);
+        IMorphoFlashLoanCallback(MORPHO).setAuthorization(address(oneD), true);
+
+        vm.prank(user);
+        oneD.deltaCompose(borrowCall);
+
+        bytes memory repayCall = morphoRepay(
+            encodeMarket(LBTC_USDC_MARKET),
+            false,
+            borrowAssets, //
+            hex""
+        );
+
+        vm.prank(user);
+        IERC20All(borrowAsset).approve(address(oneD), type(uint).max);
+
+       bytes memory transferTo = transferIn(
+            borrowAsset,
+            address(oneD),
+            borrowAssets //
+        );
+
+
+        vm.prank(user);
+        oneD.deltaCompose(abi.encodePacked(transferTo, repayCall));
+
+        console.logBytes32(marketId(LBTC_USDC_MARKET));
+        console.logBytes32(marketId2(LBTC_USDC_MARKET));
+    }
+
     function test_morpho_deposit() external {
         deal(LBTC, user, 30.0e8);
         deal(USDC, user, 300_000.0e6);
@@ -223,6 +271,24 @@ contract FlashLoanTestMorpho is Test, ComposerUtils {
     function marketId(MarketParams memory marketParams) internal pure returns (bytes32 marketParamsId) {
         assembly ("memory-safe") {
             marketParamsId := keccak256(marketParams, mul(5, 32))
+        }
+    }
+
+    /// @notice Returns the id of the market `marketParams`.
+    function marketId2(MarketParams memory marketParams) internal pure returns (bytes32 marketParamsId) {
+        address loanToken = marketParams.loanToken;
+        address collateralToken = marketParams.collateralToken;
+        address oracle = marketParams.oracle;
+        address irm = marketParams.irm;
+        uint256 lltv = marketParams.lltv;
+        assembly ("memory-safe") {
+            let ptr := mload(0x40)
+            mstore(ptr, loanToken)
+            mstore(add(ptr, 32), collateralToken)
+            mstore(add(ptr, 64), oracle)
+            mstore(add(ptr, 96), irm)
+            mstore(add(ptr, 128), lltv)
+            marketParamsId := keccak256(ptr, 160)
         }
     }
 
