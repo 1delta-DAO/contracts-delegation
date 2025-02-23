@@ -4,6 +4,7 @@ pragma solidity 0.8.28;
 
 import {MarginTrading} from "./MarginTrading.sol";
 import {Commands} from "../shared/Commands.sol";
+import {Morpho} from "./MorphoLending.sol";
 
 /**
  * @title Universal aggregator contract.
@@ -11,13 +12,11 @@ import {Commands} from "../shared/Commands.sol";
  *        Efficient baching through compact calldata usage.
  * @author 1delta Labs AG
  */
-contract OneDeltaComposerBase is MarginTrading {
+contract OneDeltaComposerBase is MarginTrading, Morpho {
     /// @dev we need base tokens to identify Compound V3's selectors
     address internal constant AERO = 0x940181a94A35A4569E4529A3CDfB74e38FD98631;
     address internal constant USDBC = 0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA;
     address internal constant USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
-
-    address internal constant MORPHO_BLUE = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
 
     /**
      * Batch-executes a series of operations
@@ -922,19 +921,18 @@ contract OneDeltaComposerBase is MarginTrading {
                     }
                     _withdraw(underlying, callerAddress, receiver, amount, lenderId);
                 } else if (operation == Commands.MORPH) {
+                    uint256 morphoOperation;
                     assembly {
-                        // morpho should be the primary choice
-                        let ptr := mload(0x40)
-
-                        let slice := calldataload(currentOffset)
-                        let op := shr(248, slice)
-                        let calldataLength := and(UINT16_MASK,  shr(232, slice))
-                        switch lt(op, 2)
-                        case 1 {
-                            let token := shr(88, slice)
+                        morphoOperation := shr(248, calldataload(currentOffset))
+                    }
+                    /** Morphgo deposit */
+                    if (morphoOperation == 0) {
+                        address token;
+                        assembly {
+                            let ptr := mload(0x40)
+                            token := shr(96, calldataload(add(currentOffset, 21)))
                             /**
-                             * Approve MB beforehand for the flash amount
-                             * Similar to Aave V3, they pull funds from the caller
+                             * Approve MB beforehand for the depo amount
                              */
                             mstore(0x0, token)
                             mstore(0x20, CALL_MANAGEMENT_APPROVALS)
@@ -949,68 +947,17 @@ contract OneDeltaComposerBase is MarginTrading {
                                 mstore(add(ptr, 0x24), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff)
 
                                 if iszero(call(gas(), token, 0x0, ptr, 0x44, ptr, 32)) {
-                                    revert(0x0, 0x0)
+                                    // revert(0x0, 0x0)
                                 }
                                 sstore(key, 1)
                             }
-                            switch op
-                            case 0 {
-                                // flashLoan(...)
-                                mstore(ptr, 0xe0232b4200000000000000000000000000000000000000000000000000000000)
-                            }
-                            default {
-                                // flashLoan(...)
-                                mstore(ptr, 0xe0232b4200000000000000000000000000000000000000000000000000000000)
-                            }
-                            mstore(add(ptr, 4), shr(72, slice))
-
-                            currentOffset := add(currentOffset, 23)
-                            mstore(add(ptr, 36), shr(96, calldataload(currentOffset))) // MarketParams.loanToken
-
-                            currentOffset := add(currentOffset, 20)
-                            mstore(add(ptr, 68), shr(96, calldataload(currentOffset))) // MarketParams.collateralToken
-
-                            currentOffset := add(currentOffset, 20)
-                            mstore(add(ptr, 100), shr(96, calldataload(currentOffset))) // MarketParams.oracle
-
-                            currentOffset := add(currentOffset, 20)
-                            mstore(add(ptr, 132), shr(96, calldataload(currentOffset))) // MarketParams.irm
-
-                            currentOffset := add(currentOffset, 20)
-
-                            slice := calldataload(currentOffset)
-
-                            mstore(add(ptr, 164), shr(128, slice)) // assets
-                            mstore(add(ptr, 196), and(UINT128_MASK, slice)) // shares
-                            mstore(add(ptr, 228), callerAddress) // onBehalfOf
-                            mstore(add(ptr, 260), 0x120) // offset
-                            mstore(add(ptr, 292), calldataLength) // calldatalength
-                            // add calldata if needed
-                            if xor(0, calldataLength) {
-                                calldatacopy(add(ptr, 324), currentOffset, calldataLength) // calldata
-                            }
-                            if iszero(
-                                call(
-                                    gas(),
-                                    MORPHO_BLUE,
-                                    0x0,
-                                    ptr,
-                                    add(calldataLength, 324), // = 10 * 32 + 4
-                                    0x0,
-                                    0x0 //
-                                )
-                            ) {
-                                let rdlen := returndatasize()
-                                returndatacopy(0, 0, rdlen)
-                                revert(0x0, rdlen)
-                            }
                         }
-                        default {
-
-                        }
-                        // increment offset
-                        currentOffset := add(currentOffset, calldataLength)
+                        currentOffset = _morphoDeposit(currentOffset, callerAddress, token);
                     }
+                    /** Morphgo borrow */
+                    else if (morphoOperation == 1) {
+                        currentOffset = _morphoBorrow(currentOffset, callerAddress);
+                    } else revert();
                 }
             } else if (operation < 0x30) {
                 if (operation == Commands.TRANSFER_FROM) {
