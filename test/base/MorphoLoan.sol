@@ -62,11 +62,35 @@ interface IMorphoFlashLoanCallback {
         bytes memory data
     ) external;
 
+    function market(
+        bytes32 id
+    )
+        external
+        view
+        returns (
+            uint128 totalSupplyAssets,
+            uint128 totalSupplyShares,
+            uint128 totalBorrowAssets,
+            uint128 totalBorrowShares,
+            uint128 lastUpdate,
+            uint128 fee //
+        );
+
     function withdrawCollateral(MarketParams memory marketParams, uint256 assets, address onBehalf, address receiver) external;
 
     function setAuthorization(address authorized, bool newIsAuthorized) external;
 
-    function position(bytes32 id, address user) external view returns (uint256 supplyShares, uint128 borrowShares, uint128 collateral);
+    function position(
+        bytes32 id,
+        address user
+    )
+        external
+        view
+        returns (
+            uint256 supplyShares, //
+            uint128 borrowShares,
+            uint128 collateral
+        );
 }
 
 /**
@@ -188,18 +212,66 @@ contract FlashLoanTestMorpho is Test, ComposerUtils {
         vm.prank(user);
         IERC20All(borrowAsset).approve(address(oneD), type(uint).max);
 
-       bytes memory transferTo = transferIn(
+        bytes memory transferTo = transferIn(
             borrowAsset,
             address(oneD),
             borrowAssets //
         );
 
-
         vm.prank(user);
         oneD.deltaCompose(abi.encodePacked(transferTo, repayCall));
 
         console.logBytes32(marketId(LBTC_USDC_MARKET));
-        console.logBytes32(marketId2(LBTC_USDC_MARKET));
+    }
+
+    function test_morpho_repay_all() external {
+        deal(LBTC, user, 30.0e8);
+        deal(USDC, user, 300_000.0e6);
+
+        uint assets = 1.0e8;
+
+        address borrowAsset = USDC;
+        uint borrowAssets = 30_000.0e6;
+        depositToMorpho(user, assets);
+
+        bytes memory borrowCall = morphoBorrow(
+            encodeMarket(LBTC_USDC_MARKET),
+            false,
+            borrowAssets, //
+            user,
+            hex""
+        );
+
+        vm.prank(user);
+        IMorphoFlashLoanCallback(MORPHO).setAuthorization(address(oneD), true);
+
+        vm.prank(user);
+        oneD.deltaCompose(borrowCall);
+
+        logMarket(marketId(LBTC_USDC_MARKET));
+        logPos(marketId(LBTC_USDC_MARKET), user);
+
+        bytes memory repayCall = morphoRepay(
+            encodeMarket(LBTC_USDC_MARKET),
+            false,
+            type(uint120).max, //
+            hex""
+        );
+
+        vm.prank(user);
+        IERC20All(borrowAsset).approve(address(oneD), type(uint).max);
+
+        bytes memory transferTo = transferIn(
+            borrowAsset,
+            address(oneD),
+            borrowAssets + 1 //
+        );
+
+        vm.prank(user);
+        oneD.deltaCompose(abi.encodePacked(transferTo, repayCall));
+
+        // console.logBytes32(marketId(LBTC_USDC_MARKET));
+        logPos(marketId(LBTC_USDC_MARKET), user);
     }
 
     function test_morpho_deposit() external {
@@ -268,27 +340,39 @@ contract FlashLoanTestMorpho is Test, ComposerUtils {
     }
 
     /// @notice Returns the id of the market `marketParams`.
-    function marketId(MarketParams memory marketParams) internal pure returns (bytes32 marketParamsId) {
-        assembly ("memory-safe") {
-            marketParamsId := keccak256(marketParams, mul(5, 32))
-        }
+    function logMarket(bytes32 id) internal view {
+        (
+            uint128 totalSupplyAssets,
+            uint128 totalSupplyShares,
+            uint128 totalBorrowAssets,
+            uint128 totalBorrowShares,
+            uint128 lastUpdate,
+            uint128 fee //
+        ) = IMorphoFlashLoanCallback(MORPHO).market(id);
+        console.log("totalSupplyAssets", totalSupplyAssets);
+        console.log("totalSupplyShares", totalSupplyShares);
+        console.log("totalBorrowAssets", totalBorrowAssets);
+        console.log("totalBorrowShares", totalBorrowShares);
+        console.log("lastUpdate", lastUpdate);
+        console.log("fee", fee); //
     }
 
     /// @notice Returns the id of the market `marketParams`.
-    function marketId2(MarketParams memory marketParams) internal pure returns (bytes32 marketParamsId) {
-        address loanToken = marketParams.loanToken;
-        address collateralToken = marketParams.collateralToken;
-        address oracle = marketParams.oracle;
-        address irm = marketParams.irm;
-        uint256 lltv = marketParams.lltv;
+    function logPos(bytes32 id, address userAddress) internal view {
+        (
+            uint256 supplyShares, //
+            uint128 borrowShares,
+            uint128 collateral
+        ) = IMorphoFlashLoanCallback(MORPHO).position(id, userAddress);
+        console.log("supplyShares", supplyShares);
+        console.log("borrowShares", borrowShares);
+        console.log("collateral", collateral);
+    }
+
+    /// @notice Returns the id of the market `marketParams`.
+    function marketId(MarketParams memory marketParams) internal pure returns (bytes32 marketParamsId) {
         assembly ("memory-safe") {
-            let ptr := mload(0x40)
-            mstore(ptr, loanToken)
-            mstore(add(ptr, 32), collateralToken)
-            mstore(add(ptr, 64), oracle)
-            mstore(add(ptr, 96), irm)
-            mstore(add(ptr, 128), lltv)
-            marketParamsId := keccak256(ptr, 160)
+            marketParamsId := keccak256(marketParams, mul(5, 32))
         }
     }
 

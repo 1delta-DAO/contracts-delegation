@@ -8,6 +8,17 @@ uint256 constant WAD = 1e18;
 /// @custom:contact security@morpho.org
 /// @notice Library to manage fixed-point arithmetic.
 library MathLib {
+    /// @dev The number of virtual shares has been chosen low enough to prevent overflows, and high enough to ensure
+    /// high precision computations.
+    /// @dev Virtual shares can never be redeemed for the assets they are entitled to, but it is assumed the share price
+    /// stays low enough not to inflate these assets to a significant value.
+    /// @dev Warning: The assets to which virtual borrow shares are entitled behave like unrealizable bad debt.
+    uint256 internal constant VIRTUAL_SHARES = 1e6;
+
+    /// @dev A number of virtual assets of 1 enforces a conversion rate between shares and assets when a market is
+    /// empty.
+    uint256 internal constant VIRTUAL_ASSETS = 1;
+
     /// @dev Returns (`x` * `y`) / `WAD` rounded down.
     function wMulDown(uint256 x, uint256 y) internal pure returns (uint256) {
         return mulDivDown(x, y, WAD);
@@ -29,8 +40,32 @@ library MathLib {
     }
 
     /// @dev Returns (`x` * `y`) / `d` rounded up.
-    function mulDivUp(uint256 x, uint256 y, uint256 d) internal pure returns (uint256) {
-        return (x * y + (d - 1)) / d;
+    function mulDivUp(uint256 x, uint256 y, uint256 d) internal pure returns (uint256 a) {
+        // return (x * y + (d - 1)) / d;
+        assembly {
+            a := div(
+                add(
+                    mul(x, y),
+                    sub(d, 1) //
+                ),
+                d //
+            )
+        }
+    }
+
+    /// @dev Calculates the value of `shares` quoted in assets, rounding up.
+    function toAssetsUp(uint256 shares, uint256 totalAssets, uint256 totalShares) internal pure returns (uint256 a) {
+        // return mulDivUp(shares, totalAssets + VIRTUAL_ASSETS, totalShares + VIRTUAL_SHARES);
+        assembly {
+            let d := add(totalShares, VIRTUAL_SHARES)
+            a := div(
+                add(
+                    mul(shares, add(totalAssets, 1)),
+                    sub(d, 1) //
+                ),
+                d //
+            )
+        }
     }
 
     /// @dev Returns the sum of the first three non-zero terms of a Taylor expansion of e^(nx) - 1, to approximate a

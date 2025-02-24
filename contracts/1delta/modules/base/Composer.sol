@@ -952,7 +952,7 @@ contract OneDeltaComposerBase is MarginTrading, Morpho {
                                 sstore(key, 1)
                             }
                         }
-                        currentOffset = _morphoDeposit(currentOffset, callerAddress, token);
+                        currentOffset = _morphoDepositCollateral(currentOffset, callerAddress, token);
                     }
                     /** Morphgo borrow */
                     else if (morphoOperation == 1) {
