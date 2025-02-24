@@ -4,6 +4,7 @@ pragma solidity ^0.8.19;
 import {Test} from "forge-std/Test.sol";
 import {console} from "forge-std/console.sol";
 import {ComposerUtils, Commands} from "../shared/utils/ComposerUtils.sol";
+import {MorphoMathLib} from "./utils/MathLib.sol";
 
 import {OneDeltaComposerBase} from "../../contracts/1delta/modules/base/Composer.sol";
 import {IERC20All} from "../shared/interfaces/IERC20All.sol";
@@ -98,7 +99,9 @@ interface IMorphoFlashLoanCallback {
  * These are always applied on margin, however, we make sure that we always get
  * The expected amounts. Exact out swaps always execute flash swaps whenever possible.
  */
-contract FlashLoanTestMorpho is Test, ComposerUtils {
+contract MorphoBlueTest is Test, ComposerUtils {
+    using MorphoMathLib for uint256;
+
     OneDeltaComposerBase oneD;
 
     address internal constant user = address(984327);
@@ -122,8 +125,8 @@ contract FlashLoanTestMorpho is Test, ComposerUtils {
         oneD = new OneDeltaComposerBase();
     }
 
-
     uint256 internal constant SWEEP = 1 << 255;
+
     function encodeMorphoPermit(uint256 nonce, bool allow) private pure returns (bytes memory) {
         uint256 _data = uint160(nonce);
         if (allow) _data = (_data & ~SWEEP) | SWEEP;
@@ -350,7 +353,13 @@ contract FlashLoanTestMorpho is Test, ComposerUtils {
         vm.prank(user);
         oneD.deltaCompose(abi.encodePacked(transferTo, deposit));
         (uint256 supplyShares, , ) = IMorphoFlashLoanCallback(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
-        // asset(assets, collateralAmount, 0);
+
+        (uint128 totalSupplyAssets, uint128 totalSupplyShares, , , , ) = //
+        IMorphoFlashLoanCallback(MORPHO).market(marketId(LBTC_USDC_MARKET));
+
+        uint256 assetsSupplied = supplyShares.toAssetsDown(totalSupplyAssets, totalSupplyShares);
+
+        assertApproxEqAbs(assetsSupplied, assets - 1, 0);
     }
 
     function test_morpho_withdraw_loan_asset() external {
@@ -380,8 +389,13 @@ contract FlashLoanTestMorpho is Test, ComposerUtils {
 
         uint balAfter = IERC20All(loan).balanceOf(user);
         (uint256 supplyShares, , ) = IMorphoFlashLoanCallback(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
-        // asset(assets, collateralAmount, 0);
         assertApproxEqAbs(balAfter - bal, loanAssetAm - loanAssetAmWithdraw, 0);
+        (uint128 totalSupplyAssets, uint128 totalSupplyShares, , , , ) = //
+        IMorphoFlashLoanCallback(MORPHO).market(marketId(LBTC_USDC_MARKET));
+
+        uint256 assetsSupplied = supplyShares.toAssetsDown(totalSupplyAssets, totalSupplyShares);
+
+        assertApproxEqAbs(assetsSupplied, loanAssetAm - loanAssetAmWithdraw - 1, 0);
     }
 
     function test_morpho_withdraw_loan_asset_all() external {
@@ -411,8 +425,14 @@ contract FlashLoanTestMorpho is Test, ComposerUtils {
 
         uint balAfter = IERC20All(loan).balanceOf(user);
         (uint256 supplyShares, , ) = IMorphoFlashLoanCallback(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
-        // asset(assets, collateralAmount, 0);
         assertApproxEqAbs(balAfter - bal, loanAssetAm - 1, 0);
+
+        (uint128 totalSupplyAssets, uint128 totalSupplyShares, , , , ) = //
+        IMorphoFlashLoanCallback(MORPHO).market(marketId(LBTC_USDC_MARKET));
+
+        uint256 assetsSupplied = supplyShares.toAssetsDown(totalSupplyAssets, totalSupplyShares);
+
+        assertApproxEqAbs(assetsSupplied, 0, 0);
     }
 
     function test_morpho_deposit_collateral() external {

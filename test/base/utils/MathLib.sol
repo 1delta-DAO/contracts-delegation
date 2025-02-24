@@ -7,7 +7,7 @@ uint256 constant WAD = 1e18;
 /// @author Morpho Labs
 /// @custom:contact security@morpho.org
 /// @notice Library to manage fixed-point arithmetic.
-library MathLib {
+library MorphoMathLib {
     /// @dev The number of virtual shares has been chosen low enough to prevent overflows, and high enough to ensure
     /// high precision computations.
     /// @dev Virtual shares can never be redeemed for the assets they are entitled to, but it is assumed the share price
