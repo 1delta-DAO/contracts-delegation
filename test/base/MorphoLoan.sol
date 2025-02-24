@@ -122,6 +122,34 @@ contract FlashLoanTestMorpho is Test, ComposerUtils {
         oneD = new OneDeltaComposerBase();
     }
 
+
+    uint256 internal constant SWEEP = 1 << 255;
+    function encodeMorphoPermit(uint256 nonce, bool allow) private pure returns (bytes memory) {
+        uint256 _data = uint160(nonce);
+        if (allow) _data = (_data & ~SWEEP) | SWEEP;
+
+        return
+            abi.encodePacked(
+                _data,
+                uint32(423),
+                uint256(674321764327), //
+                uint256(943209784329784327982)
+            );
+    }
+
+    function test_morpho_permit() external {
+        vm.assume(user != address(0));
+
+        bytes memory d = encodeMorphoPermit(999, true);
+        uint16 len = uint16(d.length);
+
+        bytes memory data = abi.encodePacked(uint8(Commands.EXEC_COMPOUND_V3_PERMIT), MORPHO, len, d);
+
+        vm.prank(user);
+        vm.expectRevert("signature expired");
+        oneD.deltaCompose(data);
+    }
+
     function test_base_flash_loan_morpho() external {
         address asset = 0x4200000000000000000000000000000000000006;
         uint256 sweepAm = 30.0e18;

@@ -83,20 +83,6 @@ abstract contract PermitUtils is PermitConstants {
                 // IDaiLikePermit.permit(address holder, address spender, uint256 nonce, uint256 expiry, bool allowed, uint8 v, bytes32 r, bytes32 s)
                 success := call(gas(), token, 0, ptr, 0x104, 0, 0)
             }
-            // IERC20Permit
-            case 224 {
-                mstore(ptr, ERC20_PERMIT)
-                calldatacopy(add(ptr, 0x04), permitOffset, permitLength) // copy permit calldata
-                // IERC20Permit.permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
-                success := call(gas(), token, 0, ptr, 0xe4, 0, 0)
-            }
-            // IDaiLikePermit
-            case 256 {
-                mstore(ptr, DAI_PERMIT)
-                calldatacopy(add(ptr, 0x04), permitOffset, permitLength) // copy permit calldata
-                // IDaiLikePermit.permit(address holder, address spender, uint256 nonce, uint256 expiry, bool allowed, uint8 v, bytes32 r, bytes32 s)
-                success := call(gas(), token, 0, ptr, 0x104, 0, 0)
-            }
             // Compact IPermit2
             case 96 {
                 // Compact IPermit2.permit(uint160 amount, uint32 expiration, uint32 nonce, uint32 sigDeadline, uint256 r, uint256 vs)
@@ -115,13 +101,6 @@ abstract contract PermitUtils is PermitConstants {
                 mstore(add(ptr, 0x104), 0x40)                                 // store length = 64
                 calldatacopy(add(ptr, 0x124), add(permitOffset, 0x20), 0x20) // store r      = copy permitOffset 0x20..0x3f
                 calldatacopy(add(ptr, 0x144), add(permitOffset, 0x40), 0x20) // store vs     = copy permitOffset 0x40..0x5f
-                // IPermit2.permit(address owner, PermitSingle calldata permitSingle, bytes calldata signature)
-                success := call(gas(), PERMIT2, 0, ptr, 0x164, 0, 0)
-            }
-            // IPermit2
-            case 352 {
-                mstore(ptr, PERMIT2_PERMIT)
-                calldatacopy(add(ptr, 0x04), permitOffset, permitLength) // copy permit calldata
                 // IPermit2.permit(address owner, PermitSingle calldata permitSingle, bytes calldata signature)
                 success := call(gas(), PERMIT2, 0, ptr, 0x164, 0, 0)
             }
@@ -149,10 +128,9 @@ abstract contract PermitUtils is PermitConstants {
      */
     function _tryCreditPermit(address token, uint256 permitOffset, uint permitLength) internal {
         assembly {
-            let success
             let ptr := mload(0x40)
             switch permitLength
-            // Compact IERC20Permit
+            // Compact ICreditPermit
             case 100 {
                 mstore(ptr, CREDIT_PERMIT)     // store selector
                 mstore(add(ptr, 0x04), caller())   // store owner
@@ -170,25 +148,15 @@ abstract contract PermitUtils is PermitConstants {
                     mstore(add(ptr, 0xc4), shr(1, shl(1, vs)))                   // store s         = vs without most significant bit
                 }
                 // ICreditPermit.delegationWithSig(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
-                success := call(gas(), token, 0, ptr, 0xe4, 0, 0)
-            }
-            // ICreditPermit
-            case 224 {
-                mstore(ptr, CREDIT_PERMIT)
-                calldatacopy(add(ptr, 0x04), permitOffset, permitLength) // copy permit calldata
-                // ICreditPermit.delegationWithSig(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
-                success := call(gas(), token, 0, ptr, 0xe4, 0, 0)
+                if iszero(call(gas(), token, 0, ptr, 0xe4, 0, 0)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
             }
             // Unknown
             default {
                 mstore(ptr, _PERMIT_LENGTH_ERROR)
                 revert(ptr, 4)
-            }
-
-            // revert if not successful
-            if iszero(success) {
-                returndatacopy(0, 0, returndatasize())
-                revert(0, returndatasize())
             }
         }
     }
@@ -199,15 +167,21 @@ abstract contract PermitUtils is PermitConstants {
      * @param permitOffset calldata
      * @param permitLength calldata
      */
-    function _tryCompoundV3Permit(address comet, uint256 permitOffset, uint permitLength) internal {
+    function _tryCompoundV3Permit(address comet, uint256 permitOffset, uint permitLength, address callerAddress) internal {
         assembly {
-            let success
             let ptr := mload(0x40)
             switch permitLength
             // Compact ICreditPermit
             case 100 {
-                mstore(ptr, COMPOUND_V3_CREDIT_PERMIT)     // store selector
-                mstore(add(ptr, 0x04), caller())   // store owner
+                // mopho blue and CompoundV3 are similarly parametrized
+                switch eq(comet, 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb)
+                case 1 {
+                    mstore(ptr, MORPHO_CREDIT_PERMIT)   // store selector
+                }
+                default {
+                    mstore(ptr, COMPOUND_V3_CREDIT_PERMIT)  // store selector
+                }
+                mstore(add(ptr, 0x04), callerAddress)   // store owner
                 mstore(add(ptr, 0x24), address()) // store manager
 
                 // Compact ICreditPermit.allowBySig(uint256 isAllowedAndNonce, uint32 expiry, uint256 r, uint256 vs)
@@ -224,25 +198,15 @@ abstract contract PermitUtils is PermitConstants {
                     mstore(add(ptr, 0xE4), shr(1, shl(1, vs)))                   // store s         = vs without most significant bit
                 }
                 // ICreditPermit.allowBySig(address owner, address manager, bool isAllowed, uint256 value, uint256 expiry, uint8 v, bytes32 r, bytes32 s)
-                success := call(gas(), comet, 0, ptr, 0x104, 0, 0)
-            }
-            // ICreditPermit
-            case 256 {
-                mstore(ptr, COMPOUND_V3_CREDIT_PERMIT)
-                calldatacopy(add(ptr, 0x04), permitOffset, permitLength) // copy permit calldata
-                // ICreditPermit.allowBySig(address owner, address spender, bool isAllowed, uint256 nonce, uint256 expiry, uint8 v, bytes32 r, bytes32 s)
-                success := call(gas(), comet, 0, ptr, 0x104, 0, 0)
+                if iszero(call(gas(), comet, 0, ptr, 0x104, 0, 0)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
             }
             // Unknown
             default {
                 mstore(ptr, _PERMIT_LENGTH_ERROR)
                 revert(ptr, 4)
-            }
-
-            // revert if not successful
-            if iszero(success) {
-                returndatacopy(0, 0, returndatasize())
-                revert(0, returndatasize())
             }
         }
     }

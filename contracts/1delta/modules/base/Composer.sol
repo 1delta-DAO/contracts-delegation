@@ -1338,7 +1338,7 @@ contract OneDeltaComposerBase is MarginTrading, Morpho {
                     ////////////////////////////////////////////////////
                     // Execute lending delegation based on Compound V3.
                     // Data layout:
-                    //      bytes 0-20:                  token
+                    //      bytes 0-20:                  comet address
                     //      bytes 20-22:                 permit length
                     //      bytes 22-(22+permit length): permit data
                     ////////////////////////////////////////////////////
@@ -1352,7 +1352,7 @@ contract OneDeltaComposerBase is MarginTrading, Morpho {
                         permitOffset := add(currentOffset, 22)
                         currentOffset := add(permitOffset, permitLength)
                     }
-                    _tryCompoundV3Permit(comet, permitOffset, permitLength);
+                    _tryCompoundV3Permit(comet, permitOffset, permitLength, callerAddress);
                 } else if (operation == Commands.FLASH_LOAN) {
                     ////////////////////////////////////////////////////
                     // Execute single asset flash loan
