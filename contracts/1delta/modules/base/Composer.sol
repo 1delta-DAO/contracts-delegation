@@ -925,43 +925,26 @@ contract OneDeltaComposerBase is MarginTrading, Morpho {
                     assembly {
                         morphoOperation := shr(248, calldataload(currentOffset))
                     }
-                    /** Morphgo deposit */
+                    /** Morpho deposit collateral */
                     if (morphoOperation == 0) {
-                        address token;
-                        assembly {
-                            let ptr := mload(0x40)
-                            token := shr(96, calldataload(add(currentOffset, 21)))
-                            /**
-                             * Approve MB beforehand for the depo amount
-                             */
-                            mstore(0x0, token)
-                            mstore(0x20, CALL_MANAGEMENT_APPROVALS)
-                            mstore(0x20, keccak256(0x0, 0x40))
-                            mstore(0x0, MORPHO_BLUE)
-                            let key := keccak256(0x0, 0x40)
-                            // check if already approved
-                            if iszero(sload(key)) {
-                                // selector for approve(address,uint256)
-                                mstore(ptr, ERC20_APPROVE)
-                                mstore(add(ptr, 0x04), MORPHO_BLUE)
-                                mstore(add(ptr, 0x24), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff)
-
-                                if iszero(call(gas(), token, 0x0, ptr, 0x44, ptr, 32)) {
-                                    revert(0x0, 0x0)
-                                }
-                                sstore(key, 1)
-                            }
-                        }
-                        currentOffset = _morphoDepositCollateral(currentOffset, callerAddress, token);
+                        currentOffset = _morphoDepositCollateral(currentOffset, callerAddress);
                     }
-                    /** Morphgo borrow */
+                    /** Morpho borrow */
                     else if (morphoOperation == 1) {
                         currentOffset = _morphoBorrow(currentOffset, callerAddress);
-                    } else if (morphoOperation == 2) {
+                    } 
+                    /** Morpho repay */
+                    else if (morphoOperation == 2) {
                         currentOffset = _morphoRepay(currentOffset, callerAddress);
-                    } else if (morphoOperation == 3) {
+                    } 
+                    /** Morpho withdraw colalteral */
+                    else if (morphoOperation == 3) {
                         currentOffset = _morphoWithdrawCollateral(currentOffset, callerAddress);
-                    } else revert();
+                    }  
+                    /** Morpho deposit lendingToken */
+                    else if (morphoOperation == 4) {
+                        currentOffset = _morphoDeposit(currentOffset, callerAddress);
+                    }else revert();
                 }
             } else if (operation < 0x30) {
                 if (operation == Commands.TRANSFER_FROM) {

@@ -19,22 +19,28 @@ abstract contract Morpho is Slots, ERC20Selectors, Masks {
     address internal constant MORPHO_BLUE = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
 
     /// @dev  position(...)
-    bytes32 internal constant MORPHO_POSITION = 0x93c5206200000000000000000000000000000000000000000000000000000000;
+    bytes32 private constant MORPHO_POSITION = 0x93c5206200000000000000000000000000000000000000000000000000000000;
 
     /// @dev  market(...)
-    bytes32 internal constant MORPHO_MARKET = 0x5c60e39a00000000000000000000000000000000000000000000000000000000;
+    bytes32 private constant MORPHO_MARKET = 0x5c60e39a00000000000000000000000000000000000000000000000000000000;
 
     /// @dev  market(...)
-    bytes32 internal constant MORPHO_ACCRUE = 0x151c1ade00000000000000000000000000000000000000000000000000000000;
+    bytes32 private constant MORPHO_ACCRUE = 0x151c1ade00000000000000000000000000000000000000000000000000000000;
 
     /// @dev  repay(...)
-    bytes32 internal constant MORPHO_REPAY = 0x20b76e8100000000000000000000000000000000000000000000000000000000;
+    bytes32 private constant MORPHO_REPAY = 0x20b76e8100000000000000000000000000000000000000000000000000000000;
 
     /// @dev  supplyCollateral(...)
-    bytes32 internal constant MORPHO_SUPPLY_COLLATERAL = 0x238d657900000000000000000000000000000000000000000000000000000000;
+    bytes32 private constant MORPHO_SUPPLY_COLLATERAL = 0x238d657900000000000000000000000000000000000000000000000000000000;
+
+    /// @dev  supply(...)
+    bytes32 private constant MORPHO_SUPPLY = 0xa99aad8900000000000000000000000000000000000000000000000000000000;
+
+    /// @dev  borrow(...)
+    bytes32 private constant MORPHO_BORROW = 0x50d8cd4b00000000000000000000000000000000000000000000000000000000;
 
     /// @dev  withdrawCollateral(...)
-    bytes32 internal constant MORPHO_WITHDRAW_COLLATERAL = 0x8720316d00000000000000000000000000000000000000000000000000000000;
+    bytes32 private constant MORPHO_WITHDRAW_COLLATERAL = 0x8720316d00000000000000000000000000000000000000000000000000000000;
 
     /**
      * Layout:
@@ -48,7 +54,7 @@ abstract contract Morpho is Slots, ERC20Selectors, Masks {
             let ptr := mload(0x40)
 
             // borrow(...)
-            mstore(ptr, 0x50d8cd4b00000000000000000000000000000000000000000000000000000000)
+            mstore(ptr, MORPHO_BORROW)
 
             // market stuff
 
@@ -110,24 +116,162 @@ abstract contract Morpho is Slots, ERC20Selectors, Masks {
         return currentOffset;
     }
 
-    /// @notice Deposit to Morpho Blue - add calldata if length is nonzero
-    function _morphoDepositCollateral(uint256 currentOffset, address callerAddress, address token) internal returns (uint256) {
+    /// @notice Deposit loanTokens to Morpho Blue - add calldata if length is nonzero
+    function _morphoDeposit(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
             // morpho should be the primary choice
             let ptr := mload(0x40)
 
-            // supplyCollateral(...)
-            mstore(ptr, MORPHO_SUPPLY_COLLATERAL)
-
             // market stuff
 
             currentOffset := add(currentOffset, 1)
-            // tokens
-            mstore(add(ptr, 4), shr(96, calldataload(currentOffset))) // MarketParams.loanToken
-            mstore(add(ptr, 36), token) // MarketParams.collateralToken
+            let token := shr(96, calldataload(currentOffset))
+            /**
+             * Approve MB beforehand for the depo amount
+             */
+            mstore(0x0, token)
+            mstore(0x20, CALL_MANAGEMENT_APPROVALS)
+            mstore(0x20, keccak256(0x0, 0x40))
+            mstore(0x0, MORPHO_BLUE)
+            let key := keccak256(0x0, 0x40)
+            // check if already approved
+            if iszero(sload(key)) {
+                // selector for approve(address,uint256)
+                mstore(ptr, ERC20_APPROVE)
+                mstore(add(ptr, 0x04), MORPHO_BLUE)
+                mstore(add(ptr, 0x24), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff)
 
+                if iszero(call(gas(), token, 0x0, ptr, 0x44, ptr, 32)) {
+                    revert(0x0, 0x0)
+                }
+                sstore(key, 1)
+            }
+
+            // supply(...)
+            mstore(ptr, MORPHO_SUPPLY)
+            // tokens
+            mstore(add(ptr, 4), token) // MarketParams.loanToken
+            currentOffset := add(currentOffset, 20)
+            mstore(add(ptr, 36), shr(96, calldataload(currentOffset))) // MarketParams.collateralToken
+            currentOffset := add(currentOffset, 20)
+            mstore(add(ptr, 68), shr(96, calldataload(currentOffset))) // MarketParams.oracle
+            currentOffset := add(currentOffset, 20)
+            mstore(add(ptr, 100), shr(96, calldataload(currentOffset))) // MarketParams.irm
+
+            currentOffset := add(currentOffset, 20)
+            let lltvAndAmount := calldataload(currentOffset)
+
+            mstore(add(ptr, 132), shr(128, lltvAndAmount)) // MarketParams.lltv
+
+            let amountToDeposit := and(UINT120_MASK, lltvAndAmount)
+
+            /** check if it is by shares or assets */
+            switch and(UINT8_MASK, shr(120, lltvAndAmount))
+            case 0 {
+                /** if the amount is zero, we assume that the contract balance is deposited */
+                if iszero(amountToDeposit) {
+                    // selector for balanceOf(address)
+                    mstore(0, ERC20_BALANCE_OF)
+                    // add this address as parameter
+                    mstore(0x04, address())
+                    // call to token
+                    pop(
+                        staticcall(
+                            gas(),
+                            token, // collateral token
+                            0x0,
+                            0x24,
+                            0x0,
+                            0x20
+                        )
+                    )
+                    // load the retrieved balance
+                    amountToDeposit := mload(0x0)
+                }
+
+                mstore(add(ptr, 164), amountToDeposit) // assets
+                mstore(add(ptr, 196), 0) // shares
+            }
+            default {
+                mstore(add(ptr, 164), 0) // assets
+                mstore(add(ptr, 196), amountToDeposit) // shares
+            }
+            // onbehalf
+            mstore(add(ptr, 228), callerAddress) // onBehalfOf
+            mstore(add(ptr, 260), 0x120) // offset
+
+            currentOffset := add(currentOffset, 32)
+
+            let calldataLength := and(UINT16_MASK, shr(240, currentOffset))
+            currentOffset := add(currentOffset, 2)
+
+            // add calldata if needed
+            if xor(0, calldataLength) {
+                calldataLength := add(calldataLength, 20)
+                mstore(add(ptr, 324), shl(96, callerAddress)) // caller
+                calldatacopy(add(ptr, 344), currentOffset, calldataLength) // calldata
+                currentOffset := add(currentOffset, calldataLength)
+            }
+
+            mstore(add(ptr, 292), calldataLength) // calldatalength
+            if iszero(
+                call(
+                    gas(),
+                    MORPHO_BLUE,
+                    0x0,
+                    ptr,
+                    add(calldataLength, 344), // = 10 * 32 + 4
+                    0x0,
+                    0x0 //
+                )
+            ) {
+                let rdlen := returndatasize()
+                returndatacopy(0, 0, rdlen)
+                revert(0x0, rdlen)
+            }
+        }
+        return currentOffset;
+    }
+
+    /// @notice Deposit collateral to Morpho Blue - add calldata if length is nonzero
+    function _morphoDepositCollateral(uint256 currentOffset, address callerAddress) internal returns (uint256) {
+        assembly {
+            // morpho should be the primary choice
+            let ptrBase := mload(0x40)
+            let ptr := add(256, ptrBase)
+
+            // supplyCollateral(...)
+            mstore(ptr, MORPHO_SUPPLY_COLLATERAL)
+            currentOffset := add(currentOffset, 1)
+            mstore(add(ptr, 4), shr(96, calldataload(currentOffset))) // MarketParams.loanToken
+            currentOffset := add(currentOffset, 20)
+
+            // get the collateral token and approve if needed
+            let token := shr(96, calldataload(currentOffset))
+            /**
+             * Approve MB beforehand for the depo amount
+             */
+            mstore(0x0, token)
+            mstore(0x20, CALL_MANAGEMENT_APPROVALS)
+            mstore(0x20, keccak256(0x0, 0x40))
+            mstore(0x0, MORPHO_BLUE)
+            let key := keccak256(0x0, 0x40)
+            // check if already approved
+            if iszero(sload(key)) {
+                // selector for approve(address,uint256)
+                mstore(ptrBase, ERC20_APPROVE)
+                mstore(add(ptrBase, 0x04), MORPHO_BLUE)
+                mstore(add(ptrBase, 0x24), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff)
+
+                if iszero(call(gas(), token, 0x0, ptrBase, 0x44, 0x0, 0x0)) {
+                    revert(0x0, 0x0)
+                }
+                sstore(key, 1)
+            }
+
+            mstore(add(ptr, 36), token) // MarketParams.collateralToken
             // oralce and irm
-            currentOffset := add(currentOffset, 40)
+            currentOffset := add(currentOffset, 20)
             mstore(add(ptr, 68), shr(96, calldataload(currentOffset))) // MarketParams.oracle
             currentOffset := add(currentOffset, 20)
             mstore(add(ptr, 100), shr(96, calldataload(currentOffset))) // MarketParams.irm

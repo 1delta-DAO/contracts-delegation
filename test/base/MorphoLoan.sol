@@ -297,7 +297,35 @@ contract FlashLoanTestMorpho is Test, ComposerUtils {
         logPos(marketId(LBTC_USDC_MARKET), user);
     }
 
-    function test_morpho_deposit() external {
+    function test_morpho_deposit_loan_asset() external {
+        deal(LBTC, user, 30.0e8);
+        deal(USDC, user, 300_000.0e6);
+
+        uint assets = 1.0e8;
+
+        address loan = USDC;
+        bytes memory transferTo = transferIn(
+            loan,
+            address(oneD),
+            assets //
+        );
+
+        bytes memory deposit = morphoDeposit(
+            encodeMarket(LBTC_USDC_MARKET),
+            false,
+            assets,
+            hex"" //
+        );
+        vm.prank(user);
+        IERC20All(loan).approve(address(oneD), type(uint).max);
+
+        vm.prank(user);
+        oneD.deltaCompose(abi.encodePacked(transferTo, deposit));
+        (uint256 supplyShares, ,) = IMorphoFlashLoanCallback(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
+        // asset(assets, collateralAmount, 0);
+    }
+
+    function test_morpho_deposit_collateral() external {
         deal(LBTC, user, 30.0e8);
         deal(USDC, user, 300_000.0e6);
 
@@ -310,7 +338,7 @@ contract FlashLoanTestMorpho is Test, ComposerUtils {
             assets //
         );
 
-        bytes memory deposit = morphoDeposit(encodeMarket(LBTC_USDC_MARKET), assets, hex"");
+        bytes memory deposit = morphoDepositCollateral(encodeMarket(LBTC_USDC_MARKET), assets, hex"");
         vm.prank(user);
         IERC20All(collateral).approve(address(oneD), type(uint).max);
 
@@ -332,7 +360,7 @@ contract FlashLoanTestMorpho is Test, ComposerUtils {
             amount //
         );
 
-        bytes memory deposit = morphoDeposit(encodeMarket(LBTC_USDC_MARKET), amount, hex"");
+        bytes memory deposit = morphoDepositCollateral(encodeMarket(LBTC_USDC_MARKET), amount, hex"");
         vm.prank(userAddr);
         IERC20All(collateral).approve(address(oneD), type(uint).max);
 
@@ -340,27 +368,27 @@ contract FlashLoanTestMorpho is Test, ComposerUtils {
         oneD.deltaCompose(abi.encodePacked(transferTo, deposit));
     }
 
-    function test_base_params() external {
-        address onBehalf = 0x937Ce2d6c488b361825D2DB5e8A70e26d48afEd5;
-        uint256 assets = 543978;
-        uint256 shares = 9753284975432;
-        MarketParams memory market = MarketParams(
-            0x4200000000000000000000000000000000000006,
-            0x4200000000000000000000000000000000000007,
-            0x4200000000000000000000000000000000000008,
-            0x4200000000000000000000000000000000000009,
-            860000000000000000
-        );
+    // function test_base_params() external {
+    //     address onBehalf = 0x937Ce2d6c488b361825D2DB5e8A70e26d48afEd5;
+    //     uint256 assets = 543978;
+    //     uint256 shares = 9753284975432;
+    //     MarketParams memory market = MarketParams(
+    //         0x4200000000000000000000000000000000000006,
+    //         0x4200000000000000000000000000000000000007,
+    //         0x4200000000000000000000000000000000000008,
+    //         0x4200000000000000000000000000000000000009,
+    //         860000000000000000
+    //     );
 
-        bytes memory dp = sweep(
-            address(0),
-            onBehalf,
-            assets, //
-            SweepType.AMOUNT
-        );
-        console.log(dp.length);
-        console.logBytes(abi.encodeWithSelector(IMorphoFlashLoanCallback.supplyCollateral.selector, market, assets, onBehalf, dp));
-    }
+    //     bytes memory dp = sweep(
+    //         address(0),
+    //         onBehalf,
+    //         assets, //
+    //         SweepType.AMOUNT
+    //     );
+    //     console.log(dp.length);
+    //     console.logBytes(abi.encodeWithSelector(IMorphoFlashLoanCallback.supplyCollateral.selector, market, assets, onBehalf, dp));
+    // }
 
     /// @notice Returns the id of the market `marketParams`.
     function logMarket(bytes32 id) internal view {
