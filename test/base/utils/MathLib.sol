@@ -35,8 +35,25 @@ library MathLib {
     }
 
     /// @dev Returns (`x` * `y`) / `d` rounded down.
-    function mulDivDown(uint256 x, uint256 y, uint256 d) internal pure returns (uint256) {
-        return (x * y) / d;
+    function mulDivDown(uint256 x, uint256 y, uint256 d) internal pure returns (uint256 a) {
+        // return (x * y) / d;
+        assembly {
+            a := div(mul(x, y), d)
+        }
+    }
+
+    /// @dev Calculates the value of `shares` quoted in assets, rounding down.
+    function toAssetsDown(uint256 shares, uint256 totalAssets, uint256 totalShares) internal pure returns (uint256 a) {
+        // return mulDivDown(shares, totalAssets + VIRTUAL_ASSETS, totalShares + VIRTUAL_SHARES);
+        assembly {
+            a := div(
+                mul(
+                    shares,
+                    add(totalAssets, VIRTUAL_ASSETS) //
+                ),
+                add(totalShares, VIRTUAL_SHARES)
+            ) //
+        }
     }
 
     /// @dev Returns (`x` * `y`) / `d` rounded up.

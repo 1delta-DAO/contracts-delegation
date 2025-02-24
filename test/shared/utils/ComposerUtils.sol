@@ -124,6 +124,22 @@ contract ComposerUtils {
             );
     }
 
+    function morphoWithdraw(
+        bytes memory market,
+        bool isShares, //
+        uint assets,
+        address receiver
+    ) internal pure returns (bytes memory) {
+        return
+            abi.encodePacked(
+                uint8(Commands.MORPH), // 1
+                uint8(5), // 1
+                market, // 4 * 20 + 16
+                abi.encodePacked(isShares ? uint8(1) : uint8(0), uint120(assets)),
+                receiver // 20
+            );
+    }
+
     function morphoWithdrawCollateral(bytes memory market, uint assets, address receiver) internal pure returns (bytes memory) {
         return
             abi.encodePacked(

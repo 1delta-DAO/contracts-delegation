@@ -924,6 +924,7 @@ contract OneDeltaComposerBase is MarginTrading, Morpho {
                     uint256 morphoOperation;
                     assembly {
                         morphoOperation := shr(248, calldataload(currentOffset))
+                        currentOffset := add(currentOffset, 1)
                     }
                     /** Morpho deposit collateral */
                     if (morphoOperation == 0) {
@@ -932,19 +933,23 @@ contract OneDeltaComposerBase is MarginTrading, Morpho {
                     /** Morpho borrow */
                     else if (morphoOperation == 1) {
                         currentOffset = _morphoBorrow(currentOffset, callerAddress);
-                    } 
+                    }
                     /** Morpho repay */
                     else if (morphoOperation == 2) {
                         currentOffset = _morphoRepay(currentOffset, callerAddress);
-                    } 
+                    }
                     /** Morpho withdraw colalteral */
                     else if (morphoOperation == 3) {
                         currentOffset = _morphoWithdrawCollateral(currentOffset, callerAddress);
-                    }  
+                    }
                     /** Morpho deposit lendingToken */
                     else if (morphoOperation == 4) {
                         currentOffset = _morphoDeposit(currentOffset, callerAddress);
-                    }else revert();
+                    }
+                    /** Morpho withdraw lendingToken */
+                    else if (morphoOperation == 5) {
+                        currentOffset = _morphoWithdraw(currentOffset, callerAddress);
+                    } else revert();
                 }
             } else if (operation < 0x30) {
                 if (operation == Commands.TRANSFER_FROM) {

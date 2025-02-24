@@ -152,7 +152,7 @@ contract FlashLoanTestMorpho is Test, ComposerUtils {
 
         uint assets = 1.0e8;
 
-        depositToMorpho(user, assets);
+        depositCollateralToMorpho(user, assets);
 
         uint withdrawAssets = 0.5e8;
         bytes memory withdrawCall = morphoWithdrawCollateral(
@@ -180,7 +180,7 @@ contract FlashLoanTestMorpho is Test, ComposerUtils {
 
         address borrowAsset = USDC;
         uint borrowAssets = 30_000.0e6;
-        depositToMorpho(user, assets);
+        depositCollateralToMorpho(user, assets);
 
         bytes memory borrowCall = morphoBorrow(
             encodeMarket(LBTC_USDC_MARKET),
@@ -211,7 +211,7 @@ contract FlashLoanTestMorpho is Test, ComposerUtils {
 
         address borrowAsset = USDC;
         uint borrowAssets = 30_000.0e6;
-        depositToMorpho(user, assets);
+        depositCollateralToMorpho(user, assets);
 
         bytes memory borrowCall = morphoBorrow(
             encodeMarket(LBTC_USDC_MARKET),
@@ -256,7 +256,7 @@ contract FlashLoanTestMorpho is Test, ComposerUtils {
 
         address borrowAsset = USDC;
         uint borrowAssets = 30_000.0e6;
-        depositToMorpho(user, assets);
+        depositCollateralToMorpho(user, assets);
 
         bytes memory borrowCall = morphoBorrow(
             encodeMarket(LBTC_USDC_MARKET),
@@ -321,8 +321,70 @@ contract FlashLoanTestMorpho is Test, ComposerUtils {
 
         vm.prank(user);
         oneD.deltaCompose(abi.encodePacked(transferTo, deposit));
-        (uint256 supplyShares, ,) = IMorphoFlashLoanCallback(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
+        (uint256 supplyShares, , ) = IMorphoFlashLoanCallback(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
         // asset(assets, collateralAmount, 0);
+    }
+
+    function test_morpho_withdraw_loan_asset() external {
+        deal(LBTC, user, 30.0e8);
+        deal(USDC, user, 300_000.0e6);
+
+        uint loanAssetAm = 20_000.0e6;
+        uint loanAssetAmWithdraw = 10_000.0e6;
+
+        address loan = USDC;
+        depositToMorpho(user, false, loanAssetAm);
+
+        bytes memory withdrawCall = morphoWithdraw(
+            encodeMarket(LBTC_USDC_MARKET),
+            false,
+            loanAssetAmWithdraw,
+            user //
+        );
+
+        vm.prank(user);
+        IMorphoFlashLoanCallback(MORPHO).setAuthorization(address(oneD), true);
+
+        uint bal = IERC20All(loan).balanceOf(user);
+
+        vm.prank(user);
+        oneD.deltaCompose(withdrawCall);
+
+        uint balAfter = IERC20All(loan).balanceOf(user);
+        (uint256 supplyShares, , ) = IMorphoFlashLoanCallback(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
+        // asset(assets, collateralAmount, 0);
+        assertApproxEqAbs(balAfter - bal, loanAssetAm - loanAssetAmWithdraw, 0);
+    }
+
+    function test_morpho_withdraw_loan_asset_all() external {
+        deal(LBTC, user, 30.0e8);
+        deal(USDC, user, 300_000.0e6);
+
+        uint loanAssetAm = 20_000.0e6;
+        uint loanAssetAmWithdraw = type(uint120).max;
+
+        address loan = USDC;
+        depositToMorpho(user, false, loanAssetAm);
+
+        bytes memory withdrawCall = morphoWithdraw(
+            encodeMarket(LBTC_USDC_MARKET),
+            false,
+            loanAssetAmWithdraw,
+            user //
+        );
+
+        vm.prank(user);
+        IMorphoFlashLoanCallback(MORPHO).setAuthorization(address(oneD), true);
+
+        uint bal = IERC20All(loan).balanceOf(user);
+
+        vm.prank(user);
+        oneD.deltaCompose(withdrawCall);
+
+        uint balAfter = IERC20All(loan).balanceOf(user);
+        (uint256 supplyShares, , ) = IMorphoFlashLoanCallback(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
+        // asset(assets, collateralAmount, 0);
+        assertApproxEqAbs(balAfter - bal, loanAssetAm - 1, 0);
     }
 
     function test_morpho_deposit_collateral() external {
@@ -352,7 +414,7 @@ contract FlashLoanTestMorpho is Test, ComposerUtils {
         return abi.encodePacked(m.loanToken, m.collateralToken, m.oracle, m.irm, uint128(m.lltv));
     }
 
-    function depositToMorpho(address userAddr, uint amount) internal {
+    function depositCollateralToMorpho(address userAddr, uint amount) internal {
         address collateral = LBTC;
         bytes memory transferTo = transferIn(
             collateral,
@@ -363,6 +425,22 @@ contract FlashLoanTestMorpho is Test, ComposerUtils {
         bytes memory deposit = morphoDepositCollateral(encodeMarket(LBTC_USDC_MARKET), amount, hex"");
         vm.prank(userAddr);
         IERC20All(collateral).approve(address(oneD), type(uint).max);
+
+        vm.prank(userAddr);
+        oneD.deltaCompose(abi.encodePacked(transferTo, deposit));
+    }
+
+    function depositToMorpho(address userAddr, bool isShares, uint amount) internal {
+        address loan = USDC;
+        bytes memory transferTo = transferIn(
+            loan,
+            address(oneD),
+            amount //
+        );
+
+        bytes memory deposit = morphoDeposit(encodeMarket(LBTC_USDC_MARKET), isShares, amount, hex"");
+        vm.prank(userAddr);
+        IERC20All(loan).approve(address(oneD), type(uint).max);
 
         vm.prank(userAddr);
         oneD.deltaCompose(abi.encodePacked(transferTo, deposit));
