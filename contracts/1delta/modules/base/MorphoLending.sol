@@ -24,9 +24,6 @@ abstract contract Morpho is Slots, ERC20Selectors, Masks {
     /// @dev  market(...)
     bytes32 private constant MORPHO_MARKET = 0x5c60e39a00000000000000000000000000000000000000000000000000000000;
 
-    /// @dev  market(...)
-    bytes32 private constant MORPHO_ACCRUE = 0x151c1ade00000000000000000000000000000000000000000000000000000000;
-
     /// @dev  repay(...)
     bytes32 private constant MORPHO_REPAY = 0x20b76e8100000000000000000000000000000000000000000000000000000000;
 
@@ -437,7 +434,7 @@ abstract contract Morpho is Slots, ERC20Selectors, Masks {
                     // https://docs.morpho.org/morpho/tutorials/manage-positions/#repayAll
 
                     // accrue interest
-                    // add selector to params
+                    // add accrueInterest (0x151c1ade)
                     mstore(sub(ptr, 28), 0x151c1ade)
                     if iszero(call(gas(), MORPHO_BLUE, 0x0, ptr, 0xA4, 0x0, 0x0)) {
                         revert(0x0, 0x0)
@@ -596,7 +593,7 @@ abstract contract Morpho is Slots, ERC20Selectors, Masks {
                     // https://docs.morpho.org/morpho/tutorials/manage-positions/#repayAll
 
                     // accrue interest
-                    // add selector to params
+                    // add accrueInterest (0x151c1ade)
                     mstore(sub(ptr, 28), 0x151c1ade)
                     if iszero(call(gas(), MORPHO_BLUE, 0x0, ptr, 0xA4, 0x0, 0x0)) {
                         revert(0x0, 0x0)
