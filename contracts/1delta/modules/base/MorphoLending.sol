@@ -215,7 +215,7 @@ abstract contract Morpho is Slots, ERC20Selectors, Masks {
                     MORPHO_BLUE,
                     0x0,
                     ptr,
-                    add(calldataLength, 344), // = 10 * 32 + 4
+                    add(calldataLength, 324), // = 10 * 32 + 4
                     0x0,
                     0x0 //
                 )
@@ -298,10 +298,7 @@ abstract contract Morpho is Slots, ERC20Selectors, Masks {
                 amountToDeposit := mload(0x0)
             }
 
-            // amount
             mstore(add(ptr, 164), amountToDeposit) // assets
-
-            // onbehalf
             mstore(add(ptr, 196), callerAddress) // onBehalfOf
             mstore(add(ptr, 228), 0x100) // offset
 
@@ -325,7 +322,7 @@ abstract contract Morpho is Slots, ERC20Selectors, Masks {
                     MORPHO_BLUE,
                     0x0,
                     ptr,
-                    add(calldataLength, 312), // = 10 * 32 + 4
+                    add(calldataLength, 292), // = 10 * 32 + 4
                     0x0,
                     0x0 //
                 )
@@ -686,7 +683,7 @@ abstract contract Morpho is Slots, ERC20Selectors, Masks {
                     MORPHO_BLUE,
                     0x0,
                     ptr,
-                    add(calldataLength, 344), // = 10 * 32 + 4
+                    add(calldataLength, 324), // = 10 * 32 + 4
                     0x0,
                     0x0 //
                 )

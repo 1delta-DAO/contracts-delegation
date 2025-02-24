@@ -1825,7 +1825,7 @@ contract OneDeltaComposerBase is MarginTrading, Morpho {
         _onMorphoCallback(params);
     }
 
-    /// @dev Morpho Blue is immutable and their flash loans are callbacks,
+    /// @dev Morpho Blue is immutable and their flash loans are callbacks to msg.sender,
     /// Since it is universal batching and the same validation for all
     /// Morpho callbacks, we can use the same logic everywhere
     function _onMorphoCallback(bytes calldata params) internal {

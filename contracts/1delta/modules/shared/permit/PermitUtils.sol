@@ -37,7 +37,7 @@ abstract contract PermitUtils is PermitConstants {
      * @param permitLength Length of the permit calldata.
      */
     function _tryPermit(address token, uint256 permitOffset, uint permitLength) internal {
-        assembly ("memory-safe") { // solhint-disable-line no-inline-assembly
+        assembly { // solhint-disable-line no-inline-assembly
             let ptr := mload(0x40)
             let success
             // Switch case for different permit lengths, indicating different permit standards
