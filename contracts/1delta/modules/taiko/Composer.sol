@@ -960,7 +960,7 @@ contract OneDeltaComposerTaiko is MarginTrading {
                         permitOffset := add(currentOffset, 22)
                         currentOffset := add(permitOffset, permitLength)
                     }
-                    _tryPermit(token, permitOffset, permitLength);
+                    _tryPermit(token, permitOffset, permitLength, callerAddress);
                 } else if (operation == Commands.EXEC_CREDIT_PERMIT) {
                     ////////////////////////////////////////////////////
                     // Execute credit delegation permit.
@@ -981,7 +981,7 @@ contract OneDeltaComposerTaiko is MarginTrading {
                         permitOffset := add(currentOffset, 22)
                         currentOffset := add(permitOffset, permitLength)
                     }
-                    _tryCreditPermit(token, permitOffset, permitLength);
+                    _tryCreditPermit(token, permitOffset, permitLength, callerAddress);
                 } else if (operation == Commands.FLASH_LOAN) {
                     ////////////////////////////////////////////////////
                     // Execute single asset flash loan

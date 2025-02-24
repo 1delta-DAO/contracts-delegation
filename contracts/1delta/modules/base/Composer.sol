@@ -1312,7 +1312,7 @@ contract OneDeltaComposerBase is MarginTrading, Morpho {
                         permitOffset := add(currentOffset, 22)
                         currentOffset := add(permitOffset, permitLength)
                     }
-                    _tryPermit(token, permitOffset, permitLength);
+                    _tryPermit(token, permitOffset, permitLength, callerAddress);
                 } else if (operation == Commands.EXEC_CREDIT_PERMIT) {
                     ////////////////////////////////////////////////////
                     // Execute credit delegation permit.
@@ -1333,7 +1333,7 @@ contract OneDeltaComposerBase is MarginTrading, Morpho {
                         permitOffset := add(currentOffset, 22)
                         currentOffset := add(permitOffset, permitLength)
                     }
-                    _tryCreditPermit(token, permitOffset, permitLength);
+                    _tryCreditPermit(token, permitOffset, permitLength, callerAddress);
                 } else if (operation == Commands.EXEC_COMPOUND_V3_PERMIT) {
                     ////////////////////////////////////////////////////
                     // Execute lending delegation based on Compound V3.

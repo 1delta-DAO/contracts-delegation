@@ -36,7 +36,7 @@ abstract contract PermitUtils is PermitConstants {
      * @param permitOffset The off-chain permit data, containing different fields depending on the type of permit function.
      * @param permitLength Length of the permit calldata.
      */
-    function _tryPermit(address token, uint256 permitOffset, uint permitLength) internal {
+    function _tryPermit(address token, uint256 permitOffset, uint256 permitLength, address callerAddress) internal {
         assembly { // solhint-disable-line no-inline-assembly
             let ptr := mload(0x40)
             let success
@@ -45,7 +45,7 @@ abstract contract PermitUtils is PermitConstants {
             // Compact IERC20Permit
             case 100 {
                 mstore(ptr, ERC20_PERMIT)     // store selector
-                mstore(add(ptr, 0x04), caller())   // store owner
+                mstore(add(ptr, 0x04), callerAddress)   // store owner
                 mstore(add(ptr, 0x24), address()) // store spender
 
                 // Compact IERC20Permit.permit(uint256 value, uint32 deadline, uint256 r, uint256 vs)
@@ -65,7 +65,7 @@ abstract contract PermitUtils is PermitConstants {
             // Compact IDaiLikePermit
             case 72 {
                 mstore(ptr, DAI_PERMIT)  // store selector
-                mstore(add(ptr, 0x04), caller())   // store owner
+                mstore(add(ptr, 0x04), callerAddress)   // store owner
                 mstore(add(ptr, 0x24), address()) // store spender
 
                 // Compact IDaiLikePermit.permit(uint32 nonce, uint32 expiry, uint256 r, uint256 vs)
@@ -87,7 +87,7 @@ abstract contract PermitUtils is PermitConstants {
             case 96 {
                 // Compact IPermit2.permit(uint160 amount, uint32 expiration, uint32 nonce, uint32 sigDeadline, uint256 r, uint256 vs)
                 mstore(ptr, PERMIT2_PERMIT)  // store selector
-                mstore(add(ptr, 0x04), caller()) // store owner
+                mstore(add(ptr, 0x04), callerAddress) // store owner
                 mstore(add(ptr, 0x24), token) // store token
 
                 calldatacopy(add(ptr, 0x50), permitOffset, 0x14)             // store amount = copy permitOffset 0x00..0x13
@@ -126,14 +126,14 @@ abstract contract PermitUtils is PermitConstants {
      * @param token asset to permit / delegate
      * @param permitOffset calldata
      */
-    function _tryCreditPermit(address token, uint256 permitOffset, uint permitLength) internal {
+    function _tryCreditPermit(address token, uint256 permitOffset, uint256 permitLength, address callerAddress) internal {
         assembly {
             let ptr := mload(0x40)
             switch permitLength
             // Compact ICreditPermit
             case 100 {
                 mstore(ptr, CREDIT_PERMIT)     // store selector
-                mstore(add(ptr, 0x04), caller())   // store owner
+                mstore(add(ptr, 0x04), callerAddress)   // store owner
                 mstore(add(ptr, 0x24), address()) // store spender
 
                 // Compact ICreditPermit.delegationWithSig(uint256 value, uint32 deadline, uint256 r, uint256 vs)
@@ -167,7 +167,7 @@ abstract contract PermitUtils is PermitConstants {
      * @param permitOffset calldata
      * @param permitLength calldata
      */
-    function _tryCompoundV3Permit(address comet, uint256 permitOffset, uint permitLength, address callerAddress) internal {
+    function _tryCompoundV3Permit(address comet, uint256 permitOffset, uint256 permitLength, address callerAddress) internal {
         assembly {
             let ptr := mload(0x40)
             switch permitLength
@@ -212,14 +212,14 @@ abstract contract PermitUtils is PermitConstants {
     }
 
     /// @notice transferERC20from version using permit2
-    function _transferFromPermit2(address token, address to, uint256 amount) internal {
+    function _transferFromPermit2(address token, address to, uint256 amount, address callerAddress) internal {
         assembly {
             let ptr := mload(0x40)
             ////////////////////////////////////////////////////
             // transferFrom through permit2
             ////////////////////////////////////////////////////
             mstore(ptr, PERMIT2_TRANSFER_FROM)
-            mstore(add(ptr, 0x04), caller())
+            mstore(add(ptr, 0x04), callerAddress)
             mstore(add(ptr, 0x24), to)
             mstore(add(ptr, 0x44), amount)
             mstore(add(ptr, 0x64), token)
