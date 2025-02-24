@@ -253,17 +253,17 @@ abstract contract Morpho is Slots, ERC20Selectors, Masks {
 
             let marketId := keccak256(add(ptr, 4), 160)
 
-            let borrowAm := and(UINT120_MASK, lltvAndAmount)
+            let repayAm := and(UINT120_MASK, lltvAndAmount)
 
             /** check if it is by shares or assets */
             switch and(UINT8_MASK, shr(120, lltvAndAmount))
             case 0 {
-                mstore(add(ptr, 164), borrowAm) // assets
+                mstore(add(ptr, 164), repayAm) // assets
                 mstore(add(ptr, 196), 0) // shares
             }
             default {
                 mstore(add(ptr, 164), 0) // assets
-                mstore(add(ptr, 196), borrowAm) // shares
+                mstore(add(ptr, 196), repayAm) // shares
             }
             currentOffset := add(currentOffset, 32)
 
