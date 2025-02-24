@@ -53,23 +53,16 @@ abstract contract Morpho is Slots, ERC20Selectors, Masks {
             // borrow(...)
             mstore(ptr, MORPHO_BORROW)
 
-            // market stuff
-
-            // tokens
+            // market data
             mstore(add(ptr, 4), shr(96, calldataload(currentOffset))) // MarketParams.loanToken
-
             currentOffset := add(currentOffset, 20)
             mstore(add(ptr, 36), shr(96, calldataload(currentOffset))) // MarketParams.collateralToken
-
-            // oralce and irm
             currentOffset := add(currentOffset, 20)
             mstore(add(ptr, 68), shr(96, calldataload(currentOffset))) // MarketParams.oracle
             currentOffset := add(currentOffset, 20)
             mstore(add(ptr, 100), shr(96, calldataload(currentOffset))) // MarketParams.irm
-
             currentOffset := add(currentOffset, 20)
             let lltvAndAmount := calldataload(currentOffset)
-
             mstore(add(ptr, 132), shr(128, lltvAndAmount)) // MarketParams.lltv
 
             let borrowAm := and(UINT120_MASK, lltvAndAmount)
@@ -115,11 +108,9 @@ abstract contract Morpho is Slots, ERC20Selectors, Masks {
     /// @notice Deposit loanTokens to Morpho Blue - add calldata if length is nonzero
     function _morphoDeposit(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
-            // morpho should be the primary choice
             let ptr := mload(0x40)
 
-            // market stuff
-
+            // loan token
             let token := shr(96, calldataload(currentOffset))
             /**
              * Approve MB beforehand for the depo amount
@@ -144,7 +135,7 @@ abstract contract Morpho is Slots, ERC20Selectors, Masks {
 
             // supply(...)
             mstore(ptr, MORPHO_SUPPLY)
-            // tokens
+            // market data
             mstore(add(ptr, 4), token) // MarketParams.loanToken
             currentOffset := add(currentOffset, 20)
             mstore(add(ptr, 36), shr(96, calldataload(currentOffset))) // MarketParams.collateralToken
@@ -231,7 +222,7 @@ abstract contract Morpho is Slots, ERC20Selectors, Masks {
     /// @notice Deposit collateral to Morpho Blue - add calldata if length is nonzero
     function _morphoDepositCollateral(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
-            // morpho should be the primary choice
+            // use two memory ranges
             let ptrBase := mload(0x40)
             let ptr := add(256, ptrBase)
 
@@ -264,15 +255,12 @@ abstract contract Morpho is Slots, ERC20Selectors, Masks {
             }
 
             mstore(add(ptr, 36), token) // MarketParams.collateralToken
-            // oralce and irm
             currentOffset := add(currentOffset, 20)
             mstore(add(ptr, 68), shr(96, calldataload(currentOffset))) // MarketParams.oracle
             currentOffset := add(currentOffset, 20)
             mstore(add(ptr, 100), shr(96, calldataload(currentOffset))) // MarketParams.irm
-
             currentOffset := add(currentOffset, 20)
             let lltvAndAmount := calldataload(currentOffset)
-
             mstore(add(ptr, 132), shr(128, lltvAndAmount)) // MarketParams.lltv
 
             let amountToDeposit := and(UINT128_MASK, lltvAndAmount)
@@ -398,20 +386,16 @@ abstract contract Morpho is Slots, ERC20Selectors, Masks {
             let ptrBase := mload(0x40)
             let ptr := add(ptrBase, 256)
 
-            // tokens
+            // market data
             mstore(add(ptr, 4), shr(96, calldataload(currentOffset))) // MarketParams.loanToken
             currentOffset := add(currentOffset, 20)
             mstore(add(ptr, 36), shr(96, calldataload(currentOffset))) // MarketParams.collateralToken
-
-            // oralce and irm
             currentOffset := add(currentOffset, 20)
             mstore(add(ptr, 68), shr(96, calldataload(currentOffset))) // MarketParams.oracle
             currentOffset := add(currentOffset, 20)
             mstore(add(ptr, 100), shr(96, calldataload(currentOffset))) // MarketParams.irm
-
             currentOffset := add(currentOffset, 20)
             let lltvAndAmount := calldataload(currentOffset)
-
             mstore(add(ptr, 132), shr(128, lltvAndAmount)) // MarketParams.lltv
 
             let withdrawAm := and(UINT120_MASK, lltvAndAmount)
@@ -544,23 +528,16 @@ abstract contract Morpho is Slots, ERC20Selectors, Masks {
                 }
                 sstore(key, 1)
             }
-            // market stuff
-
-            // tokens
+            // market data
             mstore(add(ptr, 4), token) // MarketParams.loanToken
-
             currentOffset := add(currentOffset, 20)
             mstore(add(ptr, 36), shr(96, calldataload(currentOffset))) // MarketParams.collateralToken
-
-            // oralce and irm
             currentOffset := add(currentOffset, 20)
             mstore(add(ptr, 68), shr(96, calldataload(currentOffset))) // MarketParams.oracle
             currentOffset := add(currentOffset, 20)
             mstore(add(ptr, 100), shr(96, calldataload(currentOffset))) // MarketParams.irm
-
             currentOffset := add(currentOffset, 20)
             let lltvAndAmount := calldataload(currentOffset)
-
             mstore(add(ptr, 132), shr(128, lltvAndAmount)) // MarketParams.lltv
 
             let repayAm := and(UINT120_MASK, lltvAndAmount)
