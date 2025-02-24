@@ -122,7 +122,7 @@ contract FlashLoanTestMorpho is Test, ComposerUtils {
         oneD = new OneDeltaComposerBase();
     }
 
-    function test_base_flsah_loan_morpho() external {
+    function test_base_flash_loan_morpho() external {
         address asset = 0x4200000000000000000000000000000000000006;
         uint256 sweepAm = 30.0e18;
         vm.deal(address(oneD), 30.0e18);
@@ -146,6 +146,32 @@ contract FlashLoanTestMorpho is Test, ComposerUtils {
         oneD.onMorphoFlashLoan(0, d);
     }
 
+    function test_morpho_withdraw_collateral() external {
+        deal(LBTC, user, 30.0e8);
+        deal(USDC, user, 300_000.0e6);
+
+        uint assets = 1.0e8;
+
+        depositToMorpho(user, assets);
+
+        uint withdrawAssets = 0.5e8;
+        bytes memory withdrawCall = morphoWithdrawCollateral(
+            encodeMarket(LBTC_USDC_MARKET),
+            withdrawAssets, //
+            user
+        );
+
+        vm.prank(user);
+        IMorphoFlashLoanCallback(MORPHO).setAuthorization(address(oneD), true);
+
+        vm.prank(user);
+        oneD.deltaCompose(withdrawCall);
+
+        (, , uint128 collateralAmount) = IMorphoFlashLoanCallback(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
+
+        assertApproxEqAbs(collateralAmount, assets - withdrawAssets, 0);
+    }
+
     function test_morpho_borrow() external {
         deal(LBTC, user, 30.0e8);
         deal(USDC, user, 300_000.0e6);
@@ -160,8 +186,7 @@ contract FlashLoanTestMorpho is Test, ComposerUtils {
             encodeMarket(LBTC_USDC_MARKET),
             false,
             borrowAssets, //
-            user,
-            hex""
+            user
         );
 
         vm.prank(user);
@@ -192,8 +217,7 @@ contract FlashLoanTestMorpho is Test, ComposerUtils {
             encodeMarket(LBTC_USDC_MARKET),
             false,
             borrowAssets, //
-            user,
-            hex""
+            user
         );
 
         vm.prank(user);
@@ -238,8 +262,7 @@ contract FlashLoanTestMorpho is Test, ComposerUtils {
             encodeMarket(LBTC_USDC_MARKET),
             false,
             borrowAssets, //
-            user,
-            hex""
+            user
         );
 
         vm.prank(user);

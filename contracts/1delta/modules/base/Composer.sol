@@ -959,6 +959,8 @@ contract OneDeltaComposerBase is MarginTrading, Morpho {
                         currentOffset = _morphoBorrow(currentOffset, callerAddress);
                     } else if (morphoOperation == 2) {
                         currentOffset = _morphoRepay(currentOffset, callerAddress);
+                    } else if (morphoOperation == 3) {
+                        currentOffset = _morphoWithdrawCollateral(currentOffset, callerAddress);
                     } else revert();
                 }
             } else if (operation < 0x30) {

@@ -107,12 +107,22 @@ contract ComposerUtils {
             );
     }
 
+    function morphoWithdrawCollateral(bytes memory market, uint assets, address receiver) internal pure returns (bytes memory) {
+        return
+            abi.encodePacked(
+                uint8(Commands.MORPH), // 1
+                uint8(3), // 1
+                market, // 4 * 20 + 16
+                uint128(assets), // 16
+                receiver // 20
+            );
+    }
+
     function morphoBorrow(
         bytes memory market,
         bool isShares, //
         uint assets,
-        address receiver,
-        bytes memory data
+        address receiver
     ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
@@ -120,9 +130,7 @@ contract ComposerUtils {
                 uint8(1), // 1
                 market, // 4 * 20 + 16
                 abi.encodePacked(isShares ? uint8(1) : uint8(0), uint120(assets)),
-                receiver,
-                uint16(data.length), // 2 @ 1 + 4*20
-                data
+                receiver
             );
     }
 
