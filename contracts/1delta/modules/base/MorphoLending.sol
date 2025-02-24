@@ -196,8 +196,8 @@ abstract contract Morpho is Slots, ERC20Selectors, Masks {
             mstore(add(ptr, 260), 0x120) // offset
 
             currentOffset := add(currentOffset, 32)
-
-            let calldataLength := and(UINT16_MASK, shr(240, currentOffset))
+            // get calldatalength
+            let calldataLength := and(UINT16_MASK, shr(240, calldataload(currentOffset)))
             currentOffset := add(currentOffset, 2)
 
             // add calldata if needed
@@ -303,8 +303,8 @@ abstract contract Morpho is Slots, ERC20Selectors, Masks {
             mstore(add(ptr, 228), 0x100) // offset
 
             currentOffset := add(currentOffset, 32)
-
-            let calldataLength := and(UINT16_MASK, shr(240, currentOffset))
+            // get calldatalength
+            let calldataLength := and(UINT16_MASK, shr(240, calldataload(currentOffset)))
             currentOffset := add(currentOffset, 2)
 
             // add calldata if needed
@@ -662,7 +662,8 @@ abstract contract Morpho is Slots, ERC20Selectors, Masks {
             mstore(add(ptr, 228), callerAddress) // onBehalfOf
             mstore(add(ptr, 260), 0x120) // offset
 
-            let calldataLength := and(UINT16_MASK, shr(80, calldataload(currentOffset)))
+            // get calldatalength
+            let calldataLength := and(UINT16_MASK, shr(240, calldataload(currentOffset)))
             currentOffset := add(currentOffset, 2)
 
             // add calldata if needed

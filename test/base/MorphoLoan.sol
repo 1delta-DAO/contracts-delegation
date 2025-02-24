@@ -107,6 +107,7 @@ contract MorphoBlueTest is Test, ComposerUtils {
 
     address internal constant LBTC = 0xecAc9C5F704e954931349Da37F60E39f515c11c1;
     address internal constant USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
+    address internal constant WETH = 0x4200000000000000000000000000000000000006;
 
     MarketParams LBTC_USDC_MARKET =
         MarketParams(
@@ -278,6 +279,62 @@ contract MorphoBlueTest is Test, ComposerUtils {
         console.logBytes32(marketId(LBTC_USDC_MARKET));
     }
 
+    function test_morpho_repay_with_callback() external {
+        deal(LBTC, user, 30.0e8);
+        deal(USDC, user, 300_000.0e6);
+
+        uint recoverWeth = 1.0e18;
+        deal(WETH, address(oneD), recoverWeth);
+
+        uint assets = 1.0e8;
+
+        address borrowAsset = USDC;
+        uint borrowAssets = 30_000.0e6;
+        depositCollateralToMorpho(user, assets);
+
+        bytes memory borrowCall = morphoBorrow(
+            encodeMarket(LBTC_USDC_MARKET),
+            false,
+            borrowAssets, //
+            user
+        );
+
+        vm.prank(user);
+        IMorphoEverything(MORPHO).setAuthorization(address(oneD), true);
+
+        vm.prank(user);
+        oneD.deltaCompose(borrowCall);
+
+        bytes memory sweepWethInCallback = sweep(
+            WETH,
+            user,
+            recoverWeth,
+            SweepType.VALIDATE //
+        );
+
+        bytes memory repayCall = morphoRepay(
+            encodeMarket(LBTC_USDC_MARKET),
+            false,
+            borrowAssets, //
+            sweepWethInCallback
+        );
+
+        vm.prank(user);
+        IERC20All(borrowAsset).approve(address(oneD), type(uint).max);
+
+        bytes memory transferTo = transferIn(
+            borrowAsset,
+            address(oneD),
+            borrowAssets //
+        );
+
+        vm.prank(user);
+        oneD.deltaCompose(abi.encodePacked(transferTo, repayCall));
+
+        console.logBytes32(marketId(LBTC_USDC_MARKET));
+        assertApproxEqAbs(IERC20All(WETH).balanceOf(user), recoverWeth, 0);
+    }
+
     function test_morpho_repay_all() external {
         deal(LBTC, user, 30.0e8);
         deal(USDC, user, 300_000.0e6);
@@ -365,6 +422,56 @@ contract MorphoBlueTest is Test, ComposerUtils {
         uint256 assetsSupplied = supplyShares.toAssetsDown(totalSupplyAssets, totalSupplyShares);
 
         assertApproxEqAbs(assetsSupplied, assets - 1, 0);
+    }
+
+    function test_morpho_deposit_loan_asset_callback() external {
+        deal(LBTC, user, 30.0e8);
+        deal(USDC, user, 300_000.0e6);
+        uint recoverWeth = 1.0e18;
+        deal(WETH, address(oneD), recoverWeth);
+
+        uint assets = 1.0e8;
+
+        address loan = USDC;
+        bytes memory transferTo = transferIn(
+            loan,
+            address(oneD),
+            assets //
+        );
+
+        bytes memory sweepWethInCallback = sweep(
+            WETH,
+            user,
+            recoverWeth,
+            SweepType.VALIDATE //
+        );
+
+        bytes memory deposit = morphoDeposit(
+            encodeMarket(LBTC_USDC_MARKET),
+            false,
+            assets,
+            sweepWethInCallback //
+        );
+        vm.prank(user);
+        IERC20All(loan).approve(address(oneD), type(uint).max);
+
+        vm.prank(user);
+        oneD.deltaCompose(abi.encodePacked(transferTo, deposit));
+        (uint256 supplyShares, , ) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
+
+        (
+            uint128 totalSupplyAssets,
+            uint128 totalSupplyShares, //
+            ,
+            ,
+            ,
+
+        ) = IMorphoEverything(MORPHO).market(marketId(LBTC_USDC_MARKET));
+
+        uint256 assetsSupplied = supplyShares.toAssetsDown(totalSupplyAssets, totalSupplyShares);
+
+        assertApproxEqAbs(assetsSupplied, assets - 1, 0);
+        assertApproxEqAbs(IERC20All(WETH).balanceOf(user), recoverWeth, 0);
     }
 
     function test_morpho_withdraw_loan_asset() external {
@@ -473,6 +580,40 @@ contract MorphoBlueTest is Test, ComposerUtils {
         oneD.deltaCompose(abi.encodePacked(transferTo, deposit));
         (, , uint128 collateralAmount) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
         assertApproxEqAbs(assets, collateralAmount, 0);
+    }
+
+    function test_morpho_deposit_collateral_with_callback() external {
+        deal(LBTC, user, 30.0e8);
+        deal(USDC, user, 300_000.0e6);
+
+        uint recoverWeth = 1.0e18;
+        deal(WETH, address(oneD), recoverWeth);
+
+        uint assets = 1.0e8;
+
+        address collateral = LBTC;
+        bytes memory transferTo = transferIn(
+            collateral,
+            address(oneD),
+            assets //
+        );
+
+        bytes memory sweepWethInCallback = sweep(
+            WETH,
+            user,
+            recoverWeth,
+            SweepType.VALIDATE //
+        );
+
+        bytes memory deposit = morphoDepositCollateral(encodeMarket(LBTC_USDC_MARKET), assets, sweepWethInCallback);
+        vm.prank(user);
+        IERC20All(collateral).approve(address(oneD), type(uint).max);
+
+        vm.prank(user);
+        oneD.deltaCompose(abi.encodePacked(transferTo, deposit));
+        (, , uint128 collateralAmount) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
+        assertApproxEqAbs(assets, collateralAmount, 0);
+        assertApproxEqAbs(IERC20All(WETH).balanceOf(user), recoverWeth, 0);
     }
 
     function encodeMarket(MarketParams memory m) internal pure returns (bytes memory) {
