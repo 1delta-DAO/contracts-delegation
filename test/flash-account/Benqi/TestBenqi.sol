@@ -44,6 +44,10 @@ contract TestBenqi is Test {
     UpgradeableBeacon public accountBeacon;
 
     event Transfer(address indexed from, address indexed to, uint256 value);
+    event Borrow(address borrower, uint256 borrowAmount, uint256 accountBorrows, uint256 totalBorrows);
+    event RepayBorrow(
+        address payer, address borrower, uint256 repayAmount, uint256 accountBorrows, uint256 totalBorrows
+    );
 
     function setUp() public {
         // Initialize a mainnet fork
@@ -68,33 +72,52 @@ contract TestBenqi is Test {
     }
 
     function testLend() public {
-        _lendUsdc();
+        _lendUsdc(1e9);
     }
 
     function testBorrow() public {
         // lend some usdc to qiUSDC
-        _lendUsdc();
+        _lendUsdc(1e9);
         // borrow usdc from qiUSDC
-        _borrowUsdc();
+        _borrowUsdc(1e8);
     }
 
-    function _lendUsdc() private {
+    function testRepay() public {
+        // lend some usdc to qiUSDC
+        _lendUsdc(1e9);
+        // borrow usdc from qiUSDC
+        _borrowUsdc(1e8);
+        // repay usdc to qiUSDC
+        _repayUsdc(1e8);
+    }
+
+    function _lendUsdc(uint256 amount) private {
         address usdce = 0xA7D7079b0FEaD91F3e65f86E8915Cb59c1a4C664;
         vm.prank(0x3A2434c698f8D79af1f5A9e43013157ca8B11a66);
-        usdce.call(abi.encodeWithSignature("transfer(address,uint256)", address(account), 1e9));
+        usdce.call(abi.encodeWithSignature("transfer(address,uint256)", address(account), amount));
         vm.startPrank(eoaAddress);
         // approve Token
-        usdce.call(abi.encodeWithSignature("approve(address,uint256)", qiUSDC, 1e9));
+        usdce.call(abi.encodeWithSignature("approve(address,uint256)", qiUSDC, amount));
         // lend to Benqi
         vm.expectEmit(true, true, false, false);
         emit Transfer(qiUSDC, address(account), 0);
-        account.lendToCompoundV2(qiUSDC, 1e9);
+        account.lendToCompoundV2(qiUSDC, amount);
         vm.stopPrank();
     }
 
-    function _borrowUsdc() private {
+    function _borrowUsdc(uint256 amount) private {
         vm.startPrank(eoaAddress);
-        account.borrowFromCompoundV2(qiUSDC, 1e8);
+        vm.expectEmit(true, true, false, false);
+        emit Borrow(address(account), amount, 0, 0);
+        account.borrowFromCompoundV2(qiUSDC, amount);
+        vm.stopPrank();
+    }
+
+    function _repayUsdc(uint256 amount) private {
+        vm.startPrank(eoaAddress);
+        vm.expectEmit(true, true, false, false);
+        emit RepayBorrow(address(account), address(account), amount, 0, 0);
+        account.repayCompoundV2(qiUSDC, amount);
         vm.stopPrank();
     }
 }
