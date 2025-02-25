@@ -505,17 +505,54 @@ abstract contract Morpho is Slots, ERC20Selectors, Masks {
 
             let repayAm := and(UINT120_MASK, lltvAndAmount)
 
-            /** check if it is by shares or assets */
-            switch and(UINT8_MASK, shr(120, lltvAndAmount))
-            case 0 {
-                /**
-                 * Repay amount variations
-                 * 0:                    contract balance (use max if balance is higher than user debt)
-                 * type(uint120).max:    user balance
-                 * other:                amount provided
-                 */
-                switch repayAm
+            /**
+             * Logic tree
+             *  if repayAmount is Max -> repay max shares
+             *  else {
+             *      if(repayAmount id 0): set repayAmount to contract balance
+             *      if(amountFlag is 0): safe repay amount (ensures that morpho does not revert on overpaying)
+             *      else if(amountFlag is 1) repay amount as shares (unsafe, determinsitic on-chain though)
+             *      else repay amount unsafe
+             *  }
+             */
+            switch repayAm
+            // all or nothing
+            // fails if there are not enough funds in this contract
+            case 0xffffffffffffffffffffffffffffff {
+                // fetch user shares and repay all shares
+                // will revert if balance in contract is not enough
+                let marketId := keccak256(add(ptr, 4), 160)
+                // position datas
+                mstore(ptrBase, MORPHO_POSITION)
+                mstore(add(ptrBase, 0x4), marketId)
+                mstore(add(ptrBase, 0x24), callerAddress)
+                if iszero(staticcall(gas(), MORPHO_BLUE, ptrBase, 0x44, ptrBase, 0x40)) {
+                    revert(0x0, 0x0)
+                }
+                mstore(add(ptr, 164), 0) // assets
+                mstore(add(ptr, 196), mload(add(ptrBase, 0x20))) // shares
+            }
+            default {
+                let amountType := and(UINT8_MASK, shr(120, lltvAndAmount))
+                // zero balance means contract balance
+                // creates unexpected behavior if this amount is used for shares!
+                if iszero(repayAm) {
+                    // revert if shares are selected
+                    if eq(amountType, 1) {
+                        revert(0x0, 0x0)
+                    }
+                    // get balance
+                    mstore(0x0, ERC20_BALANCE_OF)
+                    mstore(0x04, address())
+                    if iszero(staticcall(gas(), token, 0x0, 0x24, 0x0, 0x20)) {
+                        revert(0x0, 0x0)
+                    }
+                    repayAm := mload(0x0)
+                }
+                /** check if it is by shares or assets */
+                switch amountType
                 case 0 {
+                    // by assets safe - will not revert if too much is repaid
                     // we need to fetch everything and acrure interest
                     // https://docs.morpho.org/morpho/tutorials/manage-positions/#repayAll
 
@@ -575,36 +612,17 @@ abstract contract Morpho is Slots, ERC20Selectors, Masks {
                         mstore(add(ptr, 196), userBorrowShares) // shares
                     }
                 }
-                // all or nothing
-                case 0xffffffffffffffffffffffffffffff {
-                    // fetch user shares and repay all shares
-                    // will revert if balance in contract is not enough
-                    let marketId := keccak256(add(ptr, 4), 160)
-                    // position datas
-                    mstore(ptrBase, MORPHO_POSITION)
-                    mstore(add(ptrBase, 0x4), marketId)
-                    mstore(add(ptrBase, 0x24), callerAddress)
-                    if iszero(staticcall(gas(), MORPHO_BLUE, ptrBase, 0x44, ptrBase, 0x40)) {
-                        revert(0x0, 0x0)
-                    }
+                case 1 {
+                    // by shares
                     mstore(add(ptr, 164), 0) // assets
-                    mstore(add(ptr, 196), mload(add(ptrBase, 0x20))) // shares
+                    mstore(add(ptr, 196), repayAm) // shares
                 }
-                // explicit amount
                 default {
+                    // by assets unsafe
+                    // reverts if repay amount is too high
                     mstore(add(ptr, 164), repayAm) // assets
                     mstore(add(ptr, 196), 0) // shares
                 }
-            }
-            // plain shares
-            case 1 {
-                mstore(add(ptr, 164), 0) // assets
-                mstore(add(ptr, 196), repayAm) // shares
-            }
-            // unsafe amount
-            default {
-                mstore(add(ptr, 164), repayAm) // assets
-                mstore(add(ptr, 196), 0) // shares
             }
 
             currentOffset := add(currentOffset, 32)
