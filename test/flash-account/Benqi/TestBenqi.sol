@@ -71,6 +71,13 @@ contract TestBenqi is Test {
         _lendUsdc();
     }
 
+    function testBorrow() public {
+        // lend some usdc to qiUSDC
+        _lendUsdc();
+        // borrow usdc from qiUSDC
+        _borrowUsdc();
+    }
+
     function _lendUsdc() private {
         address usdce = 0xA7D7079b0FEaD91F3e65f86E8915Cb59c1a4C664;
         vm.prank(0x3A2434c698f8D79af1f5A9e43013157ca8B11a66);
@@ -82,6 +89,12 @@ contract TestBenqi is Test {
         vm.expectEmit(true, true, false, false);
         emit Transfer(qiUSDC, address(account), 0);
         account.lendToCompoundV2(qiUSDC, 1e9);
+        vm.stopPrank();
+    }
+
+    function _borrowUsdc() private {
+        vm.startPrank(eoaAddress);
+        account.borrowFromCompoundV2(qiUSDC, 1e8);
         vm.stopPrank();
     }
 }
