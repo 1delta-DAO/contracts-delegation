@@ -30,8 +30,6 @@ contract TestBenqi is Test {
     address public constant qiUSDC = 0xBEb5d47A3f720Ec0a390d04b4d41ED7d9688bC7F;
     address public constant qiAVAX = 0x5C0401e81Bc07Ca70fAD469b451682c0d747Ef1c;
 
-    address public constant ENTRYPOINT = 0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789;
-
     uint256 public chainFork;
 
     address public eoaAddress;
@@ -40,20 +38,22 @@ contract TestBenqi is Test {
 
     FlashAccount public account;
     FlashAccount public beaconOwnerAccount;
-    EntryPoint public entryPoint;
+    IEntryPoint public entryPoint;
     FlashAccountFactory public factory;
 
     UpgradeableBeacon public accountBeacon;
 
+    event Transfer(address indexed from, address indexed to, uint256 value);
+
     function setUp() public {
         // Initialize a mainnet fork
         string memory rpcUrl = vm.envString("AVAX_RPC_URL");
-        chainFork = vm.createSelectFork(rpcUrl);
+        chainFork = vm.createSelectFork(rpcUrl, 40840732);
 
         eoaAddress = vm.addr(EOA_PRIVATE_KEY);
         beaconOwner = vm.addr(BEACON_OWNER_PRIVATE_KEY);
 
-        entryPoint = IEntryPoint(ENTRYPOINT);
+        entryPoint = new EntryPoint();
         FlashAccount implementation = new FlashAccount(entryPoint);
         initialAccountImplementation = address(implementation);
 
@@ -65,5 +65,23 @@ contract TestBenqi is Test {
 
         vm.deal(address(account), 1 << 128);
         vm.deal(eoaAddress, 1 << 128);
+    }
+
+    function testLend() public {
+        _lendUsdc();
+    }
+
+    function _lendUsdc() private {
+        address usdce = 0xA7D7079b0FEaD91F3e65f86E8915Cb59c1a4C664;
+        vm.prank(0x3A2434c698f8D79af1f5A9e43013157ca8B11a66);
+        usdce.call(abi.encodeWithSignature("transfer(address,uint256)", address(account), 1e9));
+        vm.startPrank(eoaAddress);
+        // approve Token
+        usdce.call(abi.encodeWithSignature("approve(address,uint256)", qiUSDC, 1e9));
+        // lend to Benqi
+        vm.expectEmit(true, true, false, false);
+        emit Transfer(qiUSDC, address(account), 0);
+        account.lendToCompoundV2(qiUSDC, 1e9);
+        vm.stopPrank();
     }
 }
