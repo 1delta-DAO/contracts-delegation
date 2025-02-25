@@ -3,17 +3,16 @@ pragma solidity ^0.8.27;
 
 import {FlashAccountBase} from "./FlashAccountBase.sol";
 import {IEntryPoint} from "account-abstraction/interfaces/IEntryPoint.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {CTokenSignatures} from "./common/CTokenSignatures.sol";
 
 contract FlashAccount is FlashAccountBase, CTokenSignatures {
     /**
      * @notice Only for initial testing, the implementation of supported protocols will be moved to the protocol registry
      */
-    event Supplied(address indexed token, address indexed lendingProtocol, uint256 amount);
-    event Borrowed(address indexed token, address indexed lendingProtocol, uint256 amount);
-    event Repaid(address indexed token, address indexed lendingProtocol, uint256 amount);
-    event Withdrawn(address indexed token, address indexed lendingProtocol, uint256 amount);
+    event Supplied(address indexed token, uint256 amount);
+    event Borrowed(address indexed token, uint256 amount);
+    event Repaid(address indexed token, uint256 amount);
+    event Withdrawn(address indexed token, uint256 amount);
 
     constructor(IEntryPoint entryPoint_) FlashAccountBase(entryPoint_) {}
 
@@ -28,13 +27,13 @@ contract FlashAccount is FlashAccountBase, CTokenSignatures {
         address underlying = _getUnderlying(cToken);
 
         // Approve the cToken to spend the underlying asset
-        IERC20(underlying).approve(cToken, amount);
+        underlying.call(abi.encodeWithSignature("approve(address,uint256)", cToken, amount));
 
         // Mint cTokens
         (bool success,) = cToken.call(abi.encodeWithSelector(CTOKEN_MINT_SELECTOR, amount));
         require(success, "Mint failed");
 
-        emit Supplied(underlying, cToken, amount);
+        emit Supplied(underlying, amount);
     }
 
     /**
@@ -47,7 +46,20 @@ contract FlashAccount is FlashAccountBase, CTokenSignatures {
         (bool success,) = cToken.call(abi.encodeWithSelector(CTOKEN_BORROW_SELECTOR, amount));
         require(success, "Borrow failed");
 
-        emit Borrowed(underlying, cToken, amount);
+        emit Borrowed(underlying, amount);
+    }
+
+    function repayCompoundV2(address cToken, uint256 amount) public onlyAuthorized {
+        address underlying = _getUnderlying(cToken);
+
+        // Approve the cToken to spend the underlying asset
+        underlying.call(abi.encodeWithSignature("approve(address,uint256)", cToken, amount));
+
+        // Repay the underlying asset
+        (bool success,) = cToken.call(abi.encodeWithSelector(CTOKEN_REPAY_BORROW_SELECTOR, amount));
+        require(success, "Repay failed");
+
+        emit Repaid(underlying, amount);
     }
 
     function _getUnderlying(address cToken) internal returns (address) {
