@@ -24,7 +24,7 @@ contract FlashAccount is FlashAccountBase, CTokenSignatures {
     /**
      * @dev Lend to Compound V2
      */
-    function lendToCompoundV2(address cToken, uint256 amount) public requireInExecution {
+    function lendToCompoundV2(address cToken, uint256 amount) public onlyAuthorized {
         address underlying = _getUnderlying(cToken);
 
         // Approve the cToken to spend the underlying asset
@@ -40,7 +40,7 @@ contract FlashAccount is FlashAccountBase, CTokenSignatures {
     /**
      * @dev Borrow from Compound V2
      */
-    function borrowFromCompoundV2(address cToken, uint256 amount) public requireInExecution {
+    function borrowFromCompoundV2(address cToken, uint256 amount) public onlyAuthorized {
         address underlying = _getUnderlying(cToken);
 
         // Borrow the underlying asset
@@ -50,7 +50,7 @@ contract FlashAccount is FlashAccountBase, CTokenSignatures {
         emit Borrowed(underlying, cToken, amount);
     }
 
-    function _getUnderlying(address cToken) internal view returns (address) {
+    function _getUnderlying(address cToken) internal returns (address) {
         require(cToken != address(0), "invalid cToken");
 
         (bool success, bytes memory data) = cToken.call(abi.encodeWithSelector(CTOKEN_UNDERLYING_SELECTOR));
