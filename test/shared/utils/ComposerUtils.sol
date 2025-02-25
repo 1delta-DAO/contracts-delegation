@@ -84,16 +84,7 @@ contract ComposerUtils {
             );
     }
 
-    function morphoOperation(uint op, bytes memory market, uint assets, uint shares, bytes memory data) internal pure returns (bytes memory) {
-        return
-            abi.encodePacked(
-                uint8(Commands.MORPH), // 1
-                uint8(op),
-                uint16(data.length),
-                market, // 20
-                abi.encodePacked(uint128(assets), uint128(shares))
-            );
-    }
+    /** MORPHO OPERATIONS */
 
     function morphoDepositCollateral(bytes memory market, uint assets, bytes memory data) internal pure returns (bytes memory) {
         return

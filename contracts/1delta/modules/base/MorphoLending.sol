@@ -409,58 +409,21 @@ abstract contract Morpho is Slots, ERC20Selectors, Masks {
                  * other:                amount provided
                  */
                 switch withdrawAm
-                // maximum uint112 means repay everything
+                // maximum uint112 means withdraw everything
                 case 0xffffffffffffffffffffffffffffff {
-                    // we need to fetch everything and acrure interest
+                    // we need to fetch user shares and just withdraw all shares
                     // https://docs.morpho.org/morpho/tutorials/manage-positions/#repayAll
 
-                    // accrue interest
-                    // add accrueInterest (0x151c1ade)
-                    mstore(sub(ptr, 28), 0x151c1ade)
-                    if iszero(call(gas(), MORPHO_BLUE, 0x0, ptr, 0xA4, 0x0, 0x0)) {
-                        revert(0x0, 0x0)
-                    }
-
                     let marketId := keccak256(add(ptr, 4), 160)
-                    mstore(0x0, MORPHO_MARKET)
-                    mstore(0x4, marketId)
-                    if iszero(staticcall(gas(), MORPHO_BLUE, 0x0, 0x24, ptrBase, 0x80)) {
-                        revert(0x0, 0x0)
-                    }
-                    let totalSupplyAssets := mload(ptrBase)
-                    let totalSupplyShares := mload(add(ptrBase, 0x20))
-
-                    // position datas
+                    // position datas (1st slot of return data is the user shares)
                     mstore(ptrBase, MORPHO_POSITION)
                     mstore(add(ptrBase, 0x4), marketId)
                     mstore(add(ptrBase, 0x24), callerAddress)
-                    if iszero(staticcall(gas(), MORPHO_BLUE, ptrBase, 0x44, ptrBase, 0x40)) {
+                    if iszero(staticcall(gas(), MORPHO_BLUE, ptrBase, 0x44, ptrBase, 0x20)) {
                         revert(0x0, 0x0)
                     }
-                    let userSupplyShares := mload(ptrBase)
-
-                    // mulDivDown(shares, totalAssets + VIRTUAL_ASSETS, totalShares + VIRTUAL_SHARES)
-                    let maxAssets := add(totalSupplyShares, 1000000) // VIRTUAL_SHARES=1e6
-                    maxAssets := div(
-                        mul(
-                            userSupplyShares, //
-                            sub(totalSupplyAssets, 1) // VIRTUAL_ASSETS=1
-                        ),
-                        add(totalSupplyShares, 1000000) // VIRTUAL_SHARES=1e6
-                    )
-
-                    // if maxAssets is greater than repay amount
-                    // we repay whatever is possible
-                    switch gt(maxAssets, withdrawAm)
-                    case 1 {
-                        mstore(add(ptr, 164), withdrawAm) // assets
-                        mstore(add(ptr, 196), 0) // shares
-                    }
-                    // otherwise, repay all shares, leaving no dust
-                    default {
-                        mstore(add(ptr, 164), 0) // assets
-                        mstore(add(ptr, 196), userSupplyShares) // shares
-                    }
+                    mstore(add(ptr, 164), 0) // assets
+                    mstore(add(ptr, 196), mload(ptrBase)) // shares
                 }
                 // explicit amount
                 default {
@@ -547,22 +510,12 @@ abstract contract Morpho is Slots, ERC20Selectors, Masks {
             case 0 {
                 /**
                  * Repay amount variations
-                 * 0:                    contract balance (use max if expected to repay all)
+                 * 0:                    contract balance (use max if balance is higher than user debt)
                  * type(uint120).max:    user balance
                  * other:                amount provided
                  */
                 switch repayAm
                 case 0 {
-                    // get balance
-                    mstore(0x0, ERC20_BALANCE_OF)
-                    mstore(0x04, address())
-                    if iszero(staticcall(gas(), token, 0x0, 0x24, 0x0, 0x20)) {
-                        revert(0x0, 0x0)
-                    }
-                    repayAm := mload(0x0)
-                }
-                // maximum uint112 means repay everything
-                case 0xffffffffffffffffffffffffffffff {
                     // we need to fetch everything and acrure interest
                     // https://docs.morpho.org/morpho/tutorials/manage-positions/#repayAll
 
@@ -622,15 +575,36 @@ abstract contract Morpho is Slots, ERC20Selectors, Masks {
                         mstore(add(ptr, 196), userBorrowShares) // shares
                     }
                 }
+                // all or nothing
+                case 0xffffffffffffffffffffffffffffff {
+                    // fetch user shares and repay all shares
+                    // will revert if balance in contract is not enough
+                    let marketId := keccak256(add(ptr, 4), 160)
+                    // position datas
+                    mstore(ptrBase, MORPHO_POSITION)
+                    mstore(add(ptrBase, 0x4), marketId)
+                    mstore(add(ptrBase, 0x24), callerAddress)
+                    if iszero(staticcall(gas(), MORPHO_BLUE, ptrBase, 0x44, ptrBase, 0x40)) {
+                        revert(0x0, 0x0)
+                    }
+                    mstore(add(ptr, 164), 0) // assets
+                    mstore(add(ptr, 196), mload(add(ptrBase, 0x20))) // shares
+                }
                 // explicit amount
                 default {
                     mstore(add(ptr, 164), repayAm) // assets
                     mstore(add(ptr, 196), 0) // shares
                 }
             }
-            default {
+            // plain shares
+            case 1 {
                 mstore(add(ptr, 164), 0) // assets
                 mstore(add(ptr, 196), repayAm) // shares
+            }
+            // unsafe amount
+            default {
+                mstore(add(ptr, 164), repayAm) // assets
+                mstore(add(ptr, 196), 0) // shares
             }
 
             currentOffset := add(currentOffset, 32)
