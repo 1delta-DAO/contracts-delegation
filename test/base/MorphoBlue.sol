@@ -42,11 +42,11 @@ contract MorphoBlueTest is Test, ComposerUtils {
         oneD = new OneDeltaComposerBase();
     }
 
-    uint256 internal constant SWEEP = 1 << 255;
+    uint256 internal constant UPPER_BIT = 1 << 255;
 
     function encodeMorphoPermit(uint256 nonce, bool allow) private pure returns (bytes memory) {
         uint256 _data = uint160(nonce);
-        if (allow) _data = (_data & ~SWEEP) | SWEEP;
+        if (allow) _data = (_data & ~UPPER_BIT) | UPPER_BIT;
 
         return
             abi.encodePacked(
