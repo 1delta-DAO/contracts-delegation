@@ -504,18 +504,20 @@ contract MorphoBlueTest is Test, ComposerUtils {
         deal(LBTC, user, 30.0e8);
         deal(USDC, user, 300_000.0e6);
 
+        address vault = META_MORPHO_USDC;
+        address asset = USDC;
+
         uint assets = 100.0e6;
 
-        address asset = USDC;
         bytes memory transferTo = transferIn(
             asset,
             address(oneD),
             assets //
         );
 
-        bytes memory deposit = metaMorphoDeposit(
+        bytes memory deposit = erc4646Deposit(
             asset,
-            META_MORPHO_USDC, //
+            vault, //
             false,
             assets,
             user
@@ -525,18 +527,58 @@ contract MorphoBlueTest is Test, ComposerUtils {
 
         vm.prank(user);
         oneD.deltaCompose(abi.encodePacked(transferTo, deposit));
-        // (, , uint128 collateralAmount) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
-        // assertApproxEqAbs(assets, collateralAmount, 0);
+
+        uint shares = IERC20All(vault).balanceOf(user);
+        uint assetsInVault = IERC20All(vault).convertToAssets(shares);
+
+        assertApproxEqAbs(assets, assetsInVault, 1); // adjust for rounding
     }
 
-    function depositToMM(address userAddress, address asset, uint assets) internal {
+    function test_morpho_deposit_shares_to_meta_morpho() external {
+        deal(LBTC, user, 30.0e8);
+        deal(USDC, user, 300_000.0e6);
+
+        address asset = USDC;
+        address vault = META_MORPHO_USDC;
+
+        uint desiredShares = 10.0e8;
+
+        uint assets = IERC20All(META_MORPHO_USDC).convertToAssets(desiredShares);
+
         bytes memory transferTo = transferIn(
             asset,
             address(oneD),
             assets //
         );
 
-        bytes memory deposit = metaMorphoDeposit(
+        bytes memory deposit = erc4646Deposit(
+            asset,
+            vault, //
+            true,
+            desiredShares,
+            user
+        );
+        vm.prank(user);
+        IERC20All(asset).approve(address(oneD), type(uint).max);
+
+        vm.prank(user);
+        oneD.deltaCompose(abi.encodePacked(transferTo, deposit));
+
+        uint shares = IERC20All(vault).balanceOf(user);
+        uint assetsInVault = IERC20All(vault).convertToAssets(shares);
+
+        assertApproxEqAbs(shares, desiredShares, 0); // shares are exact!
+        assertApproxEqAbs(assets, assetsInVault, 0);
+    }
+
+    function depositToMetaMorpho(address userAddress, address asset, uint assets) internal {
+        bytes memory transferTo = transferIn(
+            asset,
+            address(oneD),
+            assets //
+        );
+
+        bytes memory deposit = erc4646Deposit(
             asset,
             META_MORPHO_USDC, //
             false,
@@ -555,50 +597,61 @@ contract MorphoBlueTest is Test, ComposerUtils {
         deal(USDC, user, 300_000.0e6);
 
         uint assets = 100.0e6;
+        address underlying = USDC;
+        address vault = META_MORPHO_USDC;
 
-        depositToMM(user, USDC, assets);
+        depositToMetaMorpho(user, USDC, assets);
 
         uint withdrawAssets = 70.0e6;
-        bytes memory withdrawCall = metaMorphoWithdraw(
-            META_MORPHO_USDC, //
+        bytes memory withdrawCall = erc4646Withdraw(
+            vault, //
             false,
             withdrawAssets,
             user
         );
+
         vm.prank(user);
-        IERC20All(META_MORPHO_USDC).approve(address(oneD), type(uint).max);
+        IERC20All(vault).approve(address(oneD), type(uint).max);
+
+        uint underlyingBefore = IERC20All(underlying).balanceOf(user);
+
+        uint assetsInVault = IERC20All(vault).convertToAssets(IERC20All(vault).balanceOf(user));
 
         vm.prank(user);
         oneD.deltaCompose(withdrawCall);
-        // (, , uint128 collateralAmount) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
-        // assertApproxEqAbs(assets, collateralAmount, 0);
+
+        uint underlyingAfter = IERC20All(underlying).balanceOf(user);
+        uint assetsInVaultAfter = IERC20All(vault).convertToAssets(IERC20All(vault).balanceOf(user));
+
+        assertApproxEqAbs(assetsInVault - assetsInVaultAfter, withdrawAssets, 1);
+        assertApproxEqAbs(underlyingAfter - underlyingBefore, withdrawAssets, 1);
     }
 
     function test_morpho_withdraw_shares_from_meta_morpho() external {
         deal(LBTC, user, 30.0e8);
         deal(USDC, user, 300_000.0e6);
 
+        address underlying = USDC;
+        address vault = META_MORPHO_USDC;
         uint assets = 100.0e6;
 
-        depositToMM(user, USDC, assets);
+        depositToMetaMorpho(user, underlying, assets);
 
-        uint userShares = IERC20All(META_MORPHO_USDC).balanceOf(user);
+        uint userShares = IERC20All(vault).balanceOf(user);
 
-        console.log("userShares", userShares);
-
-        bytes memory withdrawCall = metaMorphoWithdraw(
-            META_MORPHO_USDC, //
+        bytes memory withdrawCall = erc4646Withdraw(
+            vault, //
             true,
             userShares / 2,
             user
         );
         vm.prank(user);
-        IERC20All(META_MORPHO_USDC).approve(address(oneD), type(uint).max);
+        IERC20All(vault).approve(address(oneD), type(uint).max);
 
         vm.prank(user);
         oneD.deltaCompose(withdrawCall);
-        // (, , uint128 collateralAmount) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
-        // assertApproxEqAbs(assets, collateralAmount, 0);
+
+        assertApproxEqAbs(IERC20All(vault).balanceOf(user), userShares / 2, 0);
     }
 
     function test_morpho_deposit_collateral_with_callback() external {

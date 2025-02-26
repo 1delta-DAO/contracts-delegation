@@ -115,7 +115,7 @@ contract ComposerUtils {
             );
     }
 
-    function metaMorphoDeposit(
+    function erc4646Deposit(
         address asset,
         address vault,
         bool isShares, //
@@ -133,7 +133,7 @@ contract ComposerUtils {
             );
     }
 
-    function metaMorphoWithdraw(
+    function erc4646Withdraw(
         address vault,
         bool isShares, //
         uint assets,
@@ -142,7 +142,7 @@ contract ComposerUtils {
         return
             abi.encodePacked(
                 uint8(Commands.ERC4646), // 1
-                uint8(7), // 1
+                uint8(1), // 1
                 vault, // 20
                 abi.encodePacked(isShares ? uint8(1) : uint8(0), uint120(assets)), // 16
                 receiver // 20
