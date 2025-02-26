@@ -11,9 +11,8 @@ import {OneDeltaComposerBase} from "../../contracts/1delta/modules/base/Composer
 import {IERC20All} from "../shared/interfaces/IERC20All.sol";
 
 /**
- * We test flash swap executions using exact in trade types (given that the first pool supports flash swaps)
- * These are always applied on margin, however, we make sure that we always get
- * The expected amounts. Exact out swaps always execute flash swaps whenever possible.
+ * We test all morpho blue operations
+ * - supply, supplyCollateral, borrow, repay, erc4646Deposit, erc4646Withdraw
  */
 contract MorphoBlueTest is Test, ComposerUtils {
     using MorphoMathLib for uint256;
