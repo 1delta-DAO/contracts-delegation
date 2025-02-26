@@ -949,6 +949,14 @@ contract OneDeltaComposerBase is MarginTrading, Morpho {
                     /** Morpho withdraw lendingToken */
                     else if (morphoOperation == 5) {
                         currentOffset = _morphoWithdraw(currentOffset, callerAddress);
+                    }
+                    /** MetaMorpho deposit */
+                    else if (morphoOperation == 6) {
+                        currentOffset = _metaMorphoDeposit(currentOffset);
+                    }
+                    /** MetaMorpho withdraw */
+                    else if (morphoOperation == 7) {
+                        currentOffset = _metaMorphoWithdraw(currentOffset, callerAddress);
                     } else revert();
                 }
             } else if (operation < 0x30) {

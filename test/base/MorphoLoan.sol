@@ -5,93 +5,10 @@ import {Test} from "forge-std/Test.sol";
 import {console} from "forge-std/console.sol";
 import {ComposerUtils, Commands} from "../shared/utils/ComposerUtils.sol";
 import {MorphoMathLib} from "./utils/MathLib.sol";
+import {MarketParams, IMorphoEverything} from "./utils/Morpho.sol";
 
 import {OneDeltaComposerBase} from "../../contracts/1delta/modules/base/Composer.sol";
 import {IERC20All} from "../shared/interfaces/IERC20All.sol";
-
-struct MarketParams {
-    address loanToken;
-    address collateralToken;
-    address oracle;
-    address irm;
-    uint256 lltv;
-}
-
-/// @title IMorphoEverything
-interface IMorphoEverything {
-    function onMorphoFlashLoan(uint256 assets, bytes calldata data) external;
-
-    function flashLoan(address token, uint256 assets, bytes calldata data) external;
-
-    function supply(
-        MarketParams memory marketParams,
-        uint256 assets,
-        uint256 shares,
-        address onBehalf,
-        bytes memory data
-    ) external returns (uint256 assetsSupplied, uint256 sharesSupplied);
-
-    function withdraw(
-        MarketParams memory marketParams,
-        uint256 assets,
-        uint256 shares,
-        address onBehalf,
-        address receiver
-    ) external returns (uint256 assetsWithdrawn, uint256 sharesWithdrawn);
-
-    function borrow(
-        MarketParams memory marketParams,
-        uint256 assets,
-        uint256 shares,
-        address onBehalf,
-        address receiver
-    ) external returns (uint256 assetsBorrowed, uint256 sharesBorrowed);
-
-    function repay(
-        MarketParams memory marketParams,
-        uint256 assets,
-        uint256 shares,
-        address onBehalf,
-        bytes memory data
-    ) external returns (uint256 assetsRepaid, uint256 sharesRepaid);
-
-    function supplyCollateral(
-        MarketParams memory marketParams,
-        uint256 assets,
-        address onBehalf, //
-        bytes memory data
-    ) external;
-
-    function market(
-        bytes32 id
-    )
-        external
-        view
-        returns (
-            uint128 totalSupplyAssets,
-            uint128 totalSupplyShares,
-            uint128 totalBorrowAssets,
-            uint128 totalBorrowShares,
-            uint128 lastUpdate,
-            uint128 fee //
-        );
-
-    function withdrawCollateral(MarketParams memory marketParams, uint256 assets, address onBehalf, address receiver) external;
-
-    function setAuthorization(address authorized, bool newIsAuthorized) external;
-
-    function position(
-        bytes32 id,
-        address user
-    )
-        external
-        view
-        returns (
-            uint256 supplyShares, //
-            uint128 borrowShares,
-            uint128 collateral
-        );
-}
 
 /**
  * We test flash swap executions using exact in trade types (given that the first pool supports flash swaps)
@@ -108,6 +25,7 @@ contract MorphoBlueTest is Test, ComposerUtils {
     address internal constant LBTC = 0xecAc9C5F704e954931349Da37F60E39f515c11c1;
     address internal constant USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
     address internal constant WETH = 0x4200000000000000000000000000000000000006;
+    address internal constant META_MORPHO_USDC = 0x7BfA7C4f149E7415b73bdeDfe609237e29CBF34A;
 
     MarketParams LBTC_USDC_MARKET =
         MarketParams(
@@ -580,6 +498,107 @@ contract MorphoBlueTest is Test, ComposerUtils {
         oneD.deltaCompose(abi.encodePacked(transferTo, deposit));
         (, , uint128 collateralAmount) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
         assertApproxEqAbs(assets, collateralAmount, 0);
+    }
+
+    function test_morpho_deposit_to_meta_morpho() external {
+        deal(LBTC, user, 30.0e8);
+        deal(USDC, user, 300_000.0e6);
+
+        uint assets = 100.0e6;
+
+        address asset = USDC;
+        bytes memory transferTo = transferIn(
+            asset,
+            address(oneD),
+            assets //
+        );
+
+        bytes memory deposit = metaMorphoDeposit(
+            asset,
+            META_MORPHO_USDC, //
+            false,
+            assets,
+            user
+        );
+        vm.prank(user);
+        IERC20All(asset).approve(address(oneD), type(uint).max);
+
+        vm.prank(user);
+        oneD.deltaCompose(abi.encodePacked(transferTo, deposit));
+        // (, , uint128 collateralAmount) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
+        // assertApproxEqAbs(assets, collateralAmount, 0);
+    }
+
+    function depositToMM(address userAddress, address asset, uint assets) internal {
+        bytes memory transferTo = transferIn(
+            asset,
+            address(oneD),
+            assets //
+        );
+
+        bytes memory deposit = metaMorphoDeposit(
+            asset,
+            META_MORPHO_USDC, //
+            false,
+            assets,
+            userAddress
+        );
+        vm.prank(userAddress);
+        IERC20All(asset).approve(address(oneD), type(uint).max);
+
+        vm.prank(userAddress);
+        oneD.deltaCompose(abi.encodePacked(transferTo, deposit));
+    }
+
+    function test_morpho_withdraw_from_meta_morpho() external {
+        deal(LBTC, user, 30.0e8);
+        deal(USDC, user, 300_000.0e6);
+
+        uint assets = 100.0e6;
+
+        depositToMM(user, USDC, assets);
+
+        uint withdrawAssets = 70.0e6;
+        bytes memory withdrawCall = metaMorphoWithdraw(
+            META_MORPHO_USDC, //
+            false,
+            withdrawAssets,
+            user
+        );
+        vm.prank(user);
+        IERC20All(META_MORPHO_USDC).approve(address(oneD), type(uint).max);
+
+        vm.prank(user);
+        oneD.deltaCompose(withdrawCall);
+        // (, , uint128 collateralAmount) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
+        // assertApproxEqAbs(assets, collateralAmount, 0);
+    }
+
+    function test_morpho_withdraw_shares_from_meta_morpho() external {
+        deal(LBTC, user, 30.0e8);
+        deal(USDC, user, 300_000.0e6);
+
+        uint assets = 100.0e6;
+
+        depositToMM(user, USDC, assets);
+
+        uint userShares = IERC20All(META_MORPHO_USDC).balanceOf(user);
+
+        console.log("userShares", userShares);
+
+        bytes memory withdrawCall = metaMorphoWithdraw(
+            META_MORPHO_USDC, //
+            true,
+            userShares / 2,
+            user
+        );
+        vm.prank(user);
+        IERC20All(META_MORPHO_USDC).approve(address(oneD), type(uint).max);
+
+        vm.prank(user);
+        oneD.deltaCompose(withdrawCall);
+        // (, , uint128 collateralAmount) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
+        // assertApproxEqAbs(assets, collateralAmount, 0);
     }
 
     function test_morpho_deposit_collateral_with_callback() external {

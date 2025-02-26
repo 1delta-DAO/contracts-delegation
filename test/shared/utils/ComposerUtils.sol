@@ -115,6 +115,40 @@ contract ComposerUtils {
             );
     }
 
+    function metaMorphoDeposit(
+        address asset,
+        address vault,
+        bool isShares, //
+        uint assets,
+        address receiver
+    ) internal pure returns (bytes memory) {
+        return
+            abi.encodePacked(
+                uint8(Commands.MORPH), // 1
+                uint8(6), // 1
+                asset, // 20
+                vault, // 20
+                abi.encodePacked(isShares ? uint8(1) : uint8(0), uint120(assets)), // 16
+                receiver // 20
+            );
+    }
+
+    function metaMorphoWithdraw(
+        address vault,
+        bool isShares, //
+        uint assets,
+        address receiver
+    ) internal pure returns (bytes memory) {
+        return
+            abi.encodePacked(
+                uint8(Commands.MORPH), // 1
+                uint8(7), // 1
+                vault, // 20
+                abi.encodePacked(isShares ? uint8(1) : uint8(0), uint120(assets)), // 16
+                receiver // 20
+            );
+    }
+
     function morphoWithdraw(
         bytes memory market,
         bool isShares, //
