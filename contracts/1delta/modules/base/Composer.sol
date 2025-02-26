@@ -5,6 +5,7 @@ pragma solidity 0.8.28;
 import {MarginTrading} from "./MarginTrading.sol";
 import {Commands} from "../shared/Commands.sol";
 import {Morpho} from "./MorphoLending.sol";
+import {ERC4646Transfers} from "./ERC4646Transfers.sol";
 
 /**
  * @title Universal aggregator contract.
@@ -12,7 +13,7 @@ import {Morpho} from "./MorphoLending.sol";
  *        Efficient baching through compact calldata usage.
  * @author 1delta Labs AG
  */
-contract OneDeltaComposerBase is MarginTrading, Morpho {
+contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
     /// @dev we need base tokens to identify Compound V3's selectors
     address internal constant AERO = 0x940181a94A35A4569E4529A3CDfB74e38FD98631;
     address internal constant USDBC = 0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA;
@@ -949,14 +950,6 @@ contract OneDeltaComposerBase is MarginTrading, Morpho {
                     /** Morpho withdraw lendingToken */
                     else if (morphoOperation == 5) {
                         currentOffset = _morphoWithdraw(currentOffset, callerAddress);
-                    }
-                    /** MetaMorpho deposit */
-                    else if (morphoOperation == 6) {
-                        currentOffset = _metaMorphoDeposit(currentOffset);
-                    }
-                    /** MetaMorpho withdraw */
-                    else if (morphoOperation == 7) {
-                        currentOffset = _metaMorphoWithdraw(currentOffset, callerAddress);
                     } else revert();
                 }
             } else if (operation < 0x30) {
@@ -1297,6 +1290,20 @@ contract OneDeltaComposerBase is MarginTrading, Morpho {
                             revert(0, returndatasize())
                         }
                         currentOffset := add(currentOffset, 54)
+                    }
+                } else if (operation == Commands.ERC4646) {
+                    uint256 erc4646Operation;
+                    assembly {
+                        erc4646Operation := shr(248, calldataload(currentOffset))
+                        currentOffset := add(currentOffset, 1)
+                    }
+                    /** ERC6464 deposit */
+                    if (erc4646Operation == 0) {
+                        currentOffset = _erc4646Deposit(currentOffset);
+                    }
+                    /** MetaMorpho withdraw */
+                    else {
+                        currentOffset = _erc4646Withdraw(currentOffset, callerAddress);
                     }
                 }
             } else {
