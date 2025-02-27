@@ -72,6 +72,9 @@ contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
                     // | receiver | amount | pathLength | path |
                     // | address  | uint240|   uint16   | bytes|
                     // where amount is provided as
+                    // Amount Bitmap Structure:
+                    // | Pay Self (1) | Fee-on-Transfer (1) | Reserved (14) | Minimum Amount Out (112) | Amount In (112) | opdataLength (16) |
+                    // |--------------|---------------------|---------------|---------------------------|----------------|-------------------|
                     // pay self         (bool)      in the upper bit if true, payer is this contract
                     // fot              (bool)      2nd bit, if true, assume fee-on-transfer as input
                     // minimumAmountOut (uint120)   in the bytes starting at bit 128
@@ -145,18 +148,21 @@ contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
                 } else if (operation == Commands.SWAP_EXACT_OUT) {
                     ////////////////////////////////////////////////////
                     // Always uses a flash swap when possible
-                    // Encoded parameters for the swap
-                    // | receiver | amount  | pathLength | path |
-                    // | address  | uint240 | uint16     | bytes|
-                    // where amount is provided as
-                    // pay self         (bool)      in the upper bit
-                    //                              if true, payer is this contract
-                    // maximumAmountIn  (uint120)   in the bytes starting at bit 128
-                    //                              from the right
-                    // amountOut        (uint128)   in the lowest bytes
-                    //                              zero is for paying withn the balance of
-                    //                              payer (self or caller)
+                    // Calldata Structure for Flash Swap
+                    // | Receiver | Amount Bitmap | Path Length | Path |
+                    // | address  | uint240       | uint16      | bytes|
+                    //
+                    // Amount Bitmap Structure:
+                    // | Pay Self (1) | Fee-on-Transfer (1) | Reserved (14) | Amount In Maximum (112) | Amount Out (112) | opdataLength (16) |
+                    // |--------------|---------------------|---------------|-------------------------|------------------|-------------------|
+                    // - Pay Self: Determines if the contract itself is the payer (1 bit).
+                    // - Fee-on-Transfer: Indicates if fee-on-transfer tokens are considered (1 bit).
+                    // - Reserved: Reserved for alignment or maybe future use (14 bits).
+                    // - Amount In Maximum: Maximum allowable input amount for the swap (112 bits).
+                    // - Amount Out: Exact amount of tokens to be output from the swap (112 bits).
+                    // - opdataLength: Length of the path data (16 bits).
                     ////////////////////////////////////////////////////
+
                     uint256 opdataOffset;
                     uint256 opdataLength;
                     uint256 amountOut;
@@ -180,7 +186,7 @@ contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
                         default {
                             payer := callerAddress
                         }
-                        // rigth shigt by pathlength size and masking yields
+                        // right shift by pathlength size and masking yields
                         // the final amout out
                         amountOut := and(_UINT112_MASK, shr(16, amountOut))
                         if iszero(amountOut) {
