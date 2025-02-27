@@ -556,7 +556,6 @@ abstract contract Morpho is Slots, ERC20Selectors, Masks {
                     revert(0x0, 0x0)
                 }
                 mstore(add(ptr, 164), 0) // assets
-                // Todo I think mload(add(ptrBase, 0x20)) reads both the borrow shares and collateral
                 mstore(add(ptr, 196), mload(add(ptrBase, 0x20))) // shares
             }
             default {

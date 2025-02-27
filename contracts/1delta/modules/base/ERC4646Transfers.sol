@@ -56,7 +56,7 @@ abstract contract ERC4646Transfers is Slots, ERC20Selectors, Masks {
                 // selector for approve(address,uint256)
                 mstore(ptr, ERC20_APPROVE)
                 mstore(add(ptr, 0x04), morphoVault)
-                mstore(add(ptr, 0x24), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff)
+                mstore(add(ptr, 0x24), MAX_UINT256)
 
                 if iszero(call(gas(), asset, 0x0, ptr, 0x44, ptr, 32)) {
                     revert(0x0, 0x0)
@@ -109,7 +109,7 @@ abstract contract ERC4646Transfers is Slots, ERC20Selectors, Masks {
                     morphoVault,
                     0x0,
                     ptr,
-                    0x44, // = 10 * 32 + 4
+                    0x44, // = 2 * 32 + 4
                     0x0,
                     0x0 //
                 )
