@@ -6,9 +6,11 @@ import {Slots} from "../shared/storage/Slots.sol";
 import {ERC20Selectors} from "../shared/selectors/ERC20Selectors.sol";
 import {Masks} from "../shared/masks/Masks.sol";
 
-/******************************************************************************\
-* Author: Achthar | 1delta 
-/******************************************************************************/
+/**
+ * \
+ * Author: Achthar | 1delta
+ * /*****************************************************************************
+ */
 
 // solhint-disable max-line-length
 
@@ -32,7 +34,8 @@ abstract contract Morpho is Slots, ERC20Selectors, Masks {
     bytes32 private constant MORPHO_REPAY = 0x20b76e8100000000000000000000000000000000000000000000000000000000;
 
     /// @dev  supplyCollateral(...)
-    bytes32 private constant MORPHO_SUPPLY_COLLATERAL = 0x238d657900000000000000000000000000000000000000000000000000000000;
+    bytes32 private constant MORPHO_SUPPLY_COLLATERAL =
+        0x238d657900000000000000000000000000000000000000000000000000000000;
 
     /// @dev  supply(...)
     bytes32 private constant MORPHO_SUPPLY = 0xa99aad8900000000000000000000000000000000000000000000000000000000;
@@ -41,11 +44,22 @@ abstract contract Morpho is Slots, ERC20Selectors, Masks {
     bytes32 private constant MORPHO_BORROW = 0x50d8cd4b00000000000000000000000000000000000000000000000000000000;
 
     /// @dev  withdrawCollateral(...)
-    bytes32 private constant MORPHO_WITHDRAW_COLLATERAL = 0x8720316d00000000000000000000000000000000000000000000000000000000;
+    bytes32 private constant MORPHO_WITHDRAW_COLLATERAL =
+        0x8720316d00000000000000000000000000000000000000000000000000000000;
 
     /**
      * Layout:
      * [market|amount|receiver|calldataLength|calldata]
+     * | Offset | Length (bytes) | Description                     |
+     * |--------|----------------|---------------------------------|
+     * | 0      | 20             | MarketParams.loanToken          |
+     * | 20     | 20             | MarketParams.collateralToken    |
+     * | 40     | 20             | MarketParams.oracle             |
+     * | 60     | 20             | MarketParams.irm                |
+     * | 80     | 16             | MarketParams.lltv               |
+     * | 96     |  1             | Assets or Shares                |
+     * | 97     | 15             | Amount (borrowAm)               |
+     * | 112    | 20             | Receiver                        |
      */
 
     /// @notice Withdraw from lender lastgiven user address and lender Id
@@ -71,7 +85,9 @@ abstract contract Morpho is Slots, ERC20Selectors, Masks {
 
             let borrowAm := and(UINT120_MASK, lltvAndAmount)
 
-            /** check if it is by shares or assets */
+            /**
+             * check if it is by shares or assets
+             */
             switch and(SHARES_MASK, lltvAndAmount)
             case 0 {
                 mstore(add(ptr, 164), borrowAm) // assets
@@ -95,7 +111,7 @@ abstract contract Morpho is Slots, ERC20Selectors, Masks {
                     MORPHO_BLUE,
                     0x0,
                     ptr,
-                    296, // = 10 * 32 + 4
+                    292, // = 9 * 32 + 4
                     0x0,
                     0x0 //
                 )
@@ -118,6 +134,7 @@ abstract contract Morpho is Slots, ERC20Selectors, Masks {
             let token := shr(96, calldataload(currentOffset))
             /**
              * Approve MB beforehand for the depo amount
+             * Slot: keccak256(MorphoBlue, keccak256(token, CALL_MANAGEMENT_APPROVALS))
              */
             mstore(0x0, token)
             mstore(0x20, CALL_MANAGEMENT_APPROVALS)
@@ -129,11 +146,9 @@ abstract contract Morpho is Slots, ERC20Selectors, Masks {
                 // selector for approve(address,uint256)
                 mstore(ptr, ERC20_APPROVE)
                 mstore(add(ptr, 0x04), MORPHO_BLUE)
-                mstore(add(ptr, 0x24), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff)
+                mstore(add(ptr, 0x24), MAX_UINT256)
 
-                if iszero(call(gas(), token, 0x0, ptr, 0x44, ptr, 32)) {
-                    revert(0x0, 0x0)
-                }
+                if iszero(call(gas(), token, 0x0, ptr, 0x44, ptr, 32)) { revert(0x0, 0x0) }
                 sstore(key, 1)
             }
 
@@ -155,10 +170,14 @@ abstract contract Morpho is Slots, ERC20Selectors, Masks {
 
             let amountToDeposit := and(UINT120_MASK, lltvAndAmount)
 
-            /** check if it is by shares or assets */
+            /**
+             * check if it is by shares or assets
+             */
             switch and(SHARES_MASK, lltvAndAmount)
             case 0 {
-                /** if the amount is zero, we assume that the contract balance is deposited */
+                /**
+                 * if the amount is zero, we assume that the contract balance is deposited
+                 */
                 if iszero(amountToDeposit) {
                     // selector for balanceOf(address)
                     mstore(0, ERC20_BALANCE_OF)
@@ -250,11 +269,9 @@ abstract contract Morpho is Slots, ERC20Selectors, Masks {
                 // selector for approve(address,uint256)
                 mstore(ptrBase, ERC20_APPROVE)
                 mstore(add(ptrBase, 0x04), MORPHO_BLUE)
-                mstore(add(ptrBase, 0x24), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff)
+                mstore(add(ptrBase, 0x24), MAX_UINT256)
 
-                if iszero(call(gas(), token, 0x0, ptrBase, 0x44, 0x0, 0x0)) {
-                    revert(0x0, 0x0)
-                }
+                if iszero(call(gas(), token, 0x0, ptrBase, 0x44, 0x0, 0x0)) { revert(0x0, 0x0) }
                 sstore(key, 1)
             }
 
@@ -269,7 +286,9 @@ abstract contract Morpho is Slots, ERC20Selectors, Masks {
 
             let amountToDeposit := and(UINT128_MASK, lltvAndAmount)
 
-            /** if the amount is zero, we assume that the contract balance is deposited */
+            /**
+             * if the amount is zero, we assume that the contract balance is deposited
+             */
             if iszero(amountToDeposit) {
                 // selector for balanceOf(address)
                 mstore(0, ERC20_BALANCE_OF)
@@ -333,7 +352,7 @@ abstract contract Morpho is Slots, ERC20Selectors, Masks {
             // morpho should be the primary choice
             let ptr := mload(0x40)
 
-            // supplyCollateral(...)
+            // withdrawCollateral(...)
             mstore(ptr, MORPHO_WITHDRAW_COLLATERAL)
 
             // market stuff
@@ -358,7 +377,6 @@ abstract contract Morpho is Slots, ERC20Selectors, Masks {
             mstore(add(ptr, 196), callerAddress) // onBehalfOf
 
             currentOffset := add(currentOffset, 32)
-            mstore(add(ptr, 196), callerAddress) // onBehalfOf
             mstore(add(ptr, 228), shr(96, calldataload(currentOffset))) // receiver
 
             // skip receiver in offset
@@ -370,7 +388,7 @@ abstract contract Morpho is Slots, ERC20Selectors, Masks {
                     MORPHO_BLUE,
                     0x0,
                     ptr,
-                    260, // = 10 * 32 + 4
+                    260, // = 8 * 32 + 4
                     0x0,
                     0x0 //
                 )
@@ -404,16 +422,20 @@ abstract contract Morpho is Slots, ERC20Selectors, Masks {
 
             let withdrawAm := and(UINT120_MASK, lltvAndAmount)
 
-            /** check if it is by shares or assets */
+            /**
+             * check if it is by shares or assets
+             * 0 => by assets
+             * 1 => by shares
+             */
             switch and(SHARES_MASK, lltvAndAmount)
             case 0 {
                 /**
-                 * Repay amount variations
+                 * Withdraw amount variations
                  * type(uint120).max:    user supply balance
                  * other:                amount provided
                  */
                 switch withdrawAm
-                // maximum uint112 means withdraw everything
+                // maximum uint120 means withdraw everything
                 case 0xffffffffffffffffffffffffffffff {
                     // we need to fetch user shares and just withdraw all shares
                     // https://docs.morpho.org/morpho/tutorials/manage-positions/#repayAll
@@ -423,9 +445,7 @@ abstract contract Morpho is Slots, ERC20Selectors, Masks {
                     mstore(ptrBase, MORPHO_POSITION)
                     mstore(add(ptrBase, 0x4), marketId)
                     mstore(add(ptrBase, 0x24), callerAddress)
-                    if iszero(staticcall(gas(), MORPHO_BLUE, ptrBase, 0x44, ptrBase, 0x20)) {
-                        revert(0x0, 0x0)
-                    }
+                    if iszero(staticcall(gas(), MORPHO_BLUE, ptrBase, 0x44, ptrBase, 0x20)) { revert(0x0, 0x0) }
                     mstore(add(ptr, 164), 0) // assets
                     mstore(add(ptr, 196), mload(ptrBase)) // shares
                 }
@@ -455,7 +475,7 @@ abstract contract Morpho is Slots, ERC20Selectors, Masks {
                     MORPHO_BLUE,
                     0x0,
                     ptr,
-                    292, // = 10 * 32 + 4
+                    292, // = 9 * 32 + 4
                     0x0,
                     0x0 //
                 )
@@ -490,9 +510,7 @@ abstract contract Morpho is Slots, ERC20Selectors, Masks {
                 mstore(ptrBase, ERC20_APPROVE)
                 mstore(add(ptrBase, 0x04), MORPHO_BLUE)
                 mstore(add(ptrBase, 0x24), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff)
-                if iszero(call(gas(), token, 0x0, ptrBase, 0x44, ptrBase, 0x0)) {
-                    revert(0x0, 0x0)
-                }
+                if iszero(call(gas(), token, 0x0, ptrBase, 0x44, ptrBase, 0x0)) { revert(0x0, 0x0) }
                 sstore(key, 1)
             }
             // market data
@@ -530,10 +548,9 @@ abstract contract Morpho is Slots, ERC20Selectors, Masks {
                 mstore(ptrBase, MORPHO_POSITION)
                 mstore(add(ptrBase, 0x4), marketId)
                 mstore(add(ptrBase, 0x24), callerAddress)
-                if iszero(staticcall(gas(), MORPHO_BLUE, ptrBase, 0x44, ptrBase, 0x40)) {
-                    revert(0x0, 0x0)
-                }
+                if iszero(staticcall(gas(), MORPHO_BLUE, ptrBase, 0x44, ptrBase, 0x40)) { revert(0x0, 0x0) }
                 mstore(add(ptr, 164), 0) // assets
+                // Todo I think mload(add(ptrBase, 0x20)) reads both the borrow shares and collateral
                 mstore(add(ptr, 196), mload(add(ptrBase, 0x20))) // shares
             }
             default {
@@ -543,18 +560,16 @@ abstract contract Morpho is Slots, ERC20Selectors, Masks {
                 if iszero(repayAm) {
                     // revert if shares are selected as a continuation
                     // will lead to unexpected behavior
-                    if eq(amountType, 1) {
-                        revert(0x0, 0x0)
-                    }
+                    if eq(amountType, 1) { revert(0x0, 0x0) }
                     // get balance
                     mstore(0x0, ERC20_BALANCE_OF)
                     mstore(0x04, address())
-                    if iszero(staticcall(gas(), token, 0x0, 0x24, 0x0, 0x20)) {
-                        revert(0x0, 0x0)
-                    }
+                    if iszero(staticcall(gas(), token, 0x0, 0x24, 0x0, 0x20)) { revert(0x0, 0x0) }
                     repayAm := mload(0x0)
                 }
-                /** check if it is by shares or assets */
+                /**
+                 * check if it is by shares or assets
+                 */
                 switch amountType
                 case 0 {
                     // by assets safe - will not revert if too much is repaid
@@ -564,45 +579,38 @@ abstract contract Morpho is Slots, ERC20Selectors, Masks {
                     // accrue interest
                     // add accrueInterest (0x151c1ade)
                     mstore(sub(ptr, 28), 0x151c1ade)
-                    if iszero(call(gas(), MORPHO_BLUE, 0x0, ptr, 0xA4, 0x0, 0x0)) {
-                        revert(0x0, 0x0)
-                    }
+                    if iszero(call(gas(), MORPHO_BLUE, 0x0, ptr, 0xA4, 0x0, 0x0)) { revert(0x0, 0x0) }
 
                     let marketId := keccak256(add(ptr, 4), 160)
                     mstore(0x0, MORPHO_MARKET)
                     mstore(0x4, marketId)
-                    if iszero(staticcall(gas(), MORPHO_BLUE, 0x0, 0x24, ptrBase, 0x80)) {
-                        revert(0x0, 0x0)
-                    }
+                    if iszero(staticcall(gas(), MORPHO_BLUE, 0x0, 0x24, ptrBase, 0x80)) { revert(0x0, 0x0) }
                     let totalBorrowAssets := mload(add(ptrBase, 0x40))
                     let totalBorrowShares := mload(add(ptrBase, 0x60))
 
                     // get balance
                     mstore(0x0, ERC20_BALANCE_OF)
                     mstore(0x04, address())
-                    if iszero(staticcall(gas(), token, 0x0, 0x24, 0x0, 0x20)) {
-                        revert(0x0, 0x0)
-                    }
+                    if iszero(staticcall(gas(), token, 0x0, 0x24, 0x0, 0x20)) { revert(0x0, 0x0) }
                     repayAm := mload(0x0)
 
                     // position datas
                     mstore(ptrBase, MORPHO_POSITION)
                     mstore(add(ptrBase, 0x4), marketId)
                     mstore(add(ptrBase, 0x24), callerAddress)
-                    if iszero(staticcall(gas(), MORPHO_BLUE, ptrBase, 0x44, ptrBase, 0x40)) {
-                        revert(0x0, 0x0)
-                    }
+                    if iszero(staticcall(gas(), MORPHO_BLUE, ptrBase, 0x44, ptrBase, 0x40)) { revert(0x0, 0x0) }
                     let userBorrowShares := mload(add(ptrBase, 0x20))
 
                     // mulDivUp(shares, totalAssets + VIRTUAL_ASSETS, totalShares + VIRTUAL_SHARES);
                     let maxAssets := add(totalBorrowShares, 1000000) // VIRTUAL_SHARES=1e6
-                    maxAssets := div(
-                        add(
-                            mul(userBorrowShares, add(totalBorrowAssets, 1)), // VIRTUAL_ASSETS=1
-                            sub(maxAssets, 1) //
-                        ),
-                        maxAssets //
-                    )
+                    maxAssets :=
+                        div(
+                            add(
+                                mul(userBorrowShares, add(totalBorrowAssets, 1)), // VIRTUAL_ASSETS=1
+                                sub(maxAssets, 1) //
+                            ),
+                            maxAssets //
+                        )
 
                     // if maxAssets is greater than repay amount
                     // we repay whatever is possible
