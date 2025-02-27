@@ -1217,7 +1217,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                         // length of params
                         let calldataLength := and(UINT16_MASK, shr(128, slice))
 
-                        switch lt(source, 250)
+                        switch lt(source, 100)
                         case 0 {
                             let pool
                             switch source
@@ -1285,7 +1285,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                         default {
                             let pool
                             switch source
-                            case 250 {
+                            case 190 {
                                 pool := KINZA_POOL
                             }
                             default {
@@ -1440,7 +1440,7 @@ contract OneDeltaComposerMantle is MarginTrading {
             // This is a crucial check since this makes
             // the `initiator` paramter the caller of `flashLoan`
             switch source
-            case 250 {
+            case 190 {
                 if xor(caller(), KINZA_POOL) {
                     mstore(0, INVALID_FLASH_LOAN)
                     revert(0, 0x4)

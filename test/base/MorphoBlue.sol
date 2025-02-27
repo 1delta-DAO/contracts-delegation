@@ -723,6 +723,37 @@ contract MorphoBlueTest is Test, ComposerUtils {
         oneD.deltaCompose(abi.encodePacked(transferTo, deposit));
     }
 
+    // function test_morpho_balance() external {
+    //     deal(LBTC, user, 30.0e8);
+    //     deal(USDC, user, 300_000.0e6);
+
+    //     uint loanAssetAm = 1.0e8;
+
+    //     depositCollateralToMorpho(user, loanAssetAm);
+
+    //     (, , uint128 collateralAmount) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
+
+    //     console.log("collateralAmount", collateralAmount);
+    //     address userStored = user;
+    //     bytes32 mId = marketId(LBTC_USDC_MARKET);
+    //     uint256 am;
+    //     uint256 am2;
+    //     assembly {
+    //         let ptr := mload(0x40)
+    //         mstore(ptr, 0x93c5206200000000000000000000000000000000000000000000000000000000)
+    //         mstore(add(ptr, 0x4), mId)
+    //         mstore(add(ptr, 0x24), userStored)
+    //         if iszero(staticcall(gas(), MORPHO, ptr, 0x44, ptr, 0x60)) {
+    //             revert(0x0, 0x0)
+    //         }
+    //         am := and(UINT128_MASK,mload(add(ptr, 0x10)))
+    //         am2 :=mload(add(ptr, 0x40))
+        
+    //     }
+    //     console.log("am", am);
+    //     console.log("am2", am2);
+    // }
+
     // function test_base_params() external {
     //     address onBehalf = 0x937Ce2d6c488b361825D2DB5e8A70e26d48afEd5;
     //     uint256 assets = 543978;

@@ -1380,7 +1380,7 @@ contract OneDeltaComposerOptimism is MarginTrading {
                             sstore(FLASH_LOAN_GATEWAY_SLOT, 1)
                         }
                         default {
-                            switch lt(source, 100)
+                            switch lt(source, 230)
                             case 1 {
                                 let pool
                                 switch source
@@ -1425,7 +1425,7 @@ contract OneDeltaComposerOptimism is MarginTrading {
                             default {
                                 let pool
                                 switch source
-                                case 100 {
+                                case 240 {
                                     pool := GRANARY
                                 }
                                 // We revert on any other id
@@ -1530,7 +1530,7 @@ contract OneDeltaComposerOptimism is MarginTrading {
             // This is a crucial check since this makes
             // the `initiator` paramter the caller of `flashLoan`
             switch source
-            case 100 {
+            case 240 {
                 if xor(caller(), GRANARY) {
                     mstore(0, INVALID_FLASH_LOAN)
                     revert(0, 0x4)

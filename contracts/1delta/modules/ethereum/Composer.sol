@@ -1427,6 +1427,9 @@ contract OneDeltaComposerEthereum is MarginTrading {
                                     case 103 {
                                         pool := AVALON_EBTC_LBTC
                                     }
+                                    case 190 {
+                                        pool := KINZA
+                                    }
                                     default {
                                         mstore(0, INVALID_FLASH_LOAN)
                                         revert(0, 0x4)
@@ -1446,9 +1449,6 @@ contract OneDeltaComposerEthereum is MarginTrading {
                                     }
                                     case 212 {
                                         pool := ZEROLEND_ETH_LRTS
-                                    }
-                                    case 250 {
-                                        pool := KINZA
                                     }
                                     default {
                                         mstore(0, INVALID_FLASH_LOAN)
@@ -1583,6 +1583,12 @@ contract OneDeltaComposerEthereum is MarginTrading {
                             revert(0, 0x4)
                         }
                     }
+                    case 190 {
+                        if xor(caller(), KINZA) {
+                            mstore(0, INVALID_FLASH_LOAN)
+                            revert(0, 0x4)
+                        }
+                    }
                     default {
                         mstore(0, INVALID_FLASH_LOAN)
                         revert(0, 0x4)
@@ -1611,12 +1617,6 @@ contract OneDeltaComposerEthereum is MarginTrading {
                     }
                     case 212 {
                         if xor(caller(), ZEROLEND_ETH_LRTS) {
-                            mstore(0, INVALID_FLASH_LOAN)
-                            revert(0, 0x4)
-                        }
-                    }
-                    case 250 {
-                        if xor(caller(), KINZA) {
                             mstore(0, INVALID_FLASH_LOAN)
                             revert(0, 0x4)
                         }
