@@ -1275,7 +1275,7 @@ contract OneDeltaComposerPolygon is MarginTrading {
                             currentOffset := add(currentOffset, 37)
                             calldatacopy(add(ptr, 313), currentOffset, calldataLength) // calldata
                             // set entry flag
-                            sstore(FLASH_LOAN_GATEWAY_SLOT, 2)
+                            sstore(FLASH_LOAN_GATEWAY_SLOT_0, 2)
                             if iszero(
                                 call(
                                     gas(),
@@ -1292,7 +1292,7 @@ contract OneDeltaComposerPolygon is MarginTrading {
                                 revert(0x0, rdlen)
                             }
                             // unset entry flasg
-                            sstore(FLASH_LOAN_GATEWAY_SLOT, 1)
+                            sstore(FLASH_LOAN_GATEWAY_SLOT_0, 1)
                         }
                         default {
                             let pool
@@ -1470,7 +1470,7 @@ contract OneDeltaComposerPolygon is MarginTrading {
                 revert(0, 0x4)
             }
             // check that the entry flag is
-            if iszero(eq(2, sload(FLASH_LOAN_GATEWAY_SLOT))) {
+            if iszero(eq(2, sload(FLASH_LOAN_GATEWAY_SLOT_0))) {
                 mstore(0, INVALID_CALLER)
                 revert(0, 0x4)
             }
