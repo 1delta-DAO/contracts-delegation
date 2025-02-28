@@ -7,6 +7,12 @@ contract FlashAccount is FlashAccountBase {
     // Aave V3 pool ethereum mainnet
     address internal constant AAVE_V3 = 0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2;
 
+    // Morpho pool
+    address internal constant MORPHO = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
+
+    // Balancer V2 vault
+    address internal constant BALANCER_V2 = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
+
     constructor(IEntryPoint entryPoint_) FlashAccountBase(entryPoint_) {}
 
     /**
@@ -25,6 +31,8 @@ contract FlashAccount is FlashAccountBase {
         address,
         bytes calldata params // user params
     ) external requireInExecution returns (bool) {
+        require(msg.sender == AAVE_V3, "Invalid sender");
+
         // forward execution
         _decodeAndExecute(params);
 
@@ -40,6 +48,7 @@ contract FlashAccount is FlashAccountBase {
         uint256[] calldata,
         bytes calldata params //
     ) external requireInExecution {
+        require(msg.sender == BALANCER_V2, "Invalid sender");
         // execute furhter operations
         _decodeAndExecute(params);
     }
@@ -48,6 +57,7 @@ contract FlashAccount is FlashAccountBase {
      * Morpho flash loan
      */
     function onMorphoFlashLoan(uint256 assets, bytes calldata params) external requireInExecution {
+        require(msg.sender == MORPHO, "Invalid sender");
         // execute furhter operations
         _decodeAndExecute(params);
     }
