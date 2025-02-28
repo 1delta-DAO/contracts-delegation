@@ -45,7 +45,7 @@ abstract contract Morpho is Slots, ERC20Selectors, Masks {
 
     /**
      * Layout:
-     * [market|amount|receiver|calldataLength|calldata]
+     * [market|amount|receiver]
      * | Offset | Length (bytes) | Description                     |
      * |--------|----------------|---------------------------------|
      * | 0      | 20             | MarketParams.loanToken          |

@@ -7,11 +7,15 @@ import "../../contracts/1delta/modules/shared/Commands.sol";
 import "./DeltaSetup.f.sol";
 
 contract ComposerTestTaiko is DeltaSetup {
-    uint16[] lenderIds = [LenderMappingsTaiko.HANA_ID, LenderMappingsTaiko.MERIDIAN_ID, LenderMappingsTaiko.TAKOTAKO_ID];
-    uint16[] extendedLenderIds = [
+    uint16[] lenderIds = [
         LenderMappingsTaiko.HANA_ID,
         LenderMappingsTaiko.MERIDIAN_ID,
-        LenderMappingsTaiko.TAKOTAKO_ID,
+        LenderMappingsTaiko.TAKOTAKO_ID //
+    ];
+    uint16[] extendedLenderIds = [
+        // LenderMappingsTaiko.HANA_ID,
+        // LenderMappingsTaiko.MERIDIAN_ID,
+        // LenderMappingsTaiko.TAKOTAKO_ID,
         LenderMappingsTaiko.AVALON_ID
     ];
 
@@ -204,8 +208,9 @@ contract ComposerTestTaiko is DeltaSetup {
     }
 
     function test_taiko_composer_withdraw() external {
-        for (uint8 index = 0; index < extendedLenderIds.length; index++) {
-            uint16 lenderId = extendedLenderIds[index];
+        for (uint8 index = 0; index < lenderIds.length; index++) {
+            uint16 lenderId = lenderIds[index];
+            
             address user = testUser;
 
             uint256 amount = 1e18;

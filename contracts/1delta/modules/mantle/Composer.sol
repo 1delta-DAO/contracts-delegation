@@ -1218,7 +1218,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                         let calldataLength := and(UINT16_MASK, shr(128, slice))
 
                         switch lt(source, 100)
-                        case 0 {
+                        case 1 {
                             let pool
                             switch source
                             case 0 {

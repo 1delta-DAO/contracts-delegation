@@ -1011,8 +1011,8 @@ contract OneDeltaComposerTaiko is MarginTrading {
                         let calldataLength := and(UINT16_MASK, shr(128, slice))
 
                         // aave v2s
-                        switch gt(source, 229)
-                        case 1 {
+                        switch lt(source, 230)
+                        case 0 {
                             let pool
                             switch source
                             case 230 {
@@ -1246,7 +1246,7 @@ contract OneDeltaComposerTaiko is MarginTrading {
             // This is a crucial check since this makes
             // the `initiator` paramter the caller of `flashLoan`
             switch source
-            case 1 {
+            case 0 {
                 if xor(caller(), HANA_POOL) {
                     mstore(0, INVALID_FLASH_LOAN)
                     revert(0, 0x4)

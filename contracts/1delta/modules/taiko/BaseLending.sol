@@ -234,8 +234,14 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                     case 0 {
                         pool := HANA_POOL
                     }
-                    case 1 {
+                    case 100 {
                         pool := AVALON_POOL
+                    }
+                    case 101 {
+                        pool := AVALON_SOLV_BTC_POOL
+                    }
+                    case 150 {
+                        pool := AVALON_USDA_POOL
                     }
                     default {
                         mstore(0x0, _lenderId)

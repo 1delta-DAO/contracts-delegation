@@ -14,7 +14,7 @@ contract UniV3TypeTest is DeltaSetup {
     address internal router = 0x38be8Bc0cDfF59eF9B9Feb0d949B2052359e97d9;
 
     function setUp() public virtual override {
-        vm.createSelectFork({blockNumber: 389172, urlOrAlias: "https://rpc.mainnet.taiko.xyz"});
+        vm.createSelectFork({blockNumber: 745292, urlOrAlias: "https://rpc.mainnet.taiko.xyz"});
 
         intitializeFullDelta();
 
@@ -58,8 +58,8 @@ contract UniV3TypeTest is DeltaSetup {
         balanceOut = IERC20All(assetOut).balanceOf(user) - balanceOut;
         balanceIn = balanceIn - IERC20All(assetIn).balanceOf(user);
 
-        // swap 10, receive approx 10, but in 18 decs
-        assertApproxEqAbs(8585963874116459, balanceOut, 1);
+        // swap 10, receive approx 5 with massive slippage, but in 18 decs
+        assertApproxEqAbs(5714045962264805, balanceOut, 1);
         assertApproxEqAbs(quote, balanceOut, 0);
         assertApproxEqAbs(balanceIn, amountIn, 0);
     }
