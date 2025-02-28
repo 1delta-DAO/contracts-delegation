@@ -142,6 +142,40 @@ contract AaveFlashLoanTest is Test {
         account.execute(AAVEV3_POOL, 0, flashLoanCall);
     }
 
+    function testExploitDecodeAndExecuteReverts() public {
+        address exploiter = vm.addr(uint256(keccak256("exploiter")));
+        uint128 flashLoanPremiumTotal = IPool(AAVEV3_POOL).FLASHLOAN_PREMIUM_TOTAL();
+        uint256 amountToBorrow = 1e9;
+        uint256 aavePremium = percentMul(amountToBorrow, flashLoanPremiumTotal);
+        uint256 totalDebt = amountToBorrow + aavePremium;
+
+        // transfer USDC to account
+        vm.prank(0x37305B1cD40574E4C5Ce33f8e8306Be057fD7341);
+        IERC20(USDC).transfer(address(account), aavePremium + 1e9);
+
+        console.log("totalDebt", totalDebt);
+
+        address[] memory dests = new address[](2);
+        dests[0] = USDC;
+        dests[1] = USDC;
+
+        uint256[] memory values = new uint256[](2);
+        values[0] = 0;
+        values[1] = 0;
+
+        bytes[] memory calls = new bytes[](2);
+        calls[0] = abi.encodeWithSignature("approve(address,uint256)", AAVEV3_POOL, totalDebt);
+        calls[1] = abi.encodeWithSignature("transfer(address,uint256)", exploiter, 1e9);
+
+        bytes memory params = abi.encode(dests, values, calls);
+
+        vm.prank(exploiter);
+        vm.expectRevert(bytes4(0x0f2e5b6c)); // Locked()
+        AAVEV3_POOL.call(
+            abi.encodeWithSignature("flashLoanSimple(address,address,uint256,bytes,uint16)", address(account), USDC, amountToBorrow, params, 0)
+        );
+    }
+
     function testAaveV3FlashLoanWithUserOp() public {
         uint128 flashLoanPremiumTotal = IPool(AAVEV3_POOL).FLASHLOAN_PREMIUM_TOTAL();
         uint256 amountToBorrow = 1e9;
