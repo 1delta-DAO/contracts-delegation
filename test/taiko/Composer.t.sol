@@ -13,9 +13,9 @@ contract ComposerTestTaiko is DeltaSetup {
         LenderMappingsTaiko.TAKOTAKO_ID //
     ];
     uint16[] extendedLenderIds = [
-        // LenderMappingsTaiko.HANA_ID,
-        // LenderMappingsTaiko.MERIDIAN_ID,
-        // LenderMappingsTaiko.TAKOTAKO_ID,
+        LenderMappingsTaiko.HANA_ID,
+        LenderMappingsTaiko.MERIDIAN_ID,
+        LenderMappingsTaiko.TAKOTAKO_ID,
         LenderMappingsTaiko.AVALON_ID
     ];
 
@@ -63,7 +63,6 @@ contract ComposerTestTaiko is DeltaSetup {
     function test_taiko_composer_depo() external {
         for (uint8 index = 0; index < extendedLenderIds.length; index++) {
             uint16 lenderId = extendedLenderIds[index];
-            console.log("lenderId", lenderId);
             address user = testUser;
             uint256 amount = 10.0e6;
             address assetIn = getProperLenderAsset(lenderId, TokensTaiko.USDC);
@@ -207,17 +206,16 @@ contract ComposerTestTaiko is DeltaSetup {
         }
     }
 
-    function test_taiko_composer_withdraw() external {
-        for (uint8 index = 0; index < lenderIds.length; index++) {
-            uint16 lenderId = lenderIds[index];
-            
+    function test_taiko_composer_withdraw1() external {
+        for (uint8 index = 0; index < extendedLenderIds.length; index++) {
+            uint16 lenderId = extendedLenderIds[index];
+
             address user = testUser;
 
             uint256 amount = 1e18;
             address asset = getProperLenderAsset(lenderId, TokensTaiko.WETH);
 
             _deposit(asset, user, amount, lenderId);
-
             uint256 withdrawAmount = 0.50e18;
 
             bytes memory data = withdraw(asset, user, withdrawAmount, lenderId);
@@ -234,12 +232,12 @@ contract ComposerTestTaiko is DeltaSetup {
     }
 
     function test_taiko_composer_withdraw_all() external {
-        for (uint8 index = 0; index < lenderIds.length; index++) {
-            uint16 lenderId = lenderIds[index];
+        for (uint8 index = 0; index < extendedLenderIds.length; index++) {
+            uint16 lenderId = extendedLenderIds[index];
             address user = testUser;
 
             uint256 amount = 1e18;
-            address asset = TokensTaiko.WETH;
+            address asset = getProperLenderAsset(lenderId, TokensTaiko.WETH);
 
             _deposit(asset, user, amount, lenderId);
 

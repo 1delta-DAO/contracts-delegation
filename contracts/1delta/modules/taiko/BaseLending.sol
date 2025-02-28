@@ -222,7 +222,7 @@ abstract contract BaseLending is Slots, ERC20Selectors {
             case 1 {
                 switch lt(_lenderId, MAX_ID_AAVE_V3)
                 case 1 {
-                    // selector deposit(address,uint256,address,uint16)
+                    // selector supply(address,uint256,address,uint16)
                     mstore(ptr, 0x617ba03700000000000000000000000000000000000000000000000000000000)
                     mstore(add(ptr, 0x04), _underlying)
                     mstore(add(ptr, 0x24), _amount)
@@ -259,7 +259,7 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                     }
                 }
                 default {
-                    // selector supply(address,uint256,address,uint16)
+                    // selector deposit(address,uint256,address,uint16)
                     mstore(ptr, 0xe8eda9df00000000000000000000000000000000000000000000000000000000)
                     mstore(add(ptr, 0x04), _underlying)
                     mstore(add(ptr, 0x24), _amount)
