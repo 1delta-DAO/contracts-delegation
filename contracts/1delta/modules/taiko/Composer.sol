@@ -960,7 +960,7 @@ contract OneDeltaComposerTaiko is MarginTrading {
                         permitOffset := add(currentOffset, 22)
                         currentOffset := add(permitOffset, permitLength)
                     }
-                    _tryPermit(token, permitOffset, permitLength);
+                    _tryPermit(token, permitOffset, permitLength, callerAddress);
                 } else if (operation == Commands.EXEC_CREDIT_PERMIT) {
                     ////////////////////////////////////////////////////
                     // Execute credit delegation permit.
@@ -981,7 +981,7 @@ contract OneDeltaComposerTaiko is MarginTrading {
                         permitOffset := add(currentOffset, 22)
                         currentOffset := add(permitOffset, permitLength)
                     }
-                    _tryCreditPermit(token, permitOffset, permitLength);
+                    _tryCreditPermit(token, permitOffset, permitLength, callerAddress);
                 } else if (operation == Commands.FLASH_LOAN) {
                     ////////////////////////////////////////////////////
                     // Execute single asset flash loan
@@ -1010,14 +1010,12 @@ contract OneDeltaComposerTaiko is MarginTrading {
                         // length of params
                         let calldataLength := and(UINT16_MASK, shr(128, slice))
 
-                        switch lt(source, 25)
-                        case 1 {
+                        // aave v2s
+                        switch lt(source, 230)
+                        case 0 {
                             let pool
                             switch source
-                            case 0 {
-                                pool := HANA_POOL
-                            }
-                            case 1 {
+                            case 230 {
                                 pool := MERIDIAN_POOL
                             }
                             default {
@@ -1174,19 +1172,13 @@ contract OneDeltaComposerTaiko is MarginTrading {
             // This is a crucial check since this makes
             // the `initiator` paramter the caller of `flashLoan`
             switch source
-            case 0 {
-                if xor(caller(), HANA_POOL) {
-                    mstore(0, INVALID_FLASH_LOAN)
-                    revert(0, 0x4)
-                }
-            }
-            case 1 {
+            case 230 {
                 if xor(caller(), MERIDIAN_POOL) {
                     mstore(0, INVALID_FLASH_LOAN)
                     revert(0, 0x4)
                 }
             }
-            case 2 {
+            case 231 {
                 if xor(caller(), TAKOTAKO_POOL) {
                     mstore(0, INVALID_FLASH_LOAN)
                     revert(0, 0x4)
@@ -1254,7 +1246,7 @@ contract OneDeltaComposerTaiko is MarginTrading {
             // This is a crucial check since this makes
             // the `initiator` paramter the caller of `flashLoan`
             switch source
-            case 1 {
+            case 0 {
                 if xor(caller(), HANA_POOL) {
                     mstore(0, INVALID_FLASH_LOAN)
                     revert(0, 0x4)

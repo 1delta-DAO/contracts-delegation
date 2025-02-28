@@ -1281,7 +1281,7 @@ contract OneDeltaComposerArbitrum is MarginTrading {
                         permitOffset := add(currentOffset, 22)
                         currentOffset := add(permitOffset, permitLength)
                     }
-                    _tryPermit(token, permitOffset, permitLength);
+                    _tryPermit(token, permitOffset, permitLength, callerAddress);
                 } else if (operation == Commands.EXEC_CREDIT_PERMIT) {
                     ////////////////////////////////////////////////////
                     // Execute credit delegation permit.
@@ -1302,7 +1302,7 @@ contract OneDeltaComposerArbitrum is MarginTrading {
                         permitOffset := add(currentOffset, 22)
                         currentOffset := add(permitOffset, permitLength)
                     }
-                    _tryCreditPermit(token, permitOffset, permitLength);
+                    _tryCreditPermit(token, permitOffset, permitLength, callerAddress);
                 } else if (operation == Commands.EXEC_COMPOUND_V3_PERMIT) {
                     ////////////////////////////////////////////////////
                     // Execute lending delegation based on Compound V3.
@@ -1321,7 +1321,7 @@ contract OneDeltaComposerArbitrum is MarginTrading {
                         permitOffset := add(currentOffset, 22)
                         currentOffset := add(permitOffset, permitLength)
                     }
-                    _tryCompoundV3Permit(comet, permitOffset, permitLength);
+                    _tryCompoundV3Permit(comet, permitOffset, permitLength, callerAddress);
                 } else if (operation == Commands.FLASH_LOAN) {
                     ////////////////////////////////////////////////////
                     // Execute single asset flash loan
@@ -1391,7 +1391,7 @@ contract OneDeltaComposerArbitrum is MarginTrading {
                             sstore(FLASH_LOAN_GATEWAY_SLOT, 1)
                         }
                         default {
-                            switch lt(source, 100)
+                            switch lt(source, 230)
                             case 1 {
                                 let pool
                                 switch source
@@ -1404,7 +1404,7 @@ contract OneDeltaComposerArbitrum is MarginTrading {
                                 case 101 {
                                     pool := AVALON_PUMP_BTC
                                 }
-                                case 250 {
+                                case 200 {
                                     pool := YLDR
                                 }
                                 default {
@@ -1445,7 +1445,7 @@ contract OneDeltaComposerArbitrum is MarginTrading {
                             default {
                                 let pool
                                 switch source
-                                case 100 {
+                                case 240 {
                                     pool := GRANARY
                                 }
                                 // We revert on any other id
@@ -1550,7 +1550,7 @@ contract OneDeltaComposerArbitrum is MarginTrading {
             // This is a crucial check since this makes
             // the `initiator` paramter the caller of `flashLoan`
             switch source
-            case 100 {
+            case 240 {
                 if xor(caller(), GRANARY) {
                     mstore(0, INVALID_FLASH_LOAN)
                     revert(0, 0x4)
@@ -1633,7 +1633,7 @@ contract OneDeltaComposerArbitrum is MarginTrading {
                     revert(0, 0x4)
                 }
             }
-            case 250 {
+            case 200 {
                 if xor(caller(), YLDR) {
                     mstore(0, INVALID_FLASH_LOAN)
                     revert(0, 0x4)

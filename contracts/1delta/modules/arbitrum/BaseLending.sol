@@ -100,10 +100,10 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                 case 900 {
                     pool := YLDR
                 }
-                case 1 {
+                case 100 {
                     pool := AVALON
                 }
-                case 2 {
+                case 101 {
                     pool := AVALON_PUMP_BTC
                 }
                 case 1000 {
@@ -503,10 +503,10 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                     case 900 {
                         pool := YLDR
                     }
-                    case 1 {
+                    case 100 {
                         pool := AVALON
                     }
-                    case 2 {
+                    case 101 {
                         pool := AVALON_PUMP_BTC
                     }
                     default {
@@ -648,10 +648,10 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                     case 0 {
                         pool := AAVE_V3
                     }
-                    case 1 {
+                    case 100 {
                         pool := AVALON
                     }
-                    case 2 {
+                    case 101 {
                         pool := AVALON_PUMP_BTC
                     }
                     case 1000 {

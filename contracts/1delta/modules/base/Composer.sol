@@ -4,6 +4,8 @@ pragma solidity 0.8.28;
 
 import {MarginTrading} from "./MarginTrading.sol";
 import {Commands} from "../shared/Commands.sol";
+import {Morpho} from "./MorphoLending.sol";
+import {ERC4646Transfers} from "./ERC4646Transfers.sol";
 
 /**
  * @title Universal aggregator contract.
@@ -11,13 +13,11 @@ import {Commands} from "../shared/Commands.sol";
  *        Efficient baching through compact calldata usage.
  * @author 1delta Labs AG
  */
-contract OneDeltaComposerBase is MarginTrading {
+contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
     /// @dev we need base tokens to identify Compound V3's selectors
     address internal constant AERO = 0x940181a94A35A4569E4529A3CDfB74e38FD98631;
     address internal constant USDBC = 0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA;
     address internal constant USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
-
-    address internal constant MORPHO_BLUE = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
 
     /**
      * Batch-executes a series of operations
@@ -72,6 +72,9 @@ contract OneDeltaComposerBase is MarginTrading {
                     // | receiver | amount | pathLength | path |
                     // | address  | uint240|   uint16   | bytes|
                     // where amount is provided as
+                    // Amount Bitmap Structure:
+                    // | Pay Self (1) | Fee-on-Transfer (1) | Reserved (14) | Minimum Amount Out (112) | Amount In (112) | opdataLength (16) |
+                    // |--------------|---------------------|---------------|---------------------------|----------------|-------------------|
                     // pay self         (bool)      in the upper bit if true, payer is this contract
                     // fot              (bool)      2nd bit, if true, assume fee-on-transfer as input
                     // minimumAmountOut (uint120)   in the bytes starting at bit 128
@@ -145,18 +148,21 @@ contract OneDeltaComposerBase is MarginTrading {
                 } else if (operation == Commands.SWAP_EXACT_OUT) {
                     ////////////////////////////////////////////////////
                     // Always uses a flash swap when possible
-                    // Encoded parameters for the swap
-                    // | receiver | amount  | pathLength | path |
-                    // | address  | uint240 | uint16     | bytes|
-                    // where amount is provided as
-                    // pay self         (bool)      in the upper bit
-                    //                              if true, payer is this contract
-                    // maximumAmountIn  (uint120)   in the bytes starting at bit 128
-                    //                              from the right
-                    // amountOut        (uint128)   in the lowest bytes
-                    //                              zero is for paying withn the balance of
-                    //                              payer (self or caller)
+                    // Calldata Structure for Flash Swap
+                    // | Receiver | Amount Bitmap | Path Length | Path |
+                    // | address  | uint240       | uint16      | bytes|
+                    //
+                    // Amount Bitmap Structure:
+                    // | Pay Self (1) | Fee-on-Transfer (1) | Reserved (14) | Amount In Maximum (112) | Amount Out (112) | opdataLength (16) |
+                    // |--------------|---------------------|---------------|-------------------------|------------------|-------------------|
+                    // - Pay Self: Determines if the contract itself is the payer (1 bit).
+                    // - Fee-on-Transfer: Indicates if fee-on-transfer tokens are considered (1 bit).
+                    // - Reserved: Reserved for alignment or maybe future use (14 bits).
+                    // - Amount In Maximum: Maximum allowable input amount for the swap (112 bits).
+                    // - Amount Out: Exact amount of tokens to be output from the swap (112 bits).
+                    // - opdataLength: Length of the path data (16 bits).
                     ////////////////////////////////////////////////////
+
                     uint256 opdataOffset;
                     uint256 opdataLength;
                     uint256 amountOut;
@@ -180,7 +186,7 @@ contract OneDeltaComposerBase is MarginTrading {
                         default {
                             payer := callerAddress
                         }
-                        // rigth shigt by pathlength size and masking yields
+                        // right shift by pathlength size and masking yields
                         // the final amout out
                         amountOut := and(_UINT112_MASK, shr(16, amountOut))
                         if iszero(amountOut) {
@@ -921,6 +927,36 @@ contract OneDeltaComposerBase is MarginTrading {
                         currentOffset := add(currentOffset, 56)
                     }
                     _withdraw(underlying, callerAddress, receiver, amount, lenderId);
+                } else if (operation == Commands.MORPH) {
+                    uint256 morphoOperation;
+                    assembly {
+                        morphoOperation := shr(248, calldataload(currentOffset))
+                        currentOffset := add(currentOffset, 1)
+                    }
+                    /** Morpho deposit collateral */
+                    if (morphoOperation == 0) {
+                        currentOffset = _morphoDepositCollateral(currentOffset, callerAddress);
+                    }
+                    /** Morpho borrow */
+                    else if (morphoOperation == 1) {
+                        currentOffset = _morphoBorrow(currentOffset, callerAddress);
+                    }
+                    /** Morpho repay */
+                    else if (morphoOperation == 2) {
+                        currentOffset = _morphoRepay(currentOffset, callerAddress);
+                    }
+                    /** Morpho withdraw colalteral */
+                    else if (morphoOperation == 3) {
+                        currentOffset = _morphoWithdrawCollateral(currentOffset, callerAddress);
+                    }
+                    /** Morpho deposit lendingToken */
+                    else if (morphoOperation == 4) {
+                        currentOffset = _morphoDeposit(currentOffset, callerAddress);
+                    }
+                    /** Morpho withdraw lendingToken */
+                    else if (morphoOperation == 5) {
+                        currentOffset = _morphoWithdraw(currentOffset, callerAddress);
+                    } else revert();
                 }
             } else if (operation < 0x30) {
                 if (operation == Commands.TRANSFER_FROM) {
@@ -1261,6 +1297,20 @@ contract OneDeltaComposerBase is MarginTrading {
                         }
                         currentOffset := add(currentOffset, 54)
                     }
+                } else if (operation == Commands.ERC4646) {
+                    uint256 erc4646Operation;
+                    assembly {
+                        erc4646Operation := shr(248, calldataload(currentOffset))
+                        currentOffset := add(currentOffset, 1)
+                    }
+                    /** ERC6464 deposit */
+                    if (erc4646Operation == 0) {
+                        currentOffset = _erc4646Deposit(currentOffset);
+                    }
+                    /** MetaMorpho withdraw */
+                    else {
+                        currentOffset = _erc4646Withdraw(currentOffset, callerAddress);
+                    }
                 }
             } else {
                 if (operation == Commands.EXEC_PERMIT) {
@@ -1283,7 +1333,7 @@ contract OneDeltaComposerBase is MarginTrading {
                         permitOffset := add(currentOffset, 22)
                         currentOffset := add(permitOffset, permitLength)
                     }
-                    _tryPermit(token, permitOffset, permitLength);
+                    _tryPermit(token, permitOffset, permitLength, callerAddress);
                 } else if (operation == Commands.EXEC_CREDIT_PERMIT) {
                     ////////////////////////////////////////////////////
                     // Execute credit delegation permit.
@@ -1304,12 +1354,12 @@ contract OneDeltaComposerBase is MarginTrading {
                         permitOffset := add(currentOffset, 22)
                         currentOffset := add(permitOffset, permitLength)
                     }
-                    _tryCreditPermit(token, permitOffset, permitLength);
+                    _tryCreditPermit(token, permitOffset, permitLength, callerAddress);
                 } else if (operation == Commands.EXEC_COMPOUND_V3_PERMIT) {
                     ////////////////////////////////////////////////////
                     // Execute lending delegation based on Compound V3.
                     // Data layout:
-                    //      bytes 0-20:                  token
+                    //      bytes 0-20:                  comet address
                     //      bytes 20-22:                 permit length
                     //      bytes 22-(22+permit length): permit data
                     ////////////////////////////////////////////////////
@@ -1323,7 +1373,7 @@ contract OneDeltaComposerBase is MarginTrading {
                         permitOffset := add(currentOffset, 22)
                         currentOffset := add(permitOffset, permitLength)
                     }
-                    _tryCompoundV3Permit(comet, permitOffset, permitLength);
+                    _tryCompoundV3Permit(comet, permitOffset, permitLength, callerAddress);
                 } else if (operation == Commands.FLASH_LOAN) {
                     ////////////////////////////////////////////////////
                     // Execute single asset flash loan
@@ -1356,9 +1406,9 @@ contract OneDeltaComposerBase is MarginTrading {
                             // morpho should be the primary choice
                             let ptr := mload(0x40)
 
-                            /** 
+                            /**
                              * Approve MB beforehand for the flash amount
-                             * Similar to Aave V3, they pull funds from the caller 
+                             * Similar to Aave V3, they pull funds from the caller
                              */
                             mstore(0x0, token)
                             mstore(0x20, CALL_MANAGEMENT_APPROVALS)
@@ -1377,7 +1427,7 @@ contract OneDeltaComposerBase is MarginTrading {
                                 }
                                 sstore(key, 1)
                             }
-                            
+
                             /** Prepare call */
 
                             // flashLoan(...)
@@ -1446,7 +1496,7 @@ contract OneDeltaComposerBase is MarginTrading {
                             sstore(FLASH_LOAN_GATEWAY_SLOT, 1)
                         }
                         default {
-                            switch lt(source, 100)
+                            switch lt(source, 230)
                             case 1 {
                                 let pool
                                 switch source
@@ -1497,7 +1547,7 @@ contract OneDeltaComposerBase is MarginTrading {
                             default {
                                 let pool
                                 switch source
-                                case 100 {
+                                case 240 {
                                     pool := GRANARY
                                 }
                                 // We revert on any other id
@@ -1602,7 +1652,7 @@ contract OneDeltaComposerBase is MarginTrading {
             // This is a crucial check since this makes
             // the `initiator` paramter the caller of `flashLoan`
             switch source
-            case 100 {
+            case 240 {
                 if xor(caller(), GRANARY) {
                     mstore(0, INVALID_FLASH_LOAN)
                     revert(0, 0x4)
@@ -1774,9 +1824,32 @@ contract OneDeltaComposerBase is MarginTrading {
         _deltaComposeInternal(origCaller, params);
     }
 
-    /// @dev Morpho Blue is immutable and their flash loans are callbacks,
-    /// ergo a validation that the caller is the Morpho contract is enough
+    /** Morpho blue callbacks */
+
+    /// @dev Morpho Blue flash loan
     function onMorphoFlashLoan(uint256, bytes calldata params) external {
+        _onMorphoCallback(params);
+    }
+
+    /// @dev Morpho Blue supply callback
+    function onMorphoSupply(uint256, bytes calldata params) external {
+        _onMorphoCallback(params);
+    }
+
+    /// @dev Morpho Blue repay callback
+    function onMorphoRepay(uint256, bytes calldata params) external {
+        _onMorphoCallback(params);
+    }
+
+    /// @dev Morpho Blue supply collateral callback
+    function onMorphoSupplyCollateral(uint256, bytes calldata params) external {
+        _onMorphoCallback(params);
+    }
+
+    /// @dev Morpho Blue is immutable and their flash loans are callbacks to msg.sender,
+    /// Since it is universal batching and the same validation for all
+    /// Morpho callbacks, we can use the same logic everywhere
+    function _onMorphoCallback(bytes calldata params) internal {
         address origCaller;
         assembly {
             // we expect at least an address

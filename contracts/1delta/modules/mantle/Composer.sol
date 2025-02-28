@@ -1148,7 +1148,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                         permitOffset := add(currentOffset, 22)
                         currentOffset := add(permitOffset, permitLength)
                     }
-                    _tryPermit(token, permitOffset, permitLength);
+                    _tryPermit(token, permitOffset, permitLength, callerAddress);
                 } else if (operation == Commands.EXEC_CREDIT_PERMIT) {
                     ////////////////////////////////////////////////////
                     // Execute credit delegation permit.
@@ -1169,7 +1169,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                         permitOffset := add(currentOffset, 22)
                         currentOffset := add(permitOffset, permitLength)
                     }
-                    _tryCreditPermit(token, permitOffset, permitLength);
+                    _tryCreditPermit(token, permitOffset, permitLength, callerAddress);
                 } else if (operation == Commands.EXEC_COMPOUND_V3_PERMIT) {
                     ////////////////////////////////////////////////////
                     // Execute lending delegation based on Compound V3.
@@ -1188,7 +1188,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                         permitOffset := add(currentOffset, 22)
                         currentOffset := add(permitOffset, permitLength)
                     }
-                    _tryCompoundV3Permit(comet, permitOffset, permitLength);
+                    _tryCompoundV3Permit(comet, permitOffset, permitLength, callerAddress);
                 } else if (operation == Commands.FLASH_LOAN) {
                     ////////////////////////////////////////////////////
                     // Execute single asset flash loan
@@ -1217,8 +1217,8 @@ contract OneDeltaComposerMantle is MarginTrading {
                         // length of params
                         let calldataLength := and(UINT16_MASK, shr(128, slice))
 
-                        switch lt(source, 250)
-                        case 0 {
+                        switch lt(source, 100)
+                        case 1 {
                             let pool
                             switch source
                             case 0 {
@@ -1285,7 +1285,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                         default {
                             let pool
                             switch source
-                            case 250 {
+                            case 190 {
                                 pool := KINZA_POOL
                             }
                             default {
@@ -1440,7 +1440,7 @@ contract OneDeltaComposerMantle is MarginTrading {
             // This is a crucial check since this makes
             // the `initiator` paramter the caller of `flashLoan`
             switch source
-            case 250 {
+            case 190 {
                 if xor(caller(), KINZA_POOL) {
                     mstore(0, INVALID_FLASH_LOAN)
                     revert(0, 0x4)
