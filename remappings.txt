@@ -5,3 +5,4 @@ ds-test/=contracts/ds-test/
 base64-sol/=lib/base64/
 hardhat/=node_modules/hardhat/
 account-abstraction/=lib/account-abstraction/contracts/
+@uniswap-v3-core/=lib/v3-core/contracts/
