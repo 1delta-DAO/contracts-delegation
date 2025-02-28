@@ -8,7 +8,7 @@ import {PackedUserOperation} from "account-abstraction/interfaces/PackedUserOper
 
 import {UpgradeableBeacon} from "../../../../contracts/1delta/flash-account//proxy/Beacon.sol";
 import {BaseLightAccount} from "../../../../contracts/1delta/flash-account/common/BaseLightAccount.sol";
-import {FlashAccount} from "../../../../contracts/1delta/flash-account/FlashAccount.sol";
+import {FlashAccount} from "../../../../contracts/1delta/flash-account/ethereum/FlashAccount.sol";
 import {FlashAccountBase} from "../../../../contracts/1delta/flash-account/FlashAccountBase.sol";
 import {FlashAccountFactory} from "../../../../contracts/1delta/flash-account/FlashAccountFactory.sol";
 
@@ -57,8 +57,8 @@ contract BalancerFlashLoanTests is Test {
         accountBeacon = new UpgradeableBeacon(beaconOwner, initialAccountImplementation);
         factory = new FlashAccountFactory(beaconOwner, address(accountBeacon), entryPoint);
 
-        account = factory.createAccount(eoaAddress, 1);
-        beaconOwnerAccount = factory.createAccount(beaconOwner, 1);
+        account = FlashAccount(payable(factory.createAccount(eoaAddress, 1)));
+        beaconOwnerAccount = FlashAccount(payable(factory.createAccount(beaconOwner, 1)));
 
         vm.deal(address(account), 1 << 128);
         vm.deal(eoaAddress, 1 << 128);
@@ -99,7 +99,11 @@ contract BalancerFlashLoanTests is Test {
         amounts[0] = amountToBorrow;
 
         bytes memory flashLoanCall = abi.encodeWithSignature(
-            "flashLoan(address,address[],uint256[],bytes)", address(account), tokens, amounts, params
+            "flashLoan(address,address[],uint256[],bytes)",
+            address(account),
+            tokens,
+            amounts,
+            params
         );
 
         vm.prank(eoaAddress);
@@ -113,10 +117,7 @@ contract BalancerFlashLoanTests is Test {
         return abi.encodePacked(r, s, v);
     }
 
-    function prepareUserOp(uint256 amountToBorrow, uint256 privateKey)
-        private
-        returns (PackedUserOperation memory op)
-    {
+    function prepareUserOp(uint256 amountToBorrow, uint256 privateKey) private returns (PackedUserOperation memory op) {
         address[] memory dests = new address[](1);
         dests[0] = USDC;
 
@@ -134,16 +135,11 @@ contract BalancerFlashLoanTests is Test {
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = amountToBorrow;
 
-        bytes memory callData = abi.encodeWithSignature(
-            "flashLoan(address,address[],uint256[],bytes)", address(account), tokens, amounts, params
-        );
+        bytes memory callData = abi.encodeWithSignature("flashLoan(address,address[],uint256[],bytes)", address(account), tokens, amounts, params);
 
-        bytes memory executeCall =
-            abi.encodeWithSignature("execute(address,uint256,bytes)", BALANCER_VAULT, 0, callData);
+        bytes memory executeCall = abi.encodeWithSignature("execute(address,uint256,bytes)", BALANCER_VAULT, 0, callData);
         op = _getUnsignedOp(executeCall);
-        op.signature = abi.encodePacked(
-            BaseLightAccount.SignatureType.EOA, _sign(privateKey, entryPoint.getUserOpHash(op).toEthSignedMessageHash())
-        );
+        op.signature = abi.encodePacked(BaseLightAccount.SignatureType.EOA, _sign(privateKey, entryPoint.getUserOpHash(op).toEthSignedMessageHash()));
     }
 
     function _getUnsignedOp(bytes memory callData) internal view returns (PackedUserOperation memory) {
@@ -151,16 +147,17 @@ contract BalancerFlashLoanTests is Test {
         uint128 callGasLimit = 1 << 24;
         uint128 maxPriorityFeePerGas = 1 << 8;
         uint128 maxFeePerGas = 1 << 8;
-        return PackedUserOperation({
-            sender: address(account),
-            nonce: entryPoint.getNonce(address(account), 0),
-            initCode: "",
-            callData: callData,
-            accountGasLimits: bytes32((uint256(verificationGasLimit) << 128) | callGasLimit),
-            preVerificationGas: 1 << 24,
-            gasFees: bytes32((uint256(maxPriorityFeePerGas) << 128) | maxFeePerGas),
-            paymasterAndData: "",
-            signature: ""
-        });
+        return
+            PackedUserOperation({
+                sender: address(account),
+                nonce: entryPoint.getNonce(address(account), 0),
+                initCode: "",
+                callData: callData,
+                accountGasLimits: bytes32((uint256(verificationGasLimit) << 128) | callGasLimit),
+                preVerificationGas: 1 << 24,
+                gasFees: bytes32((uint256(maxPriorityFeePerGas) << 128) | maxFeePerGas),
+                paymasterAndData: "",
+                signature: ""
+            });
     }
 }

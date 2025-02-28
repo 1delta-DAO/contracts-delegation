@@ -29,8 +29,7 @@ contract FlashAccountBase is BaseLightAccount, CustomSlotInitializable {
     /// @dev keccak256("flash_account.storage");
     bytes32 internal constant _STORAGE_POSITION = 0xfe43cac86d2632475e173babfc884cd7f9ce21169af8b16db096c27563e34c09;
     /// @dev keccak256("flash_account.initializable");
-    bytes32 internal constant _INITIALIZABLE_STORAGE_POSITION =
-        0x5886a89854f64cffde2e739819f75451c42a85563516fe8eab2ef059d7e9f526;
+    bytes32 internal constant _INITIALIZABLE_STORAGE_POSITION = 0x5886a89854f64cffde2e739819f75451c42a85563516fe8eab2ef059d7e9f526;
 
     struct FlashAccountStorage {
         address owner;
@@ -103,12 +102,7 @@ contract FlashAccountBase is BaseLightAccount, CustomSlotInitializable {
     /// @dev Implement template method of BaseAccount.
     /// Uses a modified version of `SignatureChecker.isValidSignatureNow` in which the digest is wrapped with an
     /// "Ethereum Signed Message" envelope for the EOA-owner case but not in the ERC-1271 contract-owner case.
-    function _validateSignature(PackedUserOperation calldata userOp, bytes32 userOpHash)
-        internal
-        virtual
-        override
-        returns (uint256 validationData)
-    {
+    function _validateSignature(PackedUserOperation calldata userOp, bytes32 userOpHash) internal virtual override returns (uint256 validationData) {
         if (userOp.signature.length < 1) {
             revert InvalidSignatureType();
         }
@@ -148,13 +142,7 @@ contract FlashAccountBase is BaseLightAccount, CustomSlotInitializable {
     /// valid ERC-1271 signature from the owner (if the owner is a contract). Reverts if the signature is malformed.
     /// Note that unlike the signature validation used in `validateUserOp`, this does **not** wrap the hash in an
     /// "Ethereum Signed Message" envelope before checking the signature in the EOA-owner case.
-    function _isValidSignature(bytes32 replaySafeHash, bytes calldata signature)
-        internal
-        view
-        virtual
-        override
-        returns (bool)
-    {
+    function _isValidSignature(bytes32 replaySafeHash, bytes calldata signature) internal view virtual override returns (bool) {
         if (signature.length < 1) {
             revert InvalidSignatureType();
         }
@@ -169,13 +157,7 @@ contract FlashAccountBase is BaseLightAccount, CustomSlotInitializable {
         revert InvalidSignatureType();
     }
 
-    function _domainNameAndVersion()
-        internal
-        view
-        virtual
-        override
-        returns (string memory name, string memory version)
-    {
+    function _domainNameAndVersion() internal view virtual override returns (string memory name, string memory version) {
         name = "FlashAccount";
         // Set to the major version of the GitHub release at which the contract was last updated.
         version = "1";
@@ -189,6 +171,22 @@ contract FlashAccountBase is BaseLightAccount, CustomSlotInitializable {
         bytes32 position = _STORAGE_POSITION;
         assembly ("memory-safe") {
             storageStruct.slot := position
+        }
+    }
+    /// @dev Decode and execute a batch of calldata
+
+    function _decodeAndExecute(bytes calldata params) internal {
+        (
+            address[] memory dest, //
+            uint256[] memory value,
+            bytes[] memory func
+        ) = abi.decode(params, (address[], uint256[], bytes[]));
+        if (dest.length != func.length || dest.length != value.length) {
+            revert ArrayLengthMismatch();
+        }
+        uint256 length = dest.length;
+        for (uint256 i = 0; i < length; i++) {
+            _call(dest[i], value[i], func[i]);
         }
     }
 }

@@ -7,7 +7,7 @@ import {EntryPoint} from "account-abstraction/core/EntryPoint.sol";
 import {IEntryPoint} from "account-abstraction/interfaces/IEntryPoint.sol";
 
 import {BaseLightAccountFactory} from "../../contracts/1delta/flash-account/common/BaseLightAccountFactory.sol";
-import {FlashAccount} from "../../contracts/1delta/flash-account/FlashAccount.sol";
+import {FlashAccount} from "../../contracts/1delta/flash-account/ethereum/FlashAccount.sol";
 import {FlashAccountFactory} from "../../contracts/1delta/flash-account/FlashAccountFactory.sol";
 
 import {UpgradeableBeacon} from "../../contracts/1delta/flash-account//proxy/Beacon.sol";
@@ -33,15 +33,15 @@ contract FlashAccountFactoryTest is Test {
     }
 
     function testReturnsAddressWhenAccountAlreadyExists() public {
-        FlashAccount account = factory.createAccount(OWNER_ADDRESS, 1);
-        FlashAccount otherAccount = factory.createAccount(OWNER_ADDRESS, 1);
+        FlashAccount account = FlashAccount(payable(factory.createAccount(OWNER_ADDRESS, 1)));
+        FlashAccount otherAccount = FlashAccount(payable(factory.createAccount(OWNER_ADDRESS, 1)));
         assertEq(address(account), address(otherAccount));
     }
 
     function testGetAddress() public {
         address counterfactual = factory.getAddress(OWNER_ADDRESS, 1);
         assertEq(counterfactual.codehash, bytes32(0));
-        FlashAccount factual = factory.createAccount(OWNER_ADDRESS, 1);
+        FlashAccount factual = FlashAccount(payable(factory.createAccount(OWNER_ADDRESS, 1)));
         assertTrue(address(factual).codehash != bytes32(0));
         assertEq(counterfactual, address(factual));
     }
@@ -106,9 +106,7 @@ contract FlashAccountFactoryTest is Test {
 
     function testRevertWithInvalidEntryPoint() public {
         IEntryPoint invalidEntryPoint = IEntryPoint(address(123));
-        vm.expectRevert(
-            abi.encodeWithSelector(BaseLightAccountFactory.InvalidEntryPoint.selector, (address(invalidEntryPoint)))
-        );
+        vm.expectRevert(abi.encodeWithSelector(BaseLightAccountFactory.InvalidEntryPoint.selector, (address(invalidEntryPoint))));
         new FlashAccountFactory(address(this), address(accountBeacon), invalidEntryPoint);
     }
 

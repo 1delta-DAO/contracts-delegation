@@ -10,7 +10,7 @@ import {PackedUserOperation} from "account-abstraction/interfaces/PackedUserOper
 
 import {UpgradeableBeacon} from "../../../contracts/1delta/flash-account/proxy/Beacon.sol";
 import {BaseLightAccount} from "../../../contracts/1delta/flash-account/common/BaseLightAccount.sol";
-import {FlashAccount} from "../../../contracts/1delta/flash-account/FlashAccount.sol";
+import {FlashAccount} from "../../../contracts/1delta/flash-account/avalanche/FlashAccount.sol";
 import {FlashAccountBase} from "../../../contracts/1delta/flash-account/FlashAccountBase.sol";
 import {FlashAccountFactory} from "../../../contracts/1delta/flash-account/FlashAccountFactory.sol";
 
@@ -45,9 +45,7 @@ contract TestBenqi is Test {
 
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Borrow(address borrower, uint256 borrowAmount, uint256 accountBorrows, uint256 totalBorrows);
-    event RepayBorrow(
-        address payer, address borrower, uint256 repayAmount, uint256 accountBorrows, uint256 totalBorrows
-    );
+    event RepayBorrow(address payer, address borrower, uint256 repayAmount, uint256 accountBorrows, uint256 totalBorrows);
 
     function setUp() public {
         // Initialize a mainnet fork
@@ -64,8 +62,8 @@ contract TestBenqi is Test {
         accountBeacon = new UpgradeableBeacon(beaconOwner, initialAccountImplementation);
         factory = new FlashAccountFactory(beaconOwner, address(accountBeacon), entryPoint);
 
-        account = factory.createAccount(eoaAddress, 1);
-        beaconOwnerAccount = factory.createAccount(beaconOwner, 1);
+        account = FlashAccount(payable(factory.createAccount(eoaAddress, 1)));
+        beaconOwnerAccount = FlashAccount(payable(factory.createAccount(beaconOwner, 1)));
 
         vm.deal(address(account), 1 << 128);
         vm.deal(eoaAddress, 1 << 128);
@@ -101,7 +99,7 @@ contract TestBenqi is Test {
         // lend to Benqi
         vm.expectEmit(true, true, false, false);
         emit Transfer(qiUSDC, address(account), 0);
-        account.lendToCompoundV2(qiUSDC, amount);
+        account.benqiSupply(qiUSDC, amount);
         vm.stopPrank();
     }
 
@@ -109,7 +107,7 @@ contract TestBenqi is Test {
         vm.startPrank(eoaAddress);
         vm.expectEmit(true, true, false, false);
         emit Borrow(address(account), amount, 0, 0);
-        account.borrowFromCompoundV2(qiUSDC, amount);
+        account.benqiBorrow(qiUSDC, amount);
         vm.stopPrank();
     }
 
@@ -117,7 +115,7 @@ contract TestBenqi is Test {
         vm.startPrank(eoaAddress);
         vm.expectEmit(true, true, false, false);
         emit RepayBorrow(address(account), address(account), amount, 0, 0);
-        account.repayCompoundV2(qiUSDC, amount);
+        account.benqiRepay(qiUSDC, amount);
         vm.stopPrank();
     }
 }

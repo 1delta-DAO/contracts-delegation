@@ -7,7 +7,7 @@ import {IEntryPoint} from "account-abstraction/interfaces/IEntryPoint.sol";
 import {BaseLightAccountFactory} from "./common/BaseLightAccountFactory.sol";
 import {LibClone} from "./proxy/LibClone.sol";
 import {IBeacon} from "./proxy/IBeacon.sol";
-import {FlashAccount} from "./FlashAccount.sol";
+import {FlashAccountBase} from "./FlashAccountBase.sol";
 
 /// @title A factory contract for FlashAccount, baed on LightAccountFactory by Alchemy.
 /// @dev A UserOperations "initCode" holds the address of the factory, and a method call (`createAccount`). The
@@ -29,11 +29,13 @@ contract FlashAccountFactory is BaseLightAccountFactory {
     /// @param owner The owner of the account to be created.
     /// @param salt A salt, which can be changed to create multiple accounts with the same owner.
     /// @return account The address of either the newly deployed account or an existing account with this owner and salt.
-    function createAccount(address owner, uint256 salt) external returns (FlashAccount account) {
-        (bool alreadyDeployed, address accountAddress) =
-            LibClone.createDeterministicERC1967IBeaconProxy(ACCOUNT_BEACON, _getCombinedSalt(owner, salt));
+    function createAccount(address owner, uint256 salt) external returns (FlashAccountBase account) {
+        (bool alreadyDeployed, address accountAddress) = LibClone.createDeterministicERC1967IBeaconProxy(
+            ACCOUNT_BEACON,
+            _getCombinedSalt(owner, salt)
+        );
 
-        account = FlashAccount(payable(accountAddress));
+        account = FlashAccountBase(payable(accountAddress));
 
         if (!alreadyDeployed) {
             account.initialize(owner);
@@ -45,9 +47,7 @@ contract FlashAccountFactory is BaseLightAccountFactory {
     /// @param salt A salt, which can be changed to create multiple accounts with the same owner.
     /// @return The address of the account that would be created with `createAccount`.
     function getAddress(address owner, uint256 salt) external view returns (address) {
-        return LibClone.predictDeterministicAddressERC1967IBeaconProxy(
-            address(ACCOUNT_BEACON), _getCombinedSalt(owner, salt), address(this)
-        );
+        return LibClone.predictDeterministicAddressERC1967IBeaconProxy(address(ACCOUNT_BEACON), _getCombinedSalt(owner, salt), address(this));
     }
 
     /// @notice Get the account implementation provided by the beacon.
