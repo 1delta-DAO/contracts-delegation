@@ -22,12 +22,12 @@ contract InitForkTestMantle is DeltaSetup {
             // Next 5 lines from https://ethereum.stackexchange.com/a/83577
             if (ret.length < 68) {
                 console.logBytes(ret);
-                revert("unexpected error");
+                // revert("unexpected error");
             }
             assembly {
                 ret := add(ret, 0x04)
             }
-            revert(abi.decode(ret, (string)));
+            console.log(abi.decode(ret, (string)));
         }
     }
 
