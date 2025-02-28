@@ -15,8 +15,10 @@ import {FlashAccountBase} from "../../../contracts/1delta/flash-account/FlashAcc
 import {FlashAccountFactory} from "../../../contracts/1delta/flash-account/FlashAccountFactory.sol";
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {CTokenSignatures} from "../../../contracts/1delta/flash-account/avalanche/lendingProviders/Benqi/CTokenSignatures.sol";
+import {console2 as console} from "forge-std/console2.sol";
 
-contract TestBenqi is Test {
+contract TestBenqi is Test, CTokenSignatures {
     using MessageHashUtils for bytes32;
 
     uint256 public constant EOA_PRIVATE_KEY = 1;
@@ -27,7 +29,7 @@ contract TestBenqi is Test {
     address public constant USDC = 0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E;
 
     address public constant BENQI_COMPTROLLER = 0x486Af39519B4Dc9a7fCcd318217352830E8AD9b4;
-    address public constant qiUSDC = 0xBEb5d47A3f720Ec0a390d04b4d41ED7d9688bC7F;
+    address public constant qiUSDC = 0xB715808a78F6041E46d61Cb123C9B4A27056AE9C;
     address public constant qiAVAX = 0x5C0401e81Bc07Ca70fAD469b451682c0d747Ef1c;
 
     uint256 public chainFork;
@@ -46,11 +48,12 @@ contract TestBenqi is Test {
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Borrow(address borrower, uint256 borrowAmount, uint256 accountBorrows, uint256 totalBorrows);
     event RepayBorrow(address payer, address borrower, uint256 repayAmount, uint256 accountBorrows, uint256 totalBorrows);
+    event Redeem(address redeemer, uint redeemAmount, uint redeemTokens);
 
     function setUp() public {
         // Initialize a mainnet fork
         string memory rpcUrl = vm.envString("AVAX_RPC_URL");
-        chainFork = vm.createSelectFork(rpcUrl, 40840732);
+        chainFork = vm.createSelectFork(rpcUrl); // , 40840732);
 
         eoaAddress = vm.addr(EOA_PRIVATE_KEY);
         beaconOwner = vm.addr(BEACON_OWNER_PRIVATE_KEY);
@@ -69,33 +72,47 @@ contract TestBenqi is Test {
         vm.deal(eoaAddress, 1 << 128);
     }
 
-    function testLend() public {
-        _lendUsdc(1e9);
+    function testSupply() public {
+        _supplyUsdc(1e9);
+    }
+
+    function testWithdraw() public {
+        _supplyUsdc(1e9);
+        _withdrawUsdc(1e9);
+    }
+
+    function testWithdrawAll() public {
+        _supplyUsdc(1e9);
+        vm.warp(block.timestamp + 10000);
+        (bool success, bytes memory data) = qiUSDC.call(abi.encodeWithSelector(CTOKEN_BALANCE_OF_UNDERLYING_SELECTOR, address(account)));
+        uint256 balance = abi.decode(data, (uint256));
+        _withdrawUsdc(balance);
+        vm.assertGt(balance, 1e9);
+        // console.log("balance", balance);
     }
 
     function testBorrow() public {
         // lend some usdc to qiUSDC
-        _lendUsdc(1e9);
+        _supplyUsdc(1e9);
         // borrow usdc from qiUSDC
         _borrowUsdc(1e8);
     }
 
     function testRepay() public {
         // lend some usdc to qiUSDC
-        _lendUsdc(1e9);
+        _supplyUsdc(1e9);
         // borrow usdc from qiUSDC
         _borrowUsdc(1e8);
         // repay usdc to qiUSDC
         _repayUsdc(1e8);
     }
 
-    function _lendUsdc(uint256 amount) private {
-        address usdce = 0xA7D7079b0FEaD91F3e65f86E8915Cb59c1a4C664;
-        vm.prank(0x3A2434c698f8D79af1f5A9e43013157ca8B11a66);
-        usdce.call(abi.encodeWithSignature("transfer(address,uint256)", address(account), amount));
+    function _supplyUsdc(uint256 amount) private {
+        vm.prank(0x4aeFa39caEAdD662aE31ab0CE7c8C2c9c0a013E8);
+        USDC.call(abi.encodeWithSignature("transfer(address,uint256)", address(account), amount));
         vm.startPrank(eoaAddress);
         // approve Token
-        usdce.call(abi.encodeWithSignature("approve(address,uint256)", qiUSDC, amount));
+        USDC.call(abi.encodeWithSignature("approve(address,uint256)", qiUSDC, amount));
         // lend to Benqi
         vm.expectEmit(true, true, false, false);
         emit Transfer(qiUSDC, address(account), 0);
@@ -116,6 +133,14 @@ contract TestBenqi is Test {
         vm.expectEmit(true, true, false, false);
         emit RepayBorrow(address(account), address(account), amount, 0, 0);
         account.benqiRepay(qiUSDC, amount);
+        vm.stopPrank();
+    }
+
+    function _withdrawUsdc(uint256 amount) private {
+        vm.startPrank(eoaAddress);
+        vm.expectEmit(true, true, false, false);
+        emit Redeem(address(account), amount, 0);
+        account.benqiWithdrawUnderlying(qiUSDC, amount);
         vm.stopPrank();
     }
 }
