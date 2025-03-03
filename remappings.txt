@@ -6,3 +6,5 @@ base64-sol/=lib/base64/
 hardhat/=node_modules/hardhat/
 account-abstraction/=lib/account-abstraction/contracts/
 @uniswap-v3-core/=lib/v3-core/contracts/
+@uniswap-v3-periphery/=lib/v3-periphery/contracts/
+@flash-account/=contracts/1delta/flash-account/
