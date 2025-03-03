@@ -4,7 +4,8 @@ pragma solidity ^0.8.27;
 import {FlashAccountBase} from "./FlashAccountBase.sol";
 import {IEntryPoint} from "account-abstraction/interfaces/IEntryPoint.sol";
 import {ILendingProvider} from "@flash-account/interfaces/ILendingProvider.sol";
-contract FlashAccount is FlashAccountBase {
+import {Benqi} from "./Lenders/Benqi/Benqi.sol";
+contract FlashAccount is FlashAccountBase, Benqi {
     constructor(IEntryPoint entryPoint_) FlashAccountBase(entryPoint_) {}
 
     /**
@@ -48,5 +49,29 @@ contract FlashAccount is FlashAccountBase {
     function onMorphoFlashLoan(uint256 assets, bytes calldata params) external requireInExecution {
         // execute furhter operations
         _decodeAndExecute(params);
+    }
+
+    function supply(ILendingProvider.LendingParams calldata params) external requireInExecution {
+        if (params.lender == BENQI_COMPTROLLER) {
+            _supplyBenqi(params);
+        }
+    }
+
+    function withdraw(ILendingProvider.LendingParams calldata params) external requireInExecution {
+        if (params.lender == BENQI_COMPTROLLER) {
+            _withdrawBenqi(params);
+        }
+    }
+
+    function borrow(ILendingProvider.LendingParams calldata params) external requireInExecution {
+        if (params.lender == BENQI_COMPTROLLER) {
+            _borrowBenqi(params);
+        }
+    }
+
+    function repay(ILendingProvider.LendingParams calldata params) external requireInExecution {
+        if (params.lender == BENQI_COMPTROLLER) {
+            _repayBenqi(params);
+        }
     }
 }

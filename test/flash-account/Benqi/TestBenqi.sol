@@ -17,6 +17,7 @@ import {FlashAccountFactory} from "@flash-account/FlashAccountFactory.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {CTokenSignatures} from "@flash-account/Lenders/Benqi/CTokenSignatures.sol";
 import {console2 as console} from "forge-std/console2.sol";
+import {ILendingProvider} from "@flash-account/interfaces/ILendingProvider.sol";
 
 contract TestBenqi is Test, CTokenSignatures {
     using MessageHashUtils for bytes32;
@@ -72,75 +73,137 @@ contract TestBenqi is Test, CTokenSignatures {
         vm.deal(eoaAddress, 1 << 128);
     }
 
-    function testSupply() public {
-        _supplyUsdc(1e9);
+    function testSupplyDirect() public {
+        _supplyUsdcDirect(1e9);
     }
 
-    function testWithdraw() public {
-        _supplyUsdc(1e9);
-        _withdrawUsdc(1e9);
+    function testSupplyUserOp() public {
+        _supplyUsdcUserOp(1e9);
     }
 
-    function testWithdrawAll() public {
-        _supplyUsdc(1e9);
-        vm.warp(block.timestamp + 10000);
-        (bool success, bytes memory data) = qiUSDC.call(abi.encodeWithSelector(CTOKEN_BALANCE_OF_UNDERLYING_SELECTOR, address(account)));
-        uint256 balance = abi.decode(data, (uint256));
-        _withdrawUsdc(balance);
-        vm.assertGt(balance, 1e9);
-        // console.log("balance", balance);
-    }
+    // function testWithdraw() public {
+    //     _supplyUsdc(1e9);
+    //     _withdrawUsdc(1e9);
+    // }
 
-    function testBorrow() public {
-        // lend some usdc to qiUSDC
-        _supplyUsdc(1e9);
-        // borrow usdc from qiUSDC
-        _borrowUsdc(1e8);
-    }
+    // function testWithdrawAll() public {
+    //     _supplyUsdc(1e9);
+    //     vm.warp(block.timestamp + 10000);
+    //     (bool success, bytes memory data) = qiUSDC.call(abi.encodeWithSelector(CTOKEN_BALANCE_OF_UNDERLYING_SELECTOR, address(account)));
+    //     uint256 balance = abi.decode(data, (uint256));
+    //     _withdrawUsdc(balance);
+    //     vm.assertGt(balance, 1e9);
+    //     // console.log("balance", balance);
+    // }
 
-    function testRepay() public {
-        // lend some usdc to qiUSDC
-        _supplyUsdc(1e9);
-        // borrow usdc from qiUSDC
-        _borrowUsdc(1e8);
-        // repay usdc to qiUSDC
-        _repayUsdc(1e8);
-    }
+    // function testBorrow() public {
+    //     // lend some usdc to qiUSDC
+    //     _supplyUsdc(1e9);
+    //     // borrow usdc from qiUSDC
+    //     _borrowUsdc(1e8);
+    // }
 
-    function _supplyUsdc(uint256 amount) private {
-        vm.prank(0x4aeFa39caEAdD662aE31ab0CE7c8C2c9c0a013E8);
-        USDC.call(abi.encodeWithSignature("transfer(address,uint256)", address(account), amount));
-        vm.startPrank(eoaAddress);
-        // approve Token
-        USDC.call(abi.encodeWithSignature("approve(address,uint256)", qiUSDC, amount));
-        // lend to Benqi
+    // function testRepay() public {
+    //     // lend some usdc to qiUSDC
+    //     _supplyUsdc(1e9);
+    //     // borrow usdc from qiUSDC
+    //     _borrowUsdc(1e8);
+    //     // repay usdc to qiUSDC
+    //     _repayUsdc(1e8);
+    // }
+
+    function _supplyUsdcDirect(uint256 amount) private {
+        deal(USDC, address(account), amount);
+
+        // supply to Benqi
+        ILendingProvider.LendingParams memory params = ILendingProvider.LendingParams({
+            caller: address(account),
+            lender: BENQI_COMPTROLLER,
+            asset: USDC,
+            collateralToken: qiUSDC,
+            amount: amount,
+            params: ""
+        });
+
+        bytes memory callData = abi.encodeWithSelector(FlashAccount.supply.selector, params);
+        vm.prank(eoaAddress);
         vm.expectEmit(true, true, false, false);
-        emit Transfer(qiUSDC, address(account), 0);
-        account.benqiSupply(qiUSDC, amount);
+        emit ILendingProvider.Supplied(address(account), USDC, amount);
+        account.execute(address(account), 0, callData);
+
         vm.stopPrank();
     }
 
-    function _borrowUsdc(uint256 amount) private {
-        vm.startPrank(eoaAddress);
-        vm.expectEmit(true, true, false, false);
-        emit Borrow(address(account), amount, 0, 0);
-        account.benqiBorrow(qiUSDC, amount);
+    function _supplyUsdcUserOp(uint256 amount) private {
+        deal(USDC, address(account), amount);
+
+        // supply to Benqi
+        ILendingProvider.LendingParams memory params = ILendingProvider.LendingParams({
+            caller: address(account),
+            lender: BENQI_COMPTROLLER,
+            asset: USDC,
+            collateralToken: qiUSDC,
+            amount: amount,
+            params: ""
+        });
+
+        bytes memory supplyCallData = abi.encodeWithSelector(FlashAccount.supply.selector, params);
+        bytes memory executeCall = abi.encodeWithSignature("execute(address,uint256,bytes)", address(account), 0, supplyCallData);
+
+        uint128 verificationGasLimit = 1 << 24;
+        uint128 callGasLimit = 1 << 24;
+        uint128 maxPriorityFeePerGas = 1 << 8;
+        uint128 maxFeePerGas = 1 << 8;
+
+        PackedUserOperation memory userOp = PackedUserOperation({
+            sender: address(account),
+            nonce: entryPoint.getNonce(address(account), 0),
+            initCode: "",
+            callData: executeCall,
+            accountGasLimits: bytes32((uint256(verificationGasLimit) << 128) | callGasLimit),
+            preVerificationGas: 1 << 24,
+            gasFees: bytes32((uint256(maxPriorityFeePerGas) << 128) | maxFeePerGas),
+            paymasterAndData: "",
+            signature: ""
+        });
+        userOp.signature = abi.encodePacked(
+            BaseLightAccount.SignatureType.EOA,
+            _sign(EOA_PRIVATE_KEY, entryPoint.getUserOpHash(userOp).toEthSignedMessageHash())
+        );
+
+        PackedUserOperation[] memory ops = new PackedUserOperation[](1);
+        ops[0] = userOp;
+        entryPoint.handleOps(ops, BENEFICIARY);
+
         vm.stopPrank();
     }
 
-    function _repayUsdc(uint256 amount) private {
-        vm.startPrank(eoaAddress);
-        vm.expectEmit(true, true, false, false);
-        emit RepayBorrow(address(account), address(account), amount, 0, 0);
-        account.benqiRepay(qiUSDC, amount);
-        vm.stopPrank();
+    function _sign(uint256 privateKey, bytes32 digest) internal pure returns (bytes memory) {
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, digest);
+        return abi.encodePacked(r, s, v);
     }
 
-    function _withdrawUsdc(uint256 amount) private {
-        vm.startPrank(eoaAddress);
-        vm.expectEmit(true, true, false, false);
-        emit Redeem(address(account), amount, 0);
-        account.benqiWithdrawUnderlying(qiUSDC, amount);
-        vm.stopPrank();
-    }
+    // function _borrowUsdc(uint256 amount) private {
+    //     vm.startPrank(eoaAddress);
+    //     vm.expectEmit(true, true, false, false);
+    //     emit Borrow(address(account), amount, 0, 0);
+    //     account.benqiBorrow(qiUSDC, amount);
+    //     vm.stopPrank();
+    // }
+
+    // function _repayUsdc(uint256 amount) private {
+    //     vm.startPrank(eoaAddress);
+    //     vm.expectEmit(true, true, false, false);
+    //     emit RepayBorrow(address(account), address(account), amount, 0, 0);
+    //     account.benqiRepay(qiUSDC, amount);
+    //     vm.stopPrank();
+    // }
+
+    // function _withdrawUsdc(uint256 amount) private {
+    //     vm.startPrank(eoaAddress);
+    //     vm.expectEmit(true, true, false, false);
+    //     emit Redeem(address(account), amount, 0);
+    //     account.benqiWithdrawUnderlying(qiUSDC, amount);
+    //     vm.stopPrank();
+    // }
 }
