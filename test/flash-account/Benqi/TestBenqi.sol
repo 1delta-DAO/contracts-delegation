@@ -81,6 +81,20 @@ contract TestBenqi is Test, CTokenSignatures {
         _supplyUsdcUserOp(1e9);
     }
 
+    function testBorrowDirect() public {
+        // lend some usdc to qiUSDC
+        _supplyUsdcDirect(1e9);
+        // borrow usdc from qiUSDC
+        _borrowUsdcDirect(1e8);
+    }
+
+    function testBorrowUserOp() public {
+        // lend some usdc to qiUSDC
+        _supplyUsdcUserOp(1e9);
+        // borrow usdc from qiUSDC
+        _borrowUsdcUserOp(1e8);
+    }
+
     // function testWithdraw() public {
     //     _supplyUsdc(1e9);
     //     _withdrawUsdc(1e9);
@@ -94,13 +108,6 @@ contract TestBenqi is Test, CTokenSignatures {
     //     _withdrawUsdc(balance);
     //     vm.assertGt(balance, 1e9);
     //     // console.log("balance", balance);
-    // }
-
-    // function testBorrow() public {
-    //     // lend some usdc to qiUSDC
-    //     _supplyUsdc(1e9);
-    //     // borrow usdc from qiUSDC
-    //     _borrowUsdc(1e8);
     // }
 
     // function testRepay() public {
@@ -127,11 +134,9 @@ contract TestBenqi is Test, CTokenSignatures {
 
         bytes memory callData = abi.encodeWithSelector(FlashAccount.supply.selector, params);
         vm.prank(eoaAddress);
-        vm.expectEmit(true, true, false, false);
+        vm.expectEmit(true, true, true, false);
         emit ILendingProvider.Supplied(address(account), USDC, amount);
         account.execute(address(account), 0, callData);
-
-        vm.stopPrank();
     }
 
     function _supplyUsdcUserOp(uint256 amount) private {
@@ -183,13 +188,71 @@ contract TestBenqi is Test, CTokenSignatures {
         return abi.encodePacked(r, s, v);
     }
 
-    // function _borrowUsdc(uint256 amount) private {
-    //     vm.startPrank(eoaAddress);
-    //     vm.expectEmit(true, true, false, false);
-    //     emit Borrow(address(account), amount, 0, 0);
-    //     account.benqiBorrow(qiUSDC, amount);
-    //     vm.stopPrank();
-    // }
+    function _borrowUsdcDirect(uint256 amount) private {
+        uint256 initBalance = IERC20(USDC).balanceOf(address(account));
+        // borrow from Benqi
+        ILendingProvider.LendingParams memory params = ILendingProvider.LendingParams({
+            caller: address(account),
+            lender: BENQI_COMPTROLLER,
+            asset: USDC,
+            collateralToken: qiUSDC,
+            amount: amount,
+            params: ""
+        });
+
+        bytes memory callData = abi.encodeWithSelector(FlashAccount.borrow.selector, params);
+        vm.prank(eoaAddress);
+        vm.expectEmit(true, true, true, false);
+        emit ILendingProvider.Borrowed(address(account), USDC, amount);
+        account.execute(address(account), 0, callData);
+
+        uint256 balance = IERC20(USDC).balanceOf(address(account));
+        assertEq(balance, initBalance + amount);
+    }
+
+    function _borrowUsdcUserOp(uint256 amount) private {
+        deal(USDC, address(account), amount);
+
+        // supply to Benqi
+        ILendingProvider.LendingParams memory params = ILendingProvider.LendingParams({
+            caller: address(account),
+            lender: BENQI_COMPTROLLER,
+            asset: USDC,
+            collateralToken: qiUSDC,
+            amount: amount,
+            params: ""
+        });
+
+        bytes memory borrowCallData = abi.encodeWithSelector(FlashAccount.borrow.selector, params);
+        bytes memory executeCall = abi.encodeWithSignature("execute(address,uint256,bytes)", address(account), 0, borrowCallData);
+
+        uint128 verificationGasLimit = 1 << 24;
+        uint128 callGasLimit = 1 << 24;
+        uint128 maxPriorityFeePerGas = 1 << 8;
+        uint128 maxFeePerGas = 1 << 8;
+
+        PackedUserOperation memory userOp = PackedUserOperation({
+            sender: address(account),
+            nonce: entryPoint.getNonce(address(account), 0),
+            initCode: "",
+            callData: executeCall,
+            accountGasLimits: bytes32((uint256(verificationGasLimit) << 128) | callGasLimit),
+            preVerificationGas: 1 << 24,
+            gasFees: bytes32((uint256(maxPriorityFeePerGas) << 128) | maxFeePerGas),
+            paymasterAndData: "",
+            signature: ""
+        });
+        userOp.signature = abi.encodePacked(
+            BaseLightAccount.SignatureType.EOA,
+            _sign(EOA_PRIVATE_KEY, entryPoint.getUserOpHash(userOp).toEthSignedMessageHash())
+        );
+
+        PackedUserOperation[] memory ops = new PackedUserOperation[](1);
+        ops[0] = userOp;
+        entryPoint.handleOps(ops, BENEFICIARY);
+
+        vm.stopPrank();
+    }
 
     // function _repayUsdc(uint256 amount) private {
     //     vm.startPrank(eoaAddress);
