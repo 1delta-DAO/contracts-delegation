@@ -6,9 +6,9 @@ import "forge-std/Test.sol";
 import {EntryPoint} from "account-abstraction/core/EntryPoint.sol";
 import {IEntryPoint} from "account-abstraction/interfaces/IEntryPoint.sol";
 
-import {BaseLightAccountFactory} from "../../contracts/1delta/flash-account/common/BaseLightAccountFactory.sol";
-import {FlashAccount} from "../../contracts/1delta/flash-account/ethereum/FlashAccount.sol";
-import {FlashAccountFactory} from "../../contracts/1delta/flash-account/FlashAccountFactory.sol";
+import {BaseLightAccountFactory} from "@flash-account/common/BaseLightAccountFactory.sol";
+import {FlashAccount} from "@flash-account/FlashAccount.sol";
+import {FlashAccountFactory} from "@flash-account/FlashAccountFactory.sol";
 
 import {UpgradeableBeacon} from "../../contracts/1delta/flash-account//proxy/Beacon.sol";
 

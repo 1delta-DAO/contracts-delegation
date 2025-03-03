@@ -8,14 +8,14 @@ import {IEntryPoint} from "account-abstraction/interfaces/IEntryPoint.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {PackedUserOperation} from "account-abstraction/interfaces/PackedUserOperation.sol";
 
-import {UpgradeableBeacon} from "../../../contracts/1delta/flash-account/proxy/Beacon.sol";
-import {BaseLightAccount} from "../../../contracts/1delta/flash-account/common/BaseLightAccount.sol";
-import {FlashAccount} from "../../../contracts/1delta/flash-account/avalanche/FlashAccount.sol";
-import {FlashAccountBase} from "../../../contracts/1delta/flash-account/FlashAccountBase.sol";
-import {FlashAccountFactory} from "../../../contracts/1delta/flash-account/FlashAccountFactory.sol";
+import {UpgradeableBeacon} from "@flash-account/proxy/Beacon.sol";
+import {BaseLightAccount} from "@flash-account/common/BaseLightAccount.sol";
+import {FlashAccount} from "@flash-account/FlashAccount.sol";
+import {FlashAccountBase} from "@flash-account/FlashAccountBase.sol";
+import {FlashAccountFactory} from "@flash-account/FlashAccountFactory.sol";
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {CTokenSignatures} from "../../../contracts/1delta/flash-account/avalanche/lendingProviders/Benqi/CTokenSignatures.sol";
+import {CTokenSignatures} from "@flash-account/Lenders/Benqi/CTokenSignatures.sol";
 import {console2 as console} from "forge-std/console2.sol";
 
 contract TestBenqi is Test, CTokenSignatures {

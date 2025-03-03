@@ -6,11 +6,11 @@ import {EntryPoint} from "account-abstraction/core/EntryPoint.sol";
 import {IEntryPoint} from "account-abstraction/interfaces/IEntryPoint.sol";
 import {PackedUserOperation} from "account-abstraction/interfaces/PackedUserOperation.sol";
 
-import {UpgradeableBeacon} from "../../../../contracts/1delta/flash-account//proxy/Beacon.sol";
-import {BaseLightAccount} from "../../../../contracts/1delta/flash-account/common/BaseLightAccount.sol";
-import {FlashAccount} from "../../../../contracts/1delta/flash-account/ethereum/FlashAccount.sol";
-import {FlashAccountBase} from "../../../../contracts/1delta/flash-account/FlashAccountBase.sol";
-import {FlashAccountFactory} from "../../../../contracts/1delta/flash-account/FlashAccountFactory.sol";
+import {UpgradeableBeacon} from "@flash-account/proxy/Beacon.sol";
+import {BaseLightAccount} from "@flash-account/common/BaseLightAccount.sol";
+import {FlashAccount} from "@flash-account/FlashAccount.sol";
+import {FlashAccountBase} from "@flash-account/FlashAccountBase.sol";
+import {FlashAccountFactory} from "@flash-account/FlashAccountFactory.sol";
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
