@@ -132,7 +132,7 @@ contract BenqiAdapterTest is Test {
         assertEq(finalQiBalance, 0); // no dust
         assertGt(finalUsdcBalance, 100e6 + initialUsdcBalance, "USDC balance not increased"); // interest should be accrued and the final amount should be greater than 100 usdc
     }
-    // Todo: add test for amount=0
+
     function testBorrow() public {
         testSupply();
 
@@ -155,11 +155,11 @@ contract BenqiAdapterTest is Test {
         assertEq(finalUsdcBalance, initialUsdcBalance + 10e6, "USDC balance not increased");
     }
 
-    // Todo: add test for amount=0
     function testRepay() public {
         testBorrow();
 
         uint256 initialUsdcBalance = IERC20(USDC).balanceOf(user);
+
         vm.prank(user);
         IERC20(USDC).transfer(address(account), initialUsdcBalance);
 
@@ -178,5 +178,33 @@ contract BenqiAdapterTest is Test {
 
         uint256 finalUsdcBalance = IERC20(USDC).balanceOf(user);
         assertLt(finalUsdcBalance, initialUsdcBalance, "USDC balance not decreased");
+    }
+
+    function testRepayAll() public {
+        testBorrow(); // borrow 10usdc
+
+        // warp time 10 days
+        vm.warp(block.timestamp + 10 days);
+
+        uint256 initialUsdcBalance = IERC20(USDC).balanceOf(user);
+
+        vm.prank(user);
+        IERC20(USDC).transfer(address(account), initialUsdcBalance);
+
+        ILendingProvider.LendingParams memory params = ILendingProvider.LendingParams({
+            caller: user,
+            lender: BENQI_COMPTROLLER,
+            asset: USDC,
+            collateralToken: qiUSDC,
+            amount: 0, // repay all
+            params: ""
+        });
+
+        vm.prank(user);
+        account.repay(params);
+
+        uint256 finalUsdcBalance = IERC20(USDC).balanceOf(user);
+        assertLt(finalUsdcBalance, initialUsdcBalance, "USDC balance not decreased");
+        assertEq(IERC20(USDC).balanceOf(address(account)), 0, "USDC balance not 0");
     }
 }

@@ -14,4 +14,5 @@ abstract contract CTokenSignatures {
     bytes4 public constant CTOKEN_BORROW_SELECTOR = bytes4(keccak256("borrow(uint256)"));
     bytes4 public constant CTOKEN_REPAY_BORROW_SELECTOR = bytes4(keccak256("repayBorrow(uint256)"));
     bytes4 public constant CTOKEN_UNDERLYING_SELECTOR = bytes4(keccak256("underlying()"));
+    bytes4 public constant CTOKEN_BORROW_BALANCE_CURRENT_SELECTOR = bytes4(keccak256("borrowBalanceCurrent(address)"));
 }
