@@ -3,37 +3,33 @@ pragma solidity ^0.8.27;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-/**
- * @title LendingAdapterRegistry
- * @notice Registry for lending adapters with efficient lookup by both address and index
- * @dev Uses bytes4 hash of adapter address as index for quick lookup
- */
 contract LendingAdapterRegistry is Ownable {
-    /// @notice Mapping from lender address to adapter address
-    mapping(address => address) private _adaptersByIndex;
+    mapping(address => address) private _adaptersByLender;
 
     address[] private _registeredAdapters;
 
     error AdapterAlreadyRegistered();
     error AdapterNotRegistered();
     error InvalidAdapter();
-    error InvalidIndex();
+    error InvalidLender();
 
-    event AdapterRegistered(address indexed adapter, address indexed index);
-    event AdapterRemoved(address indexed adapter, address indexed index);
+    event AdapterRegistered(address indexed adapter, address indexed lender);
+    event AdapterRemoved(address indexed adapter, address indexed lender);
 
     constructor() Ownable(msg.sender) {}
 
     /**
      * @notice Register a new lending adapter
      * @param adapter Address of the adapter to register
+     * @param lender Address of the lender (e.g., Benqi Comptroller)
      */
     function registerAdapter(address adapter, address lender) external onlyOwner {
         if (adapter == address(0)) revert InvalidAdapter();
+        if (lender == address(0)) revert InvalidLender();
 
-        if (_adaptersByIndex[lender] != address(0)) revert AdapterAlreadyRegistered();
+        if (_adaptersByLender[lender] != address(0)) revert AdapterAlreadyRegistered();
 
-        _adaptersByIndex[lender] = adapter;
+        _adaptersByLender[lender] = adapter;
         _registeredAdapters.push(adapter);
 
         emit AdapterRegistered(adapter, lender);
@@ -41,14 +37,13 @@ contract LendingAdapterRegistry is Ownable {
 
     /**
      * @notice Remove a lending adapter from the registry
-     * @param lender The lender address
+     * @param lender Address of the lender
      */
     function removeAdapter(address lender) external onlyOwner {
-        if (lender == address(0)) revert InvalidAdapter();
+        address adapter = _adaptersByLender[lender];
+        if (adapter == address(0)) revert AdapterNotRegistered();
 
-        if (_adaptersByIndex[lender] == address(0)) revert AdapterNotRegistered();
-        address adapter = _adaptersByIndex[lender];
-        delete _adaptersByIndex[lender];
+        delete _adaptersByLender[lender];
 
         for (uint256 i = 0; i < _registeredAdapters.length; i++) {
             if (_registeredAdapters[i] == adapter) {
@@ -62,13 +57,12 @@ contract LendingAdapterRegistry is Ownable {
     }
 
     /**
-     * @notice Get adapter address by its index
+     * @notice Get adapter address by lender
      * @param lender The lender address
-     * @return address the adapter address
+     * @return The adapter address
      */
     function getAdapter(address lender) external view returns (address) {
-        if (lender == address(0)) revert InvalidIndex();
-        return _adaptersByIndex[lender];
+        return _adaptersByLender[lender];
     }
 
     /**
@@ -77,5 +71,14 @@ contract LendingAdapterRegistry is Ownable {
      */
     function getAllAdapters() external view returns (address[] memory) {
         return _registeredAdapters;
+    }
+
+    /**
+     * @notice Check if a lender has a registered adapter
+     * @param lender The lender address to check
+     * @return bool indicating if the lender has a registered adapter
+     */
+    function hasAdapter(address lender) external view returns (bool) {
+        return _adaptersByLender[lender] != address(0);
     }
 }

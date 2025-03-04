@@ -1,14 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
-import {FlashAccountBase} from "./FlashAccountBase.sol";
+import {FlashAccountBase} from "@flash-account/FlashAccountBase.sol";
 import {IEntryPoint} from "account-abstraction/interfaces/IEntryPoint.sol";
 import {LendingBase} from "./LendingBase.sol";
+
 contract FlashAccountWithRegistry is FlashAccountBase, LendingBase {
-    constructor(
-        IEntryPoint entryPoint_,
-        address lendingAdapterRegistry_
-    ) FlashAccountBase(entryPoint_) LendingBase(lendingAdapterRegistry_) {}
+    constructor(IEntryPoint entryPoint_, address lendingAdapterRegistry_) FlashAccountBase(entryPoint_) LendingBase(lendingAdapterRegistry_) {}
 
     /**
      * @dev Explicit flash loan callback functions

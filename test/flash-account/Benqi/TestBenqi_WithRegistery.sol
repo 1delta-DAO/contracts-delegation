@@ -1,102 +1,134 @@
-// // SPDX-License-Identifier: MIT
-// pragma solidity ^0.8.0;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.27;
 
-// import {Test} from "forge-std/Test.sol";
+import "forge-std/Test.sol";
+import {FlashAccountWithRegistry} from "@flash-account/AdapterWithRegistry/FlashAccountWithRegistry.sol";
+import {BenqiAdapter} from "@flash-account/AdapterWithRegistry/adapters/BenqiAdapter.sol";
+import {LendingAdapterRegistry} from "@flash-account/AdapterWithRegistry/LendingAdapterRegistry.sol";
+import {ILendingProvider} from "@flash-account/interfaces/ILendingProvider.sol";
+import {IEntryPoint} from "account-abstraction/interfaces/IEntryPoint.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-// import {EntryPoint} from "account-abstraction/core/EntryPoint.sol";
-// import {IEntryPoint} from "account-abstraction/interfaces/IEntryPoint.sol";
-// import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
-// import {PackedUserOperation} from "account-abstraction/interfaces/PackedUserOperation.sol";
+/// @title TestBenqi_WithRegistery
+/// @notice Test the BenqiAdapter with the LendingAdapterRegistry
+/// @dev The test uses the deployed contracts on Avalanche C-Chain (entrypoint, comptroller, USDC, qiUSDC)
+contract BenqiAdapterTest is Test {
+    address constant ENTRY_POINT = 0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789;
+    address constant BENQI_COMPTROLLER = 0x486Af39519B4Dc9a7fCcd318217352830E8AD9b4;
+    address constant USDC = 0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E;
+    address constant qiUSDC = 0xB715808a78F6041E46d61Cb123C9B4A27056AE9C;
 
-// import {UpgradeableBeacon} from "@flash-account/proxy/Beacon.sol";
-// import {BaseLightAccount} from "@flash-account/common/BaseLightAccount.sol";
-// import {FlashAccountWithRegistry} from "@flash-account/FlashAccountWithRegistry.sol";
-// import {FlashAccountBase} from "@flash-account/FlashAccountBase.sol";
-// import {FlashAccountFactory} from "@flash-account/FlashAccountFactory.sol";
-// import {LendingAdapterRegistry} from "@flash-account/LendingAdapterRegistry.sol";
-// import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-// import {CTokenSignatures} from "@flash-account/Lenders/Benqi/CTokenSignatures.sol";
-// import {console2 as console} from "forge-std/console2.sol";
-// import {Benqi} from "@flash-account/Lenders/Benqi/Benqi.sol";
-// import {ILendingProvider} from "@flash-account/interfaces/ILendingProvider.sol";
+    FlashAccountWithRegistry account;
+    BenqiAdapter benqiAdapter;
+    LendingAdapterRegistry registry;
 
-// contract TestBenqi is Test, CTokenSignatures {
-//     using MessageHashUtils for bytes32;
+    address user = address(0x1de17a);
 
-//     uint256 public constant EOA_PRIVATE_KEY = 1;
-//     uint256 public constant BEACON_OWNER_PRIVATE_KEY = 2;
-//     address payable public constant BENEFICIARY = payable(address(0xbe9ef1c1a2ee));
+    function setUp() public {
+        string memory rpcUrl = vm.envString("AVAX_RPC_URL");
+        uint256 chainFork = vm.createSelectFork(rpcUrl); // , 40840732);
 
-//     address public constant AAVEV3_POOL = 0x794a61358D6845594F94dc1DB02A252b5b4814aD;
-//     address public constant USDC = 0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E;
+        registry = new LendingAdapterRegistry();
+        benqiAdapter = new BenqiAdapter();
+        account = new FlashAccountWithRegistry(IEntryPoint(ENTRY_POINT), address(registry));
 
-//     // address public constant BENQI_COMPTROLLER = 0x486Af39519B4Dc9a7fCcd318217352830E8AD9b4;
-//     address public constant qiUSDC = 0xB715808a78F6041E46d61Cb123C9B4A27056AE9C;
-//     address public constant qiAVAX = 0x5C0401e81Bc07Ca70fAD469b451682c0d747Ef1c;
+        // Register adapter
+        registry.registerAdapter(address(benqiAdapter), BENQI_COMPTROLLER);
 
-//     uint256 public chainFork;
+        deal(USDC, user, 1000e6);
 
-//     address public eoaAddress;
-//     address public beaconOwner;
-//     address public initialAccountImplementation;
+        vm.prank(user);
+        IERC20(USDC).approve(address(account), 1000e6);
+    }
+    // Todo: add test for amount=0
+    function testSupply() public {
+        // supply 100 USDC
+        ILendingProvider.LendingParams memory params = ILendingProvider.LendingParams({
+            caller: user,
+            lender: BENQI_COMPTROLLER,
+            asset: USDC,
+            collateralToken: qiUSDC,
+            amount: 100e6,
+            params: ""
+        });
 
-//     LendingAdapterRegistry public lendingAdapterRegistry;
-//     Benqi public benqi;
+        vm.prank(user);
+        account.supply(params);
 
-//     FlashAccountWithRegistry public account;
-//     FlashAccountWithRegistry public beaconOwnerAccount;
-//     IEntryPoint public entryPoint;
-//     FlashAccountFactory public factory;
+        uint256 qiBalance = IERC20(qiUSDC).balanceOf(address(account));
+        assertGt(qiBalance, 0, "No qiUSDC received");
+    }
 
-//     UpgradeableBeacon public accountBeacon;
+    // Todo: add test for amount=0
+    function testWithdraw() public {
+        testSupply();
 
-//     event Transfer(address indexed from, address indexed to, uint256 value);
-//     event Borrow(address borrower, uint256 borrowAmount, uint256 accountBorrows, uint256 totalBorrows);
-//     event RepayBorrow(address payer, address borrower, uint256 repayAmount, uint256 accountBorrows, uint256 totalBorrows);
-//     event Redeem(address redeemer, uint redeemAmount, uint redeemTokens);
-//     event AdapterRegistered(address indexed adapter, address indexed index);
+        uint256 initialQiUSDCBalance = IERC20(qiUSDC).balanceOf(address(account));
+        uint256 initialUsdcBalance = IERC20(USDC).balanceOf(user);
 
-//     function setUp() public {
-//         // Initialize a mainnet fork
-//         string memory rpcUrl = vm.envString("AVAX_RPC_URL");
-//         chainFork = vm.createSelectFork(rpcUrl); // , 40840732);
+        ILendingProvider.LendingParams memory params = ILendingProvider.LendingParams({
+            caller: user,
+            lender: BENQI_COMPTROLLER,
+            asset: USDC,
+            collateralToken: qiUSDC,
+            amount: initialQiUSDCBalance / 2, // Withdraw half
+            params: ""
+        });
 
-//         eoaAddress = vm.addr(EOA_PRIVATE_KEY);
-//         beaconOwner = vm.addr(BEACON_OWNER_PRIVATE_KEY);
+        vm.prank(user);
+        account.withdraw(params);
 
-//         vm.deal(eoaAddress, 1 << 128);
-//         vm.prank(eoaAddress);
-//         lendingAdapterRegistry = new LendingAdapterRegistry(); // the owner of the lending adapter registry is the eoa account
+        uint256 finalQiBalance = IERC20(qiUSDC).balanceOf(address(account));
+        uint256 finalUsdcBalance = IERC20(USDC).balanceOf(user);
 
-//         entryPoint = new EntryPoint();
-//         FlashAccountWithRegistry implementation = new FlashAccountWithRegistry(entryPoint, address(lendingAdapterRegistry));
-//         initialAccountImplementation = address(implementation);
+        assertLt(finalQiBalance, initialQiUSDCBalance, "qiUSDC balance not decreased");
+        assertGt(finalUsdcBalance, initialUsdcBalance, "USDC balance not increased");
+    }
+    // Todo: add test for amount=0
+    function testBorrow() public {
+        testSupply();
 
-//         accountBeacon = new UpgradeableBeacon(beaconOwner, initialAccountImplementation);
-//         factory = new FlashAccountFactory(beaconOwner, address(accountBeacon), entryPoint);
+        uint256 initialUsdcBalance = IERC20(USDC).balanceOf(user);
 
-//         account = FlashAccountWithRegistry(payable(factory.createAccount(eoaAddress, 1)));
-//         beaconOwnerAccount = FlashAccountWithRegistry(payable(factory.createAccount(beaconOwner, 1)));
+        // borrow 10 USDC
+        ILendingProvider.LendingParams memory params = ILendingProvider.LendingParams({
+            caller: user,
+            lender: BENQI_COMPTROLLER,
+            asset: USDC,
+            collateralToken: qiUSDC,
+            amount: 10e6,
+            params: ""
+        });
 
-//         vm.deal(address(account), 1 << 128);
+        vm.prank(user);
+        account.borrow(params);
 
-//         benqi = new Benqi();
-//     }
+        uint256 finalUsdcBalance = IERC20(USDC).balanceOf(user);
+        assertEq(finalUsdcBalance, initialUsdcBalance + 10e6, "USDC balance not increased");
+    }
 
-//     function testRegisterBenqiAdapter() public {
-//         address benqiComptroller = benqi.BENQI_COMPTROLLER();
-//         vm.prank(eoaAddress);
-//         vm.expectEmit(true, true, false, false);
-//         emit AdapterRegistered(address(benqi), benqiComptroller);
-//         lendingAdapterRegistry.registerAdapter(address(benqi), benqiComptroller);
-//     }
+    // Todo: add test for amount=0
+    function testRepay() public {
+        testBorrow();
 
-//     function testGetbenqiAdapter() public {
-//         address benqiComptroller = benqi.BENQI_COMPTROLLER();
+        uint256 initialUsdcBalance = IERC20(USDC).balanceOf(user);
+        vm.prank(user);
+        IERC20(USDC).transfer(address(account), initialUsdcBalance);
 
-//         vm.prank(eoaAddress);
-//         lendingAdapterRegistry.registerAdapter(address(benqi), benqiComptroller);
-//         address benqiAdapter = lendingAdapterRegistry.getAdapter(benqiComptroller);
-//         assertEq(benqiAdapter, address(benqi));
-//     }
-// }
+        // repay 5 USDC
+        ILendingProvider.LendingParams memory params = ILendingProvider.LendingParams({
+            caller: user,
+            lender: BENQI_COMPTROLLER,
+            asset: USDC,
+            collateralToken: qiUSDC,
+            amount: 5e6,
+            params: ""
+        });
+
+        vm.prank(user);
+        account.repay(params);
+
+        uint256 finalUsdcBalance = IERC20(USDC).balanceOf(user);
+        assertLt(finalUsdcBalance, initialUsdcBalance, "USDC balance not decreased");
+    }
+}

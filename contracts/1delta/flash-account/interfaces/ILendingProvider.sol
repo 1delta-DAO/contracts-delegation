@@ -19,5 +19,4 @@ interface ILendingProvider {
     function withdraw(LendingParams calldata params) external;
     function borrow(LendingParams calldata params) external;
     function repay(LendingParams calldata params) external;
-    function balanceOf(address token) external view returns (uint256);
 }
