@@ -40,7 +40,6 @@ contract BenqiAdapterTest is Test {
         vm.prank(user);
         IERC20(USDC).approve(address(account), 1000e6);
     }
-    // Todo: add test for amount=0
     function testSupply() public {
         // supply 100 USDC
         ILendingProvider.LendingParams memory params = ILendingProvider.LendingParams({
@@ -59,7 +58,28 @@ contract BenqiAdapterTest is Test {
         assertGt(qiBalance, 0, "No qiUSDC received");
     }
 
-    // Todo: add test for amount=0
+    function testSupplyAll() public {
+        uint256 initQiBalance = IERC20(qiUSDC).balanceOf(address(account));
+        assertEq(initQiBalance, 0);
+        // when the amount is 0, all the balance of the account is supplied
+        deal(USDC, address(account), 100e6);
+        // supply 100 USDC
+        ILendingProvider.LendingParams memory params = ILendingProvider.LendingParams({
+            caller: user,
+            lender: BENQI_COMPTROLLER,
+            asset: USDC,
+            collateralToken: qiUSDC,
+            amount: 0,
+            params: ""
+        });
+
+        vm.prank(user);
+        account.supply(params);
+
+        uint256 qiBalance = IERC20(qiUSDC).balanceOf(address(account));
+        assertGt(qiBalance, 0, "No qiUSDC received");
+    }
+
     function testWithdraw() public {
         testSupply();
 
@@ -83,6 +103,34 @@ contract BenqiAdapterTest is Test {
 
         assertLt(finalQiBalance, initialQiUSDCBalance, "qiUSDC balance not decreased");
         assertGt(finalUsdcBalance, initialUsdcBalance, "USDC balance not increased");
+    }
+
+    function testWithdrawAll() public {
+        testSupply(); // supply 100 USDC
+
+        uint256 initialUsdcBalance = IERC20(USDC).balanceOf(user);
+        uint256 initialQiUSDCBalance = IERC20(qiUSDC).balanceOf(address(account));
+
+        // warp time 100 days
+        vm.warp(block.timestamp + 100 days);
+
+        ILendingProvider.LendingParams memory params = ILendingProvider.LendingParams({
+            caller: user,
+            lender: BENQI_COMPTROLLER,
+            asset: USDC,
+            collateralToken: qiUSDC,
+            amount: 0, // Withdraw All
+            params: ""
+        });
+
+        vm.prank(user);
+        account.withdraw(params);
+
+        uint256 finalQiBalance = IERC20(qiUSDC).balanceOf(address(account));
+        uint256 finalUsdcBalance = IERC20(USDC).balanceOf(user);
+
+        assertEq(finalQiBalance, 0); // no dust
+        assertGt(finalUsdcBalance, 100e6 + initialUsdcBalance, "USDC balance not increased"); // interest should be accrued and the final amount should be greater than 100 usdc
     }
     // Todo: add test for amount=0
     function testBorrow() public {

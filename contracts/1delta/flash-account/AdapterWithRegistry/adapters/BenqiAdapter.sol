@@ -7,7 +7,6 @@ import {CTokenSignatures} from "@flash-account/Lenders/Benqi/CTokenSignatures.so
 
 contract BenqiAdapter is ILendingProvider, CTokenSignatures {
     error InsufficientBalance();
-    error CantReadBalance();
     address constant BENQI_COMPTROLLER = 0x486Af39519B4Dc9a7fCcd318217352830E8AD9b4;
 
     function supply(ILendingProvider.LendingParams calldata params) external override {
