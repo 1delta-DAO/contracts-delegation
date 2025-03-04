@@ -24,7 +24,7 @@ contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
      * @param data compressed instruction calldata
      */
     function deltaCompose(bytes calldata data) external payable {
-        _deltaComposeInternal(msg.sender, 0, 0 data);
+        _deltaComposeInternal(msg.sender, 0, 0, data);
     }
 
     /**
@@ -1682,7 +1682,7 @@ contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
         }
         // within the flash loan, any compose operation
         // can be executed
-        _deltaComposeInternal(origCaller, params);
+        _deltaComposeInternal(origCaller, 0, 0, params);
         return true;
     }
 
@@ -1759,7 +1759,7 @@ contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
         }
         // within the flash loan, any compose operation
         // can be executed
-        _deltaComposeInternal(origCaller, params);
+        _deltaComposeInternal(origCaller, 0, 0, params);
         return true;
     }
 
@@ -1821,7 +1821,7 @@ contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
         }
         // within the flash loan, any compose operation
         // can be executed
-        _deltaComposeInternal(origCaller, params);
+        _deltaComposeInternal(origCaller, 0, 0, params);
     }
 
     /** Morpho blue callbacks */
@@ -1877,6 +1877,6 @@ contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
         }
         // within the flash loan, any compose operation
         // can be executed
-        _deltaComposeInternal(origCaller, params);
+        _deltaComposeInternal(origCaller, 0, 0, params);
     }
 }
