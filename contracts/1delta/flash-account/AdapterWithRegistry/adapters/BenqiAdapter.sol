@@ -20,26 +20,31 @@ contract BenqiAdapter is ILendingProvider, CTokenSignatures {
         }
 
         IERC20(params.asset).approve(params.collateralToken, amount);
-        (bool success, ) = params.collateralToken.call(abi.encodeWithSelector(CTOKEN_MINT_SELECTOR, amount));
-        require(success, "Mint failed");
+        (bool success, bytes memory returnData) = params.collateralToken.call(abi.encodeWithSelector(CTOKEN_MINT_SELECTOR, amount));
+        if (!success) {
+            assembly {
+                revert(add(returnData, 32), mload(returnData))
+            }
+        }
     }
 
     /// @dev if amount is 0, we use get the balance of underlying and redeem_underlying, otherwise we use redeem
     function withdraw(ILendingProvider.LendingParams calldata params) external override {
         uint256 amount = params.amount;
         if (params.amount == 0) {
-            // this also accrues interest
-            (bool success, bytes memory data) = params.collateralToken.call(
-                abi.encodeWithSelector(CTOKEN_BALANCE_OF_UNDERLYING_SELECTOR, address(this))
-            );
-            if (!success) revert CantReadBalance();
-            amount = abi.decode(data, (uint256));
-
-            (success, ) = params.collateralToken.call(abi.encodeWithSelector(CTOKEN_REDEEM_UNDERLYING_SELECTOR, amount));
-            require(success, "Withdraw failed");
+            (bool success, bytes memory returnData) = params.collateralToken.call(abi.encodeWithSelector(CTOKEN_REDEEM_SELECTOR, type(uint256).max));
+            if (!success) {
+                assembly {
+                    revert(add(returnData, 32), mload(returnData))
+                }
+            }
         } else {
-            (bool success, ) = params.collateralToken.call(abi.encodeWithSelector(CTOKEN_REDEEM_SELECTOR, amount));
-            require(success, "Withdraw failed");
+            (bool success, bytes memory returnData) = params.collateralToken.call(abi.encodeWithSelector(CTOKEN_REDEEM_SELECTOR, amount));
+            if (!success) {
+                assembly {
+                    revert(add(returnData, 32), mload(returnData))
+                }
+            }
         }
 
         // Transfer to caller
@@ -50,8 +55,12 @@ contract BenqiAdapter is ILendingProvider, CTokenSignatures {
     }
 
     function borrow(ILendingProvider.LendingParams calldata params) external override {
-        (bool success, ) = params.collateralToken.call(abi.encodeWithSelector(CTOKEN_BORROW_SELECTOR, params.amount));
-        require(success, "Borrow failed");
+        (bool success, bytes memory returnData) = params.collateralToken.call(abi.encodeWithSelector(CTOKEN_BORROW_SELECTOR, params.amount));
+        if (!success) {
+            assembly {
+                revert(add(returnData, 32), mload(returnData))
+            }
+        }
 
         // Transfer to caller
         if (params.caller != address(this)) {
@@ -71,7 +80,11 @@ contract BenqiAdapter is ILendingProvider, CTokenSignatures {
         IERC20(params.asset).approve(params.collateralToken, amount);
 
         (bool success, bytes memory data) = params.collateralToken.call(abi.encodeWithSelector(CTOKEN_REPAY_BORROW_SELECTOR, params.amount));
-        require(success, "Repay failed");
+        if (!success) {
+            assembly {
+                revert(add(data, 32), mload(data))
+            }
+        }
 
         uint256 repayAmount = abi.decode(data, (uint256));
         // refund
