@@ -19,29 +19,34 @@ contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
     address internal constant USDBC = 0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA;
     address internal constant USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
 
+    uint256 internal constant _PRE_PARAM = 1 << 253;
+
     /**
      * Batch-executes a series of operations
      * @param data compressed instruction calldata
      */
     function deltaCompose(bytes calldata data) external payable {
-        _deltaComposeInternal(msg.sender, 0, 0, data);
+        uint offset;
+        uint length;
+        assembly {
+            length := data.length
+            offset := data.offset
+        }
+        _deltaComposeInternal(msg.sender, 0, 0, offset, length);
     }
 
     /**
      * Execute a set op packed operations
      * @param callerAddress the address of the EOA/contract that
      *                      initially triggered the `deltaCompose`
-     * @param data packed ops array
      * | op0 | length0 | data0 | op1 | length1 | ...
      * | 1   |    16   | ...   |  1  |    16   | ...
      */
-    function _deltaComposeInternal(address callerAddress, uint256 param0, uint256 param1, bytes calldata data) internal {
+    function _deltaComposeInternal(address callerAddress, uint256 paramPull, uint256 paramPush, uint currentOffset, uint _length) internal override {
         // data loop paramters
-        uint256 currentOffset;
         uint256 maxIndex;
         assembly {
-            maxIndex := add(data.length, data.offset)
-            currentOffset := data.offset
+            maxIndex := add(currentOffset, _length)
         }
 
         ////////////////////////////////////////////////////
@@ -110,27 +115,34 @@ contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
                             payer := callerAddress
                         }
                         noFOT := iszero(and(_FEE_ON_TRANSFER, amountIn))
-                        // mask input amount
-                        amountIn := and(_UINT112_MASK, shr(16, amountIn))
-                        // fetch balance if needed
-                        if iszero(amountIn) {
-                            // selector for balanceOf(address)
-                            mstore(0, ERC20_BALANCE_OF)
-                            // add payer address as parameter
-                            mstore(0x04, payer)
-                            // call to token
-                            pop(
-                                staticcall(
-                                    gas(),
-                                    calldataload(and(ADDRESS_MASK, sub(opdataOffset, 12))), // fetches first token
-                                    0x0,
-                                    0x24,
-                                    0x0,
-                                    0x20 //
+
+                        switch and(_FEE_ON_TRANSFER, amountIn)
+                        case 0 {
+                            amountIn := paramPull
+                        }
+                        default {
+                            // mask input amount
+                            amountIn := and(_UINT112_MASK, shr(16, amountIn))
+                            // fetch balance if needed
+                            if iszero(amountIn) {
+                                // selector for balanceOf(address)
+                                mstore(0, ERC20_BALANCE_OF)
+                                // add payer address as parameter
+                                mstore(0x04, payer)
+                                // call to token
+                                pop(
+                                    staticcall(
+                                        gas(),
+                                        calldataload(and(ADDRESS_MASK, sub(opdataOffset, 12))), // fetches first token
+                                        0x0,
+                                        0x24,
+                                        0x0,
+                                        0x20 //
+                                    )
                                 )
-                            )
-                            // load the retrieved balance
-                            amountIn := mload(0x0)
+                                // load the retrieved balance
+                                amountIn := mload(0x0)
+                            }
                         }
                         currentOffset := add(currentOffset, add(52, opdataLength))
                     }
@@ -175,7 +187,8 @@ contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
                         // get the number parameters
                         amountOut := calldataload(add(currentOffset, 20))
                         // we get the calldatalength of the path
-                        opdataLength := and(amountOut, UINT16_MASK)
+
+                        currentOffset := add(currentOffset, add(52, and(amountOut, UINT16_MASK)))
                         // validation amount starts at bit 128 from the right
                         amountInMaximum := and(_UINT112_MASK, shr(128, amountOut))
                         // check the upper bit as to whether it is a internal swap
@@ -213,7 +226,6 @@ contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
                             // load the retrieved balance
                             amountOut := mload(0x0)
                         }
-                        currentOffset := add(currentOffset, add(52, opdataLength))
                     }
                     swapExactOutInternal(amountOut, amountInMaximum, payer, receiver, opdataOffset, opdataLength);
                 } else if (operation == Commands.FLASH_SWAP_EXACT_IN) {
@@ -1682,7 +1694,7 @@ contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
         }
         // within the flash loan, any compose operation
         // can be executed
-        _deltaComposeInternal(origCaller, 0, 0, params);
+        _deltaComposeInternal(origCaller, 0, 0, 0, 1);
         return true;
     }
 
@@ -1759,7 +1771,7 @@ contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
         }
         // within the flash loan, any compose operation
         // can be executed
-        _deltaComposeInternal(origCaller, 0, 0, params);
+        _deltaComposeInternal(origCaller, 0, 0, 0, 1);
         return true;
     }
 
@@ -1821,7 +1833,7 @@ contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
         }
         // within the flash loan, any compose operation
         // can be executed
-        _deltaComposeInternal(origCaller, 0, 0, params);
+        _deltaComposeInternal(origCaller, 0, 0, 0, 1);
     }
 
     /** Morpho blue callbacks */
@@ -1877,6 +1889,6 @@ contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
         }
         // within the flash loan, any compose operation
         // can be executed
-        _deltaComposeInternal(origCaller, 0, 0, params);
+        _deltaComposeInternal(origCaller, 0, 0, 0, 1);
     }
 }

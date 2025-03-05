@@ -751,16 +751,6 @@ abstract contract MarginTrading is BaseLending, BaseSwapper, V2ReferencesBase, V
             // at the end of the path
             ////////////////////////////////////////////////////
             else {
-                (uint256 payType, uint256 lenderId) = getPayConfigFromCalldata(pathOffset, pathLength);
-                // pay the pool
-                handlePayPool(
-                    tokenIn,
-                    payer, // prevents sload if desired
-                    pair,
-                    payType,
-                    amountIn,
-                    lenderId
-                );
                 // if(maxIn < amountIn) revert Slippage();
                 assembly {
                     if lt(maxIn, amountIn) {
@@ -768,6 +758,19 @@ abstract contract MarginTrading is BaseLending, BaseSwapper, V2ReferencesBase, V
                         revert (0, 0x4)
                     }
                 }
+                _deltaComposeInternal(payer, amountIn, 0, 0, 0);
+
+                // (uint256 payType, uint256 lenderId) = getPayConfigFromCalldata(pathOffset, pathLength);
+                // // pay the pool
+                // handlePayPool(
+                //     tokenIn,
+                //     payer, // prevents sload if desired
+                //     pair,
+                //     payType,
+                //     amountIn,
+                //     lenderId
+                // );
+             
             }
             _swapV2StyleExactOut(
                 tokenIn,
@@ -1076,4 +1079,6 @@ abstract contract MarginTrading is BaseLending, BaseSwapper, V2ReferencesBase, V
             _repay(token, user, amount, payId, lenderId);
         }
      }
+
+     function _deltaComposeInternal(address callerAddress, uint256 paramPull, uint256 paramPush, uint256 offset, uint256 length) internal virtual {}
 }
