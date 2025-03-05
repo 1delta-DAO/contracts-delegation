@@ -55,7 +55,6 @@
     "typescript": "^4.3.2"
   },
   "scripts": {
-    "prepare": "node ./.setup.js && hardhat typechain",
     "lint": "eslint \"**/*.{js,ts}\" && solhint src/**/*.sol",
     "lint:fix": "eslint --fix \"**/*.{js,ts}\" && solhint --fix src/**/*.sol",
     "format": "prettier --check \"**/*.{ts,js,sol}\"",
@@ -78,7 +77,7 @@
     "build": "export NODE_OPTIONS=--openssl-legacy-provider; gatsby build"
   },
   "dependencies": {
-    "@1delta/asset-registry": "^0.0.63",
+    "@1delta/asset-registry": "^0.0.68",
     "@chainlink/contracts": "^0.6.1",
     "@defi-wonderland/smock": "^2.0.7",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.8",

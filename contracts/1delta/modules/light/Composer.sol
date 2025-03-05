@@ -5,7 +5,9 @@ pragma solidity 0.8.28;
 import {MarginTrading} from "./MarginTrading.sol";
 import {Commands} from "../shared/Commands.sol";
 import {Morpho} from "./MorphoLending.sol";
+import {GenericLending} from "./lending/GenericLending.sol";
 import {ERC4646Transfers} from "./ERC4646Transfers.sol";
+import {console} from "forge-std/console.sol";
 
 /**
  * @title Universal aggregator contract.
@@ -13,7 +15,7 @@ import {ERC4646Transfers} from "./ERC4646Transfers.sol";
  *        Efficient baching through compact calldata usage.
  * @author 1delta Labs AG
  */
-contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
+contract OneDeltaComposerLight is MarginTrading, Morpho, ERC4646Transfers, GenericLending {
     /// @dev we need base tokens to identify Compound V3's selectors
     address internal constant AERO = 0x940181a94A35A4569E4529A3CDfB74e38FD98631;
     address internal constant USDBC = 0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA;
@@ -26,13 +28,11 @@ contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
      * @param data compressed instruction calldata
      */
     function deltaCompose(bytes calldata data) external payable {
-        uint offset;
         uint length;
         assembly {
             length := data.length
-            offset := data.offset
         }
-        _deltaComposeInternal(msg.sender, 0, 0, offset, length);
+        _deltaComposeInternal(msg.sender, 0, 0, 68, length);
     }
 
     /**
@@ -70,515 +70,7 @@ contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
                 currentOffset := add(1, currentOffset)
             }
             if (operation < 0x10) {
-                // exec op
-                if (operation == Commands.SWAP_EXACT_IN) {
-                    ////////////////////////////////////////////////////
-                    // Encoded parameters for the swap
-                    // | receiver | amount | pathLength | path |
-                    // | address  | uint240|   uint16   | bytes|
-                    // where amount is provided as
-                    // Amount Bitmap Structure:
-                    // | Pay Self (1) | Fee-on-Transfer (1) | Reserved (14) | Minimum Amount Out (112) | Amount In (112) | opdataLength (16) |
-                    // |--------------|---------------------|---------------|---------------------------|----------------|-------------------|
-                    // pay self         (bool)      in the upper bit if true, payer is this contract
-                    // fot              (bool)      2nd bit, if true, assume fee-on-transfer as input
-                    // minimumAmountOut (uint120)   in the bytes starting at bit 128
-                    //                              from the right
-                    // amountIn         (uint128)   in the lowest bytes
-                    //                              zero is for paying withn the balance of
-                    //                              payer (self or caller)
-                    ////////////////////////////////////////////////////
-                    uint256 opdataOffset;
-                    uint256 opdataLength;
-                    uint256 amountIn;
-                    address payer;
-                    address receiver;
-                    uint256 minimumAmountOut;
-                    bool noFOT;
-                    assembly {
-                        // the path starts after the path length
-                        opdataOffset := add(currentOffset, 52) // 20 + 32 (address + amountBitmap)
-                        // the first 20 bytes are the receiver address
-                        receiver := shr(96, calldataload(currentOffset))
-                        // assign the entire 32 bytes of amounts data
-                        amountIn := calldataload(add(currentOffset, 20))
-                        // this is the path data length
-                        opdataLength := and(amountIn, UINT16_MASK)
-                        // validation amount starts at bit 128 from the right
-                        minimumAmountOut := and(_UINT112_MASK, shr(128, amountIn))
-                        // check whether the swap is internal by the highest bit
-                        switch iszero(and(_PAY_SELF, amountIn))
-                        case 0 {
-                            payer := address()
-                        }
-                        default {
-                            payer := callerAddress
-                        }
-                        noFOT := iszero(and(_FEE_ON_TRANSFER, amountIn))
-
-                        switch and(_FEE_ON_TRANSFER, amountIn)
-                        case 0 {
-                            amountIn := paramPull
-                        }
-                        default {
-                            // mask input amount
-                            amountIn := and(_UINT112_MASK, shr(16, amountIn))
-                            // fetch balance if needed
-                            if iszero(amountIn) {
-                                // selector for balanceOf(address)
-                                mstore(0, ERC20_BALANCE_OF)
-                                // add payer address as parameter
-                                mstore(0x04, payer)
-                                // call to token
-                                pop(
-                                    staticcall(
-                                        gas(),
-                                        calldataload(and(ADDRESS_MASK, sub(opdataOffset, 12))), // fetches first token
-                                        0x0,
-                                        0x24,
-                                        0x0,
-                                        0x20 //
-                                    )
-                                )
-                                // load the retrieved balance
-                                amountIn := mload(0x0)
-                            }
-                        }
-                        currentOffset := add(currentOffset, add(52, opdataLength))
-                    }
-                    uint256 dexId = _preFundTrade(payer, amountIn, opdataOffset);
-                    // swap execution
-                    if (noFOT) amountIn = swapExactIn(amountIn, dexId, payer, receiver, opdataOffset, opdataLength);
-                    else amountIn = swapExactInFOT(amountIn, dexId, receiver, opdataOffset, opdataLength);
-                    // slippage check
-                    assembly {
-                        if lt(amountIn, minimumAmountOut) {
-                            mstore(0, SLIPPAGE)
-                            revert(0, 0x4)
-                        }
-                    }
-                } else if (operation == Commands.SWAP_EXACT_OUT) {
-                    ////////////////////////////////////////////////////
-                    // Always uses a flash swap when possible
-                    // Calldata Structure for Flash Swap
-                    // | Receiver | Amount Bitmap | Path Length | Path |
-                    // | address  | uint240       | uint16      | bytes|
-                    //
-                    // Amount Bitmap Structure:
-                    // | Pay Self (1) | Fee-on-Transfer (1) | Reserved (14) | Amount In Maximum (112) | Amount Out (112) | opdataLength (16) |
-                    // |--------------|---------------------|---------------|-------------------------|------------------|-------------------|
-                    // - Pay Self: Determines if the contract itself is the payer (1 bit).
-                    // - Fee-on-Transfer: Indicates if fee-on-transfer tokens are considered (1 bit).
-                    // - Reserved: Reserved for alignment or maybe future use (14 bits).
-                    // - Amount In Maximum: Maximum allowable input amount for the swap (112 bits).
-                    // - Amount Out: Exact amount of tokens to be output from the swap (112 bits).
-                    // - opdataLength: Length of the path data (16 bits).
-                    ////////////////////////////////////////////////////
-
-                    uint256 opdataOffset;
-                    uint256 opdataLength;
-                    uint256 amountOut;
-                    address payer;
-                    address receiver;
-                    uint256 amountInMaximum;
-                    assembly {
-                        opdataOffset := add(currentOffset, 52) // 20 + 32 (address + amountBitmap)
-                        receiver := shr(96, calldataload(currentOffset))
-                        // get the number parameters
-                        amountOut := calldataload(add(currentOffset, 20))
-                        // we get the calldatalength of the path
-
-                        currentOffset := add(currentOffset, add(52, and(amountOut, UINT16_MASK)))
-                        // validation amount starts at bit 128 from the right
-                        amountInMaximum := and(_UINT112_MASK, shr(128, amountOut))
-                        // check the upper bit as to whether it is a internal swap
-                        switch iszero(and(_PAY_SELF, amountOut))
-                        case 0 {
-                            payer := address()
-                        }
-                        default {
-                            payer := callerAddress
-                        }
-                        // right shift by pathlength size and masking yields
-                        // the final amout out
-                        amountOut := and(_UINT112_MASK, shr(16, amountOut))
-                        if iszero(amountOut) {
-                            // selector for balanceOf(address)
-                            mstore(0, ERC20_BALANCE_OF)
-                            // add this address as parameter
-                            mstore(0x04, payer)
-                            // call to token
-                            pop(
-                                staticcall(
-                                    gas(),
-                                    calldataload(
-                                        and(
-                                            ADDRESS_MASK,
-                                            add(currentOffset, 32) // this puts the address already in lower bytes
-                                        )
-                                    ),
-                                    0x0,
-                                    0x24,
-                                    0x0,
-                                    0x20 //
-                                )
-                            )
-                            // load the retrieved balance
-                            amountOut := mload(0x0)
-                        }
-                    }
-                    swapExactOutInternal(amountOut, amountInMaximum, payer, receiver, opdataOffset, opdataLength);
-                } else if (operation == Commands.FLASH_SWAP_EXACT_IN) {
-                    ////////////////////////////////////////////////////
-                    // Encoded parameters for the swap
-                    // | amount | pathLength | path |
-                    // | uint240|  uint16    | bytes|
-                    // where amount is provided as
-                    // pay self         (bool)      in the upper bit
-                    //                              if true, payer is this contract
-                    //                              the following bits are empty
-                    // minimumAmountOut (uint112)   in the bytes starting at bit 128
-                    //                              from the right
-                    // amountIn         (uint112)   in the lowest bytes
-                    //                              zero is for paying with the balance of
-                    //                              payer (self or caller)
-                    ////////////////////////////////////////////////////
-                    uint256 opdataOffset;
-                    uint256 opdataLength;
-                    uint256 amountIn;
-                    address payer;
-                    uint256 minimumAmountOut;
-                    // all but balance fetch same as for SWAP_EXACT_IN
-                    assembly {
-                        // the path starts after the path length
-                        opdataOffset := add(currentOffset, 32) // 32
-                        // temp includes receiver address and pathlength
-                        let temp := calldataload(currentOffset)
-                        // this is the path data length
-                        // included in lowest 2 bytes
-                        opdataLength := and(temp, UINT16_MASK)
-                        // extract lowr 112 bits shifted by 16
-                        minimumAmountOut := and(_UINT112_MASK, shr(128, temp))
-
-                        // upper bit signals whether to pay self
-                        switch iszero(and(_PAY_SELF, temp))
-                        case 0 {
-                            payer := address()
-                        }
-                        default {
-                            payer := callerAddress
-                        }
-                        // mask input amount
-                        amountIn := and(_UINT112_MASK, shr(16, temp))
-                        ////////////////////////////////////////////////////
-                        // Fetching the balance here is a bit trickier here
-                        // We have to fetch the lender-specific collateral
-                        // balance
-                        // `tokenIn`    is at the beginning of the path; and
-                        // `lenderId`   is at the end of the path
-                        ////////////////////////////////////////////////////
-                        if iszero(amountIn) {
-                            // first we assign lenderId
-                            let lenderId_tokenIn := and(
-                                calldataload(
-                                    sub(
-                                        add(opdataLength, opdataOffset), //
-                                        33
-                                    )
-                                ),
-                                UINT16_MASK
-                            )
-                            switch lt(lenderId_tokenIn, MAX_ID_AAVE_V2)
-                            // Aave types
-                            case 1 {
-                                mstore(0x0, or(shl(240, lenderId_tokenIn), shr(96, calldataload(opdataOffset))))
-                                mstore(0x20, COLLATERAL_TOKENS_SLOT)
-                                lenderId_tokenIn := sload(keccak256(0x0, 0x40))
-                                // selector for balanceOf(address)
-                                mstore(0x0, ERC20_BALANCE_OF)
-                                // add caller address as parameter
-                                mstore(0x4, callerAddress)
-                                // call to collateralToken
-                                pop(staticcall(gas(), lenderId_tokenIn, 0x0, 0x24, 0x0, 0x20))
-                                // load the retrieved balance
-                                amountIn := mload(0x0)
-                            }
-                            default {
-                                switch lt(lenderId_tokenIn, MAX_ID_COMPOUND_V3)
-                                // Compound V3
-                                case 1 {
-                                    // abuse amountIn for cometPool variable
-                                    // it will be overridden at the end
-                                    // temp will now become the var for comet ccy
-                                    switch lenderId_tokenIn
-                                    // Compound V3 Markets
-                                    case 2000 {
-                                        amountIn := COMET_USDC
-                                        temp := USDC
-                                    }
-                                    case 2001 {
-                                        amountIn := COMET_WETH
-                                        temp := WRAPPED_NATIVE
-                                    }
-                                    case 2002 {
-                                        amountIn := COMET_USDBC
-                                        temp := USDBC
-                                    }
-                                    case 2003 {
-                                        amountIn := COMET_AERO
-                                        temp := AERO
-                                    }
-                                    // default: load comet from storage
-                                    // if it is not provided directly
-                                    // note that the debt token is stored as
-                                    // variable debt token
-                                    default {
-                                        mstore(0x0, lenderId_tokenIn)
-                                        mstore(0x20, LENDING_POOL_SLOT)
-                                        amountIn := sload(keccak256(0x0, 0x40))
-                                        if iszero(amountIn) {
-                                            mstore(0, BAD_LENDER)
-                                            revert(0, 0x4)
-                                        }
-
-                                        mstore(0x0, or(shl(240, lenderId_tokenIn), amountIn))
-                                        mstore(0x20, VARIABLE_DEBT_TOKENS_SLOT)
-                                        temp := sload(keccak256(0x0, 0x40))
-                                    }
-                                    // assign tokenIn to transitioning variable
-                                    lenderId_tokenIn := shr(96, calldataload(opdataOffset))
-
-                                    // token is baseToken
-                                    switch eq(lenderId_tokenIn, temp)
-                                    case 1 {
-                                        // selector for balanceOf(address)
-                                        mstore(0, ERC20_BALANCE_OF)
-                                        // add caller address as parameter
-                                        mstore(0x04, callerAddress)
-                                        // call to token
-                                        pop(
-                                            staticcall(
-                                                gas(),
-                                                amountIn, // collateral token
-                                                0x0,
-                                                0x24,
-                                                0x0,
-                                                0x20
-                                            )
-                                        )
-                                        // load the retrieved balance
-                                        amountIn := mload(0x0)
-                                    }
-                                    // token is collateral
-                                    default {
-                                        // assign ptr to transition var
-                                        temp := mload(0x40)
-                                        // selector for userCollateral(address,address)
-                                        mstore(temp, 0x2b92a07d00000000000000000000000000000000000000000000000000000000)
-                                        // add caller address as parameter
-                                        mstore(add(temp, 0x04), callerAddress)
-                                        // add underlying address
-                                        mstore(add(temp, 0x24), lenderId_tokenIn)
-                                        // call to token
-                                        pop(
-                                            staticcall(
-                                                gas(),
-                                                amountIn, // collateral token
-                                                temp,
-                                                0x44,
-                                                temp,
-                                                0x20
-                                            )
-                                        )
-                                        // load the retrieved balance (lower 128 bits)
-                                        amountIn := and(UINT128_MASK, mload(temp))
-                                    }
-                                }
-                                default {
-                                    // Slot for collateralTokens[target] is keccak256(target . collateralTokens.slot).
-                                    mstore(0x0, or(shl(240, lenderId_tokenIn), shr(96, calldataload(opdataOffset))))
-                                    mstore(0x20, COLLATERAL_TOKENS_SLOT)
-                                    // override to prevent stack error
-                                    lenderId_tokenIn := sload(keccak256(0x0, 0x40))
-                                    // revert if token not defined
-                                    if iszero(lenderId_tokenIn) {
-                                        mstore(0, BAD_LENDER)
-                                        revert(0, 0x4)
-                                    }
-                                    // selector for balanceOfUnderlying(address)
-                                    mstore(0, 0x3af9e66900000000000000000000000000000000000000000000000000000000)
-                                    // add caller address as parameter
-                                    mstore(0x04, callerAddress)
-                                    // call to token
-                                    pop(
-                                        call(
-                                            gas(),
-                                            lenderId_tokenIn, // collateral token
-                                            0x0,
-                                            0x0,
-                                            0x24,
-                                            0x0,
-                                            0x20
-                                        )
-                                    )
-                                    // load the retrieved balance
-                                    amountIn := mload(0x0)
-                                }
-                            }
-                        }
-                        currentOffset := add(currentOffset, add(32, opdataLength)) // 32 args plus path
-                    }
-                    flashSwapExactInInternal(amountIn, minimumAmountOut, payer, opdataOffset, opdataLength);
-                } else if (operation == Commands.FLASH_SWAP_EXACT_OUT) {
-                    ////////////////////////////////////////////////////
-                    // Always uses a flash swap when possible
-                    // Encoded parameters for the swap
-                    // | amount | pathLength | path |
-                    // | uint240|  uint16    | bytes|
-                    // where amount is provided as
-                    // pay self         (bool)      in the upper bit
-                    //                              if true, payer is this contract
-                    //                              The ext 7 bits are empty
-                    // maximumAmountIn  (uint112)   in the bytes starting at bit 128
-                    //                              from the right
-                    // amountOut        (uint112)   in the lowest bytes
-                    //                              zero is for paying with the balance of
-                    //                              payer (self or caller)
-                    ////////////////////////////////////////////////////
-                    uint256 opdataOffset;
-                    uint256 opdataLength;
-                    uint256 amountOut;
-                    address payer;
-                    uint256 amountInMaximum;
-                    assembly {
-                        opdataOffset := add(currentOffset, 32) // opdata starts in 2nd byte
-                        let firstParam := calldataload(currentOffset)
-
-                        // we get the calldatalength of the path
-                        // these are populated in the lower two bytes
-                        opdataLength := and(firstParam, UINT16_MASK)
-                        // check amount strats at bit 128 from the right (within first 32 )
-                        amountInMaximum := and(shr(128, firstParam), _UINT112_MASK)
-                        // check highest bit
-                        switch iszero(and(_PAY_SELF, firstParam))
-                        case 0 {
-                            payer := address()
-                        }
-                        default {
-                            payer := callerAddress
-                        }
-                        amountOut := and(_UINT112_MASK, shr(16, firstParam))
-                        ////////////////////////////////////////////////////
-                        // Fetch the debt balance in case amountOut is zero
-                        ////////////////////////////////////////////////////
-                        if iszero(amountOut) {
-                            // last 32 bytes
-                            let lenderId := and(calldataload(sub(add(opdataLength, opdataOffset), 33)), UINT16_MASK)
-                            switch lt(lenderId, MAX_ID_AAVE_V2)
-                            case 1 {
-                                let tokenOut := calldataload(opdataOffset)
-                                let mode := and(UINT8_MASK, shr(88, tokenOut))
-                                mstore(0x0, or(shl(240, lenderId), shr(96, tokenOut)))
-
-                                switch mode
-                                case 2 {
-                                    mstore(0x20, VARIABLE_DEBT_TOKENS_SLOT)
-                                }
-                                case 1 {
-                                    mstore(0x20, STABLE_DEBT_TOKENS_SLOT)
-                                }
-                                default {
-                                    revert(0, 0)
-                                }
-
-                                let debtToken := sload(keccak256(0x0, 0x40))
-                                if iszero(debtToken) {
-                                    mstore(0, BAD_LENDER)
-                                    revert(0, 0x4)
-                                }
-                                // selector for balanceOf(address)
-                                mstore(0x0, ERC20_BALANCE_OF)
-                                // add caller address as parameter
-                                mstore(0x4, callerAddress)
-                                // call to debtToken
-                                pop(staticcall(gas(), debtToken, 0x0, 0x24, 0x0, 0x20))
-                                // load the retrieved balance
-                                amountOut := mload(0x0)
-                            }
-                            default {
-                                switch lt(lenderId, MAX_ID_COMPOUND_V3)
-                                // Compound V3
-                                case 1 {
-                                    let cometPool
-                                    switch lenderId
-                                    case 2000 {
-                                        cometPool := COMET_USDC
-                                    }
-                                    case 2001 {
-                                        cometPool := COMET_WETH
-                                    }
-                                    case 2002 {
-                                        cometPool := COMET_USDBC
-                                    }
-                                    case 2003 {
-                                        cometPool := COMET_AERO
-                                    }
-                                    // default: load comet from storage
-                                    // if it is not provided directly
-                                    default {
-                                        mstore(0x0, lenderId)
-                                        mstore(0x20, LENDING_POOL_SLOT)
-                                        cometPool := sload(keccak256(0x0, 0x40))
-                                        if iszero(cometPool) {
-                                            mstore(0, BAD_LENDER)
-                                            revert(0, 0x4)
-                                        }
-                                    }
-
-                                    // borrowBalanceOf(address)
-                                    mstore(0x0, 0x374c49b400000000000000000000000000000000000000000000000000000000)
-                                    // add caller address as parameter
-                                    mstore(0x4, callerAddress)
-                                    // call to debtToken
-                                    pop(staticcall(gas(), cometPool, 0x0, 0x24, 0x0, 0x20))
-                                    // load the retrieved balance
-                                    amountOut := mload(0x0)
-                                }
-                                default {
-                                    // Slot for collateralTokens[target] is keccak256(target . collateralTokens.slot).
-                                    mstore(0x0, or(shl(240, lenderId), shr(96, calldataload(opdataOffset))))
-                                    mstore(0x20, COLLATERAL_TOKENS_SLOT)
-                                    let collateralToken := sload(keccak256(0x0, 0x40))
-                                    // revert if token not defined
-                                    if iszero(collateralToken) {
-                                        mstore(0, BAD_LENDER)
-                                        revert(0, 0x4)
-                                    }
-                                    // selector for borrowBalanceCurrent(address)
-                                    mstore(0, 0x17bfdfbc00000000000000000000000000000000000000000000000000000000)
-                                    // add caller address as parameter
-                                    mstore(0x04, callerAddress)
-                                    // call to token
-                                    pop(
-                                        call(
-                                            gas(),
-                                            collateralToken, // collateral token
-                                            0x0,
-                                            0x0,
-                                            0x24,
-                                            0x0,
-                                            0x20
-                                        )
-                                    )
-                                    // load the retrieved balance
-                                    amountOut := mload(0x0)
-                                }
-                            }
-                        }
-                        currentOffset := add(currentOffset, add(32, opdataLength))
-                    }
-                    flashSwapExactOutInternal(amountOut, amountInMaximum, payer, opdataOffset, opdataLength);
-                } else if (operation == Commands.EXTERNAL_CALL) {
+                if (operation == Commands.EXTERNAL_CALL) {
                     ////////////////////////////////////////////////////
                     // Execute call to external contract. It consits of
                     // an approval target and call target.
@@ -827,84 +319,84 @@ contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
                             }
                             case 0 {
                                 switch lt(lenderId, MAX_ID_COMPOUND_V3)
-                                case 1 {
-                                    let cometPool
-                                    let cometCcy
-                                    switch lenderId
-                                    // Compound V3 USDC.e
-                                    case 2000 {
-                                        cometPool := COMET_USDC
-                                    }
-                                    case 2001 {
-                                        cometPool := COMET_WETH
-                                    }
-                                    case 2002 {
-                                        cometPool := COMET_USDBC
-                                    }
-                                    case 2003 {
-                                        cometPool := COMET_AERO
-                                    }
-                                    // default: load comet from storage
-                                    // if it is not provided directly
-                                    // note that the debt token is stored as
-                                    // variable debt token
-                                    default {
-                                        mstore(0x0, lenderId)
-                                        mstore(0x20, LENDING_POOL_SLOT)
-                                        cometPool := sload(keccak256(0x0, 0x40))
-                                        if iszero(cometPool) {
-                                            mstore(0, BAD_LENDER)
-                                            revert(0, 0x4)
-                                        }
+                                // case 1 {
+                                //     let cometPool
+                                //     let cometCcy
+                                //     switch lenderId
+                                //     // Compound V3 USDC.e
+                                //     case 2000 {
+                                //         cometPool := COMET_USDC
+                                //     }
+                                //     case 2001 {
+                                //         cometPool := COMET_WETH
+                                //     }
+                                //     case 2002 {
+                                //         cometPool := COMET_USDBC
+                                //     }
+                                //     case 2003 {
+                                //         cometPool := COMET_AERO
+                                //     }
+                                //     // default: load comet from storage
+                                //     // if it is not provided directly
+                                //     // note that the debt token is stored as
+                                //     // variable debt token
+                                //     default {
+                                //         mstore(0x0, lenderId)
+                                //         mstore(0x20, LENDING_POOL_SLOT)
+                                //         cometPool := sload(keccak256(0x0, 0x40))
+                                //         if iszero(cometPool) {
+                                //             mstore(0, BAD_LENDER)
+                                //             revert(0, 0x4)
+                                //         }
 
-                                        mstore(0x0, or(shl(240, lenderId), cometPool))
-                                        mstore(0x20, VARIABLE_DEBT_TOKENS_SLOT)
-                                        cometCcy := sload(keccak256(0x0, 0x40))
-                                    }
+                                //         mstore(0x0, or(shl(240, lenderId), cometPool))
+                                //         mstore(0x20, VARIABLE_DEBT_TOKENS_SLOT)
+                                //         cometCcy := sload(keccak256(0x0, 0x40))
+                                //     }
 
-                                    switch eq(underlying, cometCcy)
-                                    case 1 {
-                                        // selector for balanceOf(address)
-                                        mstore(0, ERC20_BALANCE_OF)
-                                        // add caller address as parameter
-                                        mstore(0x04, callerAddress)
-                                        // call to token
-                                        pop(
-                                            staticcall(
-                                                gas(),
-                                                cometPool, // collateral token
-                                                0x0,
-                                                0x24,
-                                                0x0,
-                                                0x20
-                                            )
-                                        )
-                                        // load the retrieved balance
-                                        amount := mload(0x0)
-                                    }
-                                    default {
-                                        let ptr := mload(0x40)
-                                        // selector for userCollateral(address,address)
-                                        mstore(ptr, 0x2b92a07d00000000000000000000000000000000000000000000000000000000)
-                                        // add caller address as parameter
-                                        mstore(add(ptr, 0x04), callerAddress)
-                                        // add underlying address
-                                        mstore(add(ptr, 0x24), underlying)
-                                        // call to token
-                                        pop(
-                                            staticcall(
-                                                gas(),
-                                                cometPool, // collateral token
-                                                ptr,
-                                                0x44,
-                                                ptr,
-                                                0x20
-                                            )
-                                        )
-                                        // load the retrieved balance (lower 128 bits)
-                                        amount := and(UINT128_MASK, mload(ptr))
-                                    }
-                                }
+                                //     switch eq(underlying, cometCcy)
+                                //     case 1 {
+                                //         // selector for balanceOf(address)
+                                //         mstore(0, ERC20_BALANCE_OF)
+                                //         // add caller address as parameter
+                                //         mstore(0x04, callerAddress)
+                                //         // call to token
+                                //         pop(
+                                //             staticcall(
+                                //                 gas(),
+                                //                 cometPool, // collateral token
+                                //                 0x0,
+                                //                 0x24,
+                                //                 0x0,
+                                //                 0x20
+                                //             )
+                                //         )
+                                //         // load the retrieved balance
+                                //         amount := mload(0x0)
+                                //     }
+                                //     default {
+                                //         let ptr := mload(0x40)
+                                //         // selector for userCollateral(address,address)
+                                //         mstore(ptr, 0x2b92a07d00000000000000000000000000000000000000000000000000000000)
+                                //         // add caller address as parameter
+                                //         mstore(add(ptr, 0x04), callerAddress)
+                                //         // add underlying address
+                                //         mstore(add(ptr, 0x24), underlying)
+                                //         // call to token
+                                //         pop(
+                                //             staticcall(
+                                //                 gas(),
+                                //                 cometPool, // collateral token
+                                //                 ptr,
+                                //                 0x44,
+                                //                 ptr,
+                                //                 0x20
+                                //             )
+                                //         )
+                                //         // load the retrieved balance (lower 128 bits)
+                                //         amount := and(UINT128_MASK, mload(ptr))
+                                //     }
+                                // }
                                 default {
                                     // Slot for collateralTokens[target] is keccak256(target . collateralTokens.slot).
                                     mstore(0x0, or(shl(240, lenderId), underlying))
@@ -939,6 +431,76 @@ contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
                         currentOffset := add(currentOffset, 56)
                     }
                     _withdraw(underlying, callerAddress, receiver, amount, lenderId);
+                } else if (operation == Commands.LENDING) {
+                    uint256 lendingOperation;
+                    uint256 lender;
+                    console.log("Commands.LENDING");
+                    assembly {
+                        let slice := calldataload(currentOffset)
+                        lendingOperation := shr(248, calldataload(currentOffset))
+                        lender := and(UINT16_MASK, shr(232, calldataload(currentOffset)))
+                        currentOffset := add(currentOffset, 3)
+                    }
+                    console.log("lendingOperation", lendingOperation);
+                    console.log("lender", lender);
+                    /** Deposit collateral */
+                    if (lendingOperation == 0) {
+                        if (lender < 1000) {
+                            currentOffset = _depositToAaveV3(currentOffset, paramPush);
+                        } else if (lender == 1000) {
+                            //
+                        } else if (lender == 2000) {
+                            //
+                        } else if (lender == 3000) {
+                            //
+                        } else {
+                            currentOffset = _morphoDepositCollateral(currentOffset, callerAddress);
+                        }
+                    }
+                    /** Borrow */
+                    else if (lendingOperation == 1) {
+                        if (lender < 2000) {
+                            currentOffset = _borrowFromAave(currentOffset, callerAddress, paramPull);
+                        } else if (lender == 2000) {
+                            //
+                        } else if (lender == 3000) {
+                            //
+                        } else {
+                            currentOffset = _morphoBorrow(currentOffset, callerAddress);
+                        }
+                    }
+                    /** repay */
+                    else if (lendingOperation == 2) {
+                        if (lender < 2000) {
+                            currentOffset = _repayToAave(currentOffset, callerAddress, paramPull);
+                        } else if (lender == 2000) {
+                            //
+                        } else if (lender == 3000) {
+                            //
+                        } else {
+                            currentOffset = _morphoRepay(currentOffset, callerAddress);
+                        }
+                    }
+                    /** Morpho withdraw collateral */
+                    else if (lendingOperation == 3) {
+                        if (lender < 2000) {
+                            currentOffset = _withdrawFromAave(currentOffset, callerAddress, paramPull);
+                        } else if (lender == 2000) {
+                            //
+                        } else if (lender == 3000) {
+                            //
+                        } else {
+                            currentOffset = _morphoWithdrawCollateral(currentOffset, callerAddress);
+                        }
+                    }
+                    /** deposit lendingToken */
+                    else if (lendingOperation == 4) {
+                        currentOffset = _morphoDeposit(currentOffset, callerAddress);
+                    }
+                    /** withdraw lendingToken */
+                    else if (lendingOperation == 5) {
+                        currentOffset = _morphoWithdraw(currentOffset, callerAddress);
+                    } else revert();
                 } else if (operation == Commands.MORPH) {
                     uint256 morphoOperation;
                     assembly {
