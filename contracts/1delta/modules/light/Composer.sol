@@ -6,8 +6,9 @@ import {MarginTrading} from "./MarginTrading.sol";
 import {Commands} from "../shared/Commands.sol";
 import {Morpho} from "./MorphoLending.sol";
 import {GenericLending} from "./lending/GenericLending.sol";
+import {V3TypeGeneric} from "./swappers/V3Type.sol";
 import {ERC4646Transfers} from "./ERC4646Transfers.sol";
-import {console} from "forge-std/console.sol";
+// import {console} from "forge-std/console.sol";
 
 /**
  * @title Universal aggregator contract.
@@ -15,7 +16,7 @@ import {console} from "forge-std/console.sol";
  *        Efficient baching through compact calldata usage.
  * @author 1delta Labs AG
  */
-contract OneDeltaComposerLight is MarginTrading, Morpho, ERC4646Transfers, GenericLending {
+contract OneDeltaComposerLight is MarginTrading, Morpho, ERC4646Transfers, GenericLending, V3TypeGeneric {
     /// @dev we need base tokens to identify Compound V3's selectors
     address internal constant AERO = 0x940181a94A35A4569E4529A3CDfB74e38FD98631;
     address internal constant USDBC = 0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA;
@@ -70,7 +71,20 @@ contract OneDeltaComposerLight is MarginTrading, Morpho, ERC4646Transfers, Gener
                 currentOffset := add(1, currentOffset)
             }
             if (operation < 0x10) {
-                if (operation == Commands.EXTERNAL_CALL) {
+                if (operation == 8) {
+                    assembly {
+                        
+                    }
+                    eSwapExactIn(
+                        0,
+                        callerAddress,
+                        callerAddress,
+                        callerAddress,
+                        callerAddress,
+                        currentOffset
+                    );
+                    //
+                } else if (operation == Commands.EXTERNAL_CALL) {
                     ////////////////////////////////////////////////////
                     // Execute call to external contract. It consits of
                     // an approval target and call target.
@@ -434,15 +448,12 @@ contract OneDeltaComposerLight is MarginTrading, Morpho, ERC4646Transfers, Gener
                 } else if (operation == Commands.LENDING) {
                     uint256 lendingOperation;
                     uint256 lender;
-                    console.log("Commands.LENDING");
                     assembly {
                         let slice := calldataload(currentOffset)
                         lendingOperation := shr(248, calldataload(currentOffset))
                         lender := and(UINT16_MASK, shr(232, calldataload(currentOffset)))
                         currentOffset := add(currentOffset, 3)
                     }
-                    console.log("lendingOperation", lendingOperation);
-                    console.log("lender", lender);
                     /** Deposit collateral */
                     if (lendingOperation == 0) {
                         if (lender < 1000) {
