@@ -9,14 +9,14 @@ import {MarketParams, IMorphoEverything} from "./utils/Morpho.sol";
 import {OneDeltaComposerBase} from "../../contracts/1delta/modules/base/Composer.sol";
 import {OneDeltaComposerLight} from "../../contracts/1delta/modules/light/Composer.sol";
 import {IERC20All} from "../shared/interfaces/IERC20All.sol";
-import {AAVE_V3_DATA_8453} from "./AAVE_V3_DATA_8453.sol";
+import {GRANARY_DATA_8453} from "./GRANARY_DATA_8453.sol";
 
 /**
  * We test all morpho blue operations
  * - supply, supplyCollateral, borrow, repay, erc4646Deposit, erc4646Withdraw
  */
-contract AaveLightTest is Test, ComposerUtils, AAVE_V3_DATA_8453 {
-
+contract AaveLightTest is Test, ComposerUtils, GRANARY_DATA_8453 {
+    uint16 internal constant GRANARY = 1000;
     OneDeltaComposerBase oneD;
     OneDeltaComposerLight oneDV2;
 
@@ -35,11 +35,11 @@ contract AaveLightTest is Test, ComposerUtils, AAVE_V3_DATA_8453 {
             abi.encodePacked(
                 uint8(Commands.LENDING),
                 uint8(0),
-                uint16(0),
+                uint16(GRANARY),
                 token,
                 uint128(amount),
                 receiver,
-                AAVE_V3_POOL //
+                GRANARY_POOL //
             );
     }
 
@@ -48,12 +48,12 @@ contract AaveLightTest is Test, ComposerUtils, AAVE_V3_DATA_8453 {
             abi.encodePacked(
                 uint8(Commands.LENDING),
                 uint8(1),
-                uint16(0),
+                uint16(GRANARY),
                 token,
                 uint128(amount),
                 receiver,
                 uint8(mode),
-                AAVE_V3_POOL //
+                GRANARY_POOL //
             );
     }
 
@@ -62,13 +62,13 @@ contract AaveLightTest is Test, ComposerUtils, AAVE_V3_DATA_8453 {
             abi.encodePacked(
                 uint8(Commands.LENDING),
                 uint8(2),
-                uint16(0),
+                uint16(GRANARY),
                 token,
                 uint128(amount),
                 receiver,
                 uint8(mode),
                 lendingTokens[token].vToken,
-                AAVE_V3_POOL //
+                GRANARY_POOL //
             );
     }
 
@@ -83,16 +83,16 @@ contract AaveLightTest is Test, ComposerUtils, AAVE_V3_DATA_8453 {
             abi.encodePacked(
                 uint8(Commands.LENDING),
                 uint8(3),
-                uint16(0),
+                uint16(GRANARY),
                 token,
                 uint128(amount),
                 receiver,
                 lendingTokens[token].aToken,
-                AAVE_V3_POOL //
+                GRANARY_POOL //
             );
     }
 
-    function test_light_aave_deposit() external {
+    function test_light_granary_deposit() external {
         vm.assume(user != address(0));
 
         address token = USDC;
@@ -114,7 +114,7 @@ contract AaveLightTest is Test, ComposerUtils, AAVE_V3_DATA_8453 {
         oneDV2.deltaCompose(abi.encodePacked(transferTo, d));
     }
 
-    function test_light_aave_borrow() external {
+    function test_light_granary_borrow() external {
         vm.assume(user != address(0));
 
         address token = USDC;
@@ -133,7 +133,7 @@ contract AaveLightTest is Test, ComposerUtils, AAVE_V3_DATA_8453 {
         oneDV2.deltaCompose(d);
     }
 
-    function test_light_aave_withdraw() external {
+    function test_light_granary_withdraw() external {
         vm.assume(user != address(0));
 
         address token = USDC;
@@ -152,7 +152,7 @@ contract AaveLightTest is Test, ComposerUtils, AAVE_V3_DATA_8453 {
         oneDV2.deltaCompose(d);
     }
 
-    function test_light_aave_repay() external {
+    function test_light_granary_repay() external {
         vm.assume(user != address(0));
 
         address token = USDC;

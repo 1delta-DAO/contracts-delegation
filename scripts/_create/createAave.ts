@@ -26,7 +26,7 @@ const constantAddress = (name: string, v: string) => `address internal constant 
 
 async function main() {
     const chainId = Chain.BASE
-    const lender = Lender.AAVE_V3
+    const lender = Lender.GRANARY
     const header = importSnippetReserves(lender, chainId)
 
     const poolData = AAVE_FORK_POOL_DATA[lender][chainId]
