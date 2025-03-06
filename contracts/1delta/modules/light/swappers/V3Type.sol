@@ -31,21 +31,19 @@ abstract contract V3TypeGeneric is Masks {
     /*
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
-     * | 0      | 1              | dexOp                | <- Operation info (should be flag for )
-     * | 1      | 1              | dexId                |
-     * | 2      | 20             | pool                 |
-     * | 22     | 20             | receiver             |
      * | 52     | 20             | pool                 |
-     * | 72     | 20             | tokenIn              | <- this is passed to the callback for validation
-     * | 74     | 20             | tokenOut             |
      * | 94     | 2              | fee                  |
      * | 96     | 2              | calldataLength       |
      * | 98     | calldataLength | calldata             |
      */
     function _swapUniswapV3PoolExactInGeneric(
+        uint256 dexId,
+        uint256 fromAmount,
+        address tokenIn,
+        address tokenOut,
+        address receiver,
         uint256 currentOffset,
         address callerAddress,
-        uint256 fromAmount,
         uint256 pathOffset
     ) internal returns (uint256 receivedAmount, uint256) {
         // solhint-disable-next-line no-inline-assembly
@@ -55,7 +53,6 @@ abstract contract V3TypeGeneric is Masks {
             let maxAm := shl(128, amount)
             amount := and(UINT128_MASK, amount)
             currentOffset := add(currentOffset, 32)
-            let receiver := shr(96, calldataload(pathOffset))
             // read the pool address
             let pool := and(
                 ADDRESS_MASK,
@@ -134,6 +131,112 @@ abstract contract V3TypeGeneric is Masks {
         }
         return (receivedAmount, currentOffset);
     }
+    // /*
+    //  * | Offset | Length (bytes) | Description          |
+    //  * |--------|----------------|----------------------|
+    //  * | 0      | 1              | dexOp                | <- Operation info (should be flag for )
+    //  * | 1      | 1              | dexId                |
+    //  * | 2      | 20             | pool                 |
+    //  * | 22     | 20             | receiver             |
+    //  * | 52     | 20             | pool                 |
+    //  * | 72     | 20             | tokenIn              | <- this is passed to the callback for validation
+    //  * | 74     | 20             | tokenOut             |
+    //  * | 94     | 2              | fee                  |
+    //  * | 96     | 2              | calldataLength       |
+    //  * | 98     | calldataLength | calldata             |
+    //  */
+    // function _swapUniswapV3PoolExactInGeneric(
+    //     uint256 currentOffset,
+    //     address callerAddress,
+    //     uint256 fromAmount,
+    //     uint256 pathOffset
+    // ) internal returns (uint256 receivedAmount, uint256) {
+    //     // solhint-disable-next-line no-inline-assembly
+    //     assembly {
+    //         let ptr := mload(0x40)
+    //         let amount := calldataload(currentOffset)
+    //         let maxAm := shl(128, amount)
+    //         amount := and(UINT128_MASK, amount)
+    //         currentOffset := add(currentOffset, 32)
+    //         let receiver := shr(96, calldataload(pathOffset))
+    //         // read the pool address
+    //         let pool := and(
+    //             ADDRESS_MASK,
+    //             calldataload(currentOffset) // starts as first param
+    //         )
+    //         currentOffset := add(currentOffset, 20)
+    //         // Return amount0 or amount1 depending on direction
+    //         let zeroForOne := shr(96, calldataload(pathOffset)) // tokenIn
+    //         currentOffset := add(currentOffset, 20)
+    //         zeroForOne := lt(
+    //             zeroForOne, // tokenIn
+    //             shr(96, calldataload(pathOffset)) // tokenOut
+    //         )
+
+    //         // Prepare external call data
+    //         // Store swap selector (0x128acb08)
+    //         mstore(ptr, 0x128acb0800000000000000000000000000000000000000000000000000000000)
+    //         // Store toAddress
+    //         mstore(add(ptr, 4), receiver)
+    //         // Store direction
+    //         mstore(add(ptr, 36), zeroForOne)
+    //         // Store fromAmount
+    //         mstore(add(ptr, 68), fromAmount)
+
+    //         // Store data offset
+    //         mstore(add(ptr, 132), 0xa0)
+    //         currentOffset := add(currentOffset, 42)
+    //         let pathLength := shr(240, calldataload(currentOffset))
+    //         // Store path
+    //         calldatacopy(add(ptr, 196), pathOffset, pathLength)
+
+    //         // within the callback, we add the maximum in amount
+    //         mstore(add(add(ptr, 196), pathLength), shl(128, amount))
+    //         let _pathLength := add(pathLength, 16)
+    //         // within the callback, we add the callerAddress
+    //         mstore(add(add(ptr, 196), _pathLength), shl(96, callerAddress))
+    //         _pathLength := add(_pathLength, 20)
+
+    //         /// Store data length
+    //         mstore(add(ptr, 164), _pathLength)
+
+    //         switch zeroForOne
+    //         case 0 {
+    //             // Store sqrtPriceLimitX96
+    //             mstore(add(ptr, 100), MAX_SQRT_RATIO)
+
+    //             // Perform the external 'swap' call
+    //             if iszero(call(gas(), pool, 0, ptr, add(228, _pathLength), ptr, 32)) {
+    //                 // store return value directly to free memory pointer
+    //                 // The call failed; we retrieve the exact error message and revert with it
+    //                 returndatacopy(0, 0, returndatasize()) // Copy the error message to the start of memory
+    //                 revert(0, returndatasize()) // Revert with the error message
+    //             }
+    //             // If direction is 0, return amount0
+    //             receivedAmount := mload(ptr)
+    //         }
+    //         default {
+    //             // Store sqrtPriceLimitX96
+    //             mstore(add(ptr, 100), MIN_SQRT_RATIO)
+
+    //             // Perform the external 'swap' call
+    //             if iszero(call(gas(), pool, 0, ptr, add(228, _pathLength), ptr, 64)) {
+    //                 // store return value directly to free memory pointer
+    //                 // The call failed; we retrieve the exact error message and revert with it
+    //                 returndatacopy(0, 0, returndatasize()) // Copy the error message to the start of memory
+    //                 revert(0, returndatasize()) // Revert with the error message
+    //             }
+
+    //             // If direction is 1, return amount1
+    //             receivedAmount := mload(add(ptr, 32))
+    //         }
+    //         // receivedAmount = -receivedAmount
+    //         receivedAmount := sub(0, receivedAmount)
+
+    //         currentOffset := add(currentOffset, add(2, pathLength))
+    //     }
+    //     return (receivedAmount, currentOffset);
+    // }
 
     // /// @dev Swap exact input through izumi
     // function _swapIZIPoolExactIn(

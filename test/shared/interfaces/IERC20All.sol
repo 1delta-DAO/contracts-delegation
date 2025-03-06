@@ -32,4 +32,6 @@ interface IERC20All {
 
     // ERC4646
     function convertToAssets(uint256 shares) external view returns (uint256 assets);
+
+    function allow(address manager, bool isAllowed) external;
 }

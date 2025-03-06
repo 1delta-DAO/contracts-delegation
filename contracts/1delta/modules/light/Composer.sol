@@ -2,12 +2,13 @@
 
 pragma solidity 0.8.28;
 
-import {MarginTrading} from "./MarginTrading.sol";
 import {Commands} from "../shared/Commands.sol";
 import {Morpho} from "./MorphoLending.sol";
 import {GenericLending} from "./lending/GenericLending.sol";
-import {V3TypeGeneric} from "./swappers/V3Type.sol";
 import {ERC4646Transfers} from "./ERC4646Transfers.sol";
+import {PermitUtils} from "../shared/permit/PermitUtils.sol";
+import {DeltaErrors} from "../shared/errors/Errors.sol";
+
 // import {console} from "forge-std/console.sol";
 
 /**
@@ -16,11 +17,22 @@ import {ERC4646Transfers} from "./ERC4646Transfers.sol";
  *        Efficient baching through compact calldata usage.
  * @author 1delta Labs AG
  */
-contract OneDeltaComposerLight is MarginTrading, Morpho, ERC4646Transfers, GenericLending, V3TypeGeneric {
-    /// @dev we need base tokens to identify Compound V3's selectors
-    address internal constant AERO = 0x940181a94A35A4569E4529A3CDfB74e38FD98631;
-    address internal constant USDBC = 0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA;
-    address internal constant USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
+contract OneDeltaComposerLight is Morpho, ERC4646Transfers, GenericLending, PermitUtils, DeltaErrors {
+    // wNative
+    address internal constant WRAPPED_NATIVE = 0x4200000000000000000000000000000000000006;
+
+    // Balancer V2 ault
+    address internal constant BALANCER_V2_VAULT = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
+
+    // Aave V3 style lender pool addresses
+    address internal constant AAVE_V3 = 0xA238Dd80C259a72e81d7e4664a9801593F98d1c5;
+
+    address internal constant AVALON = 0x6374a1F384737bcCCcD8fAE13064C18F7C8392e5;
+
+    address internal constant ZEROLEND = 0x766f21277087E18967c1b10bF602d8Fe56d0c671;
+
+    // Aave v2s
+    address internal constant GRANARY = 0xB702cE183b4E1Faa574834715E5D4a6378D0eEd3;
 
     uint256 internal constant _PRE_PARAM = 1 << 253;
 
@@ -43,7 +55,7 @@ contract OneDeltaComposerLight is MarginTrading, Morpho, ERC4646Transfers, Gener
      * | op0 | length0 | data0 | op1 | length1 | ...
      * | 1   |    16   | ...   |  1  |    16   | ...
      */
-    function _deltaComposeInternal(address callerAddress, uint256 paramPull, uint256 paramPush, uint currentOffset, uint _length) internal override {
+    function _deltaComposeInternal(address callerAddress, uint256 paramPull, uint256 paramPush, uint currentOffset, uint _length) internal {
         // data loop paramters
         uint256 maxIndex;
         assembly {
@@ -71,20 +83,7 @@ contract OneDeltaComposerLight is MarginTrading, Morpho, ERC4646Transfers, Gener
                 currentOffset := add(1, currentOffset)
             }
             if (operation < 0x10) {
-                if (operation == 8) {
-                    assembly {
-                        
-                    }
-                    eSwapExactIn(
-                        0,
-                        callerAddress,
-                        callerAddress,
-                        callerAddress,
-                        callerAddress,
-                        currentOffset
-                    );
-                    //
-                } else if (operation == Commands.EXTERNAL_CALL) {
+                if (operation == Commands.EXTERNAL_CALL) {
                     ////////////////////////////////////////////////////
                     // Execute call to external contract. It consits of
                     // an approval target and call target.
@@ -178,274 +177,7 @@ contract OneDeltaComposerLight is MarginTrading, Morpho, ERC4646Transfers, Gener
                     }
                 }
             } else if (operation < 0x20) {
-                if (operation == Commands.DEPOSIT) {
-                    ////////////////////////////////////////////////////
-                    // Executes deposit to lender
-                    // Data layout:
-                    //      bytes 0-20:                  underlying
-                    //      bytes 20-40:                 receiver
-                    //      bytes 40-52:                 amount
-                    //      bytes 52-54:                 lenderId
-                    ////////////////////////////////////////////////////
-                    address underlying;
-                    address receiver;
-                    uint256 amount;
-                    uint256 lenderId;
-                    assembly {
-                        underlying := shr(96, calldataload(currentOffset))
-                        receiver := and(ADDRESS_MASK, calldataload(add(currentOffset, 8)))
-                        let lastBytes := calldataload(add(currentOffset, 40))
-                        amount := and(_UINT112_MASK, shr(128, lastBytes))
-                        lenderId := shr(240, lastBytes) // last 2 bytes
-                        if iszero(amount) {
-                            // selector for balanceOf(address)
-                            mstore(0, ERC20_BALANCE_OF)
-                            // add this address as parameter
-                            mstore(0x04, address())
-                            // call to token
-                            pop(
-                                staticcall(
-                                    gas(),
-                                    underlying, // token
-                                    0x0,
-                                    0x24,
-                                    0x0,
-                                    0x20
-                                )
-                            )
-                            // load the retrieved balance
-                            amount := mload(0x0)
-                        }
-                        currentOffset := add(currentOffset, 56)
-                    }
-                    _deposit(underlying, receiver, amount, lenderId);
-                } else if (operation == Commands.BORROW) {
-                    ////////////////////////////////////////////////////
-                    // Executes delegated borrow from lender
-                    // Data layout:
-                    //      bytes 0-20:                  underlying
-                    //      bytes 20-40:                 receiver
-                    //      bytes 40-42:                 lenderId
-                    //      bytes 42-54:                 amount
-                    //      bytes 54-55:                 mode
-                    ////////////////////////////////////////////////////
-                    address underlying;
-                    address receiver;
-                    uint256 amount;
-                    uint256 lenderId;
-                    uint256 mode;
-                    assembly {
-                        underlying := shr(96, calldataload(currentOffset))
-                        receiver := and(ADDRESS_MASK, calldataload(add(currentOffset, 8)))
-                        let lastBytes := calldataload(add(currentOffset, 40))
-                        amount := and(_UINT112_MASK, shr(120, lastBytes))
-                        lenderId := shr(240, lastBytes) // last 2 bytes
-                        mode := and(UINT8_MASK, shr(232, lastBytes))
-                        currentOffset := add(currentOffset, 57)
-                    }
-                    _borrow(underlying, callerAddress, receiver, amount, mode, lenderId);
-                } else if (operation == Commands.REPAY) {
-                    address underlying;
-                    address receiver;
-                    uint256 amount;
-                    uint256 lenderId;
-                    uint256 mode;
-                    assembly {
-                        let offset := currentOffset
-                        underlying := and(ADDRESS_MASK, shr(96, calldataload(offset)))
-                        receiver := and(ADDRESS_MASK, calldataload(add(offset, 8)))
-                        let lastBytes := calldataload(add(offset, 40))
-                        lenderId := shr(240, lastBytes) // last 2 bytes
-                        mode := and(UINT8_MASK, shr(232, lastBytes))
-                        amount := and(_UINT112_MASK, shr(120, lastBytes))
-                        // zero means that we repay whatever is in this contract
-                        switch amount
-                        // conract balance
-                        case 0 {
-                            // selector for balanceOf(address)
-                            mstore(0, ERC20_BALANCE_OF)
-                            // add this address as parameter
-                            mstore(0x04, address())
-                            // call to token
-                            pop(
-                                staticcall(
-                                    gas(),
-                                    underlying, // token
-                                    0x0,
-                                    0x24,
-                                    0x0,
-                                    0x20
-                                )
-                            )
-                            // load the retrieved balance
-                            amount := mload(0x0)
-                        }
-                        // full user debt balance
-                        // only used for Compound V3. Overpaying results into the residual
-                        // being converted to collateral
-                        // Aave V2/3s allow higher amounts than the balance and will correctly adapt
-                        case 0xffffffffffffffffffffffffffff {
-                            // venus & Compound use max(uint) as flag
-                            amount := 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
-                        }
-                        currentOffset := add(currentOffset, 57)
-                    }
-                    _repay(underlying, receiver, amount, mode, lenderId);
-                } else if (operation == Commands.WITHDRAW) {
-                    address underlying;
-                    address receiver;
-                    uint256 amount;
-                    uint256 lenderId;
-                    assembly {
-                        underlying := shr(96, calldataload(currentOffset))
-                        receiver := and(ADDRESS_MASK, calldataload(add(currentOffset, 8)))
-                        let lastBytes := calldataload(add(currentOffset, 40))
-                        amount := and(_UINT112_MASK, shr(128, lastBytes))
-                        lenderId := shr(240, lastBytes) // last 2 bytes
-
-                        // maximum uint112 has a special meaning
-                        // for using the user collateral balance
-                        if eq(amount, 0xffffffffffffffffffffffffffff) {
-                            switch lt(lenderId, MAX_ID_AAVE_V2)
-                            // get aave type user collateral balance
-                            case 1 {
-                                // Slot for collateralTokens[target] is keccak256(target . collateralTokens.slot).
-                                mstore(0x0, or(shl(240, lenderId), underlying))
-                                mstore(0x20, COLLATERAL_TOKENS_SLOT)
-                                let collateralToken := sload(keccak256(0x0, 0x40))
-                                // selector for balanceOf(address)
-                                mstore(0, ERC20_BALANCE_OF)
-                                // add caller address as parameter
-                                mstore(0x04, callerAddress)
-                                // call to token
-                                pop(
-                                    staticcall(
-                                        gas(),
-                                        collateralToken, // collateral token
-                                        0x0,
-                                        0x24,
-                                        0x0,
-                                        0x20
-                                    )
-                                )
-                                // load the retrieved balance
-                                amount := mload(0x0)
-                            }
-                            case 0 {
-                                switch lt(lenderId, MAX_ID_COMPOUND_V3)
-                                // case 1 {
-                                //     let cometPool
-                                //     let cometCcy
-                                //     switch lenderId
-                                //     // Compound V3 USDC.e
-                                //     case 2000 {
-                                //         cometPool := COMET_USDC
-                                //     }
-                                //     case 2001 {
-                                //         cometPool := COMET_WETH
-                                //     }
-                                //     case 2002 {
-                                //         cometPool := COMET_USDBC
-                                //     }
-                                //     case 2003 {
-                                //         cometPool := COMET_AERO
-                                //     }
-                                //     // default: load comet from storage
-                                //     // if it is not provided directly
-                                //     // note that the debt token is stored as
-                                //     // variable debt token
-                                //     default {
-                                //         mstore(0x0, lenderId)
-                                //         mstore(0x20, LENDING_POOL_SLOT)
-                                //         cometPool := sload(keccak256(0x0, 0x40))
-                                //         if iszero(cometPool) {
-                                //             mstore(0, BAD_LENDER)
-                                //             revert(0, 0x4)
-                                //         }
-
-                                //         mstore(0x0, or(shl(240, lenderId), cometPool))
-                                //         mstore(0x20, VARIABLE_DEBT_TOKENS_SLOT)
-                                //         cometCcy := sload(keccak256(0x0, 0x40))
-                                //     }
-
-                                //     switch eq(underlying, cometCcy)
-                                //     case 1 {
-                                //         // selector for balanceOf(address)
-                                //         mstore(0, ERC20_BALANCE_OF)
-                                //         // add caller address as parameter
-                                //         mstore(0x04, callerAddress)
-                                //         // call to token
-                                //         pop(
-                                //             staticcall(
-                                //                 gas(),
-                                //                 cometPool, // collateral token
-                                //                 0x0,
-                                //                 0x24,
-                                //                 0x0,
-                                //                 0x20
-                                //             )
-                                //         )
-                                //         // load the retrieved balance
-                                //         amount := mload(0x0)
-                                //     }
-                                //     default {
-                                //         let ptr := mload(0x40)
-                                //         // selector for userCollateral(address,address)
-                                //         mstore(ptr, 0x2b92a07d00000000000000000000000000000000000000000000000000000000)
-                                //         // add caller address as parameter
-                                //         mstore(add(ptr, 0x04), callerAddress)
-                                //         // add underlying address
-                                //         mstore(add(ptr, 0x24), underlying)
-                                //         // call to token
-                                //         pop(
-                                //             staticcall(
-                                //                 gas(),
-                                //                 cometPool, // collateral token
-                                //                 ptr,
-                                //                 0x44,
-                                //                 ptr,
-                                //                 0x20
-                                //             )
-                                //         )
-                                //         // load the retrieved balance (lower 128 bits)
-                                //         amount := and(UINT128_MASK, mload(ptr))
-                                //     }
-                                // }
-                                default {
-                                    // Slot for collateralTokens[target] is keccak256(target . collateralTokens.slot).
-                                    mstore(0x0, or(shl(240, lenderId), underlying))
-                                    mstore(0x20, COLLATERAL_TOKENS_SLOT)
-                                    let collateralToken := sload(keccak256(0x0, 0x40))
-                                    // revert if token not defined
-                                    if iszero(collateralToken) {
-                                        mstore(0, BAD_LENDER)
-                                        revert(0, 0x4)
-                                    }
-                                    // selector for balanceOfUnderlying(address)
-                                    mstore(0, 0x3af9e66900000000000000000000000000000000000000000000000000000000)
-                                    // add caller address as parameter
-                                    mstore(0x04, callerAddress)
-                                    // call to token
-                                    pop(
-                                        call(
-                                            gas(),
-                                            collateralToken, // collateral token
-                                            0x0,
-                                            0x0,
-                                            0x24,
-                                            0x0,
-                                            0x20
-                                        )
-                                    )
-                                    // load the retrieved balance
-                                    amount := mload(0x0)
-                                }
-                            }
-                        }
-                        currentOffset := add(currentOffset, 56)
-                    }
-                    _withdraw(underlying, callerAddress, receiver, amount, lenderId);
-                } else if (operation == Commands.LENDING) {
+                if (operation == Commands.LENDING) {
                     uint256 lendingOperation;
                     uint256 lender;
                     assembly {
@@ -459,9 +191,9 @@ contract OneDeltaComposerLight is MarginTrading, Morpho, ERC4646Transfers, Gener
                         if (lender < 1000) {
                             currentOffset = _depositToAaveV3(currentOffset, paramPush);
                         } else if (lender == 1000) {
-                            //
+                            currentOffset = _depositToAaveV2(currentOffset, paramPush);
                         } else if (lender == 2000) {
-                            //
+                            currentOffset = _depositToCompoundV3(currentOffset, paramPush);
                         } else if (lender == 3000) {
                             //
                         } else {
@@ -473,7 +205,7 @@ contract OneDeltaComposerLight is MarginTrading, Morpho, ERC4646Transfers, Gener
                         if (lender < 2000) {
                             currentOffset = _borrowFromAave(currentOffset, callerAddress, paramPull);
                         } else if (lender == 2000) {
-                            //
+                            currentOffset = _borrowFromCompoundV3(currentOffset, callerAddress, paramPull);
                         } else if (lender == 3000) {
                             //
                         } else {
@@ -485,7 +217,7 @@ contract OneDeltaComposerLight is MarginTrading, Morpho, ERC4646Transfers, Gener
                         if (lender < 2000) {
                             currentOffset = _repayToAave(currentOffset, callerAddress, paramPull);
                         } else if (lender == 2000) {
-                            //
+                            currentOffset = _repayToCompoundV3(currentOffset, paramPush);
                         } else if (lender == 3000) {
                             //
                         } else {
@@ -497,7 +229,7 @@ contract OneDeltaComposerLight is MarginTrading, Morpho, ERC4646Transfers, Gener
                         if (lender < 2000) {
                             currentOffset = _withdrawFromAave(currentOffset, callerAddress, paramPull);
                         } else if (lender == 2000) {
-                            //
+                            currentOffset = _withdrawFromCompoundV3(currentOffset, callerAddress, paramPull);
                         } else if (lender == 3000) {
                             //
                         } else {

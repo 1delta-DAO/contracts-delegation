@@ -4,7 +4,6 @@ pragma solidity ^0.8.19;
 import {Test} from "forge-std/Test.sol";
 import {console} from "forge-std/console.sol";
 import {ComposerUtils, Commands} from "../shared/utils/ComposerUtils.sol";
-import {MorphoMathLib} from "./utils/MathLib.sol";
 import {MarketParams, IMorphoEverything} from "./utils/Morpho.sol";
 
 import {OneDeltaComposerBase} from "../../contracts/1delta/modules/base/Composer.sol";
@@ -16,8 +15,7 @@ import {AAVE_V3_DATA_8453} from "./AAVE_V3_DATA_8453.sol";
  * We test all morpho blue operations
  * - supply, supplyCollateral, borrow, repay, erc4646Deposit, erc4646Withdraw
  */
-contract ComposerLightTest is Test, ComposerUtils, AAVE_V3_DATA_8453 {
-    using MorphoMathLib for uint256;
+contract AaveLightTest is Test, ComposerUtils, AAVE_V3_DATA_8453 {
 
     OneDeltaComposerBase oneD;
     OneDeltaComposerLight oneDV2;
@@ -32,7 +30,7 @@ contract ComposerLightTest is Test, ComposerUtils, AAVE_V3_DATA_8453 {
         oneDV2 = new OneDeltaComposerLight();
     }
 
-    function encodeAaveDeposit(address token, bool overrideAmount, uint amount, address receiver) internal view returns (bytes memory) {
+    function encodeAaveDeposit(address token, bool overrideAmount, uint amount, address receiver) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
                 uint8(Commands.LENDING),
@@ -45,7 +43,7 @@ contract ComposerLightTest is Test, ComposerUtils, AAVE_V3_DATA_8453 {
             );
     }
 
-    function encodeAaveBorrow(address token, bool overrideAmount, uint amount, address receiver, uint256 mode) internal view returns (bytes memory) {
+    function encodeAaveBorrow(address token, bool overrideAmount, uint amount, address receiver, uint256 mode) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
                 uint8(Commands.LENDING),
@@ -95,7 +93,7 @@ contract ComposerLightTest is Test, ComposerUtils, AAVE_V3_DATA_8453 {
             );
     }
 
-    function test_light_deposit() external {
+    function test_light_aave_deposit() external {
         vm.assume(user != address(0));
 
         address token = USDC;
@@ -117,7 +115,7 @@ contract ComposerLightTest is Test, ComposerUtils, AAVE_V3_DATA_8453 {
         oneDV2.deltaCompose(abi.encodePacked(transferTo, d));
     }
 
-    function test_light_borrow() external {
+    function test_light_aave_borrow() external {
         vm.assume(user != address(0));
 
         address token = USDC;
@@ -136,7 +134,7 @@ contract ComposerLightTest is Test, ComposerUtils, AAVE_V3_DATA_8453 {
         oneDV2.deltaCompose(d);
     }
 
-    function test_light_withdraw() external {
+    function test_light_aave_withdraw() external {
         vm.assume(user != address(0));
 
         address token = USDC;
@@ -155,7 +153,7 @@ contract ComposerLightTest is Test, ComposerUtils, AAVE_V3_DATA_8453 {
         oneDV2.deltaCompose(d);
     }
 
-    function test_light_repay() external {
+    function test_light_aave_repay() external {
         vm.assume(user != address(0));
 
         address token = USDC;

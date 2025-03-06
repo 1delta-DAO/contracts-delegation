@@ -33,7 +33,6 @@ async function main() {
     const reserves = AAVE_STYLE_RESERVE_ASSETS[lender][chainId]
     const tokens = AAVE_STYLE_TOKENS[lender][chainId]
 
-    console.log("tokens", tokens)
     let data = header
     data += `constructor() {\n`
     Object.entries(tokens).map(([reserves, tokens]) => {
