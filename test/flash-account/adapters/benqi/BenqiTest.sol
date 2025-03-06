@@ -14,6 +14,7 @@ contract BenqiTest is FlashAccountBaseTest {
     using MessageHashUtils for bytes32;
 
     event Mint(address minter, uint256 mintAmount, uint256 mintTokens);
+    event UserOperationRevertReason(bytes32 indexed userOpHash, address indexed sender, uint256 nonce, bytes revertReason);
 
     // Avalanche c-chain addresses
     address constant BENQI_COMPTROLLER = 0x486Af39519B4Dc9a7fCcd318217352830E8AD9b4;
@@ -31,67 +32,46 @@ contract BenqiTest is FlashAccountBaseTest {
         utilityAdapter = new UtilityAdapter();
     }
 
-    function test_supplyAdapter() public {
+    function test_supplyAdapter_multipleUserOps() public {
         uint256 usdcAmount = 10000e6; // 10k USDC
         uint256 supplyAmount = 1000e6; // 1k USDC
 
         // deal some USDC to the account
         deal(USDC, address(userFlashAccount), usdcAmount);
-
-        // gas limits
-        uint128 verificationGasLimit = 1 << 24;
-        uint128 callGasLimit = 1 << 24;
-        uint128 maxPriorityFeePerGas = 1 << 8;
-        uint128 maxFeePerGas = 1 << 8;
-
         // create an array of userOps that supplies usdc to benqi
         uint256 nonce = entryPoint.getNonce(address(userFlashAccount), 0);
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](2);
         // transfer usdc to the adapter
-        userOps[0] = PackedUserOperation({
-            sender: address(userFlashAccount),
-            nonce: nonce++,
-            initCode: "",
-            callData: abi.encodeWithSignature(
+        userOps[0] = _getUnsignedOp(
+            abi.encodeWithSignature(
                 "execute(address,uint256,bytes)",
                 address(USDC),
                 0,
                 abi.encodeWithSelector(IERC20.transfer.selector, address(benqiAdapter), supplyAmount)
             ),
-            accountGasLimits: bytes32((uint256(verificationGasLimit) << 128) | callGasLimit),
-            preVerificationGas: 1 << 24,
-            gasFees: bytes32((uint256(maxPriorityFeePerGas) << 128) | maxFeePerGas),
-            paymasterAndData: "",
-            signature: ""
-        });
+            nonce++
+        );
         userOps[0].signature = abi.encodePacked(
             BaseLightAccount.SignatureType.EOA,
             _sign(userPrivateKey, entryPoint.getUserOpHash(userOps[0]).toEthSignedMessageHash())
         );
         // supply usdc to benqi
-        userOps[1] = PackedUserOperation({
-            sender: address(userFlashAccount),
-            nonce: nonce,
-            initCode: "",
-            callData: abi.encodeWithSignature(
+        userOps[1] = _getUnsignedOp(
+            abi.encodeWithSignature(
                 "execute(address,uint256,bytes)",
                 address(benqiAdapter),
                 0,
                 abi.encodeWithSelector(BenqiAdapter.supply.selector, qiUSDC, USDC, user)
             ),
-            accountGasLimits: bytes32((uint256(verificationGasLimit) << 128) | callGasLimit),
-            preVerificationGas: 1 << 24,
-            gasFees: bytes32((uint256(maxPriorityFeePerGas) << 128) | maxFeePerGas),
-            paymasterAndData: "",
-            signature: ""
-        });
+            nonce
+        );
         userOps[1].signature = abi.encodePacked(
             BaseLightAccount.SignatureType.EOA,
             _sign(userPrivateKey, entryPoint.getUserOpHash(userOps[1]).toEthSignedMessageHash())
         );
 
-        // // init balances
+        // init balances
         uint256 userQiUsdcBalanceBefore = IERC20(qiUSDC).balanceOf(user);
 
         // send the userOps
@@ -101,6 +81,81 @@ contract BenqiTest is FlashAccountBaseTest {
         entryPoint.handleOps(userOps, BENEFICIARY);
 
         // check balances
+        _checkBalances(usdcAmount, supplyAmount, userQiUsdcBalanceBefore);
+    }
+
+    function test_supplyAdapter_singleUserOp() public {
+        uint256 usdcAmount = 10000e6; // 10k USDC
+        uint256 supplyAmount = 1000e6; // 1k USDC
+
+        // deal some USDC to the account
+        deal(USDC, address(userFlashAccount), usdcAmount);
+
+        address[] memory dests = new address[](2);
+        dests[0] = address(USDC);
+        dests[1] = address(benqiAdapter);
+        bytes[] memory funcs = new bytes[](2);
+        funcs[0] = abi.encodeWithSelector(IERC20.transfer.selector, address(benqiAdapter), supplyAmount);
+        funcs[1] = abi.encodeWithSelector(BenqiAdapter.supply.selector, qiUSDC, USDC, user);
+
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
+        userOps[0] = _getUnsignedOp(
+            abi.encodeWithSignature("executeBatch(address[],bytes[])", dests, funcs),
+            entryPoint.getNonce(address(userFlashAccount), 0)
+        );
+        userOps[0].signature = abi.encodePacked(
+            BaseLightAccount.SignatureType.EOA,
+            _sign(userPrivateKey, entryPoint.getUserOpHash(userOps[0]).toEthSignedMessageHash())
+        );
+
+        // init balances
+        uint256 userQiUsdcBalanceBefore = IERC20(qiUSDC).balanceOf(user);
+
+        // send the userOps
+        vm.prank(user);
+        vm.expectEmit(true, true, false, false);
+        emit Mint(address(benqiAdapter), supplyAmount, supplyAmount);
+        entryPoint.handleOps(userOps, BENEFICIARY);
+
+        // check balances
+        _checkBalances(usdcAmount, supplyAmount, userQiUsdcBalanceBefore);
+    }
+
+    function test_supplyRevertsWhenTransferFails() public {
+        uint256 usdcAmount = 10000e6; // 10k USDC
+        uint256 supplyAmount = 1000e6; // 1k USDC
+
+        // deal some USDC to the account
+        deal(USDC, address(userFlashAccount), usdcAmount);
+
+        address[] memory dests = new address[](2);
+        dests[0] = address(USDC);
+        dests[1] = address(benqiAdapter);
+        bytes[] memory funcs = new bytes[](2);
+        funcs[0] = abi.encodeWithSelector(IERC20.transfer.selector, address(benqiAdapter), ++usdcAmount);
+        funcs[1] = abi.encodeWithSelector(BenqiAdapter.supply.selector, qiUSDC, USDC, user);
+
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
+        userOps[0] = _getUnsignedOp(
+            abi.encodeWithSignature("executeBatch(address[],bytes[])", dests, funcs),
+            entryPoint.getNonce(address(userFlashAccount), 0)
+        );
+        userOps[0].signature = abi.encodePacked(
+            BaseLightAccount.SignatureType.EOA,
+            _sign(userPrivateKey, entryPoint.getUserOpHash(userOps[0]).toEthSignedMessageHash())
+        );
+
+        // init balances
+        uint256 userQiUsdcBalanceBefore = IERC20(qiUSDC).balanceOf(user);
+
+        // send the userOps
+        vm.prank(user);
+        vm.expectEmit(true, true, false, false);
+        emit UserOperationRevertReason(entryPoint.getUserOpHash(userOps[0]), address(userFlashAccount), 0, "");
+        entryPoint.handleOps(userOps, BENEFICIARY);
+    }
+
+    function _checkBalances(uint256 usdcAmount, uint256 supplyAmount, uint256 userQiUsdcBalanceBefore) internal {
         uint256 qiUsdcBalanceAfter = IERC20(qiUSDC).balanceOf(address(userFlashAccount));
         uint256 qiUsdcBalanceAdapterAfter = IERC20(qiUSDC).balanceOf(address(benqiAdapter));
         uint256 usdcBalanceAfter = IERC20(USDC).balanceOf(address(userFlashAccount));
@@ -110,16 +165,5 @@ contract BenqiTest is FlashAccountBaseTest {
         assertEq(usdcBalanceAfter, usdcAmount - supplyAmount);
         assertEq(qiUsdcBalanceAdapterAfter, 0);
         assertGt(userQiUsdcBalanceAfter, userQiUsdcBalanceBefore);
-
-        // console.log("FlashAccount_qiUsdcBalance_after", qiUsdcBalanceAfter);
-        // console.log("qiUsdcBalanceAdapter_after", qiUsdcBalanceAdapterAfter);
-        // console.log("FlashAccount_usdcBalance_after", usdcBalanceAfter);
-        // console.log("user_UsdcBalance_after", userBalanceAfter);
-        // console.log("user_qiUsdcBalance_after", userQiUsdcBalanceAfter);
-    }
-
-    function _sign(uint256 privateKey, bytes32 digest) internal pure returns (bytes memory) {
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, digest);
-        return abi.encodePacked(r, s, v);
     }
 }

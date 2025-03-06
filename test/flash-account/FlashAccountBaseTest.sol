@@ -6,6 +6,7 @@ import {EntryPoint} from "account-abstraction/core/EntryPoint.sol";
 import {FlashAccount} from "@flash-account/FlashAccount.sol";
 import {UpgradeableBeacon} from "@flash-account/proxy/Beacon.sol";
 import {FlashAccountFactory} from "@flash-account/FlashAccountFactory.sol";
+import {PackedUserOperation} from "account-abstraction/interfaces/PackedUserOperation.sol";
 // solhint-disable-next-line
 import {console2 as console} from "forge-std/console2.sol";
 contract FlashAccountBaseTest is Test {
@@ -35,5 +36,29 @@ contract FlashAccountBaseTest is Test {
         // deal some eth to the user and userAccount
         vm.deal(user, 1 ether);
         vm.deal(address(userFlashAccount), 1 ether);
+    }
+
+    function _sign(uint256 privateKey, bytes32 digest) internal pure returns (bytes memory) {
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, digest);
+        return abi.encodePacked(r, s, v);
+    }
+
+    function _getUnsignedOp(bytes memory callData, uint256 nonce) internal view returns (PackedUserOperation memory) {
+        uint128 verificationGasLimit = 1 << 24;
+        uint128 callGasLimit = 1 << 24;
+        uint128 maxPriorityFeePerGas = 1 << 8;
+        uint128 maxFeePerGas = 1 << 8;
+        return
+            PackedUserOperation({
+                sender: address(userFlashAccount),
+                nonce: nonce,
+                initCode: "",
+                callData: callData,
+                accountGasLimits: bytes32((uint256(verificationGasLimit) << 128) | callGasLimit),
+                preVerificationGas: 1 << 24,
+                gasFees: bytes32((uint256(maxPriorityFeePerGas) << 128) | maxFeePerGas),
+                paymasterAndData: "",
+                signature: ""
+            });
     }
 }
