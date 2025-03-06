@@ -18,6 +18,8 @@ import {console2 as console} from "forge-std/console2.sol";
 contract BenqiTest is Test {
     using MessageHashUtils for bytes32;
 
+    event Mint(address minter, uint mintAmount, uint mintTokens);
+
     // Avalanche c-chain addresses
     address constant BENQI_COMPTROLLER = 0x486Af39519B4Dc9a7fCcd318217352830E8AD9b4;
     address constant USDC = 0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E;
@@ -39,7 +41,7 @@ contract BenqiTest is Test {
         user = vm.addr(userPrivateKey);
 
         // create a fork
-        uint256 forkId = vm.createSelectFork(vm.envString("AVAX_RPC_URL")); // , 40840732);
+        vm.createSelectFork(vm.envString("AVAX_RPC_URL")); // , 40840732);
         entryPoint = new EntryPoint();
 
         // Accounts
@@ -117,30 +119,31 @@ contract BenqiTest is Test {
             _sign(userPrivateKey, entryPoint.getUserOpHash(userOps[1]).toEthSignedMessageHash())
         );
 
-        // init balances
-        uint256 qiUsdcBalanceBefore = IERC20(qiUSDC).balanceOf(address(userFlashAccount));
-        uint256 usdcBalanceBefore = IERC20(USDC).balanceOf(address(userFlashAccount));
-        uint256 userBalanceBefore = IERC20(USDC).balanceOf(user);
-        console.log("FlashAccount_qiUsdcBalance_before", qiUsdcBalanceBefore);
-        console.log("FlashAccount_usdcBalance_before", usdcBalanceBefore);
-        console.log("userBalance_before", userBalanceBefore);
+        // // init balances
+        uint256 userQiUsdcBalanceBefore = IERC20(qiUSDC).balanceOf(user);
 
         // send the userOps
         vm.prank(user);
+        vm.expectEmit(true, true, false, false);
+        emit Mint(address(benqiAdapter), supplyAmount, supplyAmount);
         entryPoint.handleOps(userOps, BENEFICIARY);
 
         // check balances
         uint256 qiUsdcBalanceAfter = IERC20(qiUSDC).balanceOf(address(userFlashAccount));
         uint256 qiUsdcBalanceAdapterAfter = IERC20(qiUSDC).balanceOf(address(benqiAdapter));
         uint256 usdcBalanceAfter = IERC20(USDC).balanceOf(address(userFlashAccount));
-        uint256 userBalanceAfter = IERC20(USDC).balanceOf(user);
         uint256 userQiUsdcBalanceAfter = IERC20(qiUSDC).balanceOf(user);
 
-        console.log("FlashAccount_qiUsdcBalance_after", qiUsdcBalanceAfter);
-        console.log("qiUsdcBalanceAdapter_after", qiUsdcBalanceAdapterAfter);
-        console.log("FlashAccount_usdcBalance_after", usdcBalanceAfter);
-        console.log("user_UsdcBalance_after", userBalanceAfter);
-        console.log("user_qiUsdcBalance_after", userQiUsdcBalanceAfter);
+        assertEq(qiUsdcBalanceAfter, 0);
+        assertEq(usdcBalanceAfter, usdcAmount - supplyAmount);
+        assertEq(qiUsdcBalanceAdapterAfter, 0);
+        assertGt(userQiUsdcBalanceAfter, userQiUsdcBalanceBefore);
+
+        // console.log("FlashAccount_qiUsdcBalance_after", qiUsdcBalanceAfter);
+        // console.log("qiUsdcBalanceAdapter_after", qiUsdcBalanceAdapterAfter);
+        // console.log("FlashAccount_usdcBalance_after", usdcBalanceAfter);
+        // console.log("user_UsdcBalance_after", userBalanceAfter);
+        // console.log("user_qiUsdcBalance_after", userQiUsdcBalanceAfter);
     }
 
     function _sign(uint256 privateKey, bytes32 digest) internal pure returns (bytes memory) {
