@@ -14,8 +14,7 @@ const constantAddress = (name: string, v: string) => `address internal constant 
 
 async function main() {
     const chainId = Chain.ARBITRUM_ONE
-    // const lender = Lender.COMPOUND_V3_USDC
-    const header = importSnippetReserves("COMPOUND_V3", chainId)
+    const header = importSnippetReserves("COMPOUND_V2", chainId)
 
     let data = header
 
