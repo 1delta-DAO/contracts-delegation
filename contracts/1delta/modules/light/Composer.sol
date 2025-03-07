@@ -190,12 +190,12 @@ contract OneDeltaComposerLight is Morpho, ERC4646Transfers, GenericLending, Perm
                     if (lendingOperation == 0) {
                         if (lender < 1000) {
                             currentOffset = _depositToAaveV3(currentOffset, paramPush);
-                        } else if (lender == 1000) {
+                        } else if (lender < 2000) {
                             currentOffset = _depositToAaveV2(currentOffset, paramPush);
-                        } else if (lender == 2000) {
+                        } else if (lender < 3000) {
                             currentOffset = _depositToCompoundV3(currentOffset, paramPush);
-                        } else if (lender == 3000) {
-                            //
+                        } else if (lender < 4000) {
+                            currentOffset = _depositToCompoundV2(currentOffset, paramPush);
                         } else {
                             currentOffset = _morphoDepositCollateral(currentOffset, callerAddress);
                         }
@@ -204,10 +204,10 @@ contract OneDeltaComposerLight is Morpho, ERC4646Transfers, GenericLending, Perm
                     else if (lendingOperation == 1) {
                         if (lender < 2000) {
                             currentOffset = _borrowFromAave(currentOffset, callerAddress, paramPull);
-                        } else if (lender == 2000) {
+                        } else if (lender < 3000) {
                             currentOffset = _borrowFromCompoundV3(currentOffset, callerAddress, paramPull);
-                        } else if (lender == 3000) {
-                            //
+                        } else if (lender < 4000) {
+                            currentOffset = _borrowFromCompoundV2(currentOffset, callerAddress, paramPull);
                         } else {
                             currentOffset = _morphoBorrow(currentOffset, callerAddress);
                         }
@@ -216,10 +216,10 @@ contract OneDeltaComposerLight is Morpho, ERC4646Transfers, GenericLending, Perm
                     else if (lendingOperation == 2) {
                         if (lender < 2000) {
                             currentOffset = _repayToAave(currentOffset, callerAddress, paramPull);
-                        } else if (lender == 2000) {
+                        } else if (lender < 3000) {
                             currentOffset = _repayToCompoundV3(currentOffset, paramPush);
-                        } else if (lender == 3000) {
-                            //
+                        } else if (lender < 4000) {
+                            currentOffset = _repayToCompoundV2(currentOffset, paramPush);
                         } else {
                             currentOffset = _morphoRepay(currentOffset, callerAddress);
                         }
@@ -228,10 +228,10 @@ contract OneDeltaComposerLight is Morpho, ERC4646Transfers, GenericLending, Perm
                     else if (lendingOperation == 3) {
                         if (lender < 2000) {
                             currentOffset = _withdrawFromAave(currentOffset, callerAddress, paramPull);
-                        } else if (lender == 2000) {
+                        } else if (lender < 3000) {
                             currentOffset = _withdrawFromCompoundV3(currentOffset, callerAddress, paramPull);
-                        } else if (lender == 3000) {
-                            //
+                        } else if (lender < 4000) {
+                            currentOffset = _withdrawFromCompoundV2(currentOffset, callerAddress, paramPull);
                         } else {
                             currentOffset = _morphoWithdrawCollateral(currentOffset, callerAddress);
                         }

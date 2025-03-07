@@ -3,7 +3,7 @@
 
 pragma solidity ^0.8.28;
 
-contract COMPOUND_V3_DATA_42161 {
+contract COMPOUND_V2_DATA_42161 {
 mapping(address => address) VENUS_cTokens;
 mapping(address => address) VENUS_ETH_cTokens;
 address internal constant VENUS_COMPTROLLER = 0x317c1A5739F39046E20b08ac9BeEa3f10fD43326;

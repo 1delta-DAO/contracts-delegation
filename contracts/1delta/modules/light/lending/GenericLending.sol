@@ -6,8 +6,6 @@ import {Slots} from "../../shared/storage/Slots.sol";
 import {ERC20Selectors} from "../../shared/selectors/ERC20Selectors.sol";
 import {Masks} from "../../shared/masks/Masks.sol";
 
-// import {console} from "forge-std/console.sol";
-
 /******************************************************************************\
 * Author: Achthar | 1delta 
 /******************************************************************************/
@@ -18,33 +16,6 @@ import {Masks} from "../../shared/masks/Masks.sol";
  * @notice Lending base contract that wraps multiple lender types.
  */
 abstract contract GenericLending is Slots, ERC20Selectors, Masks {
-    // errors
-    // error BadLender();
-
-    // id thresholds, strict upper limit
-    // uint256 internal constant MAX_ID_AAVE_V3 = 1000; // 0-1000
-    // uint256 internal constant MAX_ID_AAVE_V2 = 2000; // 1000-2000
-    // uint256 internal constant MAX_ID_COMPOUND_V3 = 3000; // 2000-3000
-    // uint256 internal constant MAX_ID_VENUS = 4000; // 3000-4000
-
-    // // wNative
-    // address internal constant WRAPPED_NATIVE = 0x4200000000000000000000000000000000000006;
-
-    // // Aave V3 style lender pool addresses
-    // address internal constant AAVE_V3 = 0xA238Dd80C259a72e81d7e4664a9801593F98d1c5;
-
-    // address internal constant AVALON = 0x6374a1F384737bcCCcD8fAE13064C18F7C8392e5;
-
-    // address internal constant ZEROLEND = 0x766f21277087E18967c1b10bF602d8Fe56d0c671;
-
-    // // Aave v2s
-    // address internal constant GRANARY = 0xB702cE183b4E1Faa574834715E5D4a6378D0eEd3;
-
-    // // Compound V3 addresses
-    // address internal constant COMET_USDBC = 0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf;
-    // address internal constant COMET_USDC = 0xb125E6687d4313864e53df431d5425969c15Eb2F;
-    // address internal constant COMET_WETH = 0x46e6b214b524310239732D51387075E0e70970bf;
-    // address internal constant COMET_AERO = 0x784efeB622244d2348d4F2522f8860B96fbEcE89;
 
     // BadLender()
     bytes4 private constant BAD_LENDER = 0x603b7f3e;
@@ -176,14 +147,13 @@ abstract contract GenericLending is Slots, ERC20Selectors, Masks {
             let underlying := shr(96, calldataload(currentOffset))
             // offset for amoutn at lower bytes
             currentOffset := add(currentOffset, 20)
-            let amountData := and(UINT128_MASK, calldataload(currentOffset))
+            let amountData := shr(128, calldataload(currentOffset))
 
             // skip amounts
             currentOffset := add(currentOffset, 16)
             let isBase := calldataload(currentOffset)
             // receiver
             let receiver := shr(96, isBase)
-            isBase := and(UINT8_MASK, shr(88, isBase))
 
             // skip receiver and isBase flag
             currentOffset := add(currentOffset, 21)
@@ -199,50 +169,50 @@ abstract contract GenericLending is Slots, ERC20Selectors, Masks {
             // check if override is used
             switch and(_PRE_PARAM, amountData)
             case 0 {
-                switch isBase
-                case 0 {
-                    // selector for userCollateral(address,address)
-                    mstore(ptr, 0x2b92a07d00000000000000000000000000000000000000000000000000000000)
-                    // add caller address as parameter
-                    mstore(add(ptr, 0x04), callerAddress)
-                    // add underlying address
-                    mstore(add(ptr, 0x24), underlying)
-                    // call to token
-                    pop(
-                        staticcall(
-                            gas(),
-                            cometPool, // collateral token
-                            ptr,
-                            0x44,
-                            ptr,
-                            0x20
+                amount := and(_UINT112_MASK, amountData)
+                if eq(amount, 0xffffffffffffffffffffffffffff) {
+                    switch and(UINT8_MASK, shr(88, isBase))
+                    case 0 {
+                        // selector for userCollateral(address,address)
+                        mstore(ptr, 0x2b92a07d00000000000000000000000000000000000000000000000000000000)
+                        // add caller address as parameter
+                        mstore(add(ptr, 0x04), callerAddress)
+                        // add underlying address
+                        mstore(add(ptr, 0x24), underlying)
+                        // call to token
+                        pop(
+                            staticcall(
+                                gas(),
+                                cometPool, // collateral token
+                                ptr,
+                                0x44,
+                                ptr,
+                                0x20
+                            )
                         )
-                    )
-                    // load the retrieved balance (lower 128 bits)
-                    amount := and(UINT128_MASK, mload(ptr))
-                }
-                // comet.balanceOf(...) is lending token balance
-                case 0xffffffffffffffffffffffffffff {
-                    // selector for balanceOf(address)
-                    mstore(0, ERC20_BALANCE_OF)
-                    // add caller address as parameter
-                    mstore(0x04, callerAddress)
-                    // call to token
-                    pop(
-                        staticcall(
-                            gas(),
-                            cometPool, // collateral token
-                            0x0,
-                            0x24,
-                            0x0,
-                            0x20
+                        // load the retrieved balance (lower 128 bits)
+                        amount := and(UINT128_MASK, mload(ptr))
+                    }
+                    // comet.balanceOf(...) is lending token balance
+                    default {
+                        // selector for balanceOf(address)
+                        mstore(0, ERC20_BALANCE_OF)
+                        // add caller address as parameter
+                        mstore(0x04, callerAddress)
+                        // call to token
+                        pop(
+                            staticcall(
+                                gas(),
+                                cometPool, // collateral token
+                                0x0,
+                                0x24,
+                                0x0,
+                                0x20
+                            )
                         )
-                    )
-                    // load the retrieved balance
-                    amount := mload(0x0)
-                }
-                default {
-                    amount := and(_UINT112_MASK, amountData)
+                        // load the retrieved balance
+                        amount := mload(0x0)
+                    }
                 }
             }
             default {
@@ -279,7 +249,7 @@ abstract contract GenericLending is Slots, ERC20Selectors, Masks {
             let underlying := shr(96, calldataload(currentOffset))
             currentOffset := add(currentOffset, 20)
             // offset for amoutn at lower bytes
-            let amountData := and(UINT128_MASK, calldataload(currentOffset))
+            let amountData := shr(128, calldataload(currentOffset))
             currentOffset := add(currentOffset, 16)
             // receiver
             let receiver := shr(96, calldataload(currentOffset))
@@ -333,7 +303,7 @@ abstract contract GenericLending is Slots, ERC20Selectors, Masks {
             let underlying := shr(96, calldataload(currentOffset))
             currentOffset := add(currentOffset, 20)
             // offset for amoutn at lower bytes
-            let amountData := and(UINT128_MASK, calldataload(currentOffset))
+            let amountData := shr(128, calldataload(currentOffset))
             currentOffset := add(currentOffset, 16)
             // receiver
             let receiver := shr(96, calldataload(currentOffset))
@@ -342,7 +312,7 @@ abstract contract GenericLending is Slots, ERC20Selectors, Masks {
 
             let cToken := shr(96, calldataload(currentOffset))
 
-            // skip base comet
+            // skip cToken
             currentOffset := add(currentOffset, 20)
 
             let amount
@@ -418,12 +388,51 @@ abstract contract GenericLending is Slots, ERC20Selectors, Masks {
     function _withdrawFromCompoundV2(uint256 currentOffset, address callerAddress, uint256 amountOverride) internal returns (uint256) {
         assembly {
             let ptr := mload(0x40)
+            // Compound V2 types need to trasfer collateral tokens
+            let underlying := shr(96, calldataload(currentOffset))
+            currentOffset := add(currentOffset, 20)
+            // offset for amoutn at lower bytes
+            let amountData := shr(128, calldataload(currentOffset))
+            currentOffset := add(currentOffset, 16)
+            // receiver
+            let receiver := shr(96, calldataload(currentOffset))
+            // skip receiver
+            currentOffset := add(currentOffset, 20)
 
-            let amountData := and(UINT128_MASK, calldataload(add(currentOffset, 4)))
-            let amount := and(_UINT112_MASK, amountData)
-            let underlying := shr(96, calldataload(add(currentOffset, 76)))
-            let cToken := shr(96, calldataload(add(currentOffset, 76)))
-            let receiver := shr(96, calldataload(add(currentOffset, 76)))
+            let cToken := shr(96, calldataload(currentOffset))
+
+            // skip cToken
+            currentOffset := add(currentOffset, 20)
+
+            let amount
+            // check if override is used
+            switch and(_PRE_PARAM, amountData)
+            case 0 {
+                amount := and(_UINT112_MASK, amountData)
+                if eq(amount, 0xffffffffffffffffffffffffffff) {
+                    // selector for balanceOfUnderlying(address)
+                    mstore(0, 0x3af9e66900000000000000000000000000000000000000000000000000000000)
+                    // add caller address as parameter
+                    mstore(0x04, callerAddress)
+                    // call to token
+                    pop(
+                        call(
+                            gas(),
+                            cToken, // collateral token
+                            0x0,
+                            0x0,
+                            0x24,
+                            0x0,
+                            0x20
+                        )
+                    )
+                    // load the retrieved balance
+                    amount := mload(0x0)
+                }
+            }
+            default {
+                amount := amountOverride
+            }
 
             // 1) CALCULTAE TRANSFER AMOUNT
             // Store fnSig (=bytes4(abi.encodeWithSignature("exchangeRateCurrent()"))) at params
@@ -450,7 +459,7 @@ abstract contract GenericLending is Slots, ERC20Selectors, Masks {
             let refAmount := mload(0x0)
 
             // calculate collateral token amount, rounding up
-            let transferAmount := add(
+            let cTokenTransferAmount := add(
                 div(
                     mul(amount, 1000000000000000000), // multiply with 1e18
                     refAmount // divide by rate
@@ -470,8 +479,8 @@ abstract contract GenericLending is Slots, ERC20Selectors, Masks {
             refAmount := mload(0x0)
 
             // floor to the balance
-            if gt(transferAmount, refAmount) {
-                transferAmount := refAmount
+            if gt(cTokenTransferAmount, refAmount) {
+                cTokenTransferAmount := refAmount
             }
 
             // 2) TRANSFER VTOKENS
@@ -480,7 +489,7 @@ abstract contract GenericLending is Slots, ERC20Selectors, Masks {
             mstore(ptr, ERC20_TRANSFER_FROM)
             mstore(add(ptr, 0x04), callerAddress) // from user
             mstore(add(ptr, 0x24), address()) // to this address
-            mstore(add(ptr, 0x44), transferAmount)
+            mstore(add(ptr, 0x44), cTokenTransferAmount)
 
             let success := call(gas(), cToken, 0, ptr, 0x64, ptr, 32)
 
@@ -492,7 +501,7 @@ abstract contract GenericLending is Slots, ERC20Selectors, Masks {
             // 3) REDEEM
             // selector for redeem(uint256)
             mstore(0, 0xdb006a7500000000000000000000000000000000000000000000000000000000)
-            mstore(0x4, transferAmount)
+            mstore(0x4, cTokenTransferAmount)
 
             if iszero(
                 call(
@@ -505,8 +514,8 @@ abstract contract GenericLending is Slots, ERC20Selectors, Masks {
                     0x0 // output size = zero
                 )
             ) {
-                returndatacopy(0, 0, returndatasize())
-                revert(0, returndatasize())
+                // returndatacopy(0, 0, returndatasize())
+                // revert(0, returndatasize())
             }
 
             // transfer tokens only if the receiver is not this address
@@ -536,8 +545,8 @@ abstract contract GenericLending is Slots, ERC20Selectors, Masks {
                 )
 
                 if iszero(success) {
-                    returndatacopy(0, 0, rdsize)
-                    revert(0, rdsize)
+                    // returndatacopy(0, 0, rdsize)
+                    // revert(0, rdsize)
                 }
             }
         }
@@ -893,7 +902,7 @@ abstract contract GenericLending is Slots, ERC20Selectors, Masks {
     }
 
     /*
-     * Note: Some Compound V2 forks might not have this feature and need a separate 
+     * Note: Some Compound V2 forks might not have this feature and need a separate
      * function.
      * | Offset | Length (bytes) | Description                     |
      * |--------|----------------|---------------------------------|
@@ -1170,6 +1179,28 @@ abstract contract GenericLending is Slots, ERC20Selectors, Masks {
             currentOffset := add(currentOffset, 20)
 
             let ptr := mload(0x40)
+
+            /**
+             * Approve aave pool beforehand
+             */
+            mstore(0x0, underlying)
+            mstore(0x20, CALL_MANAGEMENT_APPROVALS)
+            mstore(0x20, keccak256(0x0, 0x40))
+            mstore(0x0, pool)
+            let key := keccak256(0x0, 0x40)
+            // check if already approved
+            if iszero(sload(key)) {
+                // selector for approve(address,uint256)
+                mstore(ptr, ERC20_APPROVE)
+                mstore(add(ptr, 0x04), pool)
+                mstore(add(ptr, 0x24), MAX_UINT256)
+
+                if iszero(call(gas(), underlying, 0x0, ptr, 0x44, 0x0, 0x0)) {
+                    revert(0x0, 0x0)
+                }
+                sstore(key, 1)
+            }
+
             // selector repay(address,uint256,uint256,address)
             mstore(ptr, 0x573ade8100000000000000000000000000000000000000000000000000000000)
             mstore(add(ptr, 0x04), underlying)
@@ -1183,6 +1214,110 @@ abstract contract GenericLending is Slots, ERC20Selectors, Masks {
             }
         }
 
+        return currentOffset;
+    }
+
+    /*
+     * | Offset | Length (bytes) | Description                     |
+     * |--------|----------------|---------------------------------|
+     * | 0      | 20             | underlying                      |
+     * | 20     | 16             | amount                          |
+     * | 36     | 20             | receiver                        |
+     * | 76     | 20             | cToken                          |
+     */
+    function _repayToCompoundV2(uint256 currentOffset, uint256 amountOverride) internal returns (uint256) {
+        assembly {
+            let underlying := shr(96, calldataload(currentOffset))
+            // offset for amoutn at lower bytes
+            currentOffset := add(currentOffset, 20)
+            let amountData := shr(128, calldataload(currentOffset))
+            // skip amounts
+            currentOffset := add(currentOffset, 16)
+            // receiver
+            let receiver := shr(96, calldataload(currentOffset))
+            // skip receiver
+            currentOffset := add(currentOffset, 20)
+            // get comet
+            let cToken := shr(96, calldataload(currentOffset))
+            // skip comet (end of data)
+            currentOffset := add(currentOffset, 20)
+
+            let amount
+            // check if override is used
+            switch and(_PRE_PARAM, amountData)
+            case 0 {
+                amount := and(_UINT112_MASK, amountData)
+                switch amount
+                case 0 {
+                    // selector for balanceOf(address)
+                    mstore(0, ERC20_BALANCE_OF)
+                    // add this address as parameter
+                    mstore(0x04, address())
+                    // call to token
+                    pop(
+                        staticcall(
+                            gas(),
+                            underlying, // token
+                            0x0,
+                            0x24,
+                            0x0,
+                            0x20
+                        )
+                    )
+                    // load the retrieved balance
+                    amount := mload(0x0)
+                }
+                case 0xffffffffffffffffffffffffffff {
+                    amount := MAX_UINT256
+                }
+            }
+            default {
+                amount := amountOverride
+            }
+
+            let ptr := mload(0x40)
+
+            /**
+             * Approve cToken beforehand if needed
+             */
+            mstore(0x0, underlying)
+            mstore(0x20, CALL_MANAGEMENT_APPROVALS)
+            mstore(0x20, keccak256(0x0, 0x40))
+            mstore(0x0, cToken)
+            let key := keccak256(0x0, 0x40)
+            // check if already approved
+            if iszero(sload(key)) {
+                // selector for approve(address,uint256)
+                mstore(ptr, ERC20_APPROVE)
+                mstore(add(ptr, 0x04), cToken)
+                mstore(add(ptr, 0x24), MAX_UINT256)
+
+                if iszero(call(gas(), underlying, 0x0, ptr, 0x44, 0x0, 0x0)) {
+                    revert(0x0, 0x0)
+                }
+                sstore(key, 1)
+            }
+
+            // selector for repayBorrowBehalf(address,uint256)
+            mstore(ptr, 0x2608f81800000000000000000000000000000000000000000000000000000000)
+            mstore(add(ptr, 0x4), receiver) // user
+            mstore(add(ptr, 0x24), amount) // to this address
+
+            if iszero(
+                call(
+                    gas(),
+                    cToken,
+                    0x0,
+                    ptr, // input = empty for fallback
+                    0x44, // input size = selector + address + uint256
+                    ptr, // output
+                    0x0 // output size = zero
+                )
+            ) {
+                returndatacopy(0x0, 0, returndatasize())
+                revert(0x0, returndatasize())
+            }
+        }
         return currentOffset;
     }
 
