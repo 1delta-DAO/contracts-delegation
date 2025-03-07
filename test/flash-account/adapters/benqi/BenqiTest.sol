@@ -14,6 +14,8 @@ contract BenqiTest is FlashAccountBaseTest {
     using MessageHashUtils for bytes32;
 
     event Mint(address minter, uint256 mintAmount, uint256 mintTokens);
+    event Borrow(address borrower, uint borrowAmount, uint accountBorrows, uint totalBorrows);
+    event RepayBorrow(address payer, address borrower, uint repayAmount, uint accountBorrows, uint totalBorrows);
     event UserOperationRevertReason(bytes32 indexed userOpHash, address indexed sender, uint256 nonce, bytes revertReason);
 
     // Avalanche c-chain addresses
@@ -152,6 +154,65 @@ contract BenqiTest is FlashAccountBaseTest {
         vm.prank(user);
         vm.expectEmit(true, true, false, false);
         emit UserOperationRevertReason(entryPoint.getUserOpHash(userOps[0]), address(userFlashAccount), 0, "");
+        entryPoint.handleOps(userOps, BENEFICIARY);
+    }
+
+    function testRepay() public {
+        // supply some usdc to the account
+        _supply(10000e6, 1000e6);
+
+        address[] memory dests = new address[](3);
+        dests[0] = address(qiUSDC);
+        dests[1] = address(USDC);
+        dests[2] = address(benqiAdapter);
+        bytes[] memory funcs = new bytes[](3);
+        funcs[0] = abi.encodeWithSignature("borrow(uint256)", 100e6);
+        funcs[1] = abi.encodeWithSelector(IERC20.transfer.selector, address(benqiAdapter), 100e6);
+        funcs[2] = abi.encodeWithSelector(BenqiAdapter.repay.selector, qiUSDC, USDC, address(userFlashAccount), address(userFlashAccount));
+
+        // borrow some usdc and then repay it
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
+        userOps[0] = _getUnsignedOp(
+            abi.encodeWithSignature("executeBatch(address[],bytes[])", dests, funcs),
+            entryPoint.getNonce(address(userFlashAccount), 0)
+        );
+        userOps[0].signature = abi.encodePacked(
+            BaseLightAccount.SignatureType.EOA,
+            _sign(userPrivateKey, entryPoint.getUserOpHash(userOps[0]).toEthSignedMessageHash())
+        );
+
+        // send the userOps
+        vm.prank(user);
+        vm.expectEmit(true, true, false, false);
+        emit Borrow(address(userFlashAccount), 100e6, 100e6, 100e6);
+        vm.expectEmit(true, true, true, false);
+        emit RepayBorrow(address(benqiAdapter), address(userFlashAccount), 100e6, 0, 0);
+        entryPoint.handleOps(userOps, BENEFICIARY);
+    }
+
+    function _supply(uint256 usdcAmount, uint256 supplyAmount) internal {
+        // deal some USDC to the account
+        deal(USDC, address(userFlashAccount), usdcAmount);
+
+        address[] memory dests = new address[](2);
+        dests[0] = address(USDC);
+        dests[1] = address(benqiAdapter);
+        bytes[] memory funcs = new bytes[](2);
+        funcs[0] = abi.encodeWithSelector(IERC20.transfer.selector, address(benqiAdapter), supplyAmount);
+        funcs[1] = abi.encodeWithSelector(BenqiAdapter.supply.selector, qiUSDC, USDC, address(userFlashAccount));
+
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
+        userOps[0] = _getUnsignedOp(
+            abi.encodeWithSignature("executeBatch(address[],bytes[])", dests, funcs),
+            entryPoint.getNonce(address(userFlashAccount), 0)
+        );
+        userOps[0].signature = abi.encodePacked(
+            BaseLightAccount.SignatureType.EOA,
+            _sign(userPrivateKey, entryPoint.getUserOpHash(userOps[0]).toEthSignedMessageHash())
+        );
+
+        // send the userOps
+        vm.prank(user);
         entryPoint.handleOps(userOps, BENEFICIARY);
     }
 
