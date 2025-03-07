@@ -3,8 +3,7 @@
 pragma solidity 0.8.28;
 
 import {Commands} from "../shared/Commands.sol";
-import {Morpho} from "./MorphoLending.sol";
-import {GenericLending} from "./lending/GenericLending.sol";
+import {UniversalLending} from "./lending/UniversalLending.sol";
 import {ERC4646Transfers} from "./ERC4646Transfers.sol";
 import {PermitUtils} from "../shared/permit/PermitUtils.sol";
 import {DeltaErrors} from "../shared/errors/Errors.sol";
@@ -17,11 +16,11 @@ import {DeltaErrors} from "../shared/errors/Errors.sol";
  *        Efficient baching through compact calldata usage.
  * @author 1delta Labs AG
  */
-contract OneDeltaComposerLight is Morpho, ERC4646Transfers, GenericLending, PermitUtils, DeltaErrors {
+contract OneDeltaComposerLight is ERC4646Transfers, UniversalLending, PermitUtils, DeltaErrors {
     // wNative
     address internal constant WRAPPED_NATIVE = 0x4200000000000000000000000000000000000006;
 
-    // Balancer V2 ault
+    // Balancer V2 vault
     address internal constant BALANCER_V2_VAULT = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
 
     // Aave V3 style lender pool addresses
@@ -178,102 +177,7 @@ contract OneDeltaComposerLight is Morpho, ERC4646Transfers, GenericLending, Perm
                 }
             } else if (operation < 0x20) {
                 if (operation == Commands.LENDING) {
-                    uint256 lendingOperation;
-                    uint256 lender;
-                    assembly {
-                        let slice := calldataload(currentOffset)
-                        lendingOperation := shr(248, calldataload(currentOffset))
-                        lender := and(UINT16_MASK, shr(232, calldataload(currentOffset)))
-                        currentOffset := add(currentOffset, 3)
-                    }
-                    /** Deposit collateral */
-                    if (lendingOperation == 0) {
-                        if (lender < 1000) {
-                            currentOffset = _depositToAaveV3(currentOffset, paramPush);
-                        } else if (lender < 2000) {
-                            currentOffset = _depositToAaveV2(currentOffset, paramPush);
-                        } else if (lender < 3000) {
-                            currentOffset = _depositToCompoundV3(currentOffset, paramPush);
-                        } else if (lender < 4000) {
-                            currentOffset = _depositToCompoundV2(currentOffset, paramPush);
-                        } else {
-                            currentOffset = _morphoDepositCollateral(currentOffset, callerAddress);
-                        }
-                    }
-                    /** Borrow */
-                    else if (lendingOperation == 1) {
-                        if (lender < 2000) {
-                            currentOffset = _borrowFromAave(currentOffset, callerAddress, paramPull);
-                        } else if (lender < 3000) {
-                            currentOffset = _borrowFromCompoundV3(currentOffset, callerAddress, paramPull);
-                        } else if (lender < 4000) {
-                            currentOffset = _borrowFromCompoundV2(currentOffset, callerAddress, paramPull);
-                        } else {
-                            currentOffset = _morphoBorrow(currentOffset, callerAddress);
-                        }
-                    }
-                    /** repay */
-                    else if (lendingOperation == 2) {
-                        if (lender < 2000) {
-                            currentOffset = _repayToAave(currentOffset, callerAddress, paramPull);
-                        } else if (lender < 3000) {
-                            currentOffset = _repayToCompoundV3(currentOffset, paramPush);
-                        } else if (lender < 4000) {
-                            currentOffset = _repayToCompoundV2(currentOffset, paramPush);
-                        } else {
-                            currentOffset = _morphoRepay(currentOffset, callerAddress);
-                        }
-                    }
-                    /** Morpho withdraw collateral */
-                    else if (lendingOperation == 3) {
-                        if (lender < 2000) {
-                            currentOffset = _withdrawFromAave(currentOffset, callerAddress, paramPull);
-                        } else if (lender < 3000) {
-                            currentOffset = _withdrawFromCompoundV3(currentOffset, callerAddress, paramPull);
-                        } else if (lender < 4000) {
-                            currentOffset = _withdrawFromCompoundV2(currentOffset, callerAddress, paramPull);
-                        } else {
-                            currentOffset = _morphoWithdrawCollateral(currentOffset, callerAddress);
-                        }
-                    }
-                    /** deposit lendingToken */
-                    else if (lendingOperation == 4) {
-                        currentOffset = _morphoDeposit(currentOffset, callerAddress);
-                    }
-                    /** withdraw lendingToken */
-                    else if (lendingOperation == 5) {
-                        currentOffset = _morphoWithdraw(currentOffset, callerAddress);
-                    } else revert();
-                } else if (operation == Commands.MORPH) {
-                    uint256 morphoOperation;
-                    assembly {
-                        morphoOperation := shr(248, calldataload(currentOffset))
-                        currentOffset := add(currentOffset, 1)
-                    }
-                    /** Morpho deposit collateral */
-                    if (morphoOperation == 0) {
-                        currentOffset = _morphoDepositCollateral(currentOffset, callerAddress);
-                    }
-                    /** Morpho borrow */
-                    else if (morphoOperation == 1) {
-                        currentOffset = _morphoBorrow(currentOffset, callerAddress);
-                    }
-                    /** Morpho repay */
-                    else if (morphoOperation == 2) {
-                        currentOffset = _morphoRepay(currentOffset, callerAddress);
-                    }
-                    /** Morpho withdraw colalteral */
-                    else if (morphoOperation == 3) {
-                        currentOffset = _morphoWithdrawCollateral(currentOffset, callerAddress);
-                    }
-                    /** Morpho deposit lendingToken */
-                    else if (morphoOperation == 4) {
-                        currentOffset = _morphoDeposit(currentOffset, callerAddress);
-                    }
-                    /** Morpho withdraw lendingToken */
-                    else if (morphoOperation == 5) {
-                        currentOffset = _morphoWithdraw(currentOffset, callerAddress);
-                    } else revert();
+                    currentOffset = lendingOperations(callerAddress, paramPull, paramPush, currentOffset);
                 }
             } else if (operation < 0x30) {
                 if (operation == Commands.TRANSFER_FROM) {
@@ -949,18 +853,22 @@ contract OneDeltaComposerLight is Morpho, ERC4646Transfers, GenericLending, Perm
         bytes calldata params
     ) external returns (bool) {
         address origCaller;
+        uint256 calldataOffset;
+        uint256 calldataLength;
         assembly {
+            calldataOffset := params.offset
+            calldataLength := params.length
             // we expect at least an address
             // and a sourceId (uint8)
             // invalid params will lead to errors in the
             // compose at the bottom
-            if lt(params.length, 21) {
+            if lt(calldataLength, 21) {
                 mstore(0, INVALID_FLASH_LOAN)
                 revert(0, 0x4)
             }
             // validate caller
             // - extract id from params
-            let firstWord := calldataload(params.offset)
+            let firstWord := calldataload(calldataOffset)
             // needs no uint8 masking as we shift 248 bits
             let source := shr(248, firstWord)
 
@@ -994,12 +902,12 @@ contract OneDeltaComposerLight is Morpho, ERC4646Transfers, GenericLending, Perm
             // Otherwise, this would be a vulnerability
             origCaller := and(ADDRESS_MASK, shr(88, firstWord))
             // shift / slice params
-            params.offset := add(params.offset, 21)
-            params.length := sub(params.length, 21)
+            calldataOffset := add(calldataOffset, 21)
+            calldataLength := sub(calldataLength, 21)
         }
         // within the flash loan, any compose operation
         // can be executed
-        _deltaComposeInternal(origCaller, 0, 0, 0, 1);
+        _deltaComposeInternal(origCaller, 0, 0, calldataOffset, calldataLength);
         return true;
     }
 
@@ -1014,18 +922,22 @@ contract OneDeltaComposerLight is Morpho, ERC4646Transfers, GenericLending, Perm
         bytes calldata params // user params
     ) external returns (bool) {
         address origCaller;
+        uint256 calldataOffset;
+        uint256 calldataLength;
         assembly {
+            calldataOffset := params.offset
+            calldataLength := params.length
             // we expect at least an address
             // and a sourceId (uint8)
             // invalid params will lead to errors in the
             // compose at the bottom
-            if lt(params.length, 21) {
+            if lt(calldataLength, 21) {
                 mstore(0, INVALID_FLASH_LOAN)
                 revert(0, 0x4)
             }
             // validate caller
             // - extract id from params
-            let firstWord := calldataload(params.offset)
+            let firstWord := calldataload(calldataOffset)
             // needs no uint8 masking as we shift 248 bits
             let source := shr(248, firstWord)
 
@@ -1071,12 +983,12 @@ contract OneDeltaComposerLight is Morpho, ERC4646Transfers, GenericLending, Perm
             // Otherwise, this would be a vulnerability
             origCaller := and(ADDRESS_MASK, shr(88, firstWord))
             // shift / slice params
-            params.offset := add(params.offset, 21)
-            params.length := sub(params.length, 21)
+            calldataOffset := add(calldataOffset, 21)
+            calldataLength := sub(calldataLength, 21)
         }
         // within the flash loan, any compose operation
         // can be executed
-        _deltaComposeInternal(origCaller, 0, 0, 0, 1);
+        _deltaComposeInternal(origCaller, 0, 0, calldataOffset, calldataLength);
         return true;
     }
 
@@ -1091,18 +1003,22 @@ contract OneDeltaComposerLight is Morpho, ERC4646Transfers, GenericLending, Perm
         bytes calldata params //
     ) external {
         address origCaller;
+        uint256 calldataOffset;
+        uint256 calldataLength;
         assembly {
+            calldataOffset := params.offset
+            calldataLength := params.length
             // we expect at least an address
             // and a sourceId (uint8)
             // invalid params will lead to errors in the
             // compose at the bottom
-            if lt(params.length, 21) {
+            if lt(calldataLength, 21) {
                 mstore(0, INVALID_FLASH_LOAN)
                 revert(0, 0x4)
             }
             // validate caller
             // - extract id from params
-            let firstWord := calldataload(params.offset)
+            let firstWord := calldataload(calldataOffset)
             // needs no uint8 masking as we shift 248 bits
             let source := shr(248, firstWord)
 
@@ -1133,12 +1049,12 @@ contract OneDeltaComposerLight is Morpho, ERC4646Transfers, GenericLending, Perm
             // Otherwise, this would be a vulnerability
             origCaller := and(ADDRESS_MASK, shr(88, firstWord))
             // shift / slice params
-            params.offset := add(params.offset, 21)
-            params.length := sub(params.length, 21)
+            calldataOffset := add(calldataOffset, 21)
+            calldataLength := sub(calldataLength, 21)
         }
         // within the flash loan, any compose operation
         // can be executed
-        _deltaComposeInternal(origCaller, 0, 0, 0, 1);
+        _deltaComposeInternal(origCaller, 0, 0, calldataOffset, calldataLength);
     }
 
     /** Morpho blue callbacks */
@@ -1168,12 +1084,16 @@ contract OneDeltaComposerLight is Morpho, ERC4646Transfers, GenericLending, Perm
     /// Morpho callbacks, we can use the same logic everywhere
     function _onMorphoCallback(bytes calldata params) internal {
         address origCaller;
+        uint256 calldataOffset;
+        uint256 calldataLength;
         assembly {
+            calldataOffset := params.offset
+            calldataLength := params.length
             // we expect at least an address
             // and a sourceId (uint8)
             // invalid params will lead to errors in the
             // compose at the bottom
-            if lt(params.length, 21) {
+            if lt(calldataLength, 21) {
                 mstore(0, INVALID_FLASH_LOAN)
                 revert(0, 0x4)
             }
@@ -1187,13 +1107,13 @@ contract OneDeltaComposerLight is Morpho, ERC4646Transfers, GenericLending, Perm
             // From here on we have validated that the `origCaller`
             // was attached in the deltaCompose function
             // Otherwise, this would be a vulnerability
-            origCaller := and(ADDRESS_MASK, shr(96, calldataload(params.offset)))
+            origCaller := and(ADDRESS_MASK, shr(96, calldataload(calldataOffset)))
             // shift / slice params
-            params.offset := add(params.offset, 20)
-            params.length := sub(params.length, 20)
+            calldataOffset := add(calldataOffset, 20)
+            calldataLength := sub(calldataLength, 20)
         }
         // within the flash loan, any compose operation
         // can be executed
-        _deltaComposeInternal(origCaller, 0, 0, 0, 1);
+        _deltaComposeInternal(origCaller, 0, 0, calldataOffset, calldataLength);
     }
 }
