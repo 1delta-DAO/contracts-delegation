@@ -317,6 +317,97 @@ abstract contract GenericLending is Slots, ERC20Selectors, Masks {
     }
 
     /*
+     * Note this is for Venus Finance only as other COmpound forks
+     * do not have this feature.
+     * | Offset | Length (bytes) | Description                     |
+     * |--------|----------------|---------------------------------|
+     * | 0      | 20             | underlying                      |
+     * | 20     | 16             | amount                          |
+     * | 36     | 20             | receiver                        |
+     * | 76     | 20             | cToken                          |
+     */
+    function _borrowFromCompoundV2(uint256 currentOffset, address callerAddress, uint256 amountOverride) internal returns (uint256) {
+        assembly {
+            let ptr := mload(0x40)
+            // Compound V3 types need to trasfer collateral tokens
+            let underlying := shr(96, calldataload(currentOffset))
+            currentOffset := add(currentOffset, 20)
+            // offset for amoutn at lower bytes
+            let amountData := and(UINT128_MASK, calldataload(currentOffset))
+            currentOffset := add(currentOffset, 16)
+            // receiver
+            let receiver := shr(96, calldataload(currentOffset))
+            // skip receiver
+            currentOffset := add(currentOffset, 20)
+
+            let cToken := shr(96, calldataload(currentOffset))
+
+            // skip base comet
+            currentOffset := add(currentOffset, 20)
+
+            let amount
+            // check if override is used
+            switch and(_PRE_PARAM, amountData)
+            case 0 {
+                amount := and(_UINT112_MASK, amountData)
+            }
+            default {
+                amount := amountOverride
+            }
+
+            // selector for borrowBehlaf(address,uint256)
+            mstore(ptr, 0x856e5bb300000000000000000000000000000000000000000000000000000000)
+            mstore(add(ptr, 0x4), callerAddress) // user
+            mstore(add(ptr, 0x24), amount) // to this address
+            if iszero(
+                call(
+                    gas(),
+                    cToken,
+                    0x0, // no ETH sent
+                    ptr, // input selector
+                    0x44, // input size = selector + address + uint256
+                    ptr, // output
+                    0x0 // output size = zero
+                )
+            ) {
+                returndatacopy(ptr, 0, returndatasize())
+                revert(ptr, returndatasize())
+            }
+            if xor(address(), receiver) {
+                // 4) TRANSFER TO RECIPIENT
+                // selector for transfer(address,uint256)
+                mstore(ptr, ERC20_TRANSFER)
+                mstore(add(ptr, 0x04), receiver)
+                mstore(add(ptr, 0x24), amount)
+
+                let success := call(gas(), underlying, 0, ptr, 0x44, ptr, 32)
+
+                let rdsize := returndatasize()
+
+                // Check for ERC20 success. ERC20 tokens should return a boolean,
+                // but some don't. We accept 0-length return data as success, or at
+                // least 32 bytes that starts with a 32-byte boolean true.
+                success := and(
+                    success, // call itself succeeded
+                    or(
+                        iszero(rdsize), // no return data, or
+                        and(
+                            iszero(lt(rdsize, 32)), // at least 32 bytes
+                            eq(mload(ptr), 1) // starts with uint256(1)
+                        )
+                    )
+                )
+
+                if iszero(success) {
+                    returndatacopy(ptr, 0, rdsize)
+                    revert(ptr, rdsize)
+                }
+            }
+        }
+        return currentOffset;
+    }
+
+    /*
      * | Offset | Length (bytes) | Description                     |
      * |--------|----------------|---------------------------------|
      * | 0      | 20             | underlying                      |
@@ -796,6 +887,110 @@ abstract contract GenericLending is Slots, ERC20Selectors, Masks {
             if iszero(call(gas(), pool, 0x0, ptr, 0x84, 0x0, 0x0)) {
                 returndatacopy(0x0, 0x0, returndatasize())
                 revert(0x0, returndatasize())
+            }
+        }
+        return currentOffset;
+    }
+
+    /*
+     * Note: Some Compound V2 forks might not have this feature and need a separate 
+     * function.
+     * | Offset | Length (bytes) | Description                     |
+     * |--------|----------------|---------------------------------|
+     * | 0      | 20             | underlying                      |
+     * | 20     | 16             | amount                          |
+     * | 36     | 20             | receiver                        |
+     * | 76     | 20             | cToken                          |
+     */
+    /// @notice Withdraw from lender lastgiven user address and lender Id
+    function _depositToCompoundV2(uint256 currentOffset, uint256 amountOverride) internal returns (uint256) {
+        assembly {
+            let underlying := shr(96, calldataload(currentOffset))
+            // offset for amoutn at lower bytes
+            currentOffset := add(currentOffset, 20)
+            let amountData := shr(128, calldataload(currentOffset))
+            // skip amounts
+            currentOffset := add(currentOffset, 16)
+            // receiver
+            let receiver := shr(96, calldataload(currentOffset))
+            // skip receiver
+            currentOffset := add(currentOffset, 20)
+            // get cToken
+            let cToken := shr(96, calldataload(currentOffset))
+            // skip cToken (end of data)
+            currentOffset := add(currentOffset, 20)
+
+            let amount
+            // check if override is used
+            switch and(_PRE_PARAM, amountData)
+            case 0 {
+                amount := and(_UINT112_MASK, amountData)
+                // zero is this balance
+                if iszero(amount) {
+                    // selector for balanceOf(address)
+                    mstore(0, ERC20_BALANCE_OF)
+                    // add this address as parameter
+                    mstore(0x04, address())
+                    // call to token
+                    pop(
+                        staticcall(
+                            gas(),
+                            underlying, // token
+                            0x0,
+                            0x24,
+                            0x0,
+                            0x20
+                        )
+                    )
+                    // load the retrieved balance
+                    amount := mload(0x0)
+                }
+            }
+            default {
+                amount := amountOverride
+            }
+
+            let ptr := mload(0x40)
+
+            /**
+             * Approve cToken beforehand
+             */
+            mstore(0x0, underlying)
+            mstore(0x20, CALL_MANAGEMENT_APPROVALS)
+            mstore(0x20, keccak256(0x0, 0x40))
+            mstore(0x0, cToken)
+            let key := keccak256(0x0, 0x40)
+            // check if already approved
+            if iszero(sload(key)) {
+                // selector for approve(address,uint256)
+                mstore(ptr, ERC20_APPROVE)
+                mstore(add(ptr, 0x04), cToken)
+                mstore(add(ptr, 0x24), MAX_UINT256)
+
+                if iszero(call(gas(), underlying, 0x0, ptr, 0x44, 0x0, 0x0)) {
+                    revert(0x0, 0x0)
+                }
+                sstore(key, 1)
+            }
+
+            // selector for mintBehalf(address,uint256)
+            mstore(ptr, 0x23323e0300000000000000000000000000000000000000000000000000000000)
+            mstore(add(ptr, 0x04), receiver)
+            mstore(add(ptr, 0x24), amount)
+
+            let success := call(
+                gas(),
+                cToken,
+                0x0,
+                ptr, //
+                0x44, //
+                0x0, //
+                0x0 // output size = zero
+            )
+
+            if iszero(success) {
+                returndatacopy(ptr, 0, returndatasize())
+                revert(ptr, returndatasize())
             }
         }
         return currentOffset;
