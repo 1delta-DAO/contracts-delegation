@@ -5,6 +5,7 @@ pragma solidity ^0.8.28;
 import {Slots} from "../../shared/storage/Slots.sol";
 import {ERC20Selectors} from "../../shared/selectors/ERC20Selectors.sol";
 import {Masks} from "../../shared/masks/Masks.sol";
+import {LendingConstants} from "./LendingConstants.sol";
 
 /******************************************************************************\
 * Author: Achthar | 1delta 
@@ -15,11 +16,9 @@ import {Masks} from "../../shared/masks/Masks.sol";
 /**
  * @notice Lending base contract that wraps multiple lender types.
  */
-abstract contract AaveLending is Slots, ERC20Selectors, Masks {
+abstract contract AaveLending is Slots, ERC20Selectors, Masks, LendingConstants {
     // BadLender()
     bytes4 private constant BAD_LENDER = 0x603b7f3e;
-
-    uint256 private constant _PRE_PARAM = 1 << 127;
 
     /*
      * | Offset | Length (bytes) | Description                     |
@@ -486,7 +485,7 @@ abstract contract AaveLending is Slots, ERC20Selectors, Masks {
             let ptr := mload(0x40)
 
             /**
-             * Approve aave pool beforehand
+             * Approve aave pool beforehand if needed
              */
             mstore(0x0, underlying)
             mstore(0x20, CALL_MANAGEMENT_APPROVALS)

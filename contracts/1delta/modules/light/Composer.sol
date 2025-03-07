@@ -33,8 +33,6 @@ contract OneDeltaComposerLight is ERC4646Transfers, UniversalLending, PermitUtil
     // Aave v2s
     address internal constant GRANARY = 0xB702cE183b4E1Faa574834715E5D4a6378D0eEd3;
 
-    uint256 internal constant _PRE_PARAM = 1 << 253;
-
     /**
      * Batch-executes a series of operations
      * @param data compressed instruction calldata
