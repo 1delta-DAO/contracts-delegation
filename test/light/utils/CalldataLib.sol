@@ -32,6 +32,7 @@ library CalldataLib {
     function encodeMorphoFlashLoan(
         address asset,
         uint256 amount,
+        address morphoBlue,
         uint8 poolId, //
         bytes memory data
     ) internal pure returns (bytes memory) {
@@ -41,6 +42,7 @@ library CalldataLib {
                 poolId,
                 uint8(0),
                 asset, //
+                morphoBlue,
                 uint112(amount),
                 uint16(data.length),
                 data

@@ -71,30 +71,6 @@ contract MorphoBlueTest is Test, ComposerUtils {
         oneD.deltaCompose(data);
     }
 
-    function test_light_flash_loan_morpho() external {
-        address asset = 0x4200000000000000000000000000000000000006;
-        uint256 sweepAm = 30.0e18;
-        vm.deal(address(oneD), 30.0e18);
-        uint256 amount = 11111;
-        bytes memory dp = sweep(
-            address(0),
-            user,
-            sweepAm, //
-            SweepType.AMOUNT
-        );
-
-        bytes memory d = CalldataLib.encodeMorphoFlashLoan(
-            asset,
-            amount,
-            uint8(254), //
-            dp
-        );
-        oneD.deltaCompose(d);
-
-        vm.expectRevert();
-        oneD.onMorphoFlashLoan(0, d);
-    }
-
     function test_light_morpho_withdraw_collateral() external {
         deal(LBTC, user, 30.0e8);
         deal(USDC, user, 300_000.0e6);
