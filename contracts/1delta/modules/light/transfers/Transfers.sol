@@ -7,10 +7,7 @@ import {Masks} from "../../shared/masks/Masks.sol";
 import {DeltaErrors} from "../../shared/errors/Errors.sol";
 
 /**
- * @title Universal aggregator contract.
- *        Allows spot and margin swap aggregation
- *        Efficient baching through compact calldata usage.
- * @author 1delta Labs AG
+ * @title Token transfer contract - should work across all EVMs - user Uniswap style Permit2
  */
 contract Transfers is ERC20Selectors, Masks, DeltaErrors {
     bytes32 private constant PERMIT2_TRANSFER_FROM = 0x36c7851600000000000000000000000000000000000000000000000000000000;

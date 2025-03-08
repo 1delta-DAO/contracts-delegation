@@ -10,7 +10,6 @@ import {ERC4646Transfers} from "./transfers/ERC4646Transfers.sol";
 import {UniversalLending} from "./lending/UniversalLending.sol";
 import {UniversalFlashLoan} from "./flashLoan/UniversalFlashLoan.sol";
 import {PermitUtils} from "../shared/permit/PermitUtils.sol";
-import {DeltaErrors} from "../shared/errors/Errors.sol";
 
 /**
  * @title Universal aggregator contract.
@@ -19,9 +18,8 @@ import {DeltaErrors} from "../shared/errors/Errors.sol";
  * @author 1delta Labs AG
  */
 contract OneDeltaComposerLight is
-    UniversalLending,
     PermitUtils,
-    DeltaErrors,
+    UniversalLending,
     UniversalFlashLoan,
     ERC4646Transfers,
     Transfers,

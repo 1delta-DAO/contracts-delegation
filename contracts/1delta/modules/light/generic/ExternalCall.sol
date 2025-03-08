@@ -14,7 +14,8 @@ import {DeltaErrors} from "../../shared/errors/Errors.sol";
 // solhint-disable max-line-length
 
 /**
- * @notice Lending base contract that wraps multiple lender types.
+ * @notice External call on whitelisted targets
+ * Do NOT whitlist lending contracts or tokens!
  */
 abstract contract ExternalCall is Slots, ERC20Selectors, Masks, DeltaErrors {
     function _callExternal(uint256 currentOffset) internal returns (uint256) {

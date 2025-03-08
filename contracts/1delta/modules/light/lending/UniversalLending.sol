@@ -36,7 +36,10 @@ library LenderOps {
 }
 
 /**
- * @notice Lending base contract that wraps multiple lender types.
+ * @notice Merge all lending ops in one operation
+ * Can inject parameters 
+ * - paramPush for receiving funds (e.g. receiving funds from swaps or flash loans)
+ * - paramPull for being required to pay an exact amount (e.g. DEX swap payments, flash loan amounts) 
  */
 abstract contract UniversalLending is AaveLending, CompoundV3Lending, CompoundV2Lending, MorphoLending {
     /**
