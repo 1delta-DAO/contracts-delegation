@@ -29,20 +29,21 @@ library LenderOps {
 library CalldataLib {
     /** MORPHO OPERATIONS */
 
-    function encodeMorphoFlashLoan(
+    function encodeFlashLoan(
         address asset,
         uint256 amount,
-        address morphoBlue,
+        address pool,
+        uint8 poolType,
         uint8 poolId, //
         bytes memory data
     ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
                 uint8(Commands.FLASH_LOAN),
+                uint8(poolType),
                 poolId,
-                uint8(0),
                 asset, //
-                morphoBlue,
+                pool,
                 uint112(amount),
                 uint16(data.length),
                 data

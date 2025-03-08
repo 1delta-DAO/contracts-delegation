@@ -5,6 +5,7 @@ pragma solidity 0.8.28;
 import {Slots} from "../../shared/storage/Slots.sol";
 import {ERC20Selectors} from "../../shared/selectors/ERC20Selectors.sol";
 import {Masks} from "../../shared/masks/Masks.sol";
+import {DeltaErrors} from "../../shared/errors/Errors.sol";
 
 /**
  * @title Universal aggregator contract.
@@ -12,10 +13,7 @@ import {Masks} from "../../shared/masks/Masks.sol";
  *        Efficient baching through compact calldata usage.
  * @author 1delta Labs AG
  */
-contract MorphoFlashLoans is Slots, ERC20Selectors, Masks {
-    // InvalidFlashLoan()
-    bytes4 private constant INVALID_FLASH_LOAN = 0xbafe1c53;
-
+contract MorphoFlashLoans is Slots, ERC20Selectors, Masks, DeltaErrors {
     /// @dev Constant MorphoB address
     address private constant MORPHO_BLUE = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
 

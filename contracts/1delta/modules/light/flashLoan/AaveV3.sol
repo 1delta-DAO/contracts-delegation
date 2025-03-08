@@ -5,6 +5,7 @@ pragma solidity 0.8.28;
 import {Slots} from "../../shared/storage/Slots.sol";
 import {ERC20Selectors} from "../../shared/selectors/ERC20Selectors.sol";
 import {Masks} from "../../shared/masks/Masks.sol";
+import {DeltaErrors} from "../../shared/errors/Errors.sol";
 
 /**
  * @title Universal aggregator contract.
@@ -12,13 +13,7 @@ import {Masks} from "../../shared/masks/Masks.sol";
  *        Efficient baching through compact calldata usage.
  * @author 1delta Labs AG
  */
-contract AaveV3FlashLoans is Slots, ERC20Selectors, Masks {
-    // InvalidCaller()
-    bytes4 private constant INVALID_CALLER = 0x48f5c3ed;
-
-    // InvalidFlashLoan()
-    bytes4 private constant INVALID_FLASH_LOAN = 0xbafe1c53;
-
+contract AaveV3FlashLoans is Slots, ERC20Selectors, Masks, DeltaErrors {
     // Aave V3 style lender pool addresses
     address private constant AAVE_V3 = 0xA238Dd80C259a72e81d7e4664a9801593F98d1c5;
 
@@ -51,6 +46,28 @@ contract AaveV3FlashLoans is Slots, ERC20Selectors, Masks {
             currentOffset := add(currentOffset, 16)
 
             let ptr := mload(0x40)
+
+            /**
+             * Approve Aave V3 pool, they pull funds from the caller
+             */
+            mstore(0x0, token)
+            mstore(0x20, CALL_MANAGEMENT_APPROVALS)
+            mstore(0x20, keccak256(0x0, 0x40))
+            mstore(0x0, pool)
+            let key := keccak256(0x0, 0x40)
+            // check if already approved
+            if iszero(sload(key)) {
+                // selector for approve(address,uint256)
+                mstore(ptr, ERC20_APPROVE)
+                mstore(add(ptr, 0x04), pool)
+                mstore(add(ptr, 0x24), MAX_UINT256)
+
+                if iszero(call(gas(), token, 0x0, ptr, 0x44, ptr, 32)) {
+                    revert(0x0, 0x0)
+                }
+                sstore(key, 1)
+            }
+
             // flashLoanSimple(...)
             mstore(ptr, 0x42b0b77c00000000000000000000000000000000000000000000000000000000)
             mstore(add(ptr, 4), address())
@@ -62,7 +79,6 @@ contract AaveV3FlashLoans is Slots, ERC20Selectors, Masks {
             mstore8(add(ptr, 196), poolId) // source id
             // caller at the beginning
             mstore(add(ptr, 197), shl(96, callerAddress))
-            currentOffset := add(currentOffset, 37)
             calldatacopy(add(ptr, 217), currentOffset, calldataLength) // calldata
             if iszero(
                 call(
@@ -91,16 +107,15 @@ contract AaveV3FlashLoans is Slots, ERC20Selectors, Masks {
      */
     function executeOperation(
         address,
-        uint256,
-        uint256,
+        uint256 flashAmount,
+        uint256 fee,
         address initiator,
         bytes calldata params // user params
     ) external returns (bool) {
         address origCaller;
-        uint256 calldataOffset;
         uint256 calldataLength;
+        uint256 payback;
         assembly {
-            calldataOffset := params.offset
             calldataLength := params.length
             // we expect at least an address
             // and a sourceId (uint8)
@@ -112,7 +127,7 @@ contract AaveV3FlashLoans is Slots, ERC20Selectors, Masks {
             }
             // validate caller
             // - extract id from params
-            let firstWord := calldataload(calldataOffset)
+            let firstWord := calldataload(196)
             // needs no uint8 masking as we shift 248 bits
             let source := shr(248, firstWord)
 
@@ -127,13 +142,13 @@ contract AaveV3FlashLoans is Slots, ERC20Selectors, Masks {
                     revert(0, 0x4)
                 }
             }
-            case 100 {
+            case 1 {
                 if xor(caller(), AVALON) {
                     mstore(0, INVALID_FLASH_LOAN)
                     revert(0, 0x4)
                 }
             }
-            case 210 {
+            case 2 {
                 if xor(caller(), ZEROLEND) {
                     mstore(0, INVALID_FLASH_LOAN)
                     revert(0, 0x4)
@@ -152,18 +167,25 @@ contract AaveV3FlashLoans is Slots, ERC20Selectors, Masks {
                 mstore(0, INVALID_CALLER)
                 revert(0, 0x4)
             }
+            // compute amount to be paid back
+            payback := add(flashAmount, fee)
             // Slice the original caller off the beginnig of the calldata
             // From here on we have validated that the `origCaller`
             // was attached in the deltaCompose function
             // Otherwise, this would be a vulnerability
             origCaller := and(ADDRESS_MASK, shr(88, firstWord))
             // shift / slice params
-            calldataOffset := add(calldataOffset, 21)
             calldataLength := sub(calldataLength, 21)
         }
         // within the flash loan, any compose operation
         // can be executed
-        _deltaComposeInternal(origCaller, 0, 0, calldataOffset, calldataLength);
+        _deltaComposeInternal(
+            origCaller,
+            payback,
+            flashAmount,
+            217, // 196 +21 as constant offset
+            calldataLength
+        );
         return true;
     }
 

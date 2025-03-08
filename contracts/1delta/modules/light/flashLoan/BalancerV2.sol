@@ -5,17 +5,12 @@ pragma solidity 0.8.28;
 import {Slots} from "../../shared/storage/Slots.sol";
 import {ERC20Selectors} from "../../shared/selectors/ERC20Selectors.sol";
 import {Masks} from "../../shared/masks/Masks.sol";
+import {DeltaErrors} from "../../shared/errors/Errors.sol";
 
 /**
  * Flash loaning through BalancerV2
  */
-contract BalancerV2FlashLoans is Slots, ERC20Selectors, Masks {
-    // InvalidCaller()
-    bytes4 private constant INVALID_CALLER = 0x48f5c3ed;
-
-    // InvalidFlashLoan()
-    bytes4 private constant INVALID_FLASH_LOAN = 0xbafe1c53;
-
+contract BalancerV2FlashLoans is Slots, ERC20Selectors, Masks, DeltaErrors {
     // Balancer V2 vault
     address private constant BALANCER_V2_VAULT = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
 
@@ -23,9 +18,10 @@ contract BalancerV2FlashLoans is Slots, ERC20Selectors, Masks {
      * | Offset | Length (bytes) | Description                     |
      * |--------|----------------|---------------------------------|
      * | 0      | 20             | asset                           |
-     * | 20     | 14             | amount                          |
-     * | 34     | 2              | paramsLength                    |
-     * | 36     | paramsLength   | params                          |
+     * | 20     | 20             | pool                            | <-- we allow ANY balancer style pool here
+     * | 40     | 14             | amount                          |
+     * | 54     | 2              | paramsLength                    |
+     * | 56     | paramsLength   | params                          |
      */
     function balancerV2FlashLoan(uint256 currentOffset, address callerAddress, uint256 poolId) internal returns (uint256) {
         assembly {
@@ -57,8 +53,6 @@ contract BalancerV2FlashLoans is Slots, ERC20Selectors, Masks {
             mstore8(add(ptr, 292), poolId) // source id
             // caller at the beginning
             mstore(add(ptr, 293), shl(96, callerAddress))
-            // caller at the beginning
-            currentOffset := add(currentOffset, 37)
             calldatacopy(add(ptr, 313), currentOffset, calldataLength) // calldata
             // set entry flag
             sstore(FLASH_LOAN_GATEWAY_SLOT, 2)
@@ -120,7 +114,7 @@ contract BalancerV2FlashLoans is Slots, ERC20Selectors, Masks {
             // This is a crucial check since this makes
             // the `initiator` paramter the caller of `flashLoan`
             switch source
-            case 0xff {
+            case 0 {
                 if xor(caller(), BALANCER_V2_VAULT) {
                     mstore(0, INVALID_FLASH_LOAN)
                     revert(0, 0x4)

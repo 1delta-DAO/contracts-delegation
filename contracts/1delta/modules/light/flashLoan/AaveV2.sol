@@ -43,6 +43,28 @@ contract AaveV2FlashLoans is Slots, ERC20Selectors, Masks, DeltaErrors {
 
             // call flash loan
             let ptr := mload(0x40)
+
+            /**
+             * Approve Aave V2 pool, they pull funds from the caller
+             */
+            mstore(0x0, token)
+            mstore(0x20, CALL_MANAGEMENT_APPROVALS)
+            mstore(0x20, keccak256(0x0, 0x40))
+            mstore(0x0, pool)
+            let key := keccak256(0x0, 0x40)
+            // check if already approved
+            if iszero(sload(key)) {
+                // selector for approve(address,uint256)
+                mstore(ptr, ERC20_APPROVE)
+                mstore(add(ptr, 0x04), pool)
+                mstore(add(ptr, 0x24), MAX_UINT256)
+
+                if iszero(call(gas(), token, 0x0, ptr, 0x44, ptr, 32)) {
+                    revert(0x0, 0x0)
+                }
+                sstore(key, 1)
+            }
+
             // flashLoan(...) (See Aave V2 ILendingPool)
             mstore(ptr, 0xab9c4b5d00000000000000000000000000000000000000000000000000000000)
             mstore(add(ptr, 4), address()) // receiver is this address
@@ -67,8 +89,6 @@ contract AaveV2FlashLoans is Slots, ERC20Selectors, Masks, DeltaErrors {
             // caller at the beginning
             mstore(add(ptr, 453), shl(96, callerAddress))
 
-            // increment offset by the preceding bytes length
-            currentOffset := add(currentOffset, 37)
             // copy the calldataslice for the params
             calldatacopy(
                 add(ptr, 473), // next slot
@@ -97,7 +117,6 @@ contract AaveV2FlashLoans is Slots, ERC20Selectors, Masks, DeltaErrors {
         return currentOffset;
     }
 
-
     /**
      * @dev Aave V2 style flash loan callback
      */
@@ -108,6 +127,8 @@ contract AaveV2FlashLoans is Slots, ERC20Selectors, Masks, DeltaErrors {
         address initiator,
         bytes calldata params
     ) external returns (bool) {
+        uint256 amount;
+        uint256 toPay;
         address origCaller;
         uint256 calldataOffset;
         uint256 calldataLength;
@@ -133,7 +154,7 @@ contract AaveV2FlashLoans is Slots, ERC20Selectors, Masks, DeltaErrors {
             // This is a crucial check since this makes
             // the `initiator` paramter the caller of `flashLoan`
             switch source
-            case 240 {
+            case 0 {
                 if xor(caller(), GRANARY) {
                     mstore(0, INVALID_FLASH_LOAN)
                     revert(0, 0x4)
@@ -160,10 +181,15 @@ contract AaveV2FlashLoans is Slots, ERC20Selectors, Masks, DeltaErrors {
             // shift / slice params
             calldataOffset := add(calldataOffset, 21)
             calldataLength := sub(calldataLength, 21)
+            // we load the amounts here from the raw calldata
+            // these are in the arrays of length 1
+            amount := calldataload(260)
+            toPay := add(amount, calldataload(324))
         }
         // within the flash loan, any compose operation
         // can be executed
-        _deltaComposeInternal(origCaller, 0, 0, calldataOffset, calldataLength);
+        // we pass the payAmount and loaned amount for consistent usage
+        _deltaComposeInternal(origCaller, toPay, amount, calldataOffset, calldataLength);
         return true;
     }
 
