@@ -71,7 +71,7 @@ contract MorphoBlueTest is Test, ComposerUtils {
         oneD.deltaCompose(data);
     }
 
-    function test_base_flash_loan_morpho() external {
+    function test_light_flash_loan_morpho() external {
         address asset = 0x4200000000000000000000000000000000000006;
         uint256 sweepAm = 30.0e18;
         vm.deal(address(oneD), 30.0e18);
@@ -83,7 +83,7 @@ contract MorphoBlueTest is Test, ComposerUtils {
             SweepType.AMOUNT
         );
 
-        bytes memory d = encodeFlashLoan(
+        bytes memory d = CalldataLib.encodeMorphoFlashLoan(
             asset,
             amount,
             uint8(254), //

@@ -15,6 +15,7 @@ import {DeltaErrors} from "../../shared/errors/Errors.sol";
 
 /**
  * @notice External call on whitelisted targets
+ * This needs a whitelisting functions that stores the addresses in the correct slots
  * Do NOT whitlist lending contracts or tokens!
  */
 abstract contract ExternalCall is Slots, ERC20Selectors, Masks, DeltaErrors {

@@ -6,84 +6,98 @@ import {console} from "forge-std/console.sol";
 import {ComposerUtils, Commands} from "../shared/utils/ComposerUtils.sol";
 import {MarketParams, IMorphoEverything} from "./utils/Morpho.sol";
 
+import {OneDeltaComposerBase} from "../../contracts/1delta/modules/base/Composer.sol";
 import {OneDeltaComposerLight} from "../../contracts/1delta/modules/light/Composer.sol";
 import {IERC20All} from "../shared/interfaces/IERC20All.sol";
-import {COMPOUND_V2_DATA_42161} from "./COMPOUND_V2_DATA_42161.sol";
+import {AAVE_V3_DATA_8453} from "./data/AAVE_V3_DATA_8453.sol";
 
 /**
  * We test all morpho blue operations
  * - supply, supplyCollateral, borrow, repay, erc4646Deposit, erc4646Withdraw
  */
-contract CompoundComposerLightTest is Test, ComposerUtils, COMPOUND_V2_DATA_42161 {
-    uint16 internal constant COMPOUND_V2_ID = 3000;
+contract AaveLightTest is Test, ComposerUtils, AAVE_V3_DATA_8453 {
 
+    OneDeltaComposerBase oneD;
     OneDeltaComposerLight oneDV2;
 
     address internal constant user = address(984327);
 
+    address internal constant LBTC = 0xecAc9C5F704e954931349Da37F60E39f515c11c1;
+
     function setUp() public virtual {
-        vm.createSelectFork({blockNumber: 290934482, urlOrAlias: "https://arbitrum.drpc.org"});
+        vm.createSelectFork({blockNumber: 26696865, urlOrAlias: "https://mainnet.base.org"});
+        oneD = new OneDeltaComposerBase();
         oneDV2 = new OneDeltaComposerLight();
     }
 
-    function encodeCompoundV2Deposit(address token, bool overrideAmount, uint amount, address receiver) internal view returns (bytes memory) {
+    function encodeAaveDeposit(address token, bool overrideAmount, uint amount, address receiver) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
                 uint8(Commands.LENDING),
                 uint8(0),
-                uint16(COMPOUND_V2_ID),
+                uint16(0),
                 token,
                 uint128(amount),
                 receiver,
-                VENUS_cTokens[token] //
+                AAVE_V3_POOL //
             );
     }
 
-    function encodeCompoundV2Borrow(address token, bool overrideAmount, uint amount, address receiver) internal view returns (bytes memory) {
+    function encodeAaveBorrow(address token, bool overrideAmount, uint amount, address receiver, uint256 mode) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
                 uint8(Commands.LENDING),
                 uint8(1),
-                uint16(COMPOUND_V2_ID),
+                uint16(0),
                 token,
                 uint128(amount),
                 receiver,
-                VENUS_cTokens[token] //
+                uint8(mode),
+                AAVE_V3_POOL //
             );
     }
 
-    function encodeCompoundV2Repay(address token, bool overrideAmount, uint amount, address receiver) internal view returns (bytes memory) {
+    function encodeAaveRepay(address token, bool overrideAmount, uint amount, address receiver, uint256 mode) internal view returns (bytes memory) {
         return
             abi.encodePacked(
                 uint8(Commands.LENDING),
                 uint8(2),
-                uint16(COMPOUND_V2_ID),
+                uint16(0),
                 token,
                 uint128(amount),
                 receiver,
-                VENUS_cTokens[token] //
+                uint8(mode),
+                lendingTokens[token].vToken,
+                AAVE_V3_POOL //
             );
     }
 
-    function encodeCompoundV2Withdraw(address token, bool overrideAmount, uint amount, address receiver) internal view returns (bytes memory) {
+
+    function encodeAaveWithdraw(
+        address token,
+        bool overrideAmount,
+        uint amount,
+        address receiver
+    ) internal view returns (bytes memory) {
         return
             abi.encodePacked(
                 uint8(Commands.LENDING),
                 uint8(3),
-                uint16(COMPOUND_V2_ID),
+                uint16(0),
                 token,
                 uint128(amount),
                 receiver,
-                VENUS_cTokens[token] //
+                lendingTokens[token].aToken,
+                AAVE_V3_POOL //
             );
     }
 
-    function test_light_compoundV2_deposit() external {
+    function test_light_aave_deposit() external {
         vm.assume(user != address(0));
 
         address token = USDC;
+        deal(token, user, 1000.0e6);
         uint256 amount = 100.0e6;
-        deal(token, user, amount);
 
         vm.prank(user);
         IERC20All(token).approve(address(oneDV2), type(uint).max);
@@ -94,94 +108,83 @@ contract CompoundComposerLightTest is Test, ComposerUtils, COMPOUND_V2_DATA_4216
             amount //
         );
 
-        bytes memory d = encodeCompoundV2Deposit(token, false, amount, user);
+        bytes memory d = encodeAaveDeposit(token, false, amount, user);
 
         vm.prank(user);
         oneDV2.deltaCompose(abi.encodePacked(transferTo, d));
     }
 
-    function test_light_compoundV2_borrow() external {
-        vm.assume(user != address(0));
-
-        address depositToken = WETH;
-        address token = USDC;
-        address comptroller = VENUS_COMPTROLLER;
-
-        uint256 amount = 1.0e18;
-        deal(token, user, amount);
-
-        depositToCompoundV2(depositToken, user, amount, comptroller);
-
-        vm.prank(user);
-        IERC20All(comptroller).updateDelegate(address(oneDV2), true);
-
-        uint256 amountToBorrow = 10.0e6;
-        bytes memory d = encodeCompoundV2Borrow(token, false, amountToBorrow, user);
-
-        vm.prank(user);
-        oneDV2.deltaCompose(d);
-    }
-
-    function test_light_compoundV2_withdraw() external {
+    function test_light_aave_borrow() external {
         vm.assume(user != address(0));
 
         address token = USDC;
-        address comptroller = VENUS_COMPTROLLER;
+        deal(token, user, 1000.0e6);
         uint256 amount = 100.0e6;
-        deal(token, user, amount);
 
-        depositToCompoundV2(token, user, amount, comptroller);
+        depositToAave(token, user, amount);
 
         vm.prank(user);
-        IERC20All(VENUS_cTokens[token]).approve(address(oneDV2), type(uint).max);
+        IERC20All(lendingTokens[token].vToken).approveDelegation(address(oneDV2), type(uint).max);
 
         uint256 amountToBorrow = 10.0e6;
-        bytes memory d = encodeCompoundV2Withdraw(token, false, amountToBorrow, user);
+        bytes memory d = encodeAaveBorrow(token, false, amountToBorrow, user, 2);
 
         vm.prank(user);
         oneDV2.deltaCompose(d);
     }
 
-    function test_light_compoundV2_repay() external {
+    function test_light_aave_withdraw() external {
         vm.assume(user != address(0));
 
-        address depositToken = WETH;
         address token = USDC;
-        address comptroller = VENUS_COMPTROLLER;
+        deal(token, user, 1000.0e6);
+        uint256 amount = 100.0e6;
 
-        uint256 amount = 1.0e18;
-        deal(token, user, amount);
+        depositToAave(token, user, amount);
 
-        depositToCompoundV2(depositToken, user, amount, comptroller);
+        vm.prank(user);
+        IERC20All(lendingTokens[token].aToken).approve(address(oneDV2), type(uint).max);
 
         uint256 amountToBorrow = 10.0e6;
-        borrowFromCompoundV2(token, user, amountToBorrow, comptroller);
+        bytes memory d = encodeAaveWithdraw(token, false, amountToBorrow, user);
+
+        vm.prank(user);
+        oneDV2.deltaCompose(d);
+    }
+
+    function test_light_aave_repay() external {
+        vm.assume(user != address(0));
+
+        address token = USDC;
+        deal(token, user, 1000.0e6);
+        uint256 amount = 100.0e6;
+
+        depositToAave(token, user, amount);
+
+        uint256 amountToBorrow = 10.0e6;
+        borrowFromAave(token, user, amountToBorrow);
 
         vm.prank(user);
         IERC20All(token).approve(address(oneDV2), type(uint).max);
 
         uint256 amountToRepay = 7.0e6;
 
-        bytes memory transferTo = transferIn(
+
+      bytes memory transferTo = transferIn(
             token,
             address(oneDV2),
             amountToRepay //
         );
 
-        bytes memory d = encodeCompoundV2Repay(token, false, amountToRepay, user);
+
+        bytes memory d = encodeAaveRepay(token, false, amountToRepay, user, 2);
 
         vm.prank(user);
         oneDV2.deltaCompose(abi.encodePacked(transferTo, d));
     }
 
-    function depositToCompoundV2(address token, address userAddress, uint amount, address comptroller) internal {
-        deal(token, userAddress, amount);
-
-        address[] memory cToken = new address[](1);
-        cToken[0] = VENUS_cTokens[token];
-
-        vm.prank(userAddress);
-        IERC20All(comptroller).enterMarkets(cToken);
+    function depositToAave(address token, address userAddress, uint amount) internal {
+        deal(token, userAddress, 1000.0e6);
 
         vm.prank(userAddress);
         IERC20All(token).approve(address(oneDV2), type(uint).max);
@@ -192,17 +195,17 @@ contract CompoundComposerLightTest is Test, ComposerUtils, COMPOUND_V2_DATA_4216
             amount //
         );
 
-        bytes memory d = encodeCompoundV2Deposit(token, false, amount, userAddress);
+        bytes memory d = encodeAaveDeposit(token, false, amount, userAddress);
 
         vm.prank(userAddress);
         oneDV2.deltaCompose(abi.encodePacked(transferTo, d));
     }
 
-    function borrowFromCompoundV2(address token, address userAddress, uint amountToBorrow, address comptroller) internal {
+    function borrowFromAave(address token, address userAddress, uint amountToBorrow) internal {
         vm.prank(userAddress);
-        IERC20All(comptroller).updateDelegate(address(oneDV2), true);
+        IERC20All(lendingTokens[token].vToken).approveDelegation(address(oneDV2), type(uint).max);
 
-        bytes memory d = encodeCompoundV2Borrow(token, false, amountToBorrow, userAddress);
+        bytes memory d = encodeAaveBorrow(token, false, amountToBorrow, userAddress, 2);
 
         vm.prank(userAddress);
         oneDV2.deltaCompose(d);

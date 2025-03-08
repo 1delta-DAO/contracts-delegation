@@ -8,106 +8,80 @@ import {MarketParams, IMorphoEverything} from "./utils/Morpho.sol";
 
 import {OneDeltaComposerLight} from "../../contracts/1delta/modules/light/Composer.sol";
 import {IERC20All} from "../shared/interfaces/IERC20All.sol";
-import {COMPOUND_V3_DATA_8453} from "./COMPOUND_V3_DATA_8453.sol";
+import {COMPOUND_V2_DATA_42161} from "./data/COMPOUND_V2_DATA_42161.sol";
 
 /**
  * We test all morpho blue operations
  * - supply, supplyCollateral, borrow, repay, erc4646Deposit, erc4646Withdraw
  */
-contract CompoundComposerLightTest is Test, ComposerUtils, COMPOUND_V3_DATA_8453 {
-    uint16 internal constant COMPOUND_V3_ID = 2000;
+contract CompoundComposerLightTest is Test, ComposerUtils, COMPOUND_V2_DATA_42161 {
+    uint16 internal constant COMPOUND_V2_ID = 3000;
 
     OneDeltaComposerLight oneDV2;
 
     address internal constant user = address(984327);
 
     function setUp() public virtual {
-        vm.createSelectFork({blockNumber: 26696865, urlOrAlias: "https://mainnet.base.org"});
+        vm.createSelectFork({blockNumber: 290934482, urlOrAlias: "https://arbitrum.drpc.org"});
         oneDV2 = new OneDeltaComposerLight();
     }
 
-    function encodeCompoundV3Deposit(
-        address token,
-        bool overrideAmount,
-        uint amount,
-        address receiver,
-        address comet
-    ) internal pure returns (bytes memory) {
+    function encodeCompoundV2Deposit(address token, bool overrideAmount, uint amount, address receiver) internal view returns (bytes memory) {
         return
             abi.encodePacked(
                 uint8(Commands.LENDING),
                 uint8(0),
-                uint16(COMPOUND_V3_ID),
+                uint16(COMPOUND_V2_ID),
                 token,
                 uint128(amount),
                 receiver,
-                comet //
+                VENUS_cTokens[token] //
             );
     }
 
-    function encodeCompoundV3Borrow(
-        address token,
-        bool overrideAmount,
-        uint amount,
-        address receiver,
-        address comet
-    ) internal pure returns (bytes memory) {
+    function encodeCompoundV2Borrow(address token, bool overrideAmount, uint amount, address receiver) internal view returns (bytes memory) {
         return
             abi.encodePacked(
                 uint8(Commands.LENDING),
                 uint8(1),
-                uint16(COMPOUND_V3_ID),
+                uint16(COMPOUND_V2_ID),
                 token,
                 uint128(amount),
                 receiver,
-                comet //
+                VENUS_cTokens[token] //
             );
     }
 
-    function encodeCompoundV3Repay(
-        address token,
-        bool overrideAmount,
-        uint amount,
-        address receiver,
-        address comet
-    ) internal view returns (bytes memory) {
+    function encodeCompoundV2Repay(address token, bool overrideAmount, uint amount, address receiver) internal view returns (bytes memory) {
         return
             abi.encodePacked(
                 uint8(Commands.LENDING),
                 uint8(2),
-                uint16(COMPOUND_V3_ID),
+                uint16(COMPOUND_V2_ID),
                 token,
                 uint128(amount),
                 receiver,
-                comet //
+                VENUS_cTokens[token] //
             );
     }
 
-    function encodeCompoundV3Withdraw(
-        address token,
-        bool overrideAmount,
-        uint amount,
-        address receiver,
-        address comet
-    ) internal view returns (bytes memory) {
+    function encodeCompoundV2Withdraw(address token, bool overrideAmount, uint amount, address receiver) internal view returns (bytes memory) {
         return
             abi.encodePacked(
                 uint8(Commands.LENDING),
                 uint8(3),
-                uint16(COMPOUND_V3_ID),
+                uint16(COMPOUND_V2_ID),
                 token,
                 uint128(amount),
                 receiver,
-                cometToBase[token] == token,
-                comet //
+                VENUS_cTokens[token] //
             );
     }
 
-    function test_light_compoundV3_deposit() external {
+    function test_light_compoundV2_deposit() external {
         vm.assume(user != address(0));
 
         address token = USDC;
-        address comet = COMPOUND_V3_USDC_COMET;
         uint256 amount = 100.0e6;
         deal(token, user, amount);
 
@@ -120,68 +94,68 @@ contract CompoundComposerLightTest is Test, ComposerUtils, COMPOUND_V3_DATA_8453
             amount //
         );
 
-        bytes memory d = encodeCompoundV3Deposit(token, false, amount, user, comet);
+        bytes memory d = encodeCompoundV2Deposit(token, false, amount, user);
 
         vm.prank(user);
         oneDV2.deltaCompose(abi.encodePacked(transferTo, d));
     }
 
-    function test_light_compoundV3_borrow() external {
+    function test_light_compoundV2_borrow() external {
         vm.assume(user != address(0));
 
         address depositToken = WETH;
         address token = USDC;
-        address comet = COMPOUND_V3_USDC_COMET;
+        address comptroller = VENUS_COMPTROLLER;
 
         uint256 amount = 1.0e18;
         deal(token, user, amount);
 
-        depositToCompoundV3(depositToken, user, amount, comet);
+        depositToCompoundV2(depositToken, user, amount, comptroller);
 
         vm.prank(user);
-        IERC20All(comet).allow(address(oneDV2), true);
+        IERC20All(comptroller).updateDelegate(address(oneDV2), true);
 
         uint256 amountToBorrow = 10.0e6;
-        bytes memory d = encodeCompoundV3Borrow(token, false, amountToBorrow, user, comet);
+        bytes memory d = encodeCompoundV2Borrow(token, false, amountToBorrow, user);
 
         vm.prank(user);
         oneDV2.deltaCompose(d);
     }
 
-    function test_light_compoundV3_withdraw() external {
+    function test_light_compoundV2_withdraw() external {
         vm.assume(user != address(0));
 
         address token = USDC;
-        address comet = COMPOUND_V3_USDC_COMET;
+        address comptroller = VENUS_COMPTROLLER;
         uint256 amount = 100.0e6;
         deal(token, user, amount);
 
-        depositToCompoundV3(token, user, amount, comet);
+        depositToCompoundV2(token, user, amount, comptroller);
 
         vm.prank(user);
-        IERC20All(comet).allow(address(oneDV2), true);
+        IERC20All(VENUS_cTokens[token]).approve(address(oneDV2), type(uint).max);
 
         uint256 amountToBorrow = 10.0e6;
-        bytes memory d = encodeCompoundV3Withdraw(token, false, amountToBorrow, user, comet);
+        bytes memory d = encodeCompoundV2Withdraw(token, false, amountToBorrow, user);
 
         vm.prank(user);
         oneDV2.deltaCompose(d);
     }
 
-    function test_light_compoundV3_repay() external {
+    function test_light_compoundV2_repay() external {
         vm.assume(user != address(0));
 
         address depositToken = WETH;
         address token = USDC;
-        address comet = COMPOUND_V3_USDC_COMET;
+        address comptroller = VENUS_COMPTROLLER;
 
         uint256 amount = 1.0e18;
         deal(token, user, amount);
 
-        depositToCompoundV3(depositToken, user, amount, comet);
+        depositToCompoundV2(depositToken, user, amount, comptroller);
 
         uint256 amountToBorrow = 10.0e6;
-        borrowFromCompoundV3(token, user, amountToBorrow, comet);
+        borrowFromCompoundV2(token, user, amountToBorrow, comptroller);
 
         vm.prank(user);
         IERC20All(token).approve(address(oneDV2), type(uint).max);
@@ -194,14 +168,20 @@ contract CompoundComposerLightTest is Test, ComposerUtils, COMPOUND_V3_DATA_8453
             amountToRepay //
         );
 
-        bytes memory d = encodeCompoundV3Repay(token, false, amountToRepay, user, comet);
+        bytes memory d = encodeCompoundV2Repay(token, false, amountToRepay, user);
 
         vm.prank(user);
         oneDV2.deltaCompose(abi.encodePacked(transferTo, d));
     }
 
-    function depositToCompoundV3(address token, address userAddress, uint amount, address comet) internal {
+    function depositToCompoundV2(address token, address userAddress, uint amount, address comptroller) internal {
         deal(token, userAddress, amount);
+
+        address[] memory cToken = new address[](1);
+        cToken[0] = VENUS_cTokens[token];
+
+        vm.prank(userAddress);
+        IERC20All(comptroller).enterMarkets(cToken);
 
         vm.prank(userAddress);
         IERC20All(token).approve(address(oneDV2), type(uint).max);
@@ -212,17 +192,17 @@ contract CompoundComposerLightTest is Test, ComposerUtils, COMPOUND_V3_DATA_8453
             amount //
         );
 
-        bytes memory d = encodeCompoundV3Deposit(token, false, amount, userAddress, comet);
+        bytes memory d = encodeCompoundV2Deposit(token, false, amount, userAddress);
 
         vm.prank(userAddress);
         oneDV2.deltaCompose(abi.encodePacked(transferTo, d));
     }
 
-    function borrowFromCompoundV3(address token, address userAddress, uint amountToBorrow, address comet) internal {
+    function borrowFromCompoundV2(address token, address userAddress, uint amountToBorrow, address comptroller) internal {
         vm.prank(userAddress);
-        IERC20All(comet).allow(address(oneDV2), true);
+        IERC20All(comptroller).updateDelegate(address(oneDV2), true);
 
-        bytes memory d = encodeCompoundV3Borrow(token, false, amountToBorrow, userAddress, comet);
+        bytes memory d = encodeCompoundV2Borrow(token, false, amountToBorrow, userAddress);
 
         vm.prank(userAddress);
         oneDV2.deltaCompose(d);

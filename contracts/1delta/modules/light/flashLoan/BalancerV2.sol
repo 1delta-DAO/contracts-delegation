@@ -23,10 +23,9 @@ contract BalancerV2FlashLoans is Slots, ERC20Selectors, Masks {
      * | Offset | Length (bytes) | Description                     |
      * |--------|----------------|---------------------------------|
      * | 0      | 20             | asset                           |
-     * | 20     | 20             | pool                            | <-- we allow ANY aave v2 style pool here
-     * | 40     | 14             | amount                          |
-     * | 54     | 2              | paramsLength                    |
-     * | 56     | paramsLength   | params                          |
+     * | 20     | 14             | amount                          |
+     * | 34     | 2              | paramsLength                    |
+     * | 36     | paramsLength   | params                          |
      */
     function balancerV2FlashLoan(uint256 currentOffset, address callerAddress, uint256 poolId) internal returns (uint256) {
         assembly {

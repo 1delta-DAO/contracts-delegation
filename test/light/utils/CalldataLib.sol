@@ -14,7 +14,6 @@ library LenderIds {
     uint256 internal constant UP_TO_MORPHO = 5000;
 }
 
-
 /**
  * Operations enums, encoded as uint8
  */
@@ -29,6 +28,24 @@ library LenderOps {
 
 library CalldataLib {
     /** MORPHO OPERATIONS */
+
+    function encodeMorphoFlashLoan(
+        address asset,
+        uint256 amount,
+        uint8 poolId, //
+        bytes memory data
+    ) internal pure returns (bytes memory) {
+        return
+            abi.encodePacked(
+                uint8(Commands.FLASH_LOAN),
+                poolId,
+                uint8(0),
+                asset, //
+                uint112(amount),
+                uint16(data.length),
+                data
+            );
+    }
 
     function morphoDepositCollateral(bytes memory market, uint assets, bytes memory data) internal pure returns (bytes memory) {
         return
