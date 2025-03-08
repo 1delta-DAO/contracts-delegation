@@ -9,7 +9,7 @@ pragma solidity ^0.8.28;
 // solhint-disable max-line-length
 
 /**
- * @notice Lending base contract that wraps multiple lender types.
+ * @notice Constants for lending.
  */
 abstract contract LendingConstants {
     uint256 internal constant _PRE_PARAM = 1 << 127;

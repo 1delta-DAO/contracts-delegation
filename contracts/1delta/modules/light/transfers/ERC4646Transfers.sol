@@ -2,9 +2,9 @@
 
 pragma solidity ^0.8.28;
 
-import {Slots} from "../shared/storage/Slots.sol";
-import {ERC20Selectors} from "../shared/selectors/ERC20Selectors.sol";
-import {Masks} from "../shared/masks/Masks.sol";
+import {Slots} from "../../shared/storage/Slots.sol";
+import {ERC20Selectors} from "../../shared/selectors/ERC20Selectors.sol";
+import {Masks} from "../../shared/masks/Masks.sol";
 
 /******************************************************************************\
 * Author: Achthar | 1delta 

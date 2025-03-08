@@ -17,7 +17,6 @@ import {LendingConstants} from "./LendingConstants.sol";
  * @notice Lending base contract that wraps multiple lender types.
  */
 abstract contract CompoundV2Lending is Slots, ERC20Selectors, Masks, LendingConstants {
-
     // BadLender()
     bytes4 private constant BAD_LENDER = 0x603b7f3e;
 
