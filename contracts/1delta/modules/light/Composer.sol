@@ -2,14 +2,13 @@
 
 pragma solidity 0.8.28;
 
-import {Commands} from "../shared/Commands.sol";
+import {ComposerCommands} from "./enums/DeltaEnums.sol";
 import {ExternalCall} from "./generic/ExternalCall.sol";
 import {Transfers} from "./transfers/Transfers.sol";
-import {Native} from "./transfers/Native.sol";
-import {ERC4646Transfers} from "./transfers/ERC4646Transfers.sol";
+import {ERC4646Operations} from "./ERC4646/ERC4646Operations.sol";
 import {UniversalLending} from "./lending/UniversalLending.sol";
+import {Permits} from "./permit/Permits.sol";
 import {UniversalFlashLoan} from "./flashLoan/UniversalFlashLoan.sol";
-import {PermitUtils} from "../shared/permit/PermitUtils.sol";
 
 /**
  * @title Universal aggregator contract.
@@ -18,32 +17,38 @@ import {PermitUtils} from "../shared/permit/PermitUtils.sol";
  * @author 1delta Labs AG
  */
 contract OneDeltaComposerLight is
-    PermitUtils,
     UniversalLending,
     UniversalFlashLoan,
-    ERC4646Transfers,
+    ERC4646Operations,
     Transfers,
-    Native,
+    Permits,
     ExternalCall //
 {
     /**
      * Batch-executes a series of operations
-     * @param data compressed instruction calldata
+     * The calldata is loaded in assembly and therefore not referred to here
      */
-    function deltaCompose(bytes calldata data) external payable {
-        uint length;
+    function deltaCompose(bytes calldata) external payable {
+        uint256 length;
         assembly {
-            length := data.length
+            // the length is stored per abi encoding standards
+            length := calldataload(0x24)
         }
-        _deltaComposeInternal(msg.sender, 0, 0, 68, length);
+        _deltaComposeInternal(
+            msg.sender,
+            0, // no injecteds
+            0,
+            0x44, // the offset is cponstant
+            length
+        );
     }
 
     /**
      * Execute a set op packed operations
      * @param callerAddress the address of the EOA/contract that
      *                      initially triggered the `deltaCompose`
-     * | op0 | length0 | data0 | op1 | length1 | ...
-     * | 1   |    16   | ...   |  1  |    16   | ...
+     * | op0 | data0 | op1 | data1 | ...
+     * | 1   | ...   |  1  | ...   | ...
      */
     function _deltaComposeInternal(
         address callerAddress,
@@ -78,110 +83,20 @@ contract OneDeltaComposerLight is
                 // we increment the current offset to skip the operation
                 currentOffset := add(1, currentOffset)
             }
-            if (operation < 0x10) {
-                if (operation == Commands.EXTERNAL_CALL) {
-                    currentOffset = _callExternal(currentOffset);
-                }
-            } else if (operation < 0x20) {
-                if (operation == Commands.LENDING) {
-                    currentOffset = lendingOperations(callerAddress, paramPull, paramPush, currentOffset);
-                }
-            } else if (operation < 0x30) {
-                if (operation == Commands.TRANSFER_FROM) {
-                    currentOffset = _transferFrom(currentOffset, callerAddress);
-                } else if (operation == Commands.SWEEP) {
-                    currentOffset = _sweep(currentOffset);
-                } else if (operation == Commands.WRAP_NATIVE) {
-                    currentOffset = _wrap(currentOffset);
-                } else if (operation == Commands.UNWRAP_WNATIVE) {
-                    currentOffset = _unwrap(currentOffset);
-                } else if (operation == Commands.PERMIT2_TRANSFER_FROM) {
-                    currentOffset = _permit2TransferFrom(currentOffset, callerAddress);
-                } else if (operation == Commands.ERC4646) {
-                    uint256 erc4646Operation;
-                    assembly {
-                        erc4646Operation := shr(248, calldataload(currentOffset))
-                        currentOffset := add(currentOffset, 1)
-                    }
-                    /** ERC6464 deposit */
-                    if (erc4646Operation == 0) {
-                        currentOffset = _erc4646Deposit(currentOffset);
-                    }
-                    /** MetaMorpho withdraw */
-                    else {
-                        currentOffset = _erc4646Withdraw(currentOffset, callerAddress);
-                    }
-                }
+            if (operation == ComposerCommands.EXT_CALL) {
+                currentOffset = _callExternal(currentOffset);
+            } else if (operation == ComposerCommands.LENDING) {
+                currentOffset = _lendingOperations(callerAddress, paramPull, paramPush, currentOffset);
+            } else if (operation == ComposerCommands.TRANSFERS) {
+                currentOffset = _transfers(currentOffset, callerAddress);
+            } else if (operation == ComposerCommands.PERMIT) {
+                currentOffset = _permit(currentOffset, callerAddress);
+            } else if (operation == ComposerCommands.FLASH_LOAN) {
+                currentOffset = _universalFlashLoan(currentOffset, callerAddress);
+            } else if (operation == ComposerCommands.ERC4646) {
+                currentOffset = _ERC4646Operations(currentOffset, callerAddress);
             } else {
-                if (operation == Commands.EXEC_PERMIT) {
-                    ////////////////////////////////////////////////////
-                    // Execute normal transfer permit (Dai, ERC20Permit, P2).
-                    // The specific permit type is executed based
-                    // on the permit length (credits to 1inch for the implementation)
-                    // Data layout:
-                    //      bytes 0-20:                  token
-                    //      bytes 20-22:                 permit length
-                    //      bytes 22-(22+permit length): permit data
-                    ////////////////////////////////////////////////////
-                    uint256 permitOffset;
-                    uint256 permitLength;
-                    address token;
-                    assembly {
-                        token := calldataload(currentOffset)
-                        permitLength := and(UINT16_MASK, shr(80, token))
-                        token := shr(96, token)
-                        permitOffset := add(currentOffset, 22)
-                        currentOffset := add(permitOffset, permitLength)
-                    }
-                    _tryPermit(token, permitOffset, permitLength, callerAddress);
-                } else if (operation == Commands.EXEC_CREDIT_PERMIT) {
-                    ////////////////////////////////////////////////////
-                    // Execute credit delegation permit.
-                    // The specific permit type is executed based
-                    // on the permit length (credits to 1inch for the implementation)
-                    // Data layout:
-                    //      bytes 0-20:                  token
-                    //      bytes 20-22:                 permit length
-                    //      bytes 22-(22+permit length): permit data
-                    ////////////////////////////////////////////////////
-                    uint256 permitOffset;
-                    uint256 permitLength;
-                    address token;
-                    assembly {
-                        token := calldataload(currentOffset)
-                        permitLength := and(UINT16_MASK, shr(80, token))
-                        token := shr(96, token)
-                        permitOffset := add(currentOffset, 22)
-                        currentOffset := add(permitOffset, permitLength)
-                    }
-                    _tryCreditPermit(token, permitOffset, permitLength, callerAddress);
-                } else if (operation == Commands.EXEC_COMPOUND_V3_PERMIT) {
-                    ////////////////////////////////////////////////////
-                    // Execute lending delegation based on Compound V3.
-                    // Data layout:
-                    //      bytes 0-20:                  comet address
-                    //      bytes 20-22:                 permit length
-                    //      bytes 22-(22+permit length): permit data
-                    ////////////////////////////////////////////////////
-                    uint256 permitOffset;
-                    uint256 permitLength;
-                    address comet;
-                    assembly {
-                        comet := calldataload(currentOffset)
-                        permitLength := and(UINT16_MASK, shr(80, comet))
-                        comet := shr(96, comet)
-                        permitOffset := add(currentOffset, 22)
-                        currentOffset := add(permitOffset, permitLength)
-                    }
-                    _tryCompoundV3Permit(comet, permitOffset, permitLength, callerAddress);
-                } else if (operation == Commands.FLASH_LOAN) {
-                    currentOffset = _universalFlashLoan(currentOffset, callerAddress);
-                } else {
-                    assembly {
-                        mstore(0, INVALID_OPERATION)
-                        revert(0, 0x4)
-                    }
-                }
+                _invalidOperation();
             }
             // break criteria - we shifted to the end of the calldata
             if (currentOffset >= maxIndex) break;

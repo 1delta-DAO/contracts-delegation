@@ -6,16 +6,16 @@ import {console} from "forge-std/console.sol";
 import {ComposerUtils, Commands} from "../shared/utils/ComposerUtils.sol";
 import {MorphoMathLib} from "./utils/MathLib.sol";
 import {MarketParams, IMorphoEverything} from "./utils/Morpho.sol";
-import {CalldataLib} from "./utils/CalldataLib.sol";
 
 import {OneDeltaComposerLight} from "../../contracts/1delta/modules/light/Composer.sol";
 import {IERC20All} from "../shared/interfaces/IERC20All.sol";
+import "./utils/CalldataLib.sol";
 
 /**
  * We test all CalldataLib.morpho blue operations
  * - supply, supplyCollateral, borrow, repay, erc4646Deposit, erc4646Withdraw
  */
-contract FlashLoanLightTest is Test, ComposerUtils {
+contract FlashLoanLightTest is Test {
     using MorphoMathLib for uint256;
 
     OneDeltaComposerLight oneD;
@@ -41,11 +41,11 @@ contract FlashLoanLightTest is Test, ComposerUtils {
         uint256 sweepAm = 30.0e18;
         vm.deal(address(oneD), sweepAm);
         uint256 amount = 11111;
-        bytes memory dp = sweep(
+        bytes memory dp = CalldataLib.sweep(
             address(0),
             user,
             sweepAm, //
-            SweepType.AMOUNT
+            CalldataLib.SweepType.AMOUNT
         );
         bytes memory d = CalldataLib.encodeFlashLoan(
             asset,
@@ -68,11 +68,11 @@ contract FlashLoanLightTest is Test, ComposerUtils {
         vm.deal(address(oneD), sweepAm);
         uint256 amount = 1.0e18;
         deal(asset, address(oneD), 0.0005e18); // fee
-        bytes memory dp = sweep(
+        bytes memory dp = CalldataLib.sweep(
             address(0),
             user,
             sweepAm, //
-            SweepType.AMOUNT
+            CalldataLib.SweepType.AMOUNT
         );
         bytes memory d = CalldataLib.encodeFlashLoan(
             asset,
@@ -95,11 +95,11 @@ contract FlashLoanLightTest is Test, ComposerUtils {
         vm.deal(address(oneD), sweepAm);
         uint256 amount = 1.0e18;
         deal(asset, address(oneD), 0.0009e18); // fee
-        bytes memory dp = sweep(
+        bytes memory dp = CalldataLib.sweep(
             address(0),
             user,
             sweepAm, //
-            SweepType.AMOUNT
+            CalldataLib.SweepType.AMOUNT
         );
         bytes memory d = CalldataLib.encodeFlashLoan(
             asset,
@@ -122,18 +122,18 @@ contract FlashLoanLightTest is Test, ComposerUtils {
         vm.deal(address(oneD), sweepAm);
         uint256 amount = 1.0e18;
         deal(asset, address(oneD), 0.0009e18); // fee
-        bytes memory dp = sweep(
+        bytes memory dp = CalldataLib.sweep(
             address(0),
             user,
             sweepAm, //
-            SweepType.AMOUNT
+            CalldataLib.SweepType.AMOUNT
         );
 
-        bytes memory t = sweep(
+        bytes memory t = CalldataLib.sweep(
             asset,
             BALANCER_V2_VAULT,
             amount, //
-            SweepType.AMOUNT
+            CalldataLib.SweepType.AMOUNT
         );
         bytes memory d = CalldataLib.encodeFlashLoan(
             asset,

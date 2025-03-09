@@ -59,7 +59,7 @@ contract BalancerV2FlashLoans is Slots, ERC20Selectors, Masks, DeltaErrors {
             if iszero(
                 call(
                     gas(),
-                    BALANCER_V2_VAULT,
+                    pool,
                     0x0,
                     ptr,
                     add(calldataLength, 345), // = 10 * 32 + 4

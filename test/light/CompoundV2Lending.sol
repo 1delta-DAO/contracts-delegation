@@ -3,18 +3,18 @@ pragma solidity ^0.8.19;
 
 import {Test} from "forge-std/Test.sol";
 import {console} from "forge-std/console.sol";
-import {ComposerUtils, Commands} from "../shared/utils/ComposerUtils.sol";
 import {MarketParams, IMorphoEverything} from "./utils/Morpho.sol";
 
 import {OneDeltaComposerLight} from "../../contracts/1delta/modules/light/Composer.sol";
 import {IERC20All} from "../shared/interfaces/IERC20All.sol";
 import {COMPOUND_V2_DATA_42161} from "./data/COMPOUND_V2_DATA_42161.sol";
+import "./utils/CalldataLib.sol";
 
 /**
  * We test all morpho blue operations
  * - supply, supplyCollateral, borrow, repay, erc4646Deposit, erc4646Withdraw
  */
-contract CompoundComposerLightTest is Test, ComposerUtils, COMPOUND_V2_DATA_42161 {
+contract CompoundComposerLightTest is Test, COMPOUND_V2_DATA_42161 {
     uint16 internal constant COMPOUND_V2_ID = 3000;
 
     OneDeltaComposerLight oneDV2;
@@ -26,58 +26,6 @@ contract CompoundComposerLightTest is Test, ComposerUtils, COMPOUND_V2_DATA_4216
         oneDV2 = new OneDeltaComposerLight();
     }
 
-    function encodeCompoundV2Deposit(address token, bool overrideAmount, uint amount, address receiver) internal view returns (bytes memory) {
-        return
-            abi.encodePacked(
-                uint8(Commands.LENDING),
-                uint8(0),
-                uint16(COMPOUND_V2_ID),
-                token,
-                uint128(amount),
-                receiver,
-                VENUS_cTokens[token] //
-            );
-    }
-
-    function encodeCompoundV2Borrow(address token, bool overrideAmount, uint amount, address receiver) internal view returns (bytes memory) {
-        return
-            abi.encodePacked(
-                uint8(Commands.LENDING),
-                uint8(1),
-                uint16(COMPOUND_V2_ID),
-                token,
-                uint128(amount),
-                receiver,
-                VENUS_cTokens[token] //
-            );
-    }
-
-    function encodeCompoundV2Repay(address token, bool overrideAmount, uint amount, address receiver) internal view returns (bytes memory) {
-        return
-            abi.encodePacked(
-                uint8(Commands.LENDING),
-                uint8(2),
-                uint16(COMPOUND_V2_ID),
-                token,
-                uint128(amount),
-                receiver,
-                VENUS_cTokens[token] //
-            );
-    }
-
-    function encodeCompoundV2Withdraw(address token, bool overrideAmount, uint amount, address receiver) internal view returns (bytes memory) {
-        return
-            abi.encodePacked(
-                uint8(Commands.LENDING),
-                uint8(3),
-                uint16(COMPOUND_V2_ID),
-                token,
-                uint128(amount),
-                receiver,
-                VENUS_cTokens[token] //
-            );
-    }
-
     function test_light_compoundV2_deposit() external {
         vm.assume(user != address(0));
 
@@ -85,16 +33,18 @@ contract CompoundComposerLightTest is Test, ComposerUtils, COMPOUND_V2_DATA_4216
         uint256 amount = 100.0e6;
         deal(token, user, amount);
 
+        address cToken = VENUS_cTokens[token];
+
         vm.prank(user);
         IERC20All(token).approve(address(oneDV2), type(uint).max);
 
-        bytes memory transferTo = transferIn(
+        bytes memory transferTo = CalldataLib.transferIn(
             token,
             address(oneDV2),
             amount //
         );
 
-        bytes memory d = encodeCompoundV2Deposit(token, false, amount, user);
+        bytes memory d = CalldataLib.encodeCompoundV2Deposit(token, false, amount, user, cToken);
 
         vm.prank(user);
         oneDV2.deltaCompose(abi.encodePacked(transferTo, d));
@@ -107,6 +57,7 @@ contract CompoundComposerLightTest is Test, ComposerUtils, COMPOUND_V2_DATA_4216
         address token = USDC;
         address comptroller = VENUS_COMPTROLLER;
 
+        address cToken = VENUS_cTokens[token];
         uint256 amount = 1.0e18;
         deal(token, user, amount);
 
@@ -116,7 +67,7 @@ contract CompoundComposerLightTest is Test, ComposerUtils, COMPOUND_V2_DATA_4216
         IERC20All(comptroller).updateDelegate(address(oneDV2), true);
 
         uint256 amountToBorrow = 10.0e6;
-        bytes memory d = encodeCompoundV2Borrow(token, false, amountToBorrow, user);
+        bytes memory d = CalldataLib.encodeCompoundV2Borrow(token, false, amountToBorrow, user, cToken);
 
         vm.prank(user);
         oneDV2.deltaCompose(d);
@@ -135,8 +86,9 @@ contract CompoundComposerLightTest is Test, ComposerUtils, COMPOUND_V2_DATA_4216
         vm.prank(user);
         IERC20All(VENUS_cTokens[token]).approve(address(oneDV2), type(uint).max);
 
+        address cToken = VENUS_cTokens[token];
         uint256 amountToBorrow = 10.0e6;
-        bytes memory d = encodeCompoundV2Withdraw(token, false, amountToBorrow, user);
+        bytes memory d = CalldataLib.encodeCompoundV2Withdraw(token, false, amountToBorrow, user, cToken);
 
         vm.prank(user);
         oneDV2.deltaCompose(d);
@@ -162,13 +114,14 @@ contract CompoundComposerLightTest is Test, ComposerUtils, COMPOUND_V2_DATA_4216
 
         uint256 amountToRepay = 7.0e6;
 
-        bytes memory transferTo = transferIn(
+        bytes memory transferTo = CalldataLib.transferIn(
             token,
             address(oneDV2),
             amountToRepay //
         );
 
-        bytes memory d = encodeCompoundV2Repay(token, false, amountToRepay, user);
+        address cToken = VENUS_cTokens[token];
+        bytes memory d = CalldataLib.encodeCompoundV2Repay(token, false, amountToRepay, user, cToken);
 
         vm.prank(user);
         oneDV2.deltaCompose(abi.encodePacked(transferTo, d));
@@ -177,22 +130,23 @@ contract CompoundComposerLightTest is Test, ComposerUtils, COMPOUND_V2_DATA_4216
     function depositToCompoundV2(address token, address userAddress, uint amount, address comptroller) internal {
         deal(token, userAddress, amount);
 
-        address[] memory cToken = new address[](1);
-        cToken[0] = VENUS_cTokens[token];
+        address[] memory cTokens = new address[](1);
+        cTokens[0] = VENUS_cTokens[token];
 
         vm.prank(userAddress);
-        IERC20All(comptroller).enterMarkets(cToken);
+        IERC20All(comptroller).enterMarkets(cTokens);
 
         vm.prank(userAddress);
         IERC20All(token).approve(address(oneDV2), type(uint).max);
 
-        bytes memory transferTo = transferIn(
+        bytes memory transferTo = CalldataLib.transferIn(
             token,
             address(oneDV2),
             amount //
         );
 
-        bytes memory d = encodeCompoundV2Deposit(token, false, amount, userAddress);
+        address cToken = VENUS_cTokens[token];
+        bytes memory d = CalldataLib.encodeCompoundV2Deposit(token, false, amount, userAddress, cToken);
 
         vm.prank(userAddress);
         oneDV2.deltaCompose(abi.encodePacked(transferTo, d));
@@ -202,7 +156,8 @@ contract CompoundComposerLightTest is Test, ComposerUtils, COMPOUND_V2_DATA_4216
         vm.prank(userAddress);
         IERC20All(comptroller).updateDelegate(address(oneDV2), true);
 
-        bytes memory d = encodeCompoundV2Borrow(token, false, amountToBorrow, userAddress);
+        address cToken = VENUS_cTokens[token];
+        bytes memory d = CalldataLib.encodeCompoundV2Borrow(token, false, amountToBorrow, userAddress, cToken);
 
         vm.prank(userAddress);
         oneDV2.deltaCompose(d);

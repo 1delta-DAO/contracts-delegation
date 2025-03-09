@@ -5,6 +5,7 @@ pragma solidity ^0.8.28;
 import {Slots} from "../../shared/storage/Slots.sol";
 import {ERC20Selectors} from "../../shared/selectors/ERC20Selectors.sol";
 import {Masks} from "../../shared/masks/Masks.sol";
+import {DeltaErrors} from "../../shared/errors/Errors.sol";
 
 /******************************************************************************\
 * Author: Achthar | 1delta 
@@ -15,7 +16,7 @@ import {Masks} from "../../shared/masks/Masks.sol";
 /**
  * @notice ERC4646 deposit and withdraw actions
  */
-abstract contract ERC4646Transfers is Slots, ERC20Selectors, Masks {
+abstract contract ERC4646Transfers is Slots, ERC20Selectors, Masks, DeltaErrors {
     /// @dev Mask for shares
     uint256 private constant SHARES_MASK = 0xff000000000000000000000000000000;
 

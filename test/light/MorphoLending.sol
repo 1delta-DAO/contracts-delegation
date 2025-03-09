@@ -3,19 +3,18 @@ pragma solidity ^0.8.19;
 
 import {Test} from "forge-std/Test.sol";
 import {console} from "forge-std/console.sol";
-import {ComposerUtils, Commands} from "../shared/utils/ComposerUtils.sol";
 import {MorphoMathLib} from "./utils/MathLib.sol";
 import {MarketParams, IMorphoEverything} from "./utils/Morpho.sol";
-import {CalldataLib} from "./utils/CalldataLib.sol";
 
 import {OneDeltaComposerLight} from "../../contracts/1delta/modules/light/Composer.sol";
 import {IERC20All} from "../shared/interfaces/IERC20All.sol";
+import "./utils/CalldataLib.sol";
 
 /**
  * We test all CalldataLib.morpho blue operations
  * - supply, supplyCollateral, borrow, repay, erc4646Deposit, erc4646Withdraw
  */
-contract MorphoBlueTest is Test, ComposerUtils {
+contract MorphoBlueTest is Test {
     using MorphoMathLib for uint256;
 
     OneDeltaComposerLight oneD;
@@ -64,10 +63,16 @@ contract MorphoBlueTest is Test, ComposerUtils {
         bytes memory d = encodeMorphoPermit(999, true);
         uint16 len = uint16(d.length);
 
-        bytes memory data = abi.encodePacked(uint8(Commands.EXEC_COMPOUND_V3_PERMIT), MORPHO, len, d);
+        bytes memory data = abi.encodePacked(
+            uint8(ComposerCommands.PERMIT), //
+            uint8(PermitIds.ALLOW_CREDIT_PERMIT),
+            MORPHO,
+            len,
+            d
+        );
 
         vm.prank(user);
-        vm.expectRevert("signature expired");
+        vm.expectRevert("invalid nonce");
         oneD.deltaCompose(data);
     }
 
@@ -161,7 +166,7 @@ contract MorphoBlueTest is Test, ComposerUtils {
         vm.prank(user);
         IERC20All(borrowAsset).approve(address(oneD), type(uint).max);
 
-        bytes memory transferTo = transferIn(
+        bytes memory transferTo = CalldataLib.transferIn(
             borrowAsset,
             address(oneD),
             borrowAssets //
@@ -199,11 +204,11 @@ contract MorphoBlueTest is Test, ComposerUtils {
         vm.prank(user);
         oneD.deltaCompose(borrowCall);
 
-        bytes memory sweepWethInCallback = sweep(
+        bytes memory sweepWethInCallback = CalldataLib.sweep(
             WETH,
             user,
             recoverWeth,
-            SweepType.VALIDATE //
+            CalldataLib.SweepType.VALIDATE //
         );
 
         bytes memory repayCall = CalldataLib.morphoRepay(
@@ -216,7 +221,7 @@ contract MorphoBlueTest is Test, ComposerUtils {
         vm.prank(user);
         IERC20All(borrowAsset).approve(address(oneD), type(uint).max);
 
-        bytes memory transferTo = transferIn(
+        bytes memory transferTo = CalldataLib.transferIn(
             borrowAsset,
             address(oneD),
             borrowAssets //
@@ -265,7 +270,7 @@ contract MorphoBlueTest is Test, ComposerUtils {
         vm.prank(user);
         IERC20All(borrowAsset).approve(address(oneD), type(uint).max);
 
-        bytes memory transferTo = transferIn(
+        bytes memory transferTo = CalldataLib.transferIn(
             borrowAsset,
             address(oneD),
             borrowAssets + 1 //
@@ -285,7 +290,7 @@ contract MorphoBlueTest is Test, ComposerUtils {
         uint assets = 1.0e8;
 
         address loan = USDC;
-        bytes memory transferTo = transferIn(
+        bytes memory transferTo = CalldataLib.transferIn(
             loan,
             address(oneD),
             assets //
@@ -327,17 +332,17 @@ contract MorphoBlueTest is Test, ComposerUtils {
         uint assets = 1.0e8;
 
         address loan = USDC;
-        bytes memory transferTo = transferIn(
+        bytes memory transferTo = CalldataLib.transferIn(
             loan,
             address(oneD),
             assets //
         );
 
-        bytes memory sweepWethInCallback = sweep(
+        bytes memory sweepWethInCallback = CalldataLib.sweep(
             WETH,
             user,
             recoverWeth,
-            SweepType.VALIDATE //
+            CalldataLib.SweepType.VALIDATE //
         );
 
         bytes memory deposit = CalldataLib.morphoDeposit(
@@ -460,7 +465,7 @@ contract MorphoBlueTest is Test, ComposerUtils {
         uint assets = 1.0e8;
 
         address collateral = LBTC;
-        bytes memory transferTo = transferIn(
+        bytes memory transferTo = CalldataLib.transferIn(
             collateral,
             address(oneD),
             assets //
@@ -485,13 +490,13 @@ contract MorphoBlueTest is Test, ComposerUtils {
 
         uint assets = 100.0e6;
 
-        bytes memory transferTo = transferIn(
+        bytes memory transferTo = CalldataLib.transferIn(
             asset,
             address(oneD),
             assets //
         );
 
-        bytes memory deposit = erc4646Deposit(
+        bytes memory deposit = CalldataLib.erc4646Deposit(
             asset,
             vault, //
             false,
@@ -521,13 +526,13 @@ contract MorphoBlueTest is Test, ComposerUtils {
 
         uint assets = IERC20All(META_MORPHO_USDC).convertToAssets(desiredShares);
 
-        bytes memory transferTo = transferIn(
+        bytes memory transferTo = CalldataLib.transferIn(
             asset,
             address(oneD),
             assets //
         );
 
-        bytes memory deposit = erc4646Deposit(
+        bytes memory deposit = CalldataLib.erc4646Deposit(
             asset,
             vault, //
             true,
@@ -548,13 +553,13 @@ contract MorphoBlueTest is Test, ComposerUtils {
     }
 
     function depositToMetaMorpho(address userAddress, address asset, uint assets) internal {
-        bytes memory transferTo = transferIn(
+        bytes memory transferTo = CalldataLib.transferIn(
             asset,
             address(oneD),
             assets //
         );
 
-        bytes memory deposit = erc4646Deposit(
+        bytes memory deposit = CalldataLib.erc4646Deposit(
             asset,
             META_MORPHO_USDC, //
             false,
@@ -579,7 +584,7 @@ contract MorphoBlueTest is Test, ComposerUtils {
         depositToMetaMorpho(user, USDC, assets);
 
         uint withdrawAssets = 70.0e6;
-        bytes memory withdrawCall = erc4646Withdraw(
+        bytes memory withdrawCall = CalldataLib.erc4646Withdraw(
             vault, //
             false,
             withdrawAssets,
@@ -615,7 +620,7 @@ contract MorphoBlueTest is Test, ComposerUtils {
 
         uint userShares = IERC20All(vault).balanceOf(user);
 
-        bytes memory withdrawCall = erc4646Withdraw(
+        bytes memory withdrawCall = CalldataLib.erc4646Withdraw(
             vault, //
             true,
             userShares / 2,
@@ -640,17 +645,17 @@ contract MorphoBlueTest is Test, ComposerUtils {
         uint assets = 1.0e8;
 
         address collateral = LBTC;
-        bytes memory transferTo = transferIn(
+        bytes memory transferTo = CalldataLib.transferIn(
             collateral,
             address(oneD),
             assets //
         );
 
-        bytes memory sweepWethInCallback = sweep(
+        bytes memory sweepWethInCallback = CalldataLib.sweep(
             WETH,
             user,
             recoverWeth,
-            SweepType.VALIDATE //
+            CalldataLib.SweepType.VALIDATE //
         );
 
         bytes memory deposit = CalldataLib.morphoDepositCollateral(encodeMarket(LBTC_USDC_MARKET), assets, sweepWethInCallback);
@@ -670,7 +675,7 @@ contract MorphoBlueTest is Test, ComposerUtils {
 
     function depositCollateralToMorpho(address userAddr, uint amount) internal {
         address collateral = LBTC;
-        bytes memory transferTo = transferIn(
+        bytes memory transferTo = CalldataLib.transferIn(
             collateral,
             address(oneD),
             amount //
@@ -686,7 +691,7 @@ contract MorphoBlueTest is Test, ComposerUtils {
 
     function depositToMorpho(address userAddr, bool isShares, uint amount) internal {
         address loan = USDC;
-        bytes memory transferTo = transferIn(
+        bytes memory transferTo = CalldataLib.transferIn(
             loan,
             address(oneD),
             amount //
@@ -725,7 +730,7 @@ contract MorphoBlueTest is Test, ComposerUtils {
     //         }
     //         am := and(UINT128_MASK,mload(add(ptr, 0x10)))
     //         am2 :=mload(add(ptr, 0x40))
-        
+
     //     }
     //     console.log("am", am);
     //     console.log("am2", am2);
@@ -743,7 +748,7 @@ contract MorphoBlueTest is Test, ComposerUtils {
     //         860000000000000000
     //     );
 
-    //     bytes memory dp = sweep(
+    //     bytes memory dp = CalldataLib.sweep(
     //         address(0),
     //         onBehalf,
     //         assets, //

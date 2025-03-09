@@ -9,6 +9,7 @@ import {MarketParams, IMorphoEverything} from "./utils/Morpho.sol";
 import {OneDeltaComposerLight} from "../../contracts/1delta/modules/light/Composer.sol";
 import {IERC20All} from "../shared/interfaces/IERC20All.sol";
 import {COMPOUND_V3_DATA_8453} from "./data/COMPOUND_V3_DATA_8453.sol";
+import "./utils/CalldataLib.sol";
 
 /**
  * We test all morpho blue operations
@@ -26,83 +27,6 @@ contract CompoundComposerLightTest is Test, ComposerUtils, COMPOUND_V3_DATA_8453
         oneDV2 = new OneDeltaComposerLight();
     }
 
-    function encodeCompoundV3Deposit(
-        address token,
-        bool overrideAmount,
-        uint amount,
-        address receiver,
-        address comet
-    ) internal pure returns (bytes memory) {
-        return
-            abi.encodePacked(
-                uint8(Commands.LENDING),
-                uint8(0),
-                uint16(COMPOUND_V3_ID),
-                token,
-                uint128(amount),
-                receiver,
-                comet //
-            );
-    }
-
-    function encodeCompoundV3Borrow(
-        address token,
-        bool overrideAmount,
-        uint amount,
-        address receiver,
-        address comet
-    ) internal pure returns (bytes memory) {
-        return
-            abi.encodePacked(
-                uint8(Commands.LENDING),
-                uint8(1),
-                uint16(COMPOUND_V3_ID),
-                token,
-                uint128(amount),
-                receiver,
-                comet //
-            );
-    }
-
-    function encodeCompoundV3Repay(
-        address token,
-        bool overrideAmount,
-        uint amount,
-        address receiver,
-        address comet
-    ) internal view returns (bytes memory) {
-        return
-            abi.encodePacked(
-                uint8(Commands.LENDING),
-                uint8(2),
-                uint16(COMPOUND_V3_ID),
-                token,
-                uint128(amount),
-                receiver,
-                comet //
-            );
-    }
-
-    function encodeCompoundV3Withdraw(
-        address token,
-        bool overrideAmount,
-        uint amount,
-        address receiver,
-        address comet
-    ) internal view returns (bytes memory) {
-        return
-            abi.encodePacked(
-                uint8(Commands.LENDING),
-                uint8(3),
-                uint16(COMPOUND_V3_ID),
-                token,
-                uint128(amount),
-                receiver,
-                cometToBase[token] == token,
-                comet //
-            );
-    }
-
     function test_light_compoundV3_deposit() external {
         vm.assume(user != address(0));
 
@@ -114,13 +38,13 @@ contract CompoundComposerLightTest is Test, ComposerUtils, COMPOUND_V3_DATA_8453
         vm.prank(user);
         IERC20All(token).approve(address(oneDV2), type(uint).max);
 
-        bytes memory transferTo = transferIn(
+        bytes memory transferTo = CalldataLib.transferIn(
             token,
             address(oneDV2),
             amount //
         );
 
-        bytes memory d = encodeCompoundV3Deposit(token, false, amount, user, comet);
+        bytes memory d = CalldataLib.encodeCompoundV3Deposit(token, false, amount, user, comet);
 
         vm.prank(user);
         oneDV2.deltaCompose(abi.encodePacked(transferTo, d));
@@ -142,7 +66,7 @@ contract CompoundComposerLightTest is Test, ComposerUtils, COMPOUND_V3_DATA_8453
         IERC20All(comet).allow(address(oneDV2), true);
 
         uint256 amountToBorrow = 10.0e6;
-        bytes memory d = encodeCompoundV3Borrow(token, false, amountToBorrow, user, comet);
+        bytes memory d = CalldataLib.encodeCompoundV3Borrow(token, false, amountToBorrow, user, comet);
 
         vm.prank(user);
         oneDV2.deltaCompose(d);
@@ -162,7 +86,7 @@ contract CompoundComposerLightTest is Test, ComposerUtils, COMPOUND_V3_DATA_8453
         IERC20All(comet).allow(address(oneDV2), true);
 
         uint256 amountToBorrow = 10.0e6;
-        bytes memory d = encodeCompoundV3Withdraw(token, false, amountToBorrow, user, comet);
+        bytes memory d = CalldataLib.encodeCompoundV3Withdraw(token, false, amountToBorrow, user, comet, token == cometToBase[comet]);
 
         vm.prank(user);
         oneDV2.deltaCompose(d);
@@ -188,13 +112,13 @@ contract CompoundComposerLightTest is Test, ComposerUtils, COMPOUND_V3_DATA_8453
 
         uint256 amountToRepay = 7.0e6;
 
-        bytes memory transferTo = transferIn(
+        bytes memory transferTo = CalldataLib.transferIn(
             token,
             address(oneDV2),
             amountToRepay //
         );
 
-        bytes memory d = encodeCompoundV3Repay(token, false, amountToRepay, user, comet);
+        bytes memory d = CalldataLib.encodeCompoundV3Repay(token, false, amountToRepay, user, comet);
 
         vm.prank(user);
         oneDV2.deltaCompose(abi.encodePacked(transferTo, d));
@@ -206,13 +130,13 @@ contract CompoundComposerLightTest is Test, ComposerUtils, COMPOUND_V3_DATA_8453
         vm.prank(userAddress);
         IERC20All(token).approve(address(oneDV2), type(uint).max);
 
-        bytes memory transferTo = transferIn(
+        bytes memory transferTo = CalldataLib.transferIn(
             token,
             address(oneDV2),
             amount //
         );
 
-        bytes memory d = encodeCompoundV3Deposit(token, false, amount, userAddress, comet);
+        bytes memory d = CalldataLib.encodeCompoundV3Deposit(token, false, amount, userAddress, comet);
 
         vm.prank(userAddress);
         oneDV2.deltaCompose(abi.encodePacked(transferTo, d));
@@ -222,7 +146,7 @@ contract CompoundComposerLightTest is Test, ComposerUtils, COMPOUND_V3_DATA_8453
         vm.prank(userAddress);
         IERC20All(comet).allow(address(oneDV2), true);
 
-        bytes memory d = encodeCompoundV3Borrow(token, false, amountToBorrow, userAddress, comet);
+        bytes memory d = CalldataLib.encodeCompoundV3Borrow(token, false, amountToBorrow, userAddress, comet);
 
         vm.prank(userAddress);
         oneDV2.deltaCompose(d);

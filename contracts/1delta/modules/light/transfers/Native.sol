@@ -8,7 +8,6 @@ import {DeltaErrors} from "../../shared/errors/Errors.sol";
 
 /**
  * @title Native Transfer contract -> chain dependent
- * @author 1delta Labs AG
  */
 contract Native is ERC20Selectors, Masks, DeltaErrors {
     // wNative

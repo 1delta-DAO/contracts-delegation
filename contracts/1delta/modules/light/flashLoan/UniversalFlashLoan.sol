@@ -6,16 +6,7 @@ import {MorphoFlashLoans} from "./Morpho.sol";
 import {AaveV2FlashLoans} from "./AaveV2.sol";
 import {BalancerV2FlashLoans} from "./BalancerV2.sol";
 import {AaveV3FlashLoans} from "./AaveV3.sol";
-
-/**
- * Lender classifier enums, expected to be encoded as uint16
- */
-library FlashLoanIds {
-    uint256 internal constant MORPHO = 0;
-    uint256 internal constant BALANCER_V2 = 1;
-    uint256 internal constant AAVE_V3 = 2;
-    uint256 internal constant AAVE_V2 = 3;
-}
+import {FlashLoanIds} from "../enums/DeltaEnums.sol";
 
 /**
  * @title Universal aggregator contract.
@@ -52,7 +43,7 @@ contract UniversalFlashLoan is MorphoFlashLoans, AaveV2FlashLoans, AaveV3FlashLo
             } else if (flashLoanType == FlashLoanIds.AAVE_V2) {
                 return aaveV2FlashLoan(currentOffset, callerAddress, poolId);
             } else {
-                revert();
+                _invalidOperation();
             }
         }
     }
