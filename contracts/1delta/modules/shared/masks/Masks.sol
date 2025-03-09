@@ -32,4 +32,9 @@ abstract contract Masks {
     /// @dev We use uint112-encoded amounts to typically fit one bit flag, one path length (uint16)
     ///      add 2 amounts (2xuint112) into 32bytes, as such we use this mask for extracting those
     uint256 internal constant _UINT112_MASK = 0x000000000000000000000000000000000000ffffffffffffffffffffffffffff;
+
+    /// @dev Mask for using the injected amount
+    uint256 internal constant _PRE_PARAM = 1 << 127;
+    /// @dev Mask for shares
+    uint256 internal constant _SHARES_MASK = 1 << 126;
 }

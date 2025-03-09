@@ -70,7 +70,7 @@ library CalldataLib {
             );
     }
 
-    function morphoDepositCollateral(bytes memory market, uint assets, bytes memory data) internal pure returns (bytes memory) {
+    function morphoDepositCollateral(bytes memory market, uint assets, address receiver, bytes memory data) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
                 uint8(ComposerCommands.LENDING), // 1
@@ -78,6 +78,7 @@ library CalldataLib {
                 uint16(LenderIds.UP_TO_MORPHO), // 2
                 market, // 4 * 20 + 16
                 uint128(assets), // 16
+                receiver,
                 uint16(data.length), // 2 @ 1 + 4*20
                 data
             );
@@ -87,6 +88,7 @@ library CalldataLib {
         bytes memory market,
         bool isShares, //
         uint assets,
+        address receiver,
         bytes memory data
     ) internal pure returns (bytes memory) {
         return
@@ -95,7 +97,8 @@ library CalldataLib {
                 uint8(LenderOps.DEPOSIT_LENDING_TOKEN), // 1
                 uint16(LenderIds.UP_TO_MORPHO), // 2
                 market, // 4 * 20 + 16
-                abi.encodePacked(isShares ? uint8(1) : uint8(0), uint120(assets)),
+                generateAmountBitmap(uint128(assets), false, isShares),
+                receiver,
                 uint16(data.length), // 2 @ 1 + 4*20
                 data
             );
@@ -114,7 +117,7 @@ library CalldataLib {
                 uint8(0), // 1
                 asset, // 20
                 vault, // 20
-                abi.encodePacked(isShares ? uint8(1) : uint8(0), uint120(assets)), // 16
+                generateAmountBitmap(uint128(assets), false, isShares),
                 receiver // 20
             );
     }
@@ -130,7 +133,7 @@ library CalldataLib {
                 uint8(ComposerCommands.ERC4646), // 1
                 uint8(1), // 1
                 vault, // 20
-                abi.encodePacked(isShares ? uint8(1) : uint8(0), uint120(assets)), // 16
+                generateAmountBitmap(uint128(assets), false, isShares),
                 receiver // 20
             );
     }
@@ -147,7 +150,7 @@ library CalldataLib {
                 uint8(LenderOps.WITHDRAW_LENDING_TOKEN), // 1
                 uint16(LenderIds.UP_TO_MORPHO), // 2
                 market, // 4 * 20 + 16
-                abi.encodePacked(isShares ? uint8(1) : uint8(0), uint120(assets)),
+                generateAmountBitmap(uint128(assets), false, isShares),
                 receiver // 20
             );
     }
@@ -176,7 +179,7 @@ library CalldataLib {
                 uint8(LenderOps.BORROW), // 1
                 uint16(LenderIds.UP_TO_MORPHO), // 2
                 market, // 4 * 20 + 16
-                abi.encodePacked(isShares ? uint8(1) : uint8(0), uint120(assets)),
+                generateAmountBitmap(uint128(assets), false, isShares),
                 receiver
             );
     }
@@ -185,6 +188,7 @@ library CalldataLib {
         bytes memory market,
         bool isShares, //
         uint assets,
+        address receiver,
         bytes memory data
     ) internal pure returns (bytes memory) {
         return
@@ -193,7 +197,8 @@ library CalldataLib {
                 uint8(LenderOps.REPAY), // 1
                 uint16(LenderIds.UP_TO_MORPHO), // 2
                 market, // 4 * 20 + 16
-                abi.encodePacked(isShares ? uint8(1) : uint8(0), uint120(assets)),
+                generateAmountBitmap(uint128(assets), false, isShares),
+                receiver,
                 uint16(data.length), // 2 @ 1 + 4*20
                 data
             );
@@ -439,9 +444,13 @@ library CalldataLib {
             );
     }
 
-
-
-    function encodeCompoundV2Deposit(address token, bool overrideAmount, uint amount, address receiver, address cToken) internal view returns (bytes memory) {
+    function encodeCompoundV2Deposit(
+        address token,
+        bool overrideAmount,
+        uint amount,
+        address receiver,
+        address cToken
+    ) internal view returns (bytes memory) {
         return
             abi.encodePacked(
                 uint8(ComposerCommands.LENDING),
@@ -454,7 +463,13 @@ library CalldataLib {
             );
     }
 
-    function encodeCompoundV2Borrow(address token, bool overrideAmount, uint amount, address receiver, address cToken) internal view returns (bytes memory) {
+    function encodeCompoundV2Borrow(
+        address token,
+        bool overrideAmount,
+        uint amount,
+        address receiver,
+        address cToken
+    ) internal view returns (bytes memory) {
         return
             abi.encodePacked(
                 uint8(ComposerCommands.LENDING),
@@ -467,7 +482,13 @@ library CalldataLib {
             );
     }
 
-    function encodeCompoundV2Repay(address token, bool overrideAmount, uint amount, address receiver, address cToken) internal view returns (bytes memory) {
+    function encodeCompoundV2Repay(
+        address token,
+        bool overrideAmount,
+        uint amount,
+        address receiver,
+        address cToken
+    ) internal view returns (bytes memory) {
         return
             abi.encodePacked(
                 uint8(ComposerCommands.LENDING),
@@ -480,7 +501,13 @@ library CalldataLib {
             );
     }
 
-    function encodeCompoundV2Withdraw(address token, bool overrideAmount, uint amount, address receiver, address cToken) internal view returns (bytes memory) {
+    function encodeCompoundV2Withdraw(
+        address token,
+        bool overrideAmount,
+        uint amount,
+        address receiver,
+        address cToken
+    ) internal view returns (bytes memory) {
         return
             abi.encodePacked(
                 uint8(ComposerCommands.LENDING),
@@ -493,4 +520,15 @@ library CalldataLib {
             );
     }
 
+    /// @dev Mask for using the injected amount
+    uint256 private constant _PRE_PARAM = 1 << 127;
+    /// @dev Mask for shares
+    uint256 private constant _SHARES_MASK = 1 << 126;
+
+    function generateAmountBitmap(uint128 amount, bool preParam, bool useShares) internal pure returns (uint128 am) {
+        am = amount;
+        if (preParam) am = uint128((am & ~_PRE_PARAM) | (1 << 127));
+        if (useShares) am = uint128((am & ~_SHARES_MASK) | (1 << 126));
+        return am;
+    }
 }

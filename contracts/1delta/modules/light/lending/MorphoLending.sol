@@ -5,21 +5,15 @@ pragma solidity ^0.8.28;
 import {Slots} from "../../shared/storage/Slots.sol";
 import {ERC20Selectors} from "../../shared/selectors/ERC20Selectors.sol";
 import {Masks} from "../../shared/masks/Masks.sol";
-import {LendingConstants} from "./LendingConstants.sol";
 
 /******************************************************************************\
 * Author: Achthar | 1delta 
 /******************************************************************************/
 
-// solhint-disable max-line-length
-
 /**
  * @notice Lending base contract that wraps Morpho Blue
  */
-abstract contract MorphoLending is Slots, ERC20Selectors, Masks, LendingConstants {
-    /// @dev Mask for shares
-    uint256 private constant SHARES_MASK = 0xff000000000000000000000000000000;
-
+abstract contract MorphoLending is Slots, ERC20Selectors, Masks {
     /// @dev Constant MorphoB address
     address internal constant MORPHO_BLUE = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
 
@@ -45,8 +39,6 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks, LendingConstant
     bytes32 private constant MORPHO_WITHDRAW_COLLATERAL = 0x8720316d00000000000000000000000000000000000000000000000000000000;
 
     /**
-     * Layout:
-     * [market|amount|receiver]
      * | Offset | Length (bytes) | Description                     |
      * |--------|----------------|---------------------------------|
      * | 0      | 20             | MarketParams.loanToken          |
@@ -56,10 +48,8 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks, LendingConstant
      * | 80     | 16             | MarketParams.lltv               |
      * | 96     |  1             | Assets or Shares                |
      * | 97     | 15             | Amount (borrowAm)               |
-     * | 112    | 20             | Receiver                        |
+     * | 112    | 20             | receiver                        |
      */
-
-    /// @notice Withdraw from lender lastgiven user address and lender Id
     function _morphoBorrow(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
             // morpho should be the primary choice
@@ -85,7 +75,7 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks, LendingConstant
             /**
              * check if it is by shares or assets
              */
-            switch and(SHARES_MASK, lltvAndAmount)
+            switch and(_SHARES_MASK, lltvAndAmount)
             case 0 {
                 mstore(add(ptr, 164), borrowAm) // assets
                 mstore(add(ptr, 196), 0) // shares
@@ -122,7 +112,21 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks, LendingConstant
         return currentOffset;
     }
 
-    /// @notice Deposit loanTokens to Morpho Blue - add calldata if length is nonzero
+    /**
+     * This deposits LENDING TOKEN
+     * | Offset | Length (bytes) | Description                     |
+     * |--------|----------------|---------------------------------|
+     * | 0      | 20             | MarketParams.loanToken          |
+     * | 20     | 20             | MarketParams.collateralToken    |
+     * | 40     | 20             | MarketParams.oracle             |
+     * | 60     | 20             | MarketParams.irm                |
+     * | 80     | 16             | MarketParams.lltv               |
+     * | 96     |  1             | Assets or Shares                |
+     * | 97     | 15             | Amount (depositAm)              |
+     * | 112    | 20             | receiver                        |
+     * | 132    | 2              | calldataLength                  |
+     * | 134    | calldataLength | calldata                        |
+     */
     function _morphoDeposit(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
             let ptr := mload(0x40)
@@ -169,10 +173,13 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks, LendingConstant
 
             let amountToDeposit := and(UINT120_MASK, lltvAndAmount)
 
+            // increment for the amounts
+            currentOffset := add(currentOffset, 32)
+
             /**
              * check if it is by shares or assets
              */
-            switch and(SHARES_MASK, lltvAndAmount)
+            switch and(_SHARES_MASK, lltvAndAmount)
             case 0 {
                 /**
                  * if the amount is zero, we assume that the contract balance is deposited
@@ -204,15 +211,18 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks, LendingConstant
                 mstore(add(ptr, 164), 0) // assets
                 mstore(add(ptr, 196), amountToDeposit) // shares
             }
-            // onbehalf
-            mstore(add(ptr, 228), callerAddress) // onBehalfOf
-            mstore(add(ptr, 260), 0x120) // offset
 
-            currentOffset := add(currentOffset, 32)
+            // receiver address
+            let receiver := shr(96, calldataload(currentOffset))
+            currentOffset := add(currentOffset, 20)
+
             // get calldatalength
             let calldataLength := and(UINT16_MASK, shr(240, calldataload(currentOffset)))
             currentOffset := add(currentOffset, 2)
 
+            // leftover params
+            mstore(add(ptr, 228), receiver) // onBehalfOf is the receiver here
+            mstore(add(ptr, 260), 0x120) // offset
             // add calldata if needed
             if xor(0, calldataLength) {
                 calldataLength := add(calldataLength, 20)
@@ -241,7 +251,20 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks, LendingConstant
         return currentOffset;
     }
 
-    /// @notice Deposit collateral to Morpho Blue - add calldata if length is nonzero
+    /**
+     * This deposits COLLATERAL - never uses shares
+     * | Offset | Length (bytes) | Description                     |
+     * |--------|----------------|---------------------------------|
+     * | 0      | 20             | MarketParams.loanToken          |
+     * | 20     | 20             | MarketParams.collateralToken    |
+     * | 40     | 20             | MarketParams.oracle             |
+     * | 60     | 20             | MarketParams.irm                |
+     * | 80     | 16             | MarketParams.lltv               |
+     * | 96     | 16             | Amount (depositAm)              |
+     * | 112    | 20             | receiver                        |
+     * | 132    | 2              | calldataLength                  |
+     * | 134    | calldataLength | calldata                        |
+     */
     function _morphoDepositCollateral(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
             // use two memory ranges
@@ -286,6 +309,7 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks, LendingConstant
             mstore(add(ptr, 132), shr(128, lltvAndAmount)) // MarketParams.lltv
 
             let amountToDeposit := and(UINT128_MASK, lltvAndAmount)
+            currentOffset := add(currentOffset, 32)
 
             /**
              * if the amount is zero, we assume that the contract balance is deposited
@@ -310,11 +334,14 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks, LendingConstant
                 amountToDeposit := mload(0x0)
             }
 
+            // receiver address
+            let receiver := shr(96, calldataload(currentOffset))
+            currentOffset := add(currentOffset, 20)
+
             mstore(add(ptr, 164), amountToDeposit) // assets
-            mstore(add(ptr, 196), callerAddress) // onBehalfOf
+            mstore(add(ptr, 196), receiver) // onBehalfOf
             mstore(add(ptr, 228), 0x100) // offset
 
-            currentOffset := add(currentOffset, 32)
             // get calldatalength
             let calldataLength := and(UINT16_MASK, shr(240, calldataload(currentOffset)))
             currentOffset := add(currentOffset, 2)
@@ -428,7 +455,7 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks, LendingConstant
              * 0 => by assets
              * 1 => by shares
              */
-            switch and(SHARES_MASK, lltvAndAmount)
+            switch and(_SHARES_MASK, lltvAndAmount)
             case 0 {
                 /**
                  * Withdraw amount variations
@@ -531,6 +558,12 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks, LendingConstant
             mstore(add(ptr, 132), shr(128, lltvAndAmount)) // MarketParams.lltv
 
             let repayAm := and(UINT120_MASK, lltvAndAmount)
+            // skip amounts
+            currentOffset := add(currentOffset, 32)
+
+            // receiver address
+            let receiver := shr(96, calldataload(currentOffset))
+            currentOffset := add(currentOffset, 20)
 
             /**
              * Logic tree
@@ -552,7 +585,7 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks, LendingConstant
                 // position datas
                 mstore(ptrBase, MORPHO_POSITION)
                 mstore(add(ptrBase, 0x4), marketId)
-                mstore(add(ptrBase, 0x24), callerAddress)
+                mstore(add(ptrBase, 0x24), receiver)
                 if iszero(staticcall(gas(), MORPHO_BLUE, ptrBase, 0x44, ptrBase, 0x40)) {
                     revert(0x0, 0x0)
                 }
@@ -613,7 +646,7 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks, LendingConstant
                     // position datas
                     mstore(ptrBase, MORPHO_POSITION)
                     mstore(add(ptrBase, 0x4), marketId)
-                    mstore(add(ptrBase, 0x24), callerAddress)
+                    mstore(add(ptrBase, 0x24), receiver)
                     if iszero(staticcall(gas(), MORPHO_BLUE, ptrBase, 0x44, ptrBase, 0x40)) {
                         revert(0x0, 0x0)
                     }
@@ -655,10 +688,7 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks, LendingConstant
                 }
             }
 
-            currentOffset := add(currentOffset, 32)
-
-            // onbehalf
-            mstore(add(ptr, 228), callerAddress) // onBehalfOf
+            mstore(add(ptr, 228), receiver) // onBehalfOf is the receiver here
             mstore(add(ptr, 260), 0x120) // offset
 
             // get calldatalength

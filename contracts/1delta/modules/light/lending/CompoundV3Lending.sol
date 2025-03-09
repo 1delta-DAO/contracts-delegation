@@ -5,7 +5,6 @@ pragma solidity ^0.8.28;
 import {Slots} from "../../shared/storage/Slots.sol";
 import {ERC20Selectors} from "../../shared/selectors/ERC20Selectors.sol";
 import {Masks} from "../../shared/masks/Masks.sol";
-import {LendingConstants} from "./LendingConstants.sol";
 
 /******************************************************************************\
 * Author: Achthar | 1delta 
@@ -16,7 +15,7 @@ import {LendingConstants} from "./LendingConstants.sol";
 /**
  * @notice Lending base contract that wraps multiple lender types.
  */
-abstract contract CompoundV3Lending is Slots, ERC20Selectors, Masks, LendingConstants {
+abstract contract CompoundV3Lending is Slots, ERC20Selectors, Masks {
     // BadLender()
     bytes4 private constant BAD_LENDER = 0x603b7f3e;
 

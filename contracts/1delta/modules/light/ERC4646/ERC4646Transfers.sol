@@ -17,8 +17,6 @@ import {DeltaErrors} from "../../shared/errors/Errors.sol";
  * @notice ERC4646 deposit and withdraw actions
  */
 abstract contract ERC4646Transfers is Slots, ERC20Selectors, Masks, DeltaErrors {
-    /// @dev Mask for shares
-    uint256 private constant SHARES_MASK = 0xff000000000000000000000000000000;
 
     /// @dev  mint(...)
     bytes32 private constant ERC4646_MINT = 0x94bf804d00000000000000000000000000000000000000000000000000000000;
@@ -73,7 +71,7 @@ abstract contract ERC4646Transfers is Slots, ERC20Selectors, Masks, DeltaErrors 
             currentOffset := add(currentOffset, 16)
 
             /** check if it is by shares or assets */
-            switch and(SHARES_MASK, amount)
+            switch and(_SHARES_MASK, amount)
             case 0 {
                 mstore(ptr, ERC4646_DEPOSIT)
                 /** if the amount is zero, we assume that the contract balance is deposited */
@@ -139,7 +137,7 @@ abstract contract ERC4646Transfers is Slots, ERC20Selectors, Masks, DeltaErrors 
             currentOffset := add(currentOffset, 16)
 
             /** check if it is by shares or assets */
-            switch and(SHARES_MASK, amount)
+            switch and(_SHARES_MASK, amount)
             case 0 {
                 // plain withdraw amount
                 mstore(ptr, ERC4646_WITHDRAW)
