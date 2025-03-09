@@ -27,6 +27,11 @@ abstract contract BaseLending is Slots, ERC20Selectors {
     address internal constant WRAPPED_NATIVE = 0x78c1b0C915c4FAA5FffA6CAbf0219DA63d7f4cb8;
 
     // lender pool addresses
+
+    // aave v3s
+    address internal constant KINZA_POOL = 0x5757b15f60331eF3eDb11b16ab0ae72aE678Ed51;
+
+    // aave v2s
     address internal constant AURELIUS_POOL = 0x7c9C6F5BEd9Cfe5B9070C7D3322CF39eAD2F9492;
     address internal constant LENDLE_POOL = 0xCFa5aE7c2CE8Fadc6426C1ff872cA45378Fb7cF3;
 
@@ -83,6 +88,9 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                 let pool
                 // assign lending pool
                 switch _lenderId
+                case 250 {
+                    pool := KINZA_POOL
+                }
                 case 1000 {
                     pool := LENDLE_POOL
                 }
@@ -153,6 +161,9 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                 let pool
                 // assign lending pool
                 switch _lenderId
+                case 250 {
+                    pool := KINZA_POOL
+                }
                 case 1000 {
                     pool := LENDLE_POOL
                 }
@@ -243,34 +254,65 @@ abstract contract BaseLending is Slots, ERC20Selectors {
             let ptr := mload(0x40)
             switch lt(_lenderId, MAX_ID_AAVE_V2)
             case 1 {
-                // selector deposit(address,uint256,address,uint16)
-                mstore(ptr, 0xe8eda9df00000000000000000000000000000000000000000000000000000000)
-                mstore(add(ptr, 0x04), _underlying)
-                mstore(add(ptr, 0x24), _amount)
-                mstore(add(ptr, 0x44), _to)
-                mstore(add(ptr, 0x64), 0x0)
-                let pool
-                // assign lending pool
-                switch _lenderId
-                case 1000 {
-                    pool := LENDLE_POOL
-                }
-                case 1001 {
-                    pool := AURELIUS_POOL
-                }
-                default {
-                    mstore(0x0, _lenderId)
-                    mstore(0x20, LENDING_POOL_SLOT)
-                    pool := sload(keccak256(0x0, 0x40))
-                    if iszero(pool) {
-                        mstore(0, BAD_LENDER)
-                        revert(0, 0x4)
+                switch lt(_lenderId, MAX_ID_AAVE_V3)
+                case 1 {
+                    // selector supply(address,uint256,address,uint16)
+                    mstore(ptr, 0x617ba03700000000000000000000000000000000000000000000000000000000)
+                    mstore(add(ptr, 0x04), _underlying)
+                    mstore(add(ptr, 0x24), _amount)
+                    mstore(add(ptr, 0x44), _to)
+                    mstore(add(ptr, 0x64), 0x0)
+                    let pool
+                    // assign lending pool
+                    switch _lenderId
+                    case 250 {
+                        pool := KINZA_POOL
+                    }
+                    default {
+                        mstore(0x0, _lenderId)
+                        mstore(0x20, LENDING_POOL_SLOT)
+                        pool := sload(keccak256(0x0, 0x40))
+                        if iszero(pool) {
+                            mstore(0, BAD_LENDER)
+                            revert(0, 0x4)
+                        }
+                    }
+                    // call pool
+                    if iszero(call(gas(), pool, 0x0, ptr, 0x84, 0x0, 0x0)) {
+                        returndatacopy(0x0, 0x0, returndatasize())
+                        revert(0x0, returndatasize())
                     }
                 }
-                // call pool
-                if iszero(call(gas(), pool, 0x0, ptr, 0x84, 0x0, 0x0)) {
-                    returndatacopy(0x0, 0x0, returndatasize())
-                    revert(0x0, returndatasize())
+                default {
+                    // selector deposit(address,uint256,address,uint16)
+                    mstore(ptr, 0xe8eda9df00000000000000000000000000000000000000000000000000000000)
+                    mstore(add(ptr, 0x04), _underlying)
+                    mstore(add(ptr, 0x24), _amount)
+                    mstore(add(ptr, 0x44), _to)
+                    mstore(add(ptr, 0x64), 0x0)
+                    let pool
+                    // assign lending pool
+                    switch _lenderId
+                    case 1000 {
+                        pool := LENDLE_POOL
+                    }
+                    case 1001 {
+                        pool := AURELIUS_POOL
+                    }
+                    default {
+                        mstore(0x0, _lenderId)
+                        mstore(0x20, LENDING_POOL_SLOT)
+                        pool := sload(keccak256(0x0, 0x40))
+                        if iszero(pool) {
+                            mstore(0, BAD_LENDER)
+                            revert(0, 0x4)
+                        }
+                    }
+                    // call pool
+                    if iszero(call(gas(), pool, 0x0, ptr, 0x84, 0x0, 0x0)) {
+                        returndatacopy(0x0, 0x0, returndatasize())
+                        revert(0x0, returndatasize())
+                    }
                 }
             }
             default {
@@ -319,6 +361,9 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                 let pool
                 // assign lending pool
                 switch _lenderId
+                case 250 {
+                    pool := KINZA_POOL
+                }
                 case 1000 {
                     pool := LENDLE_POOL
                 }

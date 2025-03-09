@@ -5,7 +5,8 @@ import "./DeltaSetup.f.sol";
 import {MockRouter} from "../../contracts/mocks/MockRouter.sol";
 
 contract ComposedFlashLoanTest is DeltaSetup {
-    uint256 DEFAULT_IR_MODE = 2; // variable
+    uint256 internal constant DEFAULT_IR_MODE = 2; // variable
+    uint8 internal constant DEFAULT_FLASH_POOL_ID = 0; // variable
     MockRouter router;
 
     function setUp() public virtual override {
@@ -101,7 +102,7 @@ contract ComposedFlashLoanTest is DeltaSetup {
             encodeFlashLoan(
                 params.borrowAsset,
                 params.swapAmount,
-                0,
+                DEFAULT_FLASH_POOL_ID,
                 abi.encodePacked(swap, dataDeposit, dataBorrow) //
             )
         );
@@ -177,7 +178,7 @@ contract ComposedFlashLoanTest is DeltaSetup {
             data = encodeFlashLoan(
                 asset, // flash withdraw asset
                 amountToFlashWithdraw,
-                0,
+                DEFAULT_FLASH_POOL_ID,
                 abi.encodePacked(
                     encodeExtCall(
                         asset,

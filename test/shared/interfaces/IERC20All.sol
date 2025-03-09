@@ -27,5 +27,9 @@ interface IERC20All {
 
     // compound V2
     function balanceOfUnderlying(address owner) external returns (uint);
+
     function borrowBalanceCurrent(address account) external returns (uint);
+
+    // ERC4646
+    function convertToAssets(uint256 shares) external view returns (uint256 assets);
 }

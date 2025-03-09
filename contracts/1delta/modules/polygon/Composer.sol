@@ -673,34 +673,7 @@ contract OneDeltaComposerPolygon is MarginTrading {
                         // being converted to collateral
                         // Aave V2/3s allow higher amounts than the balance and will correctly adapt
                         case 0xffffffffffffffffffffffffffff {
-                            let cometPool
-                            switch lenderId
-                            case 2000 {
-                                cometPool := COMET_USDC
-                            }
-                            case 2001 {
-                                cometPool := COMET_USDT
-                            }
-                            // default: load comet from storage
-                            // if it is not provided directly
-                            default {
-                                mstore(0x0, lenderId)
-                                mstore(0x20, LENDING_POOL_SLOT)
-                                cometPool := sload(keccak256(0x0, 0x40))
-                                if iszero(cometPool) {
-                                    mstore(0, BAD_LENDER)
-                                    revert(0, 0x4)
-                                }
-                            }
-
-                            // borrowBalanceOf(address)
-                            mstore(0x0, 0x374c49b400000000000000000000000000000000000000000000000000000000)
-                            // add caller address as parameter
-                            mstore(0x4, callerAddress)
-                            // call to debtToken
-                            pop(staticcall(gas(), cometPool, 0x0, 0x24, 0x0, 0x20))
-                            // load the retrieved balance
-                            amount := mload(0x0)
+                            amount := 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
                         }
                         currentOffset := add(currentOffset, 57)
                     }
@@ -1185,7 +1158,7 @@ contract OneDeltaComposerPolygon is MarginTrading {
                         permitOffset := add(currentOffset, 22)
                         currentOffset := add(permitOffset, permitLength)
                     }
-                    _tryPermit(token, permitOffset, permitLength);
+                    _tryPermit(token, permitOffset, permitLength, callerAddress);
                 } else if (operation == Commands.EXEC_CREDIT_PERMIT) {
                     ////////////////////////////////////////////////////
                     // Execute credit delegation permit.
@@ -1206,7 +1179,7 @@ contract OneDeltaComposerPolygon is MarginTrading {
                         permitOffset := add(currentOffset, 22)
                         currentOffset := add(permitOffset, permitLength)
                     }
-                    _tryCreditPermit(token, permitOffset, permitLength);
+                    _tryCreditPermit(token, permitOffset, permitLength, callerAddress);
                 } else if (operation == Commands.EXEC_COMPOUND_V3_PERMIT) {
                     ////////////////////////////////////////////////////
                     // Execute lending delegation based on Compound V3.
@@ -1225,7 +1198,7 @@ contract OneDeltaComposerPolygon is MarginTrading {
                         permitOffset := add(currentOffset, 22)
                         currentOffset := add(permitOffset, permitLength)
                     }
-                    _tryCompoundV3Permit(comet, permitOffset, permitLength);
+                    _tryCompoundV3Permit(comet, permitOffset, permitLength, callerAddress);
                 } else if (operation == Commands.FLASH_LOAN) {
                     ////////////////////////////////////////////////////
                     // Execute single asset flash loan
@@ -1328,7 +1301,7 @@ contract OneDeltaComposerPolygon is MarginTrading {
                                     pool,
                                     0x0,
                                     ptr,
-                                    add(calldataLength, 228), // = 10 * 32 + 4
+                                    add(calldataLength, 228), // = 7 * 32 + 4
                                     0x0,
                                     0x0 //
                                 )

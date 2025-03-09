@@ -9,7 +9,7 @@ import {ComposerUtils, Commands} from "../shared/utils/ComposerUtils.sol";
 
 // interfaces
 import {IFlashAggregator} from "../shared/interfaces/IFlashAggregator.sol";
-import {IFlashLoanReceiver} from "./utils/IFlashLoanReceiver.sol";
+import {IFlashLoanReceiver} from "../shared/interfaces/IFlashLoanReceiver.sol";
 import {IManagement} from "../shared/interfaces/IManagement.sol";
 import {ILending} from "../shared/interfaces/ILending.sol";
 import {IInitialize} from "../shared/interfaces/IInitialize.sol";
@@ -20,7 +20,7 @@ import {IModuleLens} from "../../contracts/1delta/proxy/interfaces/IModuleLens.s
 // universal erc20
 import {IERC20All} from "../shared/interfaces/IERC20All.sol";
 // lending pool for debugging
-import {ILendingPool} from "./utils/ILendingPool.sol";
+import {ILendingPool} from "../shared/interfaces/ILendingPool.sol";
 
 // proxy and management
 import {ConfigModule} from "../../contracts/1delta/proxy/modules/ConfigModule.sol";
@@ -29,7 +29,7 @@ import {DeltaBrokerProxyGen2} from "../../contracts/1delta/proxy/DeltaBrokerGen2
 // initializer
 
 // core modules
-import {EthereumManagementModule} from "../../contracts/1delta/modules/ethereum/storage/ManagementModule.sol";
+import {ManagementModule} from "../../contracts/1delta/modules/shared/storage/ManagementModule.sol";
 import {OneDeltaComposerEthereum} from "../../contracts/1delta/modules/ethereum/Composer.sol";
 
 // forge
@@ -125,7 +125,7 @@ abstract contract DeltaSetup is AddressesEthereum, ComposerUtils, Script, Test {
 
         brokerProxy = IBrokerProxy(brokerProxyAddress);
 
-        EthereumManagementModule _management = new EthereumManagementModule();
+        ManagementModule _management = new ManagementModule();
         OneDeltaComposerEthereum _aggregator = new OneDeltaComposerEthereum();
 
         management = IManagement(brokerProxyAddress);
