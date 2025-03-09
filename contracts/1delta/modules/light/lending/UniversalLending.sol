@@ -39,8 +39,8 @@ abstract contract UniversalLending is AaveLending, CompoundV3Lending, CompoundV2
         uint256 lender;
         assembly {
             let slice := calldataload(currentOffset)
-            lendingOperation := shr(248, calldataload(currentOffset))
-            lender := and(UINT16_MASK, shr(232, calldataload(currentOffset)))
+            lendingOperation := shr(248, slice)
+            lender := and(UINT16_MASK, shr(232, slice))
             currentOffset := add(currentOffset, 3)
         }
         /** Deposit collateral */
