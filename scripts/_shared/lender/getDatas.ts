@@ -95,6 +95,14 @@ export enum MantleLenderId {
     COMPOUND_V3_USDE = 2000
 }
 
+export enum PolygonLenderId {
+    AAVE_V3 = 0,
+    YLDR = 900,
+    AAVE_V2 = 1000,
+    COMPOUND_V3_USDCE = 2000,
+    COMPOUND_V3_USDT = 2001
+}
+
 export const LENDER_TO_ID: { [c: string | number]: { [k: string]: any } } = {
     [Chain.ARBITRUM_ONE]: {
         [Lender.AAVE_V3]: ArbitrumLenderId.AAVE_V3,
@@ -140,6 +148,13 @@ export const LENDER_TO_ID: { [c: string | number]: { [k: string]: any } } = {
         [Lender.COMPOUND_V3_USDT]: OptimismLenderId.COMPOUND_V3_USDT,
         // venuses
         [Lender.VENUS]: OptimismLenderId.VENUS,
+    },
+    [Chain.POLYGON_MAINNET]: {
+        [Lender.AAVE_V3]: PolygonLenderId.AAVE_V3,
+        [Lender.YLDR]: PolygonLenderId.YLDR,
+        // comets
+        [Lender.COMPOUND_V3_USDC_E]: PolygonLenderId.COMPOUND_V3_USDCE,
+        [Lender.COMPOUND_V3_USDT]: PolygonLenderId.COMPOUND_V3_USDT,
     },
     [Chain.ETHEREUM_MAINNET]: {
         [Lender.AAVE_V3]: EthereumLenderId.AAVE_V3,

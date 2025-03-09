@@ -12,6 +12,7 @@ library Commands {
     uint256 internal constant EXTERNAL_CALL = 0x04;
 
     // Command Types where 0x10<=value<0x20, executed in the second nested-if block
+    uint256 internal constant LENDING = 0x15;
     uint256 internal constant DEPOSIT = 0x10;
     uint256 internal constant BORROW = 0x11;
     uint256 internal constant REPAY = 0x12;

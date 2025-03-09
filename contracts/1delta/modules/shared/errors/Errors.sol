@@ -45,4 +45,11 @@ abstract contract DeltaErrors {
     bytes4 internal constant INVALID_CALLER = 0x48f5c3ed;
     // Target()
     bytes4 internal constant INVALID_TARGET = 0x4fe6f55f;
+
+    function _invalidOperation() internal pure {
+        assembly {
+            mstore(0, INVALID_OPERATION)
+            revert(0, 0x4)
+        }
+    }
 }

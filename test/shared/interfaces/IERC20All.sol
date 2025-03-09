@@ -32,4 +32,14 @@ interface IERC20All {
 
     // ERC4646
     function convertToAssets(uint256 shares) external view returns (uint256 assets);
+
+    function allow(address manager, bool isAllowed) external;
+
+    // Compound v2 extended
+
+    function enterMarkets(address[] calldata vTokens) external returns (uint[] memory);
+
+    function exitMarket(address vToken) external returns (uint);
+
+    function updateDelegate(address delegate, bool allowBorrows) external;
 }
