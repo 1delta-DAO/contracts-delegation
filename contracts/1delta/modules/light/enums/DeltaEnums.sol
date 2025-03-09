@@ -55,6 +55,14 @@ library FlashLoanIds {
     uint256 internal constant AAVE_V2 = 3;
 }
 
+/**
+ * ERC4646 classifier enums
+ */
+library ERC4646Ids {
+    uint256 internal constant DEPOSIT = 0;
+    uint256 internal constant WITHDRAW = 1;
+}
+
 /// @title Commands for OneDeltaComposer
 /// @notice Command Flags used to decode commands, these are provided in 4 blocks
 library ComposerCommands {

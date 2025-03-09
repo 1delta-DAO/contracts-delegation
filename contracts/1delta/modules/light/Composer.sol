@@ -31,12 +31,12 @@ contract OneDeltaComposerLight is
     function deltaCompose(bytes calldata) external payable {
         uint256 length;
         assembly {
-            // the length is stored per abi encoding standards
+            // the length of the calldata is stored per abi encoding standards
             length := calldataload(0x24)
         }
         _deltaComposeInternal(
             msg.sender,
-            0, // no injecteds
+            0, // no injecteds on the external compose
             0,
             0x44, // the offset is cponstant
             length

@@ -5,20 +5,11 @@ pragma solidity ^0.8.28;
 import {Slots} from "../../shared/storage/Slots.sol";
 import {ERC20Selectors} from "../../shared/selectors/ERC20Selectors.sol";
 import {ERC4646Transfers} from "./ERC4646Transfers.sol";
+import {ERC4646Ids} from "../enums/DeltaEnums.sol";
 
 /******************************************************************************\
 * Author: Achthar | 1delta 
 /******************************************************************************/
-
-// solhint-disable max-line-length
-
-/**
- * ERC4646 classifier enums
- */
-library ERC4646Ids {
-    uint256 internal constant DEPOSIT = 0;
-    uint256 internal constant WITHDRAW = 1;
-}
 
 /**
  * @notice ERC4646 deposit and withdraw actions
