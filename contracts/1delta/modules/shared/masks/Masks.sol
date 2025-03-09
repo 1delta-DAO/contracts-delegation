@@ -37,4 +37,6 @@ abstract contract Masks {
     uint256 internal constant _PRE_PARAM = 1 << 127;
     /// @dev Mask for shares
     uint256 internal constant _SHARES_MASK = 1 << 126;
+    /// @dev Mask for morpho using unsafe repay
+    uint256 internal constant _UNSAFE_AMOUNT = 1 << 125;
 }

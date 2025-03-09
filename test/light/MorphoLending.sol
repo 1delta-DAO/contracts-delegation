@@ -265,7 +265,7 @@ contract MorphoBlueTest is Test {
         bytes memory repayCall = CalldataLib.morphoRepay(
             encodeMarket(LBTC_USDC_MARKET),
             false,
-            type(uint120).max, //
+            type(uint112).max, //
             user,
             hex""
         );
@@ -425,7 +425,7 @@ contract MorphoBlueTest is Test {
         deal(USDC, user, 300_000.0e6);
 
         uint loanAssetAm = 20_000.0e6;
-        uint loanAssetAmWithdraw = type(uint120).max;
+        uint loanAssetAmWithdraw = type(uint112).max;
 
         address loan = USDC;
         depositToMorpho(user, false, loanAssetAm);

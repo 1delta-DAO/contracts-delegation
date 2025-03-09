@@ -54,7 +54,7 @@ abstract contract UniversalLending is AaveLending, CompoundV3Lending, CompoundV2
             } else if (lender < LenderIds.UP_TO_COMPOUND_V2) {
                 return _depositToCompoundV2(currentOffset, paramPush);
             } else {
-                return _morphoDepositCollateral(currentOffset, callerAddress);
+                return _morphoDepositCollateral(currentOffset, callerAddress, paramPush);
             }
         }
         /** Borrow */
@@ -66,7 +66,7 @@ abstract contract UniversalLending is AaveLending, CompoundV3Lending, CompoundV2
             } else if (lender < LenderIds.UP_TO_COMPOUND_V2) {
                 return _borrowFromCompoundV2(currentOffset, callerAddress, paramPull);
             } else {
-                return _morphoBorrow(currentOffset, callerAddress);
+                return _morphoBorrow(currentOffset, callerAddress, paramPull);
             }
         }
         /** repay */
@@ -78,7 +78,7 @@ abstract contract UniversalLending is AaveLending, CompoundV3Lending, CompoundV2
             } else if (lender < LenderIds.UP_TO_COMPOUND_V2) {
                 return _repayToCompoundV2(currentOffset, paramPush);
             } else {
-                return _morphoRepay(currentOffset, callerAddress);
+                return _morphoRepay(currentOffset, callerAddress, paramPush);
             }
         }
         /** Morpho withdraw collateral */
@@ -90,16 +90,16 @@ abstract contract UniversalLending is AaveLending, CompoundV3Lending, CompoundV2
             } else if (lender < LenderIds.UP_TO_COMPOUND_V2) {
                 return _withdrawFromCompoundV2(currentOffset, callerAddress, paramPull);
             } else {
-                return _morphoWithdrawCollateral(currentOffset, callerAddress);
+                return _morphoWithdrawCollateral(currentOffset, callerAddress, paramPull);
             }
         }
         /** deposit lendingToken */
         else if (lendingOperation == LenderOps.DEPOSIT_LENDING_TOKEN) {
-            return _morphoDeposit(currentOffset, callerAddress);
+            return _morphoDeposit(currentOffset, callerAddress, paramPush);
         }
         /** withdraw lendingToken */
         else if (lendingOperation == LenderOps.WITHDRAW_LENDING_TOKEN) {
-            return _morphoWithdraw(currentOffset, callerAddress);
+            return _morphoWithdraw(currentOffset, callerAddress, paramPull);
         } else revert();
     }
 }
