@@ -85,8 +85,8 @@ contract OneDeltaComposerLight is
                 // we increment the current offset to skip the operation
                 currentOffset := add(1, currentOffset)
             }
-            if (operation == ComposerCommands.EXT_CALL) {
-                currentOffset = _callExternal(currentOffset);
+            if (operation == ComposerCommands.SWAPS) {
+                currentOffset = _swap(currentOffset, callerAddress);
             } else if (operation == ComposerCommands.EXT_CALL) {
                 currentOffset = _callExternal(currentOffset);
             } else if (operation == ComposerCommands.LENDING) {

@@ -14,6 +14,8 @@ import {GMXSwapper} from "../../shared/swapper/GMXSwapper.sol";
 import {LBSwapper} from "../../shared/swapper/LBSwapper.sol";
 import {DodoV2Swapper} from "../../shared/swapper/DodoV2Swapper.sol";
 import {BalancerSwapper} from "../../shared/swapper/BalancerSwapper.sol";
+import {V3TypeGeneric} from "./V3Type.sol";
+import {console} from "forge-std/console.sol";
 
 // solhint-disable max-line-length
 
@@ -27,6 +29,7 @@ import {BalancerSwapper} from "../../shared/swapper/BalancerSwapper.sol";
  *             Solidly:121 - 130
  */
 abstract contract BaseSwapper is
+    V3TypeGeneric,
     DexMappings,
     ExoticOffsets,
     UnoSwapper,
@@ -36,7 +39,6 @@ abstract contract BaseSwapper is
     GMXSwapper, //
     DeltaErrors
 {
-
     /**
      * Swaps exact in internally specifically for FOT tokens (uni V2 type only)
      * Will work with nnormal tokens, too, however, it is slightly less efficient
@@ -67,11 +69,12 @@ abstract contract BaseSwapper is
      * parallel swaps a->b; a->b for different dexs
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
-     * | 0      | 1-16           | splits               |
-     * | 16     | 20             | tokenIn              |
-     * | 36     | 20             | tokenOut             |
-     * | 56     | 20             | receiver             |
-     * | 75     | 20             | datas                |
+     * | 0      | 1              | splitsCount          |
+     * | 1      | 0-16           | splits               |
+     * | 17     | 20             | tokenIn              |
+     * | 37     | 20             | tokenOut             |
+     * | 57     | 20             | receiver             |
+     * | 77     | 20             | datas                |
      *
      * `splits` looks like follows
      * | Offset | Length (bytes) | Description          |
@@ -97,12 +100,14 @@ abstract contract BaseSwapper is
         uint256 currentOffset
     ) internal returns (uint256, uint256) {
         uint256 splits;
-        uint splitsCount;
+        uint256 splitsCount;
         assembly {
             splits := calldataload(currentOffset)
             splitsCount := shr(248, splits)
-            splits := shl(128, calldataload(currentOffset))
+            splits := shr(136, calldataload(currentOffset))
+            currentOffset := add(currentOffset, 1)
         }
+        console.log("splitsCount", splitsCount);
         // muliplts splits
         if (splitsCount != 0) {
             assembly {
@@ -148,6 +153,7 @@ abstract contract BaseSwapper is
             assembly {
                 currentOffset := add(1, currentOffset)
             }
+            console.log("tokenIn, tokenOut", tokenIn, tokenOut);
             (amountIn, currentOffset) = swapExactInSimple2(
                 amountIn,
                 tokenIn,
@@ -345,13 +351,14 @@ abstract contract BaseSwapper is
         ////////////////////////////////////////////////////
         // uniswapV3 style
         if (dexId < UNISWAP_V3_MAX_ID) {
-            amountIn = _swapUniswapV3PoolExactIn(
+            (amountIn, ) = _swapUniswapV3PoolExactInGeneric(
+                dexId,
                 amountIn,
-                0,
-                payer,
+                tokenIn,
+                tokenOut,
                 receiver,
                 currentOffset,
-                64 // we do not need end flags
+                payer // we do not need end flags
             );
             assembly {
                 currentOffset := add(currentOffset, SKIP_LENGTH_UNOSWAP)
