@@ -16,30 +16,30 @@ contract CompoundV2Adapter is FlashAccountAdapterBase {
     /**
      * @notice Supply assets to CompoundV2
      * @dev Handles both ERC20 tokens and native AVAX
-     * @param qiToken The qiToken address to mint (qiUSDC for USDC, qiAVAX for AVAX, ...)
+     * @param cToken The cToken address to mint (qiUSDC for USDC, qiAVAX for AVAX, ...)
      * @param underlying The underlying token address (address 0 or 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE for native AVAX)
-     * @param onbehalfOf The address that will receive the qiTokens
+     * @param onbehalfOf The address that will receive the cTokens
      * @return result 0 if successful, error code otherwise
      */
-    function supply(address qiToken, address underlying, address onbehalfOf) external payable returns (uint256 result) {
-        uint256 initialQiTokenBalance = _getERC20Balance(qiToken, address(this));
+    function supply(address cToken, address underlying, address onbehalfOf) external payable returns (uint256 result) {
+        uint256 initialCTokenBalance = _getERC20Balance(cToken, address(this));
 
         // Handle native AVAX supply
         if ((underlying == NATIVE_ADDRESS || underlying == ZERO_ADDRESS)) {
             if (msg.value == 0) revert ZeroAmount();
-            IcToken(qiToken).mint{value: msg.value}();
+            IcToken(cToken).mint{value: msg.value}();
         }
         // Handle ERC20 token supply
         else {
             uint256 amount = _getCurrentBalance(underlying);
 
             // check if token is approved
-            if (!isApprovedAddress[underlying][qiToken]) {
-                SafeERC20.safeIncreaseAllowance(IERC20(underlying), qiToken, type(uint256).max);
-                isApprovedAddress[underlying][qiToken] = true;
+            if (!isApprovedAddress[underlying][cToken]) {
+                SafeERC20.safeIncreaseAllowance(IERC20(underlying), cToken, type(uint256).max);
+                isApprovedAddress[underlying][cToken] = true;
             }
 
-            result = IcToken(qiToken).mint(amount);
+            result = IcToken(cToken).mint(amount);
 
             if (result != 0) revert MintFailed(result);
 
@@ -50,10 +50,10 @@ contract CompoundV2Adapter is FlashAccountAdapterBase {
             }
         }
 
-        uint256 finalQiTokenBalance = _getERC20Balance(qiToken, address(this));
+        uint256 finalCTokenBalance = _getERC20Balance(cToken, address(this));
 
-        // transfer qiTokens to receiver
-        _transferERC20(qiToken, onbehalfOf, finalQiTokenBalance - initialQiTokenBalance);
+        // transfer cTokens to receiver
+        _transferERC20(cToken, onbehalfOf, finalCTokenBalance - initialCTokenBalance);
 
         return result; // 0 for success
     }
@@ -61,20 +61,20 @@ contract CompoundV2Adapter is FlashAccountAdapterBase {
     /**
      * @notice Repay borrowed assets to CompoundV2
      * @dev Handles both ERC20 tokens and native AVAX
-     * @param qiToken The qiToken address to repay (qiUSDC for USDC, qiAVAX for AVAX, ....)
+     * @param cToken The cToken address to repay (qiUSDC for USDC, qiAVAX for AVAX, ....)
      * @param underlying The underlying token address (address 0 or 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE for native AVAX)
      * @param borrower The address whose debt is being repaid
      * @param onbehalfOf The address that will receive any excess tokens
      * @return result 0 if successful, error code otherwise
      */
-    function repay(address qiToken, address underlying, address borrower, address onbehalfOf) external payable returns (uint256 result) {
+    function repay(address cToken, address underlying, address borrower, address onbehalfOf) external payable returns (uint256 result) {
         // Handle native AVAX repay
         if (msg.value > 0 && (underlying == NATIVE_ADDRESS || underlying == ZERO_ADDRESS)) {
             uint256 initialBalance = address(this).balance;
             if (borrower == address(this)) {
                 revert CantRepaySelf();
             } else {
-                IcToken(qiToken).repayBorrowBehalf{value: msg.value}(borrower);
+                IcToken(cToken).repayBorrowBehalf{value: msg.value}(borrower);
             }
 
             // Refund any excess ETH
@@ -89,15 +89,15 @@ contract CompoundV2Adapter is FlashAccountAdapterBase {
             uint256 amount = _getCurrentBalance(underlying);
 
             // check if token is approved
-            if (!isApprovedAddress[underlying][qiToken]) {
-                SafeERC20.safeIncreaseAllowance(IERC20(underlying), qiToken, type(uint256).max);
-                isApprovedAddress[underlying][qiToken] = true;
+            if (!isApprovedAddress[underlying][cToken]) {
+                SafeERC20.safeIncreaseAllowance(IERC20(underlying), cToken, type(uint256).max);
+                isApprovedAddress[underlying][cToken] = true;
             }
 
             if (borrower == address(this)) {
                 revert CantRepaySelf();
             } else {
-                result = IcToken(qiToken).repayBorrowBehalf(borrower, amount);
+                result = IcToken(cToken).repayBorrowBehalf(borrower, amount);
             }
 
             if (result != 0) revert RepayFailed(result);

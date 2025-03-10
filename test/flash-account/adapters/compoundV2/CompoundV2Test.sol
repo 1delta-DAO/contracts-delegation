@@ -353,7 +353,7 @@ contract CompoundV2Test is FlashAccountBaseTest {
         entryPoint.handleOps(userOps, BENEFICIARY);
     }
 
-    function test_supply_revertOnInvalidQiToken() public {
+    function test_supply_revertOnInvalidCToken() public {
         uint256 usdcAmount = 10000e6;
         uint256 supplyAmount = 1000e6;
 
@@ -364,8 +364,8 @@ contract CompoundV2Test is FlashAccountBaseTest {
         vm.prank(address(userFlashAccount));
         IERC20(USDC).transfer(address(compoundV2Adapter), supplyAmount);
 
-        // Create operation with invalid qiToken address
-        address invalidQiToken = address(0x123);
+        // Create operation with invalid cToken address
+        address invalidCToken = address(0x123);
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = _getUnsignedOp(
@@ -373,7 +373,7 @@ contract CompoundV2Test is FlashAccountBaseTest {
                 "execute(address,uint256,bytes)",
                 address(compoundV2Adapter),
                 0,
-                abi.encodeWithSelector(compoundV2Adapter.supply.selector, invalidQiToken, USDC, user)
+                abi.encodeWithSelector(compoundV2Adapter.supply.selector, invalidCToken, USDC, user)
             ),
             entryPoint.getNonce(address(userFlashAccount), 0)
         );
