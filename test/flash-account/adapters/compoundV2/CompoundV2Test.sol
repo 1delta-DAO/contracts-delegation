@@ -2,7 +2,7 @@
 pragma solidity ^0.8.28;
 
 import {Test} from "forge-std/Test.sol";
-import {BenqiAdapter} from "@flash-account/Adapters/Lending/Benqi/BenqiAdapter.sol";
+import {CompoundV2Adapter} from "@flash-account/Adapters/Lending/CompoundV2/CompoundV2Adapter.sol";
 import {PackedUserOperation} from "account-abstraction/interfaces/PackedUserOperation.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {UtilityAdapter} from "@flash-account/Adapters/UtilityAdapter.sol";
@@ -12,7 +12,7 @@ import {FlashAccountBaseTest} from "../../FlashAccountBaseTest.sol";
 import {console2 as console} from "forge-std/console2.sol";
 import {Vm} from "forge-std/Vm.sol";
 
-contract BenqiTest is FlashAccountBaseTest {
+contract CompoundV2Test is FlashAccountBaseTest {
     using MessageHashUtils for bytes32;
 
     event Mint(address minter, uint256 mintAmount, uint256 mintTokens);
@@ -48,19 +48,19 @@ contract BenqiTest is FlashAccountBaseTest {
     );
 
     // Avalanche c-chain addresses
-    address constant BENQI_COMPTROLLER = 0x486Af39519B4Dc9a7fCcd318217352830E8AD9b4;
+    address constant CompoundV2_COMPTROLLER = 0x486Af39519B4Dc9a7fCcd318217352830E8AD9b4;
     address constant USDC = 0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E;
     address constant qiUSDC = 0xB715808a78F6041E46d61Cb123C9B4A27056AE9C;
     address constant qiAVAX = 0x5C0401e81Bc07Ca70fAD469b451682c0d747Ef1c;
 
-    BenqiAdapter internal benqiAdapter;
+    CompoundV2Adapter internal compoundV2Adapter;
     UtilityAdapter internal utilityAdapter;
 
     function setUp() public override {
         super.setUp();
 
         // adapters
-        benqiAdapter = new BenqiAdapter();
+        compoundV2Adapter = new CompoundV2Adapter();
         utilityAdapter = new UtilityAdapter();
     }
 
@@ -70,7 +70,7 @@ contract BenqiTest is FlashAccountBaseTest {
 
         // deal some USDC to the account
         deal(USDC, address(userFlashAccount), usdcAmount);
-        // create an array of userOps that supplies usdc to benqi
+        // create an array of userOps that supplies usdc to CompoundV2
         uint256 nonce = entryPoint.getNonce(address(userFlashAccount), 0);
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](2);
@@ -80,7 +80,7 @@ contract BenqiTest is FlashAccountBaseTest {
                 "execute(address,uint256,bytes)",
                 address(USDC),
                 0,
-                abi.encodeWithSelector(IERC20.transfer.selector, address(benqiAdapter), supplyAmount)
+                abi.encodeWithSelector(IERC20.transfer.selector, address(compoundV2Adapter), supplyAmount)
             ),
             nonce++
         );
@@ -88,13 +88,13 @@ contract BenqiTest is FlashAccountBaseTest {
             BaseLightAccount.SignatureType.EOA,
             _sign(userPrivateKey, entryPoint.getUserOpHash(userOps[0]).toEthSignedMessageHash())
         );
-        // supply usdc to benqi
+        // supply usdc to CompoundV2
         userOps[1] = _getUnsignedOp(
             abi.encodeWithSignature(
                 "execute(address,uint256,bytes)",
-                address(benqiAdapter),
+                address(compoundV2Adapter),
                 0,
-                abi.encodeWithSelector(BenqiAdapter.supply.selector, qiUSDC, USDC, user)
+                abi.encodeWithSelector(compoundV2Adapter.supply.selector, qiUSDC, USDC, user)
             ),
             nonce
         );
@@ -109,7 +109,7 @@ contract BenqiTest is FlashAccountBaseTest {
         // send the userOps
         vm.prank(user);
         vm.expectEmit(true, true, false, false);
-        emit Mint(address(benqiAdapter), supplyAmount, supplyAmount);
+        emit Mint(address(compoundV2Adapter), supplyAmount, supplyAmount);
         entryPoint.handleOps(userOps, BENEFICIARY);
 
         // check balances
@@ -125,10 +125,10 @@ contract BenqiTest is FlashAccountBaseTest {
 
         address[] memory dests = new address[](2);
         dests[0] = address(USDC);
-        dests[1] = address(benqiAdapter);
+        dests[1] = address(compoundV2Adapter);
         bytes[] memory funcs = new bytes[](2);
-        funcs[0] = abi.encodeWithSelector(IERC20.transfer.selector, address(benqiAdapter), supplyAmount);
-        funcs[1] = abi.encodeWithSelector(BenqiAdapter.supply.selector, qiUSDC, USDC, user);
+        funcs[0] = abi.encodeWithSelector(IERC20.transfer.selector, address(compoundV2Adapter), supplyAmount);
+        funcs[1] = abi.encodeWithSelector(compoundV2Adapter.supply.selector, qiUSDC, USDC, user);
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = _getUnsignedOp(
@@ -146,7 +146,7 @@ contract BenqiTest is FlashAccountBaseTest {
         // send the userOps
         vm.prank(user);
         vm.expectEmit(true, true, false, false);
-        emit Mint(address(benqiAdapter), supplyAmount, supplyAmount);
+        emit Mint(address(compoundV2Adapter), supplyAmount, supplyAmount);
         entryPoint.handleOps(userOps, BENEFICIARY);
 
         // check balances
@@ -162,10 +162,10 @@ contract BenqiTest is FlashAccountBaseTest {
 
         address[] memory dests = new address[](2);
         dests[0] = address(USDC);
-        dests[1] = address(benqiAdapter);
+        dests[1] = address(compoundV2Adapter);
         bytes[] memory funcs = new bytes[](2);
-        funcs[0] = abi.encodeWithSelector(IERC20.transfer.selector, address(benqiAdapter), ++usdcAmount);
-        funcs[1] = abi.encodeWithSelector(BenqiAdapter.supply.selector, qiUSDC, USDC, user);
+        funcs[0] = abi.encodeWithSelector(IERC20.transfer.selector, address(compoundV2Adapter), ++usdcAmount);
+        funcs[1] = abi.encodeWithSelector(compoundV2Adapter.supply.selector, qiUSDC, USDC, user);
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = _getUnsignedOp(
@@ -194,11 +194,11 @@ contract BenqiTest is FlashAccountBaseTest {
         address[] memory dests = new address[](3);
         dests[0] = address(qiUSDC);
         dests[1] = address(USDC);
-        dests[2] = address(benqiAdapter);
+        dests[2] = address(compoundV2Adapter);
         bytes[] memory funcs = new bytes[](3);
         funcs[0] = abi.encodeWithSignature("borrow(uint256)", 100e6);
-        funcs[1] = abi.encodeWithSelector(IERC20.transfer.selector, address(benqiAdapter), 100e6);
-        funcs[2] = abi.encodeWithSelector(BenqiAdapter.repay.selector, qiUSDC, USDC, address(userFlashAccount), address(userFlashAccount));
+        funcs[1] = abi.encodeWithSelector(IERC20.transfer.selector, address(compoundV2Adapter), 100e6);
+        funcs[2] = abi.encodeWithSelector(compoundV2Adapter.repay.selector, qiUSDC, USDC, address(userFlashAccount), address(userFlashAccount));
 
         // borrow some usdc and then repay it
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
@@ -216,7 +216,7 @@ contract BenqiTest is FlashAccountBaseTest {
         vm.expectEmit(true, true, false, false);
         emit Borrow(address(userFlashAccount), 100e6, 100e6, 100e6);
         vm.expectEmit(true, true, true, false);
-        emit RepayBorrow(address(benqiAdapter), address(userFlashAccount), 100e6, 0, 0);
+        emit RepayBorrow(address(compoundV2Adapter), address(userFlashAccount), 100e6, 0, 0);
         entryPoint.handleOps(userOps, BENEFICIARY);
     }
 
@@ -226,9 +226,9 @@ contract BenqiTest is FlashAccountBaseTest {
 
         bytes memory callData = abi.encodeWithSignature(
             "execute(address,uint256,bytes)",
-            address(benqiAdapter),
+            address(compoundV2Adapter),
             avaxAmount,
-            abi.encodeWithSelector(BenqiAdapter.supply.selector, qiAVAX, address(0), user)
+            abi.encodeWithSelector(compoundV2Adapter.supply.selector, qiAVAX, address(0), user)
         );
 
         userOps[0] = _getUnsignedOp(callData, entryPoint.getNonce(address(userFlashAccount), 0));
@@ -242,11 +242,11 @@ contract BenqiTest is FlashAccountBaseTest {
 
         vm.prank(user);
         vm.expectEmit(true, true, false, false);
-        emit Mint(address(benqiAdapter), avaxAmount, 0);
+        emit Mint(address(compoundV2Adapter), avaxAmount, 0);
         entryPoint.handleOps(userOps, BENEFICIARY);
 
         uint256 userQiAvaxBalanceAfter = IERC20(qiAVAX).balanceOf(user);
-        uint256 adapterQiAvaxBalanceAfter = IERC20(qiAVAX).balanceOf(address(benqiAdapter));
+        uint256 adapterQiAvaxBalanceAfter = IERC20(qiAVAX).balanceOf(address(compoundV2Adapter));
 
         assertGt(userQiAvaxBalanceAfter, userQiAvaxBalanceBefore, "User should receive qiAVAX tokens");
         assertEq(adapterQiAvaxBalanceAfter, 0, "Adapter should have transferred all qiAVAX tokens");
@@ -257,9 +257,9 @@ contract BenqiTest is FlashAccountBaseTest {
 
         bytes memory callData = abi.encodeWithSignature(
             "execute(address,uint256,bytes)",
-            address(benqiAdapter),
+            address(compoundV2Adapter),
             0, // Zero AVAX
-            abi.encodeWithSelector(BenqiAdapter.supply.selector, qiAVAX, address(0), user)
+            abi.encodeWithSelector(compoundV2Adapter.supply.selector, qiAVAX, address(0), user)
         );
 
         userOps[0] = _getUnsignedOp(callData, entryPoint.getNonce(address(userFlashAccount), 0));
@@ -279,7 +279,7 @@ contract BenqiTest is FlashAccountBaseTest {
         testRepay();
 
         bytes memory repayNativeCallData = abi.encodeWithSelector(
-            BenqiAdapter.repay.selector,
+            compoundV2Adapter.repay.selector,
             qiAVAX,
             address(0),
             address(userFlashAccount),
@@ -288,7 +288,7 @@ contract BenqiTest is FlashAccountBaseTest {
 
         address[] memory dests = new address[](2);
         dests[0] = address(qiAVAX);
-        dests[1] = address(benqiAdapter);
+        dests[1] = address(compoundV2Adapter);
         bytes[] memory funcs = new bytes[](2);
         funcs[0] = abi.encodeWithSignature("borrow(uint256)", 0.1 ether);
         funcs[1] = repayNativeCallData;
@@ -312,19 +312,19 @@ contract BenqiTest is FlashAccountBaseTest {
         vm.expectEmit(true, true, false, false);
         emit Borrow(address(userFlashAccount), 0.1 ether, 0.1 ether, 0.1 ether);
         vm.expectEmit(true, true, true, false);
-        emit RepayBorrow(address(benqiAdapter), address(userFlashAccount), 0.1 ether, 0, 0);
+        emit RepayBorrow(address(compoundV2Adapter), address(userFlashAccount), 0.1 ether, 0, 0);
         entryPoint.handleOps(userOps, BENEFICIARY);
     }
 
     function testApprovalMapping() public {
         // assert before supply
-        assertEq(benqiAdapter.isApprovedAddress(USDC, qiUSDC), false);
+        assertEq(compoundV2Adapter.isApprovedAddress(USDC, qiUSDC), false);
 
         // supply
         _supply(10000e6, 1000e6);
 
         // assert after supply
-        assertEq(benqiAdapter.isApprovedAddress(USDC, qiUSDC), true);
+        assertEq(compoundV2Adapter.isApprovedAddress(USDC, qiUSDC), true);
     }
 
     function test_supply_revertOnZeroRecipient() public {
@@ -335,9 +335,9 @@ contract BenqiTest is FlashAccountBaseTest {
         userOps[0] = _getUnsignedOp(
             abi.encodeWithSignature(
                 "execute(address,uint256,bytes)",
-                address(benqiAdapter),
+                address(compoundV2Adapter),
                 0,
-                abi.encodeWithSelector(BenqiAdapter.supply.selector, qiUSDC, USDC, address(0))
+                abi.encodeWithSelector(compoundV2Adapter.supply.selector, qiUSDC, USDC, address(0))
             ),
             entryPoint.getNonce(address(userFlashAccount), 0)
         );
@@ -362,7 +362,7 @@ contract BenqiTest is FlashAccountBaseTest {
 
         // Transfer USDC to adapter
         vm.prank(address(userFlashAccount));
-        IERC20(USDC).transfer(address(benqiAdapter), supplyAmount);
+        IERC20(USDC).transfer(address(compoundV2Adapter), supplyAmount);
 
         // Create operation with invalid qiToken address
         address invalidQiToken = address(0x123);
@@ -371,9 +371,9 @@ contract BenqiTest is FlashAccountBaseTest {
         userOps[0] = _getUnsignedOp(
             abi.encodeWithSignature(
                 "execute(address,uint256,bytes)",
-                address(benqiAdapter),
+                address(compoundV2Adapter),
                 0,
-                abi.encodeWithSelector(BenqiAdapter.supply.selector, invalidQiToken, USDC, user)
+                abi.encodeWithSelector(compoundV2Adapter.supply.selector, invalidQiToken, USDC, user)
             ),
             entryPoint.getNonce(address(userFlashAccount), 0)
         );
@@ -414,10 +414,10 @@ contract BenqiTest is FlashAccountBaseTest {
 
         address[] memory dests = new address[](2);
         dests[0] = address(USDC);
-        dests[1] = address(benqiAdapter);
+        dests[1] = address(compoundV2Adapter);
         bytes[] memory funcs = new bytes[](2);
-        funcs[0] = abi.encodeWithSelector(IERC20.transfer.selector, address(benqiAdapter), supplyAmount);
-        funcs[1] = abi.encodeWithSelector(BenqiAdapter.supply.selector, qiUSDC, USDC, address(userFlashAccount));
+        funcs[0] = abi.encodeWithSelector(IERC20.transfer.selector, address(compoundV2Adapter), supplyAmount);
+        funcs[1] = abi.encodeWithSelector(compoundV2Adapter.supply.selector, qiUSDC, USDC, address(userFlashAccount));
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = _getUnsignedOp(
@@ -436,7 +436,7 @@ contract BenqiTest is FlashAccountBaseTest {
 
     function _checkBalances(uint256 usdcAmount, uint256 supplyAmount, uint256 userQiUsdcBalanceBefore) internal {
         uint256 qiUsdcBalanceAfter = IERC20(qiUSDC).balanceOf(address(userFlashAccount));
-        uint256 qiUsdcBalanceAdapterAfter = IERC20(qiUSDC).balanceOf(address(benqiAdapter));
+        uint256 qiUsdcBalanceAdapterAfter = IERC20(qiUSDC).balanceOf(address(compoundV2Adapter));
         uint256 usdcBalanceAfter = IERC20(USDC).balanceOf(address(userFlashAccount));
         uint256 userQiUsdcBalanceAfter = IERC20(qiUSDC).balanceOf(user);
 

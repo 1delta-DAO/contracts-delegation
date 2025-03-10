@@ -2,11 +2,11 @@
 pragma solidity ^0.8.28;
 
 import {FlashAccountAdapterBase} from "../../FlashAccountAdapterBase.sol";
-import {IQiToken} from "./interfaces/IQiToken.sol";
+import {IcToken} from "./interfaces/IcToken.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-contract BenqiAdapter is FlashAccountAdapterBase {
+contract CompoundV2Adapter is FlashAccountAdapterBase {
     error ZeroAmount();
     error MintFailed(uint256 failureCode);
     error RepayFailed(uint256 failureCode);
@@ -14,7 +14,7 @@ contract BenqiAdapter is FlashAccountAdapterBase {
     error TransferFailed();
 
     /**
-     * @notice Supply assets to Benqi
+     * @notice Supply assets to CompoundV2
      * @dev Handles both ERC20 tokens and native AVAX
      * @param qiToken The qiToken address to mint (qiUSDC for USDC, qiAVAX for AVAX, ...)
      * @param underlying The underlying token address (address 0 or 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE for native AVAX)
@@ -27,7 +27,7 @@ contract BenqiAdapter is FlashAccountAdapterBase {
         // Handle native AVAX supply
         if ((underlying == NATIVE_ADDRESS || underlying == ZERO_ADDRESS)) {
             if (msg.value == 0) revert ZeroAmount();
-            IQiToken(qiToken).mint{value: msg.value}();
+            IcToken(qiToken).mint{value: msg.value}();
         }
         // Handle ERC20 token supply
         else {
@@ -39,7 +39,7 @@ contract BenqiAdapter is FlashAccountAdapterBase {
                 isApprovedAddress[underlying][qiToken] = true;
             }
 
-            result = IQiToken(qiToken).mint(amount);
+            result = IcToken(qiToken).mint(amount);
 
             if (result != 0) revert MintFailed(result);
 
@@ -59,7 +59,7 @@ contract BenqiAdapter is FlashAccountAdapterBase {
     }
 
     /**
-     * @notice Repay borrowed assets to Benqi
+     * @notice Repay borrowed assets to CompoundV2
      * @dev Handles both ERC20 tokens and native AVAX
      * @param qiToken The qiToken address to repay (qiUSDC for USDC, qiAVAX for AVAX, ....)
      * @param underlying The underlying token address (address 0 or 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE for native AVAX)
@@ -74,7 +74,7 @@ contract BenqiAdapter is FlashAccountAdapterBase {
             if (borrower == address(this)) {
                 revert CantRepaySelf();
             } else {
-                IQiToken(qiToken).repayBorrowBehalf{value: msg.value}(borrower);
+                IcToken(qiToken).repayBorrowBehalf{value: msg.value}(borrower);
             }
 
             // Refund any excess ETH
@@ -97,7 +97,7 @@ contract BenqiAdapter is FlashAccountAdapterBase {
             if (borrower == address(this)) {
                 revert CantRepaySelf();
             } else {
-                result = IQiToken(qiToken).repayBorrowBehalf(borrower, amount);
+                result = IcToken(qiToken).repayBorrowBehalf(borrower, amount);
             }
 
             if (result != 0) revert RepayFailed(result);
