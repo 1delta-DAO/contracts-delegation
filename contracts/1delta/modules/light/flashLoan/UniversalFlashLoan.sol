@@ -12,15 +12,13 @@ import {FlashLoanIds} from "../enums/DeltaEnums.sol";
  * @title Flash loan aggregator
  * @author 1delta Labs AG
  */
-contract UniversalFlashLoan is MorphoFlashLoans, AaveV2FlashLoans, AaveV3FlashLoans, BalancerV2FlashLoans {
-    function _deltaComposeInternal(
-        address callerAddress,
-        uint256 paramPull,
-        uint256 paramPush,
-        uint256 offset,
-        uint256 length
-    ) internal virtual override(MorphoFlashLoans, AaveV2FlashLoans, AaveV3FlashLoans, BalancerV2FlashLoans) {}
-
+contract UniversalFlashLoan is
+    MorphoFlashLoans,
+    AaveV2FlashLoans,
+    AaveV3FlashLoans,
+    BalancerV2FlashLoans //
+{
+    /** All flash ones in one function -what do you need more? */
     function _universalFlashLoan(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         uint256 flashLoanType; // architecture type
         uint256 poolId; // sub Id -> validate pool with this id

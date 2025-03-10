@@ -67,11 +67,11 @@ library ERC4646Ids {
 /// @notice Command Flags used to decode commands, these are provided in 4 blocks
 library ComposerCommands {
     // Command Types where value<0x10, executed in the first nested-if block
-    uint256 internal constant SWAPS = 0x00;
-    uint256 internal constant EXT_CALL = 0x1;
-    uint256 internal constant LENDING = 0x15;
-    uint256 internal constant PERMIT = 0x16;
-    uint256 internal constant TRANSFERS = 0x21;
-    uint256 internal constant ERC4646 = 0x22;
-    uint256 internal constant FLASH_LOAN = 0x34;
+    uint256 internal constant SWAPS = 0x20;
+    uint256 internal constant EXT_CALL = 0x40;
+    uint256 internal constant LENDING = 0x60;
+    uint256 internal constant TRANSFERS = 0x80;
+    uint256 internal constant PERMIT = 0xA0;
+    uint256 internal constant FLASH_LOAN = 0xC0;
+    uint256 internal constant ERC4646 = 0xE0;
 }
