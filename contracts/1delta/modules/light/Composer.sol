@@ -8,7 +8,7 @@ import {Transfers} from "./transfers/Transfers.sol";
 import {ERC4646Operations} from "./ERC4646/ERC4646Operations.sol";
 import {UniversalLending} from "./lending/UniversalLending.sol";
 import {Permits} from "./permit/Permits.sol";
-import {Ownable} from "./solady/Ownable.sol";
+import {Storage} from "./management/Storage.sol";
 import {UniversalFlashLoan} from "./flashLoan/UniversalFlashLoan.sol";
 
 /**
@@ -18,7 +18,7 @@ import {UniversalFlashLoan} from "./flashLoan/UniversalFlashLoan.sol";
  * @author 1delta Labs AG
  */
 contract OneDeltaComposerLight is
-    Ownable,
+    Storage,
     UniversalLending,
     UniversalFlashLoan,
     ERC4646Operations,
@@ -26,6 +26,10 @@ contract OneDeltaComposerLight is
     Permits,
     ExternalCall //
 {
+    constructor() {
+        _setOwner(msg.sender);
+    }
+
     /**
      * Batch-executes a series of operations
      * The calldata is loaded in assembly and therefore not referred to here
