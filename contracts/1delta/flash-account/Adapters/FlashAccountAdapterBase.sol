@@ -4,6 +4,11 @@ pragma solidity ^0.8.28;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 abstract contract FlashAccountAdapterBase {
+    address public constant NATIVE_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    address public constant ZERO_ADDRESS = 0x0000000000000000000000000000000000000000;
+
+    mapping(address => mapping(address => bool)) isApprovedAddress;
+
     receive() external payable virtual {}
 
     function _transferERC20(address token, address receiver, uint256 amount) internal {

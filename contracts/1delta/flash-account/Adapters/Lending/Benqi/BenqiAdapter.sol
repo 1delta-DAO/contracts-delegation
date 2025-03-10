@@ -10,66 +10,106 @@ contract BenqiAdapter is FlashAccountAdapterBase {
     error ZeroAmount();
     error MintFailed(uint256 failureCode);
     error RepayFailed(uint256 failureCode);
+    error CantRepaySelf();
+    error TransferFailed();
 
-    function supply(address qiToken, address underlying, address onbehalfOf) external returns (uint256) {
+    /**
+     * @notice Supply assets to Benqi
+     * @dev Handles both ERC20 tokens and native AVAX
+     * @param qiToken The qiToken address to mint (qiUSDC for USDC, qiAVAX for AVAX, ...)
+     * @param underlying The underlying token address (address 0 or 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE for native AVAX)
+     * @param onbehalfOf The address that will receive the qiTokens
+     * @return result 0 if successful, error code otherwise
+     */
+    function supply(address qiToken, address underlying, address onbehalfOf) external payable returns (uint256 result) {
         uint256 initialQiTokenBalance = _getERC20Balance(qiToken, address(this));
-        uint256 amount = _getCurrentBalance(underlying);
 
-        SafeERC20.safeIncreaseAllowance(IERC20(underlying), qiToken, amount);
-
-        uint256 result = IQiToken(qiToken).mint(amount);
-
-        if (result != 0) revert MintFailed(result);
-
-        // refund excess (if any)
-        uint256 excess = IERC20(underlying).balanceOf(address(this));
-        if (excess > 0) {
-            _transferERC20(underlying, onbehalfOf, excess);
+        // Handle native AVAX supply
+        if ((underlying == NATIVE_ADDRESS || underlying == ZERO_ADDRESS)) {
+            if (msg.value == 0) revert ZeroAmount();
+            IQiToken(qiToken).mint{value: msg.value}();
         }
+        // Handle ERC20 token supply
+        else {
+            uint256 amount = _getCurrentBalance(underlying);
+
+            // check if token is approved
+            if (!isApprovedAddress[underlying][qiToken]) {
+                SafeERC20.safeIncreaseAllowance(IERC20(underlying), qiToken, type(uint256).max);
+                isApprovedAddress[underlying][qiToken] = true;
+            }
+
+            result = IQiToken(qiToken).mint(amount);
+
+            if (result != 0) revert MintFailed(result);
+
+            // refund excess (if any)
+            uint256 excess = IERC20(underlying).balanceOf(address(this));
+            if (excess > 0) {
+                _transferERC20(underlying, onbehalfOf, excess);
+            }
+        }
+
         uint256 finalQiTokenBalance = _getERC20Balance(qiToken, address(this));
 
         // transfer qiTokens to receiver
         _transferERC20(qiToken, onbehalfOf, finalQiTokenBalance - initialQiTokenBalance);
-        // todo: we need to see if it is required to return 0 in case everything is successful
-        return result; // which is zero
+
+        return result; // 0 for success
     }
 
-    function supplyNative(address qiToken, address onbehalfOf) external payable returns (uint256) {
-        uint256 initialQiTokenBalance = _getERC20Balance(qiToken, address(this));
-        uint256 amount = msg.value;
-        if (amount == 0) revert ZeroAmount();
+    /**
+     * @notice Repay borrowed assets to Benqi
+     * @dev Handles both ERC20 tokens and native AVAX
+     * @param qiToken The qiToken address to repay (qiUSDC for USDC, qiAVAX for AVAX, ....)
+     * @param underlying The underlying token address (address 0 or 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE for native AVAX)
+     * @param borrower The address whose debt is being repaid
+     * @param onbehalfOf The address that will receive any excess tokens
+     * @return result 0 if successful, error code otherwise
+     */
+    function repay(address qiToken, address underlying, address borrower, address onbehalfOf) external payable returns (uint256 result) {
+        // Handle native AVAX repay
+        if (msg.value > 0 && (underlying == NATIVE_ADDRESS || underlying == ZERO_ADDRESS)) {
+            uint256 initialBalance = address(this).balance;
+            if (borrower == address(this)) {
+                revert CantRepaySelf();
+            } else {
+                IQiToken(qiToken).repayBorrowBehalf{value: msg.value}(borrower);
+            }
 
-        IQiToken(qiToken).mint{value: amount}();
+            // Refund any excess ETH
+            uint256 balance = address(this).balance - initialBalance;
+            if (balance > 0) {
+                (bool success, ) = onbehalfOf.call{value: balance}("");
+                if (!success) revert TransferFailed();
+            }
+        }
+        // Handle ERC20 token repay
+        else {
+            uint256 amount = _getCurrentBalance(underlying);
 
-        uint256 finalQiTokenBalance = _getERC20Balance(qiToken, address(this));
+            // check if token is approved
+            if (!isApprovedAddress[underlying][qiToken]) {
+                SafeERC20.safeIncreaseAllowance(IERC20(underlying), qiToken, type(uint256).max);
+                isApprovedAddress[underlying][qiToken] = true;
+            }
 
-        // transfer qiTokens to receiver
-        _transferERC20(qiToken, onbehalfOf, finalQiTokenBalance - initialQiTokenBalance);
-        return 0;
-    }
+            if (borrower == address(this)) {
+                revert CantRepaySelf();
+            } else {
+                result = IQiToken(qiToken).repayBorrowBehalf(borrower, amount);
+            }
 
-    function repay(address qiToken, address underlying, address borrower, address onbehalfOf) external returns (uint256) {
-        uint256 amount = _getCurrentBalance(underlying);
+            if (result != 0) revert RepayFailed(result);
 
-        SafeERC20.safeIncreaseAllowance(IERC20(underlying), qiToken, amount);
-
-        uint256 repayResult;
-        if (borrower == address(this)) {
-            repayResult = IQiToken(qiToken).repayBorrow(amount);
-        } else {
-            repayResult = IQiToken(qiToken).repayBorrowBehalf(borrower, amount);
+            // refund excess (if any)
+            uint256 excess = IERC20(underlying).balanceOf(address(this));
+            if (excess > 0) {
+                _transferERC20(underlying, onbehalfOf, excess);
+            }
         }
 
-        if (repayResult != 0) revert RepayFailed(repayResult);
-
-        // refund excess (if any)
-        uint256 excess = IERC20(underlying).balanceOf(address(this));
-        if (excess > 0) {
-            _transferERC20(underlying, onbehalfOf, excess);
-        }
-
-        // todo: we need to see if it is required to return 0 in case everything is successful
-        return repayResult; // which is zero
+        return result; // 0 for success
     }
 
     function _getCurrentBalance(address token) internal view returns (uint256) {

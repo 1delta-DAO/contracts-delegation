@@ -199,7 +199,7 @@ contract BenqiTest is FlashAccountBaseTest {
             "execute(address,uint256,bytes)",
             address(benqiAdapter),
             avaxAmount,
-            abi.encodeWithSelector(BenqiAdapter.supplyNative.selector, qiAVAX, user)
+            abi.encodeWithSelector(BenqiAdapter.supply.selector, qiAVAX, address(0), user)
         );
 
         userOps[0] = _getUnsignedOp(callData, entryPoint.getNonce(address(userFlashAccount), 0));
@@ -230,7 +230,7 @@ contract BenqiTest is FlashAccountBaseTest {
             "execute(address,uint256,bytes)",
             address(benqiAdapter),
             0, // Zero AVAX
-            abi.encodeWithSelector(BenqiAdapter.supplyNative.selector, qiAVAX, user)
+            abi.encodeWithSelector(BenqiAdapter.supply.selector, qiAVAX, address(0), user)
         );
 
         userOps[0] = _getUnsignedOp(callData, entryPoint.getNonce(address(userFlashAccount), 0));
@@ -243,6 +243,47 @@ contract BenqiTest is FlashAccountBaseTest {
         vm.prank(user);
         vm.expectEmit(true, true, false, false);
         emit UserOperationRevertReason(entryPoint.getUserOpHash(userOps[0]), address(userFlashAccount), 0, "");
+        entryPoint.handleOps(userOps, BENEFICIARY);
+    }
+
+    function testRepayNative() public {
+        testRepay();
+
+        bytes memory repayNativeCallData = abi.encodeWithSelector(
+            BenqiAdapter.repay.selector,
+            qiAVAX,
+            address(0),
+            address(userFlashAccount),
+            address(userFlashAccount)
+        );
+
+        address[] memory dests = new address[](2);
+        dests[0] = address(qiAVAX);
+        dests[1] = address(benqiAdapter);
+        bytes[] memory funcs = new bytes[](2);
+        funcs[0] = abi.encodeWithSignature("borrow(uint256)", 0.1 ether);
+        funcs[1] = repayNativeCallData;
+        uint256[] memory values = new uint256[](2);
+        values[0] = 0;
+        values[1] = 0.1 ether;
+
+        // borrow and then repay native avax
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
+        userOps[0] = _getUnsignedOp(
+            abi.encodeWithSignature("executeBatch(address[],uint256[],bytes[])", dests, values, funcs),
+            entryPoint.getNonce(address(userFlashAccount), 0)
+        );
+        userOps[0].signature = abi.encodePacked(
+            BaseLightAccount.SignatureType.EOA,
+            _sign(userPrivateKey, entryPoint.getUserOpHash(userOps[0]).toEthSignedMessageHash())
+        );
+
+        // send the userOps
+        vm.prank(user);
+        vm.expectEmit(true, true, false, false);
+        emit Borrow(address(userFlashAccount), 0.1 ether, 0.1 ether, 0.1 ether);
+        vm.expectEmit(true, true, true, false);
+        emit RepayBorrow(address(benqiAdapter), address(userFlashAccount), 0.1 ether, 0, 0);
         entryPoint.handleOps(userOps, BENEFICIARY);
     }
 
