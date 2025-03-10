@@ -34,6 +34,20 @@ contract BenqiAdapter is FlashAccountAdapterBase {
         return result; // which is zero
     }
 
+    function supplyNative(address qiToken, address onbehalfOf) external payable returns (uint256) {
+        uint256 initialQiTokenBalance = _getERC20Balance(qiToken, address(this));
+        uint256 amount = msg.value;
+        if (amount == 0) revert ZeroAmount();
+
+        IQiToken(qiToken).mint{value: amount}();
+
+        uint256 finalQiTokenBalance = _getERC20Balance(qiToken, address(this));
+
+        // transfer qiTokens to receiver
+        _transferERC20(qiToken, onbehalfOf, finalQiTokenBalance - initialQiTokenBalance);
+        return 0;
+    }
+
     function repay(address qiToken, address underlying, address borrower, address onbehalfOf) external returns (uint256) {
         uint256 amount = _getCurrentBalance(underlying);
 

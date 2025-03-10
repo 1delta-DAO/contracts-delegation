@@ -22,6 +22,7 @@ contract BenqiTest is FlashAccountBaseTest {
     address constant BENQI_COMPTROLLER = 0x486Af39519B4Dc9a7fCcd318217352830E8AD9b4;
     address constant USDC = 0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E;
     address constant qiUSDC = 0xB715808a78F6041E46d61Cb123C9B4A27056AE9C;
+    address constant qiAVAX = 0x5C0401e81Bc07Ca70fAD469b451682c0d747Ef1c;
 
     BenqiAdapter internal benqiAdapter;
     UtilityAdapter internal utilityAdapter;
@@ -187,6 +188,61 @@ contract BenqiTest is FlashAccountBaseTest {
         emit Borrow(address(userFlashAccount), 100e6, 100e6, 100e6);
         vm.expectEmit(true, true, true, false);
         emit RepayBorrow(address(benqiAdapter), address(userFlashAccount), 100e6, 0, 0);
+        entryPoint.handleOps(userOps, BENEFICIARY);
+    }
+
+    function test_supplyNative() public {
+        uint256 avaxAmount = 0.5 ether;
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
+
+        bytes memory callData = abi.encodeWithSignature(
+            "execute(address,uint256,bytes)",
+            address(benqiAdapter),
+            avaxAmount,
+            abi.encodeWithSelector(BenqiAdapter.supplyNative.selector, qiAVAX, user)
+        );
+
+        userOps[0] = _getUnsignedOp(callData, entryPoint.getNonce(address(userFlashAccount), 0));
+
+        userOps[0].signature = abi.encodePacked(
+            BaseLightAccount.SignatureType.EOA,
+            _sign(userPrivateKey, entryPoint.getUserOpHash(userOps[0]).toEthSignedMessageHash())
+        );
+
+        uint256 userQiAvaxBalanceBefore = IERC20(qiAVAX).balanceOf(user);
+
+        vm.prank(user);
+        vm.expectEmit(true, true, false, false);
+        emit Mint(address(benqiAdapter), avaxAmount, 0);
+        entryPoint.handleOps(userOps, BENEFICIARY);
+
+        uint256 userQiAvaxBalanceAfter = IERC20(qiAVAX).balanceOf(user);
+        uint256 adapterQiAvaxBalanceAfter = IERC20(qiAVAX).balanceOf(address(benqiAdapter));
+
+        assertGt(userQiAvaxBalanceAfter, userQiAvaxBalanceBefore, "User should receive qiAVAX tokens");
+        assertEq(adapterQiAvaxBalanceAfter, 0, "Adapter should have transferred all qiAVAX tokens");
+    }
+
+    function test_supplyNative_revertOnZeroAmount() public {
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
+
+        bytes memory callData = abi.encodeWithSignature(
+            "execute(address,uint256,bytes)",
+            address(benqiAdapter),
+            0, // Zero AVAX
+            abi.encodeWithSelector(BenqiAdapter.supplyNative.selector, qiAVAX, user)
+        );
+
+        userOps[0] = _getUnsignedOp(callData, entryPoint.getNonce(address(userFlashAccount), 0));
+
+        userOps[0].signature = abi.encodePacked(
+            BaseLightAccount.SignatureType.EOA,
+            _sign(userPrivateKey, entryPoint.getUserOpHash(userOps[0]).toEthSignedMessageHash())
+        );
+
+        vm.prank(user);
+        vm.expectEmit(true, true, false, false);
+        emit UserOperationRevertReason(entryPoint.getUserOpHash(userOps[0]), address(userFlashAccount), 0, "");
         entryPoint.handleOps(userOps, BENEFICIARY);
     }
 
