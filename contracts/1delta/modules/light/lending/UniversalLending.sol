@@ -69,7 +69,7 @@ abstract contract UniversalLending is AaveLending, CompoundV3Lending, CompoundV2
                 return _morphoBorrow(currentOffset, callerAddress, paramPull);
             }
         }
-        /** repay */
+        /** Repay */
         else if (lendingOperation == LenderOps.REPAY) {
             if (lender < LenderIds.UP_TO_AAVE_V2) {
                 return _repayToAave(currentOffset, callerAddress, paramPull);
@@ -81,7 +81,7 @@ abstract contract UniversalLending is AaveLending, CompoundV3Lending, CompoundV2
                 return _morphoRepay(currentOffset, callerAddress, paramPush);
             }
         }
-        /** Morpho withdraw collateral */
+        /** Withdraw collateral */
         else if (lendingOperation == LenderOps.WITHDRAW) {
             if (lender < LenderIds.UP_TO_AAVE_V2) {
                 return _withdrawFromAave(currentOffset, callerAddress, paramPull);
