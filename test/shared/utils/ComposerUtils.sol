@@ -84,6 +84,131 @@ contract ComposerUtils {
             );
     }
 
+    /** MORPHO OPERATIONS */
+
+    function morphoDepositCollateral(bytes memory market, uint assets, bytes memory data) internal pure returns (bytes memory) {
+        return
+            abi.encodePacked(
+                uint8(Commands.MORPH), // 1
+                uint8(0), // 1
+                market, // 4 * 20 + 16
+                uint128(assets), // 16
+                uint16(data.length), // 2 @ 1 + 4*20
+                data
+            );
+    }
+
+    function morphoDeposit(
+        bytes memory market,
+        bool isShares, //
+        uint assets,
+        bytes memory data
+    ) internal pure returns (bytes memory) {
+        return
+            abi.encodePacked(
+                uint8(Commands.MORPH), // 1
+                uint8(4), // 1
+                market, // 4 * 20 + 16
+                abi.encodePacked(isShares ? uint8(1) : uint8(0), uint120(assets)),
+                uint16(data.length), // 2 @ 1 + 4*20
+                data
+            );
+    }
+
+    function erc4646Deposit(
+        address asset,
+        address vault,
+        bool isShares, //
+        uint assets,
+        address receiver
+    ) internal pure returns (bytes memory) {
+        return
+            abi.encodePacked(
+                uint8(Commands.ERC4646), // 1
+                uint8(0), // 1
+                asset, // 20
+                vault, // 20
+                abi.encodePacked(isShares ? uint8(1) : uint8(0), uint120(assets)), // 16
+                receiver // 20
+            );
+    }
+
+    function erc4646Withdraw(
+        address vault,
+        bool isShares, //
+        uint assets,
+        address receiver
+    ) internal pure returns (bytes memory) {
+        return
+            abi.encodePacked(
+                uint8(Commands.ERC4646), // 1
+                uint8(1), // 1
+                vault, // 20
+                abi.encodePacked(isShares ? uint8(1) : uint8(0), uint120(assets)), // 16
+                receiver // 20
+            );
+    }
+
+    function morphoWithdraw(
+        bytes memory market,
+        bool isShares, //
+        uint assets,
+        address receiver
+    ) internal pure returns (bytes memory) {
+        return
+            abi.encodePacked(
+                uint8(Commands.MORPH), // 1
+                uint8(5), // 1
+                market, // 4 * 20 + 16
+                abi.encodePacked(isShares ? uint8(1) : uint8(0), uint120(assets)),
+                receiver // 20
+            );
+    }
+
+    function morphoWithdrawCollateral(bytes memory market, uint assets, address receiver) internal pure returns (bytes memory) {
+        return
+            abi.encodePacked(
+                uint8(Commands.MORPH), // 1
+                uint8(3), // 1
+                market, // 4 * 20 + 16
+                uint128(assets), // 16
+                receiver // 20
+            );
+    }
+
+    function morphoBorrow(
+        bytes memory market,
+        bool isShares, //
+        uint assets,
+        address receiver
+    ) internal pure returns (bytes memory) {
+        return
+            abi.encodePacked(
+                uint8(Commands.MORPH), // 1
+                uint8(1), // 1
+                market, // 4 * 20 + 16
+                abi.encodePacked(isShares ? uint8(1) : uint8(0), uint120(assets)),
+                receiver
+            );
+    }
+
+    function morphoRepay(
+        bytes memory market,
+        bool isShares, //
+        uint assets,
+        bytes memory data
+    ) internal pure returns (bytes memory) {
+        return
+            abi.encodePacked(
+                uint8(Commands.MORPH), // 1
+                uint8(2), // 1
+                market, // 4 * 20 + 16
+                abi.encodePacked(isShares ? uint8(1) : uint8(0), uint120(assets)),
+                uint16(data.length), // 2 @ 1 + 4*20
+                data
+            );
+    }
+
     function borrow(address asset, address receiver, uint256 amount, uint16 lenderId, uint8 mode) internal pure returns (bytes memory) {
         return
             abi.encodePacked(

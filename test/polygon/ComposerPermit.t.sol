@@ -6,6 +6,20 @@ import "../../contracts/1delta/modules/shared/MetaAggregator.sol";
 import "../../contracts/1delta/test/MockERC20WithPermit.sol";
 import "../../contracts/1delta/test/TrivialMockRouter.sol";
 
+struct Authorization {
+    address authorizer;
+    address authorized;
+    bool isAuthorized;
+    uint256 nonce;
+    uint256 deadline;
+}
+
+struct Signature {
+    uint8 v;
+    bytes32 r;
+    bytes32 s;
+}
+
 interface ICometExt {
     function allowBySig(
         address owner,
@@ -17,10 +31,20 @@ interface ICometExt {
         bytes32 r,
         bytes32 s
     ) external;
+
+    /// @notice Sets the authorization for `authorization.authorized` to manage `authorization.authorizer`'s positions.
+    /// @dev Warning: Reverts if the signature has already been submitted.
+    /// @dev The signature is malleable, but it has no impact on the security here.
+    /// @dev The nonce is passed as argument to be able to revert with a different error message.
+    /// @param authorization The `Authorization` struct.
+    /// @param signature The signature.
+    function setAuthorizationWithSig(Authorization calldata authorization, Signature calldata signature) external;
 }
 
 contract Nothing is ICometExt {
     uint public signed = 0;
+    uint public signedMorpho = 0;
+
     function call() external {}
 
     function allowBySig(
@@ -35,6 +59,10 @@ contract Nothing is ICometExt {
     ) external override {
         signed++;
     }
+
+    function setAuthorizationWithSig(Authorization calldata authorization, Signature calldata signature) external {
+        signedMorpho++;
+    }
 }
 
 contract ComposerPermitTest is DeltaSetup {
@@ -45,6 +73,7 @@ contract ComposerPermitTest is DeltaSetup {
     uint256 constant PERMIT2_LENGTH = 352;
     uint256 constant COMPACT_PERMIT2_LENGTH = 96;
     address constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
+    address constant MORPHO = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
 
     function test_comet_permit() external {
         address user = testUser;
@@ -62,6 +91,7 @@ contract ComposerPermitTest is DeltaSetup {
 
         assertEq(_swapTarget.signed(), 1);
     }
+
 
     uint256 internal constant SWEEP = 1 << 255;
 

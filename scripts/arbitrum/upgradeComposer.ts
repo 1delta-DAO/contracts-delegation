@@ -5,9 +5,10 @@ import {
     OneDeltaComposerArbitrum__factory,
     LensModule__factory,
 } from "../../types";
-import { getArbitrumConfig, getGasConfig } from "../_utils/getGasConfig";
+import { getGasConfig } from "../_utils/getGasConfig";
 import { ModuleConfigAction, getContractSelectors } from "../_utils/diamond";
 import { OneDeltaArbitrum } from "./addresses/oneDeltaAddresses";
+import { Chain } from "@1delta/asset-registry";
 
 
 async function main() {
@@ -17,7 +18,7 @@ async function main() {
     const STAGE = OneDeltaArbitrum.PRODUCTION
     const { proxy, composerImplementation } = STAGE
 
-    if (chainId !== 42161) throw new Error("invalid chainId")
+    if (chainId !== Chain.ARBITRUM_ONE) throw new Error("invalid chainId")
     console.log("operator", operator.address, "on", chainId)
 
     // we manually increment the nonce

@@ -8,7 +8,7 @@ import {ComposerUtils, Commands} from "../shared/utils/ComposerUtils.sol";
 
 // interfaces
 import {IFlashAggregator} from "../shared/interfaces/IFlashAggregator.sol";
-import {IFlashLoanReceiver} from "./utils/IFlashLoanReceiver.sol";
+import {IFlashLoanReceiverAaveV2} from "../shared/interfaces/IFlashLoanReceiver.sol";
 import {IManagement} from "../shared/interfaces/IManagement.sol";
 import {ILending} from "../shared/interfaces/ILending.sol";
 import {IInitialize} from "../shared/interfaces/IInitialize.sol";
@@ -18,7 +18,7 @@ import {IModuleLens} from "../../contracts/1delta/proxy/interfaces/IModuleLens.s
 // universal erc20
 import {IERC20All} from "../shared/interfaces/IERC20All.sol";
 // lending pool for debugging
-import {ILendingPool} from "./utils/ILendingPool.sol";
+import {ILendingPool} from "../shared/interfaces/ILendingPool.sol";
 
 // lenders
 import {LendleMantleAssets, LendleMantle} from "./utils/lender/lendleAddresses.sol";
@@ -114,7 +114,7 @@ contract DeltaSetup is AddressesMantle, ComposerUtils, Script, Test {
         selectors[20] = IFlashAggregator.uniswapV3SwapCallback.selector;
         selectors[21] = IFlashAggregator.swapExactInSpotSelf.selector;
         selectors[21] = IFlashAggregator.deltaCompose.selector;
-        selectors[22] = IFlashLoanReceiver.executeOperation.selector;
+        selectors[22] = IFlashLoanReceiverAaveV2.executeOperation.selector;
         selectors[23] = IFlashAggregator.bitCall.selector;
         return selectors;
     }
