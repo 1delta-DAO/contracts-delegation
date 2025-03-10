@@ -28,10 +28,7 @@ abstract contract BaseLending is Slots, ERC20Selectors {
     address internal constant WRAPPED_NATIVE = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
 
     // Aave V3 style lender pool addresses
-    address internal constant AAVE_V3 = 0x794a61358D6845594F94dc1DB02A252b5b4814aD;
-    address internal constant AVALON = 0xe1ee45DB12ac98d16F1342a03c93673d74527b55;
-    address internal constant AVALON_PUMP_BTC = 0x4B801fb6f0830D070f40aff9ADFC8f6939Cc1F8D;
-    address internal constant YLDR = 0x54aD657851b6Ae95bA3380704996CAAd4b7751A3;
+    address internal constant LENDOS = 0x4B801fb6f0830D070f40aff9ADFC8f6939Cc1F8D;
 
     // Aave v2s
     address internal constant GRANARY = 0x102442A3BA1e441043154Bc0B8A2e2FB5E0F94A7;
@@ -94,20 +91,8 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                 let pool
                 // assign lending pool
                 switch _lenderId
-                case 0 {
-                    pool := AAVE_V3
-                }
-                case 900 {
-                    pool := YLDR
-                }
-                case 100 {
-                    pool := AVALON
-                }
-                case 101 {
-                    pool := AVALON_PUMP_BTC
-                }
-                case 1000 {
-                    pool := GRANARY
+                case 10 {
+                    pool := LENDOS
                 }
                 default {
                     mstore(0x0, _lenderId)
@@ -125,167 +110,8 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                 }
             }
             default {
-                switch lt(_lenderId, MAX_ID_COMPOUND_V3)
-                case 1 {
-                    let cometPool
-                    switch _lenderId
-                    case 2000 {
-                        cometPool := COMET_USDC
-                    }
-                    case 2001 {
-                        cometPool := COMET_WETH
-                    }
-                    case 2002 {
-                        cometPool := COMET_USDT
-                    }
-                    case 2003 {
-                        cometPool := COMET_USDCE
-                    }
-                    // default: load comet from storage
-                    // if it is not provided directly
-                    default {
-                        mstore(0x0, _lenderId)
-                        mstore(0x20, LENDING_POOL_SLOT)
-                        cometPool := sload(keccak256(0x0, 0x40))
-                        if iszero(cometPool) {
-                            mstore(0, BAD_LENDER)
-                            revert(0, 0x4)
-                        }
-                    }
-                    // selector withdrawFrom(address,address,address,uint256)
-                    mstore(ptr, 0x2644131800000000000000000000000000000000000000000000000000000000)
-                    mstore(add(ptr, 0x04), _from)
-                    mstore(add(ptr, 0x24), _to)
-                    mstore(add(ptr, 0x44), _underlying)
-                    mstore(add(ptr, 0x64), _amount)
-                    // call pool
-                    if iszero(call(gas(), cometPool, 0x0, ptr, 0x84, 0x0, 0x0)) {
-                        returndatacopy(0x0, 0x0, returndatasize())
-                        revert(0x0, returndatasize())
-                    }
-                }
-                default {
-                    // load collateral token for market
-                    mstore(0x0, or(shl(240, _lenderId), _underlying))
-                    mstore(0x20, COLLATERAL_TOKENS_SLOT)
-                    let collateralToken := sload(keccak256(0x0, 0x40)) // access element
-
-                    // 1) CALCULTAE TRANSFER AMOUNT
-                    // Store fnSig (=bytes4(abi.encodeWithSignature("exchangeRateCurrent()"))) at params
-                    // - here we store 32 bytes : 4 bytes of fnSig and 28 bytes of RIGHT padding
-                    mstore(
-                        0x0,
-                        0xbd6d894d00000000000000000000000000000000000000000000000000000000 // with padding
-                    )
-                    // call to collateralToken
-                    // accrues interest. No real risk of failure.
-                    pop(
-                        call(
-                            gas(),
-                            collateralToken,
-                            0x0,
-                            0x0,
-                            0x24,
-                            0x0, // store back to ptr
-                            0x20
-                        )
-                    )
-
-                    // load the retrieved protocol share
-                    let refAmount := mload(0x0)
-
-                    // calculate collateral token amount, rounding up
-                    let transferAmount := add(
-                        div(
-                            mul(_amount, 1000000000000000000), // multiply with 1e18
-                            refAmount // divide by rate
-                        ),
-                        1
-                    )
-                    // FETCH BALANCE
-                    // selector for balanceOf(address)
-                    mstore(0x0, ERC20_BALANCE_OF)
-                    // add _from address as parameter
-                    mstore(0x4, _from)
-
-                    // call to collateralToken
-                    pop(staticcall(gas(), collateralToken, 0x0, 0x24, 0x0, 0x20))
-
-                    // load the retrieved balance
-                    refAmount := mload(0x0)
-
-                    // floor to the balance
-                    if gt(transferAmount, refAmount) {
-                        transferAmount := refAmount
-                    }
-
-                    // 2) TRANSFER VTOKENS
-
-                    // selector for transferFrom(address,address,uint256)
-                    mstore(ptr, ERC20_TRANSFER_FROM)
-                    mstore(add(ptr, 0x04), _from) // from user
-                    mstore(add(ptr, 0x24), address()) // to this address
-                    mstore(add(ptr, 0x44), transferAmount)
-
-                    let success := call(gas(), collateralToken, 0, ptr, 0x64, ptr, 32)
-
-                    if iszero(success) {
-                        returndatacopy(0, 0, returndatasize())
-                        revert(0, returndatasize())
-                    }
-
-                    // 3) REDEEM
-                    // selector for redeem(uint256)
-                    mstore(0, 0xdb006a7500000000000000000000000000000000000000000000000000000000)
-                    mstore(0x4, transferAmount)
-
-                    if iszero(
-                        call(
-                            gas(),
-                            collateralToken,
-                            0x0,
-                            0x0, // input = selector
-                            0x24, // input selector + uint256
-                            0x0, // output
-                            0x0 // output size = zero
-                        )
-                    ) {
-                        returndatacopy(0, 0, returndatasize())
-                        revert(0, returndatasize())
-                    }
-
-                    // transfer tokens only if the receiver is not this address
-                    if xor(address(), _to) {
-                        // 4) TRANSFER TO RECIPIENT
-                        // selector for transfer(address,uint256)
-                        mstore(ptr, ERC20_TRANSFER)
-                        mstore(add(ptr, 0x04), _to)
-                        mstore(add(ptr, 0x24), _amount)
-
-                        success := call(gas(), _underlying, 0, ptr, 0x44, ptr, 32)
-
-                        let rdsize := returndatasize()
-
-                        // Check for ERC20 success. ERC20 tokens should return a boolean,
-                        // but some don't. We accept 0-length return data as success, or at
-                        // least 32 bytes that starts with a 32-byte boolean true.
-                        success := and(
-                            success, // call itself succeeded
-                            or(
-                                iszero(rdsize), // no return data, or
-                                and(
-                                    iszero(lt(rdsize, 32)), // at least 32 bytes
-                                    eq(mload(ptr), 1) // starts with uint256(1)
-                                )
-                            )
-                        )
-
-                        if iszero(success) {
-                            returndatacopy(ptr, 0, rdsize)
-                            revert(ptr, rdsize)
-                        }
-                    }
-                }
+                mstore(0, BAD_LENDER)
+                revert(0, 0x4)
             }
         }
     }
@@ -294,187 +120,62 @@ abstract contract BaseLending is Slots, ERC20Selectors {
     function _borrow(address _underlying, address _from, address _to, uint256 _amount, uint256 _mode, uint256 _lenderId) internal {
         assembly {
             let ptr := mload(0x40)
-            switch lt(_lenderId, MAX_ID_AAVE_V2)
-            case 1 {
-                switch _lenderId
-                case 900 {
-                    // YLDR has no borrow mode
-                    // selector borrow(address,uint256,uint16,address)
-                    mstore(ptr, 0x1d5d723700000000000000000000000000000000000000000000000000000000)
-                    mstore(add(ptr, 0x04), _underlying)
-                    mstore(add(ptr, 0x24), _amount)
-                    mstore(add(ptr, 0x44), 0x0)
-                    mstore(add(ptr, 0x64), _from)
-                    // call pool
-                    if iszero(call(gas(), YLDR, 0x0, ptr, 0x84, 0x0, 0x0)) {
-                        returndatacopy(0x0, 0x0, returndatasize())
-                        revert(0x0, returndatasize())
-                    }
-                }
-                default {
-                    let pool
-                    switch _lenderId
-                    case 0 {
-                        pool := AAVE_V3
-                    }
-                    case 900 {
-                        pool := YLDR
-                    }
-                    case 100 {
-                        pool := AVALON
-                    }
-                    case 101 {
-                        pool := AVALON_PUMP_BTC
-                    }
-                    case 1000 {
-                        pool := GRANARY
-                    }
-                    default {
-                        mstore(0x0, _lenderId)
-                        mstore(0x20, LENDING_POOL_SLOT)
-                        pool := sload(keccak256(0x0, 0x40))
-                        if iszero(pool) {
-                            mstore(0, BAD_LENDER)
-                            revert(0, 0x4)
-                        }
-                    }
-                    // selector borrow(address,uint256,uint256,uint16,address)
-                    mstore(ptr, 0xa415bcad00000000000000000000000000000000000000000000000000000000)
-                    mstore(add(ptr, 0x04), _underlying)
-                    mstore(add(ptr, 0x24), _amount)
-                    mstore(add(ptr, 0x44), _mode)
-                    mstore(add(ptr, 0x64), 0x0)
-                    mstore(add(ptr, 0x84), _from)
-                    // call pool
-                    if iszero(call(gas(), pool, 0x0, ptr, 0xA4, 0x0, 0x0)) {
-                        returndatacopy(0x0, 0x0, returndatasize())
-                        revert(0x0, returndatasize())
-                    }
-                }
 
-                //  transfer underlying if needed
-                if xor(_to, address()) {
-                    // selector for transfer(address,uint256)
-                    mstore(ptr, ERC20_TRANSFER)
-                    mstore(add(ptr, 0x04), _to)
-                    mstore(add(ptr, 0x24), _amount)
-
-                    let success := call(gas(), _underlying, 0, ptr, 0x44, ptr, 32)
-
-                    let rdsize := returndatasize()
-
-                    // Check for ERC20 success. ERC20 tokens should return a boolean,
-                    // but some don't. We accept 0-length return data as success, or at
-                    // least 32 bytes that starts with a 32-byte boolean true.
-                    success := and(
-                        success, // call itself succeeded
-                        or(
-                            iszero(rdsize), // no return data, or
-                            and(
-                                iszero(lt(rdsize, 32)), // at least 32 bytes
-                                eq(mload(ptr), 1) // starts with uint256(1)
-                            )
-                        )
-                    )
-
-                    if iszero(success) {
-                        returndatacopy(0, 0, rdsize)
-                        revert(0, rdsize)
-                    }
-                }
+            let pool
+            switch _lenderId
+            case 10 {
+                pool := LENDOS
             }
             default {
-                switch lt(_lenderId, MAX_ID_COMPOUND_V3)
-                case 1 {
-                    let cometPool
-                    switch _lenderId
-                    case 2000 {
-                        cometPool := COMET_USDC
-                    }
-                    case 2001 {
-                        cometPool := COMET_WETH
-                    }
-                    case 2002 {
-                        cometPool := COMET_USDT
-                    }
-                    case 2003 {
-                        cometPool := COMET_USDCE
-                    }
-                    // default: load comet from storage
-                    // if it is not provided directly
-                    default {
-                        mstore(0x0, _lenderId)
-                        mstore(0x20, LENDING_POOL_SLOT)
-                        cometPool := sload(keccak256(0x0, 0x40))
-                        if iszero(cometPool) {
-                            mstore(0, BAD_LENDER)
-                            revert(0, 0x4)
-                        }
-                    }
-                    // selector withdrawFrom(address,address,address,uint256)
-                    mstore(ptr, 0x2644131800000000000000000000000000000000000000000000000000000000)
-                    mstore(add(ptr, 0x04), _from)
-                    mstore(add(ptr, 0x24), _to)
-                    mstore(add(ptr, 0x44), _underlying)
-                    mstore(add(ptr, 0x64), _amount)
-                    // call pool
-                    if iszero(call(gas(), cometPool, 0x0, ptr, 0x84, 0x0, 0x0)) {
-                        returndatacopy(0x0, 0x0, returndatasize())
-                        revert(0x0, returndatasize())
-                    }
+                mstore(0x0, _lenderId)
+                mstore(0x20, LENDING_POOL_SLOT)
+                pool := sload(keccak256(0x0, 0x40))
+                if iszero(pool) {
+                    mstore(0, BAD_LENDER)
+                    revert(0, 0x4)
                 }
-                default {
-                    mstore(0x0, or(shl(240, _lenderId), _underlying))
-                    mstore(0x20, COLLATERAL_TOKENS_SLOT) // add pointer to slot
-                    let collateralToken := sload(keccak256(0x0, 0x40)) // acces element
-                    // selector for borrowBehlaf(address,uint256)
-                    mstore(ptr, 0x856e5bb300000000000000000000000000000000000000000000000000000000)
-                    mstore(add(ptr, 0x4), _from) // user
-                    mstore(add(ptr, 0x24), _amount) // to this address
-                    if iszero(
-                        call(
-                            gas(),
-                            collateralToken,
-                            0x0, // no ETH sent
-                            ptr, // input selector
-                            0x44, // input size = selector + address + uint256
-                            ptr, // output
-                            0x0 // output size = zero
+            }
+            // selector borrow(address,uint256,uint256,uint16,address)
+            mstore(ptr, 0xa415bcad00000000000000000000000000000000000000000000000000000000)
+            mstore(add(ptr, 0x04), _underlying)
+            mstore(add(ptr, 0x24), _amount)
+            mstore(add(ptr, 0x44), _mode)
+            mstore(add(ptr, 0x64), 0x0)
+            mstore(add(ptr, 0x84), _from)
+            // call pool
+            if iszero(call(gas(), pool, 0x0, ptr, 0xA4, 0x0, 0x0)) {
+                returndatacopy(0x0, 0x0, returndatasize())
+                revert(0x0, returndatasize())
+            }
+
+            //  transfer underlying if needed
+            if xor(_to, address()) {
+                // selector for transfer(address,uint256)
+                mstore(ptr, ERC20_TRANSFER)
+                mstore(add(ptr, 0x04), _to)
+                mstore(add(ptr, 0x24), _amount)
+
+                let success := call(gas(), _underlying, 0, ptr, 0x44, ptr, 32)
+
+                let rdsize := returndatasize()
+
+                // Check for ERC20 success. ERC20 tokens should return a boolean,
+                // but some don't. We accept 0-length return data as success, or at
+                // least 32 bytes that starts with a 32-byte boolean true.
+                success := and(
+                    success, // call itself succeeded
+                    or(
+                        iszero(rdsize), // no return data, or
+                        and(
+                            iszero(lt(rdsize, 32)), // at least 32 bytes
+                            eq(mload(ptr), 1) // starts with uint256(1)
                         )
-                    ) {
-                        returndatacopy(ptr, 0, returndatasize())
-                        revert(ptr, returndatasize())
-                    }
-                    if xor(address(), _to) {
-                        // 4) TRANSFER TO RECIPIENT
-                        // selector for transfer(address,uint256)
-                        mstore(ptr, ERC20_TRANSFER)
-                        mstore(add(ptr, 0x04), _to)
-                        mstore(add(ptr, 0x24), _amount)
+                    )
+                )
 
-                        let success := call(gas(), _underlying, 0, ptr, 0x44, ptr, 32)
-
-                        let rdsize := returndatasize()
-
-                        // Check for ERC20 success. ERC20 tokens should return a boolean,
-                        // but some don't. We accept 0-length return data as success, or at
-                        // least 32 bytes that starts with a 32-byte boolean true.
-                        success := and(
-                            success, // call itself succeeded
-                            or(
-                                iszero(rdsize), // no return data, or
-                                and(
-                                    iszero(lt(rdsize, 32)), // at least 32 bytes
-                                    eq(mload(ptr), 1) // starts with uint256(1)
-                                )
-                            )
-                        )
-
-                        if iszero(success) {
-                            returndatacopy(ptr, 0, rdsize)
-                            revert(ptr, rdsize)
-                        }
-                    }
+                if iszero(success) {
+                    returndatacopy(0, 0, rdsize)
+                    revert(0, rdsize)
                 }
             }
         }
@@ -484,139 +185,39 @@ abstract contract BaseLending is Slots, ERC20Selectors {
     function _deposit(address _underlying, address _to, uint256 _amount, uint256 _lenderId) internal {
         assembly {
             let ptr := mload(0x40)
-            switch lt(_lenderId, MAX_ID_AAVE_V2)
+
+            switch lt(_lenderId, MAX_ID_AAVE_V3)
             case 1 {
-                switch lt(_lenderId, MAX_ID_AAVE_V3)
-                case 1 {
-                    // selector supply(address,uint256,address,uint16)
-                    mstore(ptr, 0x617ba03700000000000000000000000000000000000000000000000000000000)
-                    mstore(add(ptr, 0x04), _underlying)
-                    mstore(add(ptr, 0x24), _amount)
-                    mstore(add(ptr, 0x44), _to)
-                    mstore(add(ptr, 0x64), 0x0)
-                    let pool
-                    // assign lending pool
-                    switch _lenderId
-                    case 0 {
-                        pool := AAVE_V3
-                    }
-                    case 900 {
-                        pool := YLDR
-                    }
-                    case 100 {
-                        pool := AVALON
-                    }
-                    case 101 {
-                        pool := AVALON_PUMP_BTC
-                    }
-                    default {
-                        mstore(0x0, _lenderId)
-                        mstore(0x20, LENDING_POOL_SLOT)
-                        pool := sload(keccak256(0x0, 0x40))
-                        if iszero(pool) {
-                            mstore(0, BAD_LENDER)
-                            revert(0, 0x4)
-                        }
-                    }
-                    // call pool
-                    if iszero(call(gas(), pool, 0x0, ptr, 0x84, 0x0, 0x0)) {
-                        returndatacopy(0x0, 0x0, returndatasize())
-                        revert(0x0, returndatasize())
-                    }
+                // selector supply(address,uint256,address,uint16)
+                mstore(ptr, 0x617ba03700000000000000000000000000000000000000000000000000000000)
+                mstore(add(ptr, 0x04), _underlying)
+                mstore(add(ptr, 0x24), _amount)
+                mstore(add(ptr, 0x44), _to)
+                mstore(add(ptr, 0x64), 0x0)
+                let pool
+                // assign lending pool
+                switch _lenderId
+                case 10 {
+                    pool := LENDOS
                 }
                 default {
-                    // selector deposit(address,uint256,address,uint16)
-                    mstore(ptr, 0xe8eda9df00000000000000000000000000000000000000000000000000000000)
-                    mstore(add(ptr, 0x04), _underlying)
-                    mstore(add(ptr, 0x24), _amount)
-                    mstore(add(ptr, 0x44), _to)
-                    mstore(add(ptr, 0x64), 0x0)
-                    let pool
-                    // assign lending pool
-                    switch _lenderId
-                    case 1000 {
-                        pool := GRANARY
+                    mstore(0x0, _lenderId)
+                    mstore(0x20, LENDING_POOL_SLOT)
+                    pool := sload(keccak256(0x0, 0x40))
+                    if iszero(pool) {
+                        mstore(0, BAD_LENDER)
+                        revert(0, 0x4)
                     }
-                    default {
-                        mstore(0x0, _lenderId)
-                        mstore(0x20, LENDING_POOL_SLOT)
-                        pool := sload(keccak256(0x0, 0x40))
-                        if iszero(pool) {
-                            mstore(0, BAD_LENDER)
-                            revert(0, 0x4)
-                        }
-                    }
-                    // call pool
-                    if iszero(call(gas(), pool, 0x0, ptr, 0x84, 0x0, 0x0)) {
-                        returndatacopy(0x0, 0x0, returndatasize())
-                        revert(0x0, returndatasize())
-                    }
+                }
+                // call pool
+                if iszero(call(gas(), pool, 0x0, ptr, 0x84, 0x0, 0x0)) {
+                    returndatacopy(0x0, 0x0, returndatasize())
+                    revert(0x0, returndatasize())
                 }
             }
             default {
-                switch lt(_lenderId, MAX_ID_COMPOUND_V3)
-                case 1 {
-                    let cometPool
-                    switch _lenderId
-                    case 2000 {
-                        cometPool := COMET_USDC
-                    }
-                    case 2001 {
-                        cometPool := COMET_WETH
-                    }
-                    case 2002 {
-                        cometPool := COMET_USDT
-                    }
-                    case 2003 {
-                        cometPool := COMET_USDCE
-                    }
-                    // default: load comet from storage
-                    // if it is not provided directly
-                    default {
-                        mstore(0x0, _lenderId)
-                        mstore(0x20, LENDING_POOL_SLOT)
-                        cometPool := sload(keccak256(0x0, 0x40))
-                        if iszero(cometPool) {
-                            mstore(0, BAD_LENDER)
-                            revert(0, 0x4)
-                        }
-                    }
-                    // selector supplyTo(address,address,uint256)
-                    mstore(ptr, 0x4232cd6300000000000000000000000000000000000000000000000000000000)
-                    mstore(add(ptr, 0x04), _to)
-                    mstore(add(ptr, 0x24), _underlying)
-                    mstore(add(ptr, 0x44), _amount)
-                    // call pool
-                    if iszero(call(gas(), cometPool, 0x0, ptr, 0x64, 0x0, 0x0)) {
-                        returndatacopy(0x0, 0x0, returndatasize())
-                        revert(0x0, returndatasize())
-                    }
-                }
-                default {
-                    mstore(0x0, or(shl(240, _lenderId), _underlying))
-                    mstore(0x20, COLLATERAL_TOKENS_SLOT) // add pointer to slot
-                    let collateralToken := sload(keccak256(0x0, 0x40)) // acces element
-
-                    // selector for mintBehalf(address,uint256)
-                    mstore(ptr, 0x23323e0300000000000000000000000000000000000000000000000000000000)
-                    mstore(add(ptr, 0x04), _to)
-                    mstore(add(ptr, 0x24), _amount)
-
-                    let success := call(
-                        gas(),
-                        collateralToken,
-                        0x0,
-                        ptr, // input = selector and data
-                        0x44, // input size = 4 + 64
-                        0x0, // output
-                        0x0 // output size = zero
-                    )
-
-                    if iszero(success) {
-                        returndatacopy(ptr, 0, returndatasize())
-                        revert(ptr, returndatasize())
-                    }
-                }
+                mstore(0, BAD_LENDER)
+                revert(0, 0x4)
             }
         }
     }
@@ -628,123 +229,36 @@ abstract contract BaseLending is Slots, ERC20Selectors {
             switch lt(_lenderId, MAX_ID_AAVE_V2)
             case 1 {
                 // assign lending pool
+
+                let pool
                 switch _lenderId
-                case 900 {
-                    // same as aave V3, just no mode
-                    // selector repay(address,uint256,address)
-                    mstore(ptr, 0x5ceae9c400000000000000000000000000000000000000000000000000000000)
-                    mstore(add(ptr, 0x04), _underlying)
-                    mstore(add(ptr, 0x24), _amount)
-                    mstore(add(ptr, 0x44), _to)
-                    // call pool
-                    if iszero(call(gas(), YLDR, 0x0, ptr, 0x64, 0x0, 0x0)) {
-                        returndatacopy(0x0, 0x0, returndatasize())
-                        revert(0x0, returndatasize())
-                    }
+                case 10 {
+                    pool := LENDOS
                 }
                 default {
-                    let pool
-                    switch _lenderId
-                    case 0 {
-                        pool := AAVE_V3
+                    mstore(0x0, _lenderId)
+                    mstore(0x20, LENDING_POOL_SLOT)
+                    pool := sload(keccak256(0x0, 0x40))
+                    if iszero(pool) {
+                        mstore(0, BAD_LENDER)
+                        revert(0, 0x4)
                     }
-                    case 100 {
-                        pool := AVALON
-                    }
-                    case 101 {
-                        pool := AVALON_PUMP_BTC
-                    }
-                    case 1000 {
-                        pool := GRANARY
-                    }
-                    default {
-                        mstore(0x0, _lenderId)
-                        mstore(0x20, LENDING_POOL_SLOT)
-                        pool := sload(keccak256(0x0, 0x40))
-                        if iszero(pool) {
-                            mstore(0, BAD_LENDER)
-                            revert(0, 0x4)
-                        }
-                    }
-                    // selector repay(address,uint256,uint256,address)
-                    mstore(ptr, 0x573ade8100000000000000000000000000000000000000000000000000000000)
-                    mstore(add(ptr, 0x04), _underlying)
-                    mstore(add(ptr, 0x24), _amount)
-                    mstore(add(ptr, 0x44), _mode)
-                    mstore(add(ptr, 0x64), _to)
-                    // call pool
-                    if iszero(call(gas(), pool, 0x0, ptr, 0x84, 0x0, 0x0)) {
-                        returndatacopy(0x0, 0x0, returndatasize())
-                        revert(0x0, returndatasize())
-                    }
+                }
+                // selector repay(address,uint256,uint256,address)
+                mstore(ptr, 0x573ade8100000000000000000000000000000000000000000000000000000000)
+                mstore(add(ptr, 0x04), _underlying)
+                mstore(add(ptr, 0x24), _amount)
+                mstore(add(ptr, 0x44), _mode)
+                mstore(add(ptr, 0x64), _to)
+                // call pool
+                if iszero(call(gas(), pool, 0x0, ptr, 0x84, 0x0, 0x0)) {
+                    returndatacopy(0x0, 0x0, returndatasize())
+                    revert(0x0, returndatasize())
                 }
             }
             default {
-                switch lt(_lenderId, MAX_ID_COMPOUND_V3)
-                case 1 {
-                    let cometPool
-                    switch _lenderId
-                    case 2000 {
-                        cometPool := COMET_USDC
-                    }
-                    case 2001 {
-                        cometPool := COMET_WETH
-                    }
-                    case 2002 {
-                        cometPool := COMET_USDT
-                    }
-                    case 2003 {
-                        cometPool := COMET_USDCE
-                    }
-                    // default: load comet from storage
-                    // if it is not provided directly
-                    default {
-                        mstore(0x0, _lenderId)
-                        mstore(0x20, LENDING_POOL_SLOT)
-                        cometPool := sload(keccak256(0x0, 0x40))
-                        if iszero(cometPool) {
-                            mstore(0, BAD_LENDER)
-                            revert(0, 0x4)
-                        }
-                    }
-
-                    // selector supplyTo(address,address,uint256)
-                    mstore(ptr, 0x4232cd6300000000000000000000000000000000000000000000000000000000)
-                    mstore(add(ptr, 0x04), _to)
-                    mstore(add(ptr, 0x24), _underlying)
-                    mstore(add(ptr, 0x44), _amount)
-                    // call pool
-                    if iszero(call(gas(), cometPool, 0x0, ptr, 0x64, 0x0, 0x0)) {
-                        returndatacopy(0x0, 0x0, returndatasize())
-                        revert(0x0, returndatasize())
-                    }
-                }
-                default {
-                    // load collateral token
-                    mstore(0x0, or(shl(240, _lenderId), _underlying))
-                    mstore(0x20, COLLATERAL_TOKENS_SLOT) // add pointer to slot
-                    let collateralToken := sload(keccak256(0x0, 0x40)) // acces element
-
-                    // selector for repayBorrowBehalf(address,uint256)
-                    mstore(ptr, 0x2608f81800000000000000000000000000000000000000000000000000000000)
-                    mstore(add(ptr, 0x4), _to) // user
-                    mstore(add(ptr, 0x24), _amount) // to this address
-
-                    if iszero(
-                        call(
-                            gas(),
-                            collateralToken,
-                            0x0,
-                            ptr, // input = empty for fallback
-                            0x44, // input size = selector + address + uint256
-                            ptr, // output
-                            0x0 // output size = zero
-                        )
-                    ) {
-                        returndatacopy(0x0, 0, returndatasize())
-                        revert(0x0, returndatasize())
-                    }
-                }
+                mstore(0, BAD_LENDER)
+                revert(0, 0x4)
             }
         }
     }
