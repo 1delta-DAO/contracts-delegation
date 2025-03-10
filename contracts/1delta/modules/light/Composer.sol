@@ -8,6 +8,7 @@ import {Transfers} from "./transfers/Transfers.sol";
 import {ERC4646Operations} from "./ERC4646/ERC4646Operations.sol";
 import {UniversalLending} from "./lending/UniversalLending.sol";
 import {Permits} from "./permit/Permits.sol";
+import {Ownable} from "./solady/Ownable.sol";
 import {UniversalFlashLoan} from "./flashLoan/UniversalFlashLoan.sol";
 
 /**
@@ -17,6 +18,7 @@ import {UniversalFlashLoan} from "./flashLoan/UniversalFlashLoan.sol";
  * @author 1delta Labs AG
  */
 contract OneDeltaComposerLight is
+    Ownable,
     UniversalLending,
     UniversalFlashLoan,
     ERC4646Operations,
@@ -38,7 +40,7 @@ contract OneDeltaComposerLight is
             msg.sender,
             0, // no injecteds on the external compose
             0,
-            0x44, // the offset is cponstant
+            0x44, // the offset is constant
             length
         );
     }
