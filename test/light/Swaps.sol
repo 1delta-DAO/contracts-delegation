@@ -35,19 +35,22 @@ contract SwapsLightTest is Test, AAVE_V3_DATA_8453 {
         address assetIn,
         address assetOut, //
         uint16 fee,
+        uint8 dexId,
         address receiver,
         uint256 amount
     ) internal view returns (bytes memory data) {
         address pool = IF(UNI_FACTORY).getPool(assetIn, assetOut, fee);
+        console.log("pool", pool);
         data = abi.encodePacked(
             uint8(ComposerCommands.SWAPS),
-            uint8(0), // splits
             assetIn,
             assetOut,
-            fee,
+            uint8(0), // splits
+            dexId,
             pool,
+            fee,
             receiver,
-            uint112(amount) //
+            uint128(amount) //
         ); // 2 + 20 + 20 + 14 = 56 bytes
     }
 
@@ -67,6 +70,7 @@ contract SwapsLightTest is Test, AAVE_V3_DATA_8453 {
             tokenIn,
             tokenOut,
             fee,
+            uint8(0),
             address(oneDV2),
             amount //
         );

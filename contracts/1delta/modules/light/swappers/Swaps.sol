@@ -20,10 +20,11 @@ abstract contract Swaps is BaseSwapper {
         address tokenIn;
         address tokenOut;
         assembly {
-            // get first three addresses
+            // get first 2 addresses
             tokenIn := shr(96, calldataload(currentOffset))
             currentOffset := add(currentOffset, 20)
             tokenOut := shr(96, calldataload(currentOffset))
+            currentOffset := add(currentOffset, 20)
         }
         uint amountIn = 10000;
         (amountIn, currentOffset) = _eSwapExactIn(

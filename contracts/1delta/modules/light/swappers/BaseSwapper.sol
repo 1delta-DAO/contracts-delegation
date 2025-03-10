@@ -104,21 +104,23 @@ abstract contract BaseSwapper is
         assembly {
             splits := calldataload(currentOffset)
             splitsCount := shr(248, splits)
-            splits := shr(136, calldataload(currentOffset))
-            currentOffset := add(currentOffset, 1)
+            currentOffset := add(1, currentOffset)
         }
+        console.log("tokenIn", tokenIn);
+        console.log("tokenOut", tokenOut);
         console.log("splitsCount", splitsCount);
         // muliplts splits
         if (splitsCount != 0) {
             assembly {
+                splits := shr(136, splits)
                 currentOffset := add(mul(2, splits), currentOffset)
             }
             uint256 amount;
-            uint i;
-            uint swapsLeft = amountIn;
+            uint256 i;
+            uint256 swapsLeft = amountIn;
             while (true) {
-                uint received;
-                uint split;
+                uint256 received;
+                uint256 split;
                 assembly {
                     split := div(
                         mul(
@@ -150,9 +152,6 @@ abstract contract BaseSwapper is
             }
             amountIn = amount;
         } else {
-            assembly {
-                currentOffset := add(1, currentOffset)
-            }
             console.log("tokenIn, tokenOut", tokenIn, tokenOut);
             (amountIn, currentOffset) = swapExactInSimple2(
                 amountIn,
@@ -339,7 +338,12 @@ abstract contract BaseSwapper is
         address receiver, // last step
         uint256 currentOffset
     ) internal returns (uint256, uint256) {
-        uint dexId = 0;
+        uint256 dexId;
+        assembly {
+            dexId := shr(248, calldataload(currentOffset))
+            currentOffset := add(currentOffset, 1)
+        }
+        console.log("dexId", dexId);
         ////////////////////////////////////////////////////
         // We switch-case through the different pool types
         // To select the correct pool for the swap action

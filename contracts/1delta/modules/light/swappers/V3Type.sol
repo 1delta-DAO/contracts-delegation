@@ -48,23 +48,16 @@ abstract contract V3TypeGeneric is Masks {
         // solhint-disable-next-line no-inline-assembly
         assembly {
             let ptr := mload(0x40)
-            let amount := calldataload(currentOffset)
-            amount := and(UINT128_MASK, amount)
-            currentOffset := add(currentOffset, 32)
             // read the pool address
-            let pool := and(
-                ADDRESS_MASK,
+            let pool := shr(
+                96,
                 calldataload(currentOffset) // starts as first param
             )
-            currentOffset := add(currentOffset, 20)
-            // Return amount0 or amount1 depending on direction
-            let zeroForOne := shr(96, calldataload(currentOffset)) // tokenIn
-            currentOffset := add(currentOffset, 20)
-            zeroForOne := lt(
-                zeroForOne, // tokenIn
+            currentOffset := add(currentOffset, 22)
+            let zeroForOne := lt(
+                tokenIn, // tokenIn
                 shr(96, calldataload(currentOffset)) // tokenOut
             )
-
             // Prepare external call data
             // Store swap selector (0x128acb08)
             mstore(ptr, 0x128acb0800000000000000000000000000000000000000000000000000000000)
