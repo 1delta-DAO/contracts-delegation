@@ -5,7 +5,7 @@ pragma solidity ^0.8.28;
 library LenderMappingsArbitrum {
     uint16 internal constant DEFAULT_LENDER = 1;
     uint16 internal constant AAVE_V3 = 0;
-    uint16 internal constant AVALON = 1;
+    uint16 internal constant AVALON = 100;
     uint16 internal constant YLDR = 900;
     uint16 internal constant VENUS = 3000;
     uint16 internal constant VENUS_ETH = 3001;

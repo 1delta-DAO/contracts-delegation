@@ -15,22 +15,25 @@ export function getArbitrumConfig(n?: number) {
     }
 }
 
-export async function getGasConfig(operator: SignerWithAddress, margin = 10) {
+export async function getGasConfig(operator: SignerWithAddress, margin = 10, legacy = false) {
     const gasData: any = await operator.getFeeData()
 
     let returnMap: any = {}
-    if (gasData.maxFeePerGas) {
-        returnMap['maxFeePerGas'] = addMargin(gasData.maxFeePerGas, margin)
-        console.log("returnMap['maxFeePerGas']", formatEther(returnMap['maxFeePerGas']))
+    if (!legacy) {
+        if (gasData.maxFeePerGas) {
+            returnMap['maxFeePerGas'] = addMargin(gasData.maxFeePerGas, margin)
+            console.log("returnMap['maxFeePerGas']", formatEther(returnMap['maxFeePerGas']))
+        }
+        if (gasData.maxPriorityFeePerGas) {
+            returnMap['maxPriorityFeePerGas'] = addMargin(gasData.maxFeePerGas, margin)
+            console.log("returnMap['maxPriorityFeePerGas']", formatEther(returnMap['maxPriorityFeePerGas']))
+        }
+    } else {
+        if (gasData.gasPrice) {
+            returnMap['gasPrice'] = addMargin(gasData.gasPrice)
+            console.log("returnMap['gasPrice']", formatEther(returnMap['gasPrice']))
+        }
     }
-    if (gasData.maxPriorityFeePerGas) {
-        returnMap['maxPriorityFeePerGas'] = addMargin(gasData.maxFeePerGas, margin)
-        console.log("returnMap['maxPriorityFeePerGas']", formatEther(returnMap['maxPriorityFeePerGas']))
-    }
-    // if (gasData.gasPrice) {
-    //     returnMap['gasPrice'] = addMargin(gasData.gasPrice)
-    //     console.log("returnMap['gasPrice']", formatEther(returnMap['gasPrice']))
-    // }
     return returnMap
 }
 

@@ -759,48 +759,8 @@ contract OneDeltaComposerArbitrum is MarginTrading {
                         // being converted to collateral
                         // Aave V2/3s allow higher amounts than the balance and will correctly adapt
                         case 0xffffffffffffffffffffffffffff {
-                            switch lt(lenderId, MAX_ID_COMPOUND_V3)
-                            // Compound V3
-                            case 1 {
-                                let cometPool
-                                switch lenderId
-                                case 2000 {
-                                    cometPool := COMET_USDC
-                                }
-                                case 2001 {
-                                    cometPool := COMET_WETH
-                                }
-                                case 2002 {
-                                    cometPool := COMET_USDT
-                                }
-                                case 2003 {
-                                    cometPool := COMET_USDCE
-                                }
-                                // default: load comet from storage
-                                // if it is not provided directly
-                                default {
-                                    mstore(0x0, lenderId)
-                                    mstore(0x20, LENDING_POOL_SLOT)
-                                    cometPool := sload(keccak256(0x0, 0x40))
-                                    if iszero(cometPool) {
-                                        mstore(0, BAD_LENDER)
-                                        revert(0, 0x4)
-                                    }
-                                }
-
-                                // borrowBalanceOf(address)
-                                mstore(0x0, 0x374c49b400000000000000000000000000000000000000000000000000000000)
-                                // add caller address as parameter
-                                mstore(0x4, callerAddress)
-                                // call to debtToken
-                                pop(staticcall(gas(), cometPool, 0x0, 0x24, 0x0, 0x20))
-                                // load the retrieved balance
-                                amount := mload(0x0)
-                            }
-                            default {
-                                // venus uses max(uint) as flag
-                                amount := 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
-                            }
+                            // venus and Compound V3 use max(uint) as flag
+                            amount := 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
                         }
                         currentOffset := add(currentOffset, 57)
                     }
@@ -1321,7 +1281,7 @@ contract OneDeltaComposerArbitrum is MarginTrading {
                         permitOffset := add(currentOffset, 22)
                         currentOffset := add(permitOffset, permitLength)
                     }
-                    _tryPermit(token, permitOffset, permitLength);
+                    _tryPermit(token, permitOffset, permitLength, callerAddress);
                 } else if (operation == Commands.EXEC_CREDIT_PERMIT) {
                     ////////////////////////////////////////////////////
                     // Execute credit delegation permit.
@@ -1342,7 +1302,7 @@ contract OneDeltaComposerArbitrum is MarginTrading {
                         permitOffset := add(currentOffset, 22)
                         currentOffset := add(permitOffset, permitLength)
                     }
-                    _tryCreditPermit(token, permitOffset, permitLength);
+                    _tryCreditPermit(token, permitOffset, permitLength, callerAddress);
                 } else if (operation == Commands.EXEC_COMPOUND_V3_PERMIT) {
                     ////////////////////////////////////////////////////
                     // Execute lending delegation based on Compound V3.
@@ -1361,7 +1321,7 @@ contract OneDeltaComposerArbitrum is MarginTrading {
                         permitOffset := add(currentOffset, 22)
                         currentOffset := add(permitOffset, permitLength)
                     }
-                    _tryCompoundV3Permit(comet, permitOffset, permitLength);
+                    _tryCompoundV3Permit(comet, permitOffset, permitLength, callerAddress);
                 } else if (operation == Commands.FLASH_LOAN) {
                     ////////////////////////////////////////////////////
                     // Execute single asset flash loan
@@ -1431,47 +1391,117 @@ contract OneDeltaComposerArbitrum is MarginTrading {
                             sstore(FLASH_LOAN_GATEWAY_SLOT, 1)
                         }
                         default {
-                            let pool
-                            switch source
-                            case 0 {
-                                pool := AAVE_V3
-                            }
+                            switch lt(source, 230)
                             case 1 {
-                                pool := YLDR
+                                let pool
+                                switch source
+                                case 0 {
+                                    pool := AAVE_V3
+                                }
+                                case 100 {
+                                    pool := AVALON
+                                }
+                                case 101 {
+                                    pool := AVALON_PUMP_BTC
+                                }
+                                case 200 {
+                                    pool := YLDR
+                                }
+                                default {
+                                    mstore(0, INVALID_FLASH_LOAN)
+                                    revert(0, 0x4)
+                                }
+
+                                let ptr := mload(0x40)
+                                // flashLoanSimple(...)
+                                mstore(ptr, 0x42b0b77c00000000000000000000000000000000000000000000000000000000)
+                                mstore(add(ptr, 4), address())
+                                mstore(add(ptr, 36), token) // asset
+                                mstore(add(ptr, 68), amount) // amount
+                                mstore(add(ptr, 100), 0xa0) // offset calldata
+                                mstore(add(ptr, 132), 0) // refCode
+                                mstore(add(ptr, 164), add(21, calldataLength)) // length calldata
+                                mstore8(add(ptr, 196), source) // source id
+                                // caller at the beginning
+                                mstore(add(ptr, 197), shl(96, callerAddress))
+                                currentOffset := add(currentOffset, 37)
+                                calldatacopy(add(ptr, 217), currentOffset, calldataLength) // calldata
+                                if iszero(
+                                    call(
+                                        gas(),
+                                        pool,
+                                        0x0,
+                                        ptr,
+                                        add(calldataLength, 228), // = 10 * 32 + 4
+                                        0x0,
+                                        0x0 //
+                                    )
+                                ) {
+                                    let rdlen := returndatasize()
+                                    returndatacopy(0, 0, rdlen)
+                                    revert(0x0, rdlen)
+                                }
                             }
                             default {
-                                mstore(0, INVALID_FLASH_LOAN)
-                                revert(0, 0x4)
-                            }
+                                let pool
+                                switch source
+                                case 240 {
+                                    pool := GRANARY
+                                }
+                                // We revert on any other id
+                                default {
+                                    mstore(0, INVALID_FLASH_LOAN)
+                                    revert(0, 0x4)
+                                }
+                                // call flash loan
+                                let ptr := mload(0x40)
+                                // flashLoan(...) (See Aave V2 ILendingPool)
+                                mstore(ptr, 0xab9c4b5d00000000000000000000000000000000000000000000000000000000)
+                                mstore(add(ptr, 4), address()) // receiver is this address
+                                mstore(add(ptr, 36), 0x0e0) // offset assets
+                                mstore(add(ptr, 68), 0x120) // offset amounts
+                                mstore(add(ptr, 100), 0x160) // offset modes
+                                mstore(add(ptr, 132), 0) // onBefhalfOf = 0
+                                mstore(add(ptr, 164), 0x1a0) // offset calldata
+                                mstore(add(ptr, 196), 0) // referral code = 0
+                                mstore(add(ptr, 228), 1) // length assets
+                                mstore(add(ptr, 260), token) // assets[0]
+                                mstore(add(ptr, 292), 1) // length amounts
+                                mstore(add(ptr, 324), amount) // amounts[0]
+                                mstore(add(ptr, 356), 1) // length modes
+                                mstore(add(ptr, 388), 0) // mode = 0
+                                ////////////////////////////////////////////////////
+                                // We attach [souceId | caller] as first 21 bytes
+                                // to the params
+                                ////////////////////////////////////////////////////
+                                mstore(add(ptr, 420), add(21, calldataLength)) // length calldata (plus 1 + address)
+                                mstore8(add(ptr, 452), source) // source id
+                                // caller at the beginning
+                                mstore(add(ptr, 453), shl(96, callerAddress))
 
-                            let ptr := mload(0x40)
-                            // flashLoanSimple(...)
-                            mstore(ptr, 0x42b0b77c00000000000000000000000000000000000000000000000000000000)
-                            mstore(add(ptr, 4), address())
-                            mstore(add(ptr, 36), token) // asset
-                            mstore(add(ptr, 68), amount) // amount
-                            mstore(add(ptr, 100), 0xa0) // offset calldata
-                            mstore(add(ptr, 132), 0) // refCode
-                            mstore(add(ptr, 164), add(21, calldataLength)) // length calldata
-                            mstore8(add(ptr, 196), source) // source id
-                            // caller at the beginning
-                            mstore(add(ptr, 197), shl(96, callerAddress))
-                            currentOffset := add(currentOffset, 37)
-                            calldatacopy(add(ptr, 217), currentOffset, calldataLength) // calldata
-                            if iszero(
-                                call(
-                                    gas(),
-                                    pool,
-                                    0x0,
-                                    ptr,
-                                    add(calldataLength, 228), // = 10 * 32 + 4
-                                    0x0,
-                                    0x0 //
-                                )
-                            ) {
-                                let rdlen := returndatasize()
-                                returndatacopy(0, 0, rdlen)
-                                revert(0x0, rdlen)
+                                // increment offset by the preceding bytes length
+                                currentOffset := add(currentOffset, 37)
+                                // copy the calldataslice for the params
+                                calldatacopy(
+                                    add(ptr, 473), // next slot
+                                    currentOffset, // offset starts at 37, already incremented
+                                    calldataLength // copy given length
+                                ) // calldata
+                                if iszero(
+                                    call(
+                                        gas(),
+                                        pool,
+                                        0x0,
+                                        ptr,
+                                        add(calldataLength, 473), // = 14 * 32 + 4 + 20 (caller)
+                                        0x0,
+                                        0x0 //
+                                    )
+                                ) {
+                                    let rdlen := returndatasize()
+                                    returndatacopy(0, 0, rdlen)
+                                    revert(0x0, rdlen)
+                                }
                             }
                         }
                         // increment offset
@@ -1490,10 +1520,72 @@ contract OneDeltaComposerArbitrum is MarginTrading {
     }
 
     /**
-     * @dev When `flashLoanSimple` is called on the the Aave pool, it invokes the `executeOperation` hook on the recipient.
-     *  We assume that the flash loan fee and params have been pre-computed
-     *  We never expect more than one token to be flashed
-     *  We assume that the asset loaned is already infinite-approved (this->flashPool)
+     * @dev Aave V2 style flash loan callback
+     */
+    function executeOperation(
+        address[] calldata,
+        uint256[] calldata,
+        uint256[] calldata, // we assume that the data is known to the caller in advance
+        address initiator,
+        bytes calldata params
+    ) external returns (bool) {
+        address origCaller;
+        assembly {
+            // we expect at least an address
+            // and a sourceId (uint8)
+            // invalid params will lead to errors in the
+            // compose at the bottom
+            if lt(params.length, 21) {
+                mstore(0, INVALID_FLASH_LOAN)
+                revert(0, 0x4)
+            }
+            // validate caller
+            // - extract id from params
+            let firstWord := calldataload(params.offset)
+            // needs no uint8 masking as we shift 248 bits
+            let source := shr(248, firstWord)
+
+            // Validate the caller
+            // We check that the caller is one of the lending pools
+            // This is a crucial check since this makes
+            // the `initiator` paramter the caller of `flashLoan`
+            switch source
+            case 240 {
+                if xor(caller(), GRANARY) {
+                    mstore(0, INVALID_FLASH_LOAN)
+                    revert(0, 0x4)
+                }
+            }
+            // We revert on any other id
+            default {
+                mstore(0, INVALID_FLASH_LOAN)
+                revert(0, 0x4)
+            }
+            // We require to self-initiate
+            // this prevents caller impersonation,
+            // but ONLY if the caller address is
+            // an Aave V2 type lending pool
+            if xor(address(), initiator) {
+                mstore(0, INVALID_CALLER)
+                revert(0, 0x4)
+            }
+            // Slice the original caller off the beginnig of the calldata
+            // From here on we have validated that the `origCaller`
+            // was attached in the deltaCompose function
+            // Otherwise, this would be a vulnerability
+            origCaller := and(ADDRESS_MASK, shr(88, firstWord))
+            // shift / slice params
+            params.offset := add(params.offset, 21)
+            params.length := sub(params.length, 21)
+        }
+        // within the flash loan, any compose operation
+        // can be executed
+        _deltaComposeInternal(origCaller, params);
+        return true;
+    }
+
+    /**
+     * @dev Aave V3 style flash loan
      */
     function executeOperation(
         address,
@@ -1529,7 +1621,19 @@ contract OneDeltaComposerArbitrum is MarginTrading {
                     revert(0, 0x4)
                 }
             }
-            case 1 {
+            case 100 {
+                if xor(caller(), AVALON) {
+                    mstore(0, INVALID_FLASH_LOAN)
+                    revert(0, 0x4)
+                }
+            }
+            case 101 {
+                if xor(caller(), AVALON_PUMP_BTC) {
+                    mstore(0, INVALID_FLASH_LOAN)
+                    revert(0, 0x4)
+                }
+            }
+            case 200 {
                 if xor(caller(), YLDR) {
                     mstore(0, INVALID_FLASH_LOAN)
                     revert(0, 0x4)

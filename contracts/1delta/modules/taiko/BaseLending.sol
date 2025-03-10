@@ -27,9 +27,12 @@ abstract contract BaseLending is Slots, ERC20Selectors {
 
     // lender pool addresses
     address internal constant HANA_POOL = 0x4aB85Bf9EA548410023b25a13031E91B4c4f3b91;
-    address internal constant AVALON_POOL = 0x9dd29AA2BD662E6b569524ba00C55be39e7B00fB;
     address internal constant MERIDIAN_POOL = 0x1697A950a67d9040464287b88fCa6cb5FbEC09BA;
     address internal constant TAKOTAKO_POOL = 0x3A2Fd8a16030fFa8D66E47C3f1C0507c673C841e;
+
+    address internal constant AVALON_POOL = 0xA7f1c55530B1651665C15d8104663B3f03E3386f;
+    address internal constant AVALON_SOLV_BTC_POOL = 0x9dd29AA2BD662E6b569524ba00C55be39e7B00fB;
+    address internal constant AVALON_USDA_POOL = 0xC1bFbF4E0AdCA79790bfa0A557E4080F05e2B438;
 
     // BadLender()
     bytes4 internal constant BAD_LENDER = 0x603b7f3e;
@@ -85,8 +88,14 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                 case 0 {
                     pool := HANA_POOL
                 }
-                case 1 {
+                case 100 {
                     pool := AVALON_POOL
+                }
+                case 101 {
+                    pool := AVALON_SOLV_BTC_POOL
+                }
+                case 150 {
+                    pool := AVALON_USDA_POOL
                 }
                 case 1000 {
                     pool := MERIDIAN_POOL
@@ -136,8 +145,14 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                 case 0 {
                     pool := HANA_POOL
                 }
-                case 1 {
+                case 100 {
                     pool := AVALON_POOL
+                }
+                case 101 {
+                    pool := AVALON_SOLV_BTC_POOL
+                }
+                case 150 {
+                    pool := AVALON_USDA_POOL
                 }
                 case 1000 {
                     pool := MERIDIAN_POOL
@@ -207,7 +222,7 @@ abstract contract BaseLending is Slots, ERC20Selectors {
             case 1 {
                 switch lt(_lenderId, MAX_ID_AAVE_V3)
                 case 1 {
-                    // selector deposit(address,uint256,address,uint16)
+                    // selector supply(address,uint256,address,uint16)
                     mstore(ptr, 0x617ba03700000000000000000000000000000000000000000000000000000000)
                     mstore(add(ptr, 0x04), _underlying)
                     mstore(add(ptr, 0x24), _amount)
@@ -219,8 +234,14 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                     case 0 {
                         pool := HANA_POOL
                     }
-                    case 1 {
+                    case 100 {
                         pool := AVALON_POOL
+                    }
+                    case 101 {
+                        pool := AVALON_SOLV_BTC_POOL
+                    }
+                    case 150 {
+                        pool := AVALON_USDA_POOL
                     }
                     default {
                         mstore(0x0, _lenderId)
@@ -238,7 +259,7 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                     }
                 }
                 default {
-                    // selector supply(address,uint256,address,uint16)
+                    // selector deposit(address,uint256,address,uint16)
                     mstore(ptr, 0xe8eda9df00000000000000000000000000000000000000000000000000000000)
                     mstore(add(ptr, 0x04), _underlying)
                     mstore(add(ptr, 0x24), _amount)
@@ -294,8 +315,14 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                 case 0 {
                     pool := HANA_POOL
                 }
-                case 1 {
+                case 100 {
                     pool := AVALON_POOL
+                }
+                case 101 {
+                    pool := AVALON_SOLV_BTC_POOL
+                }
+                case 150 {
+                    pool := AVALON_USDA_POOL
                 }
                 case 1000 {
                     pool := MERIDIAN_POOL

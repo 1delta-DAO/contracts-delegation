@@ -10,7 +10,7 @@ import {ComposerUtils, Commands} from "../shared/utils/ComposerUtils.sol";
 
 // interfaces
 import {IFlashAggregator} from "../shared/interfaces/IFlashAggregator.sol";
-import {IFlashLoanReceiver} from "./utils/IFlashLoanReceiver.sol";
+import {IFlashLoanReceiver, IFlashLoanReceiverAaveV2} from "../shared/interfaces/IFlashLoanReceiver.sol";
 import {IManagement} from "../shared/interfaces/IManagement.sol";
 import {ILending} from "../shared/interfaces/ILending.sol";
 import {IInitialize} from "../shared/interfaces/IInitialize.sol";
@@ -21,7 +21,7 @@ import {IModuleLens} from "../../contracts/1delta/proxy/interfaces/IModuleLens.s
 // universal erc20
 import {IERC20All} from "../shared/interfaces/IERC20All.sol";
 // lending pool for debugging
-import {ILendingPool} from "./utils/ILendingPool.sol";
+import {ILendingPool} from "../shared/interfaces/ILendingPool.sol";
 
 // proxy and management
 import {ConfigModule} from "../../contracts/1delta/proxy/modules/ConfigModule.sol";
@@ -89,7 +89,7 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
     }
 
     function flashAggregatorSelectors() internal pure returns (bytes4[] memory selectors) {
-        selectors = new bytes4[](25);
+        selectors = new bytes4[](26);
         /** margin */
         selectors[0] = IFlashAggregator.flashSwapExactIn.selector;
         selectors[1] = IFlashAggregator.flashSwapExactOut.selector;
@@ -116,9 +116,10 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
         selectors[20] = IFlashAggregator.uniswapV3SwapCallback.selector;
         selectors[21] = IFlashAggregator.swapExactInSpotSelf.selector;
         selectors[21] = IFlashAggregator.deltaCompose.selector;
-        selectors[22] = IFlashLoanReceiver.executeOperation.selector;
+        selectors[22] = IFlashLoanReceiverAaveV2.executeOperation.selector;
         selectors[23] = IFlashAggregator.syncSwapBaseSwapCallback.selector;
         selectors[24] = IFlashAggregator.pancakeV3SwapCallback.selector;
+        selectors[25] = IFlashLoanReceiver.executeOperation.selector;
         return selectors;
     }
 
