@@ -287,6 +287,17 @@ contract BenqiTest is FlashAccountBaseTest {
         entryPoint.handleOps(userOps, BENEFICIARY);
     }
 
+    function testApprovalMapping() public {
+        // assert before supply
+        assertEq(benqiAdapter.isApprovedAddress(USDC, qiUSDC), false);
+
+        // supply
+        _supply(10000e6, 1000e6);
+
+        // assert after supply
+        assertEq(benqiAdapter.isApprovedAddress(USDC, qiUSDC), true);
+    }
+
     function _supply(uint256 usdcAmount, uint256 supplyAmount) internal {
         // deal some USDC to the account
         deal(USDC, address(userFlashAccount), usdcAmount);

@@ -7,7 +7,7 @@ abstract contract FlashAccountAdapterBase {
     address public constant NATIVE_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     address public constant ZERO_ADDRESS = 0x0000000000000000000000000000000000000000;
 
-    mapping(address => mapping(address => bool)) isApprovedAddress;
+    mapping(address => mapping(address => bool)) public isApprovedAddress;
 
     receive() external payable virtual {}
 
