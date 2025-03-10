@@ -13,7 +13,7 @@ contract Native is ERC20Selectors, Masks, DeltaErrors {
     // wNative
     address internal constant WRAPPED_NATIVE = 0x4200000000000000000000000000000000000006;
 
-    function _wrap(uint256 currentOffset) internal returns (uint256) {
+    function _wrap(uint256 currentOffset) internal virtual returns (uint256) {
         ////////////////////////////////////////////////////
         // Wrap native, only uses amount as uint112
         ////////////////////////////////////////////////////
@@ -39,7 +39,7 @@ contract Native is ERC20Selectors, Masks, DeltaErrors {
         return currentOffset;
     }
 
-    function _unwrap(uint256 currentOffset) internal returns (uint256) {
+    function _unwrap(uint256 currentOffset) internal virtual returns (uint256) {
         ////////////////////////////////////////////////////
         // Transfers either token or native balance from this
         // contract to receiver. Reverts if minAmount is

@@ -3,13 +3,12 @@
 pragma solidity 0.8.28;
 
 import {ERC20Transfers} from "./ERC20Transfers.sol";
-import {Native} from "./Native.sol";
 import {TransferIds} from "../enums/DeltaEnums.sol";
 
 /**
  * @title Token transfer contract - should work across all EVMs - user Uniswap style Permit2
  */
-contract Transfers is ERC20Transfers, Native {
+contract Transfers is ERC20Transfers {
     function _transfers(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         uint256 transferOperation;
         assembly {
@@ -31,4 +30,10 @@ contract Transfers is ERC20Transfers, Native {
             _invalidOperation();
         }
     }
+
+    /** These need to be overridden withc chain-specific data */
+
+    function _wrap(uint256 currentOffset) internal virtual returns (uint256) {}
+
+    function _unwrap(uint256 currentOffset) internal virtual returns (uint256) {}
 }

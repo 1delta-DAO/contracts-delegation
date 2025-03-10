@@ -3,13 +3,15 @@
 pragma solidity 0.8.28;
 
 import {BaseComposer} from "./BaseComposer.sol";
+import {Native} from "./transfers/Native.sol";
+import {Transfers} from "./transfers/Transfers.sol";
 import {FlashLoanCallbacks} from "./flashLoan/callbacks/FlashLoanCallbacks.sol";
 
 /**
  * @title Chain-dependent Universal aggregator contract.
  * @author 1delta Labs AG
  */
-contract OneDeltaComposerLight is BaseComposer, FlashLoanCallbacks {
+contract OneDeltaComposerLight is BaseComposer, FlashLoanCallbacks, Native {
     /**
      * Execute a set op packed operations
      */
@@ -28,5 +30,15 @@ contract OneDeltaComposerLight is BaseComposer, FlashLoanCallbacks {
                 currentOffset,
                 _length //
             );
+    }
+
+    /** Overrides for hard-coded wnative address */
+
+    function _wrap(uint256 currentOffset) internal override(Native, Transfers) returns (uint256) {
+        return Native._wrap(currentOffset);
+    }
+
+    function _unwrap(uint256 currentOffset) internal override(Native, Transfers) returns (uint256) {
+        return Native._unwrap(currentOffset);
     }
 }
