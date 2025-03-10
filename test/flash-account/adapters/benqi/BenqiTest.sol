@@ -9,6 +9,8 @@ import {UtilityAdapter} from "@flash-account/Adapters/UtilityAdapter.sol";
 import {BaseLightAccount} from "@flash-account/common/BaseLightAccount.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {FlashAccountBaseTest} from "../../FlashAccountBaseTest.sol";
+import {console2 as console} from "forge-std/console2.sol";
+import {Vm} from "forge-std/Vm.sol";
 
 contract BenqiTest is FlashAccountBaseTest {
     using MessageHashUtils for bytes32;
@@ -16,7 +18,34 @@ contract BenqiTest is FlashAccountBaseTest {
     event Mint(address minter, uint256 mintAmount, uint256 mintTokens);
     event Borrow(address borrower, uint borrowAmount, uint accountBorrows, uint totalBorrows);
     event RepayBorrow(address payer, address borrower, uint repayAmount, uint accountBorrows, uint totalBorrows);
+    /**
+     * An event emitted if the UserOperation "callData" reverted with non-zero length.
+     * @param userOpHash   - The request unique identifier.
+     * @param sender       - The sender of this request.
+     * @param nonce        - The nonce used in the request.
+     * @param revertReason - The return bytes from the (reverted) call to "callData".
+     */
     event UserOperationRevertReason(bytes32 indexed userOpHash, address indexed sender, uint256 nonce, bytes revertReason);
+    /***
+     * An event emitted after each successful request.
+     * @param userOpHash    - Unique identifier for the request (hash its entire content, except signature).
+     * @param sender        - The account that generates this request.
+     * @param paymaster     - If non-null, the paymaster that pays for this request.
+     * @param nonce         - The nonce value from the request.
+     * @param success       - True if the sender transaction succeeded, false if reverted.
+     * @param actualGasCost - Actual amount paid (by account or paymaster) for this UserOperation.
+     * @param actualGasUsed - Total gas used by this UserOperation (including preVerification, creation,
+     *                        validation and execution).
+     */
+    event UserOperationEvent(
+        bytes32 indexed userOpHash,
+        address indexed sender,
+        address indexed paymaster,
+        uint256 nonce,
+        bool success,
+        uint256 actualGasCost,
+        uint256 actualGasUsed
+    );
 
     // Avalanche c-chain addresses
     address constant BENQI_COMPTROLLER = 0x486Af39519B4Dc9a7fCcd318217352830E8AD9b4;
@@ -297,6 +326,87 @@ contract BenqiTest is FlashAccountBaseTest {
         // assert after supply
         assertEq(benqiAdapter.isApprovedAddress(USDC, qiUSDC), true);
     }
+
+    function test_supply_revertOnZeroRecipient() public {
+        uint256 supplyAmount = 1000e6;
+
+        // Create operation with zero address as recipient
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
+        userOps[0] = _getUnsignedOp(
+            abi.encodeWithSignature(
+                "execute(address,uint256,bytes)",
+                address(benqiAdapter),
+                0,
+                abi.encodeWithSelector(BenqiAdapter.supply.selector, qiUSDC, USDC, address(0))
+            ),
+            entryPoint.getNonce(address(userFlashAccount), 0)
+        );
+        userOps[0].signature = abi.encodePacked(
+            BaseLightAccount.SignatureType.EOA,
+            _sign(userPrivateKey, entryPoint.getUserOpHash(userOps[0]).toEthSignedMessageHash())
+        );
+
+        // Should revert
+        vm.prank(user);
+        vm.expectEmit(true, true, false, false);
+        emit UserOperationRevertReason(entryPoint.getUserOpHash(userOps[0]), address(userFlashAccount), 0, "");
+        entryPoint.handleOps(userOps, BENEFICIARY);
+    }
+
+    function test_supply_revertOnInvalidQiToken() public {
+        uint256 usdcAmount = 10000e6;
+        uint256 supplyAmount = 1000e6;
+
+        // Deal USDC to the account
+        deal(USDC, address(userFlashAccount), usdcAmount);
+
+        // Transfer USDC to adapter
+        vm.prank(address(userFlashAccount));
+        IERC20(USDC).transfer(address(benqiAdapter), supplyAmount);
+
+        // Create operation with invalid qiToken address
+        address invalidQiToken = address(0x123);
+
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
+        userOps[0] = _getUnsignedOp(
+            abi.encodeWithSignature(
+                "execute(address,uint256,bytes)",
+                address(benqiAdapter),
+                0,
+                abi.encodeWithSelector(BenqiAdapter.supply.selector, invalidQiToken, USDC, user)
+            ),
+            entryPoint.getNonce(address(userFlashAccount), 0)
+        );
+        bytes32 userOpHash = entryPoint.getUserOpHash(userOps[0]);
+        userOps[0].signature = abi.encodePacked(BaseLightAccount.SignatureType.EOA, _sign(userPrivateKey, userOpHash.toEthSignedMessageHash()));
+
+        // Should revert
+        // Since we cannot expect a revert with reason, then we need to record all the logs and check if the userop call failed or not,
+        vm.recordLogs();
+        vm.prank(user);
+        entryPoint.handleOps(userOps, BENEFICIARY);
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+
+        bool foundMatch;
+
+        for (uint256 i = 0; i < logs.length; i++) {
+            if (
+                logs[i].topics.length > 0 &&
+                logs[i].topics[0] == keccak256("UserOperationEvent(bytes32,address,address,uint256,bool,uint256,uint256)")
+            ) {
+                if (logs[i].topics[1] == userOpHash) {
+                    (, bool success, , ) = abi.decode(logs[i].data, (uint256, bool, uint256, uint256));
+                    if (!success) {
+                        foundMatch = true;
+                        break;
+                    }
+                }
+            }
+        }
+        assertTrue(foundMatch, "Userop didn't fail");
+    }
+
+    // Helpers
 
     function _supply(uint256 usdcAmount, uint256 supplyAmount) internal {
         // deal some USDC to the account

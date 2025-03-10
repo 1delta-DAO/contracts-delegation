@@ -8,7 +8,6 @@ import {UpgradeableBeacon} from "@flash-account/proxy/Beacon.sol";
 import {FlashAccountFactory} from "@flash-account/FlashAccountFactory.sol";
 import {PackedUserOperation} from "account-abstraction/interfaces/PackedUserOperation.sol";
 // solhint-disable-next-line
-import {console2 as console} from "forge-std/console2.sol";
 contract FlashAccountBaseTest is Test {
     // test user
     uint256 internal userPrivateKey = 0x1de17a;
