@@ -25,10 +25,10 @@ abstract contract BaseLending is Slots, ERC20Selectors {
     uint256 internal constant MAX_ID_VENUS = 4000; // 3000-4000
 
     // wNative
-    address internal constant WRAPPED_NATIVE = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
+    address internal constant WRAPPED_NATIVE = 0x4200000000000000000000000000000000000006;
 
     // Aave V3 style lender pool addresses
-    address internal constant LENDOS = 0x4B801fb6f0830D070f40aff9ADFC8f6939Cc1F8D;
+    address internal constant LENDOS = 0xaA397b29510a7219A0f3f7cE3eb53A09bc2A924c;
 
     // BadLender()
     bytes4 internal constant BAD_LENDER = 0x603b7f3e;
