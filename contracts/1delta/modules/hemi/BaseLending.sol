@@ -30,15 +30,6 @@ abstract contract BaseLending is Slots, ERC20Selectors {
     // Aave V3 style lender pool addresses
     address internal constant LENDOS = 0x4B801fb6f0830D070f40aff9ADFC8f6939Cc1F8D;
 
-    // Aave v2s
-    address internal constant GRANARY = 0x102442A3BA1e441043154Bc0B8A2e2FB5E0F94A7;
-
-    // Compound V3 addresses
-    address internal constant COMET_USDT = 0xd98Be00b5D27fc98112BdE293e487f8D4cA57d07;
-    address internal constant COMET_USDC = 0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf;
-    address internal constant COMET_WETH = 0x6f7D514bbD4aFf3BcD1140B7344b32f063dEe486;
-    address internal constant COMET_USDCE = 0xA5EDBDD9646f8dFF606d7448e414884C7d905dCA;
-
     // BadLender()
     bytes4 internal constant BAD_LENDER = 0x603b7f3e;
 

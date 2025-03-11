@@ -448,15 +448,15 @@ abstract contract MarginTrading is BaseLending, BaseSwapper, V2ReferencesHemi, V
             let salt := keccak256(add(ptr, 0x0C), 0x28)
             // validate callback
             switch pId
-            // case 100 {
-            //     mstore(ptr, UNI_V2_FF_FACTORY)
-            //     mstore(add(ptr, 0x15), salt)
-            //     mstore(add(ptr, 0x35), CODE_HASH_UNI_V2)
-            // }
             case 101 {
                 mstore(ptr, SUSHI_V2_FF_FACTORY)
                 mstore(add(ptr, 0x15), salt)
                 mstore(add(ptr, 0x35), CODE_HASH_SUSHI_V2)
+            }
+            case 102 {
+                mstore(ptr, PASS_FF_FACTORY)
+                mstore(add(ptr, 0x15), salt)
+                mstore(add(ptr, 0x35), CODE_HASH_PASS)
             }
             default {
                 mstore(0x0, BAD_POOL)
