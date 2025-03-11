@@ -1,4 +1,4 @@
-// SPDX-Licence-Identifier: MIT
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
 import {Test} from "forge-std/Test.sol";
@@ -9,6 +9,7 @@ import {UtilityAdapter} from "@flash-account/Adapters/UtilityAdapter.sol";
 import {BaseLightAccount} from "@flash-account/common/BaseLightAccount.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {FlashAccountBaseTest} from "../../FlashAccountBaseTest.sol";
+// solhint-disable-next-line
 import {console2 as console} from "forge-std/console2.sol";
 import {Vm} from "forge-std/Vm.sol";
 
@@ -64,7 +65,7 @@ contract CompoundV2Test is FlashAccountBaseTest {
         utilityAdapter = new UtilityAdapter();
     }
 
-    function test_supplyAdapter_multipleUserOps() public {
+    function testFlashAccountAdapter_Supply_Erc20_MultipleUserOps() public {
         uint256 usdcAmount = 10000e6; // 10k USDC
         uint256 supplyAmount = 1000e6; // 1k USDC
 
@@ -116,7 +117,7 @@ contract CompoundV2Test is FlashAccountBaseTest {
         _checkBalances(usdcAmount, supplyAmount, userQiUsdcBalanceBefore);
     }
 
-    function test_supplyAdapter_singleUserOp() public {
+    function testFlashAccountAdapter_supplyAdapter_singleUserOp() public {
         uint256 usdcAmount = 10000e6; // 10k USDC
         uint256 supplyAmount = 1000e6; // 1k USDC
 
@@ -153,7 +154,7 @@ contract CompoundV2Test is FlashAccountBaseTest {
         _checkBalances(usdcAmount, supplyAmount, userQiUsdcBalanceBefore);
     }
 
-    function test_supplyRevertsWhenTransferFails() public {
+    function testFlashAccountAdapter_supplyRevertsWhenTransferFails() public {
         uint256 usdcAmount = 10000e6; // 10k USDC
         uint256 supplyAmount = 1000e6; // 1k USDC
 
@@ -187,7 +188,7 @@ contract CompoundV2Test is FlashAccountBaseTest {
         entryPoint.handleOps(userOps, BENEFICIARY);
     }
 
-    function testRepay() public {
+    function testFlashAccountAdapter_repayAmount() public {
         // supply some usdc to the account
         _supply(10000e6, 1000e6);
 
@@ -198,7 +199,14 @@ contract CompoundV2Test is FlashAccountBaseTest {
         bytes[] memory funcs = new bytes[](3);
         funcs[0] = abi.encodeWithSignature("borrow(uint256)", 100e6);
         funcs[1] = abi.encodeWithSelector(IERC20.transfer.selector, address(compoundV2Adapter), 100e6);
-        funcs[2] = abi.encodeWithSelector(compoundV2Adapter.repay.selector, qiUSDC, USDC, address(userFlashAccount), address(userFlashAccount));
+        funcs[2] = abi.encodeWithSelector(
+            compoundV2Adapter.repay.selector,
+            qiUSDC,
+            USDC,
+            address(userFlashAccount),
+            address(userFlashAccount),
+            100e6
+        );
 
         // borrow some usdc and then repay it
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
@@ -220,7 +228,7 @@ contract CompoundV2Test is FlashAccountBaseTest {
         entryPoint.handleOps(userOps, BENEFICIARY);
     }
 
-    function test_supplyNative() public {
+    function testFlashAccountAdapter_supplyValue() public {
         uint256 avaxAmount = 0.5 ether;
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
 
@@ -228,7 +236,7 @@ contract CompoundV2Test is FlashAccountBaseTest {
             "execute(address,uint256,bytes)",
             address(compoundV2Adapter),
             avaxAmount,
-            abi.encodeWithSelector(compoundV2Adapter.supply.selector, qiAVAX, address(0), user)
+            abi.encodeWithSelector(compoundV2Adapter.supplyValue.selector, qiAVAX, address(userFlashAccount))
         );
 
         userOps[0] = _getUnsignedOp(callData, entryPoint.getNonce(address(userFlashAccount), 0));
@@ -238,28 +246,28 @@ contract CompoundV2Test is FlashAccountBaseTest {
             _sign(userPrivateKey, entryPoint.getUserOpHash(userOps[0]).toEthSignedMessageHash())
         );
 
-        uint256 userQiAvaxBalanceBefore = IERC20(qiAVAX).balanceOf(user);
+        uint256 userQiAvaxBalanceBefore = IERC20(qiAVAX).balanceOf(address(userFlashAccount));
 
         vm.prank(user);
         vm.expectEmit(true, true, false, false);
         emit Mint(address(compoundV2Adapter), avaxAmount, 0);
         entryPoint.handleOps(userOps, BENEFICIARY);
 
-        uint256 userQiAvaxBalanceAfter = IERC20(qiAVAX).balanceOf(user);
+        uint256 userQiAvaxBalanceAfter = IERC20(qiAVAX).balanceOf(address(userFlashAccount));
         uint256 adapterQiAvaxBalanceAfter = IERC20(qiAVAX).balanceOf(address(compoundV2Adapter));
 
         assertGt(userQiAvaxBalanceAfter, userQiAvaxBalanceBefore, "User should receive qiAVAX tokens");
         assertEq(adapterQiAvaxBalanceAfter, 0, "Adapter should have transferred all qiAVAX tokens");
     }
 
-    function test_supplyNative_revertOnZeroAmount() public {
+    function testFlashAccountAdapter_supplyValue_revertOnZeroAmount() public {
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
 
         bytes memory callData = abi.encodeWithSignature(
             "execute(address,uint256,bytes)",
             address(compoundV2Adapter),
             0, // Zero AVAX
-            abi.encodeWithSelector(compoundV2Adapter.supply.selector, qiAVAX, address(0), user)
+            abi.encodeWithSelector(compoundV2Adapter.supplyValue.selector, qiAVAX, user)
         );
 
         userOps[0] = _getUnsignedOp(callData, entryPoint.getNonce(address(userFlashAccount), 0));
@@ -275,15 +283,16 @@ contract CompoundV2Test is FlashAccountBaseTest {
         entryPoint.handleOps(userOps, BENEFICIARY);
     }
 
-    function testRepayNative() public {
-        testRepay();
+    function testFlashAccountAdapter_repayValue() public {
+        // supply to user
+        testFlashAccountAdapter_supplyValue();
 
         bytes memory repayNativeCallData = abi.encodeWithSelector(
-            compoundV2Adapter.repay.selector,
+            compoundV2Adapter.repayValue.selector,
             qiAVAX,
-            address(0),
             address(userFlashAccount),
-            address(userFlashAccount)
+            address(userFlashAccount),
+            0.1 ether
         );
 
         address[] memory dests = new address[](2);
@@ -327,7 +336,7 @@ contract CompoundV2Test is FlashAccountBaseTest {
         assertEq(compoundV2Adapter.isApprovedAddress(USDC, qiUSDC), true);
     }
 
-    function test_supply_revertOnZeroRecipient() public {
+    function testFlashAccountAdapter_supply_revertOnZeroRecipient() public {
         uint256 supplyAmount = 1000e6;
 
         // Create operation with zero address as recipient
@@ -353,7 +362,7 @@ contract CompoundV2Test is FlashAccountBaseTest {
         entryPoint.handleOps(userOps, BENEFICIARY);
     }
 
-    function test_supply_revertOnInvalidCToken() public {
+    function testFlashAccountAdapter_supply_revertOnInvalidCToken() public {
         uint256 usdcAmount = 10000e6;
         uint256 supplyAmount = 1000e6;
 
@@ -434,7 +443,7 @@ contract CompoundV2Test is FlashAccountBaseTest {
         entryPoint.handleOps(userOps, BENEFICIARY);
     }
 
-    function _checkBalances(uint256 usdcAmount, uint256 supplyAmount, uint256 userQiUsdcBalanceBefore) internal {
+    function _checkBalances(uint256 usdcAmount, uint256 supplyAmount, uint256 userQiUsdcBalanceBefore) internal view {
         uint256 qiUsdcBalanceAfter = IERC20(qiUSDC).balanceOf(address(userFlashAccount));
         uint256 qiUsdcBalanceAdapterAfter = IERC20(qiUSDC).balanceOf(address(compoundV2Adapter));
         uint256 usdcBalanceAfter = IERC20(USDC).balanceOf(address(userFlashAccount));
