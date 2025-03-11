@@ -415,6 +415,20 @@ contract CompoundV2Test is FlashAccountBaseTest {
         assertTrue(foundMatch, "Userop didn't fail");
     }
 
+    function testFlashAccountAdapter_multicall_transfer_funds() public {
+        vm.deal(address(compoundV2Adapter), 1 ether);
+        address[] memory dests = new address[](1);
+        dests[0] = address(address(0x2));
+        bytes[] memory funcs = new bytes[](1);
+        funcs[0] = "";
+        uint256[] memory values = new uint256[](1);
+        values[0] = 1 ether;
+
+        compoundV2Adapter.multicall(dests, values, funcs);
+
+        assertEq(address(0x2).balance, 1 ether);
+    }
+
     // Helpers
 
     function _supply(uint256 usdcAmount, uint256 supplyAmount) internal {
