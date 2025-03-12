@@ -1,18 +1,23 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {FlashAccountAdapterBase} from "../../FlashAccountAdapterBase.sol";
+import {FlashAccountAdapterBase} from "@flash-account/adapters/FlashAccountAdapterBase.sol";
 import {IcToken} from "./interfaces/IcToken.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@flash-account/common/FlashAccountError.sol";
 
+/**
+ * @title CompoundV2Adapter
+ * @notice This contract allows users to supply and repay assets on Compound V2.
+ * @dev Inherits from FlashAccountAdapterBase to manage flash account operations.
+ */
 contract CompoundV2Adapter is FlashAccountAdapterBase {
-    error ZeroAmount();
-    error MintFailed(uint256 failureCode);
-    error RepayFailed(uint256 failureCode);
-    error CantRepaySelf();
-    error TransferFailed();
-    error NotEnoughBalance();
+    /**
+     * @notice Constructor for the CompoundV2Adapter contract.
+     * @param weth_ The address of the WETH token.
+     */
+    constructor(address weth_) FlashAccountAdapterBase(weth_) {}
     /**
      * @notice Supply ERC20 assets to CompoundV2
      * @param cToken The cToken address to mint (e.g., cUSDC)
@@ -21,9 +26,9 @@ contract CompoundV2Adapter is FlashAccountAdapterBase {
      * @return result 0 if successful, error code otherwise
      */
     function supply(address cToken, address underlying, address onbehalfOf) external returns (uint256 result) {
-        uint256 initialCTokenBalance = _getERC20Balance(cToken, address(this));
+        uint256 initialCTokenBalance = _getBalance(cToken, address(this));
 
-        uint256 availableBalance = _getERC20Balance(underlying, address(this));
+        uint256 availableBalance = _getBalance(underlying, address(this));
         if (availableBalance == 0) revert ZeroAmount();
 
         // Check if token is approved
@@ -43,7 +48,7 @@ contract CompoundV2Adapter is FlashAccountAdapterBase {
         }
 
         // Transfer cTokens to receiver
-        uint256 finalCTokenBalance = _getERC20Balance(cToken, address(this));
+        uint256 finalCTokenBalance = _getBalance(cToken, address(this));
         _transferERC20(cToken, onbehalfOf, finalCTokenBalance - initialCTokenBalance);
 
         return result; // 0 for success
@@ -58,12 +63,12 @@ contract CompoundV2Adapter is FlashAccountAdapterBase {
     function supplyValue(address cToken, address onbehalfOf) external payable returns (uint256 result) {
         if (msg.value == 0) revert ZeroAmount();
 
-        uint256 initialCTokenBalance = _getERC20Balance(cToken, address(this));
+        uint256 initialCTokenBalance = _getBalance(cToken, address(this));
 
         IcToken(cToken).mint{value: msg.value}();
 
         // Transfer cTokens to receiver
-        uint256 finalCTokenBalance = _getERC20Balance(cToken, address(this));
+        uint256 finalCTokenBalance = _getBalance(cToken, address(this));
         _transferERC20(cToken, onbehalfOf, finalCTokenBalance - initialCTokenBalance);
 
         // Refund any excess native tokens (if any)
@@ -185,12 +190,5 @@ contract CompoundV2Adapter is FlashAccountAdapterBase {
         }
 
         return 0;
-    }
-
-    function _getCurrentBalance(address token) internal view returns (uint256) {
-        uint256 amount = _getERC20Balance(token, address(this));
-        if (amount == 0) revert ZeroAmount();
-
-        return amount;
     }
 }
