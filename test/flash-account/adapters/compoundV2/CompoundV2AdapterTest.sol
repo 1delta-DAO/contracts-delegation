@@ -13,7 +13,7 @@ import {FlashAccountBaseTest} from "../../FlashAccountBaseTest.sol";
 import {console2 as console} from "forge-std/console2.sol";
 import {Vm} from "forge-std/Vm.sol";
 
-contract CompoundV2Test is FlashAccountBaseTest {
+contract CompoundV2AdapterTest is FlashAccountBaseTest {
     using MessageHashUtils for bytes32;
 
     event Mint(address minter, uint256 mintAmount, uint256 mintTokens);
