@@ -82,18 +82,18 @@ abstract contract FlashAccountAdapterBase {
 
     /**
      * @notice Public function to wrap native tokens.
-     * @dev This function is payable to allow for native token transfers.
+     * @param amount The amount of native tokens to wrap.
      */
-    function _wrap() public payable virtual {
-        if (msg.value == 0) revert ZeroAmount();
-        WETH.call{value: msg.value}(abi.encodeWithSignature("deposit()"));
+    function _wrap(uint256 amount) internal virtual {
+        if (_getBalance(ZERO_ADDRESS, address(this)) < amount) revert NotEnoughBalance();
+        WETH.call{value: amount}(abi.encodeWithSignature("deposit()"));
     }
 
     /**
      * @notice Internal function to unwrap WETH.
      * @param amount The amount of WETH to unwrap.
      */
-    function _unwrap(uint256 amount) public virtual {
+    function _unwrap(uint256 amount) internal virtual {
         if (amount == 0) revert ZeroAmount();
         WETH.call(abi.encodeWithSignature("withdraw(uint256)", amount));
     }
