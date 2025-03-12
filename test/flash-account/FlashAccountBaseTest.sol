@@ -7,6 +7,8 @@ import {FlashAccount} from "@flash-account/FlashAccount.sol";
 import {UpgradeableBeacon} from "@flash-account/proxy/Beacon.sol";
 import {FlashAccountFactory} from "@flash-account/FlashAccountFactory.sol";
 import {PackedUserOperation} from "account-abstraction/interfaces/PackedUserOperation.sol";
+import {ChainFactory} from "./chain/ChainFactory.sol";
+import {IChainBase} from "./chain/ChainBase.sol";
 // solhint-disable-next-line
 contract FlashAccountBaseTest is Test {
     // test user
@@ -14,6 +16,7 @@ contract FlashAccountBaseTest is Test {
     address internal user;
     address internal owner = address(0x1);
     address payable internal constant BENEFICIARY = payable(address(0xbe9ef1c1a2ee));
+    IChainBase internal chain;
 
     EntryPoint internal entryPoint;
     FlashAccount internal userFlashAccount;
@@ -22,8 +25,15 @@ contract FlashAccountBaseTest is Test {
         // setup user
         user = vm.addr(userPrivateKey);
 
-        // create a fork
-        vm.createSelectFork(vm.envString("AVAX_RPC_URL"));
+        // get chain-id from env
+        uint256 chainId = uint256(vm.envOr("CHAIN_ID", int256(43114)));
+
+        // get chain from chainFactory
+        ChainFactory chainFactory = new ChainFactory();
+        chain = chainFactory.getChain(chainId);
+
+        // create a fork (setting a specific block number on free wont work most of the times)
+        uint256 forkId = vm.createSelectFork(chain.getRpcUrl());
         entryPoint = new EntryPoint();
 
         // Accounts
@@ -33,8 +43,8 @@ contract FlashAccountBaseTest is Test {
         userFlashAccount = FlashAccount(payable(flashAccountFactory.createAccount(user, 1)));
 
         // deal some eth to the user and userAccount
-        vm.deal(user, 1 ether);
-        vm.deal(address(userFlashAccount), 1 ether);
+        vm.deal(user, 100 ether);
+        vm.deal(address(userFlashAccount), 100 ether);
     }
 
     function _sign(uint256 privateKey, bytes32 digest) internal pure returns (bytes memory) {

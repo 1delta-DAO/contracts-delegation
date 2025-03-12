@@ -12,7 +12,7 @@ import {FlashAccountBaseTest} from "../../FlashAccountBaseTest.sol";
 // solhint-disable-next-line
 import {console2 as console} from "forge-std/console2.sol";
 import {Vm} from "forge-std/Vm.sol";
-
+import {TokenNames} from "../../chain/Lib.sol";
 contract CompoundV2AdapterTest is FlashAccountBaseTest {
     using MessageHashUtils for bytes32;
 
@@ -48,18 +48,24 @@ contract CompoundV2AdapterTest is FlashAccountBaseTest {
         uint256 actualGasUsed
     );
 
-    // Avalanche c-chain addresses
-    address constant CompoundV2_COMPTROLLER = 0x486Af39519B4Dc9a7fCcd318217352830E8AD9b4;
-    address constant USDC = 0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E;
-    address constant qiUSDC = 0xB715808a78F6041E46d61Cb123C9B4A27056AE9C;
-    address constant qiAVAX = 0x5C0401e81Bc07Ca70fAD469b451682c0d747Ef1c;
-    address constant WETH = 0x4200000000000000000000000000000000000006;
+    address CompoundV2_COMPTROLLER;
+    address USDC;
+    address qiUSDC;
+    address qiAVAX;
+    address WETH;
 
     CompoundV2Adapter internal compoundV2Adapter;
     UtilityAdapter internal utilityAdapter;
 
     function setUp() public override {
         super.setUp();
+
+        // initialize addresses
+        CompoundV2_COMPTROLLER = chain.getTokenAddress(TokenNames.COMPTROLLER);
+        USDC = chain.getTokenAddress(TokenNames.USDC);
+        qiUSDC = chain.getTokenAddress(TokenNames.CompV2_USDC);
+        qiAVAX = chain.getTokenAddress(TokenNames.CompV2_ETH);
+        WETH = chain.getTokenAddress(TokenNames.WRAPPED_NATIVE);
 
         // adapters
         compoundV2Adapter = new CompoundV2Adapter(WETH);

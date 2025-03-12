@@ -6,6 +6,7 @@ library TokenNames {
     string internal constant NATIVE = "NATIVE";
     string internal constant WRAPPED_NATIVE = "WRAPPED_NATIVE";
     string internal constant USDC = "USDC";
+    string internal constant CompV2_ETH = "CompV2_ETH";
     // Collaterals
 
     string internal constant CompV2_USDC = "cUSDC_V2";

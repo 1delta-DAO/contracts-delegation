@@ -13,17 +13,18 @@ contract Avalanche is ChainBase {
         // AVAX/WAVAX
         tokens[CHAIN_ID][TokenNames.NATIVE] = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
         tokens[CHAIN_ID][TokenNames.WRAPPED_NATIVE] = 0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7;
+        tokens[CHAIN_ID][TokenNames.CompV2_ETH] = 0x5C0401e81Bc07Ca70fAD469b451682c0d747Ef1c;
 
         // USDC
-        tokens[CHAIN_ID][TokenNames.USDC] = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+        tokens[CHAIN_ID][TokenNames.USDC] = 0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E;
         tokens[CHAIN_ID][TokenNames.AaveV2_USDC] = 0xBcca60bB61934080951369a648Fb03DF4F96263C;
         tokens[CHAIN_ID][TokenNames.AaveV3_USDC] = 0x98C23E9d8f34FEFb1B7BD6a91B7FF122F4e16F5c;
-        tokens[CHAIN_ID][TokenNames.CompV2_USDC] = 0x39AA39c021dfbaE8faC545936693aC917d5E7563;
+        tokens[CHAIN_ID][TokenNames.CompV2_USDC] = 0xB715808a78F6041E46d61Cb123C9B4A27056AE9C;
 
         tokens[CHAIN_ID][TokenNames.AaveV2_Pool] = 0x4F01AeD16D97E3aB5ab2B501154DC9bb0F1A5A2C;
         tokens[CHAIN_ID][TokenNames.AaveV3_Pool] = 0x794a61358D6845594F94dc1DB02A252b5b4814aD;
 
-        tokens[CHAIN_ID][TokenNames.COMPTROLLER] = 0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B;
+        tokens[CHAIN_ID][TokenNames.COMPTROLLER] = 0x486Af39519B4Dc9a7fCcd318217352830E8AD9b4;
     }
 
     function getRpcUrl() public pure override returns (string memory) {
