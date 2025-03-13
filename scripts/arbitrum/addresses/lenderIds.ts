@@ -1,8 +1,9 @@
+
 export enum ArbitrumLenderId {
     // aave v3s
     AAVE_V3 = 0,
-    AVALON = 1,
-    AVALON_PBTC = 1,
+    AVALON = 100,
+    AVALON_PBTC = 101,
     YLDR = 900,
     // comets
     COMPOUND_V3_USDC = 2000,

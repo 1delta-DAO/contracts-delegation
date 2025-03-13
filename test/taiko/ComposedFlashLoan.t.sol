@@ -5,7 +5,8 @@ import "./DeltaSetup.f.sol";
 import {MockRouter} from "../../contracts/mocks/MockRouter.sol";
 
 contract ComposedFlashLoanTestTaiko is DeltaSetup {
-    uint256 DEFAULT_IR_MODE = 2; // variable
+    uint256 internal constant DEFAULT_IR_MODE = 2; // variable
+    uint8 internal constant DEFAULT_FLASH_LOAN_ID = 0; // meridian Aave V2 style
     MockRouter router;
 
     function setUp() public virtual override {
@@ -27,10 +28,11 @@ contract ComposedFlashLoanTestTaiko is DeltaSetup {
      *  borrow
      *  payback
      */
-    function test_taiko_composed_flash_loan_open(uint8 lenderId) external /** address user, uint8 lenderId */ {
+    function test_taiko_composed_flash_loan_open() external {
+        uint16 lenderId = 1000;
         TestParamsOpen memory params;
         address user = testUser;
-        vm.assume(user != address(0) && lenderId == 0);
+        vm.assume(user != address(0));
         vm.deal(user, 1.0e18);
         {
             address asset = TokensTaiko.WETH;
@@ -102,7 +104,7 @@ contract ComposedFlashLoanTestTaiko is DeltaSetup {
             encodeFlashLoan(
                 params.borrowAsset,
                 params.swapAmount,
-                lenderId,
+                DEFAULT_FLASH_LOAN_ID,
                 abi.encodePacked(swap, dataDeposit, dataBorrow) //
             )
         );
@@ -133,9 +135,9 @@ contract ComposedFlashLoanTestTaiko is DeltaSetup {
     }
 
     function test_taiko_composed_flash_loan_close() external {
-        uint8 lenderId = 0;
+        uint16 lenderId = 1000;
         address user = testUser;
-        vm.assume(user != address(0) && lenderId == 0);
+        vm.assume(user != address(0));
         address asset = TokensTaiko.WETH;
         address collateralToken = collateralTokens[asset][lenderId];
 
@@ -149,7 +151,7 @@ contract ComposedFlashLoanTestTaiko is DeltaSetup {
             uint256 amountToDeposit = 0.001e18;
             uint256 amountToLeverage = 1.0e18;
 
-            openSimple2(user, asset, borrowAsset, amountToDeposit, amountToLeverage, 0);
+            openSimple2(user, asset, borrowAsset, amountToDeposit, amountToLeverage, lenderId);
         }
 
         uint256 amountToFlashWithdraw = 0.00001e18;
@@ -178,7 +180,7 @@ contract ComposedFlashLoanTestTaiko is DeltaSetup {
             data = encodeFlashLoan(
                 asset, // flash withdraw asset
                 amountToFlashWithdraw,
-                lenderId,
+                DEFAULT_FLASH_LOAN_ID,
                 abi.encodePacked(
                     encodeExtCall(
                         asset,
