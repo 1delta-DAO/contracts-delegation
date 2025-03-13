@@ -5,3 +5,4 @@ ds-test/=contracts/ds-test/
 base64-sol/=lib/base64/
 hardhat/=node_modules/hardhat/
 account-abstraction/=lib/account-abstraction/contracts/
+@flash-account/=contracts/1delta/flash-account/
