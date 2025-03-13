@@ -26,16 +26,10 @@ contract CompoundV2Adapter is FlashAccountAdapterBase {
      * @return result 0 if successful, error code otherwise
      */
     function supply(address cToken, address underlying, address onbehalfOf) external returns (uint256 result) {
-        uint256 initialCTokenBalance = _getBalance(cToken, address(this));
-
         uint256 availableBalance = _getBalance(underlying, address(this));
         if (availableBalance == 0) revert ZeroAmount();
 
-        // Check if token is approved
-        if (!isApprovedAddress[underlying][cToken]) {
-            SafeERC20.safeIncreaseAllowance(IERC20(underlying), cToken, type(uint256).max);
-            isApprovedAddress[underlying][cToken] = true;
-        }
+        _ensureApproval(underlying, cToken);
 
         // Execute the mint
         result = IcToken(cToken).mint(availableBalance);
@@ -48,8 +42,7 @@ contract CompoundV2Adapter is FlashAccountAdapterBase {
         }
 
         // Transfer cTokens to receiver
-        uint256 finalCTokenBalance = _getBalance(cToken, address(this));
-        _transferERC20(cToken, onbehalfOf, finalCTokenBalance - initialCTokenBalance);
+        _transferERC20(cToken, onbehalfOf, type(uint256).max);
 
         return result; // 0 for success
     }
@@ -60,16 +53,13 @@ contract CompoundV2Adapter is FlashAccountAdapterBase {
      * @param onbehalfOf The address that will receive the cTokens
      * @return result 0 if successful, error code otherwise
      */
-    function supplyValue(address cToken, address onbehalfOf) external payable returns (uint256 result) {
+    function supplyNative(address cToken, address onbehalfOf) external payable returns (uint256 result) {
         if (msg.value == 0) revert ZeroAmount();
-
-        uint256 initialCTokenBalance = _getBalance(cToken, address(this));
 
         IcToken(cToken).mint{value: msg.value}();
 
         // Transfer cTokens to receiver
-        uint256 finalCTokenBalance = _getBalance(cToken, address(this));
-        _transferERC20(cToken, onbehalfOf, finalCTokenBalance - initialCTokenBalance);
+        _transferERC20(cToken, onbehalfOf, type(uint256).max);
 
         // Refund any excess native tokens (if any)
         uint256 balance = address(this).balance;
@@ -83,8 +73,8 @@ contract CompoundV2Adapter is FlashAccountAdapterBase {
 
     /**
      * @notice Repay a borrow with ERC20 tokens
-     * @param cToken The cToken address (e.g., cUSDC)
-     * @param underlying The underlying token address (e.g., USDC)
+     * @param cToken The collateral token address (e.g., cUSDC)
+     * @param underlying The underlying asset address (e.g., USDC)
      * @param borrower The address whose debt is being repaid
      * @param onbehalfOf The address that will receive any excess tokens
      * @param amount The amount to repay (use type(uint256).max for full repayment)
@@ -98,10 +88,7 @@ contract CompoundV2Adapter is FlashAccountAdapterBase {
 
         uint256 borrowBalance = IcToken(cToken).borrowBalanceCurrent(borrower);
 
-        if (!isApprovedAddress[underlying][cToken]) {
-            SafeERC20.safeIncreaseAllowance(IERC20(underlying), cToken, type(uint256).max);
-            isApprovedAddress[underlying][cToken] = true;
-        }
+        _ensureApproval(underlying, cToken);
 
         uint256 repayAmount;
 
@@ -142,14 +129,14 @@ contract CompoundV2Adapter is FlashAccountAdapterBase {
     }
 
     /**
-     * @notice Repay a borrow with native tokens (ETH/AVAX)
-     * @param cToken The cToken address (e.g., cETH)
+     * @notice Repay a borrow with native tokens (ETH)
+     * @param cToken The collateral token address (e.g., cETH)
      * @param borrower The address whose debt is being repaid
      * @param onbehalfOf The address that will receive any excess tokens
      * @param amount The amount to repay (use type(uint256).max for full repayment)
      * @return result 0 if successful
      */
-    function repayValue(address cToken, address borrower, address onbehalfOf, uint256 amount) external payable returns (uint256 result) {
+    function repayNative(address cToken, address borrower, address onbehalfOf, uint256 amount) external payable returns (uint256 result) {
         if (msg.value == 0) revert ZeroAmount();
         if (borrower == address(this)) revert CantRepaySelf();
 

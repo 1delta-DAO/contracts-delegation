@@ -243,7 +243,7 @@ contract CompoundV2AdapterTest is FlashAccountBaseTest {
             "execute(address,uint256,bytes)",
             address(compoundV2Adapter),
             avaxAmount,
-            abi.encodeWithSelector(compoundV2Adapter.supplyValue.selector, qiAVAX, address(userFlashAccount))
+            abi.encodeWithSelector(compoundV2Adapter.supplyNative.selector, qiAVAX, address(userFlashAccount))
         );
 
         userOps[0] = _getUnsignedOp(callData, entryPoint.getNonce(address(userFlashAccount), 0));
@@ -274,7 +274,7 @@ contract CompoundV2AdapterTest is FlashAccountBaseTest {
             "execute(address,uint256,bytes)",
             address(compoundV2Adapter),
             0, // Zero AVAX
-            abi.encodeWithSelector(compoundV2Adapter.supplyValue.selector, qiAVAX, user)
+            abi.encodeWithSelector(compoundV2Adapter.supplyNative.selector, qiAVAX, user)
         );
 
         userOps[0] = _getUnsignedOp(callData, entryPoint.getNonce(address(userFlashAccount), 0));
@@ -295,7 +295,7 @@ contract CompoundV2AdapterTest is FlashAccountBaseTest {
         testFlashAccountAdapter_supplyValue();
 
         bytes memory repayNativeCallData = abi.encodeWithSelector(
-            compoundV2Adapter.repayValue.selector,
+            compoundV2Adapter.repayNative.selector,
             qiAVAX,
             address(userFlashAccount),
             address(userFlashAccount),
