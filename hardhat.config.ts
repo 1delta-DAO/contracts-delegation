@@ -91,6 +91,14 @@ const config: HardhatUserConfig = {
         }
       },
       {
+        network: "hemi",
+        chainId: 43111,
+        urls: {
+          apiURL: "https://explorer.hemi.xyz/api",
+          browserURL: "https://explorer.hemi.xyz/"
+        }
+      },
+      {
         network: "blast",
         chainId: 81457,
         urls: {
@@ -137,6 +145,7 @@ const config: HardhatUserConfig = {
       base: process.env.BASESCAN_API_KEY ?? '',
       metis: "XX",
       avalanche: "XX",
+      hemi: "XX",
     }
   },
   gasReporter: {
@@ -205,6 +214,12 @@ const config: HardhatUserConfig = {
       url: 'https://rpcapi.fantom.network',
       accounts,
       chainId: 250,
+      live: true,
+    },
+    hemi: {
+      url: 'https://rpc.hemi.network/rpc',
+      accounts,
+      chainId: 43111,
       live: true,
     },
     matic: {
@@ -464,6 +479,16 @@ const config: HardhatUserConfig = {
           optimizer: {
             enabled: true,
             runs: 500,
+          },
+          evmVersion: 'cancun',
+        },
+      },
+      "contracts/1delta/modules/hemi/Composer.sol": {
+        version: '0.8.28',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1_000_000,
           },
           evmVersion: 'cancun',
         },

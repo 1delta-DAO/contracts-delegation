@@ -16,6 +16,7 @@ import { DeployFactory__factory } from "../../types";
 // xdai
 // metis
 // mode
+// hemi
 
 async function main() {
     const accounts = await ethers.getSigners()
