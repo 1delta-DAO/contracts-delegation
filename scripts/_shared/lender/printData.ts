@@ -3,11 +3,13 @@ import { getAaveForkApproves, getAaveForkDatas, getCompoundV3Approves } from "./
 
 async function main() {
 
-    const apprsCompound = getCompoundV3Approves(Chain.OP_MAINNET)
-    const apprsAave = getAaveForkApproves(Chain.OP_MAINNET)
-    const insertsAave = getAaveForkDatas(Chain.OP_MAINNET)
+    // const apprsCompound = getCompoundV3Approves(Chain.HEMI_NETWORK)
+    const apprsAave = getAaveForkApproves(Chain.HEMI_NETWORK)
+    const insertsAave = getAaveForkDatas(Chain.HEMI_NETWORK)
 
-    const allDatas = [...apprsCompound, ...apprsAave, ...insertsAave]
+    const allDatas = [
+        // ...apprsCompound,
+         ...apprsAave, ...insertsAave]
     allDatas.map(a => console.log(a))
 }
 
