@@ -31,11 +31,16 @@ abstract contract FlashAccountAdapterBase {
      * @notice Internal function to transfer ERC20 tokens.
      * @param token The address of the ERC20 token.
      * @param receiver The address to receive the tokens.
-     * @param amount The amount of tokens to transfer.
+     * @param amount The amount of tokens to transfer, use type(uint256).max to transfer balance
      */
     function _transferERC20(address token, address receiver, uint256 amount) internal virtual {
         if (amount > 0) {
-            SafeERC20.safeTransfer(IERC20(token), receiver, amount);
+            if (amount == type(uint256).max) {
+                uint256 balance = IERC20(token).balanceOf(address(this));
+                SafeERC20.safeTransfer(IERC20(token), receiver, balance);
+            } else {
+                SafeERC20.safeTransfer(IERC20(token), receiver, amount);
+            }
         }
     }
 
@@ -96,5 +101,18 @@ abstract contract FlashAccountAdapterBase {
     function _unwrap(uint256 amount) internal virtual {
         if (amount == 0) revert ZeroAmount();
         WETH.call(abi.encodeWithSignature("withdraw(uint256)", amount));
+    }
+
+    /**
+     * @notice Internal function to check if an asset is approved for a collateral.
+     * @param asset The address of the asset to check.
+     * @param collateral The address of the collateral to check.
+     */
+    function _ensureApproval(address asset, address collateral) internal {
+        // Check if token is approved
+        if (!isApprovedAddress[asset][collateral]) {
+            SafeERC20.safeIncreaseAllowance(IERC20(asset), collateral, type(uint256).max);
+            isApprovedAddress[asset][collateral] = true;
+        }
     }
 }
