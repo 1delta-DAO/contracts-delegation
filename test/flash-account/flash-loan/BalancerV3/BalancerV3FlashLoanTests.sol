@@ -33,7 +33,7 @@ contract BalancerV3FlashLoanTests is FlashAccountBaseTest {
         USDC = chain.getTokenAddress(TokenNames.USDC);
     }
 
-    function testRevertIfNotInExecution() public {
+    function testRevertIfNotInExecution_cancun() public {
         address[] memory dests = new address[](1);
         dests[0] = USDC;
 
@@ -50,7 +50,7 @@ contract BalancerV3FlashLoanTests is FlashAccountBaseTest {
         userFlashAccount.receiveFlashLoan(params);
     }
 
-    function testBalancerV3FlashLoanDirect() public {
+    function testBalancerV3FlashLoanDirect_cancun() public {
         uint256 amountToBorrow = 1e9;
         // calldata
         bytes memory unlockCall = _prepareCalldata(amountToBorrow);
@@ -65,7 +65,7 @@ contract BalancerV3FlashLoanTests is FlashAccountBaseTest {
         userFlashAccount.execute(BALANCER_V3_VAULT, 0, unlockCall);
     }
 
-    function testBalancerV3FlashLoanWithUserOp() public {
+    function testBalancerV3FlashLoanWithUserOp_cancun() public {
         uint256 amountToBorrow = 1e9;
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
