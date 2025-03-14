@@ -21,6 +21,11 @@ library TokenNames {
     string internal constant AaveV3_Pool = "AAVE_V3_POOL";
 
     string internal constant COMPTROLLER = "COMPTROLLER";
+
+    // Balancer V3
+    string internal constant BALANCER_V3_VAULT = "BALANCER_V3_VAULT";
+    // Aave V2
+    string internal constant AAVE_V2_LENDING_POOL = "AAVE_V2_LENDING_POOL";
 }
 
 library ChainIds {
