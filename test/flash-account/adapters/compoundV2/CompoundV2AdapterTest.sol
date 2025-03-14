@@ -12,32 +12,14 @@ import {FlashAccountBaseTest} from "../../FlashAccountBaseTest.sol";
 // solhint-disable-next-line
 import {console2 as console} from "forge-std/console2.sol";
 import {Vm} from "forge-std/Vm.sol";
-import {TokenNames} from "../../chain/Lib.sol";
+import {TokenNames, ChainIds} from "../../chain/Lib.sol";
 contract CompoundV2AdapterTest is FlashAccountBaseTest {
     using MessageHashUtils for bytes32;
 
     event Mint(address minter, uint256 mintAmount, uint256 mintTokens);
     event Borrow(address borrower, uint borrowAmount, uint accountBorrows, uint totalBorrows);
     event RepayBorrow(address payer, address borrower, uint repayAmount, uint accountBorrows, uint totalBorrows);
-    /**
-     * An event emitted if the UserOperation "callData" reverted with non-zero length.
-     * @param userOpHash   - The request unique identifier.
-     * @param sender       - The sender of this request.
-     * @param nonce        - The nonce used in the request.
-     * @param revertReason - The return bytes from the (reverted) call to "callData".
-     */
     event UserOperationRevertReason(bytes32 indexed userOpHash, address indexed sender, uint256 nonce, bytes revertReason);
-    /***
-     * An event emitted after each successful request.
-     * @param userOpHash    - Unique identifier for the request (hash its entire content, except signature).
-     * @param sender        - The account that generates this request.
-     * @param paymaster     - If non-null, the paymaster that pays for this request.
-     * @param nonce         - The nonce value from the request.
-     * @param success       - True if the sender transaction succeeded, false if reverted.
-     * @param actualGasCost - Actual amount paid (by account or paymaster) for this UserOperation.
-     * @param actualGasUsed - Total gas used by this UserOperation (including preVerification, creation,
-     *                        validation and execution).
-     */
     event UserOperationEvent(
         bytes32 indexed userOpHash,
         address indexed sender,
@@ -48,7 +30,6 @@ contract CompoundV2AdapterTest is FlashAccountBaseTest {
         uint256 actualGasUsed
     );
 
-    address CompoundV2_COMPTROLLER;
     address USDC;
     address qiUSDC;
     address qiAVAX;
@@ -57,11 +38,11 @@ contract CompoundV2AdapterTest is FlashAccountBaseTest {
     CompoundV2Adapter internal compoundV2Adapter;
     UtilityAdapter internal utilityAdapter;
 
-    function setUp() public override {
-        super.setUp();
+    function setUp() public {
+        // initialize base test
+        _init(ChainIds.AVALANCHE);
 
         // initialize addresses
-        CompoundV2_COMPTROLLER = chain.getTokenAddress(TokenNames.COMPTROLLER);
         USDC = chain.getTokenAddress(TokenNames.USDC);
         qiUSDC = chain.getTokenAddress(TokenNames.CompV2_USDC);
         qiAVAX = chain.getTokenAddress(TokenNames.CompV2_ETH);

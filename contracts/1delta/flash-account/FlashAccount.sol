@@ -38,15 +38,25 @@ contract FlashAccount is FlashAccountBase {
         uint256[] calldata,
         bytes calldata params //
     ) external requireInExecution {
-        // execute furhter operations
+        // execute further operations
         _decodeAndExecute(params);
+    }
+
+    /**
+     * BalancerV3 flash loan
+     */
+    function receiveFlashLoan(
+        bytes calldata data
+    ) external requireInExecution {
+        // execute further operations
+        _decodeAndExecute(data);
     }
 
     /**
      * Morpho flash loan
      */
     function onMorphoFlashLoan(uint256 assets, bytes calldata params) external requireInExecution {
-        // execute furhter operations
+        // execute further operations
         _decodeAndExecute(params);
     }
 

@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
+
 import "./ChainBase.sol";
 import "./Lib.sol";
+
 contract Ethereum is ChainBase {
     constructor() ChainBase(ChainIds.ETHEREUM) {
         _setupTokens();
@@ -24,6 +26,9 @@ contract Ethereum is ChainBase {
         tokens[CHAIN_ID][TokenNames.AaveV3_Pool] = 0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2;
 
         tokens[CHAIN_ID][TokenNames.COMPTROLLER] = 0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B;
+
+        // Balancer V3
+        tokens[CHAIN_ID][TokenNames.BALANCER_V3_VAULT] = 0xbA1333333333a1BA1108E8412f11850A5C319bA9;
     }
 
     function getRpcUrl() public pure override returns (string memory) {
