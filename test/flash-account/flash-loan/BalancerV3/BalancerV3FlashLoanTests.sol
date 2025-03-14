@@ -80,7 +80,7 @@ contract BalancerV3FlashLoanTests is FlashAccountBaseTest {
         entryPoint.handleOps(userOps, BENEFICIARY);
     }
 
-    function prepareUserOp(uint256 loanAmount) private returns (PackedUserOperation memory op) {
+    function prepareUserOp(uint256 loanAmount) private view returns (PackedUserOperation memory op) {
         // prepare the calldata
         bytes memory unlockCall = _prepareCalldata(loanAmount);
         // prepare the execute call
@@ -95,7 +95,7 @@ contract BalancerV3FlashLoanTests is FlashAccountBaseTest {
         );
     }
 
-    function _prepareCalldata(uint256 loanAmount) internal returns (bytes memory unlockCall) {
+    function _prepareCalldata(uint256 loanAmount) internal view returns (bytes memory unlockCall) {
         address[] memory dests = new address[](3);
         dests[0] = BALANCER_V3_VAULT;
         dests[1] = USDC;

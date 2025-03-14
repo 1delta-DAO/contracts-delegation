@@ -29,6 +29,9 @@ contract Ethereum is ChainBase {
 
         // Balancer V3
         tokens[CHAIN_ID][TokenNames.BALANCER_V3_VAULT] = 0xbA1333333333a1BA1108E8412f11850A5C319bA9;
+
+        // Aave V2
+        tokens[CHAIN_ID][TokenNames.AAVE_V2_LENDING_POOL] = 0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9;
     }
 
     function getRpcUrl() public pure override returns (string memory) {
