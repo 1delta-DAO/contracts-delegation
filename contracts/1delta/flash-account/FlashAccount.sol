@@ -30,6 +30,22 @@ contract FlashAccount is FlashAccountBase {
     }
 
     /**
+     * Aave V2 flash loan callback
+     */
+    function executeOperation(
+        address[] calldata assets,
+        uint256[] calldata amounts,
+        uint256[] calldata premiums,
+        address initiator,
+        bytes calldata params
+    ) external requireInExecution returns (bool) {
+        // forward execution
+        _decodeAndExecute(params);
+
+        return true;
+    }
+
+    /**
      * Balancer flash loan
      */
     function receiveFlashLoan(
@@ -45,9 +61,7 @@ contract FlashAccount is FlashAccountBase {
     /**
      * BalancerV3 flash loan
      */
-    function receiveFlashLoan(
-        bytes calldata data
-    ) external requireInExecution {
+    function receiveFlashLoan(bytes calldata data) external requireInExecution {
         // execute further operations
         _decodeAndExecute(data);
     }
