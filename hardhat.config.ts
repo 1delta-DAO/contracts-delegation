@@ -91,6 +91,22 @@ const config: HardhatUserConfig = {
         }
       },
       {
+        network: "hemi",
+        chainId: 43111,
+        urls: {
+          apiURL: "https://explorer.hemi.xyz/api",
+          browserURL: "https://explorer.hemi.xyz/"
+        }
+      },
+      {
+        network: "core",
+        chainId: 1116,
+        urls: {
+          apiURL: "https://openapi.coredao.org/api",
+          browserURL: "https://scan.coredao.org"
+        }
+      },
+      {
         network: "blast",
         chainId: 81457,
         urls: {
@@ -121,6 +137,30 @@ const config: HardhatUserConfig = {
           apiURL: "https://api.basescan.org/api",
           browserURL: "https://basescan.org"
         }
+      },
+      {
+        network: "sonic",
+        chainId: 146,
+        urls: {
+          apiURL: "https://api.sonicscan.org/api",
+          browserURL: "https://sonicscan.org"
+        }
+      },
+      {
+        network: "fantom",
+        chainId: 250,
+        urls: {
+          apiURL: "https://api.ftmscan.org/api",
+          browserURL: "https://ftmscan.org"
+        }
+      },
+      {
+        network: "scroll",
+        chainId: 534352,
+        urls: {
+          apiURL: "https://api.scrollscan.com/api",
+          browserURL: "https://scrollscan.com"
+        }
       }
     ],
     apiKey: {
@@ -137,6 +177,11 @@ const config: HardhatUserConfig = {
       base: process.env.BASESCAN_API_KEY ?? '',
       metis: "XX",
       avalanche: "XX",
+      hemi: "XX",
+      core:  process.env.CORESCAN_API_KEY ?? '',
+      sonic:  process.env.SONICSCAN_API_KEY ?? '',
+      scroll:  process.env.SCROLLSCAN_API_KEY ?? '',
+      fantom:  process.env.FANTOMSCAN_API_KEY ?? '',
     }
   },
   gasReporter: {
@@ -205,6 +250,30 @@ const config: HardhatUserConfig = {
       url: 'https://rpcapi.fantom.network',
       accounts,
       chainId: 250,
+      live: true,
+    },
+    hemi: {
+      url: 'https://rpc.hemi.network/rpc',
+      accounts,
+      chainId: 43111,
+      live: true,
+    },
+    core: {
+      url: 'https://rpc.coredao.org',
+      accounts,
+      chainId: 1116,
+      live: true,
+    },
+    scroll: {
+      url: 'https://rpc.scroll.io',
+      accounts,
+      chainId: 534352,
+      live: true,
+    },
+    sonic: {
+      url: 'https://rpc.soniclabs.com',
+      accounts,
+      chainId: 146,
       live: true,
     },
     matic: {
@@ -464,6 +533,16 @@ const config: HardhatUserConfig = {
           optimizer: {
             enabled: true,
             runs: 500,
+          },
+          evmVersion: 'cancun',
+        },
+      },
+      "contracts/1delta/modules/hemi/Composer.sol": {
+        version: '0.8.28',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1_000_000,
           },
           evmVersion: 'cancun',
         },

@@ -16,6 +16,11 @@ import { DeployFactory__factory } from "../../types";
 // xdai
 // metis
 // mode
+// hemi
+// core
+// sonic
+// fantom
+// scroll
 
 async function main() {
     const accounts = await ethers.getSigners()

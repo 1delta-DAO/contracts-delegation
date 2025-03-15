@@ -103,6 +103,10 @@ export enum PolygonLenderId {
     COMPOUND_V3_USDT = 2001
 }
 
+export enum HemiLenderId {
+    LENDOS = 10,
+}
+
 export const LENDER_TO_ID: { [c: string | number]: { [k: string]: any } } = {
     [Chain.ARBITRUM_ONE]: {
         [Lender.AAVE_V3]: ArbitrumLenderId.AAVE_V3,
@@ -189,6 +193,9 @@ export const LENDER_TO_ID: { [c: string | number]: { [k: string]: any } } = {
         [Lender.AVALON_USDA]: TaikoLenderId.AVALON_USDA,
         [Lender.MERIDIAN]: TaikoLenderId.MERIDIAN,
         [Lender.TAKOTAKO]: TaikoLenderId.TAKOTAKO
+    },
+    [Chain.HEMI_NETWORK]: {
+        [Lender.LENDOS]: HemiLenderId.LENDOS,
     }
 }
 
@@ -210,7 +217,7 @@ export function getCompoundV3Approves(chainId: number) {
 }
 
 const specificLenders: string[] = [
-    Lender.GRANARY
+    Lender.LENDOS
 ]
 
 export function getAaveForkDatas(chainId: number) {
