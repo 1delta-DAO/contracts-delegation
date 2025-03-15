@@ -29,6 +29,9 @@ const AGGREGATORS: { [c: number]: string[] } = {
         '0xD9F4e85489aDCD0bAF0Cd63b4231c6af58c26745', // ODOS
         '0x6131B5fae19EA4f9D964eAc0408E4408b66337b5' // KYBER
     ],
+    [Chain.HEMI_NETWORK]: [
+        // none (yet)
+    ],
 }
 export function getAggregators(chainId: number) {
     const a = AGGREGATORS[chainId]
