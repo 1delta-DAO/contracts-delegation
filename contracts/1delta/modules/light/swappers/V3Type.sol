@@ -56,10 +56,9 @@ abstract contract V3TypeGeneric is Masks {
                 96,
                 pool // starts as first param
             )
-            currentOffset := add(currentOffset, 22)
             let zeroForOne := lt(
-                tokenIn, // tokenIn
-                shr(96, calldataload(currentOffset)) // tokenOut
+                tokenIn,
+                tokenOut //
             )
             // Prepare external call data
             // Store swap selector (0x128acb08)
@@ -73,10 +72,8 @@ abstract contract V3TypeGeneric is Masks {
 
             // Store data offset
             mstore(add(ptr, 132), 0xa0)
-            currentOffset := add(currentOffset, 42)
-            let pathLength := shr(240, calldataload(currentOffset))
-            let plStored := add(pathLength, 65)
-            /// Store data length
+            let plStored := add(clLength, 65)
+            // Store data length
             mstore(add(ptr, 164), plStored)
 
             /*
@@ -99,7 +96,7 @@ abstract contract V3TypeGeneric is Masks {
             mstore(add(ptr, 259), shl(240, clLength)) // calldataLength (within bytes)
 
             // Store path
-            calldatacopy(add(ptr, 261), currentOffset, pathLength)
+            calldatacopy(add(ptr, 261), currentOffset, clLength)
 
             switch zeroForOne
             case 0 {
@@ -134,7 +131,13 @@ abstract contract V3TypeGeneric is Masks {
             // receivedAmount = -receivedAmount
             receivedAmount := sub(0, receivedAmount)
 
-            currentOffset := add(currentOffset, add(2, pathLength))
+            switch lt(clLength, 2)
+            case 1 {
+                currentOffset := add(currentOffset, 24)
+            }
+            default {
+                currentOffset := add(currentOffset, add(24, clLength))
+            }
         }
         return (receivedAmount, currentOffset);
     }

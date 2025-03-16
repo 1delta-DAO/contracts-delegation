@@ -94,7 +94,7 @@ abstract contract BaseSwapper is
         uint256 amountIn,
         address tokenIn,
         address tokenOut,
-        address payer, // first step
+        address payer, // caller
         address receiver, // last step
         uint256 currentOffset
     ) internal returns (uint256, uint256) {
@@ -108,28 +108,33 @@ abstract contract BaseSwapper is
         // muliplts splits
         if (splitsCount != 0) {
             assembly {
-                splits := shr(136, splits)
-                currentOffset := add(mul(2, splits), currentOffset)
+                splits := and(UINT128_MASK, shr(120, splits))
+                currentOffset := add(mul(2, splitsCount), currentOffset)
             }
             uint256 amount;
             uint256 i;
             uint256 swapsLeft = amountIn;
             while (true) {
-                uint256 received;
                 uint256 split;
                 assembly {
-                    split := div(
-                        mul(
-                            shr(mul(i, 16), splits),
-                            amountIn //
-                        ),
-                        UINT16_MASK //
-                    )
-                    i := add(i, 1)
-                    if iszero(split) {
-                        split := sub(amountIn, swapsLeft)
+                    switch eq(i, splitsCount)
+                    case 1 {
+                        split := swapsLeft
                     }
+                    default {
+                        split := div(
+                            mul(
+                                and(UINT16_MASK, 
+                                shr(sub(112, mul(i, 16)), splits) // read the uin16 in the splits sequence
+                                ),
+                                amountIn //
+                            ),
+                            UINT16_MASK //
+                        )
+                    }
+                    i := add(i, 1)
                 }
+                uint256 received;
                 (received, currentOffset) = swapExactInSimple2(
                     split,
                     tokenIn,
@@ -144,7 +149,7 @@ abstract contract BaseSwapper is
                 amount += received;
 
                 // if nothing is left, break
-                if (i == splitsCount) break;
+                if (i > splitsCount) break;
             }
             amountIn = amount;
         } else {
@@ -349,7 +354,7 @@ abstract contract BaseSwapper is
         ////////////////////////////////////////////////////
         // uniswapV3 style
         if (dexId < UNISWAP_V3_MAX_ID) {
-            (amountIn, ) = _swapUniswapV3PoolExactInGeneric(
+            (amountIn, currentOffset) = _swapUniswapV3PoolExactInGeneric(
                 dexId,
                 amountIn,
                 tokenIn,
@@ -358,9 +363,6 @@ abstract contract BaseSwapper is
                 currentOffset,
                 payer // we do not need end flags
             );
-            assembly {
-                currentOffset := add(currentOffset, SKIP_LENGTH_UNOSWAP)
-            }
         }
         // iZi
         else if (dexId == IZI_ID) {

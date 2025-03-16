@@ -43,6 +43,7 @@ contract SwapsLightTest is Test, AAVE_V3_DATA_8453 {
         console.log("pool", pool);
         data = abi.encodePacked(
             uint8(ComposerCommands.SWAPS),
+            uint8(0), // swaps max index
             uint128(amount), //
             assetIn,
             assetOut,
@@ -56,33 +57,48 @@ contract SwapsLightTest is Test, AAVE_V3_DATA_8453 {
         ); // 2 + 20 + 20 + 14 = 56 bytes
     }
 
+    function v3poolpSwap(
+        address assetIn,
+        address assetOut, //
+        uint16 fee,
+        uint16 fee2,
+        uint8 dexId,
+        address receiver,
+        uint256 amount
+    ) internal view returns (bytes memory data) {
+        address pool = IF(UNI_FACTORY).getPool(assetIn, assetOut, fee);
+        console.log("pool", pool);
+          data = abi.encodePacked(
+            uint8(ComposerCommands.SWAPS),
+            uint8(0), // swaps max index
+            uint128(amount), //
+            assetIn,
+            assetOut,
+            receiver
+        ); // 2 + 20 + 20 + 14 = 56 bytes
 
-    // function v3poolPSwap(
-    //     address assetIn,
-    //     address assetOut, //
-    //     uint16 fee,
-    //     uint8 dexId,
-    //     address receiver,
-    //     uint256 amount
-    // ) internal view returns (bytes memory data) {
-    //     address pool = IF(UNI_FACTORY).getPool(assetIn, assetOut, fee);
-    //     console.log("pool", pool);
-    //     data = abi.encodePacked(
-    //         uint8(ComposerCommands.SWAPS),
-    //         uint128(amount), //
-    //         assetIn,
-    //         assetOut,
-    //         uint8(0), // splits
-    //         dexId,
-    //         // v3 pool data
-    //         pool,
-    //         fee,
-    //         uint16(0), // cll length
-    //         receiver
-    //     ); // 2 + 20 + 20 + 14 = 56 bytes
-    // }
+         data = abi.encodePacked(
+            data,
+            uint8(1), // splits
+            (type(uint16).max / 2), // splits
+            dexId,
+            // v3 pool data
+            pool,
+            fee,
+            uint16(0) // cll length
+        ); // 2 + 20 + 20 + 14 = 56 bytes
+         pool = IF(UNI_FACTORY).getPool(assetIn, assetOut, fee2);
+        data = abi.encodePacked(
+            data, 
+            dexId,
+            // v3 pool data
+            pool,
+            fee2,
+            uint16(0) // cll length
+        ); // 2 + 20 + 20 + 14 = 56 bytes
+    }
 
-    function test_light_swap_v3() external {
+    function test_light_swap_v3_single() external {
         vm.assume(user != address(0));
 
         address tokenIn = USDC;
@@ -107,4 +123,31 @@ contract SwapsLightTest is Test, AAVE_V3_DATA_8453 {
         oneDV2.deltaCompose(swap);
     }
 
+
+    function test_light_swap_v3_splits() external {
+        vm.assume(user != address(0));
+
+        address tokenIn = USDC;
+        address tokenOut = WETH;
+        uint16 fee = 500;
+        uint16 fee2 = 3000;
+        deal(tokenIn, user, 1000.0e6);
+        uint256 amount = 100.0e6;
+
+        vm.prank(user);
+        IERC20All(tokenIn).approve(address(oneDV2), type(uint).max);
+
+        bytes memory swap = v3poolpSwap(
+            tokenIn,
+            tokenOut,
+            fee,
+            fee2,
+            uint8(0),
+            address(oneDV2),
+            amount //
+        );
+
+        vm.prank(user);
+        oneDV2.deltaCompose(swap);
+    }
 }
