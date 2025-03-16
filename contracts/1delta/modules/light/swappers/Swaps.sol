@@ -19,20 +19,25 @@ abstract contract Swaps is BaseSwapper {
     function _swap(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         address tokenIn;
         address tokenOut;
+        uint256 amountIn;
+        address receiver;
         assembly {
+            amountIn := shr(128, calldataload(currentOffset))
+            currentOffset := add(currentOffset, 16)
             // get first 2 addresses
             tokenIn := shr(96, calldataload(currentOffset))
             currentOffset := add(currentOffset, 20)
             tokenOut := shr(96, calldataload(currentOffset))
             currentOffset := add(currentOffset, 20)
+            receiver := shr(96, calldataload(currentOffset))
+            currentOffset := add(currentOffset, 20)
         }
-        uint amountIn = 10000;
         (amountIn, currentOffset) = _eSwapExactIn(
             amountIn,
             tokenIn,
             tokenOut,
             callerAddress,
-            address(this),
+            receiver,
             currentOffset //
         );
         return currentOffset;

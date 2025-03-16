@@ -49,9 +49,12 @@ abstract contract V3TypeGeneric is Masks {
         assembly {
             let ptr := mload(0x40)
             // read the pool address
-            let pool := shr(
+            let pool := calldataload(currentOffset)
+            let fee := and(UINT16_MASK, shr(80, pool))
+            let clLength := and(UINT16_MASK, shr(64, pool))
+            pool := shr(
                 96,
-                calldataload(currentOffset) // starts as first param
+                pool // starts as first param
             )
             currentOffset := add(currentOffset, 22)
             let zeroForOne := lt(
@@ -89,15 +92,14 @@ abstract contract V3TypeGeneric is Masks {
              * | 65     | calldataLength | calldata             |
              */
             mstore(add(ptr, 196), shl(96, callerAddress))
-            mstore(add(ptr, 228), shl(96, tokenIn))
-            mstore(add(ptr, 260), shl(96, tokenOut))
-            mstore8(add(ptr, 292), dexId)
-            mstore(add(ptr, 293), shl(240, 9)) // fee
-            mstore(add(ptr, 295), shl(240, 9)) // calldataLength (within bytes)
+            mstore(add(ptr, 216), shl(96, tokenIn))
+            mstore(add(ptr, 236), shl(96, tokenOut))
+            mstore8(add(ptr, 256), dexId)
+            mstore(add(ptr, 257), shl(240, fee)) // fee
+            mstore(add(ptr, 259), shl(240, clLength)) // calldataLength (within bytes)
 
             // Store path
-            calldatacopy(add(ptr, 297), currentOffset, pathLength)
-
+            calldatacopy(add(ptr, 261), currentOffset, pathLength)
 
             switch zeroForOne
             case 0 {

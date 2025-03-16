@@ -43,16 +43,44 @@ contract SwapsLightTest is Test, AAVE_V3_DATA_8453 {
         console.log("pool", pool);
         data = abi.encodePacked(
             uint8(ComposerCommands.SWAPS),
+            uint128(amount), //
             assetIn,
             assetOut,
+            receiver,
             uint8(0), // splits
             dexId,
+            // v3 pool data
             pool,
             fee,
-            receiver,
-            uint128(amount) //
+            uint16(0) // cll length
         ); // 2 + 20 + 20 + 14 = 56 bytes
     }
+
+
+    // function v3poolPSwap(
+    //     address assetIn,
+    //     address assetOut, //
+    //     uint16 fee,
+    //     uint8 dexId,
+    //     address receiver,
+    //     uint256 amount
+    // ) internal view returns (bytes memory data) {
+    //     address pool = IF(UNI_FACTORY).getPool(assetIn, assetOut, fee);
+    //     console.log("pool", pool);
+    //     data = abi.encodePacked(
+    //         uint8(ComposerCommands.SWAPS),
+    //         uint128(amount), //
+    //         assetIn,
+    //         assetOut,
+    //         uint8(0), // splits
+    //         dexId,
+    //         // v3 pool data
+    //         pool,
+    //         fee,
+    //         uint16(0), // cll length
+    //         receiver
+    //     ); // 2 + 20 + 20 + 14 = 56 bytes
+    // }
 
     function test_light_swap_v3() external {
         vm.assume(user != address(0));

@@ -15,7 +15,6 @@ import {LBSwapper} from "../../shared/swapper/LBSwapper.sol";
 import {DodoV2Swapper} from "../../shared/swapper/DodoV2Swapper.sol";
 import {BalancerSwapper} from "../../shared/swapper/BalancerSwapper.sol";
 import {V3TypeGeneric} from "./V3Type.sol";
-import {console} from "forge-std/console.sol";
 
 // solhint-disable max-line-length
 
@@ -106,9 +105,6 @@ abstract contract BaseSwapper is
             splitsCount := shr(248, splits)
             currentOffset := add(1, currentOffset)
         }
-        console.log("tokenIn", tokenIn);
-        console.log("tokenOut", tokenOut);
-        console.log("splitsCount", splitsCount);
         // muliplts splits
         if (splitsCount != 0) {
             assembly {
@@ -152,7 +148,6 @@ abstract contract BaseSwapper is
             }
             amountIn = amount;
         } else {
-            console.log("tokenIn, tokenOut", tokenIn, tokenOut);
             (amountIn, currentOffset) = swapExactInSimple2(
                 amountIn,
                 tokenIn,
@@ -343,7 +338,6 @@ abstract contract BaseSwapper is
             dexId := shr(248, calldataload(currentOffset))
             currentOffset := add(currentOffset, 1)
         }
-        console.log("dexId", dexId);
         ////////////////////////////////////////////////////
         // We switch-case through the different pool types
         // To select the correct pool for the swap action
