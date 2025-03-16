@@ -122,10 +122,12 @@ abstract contract BaseSwapper is
                         split := swapsLeft
                     }
                     default {
+                        // splits are uint16s as share of uint16.max
                         split := div(
                             mul(
-                                and(UINT16_MASK, 
-                                shr(sub(112, mul(i, 16)), splits) // read the uin16 in the splits sequence
+                                and(
+                                    UINT16_MASK,
+                                    shr(sub(112, mul(i, 16)), splits) // read the uin16 in the splits sequence
                                 ),
                                 amountIn //
                             ),
@@ -145,11 +147,17 @@ abstract contract BaseSwapper is
                 );
 
                 // increment and decrement
-                swapsLeft -= split;
-                amount += received;
+                assembly {
+                    amount := add(amount, received)
+                }
 
                 // if nothing is left, break
                 if (i > splitsCount) break;
+                
+                // otherwise, we decrement the swaps left amount
+                assembly {
+                    swapsLeft := sub(swapsLeft, split)
+                }
             }
             amountIn = amount;
         } else {
@@ -163,163 +171,6 @@ abstract contract BaseSwapper is
             );
         }
         return (amountIn, currentOffset);
-    }
-
-    /**
-     * Swaps exact in internally using all implemented Dexs
-     * Will NOT use a flash swap
-     * The dexId is assumed to be fetched before in a prefunding action
-     * As such, the parameter can be plugged in here directly
-     * @param amountIn sell amount
-     * @param dexId dex identifier
-     * @return (amountOut, new offset) buy amount
-     */
-    function swapExactInSimple(
-        uint256 amountIn,
-        uint256 dexId,
-        address payer, // first step
-        address receiver, // last step
-        uint256 pathOffset
-    ) internal returns (uint256, uint256) {
-        ////////////////////////////////////////////////////
-        // We switch-case through the different pool types
-        // To select the correct pool for the swap action
-        // Note that this is auto-forwarding the amountIn,
-        // as such, this is dynamically usable within
-        // flash-swaps.
-        // Note that `dexId` gets reassigned within each
-        // execution step if we are not yet at the final pool
-        ////////////////////////////////////////////////////
-        // uniswapV3 style
-        if (dexId < UNISWAP_V3_MAX_ID) {
-            amountIn = _swapUniswapV3PoolExactIn(
-                amountIn,
-                0,
-                payer,
-                receiver,
-                pathOffset,
-                64 // we do not need end flags
-            );
-            assembly {
-                pathOffset := add(pathOffset, SKIP_LENGTH_UNOSWAP)
-            }
-        }
-        // iZi
-        else if (dexId == IZI_ID) {
-            amountIn = _swapIZIPoolExactIn(uint128(amountIn), 0, payer, receiver, pathOffset, 64);
-            assembly {
-                pathOffset := add(pathOffset, SKIP_LENGTH_UNOSWAP)
-            }
-        }
-        // Balancer V2
-        else if (dexId == BALANCER_V2_ID) {
-            amountIn = _swapBalancerExactIn(payer, amountIn, receiver, pathOffset);
-            assembly {
-                pathOffset := add(pathOffset, SKIP_LENGTH_BALANCER_V2)
-            }
-        }
-        // Curve pool types
-        else if (dexId < CURVE_V1_MAX_ID) {
-            // Curve standard pool
-            if (dexId == CURVE_V1_STANDARD_ID) {
-                amountIn = _swapCurveGeneral(pathOffset, amountIn, payer, receiver);
-                assembly {
-                    pathOffset := add(pathOffset, SKIP_LENGTH_CURVE)
-                }
-            } else {
-                assembly {
-                    mstore(0, INVALID_DEX)
-                    revert(0, 0x4)
-                }
-            }
-        }
-        // uniswapV2 style
-        else if (dexId < UNISWAP_V2_MAX_ID) {
-            amountIn = swapUniV2ExactInComplete(
-                amountIn,
-                0,
-                payer,
-                receiver,
-                false,
-                pathOffset, // we do not slice the path since we deterministically prevent flash swaps
-                0
-            );
-            assembly {
-                pathOffset := add(pathOffset, SKIP_LENGTH_UNOSWAP)
-            }
-        }
-        // WOO Fi
-        else if (dexId == WOO_FI_ID) {
-            address tokenIn;
-            address tokenOut;
-            address pool;
-            assembly {
-                tokenIn := shr(96, calldataload(pathOffset))
-                tokenOut := shr(96, calldataload(add(pathOffset, 42)))
-                pool := shr(96, calldataload(add(pathOffset, 22)))
-            }
-            // amountIn = swapWooFiExactIn(tokenIn, tokenOut, pool, amountIn, receiver);
-            assembly {
-                pathOffset := add(pathOffset, SKIP_LENGTH_ADDRESS)
-            }
-        }
-        // Curve NG
-        else if (dexId == CURVE_RECEIVED_ID) {
-            amountIn = _swapCurveReceived(pathOffset, amountIn, receiver);
-            assembly {
-                pathOffset := add(pathOffset, SKIP_LENGTH_CURVE)
-            }
-        }
-        // GMX
-        else if (dexId == GMX_ID || dexId == KTX_ID) {
-            address tokenIn;
-            address tokenOut;
-            address vault;
-            assembly {
-                tokenIn := shr(96, calldataload(pathOffset))
-                tokenOut := shr(96, calldataload(add(pathOffset, 42)))
-                vault := shr(96, calldataload(add(pathOffset, 22)))
-            }
-            amountIn = swapGMXExactIn(tokenIn, tokenOut, vault, receiver);
-            assembly {
-                pathOffset := add(pathOffset, SKIP_LENGTH_ADDRESS)
-            }
-        }
-        // DODO V2
-        else if (dexId == DODO_ID) {
-            address pair;
-            uint8 sellQuote;
-            assembly {
-                let params := calldataload(add(pathOffset, 11))
-                pair := shr(8, params)
-                sellQuote := and(UINT8_MASK, params)
-            }
-            amountIn = swapDodoV2ExactIn(sellQuote, pair, receiver);
-            assembly {
-                pathOffset := add(pathOffset, SKIP_LENGTH_ADDRESS_AND_PARAM)
-            }
-        }
-        // Moe LB
-        else if (dexId == LB_ID) {
-            address tokenIn;
-            address tokenOut;
-            address pair;
-            assembly {
-                tokenIn := shr(96, calldataload(pathOffset))
-                tokenOut := shr(96, calldataload(add(pathOffset, 42)))
-                pair := shr(96, calldataload(add(pathOffset, 22)))
-            }
-            amountIn = swapLBexactIn(tokenOut, pair, receiver);
-            assembly {
-                pathOffset := add(pathOffset, SKIP_LENGTH_ADDRESS)
-            }
-        } else {
-            assembly {
-                mstore(0, INVALID_DEX)
-                revert(0, 0x4)
-            }
-        }
-        return (amountIn, pathOffset);
     }
 
     /**
