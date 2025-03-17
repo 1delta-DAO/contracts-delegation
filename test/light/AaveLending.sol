@@ -9,10 +9,6 @@ import {ComposerLightBaseTest} from "./ComposerLightBaseTest.sol";
 import {ChainIds, TokenNames} from "./chain/Lib.sol";
 import "./utils/CalldataLib.sol";
 
-/**
- * We test all morpho blue operations
- * - supply, supplyCollateral, borrow, repay, erc4646Deposit, erc4646Withdraw
- */
 contract AaveLightTest is ComposerLightBaseTest {
     OneDeltaComposerLight oneDV2;
 

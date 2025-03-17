@@ -36,10 +36,10 @@ contract ArbitrumOne is ChainBase {
     }
 
     function getRpcUrl() public pure override returns (string memory) {
-        return "https://mainnet.base.org";
+        return "https://arbitrum.drpc.org";
     }
 
     function getForkBlock() public pure override returns (uint256) {
-        return 26696865;
+        return 290934482;
     }
 }
