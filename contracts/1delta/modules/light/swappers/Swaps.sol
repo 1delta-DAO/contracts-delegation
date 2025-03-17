@@ -18,51 +18,34 @@ import {BaseSwapper} from "./BaseSwapper.sol";
 abstract contract Swaps is BaseSwapper {
     function _swap(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         uint256 amountIn;
-        uint256 swapsCount;
+        address tokenIn;
         /*
          * Store the data for the callback as follows
          * | Offset | Length (bytes) | Description          |
          * |--------|----------------|----------------------|
-         * | 0      | 1              | swapCount            |
-         * | 1      | 16             | amount               |
-         * | 17     | 20             | tokenOut             |
-         * | 37     | 20             | tokenIn              |
+         * | 0      | 16             | amount               |
+         * | 16     | 20             | tokenIn              |
+         * | 36     | any            | data                 |
+         *
+         * `data` is a path that can break down in aritrary sub paths:
+         * | Offset | Length (bytes) | Description          |
+         * |--------|----------------|----------------------|
+         * | 0      | 1              | swapCount-1          |
+         * | 1      | any            | eSwapData            |
          */
         assembly {
-            amountIn := calldataload(currentOffset)
-            swapsCount := shr(248, amountIn)
-            amountIn := and(UINT120_MASK, shr(120, calldataload(currentOffset)))
-            currentOffset := add(currentOffset, 17)
+            amountIn := and(UINT120_MASK, shr(128, calldataload(currentOffset)))
+            currentOffset := add(currentOffset, 16)
+            tokenIn := shr(96, calldataload(currentOffset))
+            currentOffset := add(currentOffset, 20)
         }
-        uint256 i;
-        while (true) {
-            address tokenIn;
-            address tokenOut;
-            address receiver;
-            assembly {
-                // get first 2 addresses
-                tokenIn := shr(96, calldataload(currentOffset))
-                currentOffset := add(currentOffset, 20)
-                tokenOut := shr(96, calldataload(currentOffset))
-                currentOffset := add(currentOffset, 20)
-                receiver := shr(96, calldataload(currentOffset))
-                currentOffset := add(currentOffset, 20)
-            }
-            (amountIn, currentOffset) = _eSwapExactIn(
-                amountIn,
-                tokenIn,
-                tokenOut,
-                callerAddress,
-                receiver,
-                currentOffset //
-            );
-            // break criteria
-            if (i == swapsCount) {
-                break;
-            } else {
-                i++;
-            }
-        }
+        (amountIn, currentOffset) = _eUniversalSwap(
+            amountIn,
+            tokenIn,
+            callerAddress,
+            currentOffset //
+        );
+
         return currentOffset;
     }
 }

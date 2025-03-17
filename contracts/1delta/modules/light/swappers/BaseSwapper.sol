@@ -64,16 +64,60 @@ abstract contract BaseSwapper is
         return (amountIn, pathOffset);
     }
 
+    /*
+     * Forward swapper of e-swaps
+     * Caller needs to ensure that paths are consistent
+     * | Offset | Length (bytes) | Description          |
+     * |--------|----------------|----------------------|
+     * | 0      | 1              | swapCount-1          |
+     * | 1      | any            | eSwapData            |
+     */
+    function _eUniversalSwap(
+        uint256 amountIn,
+        address tokenIn,
+        address callerAddress,
+        uint256 currentOffset //
+    ) internal returns (uint, uint) {
+        uint256 amount = amountIn;
+        uint256 i;
+        uint256 swapMaxIndex;
+        // we do not want to mutate tokenIn outside this context
+        address _tokenIn = tokenIn;
+        assembly {
+            swapMaxIndex := shr(248, calldataload(currentOffset))
+            currentOffset := add(1, currentOffset)
+        }
+        while (true) {
+            (amount, currentOffset) = _eSwapExactIn(
+                amount,
+                _tokenIn,
+                callerAddress,
+                currentOffset //
+            );
+            // break criteria
+            if (i == swapMaxIndex) {
+                break;
+            } else {
+                // update context
+                assembly {
+                    _tokenIn := shr(96, calldataload(currentOffset))
+                    currentOffset := add(20, currentOffset)
+                    i := add(i, 1)
+                }
+            }
+        }
+
+        return (amount, currentOffset);
+    }
+
     /**
-     * parallel swaps a->b; a->b for different dexs
+     * Ensure that all paths end with the same CCY
+     * parallel swaps a->...->b; a->...->b for different dexs
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
      * | 0      | 1              | splitsCount          |
      * | 1      | 0-16           | splits               |
-     * | 17     | 20             | tokenIn              |
-     * | 37     | 20             | tokenOut             |
-     * | 57     | 20             | receiver             |
-     * | 77     | 20             | datas                |
+     * | 1+sC   | Variable       | datas                |
      *
      * `splits` looks like follows
      * | Offset | Length (bytes) | Description          |
@@ -84,6 +128,7 @@ abstract contract BaseSwapper is
      * `datas` looks like follows
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
+     * | 0      | 1              | swapCount - 1        | <- indicates whether the swap is non-simple (further e-swaps)
      * | 0      | 1              | dexId                |
      * | 1      | variable       | params               | <- depends on dexId (fixed for each one)
      * | 1+v    | 1              | dexId                |
@@ -93,9 +138,7 @@ abstract contract BaseSwapper is
     function _eSwapExactIn(
         uint256 amountIn,
         address tokenIn,
-        address tokenOut,
-        address payer, // caller
-        address receiver, // last step
+        address callerAddresss, // caller
         uint256 currentOffset
     ) internal returns (uint256, uint256) {
         uint256 splits;
@@ -103,6 +146,7 @@ abstract contract BaseSwapper is
         assembly {
             splits := calldataload(currentOffset)
             splitsCount := shr(248, splits)
+            // skip the splits count parameter
             currentOffset := add(1, currentOffset)
         }
         // muliplts splits
@@ -119,6 +163,7 @@ abstract contract BaseSwapper is
                 assembly {
                     switch eq(i, splitsCount)
                     case 1 {
+                        // assign remaing amount to split
                         split := swapsLeft
                     }
                     default {
@@ -137,12 +182,12 @@ abstract contract BaseSwapper is
                     i := add(i, 1)
                 }
                 uint256 received;
-                (received, currentOffset) = swapExactInSimple2(
+                // reenter-universal swap
+                // can be aother split or a multi-path
+                (received, currentOffset) = _singleSwap(
                     split,
-                    tokenIn,
-                    tokenOut,
-                    payer,
-                    receiver, //
+                    tokenIn, //
+                    callerAddresss,
                     currentOffset
                 );
 
@@ -161,12 +206,62 @@ abstract contract BaseSwapper is
             }
             amountIn = amount;
         } else {
+            (amountIn, currentOffset) = _singleSwap(
+                amountIn,
+                tokenIn, //
+                callerAddresss,
+                currentOffset
+            );
+        }
+        return (amountIn, currentOffset);
+    }
+
+    /*
+     * execute swap or split amounts
+     * | Offset | Length (bytes) | Description          |
+     * |--------|----------------|----------------------|
+     * | 0      | 1              | opType               |
+     * | 1      | 20             | nextToken            |
+     * | 21     | any            | swapData             |
+     */
+    function _singleSwap(
+        uint256 amountIn,
+        address tokenIn,
+        address callerAddress,
+        uint256 currentOffset //
+    ) internal returns (uint256, uint256) {
+        uint256 opType;
+        assembly {
+            opType := shr(248, calldataload(currentOffset))
+            currentOffset := add(currentOffset, 1)
+        }
+        // opType = 0 is simple single swap
+        // that is where each single step MUST end
+        if (opType == 0) {
+            // if the opType is single-swap,
+            // the next two addresses are nextToken and receiver
+            address nextToken;
+            address receiver;
+            assembly {
+                nextToken := shr(96, calldataload(currentOffset))
+                currentOffset := add(currentOffset, 20)
+                receiver := shr(96, calldataload(currentOffset))
+                currentOffset := add(currentOffset, 20)
+            }
             (amountIn, currentOffset) = swapExactInSimple2(
                 amountIn,
                 tokenIn,
-                tokenOut,
-                payer,
+                nextToken,
+                callerAddress,
                 receiver, //
+                currentOffset
+            );
+        } else {
+            // otherwise, execute universal swap (path & splits)
+            (amountIn, currentOffset) = _eUniversalSwap(
+                amountIn, //
+                tokenIn,
+                callerAddress,
                 currentOffset
             );
         }
@@ -226,9 +321,6 @@ abstract contract BaseSwapper is
                 currentOffset,
                 payer // we do not need end flags
             );
-            assembly {
-                currentOffset := add(currentOffset, SKIP_LENGTH_UNOSWAP)
-            }
         }
         // Balancer V2
         else if (dexId == BALANCER_V2_ID) {

@@ -46,20 +46,27 @@ contract SwapsLightTest is Test, AAVE_V3_DATA_8453 {
         console.log("pool", pool);
         data = abi.encodePacked(
             uint8(ComposerCommands.SWAPS),
-            uint8(0), // swaps max index
             uint128(amount), //
             assetIn,
+            uint8(0), // swaps max index
+            uint8(0) // splits
+            // single split data (no data here)
+            // uint8(0), // swaps max index for inner path
+        );
+        data = abi.encodePacked(
+            data,
+            uint8(0), // opType is zero for single swap
             assetOut,
             receiver,
-            uint8(0), // splits
             dexId,
             // v3 pool data
             pool,
             fee,
-            uint16(0) // cll length
-        ); // 2 + 20 + 20 + 14 = 56 bytes
+            uint16(0) // cll length <- user pays
+        );
     }
 
+    // swap 33% uni V3, 33% iZi, 33% other uni V3
     function v3poolpSwap(
         address assetIn,
         address assetOut, //
@@ -71,21 +78,22 @@ contract SwapsLightTest is Test, AAVE_V3_DATA_8453 {
         uint256 amount
     ) internal view returns (bytes memory data) {
         address pool = IF(UNI_FACTORY).getPool(assetIn, assetOut, fee);
-        console.log("pool", pool);
+        // head
         data = abi.encodePacked(
             uint8(ComposerCommands.SWAPS),
-            uint8(0), // swaps max index
             uint128(amount), //
             assetIn,
-            assetOut,
-            receiver
-        ); // 2 + 20 + 20 + 14 = 56 bytes
+            uint8(0), // swaps max index
+            uint8(2), // splits
+            (type(uint16).max / 3), // split (1/3)
+            (type(uint16).max / 3) // split (2/3)
+        );
 
         data = abi.encodePacked(
             data,
-            uint8(2), // splits
-            (type(uint16).max / 3), // splits
-            (type(uint16).max / 3), // splits
+            uint8(0), // opType = single swap
+            assetOut,
+            receiver,
             dexId,
             // v3 pool data
             pool,
@@ -95,16 +103,22 @@ contract SwapsLightTest is Test, AAVE_V3_DATA_8453 {
         pool = IF(IZI_FACTORY).pool(assetIn, assetOut, fee2);
         data = abi.encodePacked(
             data,
+            uint8(0), // opType = single swap
+            assetOut,
+            receiver,
             uint8(49),
             // v3 pool data
             pool,
             fee2,
             uint16(0) // cll length
         ); // 2 + 20 + 20 + 14 = 56 bytes
-    
+
         pool = IF(UNI_FACTORY).getPool(assetIn, assetOut, fee2);
         data = abi.encodePacked(
             data,
+            uint8(0), // opType = single swap
+            assetOut,
+            receiver,
             uint8(0),
             // v3 pool data
             pool,
@@ -122,7 +136,6 @@ contract SwapsLightTest is Test, AAVE_V3_DATA_8453 {
         uint256 amount
     ) internal view returns (bytes memory data) {
         address pool = IF(UNI_FACTORY).getPool(assetIn, assetOut, fee);
-        console.log("pool", pool);
         data = abi.encodePacked(
             uint8(ComposerCommands.SWAPS),
             uint8(0), // swaps max index
@@ -156,7 +169,7 @@ contract SwapsLightTest is Test, AAVE_V3_DATA_8453 {
             tokenOut,
             fee,
             uint8(0),
-            address(oneDV2),
+            user,
             amount //
         );
 
@@ -183,7 +196,7 @@ contract SwapsLightTest is Test, AAVE_V3_DATA_8453 {
             tokenOut,
             fee,
             fee2,
-            fee2,
+            fee3,
             uint8(0),
             address(oneDV2),
             amount //
