@@ -21,7 +21,7 @@ contract AaveV2LightTest is ComposerLightBaseTest {
         _init(ChainIds.BASE);
         LBTC = chain.getTokenAddress(TokenNames.LBTC);
         USDC = chain.getTokenAddress(TokenNames.USDC);
-        GRANARY_POOL = chain.getTokenAddress(TokenNames.GRANERY_POOL);
+        GRANARY_POOL = chain.getTokenAddress(TokenNames.GRANARY_POOL);
 
         oneDV2 = new OneDeltaComposerLight();
     }
