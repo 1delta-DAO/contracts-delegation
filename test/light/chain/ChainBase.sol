@@ -17,6 +17,13 @@ interface IChainBase {
     function getTokenAddress(string memory tokenName) external view returns (address);
 
     function getAaveV3LendingTokens(address token) external view returns (AaveTokens memory);
+
+    function getGraneryLendingTokens(address token) external view returns (AaveTokens memory);
+
+    function getVenusLendingTokens(address token) external view returns (address);
+    function getVenusEthLendingTokens(address token) external view returns (address);
+
+    function getCometToBase(address token) external view returns (address);
 }
 
 abstract contract ChainBase is IChainBase {
@@ -24,6 +31,11 @@ abstract contract ChainBase is IChainBase {
 
     mapping(uint256 chainId => mapping(string tokenName => address tokenAddress)) public tokens;
     mapping(address baseToken => AaveTokens lendingToken) public AaveV3LendingTokens;
+    mapping(address baseToken => AaveTokens lendingToken) public GraneryLendingTokens;
+
+    mapping(address => address) public VENUS_cTokens;
+    mapping(address => address) public VENUS_ETH_cTokens;
+    mapping(address => address) public CometToBase;
 
     uint256 public immutable CHAIN_ID;
 
@@ -42,5 +54,21 @@ abstract contract ChainBase is IChainBase {
 
     function getAaveV3LendingTokens(address token) public view returns (AaveTokens memory) {
         return AaveV3LendingTokens[token];
+    }
+
+    function getGraneryLendingTokens(address token) external view returns (AaveTokens memory) {
+        return GraneryLendingTokens[token];
+    }
+
+    function getVenusLendingTokens(address token) external view returns (address) {
+        return VENUS_cTokens[token];
+    }
+
+    function getVenusEthLendingTokens(address token) external view returns (address) {
+        return VENUS_ETH_cTokens[token];
+    }
+
+    function getCometToBase(address token) external view returns (address) {
+        return CometToBase[token];
     }
 }
