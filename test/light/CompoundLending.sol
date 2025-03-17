@@ -1,29 +1,35 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {Test} from "forge-std/Test.sol";
-import {console} from "forge-std/console.sol";
 import {ComposerUtils, Commands} from "../shared/utils/ComposerUtils.sol";
 import {MarketParams, IMorphoEverything} from "./utils/Morpho.sol";
 
 import {OneDeltaComposerLight} from "../../contracts/1delta/modules/light/Composer.sol";
 import {IERC20All} from "../shared/interfaces/IERC20All.sol";
-import {COMPOUND_V3_DATA_8453} from "./data/COMPOUND_V3_DATA_8453.sol";
+import {ComposerLightBaseTest} from "./ComposerLightBaseTest.sol";
+import {ChainIds, TokenNames} from "./chain/Lib.sol";
 import "./utils/CalldataLib.sol";
 
 /**
  * We test all morpho blue operations
  * - supply, supplyCollateral, borrow, repay, erc4646Deposit, erc4646Withdraw
  */
-contract CompoundComposerLightTest is Test, ComposerUtils, COMPOUND_V3_DATA_8453 {
+contract CompoundComposerLightTest is ComposerLightBaseTest {
     uint16 internal constant COMPOUND_V3_ID = 2000;
 
     OneDeltaComposerLight oneDV2;
 
-    address internal constant user = address(984327);
+    address internal USDC;
+    address internal COMPOUND_V3_USDC_COMET;
+    address internal WETH;
 
     function setUp() public virtual {
-        vm.createSelectFork({blockNumber: 26696865, urlOrAlias: "https://mainnet.base.org"});
+        // initialize the chain
+        _init(ChainIds.BASE);
+        USDC = chain.getTokenAddress(TokenNames.USDC);
+        COMPOUND_V3_USDC_COMET = chain.getTokenAddress(TokenNames.COMPOUND_V3_USDC_COMET);
+        WETH = chain.getTokenAddress(TokenNames.WETH);
+
         oneDV2 = new OneDeltaComposerLight();
     }
 
@@ -36,7 +42,7 @@ contract CompoundComposerLightTest is Test, ComposerUtils, COMPOUND_V3_DATA_8453
         deal(token, user, amount);
 
         vm.prank(user);
-        IERC20All(token).approve(address(oneDV2), type(uint).max);
+        IERC20All(token).approve(address(oneDV2), type(uint256).max);
 
         bytes memory transferTo = CalldataLib.transferIn(
             token,
@@ -86,7 +92,9 @@ contract CompoundComposerLightTest is Test, ComposerUtils, COMPOUND_V3_DATA_8453
         IERC20All(comet).allow(address(oneDV2), true);
 
         uint256 amountToBorrow = 10.0e6;
-        bytes memory d = CalldataLib.encodeCompoundV3Withdraw(token, false, amountToBorrow, user, comet, token == cometToBase[comet]);
+        bytes memory d = CalldataLib.encodeCompoundV3Withdraw(
+            token, false, amountToBorrow, user, comet, token == chain.getCometToBase(comet)
+        );
 
         vm.prank(user);
         oneDV2.deltaCompose(d);
@@ -108,7 +116,7 @@ contract CompoundComposerLightTest is Test, ComposerUtils, COMPOUND_V3_DATA_8453
         borrowFromCompoundV3(token, user, amountToBorrow, comet);
 
         vm.prank(user);
-        IERC20All(token).approve(address(oneDV2), type(uint).max);
+        IERC20All(token).approve(address(oneDV2), type(uint256).max);
 
         uint256 amountToRepay = 7.0e6;
 
@@ -124,11 +132,11 @@ contract CompoundComposerLightTest is Test, ComposerUtils, COMPOUND_V3_DATA_8453
         oneDV2.deltaCompose(abi.encodePacked(transferTo, d));
     }
 
-    function depositToCompoundV3(address token, address userAddress, uint amount, address comet) internal {
+    function depositToCompoundV3(address token, address userAddress, uint256 amount, address comet) internal {
         deal(token, userAddress, amount);
 
         vm.prank(userAddress);
-        IERC20All(token).approve(address(oneDV2), type(uint).max);
+        IERC20All(token).approve(address(oneDV2), type(uint256).max);
 
         bytes memory transferTo = CalldataLib.transferIn(
             token,
@@ -142,7 +150,7 @@ contract CompoundComposerLightTest is Test, ComposerUtils, COMPOUND_V3_DATA_8453
         oneDV2.deltaCompose(abi.encodePacked(transferTo, d));
     }
 
-    function borrowFromCompoundV3(address token, address userAddress, uint amountToBorrow, address comet) internal {
+    function borrowFromCompoundV3(address token, address userAddress, uint256 amountToBorrow, address comet) internal {
         vm.prank(userAddress);
         IERC20All(comet).allow(address(oneDV2), true);
 
