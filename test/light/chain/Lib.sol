@@ -6,22 +6,43 @@ library TokenNames {
     string internal constant NATIVE = "NATIVE";
     string internal constant WRAPPED_NATIVE = "WRAPPED_NATIVE";
     string internal constant WETH = "WETH";
-    string internal constant USDC = "USDC";
-    string internal constant cbETH = "cbETH";
-    string internal constant USDbC = "USDbC";
+
     string internal constant wstETH = "wstETH";
     string internal constant weETH = "weETH";
-    string internal constant cbBTC = "cbBTC";
+    string internal constant cbETH = "cbETH";
     string internal constant ezETH = "ezETH";
+    string internal constant wrsETH = "wrsETH";
+
+    string internal constant USDC = "USDC";
+    string internal constant USDT = "USDT";
+    string internal constant USDbC = "USDbC";
     string internal constant GHO = "GHO";
+    string internal constant DAI = "DAI";
+
+    string internal constant ARB = "ARB";
+
+    string internal constant AERO = "AERO";
+
+    string internal constant cbBTC = "cbBTC";
     /// @dev Lombard Staked BTC (LBTC)
     string internal constant LBTC = "LBTC";
-
 
     // Compound V2
     string internal constant CompV2_ETH = "CompV2_ETH";
     string internal constant CompV2_USDC = "cUSDC_V2";
     string internal constant COMPTROLLER = "COMPTROLLER";
+    string internal constant VENUS_COMPTROLLER = "VENUS_COMPTROLLER";
+    string internal constant VENUS_ETH_COMPTROLLER = "VENUS_ETH_COMPTROLLER";
+
+    // Compound V3
+    string internal constant COMPOUND_V3_USDC_BASE = "COMPOUND_V3_USDC_BASE";
+    string internal constant COMPOUND_V3_USDC_COMET = "COMPOUND_V3_USDC_COMET";
+    string internal constant COMPOUND_V3_USDBC_BASE = "COMPOUND_V3_USDBC_BASE";
+    string internal constant COMPOUND_V3_USDBC_COMET = "COMPOUND_V3_USDBC_COMET";
+    string internal constant COMPOUND_V3_WETH_BASE = "COMPOUND_V3_WETH_BASE";
+    string internal constant COMPOUND_V3_WETH_COMET = "COMPOUND_V3_WETH_COMET";
+    string internal constant COMPOUND_V3_AERO_BASE = "COMPOUND_V3_AERO_BASE";
+    string internal constant COMPOUND_V3_AERO_COMET = "COMPOUND_V3_AERO_COMET";
 
     // Balancer V3
     string internal constant BALANCER_V3_VAULT = "BALANCER_V3_VAULT";
@@ -35,6 +56,9 @@ library TokenNames {
     string internal constant AaveV3_Pool = "AAVE_V3_POOL";
     string internal constant AaveV3_USDC = "aUSDC_V3";
     string internal constant AaveV3_ETH = "aWETH_V3";
+
+    // Granery
+    string internal constant GRANERY_POOL = "GRANERY_POOL";
 }
 
 library ChainIds {
