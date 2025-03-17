@@ -1,36 +1,36 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {Test} from "forge-std/Test.sol";
-import {console} from "forge-std/console.sol";
 import {ComposerUtils, Commands} from "../shared/utils/ComposerUtils.sol";
 import {MorphoMathLib} from "./utils/MathLib.sol";
 import {MarketParams, IMorphoEverything} from "./utils/Morpho.sol";
 
 import {OneDeltaComposerLight} from "../../contracts/1delta/modules/light/Composer.sol";
 import {IERC20All} from "../shared/interfaces/IERC20All.sol";
+import {ComposerLightBaseTest} from "./ComposerLightBaseTest.sol";
+import {ChainIds, TokenNames} from "./chain/Lib.sol";
 import "./utils/CalldataLib.sol";
 
-/**
- * We test all CalldataLib.morpho blue operations
- * - supply, supplyCollateral, borrow, repay, erc4646Deposit, erc4646Withdraw
- */
-contract FlashLoanLightTest is Test {
+contract FlashLoanLightTest is ComposerLightBaseTest {
     using MorphoMathLib for uint256;
 
     OneDeltaComposerLight oneD;
 
-    address internal constant user = address(984327);
+    address internal MORPHO;
+    address internal AAVE_V3_POOL;
+    address internal GRANARY_POOL;
+    address private BALANCER_V2_VAULT;
 
-    address internal constant MORPHO = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
-    address internal constant AAVE_V3_POOL = 0xA238Dd80C259a72e81d7e4664a9801593F98d1c5;
-    address internal constant GRANARY_POOL = 0xB702cE183b4E1Faa574834715E5D4a6378D0eEd3;
-    address private constant BALANCER_V2_VAULT = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
-
-    address internal constant WETH = 0x4200000000000000000000000000000000000006;
+    address internal WETH;
 
     function setUp() public virtual {
-        vm.createSelectFork({blockNumber: 26696865, urlOrAlias: "https://mainnet.base.org"});
+        _init(ChainIds.BASE);
+        MORPHO = chain.getTokenAddress(TokenNames.MORPHO);
+        AAVE_V3_POOL = chain.getTokenAddress(TokenNames.AaveV3_Pool);
+        GRANARY_POOL = chain.getTokenAddress(TokenNames.GRANARY_POOL);
+        BALANCER_V2_VAULT = chain.getTokenAddress(TokenNames.BALANCER_V2_VAULT);
+        WETH = chain.getTokenAddress(TokenNames.WETH);
+
         oneD = new OneDeltaComposerLight();
     }
 
@@ -51,7 +51,7 @@ contract FlashLoanLightTest is Test {
             asset,
             amount,
             MORPHO,
-            uint8(0), // morpho B tyoe
+            uint8(0), // morpho B type
             uint8(0), // THE morpho B
             dp
         );

@@ -44,6 +44,9 @@ library TokenNames {
     string internal constant COMPOUND_V3_AERO_BASE = "COMPOUND_V3_AERO_BASE";
     string internal constant COMPOUND_V3_AERO_COMET = "COMPOUND_V3_AERO_COMET";
 
+    // Balancer V2
+    string internal constant BALANCER_V2_VAULT = "BALANCER_V2_VAULT";
+
     // Balancer V3
     string internal constant BALANCER_V3_VAULT = "BALANCER_V3_VAULT";
 

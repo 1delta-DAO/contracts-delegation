@@ -162,4 +162,8 @@ contract Base is ChainBase {
         tokens[CHAIN_ID][TokenNames.META_MORPHO_USDC] = 0x7BfA7C4f149E7415b73bdeDfe609237e29CBF34A;
         tokens[CHAIN_ID][TokenNames.MORPHO] = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
     }
+
+    function _initBalancerV2Tokens() private {
+        tokens[CHAIN_ID][TokenNames.BALANCER_V2_VAULT] = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
+    }
 }
