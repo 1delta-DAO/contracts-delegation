@@ -153,7 +153,7 @@ abstract contract BaseSwapper is
 
                 // if nothing is left, break
                 if (i > splitsCount) break;
-                
+
                 // otherwise, we decrement the swaps left amount
                 assembly {
                     swapsLeft := sub(swapsLeft, split)
@@ -217,7 +217,15 @@ abstract contract BaseSwapper is
         }
         // iZi
         else if (dexId == IZI_ID) {
-            amountIn = _swapIZIPoolExactIn(uint128(amountIn), 0, payer, receiver, currentOffset, 64);
+            (amountIn, currentOffset) = _swapIZIPoolExactInGeneric(
+                dexId,
+                amountIn,
+                tokenIn,
+                tokenOut,
+                receiver,
+                currentOffset,
+                payer // we do not need end flags
+            );
             assembly {
                 currentOffset := add(currentOffset, SKIP_LENGTH_UNOSWAP)
             }
