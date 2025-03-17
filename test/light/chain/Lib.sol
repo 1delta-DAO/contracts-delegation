@@ -57,8 +57,12 @@ library TokenNames {
     string internal constant AaveV3_USDC = "aUSDC_V3";
     string internal constant AaveV3_ETH = "aWETH_V3";
 
-    // Granery
-    string internal constant GRANERY_POOL = "GRANERY_POOL";
+    // Granary
+    string internal constant GRANARY_POOL = "GRANARY_POOL";
+
+    // Morpho
+    string internal constant META_MORPHO_USDC = "META_MORPHO_USDC";
+    string internal constant MORPHO = "MORPHO";
 }
 
 library ChainIds {
