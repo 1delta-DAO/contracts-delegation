@@ -18,7 +18,7 @@ interface IChainBase {
 
     function getAaveV3LendingTokens(address token) external view returns (AaveTokens memory);
 
-    function getGraneryLendingTokens(address token) external view returns (AaveTokens memory);
+    function getGranaryLendingTokens(address token) external view returns (AaveTokens memory);
 
     function getVenusLendingTokens(address token) external view returns (address);
     function getVenusEthLendingTokens(address token) external view returns (address);
@@ -56,7 +56,7 @@ abstract contract ChainBase is IChainBase {
         return AaveV3LendingTokens[token];
     }
 
-    function getGraneryLendingTokens(address token) external view returns (AaveTokens memory) {
+    function getGranaryLendingTokens(address token) external view returns (AaveTokens memory) {
         return GraneryLendingTokens[token];
     }
 

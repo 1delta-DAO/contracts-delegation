@@ -5,28 +5,26 @@ import {Test} from "forge-std/Test.sol";
 import {console} from "forge-std/console.sol";
 import {MarketParams, IMorphoEverything} from "./utils/Morpho.sol";
 
-import {OneDeltaComposerBase} from "../../contracts/1delta/modules/base/Composer.sol";
 import {OneDeltaComposerLight} from "../../contracts/1delta/modules/light/Composer.sol";
 import {IERC20All} from "../shared/interfaces/IERC20All.sol";
-import {GRANARY_DATA_8453} from "./data/GRANARY_DATA_8453.sol";
 import "./utils/CalldataLib.sol";
+import {ComposerLightBaseTest} from "./ComposerLightBaseTest.sol";
+import {ChainIds, TokenNames} from "./chain/Lib.sol";
 
-/**
- * We test all morpho blue operations
- * - supply, supplyCollateral, borrow, repay, erc4646Deposit, erc4646Withdraw
- */
-contract AaveV2LightTest is Test, GRANARY_DATA_8453 {
+contract AaveV2LightTest is ComposerLightBaseTest {
     uint16 internal constant GRANARY = 1000;
-    OneDeltaComposerBase oneD;
     OneDeltaComposerLight oneDV2;
-
-    address internal constant user = address(984327);
-
-    address internal constant LBTC = 0xecAc9C5F704e954931349Da37F60E39f515c11c1;
+    address internal LBTC;
+    address internal USDC;
+    address internal GRANARY_POOL;
 
     function setUp() public virtual {
-        vm.createSelectFork({blockNumber: 26696865, urlOrAlias: "https://mainnet.base.org"});
-        oneD = new OneDeltaComposerBase();
+        // initialize the chain
+        _init(ChainIds.BASE);
+        LBTC = chain.getTokenAddress(TokenNames.LBTC);
+        USDC = chain.getTokenAddress(TokenNames.USDC);
+        GRANARY_POOL = chain.getTokenAddress(TokenNames.GRANERY_POOL);
+
         oneDV2 = new OneDeltaComposerLight();
     }
 
@@ -39,7 +37,7 @@ contract AaveV2LightTest is Test, GRANARY_DATA_8453 {
         uint256 amount = 100.0e6;
 
         vm.prank(user);
-        IERC20All(token).approve(address(oneDV2), type(uint).max);
+        IERC20All(token).approve(address(oneDV2), type(uint256).max);
 
         bytes memory transferTo = CalldataLib.transferIn(
             token,
@@ -62,9 +60,9 @@ contract AaveV2LightTest is Test, GRANARY_DATA_8453 {
         uint256 amount = 100.0e6;
 
         depositToAave(token, user, amount, pool);
-        address dToken = lendingTokens[token].vToken;
+        address dToken = chain.getGranaryLendingTokens(token).vToken;
         vm.prank(user);
-        IERC20All(dToken).approveDelegation(address(oneDV2), type(uint).max);
+        IERC20All(dToken).approveDelegation(address(oneDV2), type(uint256).max);
 
         uint256 amountToBorrow = 10.0e6;
         bytes memory d = CalldataLib.encodeAaveV2Borrow(token, false, amountToBorrow, user, 2, pool);
@@ -83,9 +81,10 @@ contract AaveV2LightTest is Test, GRANARY_DATA_8453 {
 
         depositToAave(token, user, amount, pool);
 
-        address aToken = lendingTokens[token].aToken;
+        address aToken = chain.getGranaryLendingTokens(token).aToken;
+
         vm.prank(user);
-        IERC20All(aToken).approve(address(oneDV2), type(uint).max);
+        IERC20All(aToken).approve(address(oneDV2), type(uint256).max);
 
         uint256 amountToBorrow = 10.0e6;
         bytes memory d = CalldataLib.encodeAaveV2Withdraw(token, false, amountToBorrow, user, aToken, pool);
@@ -108,7 +107,7 @@ contract AaveV2LightTest is Test, GRANARY_DATA_8453 {
         borrowFromAave(token, user, amountToBorrow, pool);
 
         vm.prank(user);
-        IERC20All(token).approve(address(oneDV2), type(uint).max);
+        IERC20All(token).approve(address(oneDV2), type(uint256).max);
 
         uint256 amountToRepay = 7.0e6;
 
@@ -118,17 +117,19 @@ contract AaveV2LightTest is Test, GRANARY_DATA_8453 {
             amountToRepay //
         );
 
-        bytes memory d = CalldataLib.encodeAaveV2Repay(token, false, amountToRepay, user, 2, lendingTokens[token].vToken, pool);
+        address vToken = chain.getGranaryLendingTokens(token).vToken;
+
+        bytes memory d = CalldataLib.encodeAaveV2Repay(token, false, amountToRepay, user, 2, vToken, pool);
 
         vm.prank(user);
         oneDV2.deltaCompose(abi.encodePacked(transferTo, d));
     }
 
-    function depositToAave(address token, address userAddress, uint amount, address pool) internal {
+    function depositToAave(address token, address userAddress, uint256 amount, address pool) internal {
         deal(token, userAddress, 1000.0e6);
 
         vm.prank(userAddress);
-        IERC20All(token).approve(address(oneDV2), type(uint).max);
+        IERC20All(token).approve(address(oneDV2), type(uint256).max);
 
         bytes memory transferTo = CalldataLib.transferIn(
             token,
@@ -142,9 +143,10 @@ contract AaveV2LightTest is Test, GRANARY_DATA_8453 {
         oneDV2.deltaCompose(abi.encodePacked(transferTo, d));
     }
 
-    function borrowFromAave(address token, address userAddress, uint amountToBorrow, address pool) internal {
+    function borrowFromAave(address token, address userAddress, uint256 amountToBorrow, address pool) internal {
+        address vToken = chain.getGranaryLendingTokens(token).vToken;
         vm.prank(userAddress);
-        IERC20All(lendingTokens[token].vToken).approveDelegation(address(oneDV2), type(uint).max);
+        IERC20All(vToken).approveDelegation(address(oneDV2), type(uint256).max);
 
         bytes memory d = CalldataLib.encodeAaveV2Borrow(token, false, amountToBorrow, userAddress, 2, pool);
 
