@@ -19,6 +19,22 @@ contract Base is ChainBase {
 
     function _setupTokens() private {
         // Tokens
+        _initTokens();
+
+        // Aave V3
+        _initAaveV3LendingTokens();
+
+        // Compound V3
+        _initCompoundV3Tokens();
+
+        // Granary
+        _initGranaryLendingTokens();
+
+        // Morpho
+        _initMorphoTokens();
+    }
+
+    function _initTokens() private {
         tokens[CHAIN_ID][TokenNames.NATIVE] = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
         tokens[CHAIN_ID][TokenNames.WRAPPED_NATIVE] = 0x4200000000000000000000000000000000000006;
         tokens[CHAIN_ID][TokenNames.WETH] = 0x4200000000000000000000000000000000000006;
@@ -34,14 +50,6 @@ contract Base is ChainBase {
         tokens[CHAIN_ID][TokenNames.wrsETH] = 0xEDfa23602D0EC14714057867A78d01e94176BEA0;
         tokens[CHAIN_ID][TokenNames.AERO] = 0x940181a94A35A4569E4529A3CDfB74e38FD98631;
         tokens[CHAIN_ID][TokenNames.DAI] = 0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb;
-        // Aave V3
-        _initAaveV3LendingTokens();
-
-        // Compound V3
-        _initCompoundV3Tokens();
-
-        // Granery
-        _initGraneryLendingTokens();
     }
 
     function _initAaveV3LendingTokens() private {
@@ -110,8 +118,8 @@ contract Base is ChainBase {
         CometToBase[0x784efeB622244d2348d4F2522f8860B96fbEcE89] = 0x940181a94A35A4569E4529A3CDfB74e38FD98631;
     }
 
-    function _initGraneryLendingTokens() private {
-        tokens[CHAIN_ID][TokenNames.GRANERY_POOL] = 0xB702cE183b4E1Faa574834715E5D4a6378D0eEd3;
+    function _initGranaryLendingTokens() private {
+        tokens[CHAIN_ID][TokenNames.GRANARY_POOL] = 0xB702cE183b4E1Faa574834715E5D4a6378D0eEd3;
 
         GraneryLendingTokens[0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb] = AaveTokens(
             0xe7334Ad0e325139329E747cF2Fc24538dD564987,
@@ -148,5 +156,10 @@ contract Base is ChainBase {
             0x3F332f38926b809670b3cac52Df67706856a1555,
             0x5183adca8472B7c999c310e4D5aAab04ad12E252
         );
+    }
+
+    function _initMorphoTokens() private {
+        tokens[CHAIN_ID][TokenNames.META_MORPHO_USDC] = 0x7BfA7C4f149E7415b73bdeDfe609237e29CBF34A;
+        tokens[CHAIN_ID][TokenNames.MORPHO] = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
     }
 }
