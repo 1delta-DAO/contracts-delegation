@@ -7,29 +7,29 @@ import {MarketParams, IMorphoEverything} from "./utils/Morpho.sol";
 
 import {OneDeltaComposerLight} from "../../contracts/1delta/modules/light/Composer.sol";
 import {IERC20All} from "../shared/interfaces/IERC20All.sol";
-import {ComposerLightBaseTest} from "./ComposerLightBaseTest.sol";
-import {ChainIds, TokenNames} from "./chain/Lib.sol";
+import {BaseTest} from "../shared/BaseTest.sol";
+import {Chains, Tokens, Lenders} from "../data/LenderRegistry.sol";
 import "./utils/CalldataLib.sol";
 
-contract FlashLoanLightTest is ComposerLightBaseTest {
+contract FlashLoanLightTest is BaseTest {
     using MorphoMathLib for uint256;
 
     OneDeltaComposerLight oneD;
 
-    address internal MORPHO;
+    uint256 internal constant forkBlock = 26696865;
+
+    address internal MORPHO = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
     address internal AAVE_V3_POOL;
     address internal GRANARY_POOL;
-    address private BALANCER_V2_VAULT;
+    address private BALANCER_V2_VAULT = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
 
     address internal WETH;
 
     function setUp() public virtual {
-        _init(ChainIds.BASE);
-        MORPHO = chain.getTokenAddress(TokenNames.MORPHO);
-        AAVE_V3_POOL = chain.getTokenAddress(TokenNames.AaveV3_Pool);
-        GRANARY_POOL = chain.getTokenAddress(TokenNames.GRANARY_POOL);
-        BALANCER_V2_VAULT = chain.getTokenAddress(TokenNames.BALANCER_V2_VAULT);
-        WETH = chain.getTokenAddress(TokenNames.WETH);
+        _init(Chains.BASE, forkBlock);
+        AAVE_V3_POOL = chain.getLendingController(Lenders.AAVE_V3);
+        GRANARY_POOL = chain.getLendingController(Lenders.GRANARY);
+        WETH = chain.getTokenAddress(Tokens.WETH);
 
         oneD = new OneDeltaComposerLight();
     }

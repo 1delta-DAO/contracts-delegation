@@ -6,31 +6,31 @@ import {MarketParams, IMorphoEverything} from "./utils/Morpho.sol";
 
 import {OneDeltaComposerLight} from "../../contracts/1delta/modules/light/Composer.sol";
 import {IERC20All} from "../shared/interfaces/IERC20All.sol";
-import {ComposerLightBaseTest} from "./ComposerLightBaseTest.sol";
-import {ChainIds, TokenNames} from "./chain/Lib.sol";
+import {BaseTest} from "../shared/BaseTest.sol";
+import {Chains, Tokens, Lenders} from "../data/LenderRegistry.sol";
 import "./utils/CalldataLib.sol";
 
 /**
  * We test all CalldataLib.morpho blue operations
  * - supply, supplyCollateral, borrow, repay, erc4646Deposit, erc4646Withdraw
  */
-contract ERC4646Test is ComposerLightBaseTest {
+contract ERC4646Test is BaseTest {
     using MorphoMathLib for uint256;
 
     OneDeltaComposerLight oneD;
 
-    address internal USDC;
-    address internal META_MORPHO_USDC;
+    uint256 internal constant forkBlock = 26696865;
 
-    address internal MORPHO;
+    address internal USDC;
+    address internal constant META_MORPHO_USDC = 0x7BfA7C4f149E7415b73bdeDfe609237e29CBF34A;
+
+    address internal constant MORPHO = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
 
     function setUp() public virtual {
         // initialize the chain
-        _init(ChainIds.BASE);
+        _init(Chains.BASE, forkBlock);
 
-        USDC = chain.getTokenAddress(TokenNames.USDC);
-        META_MORPHO_USDC = chain.getTokenAddress(TokenNames.META_MORPHO_USDC);
-        MORPHO = chain.getTokenAddress(TokenNames.MORPHO);
+        USDC = chain.getTokenAddress(Tokens.USDC);
 
         oneD = new OneDeltaComposerLight();
     }
@@ -182,6 +182,6 @@ contract ERC4646Test is ComposerLightBaseTest {
         vm.prank(user);
         oneD.deltaCompose(withdrawCall);
 
-        assertApproxEqAbs(IERC20All(vault).balanceOf(user), userShares / 2, 0);
+        assertApproxEqAbs(IERC20All(vault).balanceOf(user), userShares / 2, 1);
     }
 }

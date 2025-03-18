@@ -17,9 +17,11 @@ contract AaveV2LightTest is BaseTest {
     address internal GRANARY_POOL;
     string internal lender;
 
+    uint256 internal constant forkBlock = 26696865;
+
     function setUp() public virtual {
         // initialize the chain
-        _init(Chains.BASE);
+        _init(Chains.BASE, forkBlock);
         lender = Lenders.GRANARY;
         LBTC = chain.getTokenAddress(Tokens.LBTC);
         USDC = chain.getTokenAddress(Tokens.USDC);

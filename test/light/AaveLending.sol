@@ -17,9 +17,11 @@ contract AaveLightTest is BaseTest {
 
     string internal lender;
 
+    uint256 internal constant forkBlock = 26696865;
+
     function setUp() public virtual {
         // initialize the chain
-        _init(Chains.BASE);
+        _init(Chains.BASE, forkBlock);
         lender = Lenders.AAVE_V3;
         USDC = chain.getTokenAddress(Tokens.USDC);
         AAVE_V3_POOL = chain.getLendingController(lender);

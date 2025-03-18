@@ -14,7 +14,7 @@ import "./utils/CalldataLib.sol";
  * We test all morpho blue operations
  * - supply, supplyCollateral, borrow, repay, erc4646Deposit, erc4646Withdraw
  */
-contract CompoundComposerLightTest is BaseTest {
+contract CompoundV3ComposerLightTest is BaseTest {
     uint16 internal constant COMPOUND_V3_ID = 2000;
 
     OneDeltaComposerLight oneDV2;
@@ -24,12 +24,14 @@ contract CompoundComposerLightTest is BaseTest {
     address internal WETH;
     string internal lender;
 
+    uint256 internal constant forkBlock = 26696865;
+
     function setUp() public virtual {
         // initialize the chain
-        _init(Chains.BASE);
+        _init(Chains.BASE, forkBlock);
         lender = Lenders.COMPOUND_V3_USDC;
         USDC = chain.getTokenAddress(Tokens.USDC);
-        COMPOUND_V3_USDC_COMET =  chain.getLendingController(lender);
+        COMPOUND_V3_USDC_COMET = chain.getLendingController(lender);
         WETH = chain.getTokenAddress(Tokens.WETH);
 
         oneDV2 = new OneDeltaComposerLight();
@@ -94,9 +96,7 @@ contract CompoundComposerLightTest is BaseTest {
         IERC20All(comet).allow(address(oneDV2), true);
 
         uint256 amountToBorrow = 10.0e6;
-        bytes memory d = CalldataLib.encodeCompoundV3Withdraw(
-            token, false, amountToBorrow, user, comet, token == chain.getCometToBase(lender)
-        );
+        bytes memory d = CalldataLib.encodeCompoundV3Withdraw(token, false, amountToBorrow, user, comet, token == chain.getCometToBase(lender));
 
         vm.prank(user);
         oneDV2.deltaCompose(d);

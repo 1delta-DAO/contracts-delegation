@@ -13,10 +13,20 @@ contract BaseTest is Test {
     address payable internal constant BENEFICIARY = payable(address(0xbe9ef1c1a2ee));
     ChainFactory internal chainFactory;
 
+    /**
+     * Some RPCs need to be hand-picked to allow forking older blocks,
+     * add robust RPC urls in the constructor
+     */
+    mapping(string => string) rpcOverrides;
+
+    constructor() Test() {
+        rpcOverrides[Chains.ARBITRUM_ONE] = "https://arbitrum.drpc.org";
+    }
+
     /// @notice Initialize the chain for the test
     /// @dev The chainName must be a valid chain name in the Chains library
     /// @param chainName The name of the chain to initialize
-    function _init(string memory chainName) internal {
+    function _init(string memory chainName, uint256 blockNumber) internal {
         chainFactory = new ChainFactory();
         chain = chainFactory.getChain(chainName);
 
@@ -27,7 +37,13 @@ contract BaseTest is Test {
 
         // Create a fork
         string memory rpcUrl = chain.getRpcUrl();
-        vm.createSelectFork(rpcUrl);
+
+        string memory overrideRpc = rpcOverrides[chainName];
+        if (bytes(overrideRpc).length > 0) {
+            rpcUrl = overrideRpc;
+        }
+
+        vm.createSelectFork(rpcUrl, blockNumber);
     }
 
     /// @notice Utility function for signing messages

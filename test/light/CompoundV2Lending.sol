@@ -8,7 +8,7 @@ import {BaseTest} from "../shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "../data/LenderRegistry.sol";
 import "./utils/CalldataLib.sol";
 
-contract CompoundComposerLightTest is BaseTest {
+contract CompoundV2ComposerLightTest is BaseTest {
     uint16 internal constant COMPOUND_V2_ID = 3000;
 
     OneDeltaComposerLight oneDV2;
@@ -18,9 +18,11 @@ contract CompoundComposerLightTest is BaseTest {
     address internal VENUS_COMPTROLLER;
     string internal lender;
 
+    uint256 internal constant forkBlock = 290934482;
+
     function setUp() public virtual {
         // initialize the chain
-        _init(Chains.ARBITRUM_ONE);
+        _init(Chains.ARBITRUM_ONE, forkBlock);
         lender = Lenders.VENUS;
         USDC = chain.getTokenAddress(Tokens.USDC);
         WETH = chain.getTokenAddress(Tokens.WETH);

@@ -7,37 +7,37 @@ import {MarketParams, IMorphoEverything} from "./utils/Morpho.sol";
 
 import {OneDeltaComposerLight} from "../../contracts/1delta/modules/light/Composer.sol";
 import {IERC20All} from "../shared/interfaces/IERC20All.sol";
-import {ComposerLightBaseTest} from "./ComposerLightBaseTest.sol";
-import {ChainIds, TokenNames} from "./chain/Lib.sol";
+import {BaseTest} from "../shared/BaseTest.sol";
+import {Chains, Tokens, Lenders} from "../data/LenderRegistry.sol";
 import "./utils/CalldataLib.sol";
 
 /**
  * We test all CalldataLib.morpho blue operations
  * - supply, supplyCollateral, borrow, repay, erc4646Deposit, erc4646Withdraw
  */
-contract MorphoBlueTest is ComposerLightBaseTest {
+contract MorphoBlueTest is BaseTest {
     using MorphoMathLib for uint256;
 
     OneDeltaComposerLight oneD;
 
+    uint256 internal constant forkBlock = 26696865;
+
     address internal LBTC;
     address internal USDC;
     address internal WETH;
-    address internal META_MORPHO_USDC;
-    address internal MORPHO;
+
+    address internal constant MORPHO = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
 
     MarketParams LBTC_USDC_MARKET;
 
     function setUp() public virtual {
-        _init(ChainIds.BASE);
+        _init(Chains.BASE, forkBlock);
 
         oneD = new OneDeltaComposerLight();
         // initialize the addresses
-        LBTC = chain.getTokenAddress(TokenNames.LBTC);
-        USDC = chain.getTokenAddress(TokenNames.USDC);
-        WETH = chain.getTokenAddress(TokenNames.WETH);
-        META_MORPHO_USDC = chain.getTokenAddress(TokenNames.META_MORPHO_USDC);
-        MORPHO = chain.getTokenAddress(TokenNames.MORPHO);
+        LBTC = chain.getTokenAddress(Tokens.LBTC);
+        USDC = chain.getTokenAddress(Tokens.USDC);
+        WETH = chain.getTokenAddress(Tokens.WETH);
 
         // initialize the market
         LBTC_USDC_MARKET = MarketParams(
@@ -55,12 +55,13 @@ contract MorphoBlueTest is ComposerLightBaseTest {
         uint256 _data = uint160(nonce);
         if (allow) _data = (_data & ~UPPER_BIT) | UPPER_BIT;
 
-        return abi.encodePacked(
-            _data,
-            uint32(423),
-            uint256(674321764327), //
-            uint256(943209784329784327982)
-        );
+        return
+            abi.encodePacked(
+                _data,
+                uint32(423),
+                uint256(674321764327), //
+                uint256(943209784329784327982)
+            );
     }
 
     function test_light_morpho_permit() external {
@@ -103,7 +104,7 @@ contract MorphoBlueTest is ComposerLightBaseTest {
         vm.prank(user);
         oneD.deltaCompose(withdrawCall);
 
-        (,, uint128 collateralAmount) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
+        (, , uint128 collateralAmount) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
 
         assertApproxEqAbs(collateralAmount, assets - withdrawAssets, 0);
     }
@@ -317,7 +318,7 @@ contract MorphoBlueTest is ComposerLightBaseTest {
 
         vm.prank(user);
         oneD.deltaCompose(abi.encodePacked(transferTo, deposit));
-        (uint256 supplyShares,,) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
+        (uint256 supplyShares, , ) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
 
         (
             uint128 totalSupplyAssets,
@@ -325,6 +326,7 @@ contract MorphoBlueTest is ComposerLightBaseTest {
             ,
             ,
             ,
+
         ) = IMorphoEverything(MORPHO).market(marketId(LBTC_USDC_MARKET));
 
         uint256 assetsSupplied = supplyShares.toAssetsDown(totalSupplyAssets, totalSupplyShares);
@@ -366,7 +368,7 @@ contract MorphoBlueTest is ComposerLightBaseTest {
 
         vm.prank(user);
         oneD.deltaCompose(abi.encodePacked(transferTo, deposit));
-        (uint256 supplyShares,,) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
+        (uint256 supplyShares, , ) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
 
         (
             uint128 totalSupplyAssets,
@@ -374,6 +376,7 @@ contract MorphoBlueTest is ComposerLightBaseTest {
             ,
             ,
             ,
+
         ) = IMorphoEverything(MORPHO).market(marketId(LBTC_USDC_MARKET));
 
         uint256 assetsSupplied = supplyShares.toAssetsDown(totalSupplyAssets, totalSupplyShares);
@@ -408,7 +411,7 @@ contract MorphoBlueTest is ComposerLightBaseTest {
         oneD.deltaCompose(withdrawCall);
 
         uint256 balAfter = IERC20All(loan).balanceOf(user);
-        (uint256 supplyShares,,) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
+        (uint256 supplyShares, , ) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
         assertApproxEqAbs(balAfter - bal, loanAssetAm - loanAssetAmWithdraw, 0);
         (
             uint128 totalSupplyAssets,
@@ -416,6 +419,7 @@ contract MorphoBlueTest is ComposerLightBaseTest {
             ,
             ,
             ,
+
         ) = IMorphoEverything(MORPHO).market(marketId(LBTC_USDC_MARKET));
 
         uint256 assetsSupplied = supplyShares.toAssetsDown(totalSupplyAssets, totalSupplyShares);
@@ -449,7 +453,7 @@ contract MorphoBlueTest is ComposerLightBaseTest {
         oneD.deltaCompose(withdrawCall);
 
         uint256 balAfter = IERC20All(loan).balanceOf(user);
-        (uint256 supplyShares,,) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
+        (uint256 supplyShares, , ) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
         assertApproxEqAbs(balAfter - bal, loanAssetAm - 1, 0);
 
         (
@@ -458,6 +462,7 @@ contract MorphoBlueTest is ComposerLightBaseTest {
             ,
             ,
             ,
+
         ) = IMorphoEverything(MORPHO).market(marketId(LBTC_USDC_MARKET));
 
         uint256 assetsSupplied = supplyShares.toAssetsDown(totalSupplyAssets, totalSupplyShares);
@@ -484,7 +489,7 @@ contract MorphoBlueTest is ComposerLightBaseTest {
 
         vm.prank(user);
         oneD.deltaCompose(abi.encodePacked(transferTo, deposit));
-        (,, uint128 collateralAmount) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
+        (, , uint128 collateralAmount) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
         assertApproxEqAbs(assets, collateralAmount, 0);
     }
 
@@ -511,14 +516,13 @@ contract MorphoBlueTest is ComposerLightBaseTest {
             CalldataLib.SweepType.VALIDATE //
         );
 
-        bytes memory deposit =
-            CalldataLib.morphoDepositCollateral(encodeMarket(LBTC_USDC_MARKET), assets, user, sweepWethInCallback);
+        bytes memory deposit = CalldataLib.morphoDepositCollateral(encodeMarket(LBTC_USDC_MARKET), assets, user, sweepWethInCallback);
         vm.prank(user);
         IERC20All(collateral).approve(address(oneD), type(uint256).max);
 
         vm.prank(user);
         oneD.deltaCompose(abi.encodePacked(transferTo, deposit));
-        (,, uint128 collateralAmount) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
+        (, , uint128 collateralAmount) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
         assertApproxEqAbs(assets, collateralAmount, 0);
         assertApproxEqAbs(IERC20All(WETH).balanceOf(user), recoverWeth, 0);
     }
@@ -551,8 +555,7 @@ contract MorphoBlueTest is ComposerLightBaseTest {
             amount //
         );
 
-        bytes memory deposit =
-            CalldataLib.morphoDeposit(encodeMarket(LBTC_USDC_MARKET), isShares, amount, userAddr, hex"");
+        bytes memory deposit = CalldataLib.morphoDeposit(encodeMarket(LBTC_USDC_MARKET), isShares, amount, userAddr, hex"");
         vm.prank(userAddr);
         IERC20All(loan).approve(address(oneD), type(uint256).max);
 
