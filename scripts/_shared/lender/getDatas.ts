@@ -105,6 +105,14 @@ export enum MantleLenderId {
   COMPOUND_V3_USDE = 2000,
 }
 
+export enum PolygonLenderId {
+  AAVE_V3 = 0,
+  YLDR = 900,
+  AAVE_V2 = 1000,
+  COMPOUND_V3_USDCE = 2000,
+  COMPOUND_V3_USDT = 2001
+}
+
 export enum HemiLenderId {
   LENDOS = 10,
 }
