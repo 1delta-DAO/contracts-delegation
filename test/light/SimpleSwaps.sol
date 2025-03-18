@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {Test} from "forge-std/Test.sol";
 import {console} from "forge-std/console.sol";
 import {MarketParams, IMorphoEverything} from "./utils/Morpho.sol";
 
 import {OneDeltaComposerLight} from "../../contracts/1delta/modules/light/Composer.sol";
 import {IERC20All} from "../shared/interfaces/IERC20All.sol";
-import {AAVE_V3_DATA_8453} from "./data/AAVE_V3_DATA_8453.sol";
+import {BaseTest} from "../shared/BaseTest.sol";
+import {Chains, Tokens, Lenders} from "../data/LenderRegistry.sol";
 import "./utils/CalldataLib.sol";
 
 interface IF {
@@ -20,17 +20,24 @@ interface IF {
  * We test all morpho blue operations
  * - supply, supplyCollateral, borrow, repay, erc4646Deposit, erc4646Withdraw
  */
-contract SwapsLightTest is Test, AAVE_V3_DATA_8453 {
+contract SwapsLightTest is BaseTest {
     address internal constant UNI_FACTORY = 0x33128a8fC17869897dcE68Ed026d694621f6FDfD;
     address internal constant IZI_FACTORY = 0x8c7d3063579BdB0b90997e18A770eaE32E1eBb08;
+    uint256 internal constant forkBlock = 26696865;
     OneDeltaComposerLight oneDV2;
 
-    address internal constant user = address(984327);
-
-    address internal constant LBTC = 0xecAc9C5F704e954931349Da37F60E39f515c11c1;
+    address internal USDC;
+    address internal WETH;
+    address internal cbETH;
+    address internal LBTC;
 
     function setUp() public virtual {
-        vm.createSelectFork({blockNumber: 26696865, urlOrAlias: "https://mainnet.base.org"});
+        // initialize the chain
+        _init(Chains.BASE, forkBlock);
+        LBTC = chain.getTokenAddress(Tokens.LBTC);
+        WETH = chain.getTokenAddress(Tokens.WETH);
+        cbETH = chain.getTokenAddress(Tokens.CBETH);
+        USDC = chain.getTokenAddress(Tokens.USDC);
         oneDV2 = new OneDeltaComposerLight();
     }
 
@@ -256,7 +263,7 @@ contract SwapsLightTest is Test, AAVE_V3_DATA_8453 {
 
     function getPath()
         internal
-        pure
+        view
         returns (
             address[] memory assets, //
             uint16[] memory fees,
