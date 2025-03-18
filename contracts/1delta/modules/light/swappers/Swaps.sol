@@ -19,6 +19,7 @@ abstract contract Swaps is BaseSwapper {
     function _swap(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         uint256 amountIn;
         address tokenIn;
+        uint256 swapsCount;
         /*
          * Store the data for the callback as follows
          * | Offset | Length (bytes) | Description          |
@@ -36,11 +37,14 @@ abstract contract Swaps is BaseSwapper {
         assembly {
             amountIn := and(UINT120_MASK, shr(128, calldataload(currentOffset)))
             currentOffset := add(currentOffset, 16)
-            tokenIn := shr(96, calldataload(currentOffset))
-            currentOffset := add(currentOffset, 20)
+            let dataStart := calldataload(currentOffset)
+            tokenIn := shr(96, dataStart)
+            swapsCount := and(UINT8_MASK, shr(88, dataStart))
+            currentOffset := add(21, currentOffset)
         }
         (amountIn, currentOffset) = _eUniversalSwap(
             amountIn,
+            swapsCount,
             tokenIn,
             callerAddress,
             currentOffset //

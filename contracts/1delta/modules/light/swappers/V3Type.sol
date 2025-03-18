@@ -83,7 +83,6 @@ abstract contract V3TypeGeneric is Masks {
             mstore8(add(ptr, 256), dexId)
             mstore(add(ptr, 257), shl(240, fee)) // fee
             mstore(add(ptr, 259), shl(240, clLength)) // calldataLength (within bytes)
-
             // Store path
             calldatacopy(add(ptr, 261), currentOffset, clLength)
 

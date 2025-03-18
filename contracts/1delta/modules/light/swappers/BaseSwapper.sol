@@ -74,21 +74,21 @@ abstract contract BaseSwapper is
      */
     function _eUniversalSwap(
         uint256 amountIn,
+        uint256 swapMaxIndex,
         address tokenIn,
         address callerAddress,
         uint256 currentOffset //
     ) internal returns (uint, uint) {
         uint256 amount = amountIn;
         uint256 i;
-        uint256 swapMaxIndex;
         // we do not want to mutate tokenIn outside this context
         address _tokenIn = tokenIn;
-        assembly {
-            swapMaxIndex := shr(248, calldataload(currentOffset))
-            currentOffset := add(1, currentOffset)
-        }
+        // assembly {
+        //     swapMaxIndex := shr(248, calldataload(currentOffset))
+        //     currentOffset := add(1, currentOffset)
+        // }
         while (true) {
-            (amount, currentOffset) = _eSwapExactIn(
+            (amount, currentOffset, _tokenIn) = _eSwapExactIn(
                 amount,
                 _tokenIn,
                 callerAddress,
@@ -100,8 +100,9 @@ abstract contract BaseSwapper is
             } else {
                 // update context
                 assembly {
-                    _tokenIn := shr(96, calldataload(currentOffset))
-                    currentOffset := add(20, currentOffset)
+                    // currentOffset := add(2, currentOffset)
+                    // _tokenIn := shr(96, calldataload(currentOffset))
+                    // currentOffset := add(20, currentOffset)
                     i := add(i, 1)
                 }
             }
@@ -140,9 +141,10 @@ abstract contract BaseSwapper is
         address tokenIn,
         address callerAddresss, // caller
         uint256 currentOffset
-    ) internal returns (uint256, uint256) {
+    ) internal returns (uint256, uint256, address) {
         uint256 splits;
         uint256 splitsCount;
+        address nextToken;
         assembly {
             splits := calldataload(currentOffset)
             splitsCount := shr(248, splits)
@@ -183,8 +185,8 @@ abstract contract BaseSwapper is
                 }
                 uint256 received;
                 // reenter-universal swap
-                // can be aother split or a multi-path
-                (received, currentOffset) = _singleSwap(
+                // can be another split or a multi-path
+                (received, currentOffset, ) = _singleSwapOrRoute(
                     split,
                     tokenIn, //
                     callerAddresss,
@@ -206,14 +208,14 @@ abstract contract BaseSwapper is
             }
             amountIn = amount;
         } else {
-            (amountIn, currentOffset) = _singleSwap(
+            (amountIn, currentOffset, nextToken) = _singleSwapOrRoute(
                 amountIn,
                 tokenIn, //
                 callerAddresss,
                 currentOffset
             );
         }
-        return (amountIn, currentOffset);
+        return (amountIn, currentOffset, nextToken);
     }
 
     /*
@@ -224,23 +226,23 @@ abstract contract BaseSwapper is
      * | 1      | 20             | nextToken            |
      * | 21     | any            | swapData             |
      */
-    function _singleSwap(
+    function _singleSwapOrRoute(
         uint256 amountIn,
         address tokenIn,
         address callerAddress,
         uint256 currentOffset //
-    ) internal returns (uint256, uint256) {
-        uint256 opType;
+    ) internal returns (uint256, uint256, address) {
+        uint256 swapMaxIndex;
         assembly {
-            opType := shr(248, calldataload(currentOffset))
+            swapMaxIndex := shr(248, calldataload(currentOffset))
             currentOffset := add(currentOffset, 1)
         }
-        // opType = 0 is simple single swap
+        // swapMaxIndex = 0 is simple single swap
         // that is where each single step MUST end
-        if (opType == 0) {
-            // if the opType is single-swap,
+        address nextToken;
+        if (swapMaxIndex == 0) {
+            // if the swapMaxIndex is single-swap,
             // the next two addresses are nextToken and receiver
-            address nextToken;
             address receiver;
             assembly {
                 nextToken := shr(96, calldataload(currentOffset))
@@ -260,12 +262,13 @@ abstract contract BaseSwapper is
             // otherwise, execute universal swap (path & splits)
             (amountIn, currentOffset) = _eUniversalSwap(
                 amountIn, //
+                swapMaxIndex,
                 tokenIn,
                 callerAddress,
                 currentOffset
             );
         }
-        return (amountIn, currentOffset);
+        return (amountIn, currentOffset, nextToken);
     }
 
     /**

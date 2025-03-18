@@ -45,12 +45,11 @@ abstract contract UniV3Callbacks is V2ReferencesBase, V3ReferencesBase, ERC20Sel
             callerAddress := shr(96, firstWord)
             firstWord := calldataload(add(20, PATH_OFFSET_CALLBACK_V3))
             tokenIn := shr(96, firstWord)
+            // tokenOut | dexId | fee | pathLength
             firstWord := calldataload(add(40, PATH_OFFSET_CALLBACK_V3))
-            // second word
-            // firstWord := calldataload(164) // PATH_OFFSET_CALLBACK_V3 + 32
             tokenOut := shr(96, firstWord)
             let dexId := and(UINT8_MASK, shr(88, firstWord))
-            pathLength := and(UINT16_MASK, shr(48, firstWord))
+            pathLength := and(UINT16_MASK, shr(56, firstWord))
 
             ////////////////////////////////////////////////////
             // Compute and validate pool address
@@ -178,11 +177,9 @@ abstract contract UniV3Callbacks is V2ReferencesBase, V3ReferencesBase, ERC20Sel
             firstWord := calldataload(add(20, PATH_OFFSET_CALLBACK_V3))
             tokenIn := shr(96, firstWord)
             firstWord := calldataload(add(40, PATH_OFFSET_CALLBACK_V3))
-            // second word
-            // firstWord := calldataload(164) // PATH_OFFSET_CALLBACK_V3 + 32
             tokenOut := shr(96, firstWord)
             let dexId := and(UINT8_MASK, shr(88, firstWord))
-            pathLength := and(UINT16_MASK, shr(48, firstWord))
+            pathLength := and(UINT16_MASK, shr(56, firstWord))
 
             ////////////////////////////////////////////////////
             // Compute and validate pool address
@@ -239,8 +236,6 @@ abstract contract UniV3Callbacks is V2ReferencesBase, V3ReferencesBase, ERC20Sel
             firstWord := calldataload(add(20, PATH_OFFSET_CALLBACK_V3))
             tokenIn := shr(96, firstWord)
             firstWord := calldataload(add(40, PATH_OFFSET_CALLBACK_V3))
-            // second word
-            // firstWord := calldataload(164) // PATH_OFFSET_CALLBACK_V3 + 32
             tokenOut := shr(96, firstWord)
             let dexId := and(UINT8_MASK, shr(88, firstWord))
             pathLength := and(UINT16_MASK, shr(48, firstWord))

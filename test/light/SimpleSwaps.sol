@@ -43,7 +43,6 @@ contract SwapsLightTest is Test, AAVE_V3_DATA_8453 {
         uint256 amount
     ) internal view returns (bytes memory data) {
         address pool = IF(UNI_FACTORY).getPool(assetIn, assetOut, fee);
-        console.log("pool", pool);
         data = abi.encodePacked(
             uint8(ComposerCommands.SWAPS),
             uint128(amount), //
@@ -91,7 +90,7 @@ contract SwapsLightTest is Test, AAVE_V3_DATA_8453 {
 
         data = abi.encodePacked(
             data,
-            uint8(0), // opType = single swap
+            uint8(0), // pathLength = single swap
             assetOut,
             receiver,
             dexId,
@@ -103,7 +102,7 @@ contract SwapsLightTest is Test, AAVE_V3_DATA_8453 {
         pool = IF(IZI_FACTORY).pool(assetIn, assetOut, fee2);
         data = abi.encodePacked(
             data,
-            uint8(0), // opType = single swap
+            uint8(0), // pathLength = single swap
             assetOut,
             receiver,
             uint8(49),
@@ -116,7 +115,7 @@ contract SwapsLightTest is Test, AAVE_V3_DATA_8453 {
         pool = IF(UNI_FACTORY).getPool(assetIn, assetOut, fee2);
         data = abi.encodePacked(
             data,
-            uint8(0), // opType = single swap
+            uint8(0), // pathLength = single swap
             assetOut,
             receiver,
             uint8(0),
@@ -125,6 +124,177 @@ contract SwapsLightTest is Test, AAVE_V3_DATA_8453 {
             fee3,
             uint16(0) // cll length
         ); // 2 + 20 + 20 + 14 = 56 bytes
+    }
+
+    // swap 33% uni V3, 33% iZi, 33% other uni V3
+    function v3poolUniversalSwap(
+        address assetIn,
+        address assetOut, //
+        uint16 fee,
+        uint16 fee2,
+        uint16 fee3,
+        uint8 dexId,
+        address receiver,
+        uint256 amount
+    ) internal view returns (bytes memory data) {
+        address pool = IF(UNI_FACTORY).getPool(assetIn, assetOut, fee);
+        // head
+        data = abi.encodePacked(
+            uint8(ComposerCommands.SWAPS),
+            uint128(amount), //
+            assetIn,
+            uint8(0), // swaps max index
+            uint8(2), // splits
+            (type(uint16).max / 3), // split (1/3)
+            (type(uint16).max / 3) // split (2/3)
+        );
+        // path
+        data = abi.encodePacked(
+            data,
+            uint8(0), // swaps max index
+            uint8(2), // splits
+            (type(uint16).max / 3), // split (1/3)
+            (type(uint16).max / 3) // split (2/3)
+        );
+        data = abi.encodePacked(
+            data,
+            uint8(0), // pathLength = single swap
+            assetOut,
+            receiver,
+            dexId,
+            // v3 pool data
+            pool,
+            fee,
+            uint16(0) // cll length
+        ); // 2 + 20 + 20 + 14 = 56 bytes
+        pool = IF(IZI_FACTORY).pool(assetIn, assetOut, fee2);
+        data = abi.encodePacked(
+            data,
+            uint8(0), // pathLength = single swap
+            assetOut,
+            receiver,
+            uint8(49),
+            // v3 pool data
+            pool,
+            fee2,
+            uint16(0) // cll length
+        ); // 2 + 20 + 20 + 14 = 56 bytes
+
+        pool = IF(UNI_FACTORY).getPool(assetIn, assetOut, fee2);
+        data = abi.encodePacked(
+            data,
+            uint8(0), // pathLength = single swap
+            assetOut,
+            receiver,
+            uint8(0),
+            // v3 pool data
+            pool,
+            fee3,
+            uint16(0) // cll length
+        ); // 2 + 20 + 20 + 14 = 56 bytes
+    }
+
+    function multiPath(
+        address[] memory assets,
+        uint16[] memory fees,
+        uint8[] memory dexIds,
+        address oneDta,
+        address receiver,
+        bytes memory dataIn
+    ) internal view returns (bytes memory data) {
+        printPath(assets);
+        data = abi.encodePacked(
+            dataIn, //
+            uint8(fees.length - 1) // sop type simple
+        );
+        for (uint i = 0; i < assets.length - 1; i++) {
+            address pool;
+            if (dexIds[i] == 0) {
+                pool = IF(UNI_FACTORY).getPool(assets[i], assets[i + 1], fees[i]);
+            } else {
+                pool = IF(IZI_FACTORY).pool(assets[i], assets[i + 1], fees[i]);
+            }
+            console.log("multiPath pool", pool, dexIds[i], assets[i] < assets[i + 1]);
+            address _receiver = i < assets.length - 2 ? oneDta : receiver;
+            if (i == 0) {
+                data = abi.encodePacked(
+                    data, //
+                    uint8(0), // no splits
+                    uint8(0), // no multihop
+                    assets[i + 1], // nextToken
+                    _receiver,
+                    dexIds[i],
+                    pool,
+                    fees[i],
+                    uint16(0)
+                );
+            } else {
+                data = abi.encodePacked(
+                    data, //
+                    uint8(0), // no splits
+                    uint8(0), // no multihop
+                    assets[i + 1], // nextToken
+                    _receiver,
+                    dexIds[i],
+                    pool,
+                    fees[i],
+                    uint16(1)
+                );
+            }
+        }
+    }
+
+    function printPath(address[] memory assets) internal view {
+        console.log("-----------------------------");
+        for (uint i = 0; i < assets.length; i++) {
+            console.log("          |         ");
+            console.log(IERC20All(assets[i]).symbol(), assets[i]);
+            if (i < assets.length - 1) console.log("          |         ");
+        }
+        console.log("-----------------------------");
+    }
+
+    function getPath()
+        internal
+        pure
+        returns (
+            address[] memory assets, //
+            uint16[] memory fees,
+            uint8[] memory dexIds
+        )
+    {
+        assets = new address[](3);
+        fees = new uint16[](2);
+        dexIds = new uint8[](2);
+        assets[0] = USDC;
+        assets[1] = WETH;
+        assets[2] = cbETH;
+        fees[0] = 500;
+        fees[1] = 500;
+        dexIds[0] = 0;
+        dexIds[1] = 0;
+    }
+
+    function getUSDCWethMultiPathCalldata(
+        address oneDta,
+        address receiver, //
+        bytes memory dataIn
+    ) internal view returns (bytes memory data) {
+        (
+            address[] memory assets, //
+            uint16[] memory fees,
+            uint8[] memory dexIds
+        ) = getPath();
+
+        return
+            multiPath(
+                assets,
+                fees,
+                dexIds,
+                oneDta,
+                receiver,
+                dataIn //
+            );
     }
 
     function v3v2poolSwap(
@@ -200,6 +370,30 @@ contract SwapsLightTest is Test, AAVE_V3_DATA_8453 {
             uint8(0),
             address(oneDV2),
             amount //
+        );
+
+        vm.prank(user);
+        oneDV2.deltaCompose(swap);
+    }
+
+    function test_light_swap_v3_route() external {
+        vm.assume(user != address(0));
+
+        address tokenIn = USDC;
+        deal(tokenIn, user, 1000.0e6);
+        uint256 amount = 100.0e6;
+
+        vm.prank(user);
+        IERC20All(tokenIn).approve(address(oneDV2), type(uint).max);
+
+        bytes memory swap = getUSDCWethMultiPathCalldata(
+            address(oneDV2),
+            user,
+            abi.encodePacked( //
+                uint8(ComposerCommands.SWAPS),
+                uint128(amount), //
+                tokenIn
+            )
         );
 
         vm.prank(user);
