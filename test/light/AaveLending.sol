@@ -7,22 +7,22 @@ import {OneDeltaComposerLight} from "../../contracts/1delta/modules/light/Compos
 import {IERC20All} from "../shared/interfaces/IERC20All.sol";
 import {BaseTest} from "../shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "../data/LenderRegistry.sol";
-
 import "./utils/CalldataLib.sol";
 
 contract AaveLightTest is BaseTest {
     OneDeltaComposerLight oneDV2;
 
-    address internal LBTC;
     address internal USDC;
     address internal AAVE_V3_POOL;
+
+    string internal lender;
 
     function setUp() public virtual {
         // initialize the chain
         _init(Chains.BASE);
-        LBTC = chain.getTokenAddress(Tokens.LBTC);
+        lender = Lenders.AAVE_V3;
         USDC = chain.getTokenAddress(Tokens.USDC);
-        AAVE_V3_POOL = chain.getLendingController(Lenders.AAVE_V3);
+        AAVE_V3_POOL = chain.getLendingController(lender);
 
         oneDV2 = new OneDeltaComposerLight();
     }
@@ -82,7 +82,7 @@ contract AaveLightTest is BaseTest {
 
         depositToAave(token, user, amount, pool);
 
-        address aToken = _getDebtToken(token);
+        address aToken = _getCollateralToken(token);
 
         vm.prank(user);
         IERC20All(aToken).approve(address(oneDV2), type(uint256).max);
@@ -157,6 +157,10 @@ contract AaveLightTest is BaseTest {
     }
 
     function _getDebtToken(address token) internal view returns (address) {
-        return chain.getLendingTokens(token, Lenders.AAVE_V3).debt;
+        return chain.getLendingTokens(token, lender).debt;
+    }
+
+    function _getCollateralToken(address token) internal view returns (address) {
+        return chain.getLendingTokens(token, lender).collateral;
     }
 }

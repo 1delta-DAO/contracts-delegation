@@ -6,15 +6,15 @@ import {MarketParams, IMorphoEverything} from "./utils/Morpho.sol";
 
 import {OneDeltaComposerLight} from "../../contracts/1delta/modules/light/Composer.sol";
 import {IERC20All} from "../shared/interfaces/IERC20All.sol";
-import {ComposerLightBaseTest} from "./ComposerLightBaseTest.sol";
-import {ChainIds, TokenNames} from "./chain/Lib.sol";
+import {BaseTest} from "../shared/BaseTest.sol";
+import {Chains, Tokens, Lenders} from "../data/LenderRegistry.sol";
 import "./utils/CalldataLib.sol";
 
 /**
  * We test all morpho blue operations
  * - supply, supplyCollateral, borrow, repay, erc4646Deposit, erc4646Withdraw
  */
-contract CompoundComposerLightTest is ComposerLightBaseTest {
+contract CompoundComposerLightTest is BaseTest {
     uint16 internal constant COMPOUND_V3_ID = 2000;
 
     OneDeltaComposerLight oneDV2;
@@ -22,13 +22,15 @@ contract CompoundComposerLightTest is ComposerLightBaseTest {
     address internal USDC;
     address internal COMPOUND_V3_USDC_COMET;
     address internal WETH;
+    string internal lender;
 
     function setUp() public virtual {
         // initialize the chain
-        _init(ChainIds.BASE);
-        USDC = chain.getTokenAddress(TokenNames.USDC);
-        COMPOUND_V3_USDC_COMET = chain.getTokenAddress(TokenNames.COMPOUND_V3_USDC_COMET);
-        WETH = chain.getTokenAddress(TokenNames.WETH);
+        _init(Chains.BASE);
+        lender = Lenders.COMPOUND_V3_USDC;
+        USDC = chain.getTokenAddress(Tokens.USDC);
+        COMPOUND_V3_USDC_COMET =  chain.getLendingController(lender);
+        WETH = chain.getTokenAddress(Tokens.WETH);
 
         oneDV2 = new OneDeltaComposerLight();
     }
@@ -93,7 +95,7 @@ contract CompoundComposerLightTest is ComposerLightBaseTest {
 
         uint256 amountToBorrow = 10.0e6;
         bytes memory d = CalldataLib.encodeCompoundV3Withdraw(
-            token, false, amountToBorrow, user, comet, token == chain.getCometToBase(comet)
+            token, false, amountToBorrow, user, comet, token == chain.getCometToBase(lender)
         );
 
         vm.prank(user);

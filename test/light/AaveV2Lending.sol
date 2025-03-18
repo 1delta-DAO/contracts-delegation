@@ -5,23 +5,25 @@ import {MarketParams, IMorphoEverything} from "./utils/Morpho.sol";
 
 import {OneDeltaComposerLight} from "../../contracts/1delta/modules/light/Composer.sol";
 import {IERC20All} from "../shared/interfaces/IERC20All.sol";
-import {ComposerLightBaseTest} from "./ComposerLightBaseTest.sol";
-import {ChainIds, TokenNames} from "./chain/Lib.sol";
+import {BaseTest} from "../shared/BaseTest.sol";
+import {Chains, Tokens, Lenders} from "../data/LenderRegistry.sol";
 import "./utils/CalldataLib.sol";
 
-contract AaveV2LightTest is ComposerLightBaseTest {
+contract AaveV2LightTest is BaseTest {
     uint16 internal constant GRANARY = 1000;
     OneDeltaComposerLight oneDV2;
     address internal LBTC;
     address internal USDC;
     address internal GRANARY_POOL;
+    string internal lender;
 
     function setUp() public virtual {
         // initialize the chain
-        _init(ChainIds.BASE);
-        LBTC = chain.getTokenAddress(TokenNames.LBTC);
-        USDC = chain.getTokenAddress(TokenNames.USDC);
-        GRANARY_POOL = chain.getTokenAddress(TokenNames.GRANARY_POOL);
+        _init(Chains.BASE);
+        lender = Lenders.GRANARY;
+        LBTC = chain.getTokenAddress(Tokens.LBTC);
+        USDC = chain.getTokenAddress(Tokens.USDC);
+        GRANARY_POOL = chain.getLendingController(lender);
 
         oneDV2 = new OneDeltaComposerLight();
     }
@@ -58,7 +60,7 @@ contract AaveV2LightTest is ComposerLightBaseTest {
         uint256 amount = 100.0e6;
 
         depositToAave(token, user, amount, pool);
-        address dToken = chain.getGranaryLendingTokens(token).vToken;
+        address dToken = _getDebtToken(token);
         vm.prank(user);
         IERC20All(dToken).approveDelegation(address(oneDV2), type(uint256).max);
 
@@ -79,7 +81,7 @@ contract AaveV2LightTest is ComposerLightBaseTest {
 
         depositToAave(token, user, amount, pool);
 
-        address aToken = chain.getGranaryLendingTokens(token).aToken;
+        address aToken = _getCollateralToken(token);
 
         vm.prank(user);
         IERC20All(aToken).approve(address(oneDV2), type(uint256).max);
@@ -115,7 +117,7 @@ contract AaveV2LightTest is ComposerLightBaseTest {
             amountToRepay //
         );
 
-        address vToken = chain.getGranaryLendingTokens(token).vToken;
+        address vToken = _getDebtToken(token);
 
         bytes memory d = CalldataLib.encodeAaveV2Repay(token, false, amountToRepay, user, 2, vToken, pool);
 
@@ -142,7 +144,7 @@ contract AaveV2LightTest is ComposerLightBaseTest {
     }
 
     function borrowFromAave(address token, address userAddress, uint256 amountToBorrow, address pool) internal {
-        address vToken = chain.getGranaryLendingTokens(token).vToken;
+        address vToken = _getDebtToken(token);
         vm.prank(userAddress);
         IERC20All(vToken).approveDelegation(address(oneDV2), type(uint256).max);
 
@@ -150,5 +152,13 @@ contract AaveV2LightTest is ComposerLightBaseTest {
 
         vm.prank(userAddress);
         oneDV2.deltaCompose(d);
+    }
+
+    function _getDebtToken(address token) internal view returns (address) {
+        return chain.getLendingTokens(token, lender).debt;
+    }
+
+    function _getCollateralToken(address token) internal view returns (address) {
+        return chain.getLendingTokens(token, lender).collateral;
     }
 }
