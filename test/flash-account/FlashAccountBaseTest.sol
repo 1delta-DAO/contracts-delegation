@@ -9,7 +9,7 @@ import {FlashAccountFactory} from "@flash-account/FlashAccountFactory.sol";
 import {PackedUserOperation} from "account-abstraction/interfaces/PackedUserOperation.sol";
 import {ChainFactory} from "./chain/ChainFactory.sol";
 import {IChainBase} from "./chain/ChainBase.sol";
-// solhint-disable-next-line
+
 contract FlashAccountBaseTest is Test {
     // test user
     uint256 internal userPrivateKey = 0x1de17a;
@@ -21,12 +21,12 @@ contract FlashAccountBaseTest is Test {
     EntryPoint internal entryPoint;
     FlashAccount internal userFlashAccount;
 
-    function setUp() public virtual {
+    function _init(uint256 chainId_) internal {
         // setup user
         user = vm.addr(userPrivateKey);
 
         // get chain-id from env
-        uint256 chainId = uint256(vm.envOr("CHAIN_ID", int256(43114)));
+        uint256 chainId = uint256(vm.envOr("CHAIN_ID", chainId_));
 
         // get chain from chainFactory
         ChainFactory chainFactory = new ChainFactory();
@@ -57,17 +57,16 @@ contract FlashAccountBaseTest is Test {
         uint128 callGasLimit = 1 << 24;
         uint128 maxPriorityFeePerGas = 1 << 8;
         uint128 maxFeePerGas = 1 << 8;
-        return
-            PackedUserOperation({
-                sender: address(userFlashAccount),
-                nonce: nonce,
-                initCode: "",
-                callData: callData,
-                accountGasLimits: bytes32((uint256(verificationGasLimit) << 128) | callGasLimit),
-                preVerificationGas: 1 << 24,
-                gasFees: bytes32((uint256(maxPriorityFeePerGas) << 128) | maxFeePerGas),
-                paymasterAndData: "",
-                signature: ""
-            });
+        return PackedUserOperation({
+            sender: address(userFlashAccount),
+            nonce: nonce,
+            initCode: "",
+            callData: callData,
+            accountGasLimits: bytes32((uint256(verificationGasLimit) << 128) | callGasLimit),
+            preVerificationGas: 1 << 24,
+            gasFees: bytes32((uint256(maxPriorityFeePerGas) << 128) | maxFeePerGas),
+            paymasterAndData: "",
+            signature: ""
+        });
     }
 }
