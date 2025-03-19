@@ -29,6 +29,7 @@ contract SwapsLightTest is BaseTest {
     address internal USDC;
     address internal WETH;
     address internal cbETH;
+    address internal cbBTC;
     address internal LBTC;
 
     function setUp() public virtual {
@@ -37,6 +38,7 @@ contract SwapsLightTest is BaseTest {
         LBTC = chain.getTokenAddress(Tokens.LBTC);
         WETH = chain.getTokenAddress(Tokens.WETH);
         cbETH = chain.getTokenAddress(Tokens.CBETH);
+        cbBTC = chain.getTokenAddress(Tokens.CBBTC);
         USDC = chain.getTokenAddress(Tokens.USDC);
         oneDV2 = new OneDeltaComposerLight();
     }
@@ -105,7 +107,7 @@ contract SwapsLightTest is BaseTest {
             pool,
             fee,
             uint16(0) // cll length
-        ); // 2 + 20 + 20 + 14 = 56 bytes
+        ); //
         pool = IF(IZI_FACTORY).pool(assetIn, assetOut, fee2);
         data = abi.encodePacked(
             data,
@@ -117,7 +119,7 @@ contract SwapsLightTest is BaseTest {
             pool,
             fee2,
             uint16(0) // cll length
-        ); // 2 + 20 + 20 + 14 = 56 bytes
+        ); //
 
         pool = IF(UNI_FACTORY).getPool(assetIn, assetOut, fee2);
         data = abi.encodePacked(
@@ -130,88 +132,17 @@ contract SwapsLightTest is BaseTest {
             pool,
             fee3,
             uint16(0) // cll length
-        ); // 2 + 20 + 20 + 14 = 56 bytes
-    }
-
-    // swap 33% uni V3, 33% iZi, 33% other uni V3
-    function v3poolUniversalSwap(
-        address assetIn,
-        address assetOut, //
-        uint16 fee,
-        uint16 fee2,
-        uint16 fee3,
-        uint8 dexId,
-        address receiver,
-        uint256 amount
-    ) internal view returns (bytes memory data) {
-        address pool = IF(UNI_FACTORY).getPool(assetIn, assetOut, fee);
-        // head
-        data = abi.encodePacked(
-            uint8(ComposerCommands.SWAPS),
-            uint128(amount), //
-            assetIn,
-            uint8(0), // swaps max index
-            uint8(2), // splits
-            (type(uint16).max / 3), // split (1/3)
-            (type(uint16).max / 3) // split (2/3)
-        );
-        // path
-        data = abi.encodePacked(
-            data,
-            uint8(0), // swaps max index
-            uint8(2), // splits
-            (type(uint16).max / 3), // split (1/3)
-            (type(uint16).max / 3) // split (2/3)
-        );
-        data = abi.encodePacked(
-            data,
-            uint8(0), // pathLength = single swap
-            assetOut,
-            receiver,
-            dexId,
-            // v3 pool data
-            pool,
-            fee,
-            uint16(0) // cll length
-        ); // 2 + 20 + 20 + 14 = 56 bytes
-        pool = IF(IZI_FACTORY).pool(assetIn, assetOut, fee2);
-        data = abi.encodePacked(
-            data,
-            uint8(0), // pathLength = single swap
-            assetOut,
-            receiver,
-            uint8(49),
-            // v3 pool data
-            pool,
-            fee2,
-            uint16(0) // cll length
-        ); // 2 + 20 + 20 + 14 = 56 bytes
-
-        pool = IF(UNI_FACTORY).getPool(assetIn, assetOut, fee2);
-        data = abi.encodePacked(
-            data,
-            uint8(0), // pathLength = single swap
-            assetOut,
-            receiver,
-            uint8(0),
-            // v3 pool data
-            pool,
-            fee3,
-            uint16(0) // cll length
-        ); // 2 + 20 + 20 + 14 = 56 bytes
+        ); //
     }
 
     function multiPath(
         address[] memory assets,
         uint16[] memory fees,
         uint8[] memory dexIds,
-        address oneDta,
-        address receiver,
-        bytes memory dataIn
+        address receiver
     ) internal view returns (bytes memory data) {
         printPath(assets);
         data = abi.encodePacked(
-            dataIn, //
             uint8(fees.length - 1) // sop type simple
         );
         for (uint i = 0; i < assets.length - 1; i++) {
@@ -222,7 +153,7 @@ contract SwapsLightTest is BaseTest {
                 pool = IF(IZI_FACTORY).pool(assets[i], assets[i + 1], fees[i]);
             }
             console.log("multiPath pool", pool, dexIds[i], assets[i] < assets[i + 1]);
-            address _receiver = i < assets.length - 2 ? oneDta : receiver;
+            address _receiver = i < assets.length - 2 ? address(oneDV2) : receiver;
             if (i == 0) {
                 data = abi.encodePacked(
                     data, //
@@ -261,7 +192,7 @@ contract SwapsLightTest is BaseTest {
         console.log("-----------------------------");
     }
 
-    function getPath()
+    function getPath_USDC_CBETH()
         internal
         view
         returns (
@@ -282,25 +213,106 @@ contract SwapsLightTest is BaseTest {
         dexIds[1] = 0;
     }
 
-    function getUSDCWethMultiPathCalldata(
-        address oneDta,
-        address receiver, //
-        bytes memory dataIn
+    function getPath_USDC_WETH()
+        internal
+        view
+        returns (
+            address[] memory assets, //
+            uint16[] memory fees,
+            uint8[] memory dexIds
+        )
+    {
+        assets = new address[](3);
+        fees = new uint16[](2);
+        dexIds = new uint8[](2);
+        assets[0] = USDC;
+        assets[1] = cbBTC;
+        assets[2] = WETH;
+        fees[0] = 500;
+        fees[1] = 3000;
+        dexIds[0] = 0;
+        dexIds[1] = 0;
+    }
+
+    function get_USDC_WETH_MultiPathCalldata(
+        address receiver //
     ) internal view returns (bytes memory data) {
         (
             address[] memory assets, //
             uint16[] memory fees,
             uint8[] memory dexIds
-        ) = getPath();
+        ) = getPath_USDC_WETH();
+
+        data = multiPath(
+            assets,
+            fees,
+            dexIds,
+            receiver //
+        );
+    }
+
+    // swap 33% uni V3, 33% iZi, 33% other uni V3 based route
+    function v3poolpSwapWithRoute(uint16 fee, uint16 fee2, uint8 dexId, address receiver, uint256 amount) internal view returns (bytes memory data) {
+        address assetIn = USDC;
+        address assetOut = WETH;
+        address pool = IF(UNI_FACTORY).getPool(assetIn, assetOut, fee);
+        // head
+        data = abi.encodePacked(
+            uint8(ComposerCommands.SWAPS),
+            uint128(amount), //
+            assetIn,
+            uint8(0), // swaps max index
+            uint8(2), // splits
+            (type(uint16).max / 3), // split (1/3)
+            (type(uint16).max / 3) // split (2/3)
+        );
+
+        data = abi.encodePacked(
+            data,
+            uint8(0), // pathLength = single swap
+            assetOut,
+            receiver,
+            dexId,
+            // v3 pool data
+            pool,
+            fee,
+            uint16(0) // cll length
+        ); //
+        pool = IF(IZI_FACTORY).pool(assetIn, assetOut, fee2);
+        data = abi.encodePacked(
+            data,
+            uint8(0), // pathLength = single swap
+            assetOut,
+            receiver,
+            uint8(49),
+            // v3 pool data
+            pool,
+            fee2,
+            uint16(0) // cll length
+        ); //
+
+        pool = IF(UNI_FACTORY).getPool(assetIn, assetOut, fee2);
+        data = abi.encodePacked(
+            data,
+            get_USDC_WETH_MultiPathCalldata(receiver) //
+        ); //
+    }
+
+    function get_USDC_CBETH_MultiPathCalldata(
+        address receiver //
+    ) internal view returns (bytes memory data) {
+        (
+            address[] memory assets, //
+            uint16[] memory fees,
+            uint8[] memory dexIds
+        ) = getPath_USDC_CBETH();
 
         return
             multiPath(
                 assets,
                 fees,
                 dexIds,
-                oneDta,
-                receiver,
-                dataIn //
+                receiver //
             );
     }
 
@@ -326,7 +338,7 @@ contract SwapsLightTest is BaseTest {
             pool,
             fee,
             uint16(0) // cll length
-        ); // 2 + 20 + 20 + 14 = 56 bytes
+        ); //
     }
 
     function test_light_swap_v3_single() external {
@@ -375,12 +387,42 @@ contract SwapsLightTest is BaseTest {
             fee2,
             fee3,
             uint8(0),
-            address(oneDV2),
+            user,
             amount //
         );
 
         vm.prank(user);
         oneDV2.deltaCompose(swap);
+    }
+
+    function test_light_swap_v3_splits_with_route() external {
+        vm.assume(user != address(0));
+
+        address tokenIn = USDC;
+        address tokenOut = WETH;
+        uint16 fee = 500;
+        uint16 fee2 = 3000;
+        deal(tokenIn, user, 1000.0e6);
+        uint256 amount = 100.0e6;
+
+        vm.prank(user);
+        IERC20All(tokenIn).approve(address(oneDV2), type(uint).max);
+
+        uint256 balBefore = IERC20All(tokenOut).balanceOf(user);
+
+        bytes memory swap = v3poolpSwapWithRoute(
+            fee,
+            fee2,
+            uint8(0),
+            user,
+            amount //
+        );
+
+        vm.prank(user);
+        oneDV2.deltaCompose(swap);
+
+        uint256 balAfter = IERC20All(tokenOut).balanceOf(user);
+        console.log("received", balAfter - balBefore);
     }
 
     function test_light_swap_v3_route() external {
@@ -393,14 +435,13 @@ contract SwapsLightTest is BaseTest {
         vm.prank(user);
         IERC20All(tokenIn).approve(address(oneDV2), type(uint).max);
 
-        bytes memory swap = getUSDCWethMultiPathCalldata(
-            address(oneDV2),
-            user,
+        bytes memory swap = abi.encodePacked(
             abi.encodePacked( //
                 uint8(ComposerCommands.SWAPS),
                 uint128(amount), //
                 tokenIn
-            )
+            ),
+            get_USDC_CBETH_MultiPathCalldata(user)
         );
 
         vm.prank(user);
