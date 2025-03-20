@@ -42,7 +42,7 @@ abstract contract Swaps is BaseSwapper {
             swapsCount := and(UINT8_MASK, shr(88, dataStart))
             currentOffset := add(21, currentOffset)
         }
-        (amountIn, currentOffset) = _eUniversalSwap(
+        (amountIn, currentOffset, ) = _eUniversalSwap(
             amountIn,
             swapsCount,
             tokenIn,

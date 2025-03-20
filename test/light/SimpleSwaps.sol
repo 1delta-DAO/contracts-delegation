@@ -391,8 +391,13 @@ contract SwapsLightTest is BaseTest {
             amount //
         );
 
+        uint256 balBefore = IERC20All(tokenOut).balanceOf(user);
+
         vm.prank(user);
         oneDV2.deltaCompose(swap);
+
+        uint256 balAfter = IERC20All(tokenOut).balanceOf(user);
+        console.log("received", balAfter - balBefore);
     }
 
     function test_light_swap_v3_splits_with_route() external {
@@ -446,5 +451,103 @@ contract SwapsLightTest is BaseTest {
 
         vm.prank(user);
         oneDV2.deltaCompose(swap);
+    }
+
+    // swap 33% uni V3, 33% iZi, 33% other uni V3 based route
+    function v3poolUltiSwapWithRoute(
+        uint16 fee,
+        uint16 fee2,
+        uint8 dexId,
+        address receiver,
+        uint256 amount
+    ) internal view returns (bytes memory data) {
+        address assetIn = USDC;
+        address assetOut = WETH;
+        address pool = IF(UNI_FACTORY).getPool(assetIn, assetOut, fee);
+        // head
+        data = abi.encodePacked(
+            uint8(ComposerCommands.SWAPS),
+            uint128(amount), //
+            assetIn,
+            uint8(1), // swaps max index
+            uint8(2), // splits
+            (type(uint16).max / 3), // split (1/3)
+            (type(uint16).max / 3) // split (2/3)
+        );
+
+        data = abi.encodePacked(
+            data,
+            uint8(0), // pathLength = single swap
+            assetOut,
+            address(oneDV2),
+            dexId,
+            // v3 pool data
+            pool,
+            fee,
+            uint16(0) // cll length
+        ); //
+        pool = IF(IZI_FACTORY).pool(assetIn, assetOut, fee2);
+        data = abi.encodePacked(
+            data,
+            uint8(0), // pathLength = single swap
+            assetOut,
+            address(oneDV2),
+            uint8(49),
+            // v3 pool data
+            pool,
+            fee2,
+            uint16(0) // cll length
+        ); //
+
+        data = abi.encodePacked(
+            data,
+            get_USDC_WETH_MultiPathCalldata(address(oneDV2)) //
+        ); //
+
+        pool = IF(UNI_FACTORY).getPool(assetOut, cbETH, 500);
+        data = abi.encodePacked(
+            data,
+            uint8(0), // pathLength = single swap
+            uint8(0), // splits
+            cbETH,
+            receiver,
+            uint8(0),
+            // v3 pool data
+            pool,
+            uint16(500),
+            uint16(1) // cll length
+        ); //
+    }
+
+    function test_light_swap_v3_route_splits_with_route() external {
+        vm.assume(user != address(0));
+
+        address tokenIn = USDC;
+        address tokenOut = cbETH;
+        uint16 fee = 500;
+        uint16 fee2 = 3000;
+        deal(tokenIn, user, 1000.0e6);
+        uint256 amount = 100.0e6;
+
+        vm.prank(user);
+        IERC20All(tokenIn).approve(address(oneDV2), type(uint).max);
+
+        uint256 balBefore = IERC20All(tokenOut).balanceOf(user);
+        // USDC ----------> WETH
+        // USDC ----------> WETH ---> cbETH
+        // USDC -> cbBTC -> WETH
+        bytes memory swap = v3poolUltiSwapWithRoute(
+            fee,
+            fee2,
+            uint8(0),
+            user,
+            amount //
+        );
+
+        vm.prank(user);
+        oneDV2.deltaCompose(swap);
+
+        uint256 balAfter = IERC20All(tokenOut).balanceOf(user);
+        console.log("received", balAfter - balBefore);
     }
 }

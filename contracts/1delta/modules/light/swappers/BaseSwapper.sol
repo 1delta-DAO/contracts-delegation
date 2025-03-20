@@ -78,15 +78,10 @@ abstract contract BaseSwapper is
         address tokenIn,
         address callerAddress,
         uint256 currentOffset //
-    ) internal returns (uint, uint) {
+    ) internal returns (uint256, uint256, address) {
         uint256 amount = amountIn;
-        uint256 i;
-        // we do not want to mutate tokenIn outside this context
         address _tokenIn = tokenIn;
-        // assembly {
-        //     swapMaxIndex := shr(248, calldataload(currentOffset))
-        //     currentOffset := add(1, currentOffset)
-        // }
+        uint256 i;
         while (true) {
             (amount, currentOffset, _tokenIn) = _eSwapExactIn(
                 amount,
@@ -100,15 +95,12 @@ abstract contract BaseSwapper is
             } else {
                 // update context
                 assembly {
-                    // currentOffset := add(2, currentOffset)
-                    // _tokenIn := shr(96, calldataload(currentOffset))
-                    // currentOffset := add(20, currentOffset)
                     i := add(i, 1)
                 }
             }
         }
 
-        return (amount, currentOffset);
+        return (amount, currentOffset, _tokenIn);
     }
 
     /**
@@ -186,7 +178,7 @@ abstract contract BaseSwapper is
                 uint256 received;
                 // reenter-universal swap
                 // can be another split or a multi-path
-                (received, currentOffset, ) = _singleSwapOrRoute(
+                (received, currentOffset, nextToken) = _singleSwapOrRoute(
                     split,
                     tokenIn, //
                     callerAddresss,
@@ -260,7 +252,7 @@ abstract contract BaseSwapper is
             );
         } else {
             // otherwise, execute universal swap (path & splits)
-            (amountIn, currentOffset) = _eUniversalSwap(
+            (amountIn, currentOffset, nextToken) = _eUniversalSwap(
                 amountIn, //
                 swapMaxIndex,
                 tokenIn,
