@@ -9,6 +9,7 @@ import {ERC4646Operations} from "./ERC4646/ERC4646Operations.sol";
 import {UniversalLending} from "./lending/UniversalLending.sol";
 import {Permits} from "./permit/Permits.sol";
 import {Storage} from "./management/Storage.sol";
+import {Swaps} from "./swappers/Swaps.sol";
 import {UniversalFlashLoan} from "./flashLoan/UniversalFlashLoan.sol";
 
 /**
@@ -19,6 +20,7 @@ import {UniversalFlashLoan} from "./flashLoan/UniversalFlashLoan.sol";
  * @author 1delta Labs AG
  */
 abstract contract BaseComposer is
+    Swaps,
     Storage,
     UniversalLending,
     UniversalFlashLoan,
@@ -91,7 +93,9 @@ abstract contract BaseComposer is
                 currentOffset := add(1, currentOffset)
             }
             if (operation < ComposerCommands.PERMIT) {
-                if (operation == ComposerCommands.EXT_CALL) {
+                if (operation == ComposerCommands.SWAPS) {
+                    currentOffset = _swap(currentOffset, callerAddress);
+                } else if (operation == ComposerCommands.EXT_CALL) {
                     currentOffset = _callExternal(currentOffset);
                 } else if (operation == ComposerCommands.LENDING) {
                     currentOffset = _lendingOperations(callerAddress, paramPull, paramPush, currentOffset);
