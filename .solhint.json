@@ -7,7 +7,7 @@
     "prettier/prettier": "error",
     "max-line-length": [
       "error",
-      136
+      150
     ]
   }
 }
