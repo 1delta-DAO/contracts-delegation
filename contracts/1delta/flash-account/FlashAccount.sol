@@ -3,9 +3,17 @@ pragma solidity ^0.8.27;
 
 import {FlashAccountBase} from "./FlashAccountBase.sol";
 import {IEntryPoint} from "account-abstraction/interfaces/IEntryPoint.sol";
+import {ExecutionLock} from "./common/ExecutionLock.sol";
 
-contract FlashAccount is FlashAccountBase {
+contract FlashAccount is FlashAccountBase, ExecutionLock {
     constructor(IEntryPoint entryPoint_) FlashAccountBase(entryPoint_) {}
+
+    /// @notice Execute a flash loan
+    /// @param flashLoanProvider The destination address
+    /// @param data The calldata to execute
+    function executeFlashLoan(address flashLoanProvider, bytes calldata data) public onlyAuthorized setInExecution {
+        _call(flashLoanProvider, 0, data);
+    }
 
     /**
      * @dev Explicit flash loan callback functions

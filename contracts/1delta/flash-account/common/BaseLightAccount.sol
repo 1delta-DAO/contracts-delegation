@@ -8,9 +8,8 @@ import {PackedUserOperation} from "account-abstraction/interfaces/PackedUserOper
 import {TokenCallbackHandler} from "account-abstraction/samples/callback/TokenCallbackHandler.sol";
 
 import {ERC1271} from "./ERC1271.sol";
-import {ExecutionLock} from "./ExecutionLock.sol";
 
-abstract contract BaseLightAccount is BaseAccount, TokenCallbackHandler, ERC1271, ExecutionLock {
+abstract contract BaseLightAccount is BaseAccount, TokenCallbackHandler, ERC1271 {
     IEntryPoint internal immutable _ENTRY_POINT;
 
     /// @notice Signature types used for user operation validation and ERC-1271 signature validation.
@@ -39,7 +38,7 @@ abstract contract BaseLightAccount is BaseAccount, TokenCallbackHandler, ERC1271
     /// @param dest The target of the transaction.
     /// @param value The amount of wei sent in the transaction.
     /// @param func The transaction's calldata.
-    function execute(address dest, uint256 value, bytes calldata func) external virtual onlyAuthorized setInExecution {
+    function execute(address dest, uint256 value, bytes calldata func) external virtual onlyAuthorized {
         _call(dest, value, func);
     }
 
@@ -47,12 +46,7 @@ abstract contract BaseLightAccount is BaseAccount, TokenCallbackHandler, ERC1271
     /// @param dest An array of the targets for each transaction in the sequence.
     /// @param func An array of calldata for each transaction in the sequence. Must be the same length as `dest`, with
     /// corresponding elements representing the parameters for each transaction.
-    function executeBatch(address[] calldata dest, bytes[] calldata func)
-        external
-        virtual
-        onlyAuthorized
-        setInExecution
-    {
+    function executeBatch(address[] calldata dest, bytes[] calldata func) external virtual onlyAuthorized {
         if (dest.length != func.length) {
             revert ArrayLengthMismatch();
         }
@@ -71,7 +65,6 @@ abstract contract BaseLightAccount is BaseAccount, TokenCallbackHandler, ERC1271
         external
         virtual
         onlyAuthorized
-        setInExecution
     {
         if (dest.length != func.length || dest.length != value.length) {
             revert ArrayLengthMismatch();
@@ -98,7 +91,6 @@ abstract contract BaseLightAccount is BaseAccount, TokenCallbackHandler, ERC1271
         payable
         virtual
         onlyAuthorized
-        setInExecution
         returns (address createdAddr)
     {
         assembly ("memory-safe") {
@@ -132,7 +124,6 @@ abstract contract BaseLightAccount is BaseAccount, TokenCallbackHandler, ERC1271
         payable
         virtual
         onlyAuthorized
-        setInExecution
         returns (address createdAddr)
     {
         assembly ("memory-safe") {
