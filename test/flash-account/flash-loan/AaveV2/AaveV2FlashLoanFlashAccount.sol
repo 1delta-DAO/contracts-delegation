@@ -206,13 +206,21 @@ contract AaveV2FlashLoanFlashAccount is FlashAccountBaseTest {
     }
 
     function prepareUserOp(uint256 loanAmount) private returns (PackedUserOperation memory op) {
-        // prepare the calldata
+        // prepare the flash loan calldata
         bytes memory flashLoanCall = _prepareCalldata(loanAmount);
-        // prepare the execute call
-        bytes memory executeCall =
-            abi.encodeWithSignature("execute(address,uint256,bytes)", AAVE_V2_LENDING_POOL, 0, flashLoanCall);
+
+        // prepare the executeFlashLoan call (instead of normal execute)
+        bytes memory executeFlashLoanCall =
+            abi.encodeWithSelector(FlashAccount.executeFlashLoan.selector, AAVE_V2_LENDING_POOL, flashLoanCall);
+
+        // prepare the execute call to the account itself
+        bytes memory executeCall = abi.encodeWithSignature(
+            "execute(address,uint256,bytes)", address(userFlashAccount), 0, executeFlashLoanCall
+        );
+
         // prepare the user op
         op = _getUnsignedOp(executeCall, entryPoint.getNonce(address(userFlashAccount), 0));
+
         // sign the user op
         op.signature = abi.encodePacked(
             BaseLightAccount.SignatureType.EOA,
