@@ -54,6 +54,11 @@ contract BalancerV3FlashLoanTests is FlashAccountBaseTest {
         uint256 amountToBorrow = 1e9;
         // calldata
         bytes memory unlockCall = _prepareCalldata(amountToBorrow);
+
+        // Prepare the executeFlashLoan call
+        bytes memory executeFlashLoanCall =
+            abi.encodeWithSelector(FlashAccount.executeFlashLoan.selector, BALANCER_V3_VAULT, unlockCall);
+
         // Execute the flash loan
         vm.prank(user);
         // flash loan transfer event
@@ -62,7 +67,7 @@ contract BalancerV3FlashLoanTests is FlashAccountBaseTest {
         // repay the loan event
         vm.expectEmit(true, true, true, true);
         emit Transfer(address(userFlashAccount), BALANCER_V3_VAULT, amountToBorrow);
-        userFlashAccount.execute(BALANCER_V3_VAULT, 0, unlockCall);
+        userFlashAccount.execute(address(userFlashAccount), 0, executeFlashLoanCall);
     }
 
     function testBalancerV3FlashLoanWithUserOp_cancun() public {
@@ -80,12 +85,19 @@ contract BalancerV3FlashLoanTests is FlashAccountBaseTest {
         entryPoint.handleOps(userOps, BENEFICIARY);
     }
 
-    function prepareUserOp(uint256 loanAmount) private view returns (PackedUserOperation memory op) {
+    function prepareUserOp(uint256 loanAmount) private returns (PackedUserOperation memory op) {
         // prepare the calldata
         bytes memory unlockCall = _prepareCalldata(loanAmount);
-        // prepare the execute call
-        bytes memory executeCall =
-            abi.encodeWithSignature("execute(address,uint256,bytes)", BALANCER_V3_VAULT, 0, unlockCall);
+
+        // Use executeFlashLoan instead of direct execute
+        bytes memory executeFlashLoanCall =
+            abi.encodeWithSelector(FlashAccount.executeFlashLoan.selector, BALANCER_V3_VAULT, unlockCall);
+
+        // Execute the flash loan call on the account itself
+        bytes memory executeCall = abi.encodeWithSignature(
+            "execute(address,uint256,bytes)", address(userFlashAccount), 0, executeFlashLoanCall
+        );
+
         // prepare the user op
         op = _getUnsignedOp(executeCall, entryPoint.getNonce(address(userFlashAccount), 0));
         // sign the user op

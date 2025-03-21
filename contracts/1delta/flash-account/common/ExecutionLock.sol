@@ -18,9 +18,15 @@ abstract contract ExecutionLock {
     error Locked();
 
     /// @notice All function execution user operations
+    /// @dev this modifier makes to function non-reentrant too
     /// need to use this modifier
     modifier setInExecution() {
         assembly {
+            let status := sload(_IN_EXECUTION_SLOT)
+            if eq(status, 2) {
+                mstore(0x0, 0x9ef9c1d100000000000000000000000000000000000000000000000000000000) // AlreadyInExecution()
+                revert(0x0, 0x4)
+            }
             sstore(_IN_EXECUTION_SLOT, 2)
         }
         _;

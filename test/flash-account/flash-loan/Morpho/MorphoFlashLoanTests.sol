@@ -1,82 +1,41 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
-import {EntryPoint} from "account-abstraction/core/EntryPoint.sol";
-import {IEntryPoint} from "account-abstraction/interfaces/IEntryPoint.sol";
 import {PackedUserOperation} from "account-abstraction/interfaces/PackedUserOperation.sol";
-
-import {UpgradeableBeacon} from "../../../../contracts/1delta/flash-account//proxy/Beacon.sol";
-import {BaseLightAccount} from "../../../../contracts/1delta/flash-account/common/BaseLightAccount.sol";
 import {FlashAccount} from "../../../../contracts/1delta/flash-account/FlashAccount.sol";
-import {FlashAccountBase} from "../../../../contracts/1delta/flash-account/FlashAccountBase.sol";
-import {FlashAccountFactory} from "../../../../contracts/1delta/flash-account/FlashAccountFactory.sol";
+import {BaseLightAccount} from "../../../../contracts/1delta/flash-account/common/BaseLightAccount.sol";
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {FlashAccountBaseTest} from "../../FlashAccountBaseTest.sol";
+import {ChainIds, TokenNames} from "../../chain/Lib.sol";
 
-import {Test} from "forge-std/Test.sol";
-
-contract MorphoFlashLoanTests is Test {
+contract MorphoFlashLoanTests is FlashAccountBaseTest {
     using MessageHashUtils for bytes32;
 
-    uint256 public constant EOA_PRIVATE_KEY = 1;
-    uint256 public constant BEACON_OWNER_PRIVATE_KEY = 2;
-    address payable public constant BENEFICIARY = payable(address(0xbe9ef1c1a2ee));
     address public constant MORPHO_POOL = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
-    address public constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
-
-    uint256 public mainnetFork;
-
-    address public eoaAddress;
-    address public beaconOwner;
-    address public initialAccountImplementation;
-
-    FlashAccount public account;
-    FlashAccount public beaconOwnerAccount;
-    EntryPoint public entryPoint;
-    FlashAccountFactory public factory;
-
-    UpgradeableBeacon public accountBeacon;
+    address public USDC;
 
     event FlashLoan(address indexed caller, address indexed token, uint256 assets);
 
     function setUp() public {
-        // Initialize a mainnet fork
-        string memory rpcUrl = vm.envString("MAINNET_RPC_URL");
-        mainnetFork = vm.createSelectFork(rpcUrl);
-
-        eoaAddress = vm.addr(EOA_PRIVATE_KEY);
-        beaconOwner = vm.addr(BEACON_OWNER_PRIVATE_KEY);
-
-        entryPoint = new EntryPoint();
-        FlashAccount implementation = new FlashAccount(entryPoint);
-        initialAccountImplementation = address(implementation);
-
-        accountBeacon = new UpgradeableBeacon(beaconOwner, initialAccountImplementation);
-        factory = new FlashAccountFactory(beaconOwner, address(accountBeacon), entryPoint);
-
-        account = factory.createAccount(eoaAddress, 1);
-        beaconOwnerAccount = factory.createAccount(beaconOwner, 1);
-
-        vm.deal(address(account), 1 << 128);
-        vm.deal(eoaAddress, 1 << 128);
+        _init(ChainIds.ETHEREUM);
+        USDC = chain.getTokenAddress(TokenNames.USDC);
     }
 
-    function testBalancerV2FlashLoanWithUserOp() public {
-        // the flashLoanFeePercentage for BalancerV2 is 0% so we're not concerned with fee calculations
+    function testMorphoFlashLoanWithUserOp() public {
         uint256 amountToBorrow = IERC20(USDC).balanceOf(address(MORPHO_POOL));
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
-        userOps[0] = prepareUserOp(amountToBorrow, EOA_PRIVATE_KEY);
+        userOps[0] = prepareUserOp(amountToBorrow);
 
         vm.expectEmit(true, true, true, false);
-        emit FlashLoan(address(account), USDC, amountToBorrow);
+        emit FlashLoan(address(userFlashAccount), USDC, amountToBorrow);
 
         entryPoint.handleOps(userOps, BENEFICIARY);
     }
 
-    function testBalancerV2FlashLoanDirect() public {
-        // the flashLoanFeePercentage for BalancerV2 is 0% so we're not concerned with fee calculations
+    function testMorphoFlashLoanDirect() public {
         uint256 amountToBorrow = IERC20(USDC).balanceOf(address(MORPHO_POOL));
 
         address[] memory dests = new address[](1);
@@ -93,21 +52,38 @@ contract MorphoFlashLoanTests is Test {
         bytes memory flashLoanCall =
             abi.encodeWithSignature("flashLoan(address,uint256,bytes)", USDC, amountToBorrow, params);
 
-        vm.prank(eoaAddress);
+        // Prepare the executeFlashLoan call
+        bytes memory executeFlashLoanCall =
+            abi.encodeWithSelector(FlashAccount.executeFlashLoan.selector, MORPHO_POOL, flashLoanCall);
+
+        vm.prank(user);
         vm.expectEmit(true, true, true, false);
-        emit FlashLoan(address(account), USDC, amountToBorrow);
-        account.execute(MORPHO_POOL, 0, flashLoanCall);
+        emit FlashLoan(address(userFlashAccount), USDC, amountToBorrow);
+        userFlashAccount.execute(address(userFlashAccount), 0, executeFlashLoanCall);
     }
 
-    function _sign(uint256 privateKey, bytes32 digest) internal pure returns (bytes memory) {
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, digest);
-        return abi.encodePacked(r, s, v);
+    function prepareUserOp(uint256 amountToBorrow) private returns (PackedUserOperation memory op) {
+        // Prepare flash loan call
+        bytes memory flashLoanCall = _prepareCalldata(amountToBorrow);
+
+        // Use executeFlashLoan instead of direct execute
+        bytes memory executeFlashLoanCall =
+            abi.encodeWithSelector(FlashAccount.executeFlashLoan.selector, MORPHO_POOL, flashLoanCall);
+
+        // Execute the flash loan call on the account itself
+        bytes memory executeCall = abi.encodeWithSignature(
+            "execute(address,uint256,bytes)", address(userFlashAccount), 0, executeFlashLoanCall
+        );
+
+        op = _getUnsignedOp(executeCall, entryPoint.getNonce(address(userFlashAccount), 0));
+
+        op.signature = abi.encodePacked(
+            BaseLightAccount.SignatureType.EOA,
+            _sign(userPrivateKey, entryPoint.getUserOpHash(op).toEthSignedMessageHash())
+        );
     }
 
-    function prepareUserOp(uint256 amountToBorrow, uint256 privateKey)
-        private
-        returns (PackedUserOperation memory op)
-    {
+    function _prepareCalldata(uint256 amountToBorrow) internal view returns (bytes memory) {
         address[] memory dests = new address[](1);
         dests[0] = USDC;
 
@@ -119,31 +95,6 @@ contract MorphoFlashLoanTests is Test {
 
         bytes memory params = abi.encode(dests, values, calls);
 
-        bytes memory callData =
-            abi.encodeWithSignature("flashLoan(address,uint256,bytes)", USDC, amountToBorrow, params);
-
-        bytes memory executeCall = abi.encodeWithSignature("execute(address,uint256,bytes)", MORPHO_POOL, 0, callData);
-        op = _getUnsignedOp(executeCall);
-        op.signature = abi.encodePacked(
-            BaseLightAccount.SignatureType.EOA, _sign(privateKey, entryPoint.getUserOpHash(op).toEthSignedMessageHash())
-        );
-    }
-
-    function _getUnsignedOp(bytes memory callData) internal view returns (PackedUserOperation memory) {
-        uint128 verificationGasLimit = 1 << 24;
-        uint128 callGasLimit = 1 << 24;
-        uint128 maxPriorityFeePerGas = 1 << 8;
-        uint128 maxFeePerGas = 1 << 8;
-        return PackedUserOperation({
-            sender: address(account),
-            nonce: entryPoint.getNonce(address(account), 0),
-            initCode: "",
-            callData: callData,
-            accountGasLimits: bytes32((uint256(verificationGasLimit) << 128) | callGasLimit),
-            preVerificationGas: 1 << 24,
-            gasFees: bytes32((uint256(maxPriorityFeePerGas) << 128) | maxFeePerGas),
-            paymasterAndData: "",
-            signature: ""
-        });
+        return abi.encodeWithSignature("flashLoan(address,uint256,bytes)", USDC, amountToBorrow, params);
     }
 }
