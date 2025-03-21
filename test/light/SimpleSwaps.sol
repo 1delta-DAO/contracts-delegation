@@ -14,6 +14,8 @@ interface IF {
     function getPool(address tokenA, address tokenB, uint24 fee) external view returns (address);
 
     function pool(address tokenA, address tokenB, uint24 fee) external view returns (address);
+
+    function getPair(address tokenA, address tokenB) external view returns (address pair);
 }
 
 /**
@@ -22,6 +24,7 @@ interface IF {
  */
 contract SwapsLightTest is BaseTest {
     address internal constant UNI_FACTORY = 0x33128a8fC17869897dcE68Ed026d694621f6FDfD;
+    address internal constant UNI_V2_FACTORY = 0x8909Dc15e40173Ff4699343b6eB8132c65e18eC6;
     address internal constant IZI_FACTORY = 0x8c7d3063579BdB0b90997e18A770eaE32E1eBb08;
     uint256 internal constant forkBlock = 26696865;
     OneDeltaComposerLight oneDV2;
@@ -31,6 +34,7 @@ contract SwapsLightTest is BaseTest {
     address internal cbETH;
     address internal cbBTC;
     address internal LBTC;
+    address internal constant KEYCAT = 0x9a26F5433671751C3276a065f57e5a02D2817973;
 
     function setUp() public virtual {
         // initialize the chain
@@ -454,6 +458,72 @@ contract SwapsLightTest is BaseTest {
     }
 
     // swap 33% uni V3, 33% iZi, 33% other uni V3 based route
+    function v3poolUltiSwapWithRouteV2(
+        uint16 fee,
+        uint16 fee2,
+        uint8 dexId,
+        address receiver,
+        uint256 amount
+    ) internal view returns (bytes memory data) {
+        address assetIn = USDC;
+        address assetOut = WETH;
+        address v2pool = IF(UNI_V2_FACTORY).getPair(assetOut, KEYCAT);
+        address pool = IF(UNI_FACTORY).getPool(assetIn, assetOut, fee);
+        // head
+        data = abi.encodePacked(
+            uint8(ComposerCommands.SWAPS),
+            uint128(amount), //
+            assetIn,
+            uint8(1), // swaps max index
+            uint8(2), // splits
+            (type(uint16).max / 3), // split (1/3)
+            (type(uint16).max / 3) // split (2/3)
+        );
+
+        data = abi.encodePacked(
+            data,
+            uint8(0), // pathLength = single swap
+            assetOut,
+            v2pool,
+            dexId,
+            // v3 pool data
+            pool,
+            fee,
+            uint16(0) // cll length
+        ); //
+        pool = IF(IZI_FACTORY).pool(assetIn, assetOut, fee2);
+        data = abi.encodePacked(
+            data,
+            uint8(0), // pathLength = single swap
+            assetOut,
+            v2pool,
+            uint8(49),
+            // v3 pool data
+            pool,
+            fee2,
+            uint16(0) // cll length
+        ); //
+
+        data = abi.encodePacked(
+            data,
+            get_USDC_WETH_MultiPathCalldata(v2pool) //
+        ); //
+
+        data = abi.encodePacked(
+            data,
+            uint8(0), // pathLength = single swap
+            uint8(0), // splits
+            KEYCAT,
+            receiver,
+            uint8(100), // uno v2
+            // v2 pool data
+            v2pool,
+            uint16(9970),
+            uint16(2) // cll length
+        ); //
+    }
+
+    // swap 33% uni V3, 33% iZi, 33% other uni V3 based route
     function v3poolUltiSwapWithRoute(
         uint16 fee,
         uint16 fee2,
@@ -537,6 +607,39 @@ contract SwapsLightTest is BaseTest {
         // USDC ----------> WETH ---> cbETH
         // USDC -> cbBTC -> WETH
         bytes memory swap = v3poolUltiSwapWithRoute(
+            fee,
+            fee2,
+            uint8(0),
+            user,
+            amount //
+        );
+
+        vm.prank(user);
+        oneDV2.deltaCompose(swap);
+
+        uint256 balAfter = IERC20All(tokenOut).balanceOf(user);
+        console.log("received", balAfter - balBefore);
+    }
+
+
+    function test_light_swap_v3_route_splits_with_v2_route() external {
+        vm.assume(user != address(0));
+
+        address tokenIn = USDC;
+        address tokenOut = KEYCAT;
+        uint16 fee = 500;
+        uint16 fee2 = 3000;
+        deal(tokenIn, user, 1000.0e6);
+        uint256 amount = 100.0e6;
+
+        vm.prank(user);
+        IERC20All(tokenIn).approve(address(oneDV2), type(uint).max);
+
+        uint256 balBefore = IERC20All(tokenOut).balanceOf(user);
+        // USDC ----------> WETH
+        // USDC ----------> WETH ---> KEYCAT
+        // USDC -> cbBTC -> WETH
+        bytes memory swap = v3poolUltiSwapWithRouteV2(
             fee,
             fee2,
             uint8(0),

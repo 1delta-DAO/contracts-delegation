@@ -45,14 +45,24 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
         address receiver,
         uint256 currentOffset,
         address callerAddress
-    ) internal returns (uint256 buyAmount, uint256) {
+    )
+        internal
+        returns (
+            uint256 buyAmount,
+            // we need this as transient variable to not overflow the stacksize
+            // the clLength is the calldata length for the callback at the beginning
+            // and willl be used as the new incremented offset
+            // this is to prevent `stack too deep` without using additional `mstore`
+            uint256 clLength
+        )
+    {
         assembly {
             let ptr := mload(0x40) // free memory pointer
             ////////////////////////////////////////////////////
             // We extract all relevant data from the path bytes blob
             ////////////////////////////////////////////////////
             let pool := calldataload(currentOffset)
-            let clLength := and(UINT16_MASK, shr(64, pool))
+            clLength := and(UINT16_MASK, shr(64, pool))
 
             // Compute the buy amount based on the pair reserves.
 
@@ -75,11 +85,6 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
                     returndatacopy(0, 0, returndatasize())
                     revert(0, returndatasize())
                 }
-                // Revert if the pair contract does not return at least two words.
-                if lt(returndatasize(), 0x40) {
-                    revert(0, 0)
-                }
-
                 let reserveIn
                 switch zeroForOne
                 case 1 {
@@ -107,12 +112,12 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
                 mstore(ptr, 0xf140a35a00000000000000000000000000000000000000000000000000000000)
                 mstore(add(ptr, 0x4), amountIn)
                 mstore(add(ptr, 0x24), tokenIn)
-                if iszero(staticcall(gas(), pool, ptr, 0x44, ptr, 0x20)) {
+                if iszero(staticcall(gas(), pool, ptr, 0x44, 0, 0x20)) {
                     returndatacopy(0, 0, returndatasize())
                     revert(0, returndatasize())
                 }
 
-                buyAmount := mload(ptr)
+                buyAmount := mload(0)
             }
 
             ////////////////////////////////////////////////////
@@ -140,7 +145,6 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
             ////////////////////////////////////////////////////
             switch lt(clLength, 3)
             case 0 {
-                let plStored := add(clLength, 63)
                 /*
                  * Store the data for the callback as follows
                  * | Offset | Length (bytes) | Description          |
@@ -165,7 +169,7 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
                         pool,
                         0x0,
                         ptr, // input selector
-                        add(0xA4, plStored), // input size = 164 (selector (4bytes) plus 5*32bytes)
+                        add(227, clLength), // 164 + (63+clLength)
                         0x0, // output = 0
                         0x0 // output size = 0
                     )
@@ -174,6 +178,8 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
                     returndatacopy(0, 0, returndatasize())
                     revert(0, returndatasize())
                 }
+                // update clLength as new offset
+                clLength := add(currentOffset, add(24, clLength))
             }
             ////////////////////////////////////////////////////
             // Otherwise, we have to assume that payment needs to
@@ -193,26 +199,26 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
                     mstore(add(ptr, 0x24), pool)
                     mstore(add(ptr, 0x44), amountIn)
 
-                    zeroForOne := call(gas(), tokenIn, 0, ptr, 0x64, 0, 32)
+                    let success := call(gas(), tokenIn, 0, ptr, 0x64, 0, 32)
 
-                    pool := returndatasize()
+                    let rdsize := returndatasize()
                     // Check for ERC20 success. ERC20 tokens should return a boolean,
                     // but some don't. We accept 0-length return data as success, or at
                     // least 32 bytes that starts with a 32-byte boolean true.
-                    zeroForOne := and(
-                        zeroForOne, // call itself succeeded
+                    success := and(
+                        success, // call itself succeeded
                         or(
-                            iszero(pool), // no return data, or
+                            iszero(rdsize), // no return data, or
                             and(
-                                gt(pool, 31), // at least 32 bytes
+                                gt(rdsize, 31), // at least 32 bytes
                                 eq(mload(0), 1) // starts with uint256(1)
                             )
                         )
                     )
 
-                    if iszero(zeroForOne) {
-                        returndatacopy(0, 0, pool)
-                        revert(0, pool)
+                    if iszero(success) {
+                        returndatacopy(0, 0, rdsize)
+                        revert(0, rdsize)
                     }
                 }
                 // transfer plain
@@ -221,25 +227,26 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
                     mstore(ptr, ERC20_TRANSFER)
                     mstore(add(ptr, 0x04), pool)
                     mstore(add(ptr, 0x24), amountIn)
-                    zeroForOne := call(gas(), tokenIn, 0, ptr, 0x44, 0, 32)
-                    pool := returndatasize()
+                    let success := call(gas(), tokenIn, 0, ptr, 0x44, 0, 32)
+
+                    let rdsize := returndatasize()
                     // Check for ERC20 success. ERC20 tokens should return a boolean,
                     // but some don't. We accept 0-length return data as success, or at
                     // least 32 bytes that starts with a 32-byte boolean true.
-                    zeroForOne := and(
-                        zeroForOne, // call itself succeeded
+                    success := and(
+                        success, // call itself succeeded
                         or(
-                            iszero(pool), // no return data, or
+                            iszero(rdsize), // no return data, or
                             and(
-                                gt(pool, 31), // at least 32 bytes
+                                gt(rdsize, 31), // at least 32 bytes
                                 eq(mload(0), 1) // starts with uint256(1)
                             )
                         )
                     )
 
-                    if iszero(zeroForOne) {
-                        returndatacopy(0, 0, pool)
-                        revert(0, pool)
+                    if iszero(success) {
+                        returndatacopy(0, 0, rdsize)
+                        revert(0, rdsize)
                     }
                 }
                 ////////////////////////////////////////////////////
@@ -262,17 +269,11 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
                     returndatacopy(0, 0, returndatasize())
                     revert(0, returndatasize())
                 }
-            }
-
-            switch lt(clLength, 3)
-            case 1 {
-                currentOffset := add(currentOffset, 24)
-            }
-            default {
-                currentOffset := add(currentOffset, add(24, clLength))
+                // update clLength as new offset
+                clLength := add(currentOffset, 24)
             }
         }
-        return (buyAmount, currentOffset);
+        return (buyAmount, clLength);
     }
 
     /**

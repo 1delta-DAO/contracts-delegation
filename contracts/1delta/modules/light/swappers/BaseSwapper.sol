@@ -15,6 +15,7 @@ import {LBSwapper} from "../../shared/swapper/LBSwapper.sol";
 import {DodoV2Swapper} from "../../shared/swapper/DodoV2Swapper.sol";
 import {BalancerSwapper} from "../../shared/swapper/BalancerSwapper.sol";
 import {V3TypeGeneric} from "./V3Type.sol";
+import {V2TypeGeneric} from "./V2Type.sol";
 
 // solhint-disable max-line-length
 
@@ -29,6 +30,7 @@ import {V3TypeGeneric} from "./V3Type.sol";
  */
 abstract contract BaseSwapper is
     V3TypeGeneric,
+    V2TypeGeneric,
     DexMappings,
     ExoticOffsets,
     UnoSwapper,
@@ -341,18 +343,15 @@ abstract contract BaseSwapper is
         }
         // uniswapV2 style
         else if (dexId < UNISWAP_V2_MAX_ID) {
-            amountIn = swapUniV2ExactInComplete(
+            (amountIn, currentOffset) = _swapUniswapV2PoolExactInGeneric(
+                dexId,
                 amountIn,
-                0,
-                payer,
+                tokenIn,
+                tokenOut,
                 receiver,
-                false,
-                currentOffset, // we do not slice the path since we deterministically prevent flash swaps
-                0
+                currentOffset,
+                payer // we do not need end flags
             );
-            assembly {
-                currentOffset := add(currentOffset, SKIP_LENGTH_UNOSWAP)
-            }
         }
         // WOO Fi
         else if (dexId == WOO_FI_ID) {
