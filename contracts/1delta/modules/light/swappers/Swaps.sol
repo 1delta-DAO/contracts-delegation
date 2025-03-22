@@ -19,8 +19,6 @@ abstract contract Swaps is BaseSwapper {
     function _swap(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         uint256 amountIn;
         address tokenIn;
-        uint256 swapsMaxIndex;
-        uint256 splitsMaxIndex;
         /*
          * Store the data for the callback as follows
          * | Offset | Length (bytes) | Description          |
@@ -42,9 +40,8 @@ abstract contract Swaps is BaseSwapper {
             tokenIn := shr(96, dataStart)
             currentOffset := add(20, currentOffset)
         }
-        (amountIn, currentOffset, ) = _multihopSplitSwap(
+        (amountIn, currentOffset, ) = _singleSwapSplitOrRoute(
             amountIn,
-            0,
             tokenIn,
             callerAddress,
             currentOffset //
