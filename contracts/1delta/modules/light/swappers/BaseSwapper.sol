@@ -16,7 +16,6 @@ import {DodoV2Swapper} from "../../shared/swapper/DodoV2Swapper.sol";
 import {BalancerSwapper} from "../../shared/swapper/BalancerSwapper.sol";
 import {V3TypeGeneric} from "./V3Type.sol";
 import {V2TypeGeneric} from "./V2Type.sol";
-import {console} from "forge-std/console.sol";
 
 // solhint-disable max-line-length
 
@@ -109,17 +108,12 @@ abstract contract BaseSwapper is
         address _tokenIn = tokenIn;
         uint256 i;
         while (true) {
-            console.log("----------------------------------------------------");
-            console.log("_multihopSplitSwap: i", i);
-            console.log("_multihopSplitSwap: amountIn", amount);
             (amount, currentOffset, _tokenIn) = _singleSwapSplitOrRoute(
                 amount,
                 _tokenIn,
                 callerAddress,
                 currentOffset //
             );
-            console.log("_multihopSplitSwap: amountOut", amount);
-            console.log("----------------------------------------------------");
 
             // break criteria
             if (i == swapMaxIndex) {
@@ -169,7 +163,6 @@ abstract contract BaseSwapper is
         address callerAddress, // caller
         uint256 currentOffset
     ) internal returns (uint256, uint256, address) {
-        console.log("_singleSwapOrSplit: splitsMaxIndex", splitsMaxIndex);
         address nextToken;
         // no splits, single swap
         if (splitsMaxIndex == 0) {
@@ -264,11 +257,10 @@ abstract contract BaseSwapper is
             splitsMaxIndex := and(UINT8_MASK, shr(240, datas))
             currentOffset := add(currentOffset, 2)
         }
-        console.log("_singleSwapSplitOrRoute: swapMaxIndex", swapMaxIndex);
-        console.log("_singleSwapSplitOrRoute: splitsMaxIndex", splitsMaxIndex);
         // swapMaxIndex = 0 is simple single swap
         // that is where each single step MUST end
         address nextToken;
+        uint256 received;
         if (swapMaxIndex == 0) {
             // splitsMaxIndex zero is single swap
             if (splitsMaxIndex == 0) {
@@ -281,7 +273,7 @@ abstract contract BaseSwapper is
                     receiver := shr(96, calldataload(currentOffset))
                     currentOffset := add(currentOffset, 20)
                 }
-                (amountIn, currentOffset) = swapExactInSimple2(
+                (received, currentOffset) = swapExactInSimple2(
                     amountIn,
                     tokenIn,
                     nextToken,
@@ -291,7 +283,7 @@ abstract contract BaseSwapper is
                 );
             } else {
                 // nonzero is a split swap
-                (amountIn, currentOffset, nextToken) = _singleSwapOrSplit(
+                (received, currentOffset, nextToken) = _singleSwapOrSplit(
                     amountIn,
                     splitsMaxIndex,
                     tokenIn,
@@ -301,7 +293,7 @@ abstract contract BaseSwapper is
             }
         } else {
             // otherwise, execute universal swap (path & splits)
-            (amountIn, currentOffset, nextToken) = _multihopSplitSwap(
+            (received, currentOffset, nextToken) = _multihopSplitSwap(
                 amountIn, //
                 swapMaxIndex,
                 tokenIn,
@@ -309,8 +301,7 @@ abstract contract BaseSwapper is
                 currentOffset
             );
         }
-        console.log("_singleSwapSplitOrRoute: nextToken", nextToken);
-        return (amountIn, currentOffset, nextToken);
+        return (received, currentOffset, nextToken);
     }
 
     /**
@@ -334,7 +325,6 @@ abstract contract BaseSwapper is
             dexId := shr(248, calldataload(currentOffset))
             currentOffset := add(currentOffset, 1)
         }
-        console.log("dexId, amountIn, tokenIn:", dexId, amountIn, tokenIn);
         ////////////////////////////////////////////////////
         // We switch-case through the different pool types
         // To select the correct pool for the swap action

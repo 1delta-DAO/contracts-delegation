@@ -484,6 +484,7 @@ contract SwapsLightTest is BaseTest {
         );
 
         data = abi.encodePacked(
+            data,
             uint8(0), // 0 multihops
             uint8(2), // splits
             (type(uint16).max / 3), // split (1/3)
