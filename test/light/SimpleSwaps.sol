@@ -102,8 +102,7 @@ contract SwapsLightTest is BaseTest {
 
         data = abi.encodePacked(
             data,
-            uint8(0), // pathLength = single swap
-            uint8(0), // splitLength = single split
+            uint16(0), // atomic
             assetOut,
             receiver,
             dexId,
@@ -115,8 +114,7 @@ contract SwapsLightTest is BaseTest {
         pool = IF(IZI_FACTORY).pool(assetIn, assetOut, fee2);
         data = abi.encodePacked(
             data,
-            uint8(0), // pathLength = single swap
-            uint8(0), // splitLength = single split
+            uint16(0), // atomic
             assetOut,
             receiver,
             uint8(49),
@@ -129,8 +127,7 @@ contract SwapsLightTest is BaseTest {
         pool = IF(UNI_FACTORY).getPool(assetIn, assetOut, fee2);
         data = abi.encodePacked(
             data,
-            uint8(0), // pathLength = single swap
-            uint8(0), // splitLength = single split
+            uint16(0), // atomic
             assetOut,
             receiver,
             uint8(0),
@@ -164,8 +161,7 @@ contract SwapsLightTest is BaseTest {
             if (i == 0) {
                 data = abi.encodePacked(
                     data, //
-                    uint8(0), // no multihop
-                    uint8(0), // no splits
+                    uint16(0), // atomic
                     assets[i + 1], // nextToken
                     _receiver,
                     dexIds[i],
@@ -176,8 +172,7 @@ contract SwapsLightTest is BaseTest {
             } else {
                 data = abi.encodePacked(
                     data, //
-                    uint8(0), // no multihop
-                    uint8(0), // no splits
+                    uint16(0), // atomic
                     assets[i + 1], // nextToken
                     _receiver,
                     dexIds[i],
@@ -276,8 +271,7 @@ contract SwapsLightTest is BaseTest {
 
         data = abi.encodePacked(
             data,
-            uint8(0), // pathLength = single swap
-            uint8(0), // splitLength = single split
+            uint16(0), // atomic
             assetOut,
             receiver,
             dexId,
@@ -289,8 +283,7 @@ contract SwapsLightTest is BaseTest {
         pool = IF(IZI_FACTORY).pool(assetIn, assetOut, fee2);
         data = abi.encodePacked(
             data,
-            uint8(0), // pathLength = single swap
-            uint8(0), // splitLength = single split
+            uint16(0), // atomic
             assetOut,
             receiver,
             uint8(49),
@@ -323,31 +316,6 @@ contract SwapsLightTest is BaseTest {
                 dexIds,
                 receiver //
             );
-    }
-
-    function v3v2poolSwap(
-        address assetIn,
-        address assetOut, //
-        uint16 fee,
-        uint8 dexId,
-        address receiver,
-        uint256 amount
-    ) internal view returns (bytes memory data) {
-        address pool = IF(UNI_FACTORY).getPool(assetIn, assetOut, fee);
-        data = abi.encodePacked(
-            uint8(ComposerCommands.SWAPS),
-            uint8(0), // swaps max index
-            uint128(amount), //
-            assetIn,
-            assetOut,
-            receiver,
-            uint8(0), // splits
-            dexId,
-            // v3 pool data
-            pool,
-            fee,
-            uint16(0) // cll length
-        ); //
     }
 
     function test_light_swap_v3_single() external {
@@ -491,10 +459,9 @@ contract SwapsLightTest is BaseTest {
             (type(uint16).max / 3) // split (2/3)
         );
 
-
         data = abi.encodePacked(
             data,
-            uint16(0), // pathLength = single swap & no splits
+            uint16(0), // atomic
             assetOut,
             v2pool,
             dexId,
@@ -506,7 +473,7 @@ contract SwapsLightTest is BaseTest {
         pool = IF(IZI_FACTORY).pool(assetIn, assetOut, fee2);
         data = abi.encodePacked(
             data,
-            uint16(0), // pathLength = single swap & no splits
+            uint16(0), // atomic
             assetOut,
             v2pool,
             uint8(49),
@@ -523,7 +490,7 @@ contract SwapsLightTest is BaseTest {
 
         data = abi.encodePacked(
             data,
-            uint16(0), // pathLength = single swap & no splits
+            uint16(0), // atomic
             KEYCAT,
             receiver,
             uint8(100), // uno v2
@@ -550,15 +517,21 @@ contract SwapsLightTest is BaseTest {
             uint8(ComposerCommands.SWAPS),
             uint128(amount), //
             assetIn,
-            uint8(1), // swaps max index
-            uint8(2), // splits
+            uint8(1), // 2 hops
+            uint8(0) // no splits
+        );
+
+        data = abi.encodePacked(
+            data,
+            uint8(0), // 0 hops
+            uint8(2), // 3 splits
             (type(uint16).max / 3), // split (1/3)
             (type(uint16).max / 3) // split (2/3)
         );
 
         data = abi.encodePacked(
             data,
-            uint8(0), // pathLength = single swap
+            uint16(0), // atomic swap
             assetOut,
             address(oneDV2),
             dexId,
@@ -570,7 +543,7 @@ contract SwapsLightTest is BaseTest {
         pool = IF(IZI_FACTORY).pool(assetIn, assetOut, fee2);
         data = abi.encodePacked(
             data,
-            uint8(0), // pathLength = single swap
+            uint16(0), // atomic swap
             assetOut,
             address(oneDV2),
             uint8(49),
@@ -588,8 +561,7 @@ contract SwapsLightTest is BaseTest {
         pool = IF(UNI_FACTORY).getPool(assetOut, cbETH, 500);
         data = abi.encodePacked(
             data,
-            uint8(0), // pathLength = single swap
-            uint8(0), // splits
+            uint16(0), // atomic swap
             cbETH,
             receiver,
             uint8(0),
@@ -631,7 +603,6 @@ contract SwapsLightTest is BaseTest {
         uint256 balAfter = IERC20All(tokenOut).balanceOf(user);
         console.log("received", balAfter - balBefore);
     }
-
 
     function test_light_swap_v3_route_splits_with_v2_route() external {
         vm.assume(user != address(0));

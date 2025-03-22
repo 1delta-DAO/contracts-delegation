@@ -114,7 +114,6 @@ abstract contract BaseSwapper is
                 callerAddress,
                 currentOffset //
             );
-
             // break criteria
             if (i == swapMaxIndex) {
                 break;
@@ -122,8 +121,6 @@ abstract contract BaseSwapper is
                 // update context
                 assembly {
                     i := add(i, 1)
-                    // skip the splits count parameter
-                    // currentOffset := add(1, currentOffset)
                 }
             }
         }

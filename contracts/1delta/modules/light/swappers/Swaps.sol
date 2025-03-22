@@ -40,17 +40,15 @@ abstract contract Swaps is BaseSwapper {
             currentOffset := add(currentOffset, 16)
             let dataStart := calldataload(currentOffset)
             tokenIn := shr(96, dataStart)
-            swapsMaxIndex := and(UINT8_MASK, shr(88, dataStart))
             currentOffset := add(20, currentOffset)
         }
         (amountIn, currentOffset, ) = _multihopSplitSwap(
             amountIn,
-            swapsMaxIndex,
+            0,
             tokenIn,
             callerAddress,
             currentOffset //
         );
-
         return currentOffset;
     }
 }
