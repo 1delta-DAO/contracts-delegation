@@ -67,7 +67,6 @@ contract SwapsLightTest is BaseTest {
         );
         data = abi.encodePacked(
             data,
-            uint8(0), // opType is zero for single swap
             assetOut,
             receiver,
             dexId,
@@ -104,6 +103,7 @@ contract SwapsLightTest is BaseTest {
         data = abi.encodePacked(
             data,
             uint8(0), // pathLength = single swap
+            uint8(0), // splitLength = single split
             assetOut,
             receiver,
             dexId,
@@ -116,6 +116,7 @@ contract SwapsLightTest is BaseTest {
         data = abi.encodePacked(
             data,
             uint8(0), // pathLength = single swap
+            uint8(0), // splitLength = single split
             assetOut,
             receiver,
             uint8(49),
@@ -129,6 +130,7 @@ contract SwapsLightTest is BaseTest {
         data = abi.encodePacked(
             data,
             uint8(0), // pathLength = single swap
+            uint8(0), // splitLength = single split
             assetOut,
             receiver,
             uint8(0),
@@ -147,7 +149,8 @@ contract SwapsLightTest is BaseTest {
     ) internal view returns (bytes memory data) {
         printPath(assets);
         data = abi.encodePacked(
-            uint8(fees.length - 1) // sop type simple
+            uint8(fees.length - 1), // path max index
+            uint8(0) // no splits
         );
         for (uint i = 0; i < assets.length - 1; i++) {
             address pool;
@@ -161,8 +164,8 @@ contract SwapsLightTest is BaseTest {
             if (i == 0) {
                 data = abi.encodePacked(
                     data, //
-                    uint8(0), // no splits
                     uint8(0), // no multihop
+                    uint8(0), // no splits
                     assets[i + 1], // nextToken
                     _receiver,
                     dexIds[i],
@@ -173,8 +176,8 @@ contract SwapsLightTest is BaseTest {
             } else {
                 data = abi.encodePacked(
                     data, //
-                    uint8(0), // no splits
                     uint8(0), // no multihop
+                    uint8(0), // no splits
                     assets[i + 1], // nextToken
                     _receiver,
                     dexIds[i],
@@ -274,6 +277,7 @@ contract SwapsLightTest is BaseTest {
         data = abi.encodePacked(
             data,
             uint8(0), // pathLength = single swap
+            uint8(0), // splitLength = single split
             assetOut,
             receiver,
             dexId,
@@ -286,6 +290,7 @@ contract SwapsLightTest is BaseTest {
         data = abi.encodePacked(
             data,
             uint8(0), // pathLength = single swap
+            uint8(0), // splitLength = single split
             assetOut,
             receiver,
             uint8(49),
@@ -370,7 +375,7 @@ contract SwapsLightTest is BaseTest {
         oneDV2.deltaCompose(swap);
     }
 
-    function test_light_swap_v3_splits() external {
+    function test_light_swap_v3_splits_only() external {
         vm.assume(user != address(0));
 
         address tokenIn = USDC;
@@ -475,14 +480,20 @@ contract SwapsLightTest is BaseTest {
             uint128(amount), //
             assetIn,
             uint8(1), // swaps max index
+            uint8(0) // splits
+        );
+
+        data = abi.encodePacked(
+            uint8(0), // 0 multihops
             uint8(2), // splits
             (type(uint16).max / 3), // split (1/3)
             (type(uint16).max / 3) // split (2/3)
         );
 
+
         data = abi.encodePacked(
             data,
-            uint8(0), // pathLength = single swap
+            uint16(0), // pathLength = single swap & no splits
             assetOut,
             v2pool,
             dexId,
@@ -494,7 +505,7 @@ contract SwapsLightTest is BaseTest {
         pool = IF(IZI_FACTORY).pool(assetIn, assetOut, fee2);
         data = abi.encodePacked(
             data,
-            uint8(0), // pathLength = single swap
+            uint16(0), // pathLength = single swap & no splits
             assetOut,
             v2pool,
             uint8(49),
@@ -511,8 +522,7 @@ contract SwapsLightTest is BaseTest {
 
         data = abi.encodePacked(
             data,
-            uint8(0), // pathLength = single swap
-            uint8(0), // splits
+            uint16(0), // pathLength = single swap & no splits
             KEYCAT,
             receiver,
             uint8(100), // uno v2

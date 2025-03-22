@@ -16,8 +16,32 @@ import {DodoV2Swapper} from "../../shared/swapper/DodoV2Swapper.sol";
 import {BalancerSwapper} from "../../shared/swapper/BalancerSwapper.sol";
 import {V3TypeGeneric} from "./V3Type.sol";
 import {V2TypeGeneric} from "./V2Type.sol";
+import {console} from "forge-std/console.sol";
 
 // solhint-disable max-line-length
+
+/**
+ * Core logic: Encode swaps as nested matrices (r: rows - multihops; c:columns - splits)
+ * Every element in a matrix can be another matrix
+ * The nesting stops at a (0,0) entry
+ * E.g. a multihop with each hop having 2 splits is identified as
+ * (1,0)        0             1    
+ *  
+ *  0           (0,1)       (0,1)
+ * 
+ *  1           (0,0)       (0,0)
+ * 
+ *  2           (0,0)       (0,0)
+ * 
+ * Swap execution is always along rows then columns
+ * In the example above, we indicate a multihop
+ * Each hop has length 0 (single swap) but 1 split
+ * Each split is a single swap (0,0)
+ * 
+ * This allows arbitrary deep nesting ofg sub-routes and splits
+ * 
+ * If a row entry is nonzero, 
+ * /
 
 /**
  * @title Base swapper contract
@@ -74,7 +98,7 @@ abstract contract BaseSwapper is
      * | 0      | 1              | swapCount-1          |
      * | 1      | any            | eSwapData            |
      */
-    function _eUniversalSwap(
+    function _multihopSplitSwap(
         uint256 amountIn,
         uint256 swapMaxIndex,
         address tokenIn,
@@ -85,12 +109,18 @@ abstract contract BaseSwapper is
         address _tokenIn = tokenIn;
         uint256 i;
         while (true) {
-            (amount, currentOffset, _tokenIn) = _eSwapExactIn(
+            console.log("----------------------------------------------------");
+            console.log("_multihopSplitSwap: i", i);
+            console.log("_multihopSplitSwap: amountIn", amount);
+            (amount, currentOffset, _tokenIn) = _singleSwapSplitOrRoute(
                 amount,
                 _tokenIn,
                 callerAddress,
                 currentOffset //
             );
+            console.log("_multihopSplitSwap: amountOut", amount);
+            console.log("----------------------------------------------------");
+
             // break criteria
             if (i == swapMaxIndex) {
                 break;
@@ -98,6 +128,8 @@ abstract contract BaseSwapper is
                 // update context
                 assembly {
                     i := add(i, 1)
+                    // skip the splits count parameter
+                    // currentOffset := add(1, currentOffset)
                 }
             }
         }
@@ -130,26 +162,29 @@ abstract contract BaseSwapper is
      * | 2+v    | variable       | params               | <- depends on dexId (fixed for each one)
      * | ...    | ...            | ...                  | <- count + 1 times of repeating this pattern
      */
-    function _eSwapExactIn(
+    function _singleSwapOrSplit(
         uint256 amountIn,
+        uint256 splitsMaxIndex,
         address tokenIn,
-        address callerAddresss, // caller
+        address callerAddress, // caller
         uint256 currentOffset
     ) internal returns (uint256, uint256, address) {
-        uint256 splits;
-        uint256 splitsCount;
+        console.log("_singleSwapOrSplit: splitsMaxIndex", splitsMaxIndex);
         address nextToken;
-        assembly {
-            splits := calldataload(currentOffset)
-            splitsCount := shr(248, splits)
-            // skip the splits count parameter
-            currentOffset := add(1, currentOffset)
-        }
-        // muliplts splits
-        if (splitsCount != 0) {
+        // no splits, single swap
+        if (splitsMaxIndex == 0) {
+            (amountIn, currentOffset, nextToken) = _singleSwapSplitOrRoute(
+                amountIn,
+                tokenIn, //
+                callerAddress,
+                currentOffset
+            );
+        } else {
+            uint256 splits;
             assembly {
-                splits := and(UINT128_MASK, shr(120, splits))
-                currentOffset := add(mul(2, splitsCount), currentOffset)
+                splits := calldataload(currentOffset)
+                splits := and(UINT128_MASK, shr(128, splits))
+                currentOffset := add(mul(2, splitsMaxIndex), currentOffset)
             }
             uint256 amount;
             uint256 i;
@@ -157,7 +192,7 @@ abstract contract BaseSwapper is
             while (true) {
                 uint256 split;
                 assembly {
-                    switch eq(i, splitsCount)
+                    switch eq(i, splitsMaxIndex)
                     case 1 {
                         // assign remaing amount to split
                         split := swapsLeft
@@ -177,13 +212,14 @@ abstract contract BaseSwapper is
                     }
                     i := add(i, 1)
                 }
+
                 uint256 received;
                 // reenter-universal swap
                 // can be another split or a multi-path
-                (received, currentOffset, nextToken) = _singleSwapOrRoute(
+                (received, currentOffset, nextToken) = _singleSwapSplitOrRoute(
                     split,
                     tokenIn, //
-                    callerAddresss,
+                    callerAddress,
                     currentOffset
                 );
 
@@ -193,7 +229,7 @@ abstract contract BaseSwapper is
                 }
 
                 // if nothing is left, break
-                if (i > splitsCount) break;
+                if (i > splitsMaxIndex) break;
 
                 // otherwise, we decrement the swaps left amount
                 assembly {
@@ -201,13 +237,6 @@ abstract contract BaseSwapper is
                 }
             }
             amountIn = amount;
-        } else {
-            (amountIn, currentOffset, nextToken) = _singleSwapOrRoute(
-                amountIn,
-                tokenIn, //
-                callerAddresss,
-                currentOffset
-            );
         }
         return (amountIn, currentOffset, nextToken);
     }
@@ -216,45 +245,63 @@ abstract contract BaseSwapper is
      * execute swap or split amounts
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
-     * | 0      | 1              | opType               |
-     * | 1      | 20             | nextToken            |
-     * | 21     | any            | swapData             |
+     * | 0      | 1              | swapMaxIndex         |
+     * | 0      | 1              | splits               |
+     * | 2      | 20             | nextToken            |
+     * | 22     | any            | swapData             |
      */
-    function _singleSwapOrRoute(
+    function _singleSwapSplitOrRoute(
         uint256 amountIn,
         address tokenIn,
         address callerAddress,
         uint256 currentOffset //
     ) internal returns (uint256, uint256, address) {
         uint256 swapMaxIndex;
+        uint256 splitsMaxIndex;
         assembly {
-            swapMaxIndex := shr(248, calldataload(currentOffset))
-            currentOffset := add(currentOffset, 1)
+            let datas := calldataload(currentOffset)
+            swapMaxIndex := shr(248, datas)
+            splitsMaxIndex := and(UINT8_MASK, shr(240, datas))
+            currentOffset := add(currentOffset, 2)
         }
+        console.log("_singleSwapSplitOrRoute: swapMaxIndex", swapMaxIndex);
+        console.log("_singleSwapSplitOrRoute: splitsMaxIndex", splitsMaxIndex);
         // swapMaxIndex = 0 is simple single swap
         // that is where each single step MUST end
         address nextToken;
         if (swapMaxIndex == 0) {
-            // if the swapMaxIndex is single-swap,
-            // the next two addresses are nextToken and receiver
-            address receiver;
-            assembly {
-                nextToken := shr(96, calldataload(currentOffset))
-                currentOffset := add(currentOffset, 20)
-                receiver := shr(96, calldataload(currentOffset))
-                currentOffset := add(currentOffset, 20)
+            // splitsMaxIndex zero is single swap
+            if (splitsMaxIndex == 0) {
+                // if the swapMaxIndex is single-swap,
+                // the next two addresses are nextToken and receiver
+                address receiver;
+                assembly {
+                    nextToken := shr(96, calldataload(currentOffset))
+                    currentOffset := add(currentOffset, 20)
+                    receiver := shr(96, calldataload(currentOffset))
+                    currentOffset := add(currentOffset, 20)
+                }
+                (amountIn, currentOffset) = swapExactInSimple2(
+                    amountIn,
+                    tokenIn,
+                    nextToken,
+                    callerAddress,
+                    receiver, //
+                    currentOffset
+                );
+            } else {
+                // nonzero is a split swap
+                (amountIn, currentOffset, nextToken) = _singleSwapOrSplit(
+                    amountIn,
+                    splitsMaxIndex,
+                    tokenIn,
+                    callerAddress,
+                    currentOffset //
+                );
             }
-            (amountIn, currentOffset) = swapExactInSimple2(
-                amountIn,
-                tokenIn,
-                nextToken,
-                callerAddress,
-                receiver, //
-                currentOffset
-            );
         } else {
             // otherwise, execute universal swap (path & splits)
-            (amountIn, currentOffset, nextToken) = _eUniversalSwap(
+            (amountIn, currentOffset, nextToken) = _multihopSplitSwap(
                 amountIn, //
                 swapMaxIndex,
                 tokenIn,
@@ -262,6 +309,7 @@ abstract contract BaseSwapper is
                 currentOffset
             );
         }
+        console.log("_singleSwapSplitOrRoute: nextToken", nextToken);
         return (amountIn, currentOffset, nextToken);
     }
 
@@ -286,6 +334,7 @@ abstract contract BaseSwapper is
             dexId := shr(248, calldataload(currentOffset))
             currentOffset := add(currentOffset, 1)
         }
+        console.log("dexId, amountIn, tokenIn:", dexId, amountIn, tokenIn);
         ////////////////////////////////////////////////////
         // We switch-case through the different pool types
         // To select the correct pool for the swap action
