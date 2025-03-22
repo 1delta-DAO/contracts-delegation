@@ -24,14 +24,30 @@ import {V2TypeGeneric} from "./V2Type.sol";
  * Every element in a matrix can be another matrix
  * The nesting stops at a (0,0) entry
  * E.g. a multihop with each hop having 2 splits is identified as
- * (1,0)        0             1    
- *  
- *  0           (0,1)       (0,1)
+ * (1,0)  <-- 1 as row implicates a multihop of length 2 (max index is 1)                 
+ *      \
+ *      (0,1)  --------------- (0,1)   <- the 1s in the columns indicate that  
+ *        |                      |        there are 2 splits in each sub step
+ *        ├(0,0)**               ├(0,0)
+ *        |                      | 
+ *        ├(1,0)                 ├(0,0)  <- the (0,0) entries indicate an atomic swap (e.g. a uni V2 swap)
+ *           \
+ *          (0,0)  --- (0,0)  <- this is a branching multihip within a split (indicated by (1,0)
+ *                               the output token is expected to be the same as for the 
+ *                               prior split in **
  * 
- *  1           (0,0)       (0,0)
+ * The logic accumulates values per column to enabl consistent multihops without additional balance reads
  * 
- *  2           (0,0)       (0,0)
+ * Multihops progressively update value (in amount -> out amount) too always ensure that values 
+ * within sub splits ((x,0) or (0,y)) are correctly accumulated
  * 
+ * A case like (1,2) is a violation as we always demand aclear gruping of the branch
+ * This is intuitive as we cannot have a split and a multihop at the same time. 
+ * 
+ * Every node with (x, 0) is expected to have consistent multihop connections
+ * 
+ * Every node with (0,y) is expected to have sub nodes and path that have all the same output currency
+ *  * 
  * Swap execution is always along rows then columns
  * In the example above, we indicate a multihop
  * Each hop has length 0 (single swap) but 1 split
