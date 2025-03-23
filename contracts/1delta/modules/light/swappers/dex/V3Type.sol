@@ -8,7 +8,7 @@ pragma solidity 0.8.28;
 
 // solhint-disable max-line-length
 
-import {Masks} from "../../shared/masks/Masks.sol";
+import {Masks} from "../../../shared/masks/Masks.sol";
 
 /**
  * @title Uniswap V3 type swapper contract

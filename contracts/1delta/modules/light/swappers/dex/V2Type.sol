@@ -8,8 +8,8 @@ pragma solidity 0.8.28;
 
 // solhint-disable max-line-length
 
-import {ERC20Selectors} from "../../shared/selectors/ERC20Selectors.sol";
-import {Masks} from "../../shared/masks/Masks.sol";
+import {ERC20Selectors} from "../../../shared/selectors/ERC20Selectors.sol";
+import {Masks} from "../../../shared/masks/Masks.sol";
 
 /**
  * @title Uniswap V2 type swapper contract

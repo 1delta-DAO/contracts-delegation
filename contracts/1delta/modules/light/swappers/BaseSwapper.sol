@@ -14,8 +14,10 @@ import {GMXSwapper} from "../../shared/swapper/GMXSwapper.sol";
 import {LBSwapper} from "../../shared/swapper/LBSwapper.sol";
 import {DodoV2Swapper} from "../../shared/swapper/DodoV2Swapper.sol";
 import {BalancerSwapper} from "../../shared/swapper/BalancerSwapper.sol";
-import {V3TypeGeneric} from "./V3Type.sol";
-import {V2TypeGeneric} from "./V2Type.sol";
+import {V3TypeGeneric} from "./dex/V3Type.sol";
+import {V2TypeGeneric} from "./dex/V2Type.sol";
+import {CurveSwapper} from "./dex/Curve.sol";
+import {WooFiSwapper} from "./dex/WooFi.sol";
 
 // solhint-disable max-line-length
 
@@ -72,10 +74,11 @@ abstract contract BaseSwapper is
     V2TypeGeneric,
     DexMappings,
     ExoticOffsets,
-    UnoSwapper,
     BalancerSwapper,
     LBSwapper,
     DodoV2Swapper,
+    WooFiSwapper,
+    CurveSwapper,
     GMXSwapper, //
     DeltaErrors
 {
@@ -93,10 +96,10 @@ abstract contract BaseSwapper is
         uint256 pathOffset,
         uint256 pathLength
     ) internal returns (uint256, uint256) {
-        amountIn = swapUniV2ExactInFOT(amountIn, receiver, pathOffset);
+        // amountIn = swapUniV2ExactInFOT(amountIn, receiver, pathOffset);
         assembly {
-            pathOffset := add(pathOffset, SKIP_LENGTH_UNOSWAP)
-            pathLength := sub(pathLength, SKIP_LENGTH_UNOSWAP)
+            // pathOffset := add(pathOffset, SKIP_LENGTH_UNOSWAP)
+            // pathLength := sub(pathLength, SKIP_LENGTH_UNOSWAP)
         }
         ////////////////////////////////////////////////////
         // From there on, we just continue to swap if needed
@@ -382,10 +385,14 @@ abstract contract BaseSwapper is
         else if (dexId < CURVE_V1_MAX_ID) {
             // Curve standard pool
             if (dexId == CURVE_V1_STANDARD_ID) {
-                amountIn = _swapCurveGeneral(currentOffset, amountIn, payer, receiver);
-                assembly {
-                    currentOffset := add(currentOffset, SKIP_LENGTH_CURVE)
-                }
+                (amountIn, currentOffset) = _swapCurveGeneral(
+                    tokenIn,
+                    tokenOut,
+                    currentOffset,
+                    amountIn,
+                    payer,
+                    receiver //
+                );
             } else {
                 assembly {
                     mstore(0, INVALID_DEX)
@@ -407,21 +414,18 @@ abstract contract BaseSwapper is
         }
         // WOO Fi
         else if (dexId == WOO_FI_ID) {
-            address pool;
-            assembly {
-                pool := shr(96, calldataload(add(currentOffset, 22)))
-            }
-            // amountIn = swapWooFiExactIn(tokenIn, tokenOut, pool, amountIn, receiver);
-            assembly {
-                currentOffset := add(currentOffset, SKIP_LENGTH_ADDRESS)
-            }
+            (amountIn, currentOffset) = swapWooFiExactIn(
+                amountIn,
+                tokenIn,
+                tokenOut,
+                receiver,
+                currentOffset,
+                payer // we do not need end flags
+            );
         }
         // Curve NG
         else if (dexId == CURVE_RECEIVED_ID) {
-            amountIn = _swapCurveReceived(currentOffset, amountIn, receiver);
-            assembly {
-                currentOffset := add(currentOffset, SKIP_LENGTH_CURVE)
-            }
+            (amountIn, currentOffset) = _swapCurveReceived(currentOffset, amountIn, receiver);
         }
         // GMX
         else if (dexId == GMX_ID || dexId == KTX_ID) {
