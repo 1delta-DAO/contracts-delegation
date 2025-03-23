@@ -33,6 +33,8 @@ abstract contract BaseComposer is
         _setOwner(msg.sender);
     }
 
+    receive() external payable {}
+
     /**
      * Batch-executes a series of operations
      * The calldata is loaded in assembly and therefore not referred to here

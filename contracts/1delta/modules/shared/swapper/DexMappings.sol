@@ -28,6 +28,7 @@ abstract contract DexMappings {
     uint256 internal constant LB_ID = 160;
     uint256 internal constant GMX_ID = 170;
     uint256 internal constant KTX_ID = 171;
+    uint256 internal constant MAX_GMX_ID = 173;
     uint256 internal constant DODO_ID = 180;
     uint256 internal constant SYNC_SWAP_ID = 190;
 }

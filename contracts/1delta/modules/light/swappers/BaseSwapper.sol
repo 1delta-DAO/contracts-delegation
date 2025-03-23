@@ -9,15 +9,15 @@ pragma solidity ^0.8.28;
 import {DeltaErrors} from "../../shared/errors/Errors.sol";
 import {DexMappings} from "../../shared/swapper/DexMappings.sol";
 import {ExoticOffsets} from "../../shared/swapper/ExoticOffsets.sol";
-import {UnoSwapper} from "../../shared/swapper/UnoSwapper.sol";
-import {GMXSwapper} from "../../shared/swapper/GMXSwapper.sol";
-import {LBSwapper} from "../../shared/swapper/LBSwapper.sol";
-import {DodoV2Swapper} from "../../shared/swapper/DodoV2Swapper.sol";
-import {BalancerSwapper} from "../../shared/swapper/BalancerSwapper.sol";
 import {V3TypeGeneric} from "./dex/V3Type.sol";
 import {V2TypeGeneric} from "./dex/V2Type.sol";
-import {CurveSwapper} from "./dex/Curve.sol";
 import {WooFiSwapper} from "./dex/WooFi.sol";
+import {DodoV2Swapper} from "./dex/DodoV2Swapper.sol";
+import {LBSwapper} from "./dex/LBSwapper.sol";
+import {GMXSwapper} from "./dex/GMXSwapper.sol";
+import {SyncSwapper} from "./dex/SyncSwapper.sol";
+import {CurveSwapper} from "./dex/CurveSwapper.sol";
+import {BalancerSwapper} from "./dex/BalancerSwapper.sol";
 
 // solhint-disable max-line-length
 
@@ -38,26 +38,26 @@ import {WooFiSwapper} from "./dex/WooFi.sol";
  *                               the output token is expected to be the same as for the 
  *                               prior split in **
  * 
- * The logic accumulates values per column to enabl consistent multihops without additional balance reads
+ * The logic accumulates values per column to enable consistent multihops without additional balance reads
  * 
  * Multihops progressively update value (in amount -> out amount) too always ensure that values 
  * within sub splits ((x,0) or (0,y)) are correctly accumulated
  * 
- * A case like (1,2) is a violation as we always demand aclear gruping of the branch
+ * A case like (1,2) is a violation as we always demand a clear gruping of the branch
  * This is intuitive as we cannot have a split and a multihop at the same time. 
  * 
- * Every node with (x, 0) is expected to have consistent multihop connections
+ * Every node with (x,0) is expected to have consistent multihop connections
  * 
  * Every node with (0,y) is expected to have sub nodes and path that have all the same output currency
- *  * 
+ *
  * Swap execution is always along rows then columns
  * In the example above, we indicate a multihop
  * Each hop has length 0 (single swap) but 1 split
  * Each split is a single swap (0,0)
  * 
- * This allows arbitrary deep nesting ofg sub-routes and splits
+ * This allows arbitrary deep nesting of sub-routes and splits
  * 
- * If a row entry is nonzero, 
+ * Rows are prioritized over columns.
  * /
 
 /**
@@ -80,6 +80,7 @@ abstract contract BaseSwapper is
     WooFiSwapper,
     CurveSwapper,
     GMXSwapper, //
+    SyncSwapper,
     DeltaErrors
 {
     /**
@@ -289,7 +290,7 @@ abstract contract BaseSwapper is
                     receiver := shr(96, calldataload(currentOffset))
                     currentOffset := add(currentOffset, 20)
                 }
-                (received, currentOffset) = swapExactInSimple2(
+                (received, currentOffset) = _swapExactInSimple(
                     amountIn,
                     tokenIn,
                     nextToken,
@@ -328,7 +329,7 @@ abstract contract BaseSwapper is
      * @param amountIn sell amount
      * @return (amountOut, new offset) buy amount
      */
-    function swapExactInSimple2(
+    function _swapExactInSimple(
         uint256 amountIn,
         address tokenIn,
         address tokenOut,
@@ -374,12 +375,16 @@ abstract contract BaseSwapper is
                 payer // we do not need end flags
             );
         }
-        // Balancer V2
+        // Balancer V2s
         else if (dexId == BALANCER_V2_ID) {
-            amountIn = _swapBalancerExactIn(payer, amountIn, receiver, currentOffset);
-            assembly {
-                currentOffset := add(currentOffset, SKIP_LENGTH_BALANCER_V2)
-            }
+            (amountIn, currentOffset) = _swapBalancerExactIn(
+                    tokenIn,
+                    tokenOut,
+                    amountIn,
+                    receiver, //
+                    payer,
+                    currentOffset
+            );
         }
         // Curve pool types
         else if (dexId < CURVE_V1_MAX_ID) {
@@ -388,10 +393,10 @@ abstract contract BaseSwapper is
                 (amountIn, currentOffset) = _swapCurveGeneral(
                     tokenIn,
                     tokenOut,
-                    currentOffset,
                     amountIn,
+                    receiver, //
                     payer,
-                    receiver //
+                    currentOffset
                 );
             } else {
                 assembly {
@@ -419,49 +424,61 @@ abstract contract BaseSwapper is
                 tokenIn,
                 tokenOut,
                 receiver,
-                currentOffset,
-                payer // we do not need end flags
+                payer, // we do not need end flags
+                currentOffset
             );
         }
         // Curve NG
         else if (dexId == CURVE_RECEIVED_ID) {
-            (amountIn, currentOffset) = _swapCurveReceived(currentOffset, amountIn, receiver);
+            (amountIn, currentOffset) = _swapCurveReceived(
+                tokenIn,
+                amountIn,
+                receiver, //
+                payer,
+                currentOffset
+            );
         }
         // GMX
-        else if (dexId == GMX_ID || dexId == KTX_ID) {
-            address vault;
-            assembly {
-                vault := shr(96, calldataload(add(currentOffset, 22)))
-            }
-            amountIn = swapGMXExactIn(tokenIn, tokenOut, vault, receiver);
-            assembly {
-                currentOffset := add(currentOffset, SKIP_LENGTH_ADDRESS)
-            }
+        else if (dexId < MAX_GMX_ID) {
+            (amountIn, currentOffset) = swapGMXExactIn(
+                amountIn,
+                tokenIn,
+                tokenOut,
+                receiver,
+                payer, //
+                currentOffset
+            );
+        }
+        // syncSwap style
+        else if (dexId == SYNC_SWAP_ID) {
+            (amountIn, currentOffset) = swapSyncExactIn(
+                amountIn,
+                tokenIn,
+                receiver,
+                payer, //
+                currentOffset
+            );
         }
         // DODO V2
         else if (dexId == DODO_ID) {
-            address pair;
-            uint8 sellQuote;
-            assembly {
-                let params := calldataload(add(currentOffset, 11))
-                pair := shr(8, params)
-                sellQuote := and(UINT8_MASK, params)
-            }
-            amountIn = swapDodoV2ExactIn(sellQuote, pair, receiver);
-            assembly {
-                currentOffset := add(currentOffset, SKIP_LENGTH_ADDRESS_AND_PARAM)
-            }
+            (amountIn, currentOffset) = swapDodoV2ExactIn(
+                amountIn,
+                tokenIn,
+                receiver,
+                payer, //
+                currentOffset
+            );
         }
         // Moe LB
         else if (dexId == LB_ID) {
-            address pair;
-            assembly {
-                pair := shr(96, calldataload(add(currentOffset, 22)))
-            }
-            amountIn = swapLBexactIn(tokenOut, pair, receiver);
-            assembly {
-                currentOffset := add(currentOffset, SKIP_LENGTH_ADDRESS)
-            }
+            (amountIn, currentOffset) = swapLBexactIn(
+                amountIn,
+                tokenIn,
+                tokenOut,
+                receiver,
+                payer, //
+                currentOffset
+            );
         } else {
             assembly {
                 mstore(0, INVALID_DEX)

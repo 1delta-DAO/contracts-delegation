@@ -6,41 +6,38 @@ pragma solidity 0.8.28;
 * Author: Achthar | 1delta 
 /******************************************************************************/
 
-// solhint-disable max-line-length
-
 import {ERC20Selectors} from "../../../shared/selectors/ERC20Selectors.sol";
 import {Masks} from "../../../shared/masks/Masks.sol";
 
 /**
- * @title WooFi swapper contract
+ * @title SyncSwap style swapper, pre-funded, all pool variations
  */
-abstract contract WooFiSwapper is ERC20Selectors, Masks {
-    /// @dev WooFi rebate receiver
-    address private constant REBATE_RECIPIENT = 0x0000000000000000000000000000000000000000;
+abstract contract SyncSwapper is ERC20Selectors, Masks {
+    /// @dev selector for swap(bytes,address,address,bytes)
+    bytes32 internal constant SYNCSWAP_SELECTOR = 0x7132bb7f00000000000000000000000000000000000000000000000000000000;
 
     constructor() {}
 
     /**
-     * Swaps exact input on WOOFi DEX
+     * Swaps exact input on SyncSwap
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
      * | 0      | 20             | pool                 |
-     * | 21     | 1              | pay flag             | <- 0: caller pays; 1: contract pays; greater: pre-funded
+     * | 21     | 2              | pay flag             | <- 0: caller pays; 1: contract pays; greater: pre-funded
      */
-    function swapWooFiExactIn(
+    function swapSyncExactIn(
         uint256 fromAmount,
         address tokenIn,
-        address tokenOut,
         address receiver,
         address callerAddress,
-        uint256 currentOffset
-    ) internal returns (uint256 amountOut, uint256) {
+        uint256 currentOffset //
+        ) internal returns (uint256 buyAmount, uint256) {
         assembly {
+            let syncSwapData := calldataload(currentOffset)
+            let pool := shr(96, syncSwapData)
+
             let ptr := mload(0x40)
-            let pool := calldataload(currentOffset)
-            let payFlag := and(UINT8_MASK, shr(88, pool))
-            pool := shr(96, pool)
-            switch payFlag
+            switch and(UINT8_MASK, shr(72, syncSwapData))
             case 0 {
                 // selector for transferFrom(address,address,uint256)
                 mstore(ptr, ERC20_TRANSFER_FROM)
@@ -99,36 +96,40 @@ abstract contract WooFiSwapper is ERC20Selectors, Masks {
                 }
             }
 
-            // selector for swap(address,address,uint256,uint256,address,address)
-            mstore(
-                ptr, //
-                0x7dc2038200000000000000000000000000000000000000000000000000000000
-            )
-            mstore(add(ptr, 0x04), tokenIn)
-            mstore(add(ptr, 0x24), tokenOut)
-            mstore(add(ptr, 0x44), fromAmount)
-            mstore(add(ptr, 0x64), 0x0) // amountOutMin unused
-            mstore(add(ptr, 0x84), receiver) // recipient
-            mstore(add(ptr, 0xA4), REBATE_RECIPIENT) // rebateTo
+            // selector for swap(...)
+            mstore(ptr, SYNCSWAP_SELECTOR)
+            mstore(add(ptr, 4), 0x80) // first param set offset
+            mstore(add(ptr, 36), 0x0) // sender address
+            ////////////////////////////////////////////////////
+            // We store the bytes length to zero (no callback)
+            // and directly trigger the swap
+            ////////////////////////////////////////////////////
+            mstore(add(ptr, 68), 0x0) // callback receiver address
+            mstore(add(ptr, 100), 0x100) // calldata offset
+            mstore(add(ptr, 132), 0x60) // datalength
+            mstore(add(ptr, 164), tokenIn) // tokenIn
+            mstore(add(ptr, 196), receiver) // to
+            mstore(add(ptr, 228), 0) // withdraw mode
+            mstore(add(ptr, 260), 0) // path length is zero
+
             if iszero(
                 call(
                     gas(),
-                    pool,
-                    0x0, // no native transfer
-                    ptr,
-                    0xC4, // input length 196
-                    0x0, // store output here
-                    0x20 // output is just uint
+                    pool, // pool
+                    0x0,
+                    ptr, // input selector
+                    292, // input size = 164 (selector (4bytes) plus 5*32bytes)
+                    ptr, // output
+                    0x40 // output size = 0x40
                 )
             ) {
+                // Forward the error
                 returndatacopy(0, 0, returndatasize())
                 revert(0, returndatasize())
             }
-
-            amountOut := mload(0x0)
+            buyAmount := mload(add(ptr, 0x20))
             currentOffset := add(currentOffset, 21)
         }
-
-        return (amountOut, currentOffset);
+        return (buyAmount, currentOffset);
     }
 }

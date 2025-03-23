@@ -6,46 +6,40 @@ pragma solidity 0.8.28;
 * Author: Achthar | 1delta 
 /******************************************************************************/
 
-// solhint-disable max-line-length
-
 import {ERC20Selectors} from "../../../shared/selectors/ERC20Selectors.sol";
 import {Masks} from "../../../shared/masks/Masks.sol";
 
 /**
- * @title WooFi swapper contract
+ * @title GMX V1 swapper, works for most forks, too
  */
-abstract contract WooFiSwapper is ERC20Selectors, Masks {
-    /// @dev WooFi rebate receiver
-    address private constant REBATE_RECIPIENT = 0x0000000000000000000000000000000000000000;
-
-    constructor() {}
-
+abstract contract GMXSwapper is ERC20Selectors, Masks {
     /**
      * Swaps exact input on WOOFi DEX
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
      * | 0      | 20             | pool                 |
-     * | 21     | 1              | pay flag             | <- 0: caller pays; 1: contract pays; greater: pre-funded
+     * | 21     | 2              | pay flag             | <- 0: caller pays; 1: contract pays; greater: pre-funded
      */
-    function swapWooFiExactIn(
+    function swapGMXExactIn(
         uint256 fromAmount,
         address tokenIn,
         address tokenOut,
-        address receiver,
+        address receiver, //
         address callerAddress,
         uint256 currentOffset
     ) internal returns (uint256 amountOut, uint256) {
         assembly {
             let ptr := mload(0x40)
-            let pool := calldataload(currentOffset)
-            let payFlag := and(UINT8_MASK, shr(88, pool))
-            pool := shr(96, pool)
-            switch payFlag
+
+            let gmxData := calldataload(currentOffset)
+            let vault := shr(96, gmxData)
+
+            switch and(UINT8_MASK, shr(72, gmxData))
             case 0 {
                 // selector for transferFrom(address,address,uint256)
                 mstore(ptr, ERC20_TRANSFER_FROM)
                 mstore(add(ptr, 0x04), callerAddress)
-                mstore(add(ptr, 0x24), pool)
+                mstore(add(ptr, 0x24), vault)
                 mstore(add(ptr, 0x44), fromAmount)
 
                 let success := call(gas(), tokenIn, 0, ptr, 0x64, 0, 32)
@@ -74,7 +68,7 @@ abstract contract WooFiSwapper is ERC20Selectors, Masks {
             case 1 {
                 // selector for transfer(address,uint256)
                 mstore(ptr, ERC20_TRANSFER)
-                mstore(add(ptr, 0x04), pool)
+                mstore(add(ptr, 0x04), vault)
                 mstore(add(ptr, 0x24), fromAmount)
                 let success := call(gas(), tokenIn, 0, ptr, 0x44, 0, 32)
 
@@ -99,25 +93,22 @@ abstract contract WooFiSwapper is ERC20Selectors, Masks {
                 }
             }
 
-            // selector for swap(address,address,uint256,uint256,address,address)
+            // selector for swap(address,address,address)
             mstore(
                 ptr, //
-                0x7dc2038200000000000000000000000000000000000000000000000000000000
+                0x9331621200000000000000000000000000000000000000000000000000000000
             )
             mstore(add(ptr, 0x04), tokenIn)
             mstore(add(ptr, 0x24), tokenOut)
-            mstore(add(ptr, 0x44), fromAmount)
-            mstore(add(ptr, 0x64), 0x0) // amountOutMin unused
-            mstore(add(ptr, 0x84), receiver) // recipient
-            mstore(add(ptr, 0xA4), REBATE_RECIPIENT) // rebateTo
+            mstore(add(ptr, 0x44), receiver)
             if iszero(
                 call(
                     gas(),
-                    pool,
+                    vault,
                     0x0, // no native transfer
                     ptr,
-                    0xC4, // input length 196
-                    0x0, // store output here
+                    0x64, // input length 66 bytes
+                    ptr, // store output here
                     0x20 // output is just uint
                 )
             ) {
@@ -125,10 +116,9 @@ abstract contract WooFiSwapper is ERC20Selectors, Masks {
                 revert(0, returndatasize())
             }
 
-            amountOut := mload(0x0)
+            amountOut := mload(ptr)
             currentOffset := add(currentOffset, 21)
         }
-
         return (amountOut, currentOffset);
     }
 }
