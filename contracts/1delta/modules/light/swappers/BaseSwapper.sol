@@ -83,32 +83,6 @@ abstract contract BaseSwapper is
     SyncSwapper,
     DeltaErrors
 {
-    /**
-     * Swaps exact in internally specifically for FOT tokens (uni V2 type only)
-     * Will work with nnormal tokens, too, however, it is slightly less efficient
-     * Will also never use a flash swap
-     * The dexId is assumed to be fetched before in a prefunding action
-     * @param amountIn sell amount
-     * @return amountOut buy amount
-     */
-    function swapExactInSimpleFOT(
-        uint256 amountIn,
-        address receiver, // last step
-        uint256 pathOffset,
-        uint256 pathLength
-    ) internal returns (uint256, uint256) {
-        // amountIn = swapUniV2ExactInFOT(amountIn, receiver, pathOffset);
-        assembly {
-            // pathOffset := add(pathOffset, SKIP_LENGTH_UNOSWAP)
-            // pathLength := sub(pathLength, SKIP_LENGTH_UNOSWAP)
-        }
-        ////////////////////////////////////////////////////
-        // From there on, we just continue to swap if needed
-        // similar to conventional swaps
-        ////////////////////////////////////////////////////
-        return (amountIn, pathOffset);
-    }
-
     /*
      * Forward swapper of e-swaps
      * Caller needs to ensure that paths are consistent
@@ -348,8 +322,6 @@ abstract contract BaseSwapper is
         // Note that this is auto-forwarding the amountIn,
         // as such, this is dynamically usable within
         // flash-swaps.
-        // Note that `dexId` gets reassigned within each
-        // execution step if we are not yet at the final pool
         ////////////////////////////////////////////////////
         // uniswapV3 style
         if (dexId < UNISWAP_V3_MAX_ID) {
@@ -419,7 +391,7 @@ abstract contract BaseSwapper is
         }
         // WOO Fi
         else if (dexId == WOO_FI_ID) {
-            (amountIn, currentOffset) = swapWooFiExactIn(
+            (amountIn, currentOffset) = _swapWooFiExactIn(
                 amountIn,
                 tokenIn,
                 tokenOut,
@@ -440,7 +412,7 @@ abstract contract BaseSwapper is
         }
         // GMX
         else if (dexId < MAX_GMX_ID) {
-            (amountIn, currentOffset) = swapGMXExactIn(
+            (amountIn, currentOffset) = _swapGMXExactIn(
                 amountIn,
                 tokenIn,
                 tokenOut,
@@ -451,7 +423,7 @@ abstract contract BaseSwapper is
         }
         // syncSwap style
         else if (dexId == SYNC_SWAP_ID) {
-            (amountIn, currentOffset) = swapSyncExactIn(
+            (amountIn, currentOffset) = _swapSyncExactIn(
                 amountIn,
                 tokenIn,
                 receiver,
@@ -461,7 +433,7 @@ abstract contract BaseSwapper is
         }
         // DODO V2
         else if (dexId == DODO_ID) {
-            (amountIn, currentOffset) = swapDodoV2ExactIn(
+            (amountIn, currentOffset) = _swapDodoV2ExactIn(
                 amountIn,
                 tokenIn,
                 receiver,
@@ -471,7 +443,7 @@ abstract contract BaseSwapper is
         }
         // Moe LB
         else if (dexId == LB_ID) {
-            (amountIn, currentOffset) = swapLBexactIn(
+            (amountIn, currentOffset) = _swapLBexactIn(
                 amountIn,
                 tokenIn,
                 tokenOut,

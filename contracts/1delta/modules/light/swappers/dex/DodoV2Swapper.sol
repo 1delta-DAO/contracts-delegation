@@ -23,7 +23,7 @@ abstract contract DodoV2Swapper is ERC20Selectors, Masks {
      * | 20     | 1              | sellQuote            |
      * | 21     | 2              | pay flag             | <- 0: caller pays; 1: contract pays; greater: pre-funded
      */
-    function swapDodoV2ExactIn(
+    function _swapDodoV2ExactIn(
         uint256 fromAmount,
         address tokenIn,
         address receiver,

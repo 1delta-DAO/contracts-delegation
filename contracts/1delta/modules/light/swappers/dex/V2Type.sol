@@ -284,24 +284,65 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
      * @param amountIn sell amount
      * @return buyAmount output amount
      */
-    function swapUniV2ExactInFOTGeneric(uint256 amountIn, address receiver, uint256 pathOffset) internal returns (uint256 buyAmount) {
+    function _swapUniV2ExactInFOTGeneric(
+        uint256 amountIn,
+        address tokenIn,
+        address tokenOut,
+        address receiver,
+        uint256 currentOffset,
+        address callerAddress
+    ) internal returns (uint256 buyAmount, uint256 clLength) {
         assembly {
             let ptr := mload(0x40) // free memory pointer
+
             ////////////////////////////////////////////////////
             // We extract all relevant data from the path bytes blob
             ////////////////////////////////////////////////////
-            let pair := calldataload(add(pathOffset, 22))
+            let pair := calldataload(currentOffset)
+
             // this is expected to be 10000 - x, where x is the poolfee in bps
             let poolFeeDenom := and(shr(80, pair), UINT16_MASK)
+
+            clLength := and(UINT16_MASK, shr(64, pair))
+
+            if iszero(clLength) {
+                // selector for transferFrom(address,address,uint256)
+                mstore(ptr, ERC20_TRANSFER_FROM)
+                mstore(add(ptr, 0x04), callerAddress)
+                mstore(add(ptr, 0x24), pair)
+                mstore(add(ptr, 0x44), amountIn)
+
+                let success := call(gas(), tokenIn, 0, ptr, 0x64, 0, 32)
+
+                let rdsize := returndatasize()
+                // Check for ERC20 success. ERC20 tokens should return a boolean,
+                // but some don't. We accept 0-length return data as success, or at
+                // least 32 bytes that starts with a 32-byte boolean true.
+                success := and(
+                    success, // call itself succeeded
+                    or(
+                        iszero(rdsize), // no return data, or
+                        and(
+                            gt(rdsize, 31), // at least 32 bytes
+                            eq(mload(0), 1) // starts with uint256(1)
+                        )
+                    )
+                )
+
+                if iszero(success) {
+                    returndatacopy(0, 0, rdsize)
+                    revert(0, rdsize)
+                }
+            }
+
             pair := shr(96, pair)
             // we define this as token in and later re-assign this to
             // reserve in to prevent stack too deep errors
-            let tokenIn := shr(96, calldataload(pathOffset))
             // Compute the buy amount based on the pair reserves.
             {
                 let zeroForOne := lt(
                     tokenIn,
-                    and(ADDRESS_MASK, calldataload(add(pathOffset, 32))) // tokenOut
+                    tokenOut // tokenOut
                 )
                 // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
                 // buyAmount = (pairSellAmount * feeAm * buyReserve) /

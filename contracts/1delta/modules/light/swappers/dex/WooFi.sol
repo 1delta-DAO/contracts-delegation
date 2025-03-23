@@ -27,7 +27,7 @@ abstract contract WooFiSwapper is ERC20Selectors, Masks {
      * | 0      | 20             | pool                 |
      * | 21     | 1              | pay flag             | <- 0: caller pays; 1: contract pays; greater: pre-funded
      */
-    function swapWooFiExactIn(
+    function _swapWooFiExactIn(
         uint256 fromAmount,
         address tokenIn,
         address tokenOut,

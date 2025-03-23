@@ -20,7 +20,7 @@ abstract contract GMXSwapper is ERC20Selectors, Masks {
      * | 0      | 20             | pool                 |
      * | 21     | 2              | pay flag             | <- 0: caller pays; 1: contract pays; greater: pre-funded
      */
-    function swapGMXExactIn(
+    function _swapGMXExactIn(
         uint256 fromAmount,
         address tokenIn,
         address tokenOut,
