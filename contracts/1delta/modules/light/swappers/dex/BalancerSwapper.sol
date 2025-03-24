@@ -100,7 +100,7 @@ abstract contract BalancerSwapper is ERC20Selectors, Masks {
             mstore(add(ptr, 0x84), 0) // toInternalBalance
             mstore(add(ptr, 0xA4), 0) // limit
             mstore(add(ptr, 0xC4), MAX_UINT256) // deadline
-            mstore(add(ptr, 0xE4), calldataload(currentOffset))
+            mstore(add(ptr, 0xE4), calldataload(currentOffset)) // poolId
             mstore(add(ptr, 0x104), 0) // swapKind = GIVEN_IN
             mstore(add(ptr, 0x124), tokenIn) // assetIn
             mstore(add(ptr, 0x144), tokenOut) // assetOut

@@ -363,6 +363,155 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
     }
 
     /**
+     * Swaps using a standard curve pool
+     * Data is supposed to be packed as follows
+     * tokenIn | actionId | dexId | pool | i | j | sm | tokenOut
+     * sm is the selector,
+     * i,j are the swap indexes for the pool
+     * | Offset | Length (bytes) | Description          |
+     * |--------|----------------|----------------------|
+     * | 0      | 20             | pool                 |
+     * | 20     | 1              | i                    |
+     * | 21     | 1              | j                    |
+     * | 22     | 1              | sm                   |
+     * | 23     | 2              | payMode              | <-- 0: pay from self; 1: caller pays; 3: pre-funded;
+     */
+    function _swapCurveFork(
+        address tokenIn,
+        address tokenOut,
+        uint256 amountIn,
+        address receiver, //
+        address callerAddress,
+        uint256 currentOffset
+    )
+        internal
+        returns (
+            uint256 amountOut,
+            // curve data is a transient memory variable to
+            // avoid stack too deep errors
+            uint256 curveData
+        )
+    {
+        address pool;
+        assembly {
+            curveData := calldataload(currentOffset)
+        }
+        // extract pool
+        pool = _fundAndApproveIfNeeded(
+            callerAddress,
+            tokenIn,
+            amountIn,
+            curveData // use generic data
+        );
+        assembly {
+            let ptr := mload(0x40)
+
+            mstore(0x0, ERC20_BALANCE_OF)
+            mstore(0x4, address())
+            // call to token
+            pop(
+                staticcall(
+                    gas(),
+                    tokenOut, // token
+                    0x0,
+                    0x24,
+                    ptr, // use ptr here so that we don't override the scrap space
+                    0x20
+                )
+            )
+
+            amountOut := mload(ptr)
+
+            ////////////////////////////////////////////////////
+            // Execute swap function
+            ////////////////////////////////////////////////////
+            switch and(shr(72, curveData), UINT8_MASK) // selectorId
+            case 3 {
+                // selector for exchange(int128,int128,uint256,uint256,address)
+                mstore(ptr, EXCHANGE)
+                mstore(add(ptr, 0x4), and(shr(88, curveData), UINT8_MASK))
+                mstore(add(ptr, 0x24), and(shr(80, curveData), UINT8_MASK))
+                mstore(add(ptr, 0x44), amountIn)
+                mstore(add(ptr, 0x64), 0) // min out
+                if iszero(call(gas(), pool, 0x0, ptr, 0x84, 0x0, 0x0)) { // no output
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
+            }
+            case 5 {
+                // selector for exchange(int128,int128,uint256,uint256)
+                mstore(ptr, EXCHANGE_UNDERLYING)
+                mstore(add(ptr, 0x4), and(shr(88, curveData), UINT8_MASK))
+                mstore(add(ptr, 0x24), and(shr(80, curveData), UINT8_MASK))
+                mstore(add(ptr, 0x44), amountIn)
+                mstore(add(ptr, 0x64), 0) // min out
+                if iszero(call(gas(), pool, 0x0, ptr, 0x84, ptr, 0x20)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
+            }
+
+            // call to token - note that 0x-0x24 still holds the respective calldata
+            pop(
+                staticcall(
+                    gas(),
+                    tokenOut, // token
+                    0x0,
+                    0x24,
+                    0x0, // output to ptr
+                    0x20
+                )
+            )
+            // load the retrieved balance
+            amountOut := sub(mload(0x0), amountOut)
+
+            ////////////////////////////////////////////////////
+            // Send funds to receiver if needed
+            // curveData is now the flag for manually
+            // transferuing to the receiver
+            ////////////////////////////////////////////////////
+            if and(curveData, xor(receiver, address())) {
+                // selector for transfer(address,uint256)
+                mstore(ptr, ERC20_TRANSFER)
+                mstore(add(ptr, 0x04), receiver)
+                mstore(add(ptr, 0x24), amountOut)
+                let success := call(
+                    gas(),
+                    tokenOut, // tokenIn, pool + 5x uint8 (i,j,s,a)
+                    0,
+                    ptr,
+                    0x44,
+                    ptr,
+                    32
+                )
+
+                let rdsize := returndatasize()
+
+                // Check for ERC20 success. ERC20 tokens should return a boolean,
+                // but some don't. We accept 0-length return data as success, or at
+                // least 32 bytes that starts with a 32-byte boolean true.
+                success := and(
+                    success, // call itself succeeded
+                    or(
+                        iszero(rdsize), // no return data, or
+                        and(
+                            iszero(lt(rdsize, 32)), // at least 32 bytes
+                            eq(mload(ptr), 1) // starts with uint256(1)
+                        )
+                    )
+                )
+
+                if iszero(success) {
+                    returndatacopy(0, 0, rdsize)
+                    revert(0, rdsize)
+                }
+            }
+            curveData := add(currentOffset, 25)
+        }
+        return (amountOut, curveData);
+    }
+
+    /**
      * Swaps using a NG pool that allows for pre-funded swaps
      * Data is supposed to be packed as follows
      * tokenIn | actionId | dexId | pool | sm | i | j | tokenOut

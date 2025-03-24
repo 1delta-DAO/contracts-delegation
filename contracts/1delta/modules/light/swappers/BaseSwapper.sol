@@ -84,12 +84,8 @@ abstract contract BaseSwapper is
     DeltaErrors
 {
     /*
-     * Forward swapper of e-swaps
-     * Caller needs to ensure that paths are consistent
-     * | Offset | Length (bytes) | Description          |
-     * |--------|----------------|----------------------|
-     * | 0      | 1              | swapCount-1          |
-     * | 1      | any            | eSwapData            |
+     * multihop swapper that allows for splits in each hops
+     * forward the amountOut received from the last hop
      */
     function _multihopSplitSwap(
         uint256 amountIn,
@@ -127,9 +123,8 @@ abstract contract BaseSwapper is
      * parallel swaps a->...->b; a->...->b for different dexs
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
-     * | 0      | 1              | splitsCount          |
-     * | 1      | 0-16           | splits               |
-     * | 1+sC   | Variable       | datas                |
+     * | 0      | 0-16           | splits               |
+     * | sC     | Variable       | datas                |
      *
      * `splits` looks like follows
      * | Offset | Length (bytes) | Description          |
@@ -140,12 +135,15 @@ abstract contract BaseSwapper is
      * `datas` looks like follows
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
-     * | 0      | 1              | swapCount - 1        | <- indicates whether the swap is non-simple (further e-swaps)
-     * | 0      | 1              | dexId                |
-     * | 1      | variable       | params               | <- depends on dexId (fixed for each one)
-     * | 1+v    | 1              | dexId                |
-     * | 2+v    | variable       | params               | <- depends on dexId (fixed for each one)
+     * | 0      | 2              | (r,c)                | <- indicates whether the swap is non-simple (further splits or hops)
+     * | 2      | 1              | dexId                |
+     * | 3      | variable       | params               | <- depends on dexId (fixed for each one)
+     * | 3+v    | 2              | (r,c)                |
+     * | 4+v    | 1              | dexId                |
+     * | ...    | variable       | params               | <- depends on dexId (fixed for each one)
      * | ...    | ...            | ...                  | <- count + 1 times of repeating this pattern
+     * 
+     * returns cumulative output, updated offset and nextToken address 
      */
     function _singleSwapOrSplit(
         uint256 amountIn,
@@ -166,8 +164,7 @@ abstract contract BaseSwapper is
         } else {
             uint256 splits;
             assembly {
-                splits := calldataload(currentOffset)
-                splits := and(UINT128_MASK, shr(128, splits))
+                splits := shr(128, calldataload(currentOffset))
                 currentOffset := add(mul(2, splitsMaxIndex), currentOffset)
             }
             uint256 amount;
@@ -229,10 +226,16 @@ abstract contract BaseSwapper is
      * execute swap or split amounts
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
-     * | 0      | 1              | swapMaxIndex         |
-     * | 0      | 1              | splits               |
+     * | 0      | 2              | (r,c)                |
      * | 2      | 20             | nextToken            |
      * | 22     | any            | swapData             |
+     * 
+     * if r=0 
+     *      if c=0 : single swap
+     *      else: split swap
+     * else: multihop swap
+     * 
+     * always return output amount, updated offset and nextToken address
      */
     function _singleSwapSplitOrRoute(
         uint256 amountIn,
@@ -350,12 +353,12 @@ abstract contract BaseSwapper is
         // Balancer V2s
         else if (dexId == BALANCER_V2_ID) {
             (amountIn, currentOffset) = _swapBalancerExactIn(
-                    tokenIn,
-                    tokenOut,
-                    amountIn,
-                    receiver, //
-                    payer,
-                    currentOffset
+                tokenIn,
+                tokenOut,
+                amountIn,
+                receiver, //
+                payer,
+                currentOffset
             );
         }
         // Curve pool types
@@ -363,6 +366,15 @@ abstract contract BaseSwapper is
             // Curve standard pool
             if (dexId == CURVE_V1_STANDARD_ID) {
                 (amountIn, currentOffset) = _swapCurveGeneral(
+                    tokenIn,
+                    tokenOut,
+                    amountIn,
+                    receiver, //
+                    payer,
+                    currentOffset
+                );
+            } else if (dexId == CURVE_FORK_ID) {
+                (amountIn, currentOffset) = _swapCurveFork(
                     tokenIn,
                     tokenOut,
                     amountIn,
