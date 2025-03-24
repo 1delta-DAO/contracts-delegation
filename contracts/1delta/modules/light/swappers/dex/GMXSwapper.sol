@@ -14,7 +14,7 @@ import {Masks} from "../../../shared/masks/Masks.sol";
  */
 abstract contract GMXSwapper is ERC20Selectors, Masks {
     /**
-     * Swaps exact input on WOOFi DEX
+     * Swaps exact input on GMX V1
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
      * | 0      | 20             | pool                 |

@@ -22,15 +22,7 @@ abstract contract UniV3Callbacks is V2ReferencesBase, V3ReferencesBase, ERC20Sel
 
     uint256 internal constant PATH_OFFSET_CALLBACK_V2 = 164;
     uint256 internal constant PATH_OFFSET_CALLBACK_V3 = 132;
-    uint256 internal constant NEXT_SWAP_V3_OFFSET = 176; //PATH_OFFSET_CALLBACK_V3 + SKIP_LENGTH_UNOSWAP;
-    uint256 internal constant NEXT_SWAP_V2_OFFSET = 208; //PATH_OFFSET_CALLBACK_V2 + SKIP_LENGTH_UNOSWAP;
 
-    // offset for receiver address for most DEX types (uniswap, curve etc.)
-    uint256 private constant RECEIVER_OFFSET_UNOSWAP = 66;
-    uint256 private constant MAX_SINGLE_LENGTH_UNOSWAP = 67;
-    /// @dev higher length limit for path length using lt()
-    uint256 private constant MAX_SINGLE_LENGTH_UNOSWAP_HIGH = 68;
-    uint256 private constant SKIP_LENGTH_UNOSWAP = 44; // = 20+1+1+20+2
 
     constructor() {}
 
@@ -39,17 +31,16 @@ abstract contract UniV3Callbacks is V2ReferencesBase, V3ReferencesBase, ERC20Sel
         address tokenIn;
         address tokenOut;
         address callerAddress;
-        uint256 pathLength;
+        uint256 calldataLength;
         assembly {
             let firstWord := calldataload(PATH_OFFSET_CALLBACK_V3)
             callerAddress := shr(96, firstWord)
             firstWord := calldataload(add(20, PATH_OFFSET_CALLBACK_V3))
             tokenIn := shr(96, firstWord)
-            // tokenOut | dexId | fee | pathLength
             firstWord := calldataload(add(40, PATH_OFFSET_CALLBACK_V3))
             tokenOut := shr(96, firstWord)
             let dexId := and(UINT8_MASK, shr(88, firstWord))
-            pathLength := and(UINT16_MASK, shr(56, firstWord))
+            calldataLength := and(UINT16_MASK, shr(56, firstWord))
 
             ////////////////////////////////////////////////////
             // Compute and validate pool address
@@ -85,10 +76,10 @@ abstract contract UniV3Callbacks is V2ReferencesBase, V3ReferencesBase, ERC20Sel
                 revert(0x0, 0x4)
             }
         }
-        clSwapCallback(amount0Delta, amount1Delta, tokenIn, callerAddress, pathLength);
+        clSwapCallback(amount0Delta, amount1Delta, tokenIn, callerAddress, calldataLength);
     }
 
-    function clSwapCallback(int256 amount0Delta, int256 amount1Delta, address tokenIn, address callerAddress, uint256 pathLength) private {
+    function clSwapCallback(int256 amount0Delta, int256 amount1Delta, address tokenIn, address callerAddress, uint256 calldataLength) private {
         uint256 amountToPay;
         uint256 amountReceived;
         assembly {
@@ -103,14 +94,14 @@ abstract contract UniV3Callbacks is V2ReferencesBase, V3ReferencesBase, ERC20Sel
             }
 
             // one can pass no path to continue
-            // we then assume the pathLength as flag to
+            // we then assume the calldataLength as flag to
             // indicate the pay type
-            if lt(pathLength, 2) {
+            if lt(calldataLength, 2) {
                 let ptr := mload(0x40)
 
                 let success
                 // transfer from caller
-                switch pathLength
+                switch calldataLength
                 case 0 {
                     // selector for transferFrom(address,address,uint256)
                     mstore(ptr, ERC20_TRANSFER_FROM)
@@ -159,7 +150,7 @@ abstract contract UniV3Callbacks is V2ReferencesBase, V3ReferencesBase, ERC20Sel
                 return(0, 0)
             }
         }
-        _deltaComposeInternal(callerAddress, amountReceived, amountToPay, 0x96, pathLength);
+        _deltaComposeInternal(callerAddress, amountReceived, amountToPay, 0x96, calldataLength);
     }
 
 

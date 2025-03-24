@@ -16,7 +16,7 @@ import {Masks} from "../../../shared/masks/Masks.sol";
  */
 abstract contract DodoV2Swapper is ERC20Selectors, Masks {
     /**
-     * Swaps exact input on WOOFi DEX
+     * Swaps exact input on Dodo V2
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
      * | 0      | 20             | pool                 |
