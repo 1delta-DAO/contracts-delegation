@@ -6,7 +6,6 @@ pragma solidity 0.8.28;
 * Author: Achthar | 1delta 
 /******************************************************************************/
 
-import {V2ReferencesBase} from "./V2References.sol";
 import {V3ReferencesBase} from "./V3References.sol";
 import {Masks} from "../../../shared/masks/Masks.sol";
 import {DeltaErrors} from "../../../shared/errors/Errors.sol";
@@ -16,7 +15,7 @@ import {ERC20Selectors} from "../../../shared/selectors/ERC20Selectors.sol";
  * @title Contract Module for general Margin Trading on an borrow delegation compatible Lender
  * @notice Contains main logic for uniswap-type callbacks and initiator functions
  */
-abstract contract UniV3Callbacks is V2ReferencesBase, V3ReferencesBase, ERC20Selectors, Masks, DeltaErrors {
+abstract contract UniV3Callbacks is V3ReferencesBase, ERC20Selectors, Masks, DeltaErrors {
     /// @dev the constant offset a path has for Uni V3 type swap callbacks
     uint256 internal constant PATH_OFFSET_CALLBACK_V3 = 132;
 
@@ -31,9 +30,9 @@ abstract contract UniV3Callbacks is V2ReferencesBase, V3ReferencesBase, ERC20Sel
         assembly {
             let firstWord := calldataload(PATH_OFFSET_CALLBACK_V3)
             callerAddress := shr(96, firstWord)
-            firstWord := calldataload(add(20, PATH_OFFSET_CALLBACK_V3))
+            firstWord := calldataload(152)
             tokenIn := shr(96, firstWord)
-            firstWord := calldataload(add(40, PATH_OFFSET_CALLBACK_V3))
+            firstWord := calldataload(172)
             tokenOut := shr(96, firstWord)
             let dexId := and(UINT8_MASK, shr(88, firstWord))
             calldataLength := and(UINT16_MASK, shr(56, firstWord))
@@ -170,9 +169,9 @@ abstract contract UniV3Callbacks is V2ReferencesBase, V3ReferencesBase, ERC20Sel
         assembly {
             let firstWord := calldataload(PATH_OFFSET_CALLBACK_V3)
             callerAddress := shr(96, firstWord)
-            firstWord := calldataload(add(20, PATH_OFFSET_CALLBACK_V3))
+            firstWord := calldataload(152)
             tokenIn := shr(96, firstWord)
-            firstWord := calldataload(add(40, PATH_OFFSET_CALLBACK_V3))
+            firstWord := calldataload(172)
             tokenOut := shr(96, firstWord)
             let dexId := and(UINT8_MASK, shr(88, firstWord))
             pathLength := and(UINT16_MASK, shr(56, firstWord))

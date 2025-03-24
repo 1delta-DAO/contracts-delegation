@@ -7,26 +7,24 @@ pragma solidity 0.8.28;
 /******************************************************************************/
 
 import {V2ReferencesBase} from "./V2References.sol";
-import {V3ReferencesBase} from "./V3References.sol";
 import {Masks} from "../../../shared/masks/Masks.sol";
 import {DeltaErrors} from "../../../shared/errors/Errors.sol";
 import {ERC20Selectors} from "../../../shared/selectors/ERC20Selectors.sol";
-import {console} from "forge-std/console.sol";
 
 /**
  * @title Contract Module for general Margin Trading on an borrow delegation compatible Lender
  * @notice Contains main logic for uniswap-type callbacks and initiator functions
  */
-abstract contract UniV2Callbacks is V2ReferencesBase, V3ReferencesBase, ERC20Selectors, Masks, DeltaErrors {
+abstract contract UniV2Callbacks is V2ReferencesBase, ERC20Selectors, Masks, DeltaErrors {
     uint256 internal constant PATH_OFFSET_CALLBACK_V2 = 164;
 
     // The uniswapV2 style callback for exact forks
-    function uniswapV2Call(address sender, uint256 amount0, uint256 amount1, bytes calldata) external {
-        console.log("callback");
+    function uniswapV2Call(address sender, uint256 a0, uint256 a1, bytes calldata) external {
         address tokenIn;
         address tokenOut;
         address callerAddress;
         uint256 calldataLength;
+        uint256 amountIn;
         // the fee parameter in the path can be ignored for validating a V2 pool
         assembly {
             // revert if sender param is not this address
@@ -36,12 +34,17 @@ abstract contract UniV2Callbacks is V2ReferencesBase, V3ReferencesBase, ERC20Sel
             }
             let firstWord := calldataload(PATH_OFFSET_CALLBACK_V2)
             callerAddress := shr(96, firstWord)
-            firstWord := calldataload(add(20, PATH_OFFSET_CALLBACK_V2))
+            
+            firstWord := calldataload(184)
             tokenIn := shr(96, firstWord)
-            firstWord := calldataload(add(40, PATH_OFFSET_CALLBACK_V2))
+
+            firstWord := calldataload(204)
             tokenOut := shr(96, firstWord)
-            let dexId := and(UINT8_MASK, shr(88, firstWord))
-            calldataLength := and(UINT16_MASK, shr(72, firstWord))
+
+            firstWord := calldataload(224)
+            amountIn := shr(144, firstWord)
+            let dexId := and(UINT8_MASK, shr(136, firstWord))
+            calldataLength := and(UINT16_MASK, shr(120, firstWord))
 
             let ptr := mload(0x40)
             switch lt(tokenIn, tokenOut)
@@ -78,22 +81,31 @@ abstract contract UniV2Callbacks is V2ReferencesBase, V3ReferencesBase, ERC20Sel
                 revert(0, 0x4)
             }
         }
-        console.log("calldataLength", calldataLength);
-        _deltaComposeInternal(
-            callerAddress,
-            0,
-            0,
-            // the naive offset is 164
-            // we skip the entire callback validation data
-            // that is tokens (+40), caller (+20), dexId (+1) datalength (+2)
-            // = 227
-            227, 
-            calldataLength
-        );
+        _v2Callback(amountIn, a0, a1, callerAddress, calldataLength);
     }
 
-    function _v2Callback() internal  {
-        
+    function _v2Callback(uint256 amountIn, uint256 a0, uint256 a1, address callerAddress, uint256 calldataLength) internal {
+        uint256 amountOut;
+        assembly {
+            switch iszero(a0)
+            case 1 {
+                amountOut := a1
+            }
+            default {
+                amountOut := a0
+            }
+        }
+        _deltaComposeInternal(
+            callerAddress,
+            amountIn,
+            amountOut,
+            // the naive offset is 164
+            // we skip the entire callback validation data
+            // that is tokens (+40), caller (+20), dexId (+1) datalength (+2) + amountIn (14)
+            // = 241
+            241,
+            calldataLength
+        );
     }
 
     function _deltaComposeInternal(address callerAddress, uint256 paramPull, uint256 paramPush, uint256 offset, uint256 length) internal virtual {}
