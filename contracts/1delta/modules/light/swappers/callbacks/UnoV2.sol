@@ -11,19 +11,18 @@ import {V3ReferencesBase} from "./V3References.sol";
 import {Masks} from "../../../shared/masks/Masks.sol";
 import {DeltaErrors} from "../../../shared/errors/Errors.sol";
 import {ERC20Selectors} from "../../../shared/selectors/ERC20Selectors.sol";
+import {console} from "forge-std/console.sol";
 
 /**
  * @title Contract Module for general Margin Trading on an borrow delegation compatible Lender
  * @notice Contains main logic for uniswap-type callbacks and initiator functions
  */
-abstract contract UniV3Callbacks is V2ReferencesBase, V3ReferencesBase, ERC20Selectors, Masks, DeltaErrors {
-    // errors
-    error NoBalance();
-
+abstract contract UniV2Callbacks is V2ReferencesBase, V3ReferencesBase, ERC20Selectors, Masks, DeltaErrors {
     uint256 internal constant PATH_OFFSET_CALLBACK_V2 = 164;
 
     // The uniswapV2 style callback for exact forks
     function uniswapV2Call(address sender, uint256 amount0, uint256 amount1, bytes calldata) external {
+        console.log("callback");
         address tokenIn;
         address tokenOut;
         address callerAddress;
@@ -42,7 +41,7 @@ abstract contract UniV3Callbacks is V2ReferencesBase, V3ReferencesBase, ERC20Sel
             firstWord := calldataload(add(40, PATH_OFFSET_CALLBACK_V2))
             tokenOut := shr(96, firstWord)
             let dexId := and(UINT8_MASK, shr(88, firstWord))
-            calldataLength := and(UINT16_MASK, shr(56, firstWord))
+            calldataLength := and(UINT16_MASK, shr(72, firstWord))
 
             let ptr := mload(0x40)
             switch lt(tokenIn, tokenOut)
@@ -79,7 +78,22 @@ abstract contract UniV3Callbacks is V2ReferencesBase, V3ReferencesBase, ERC20Sel
                 revert(0, 0x4)
             }
         }
-        _deltaComposeInternal(callerAddress, 0, 0, 0x96, calldataLength);
+        console.log("calldataLength", calldataLength);
+        _deltaComposeInternal(
+            callerAddress,
+            0,
+            0,
+            // the naive offset is 164
+            // we skip the entire callback validation data
+            // that is tokens (+40), caller (+20), dexId (+1) datalength (+2)
+            // = 227
+            227, 
+            calldataLength
+        );
+    }
+
+    function _v2Callback() internal  {
+        
     }
 
     function _deltaComposeInternal(address callerAddress, uint256 paramPull, uint256 paramPush, uint256 offset, uint256 length) internal virtual {}

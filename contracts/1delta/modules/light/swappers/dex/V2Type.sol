@@ -156,13 +156,14 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
                  * | 61     | 2              | calldataLength       |
                  * | 63     | calldataLength | calldata             |
                  */
-                mstore(add(ptr, 132), shl(96, callerAddress))
-                mstore(add(ptr, 152), shl(96, tokenIn))
-                mstore(add(ptr, 172), shl(96, tokenOut))
-                mstore8(add(ptr, 173), dexId)
-                mstore(add(ptr, 174), shl(240, clLength)) // calldataLength (within bytes)
+                mstore(add(ptr, 132), add(clLength, 63)) // calldataLength (within bytes)
+                mstore(add(ptr, 164), shl(96, callerAddress))
+                mstore(add(ptr, 184), shl(96, tokenIn))
+                mstore(add(ptr, 204), shl(96, tokenOut))
+                mstore8(add(ptr, 224), dexId)
                 // Store path
-                calldatacopy(add(ptr, 176), currentOffset, clLength)
+                currentOffset := add(22, currentOffset)
+                calldatacopy(add(ptr, 225), currentOffset, add(clLength, 2))
                 if iszero(
                     call(
                         gas(),
@@ -179,7 +180,7 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
                     revert(0, returndatasize())
                 }
                 // update clLength as new offset
-                clLength := add(currentOffset, add(24, clLength))
+                clLength := add(currentOffset, add(2, clLength))
             }
             ////////////////////////////////////////////////////
             // Otherwise, we have to assume that payment needs to

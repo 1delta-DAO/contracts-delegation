@@ -17,9 +17,6 @@ import {ERC20Selectors} from "../../../shared/selectors/ERC20Selectors.sol";
  * @notice Contains main logic for uniswap-type callbacks and initiator functions
  */
 abstract contract UniV3Callbacks is V2ReferencesBase, V3ReferencesBase, ERC20Selectors, Masks, DeltaErrors {
-    // errors
-    error NoBalance();
-
     /// @dev the constant offset a path has for Uni V3 type swap callbacks
     uint256 internal constant PATH_OFFSET_CALLBACK_V3 = 132;
 
