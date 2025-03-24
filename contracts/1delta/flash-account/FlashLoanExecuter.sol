@@ -4,7 +4,7 @@ pragma solidity ^0.8.28;
 import {ExecutionLock} from "./common/ExecutionLock.sol";
 
 abstract contract FlashLoanExecuter is ExecutionLock {
-    bytes32 constant ARRAY_LENGTH_MISMATCH = 0xa24a13a600000000000000000000000000000000000000000000000000000000;
+    bytes32 constant ARRAY_LENGTH_MISMATCH = 0xa24a13a600000000000000000000000000000000000000000000000000000000; // ArrayLengthMismatch()
 
     /// @notice Execute a flash loan
     /// @param flashLoanProvider The destination address
