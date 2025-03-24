@@ -142,8 +142,8 @@ abstract contract BaseSwapper is
      * | 4+v    | 1              | dexId                |
      * | ...    | variable       | params               | <- depends on dexId (fixed for each one)
      * | ...    | ...            | ...                  | <- count + 1 times of repeating this pattern
-     * 
-     * returns cumulative output, updated offset and nextToken address 
+     *
+     * returns cumulative output, updated offset and nextToken address
      */
     function _singleSwapOrSplit(
         uint256 amountIn,
@@ -229,12 +229,12 @@ abstract contract BaseSwapper is
      * | 0      | 2              | (r,c)                |
      * | 2      | 20             | nextToken            |
      * | 22     | any            | swapData             |
-     * 
-     * if r=0 
+     *
+     * if r=0
      *      if c=0 : single swap
      *      else: split swap
      * else: multihop swap
-     * 
+     *
      * always return output amount, updated offset and nextToken address
      */
     function _singleSwapSplitOrRoute(
@@ -322,10 +322,8 @@ abstract contract BaseSwapper is
         ////////////////////////////////////////////////////
         // We switch-case through the different pool types
         // To select the correct pool for the swap action
-        // Note that this is auto-forwarding the amountIn,
-        // as such, this is dynamically usable within
-        // flash-swaps.
         ////////////////////////////////////////////////////
+
         // uniswapV3 style
         if (dexId < UNISWAP_V3_MAX_ID) {
             (amountIn, currentOffset) = _swapUniswapV3PoolExactInGeneric(
