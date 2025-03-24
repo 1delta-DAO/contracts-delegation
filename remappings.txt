@@ -4,3 +4,4 @@ ds-test/=contracts/ds-test/
 @chainlink/contracts/=node_modules/@chainlink/contracts/
 base64-sol/=lib/base64/
 hardhat/=node_modules/hardhat/
+nexus/=lib/nexus/
