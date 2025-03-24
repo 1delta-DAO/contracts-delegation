@@ -20,9 +20,8 @@ abstract contract UniV3Callbacks is V2ReferencesBase, V3ReferencesBase, ERC20Sel
     // errors
     error NoBalance();
 
-    uint256 internal constant PATH_OFFSET_CALLBACK_V2 = 164;
+    /// @dev the constant offset a path has for Uni V3 type swap callbacks
     uint256 internal constant PATH_OFFSET_CALLBACK_V3 = 132;
-
 
     constructor() {}
 
@@ -150,12 +149,21 @@ abstract contract UniV3Callbacks is V2ReferencesBase, V3ReferencesBase, ERC20Sel
                 return(0, 0)
             }
         }
-        _deltaComposeInternal(callerAddress, amountReceived, amountToPay, 0x96, calldataLength);
+        _deltaComposeInternal(
+            callerAddress,
+            amountToPay,
+            amountReceived,
+            // the naive offset is 132
+            // we skip the entire callback validation data
+            // that is tokens (+40), fee (+2), caller (+20), dexId (+1) datalength (+2)
+            // = 197
+            197,
+            calldataLength
+        );
     }
 
-
     // iZi callbacks
-    
+
     // zeroForOne = true
     function swapY2XCallback(uint256 x, uint256 y, bytes calldata) external {
         address tokenIn;
@@ -206,13 +214,7 @@ abstract contract UniV3Callbacks is V2ReferencesBase, V3ReferencesBase, ERC20Sel
                 revert(0x0, 0x4)
             }
         }
-        clSwapCallback(
-            -int256(x),
-            int256(y),
-            tokenIn,
-            callerAddress,
-            pathLength
-        );
+        clSwapCallback(-int256(x), int256(y), tokenIn, callerAddress, pathLength);
     }
 
     // zeroForOne = false
@@ -265,13 +267,7 @@ abstract contract UniV3Callbacks is V2ReferencesBase, V3ReferencesBase, ERC20Sel
                 revert(0x0, 0x4)
             }
         }
-        clSwapCallback(
-            int256(x),
-            -int256(y),
-            tokenIn,
-            callerAddress,
-            pathLength
-        );
+        clSwapCallback(int256(x), -int256(y), tokenIn, callerAddress, pathLength);
     }
 
     function _deltaComposeInternal(address callerAddress, uint256 paramPull, uint256 paramPush, uint256 offset, uint256 length) internal virtual {}
