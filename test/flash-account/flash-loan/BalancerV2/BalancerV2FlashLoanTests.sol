@@ -4,6 +4,7 @@ pragma solidity ^0.8.28;
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {PackedUserOperation} from "account-abstraction/interfaces/PackedUserOperation.sol";
 import {FlashAccount} from "../../../../contracts/1delta/flash-account/FlashAccount.sol";
+import {FlashLoanExecuter} from "../../../../contracts/1delta/flash-account/FlashLoanExecuter.sol";
 import {BaseLightAccount} from "../../../../contracts/1delta/flash-account/common/BaseLightAccount.sol";
 
 import {IVault} from "./interfaces/IVault.sol";
@@ -65,7 +66,7 @@ contract BalancerFlashLoanTests is FlashAccountBaseTest {
 
         // Prepare the executeFlashLoan call
         bytes memory executeFlashLoanCall =
-            abi.encodeWithSelector(FlashAccount.executeFlashLoan.selector, BALANCER_VAULT, flashLoanCall);
+            abi.encodeWithSelector(FlashLoanExecuter.executeFlashLoan.selector, BALANCER_VAULT, flashLoanCall);
 
         vm.prank(user);
         vm.expectEmit(true, true, true, true);
@@ -79,7 +80,7 @@ contract BalancerFlashLoanTests is FlashAccountBaseTest {
 
         // Use executeFlashLoan instead of direct execute
         bytes memory executeFlashLoanCall =
-            abi.encodeWithSelector(FlashAccount.executeFlashLoan.selector, BALANCER_VAULT, flashLoanCall);
+            abi.encodeWithSelector(FlashLoanExecuter.executeFlashLoan.selector, BALANCER_VAULT, flashLoanCall);
 
         // Execute the flash loan call on the account itself
         bytes memory executeCall = abi.encodeWithSignature(

@@ -6,6 +6,7 @@ import {Test} from "forge-std/Test.sol";
 import {FlashAccountBaseTest} from "../../FlashAccountBaseTest.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {FlashAccount} from "../../../../contracts/1delta/flash-account/FlashAccount.sol";
+import {FlashLoanExecuter} from "../../../../contracts/1delta/flash-account/FlashLoanExecuter.sol";
 import {PackedUserOperation} from "account-abstraction/interfaces/PackedUserOperation.sol";
 import {BaseLightAccount} from "../../../../contracts/1delta/flash-account/common/BaseLightAccount.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -181,7 +182,7 @@ contract AaveV2FlashLoanFlashAccount is FlashAccountBaseTest {
 
         // execute flash loan call with the flash account
         bytes memory executeFlashLoanCall =
-            abi.encodeWithSelector(FlashAccount.executeFlashLoan.selector, AAVE_V2_LENDING_POOL, flashLoanCall);
+            abi.encodeWithSelector(FlashLoanExecuter.executeFlashLoan.selector, AAVE_V2_LENDING_POOL, flashLoanCall);
 
         vm.prank(user);
         vm.expectEmit(true, true, true, true);
@@ -211,7 +212,7 @@ contract AaveV2FlashLoanFlashAccount is FlashAccountBaseTest {
 
         // prepare the executeFlashLoan call (instead of normal execute)
         bytes memory executeFlashLoanCall =
-            abi.encodeWithSelector(FlashAccount.executeFlashLoan.selector, AAVE_V2_LENDING_POOL, flashLoanCall);
+            abi.encodeWithSelector(FlashLoanExecuter.executeFlashLoan.selector, AAVE_V2_LENDING_POOL, flashLoanCall);
 
         // prepare the execute call to the account itself
         bytes memory executeCall = abi.encodeWithSignature(
