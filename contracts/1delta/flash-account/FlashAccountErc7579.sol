@@ -1,17 +1,12 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.28;
 
 import {IExecutor} from "nexus/contracts/interfaces/modules/IExecutor.sol";
-import "nexus/contracts/lib/ModeLib.sol";
 import {ExecutionLock} from "./ExecutionLock.sol";
 
-interface INexus {
-    function executeFromExecutor(ExecutionMode mode, bytes calldata executionCalldata)
-        external
-        payable
-        returns (bytes[] memory returnData);
-}
-
+/// @title FlashAccountErc7579
+/// @notice A module that allows a smart account to handle flash loan callbacks
+/// @dev This module is compatible with the ERC-7579 standard
 contract FlashAccountErc7579 is ExecutionLock, IExecutor {
     /**
      * FlashLoan callback signature selectors
@@ -29,8 +24,9 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
 
     mapping(address => bool) public initialized;
 
-    constructor() {}
-
+    /// @notice Fallback function to handle flash loan callbacks
+    /// @dev This function is called when a flash loan callback is received
+    /// @dev It is only callable if the module is installed for the sender
     fallback() external payable requireInExecution {
         if (msg.data.length < 24) revert InvalidCall();
 
