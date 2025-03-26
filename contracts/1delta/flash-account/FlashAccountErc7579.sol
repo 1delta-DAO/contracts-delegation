@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {IExecutor} from "nexus/contracts/interfaces/modules/IExecutor.sol";
+import {IExecutor} from "./interfaces/IExecuter.sol";
 import {ExecutionLock} from "./ExecutionLock.sol";
 
 /// @title FlashAccountErc7579
