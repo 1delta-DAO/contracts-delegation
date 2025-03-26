@@ -57,6 +57,7 @@ contract SwapsLightTest is BaseTest {
         data = abi.encodePacked(
             uint8(ComposerCommands.SWAPS),
             uint128(amount), //
+            uint128(1), //
             assetIn,
             uint8(0), // swaps max index
             uint8(0) // splits
@@ -91,6 +92,7 @@ contract SwapsLightTest is BaseTest {
         data = abi.encodePacked(
             uint8(ComposerCommands.SWAPS),
             uint128(amount), //
+            uint128(1), //
             assetIn,
             uint8(0), // swaps max index
             uint8(2), // splits
@@ -260,6 +262,7 @@ contract SwapsLightTest is BaseTest {
         data = abi.encodePacked(
             uint8(ComposerCommands.SWAPS),
             uint128(amount), //
+            uint128(1), //
             assetIn,
             uint8(0), // swaps max index
             uint8(2), // splits
@@ -419,6 +422,7 @@ contract SwapsLightTest is BaseTest {
             abi.encodePacked( //
                 uint8(ComposerCommands.SWAPS),
                 uint128(amount), //
+                uint128(1), //
                 tokenIn
             ),
             get_USDC_CBETH_MultiPathCalldata(user)
@@ -444,6 +448,7 @@ contract SwapsLightTest is BaseTest {
         data = abi.encodePacked(
             uint8(ComposerCommands.SWAPS),
             uint128(amount), //
+            uint128(1), //
             assetIn,
             uint8(1), // swaps max index
             uint8(0) // splits
@@ -514,6 +519,7 @@ contract SwapsLightTest is BaseTest {
         data = abi.encodePacked(
             uint8(ComposerCommands.SWAPS),
             uint128(amount), //
+            uint128(1), //
             assetIn,
             uint8(1), // 2 hops
             uint8(0) // no splits

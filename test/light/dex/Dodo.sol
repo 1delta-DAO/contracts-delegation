@@ -42,6 +42,7 @@ contract DodoLightTest is BaseTest {
         data = abi.encodePacked(
             uint8(ComposerCommands.SWAPS),
             uint128(amount), //
+            uint128(1), //
             WETH,
             uint8(0), // swaps max index
             uint8(0) // splits

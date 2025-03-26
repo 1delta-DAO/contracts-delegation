@@ -193,7 +193,6 @@ abstract contract BaseSwapper is
                     }
                     i := add(i, 1)
                 }
-
                 uint256 received;
                 // reenter-universal swap
                 // can be another split or a multi-path

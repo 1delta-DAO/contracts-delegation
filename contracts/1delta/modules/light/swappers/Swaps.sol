@@ -18,24 +18,24 @@ import {BaseSwapper} from "./BaseSwapper.sol";
 abstract contract Swaps is BaseSwapper {
     function _swap(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         uint256 amountIn;
+        uint256 minimumAmountReceived;
         address tokenIn;
         /*
          * Store the data for the callback as follows
          * | Offset | Length (bytes) | Description          |
          * |--------|----------------|----------------------|
-         * | 0      | 16             | amount               |
-         * | 16     | 20             | tokenIn              |
-         * | 36     | any            | data                 |
+         * | 0      | 16             | amount               | <-- input amount
+         * | 16     | 16             | amountMax            | <-- slippage check
+         * | 32     | 20             | tokenIn              |
+         * | 52     | any            | data                 |
          *
-         * `data` is a path that can break down in aritrary sub paths:
-         * | Offset | Length (bytes) | Description          |
-         * |--------|----------------|----------------------|
-         * | 0      | 1              | swapCount-1          |
-         * | 1      | any            | eSwapData            |
+         * `data` is a path matrix definition (see BaseSwapepr)
          */
         assembly {
-            amountIn := and(UINT120_MASK, shr(128, calldataload(currentOffset)))
-            currentOffset := add(currentOffset, 16)
+            minimumAmountReceived := calldataload(currentOffset)
+            amountIn := and(UINT120_MASK, shr(128, minimumAmountReceived))
+            minimumAmountReceived := and(UINT128_MASK, minimumAmountReceived)
+            currentOffset := add(currentOffset, 32)
             let dataStart := calldataload(currentOffset)
             tokenIn := shr(96, dataStart)
             currentOffset := add(20, currentOffset)
@@ -46,6 +46,13 @@ abstract contract Swaps is BaseSwapper {
             callerAddress,
             currentOffset //
         );
+
+        assembly {
+            if gt(minimumAmountReceived, amountIn) {
+                mstore(0x0, SLIPPAGE)
+                revert(0x0, 0x4)
+            }
+        }
         return currentOffset;
     }
 }
