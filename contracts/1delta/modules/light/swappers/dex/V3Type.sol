@@ -147,6 +147,8 @@ abstract contract V3TypeGeneric is Masks {
             let ptr := mload(0x40)
             // read the pool address
             let pool := calldataload(currentOffset)
+            // skip pool
+            currentOffset := add(currentOffset, 20)
             let fee := and(UINT16_MASK, shr(80, pool))
             let clLength := and(UINT16_MASK, shr(64, pool))
             pool := shr(
@@ -239,11 +241,11 @@ abstract contract V3TypeGeneric is Masks {
                 mstore(add(ptr, 184), shl(96, tokenIn))
                 mstore(add(ptr, 204), shl(96, tokenOut))
                 mstore8(add(ptr, 224), dexId)
-                mstore(add(ptr, 225), shl(240, fee)) // fee
-                mstore(add(ptr, 227), shl(240, clLength)) // calldataLength (within bytes)
+                // mstore(add(ptr, 225), shl(240, fee)) // fee
+                // mstore(add(ptr, 227), shl(240, clLength)) // calldataLength (within bytes)
 
                 // Store furhter calldata
-                calldatacopy(add(ptr, 229), currentOffset, clLength)
+                calldatacopy(add(ptr, 225), currentOffset, add(clLength, 4))
 
                 // Perform the external 'swap' call
                 if iszero(call(gas(), pool, 0, ptr, add(196, plStored), ptr, 64)) {
@@ -258,10 +260,10 @@ abstract contract V3TypeGeneric is Masks {
 
             switch lt(clLength, 2)
             case 1 {
-                currentOffset := add(currentOffset, 24)
+                currentOffset := add(currentOffset, 4)
             }
             default {
-                currentOffset := add(currentOffset, add(24, clLength))
+                currentOffset := add(currentOffset, add(4, clLength))
             }
         }
         return (receivedAmount, currentOffset);

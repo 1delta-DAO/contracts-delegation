@@ -165,7 +165,7 @@ abstract contract UniV3Callbacks is V3ReferencesBase, ERC20Selectors, Masks, Del
         address tokenIn;
         address tokenOut;
         address callerAddress;
-        uint256 pathLength;
+        uint256 calldataLength;
         assembly {
             let firstWord := calldataload(PATH_OFFSET_CALLBACK_V3)
             callerAddress := shr(96, firstWord)
@@ -174,7 +174,7 @@ abstract contract UniV3Callbacks is V3ReferencesBase, ERC20Selectors, Masks, Del
             firstWord := calldataload(172)
             tokenOut := shr(96, firstWord)
             let dexId := and(UINT8_MASK, shr(88, firstWord))
-            pathLength := and(UINT16_MASK, shr(56, firstWord))
+            calldataLength := and(UINT16_MASK, shr(56, firstWord))
 
             ////////////////////////////////////////////////////
             // Compute and validate pool address
@@ -206,11 +206,17 @@ abstract contract UniV3Callbacks is V3ReferencesBase, ERC20Selectors, Masks, Del
             // If the caller is not the calculated pool, we revert
             ////////////////////////////////////////////////////
             if xor(caller(), and(ADDRESS_MASK, keccak256(s, 85))) {
-                mstore(0x0, BAD_POOL)
-                revert(0x0, 0x4)
+                // mstore(0x0, BAD_POOL)
+                // revert(0x0, 0x4)
             }
         }
-        clSwapCallback(-int256(x), int256(y), tokenIn, callerAddress, pathLength);
+        clSwapCallback(
+            -int256(x), // izi pushses units, we map them here to avoid duplicate code
+            int256(y),
+            tokenIn,
+            callerAddress,
+            calldataLength
+        );
     }
 
     // zeroForOne = false
@@ -218,16 +224,16 @@ abstract contract UniV3Callbacks is V3ReferencesBase, ERC20Selectors, Masks, Del
         address tokenIn;
         address tokenOut;
         address callerAddress;
-        uint256 pathLength;
+        uint256 calldataLength;
         assembly {
             let firstWord := calldataload(PATH_OFFSET_CALLBACK_V3)
             callerAddress := shr(96, firstWord)
-            firstWord := calldataload(add(20, PATH_OFFSET_CALLBACK_V3))
+            firstWord := calldataload(152)
             tokenIn := shr(96, firstWord)
-            firstWord := calldataload(add(40, PATH_OFFSET_CALLBACK_V3))
+            firstWord := calldataload(172)
             tokenOut := shr(96, firstWord)
             let dexId := and(UINT8_MASK, shr(88, firstWord))
-            pathLength := and(UINT16_MASK, shr(48, firstWord))
+            calldataLength := and(UINT16_MASK, shr(56, firstWord))
 
             ////////////////////////////////////////////////////
             // Compute and validate pool address
@@ -263,7 +269,13 @@ abstract contract UniV3Callbacks is V3ReferencesBase, ERC20Selectors, Masks, Del
                 revert(0x0, 0x4)
             }
         }
-        clSwapCallback(int256(x), -int256(y), tokenIn, callerAddress, pathLength);
+        clSwapCallback(
+            int256(x),
+            -int256(y), // izi pushses units, we map them here to avoid duplicate code
+            tokenIn,
+            callerAddress,
+            calldataLength
+        );
     }
 
     function _deltaComposeInternal(address callerAddress, uint256 paramPull, uint256 paramPush, uint256 offset, uint256 length) internal virtual {}
