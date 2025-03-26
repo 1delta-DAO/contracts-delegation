@@ -62,16 +62,19 @@ contract AaveLightTest is BaseTest {
 
         depositToAave(token, user, amount, pool);
 
-        address vToken = _getDebtToken(token);
-
-        vm.prank(user);
-        IERC20All(vToken).approveDelegation(address(oneDV2), type(uint256).max);
+        approveBorrowDelegation(user, token, address(oneDV2), lender);
 
         uint256 amountToBorrow = 10.0e6;
         bytes memory d = CalldataLib.encodeAaveBorrow(token, false, amountToBorrow, user, 2, pool);
 
+        uint256 borrowBalanceBefore = chain.getDebtBalance(user, token, lender);
+
         vm.prank(user);
         oneDV2.deltaCompose(d);
+
+        uint256 borrowBalanceAfter = chain.getDebtBalance(user, token, lender);
+
+        assertApproxEqAbs(borrowBalanceAfter - borrowBalanceBefore, amountToBorrow, 0);
     }
 
     function test_light_aave_withdraw() external {

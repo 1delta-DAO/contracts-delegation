@@ -45,6 +45,31 @@ contract LenderRegistry {
     mapping(string => ChainInfo) chainInfo;
 `;
 
+
+const isAave = (arr: string[]) => {
+  return `function  isAave(string memory lender) internal pure returns(bool isAaveFlag) {
+  bytes32 _lender = keccak256(abi.encodePacked((lender))); 
+  isAaveFlag = _lender == ${arr.map(a => `keccak256(abi.encodePacked((${a})))`).join(" || _lender == ")};
+  }`
+}
+
+
+const isCompoundV3 = (arr: string[]) => {
+  return `function  isCompoundV3(string memory lender) internal pure returns(bool isCompoundV3Flag) {
+    bytes32 _lender = keccak256(abi.encodePacked((lender)));   
+    isCompoundV3Flag = _lender == ${arr.map(a => `keccak256(abi.encodePacked((${a})))`).join(" || _lender == ")};
+  }`
+}
+
+const isCompoundV2 = (arr: string[]) => {
+  return `function  isCompoundV2(string memory lender) internal pure returns(bool isCompoundV2Flag) {
+    bytes32 _lender = keccak256(abi.encodePacked((lender)));   
+    isCompoundV2Flag = _lender == ${arr.map(a => `keccak256(abi.encodePacked((${a})))`).join(" || _lender == ")};
+  }`
+}
+
+
+
 function getChainString(s: any) {
   return CHAIN_INFO[s].enum;
 }
@@ -79,9 +104,14 @@ async function main() {
   let chainIdsCovered: any[] = [];
   let lendersCovered: any[] = [];
 
+  let aaves: string[] = []
+  let compoundV3s: string[] = []
+  let compoundV2s: string[] = []
+
   // aave
   Object.entries(AAVE_FORK_POOL_DATA).forEach(([lender, maps]) => {
     lendersCovered.push(lender);
+    aaves.push(lender)
     Object.entries(maps).forEach(([chains, _]) => {
       chainIdsCovered.push(chains);
     });
@@ -91,6 +121,7 @@ async function main() {
   Object.entries(COMETS_PER_CHAIN_MAP).forEach(([chain, maps]) => {
     chainIdsCovered.push(chain);
     Object.entries(maps).forEach(([lender, _]) => {
+      compoundV3s.push(lender)
       lendersCovered.push(lender);
     });
   });
@@ -98,6 +129,7 @@ async function main() {
   // compound V2
   Object.entries(COMPOUND_V2_COMPTROLLERS).forEach(([lender, maps]) => {
     lendersCovered.push(lender);
+    compoundV2s.push(lender)
     Object.entries(maps).forEach(([chains, _]) => {
       chainIdsCovered.push(chains);
     });
@@ -178,6 +210,10 @@ async function main() {
   uniqueLenders.forEach((lender) => {
     lenderLib += `    string internal constant ${lender} = "${lender}";\n`;
   });
+
+  lenderLib += isAave(uniq(aaves))
+  lenderLib += isCompoundV3(uniq(compoundV3s))
+  lenderLib += isCompoundV2(uniq(compoundV2s))
   lenderLib += `}\n`;
 
   ///////////////////////////////////////////////////////////////
