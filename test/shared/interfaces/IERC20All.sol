@@ -5,6 +5,8 @@ interface IERC20All {
     // base
     function decimals() external view returns (uint8);
 
+    function symbol() external view returns (string memory);
+
     function totalSupply() external view returns (uint256);
 
     function balanceOf(address account) external view returns (uint256);

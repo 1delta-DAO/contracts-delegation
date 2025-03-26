@@ -9,6 +9,7 @@ import {ERC4646Operations} from "./ERC4646/ERC4646Operations.sol";
 import {UniversalLending} from "./lending/UniversalLending.sol";
 import {Permits} from "./permit/Permits.sol";
 import {Storage} from "./management/Storage.sol";
+import {Swaps} from "./swappers/Swaps.sol";
 import {UniversalFlashLoan} from "./flashLoan/UniversalFlashLoan.sol";
 
 /**
@@ -19,6 +20,7 @@ import {UniversalFlashLoan} from "./flashLoan/UniversalFlashLoan.sol";
  * @author 1delta Labs AG
  */
 abstract contract BaseComposer is
+    Swaps,
     Storage,
     UniversalLending,
     UniversalFlashLoan,
@@ -30,6 +32,8 @@ abstract contract BaseComposer is
     constructor() {
         _setOwner(msg.sender);
     }
+
+    receive() external payable {}
 
     /**
      * Batch-executes a series of operations
@@ -54,20 +58,27 @@ abstract contract BaseComposer is
      * Execute a set op packed operations
      * @param callerAddress the address of the EOA/contract that
      *                      initially triggered the `deltaCompose`
-     * | op0 | data0 | op1 | data1 | ...
-     * | 1   | ...   |  1  | ...   | ...
+     *                      - this is called within flash & swap callbacks
+     *                      - strict validations need to be made in these to
+     *                        prevent an entity to call this with a non-matching callerAddress
+     * @param paramPull when callend in a falsh callback the amount to be paid back is injected here 
+     * @param paramPush when callend in a falsh callback the amount received is injected here
+     * @param currentOffset offset packed ops array
+     * @param calldataLength length of packed ops array
+     * | op0 | data0 | op1 | ...
+     * | 1   | ...   |  1  | ...
      */
     function _deltaComposeInternal(
         address callerAddress,
         uint256 paramPull,
         uint256 paramPush,
         uint256 currentOffset,
-        uint256 _length //
+        uint256 calldataLength //
     ) internal virtual {
         // data loop paramters
         uint256 maxIndex;
         assembly {
-            maxIndex := add(currentOffset, _length)
+            maxIndex := add(currentOffset, calldataLength)
         }
 
         ////////////////////////////////////////////////////
@@ -91,7 +102,9 @@ abstract contract BaseComposer is
                 currentOffset := add(1, currentOffset)
             }
             if (operation < ComposerCommands.PERMIT) {
-                if (operation == ComposerCommands.EXT_CALL) {
+                if (operation == ComposerCommands.SWAPS) {
+                    currentOffset = _swap(currentOffset, callerAddress);
+                } else if (operation == ComposerCommands.EXT_CALL) {
                     currentOffset = _callExternal(currentOffset);
                 } else if (operation == ComposerCommands.LENDING) {
                     currentOffset = _lendingOperations(callerAddress, paramPull, paramPush, currentOffset);

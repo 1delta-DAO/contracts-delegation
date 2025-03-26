@@ -66,7 +66,6 @@ library ERC4646Ids {
 /// @title Commands for OneDeltaComposer
 /// @notice Command Flags used to decode commands, these are provided in 4 blocks
 library ComposerCommands {
-    // Command Types where value<0x10, executed in the first nested-if block
     uint256 internal constant SWAPS = 0x20;
     uint256 internal constant EXT_CALL = 0x40;
     uint256 internal constant LENDING = 0x60;

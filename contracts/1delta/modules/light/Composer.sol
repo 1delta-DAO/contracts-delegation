@@ -6,12 +6,13 @@ import {BaseComposer} from "./BaseComposer.sol";
 import {Native} from "./transfers/Native.sol";
 import {Transfers} from "./transfers/Transfers.sol";
 import {FlashLoanCallbacks} from "./flashLoan/callbacks/FlashLoanCallbacks.sol";
+import {SwapCallbacks} from "./swappers/callbacks/SwapCallbacks.sol";
 
 /**
  * @title Chain-dependent Universal aggregator contract.
  * @author 1delta Labs AG
  */
-contract OneDeltaComposerLight is BaseComposer, FlashLoanCallbacks, Native {
+contract OneDeltaComposerLight is BaseComposer, FlashLoanCallbacks, SwapCallbacks, Native {
     /**
      * Execute a set op packed operations
      */
@@ -21,7 +22,7 @@ contract OneDeltaComposerLight is BaseComposer, FlashLoanCallbacks, Native {
         uint256 paramPush,
         uint256 currentOffset,
         uint256 _length //
-    ) internal override(BaseComposer, FlashLoanCallbacks) {
+    ) internal override(BaseComposer, FlashLoanCallbacks, SwapCallbacks) {
         return
             BaseComposer._deltaComposeInternal(
                 callerAddress,

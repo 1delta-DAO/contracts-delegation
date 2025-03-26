@@ -24,9 +24,12 @@ contract OneDeltaComposerTaiko is MarginTrading {
      * Execute a set op packed operations
      * @param callerAddress the address of the EOA/contract that
      *                      initially triggered the `deltaCompose`
+     *                      - this is called within flash & swap callbacks
+     *                      - strict validations need to be made in these to
+     *                        prevent an entity to call this with a non-matching callerADdress
      * @param data packed ops array
-     * | op0 | length0 | data0 | op1 | length1 | ...
-     * | 1   |    16   | ...   |  1  |    16   | ...
+     * | op0 | data0 | op1 | ...
+     * | 1   | ...   |  1  | ...
      */
     function _deltaComposeInternal(address callerAddress, bytes calldata data) internal {
         // data loop paramters

@@ -211,7 +211,7 @@ library CalldataLib {
                 uint8(LenderOps.DEPOSIT),
                 uint16(LenderIds.UP_TO_AAVE_V3 - 1),
                 token,
-                uint128(amount),
+                setOverrideAmount(amount, overrideAmount),
                 receiver,
                 pool //
             );
@@ -231,7 +231,7 @@ library CalldataLib {
                 uint8(LenderOps.BORROW),
                 uint16(LenderIds.UP_TO_AAVE_V3 - 1),
                 token,
-                uint128(amount),
+                setOverrideAmount(amount, overrideAmount),
                 receiver,
                 uint8(mode),
                 pool //
@@ -246,14 +246,14 @@ library CalldataLib {
         uint256 mode,
         address dToken,
         address pool
-    ) internal view returns (bytes memory) {
+    ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
                 uint8(ComposerCommands.LENDING),
                 uint8(LenderOps.REPAY),
                 uint16(LenderIds.UP_TO_AAVE_V3 - 1),
                 token,
-                uint128(amount),
+                setOverrideAmount(amount, overrideAmount),
                 receiver,
                 uint8(mode),
                 dToken,
@@ -268,14 +268,14 @@ library CalldataLib {
         address receiver,
         address aToken,
         address pool
-    ) internal view returns (bytes memory) {
+    ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
                 uint8(ComposerCommands.LENDING),
                 uint8(LenderOps.WITHDRAW),
                 uint16(LenderIds.UP_TO_AAVE_V3 - 1),
                 token,
-                uint128(amount),
+                setOverrideAmount(amount, overrideAmount),
                 receiver,
                 aToken,
                 pool //
@@ -295,7 +295,7 @@ library CalldataLib {
                 uint8(LenderOps.DEPOSIT),
                 uint16(LenderIds.UP_TO_AAVE_V2 - 1),
                 token,
-                uint128(amount),
+                setOverrideAmount(amount, overrideAmount),
                 receiver,
                 pool //
             );
@@ -315,7 +315,7 @@ library CalldataLib {
                 uint8(LenderOps.BORROW),
                 uint16(LenderIds.UP_TO_AAVE_V2 - 1),
                 token,
-                uint128(amount),
+                setOverrideAmount(amount, overrideAmount),
                 receiver,
                 uint8(mode),
                 pool //
@@ -330,14 +330,14 @@ library CalldataLib {
         uint256 mode,
         address dToken,
         address pool
-    ) internal view returns (bytes memory) {
+    ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
                 uint8(ComposerCommands.LENDING),
                 uint8(LenderOps.REPAY),
                 uint16(LenderIds.UP_TO_AAVE_V2 - 1),
                 token,
-                uint128(amount),
+                setOverrideAmount(amount, overrideAmount),
                 receiver,
                 uint8(mode),
                 dToken,
@@ -352,14 +352,14 @@ library CalldataLib {
         address receiver,
         address aToken,
         address pool
-    ) internal view returns (bytes memory) {
+    ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
                 uint8(ComposerCommands.LENDING),
                 uint8(LenderOps.WITHDRAW),
                 uint16(LenderIds.UP_TO_AAVE_V2 - 1),
                 token,
-                uint128(amount),
+                setOverrideAmount(amount, overrideAmount),
                 receiver,
                 aToken,
                 pool //
@@ -379,7 +379,7 @@ library CalldataLib {
                 uint8(LenderOps.DEPOSIT),
                 uint16(LenderIds.UP_TO_COMPOUND_V3 - 1),
                 token,
-                uint128(amount),
+                setOverrideAmount(amount, overrideAmount),
                 receiver,
                 comet //
             );
@@ -398,7 +398,7 @@ library CalldataLib {
                 uint8(LenderOps.BORROW),
                 uint16(LenderIds.UP_TO_COMPOUND_V3 - 1),
                 token,
-                uint128(amount),
+                setOverrideAmount(amount, overrideAmount),
                 receiver,
                 comet //
             );
@@ -410,14 +410,14 @@ library CalldataLib {
         uint amount,
         address receiver,
         address comet
-    ) internal view returns (bytes memory) {
+    ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
                 uint8(ComposerCommands.LENDING),
                 uint8(LenderOps.REPAY),
                 uint16(LenderIds.UP_TO_COMPOUND_V3 - 1),
                 token,
-                uint128(amount),
+                setOverrideAmount(amount, overrideAmount),
                 receiver,
                 comet //
             );
@@ -430,14 +430,14 @@ library CalldataLib {
         address receiver,
         address comet,
         bool isBase
-    ) internal view returns (bytes memory) {
+    ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
                 uint8(ComposerCommands.LENDING),
                 uint8(LenderOps.WITHDRAW),
                 uint16(LenderIds.UP_TO_COMPOUND_V3 - 1),
                 token,
-                uint128(amount),
+                setOverrideAmount(amount, overrideAmount),
                 receiver,
                 isBase ? uint8(1) : uint8(0),
                 comet //
@@ -450,14 +450,14 @@ library CalldataLib {
         uint amount,
         address receiver,
         address cToken
-    ) internal view returns (bytes memory) {
+    ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
                 uint8(ComposerCommands.LENDING),
                 uint8(LenderOps.DEPOSIT),
                 uint16(LenderIds.UP_TO_COMPOUND_V2 - 1),
                 token,
-                uint128(amount),
+                setOverrideAmount(amount, overrideAmount),
                 receiver,
                 cToken //
             );
@@ -469,14 +469,14 @@ library CalldataLib {
         uint amount,
         address receiver,
         address cToken
-    ) internal view returns (bytes memory) {
+    ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
                 uint8(ComposerCommands.LENDING),
                 uint8(LenderOps.BORROW),
                 uint16(LenderIds.UP_TO_COMPOUND_V2 - 1),
                 token,
-                uint128(amount),
+                setOverrideAmount(amount, overrideAmount),
                 receiver,
                 cToken //
             );
@@ -488,14 +488,14 @@ library CalldataLib {
         uint amount,
         address receiver,
         address cToken
-    ) internal view returns (bytes memory) {
+    ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
                 uint8(ComposerCommands.LENDING),
                 uint8(LenderOps.REPAY),
                 uint16(LenderIds.UP_TO_COMPOUND_V2 - 1),
                 token,
-                uint128(amount),
+                setOverrideAmount(amount, overrideAmount),
                 receiver,
                 cToken //
             );
@@ -507,14 +507,14 @@ library CalldataLib {
         uint amount,
         address receiver,
         address cToken
-    ) internal view returns (bytes memory) {
+    ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
                 uint8(ComposerCommands.LENDING),
                 uint8(LenderOps.WITHDRAW),
                 uint16(LenderIds.UP_TO_COMPOUND_V2 - 1),
                 token,
-                uint128(amount),
+                setOverrideAmount(amount, overrideAmount),
                 receiver,
                 cToken //
             );
@@ -529,6 +529,12 @@ library CalldataLib {
         am = amount;
         if (preParam) am = uint128((am & ~_PRE_PARAM) | (1 << 127));
         if (useShares) am = uint128((am & ~_SHARES_MASK) | (1 << 126));
+        return am;
+    }
+
+    function setOverrideAmount(uint256 amount, bool preParam) internal pure returns (uint128 am) {
+        am = uint128(amount);
+        if (preParam) am = uint128((am & ~_PRE_PARAM) | (1 << 127));
         return am;
     }
 }
