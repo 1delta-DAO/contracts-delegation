@@ -70,7 +70,13 @@ library CalldataLib {
             );
     }
 
-    function morphoDepositCollateral(bytes memory market, uint assets, address receiver, bytes memory data) internal pure returns (bytes memory) {
+    function morphoDepositCollateral(
+        bytes memory market,
+        uint assets,
+        address receiver,
+        bytes memory data, //
+        address morphoB
+    ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
                 uint8(ComposerCommands.LENDING), // 1
@@ -79,6 +85,7 @@ library CalldataLib {
                 market, // 4 * 20 + 16
                 uint128(assets), // 16
                 receiver,
+                morphoB,
                 uint16(data.length), // 2 @ 1 + 4*20
                 data
             );
@@ -89,7 +96,8 @@ library CalldataLib {
         bool isShares, //
         uint assets,
         address receiver,
-        bytes memory data
+        bytes memory data,
+        address morphoB
     ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
@@ -99,6 +107,7 @@ library CalldataLib {
                 market, // 4 * 20 + 16
                 generateAmountBitmap(uint128(assets), false, isShares),
                 receiver,
+                morphoB,
                 uint16(data.length), // 2 @ 1 + 4*20
                 data
             );
@@ -142,7 +151,8 @@ library CalldataLib {
         bytes memory market,
         bool isShares, //
         uint assets,
-        address receiver
+        address receiver,
+        address morphoB
     ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
@@ -151,11 +161,17 @@ library CalldataLib {
                 uint16(LenderIds.UP_TO_MORPHO), // 2
                 market, // 4 * 20 + 16
                 generateAmountBitmap(uint128(assets), false, isShares),
-                receiver // 20
+                receiver, // 20
+                morphoB
             );
     }
 
-    function morphoWithdrawCollateral(bytes memory market, uint assets, address receiver) internal pure returns (bytes memory) {
+    function morphoWithdrawCollateral(
+        bytes memory market, //
+        uint assets,
+        address receiver,
+        address morphoB
+    ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
                 uint8(ComposerCommands.LENDING), // 1
@@ -163,7 +179,8 @@ library CalldataLib {
                 uint16(LenderIds.UP_TO_MORPHO), // 2
                 market, // 4 * 20 + 16
                 uint128(assets), // 16
-                receiver // 20
+                receiver, // 20
+                morphoB
             );
     }
 
@@ -171,7 +188,8 @@ library CalldataLib {
         bytes memory market,
         bool isShares, //
         uint assets,
-        address receiver
+        address receiver,
+        address morphoB
     ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
@@ -180,7 +198,8 @@ library CalldataLib {
                 uint16(LenderIds.UP_TO_MORPHO), // 2
                 market, // 4 * 20 + 16
                 generateAmountBitmap(uint128(assets), false, isShares),
-                receiver
+                receiver,
+                morphoB
             );
     }
 
@@ -189,7 +208,8 @@ library CalldataLib {
         bool isShares, //
         uint assets,
         address receiver,
-        bytes memory data
+        bytes memory data,
+        address morphoB
     ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
@@ -199,6 +219,7 @@ library CalldataLib {
                 market, // 4 * 20 + 16
                 generateAmountBitmap(uint128(assets), false, isShares),
                 receiver,
+                morphoB,
                 uint16(data.length), // 2 @ 1 + 4*20
                 data
             );

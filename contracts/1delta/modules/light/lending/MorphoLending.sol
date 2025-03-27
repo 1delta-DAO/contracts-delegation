@@ -15,7 +15,7 @@ import {Masks} from "../../shared/masks/Masks.sol";
  */
 abstract contract MorphoLending is Slots, ERC20Selectors, Masks {
     /// @dev Constant MorphoB address
-    address internal constant MORPHO_BLUE = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
+    // address internal constant MORPHO_BLUE = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
 
     /// @dev  position(...)
     bytes32 private constant MORPHO_POSITION = 0x93c5206200000000000000000000000000000000000000000000000000000000;
@@ -49,6 +49,7 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks {
      * | 96     |  1             | Assets or Shares                |
      * | 97     | 15             | Amount (borrowAm)               |
      * | 112    | 20             | receiver                        |
+     * | 132    | 20             | morpho                          | <-- we allow all morphos (incl forks)
      */
     function _morphoBorrow(uint256 currentOffset, address callerAddress, uint256 amountOverride) internal returns (uint256) {
         assembly {
@@ -94,11 +95,12 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks {
             let lastBit := calldataload(currentOffset)
             mstore(add(ptr, 260), shr(96, lastBit)) // receiver
             currentOffset := add(currentOffset, 20)
-
+            let morpho := shr(96, calldataload(currentOffset))
+            currentOffset := add(currentOffset, 20)
             if iszero(
                 call(
                     gas(),
-                    MORPHO_BLUE,
+                    morpho,
                     0x0,
                     ptr,
                     292, // = 9 * 32 + 4
@@ -127,36 +129,17 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks {
      * | 96     |  1             | Assets or Shares                |
      * | 97     | 15             | Amount (depositAm)              |
      * | 112    | 20             | receiver                        |
-     * | 132    | 2              | calldataLength                  |
-     * | 134    | calldataLength | calldata                        |
+     * | 132    | 20             | morpho                          | <-- we allow all morphos (incl forks)
+     * | 152    | 2              | calldataLength                  |
+     * | 154    | calldataLength | calldata                        |
      */
     function _morphoDeposit(uint256 currentOffset, address callerAddress, uint256 amountOverride) internal returns (uint256) {
         assembly {
-            let ptr := mload(0x40)
+            let ptrBase := mload(0x40)
+            let ptr := add(128, ptrBase)
 
             // loan token
             let token := shr(96, calldataload(currentOffset))
-            /**
-             * Approve MB beforehand for the depo amount
-             * Slot: keccak256(MorphoBlue, keccak256(token, CALL_MANAGEMENT_APPROVALS))
-             */
-            mstore(0x0, token)
-            mstore(0x20, CALL_MANAGEMENT_APPROVALS)
-            mstore(0x20, keccak256(0x0, 0x40))
-            mstore(0x0, MORPHO_BLUE)
-            let key := keccak256(0x0, 0x40)
-            // check if already approved
-            if iszero(sload(key)) {
-                // selector for approve(address,uint256)
-                mstore(ptr, ERC20_APPROVE)
-                mstore(add(ptr, 0x04), MORPHO_BLUE)
-                mstore(add(ptr, 0x24), MAX_UINT256)
-
-                if iszero(call(gas(), token, 0x0, ptr, 0x44, ptr, 32)) {
-                    revert(0x0, 0x0)
-                }
-                sstore(key, 1)
-            }
 
             // supply(...)
             mstore(ptr, MORPHO_SUPPLY)
@@ -225,6 +208,31 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks {
             let receiver := shr(96, calldataload(currentOffset))
             currentOffset := add(currentOffset, 20)
 
+            let morpho := shr(96, calldataload(currentOffset))
+            currentOffset := add(currentOffset, 20)
+
+            /**
+             * Approve MB beforehand for the depo amount
+             * Slot: keccak256(MorphoBlue, keccak256(token, CALL_MANAGEMENT_APPROVALS))
+             */
+            mstore(0x0, token)
+            mstore(0x20, CALL_MANAGEMENT_APPROVALS)
+            mstore(0x20, keccak256(0x0, 0x40))
+            mstore(0x0, morpho)
+            let key := keccak256(0x0, 0x40)
+            // check if already approved
+            if iszero(sload(key)) {
+                // selector for approve(address,uint256)
+                mstore(ptrBase, ERC20_APPROVE)
+                mstore(add(ptrBase, 0x04), morpho)
+                mstore(add(ptrBase, 0x24), MAX_UINT256)
+
+                if iszero(call(gas(), token, 0x0, ptrBase, 0x44, 0x0, 0x0)) {
+                    revert(0x0, 0x0)
+                }
+                sstore(key, 1)
+            }
+
             // get calldatalength
             let calldataLength := and(UINT16_MASK, shr(240, calldataload(currentOffset)))
             currentOffset := add(currentOffset, 2)
@@ -241,10 +249,11 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks {
             }
 
             mstore(add(ptr, 292), calldataLength) // calldatalength
+
             if iszero(
                 call(
                     gas(),
-                    MORPHO_BLUE,
+                    morpho,
                     0x0,
                     ptr,
                     add(calldataLength, 324), // = 10 * 32 + 4
@@ -271,8 +280,9 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks {
      * | 80     | 16             | MarketParams.lltv               |
      * | 96     | 16             | Amount (depositAm)              |
      * | 112    | 20             | receiver                        |
-     * | 132    | 2              | calldataLength                  |
-     * | 134    | calldataLength | calldata                        |
+     * | 132    | 20             | morpho                          | <-- we allow all morphos (incl forks)
+     * | 152    | 2              | calldataLength                  |
+     * | 154    | calldataLength | calldata                        |
      */
     function _morphoDepositCollateral(uint256 currentOffset, address callerAddress, uint256 amountOverride) internal returns (uint256) {
         assembly {
@@ -287,27 +297,6 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks {
 
             // get the collateral token and approve if needed
             let token := shr(96, calldataload(currentOffset))
-            /**
-             * Approve MB beforehand for the depo amount
-             */
-            mstore(0x0, token)
-            mstore(0x20, CALL_MANAGEMENT_APPROVALS)
-            mstore(0x20, keccak256(0x0, 0x40))
-            mstore(0x0, MORPHO_BLUE)
-            let key := keccak256(0x0, 0x40)
-            // check if already approved
-            if iszero(sload(key)) {
-                // selector for approve(address,uint256)
-                mstore(ptrBase, ERC20_APPROVE)
-                mstore(add(ptrBase, 0x04), MORPHO_BLUE)
-                mstore(add(ptrBase, 0x24), MAX_UINT256)
-
-                if iszero(call(gas(), token, 0x0, ptrBase, 0x44, 0x0, 0x0)) {
-                    revert(0x0, 0x0)
-                }
-                sstore(key, 1)
-            }
-
             mstore(add(ptr, 36), token) // MarketParams.collateralToken
             currentOffset := add(currentOffset, 20)
             mstore(add(ptr, 68), shr(96, calldataload(currentOffset))) // MarketParams.oracle
@@ -359,9 +348,34 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks {
             mstore(add(ptr, 196), receiver) // onBehalfOf
             mstore(add(ptr, 228), 0x100) // offset
 
+            // get morpho
+            let morpho := shr(96, calldataload(currentOffset))
+            currentOffset := add(currentOffset, 20)
+
             // get calldatalength
             let calldataLength := and(UINT16_MASK, shr(240, calldataload(currentOffset)))
             currentOffset := add(currentOffset, 2)
+
+            /**
+             * Approve MB beforehand for the depo amount
+             */
+            mstore(0x0, token)
+            mstore(0x20, CALL_MANAGEMENT_APPROVALS)
+            mstore(0x20, keccak256(0x0, 0x40))
+            mstore(0x0, morpho)
+            let key := keccak256(0x0, 0x40)
+            // check if already approved
+            if iszero(sload(key)) {
+                // selector for approve(address,uint256)
+                mstore(ptrBase, ERC20_APPROVE)
+                mstore(add(ptrBase, 0x04), morpho)
+                mstore(add(ptrBase, 0x24), MAX_UINT256)
+
+                if iszero(call(gas(), token, 0x0, ptrBase, 0x44, 0x0, 0x0)) {
+                    revert(0x0, 0x0)
+                }
+                sstore(key, 1)
+            }
 
             // add calldata if needed
             if xor(0, calldataLength) {
@@ -375,7 +389,7 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks {
             if iszero(
                 call(
                     gas(),
-                    MORPHO_BLUE,
+                    morpho,
                     0x0,
                     ptr,
                     add(calldataLength, 292), // = 10 * 32 + 4
@@ -431,15 +445,18 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks {
             mstore(add(ptr, 196), callerAddress) // onBehalfOf
 
             currentOffset := add(currentOffset, 32)
+            // store receiver
             mstore(add(ptr, 228), shr(96, calldataload(currentOffset))) // receiver
-
             // skip receiver in offset
+            currentOffset := add(currentOffset, 20)
+
+            let morpho := shr(96, calldataload(currentOffset))
             currentOffset := add(currentOffset, 20)
 
             if iszero(
                 call(
                     gas(),
-                    MORPHO_BLUE,
+                    morpho,
                     0x0,
                     ptr,
                     260, // = 8 * 32 + 4
@@ -476,6 +493,15 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks {
 
             let withdrawAm := and(_UINT112_MASK, lltvAndAmount)
 
+            currentOffset := add(currentOffset, 32)
+
+            mstore(add(ptr, 228), callerAddress) // onBehalfOf
+            mstore(add(ptr, 260), shr(96, calldataload(currentOffset))) // receiver
+            currentOffset := add(currentOffset, 20)
+            // get morpho
+            let morpho := shr(96, calldataload(currentOffset))
+            currentOffset := add(currentOffset, 20)
+
             /**
              * check if it is by shares or assets
              * 0 => by assets
@@ -501,7 +527,7 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks {
                         mstore(ptrBase, MORPHO_POSITION)
                         mstore(add(ptrBase, 0x4), marketId)
                         mstore(add(ptrBase, 0x24), callerAddress)
-                        if iszero(staticcall(gas(), MORPHO_BLUE, ptrBase, 0x44, ptrBase, 0x20)) {
+                        if iszero(staticcall(gas(), morpho, ptrBase, 0x44, ptrBase, 0x20)) {
                             revert(0x0, 0x0)
                         }
                         mstore(add(ptr, 164), 0) // assets
@@ -523,11 +549,7 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks {
                 mstore(add(ptr, 196), withdrawAm) // shares
             }
 
-            currentOffset := add(currentOffset, 32)
 
-            mstore(add(ptr, 228), callerAddress) // onBehalfOf
-            mstore(add(ptr, 260), shr(96, calldataload(currentOffset))) // receiver
-            currentOffset := add(currentOffset, 20)
 
             // withdraw(...)
             // we have to do it like this to override the selector only in this memory position
@@ -535,7 +557,7 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks {
             if iszero(
                 call(
                     gas(),
-                    MORPHO_BLUE,
+                    morpho,
                     0x0,
                     ptr,
                     292, // = 9 * 32 + 4
@@ -552,32 +574,24 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks {
     }
 
     /// @notice Withdraw from lender lastgiven user address and lender Id
-    function _morphoRepay(uint256 currentOffset, address callerAddress, uint256 amountOverride) internal returns (uint256) {
+    function _morphoRepay(
+        uint256 currentOffset,
+        address callerAddress,
+        uint256 amountOverride
+    )
+        internal
+        returns (
+            // this will be returned as the offset, but initialized as lltvAndAmount
+            // we use it here to avoid stack-too deep
+            uint256 tempData
+        )
+    {
         assembly {
             // morpho should be the primary choice
             let ptrBase := mload(0x40)
             let ptr := add(ptrBase, 256)
 
             let token := shr(96, calldataload(currentOffset))
-            /**
-             * Approve MB beforehand for the repay amount
-             */
-            mstore(0x0, token)
-            mstore(0x20, CALL_MANAGEMENT_APPROVALS)
-            mstore(0x20, keccak256(0x0, 0x40))
-            mstore(0x0, MORPHO_BLUE)
-            let key := keccak256(0x0, 0x40)
-            // check if already approved
-            if iszero(sload(key)) {
-                // selector for approve(address,uint256)
-                mstore(ptrBase, ERC20_APPROVE)
-                mstore(add(ptrBase, 0x04), MORPHO_BLUE)
-                mstore(add(ptrBase, 0x24), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff)
-                if iszero(call(gas(), token, 0x0, ptrBase, 0x44, ptrBase, 0x0)) {
-                    revert(0x0, 0x0)
-                }
-                sstore(key, 1)
-            }
             // market data
             mstore(add(ptr, 4), token) // MarketParams.loanToken
             currentOffset := add(currentOffset, 20)
@@ -587,10 +601,10 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks {
             currentOffset := add(currentOffset, 20)
             mstore(add(ptr, 100), shr(96, calldataload(currentOffset))) // MarketParams.irm
             currentOffset := add(currentOffset, 20)
-            let lltvAndAmount := calldataload(currentOffset)
-            mstore(add(ptr, 132), shr(128, lltvAndAmount)) // MarketParams.lltv
+            tempData := calldataload(currentOffset)
+            mstore(add(ptr, 132), shr(128, tempData)) // MarketParams.lltv
 
-            let repayAm := and(_UINT112_MASK, lltvAndAmount)
+            let repayAm := and(_UINT112_MASK, tempData)
             // skip amounts
             currentOffset := add(currentOffset, 32)
 
@@ -598,8 +612,11 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks {
             let receiver := shr(96, calldataload(currentOffset))
             currentOffset := add(currentOffset, 20)
 
+            let morpho := shr(96, calldataload(currentOffset))
+            currentOffset := add(currentOffset, 20)
+
             // check if override is used
-            switch and(_PRE_PARAM, lltvAndAmount)
+            switch and(_PRE_PARAM, tempData)
             case 0 {
                 /**
                  * Logic tree
@@ -621,16 +638,16 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks {
                     mstore(ptrBase, MORPHO_POSITION)
                     mstore(add(ptrBase, 0x4), marketId)
                     mstore(add(ptrBase, 0x24), receiver)
-                    if iszero(staticcall(gas(), MORPHO_BLUE, ptrBase, 0x44, ptrBase, 0x40)) {
+                    if iszero(staticcall(gas(), morpho, ptrBase, 0x44, ptrBase, 0x40)) {
                         revert(0x0, 0x0)
                     }
                     mstore(add(ptr, 164), 0) // assets
                     mstore(add(ptr, 196), mload(add(ptrBase, 0x20))) // shares
                 }
                 default {
-                    switch and(_UNSAFE_AMOUNT, lltvAndAmount)
+                    switch and(_UNSAFE_AMOUNT, tempData)
                     case 0 {
-                        switch and(_SHARES_MASK, lltvAndAmount)
+                        switch and(_SHARES_MASK, tempData)
                         case 0 {
                             // by shares
                             mstore(add(ptr, 164), 0) // assets
@@ -655,14 +672,14 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks {
                             // accrue interest
                             // add accrueInterest (0x151c1ade)
                             mstore(sub(ptr, 28), 0x151c1ade)
-                            if iszero(call(gas(), MORPHO_BLUE, 0x0, ptr, 0xA4, 0x0, 0x0)) {
+                            if iszero(call(gas(), morpho, 0x0, ptr, 0xA4, 0x0, 0x0)) {
                                 revert(0x0, 0x0)
                             }
 
                             let marketId := keccak256(add(ptr, 4), 160)
                             mstore(0x0, MORPHO_MARKET)
                             mstore(0x4, marketId)
-                            if iszero(staticcall(gas(), MORPHO_BLUE, 0x0, 0x24, ptrBase, 0x80)) {
+                            if iszero(staticcall(gas(), morpho, 0x0, 0x24, ptrBase, 0x80)) {
                                 revert(0x0, 0x0)
                             }
                             let totalBorrowAssets := mload(add(ptrBase, 0x40))
@@ -680,7 +697,7 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks {
                             mstore(ptrBase, MORPHO_POSITION)
                             mstore(add(ptrBase, 0x4), marketId)
                             mstore(add(ptrBase, 0x24), receiver)
-                            if iszero(staticcall(gas(), MORPHO_BLUE, ptrBase, 0x44, ptrBase, 0x40)) {
+                            if iszero(staticcall(gas(), morpho, ptrBase, 0x44, ptrBase, 0x40)) {
                                 revert(0x0, 0x0)
                             }
                             let userBorrowShares := mload(add(ptrBase, 0x20))
@@ -739,6 +756,26 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks {
                 currentOffset := add(currentOffset, calldataLength)
             }
 
+            /**
+             * Approve MB beforehand for the repay amount
+             */
+            mstore(0x0, token)
+            mstore(0x20, CALL_MANAGEMENT_APPROVALS)
+            mstore(0x20, keccak256(0x0, 0x40))
+            mstore(0x0, morpho)
+            let key := keccak256(0x0, 0x40)
+            // check if already approved
+            if iszero(sload(key)) {
+                // selector for approve(address,uint256)
+                mstore(ptrBase, ERC20_APPROVE)
+                mstore(add(ptrBase, 0x04), morpho)
+                mstore(add(ptrBase, 0x24), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff)
+                if iszero(call(gas(), token, 0x0, ptrBase, 0x44, ptrBase, 0x0)) {
+                    revert(0x0, 0x0)
+                }
+                sstore(key, 1)
+            }
+
             // repay(...)
             // we have to do it like this to override the selector only in this memory position
             mstore(sub(ptr, 28), 0x20b76e81)
@@ -746,7 +783,7 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks {
             if iszero(
                 call(
                     gas(),
-                    MORPHO_BLUE,
+                    morpho,
                     0x0,
                     ptr,
                     add(calldataLength, 324), // = 10 * 32 + 4

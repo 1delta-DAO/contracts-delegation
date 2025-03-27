@@ -17,6 +17,26 @@ contract CallForwarder_UNFINISHED is Masks, ERC20Selectors {
     bytes32 private constant SELECTOR_MASK = 0xffffffff00000000000000000000000000000000000000000000000000000000;
 
     /**
+     * There are these following configurations
+     * AssetIn:
+     *  1) transferFrom
+     *  2) native
+     *  3) transferTo (sweep back)
+     *  4) nothing (assume that the contract is pre-funded (ideal scenario))
+     * 
+     * AssetOut
+     *  1) nothing
+     *  2) validate and Sweep 
+     * 
+     * asset = address(0) means that the asset is native
+     * 
+     * CallTarget
+     *  - Call any target with calldata prvided
+     *  - if asset in is nonzero, approve
+     *  - approvals are managed via a custom mapping
+     * 
+     * Validate that we do not call `transferFrom` unvalidated.
+     * 
      * Only uses a fallback to skip abi coding
      * The expected pattern is
      *

@@ -95,7 +95,8 @@ contract MorphoBlueTest is BaseTest {
         bytes memory withdrawCall = CalldataLib.morphoWithdrawCollateral(
             encodeMarket(LBTC_USDC_MARKET),
             withdrawAssets, //
-            user
+            user,
+            MORPHO
         );
 
         vm.prank(user);
@@ -123,7 +124,8 @@ contract MorphoBlueTest is BaseTest {
             encodeMarket(LBTC_USDC_MARKET),
             false,
             borrowAssets, //
-            user
+            user,
+            MORPHO
         );
 
         vm.prank(user);
@@ -154,7 +156,8 @@ contract MorphoBlueTest is BaseTest {
             encodeMarket(LBTC_USDC_MARKET),
             false,
             borrowAssets, //
-            user
+            user,
+            MORPHO
         );
 
         vm.prank(user);
@@ -168,7 +171,8 @@ contract MorphoBlueTest is BaseTest {
             false,
             borrowAssets, //
             user,
-            hex""
+            hex"",
+            MORPHO
         );
 
         vm.prank(user);
@@ -203,7 +207,8 @@ contract MorphoBlueTest is BaseTest {
             encodeMarket(LBTC_USDC_MARKET),
             false,
             borrowAssets, //
-            user
+            user,
+            MORPHO
         );
 
         vm.prank(user);
@@ -224,7 +229,8 @@ contract MorphoBlueTest is BaseTest {
             false,
             borrowAssets, //
             user,
-            sweepWethInCallback
+            sweepWethInCallback,
+            MORPHO
         );
 
         vm.prank(user);
@@ -257,7 +263,8 @@ contract MorphoBlueTest is BaseTest {
             encodeMarket(LBTC_USDC_MARKET),
             false,
             borrowAssets, //
-            user
+            user,
+            MORPHO
         );
 
         vm.prank(user);
@@ -274,7 +281,8 @@ contract MorphoBlueTest is BaseTest {
             false,
             type(uint112).max, //
             user,
-            hex""
+            hex"",
+            MORPHO
         );
 
         vm.prank(user);
@@ -311,7 +319,8 @@ contract MorphoBlueTest is BaseTest {
             false,
             assets,
             user,
-            hex"" //
+            hex"", //,
+            MORPHO
         );
         vm.prank(user);
         IERC20All(loan).approve(address(oneD), type(uint256).max);
@@ -361,7 +370,8 @@ contract MorphoBlueTest is BaseTest {
             false,
             assets,
             user,
-            sweepWethInCallback //
+            sweepWethInCallback,
+            MORPHO //
         );
         vm.prank(user);
         IERC20All(loan).approve(address(oneD), type(uint256).max);
@@ -399,7 +409,8 @@ contract MorphoBlueTest is BaseTest {
             encodeMarket(LBTC_USDC_MARKET),
             false,
             loanAssetAmWithdraw,
-            user //
+            user,
+            MORPHO //
         );
 
         vm.prank(user);
@@ -441,7 +452,8 @@ contract MorphoBlueTest is BaseTest {
             encodeMarket(LBTC_USDC_MARKET),
             false,
             loanAssetAmWithdraw,
-            user //
+            user,
+            MORPHO //
         );
 
         vm.prank(user);
@@ -483,7 +495,13 @@ contract MorphoBlueTest is BaseTest {
             assets //
         );
 
-        bytes memory deposit = CalldataLib.morphoDepositCollateral(encodeMarket(LBTC_USDC_MARKET), assets, user, hex"");
+        bytes memory deposit = CalldataLib.morphoDepositCollateral(
+            encodeMarket(LBTC_USDC_MARKET),
+            assets,
+            user,
+            hex"",
+            MORPHO //
+        );
         vm.prank(user);
         IERC20All(collateral).approve(address(oneD), type(uint256).max);
 
@@ -516,7 +534,13 @@ contract MorphoBlueTest is BaseTest {
             CalldataLib.SweepType.VALIDATE //
         );
 
-        bytes memory deposit = CalldataLib.morphoDepositCollateral(encodeMarket(LBTC_USDC_MARKET), assets, user, sweepWethInCallback);
+        bytes memory deposit = CalldataLib.morphoDepositCollateral(
+            encodeMarket(LBTC_USDC_MARKET),
+            assets,
+            user,
+            sweepWethInCallback,
+            MORPHO //
+        );
         vm.prank(user);
         IERC20All(collateral).approve(address(oneD), type(uint256).max);
 
@@ -539,7 +563,13 @@ contract MorphoBlueTest is BaseTest {
             amount //
         );
 
-        bytes memory deposit = CalldataLib.morphoDepositCollateral(encodeMarket(LBTC_USDC_MARKET), amount, user, hex"");
+        bytes memory deposit = CalldataLib.morphoDepositCollateral(
+            encodeMarket(LBTC_USDC_MARKET),
+            amount,
+            user,
+            hex"",
+            MORPHO //
+        );
         vm.prank(userAddr);
         IERC20All(collateral).approve(address(oneD), type(uint256).max);
 
@@ -555,7 +585,14 @@ contract MorphoBlueTest is BaseTest {
             amount //
         );
 
-        bytes memory deposit = CalldataLib.morphoDeposit(encodeMarket(LBTC_USDC_MARKET), isShares, amount, userAddr, hex"");
+        bytes memory deposit = CalldataLib.morphoDeposit(
+            encodeMarket(LBTC_USDC_MARKET),
+            isShares,
+            amount,
+            userAddr,
+            hex"",
+            MORPHO //
+        );
         vm.prank(userAddr);
         IERC20All(loan).approve(address(oneD), type(uint256).max);
 
