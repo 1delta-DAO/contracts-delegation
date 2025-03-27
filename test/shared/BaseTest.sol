@@ -62,14 +62,18 @@ contract BaseTest is Test {
         return _sign(userPrivateKey, digest);
     }
 
-    /** delegate borrow (user to spender for underlying) */
-    function approveBorrowDelegation(address _user, address underlying, address spender, string memory lender) internal {
+    /**
+     * delegate borrow (user to spender for underlying)
+     */
+    function approveBorrowDelegation(address _user, address underlying, address spender, string memory lender)
+        internal
+    {
         if (Lenders.isAave(lender)) {
             address instance = chain.getLendingTokens(underlying, lender).debt;
             vm.prank(_user);
             ILendingTools(instance).approveDelegation(
                 spender, //
-                type(uint).max
+                type(uint256).max
             );
         } else if (Lenders.isCompoundV2(lender)) {
             address instance = chain.getLendingController(lender);
@@ -92,24 +96,28 @@ contract BaseTest is Test {
         }
     }
 
-    /** delegate withdrawal (user to spender for underlying) */
-    function approveWithdrawalDelegation(address _user, address underlying, address spender, string memory lender) internal {
+    /**
+     * delegate withdrawal (user to spender for underlying)
+     */
+    function approveWithdrawalDelegation(address _user, address underlying, address spender, string memory lender)
+        internal
+    {
         if (Lenders.isAave(lender)) {
             address instance = chain.getLendingTokens(underlying, lender).collateral;
             vm.prank(_user);
             ILendingTools(instance).approve(
                 spender, //
-                type(uint).max
+                type(uint256).max
             );
         } else if (Lenders.isCompoundV2(lender)) {
             address instance = chain.getLendingTokens(underlying, lender).collateral;
             vm.prank(_user);
-            ILendingTools(instance).approve(spender, type(uint).max);
+            ILendingTools(instance).approve(spender, type(uint256).max);
         } else if (Lenders.isCompoundV3(lender)) {
             address instance = chain.getLendingController(lender);
             vm.prank(_user);
             ILendingTools(instance).allow(
-                user,
+                spender,
                 true //
             );
         }

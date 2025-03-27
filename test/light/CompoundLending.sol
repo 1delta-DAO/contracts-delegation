@@ -85,8 +85,7 @@ contract CompoundV3ComposerLightTest is BaseTest {
 
         depositToCompoundV3(depositToken, user, depositAmount, comet);
 
-        vm.prank(user);
-        IERC20All(comet).allow(address(oneDV2), true);
+        approveBorrowDelegation(user, depositToken, address(oneDV2), lender);
 
         uint256 amountToBorrow = 100.0e6;
         bytes memory d = CalldataLib.encodeCompoundV3Borrow(token, false, amountToBorrow, user, comet);
@@ -117,8 +116,7 @@ contract CompoundV3ComposerLightTest is BaseTest {
 
         depositToCompoundV3(token, user, amount, comet);
 
-        vm.prank(user);
-        IERC20All(comet).allow(address(oneDV2), true);
+        approveWithdrawalDelegation(user, token, address(oneDV2), lender);
 
         uint256 amountToWithdraw = 10.0e6;
         bytes memory d = CalldataLib.encodeCompoundV3Withdraw(
