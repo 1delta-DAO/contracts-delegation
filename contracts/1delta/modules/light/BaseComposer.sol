@@ -61,7 +61,7 @@ abstract contract BaseComposer is
      *                      - this is called within flash & swap callbacks
      *                      - strict validations need to be made in these to
      *                        prevent an entity to call this with a non-matching callerAddress
-     * @param paramPull when callend in a falsh callback the amount to be paid back is injected here 
+     * @param paramPull when callend in a falsh callback the amount to be paid back is injected here
      * @param paramPush when callend in a falsh callback the amount received is injected here
      * @param currentOffset offset packed ops array
      * @param calldataLength length of packed ops array
@@ -103,7 +103,7 @@ abstract contract BaseComposer is
             }
             if (operation < ComposerCommands.PERMIT) {
                 if (operation == ComposerCommands.SWAPS) {
-                    currentOffset = _swap(currentOffset, callerAddress);
+                    currentOffset = _swap(currentOffset, callerAddress, paramPush);
                 } else if (operation == ComposerCommands.EXT_CALL) {
                     currentOffset = _callExternal(currentOffset);
                 } else if (operation == ComposerCommands.LENDING) {
