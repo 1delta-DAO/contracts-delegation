@@ -10,6 +10,15 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IPool} from "aave-v3-core/interfaces/IPool.sol";
 import {IPoolAddressesProvider} from "aave-v3-core/interfaces/IPoolAddressesProvider.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
+import {NexusBootstrap, BootstrapConfig} from "nexus/contracts/utils/NexusBootstrap.sol";
+import {IERC7484} from "nexus/contracts/interfaces/IERC7484.sol";
+import {K1Validator} from "nexus/contracts/modules/validators/K1Validator.sol";
+import {NexusAccountFactory} from "nexus/contracts/factory/NexusAccountFactory.sol";
+import {Nexus} from "nexus/contracts/Nexus.sol";
+import "nexus/contracts/lib/ModeLib.sol"; // ModeLib and types for execution mode
+import {PercentageMath} from "aave-v3-core/protocol/libraries/math/PercentageMath.sol";
+import {ExecLib} from "nexus/contracts/lib/ExecLib.sol";
+import {Execution} from "nexus/contracts/types/DataTypes.sol";
 
 contract FlashAccountErc7579Test is Test {
     using MessageHashUtils for bytes32;
@@ -18,10 +27,6 @@ contract FlashAccountErc7579Test is Test {
     address public constant AAVE_POOL_ADDRESSES_PROVIDER = 0x2f39d218133AFaB8F2B819B1066c7E434Ad94E9e;
     address public constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-    address public constant VALIDATOR = 0x000000824dc138db84FD9109fc154bdad332Aa8E;
-
-    address public constant ACCOUNT_FACTORY = 0x000000c3A93d2c5E02Cb053AC675665b1c4217F9;
-    address public constant NEXUS_IMPLEMENTATION = 0x000000aC74357BFEa72BBD0781833631F732cf19;
 
     // Test user
     uint256 public constant PRIVATE_KEY = 0x1de17a;
@@ -32,9 +37,15 @@ contract FlashAccountErc7579Test is Test {
     EntryPoint public entryPoint;
     IPool public aavePool;
     address public account;
+    NexusBootstrap public bootstrap;
+    // MockValidator public validator;
+    K1Validator public validator;
+    NexusAccountFactory public factory;
+    Nexus public implementation;
 
     function setUp() public {
-        vm.createSelectFork("https://ethereum.blockpi.network/v1/rpc/public");
+        // Fork from a recent block to ensure all contracts are deployed
+        vm.createSelectFork("https://ethereum.rpc.subquery.network/public");
 
         user = vm.addr(PRIVATE_KEY);
         vm.deal(user, 100 ether);
@@ -42,110 +53,175 @@ contract FlashAccountErc7579Test is Test {
         entryPoint = EntryPoint(payable(MAINNET_ENTRYPOINT_ADDRESS));
         module = new FlashAccountErc7579();
         aavePool = IPool(IPoolAddressesProvider(AAVE_POOL_ADDRESSES_PROVIDER).getPool());
+        // validator = new MockValidator();
+        validator = new K1Validator();
+        implementation = new Nexus(MAINNET_ENTRYPOINT_ADDRESS);
+        factory = new NexusAccountFactory(address(implementation), user);
+
+        bootstrap = new NexusBootstrap();
 
         _createAndSetupAccount();
     }
 
-    // Callback function that will be called by Aave
-    // function executeOperation(
-    //     address[] calldata assets,
-    //     uint256[] calldata amounts,
-    //     uint256[] calldata premiums,
-    //     address initiator,
-    //     bytes calldata params
-    // ) external returns (bool) {
-    //     // Verify this is called by Aave pool
-    //     require(msg.sender == address(aavePool), "Caller not Aave pool");
+    function testFlashLoanOnAave() public {
+        uint128 flashLoanPremiumTotal = aavePool.FLASHLOAN_PREMIUM_TOTAL();
+        uint256 amountToBorrow = 1e9; // 1000 USDC
+        uint256 aavePremium = PercentageMath.percentMul(amountToBorrow, flashLoanPremiumTotal);
+        uint256 totalDebt = amountToBorrow + aavePremium;
 
-    //     // Verify initiator is our account
-    //     require(initiator == address(account), "Initiator not our account");
+        deal(USDC, address(account), aavePremium); // fund account with aave premium
 
-    //     // Here you would implement your flash loan logic
-    //     // For example, swap WETH for USDC, then swap back
+        Execution[] memory repayExec = new Execution[](2);
+        repayExec[0] = Execution({
+            target: USDC,
+            value: 0,
+            callData: abi.encodeWithSelector(IERC20.transfer.selector, address(module), aavePremium)
+        });
+        repayExec[1] = Execution({
+            target: address(module),
+            value: 0,
+            callData: abi.encodeWithSelector(
+                FlashAccountErc7579.handleRepay.selector,
+                abi.encode(USDC, abi.encodeWithSelector(IERC20.approve.selector, address(aavePool), totalDebt))
+            )
+        });
 
-    //     // Approve repayment
-    //     IERC20(WETH).approve(address(aavePool), amounts[0] + premiums[0]);
+        bytes memory repayCalldata = ExecLib.encodeBatch(repayExec);
 
-    //     return true;
-    // }
+        bytes memory aaveFlashLoanCalldata = abi.encodeWithSelector(
+            IPool.flashLoanSimple.selector,
+            address(module),
+            USDC,
+            amountToBorrow,
+            abi.encodePacked(ModeLib.encodeSimpleBatch(), repayCalldata),
+            0
+        );
 
-    // function testFlashLoan() public {
-    //     // Prepare flash loan parameters
-    //     address[] memory assets = new address[](1);
-    //     assets[0] = WETH;
+        bytes memory flashloanCallData = abi.encodeWithSelector(
+            FlashAccountErc7579.flashLoan.selector, address(aavePool), uint256(100), aaveFlashLoanCalldata
+        );
 
-    //     uint256[] memory amounts = new uint256[](1);
-    //     amounts[0] = 1 ether;
+        bytes memory execute = abi.encodeWithSignature(
+            "execute(bytes32,bytes)",
+            ModeLib.encodeSimpleSingle(),
+            abi.encodePacked(address(module), uint256(0), flashloanCallData)
+        );
 
-    //     uint256[] memory modes = new uint256[](1);
-    //     modes[0] = 0;
+        PackedUserOperation[] memory ops = new PackedUserOperation[](1);
+        ops[0] = _createUserOp({nounce: 1, calldata_: execute, initCode: ""});
 
-    //     bytes memory params = abi.encode(
-    //         assets,
-    //         amounts,
-    //         modes,
-    //         address(account),
-    //         abi.encodeWithSelector(this.executeOperation.selector, assets, amounts, modes, address(account), "")
-    //     );
-
-    //     // Execute flash loan
-    //     aavePool.flashLoanSimple(address(account), WETH, 1 ether, params, 0);
-    // }
+        vm.prank(user);
+        entryPoint.handleOps(ops, payable(address(0x1)));
+    }
 
     function testModuleInstallation() public {
         assertTrue(module.isInitialized(address(account)));
     }
 
     function _createAndSetupAccount() internal {
-        // install module call
-        bytes memory moduleInstallCalldata = abi.encodeWithSelector(0x9517e29f, 2, address(module), "");
-
-        // Create account with module installation
-        bytes memory initData = abi.encode(NEXUS_IMPLEMENTATION, moduleInstallCalldata);
-
-        uint128 verificationGasLimit = 1 << 24;
-        uint128 callGasLimit = 1 << 24;
-        uint128 maxPriorityFeePerGas = 1 << 8;
-        uint128 maxFeePerGas = 1 << 8;
-
-        initData = "";
-
-        PackedUserOperation memory op = PackedUserOperation({
-            sender: address(0),
-            nonce: 0,
-            initCode: abi.encodePacked(ACCOUNT_FACTORY, abi.encodeWithSelector(0xea6d13ac, initData)),
-            callData: "",
-            accountGasLimits: bytes32((uint256(verificationGasLimit) << 128) | callGasLimit),
-            preVerificationGas: 1 << 24,
-            gasFees: bytes32((uint256(maxPriorityFeePerGas) << 128) | maxFeePerGas),
-            paymasterAndData: "",
-            signature: ""
+        // Create validator config
+        BootstrapConfig[] memory validators = new BootstrapConfig[](1);
+        validators[0] = BootstrapConfig({
+            module: address(validator),
+            data: abi.encodePacked(user) // validator init data is the owner address
         });
 
-        // Sign and execute userOp
-        op.signature = _signUserOp(op);
-        PackedUserOperation[] memory ops = new PackedUserOperation[](1);
-        ops[0] = op;
+        // Create executor config for flash loan module
+        BootstrapConfig[] memory executors = new BootstrapConfig[](1);
+        executors[0] = BootstrapConfig({
+            module: address(module),
+            data: "" // empty initialization data
+        });
 
-        vm.prank(user);
-        entryPoint.handleOps(ops, payable(user));
+        // Empty hook and fallbacks
+        BootstrapConfig memory hook = BootstrapConfig({module: address(0), data: ""});
+        BootstrapConfig[] memory fallbacks = new BootstrapConfig[](0);
 
-        // Get account address
-        (bool success, bytes memory data) = ACCOUNT_FACTORY.call(abi.encodeWithSelector(0xfafa2b42, initData, 0));
-        require(success, "Failed to create account");
+        // Get initialization data from bootstrap
+        bytes memory initData = bootstrap.getInitNexusCalldata(
+            validators,
+            executors,
+            hook,
+            fallbacks,
+            IERC7484(address(0)), // no registry
+            new address[](0), // no attesters
+            0 // no threshold
+        );
+
+        bytes memory initCode = abi.encodePacked(
+            address(factory), abi.encodeWithSelector(NexusAccountFactory.createAccount.selector, initData, bytes32(0))
+        );
+
+        // get sender address
+        (bool success, bytes memory data) = address(factory).staticcall(
+            abi.encodeWithSelector(NexusAccountFactory.computeAccountAddress.selector, initData, bytes32(0))
+        );
+        require(success, "Failed to get account address");
         account = abi.decode(data, (address));
 
+        PackedUserOperation[] memory ops = new PackedUserOperation[](1);
+        ops[0] = _createUserOp({nounce: 0, calldata_: "", initCode: initCode});
+
+        // Fund account BEFORE the operation
+        vm.deal(address(account), 100 ether);
+
+        // Execute the operation
+        vm.prank(user);
+        entryPoint.handleOps(ops, payable(user));
         // Fund account
         vm.deal(address(account), 100 ether);
     }
 
-    function _signUserOp(PackedUserOperation memory userOp) internal view returns (bytes memory) {
-        bytes32 opHash = entryPoint.getUserOpHash(userOp).toEthSignedMessageHash();
-        return _signMessage(opHash);
+    /**
+     * @notice Creates a user operation with the given nounce and calldata
+     * @param nounce The nounce for the user operation
+     * @param calldata_ The calldata for the user operation
+     * @return op The signed user operation
+     */
+    function _createUserOp(uint64 nounce, bytes memory calldata_, bytes memory initCode)
+        internal
+        returns (PackedUserOperation memory op)
+    {
+        uint128 verificationGasLimit = 2_000_000;
+        uint128 callGasLimit = 2_000_000;
+        uint128 maxPriorityFeePerGas = 1 gwei;
+        uint128 maxFeePerGas = 100 gwei;
+
+        op = PackedUserOperation({
+            sender: account,
+            nonce: _encodeNonce(address(validator), uint64(nounce)),
+            initCode: initCode,
+            callData: calldata_,
+            accountGasLimits: bytes32((uint256(verificationGasLimit) << 128) | callGasLimit),
+            preVerificationGas: 500_000,
+            gasFees: bytes32((uint256(maxPriorityFeePerGas) << 128) | maxFeePerGas),
+            paymasterAndData: "",
+            signature: ""
+        });
+        op = _signUserOp(op);
     }
 
-    function _signMessage(bytes32 messageHash) internal pure returns (bytes memory signature) {
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(PRIVATE_KEY, messageHash);
-        signature = abi.encodePacked(r, s, v);
+    function _encodeNonce(address validator_, uint64 nounce_) internal returns (uint256 nounce) {
+        /**
+         * Nonce structure
+         *     [3 bytes empty][1 bytes validation mode][20 bytes validator][8 bytes nonce]
+         */
+        // Validation modes
+        // bytes1 constant MODE_VALIDATION = 0x00;
+        // bytes1 constant MODE_MODULE_ENABLE = 0x01;
+        assembly {
+            nounce := shl(64, validator_)
+            let mode := shl(224, 0x0)
+            nounce := or(nounce, mode)
+            nounce := or(nounce, nounce_) // 8 bytes nounce
+        }
+    }
+
+    function _signUserOp(PackedUserOperation memory op) internal returns (PackedUserOperation memory) {
+        bytes32 userOpHash = entryPoint.getUserOpHash(op);
+        bytes32 signHash = MessageHashUtils.toEthSignedMessageHash(userOpHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(PRIVATE_KEY, signHash);
+        op.signature = abi.encodePacked(r, s, v);
+        return op;
     }
 }
