@@ -109,8 +109,7 @@ contract AaveLightTest is BaseTest {
 
         address aToken = _getCollateralToken(token);
 
-        vm.prank(user);
-        IERC20All(aToken).approve(address(oneDV2), type(uint256).max);
+        approveWithdrawalDelegation(user, token, address(oneDV2), lender);
 
         uint256 amountToWithdraw = 10.0e6;
         bytes memory d = CalldataLib.encodeAaveWithdraw(token, false, amountToWithdraw, user, aToken, pool);

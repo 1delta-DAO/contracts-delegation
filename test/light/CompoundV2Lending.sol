@@ -81,8 +81,7 @@ contract CompoundV2ComposerLightTest is BaseTest {
 
         depositToCompoundV2(depositToken, user, amount, comptroller);
 
-        vm.prank(user);
-        IERC20All(comptroller).updateDelegate(address(oneDV2), true);
+        approveBorrowDelegation(user, token, address(oneDV2), lender);
 
         uint256 amountToBorrow = 10.0e6;
         bytes memory d = CalldataLib.encodeCompoundV2Borrow(token, false, amountToBorrow, user, cToken);
@@ -116,8 +115,7 @@ contract CompoundV2ComposerLightTest is BaseTest {
 
         address cToken = _getCollateralToken(token);
 
-        vm.prank(user);
-        IERC20All(cToken).approve(address(oneDV2), type(uint256).max);
+        approveWithdrawalDelegation(user, token, address(oneDV2), lender);
 
         uint256 amountToWithdraw = 10.0e6;
         bytes memory d = CalldataLib.encodeCompoundV2Withdraw(token, false, amountToWithdraw, user, cToken);
