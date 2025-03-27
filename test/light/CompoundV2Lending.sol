@@ -43,6 +43,10 @@ contract CompoundV2ComposerLightTest is BaseTest {
         vm.prank(user);
         IERC20All(token).approve(address(oneDV2), type(uint256).max);
 
+        // Get balances before deposit
+        uint256 collateralBefore = chain.getCollateralBalance(user, token, lender);
+        uint256 underlyingBefore = IERC20All(token).balanceOf(user);
+
         bytes memory transferTo = CalldataLib.transferIn(
             token,
             address(oneDV2),
@@ -53,6 +57,15 @@ contract CompoundV2ComposerLightTest is BaseTest {
 
         vm.prank(user);
         oneDV2.deltaCompose(abi.encodePacked(transferTo, d));
+
+        // Get balances after deposit
+        uint256 collateralAfter = chain.getCollateralBalance(user, token, lender);
+        uint256 underlyingAfter = IERC20All(token).balanceOf(user);
+
+        // Assert collateral balance increased by amount
+        assertApproxEqAbs(collateralAfter - collateralBefore, amount, 1);
+        // Assert underlying balance decreased by amount
+        assertApproxEqAbs(underlyingBefore - underlyingAfter, amount, 1);
     }
 
     function test_light_compoundV2_borrow() external {
@@ -74,8 +87,21 @@ contract CompoundV2ComposerLightTest is BaseTest {
         uint256 amountToBorrow = 10.0e6;
         bytes memory d = CalldataLib.encodeCompoundV2Borrow(token, false, amountToBorrow, user, cToken);
 
+        // Check balances before borrowing
+        uint256 borrowBalanceBefore = chain.getDebtBalance(user, token, lender);
+        uint256 underlyingBefore = IERC20All(token).balanceOf(user);
+
         vm.prank(user);
         oneDV2.deltaCompose(d);
+
+        // Check balances after borrowing
+        uint256 borrowBalanceAfter = chain.getDebtBalance(user, token, lender);
+        uint256 underlyingAfter = IERC20All(token).balanceOf(user);
+
+        // Assert debt increased by borrowed amount
+        assertApproxEqAbs(borrowBalanceAfter - borrowBalanceBefore, amountToBorrow, 1);
+        // Assert underlying increased by borrowed amount
+        assertApproxEqAbs(underlyingAfter - underlyingBefore, amountToBorrow, 1);
     }
 
     function test_light_compoundV2_withdraw() external {
@@ -93,11 +119,24 @@ contract CompoundV2ComposerLightTest is BaseTest {
         vm.prank(user);
         IERC20All(cToken).approve(address(oneDV2), type(uint256).max);
 
-        uint256 amountToBorrow = 10.0e6;
-        bytes memory d = CalldataLib.encodeCompoundV2Withdraw(token, false, amountToBorrow, user, cToken);
+        uint256 amountToWithdraw = 10.0e6;
+        bytes memory d = CalldataLib.encodeCompoundV2Withdraw(token, false, amountToWithdraw, user, cToken);
+
+        // Check balances before withdrawal
+        uint256 collateralBefore = chain.getCollateralBalance(user, token, lender);
+        uint256 underlyingBefore = IERC20All(token).balanceOf(user);
 
         vm.prank(user);
         oneDV2.deltaCompose(d);
+
+        // Check balances after withdrawal
+        uint256 collateralAfter = chain.getCollateralBalance(user, token, lender);
+        uint256 underlyingAfter = IERC20All(token).balanceOf(user);
+
+        // Assert collateral decreased by withdrawn amount
+        assertApproxEqAbs(collateralBefore - collateralAfter, amountToWithdraw, 1);
+        // Assert underlying increased by withdrawn amount
+        assertApproxEqAbs(underlyingAfter - underlyingBefore, amountToWithdraw, 1);
     }
 
     function test_light_compoundV2_repay() external {
@@ -129,8 +168,21 @@ contract CompoundV2ComposerLightTest is BaseTest {
         address cToken = _getCollateralToken(token);
         bytes memory d = CalldataLib.encodeCompoundV2Repay(token, false, amountToRepay, user, cToken);
 
+        // Check balances before repay
+        uint256 debtBefore = chain.getDebtBalance(user, token, lender);
+        uint256 underlyingBefore = IERC20All(token).balanceOf(user);
+
         vm.prank(user);
         oneDV2.deltaCompose(abi.encodePacked(transferTo, d));
+
+        // Check balances after repay
+        uint256 debtAfter = chain.getDebtBalance(user, token, lender);
+        uint256 underlyingAfter = IERC20All(token).balanceOf(user);
+
+        // Assert debt decreased by repaid amount
+        assertApproxEqAbs(debtBefore - debtAfter, amountToRepay, 1);
+        // Assert underlying decreased by repaid amount
+        assertApproxEqAbs(underlyingBefore - underlyingAfter, amountToRepay, 1);
     }
 
     function depositToCompoundV2(address token, address userAddress, uint256 amount, address comptroller) internal {
@@ -158,7 +210,9 @@ contract CompoundV2ComposerLightTest is BaseTest {
         oneDV2.deltaCompose(abi.encodePacked(transferTo, d));
     }
 
-    function borrowFromCompoundV2(address token, address userAddress, uint256 amountToBorrow, address comptroller) internal {
+    function borrowFromCompoundV2(address token, address userAddress, uint256 amountToBorrow, address comptroller)
+        internal
+    {
         vm.prank(userAddress);
         IERC20All(comptroller).updateDelegate(address(oneDV2), true);
 

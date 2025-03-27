@@ -40,6 +40,10 @@ contract AaveLightTest is BaseTest {
         vm.prank(user);
         IERC20All(token).approve(address(oneDV2), type(uint256).max);
 
+        // Get collateral balance before deposit
+        uint256 collateralBefore = chain.getCollateralBalance(user, token, lender);
+        uint256 underlyingBefore = IERC20All(token).balanceOf(user);
+
         bytes memory transferTo = CalldataLib.transferIn(
             token,
             address(oneDV2),
@@ -50,6 +54,15 @@ contract AaveLightTest is BaseTest {
 
         vm.prank(user);
         oneDV2.deltaCompose(abi.encodePacked(transferTo, d));
+
+        // Get balances after deposit
+        uint256 collateralAfter = chain.getCollateralBalance(user, token, lender);
+        uint256 underlyingAfter = IERC20All(token).balanceOf(user);
+
+        // Assert collateral balance increased by amount
+        assertApproxEqAbs(collateralAfter - collateralBefore, amount, 1);
+        // Assert underlying balance decreased by amount
+        assertApproxEqAbs(underlyingBefore - underlyingAfter, amount, 1);
     }
 
     function test_light_aave_borrow() external {
@@ -67,14 +80,21 @@ contract AaveLightTest is BaseTest {
         uint256 amountToBorrow = 10.0e6;
         bytes memory d = CalldataLib.encodeAaveBorrow(token, false, amountToBorrow, user, 2, pool);
 
+        // Check balances before borrowing
         uint256 borrowBalanceBefore = chain.getDebtBalance(user, token, lender);
+        uint256 underlyingBefore = IERC20All(token).balanceOf(user);
 
         vm.prank(user);
         oneDV2.deltaCompose(d);
 
+        // Check balances after borrowing
         uint256 borrowBalanceAfter = chain.getDebtBalance(user, token, lender);
+        uint256 underlyingAfter = IERC20All(token).balanceOf(user);
 
+        // Assert debt increased by borrowed amount
         assertApproxEqAbs(borrowBalanceAfter - borrowBalanceBefore, amountToBorrow, 0);
+        // Assert underlying increased by borrowed amount
+        assertApproxEqAbs(underlyingAfter - underlyingBefore, amountToBorrow, 0);
     }
 
     function test_light_aave_withdraw() external {
@@ -92,11 +112,24 @@ contract AaveLightTest is BaseTest {
         vm.prank(user);
         IERC20All(aToken).approve(address(oneDV2), type(uint256).max);
 
-        uint256 amountToBorrow = 10.0e6;
-        bytes memory d = CalldataLib.encodeAaveWithdraw(token, false, amountToBorrow, user, aToken, pool);
+        uint256 amountToWithdraw = 10.0e6;
+        bytes memory d = CalldataLib.encodeAaveWithdraw(token, false, amountToWithdraw, user, aToken, pool);
+
+        // Check balances before withdrawal
+        uint256 collateralBefore = chain.getCollateralBalance(user, token, lender);
+        uint256 underlyingBefore = IERC20All(token).balanceOf(user);
 
         vm.prank(user);
         oneDV2.deltaCompose(d);
+
+        // Check balances after withdrawal
+        uint256 collateralAfter = chain.getCollateralBalance(user, token, lender);
+        uint256 underlyingAfter = IERC20All(token).balanceOf(user);
+
+        // Assert collateral decreased by withdrawn amount
+        assertApproxEqAbs(collateralBefore - collateralAfter, amountToWithdraw, 1);
+        // Assert underlying increased by withdrawn amount
+        assertApproxEqAbs(underlyingAfter - underlyingBefore, amountToWithdraw, 1);
     }
 
     function test_light_aave_repay() external {
@@ -127,8 +160,21 @@ contract AaveLightTest is BaseTest {
 
         bytes memory d = CalldataLib.encodeAaveRepay(token, false, amountToRepay, user, 2, vToken, pool);
 
+        // Check balances before repay
+        uint256 debtBefore = chain.getDebtBalance(user, token, lender);
+        uint256 underlyingBefore = IERC20All(token).balanceOf(user);
+
         vm.prank(user);
         oneDV2.deltaCompose(abi.encodePacked(transferTo, d));
+
+        // Check balances after repay
+        uint256 debtAfter = chain.getDebtBalance(user, token, lender);
+        uint256 underlyingAfter = IERC20All(token).balanceOf(user);
+
+        // Assert debt decreased by repaid amount
+        assertApproxEqAbs(debtBefore - debtAfter, amountToRepay, 1);
+        // Assert underlying decreased by repaid amount
+        assertApproxEqAbs(underlyingBefore - underlyingAfter, amountToRepay, 1);
     }
 
     function depositToAave(address token, address userAddress, uint256 amount, address pool) internal {
