@@ -28,7 +28,7 @@ contract ForkTestBase is Test {
     function test_generic_hemi() external /** address user, uint8 lenderId */ {
         address user = 0x91ae002a960e63Ccb0E5bDE83A8C13E51e1cB91A;
         vm.prank(user);
-        // vm.expectRevert(); // should revert with slippage
+        vm.expectRevert(); // should revert with faulty permit
         (bool success, bytes memory ret) = address(brokerProxyAddress).call(getGenericData());
         if (!success) {
             console.logBytes(ret);
