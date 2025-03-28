@@ -26,7 +26,7 @@ contract AaveLightTest is BaseTest {
         USDC = chain.getTokenAddress(Tokens.USDC);
         AAVE_V3_POOL = chain.getLendingController(lender);
 
-        oneDV2 = new OneDeltaComposerLight();
+        oneDV2 = new OneDeltaComposerLight(address(0));
     }
 
     function test_light_aave_deposit() external {

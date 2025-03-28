@@ -42,7 +42,7 @@ contract FlashSwapTest is BaseTest {
         WETH = chain.getTokenAddress(Tokens.WETH);
         AAVE_V3_POOL = chain.getLendingController(lender);
 
-        oneDV2 = new OneDeltaComposerLight();
+        oneDV2 = new OneDeltaComposerLight(address(0));
     }
 
     function v3poolFlashSwap(

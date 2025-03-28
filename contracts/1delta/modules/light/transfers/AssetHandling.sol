@@ -3,12 +3,12 @@
 pragma solidity 0.8.28;
 
 import {ERC20Transfers} from "./ERC20Transfers.sol";
-import {TransferIds} from "../enums/DeltaEnums.sol";
+import {AssetHandlingIds} from "../enums/ForwarderEnums.sol";
 
 /**
- * @title Token transfer contract - should work across all EVMs - user Uniswap style Permit2
+ * @title Similar to composer transfers, except that we drop permit2
  */
-contract Transfers is ERC20Transfers {
+contract AssetHandling is ERC20Transfers {
     function _transfers(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         uint256 transferOperation;
         assembly {
@@ -16,19 +16,17 @@ contract Transfers is ERC20Transfers {
             transferOperation := shr(248, firstSlice)
             currentOffset := add(currentOffset, 1)
         }
-        if (transferOperation == TransferIds.TRANSFER_FROM) {
+        if (transferOperation == AssetHandlingIds.TRANSFER_FROM) {
             return _transferFrom(currentOffset, callerAddress);
-        } else if (transferOperation == TransferIds.SWEEP) {
+        } else if (transferOperation == AssetHandlingIds.SWEEP) {
             return _sweep(currentOffset);
-        } else if (transferOperation == TransferIds.WRAP_NATIVE) {
+        } else if (transferOperation == AssetHandlingIds.WRAP_NATIVE) {
             return _wrap(currentOffset);
-        } else if (transferOperation == TransferIds.UNWRAP_WNATIVE) {
+        } else if (transferOperation == AssetHandlingIds.UNWRAP_WNATIVE) {
             return _unwrap(currentOffset);
-        } else if (transferOperation == TransferIds.PERMIT2_TRANSFER_FROM) {
-            return _permit2TransferFrom(currentOffset, callerAddress);
-        } else if (transferOperation == TransferIds.APPROVE) {
+        } else if (transferOperation == AssetHandlingIds.APPROVE) {
             return _approve(currentOffset);
-        } else {
+        }  else {
             _invalidOperation();
         }
     }

@@ -32,7 +32,7 @@ contract ERC4646Test is BaseTest {
 
         USDC = chain.getTokenAddress(Tokens.USDC);
 
-        oneD = new OneDeltaComposerLight();
+        oneD = new OneDeltaComposerLight(address(0));
     }
 
     function test_light_morpho_deposit_to_erc4646() external {

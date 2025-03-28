@@ -33,7 +33,7 @@ contract MorphoBlueTest is BaseTest {
     function setUp() public virtual {
         _init(Chains.BASE, forkBlock);
 
-        oneD = new OneDeltaComposerLight();
+        oneD = new OneDeltaComposerLight(address(0));
         // initialize the addresses
         LBTC = chain.getTokenAddress(Tokens.LBTC);
         USDC = chain.getTokenAddress(Tokens.USDC);

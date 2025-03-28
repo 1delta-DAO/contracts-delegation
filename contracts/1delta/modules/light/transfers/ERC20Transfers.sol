@@ -7,9 +7,12 @@ import {Masks} from "../../shared/masks/Masks.sol";
 import {DeltaErrors} from "../../shared/errors/Errors.sol";
 
 /**
- * @title Token transfer contract - should work across all EVMs - user Uniswap style Permit2
+ * @title Token transfer contract - should work across all EVMs - use Uniswap style Permit2
  */
 contract ERC20Transfers is ERC20Selectors, Masks, DeltaErrors {
+    // approval slot
+    bytes32 private constant CALL_MANAGEMENT_APPROVALS = 0x1aae13105d9b6581c36534caba5708726e5ea1e03175e823c989a5756966d1f3;
+
     bytes32 private constant PERMIT2_TRANSFER_FROM = 0x36c7851600000000000000000000000000000000000000000000000000000000;
     address private constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
 
@@ -68,7 +71,7 @@ contract ERC20Transfers is ERC20Selectors, Masks, DeltaErrors {
             let underlying := shr(96, calldataload(currentOffset))
             let receiver := and(ADDRESS_MASK, calldataload(add(currentOffset, 8)))
             let amount := and(_UINT112_MASK, calldataload(add(currentOffset, 22)))
-            // when entering 0 as amount, use the callwe balance
+            // when entering 0 as amount, use the caller balance
             if iszero(amount) {
                 // selector for balanceOf(address)
                 mstore(0, ERC20_BALANCE_OF)
@@ -254,6 +257,48 @@ contract ERC20Transfers is ERC20Selectors, Masks, DeltaErrors {
                 }
             }
             currentOffset := add(currentOffset, 55)
+        }
+        return currentOffset;
+    }
+
+    /*
+     * | Offset | Length (bytes) | Description          |
+     * |--------|----------------|----------------------|
+     * | 0      | 20             | token                |
+     * | 20     | 20             | target               |
+     */
+    function _approve(uint256 currentOffset) internal returns (uint256) {
+        assembly {
+            let ptr := mload(0x40)
+            let underlying := shr(96, calldataload(currentOffset))
+            currentOffset := add(currentOffset, 20)
+            let target := and(ADDRESS_MASK, calldataload(add(currentOffset, 8)))
+            mstore(0x0, underlying)
+            mstore(0x20, CALL_MANAGEMENT_APPROVALS)
+            mstore(0x20, keccak256(0x0, 0x40))
+            mstore(0x0, target)
+            let key := keccak256(0x0, 0x40)
+            // check if already approved
+            if iszero(sload(key)) {
+                // approveFlag
+                // selector for approve(address,uint256)
+                mstore(ptr, ERC20_APPROVE)
+                mstore(add(ptr, 0x04), target)
+                mstore(add(ptr, 0x24), MAX_UINT256)
+                pop(
+                    call(
+                        gas(),
+                        underlying, //
+                        0,
+                        ptr,
+                        0x44,
+                        ptr,
+                        32
+                    )
+                )
+                sstore(key, 1)
+            }
+            currentOffset := add(currentOffset, 40)
         }
         return currentOffset;
     }

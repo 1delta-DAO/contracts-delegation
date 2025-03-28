@@ -8,20 +8,18 @@ import {Transfers} from "./transfers/Transfers.sol";
 import {ERC4646Operations} from "./ERC4646/ERC4646Operations.sol";
 import {UniversalLending} from "./lending/UniversalLending.sol";
 import {Permits} from "./permit/Permits.sol";
-import {Storage} from "./management/Storage.sol";
 import {Swaps} from "./swappers/Swaps.sol";
 import {UniversalFlashLoan} from "./flashLoan/UniversalFlashLoan.sol";
 
 /**
- * @title Universal aggregator contract.
+ * @title Base aggregator contract that needs overrides for explicit chains.
  *        Allows spot and margin swap aggregation
- *        Efficient baching through compact calldata usage.
+ *        Efficient batching through compact calldata usage.
  *        Needs to inherit callback implementations
  * @author 1delta Labs AG
  */
 abstract contract BaseComposer is
     Swaps,
-    Storage,
     UniversalLending,
     UniversalFlashLoan,
     ERC4646Operations,
@@ -29,9 +27,7 @@ abstract contract BaseComposer is
     Permits,
     ExternalCall //
 {
-    constructor() {
-        _setOwner(msg.sender);
-    }
+    constructor(address _forwarder) ExternalCall(_forwarder) {}
 
     receive() external payable {}
 

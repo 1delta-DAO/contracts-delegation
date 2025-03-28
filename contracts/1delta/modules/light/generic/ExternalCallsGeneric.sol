@@ -18,27 +18,35 @@ import {DeltaErrors} from "../../shared/errors/Errors.sol";
  * This needs a whitelisting functions that stores the addresses in the correct slots
  * Do NOT whitlist lending contracts or tokens!
  */
-abstract contract ExternalCall is Slots, ERC20Selectors, Masks, DeltaErrors {
-    // this is a consistent call forwarder deployment
-    address internal immutable FORWARDER;
+abstract contract ExternalCallsGeneric is Slots, ERC20Selectors, Masks, DeltaErrors {
+    /// @dev mask for selector in calldata
+    bytes32 private constant SELECTOR_MASK = 0xffffffff00000000000000000000000000000000000000000000000000000000;
 
-    constructor(address _forwarder) {
-        FORWARDER = _forwarder;
-    }
+    // InvalidSwapCall()
+    bytes4 private constant FORBIDDEN = 0xb1ab1ab1;
 
     function _callExternal(uint256 currentOffset) internal returns (uint256) {
-        address _forwarder = FORWARDER;
         ////////////////////////////////////////////////////
-        // Foraward a call to callForawrder to execute unsafe
-        // generic calls
+        // Execute call to external contract. It consits of
+        // an approval target and call target.
+        // The combo of [approvalTarget, target] has to be whitelisted
+        // for calls. Those are exclusively swap aggregator contracts.
+        // An amount has to be supplied to check the allowance from
+        // this contract to target.
+        // NEVER whitelist a token as an attacker can call
+        // `transferFrom` on target
         // Data layout:
-        //      bytes 0-14:                  netiveValue
-        //      bytes 14-16:                 calldata length
-        //      bytes 16-(16+data length):   data
+        //      bytes 0-20:                  target
+        //      bytes 20-34:                 callvalue()
+        //      bytes 34-36:                 calldataLength
+        //      bytes 36-(36+data length):   data
         ////////////////////////////////////////////////////
         assembly {
+            // get first three addresses
+            let target := shr(96, calldataload(currentOffset))
+
             // get msg.value for call
-            let callValue := calldataload(currentOffset)
+            let callValue := calldataload(add(currentOffset, 20))
             let dataLength := and(UINT16_MASK, shr(128, callValue))
             callValue := shr(144, callValue) // shr will already mask correctly
 
@@ -53,12 +61,19 @@ abstract contract ExternalCall is Slots, ERC20Selectors, Masks, DeltaErrors {
             // increment offset to calldata start
             currentOffset := add(36, currentOffset)
 
+            // extract the selector from the calldata
+            // and check if it is `transferFrom`
+            if eq(and(SELECTOR_MASK, calldataload(currentOffset)), ERC20_TRANSFER_FROM) {
+                mstore(0x0, FORBIDDEN)
+                revert(0x0, 0x4)
+            }
+
             // copy calldata
             calldatacopy(ptr, currentOffset, dataLength)
             if iszero(
                 call(
                     gas(),
-                    _forwarder,
+                    target,
                     callValue,
                     ptr, //
                     dataLength, // the length must be correct or the call will fail

@@ -13,8 +13,11 @@ import {SwapCallbacks} from "./swappers/callbacks/SwapCallbacks.sol";
  * @author 1delta Labs AG
  */
 contract OneDeltaComposerLight is BaseComposer, FlashLoanCallbacks, SwapCallbacks, Native {
+    // initialize with an immutable forwarder
+    constructor(address _forwarder) BaseComposer(_forwarder) {}
+
     /**
-     * Execute a set op packed operations
+     * Execute a set of packed operations
      */
     function _deltaComposeInternal(
         address callerAddress,

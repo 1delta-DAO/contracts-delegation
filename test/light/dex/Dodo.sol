@@ -35,7 +35,7 @@ contract DodoLightTest is BaseTest {
         cbETH = chain.getTokenAddress(Tokens.CBETH);
         cbBTC = chain.getTokenAddress(Tokens.CBBTC);
         USDC = chain.getTokenAddress(Tokens.USDC);
-        oneDV2 = new OneDeltaComposerLight();
+        oneDV2 = new OneDeltaComposerLight(address(0));
     }
 
     function dodPoolWETHJOJOSwap(address receiver, uint256 amount) internal view returns (bytes memory data) {
