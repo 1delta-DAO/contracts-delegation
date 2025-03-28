@@ -1,67 +1,29 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
-import {EntryPoint} from "account-abstraction/core/EntryPoint.sol";
-import {IEntryPoint} from "account-abstraction/interfaces/IEntryPoint.sol";
 import {PackedUserOperation} from "account-abstraction/interfaces/PackedUserOperation.sol";
-
-import {UpgradeableBeacon} from "../../../../contracts/1delta/flash-account//proxy/Beacon.sol";
-import {BaseLightAccount} from "../../../../contracts/1delta/flash-account/common/BaseLightAccount.sol";
 import {FlashAccount} from "../../../../contracts/1delta/flash-account/FlashAccount.sol";
-import {FlashAccountBase} from "../../../../contracts/1delta/flash-account/FlashAccountBase.sol";
-import {FlashAccountFactory} from "../../../../contracts/1delta/flash-account/FlashAccountFactory.sol";
+import {FlashLoanExecuter} from "../../../../contracts/1delta/flash-account/FlashLoanExecuter.sol";
+import {BaseLightAccount} from "../../../../contracts/1delta/flash-account/common/BaseLightAccount.sol";
 
 import {IVault} from "./interfaces/IVault.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IFlashLoanRecipient} from "./interfaces/IFlashLoanRecipient.sol";
+import {FlashAccountBaseTest} from "../../FlashAccountBaseTest.sol";
+import {ChainIds, TokenNames} from "../../chain/Lib.sol";
 
-import {Test} from "forge-std/Test.sol";
-
-contract BalancerFlashLoanTests is Test {
+contract BalancerFlashLoanTests is FlashAccountBaseTest {
     using MessageHashUtils for bytes32;
 
-    uint256 public constant EOA_PRIVATE_KEY = 1;
-    uint256 public constant BEACON_OWNER_PRIVATE_KEY = 2;
-    address payable public constant BENEFICIARY = payable(address(0xbe9ef1c1a2ee));
     address public constant BALANCER_VAULT = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
-    address public constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
-
-    uint256 public mainnetFork;
-
-    address public eoaAddress;
-    address public beaconOwner;
-    address public initialAccountImplementation;
-
-    FlashAccount public account;
-    FlashAccount public beaconOwnerAccount;
-    EntryPoint public entryPoint;
-    FlashAccountFactory public factory;
-
-    UpgradeableBeacon public accountBeacon;
+    address public USDC;
 
     event FlashLoan(IFlashLoanRecipient indexed recipient, IERC20 indexed token, uint256 amount, uint256 feeAmount);
 
     function setUp() public {
-        // Initialize a mainnet fork
-        string memory rpcUrl = vm.envString("MAINNET_RPC_URL");
-        mainnetFork = vm.createSelectFork(rpcUrl);
-
-        eoaAddress = vm.addr(EOA_PRIVATE_KEY);
-        beaconOwner = vm.addr(BEACON_OWNER_PRIVATE_KEY);
-
-        entryPoint = new EntryPoint();
-        FlashAccount implementation = new FlashAccount(entryPoint);
-        initialAccountImplementation = address(implementation);
-
-        accountBeacon = new UpgradeableBeacon(beaconOwner, initialAccountImplementation);
-        factory = new FlashAccountFactory(beaconOwner, address(accountBeacon), entryPoint);
-
-        account = factory.createAccount(eoaAddress, 1);
-        beaconOwnerAccount = factory.createAccount(beaconOwner, 1);
-
-        vm.deal(address(account), 1 << 128);
-        vm.deal(eoaAddress, 1 << 128);
+        _init(ChainIds.ETHEREUM);
+        USDC = chain.getTokenAddress(TokenNames.USDC);
     }
 
     function testBalancerV2FlashLoanWithUserOp() public {
@@ -69,10 +31,10 @@ contract BalancerFlashLoanTests is Test {
         uint256 amountToBorrow = 1e9;
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
-        userOps[0] = prepareUserOp(amountToBorrow, EOA_PRIVATE_KEY);
+        userOps[0] = prepareUserOp(amountToBorrow);
 
         vm.expectEmit(true, true, true, true);
-        emit FlashLoan(IFlashLoanRecipient(address(account)), IERC20(USDC), amountToBorrow, 0);
+        emit FlashLoan(IFlashLoanRecipient(address(userFlashAccount)), IERC20(USDC), amountToBorrow, 0);
 
         entryPoint.handleOps(userOps, BENEFICIARY);
     }
@@ -99,24 +61,41 @@ contract BalancerFlashLoanTests is Test {
         amounts[0] = amountToBorrow;
 
         bytes memory flashLoanCall = abi.encodeWithSignature(
-            "flashLoan(address,address[],uint256[],bytes)", address(account), tokens, amounts, params
+            "flashLoan(address,address[],uint256[],bytes)", address(userFlashAccount), tokens, amounts, params
         );
 
-        vm.prank(eoaAddress);
+        // Prepare the executeFlashLoan call
+        bytes memory executeFlashLoanCall =
+            abi.encodeWithSelector(FlashLoanExecuter.executeFlashLoan.selector, BALANCER_VAULT, flashLoanCall);
+
+        vm.prank(user);
         vm.expectEmit(true, true, true, true);
-        emit FlashLoan(IFlashLoanRecipient(address(account)), IERC20(USDC), amountToBorrow, 0);
-        account.execute(BALANCER_VAULT, 0, flashLoanCall);
+        emit FlashLoan(IFlashLoanRecipient(address(userFlashAccount)), IERC20(USDC), amountToBorrow, 0);
+        userFlashAccount.execute(address(userFlashAccount), 0, executeFlashLoanCall);
     }
 
-    function _sign(uint256 privateKey, bytes32 digest) internal pure returns (bytes memory) {
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, digest);
-        return abi.encodePacked(r, s, v);
+    function prepareUserOp(uint256 amountToBorrow) private returns (PackedUserOperation memory op) {
+        // Prepare flash loan call
+        bytes memory flashLoanCall = _prepareCalldata(amountToBorrow);
+
+        // Use executeFlashLoan instead of direct execute
+        bytes memory executeFlashLoanCall =
+            abi.encodeWithSelector(FlashLoanExecuter.executeFlashLoan.selector, BALANCER_VAULT, flashLoanCall);
+
+        // Execute the flash loan call on the account itself
+        bytes memory executeCall = abi.encodeWithSignature(
+            "execute(address,uint256,bytes)", address(userFlashAccount), 0, executeFlashLoanCall
+        );
+
+        op = _getUnsignedOp(executeCall, entryPoint.getNonce(address(userFlashAccount), 0));
+
+        op.signature = abi.encodePacked(
+            BaseLightAccount.SignatureType.EOA,
+            _sign(userPrivateKey, entryPoint.getUserOpHash(op).toEthSignedMessageHash())
+        );
     }
 
-    function prepareUserOp(uint256 amountToBorrow, uint256 privateKey)
-        private
-        returns (PackedUserOperation memory op)
-    {
+    function _prepareCalldata(uint256 amountToBorrow) internal view returns (bytes memory) {
         address[] memory dests = new address[](1);
         dests[0] = USDC;
 
@@ -134,33 +113,8 @@ contract BalancerFlashLoanTests is Test {
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = amountToBorrow;
 
-        bytes memory callData = abi.encodeWithSignature(
-            "flashLoan(address,address[],uint256[],bytes)", address(account), tokens, amounts, params
+        return abi.encodeWithSignature(
+            "flashLoan(address,address[],uint256[],bytes)", address(userFlashAccount), tokens, amounts, params
         );
-
-        bytes memory executeCall =
-            abi.encodeWithSignature("execute(address,uint256,bytes)", BALANCER_VAULT, 0, callData);
-        op = _getUnsignedOp(executeCall);
-        op.signature = abi.encodePacked(
-            BaseLightAccount.SignatureType.EOA, _sign(privateKey, entryPoint.getUserOpHash(op).toEthSignedMessageHash())
-        );
-    }
-
-    function _getUnsignedOp(bytes memory callData) internal view returns (PackedUserOperation memory) {
-        uint128 verificationGasLimit = 1 << 24;
-        uint128 callGasLimit = 1 << 24;
-        uint128 maxPriorityFeePerGas = 1 << 8;
-        uint128 maxFeePerGas = 1 << 8;
-        return PackedUserOperation({
-            sender: address(account),
-            nonce: entryPoint.getNonce(address(account), 0),
-            initCode: "",
-            callData: callData,
-            accountGasLimits: bytes32((uint256(verificationGasLimit) << 128) | callGasLimit),
-            preVerificationGas: 1 << 24,
-            gasFees: bytes32((uint256(maxPriorityFeePerGas) << 128) | maxFeePerGas),
-            paymasterAndData: "",
-            signature: ""
-        });
     }
 }
