@@ -20,7 +20,7 @@ contract CallForwarder is Transfers, ExternalCallsGeneric {
      * Note: This contract should not trigger callbacks of any kind as the calls are not abi encoded
      */
     fallback() external payable {
-        uint256 currentOffset;
+        uint256 currentOffset; // = 0
         // data loop paramters
         uint256 maxIndex;
         assembly {

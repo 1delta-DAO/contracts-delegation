@@ -2,8 +2,6 @@
 
 pragma solidity ^0.8.28;
 
-import {Slots} from "../../shared/storage/Slots.sol";
-import {ERC20Selectors} from "../../shared/selectors/ERC20Selectors.sol";
 import {Masks} from "../../shared/masks/Masks.sol";
 import {DeltaErrors} from "../../shared/errors/Errors.sol";
 
@@ -18,7 +16,7 @@ import {DeltaErrors} from "../../shared/errors/Errors.sol";
  * This needs a whitelisting functions that stores the addresses in the correct slots
  * Do NOT whitlist lending contracts or tokens!
  */
-abstract contract ExternalCall is Slots, ERC20Selectors, Masks, DeltaErrors {
+abstract contract ExternalCall is Masks, DeltaErrors {
     // this is a consistent call forwarder deployment
     address internal immutable FORWARDER;
 

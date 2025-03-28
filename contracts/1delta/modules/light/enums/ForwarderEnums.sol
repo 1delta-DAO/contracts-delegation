@@ -2,17 +2,6 @@
 
 pragma solidity ^0.8.28;
 
-/**
- * AssetHandling classifier enums
- */
-library AssetHandlingIds {
-    uint256 internal constant TRANSFER_FROM = 0;
-    uint256 internal constant SWEEP = 1;
-    uint256 internal constant WRAP_NATIVE = 2;
-    uint256 internal constant UNWRAP_WNATIVE = 3;
-    uint256 internal constant APPROVE = 5;
-}
-
 /// @title Commands for CallForwarder
 /// @notice Reduced Command Flags used to decode commands
 library ForwarderCommands {
