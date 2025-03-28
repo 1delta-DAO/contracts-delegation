@@ -78,7 +78,7 @@
     "build": "export NODE_OPTIONS=--openssl-legacy-provider; gatsby build"
   },
   "dependencies": {
-    "@1delta/asset-registry": "^0.0.97",
+    "@1delta/asset-registry": "^0.0.99",
     "@chainlink/contracts": "^0.6.1",
     "@defi-wonderland/smock": "^2.0.7",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.8",

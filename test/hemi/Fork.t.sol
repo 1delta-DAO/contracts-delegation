@@ -18,9 +18,9 @@ contract ForkTestBase is Test {
     address internal constant brokerProxyAddress = 0x816EBC5cb8A5651C902Cb06659907A93E574Db0B;
 
     function setUp() public virtual {
-        vm.createSelectFork({blockNumber: 1320344, urlOrAlias: "https://rpc.hemi.network/rpc"});
+        vm.createSelectFork({blockNumber: 1443500, urlOrAlias: "https://rpc.hemi.network/rpc"});
         address admin = 0x999999833d965c275A2C102a4Ebf222ca938546f;
-        address oldModule = 0x7a59ddbB76521E8982Fa3A08598C9a83b14A6C07;
+        address oldModule = 0x80416C1e314662D6417ba9fA4F983fE4507785ff;
         upgradeExistingDelta(admin, oldModule);
     }
 
@@ -29,7 +29,7 @@ contract ForkTestBase is Test {
         address user = 0x91ae002a960e63Ccb0E5bDE83A8C13E51e1cB91A;
         vm.prank(user);
         // vm.expectRevert(); // should revert with slippage
-        (bool success, bytes memory ret) = address(brokerProxyAddress).call{value:0.0001e18}(getGenericData());
+        (bool success, bytes memory ret) = address(brokerProxyAddress).call(getGenericData());
         if (!success) {
             console.logBytes(ret);
             // Next 5 lines from https://ethereum.stackexchange.com/a/83577
@@ -44,7 +44,7 @@ contract ForkTestBase is Test {
     // skipt this one for now
     function getGenericData() internal pure returns (bytes memory data) {
         // this data is incorrect for block 60576346
-        data = hex"17d73091000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000872300000000000000005af3107a40000091ae002a960e63ccb0e5bde83a8c13e51e1cb91a800000000000000000000000000000f200000000000000005af3107a4000004342000000000000000000000000000000000000060001efbca54dbe761f73cf874867e436579aada748bb01f403c7054bcb39f7b2e5b2c7acb37583e32d70cfa300ff0900000000000000000000000000000000000000000000000000";
+        data = hex"17d730910000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000010b32568059251e0fc2df2558671507ef5d7a59dcc6c300640000000000000000000000000000000000000000000000000002223e165f72fc67e700c82bd617309d2c06e43b34837e313a53330e1eb483f653d435ac8792cd7c08e486730aaaa4a827d4beeb218a851d10f9ce198f00ea1e85f2316592a4f9b85e4cb002000000000000000000000000001145f40000000000000000000000000000006f42000000000000000000000000000000000000060301c863ddd8ac2157f3a6fe85c9c383b98812cf19860064ad11a8beb98bbf61dbb1aa0f6d6f2ecd87b35afa0001c36a310bd93e2927452de563faaa89a86822a21f0bb8bb0d083fb1be0a9f6157ec484b6c79e0a4e31c2e00d203000000000000000000000000000000000000000000";
     }
 
     function getCallData() internal pure returns (bytes memory data) {

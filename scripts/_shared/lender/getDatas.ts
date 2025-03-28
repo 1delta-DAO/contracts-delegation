@@ -204,7 +204,7 @@ export function getCompoundV3Approves(chainId: string) {
 }
 
 const specificLenders: string[] = [
-    Lender.LENDOS
+    Lender.ZEROLEND
 ]
 
 export function getAaveForkDatas(chainId: string) {
