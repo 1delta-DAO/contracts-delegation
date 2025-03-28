@@ -152,7 +152,7 @@ contract MorphoBlueTest is BaseTest {
         assertEq(borrowBalanceAfter, borrowAssets);
     }
 
-    function test_light_morpho_repay() external {
+    function test_light_morpho_repay_by_assets() external {
         deal(LBTC, user, 30.0e8);
         deal(USDC, user, 300_000.0e6);
 
@@ -200,6 +200,46 @@ contract MorphoBlueTest is BaseTest {
 
         (, uint128 borrowShares,) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
         assertApproxEqAbs(borrowShares, 0, 1);
+    }
+
+    function test_light_morpho_repay_by_shares() external {
+        deal(LBTC, user, 30.0e8);
+        deal(USDC, user, 300_000.0e6);
+
+        uint256 assets = 1e8;
+
+        address borrowAsset = USDC;
+        uint256 borrowAssets = 30_000.0e6;
+        depositCollateralToMorpho(user, assets);
+
+        bytes memory borrowCall =
+            CalldataLib.morphoBorrow(encodeMarket(LBTC_USDC_MARKET), false, borrowAssets, user, MORPHO);
+
+        vm.prank(user);
+        IMorphoEverything(MORPHO).setAuthorization(address(oneD), true);
+
+        vm.prank(user);
+        oneD.deltaCompose(borrowCall);
+
+        (, uint128 borrowShares,) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
+
+        bytes memory repayCall =
+            CalldataLib.morphoRepay(encodeMarket(LBTC_USDC_MARKET), true, false, borrowShares, user, hex"", MORPHO);
+
+        vm.prank(user);
+        IERC20All(borrowAsset).approve(address(oneD), type(uint256).max);
+
+        bytes memory transferTo = CalldataLib.transferIn(
+            borrowAsset,
+            address(oneD),
+            borrowAssets //
+        );
+
+        vm.prank(user);
+        oneD.deltaCompose(abi.encodePacked(transferTo, repayCall));
+
+        (, uint128 borrowSharesAfter,) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
+        assertApproxEqAbs(borrowSharesAfter, 0, 1);
     }
 
     function test_light_morpho_repay_with_callback() external {
