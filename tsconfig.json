@@ -10,8 +10,7 @@
   },
   "include": [
     "./scripts",
-    "test-ts",
-    "utils/types.ts"
+    "test-ts"
   ],
   "files": [
     "hardhat.config.ts"
