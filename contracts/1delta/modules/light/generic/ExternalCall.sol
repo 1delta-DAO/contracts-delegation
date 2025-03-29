@@ -30,7 +30,7 @@ abstract contract ExternalCall is Masks, DeltaErrors {
         // Foraward a call to callForawrder to execute unsafe
         // generic calls
         // Data layout:
-        //      bytes 0-14:                  netiveValue
+        //      bytes 0-14:                  nativeValue
         //      bytes 14-16:                 calldata length
         //      bytes 16-(16+data length):   data
         ////////////////////////////////////////////////////
@@ -49,7 +49,7 @@ abstract contract ExternalCall is Masks, DeltaErrors {
             ////////////////////////////////////////////////////
 
             // increment offset to calldata start
-            currentOffset := add(36, currentOffset)
+            currentOffset := add(14, currentOffset)
 
             // copy calldata
             calldatacopy(ptr, currentOffset, dataLength)
@@ -68,7 +68,7 @@ abstract contract ExternalCall is Masks, DeltaErrors {
                 revert(0, returndatasize())
             }
             // increment offset by data length
-            currentOffset := add(currentOffset, dataLength)
+            currentOffset := add(add(currentOffset, 2), dataLength)
         }
         return currentOffset;
     }

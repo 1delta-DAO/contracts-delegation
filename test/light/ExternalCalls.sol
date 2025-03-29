@@ -48,30 +48,38 @@ contract ExternalCallsTest is BaseTest {
         oneDV2 = new OneDeltaComposerLight(address(cf));
     }
 
+    function extCall(address asset, uint256 amount, address receiver) internal view returns (bytes memory data) {
+        data = CalldataLib.sweep(
+            asset,
+            receiver,
+            amount, //
+            CalldataLib.SweepType.AMOUNT
+        );
+
+        data = abi.encodePacked(
+            ForwarderCommands.EXT_CALL,
+            uint112(amount),
+            uint16(data.length),
+            data //
+        );
+    }
 
     function test_light_ext_call() external {
         vm.assume(user != address(0));
 
-        address tokenIn = USDC;
+        address tokenIn = address(0);
         address tokenOut = WETH;
-    
+
         uint256 amount = 100.0e6;
-        deal(tokenIn, user, amount);
+        deal(user, amount);
+
+        bytes memory genericData = extCall(
+            tokenIn,
+            amount,
+            user //
+        );
 
         vm.prank(user);
-        IERC20All(tokenIn).approve(address(oneDV2), type(uint).max);
-
-        // bytes memory swap = v3poolSwap(
-        //     tokenIn,
-        //     tokenOut,
-        //     fee,
-        //     uint8(0),
-        //     user,
-        //     amount //
-        // );
-
-        // vm.prank(user);
-        // oneDV2.deltaCompose(swap);
+        oneDV2.deltaCompose{value: amount}(genericData);
     }
-
 }
