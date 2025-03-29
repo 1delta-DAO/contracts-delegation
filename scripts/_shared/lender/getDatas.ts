@@ -114,159 +114,158 @@ export enum PolygonLenderId {
 }
 
 export enum HemiLenderId {
-  LENDOS = 10,
+    LENDOS = 10,
+    ZEROLEND = 210,
 }
 
 export const LENDER_TO_ID: { [c: string | number]: { [k: string]: any } } = {
-  [Chain.ARBITRUM_ONE]: {
-    [Lender.AAVE_V3]: ArbitrumLenderId.AAVE_V3,
-    [Lender.AVALON]: ArbitrumLenderId.AVALON,
-    [Lender.AVALON_PUMP_BTC]: ArbitrumLenderId.AVALON_PBTC,
-    [Lender.YLDR]: ArbitrumLenderId.YLDR,
-    [Lender.GRANARY]: BaseLenderId.GRANARY,
-    // comets
-    [Lender.COMPOUND_V3_USDC]: ArbitrumLenderId.COMPOUND_V3_USDC,
-    [Lender.COMPOUND_V3_WETH]: ArbitrumLenderId.COMPOUND_V3_WETH,
-    [Lender.COMPOUND_V3_USDT]: ArbitrumLenderId.COMPOUND_V3_USDT,
-    [Lender.COMPOUND_V3_USDC_E]: ArbitrumLenderId.COMPOUND_V3_USDCE,
-    // venuses
-    [Lender.VENUS]: ArbitrumLenderId.VENUS,
-    // [Lender.VENUS_ETH]: ArbitrumLenderId.VENUS_ETH,
-  },
-  [Chain.BASE]: {
-    [Lender.AAVE_V3]: BaseLenderId.AAVE_V3,
-    [Lender.AVALON]: BaseLenderId.AVALON,
-    [Lender.ZEROLEND]: BaseLenderId.ZEROLEND,
-    [Lender.GRANARY]: BaseLenderId.GRANARY,
-    // comets
-    [Lender.COMPOUND_V3_USDC]: BaseLenderId.COMPOUND_V3_USDC,
-    [Lender.COMPOUND_V3_WETH]: BaseLenderId.COMPOUND_V3_WETH,
-    [Lender.COMPOUND_V3_USDBC]: BaseLenderId.COMPOUND_V3_USDBC,
-    [Lender.COMPOUND_V3_AERO]: BaseLenderId.COMPOUND_V3_AERO,
-    // venuses
-    [Lender.VENUS]: BaseLenderId.VENUS,
-  },
-  [Chain.MANTLE]: {
-    [Lender.KINZA]: MantleLenderId.KINZA,
-    [Lender.LENDLE]: MantleLenderId.LENDLE,
-    [Lender.AURELIUS]: MantleLenderId.AURELIUS,
-    // comets
-    [Lender.COMPOUND_V3_USDE]: MantleLenderId.COMPOUND_V3_USDE,
-  },
-  [Chain.OP_MAINNET]: {
-    [Lender.AAVE_V3]: OptimismLenderId.AAVE_V3,
-    [Lender.GRANARY]: BaseLenderId.GRANARY,
-    // comets
-    [Lender.COMPOUND_V3_USDC]: OptimismLenderId.COMPOUND_V3_USDC,
-    [Lender.COMPOUND_V3_WETH]: OptimismLenderId.COMPOUND_V3_WETH,
-    [Lender.COMPOUND_V3_USDT]: OptimismLenderId.COMPOUND_V3_USDT,
-    // venuses
-    [Lender.VENUS]: OptimismLenderId.VENUS,
-  },
-  [Chain.POLYGON_MAINNET]: {
-    [Lender.AAVE_V3]: PolygonLenderId.AAVE_V3,
-    [Lender.YLDR]: PolygonLenderId.YLDR,
-    // comets
-    [Lender.COMPOUND_V3_USDC_E]: PolygonLenderId.COMPOUND_V3_USDCE,
-    [Lender.COMPOUND_V3_USDT]: PolygonLenderId.COMPOUND_V3_USDT,
-  },
-  [Chain.ETHEREUM_MAINNET]: {
-    [Lender.AAVE_V3]: EthereumLenderId.AAVE_V3,
-    [Lender.AAVE_V3_PRIME]: EthereumLenderId.AAVE_V3_PRIME,
-    [Lender.AAVE_V3_ETHER_FI]: EthereumLenderId.AAVE_V3_ETHER_FI,
-    [Lender.SPARK]: EthereumLenderId.SPARK,
-    [Lender.KINZA]: EthereumLenderId.KINZA,
-    // avalons
-    [Lender.AVALON_SOLV_BTC]: EthereumLenderId.AVALON_SOLV_BTC,
-    [Lender.AVALON_SWELL_BTC]: EthereumLenderId.AVALON_SWELL_BTC,
-    [Lender.AVALON_PUMP_BTC]: EthereumLenderId.AVALON_PUMP_BTC,
-    [Lender.AVALON_EBTC_LBTC]: EthereumLenderId.AVALON_EBTC_LBTC,
-    // zerolends
-    [Lender.ZEROLEND_STABLECOINS_RWA]:
-      EthereumLenderId.ZEROLEND_STABLECOINS_RWA,
-    [Lender.ZEROLEND_ETH_LRTS]: EthereumLenderId.ZEROLEND_ETH_LRTS,
-    [Lender.ZEROLEND_BTC_LRTS]: EthereumLenderId.ZEROLEND_BTC_LRTS,
-    // aave v2s
-    [Lender.GRANARY]: BaseLenderId.GRANARY,
-    // comets
-    [Lender.COMPOUND_V3_USDC]: EthereumLenderId.COMPOUND_V3_USDC,
-    [Lender.COMPOUND_V3_WETH]: EthereumLenderId.COMPOUND_V3_WETH,
-    [Lender.COMPOUND_V3_USDT]: EthereumLenderId.COMPOUND_V3_USDT,
-    [Lender.COMPOUND_V3_WSTETH]: EthereumLenderId.COMPOUND_V3_WSTETH,
-    [Lender.COMPOUND_V3_USDS]: EthereumLenderId.COMPOUND_V3_USDS,
-    // venuses
-    [Lender.VENUS]: EthereumLenderId.VENUS,
-  },
-  [Chain.TAIKO_ALETHIA]: {
-    [Lender.HANA]: TaikoLenderId.HANA,
-    [Lender.AVALON]: TaikoLenderId.AVALON,
-    [Lender.AVALON_SOLV_BTC]: TaikoLenderId.AVALON_SOLV_BTC,
-    [Lender.AVALON_USDA]: TaikoLenderId.AVALON_USDA,
-    [Lender.MERIDIAN]: TaikoLenderId.MERIDIAN,
-    [Lender.TAKOTAKO]: TaikoLenderId.TAKOTAKO,
-  },
-  [Chain.HEMI_NETWORK]: {
-    [Lender.LENDOS]: HemiLenderId.LENDOS,
-  },
-};
+    [Chain.ARBITRUM_ONE]: {
+        [Lender.AAVE_V3]: ArbitrumLenderId.AAVE_V3,
+        [Lender.AVALON]: ArbitrumLenderId.AVALON,
+        [Lender.AVALON_PUMP_BTC]: ArbitrumLenderId.AVALON_PBTC,
+        [Lender.YLDR]: ArbitrumLenderId.YLDR,
+        [Lender.GRANARY]: BaseLenderId.GRANARY,
+        // comets
+        [Lender.COMPOUND_V3_USDC]: ArbitrumLenderId.COMPOUND_V3_USDC,
+        [Lender.COMPOUND_V3_WETH]: ArbitrumLenderId.COMPOUND_V3_WETH,
+        [Lender.COMPOUND_V3_USDT]: ArbitrumLenderId.COMPOUND_V3_USDT,
+        [Lender.COMPOUND_V3_USDC_E]: ArbitrumLenderId.COMPOUND_V3_USDCE,
+        // venuses
+        [Lender.VENUS]: ArbitrumLenderId.VENUS,
+        // [Lender.VENUS_ETH]: ArbitrumLenderId.VENUS_ETH,
+    },
+    [Chain.BASE]: {
+        [Lender.AAVE_V3]: BaseLenderId.AAVE_V3,
+        [Lender.AVALON]: BaseLenderId.AVALON,
+        [Lender.ZEROLEND]: BaseLenderId.ZEROLEND,
+        [Lender.GRANARY]: BaseLenderId.GRANARY,
+        // comets
+        [Lender.COMPOUND_V3_USDC]: BaseLenderId.COMPOUND_V3_USDC,
+        [Lender.COMPOUND_V3_WETH]: BaseLenderId.COMPOUND_V3_WETH,
+        [Lender.COMPOUND_V3_USDBC]: BaseLenderId.COMPOUND_V3_USDBC,
+        [Lender.COMPOUND_V3_AERO]: BaseLenderId.COMPOUND_V3_AERO,
+        // venuses
+        [Lender.VENUS]: BaseLenderId.VENUS,
+    },
+    [Chain.MANTLE]: {
+        [Lender.KINZA]: MantleLenderId.KINZA,
+        [Lender.LENDLE]: MantleLenderId.LENDLE,
+        [Lender.AURELIUS]: MantleLenderId.AURELIUS,
+        // comets
+        [Lender.COMPOUND_V3_USDE]: MantleLenderId.COMPOUND_V3_USDE
+    },
+    [Chain.OP_MAINNET]: {
+        [Lender.AAVE_V3]: OptimismLenderId.AAVE_V3,
+        [Lender.GRANARY]: BaseLenderId.GRANARY,
+        // comets
+        [Lender.COMPOUND_V3_USDC]: OptimismLenderId.COMPOUND_V3_USDC,
+        [Lender.COMPOUND_V3_WETH]: OptimismLenderId.COMPOUND_V3_WETH,
+        [Lender.COMPOUND_V3_USDT]: OptimismLenderId.COMPOUND_V3_USDT,
+        // venuses
+        [Lender.VENUS]: OptimismLenderId.VENUS,
+    },
+    [Chain.ETHEREUM_MAINNET]: {
+        [Lender.AAVE_V3]: EthereumLenderId.AAVE_V3,
+        [Lender.AAVE_V3_PRIME]: EthereumLenderId.AAVE_V3_PRIME,
+        [Lender.AAVE_V3_ETHER_FI]: EthereumLenderId.AAVE_V3_ETHER_FI,
+        [Lender.SPARK]: EthereumLenderId.SPARK,
+        [Lender.KINZA]: EthereumLenderId.KINZA,
+        // avalons
+        [Lender.AVALON_SOLV_BTC]: EthereumLenderId.AVALON_SOLV_BTC,
+        [Lender.AVALON_SWELL_BTC]: EthereumLenderId.AVALON_SWELL_BTC,
+        [Lender.AVALON_PUMP_BTC]: EthereumLenderId.AVALON_PUMP_BTC,
+        [Lender.AVALON_EBTC_LBTC]: EthereumLenderId.AVALON_EBTC_LBTC,
+        // zerolends
+        [Lender.ZEROLEND_STABLECOINS_RWA]: EthereumLenderId.ZEROLEND_STABLECOINS_RWA,
+        [Lender.ZEROLEND_ETH_LRTS]: EthereumLenderId.ZEROLEND_ETH_LRTS,
+        [Lender.ZEROLEND_BTC_LRTS]: EthereumLenderId.ZEROLEND_BTC_LRTS,
+        // aave v2s
+        [Lender.GRANARY]: BaseLenderId.GRANARY,
+        // comets
+        [Lender.COMPOUND_V3_USDC]: EthereumLenderId.COMPOUND_V3_USDC,
+        [Lender.COMPOUND_V3_WETH]: EthereumLenderId.COMPOUND_V3_WETH,
+        [Lender.COMPOUND_V3_USDT]: EthereumLenderId.COMPOUND_V3_USDT,
+        [Lender.COMPOUND_V3_WSTETH]: EthereumLenderId.COMPOUND_V3_WSTETH,
+        [Lender.COMPOUND_V3_USDS]: EthereumLenderId.COMPOUND_V3_USDS,
+        // venuses
+        [Lender.VENUS]: EthereumLenderId.VENUS,
+    },
+    [Chain.TAIKO_ALETHIA]: {
+        [Lender.HANA]: TaikoLenderId.HANA,
+        [Lender.AVALON]: TaikoLenderId.AVALON,
+        [Lender.AVALON_SOLV_BTC]: TaikoLenderId.AVALON_SOLV_BTC,
+        [Lender.AVALON_USDA]: TaikoLenderId.AVALON_USDA,
+        [Lender.MERIDIAN]: TaikoLenderId.MERIDIAN,
+        [Lender.TAKOTAKO]: TaikoLenderId.TAKOTAKO
+    },
+    [Chain.HEMI_NETWORK]: {
+        [Lender.LENDOS]: HemiLenderId.LENDOS,
+        [Lender.ZEROLEND]: HemiLenderId.ZEROLEND,
+    }
+}
 
-export function getCompoundV3Approves(chainId: number) {
-  let params: ApproveParamsStruct[] = [];
-  Object.entries(COMETS_PER_CHAIN_MAP[chainId]).map(([lender, comet]) => {
-    const assets = COMPOUND_STYLE_RESERVE_ASSETS[lender][chainId];
-    assets.map((token) => {
-      params.push({
-        token,
-        target: comet as any,
-      });
-    });
-  });
+
+export function getCompoundV3Approves(chainId: string) {
+    let params: ApproveParamsStruct[] = []
+    Object.entries(COMETS_PER_CHAIN_MAP[chainId]).map(([lender, comet]) => {
+        const assets = COMPOUND_STYLE_RESERVE_ASSETS[lender][chainId]
+        assets.map(token => {
+            params.push({
+                token,
+                target: comet as any,
+            })
+        })
+      })
 
   return params;
 }
 
-const specificLenders: string[] = [Lender.LENDOS];
+const specificLenders: string[] = [
+    Lender.ZEROLEND
+]
 
-export function getAaveForkDatas(chainId: number) {
-  let params: BatchAddLenderTokensParamsStruct[] = [];
-  Object.entries(AAVE_FORK_POOL_DATA).forEach(([lender, data]) => {
-    if (specificLenders.length === 0 || specificLenders.includes(lender)) {
-      const dataForChain = data[chainId];
-      if (dataForChain) {
-        const reserves = AAVE_STYLE_RESERVE_ASSETS[lender][chainId];
-        const tokens = AAVE_STYLE_TOKENS[lender][chainId];
-        reserves.forEach((underlying) => {
-          const data = tokens[underlying];
-          params.push({
-            underlying,
-            collateralToken: data.aToken,
-            debtToken: data.vToken,
-            stableDebtToken: data.sToken,
-            lenderId: LENDER_TO_ID[chainId][lender],
-          });
-        });
-      }
-    }
-  });
+export function getAaveForkDatas(chainId: string) {
+    let params: BatchAddLenderTokensParamsStruct[] = []
+    Object.entries(AAVE_FORK_POOL_DATA).forEach(([lender, data]) => {
+        if (specificLenders.length === 0 || specificLenders.includes(lender)) {
+            const dataForChain = data[chainId]
+            if (dataForChain) {
+                const reserves = AAVE_STYLE_RESERVE_ASSETS[lender][chainId]
+                const tokens = AAVE_STYLE_TOKENS[lender][chainId]
+                reserves.forEach(underlying => {
+                    const data = tokens[underlying]
+                    params.push({
+                        underlying,
+                        collateralToken: data.aToken,
+                        debtToken: data.vToken,
+                        stableDebtToken: data.sToken,
+                        lenderId: LENDER_TO_ID[chainId][lender]
+                    })
+                })
+            }
+        }
+    })
 
   return params;
 }
 
-export function getAaveForkApproves(chainId: number) {
-  let params: ApproveParamsStruct[] = [];
-  Object.entries(AAVE_FORK_POOL_DATA).forEach(([lender, data]) => {
-    if (specificLenders.length === 0 || specificLenders.includes(lender)) {
-      const dataForChain = data[chainId];
-      if (dataForChain) {
-        const reserves = AAVE_STYLE_RESERVE_ASSETS[lender][chainId];
-        reserves.forEach((underlying) => {
-          params.push({
-            token: underlying,
-            target: dataForChain.pool,
-          });
-        });
-      }
-    }
-  });
-  return params;
+
+export function getAaveForkApproves(chainId: string) {
+    let params: ApproveParamsStruct[] = []
+    Object.entries(AAVE_FORK_POOL_DATA).forEach(([lender, data]) => {
+        if (specificLenders.length === 0 || specificLenders.includes(lender)) {
+            const dataForChain = data[chainId]
+            if (dataForChain) {
+                const reserves = AAVE_STYLE_RESERVE_ASSETS[lender][chainId]
+                reserves.forEach(underlying => {
+                    params.push({
+                        token: underlying,
+                        target: dataForChain.pool,
+                    })
+                })
+
+            }
+        }
+    })
+    return params
 }

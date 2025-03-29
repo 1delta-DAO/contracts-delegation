@@ -1061,6 +1061,9 @@ contract OneDeltaComposerHemi is MarginTrading {
                         case 10 {
                             pool := LENDOS
                         }
+                        case 210 {
+                            pool := ZEROLEND
+                        }
                         default {
                             mstore(0, INVALID_FLASH_LOAN)
                             revert(0, 0x4)
@@ -1144,6 +1147,12 @@ contract OneDeltaComposerHemi is MarginTrading {
             switch source
             case 10 {
                 if xor(caller(), LENDOS) {
+                    mstore(0, INVALID_FLASH_LOAN)
+                    revert(0, 0x4)
+                }
+            }
+            case 210 {
+                if xor(caller(), ZEROLEND) {
                     mstore(0, INVALID_FLASH_LOAN)
                     revert(0, 0x4)
                 }

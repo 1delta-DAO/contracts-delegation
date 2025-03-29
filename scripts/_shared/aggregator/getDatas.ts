@@ -1,6 +1,6 @@
 import { Chain } from "@1delta/asset-registry";
 
-const AGGREGATORS: { [c: number]: string[] } = {
+const AGGREGATORS: { [c: string]: string[] } = {
     [Chain.ARBITRUM_ONE]: [
         '0xa669e7A0d4b3e4Fa48af2dE86BD4CD7126Be4e13', // ODOS
         '0x6131B5fae19EA4f9D964eAc0408E4408b66337b5', // KYBER
@@ -33,7 +33,7 @@ const AGGREGATORS: { [c: number]: string[] } = {
         // none (yet)
     ],
 }
-export function getAggregators(chainId: number) {
+export function getAggregators(chainId: string) {
     const a = AGGREGATORS[chainId]
     if (!a) throw new Error(`No Aggregator on ${chainId}`)
     return a.map(target => ({
