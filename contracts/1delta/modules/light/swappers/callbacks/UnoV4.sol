@@ -16,7 +16,15 @@ import {ERC20Selectors} from "../../../shared/selectors/ERC20Selectors.sol";
  */
 abstract contract UniV4Callbacks is V4ReferencesBase, ERC20Selectors, Masks, DeltaErrors {
     /** Callback fromn uniswap V4 type singletons */
-    function unlockCallback(bytes calldata) external returns (bytes memory) {
+    function unlockCallback(
+        bytes calldata
+    )
+        external
+        returns (
+            // ignored - assigning it costs additional gas
+            bytes memory
+        )
+    {
         address callerAddress;
         uint256 length;
         assembly {
