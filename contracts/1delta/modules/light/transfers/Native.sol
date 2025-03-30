@@ -120,4 +120,56 @@ contract Native is ERC20Selectors, Masks, DeltaErrors {
         }
         return currentOffset;
     }
+
+    /** This one is for overring the DEX implementatio */
+    function _wrapOrUnwrapSimple(uint256 amount, uint256 currentOffset) internal virtual returns (uint256, uint256) {
+        assembly {
+            /**
+             * wrap: 1
+             * unwrap: 0
+             */
+            let wrap := shr(248, calldataload(currentOffset))
+            switch wrap
+            case 0 {
+                // selector for withdraw(uint256)
+                mstore(0x0, 0x2e1a7d4d00000000000000000000000000000000000000000000000000000000)
+                mstore(0x4, amount)
+                // should not fail since WRAPPED_NATIVE is immutable
+                if iszero(
+                    call(
+                        gas(),
+                        WRAPPED_NATIVE,
+                        0x0, // no ETH
+                        0x0, // start of data
+                        0x24, // input size = selector plus amount
+                        0x0, // output = empty
+                        0x0 // output size = zero
+                    )
+                ) {
+                    // revert when native transfer fails
+                    mstore(0, WRAP)
+                    revert(0, 0x4)
+                }
+            }
+            default {
+                if iszero(
+                    call(
+                        gas(),
+                        WRAPPED_NATIVE,
+                        amount, // ETH to deposit
+                        0x0, // no input
+                        0x0, // input size = zero
+                        0x0, // output = empty
+                        0x0 // output size = zero
+                    )
+                ) {
+                    // revert when native transfer fails
+                    mstore(0, WRAP)
+                    revert(0, 0x4)
+                }
+            }
+            currentOffset := add(currentOffset, 1)
+        }
+        return (currentOffset, amount);
+    }
 }

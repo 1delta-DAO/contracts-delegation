@@ -64,6 +64,16 @@ library ERC4646Ids {
     uint256 internal constant WITHDRAW = 1;
 }
 
+/**
+ * Uniswp V4 operations outside of swaps
+ */
+library UniswapV4ActionIds {
+    uint256 internal constant UNLOCK = 0;
+    uint256 internal constant TAKE = 1;
+    uint256 internal constant SETTLE = 2;
+    uint256 internal constant SYNC = 3;
+}
+
 /// @title Commands for OneDeltaComposer
 /// @notice Command Flags used to decode commands, these are provided in 4 blocks
 library ComposerCommands {
@@ -74,4 +84,5 @@ library ComposerCommands {
     uint256 internal constant PERMIT = 0xA0;
     uint256 internal constant FLASH_LOAN = 0xC0;
     uint256 internal constant ERC4646 = 0xE0;
+    uint256 internal constant UNI_V4 = 0xE1;
 }

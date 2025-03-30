@@ -3,6 +3,7 @@
 pragma solidity 0.8.28;
 
 import {BaseComposer} from "./BaseComposer.sol";
+import {BaseSwapper} from "./swappers/BaseSwapper.sol";
 import {Native} from "./transfers/Native.sol";
 import {Transfers} from "./transfers/Transfers.sol";
 import {FlashLoanCallbacks} from "./flashLoan/callbacks/FlashLoanCallbacks.sol";
@@ -44,5 +45,9 @@ contract OneDeltaComposerLight is BaseComposer, FlashLoanCallbacks, SwapCallback
 
     function _unwrap(uint256 currentOffset) internal override(Native, Transfers) returns (uint256) {
         return Native._unwrap(currentOffset);
+    }
+
+    function _wrapOrUnwrapSimple(uint256 amount, uint256 currentOffset) internal override(Native, BaseSwapper) returns (uint256, uint256) {
+        return Native._wrapOrUnwrapSimple(amount, currentOffset);
     }
 }

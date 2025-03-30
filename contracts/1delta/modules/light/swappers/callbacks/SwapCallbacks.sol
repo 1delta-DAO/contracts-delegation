@@ -2,6 +2,7 @@
 
 pragma solidity 0.8.28;
 
+import {UniV4Callbacks} from "./UnoV4.sol";
 import {UniV3Callbacks} from "./UnoV3.sol";
 import {UniV2Callbacks} from "./UnoV2.sol";
 
@@ -11,7 +12,8 @@ import {UniV2Callbacks} from "./UnoV2.sol";
  */
 contract SwapCallbacks is
     UniV2Callbacks,
-    UniV3Callbacks //
+    UniV3Callbacks,
+    UniV4Callbacks //
 {
     // override the compose
     function _deltaComposeInternal(
@@ -25,7 +27,8 @@ contract SwapCallbacks is
         virtual
         override(
             UniV2Callbacks,
-            UniV3Callbacks //
+            UniV3Callbacks,
+            UniV4Callbacks //
         )
     {}
 }

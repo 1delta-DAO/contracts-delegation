@@ -74,90 +74,6 @@ abstract contract UniV3Callbacks is V3ReferencesBase, ERC20Selectors, Masks, Del
         clSwapCallback(amount0Delta, amount1Delta, tokenIn, callerAddress, calldataLength);
     }
 
-    function clSwapCallback(int256 amount0Delta, int256 amount1Delta, address tokenIn, address callerAddress, uint256 calldataLength) private {
-        uint256 amountToPay;
-        uint256 amountReceived;
-        assembly {
-            switch sgt(amount0Delta, 0)
-            case 1 {
-                amountReceived := sub(0, amount1Delta)
-                amountToPay := amount0Delta
-            }
-            default {
-                amountReceived := sub(0, amount0Delta)
-                amountToPay := amount1Delta
-            }
-
-            // one can pass no path to continue
-            // we then assume the calldataLength as flag to
-            // indicate the pay type
-            if lt(calldataLength, 2) {
-                let ptr := mload(0x40)
-
-                let success
-                // transfer from caller
-                switch calldataLength
-                case 0 {
-                    // selector for transferFrom(address,address,uint256)
-                    mstore(ptr, ERC20_TRANSFER_FROM)
-                    mstore(add(ptr, 0x04), callerAddress)
-                    mstore(add(ptr, 0x24), caller())
-                    mstore(add(ptr, 0x44), amountToPay)
-
-                    success := call(gas(), tokenIn, 0, ptr, 0x64, ptr, 32)
-                }
-                // transfer plain
-                default {
-                    // selector for transfer(address,uint256)
-                    mstore(ptr, ERC20_TRANSFER)
-                    mstore(add(ptr, 0x04), caller())
-                    mstore(add(ptr, 0x24), amountToPay)
-                    success := call(
-                        gas(),
-                        tokenIn, // tokenIn, pool + 5x uint8 (i,j,s,a)
-                        0,
-                        ptr,
-                        0x44,
-                        ptr,
-                        32
-                    )
-                }
-
-                let rdsize := returndatasize()
-                // Check for ERC20 success. ERC20 tokens should return a boolean,
-                // but some don't. We accept 0-length return data as success, or at
-                // least 32 bytes that starts with a 32-byte boolean true.
-                success := and(
-                    success, // call itself succeeded
-                    or(
-                        iszero(rdsize), // no return data, or
-                        and(
-                            iszero(lt(rdsize, 32)), // at least 32 bytes
-                            eq(mload(ptr), 1) // starts with uint256(1)
-                        )
-                    )
-                )
-
-                if iszero(success) {
-                    returndatacopy(0, 0, rdsize)
-                    revert(0, rdsize)
-                }
-                return(0, 0)
-            }
-        }
-        _deltaComposeInternal(
-            callerAddress,
-            amountToPay,
-            amountReceived,
-            // the naive offset is 132
-            // we skip the entire callback validation data
-            // that is tokens (+40), fee (+2), caller (+20), dexId (+1) datalength (+2)
-            // = 197
-            197,
-            calldataLength
-        );
-    }
-
     // iZi callbacks
 
     // zeroForOne = true
@@ -274,6 +190,90 @@ abstract contract UniV3Callbacks is V3ReferencesBase, ERC20Selectors, Masks, Del
             -int256(y), // izi pushses units, we map them here to avoid duplicate code
             tokenIn,
             callerAddress,
+            calldataLength
+        );
+    }
+
+    function clSwapCallback(int256 amount0Delta, int256 amount1Delta, address tokenIn, address callerAddress, uint256 calldataLength) private {
+        uint256 amountToPay;
+        uint256 amountReceived;
+        assembly {
+            switch sgt(amount0Delta, 0)
+            case 1 {
+                amountReceived := sub(0, amount1Delta)
+                amountToPay := amount0Delta
+            }
+            default {
+                amountReceived := sub(0, amount0Delta)
+                amountToPay := amount1Delta
+            }
+
+            // one can pass no path to continue
+            // we then assume the calldataLength as flag to
+            // indicate the pay type
+            if lt(calldataLength, 2) {
+                let ptr := mload(0x40)
+
+                let success
+                // transfer from caller
+                switch calldataLength
+                case 0 {
+                    // selector for transferFrom(address,address,uint256)
+                    mstore(ptr, ERC20_TRANSFER_FROM)
+                    mstore(add(ptr, 0x04), callerAddress)
+                    mstore(add(ptr, 0x24), caller())
+                    mstore(add(ptr, 0x44), amountToPay)
+
+                    success := call(gas(), tokenIn, 0, ptr, 0x64, ptr, 32)
+                }
+                // transfer plain
+                default {
+                    // selector for transfer(address,uint256)
+                    mstore(ptr, ERC20_TRANSFER)
+                    mstore(add(ptr, 0x04), caller())
+                    mstore(add(ptr, 0x24), amountToPay)
+                    success := call(
+                        gas(),
+                        tokenIn, // tokenIn, pool + 5x uint8 (i,j,s,a)
+                        0,
+                        ptr,
+                        0x44,
+                        ptr,
+                        32
+                    )
+                }
+
+                let rdsize := returndatasize()
+                // Check for ERC20 success. ERC20 tokens should return a boolean,
+                // but some don't. We accept 0-length return data as success, or at
+                // least 32 bytes that starts with a 32-byte boolean true.
+                success := and(
+                    success, // call itself succeeded
+                    or(
+                        iszero(rdsize), // no return data, or
+                        and(
+                            iszero(lt(rdsize, 32)), // at least 32 bytes
+                            eq(mload(ptr), 1) // starts with uint256(1)
+                        )
+                    )
+                )
+
+                if iszero(success) {
+                    returndatacopy(0, 0, rdsize)
+                    revert(0, rdsize)
+                }
+                return(0, 0)
+            }
+        }
+        _deltaComposeInternal(
+            callerAddress,
+            amountToPay,
+            amountReceived,
+            // the naive offset is 132
+            // we skip the entire callback validation data
+            // that is tokens (+40), fee (+2), caller (+20), dexId (+1) datalength (+2)
+            // = 197
+            197,
             calldataLength
         );
     }

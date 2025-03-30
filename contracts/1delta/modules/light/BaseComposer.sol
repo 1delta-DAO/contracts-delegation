@@ -9,6 +9,7 @@ import {ERC4646Operations} from "./ERC4646/ERC4646Operations.sol";
 import {UniversalLending} from "./lending/UniversalLending.sol";
 import {Permits} from "./permit/Permits.sol";
 import {Swaps} from "./swappers/Swaps.sol";
+import {UniswapV4} from "./uniswap-v4/UnoV4.sol";
 import {UniversalFlashLoan} from "./flashLoan/UniversalFlashLoan.sol";
 
 /**
@@ -20,6 +21,7 @@ import {UniversalFlashLoan} from "./flashLoan/UniversalFlashLoan.sol";
  */
 abstract contract BaseComposer is
     Swaps,
+    UniswapV4,
     UniversalLending,
     UniversalFlashLoan,
     ERC4646Operations,
@@ -28,8 +30,6 @@ abstract contract BaseComposer is
     ExternalCall //
 {
     constructor(address _forwarder) ExternalCall(_forwarder) {}
-
-    receive() external payable {}
 
     /**
      * Batch-executes a series of operations
@@ -114,6 +114,8 @@ abstract contract BaseComposer is
                     currentOffset = _universalFlashLoan(currentOffset, callerAddress);
                 } else if (operation == ComposerCommands.ERC4646) {
                     currentOffset = _ERC4646Operations(currentOffset, callerAddress);
+                } else if (operation == ComposerCommands.UNI_V4) {
+                    currentOffset = _uniV4Ops(currentOffset, callerAddress, paramPull, paramPush);
                 } else {
                     _invalidOperation();
                 }

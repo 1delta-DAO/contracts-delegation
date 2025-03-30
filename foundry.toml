@@ -1,6 +1,6 @@
 [profile.default]
 solc-version = "0.8.28"
-evm_version="shanghai"
+evm_version="cancun"
 optimizer_runs = 9_950
 src = "contracts/1delta"
 out = "out"

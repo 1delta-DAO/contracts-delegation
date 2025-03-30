@@ -9,6 +9,7 @@ pragma solidity ^0.8.28;
 import {DeltaErrors} from "../../shared/errors/Errors.sol";
 import {DexMappings} from "../../shared/swapper/DexMappings.sol";
 import {ExoticOffsets} from "../../shared/swapper/ExoticOffsets.sol";
+import {V4TypeGeneric} from "./dex/V4Type.sol";
 import {V3TypeGeneric} from "./dex/V3Type.sol";
 import {V2TypeGeneric} from "./dex/V2Type.sol";
 import {WooFiSwapper} from "./dex/WooFi.sol";
@@ -70,6 +71,7 @@ import {BalancerSwapper} from "./dex/BalancerSwapper.sol";
  *             Solidly:121 - 130
  */
 abstract contract BaseSwapper is
+    V4TypeGeneric,
     V3TypeGeneric,
     V2TypeGeneric,
     DexMappings,
@@ -332,7 +334,7 @@ abstract contract BaseSwapper is
                 tokenOut,
                 receiver,
                 currentOffset,
-                payer // we do not need end flags
+                payer //
             );
         }
         // iZi
@@ -344,7 +346,18 @@ abstract contract BaseSwapper is
                 tokenOut,
                 receiver,
                 currentOffset,
-                payer // we do not need end flags
+                payer //
+            );
+        }
+        // uni V4
+        else if (dexId == UNISWAP_V4_ID) {
+            (amountIn, currentOffset) = _swapUniswapV4ExactInGeneric(
+                amountIn,
+                tokenIn,
+                tokenOut,
+                receiver,
+                currentOffset,
+                payer //
             );
         }
         // Balancer V2s
@@ -395,7 +408,7 @@ abstract contract BaseSwapper is
                 tokenOut,
                 receiver,
                 currentOffset,
-                payer // we do not need end flags
+                payer //
             );
         }
         // WOO Fi
@@ -405,7 +418,7 @@ abstract contract BaseSwapper is
                 tokenIn,
                 tokenOut,
                 receiver,
-                payer, // we do not need end flags
+                payer, //
                 currentOffset
             );
         }
@@ -460,6 +473,11 @@ abstract contract BaseSwapper is
                 payer, //
                 currentOffset
             );
+        } else if (dexId == NATIVE_WRAP_ID) {
+            (amountIn, currentOffset) = _wrapOrUnwrapSimple(
+                amountIn,
+                currentOffset //
+            );
         } else {
             assembly {
                 mstore(0, INVALID_DEX)
@@ -468,4 +486,6 @@ abstract contract BaseSwapper is
         }
         return (amountIn, currentOffset);
     }
+
+    function _wrapOrUnwrapSimple(uint256 amount, uint256 currentOffset) internal virtual returns (uint256, uint256) {}
 }

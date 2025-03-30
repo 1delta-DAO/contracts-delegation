@@ -12,9 +12,8 @@ import {DeltaErrors} from "../../shared/errors/Errors.sol";
 // solhint-disable max-line-length
 
 /**
- * @notice External call on whitelisted targets
- * This needs a whitelisting functions that stores the addresses in the correct slots
- * Do NOT whitlist lending contracts or tokens!
+ * @notice External call on call forwarder which can safely execute any calls
+ * without comprimising this contract
  */
 abstract contract ExternalCall is Masks, DeltaErrors {
     // this is a consistent call forwarder deployment

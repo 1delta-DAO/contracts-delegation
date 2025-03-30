@@ -9,6 +9,7 @@ abstract contract DexMappings {
     uint256 internal constant UNISWAP_V3_MAX_ID = 49;
     uint256 internal constant IZI_ID = UNISWAP_V3_MAX_ID;
     uint256 internal constant BALANCER_V2_ID = 80;
+    uint256 internal constant UNISWAP_V4_ID = 55;
     uint256 internal constant BALANCER_V2_FORK_ID = 80;
     uint256 internal constant CURVE_V1_MAX_ID = 70;
     // all DEX that behave like curve
@@ -31,4 +32,5 @@ abstract contract DexMappings {
     uint256 internal constant MAX_GMX_ID = 173;
     uint256 internal constant DODO_ID = 180;
     uint256 internal constant SYNC_SWAP_ID = 190;
+    uint256 internal constant NATIVE_WRAP_ID = 254;
 }
