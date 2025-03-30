@@ -51,12 +51,12 @@ abstract contract UniswapV4 is Masks, DeltaErrors {
 
     function _unoV4Unlock(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         /*
-         * | Offset | Length (bytes) | Description                     |
-         * |--------|----------------|---------------------------------|
-         * | 0      | 20             | manager                         |
-         * | 20     | 1              | poolId                          |
-         * | 21     | 2              | length                          | <-- we allow ANY balancer style pool here
-         * | 23     | length         | data                            |
+         * | Offset | Length (bytes) | Description     |
+         * |--------|----------------|-----------------|
+         * | 0      | 20             | manager         |
+         * | 20     | 1              | poolId          |
+         * | 21     | 2              | length          |
+         * | 23     | length         | data            |
          */
         assembly {
             let manager := calldataload(currentOffset)
@@ -97,12 +97,12 @@ abstract contract UniswapV4 is Masks, DeltaErrors {
 
     function _unoV4Take(uint256 currentOffset, uint256 amountOverride) internal returns (uint256) {
         /*
-         * | Offset | Length (bytes) | Description                     |
-         * |--------|----------------|---------------------------------|
-         * | 0      | 20             | manager                         |
-         * | 20     | 20             | asset                           |
-         * | 40     | 20             | receiver                        |
-         * | 60     | 16             | amount                          |
+         * | Offset | Length (bytes) | Description         |
+         * |--------|----------------|---------------------|
+         * | 0      | 20             | manager             |
+         * | 20     | 20             | asset               |
+         * | 40     | 20             | receiver            |
+         * | 60     | 16             | amount              |
          */
         assembly {
             let manager := shr(96, calldataload(currentOffset))
@@ -148,10 +148,10 @@ abstract contract UniswapV4 is Masks, DeltaErrors {
 
     function _unoV4Sync(uint256 currentOffset) internal returns (uint256) {
         /*
-         * | Offset | Length (bytes) | Description                     |
-         * |--------|----------------|---------------------------------|
-         * | 0      | 20             | manager                         |
-         * | 20     | 20             | asset                           |
+         * | Offset | Length (bytes) | Description   |
+         * |--------|----------------|---------------|
+         * | 0      | 20             | manager       |
+         * | 20     | 20             | asset         |
          */
         assembly {
             let manager := shr(96, calldataload(currentOffset))
@@ -185,10 +185,10 @@ abstract contract UniswapV4 is Masks, DeltaErrors {
 
     function _unoV4Settle(uint256 currentOffset, uint256 amountOverride) internal returns (uint256) {
         /*
-         * | Offset | Length (bytes) | Description                     |
-         * |--------|----------------|---------------------------------|
-         * | 0      | 20             | manager                         |
-         * | 20     | 16             | nativeAmount                    |
+         * | Offset | Length (bytes) | Description       |
+         * |--------|----------------|-------------------|
+         * | 0      | 20             | manager           |
+         * | 20     | 16             | nativeAmount      |
          */
         assembly {
             let manager := shr(96, calldataload(currentOffset))
