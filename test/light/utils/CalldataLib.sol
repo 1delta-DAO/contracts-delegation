@@ -13,8 +13,8 @@ library CalldataLib {
 
     function nextGenDexUnlock(address singleton, uint8 id, bytes memory d) internal pure returns (bytes memory data) {
         data = abi.encodePacked(
-            uint8(ComposerCommands.UNI_V4),
-            uint8(UniswapV4ActionIds.UNLOCK),
+            uint8(ComposerCommands.GEN_2025_SINGELTONS),
+            uint8(Gen2025ActionIds.UNLOCK),
             singleton, // manager address
             id, // validation Id
             uint16(d.length),
@@ -24,8 +24,8 @@ library CalldataLib {
 
     function nextGenDexSettle(address singleton, uint256 nativeAmount) internal pure returns (bytes memory data) {
         data = abi.encodePacked(
-            uint8(ComposerCommands.UNI_V4),
-            uint8(UniswapV4ActionIds.SETTLE),
+            uint8(ComposerCommands.GEN_2025_SINGELTONS),
+            uint8(Gen2025ActionIds.UNI_V4_SETTLE),
             singleton,
             uint128(nativeAmount) // manager address
         ); // swaps max index for inner path

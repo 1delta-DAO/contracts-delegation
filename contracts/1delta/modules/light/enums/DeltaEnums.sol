@@ -67,11 +67,13 @@ library ERC4646Ids {
 /**
  * Uniswp V4 operations outside of swaps
  */
-library UniswapV4ActionIds {
+library Gen2025ActionIds {
     uint256 internal constant UNLOCK = 0;
-    uint256 internal constant TAKE = 1;
-    uint256 internal constant SETTLE = 2;
-    uint256 internal constant SYNC = 3;
+    uint256 internal constant UNI_V4_TAKE = 1;
+    uint256 internal constant UNI_V4_SETTLE = 2;
+    uint256 internal constant UNI_V4_SYNC = 3;
+    uint256 internal constant BAL_V3_TAKE = 4;
+    uint256 internal constant BAL_V3_SETTLE = 5;
 }
 
 /// @title Commands for OneDeltaComposer
@@ -84,5 +86,5 @@ library ComposerCommands {
     uint256 internal constant PERMIT = 0xA0;
     uint256 internal constant FLASH_LOAN = 0xC0;
     uint256 internal constant ERC4646 = 0xE0;
-    uint256 internal constant UNI_V4 = 0xE1;
+    uint256 internal constant GEN_2025_SINGELTONS = 0xE1;
 }

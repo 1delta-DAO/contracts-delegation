@@ -116,8 +116,8 @@ abstract contract BaseComposer is
                     currentOffset = _universalFlashLoan(currentOffset, callerAddress);
                 } else if (operation == ComposerCommands.ERC4646) {
                     currentOffset = _ERC4646Operations(currentOffset, callerAddress);
-                } else if (operation == ComposerCommands.UNI_V4) {
-                    currentOffset = _uniV4Ops(currentOffset, callerAddress, paramPull, paramPush);
+                } else if (operation == ComposerCommands.GEN_2025_SINGELTONS) {
+                    currentOffset = _gen2025DexActions(currentOffset, callerAddress, paramPull, paramPush);
                 } else {
                     _invalidOperation();
                 }
