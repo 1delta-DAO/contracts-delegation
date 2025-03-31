@@ -115,8 +115,25 @@ contract FlashSwapTest is BaseTest {
             abi.encodePacked(action, borrow)
         );
 
+        // Check balances before action
+        uint256 borrowBalanceBefore = chain.getDebtBalance(user, tokenIn, lender);
+        uint256 collateralBefore = chain.getCollateralBalance(user, tokenOut, lender);
+
         vm.prank(user);
         oneDV2.deltaCompose(action);
+
+        // Check balances after action
+        uint256 borrowBalanceAfter = chain.getDebtBalance(user, tokenIn, lender);
+        uint256 collateralAfter = chain.getCollateralBalance(user, tokenOut, lender);
+
+        // Assert debt increased by borrowed amount
+        assertApproxEqAbs(borrowBalanceAfter - borrowBalanceBefore, borrowAmount, 1);
+        // Assert underlying increased by borrowed amount
+        assertApproxEqAbs(
+            collateralAfter - collateralBefore,
+            751372963117975909, // assume receivpt of 0.75WETH
+            0
+        );
     }
 
     /**

@@ -31,6 +31,8 @@ abstract contract BaseComposer is
 {
     constructor(address _forwarder) ExternalCall(_forwarder) {}
 
+    receive() external payable {}
+
     /**
      * Batch-executes a series of operations
      * The calldata is loaded in assembly and therefore not referred to here

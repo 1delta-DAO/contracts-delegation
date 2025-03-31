@@ -85,7 +85,7 @@ contract Native is ERC20Selectors, Masks, DeltaErrors {
                 mstore(0x0, 0x2e1a7d4d00000000000000000000000000000000000000000000000000000000)
                 mstore(0x4, transferAmount)
                 // should not fail since WRAPPED_NATIVE is immutable
-                pop(
+                if iszero(
                     call(
                         gas(),
                         WRAPPED_NATIVE,
@@ -95,7 +95,11 @@ contract Native is ERC20Selectors, Masks, DeltaErrors {
                         0x0, // output = empty
                         0x0 // output size = zero
                     )
-                )
+                ) {
+                    // should only revert if receiver cannot receive native
+                    mstore(0, NATIVE_TRANSFER)
+                    revert(0, 0x4)
+                }
                 // transfer to receiver if different from this address
                 if xor(receiver, address()) {
                     // transfer native to receiver

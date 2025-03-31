@@ -239,21 +239,112 @@ abstract contract V4TypeGeneric is ERC20Selectors, Masks {
                 revert(0, returndatasize())
             }
 
-            /** Pull funds from payer */
-            switch iszero(tokenIn)
-            case 0 {
-                /** Sync pay asset */
+            /**
+             * If the pay mode is >=2, we assume deferred payment
+             * This means that the composer must manually settle
+             * for the input amount
+             * Warning: This should not be done for pools with
+             * arbitrary hooks as these can have cases where
+             * `amountIn` selected != actual `amountIn`
+             */
+            if lt(tempVar, 2) {
+                /** Pull funds from payer */
+                switch iszero(tokenIn)
+                case 0 {
+                    /** Sync pay asset */
 
-                mstore(0, SYNC)
-                mstore(4, tokenIn) // offset
+                    mstore(0, SYNC)
+                    mstore(4, tokenIn) // offset
 
+                    if iszero(
+                        call(
+                            gas(),
+                            pool,
+                            0x0,
+                            0, //
+                            36, // selector, offset, length, data
+                            0x0, // output = empty
+                            0x0 // output size = zero
+                        )
+                    ) {
+                        returndatacopy(0, 0, returndatasize())
+                        revert(0, returndatasize())
+                    }
+
+                    switch tempVar
+                    case 0 {
+                        // selector for transferFrom(address,address,uint256)
+                        mstore(ptr, ERC20_TRANSFER_FROM)
+                        mstore(add(ptr, 0x04), callerAddress)
+                        mstore(add(ptr, 0x24), pool)
+                        mstore(add(ptr, 0x44), fromAmount)
+
+                        let success := call(gas(), tokenIn, 0, ptr, 0x64, 0, 32)
+
+                        let rdsize := returndatasize()
+                        // Check for ERC20 success. ERC20 tokens should return a boolean,
+                        // but some don't. We accept 0-length return data as success, or at
+                        // least 32 bytes that starts with a 32-byte boolean true.
+                        success := and(
+                            success, // call itself succeeded
+                            or(
+                                iszero(rdsize), // no return data, or
+                                and(
+                                    gt(rdsize, 31), // at least 32 bytes
+                                    eq(mload(0), 1) // starts with uint256(1)
+                                )
+                            )
+                        )
+
+                        if iszero(success) {
+                            returndatacopy(0, 0, rdsize)
+                            revert(0, rdsize)
+                        }
+                    }
+                    // transfer plain
+                    case 1 {
+                        // selector for transfer(address,uint256)
+                        mstore(ptr, ERC20_TRANSFER)
+                        mstore(add(ptr, 0x04), pool)
+                        mstore(add(ptr, 0x24), fromAmount)
+                        let success := call(gas(), tokenIn, 0, ptr, 0x44, 0, 32)
+
+                        let rdsize := returndatasize()
+                        // Check for ERC20 success. ERC20 tokens should return a boolean,
+                        // but some don't. We accept 0-length return data as success, or at
+                        // least 32 bytes that starts with a 32-byte boolean true.
+                        success := and(
+                            success, // call itself succeeded
+                            or(
+                                iszero(rdsize), // no return data, or
+                                and(
+                                    gt(rdsize, 31), // at least 32 bytes
+                                    eq(mload(0), 1) // starts with uint256(1)
+                                )
+                            )
+                        )
+
+                        if iszero(success) {
+                            returndatacopy(0, 0, rdsize)
+                            revert(0, rdsize)
+                        }
+                    }
+                    tempVar := 0
+                }
+                default {
+                    tempVar := fromAmount
+                }
+                /** Settle funds in pool manager */
+
+                // settle amount
+                mstore(0, SETTLE)
                 if iszero(
                     call(
                         gas(),
                         pool,
-                        0x0,
+                        tempVar,
                         0, //
-                        36, // selector, offset, length, data
+                        4, // selector, offset, length, data
                         0x0, // output = empty
                         0x0 // output size = zero
                     )
@@ -261,87 +352,6 @@ abstract contract V4TypeGeneric is ERC20Selectors, Masks {
                     returndatacopy(0, 0, returndatasize())
                     revert(0, returndatasize())
                 }
-
-                switch tempVar
-                case 0 {
-                    // selector for transferFrom(address,address,uint256)
-                    mstore(ptr, ERC20_TRANSFER_FROM)
-                    mstore(add(ptr, 0x04), callerAddress)
-                    mstore(add(ptr, 0x24), pool)
-                    mstore(add(ptr, 0x44), fromAmount)
-
-                    let success := call(gas(), tokenIn, 0, ptr, 0x64, 0, 32)
-
-                    let rdsize := returndatasize()
-                    // Check for ERC20 success. ERC20 tokens should return a boolean,
-                    // but some don't. We accept 0-length return data as success, or at
-                    // least 32 bytes that starts with a 32-byte boolean true.
-                    success := and(
-                        success, // call itself succeeded
-                        or(
-                            iszero(rdsize), // no return data, or
-                            and(
-                                gt(rdsize, 31), // at least 32 bytes
-                                eq(mload(0), 1) // starts with uint256(1)
-                            )
-                        )
-                    )
-
-                    if iszero(success) {
-                        returndatacopy(0, 0, rdsize)
-                        revert(0, rdsize)
-                    }
-                }
-                // transfer plain
-                case 1 {
-                    // selector for transfer(address,uint256)
-                    mstore(ptr, ERC20_TRANSFER)
-                    mstore(add(ptr, 0x04), pool)
-                    mstore(add(ptr, 0x24), fromAmount)
-                    let success := call(gas(), tokenIn, 0, ptr, 0x44, 0, 32)
-
-                    let rdsize := returndatasize()
-                    // Check for ERC20 success. ERC20 tokens should return a boolean,
-                    // but some don't. We accept 0-length return data as success, or at
-                    // least 32 bytes that starts with a 32-byte boolean true.
-                    success := and(
-                        success, // call itself succeeded
-                        or(
-                            iszero(rdsize), // no return data, or
-                            and(
-                                gt(rdsize, 31), // at least 32 bytes
-                                eq(mload(0), 1) // starts with uint256(1)
-                            )
-                        )
-                    )
-
-                    if iszero(success) {
-                        returndatacopy(0, 0, rdsize)
-                        revert(0, rdsize)
-                    }
-                }
-                tempVar := 0
-            }
-            default {
-                tempVar := fromAmount
-            }
-            /** Settle funds in pool manager */
-
-            // settle amount
-            mstore(0, SETTLE)
-            if iszero(
-                call(
-                    gas(),
-                    pool,
-                    tempVar,
-                    0, //
-                    4, // selector, offset, length, data
-                    0x0, // output = empty
-                    0x0 // output size = zero
-                )
-            ) {
-                returndatacopy(0, 0, returndatasize())
-                revert(0, returndatasize())
             }
         }
         return (receivedAmount, currentOffset);

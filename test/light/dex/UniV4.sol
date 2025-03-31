@@ -26,7 +26,6 @@ contract UnoV4LightTest is BaseTest {
     address internal WETH;
     address internal cbETH;
     address internal cbBTC;
-    address internal LBTC;
     address internal constant ETH = address(0);
 
     PoolKey pkUSDCETH;
@@ -34,7 +33,6 @@ contract UnoV4LightTest is BaseTest {
     function setUp() public virtual {
         // initialize the chain
         _init(Chains.BASE, forkBlock);
-        LBTC = chain.getTokenAddress(Tokens.LBTC);
         WETH = chain.getTokenAddress(Tokens.WETH);
         cbETH = chain.getTokenAddress(Tokens.CBETH);
         cbBTC = chain.getTokenAddress(Tokens.CBBTC);
@@ -47,17 +45,6 @@ contract UnoV4LightTest is BaseTest {
             10, //
             address(0)
         );
-    }
-
-    function unoV4Unlock(bytes memory d) internal pure returns (bytes memory data) {
-        data = abi.encodePacked(
-            uint8(ComposerCommands.UNI_V4),
-            uint8(UniswapV4ActionIds.UNLOCK),
-            UNI_V4_PM, // manager address
-            UNISWAP_V4_POOL_ID, // validation Id
-            uint16(d.length),
-            d
-        ); // swaps max index for inner path
     }
 
     function unoV4Swap(
@@ -78,11 +65,11 @@ contract UnoV4LightTest is BaseTest {
             data,
             tokenOut,
             user,
-            UNISWAP_V4_DEX_ID, // DODO
+            UNISWAP_V4_DEX_ID, // dexId !== poolId here
             address(0), // hook
             UNI_V4_PM,
-            uint24(500),
-            uint24(10),
+            uint24(500), // fee
+            uint24(10), // tick spacing
             uint8(0), // caller pays
             uint16(0) // data length
         );
@@ -125,7 +112,9 @@ contract UnoV4LightTest is BaseTest {
 
         bytes memory dat = unoV4Swap(user, tokenIn, tokenOut, amount);
 
-        bytes memory swap = unoV4Unlock(
+        bytes memory swap = CalldataLib.nextGenDexUnlock(
+            UNI_V4_PM,
+            UNISWAP_V4_POOL_ID,
             dat //
         );
 
