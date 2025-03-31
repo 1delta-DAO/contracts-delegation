@@ -13,9 +13,9 @@ import {UniswapV4ActionIds} from "../enums/DeltaEnums.sol";
 // solhint-disable max-line-length
 
 /**
- * @notice Everything Uniswap V4
+ * @notice Everything Uniswap V4 & Balancer V3, the major upgrades for DEXs in 2025
  */
-abstract contract UniswapV4 is Masks, DeltaErrors {
+abstract contract Gen2025DexActions is Masks, DeltaErrors {
     // Uni V4 selectors needed for executing a flash loan
     bytes32 private constant UNLOCK = 0x48c8949100000000000000000000000000000000000000000000000000000000;
     bytes32 private constant TAKE = 0x0b0d9c0900000000000000000000000000000000000000000000000000000000;

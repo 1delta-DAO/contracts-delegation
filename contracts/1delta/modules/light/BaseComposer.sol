@@ -9,7 +9,7 @@ import {ERC4646Operations} from "./ERC4646/ERC4646Operations.sol";
 import {UniversalLending} from "./lending/UniversalLending.sol";
 import {Permits} from "./permit/Permits.sol";
 import {Swaps} from "./swappers/Swaps.sol";
-import {UniswapV4} from "./uniswap-v4/UnoV4.sol";
+import {Gen2025DexActions} from "./singletons/Gen2025DexActions.sol";
 import {UniversalFlashLoan} from "./flashLoan/UniversalFlashLoan.sol";
 
 /**
@@ -21,7 +21,7 @@ import {UniversalFlashLoan} from "./flashLoan/UniversalFlashLoan.sol";
  */
 abstract contract BaseComposer is
     Swaps,
-    UniswapV4,
+    Gen2025DexActions,
     UniversalLending,
     UniversalFlashLoan,
     ERC4646Operations,
