@@ -17,29 +17,22 @@ import {Masks} from "../../../shared/masks/Masks.sol";
  * Ergo, if Balancer v3 is in the path (no matter how many times), one has to push
  * the swap data and execution into the BalancerV3.unlock
  * This should be usable together with flash loans from their singleton
- * Cannot unlock multiple times
+ *
+ * Can unlock arbitrary times times!
  *
  * The execution of a swap follows the steps:
  *
  * 1) pm.unlock(...) (outside of this contract)
  * 2) call pm.swap(...)
- * 3) getDeltas via pm.exttload(bytes[]) (we get it for input/output at once)
- *    we get [inputDelta, outputDelta] (pay amount, receive amount)
- *    As for the V4 docs, `swap` does not necessarily return the correct
- *    deltas when using hooks, that is why we remain with fetching the deltas
- * 4) call pm.take to pull the outputDelta from pm
- * 4) if input nonnative call pm.sync() and send inputDelta to pm
- * 5) call pm.settle to settle the swap (if native with input value)
+ * 3) call pm.settle to settle the swap (no native accepted)
  *
- * Technically it is possible to call multihops within V4 where one would
- * skip the `take` when the next swap is also for V4
- * This is a bit annoying to implement and for this first version we skip it
  */
 abstract contract BalancerV3Swapper is ERC20Selectors, Masks {
     /** We need all these selectors for executing a single swap */
     bytes32 private constant SWAP = 0x2bfb780c00000000000000000000000000000000000000000000000000000000;
     /// @notice same selector string name as for UniV4, different params for balancer
     bytes32 private constant SETTLE = 0x15afd40900000000000000000000000000000000000000000000000000000000;
+    /// @notice pull funds from vault with this
     bytes32 private constant SEND_TO = 0xae63932900000000000000000000000000000000000000000000000000000000;
 
     constructor() {}

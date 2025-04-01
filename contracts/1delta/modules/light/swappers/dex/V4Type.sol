@@ -6,8 +6,6 @@ pragma solidity 0.8.28;
 * Author: Achthar | 1delta 
 /******************************************************************************/
 
-// solhint-disable max-line-length
-
 import {ERC20Selectors} from "../../../shared/selectors/ERC20Selectors.sol";
 import {Masks} from "../../../shared/masks/Masks.sol";
 
@@ -17,7 +15,8 @@ import {Masks} from "../../../shared/masks/Masks.sol";
  * Ergo, if Uniswap v4 is in the path (no matter how many times), one has to push
  * the swap data and execution into the UniswapV4.unlock
  * This should be usable together with flash loans from their singleton
- * Cannot unlock multiple times
+ * 
+ * Cannot unlock multiple times!
  *
  * The execution of a swap follows the steps:
  *

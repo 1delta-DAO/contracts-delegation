@@ -15,7 +15,13 @@ import {ERC20Selectors} from "../../../shared/selectors/ERC20Selectors.sol";
  * @title Contract Module taking Uniswap V4 callbacks
  */
 abstract contract UniV4Callbacks is V4ReferencesBase, ERC20Selectors, Masks, DeltaErrors {
-    /** Callback fromn uniswap V4 type singletons */
+    /**
+     * Callback from uniswap V4 type singletons
+     * As Balancer V3 shares the same trigger selector and (unlike this one) has
+     * a custom selector provided, we need to skip this part of the data
+     * This is mainly done to not have duplicate code and maintain
+     * the same level of security by callback validation for both DEX types
+     */
     function unlockCallback(
         bytes calldata
     )
