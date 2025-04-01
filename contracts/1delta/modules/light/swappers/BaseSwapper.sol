@@ -7,8 +7,7 @@ pragma solidity ^0.8.28;
 /******************************************************************************/
 
 import {DeltaErrors} from "../../shared/errors/Errors.sol";
-import {DexMappings} from "../../shared/swapper/DexMappings.sol";
-import {ExoticOffsets} from "../../shared/swapper/ExoticOffsets.sol";
+import {DexMappings} from "./dex/DexMappings.sol";
 import {V4TypeGeneric} from "./dex/V4Type.sol";
 import {V3TypeGeneric} from "./dex/V3Type.sol";
 import {V2TypeGeneric} from "./dex/V2Type.sol";
@@ -76,7 +75,6 @@ abstract contract BaseSwapper is
     V3TypeGeneric,
     V2TypeGeneric,
     DexMappings,
-    ExoticOffsets,
     BalancerV3Swapper,
     BalancerSwapper,
     LBSwapper,
