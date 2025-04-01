@@ -18,7 +18,7 @@ interface IF {
     function getPair(address tokenA, address tokenB) external view returns (address pair);
 }
 
-contract FlashSwapTest is BaseTest {
+contract BalancerFlashSwapTest is BaseTest {
     uint8 internal constant UNI_V3_DEX_ID = 0;
 
     OneDeltaComposerLight oneDV2;
@@ -31,10 +31,11 @@ contract FlashSwapTest is BaseTest {
     string internal lender;
 
     uint256 internal constant forkBlock = 27970029;
-    uint8 internal constant UNISWAP_V4_POOL_ID = 0;
-    uint8 internal constant UNISWAP_V4_DEX_ID = 55;
+    uint8 internal constant BALANCER_V3_POOL_ID = 0;
+    uint8 internal constant BALANCER_V3_DEX_ID = 85;
 
-    address internal constant UNI_V4_PM = 0x498581fF718922c3f8e6A244956aF099B2652b2b;
+    address internal constant BALANCER_V3_VAULT = 0xbA1333333333a1BA1108E8412f11850A5C319bA9;
+    address internal constant USDC_WETH_POOL = 0x1667832E66f158043754aE19461aD54D8b178E1E;
 
     function setUp() public virtual {
         // initialize the chain
@@ -47,7 +48,7 @@ contract FlashSwapTest is BaseTest {
         oneDV2 = new OneDeltaComposerLight(address(0));
     }
 
-    function unoV4Swap(
+    function balV3Swap(
         address user, //
         address tokenIn,
         address tokenOut,
@@ -65,12 +66,10 @@ contract FlashSwapTest is BaseTest {
             data,
             tokenOut,
             user,
-            UNISWAP_V4_DEX_ID, // dexId !== poolId here
-            address(0), // hook
-            UNI_V4_PM,
-            uint24(500), // fee
-            uint24(10), // tick spacing
-            uint8(3), // nobody pays - settle later
+            BALANCER_V3_DEX_ID, // dexId !== poolId here
+            USDC_WETH_POOL, // pool
+            BALANCER_V3_VAULT,
+            uint8(3), // caller pays
             uint16(0) // data length
         );
     }
@@ -78,38 +77,38 @@ contract FlashSwapTest is BaseTest {
     /**
      * Flash swap open on aave v3 using Uniswap V3
      */
-    function test_light_aave_flash_swap_v4_single() external {
+    function test_light_aave_flash_swap_balancer_v3_single() external {
         vm.assume(user != address(0));
 
-        address tokenIn = ETH;
+        address tokenIn = WETH;
         address tokenOut = USDC;
         address pool = AAVE_V3_POOL;
-        uint256 depoistAmount = 2000.0e6;
-        uint256 borrowAmount = 1.0e18;
+        uint256 depoistAmount = 50.0e6;
+        uint256 borrowAmount = 0.05e18;
         deal(tokenOut, user, depoistAmount);
 
         depositToAave(tokenOut, user, depoistAmount, pool);
 
-        address vToken = _getDebtToken(WETH);
+        address vToken = _getDebtToken(tokenIn);
 
         vm.prank(user);
         IERC20All(vToken).approveDelegation(address(oneDV2), type(uint256).max);
 
-        bytes memory swapAction = unoV4Swap(address(oneDV2), tokenIn, tokenOut, borrowAmount);
+        bytes memory swapAction = balV3Swap(address(oneDV2), tokenIn, tokenOut, borrowAmount);
         {
             // borrow and deposit with override amounts (optimal)
-            bytes memory borrow = CalldataLib.encodeAaveBorrow(WETH, false, borrowAmount, address(oneDV2), 2, pool);
+            bytes memory borrow = CalldataLib.encodeAaveBorrow(tokenIn, false, borrowAmount, address(BALANCER_V3_VAULT), 2, pool);
             bytes memory deposit = CalldataLib.encodeAaveDeposit(tokenOut, false, 0, user, pool);
 
-            bytes memory settlementActions = CalldataLib.nextGenDexSettle(
-                UNI_V4_PM, //
+            bytes memory settlementActions = CalldataLib.nextGenDexSettleBalancer(
+                BALANCER_V3_VAULT, //
+                tokenIn,
                 borrowAmount
             );
-            settlementActions = abi.encodePacked(CalldataLib.unwrap(address(oneDV2), borrowAmount, CalldataLib.SweepType.AMOUNT), settlementActions);
 
             swapAction = CalldataLib.nextGenDexUnlock(
-                UNI_V4_PM,
-                UNISWAP_V4_POOL_ID,
+                BALANCER_V3_VAULT,
+                BALANCER_V3_POOL_ID,
                 abi.encodePacked(
                     swapAction, // the swap
                     deposit,
@@ -118,9 +117,8 @@ contract FlashSwapTest is BaseTest {
                 ) //
             );
         }
-
         // Check balances before action
-        uint256 borrowBalanceBefore = chain.getDebtBalance(user, WETH, lender);
+        uint256 borrowBalanceBefore = chain.getDebtBalance(user, tokenIn, lender);
         uint256 collateralBefore = chain.getCollateralBalance(user, tokenOut, lender);
 
         uint gas = gasleft();
@@ -132,13 +130,13 @@ contract FlashSwapTest is BaseTest {
         console.log("gas", gas);
 
         // Check balances after action
-        uint256 borrowBalanceAfter = chain.getDebtBalance(user, WETH, lender);
+        uint256 borrowBalanceAfter = chain.getDebtBalance(user, tokenIn, lender);
         uint256 collateralAfter = chain.getCollateralBalance(user, tokenOut, lender);
 
         // Assert debt increased by borrowed amount
         assertApproxEqAbs(borrowBalanceAfter - borrowBalanceBefore, borrowAmount, 0);
         // Assert underlying increased by borrowed amount
-        assertApproxEqAbs(collateralAfter - collateralBefore, 2016643282, 0);
+        assertApproxEqAbs(collateralAfter - collateralBefore, 99761858, 0);
     }
 
     function depositToAave(address token, address userAddress, uint256 amount, address pool) internal {

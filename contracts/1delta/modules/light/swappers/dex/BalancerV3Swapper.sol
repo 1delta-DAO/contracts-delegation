@@ -98,8 +98,8 @@ abstract contract BalancerV3Swapper is ERC20Selectors, Masks {
             currentOffset := add(currentOffset, 23)
 
             // pay flag
-            tempVar := and(UINT8_MASK, shr(40, vault))
-            let clLength := and(UINT16_MASK, shr(24, vault))
+            tempVar := and(UINT8_MASK, shr(88, vault))
+            let clLength := and(UINT16_MASK, shr(72, vault))
             vault := shr(96, vault)
             // Prepare external call data
             // Store swap selector
@@ -120,8 +120,6 @@ abstract contract BalancerV3Swapper is ERC20Selectors, Masks {
             }
             // Perform the external 'swap' call
             if iszero(call(gas(), vault, 0, ptr, add(260, clLength), ptr, 0x60)) {
-                // store return value directly to free memory pointer
-                // The call failed; we retrieve the exact error message and revert with it
                 returndatacopy(0, 0, returndatasize()) // Copy the error message to the start of memory
                 revert(0, returndatasize()) // Revert with the error message
             }

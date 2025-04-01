@@ -31,6 +31,16 @@ library CalldataLib {
         ); // swaps max index for inner path
     }
 
+    function nextGenDexSettleBalancer(address singleton, address asset, uint256 amountHint) internal pure returns (bytes memory data) {
+        data = abi.encodePacked(
+            uint8(ComposerCommands.GEN_2025_SINGELTONS),
+            uint8(Gen2025ActionIds.BAL_V3_SETTLE),
+            singleton,
+            asset,
+            uint128(amountHint) // manager address
+        ); // swaps max index for inner path
+    }
+
     function transferIn(address asset, address receiver, uint256 amount) internal pure returns (bytes memory data) {
         data = abi.encodePacked(
             uint8(ComposerCommands.TRANSFERS),

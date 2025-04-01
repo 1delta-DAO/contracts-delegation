@@ -87,10 +87,13 @@ abstract contract BalancerV3VaultActions is Masks, DeltaErrors {
          * | Offset | Length (bytes) | Description       |
          * |--------|----------------|-------------------|
          * | 0      | 20             | manager           |
+         * | 20     | 20             | asset             | <-- never native
          * | 20     | 16             | amountHint        |
          */
         assembly {
             let manager := shr(96, calldataload(currentOffset))
+            currentOffset := add(20, currentOffset)
+            let asset := shr(96, calldataload(currentOffset))
             currentOffset := add(20, currentOffset)
             let amountHint := shr(128, calldataload(currentOffset))
 
@@ -109,16 +112,18 @@ abstract contract BalancerV3VaultActions is Masks, DeltaErrors {
             }
             currentOffset := add(16, currentOffset)
 
-            mstore(0, SETTLE)
-            mstore(4, amountHint)
-
+            let ptr := mload(0x40)
+            // settle amount
+            mstore(ptr, SETTLE)
+            mstore(add(ptr, 4), asset)
+            mstore(add(ptr, 36), amountHint)
             if iszero(
                 call(
                     gas(),
                     manager,
-                    0x0,
-                    0, //
-                    36, // selector, offset, length, data
+                    0x0, // no native
+                    ptr, //
+                    68, // selector, offset, length, data
                     0x0, // output = empty
                     0x0 // output size = zero
                 )

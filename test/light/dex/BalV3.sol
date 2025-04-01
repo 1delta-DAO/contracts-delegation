@@ -16,7 +16,7 @@ import {PoolKey, SwapParams, PS, BalanceDelta} from "./utils/UniV4Utils.sol";
 contract BalV3LightTest is BaseTest {
     uint256 internal constant forkBlock = 27970029;
     OneDeltaComposerLight oneDV2;
-    uint8 internal constant UNISWAP_V4_POOL_ID = 0;
+    uint8 internal constant BALANCER_V3_POOL_ID = 0;
     uint8 internal constant UNISWAP_V4_DEX_ID = 55;
     uint8 internal constant BALANCER_V3_ID = 85;
 
@@ -106,7 +106,7 @@ contract BalV3LightTest is BaseTest {
 
         bytes memory swap = CalldataLib.nextGenDexUnlock(
             BALANCER_V3_VAULT,
-            UNISWAP_V4_POOL_ID,
+            BALANCER_V3_POOL_ID,
             dat //
         );
 
