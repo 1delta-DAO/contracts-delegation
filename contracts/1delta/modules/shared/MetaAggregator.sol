@@ -371,7 +371,7 @@ contract DeltaMetaAggregator is PermitUtilsSlim, DeadLogger {
                             or(
                                 iszero(rdsize), // no return data, or
                                 and(
-                                    iszero(lt(rdsize, 32)), // at least 32 bytes
+                                    gt(rdsize, 31), // at least 32 bytes
                                     eq(mload(ptr), 1) // starts with uint256(1)
                                 )
                             )
@@ -452,7 +452,7 @@ contract DeltaMetaAggregator is PermitUtilsSlim, DeadLogger {
                             or(
                                 iszero(rdsize), // no return data, or
                                 and(
-                                    iszero(lt(rdsize, 32)), // at least 32 bytes
+                                    gt(rdsize, 31), // at least 32 bytes
                                     eq(mload(ptr), 1) // starts with uint256(1)
                                 )
                             )

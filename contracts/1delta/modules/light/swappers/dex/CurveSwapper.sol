@@ -184,6 +184,11 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
         assembly {
             let ptr := mload(0x40)
 
+            // consistent params not overlapping with 32 bytes from selector
+            mstore(add(ptr, 0x24), and(shr(80, curveData), UINT8_MASK))
+            mstore(add(ptr, 0x44), amountIn)
+            mstore(add(ptr, 0x64), 0) // min out
+
             ////////////////////////////////////////////////////
             // Execute swap function
             ////////////////////////////////////////////////////
@@ -192,9 +197,6 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                 // selector for exchange(int128,int128,uint256,uint256,address)
                 mstore(ptr, EXCHANGE_INT_WITH_RECEIVER)
                 mstore(add(ptr, 0x4), and(shr(88, curveData), UINT8_MASK))
-                mstore(add(ptr, 0x24), and(shr(80, curveData), UINT8_MASK))
-                mstore(add(ptr, 0x44), amountIn)
-                mstore(add(ptr, 0x64), 0) // min out
                 mstore(add(ptr, 0x84), receiver) // receiver, set curveData accordingly
                 if iszero(call(gas(), pool, 0x0, ptr, 0xA4, ptr, 0x20)) {
                     returndatacopy(0, 0, returndatasize())
@@ -206,9 +208,6 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                 // selector for exchange(int128,int128,uint256,uint256)
                 mstore(ptr, EXCHANGE_INT)
                 mstore(add(ptr, 0x4), and(shr(88, curveData), UINT8_MASK))
-                mstore(add(ptr, 0x24), and(shr(80, curveData), UINT8_MASK))
-                mstore(add(ptr, 0x44), amountIn)
-                mstore(add(ptr, 0x64), 0) // min out
                 if iszero(call(gas(), pool, 0x0, ptr, 0x84, ptr, 0x20)) {
                     returndatacopy(0, 0, returndatasize())
                     revert(0, returndatasize())
@@ -219,9 +218,6 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                 // selector for exchange(uint256,uint256,uint256,uint256,address)
                 mstore(ptr, EXCHANGE_WITH_RECEIVER)
                 mstore(add(ptr, 0x4), and(shr(88, curveData), UINT8_MASK))
-                mstore(add(ptr, 0x24), and(shr(80, curveData), UINT8_MASK))
-                mstore(add(ptr, 0x44), amountIn)
-                mstore(add(ptr, 0x64), 0) // min out is zero, we validate slippage at the
                 mstore(add(ptr, 0x84), receiver) // receiver, set curveData accordingly
                 if iszero(call(gas(), pool, 0x0, ptr, 0xA4, ptr, 0x20)) {
                     returndatacopy(0, 0, returndatasize())
@@ -233,9 +229,7 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                 // selector for exchange(uint256,uint256,uint256,uint256)
                 mstore(ptr, EXCHANGE)
                 mstore(add(ptr, 0x4), and(shr(88, curveData), UINT8_MASK))
-                mstore(add(ptr, 0x24), and(shr(80, curveData), UINT8_MASK))
-                mstore(add(ptr, 0x44), amountIn)
-                mstore(add(ptr, 0x64), 0) // min out
+
                 if iszero(call(gas(), pool, 0x0, ptr, 0x84, ptr, 0x20)) {
                     returndatacopy(0, 0, returndatasize())
                     revert(0, returndatasize())
@@ -246,9 +240,6 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                 // selector for exchange_underlying(int128,int128,uint256,uint256,address)
                 mstore(ptr, EXCHANGE_UNDERLYING_INT_WITH_RECEIVER)
                 mstore(add(ptr, 0x4), and(shr(88, curveData), UINT8_MASK))
-                mstore(add(ptr, 0x24), and(shr(80, curveData), UINT8_MASK))
-                mstore(add(ptr, 0x44), amountIn)
-                mstore(add(ptr, 0x64), 0) // min out
                 mstore(add(ptr, 0x84), receiver)
                 if iszero(call(gas(), pool, 0x0, ptr, 0xA4, ptr, 0x20)) {
                     returndatacopy(0, 0, returndatasize())
@@ -260,9 +251,6 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                 // selector for exchange_underlying(int128,int128,uint256,uint256)
                 mstore(ptr, EXCHANGE_UNDERLYING_INT)
                 mstore(add(ptr, 0x4), and(shr(88, curveData), UINT8_MASK))
-                mstore(add(ptr, 0x24), and(shr(80, curveData), UINT8_MASK))
-                mstore(add(ptr, 0x44), amountIn)
-                mstore(add(ptr, 0x64), 0) // min out
                 if iszero(call(gas(), pool, 0x0, ptr, 0x84, ptr, 0x20)) {
                     returndatacopy(0, 0, returndatasize())
                     revert(0, returndatasize())
@@ -273,9 +261,6 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                 // selector for exchange_underlying(uint256,uint256,uint256,uint256,address)
                 mstore(ptr, EXCHANGE_UNDERLYING_WITH_RECEIVER)
                 mstore(add(ptr, 0x4), and(shr(88, curveData), UINT8_MASK))
-                mstore(add(ptr, 0x24), and(shr(80, curveData), UINT8_MASK))
-                mstore(add(ptr, 0x44), amountIn)
-                mstore(add(ptr, 0x64), 0) // min out
                 mstore(add(ptr, 0x84), receiver)
                 if iszero(call(gas(), pool, 0x0, ptr, 0xA4, ptr, 0x20)) {
                     returndatacopy(0, 0, returndatasize())
@@ -287,9 +272,6 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                 // selector for exchange_underlying(uint256,uint256,uint256,uint256)
                 mstore(ptr, EXCHANGE_UNDERLYING)
                 mstore(add(ptr, 0x4), and(shr(88, curveData), UINT8_MASK))
-                mstore(add(ptr, 0x24), and(shr(80, curveData), UINT8_MASK))
-                mstore(add(ptr, 0x44), amountIn)
-                mstore(add(ptr, 0x64), 0) // min out
                 if iszero(call(gas(), pool, 0x0, ptr, 0x84, ptr, 0x20)) {
                     returndatacopy(0, 0, returndatasize())
                     revert(0, returndatasize())
@@ -300,9 +282,6 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                 // selector for swap(uint8,uint8,uint256,uint256,uint256)
                 mstore(ptr, SWAP)
                 mstore(add(ptr, 0x4), and(shr(88, curveData), UINT8_MASK))
-                mstore(add(ptr, 0x24), and(shr(80, curveData), UINT8_MASK))
-                mstore(add(ptr, 0x44), amountIn)
-                mstore(add(ptr, 0x64), 0) // min out
                 mstore(add(ptr, 0x84), MAX_UINT256) // deadline
                 if iszero(call(gas(), pool, 0x0, ptr, 0xA4, ptr, 0x20)) {
                     returndatacopy(0, 0, returndatasize())
@@ -346,7 +325,7 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                     or(
                         iszero(rdsize), // no return data, or
                         and(
-                            iszero(lt(rdsize, 32)), // at least 32 bytes
+                            gt(rdsize, 31), // at least 32 bytes
                             eq(mload(ptr), 1) // starts with uint256(1)
                         )
                     )
@@ -433,7 +412,8 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                 mstore(add(ptr, 0x24), and(shr(80, curveData), UINT8_MASK))
                 mstore(add(ptr, 0x44), amountIn)
                 mstore(add(ptr, 0x64), 0) // min out
-                if iszero(call(gas(), pool, 0x0, ptr, 0x84, 0x0, 0x0)) { // no output
+                if iszero(call(gas(), pool, 0x0, ptr, 0x84, 0x0, 0x0)) {
+                    // no output
                     returndatacopy(0, 0, returndatasize())
                     revert(0, returndatasize())
                 }
@@ -495,7 +475,7 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                     or(
                         iszero(rdsize), // no return data, or
                         and(
-                            iszero(lt(rdsize, 32)), // at least 32 bytes
+                            gt(rdsize, 31), // at least 32 bytes
                             eq(mload(ptr), 1) // starts with uint256(1)
                         )
                     )
@@ -604,54 +584,36 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
             case 0 {
                 // selector for exchange_received(int128,int128,uint256,uint256,address)
                 mstore(ptr, EXCHANGE_RECEIVED_INT_WITH_RECEIVER)
-                mstore(add(ptr, 0x4), and(shr(88, curveData), UINT8_MASK)) // indexIn
-                mstore(add(ptr, 0x24), and(shr(80, curveData), UINT8_MASK)) // indexOut
-                mstore(add(ptr, 0x44), amountIn)
-                mstore(add(ptr, 0x64), 0) // min out
-                mstore(add(ptr, 0x84), receiver)
-                if iszero(
-                    call(
-                        gas(),
-                        pool, //
-                        0x0,
-                        ptr,
-                        0xA4,
-                        ptr,
-                        0x20
-                    )
-                ) {
-                    returndatacopy(0, 0, returndatasize())
-                    revert(0, returndatasize())
-                }
             }
             case 2 {
                 // selector for exchange_received(uint256,uint256,uint256,uint256,address)
                 mstore(ptr, EXCHANGE_RECEIVED_WITH_RECEIVER)
-                mstore(add(ptr, 0x4), and(shr(88, curveData), 0xff)) // indexIn
-                mstore(add(ptr, 0x24), and(shr(80, curveData), 0xff)) // indexOut
-                mstore(add(ptr, 0x44), amountIn)
-                mstore(add(ptr, 0x64), 0) // min out
-                mstore(add(ptr, 0x84), receiver)
-                if iszero(
-                    call(
-                        gas(),
-                        pool, //
-                        0x0,
-                        ptr,
-                        0xA4,
-                        ptr,
-                        0x20
-                    )
-                ) {
-                    returndatacopy(0, 0, returndatasize())
-                    revert(0, returndatasize())
-                }
             }
             default {
                 revert(0, 0)
             }
 
-            amountOut := mload(ptr)
+            mstore(add(ptr, 0x4), and(shr(88, curveData), UINT8_MASK)) // indexIn
+            mstore(add(ptr, 0x24), and(shr(80, curveData), UINT8_MASK)) // indexOut
+            mstore(add(ptr, 0x44), amountIn)
+            mstore(add(ptr, 0x64), 0) // min out
+            mstore(add(ptr, 0x84), receiver)
+            if iszero(
+                call(
+                    gas(),
+                    pool, //
+                    0x0,
+                    ptr,
+                    0xA4,
+                    0,
+                    0x20
+                )
+            ) {
+                returndatacopy(0, 0, returndatasize())
+                revert(0, returndatasize())
+            }
+
+            amountOut := mload(0)
             curveData := add(currentOffset, 25)
         }
         return (amountOut, curveData);
