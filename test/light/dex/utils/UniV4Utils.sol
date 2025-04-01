@@ -33,5 +33,15 @@ contract PS {
         bytes calldata hookData //
     ) external view returns (BalanceDelta swapDelta) {}
 
+    function swapB(
+        uint256 kind,
+        address pool,
+        address tokenIn,
+        address tokenOut,
+        uint256 amountGivenRaw,
+        uint256 limitRaw,
+        bytes calldata userData //
+    ) external returns (uint256 amountCalculated, uint256 amountIn, uint256 amountOut) {}
+
     function exttload(bytes32[] calldata slots) external view returns (bytes32[] memory) {}
 }

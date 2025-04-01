@@ -11,21 +11,26 @@ import "../utils/CalldataLib.sol";
 import {PoolKey, SwapParams, PS, BalanceDelta} from "./utils/UniV4Utils.sol";
 
 /**
- * We test UniV4 single swaps
+ * We test Blancer v3 single swaps
  */
-contract UnoV4LightTest is BaseTest {
+contract BalV3LightTest is BaseTest {
     uint256 internal constant forkBlock = 27970029;
     OneDeltaComposerLight oneDV2;
     uint8 internal constant UNISWAP_V4_POOL_ID = 0;
     uint8 internal constant UNISWAP_V4_DEX_ID = 55;
+    uint8 internal constant BALANCER_V3_ID = 85;
 
-    address internal constant UNI_V4_PM = 0x498581fF718922c3f8e6A244956aF099B2652b2b;
+    address internal constant BALANCER_V3_VAULT = 0xbA1333333333a1BA1108E8412f11850A5C319bA9;
+
+    address internal constant USDC_WETH_POOL = 0x1667832E66f158043754aE19461aD54D8b178E1E;
 
     address internal USDC;
     address internal WETH;
     address internal cbETH;
     address internal cbBTC;
     address internal constant ETH = address(0);
+
+    PoolKey pkUSDCETH;
 
     function setUp() public virtual {
         // initialize the chain
@@ -35,9 +40,16 @@ contract UnoV4LightTest is BaseTest {
         cbBTC = chain.getTokenAddress(Tokens.CBBTC);
         USDC = chain.getTokenAddress(Tokens.USDC);
         oneDV2 = new OneDeltaComposerLight(address(0));
+        pkUSDCETH = PoolKey(
+            address(0),
+            USDC,
+            500,
+            10, //
+            address(0)
+        );
     }
 
-    function unoV4Swap(
+    function balancerV3Swap(
         address user, //
         address tokenIn,
         address tokenOut,
@@ -55,57 +67,45 @@ contract UnoV4LightTest is BaseTest {
             data,
             tokenOut,
             user,
-            UNISWAP_V4_DEX_ID, // dexId !== poolId here
-            address(0), // hook
-            UNI_V4_PM,
-            uint24(500), // fee
-            uint24(10), // tick spacing
+            BALANCER_V3_ID, // dexId !== poolId here
+            USDC_WETH_POOL, // pool
+            BALANCER_V3_VAULT,
             uint8(0), // caller pays
             uint16(0) // data length
         );
     }
 
-    function test_light_swap_v4_single() external {
+    function test_light_swap_balv3_single() external {
         vm.assume(user != address(0));
 
-        address tokenIn = ETH;
+        address tokenIn = WETH;
         address tokenOut = USDC;
-        uint256 amount = 1.0e18;
+        uint256 amount = 0.05e18;
         // this is the expected exact amount for the block
-        // this is equivalent to a rate of 2016.643281 USDC->WETH
-        uint256 approxOut = 2016643281;
-        if (tokenIn != ETH) {
-            deal(tokenIn, user, amount);
-        } else {
-            deal(user, amount);
-        }
+        // this is equivalent to a rate of 1995.23716 USDC->WETH
+        uint256 approxOut = 99761858;
+        deal(tokenIn, user, amount);
 
-        if (tokenIn != ETH) {
-            vm.prank(user);
-            IERC20All(tokenIn).approve(address(oneDV2), type(uint).max);
-        }
+        vm.prank(user);
+        IERC20All(tokenIn).approve(address(oneDV2), type(uint).max);
 
         // console.logBytes(
         //     abi.encodeWithSelector(
-        //         PS.swap.selector, //
-        //         PoolKey(
-        //             WETH,
-        //             USDC,
-        //             500,
-        //             10,
-        //             address(0) // no hook
-        //         ),
-        //         true,
-        //         int256(111),
-        //         uint160(99),
+        //         PS.swapB.selector, //
+        //         uint256(0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffff),
+        //         USDC_WETH_POOL,
+        //         tokenIn,
+        //         tokenOut,
+        //         uint256(4213),
+        //         uint256(11111),
         //         hex"6383f2df8b9113f98ec2512238dc535b7d7a2b257e8d2456dd22829f3d7c471a" //
         //     )
         // );
 
-        bytes memory dat = unoV4Swap(user, tokenIn, tokenOut, amount);
+        bytes memory dat = balancerV3Swap(user, tokenIn, tokenOut, amount);
 
         bytes memory swap = CalldataLib.nextGenDexUnlock(
-            UNI_V4_PM,
+            BALANCER_V3_VAULT,
             UNISWAP_V4_POOL_ID,
             dat //
         );
@@ -114,13 +114,8 @@ contract UnoV4LightTest is BaseTest {
 
         uint gas = gasleft();
 
-        if (tokenIn != ETH) {
-            vm.prank(user);
-            oneDV2.deltaCompose(swap);
-        } else {
-            vm.prank(user);
-            oneDV2.deltaCompose{value: amount}(swap);
-        }
+        vm.prank(user);
+        oneDV2.deltaCompose(swap);
 
         gas = gas - gasleft();
         console.log("gas", gas);

@@ -19,6 +19,7 @@ import {GMXSwapper} from "./dex/GMXSwapper.sol";
 import {SyncSwapper} from "./dex/SyncSwapper.sol";
 import {CurveSwapper} from "./dex/CurveSwapper.sol";
 import {BalancerSwapper} from "./dex/BalancerSwapper.sol";
+import {BalancerV3Swapper} from "./dex/BalancerV3Swapper.sol";
 
 // solhint-disable max-line-length
 
@@ -76,6 +77,7 @@ abstract contract BaseSwapper is
     V2TypeGeneric,
     DexMappings,
     ExoticOffsets,
+    BalancerV3Swapper,
     BalancerSwapper,
     LBSwapper,
     DodoV2Swapper,
@@ -369,6 +371,17 @@ abstract contract BaseSwapper is
                 receiver, //
                 payer,
                 currentOffset
+            );
+        }
+        // Balancer V3s
+        else if (dexId == BALANCER_V3_ID) {
+            (amountIn, currentOffset) = _swapBalancerV3ExactInGeneric(
+                amountIn,
+                tokenIn,
+                tokenOut,
+                receiver,
+                currentOffset,
+                payer //
             );
         }
         // Curve pool types

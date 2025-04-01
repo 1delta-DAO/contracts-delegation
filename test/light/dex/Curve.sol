@@ -18,8 +18,7 @@ interface IF {
 }
 
 /**
- * We test all morpho blue operations
- * - supply, supplyCollateral, borrow, repay, erc4646Deposit, erc4646Withdraw
+ * We test Curve single swaps
  */
 contract CurveLightTest is BaseTest {
     uint256 internal constant forkBlock = 27970029;

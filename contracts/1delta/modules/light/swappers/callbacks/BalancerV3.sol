@@ -6,7 +6,7 @@ pragma solidity 0.8.28;
 * Author: Achthar | 1delta 
 /******************************************************************************/
 
-import {V4ReferencesBase} from "./V4References.sol";
+import {BalancerV3ReferencesBase} from "./BalancerV3References.sol";
 import {Masks} from "../../../shared/masks/Masks.sol";
 import {DeltaErrors} from "../../../shared/errors/Errors.sol";
 import {ERC20Selectors} from "../../../shared/selectors/ERC20Selectors.sol";
@@ -14,9 +14,9 @@ import {ERC20Selectors} from "../../../shared/selectors/ERC20Selectors.sol";
 /**
  * @title Contract Module taking Uniswap V4 callbacks
  */
-abstract contract UniV4Callbacks is V4ReferencesBase, ERC20Selectors, Masks, DeltaErrors {
-    /** Callback fromn uniswap V4 type singletons */
-    function unlockCallback(
+abstract contract BalancerV3Callbacks is BalancerV3ReferencesBase, ERC20Selectors, Masks, DeltaErrors {
+    /** Callback fromn balancer V3 type vaults */
+    function balancerUnlockCallback(
         bytes calldata
     )
         external
@@ -27,18 +27,19 @@ abstract contract UniV4Callbacks is V4ReferencesBase, ERC20Selectors, Masks, Del
     {
         address callerAddress;
         uint256 length;
+        uint poolId;
         assembly {
             length := calldataload(36)
-            let poolId := calldataload(136)
+            poolId := calldataload(68)
             callerAddress := and(ADDRESS_MASK, shr(88, poolId))
             poolId := shr(248, poolId)
             // cut off address and poolId
-            length := sub(length, 89)
+            length := sub(length, 21)
 
             /** Ensure that the caller is the singleton of choice */
             switch poolId
             case 0 {
-                if xor(caller(), UNI_V4_PM) {
+                if xor(caller(), BALANCER_V3_VAULT) {
                     mstore(0x0, BAD_POOL)
                     revert(0x0, 0x4)
                 }
@@ -48,6 +49,7 @@ abstract contract UniV4Callbacks is V4ReferencesBase, ERC20Selectors, Masks, Del
                 revert(0x0, 0x4)
             }
         }
+
         /**
          * This is to execute swaps or flash laons
          * For swaps, one needs to bump the composer swap command in here
@@ -58,15 +60,7 @@ abstract contract UniV4Callbacks is V4ReferencesBase, ERC20Selectors, Masks, Del
             callerAddress,
             0,
             0,
-            // this is
-            //  68 native (selector, offs, len)
-            //  4 b3 selector
-            //  32 offset
-            //  32 length
-            //  1 poolId
-            //  20 address
-            // = 157
-            157,
+            89, // natural offset is 68 plus selector plus addres plus poolId
             length //
         );
     }
