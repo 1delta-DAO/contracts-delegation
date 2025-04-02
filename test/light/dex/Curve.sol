@@ -122,7 +122,7 @@ contract CurveLightTest is BaseTest {
         );
     }
 
-    function test_light_swap_cuve_single_eth_in() external {
+    function test_light_swap_curve_single_eth_in() external {
         vm.assume(user != address(0));
 
         address tokenIn = WETH;
@@ -147,7 +147,7 @@ contract CurveLightTest is BaseTest {
         assertApproxEqAbs(balAfter - balBefore, amount, 0.2e18);
     }
 
-    function test_light_swap_cuve_single_reverse() external {
+    function test_light_swap_curve_single_reverse() external {
         vm.assume(user != address(0));
 
         address tokenIn = cbETH;
@@ -172,7 +172,7 @@ contract CurveLightTest is BaseTest {
         assertApproxEqAbs(balAfter - balBefore, amount, 0.2e18);
     }
 
-    function test_light_swap_cuve_single_ng() external {
+    function test_light_swap_curve_single_ng() external {
         vm.assume(user != address(0));
         address tokenIn = WETH;
         address tokenOut = SUPEROBETH;
