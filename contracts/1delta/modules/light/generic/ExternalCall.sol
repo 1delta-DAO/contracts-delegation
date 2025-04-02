@@ -16,24 +16,28 @@ import {DeltaErrors} from "../../shared/errors/Errors.sol";
  * without comprimising this contract
  */
 abstract contract ExternalCall is Masks, DeltaErrors {
-    // this is a consistent call forwarder deployment
-    address internal immutable FORWARDER;
+    /// @notice selector for deltaComposeLevel2(bytes)
+    bytes32 private constant COMPOSER_LEVEL2_COMPOSE = 0xfd2eb88300000000000000000000000000000000000000000000000000000000;
 
-    constructor(address _forwarder) {
-        FORWARDER = _forwarder;
-    }
-
+    /**
+     * This is not a real external call, this one has a pre-determined selector
+     * that prevents collision with any calls that can be made in this contract
+     * This prevents unauthorized calls that would pull funds from other users
+     *
+     * On top of that, this makes the contract arbitrarily extensible.
+     */
     function _callExternal(uint256 currentOffset) internal returns (uint256) {
-        address _forwarder = FORWARDER;
-        ////////////////////////////////////////////////////
-        // Foraward a call to callForawrder to execute unsafe
-        // generic calls
-        // Data layout:
-        //      bytes 0-14:                  nativeValue
-        //      bytes 14-16:                 calldata length
-        //      bytes 16-(16+data length):   data
-        ////////////////////////////////////////////////////
+        /*
+         * | Offset | Length (bytes) | Description          |
+         * |--------|----------------|----------------------|
+         * | 0      | 20             | target               |
+         * | 20     | 14             | nativeValue          |
+         * | 41     | 2              | calldataLength       |
+         * | 42     | calldataLength | calldata             |
+         */
         assembly {
+            let target := shr(96, calldataload(currentOffset))
+            currentOffset := add(20, currentOffset)
             // get msg.value for call
             let callValue := calldataload(currentOffset)
             let dataLength := and(UINT16_MASK, shr(128, callValue))
@@ -48,14 +52,18 @@ abstract contract ExternalCall is Masks, DeltaErrors {
             ////////////////////////////////////////////////////
 
             // increment offset to calldata start
-            currentOffset := add(14, currentOffset)
+            currentOffset := add(16, currentOffset)
+
+            mstore(ptr, COMPOSER_LEVEL2_COMPOSE)
+            mstore(add(ptr, 0x24), 0x20) // offset
+            mstore(add(ptr, 0x44), dataLength) // length
 
             // copy calldata
-            calldatacopy(ptr, currentOffset, dataLength)
+            calldatacopy(add(ptr, 0x64), currentOffset, dataLength)
             if iszero(
                 call(
                     gas(),
-                    _forwarder,
+                    target,
                     callValue,
                     ptr, //
                     dataLength, // the length must be correct or the call will fail
@@ -67,7 +75,7 @@ abstract contract ExternalCall is Masks, DeltaErrors {
                 revert(0, returndatasize())
             }
             // increment offset by data length
-            currentOffset := add(add(currentOffset, 2), dataLength)
+            currentOffset := add(currentOffset, dataLength)
         }
         return currentOffset;
     }

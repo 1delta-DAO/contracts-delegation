@@ -31,7 +31,7 @@ contract FlashLoanLightTest is BaseTest {
         GRANARY_POOL = chain.getLendingController(Lenders.GRANARY);
         WETH = chain.getTokenAddress(Tokens.WETH);
 
-        oneD = new OneDeltaComposerLight(address(0));
+        oneD = new OneDeltaComposerLight();
     }
 
     uint256 internal constant UPPER_BIT = 1 << 255;

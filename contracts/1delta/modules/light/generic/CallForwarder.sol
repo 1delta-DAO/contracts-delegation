@@ -13,19 +13,21 @@ import {ExternalCallsGeneric} from "../generic/ExternalCallsGeneric.sol";
  * Can generically call any target and checks if the selector for these calls is not `transferFrom`
  */
 contract CallForwarder is Transfers, ExternalCallsGeneric {
+    
+    // base receive function
+    receive() external payable {}
+
     /**
-     * Fallback that takes direct composer-like instructions, only for
-     * safe transfers and non-`transferFrom` generic calls
-     *
-     * Note: This contract should not trigger callbacks of any kind as the calls are not abi encoded
+     * A selector different to the classic Composer
+     * Should be called by a composer 
      */
-    fallback() external payable {
+    function deltaComposeLevel2(bytes calldata) external payable {
         uint256 currentOffset;
         // data loop paramters
         uint256 maxIndex;
         assembly {
-            maxIndex := shr(240, calldataload(0)) // first 2 bytes 
-            currentOffset := 1
+            maxIndex := shr(240, calldataload(0x24)) // first 2 bytes
+            currentOffset := 0x44
         }
 
         ////////////////////////////////////////////////////

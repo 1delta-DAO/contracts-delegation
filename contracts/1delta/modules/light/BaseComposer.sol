@@ -29,7 +29,7 @@ abstract contract BaseComposer is
     Permits,
     ExternalCall //
 {
-    constructor(address _forwarder) ExternalCall(_forwarder) {}
+    constructor() {}
 
     receive() external payable {}
 

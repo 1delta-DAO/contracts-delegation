@@ -45,7 +45,7 @@ contract ExternalCallsTest is BaseTest {
         cbBTC = chain.getTokenAddress(Tokens.CBBTC);
         USDC = chain.getTokenAddress(Tokens.USDC);
         cf = new CallForwarder();
-        oneDV2 = new OneDeltaComposerLight(address(cf));
+        oneDV2 = new OneDeltaComposerLight();
     }
 
     function extCall(address asset, uint256 amount, address receiver) internal view returns (bytes memory data) {
@@ -58,6 +58,7 @@ contract ExternalCallsTest is BaseTest {
 
         data = abi.encodePacked(
             ForwarderCommands.EXT_CALL,
+            address(cf),
             uint112(amount),
             uint16(data.length),
             data //

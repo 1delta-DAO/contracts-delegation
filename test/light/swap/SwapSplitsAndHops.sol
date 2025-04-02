@@ -45,7 +45,7 @@ contract SwapsSplitsAndHopsLightTest is BaseTest {
         cbETH = chain.getTokenAddress(Tokens.CBETH);
         cbBTC = chain.getTokenAddress(Tokens.CBBTC);
         USDC = chain.getTokenAddress(Tokens.USDC);
-        oneDV2 = new OneDeltaComposerLight(address(0));
+        oneDV2 = new OneDeltaComposerLight();
     }
 
     function multiPath(

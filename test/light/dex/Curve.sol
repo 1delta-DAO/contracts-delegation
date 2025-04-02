@@ -47,7 +47,7 @@ contract CurveLightTest is BaseTest {
         cbETH = chain.getTokenAddress(Tokens.CBETH);
         cbBTC = chain.getTokenAddress(Tokens.CBBTC);
         USDC = chain.getTokenAddress(Tokens.USDC);
-        oneDV2 = new OneDeltaComposerLight(address(0));
+        oneDV2 = new OneDeltaComposerLight();
     }
 
     function curvePoolETHcbETHSwap(address receiver, uint256 amount) internal view returns (bytes memory data) {

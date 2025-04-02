@@ -34,7 +34,7 @@ contract CompoundV3ComposerLightTest is BaseTest {
         COMPOUND_V3_USDC_COMET = chain.getLendingController(lender);
         WETH = chain.getTokenAddress(Tokens.WETH);
 
-        oneDV2 = new OneDeltaComposerLight(address(0));
+        oneDV2 = new OneDeltaComposerLight();
     }
 
     function test_light_lending_compoundV3_deposit() external {

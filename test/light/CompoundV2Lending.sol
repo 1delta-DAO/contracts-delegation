@@ -28,7 +28,7 @@ contract CompoundV2ComposerLightTest is BaseTest {
         WETH = chain.getTokenAddress(Tokens.WETH);
         VENUS_COMPTROLLER = chain.getLendingController(lender);
 
-        oneDV2 = new OneDeltaComposerLight(address(0));
+        oneDV2 = new OneDeltaComposerLight();
     }
 
     function test_light_lending_compoundV2_deposit() external {
