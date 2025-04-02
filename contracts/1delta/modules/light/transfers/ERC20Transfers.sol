@@ -269,10 +269,12 @@ contract ERC20Transfers is ERC20Selectors, Masks, DeltaErrors {
      */
     function _approve(uint256 currentOffset) internal returns (uint256) {
         assembly {
-            let ptr := mload(0x40)
+            // load underlying and target
             let underlying := shr(96, calldataload(currentOffset))
             currentOffset := add(currentOffset, 20)
-            let target := and(ADDRESS_MASK, calldataload(add(currentOffset, 8)))
+            let target := shr(96, calldataload(currentOffset))
+            // check whether the approval alderady was done
+            // if so, we can skip this part silently
             mstore(0x0, underlying)
             mstore(0x20, CALL_MANAGEMENT_APPROVALS)
             mstore(0x20, keccak256(0x0, 0x40))
@@ -280,7 +282,7 @@ contract ERC20Transfers is ERC20Selectors, Masks, DeltaErrors {
             let key := keccak256(0x0, 0x40)
             // check if already approved
             if iszero(sload(key)) {
-                // approveFlag
+                let ptr := mload(0x40)
                 // selector for approve(address,uint256)
                 mstore(ptr, ERC20_APPROVE)
                 mstore(add(ptr, 0x04), target)
@@ -298,7 +300,7 @@ contract ERC20Transfers is ERC20Selectors, Masks, DeltaErrors {
                 )
                 sstore(key, 1)
             }
-            currentOffset := add(currentOffset, 40)
+            currentOffset := add(currentOffset, 20)
         }
         return currentOffset;
     }
