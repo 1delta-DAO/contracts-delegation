@@ -404,31 +404,28 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
             ////////////////////////////////////////////////////
             // Execute swap function
             ////////////////////////////////////////////////////
+
+            // get selector
             switch and(shr(72, curveData), UINT8_MASK) // selectorId
             case 3 {
                 // selector for exchange(int128,int128,uint256,uint256,address)
                 mstore(ptr, EXCHANGE)
-                mstore(add(ptr, 0x4), and(shr(88, curveData), UINT8_MASK))
-                mstore(add(ptr, 0x24), and(shr(80, curveData), UINT8_MASK))
-                mstore(add(ptr, 0x44), amountIn)
-                mstore(add(ptr, 0x64), 0) // min out
-                if iszero(call(gas(), pool, 0x0, ptr, 0x84, 0x0, 0x0)) {
-                    // no output
-                    returndatacopy(0, 0, returndatasize())
-                    revert(0, returndatasize())
-                }
             }
             case 5 {
                 // selector for exchange(int128,int128,uint256,uint256)
                 mstore(ptr, EXCHANGE_UNDERLYING)
-                mstore(add(ptr, 0x4), and(shr(88, curveData), UINT8_MASK))
-                mstore(add(ptr, 0x24), and(shr(80, curveData), UINT8_MASK))
-                mstore(add(ptr, 0x44), amountIn)
-                mstore(add(ptr, 0x64), 0) // min out
-                if iszero(call(gas(), pool, 0x0, ptr, 0x84, ptr, 0x20)) {
-                    returndatacopy(0, 0, returndatasize())
-                    revert(0, returndatasize())
-                }
+            }
+            default {
+                revert(0, 0)
+            }
+
+            mstore(add(ptr, 0x4), and(shr(88, curveData), UINT8_MASK))
+            mstore(add(ptr, 0x24), and(shr(80, curveData), UINT8_MASK))
+            mstore(add(ptr, 0x44), amountIn)
+            mstore(add(ptr, 0x64), 0) // min out
+            if iszero(call(gas(), pool, 0x0, ptr, 0x84, 0x0, 0x0)) {
+                returndatacopy(0, 0, returndatasize())
+                revert(0, returndatasize())
             }
 
             // call to token - note that 0x-0x24 still holds the respective calldata
@@ -447,10 +444,8 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
 
             ////////////////////////////////////////////////////
             // Send funds to receiver if needed
-            // curveData is now the flag for manually
-            // transferuing to the receiver
             ////////////////////////////////////////////////////
-            if and(curveData, xor(receiver, address())) {
+            if xor(receiver, address()) {
                 // selector for transfer(address,uint256)
                 mstore(ptr, ERC20_TRANSFER)
                 mstore(add(ptr, 0x04), receiver)
