@@ -61,7 +61,7 @@ contract SwapsSplitsAndHopsLightTest is BaseTest {
         );
         for (uint i = 0; i < assets.length - 1; i++) {
             address pool;
-            if (dexIds[i] == 0) {
+            if (dexIds[i] == DexTypeMappings.UNISWAP_V3_ID) {
                 pool = IF(UNI_FACTORY).getPool(assets[i], assets[i + 1], fees[i]);
             } else {
                 pool = IF(IZI_FACTORY).pool(assets[i], assets[i + 1], fees[i]);
@@ -76,6 +76,7 @@ contract SwapsSplitsAndHopsLightTest is BaseTest {
                     _receiver,
                     dexIds[i],
                     pool,
+                    uint8(0), // <-- we assume native protocol here
                     fees[i],
                     uint16(0)
                 );
@@ -87,6 +88,7 @@ contract SwapsSplitsAndHopsLightTest is BaseTest {
                     _receiver,
                     dexIds[i],
                     pool,
+                    uint8(0), // <-- we assume native protocol here
                     fees[i],
                     uint16(1)
                 );
@@ -121,8 +123,8 @@ contract SwapsSplitsAndHopsLightTest is BaseTest {
         assets[2] = WETH;
         fees[0] = 500;
         fees[1] = 3000;
-        dexIds[0] = UNISWAP_V3_DEX_ID;
-        dexIds[1] = UNISWAP_V3_DEX_ID;
+        dexIds[0] = uint8(DexTypeMappings.UNISWAP_V3_ID);
+        dexIds[1] = uint8(DexTypeMappings.UNISWAP_V3_ID);
     }
 
     function get_USDC_WETH_MultiPathCalldata(
@@ -144,7 +146,7 @@ contract SwapsSplitsAndHopsLightTest is BaseTest {
 
     // swap 33% uni V3, 33% iZi, 33% other uni V3 based route
     // 33% USDC ---uni----> WETH
-    // 33% USDC ---izi----> WETH 
+    // 33% USDC ---izi----> WETH
     // 33% USDC -> cbBTC -> WETH  /// the last ones are all uni V3
     function v3poolpSwapWithRoute(uint16 fee, uint16 fee2, address receiver, uint256 amount) internal view returns (bytes memory data) {
         address assetIn = USDC;
@@ -167,9 +169,10 @@ contract SwapsSplitsAndHopsLightTest is BaseTest {
             uint16(0), // atomic
             assetOut,
             receiver,
-            UNISWAP_V3_DEX_ID,
+            uint8(DexTypeMappings.UNISWAP_V3_ID),
             // v3 pool data
             pool,
+            uint8(DexForkMappings.UNISWAP_V3), // <- the actual uni v3
             fee,
             uint16(0) // cll length
         ); //
@@ -179,9 +182,10 @@ contract SwapsSplitsAndHopsLightTest is BaseTest {
             uint16(0), // atomic
             assetOut,
             receiver,
-            IZUMI_DEX_ID,
+            uint8(DexTypeMappings.IZI_ID),
             // v3 pool data
             pool,
+            uint8(DexForkMappings.IZI), // <- the actual izumi
             fee2,
             uint16(0) // cll length
         ); //

@@ -53,7 +53,7 @@ contract DodoLightTest is BaseTest {
             data,
             SUPEROBETH,
             receiver,
-            uint8(180), // DODO
+            uint8(DexTypeMappings.DODO_ID), // DODO
             DODO_WETH_JOJO,
             uint8(1), // sell quote
             uint16(0) // payMode <- user pays

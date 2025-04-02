@@ -30,7 +30,7 @@ contract AaveV2LightTest is BaseTest {
         oneDV2 = new OneDeltaComposerLight(address(0));
     }
 
-    function test_light_granary_deposit() external {
+    function test_light_lending_granary_deposit() external {
         vm.assume(user != address(0));
 
         address token = USDC;
@@ -66,7 +66,7 @@ contract AaveV2LightTest is BaseTest {
         assertApproxEqAbs(underlyingBefore - underlyingAfter, amount, 1);
     }
 
-    function test_light_granary_borrow() external {
+    function test_light_lending_granary_borrow() external {
         vm.assume(user != address(0));
 
         address token = USDC;
@@ -97,7 +97,7 @@ contract AaveV2LightTest is BaseTest {
         assertApproxEqAbs(underlyingAfter - underlyingBefore, amountToBorrow, 0);
     }
 
-    function test_light_granary_withdraw() external {
+    function test_light_lending_granary_withdraw() external {
         vm.assume(user != address(0));
 
         address token = USDC;
@@ -131,7 +131,7 @@ contract AaveV2LightTest is BaseTest {
         assertApproxEqAbs(underlyingAfter - underlyingBefore, amountToWithdraw, 1);
     }
 
-    function test_light_granary_repay() external {
+    function test_light_lending_granary_repay() external {
         vm.assume(user != address(0));
 
         address token = USDC;

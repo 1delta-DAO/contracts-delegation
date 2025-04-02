@@ -21,9 +21,6 @@ interface IF {
  * - supply, supplyCollateral, borrow, repay, erc4646Deposit, erc4646Withdraw
  */
 contract SwapHopsAndSplitsLightTest is BaseTest {
-    uint8 internal UNISWAP_V3_DEX_ID = 0;
-    uint8 internal IZUMI_DEX_ID = 49;
-    uint8 internal UNISWAP_V2_DEX_ID = 100;
     address internal constant UNI_FACTORY = 0x33128a8fC17869897dcE68Ed026d694621f6FDfD;
     address internal constant UNI_V2_FACTORY = 0x8909Dc15e40173Ff4699343b6eB8132c65e18eC6;
     address internal constant IZI_FACTORY = 0x8c7d3063579BdB0b90997e18A770eaE32E1eBb08;
@@ -61,7 +58,7 @@ contract SwapHopsAndSplitsLightTest is BaseTest {
         );
         for (uint i = 0; i < assets.length - 1; i++) {
             address pool;
-            if (dexIds[i] == 0) {
+            if (dexIds[i] == DexTypeMappings.UNISWAP_V3_ID) {
                 pool = IF(UNI_FACTORY).getPool(assets[i], assets[i + 1], fees[i]);
             } else {
                 pool = IF(IZI_FACTORY).pool(assets[i], assets[i + 1], fees[i]);
@@ -76,6 +73,7 @@ contract SwapHopsAndSplitsLightTest is BaseTest {
                     _receiver,
                     dexIds[i],
                     pool,
+                    uint8(0), // <-- we assume native protocol here
                     fees[i],
                     uint16(0)
                 );
@@ -87,6 +85,7 @@ contract SwapHopsAndSplitsLightTest is BaseTest {
                     _receiver,
                     dexIds[i],
                     pool,
+                    uint8(0), // <-- we assume native protocol here
                     fees[i],
                     uint16(1)
                 );
@@ -102,27 +101,6 @@ contract SwapHopsAndSplitsLightTest is BaseTest {
             if (i < assets.length - 1) console.log("          |         ");
         }
         console.log("-----------------------------");
-    }
-
-    function getPath_USDC_CBETH()
-        internal
-        view
-        returns (
-            address[] memory assets, //
-            uint16[] memory fees,
-            uint8[] memory dexIds
-        )
-    {
-        assets = new address[](3);
-        fees = new uint16[](2);
-        dexIds = new uint8[](2);
-        assets[0] = USDC;
-        assets[1] = WETH;
-        assets[2] = cbETH;
-        fees[0] = 500;
-        fees[1] = 500;
-        dexIds[0] = 0;
-        dexIds[1] = 0;
     }
 
     function getPath_USDC_WETH()
@@ -142,8 +120,8 @@ contract SwapHopsAndSplitsLightTest is BaseTest {
         assets[2] = WETH;
         fees[0] = 500;
         fees[1] = 3000;
-        dexIds[0] = 0;
-        dexIds[1] = 0;
+        dexIds[0] = uint8(DexTypeMappings.UNISWAP_V3_ID);
+        dexIds[1] = uint8(DexTypeMappings.UNISWAP_V3_ID);
     }
 
     function get_USDC_WETH_MultiPathCalldata(
@@ -170,7 +148,6 @@ contract SwapHopsAndSplitsLightTest is BaseTest {
     function v3poolUltiSwapWithRouteV2(
         uint16 fee,
         uint16 fee2,
-        uint8 dexId,
         address receiver,
         uint256 amount
     ) internal view returns (bytes memory data) {
@@ -201,9 +178,10 @@ contract SwapHopsAndSplitsLightTest is BaseTest {
             uint16(0), // atomic
             assetOut,
             v2pool,
-            dexId,
+            uint8(DexTypeMappings.UNISWAP_V3_ID),
             // v3 pool data
             pool,
+            uint8(DexForkMappings.UNISWAP_V3), // <- the actual uni v3
             fee,
             uint16(0) // cll length
         ); //
@@ -213,9 +191,10 @@ contract SwapHopsAndSplitsLightTest is BaseTest {
             uint16(0), // atomic
             assetOut,
             v2pool,
-            uint8(49),
+            uint8(DexTypeMappings.IZI_ID),
             // v3 pool data
             pool,
+            uint8(DexForkMappings.IZI), // <- the actual izumi
             fee2,
             uint16(0) // cll length
         ); //
@@ -230,10 +209,11 @@ contract SwapHopsAndSplitsLightTest is BaseTest {
             uint16(0), // atomic
             KEYCAT,
             receiver,
-            uint8(100), // uno v2
+            uint8(DexTypeMappings.UNISWAP_V2_ID),
             // v2 pool data
             v2pool,
             uint16(9970),
+            uint8(DexForkMappings.UNISWAP_V2), // <- the actual uni v2
             uint16(2) // cll length
         ); //
     }
@@ -245,7 +225,6 @@ contract SwapHopsAndSplitsLightTest is BaseTest {
     function v3poolUltiSwapWithRoute(
         uint16 fee,
         uint16 fee2,
-        uint8 dexId,
         address receiver,
         uint256 amount
     ) internal view returns (bytes memory data) {
@@ -275,9 +254,10 @@ contract SwapHopsAndSplitsLightTest is BaseTest {
             uint16(0), // atomic swap
             assetOut,
             address(oneDV2),
-            dexId,
+            uint8(DexTypeMappings.UNISWAP_V3_ID),
             // v3 pool data
             pool,
+            uint8(DexForkMappings.UNISWAP_V3), // <- the actual izumi
             fee,
             uint16(0) // cll length
         ); //
@@ -287,9 +267,10 @@ contract SwapHopsAndSplitsLightTest is BaseTest {
             uint16(0), // atomic swap
             assetOut,
             address(oneDV2),
-            uint8(49),
+            uint8(DexTypeMappings.IZI_ID),
             // v3 pool data
             pool,
+            uint8(DexForkMappings.IZI), // <- the actual izumi
             fee2,
             uint16(0) // cll length
         ); //
@@ -305,9 +286,10 @@ contract SwapHopsAndSplitsLightTest is BaseTest {
             uint16(0), // atomic swap
             cbETH,
             receiver,
-            uint8(0),
+            uint8(DexTypeMappings.UNISWAP_V3_ID),
             // v3 pool data
             pool,
+            uint8(DexForkMappings.UNISWAP_V3), // <- the actual uni v3
             uint16(500),
             uint16(1) // cll length
         ); //
@@ -333,7 +315,6 @@ contract SwapHopsAndSplitsLightTest is BaseTest {
         bytes memory swap = v3poolUltiSwapWithRoute(
             fee,
             fee2,
-            uint8(0),
             user,
             amount //
         );
@@ -365,7 +346,6 @@ contract SwapHopsAndSplitsLightTest is BaseTest {
         bytes memory swap = v3poolUltiSwapWithRouteV2(
             fee,
             fee2,
-            uint8(0),
             user,
             amount //
         );

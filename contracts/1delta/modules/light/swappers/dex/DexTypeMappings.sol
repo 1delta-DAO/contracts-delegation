@@ -2,20 +2,15 @@
 
 pragma solidity ^0.8.28;
 
-abstract contract DexMappings {
-    // MAX_ID values are the maximum plus 1
+library DexTypeMappings {
+    uint256 internal constant UNISWAP_V3_ID = 0;
+    uint256 internal constant IZI_ID =  1;
+    uint256 internal constant UNISWAP_V4_ID = 2;
+    uint256 internal constant BALANCER_V3_ID = 4;
 
-    // non-pre-fundeds
-    uint256 internal constant UNISWAP_V3_MAX_ID = 49;
-    uint256 internal constant IZI_ID = UNISWAP_V3_MAX_ID;
+    uint256 internal constant BALANCER_V2_ID = 3;
+    uint256 internal constant UNISWAP_V2_ID = 6;
 
-    uint256 internal constant BALANCER_V2_ID = 80;
-
-    uint256 internal constant BALANCER_V3_ID = 85;
-
-    uint256 internal constant UNISWAP_V4_ID = 55;
-
-    uint256 internal constant CURVE_V1_MAX_ID = 70;
     // all DEX that behave like curve
     // indexs as input
     // returns out amount

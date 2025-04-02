@@ -60,7 +60,7 @@ contract BalancerLightTest is BaseTest {
             data,
             rETH,
             receiver,
-            uint8(80), // DODO
+            uint8(DexTypeMappings.BALANCER_V2_ID), // 
             WETH_RETH_PID,
             BALANCER_V2_VAULT,
             uint8(0) // payMode <- user pays

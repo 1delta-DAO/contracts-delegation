@@ -59,7 +59,7 @@ abstract contract UniV2Callbacks is V2ReferencesBase, ERC20Selectors, Masks, Del
             let salt := keccak256(add(ptr, 0x0C), 0x28)
             // validate callback
             switch dexId
-            case 100 {
+            case 0 {
                 mstore(ptr, UNI_V2_FF_FACTORY)
                 mstore(add(ptr, 0x15), salt)
                 mstore(add(ptr, 0x35), CODE_HASH_UNI_V2)

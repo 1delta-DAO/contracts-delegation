@@ -65,7 +65,7 @@ contract FlashSwapTest is BaseTest {
             data,
             tokenOut,
             user,
-            UNISWAP_V4_DEX_ID, // dexId !== poolId here
+            uint8(DexTypeMappings.UNISWAP_V4_ID), // dexId !== poolId here
             address(0), // hook
             UNI_V4_PM,
             uint24(500), // fee

@@ -37,7 +37,7 @@ contract CompoundV3ComposerLightTest is BaseTest {
         oneDV2 = new OneDeltaComposerLight(address(0));
     }
 
-    function test_light_compoundV3_deposit() external {
+    function test_light_lending_compoundV3_deposit() external {
         vm.assume(user != address(0));
 
         address token = USDC;
@@ -73,7 +73,7 @@ contract CompoundV3ComposerLightTest is BaseTest {
         assertApproxEqAbs(underlyingBefore - underlyingAfter, amount, 1);
     }
 
-    function test_light_compoundV3_borrow() external {
+    function test_light_lending_compoundV3_borrow() external {
         vm.assume(user != address(0));
 
         address depositToken = WETH;
@@ -106,7 +106,7 @@ contract CompoundV3ComposerLightTest is BaseTest {
         assertApproxEqAbs(tokenAfter - tokenBefore, amountToBorrow, 1, "3");
     }
 
-    function test_light_compoundV3_withdraw() external {
+    function test_light_lending_compoundV3_withdraw() external {
         vm.assume(user != address(0));
 
         address token = USDC;
@@ -140,7 +140,7 @@ contract CompoundV3ComposerLightTest is BaseTest {
         assertApproxEqAbs(underlyingAfter - underlyingBefore, amountToWithdraw, 1);
     }
 
-    function test_light_compoundV3_repay() external {
+    function test_light_lending_compoundV3_repay() external {
         vm.assume(user != address(0));
 
         address depositToken = WETH;

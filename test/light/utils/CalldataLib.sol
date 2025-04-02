@@ -3,6 +3,8 @@ pragma solidity ^0.8.19;
 
 import "../../../contracts/1delta/modules/light/enums/DeltaEnums.sol";
 import "../../../contracts/1delta/modules/light/enums/ForwarderEnums.sol";
+import "../../../contracts/1delta/modules/light/swappers/dex/DexTypeMappings.sol";
+import "../../../contracts/1delta/modules/light/swappers/callbacks/DexForkMappings.sol";
 
 library CalldataLib {
     enum SweepType {

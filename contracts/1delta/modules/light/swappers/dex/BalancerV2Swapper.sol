@@ -13,7 +13,7 @@ import {Masks} from "../../../shared/masks/Masks.sol";
  * @title Balancer V2 swapper contract that uses Symmetric's vault
  * @notice Balancer V2 is fun (mostly)
  */
-abstract contract BalancerSwapper is ERC20Selectors, Masks {
+abstract contract BalancerV2Swapper is ERC20Selectors, Masks {
     /// @dev Balancer's single swap function
     bytes32 private constant BALANCER_SWAP = 0x52bbbe2900000000000000000000000000000000000000000000000000000000;
 
@@ -34,6 +34,7 @@ abstract contract BalancerSwapper is ERC20Selectors, Masks {
         uint256 currentOffset //
     ) internal returns (uint256 amountOut, uint256 balancerData) {
         assembly {
+            // balancer vault plus pay flag
             balancerData := calldataload(add(32, currentOffset))
 
             let ptr := mload(0x40)

@@ -19,7 +19,6 @@ interface IF {
 }
 
 contract FlashSwapTest is BaseTest {
-    uint8 internal constant UNI_V3_DEX_ID = 0;
 
     address internal constant UNI_FACTORY = 0x33128a8fC17869897dcE68Ed026d694621f6FDfD;
     address internal constant UNI_V2_FACTORY = 0x8909Dc15e40173Ff4699343b6eB8132c65e18eC6;
@@ -73,6 +72,7 @@ contract FlashSwapTest is BaseTest {
             dexId,
             // v3 pool data
             pool,
+            uint8(DexForkMappings.UNISWAP_V3), // <- the actual uni v3
             fee,
             uint16(callbackData.length), // cll length <- user pays
             callbackData
@@ -109,7 +109,7 @@ contract FlashSwapTest is BaseTest {
             tokenIn,
             tokenOut, //
             fee,
-            UNI_V3_DEX_ID,
+            uint8(DexTypeMappings.UNISWAP_V3_ID),
             address(oneDV2),
             borrowAmount,
             abi.encodePacked(action, borrow)
@@ -209,7 +209,7 @@ contract FlashSwapTest is BaseTest {
             tokenIn,
             tokenOut, //
             500, // first pool
-            UNI_V3_DEX_ID,
+            uint8(DexTypeMappings.UNISWAP_V3_ID),
             address(oneDV2),
             borrowAmount / 2,
             abi.encodePacked(
@@ -224,7 +224,7 @@ contract FlashSwapTest is BaseTest {
             tokenIn,
             tokenOut, //
             3000, // second pool
-            UNI_V3_DEX_ID,
+            uint8(DexTypeMappings.UNISWAP_V3_ID),
             address(oneDV2),
             borrowAmount / 2,
             action // nest the prior swap

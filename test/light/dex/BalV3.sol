@@ -17,8 +17,6 @@ contract BalV3LightTest is BaseTest {
     uint256 internal constant forkBlock = 27970029;
     OneDeltaComposerLight oneDV2;
     uint8 internal constant BALANCER_V3_POOL_ID = 0;
-    uint8 internal constant UNISWAP_V4_DEX_ID = 55;
-    uint8 internal constant BALANCER_V3_ID = 85;
 
     address internal constant BALANCER_V3_VAULT = 0xbA1333333333a1BA1108E8412f11850A5C319bA9;
 
@@ -67,7 +65,7 @@ contract BalV3LightTest is BaseTest {
             data,
             tokenOut,
             user,
-            BALANCER_V3_ID, // dexId !== poolId here
+            uint8(DexTypeMappings.BALANCER_V3_ID), // dexId !== poolId here
             USDC_WETH_POOL, // pool
             BALANCER_V3_VAULT,
             uint8(0), // caller pays

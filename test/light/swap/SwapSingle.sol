@@ -22,6 +22,7 @@ interface IF {
  */
 contract SwapSingleTest is BaseTest {
     uint8 internal UNISWAP_V3_DEX_ID = 0;
+    uint8 internal UNISWAP_V3_FORK_ID = 0;
     uint8 internal IZUMI_DEX_ID = 49;
     uint8 internal UNISWAP_V2_DEX_ID = 100;
     address internal constant UNI_FACTORY = 0x33128a8fC17869897dcE68Ed026d694621f6FDfD;
@@ -72,9 +73,10 @@ contract SwapSingleTest is BaseTest {
             data,
             assetOut,
             receiver,
-            UNISWAP_V3_DEX_ID,
+            uint8(DexTypeMappings.UNISWAP_V3_ID),
             // v3 pool data
             pool,
+            uint8(DexForkMappings.UNISWAP_V3), // <- the actual uni v3
             fee,
             uint16(0) // cll length <- user pays
         );

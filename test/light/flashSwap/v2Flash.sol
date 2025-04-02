@@ -19,8 +19,6 @@ interface IF {
 }
 
 contract FlashSwapTest is BaseTest {
-    uint8 internal constant UNI_V2_DEX_ID = 100;
-
     address internal constant UNI_FACTORY = 0x33128a8fC17869897dcE68Ed026d694621f6FDfD;
     address internal constant UNI_V2_FACTORY = 0x8909Dc15e40173Ff4699343b6eB8132c65e18eC6;
     address internal constant IZI_FACTORY = 0x8c7d3063579BdB0b90997e18A770eaE32E1eBb08;
@@ -75,6 +73,7 @@ contract FlashSwapTest is BaseTest {
             // v2 pool data
             pool,
             uint16(9970), // fee denom
+            uint8(DexForkMappings.UNISWAP_V2),
             uint16(callbackData.length), // cll length <- user pays
             callbackData
         );
@@ -108,7 +107,7 @@ contract FlashSwapTest is BaseTest {
         action = v2poolFlashSwap(
             tokenIn,
             tokenOut, //
-            UNI_V2_DEX_ID,
+            uint8(DexTypeMappings.UNISWAP_V2_ID),
             address(oneDV2),
             borrowAmount,
             abi.encodePacked(action, borrow)
@@ -117,7 +116,6 @@ contract FlashSwapTest is BaseTest {
         vm.prank(user);
         oneDV2.deltaCompose(action);
     }
-
 
     function depositToAave(address token, address userAddress, uint256 amount, address pool) internal {
         deal(token, userAddress, amount);

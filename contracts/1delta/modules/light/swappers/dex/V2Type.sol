@@ -32,13 +32,13 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
     /*
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
-     * | 52     | 20             | pool                 |
-     * | 94     | 2              | feeDenom             |
-     * | 96     | 2              | calldataLength       | <-- 0: pay from self; 1: caller pays; 3: pre-funded;
-     * | 98     | calldataLength | calldata             |
+     * | 0      | 20             | pool                 |
+     * | 20     | 2              | feeDenom             |
+     * | 22     | 1              | forkId               |
+     * | 23     | 2              | calldataLength       | <-- 0: pay from self; 1: caller pays; 3: pre-funded;
+     * | 25     | calldataLength | calldata             |
      */
     function _swapUniswapV2PoolExactInGeneric(
-        uint256 dexId,
         uint256 amountIn,
         address tokenIn,
         address tokenOut,
@@ -62,7 +62,7 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
             // We extract all relevant data from the path bytes blob
             ////////////////////////////////////////////////////
             let pool := calldataload(currentOffset)
-            clLength := and(UINT16_MASK, shr(64, pool))
+            clLength := and(UINT16_MASK, shr(56, pool))
 
             // Compute the buy amount based on the pair reserves.
 
@@ -70,11 +70,15 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
                 tokenIn,
                 tokenOut //
             )
-            // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
-            // buyAmount = (pairSellAmount * feeAm * buyReserve) /
-            //     (pairSellAmount * feeAm + sellReserve * 1000);
-            switch lt(dexId, 120)
+
+            switch lt(
+                and(UINT8_MASK, shr(88, pool)), // this is the forkId
+                128 // less than 128 indicates that it is classic uni V2, solidly otherwise
+            )
             case 1 {
+                // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
+                // buyAmount = (pairSellAmount * feeAm * buyReserve) /
+                //     (pairSellAmount * feeAm + sellReserve * 1000);
                 // this is expected to be 10000 - x, where x is the poolfee in bps
                 let poolFeeDenom := and(shr(80, pool), UINT16_MASK)
                 pool := shr(96, pool)
@@ -153,7 +157,7 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
                  * | 20     | 20             | tokenIn              |
                  * | 40     | 20             | tokenOut             |
                  * | 60     | 14             | amountIn             | <- we bump amount in to ensure same bahavior as for uno v3
-                 * | 74     | 1              | dexId                |
+                 * | 74     | 1              | forkId               |
                  * | 75     | 2              | calldataLength       |
                  * | 77     | calldataLength | calldata             |
                  */
@@ -162,10 +166,10 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
                 mstore(add(ptr, 184), shl(96, tokenIn))
                 mstore(add(ptr, 204), shl(96, tokenOut))
                 mstore(add(ptr, 224), shl(144, amountIn))
-                mstore8(add(ptr, 238), dexId)
-                // Store path
+                // we skip to the forkId offset
                 currentOffset := add(22, currentOffset)
-                calldatacopy(add(ptr, 239), currentOffset, add(clLength, 2))
+                // Store callback  (incl forkId)
+                calldatacopy(add(ptr, 238), currentOffset, add(clLength, 3))
                 if iszero(
                     call(
                         gas(),
@@ -182,7 +186,8 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
                     revert(0, returndatasize())
                 }
                 // update clLength as new offset
-                clLength := add(currentOffset, add(2, clLength))
+                // we add forkId and clLengh and datalength
+                clLength := add(add(3, currentOffset), clLength)
             }
             ////////////////////////////////////////////////////
             // Otherwise, we have to assume that payment needs to
@@ -273,7 +278,7 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
                     revert(0, returndatasize())
                 }
                 // update clLength as new offset
-                clLength := add(currentOffset, 24)
+                clLength := add(currentOffset, 25)
             }
         }
         return (buyAmount, clLength);

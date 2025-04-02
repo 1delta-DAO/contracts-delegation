@@ -21,10 +21,6 @@ interface IF {
  * - supply, supplyCollateral, borrow, repay, erc4646Deposit, erc4646Withdraw
  */
 contract SwapHopsLightTest is BaseTest {
-    uint8 internal UNISWAP_V3_DEX_ID = 0;
-    uint8 internal IZUMI_DEX_ID = 49;
-    uint8 internal UNISWAP_V2_DEX_ID = 100;
-
     address internal constant UNI_FACTORY = 0x33128a8fC17869897dcE68Ed026d694621f6FDfD;
     address internal constant UNI_V2_FACTORY = 0x8909Dc15e40173Ff4699343b6eB8132c65e18eC6;
     address internal constant IZI_FACTORY = 0x8c7d3063579BdB0b90997e18A770eaE32E1eBb08;
@@ -62,7 +58,7 @@ contract SwapHopsLightTest is BaseTest {
         );
         for (uint i = 0; i < assets.length - 1; i++) {
             address pool;
-            if (dexIds[i] == 0) {
+            if (dexIds[i] == DexTypeMappings.UNISWAP_V3_ID) {
                 pool = IF(UNI_FACTORY).getPool(assets[i], assets[i + 1], fees[i]);
             } else {
                 pool = IF(IZI_FACTORY).pool(assets[i], assets[i + 1], fees[i]);
@@ -77,6 +73,7 @@ contract SwapHopsLightTest is BaseTest {
                     _receiver,
                     dexIds[i],
                     pool,
+                    uint8(0), // <-- we assume native protocol here
                     fees[i],
                     uint16(0)
                 );
@@ -88,6 +85,7 @@ contract SwapHopsLightTest is BaseTest {
                     _receiver,
                     dexIds[i],
                     pool,
+                    uint8(0), // <-- we assume native protocol here
                     fees[i],
                     uint16(1)
                 );
@@ -122,8 +120,8 @@ contract SwapHopsLightTest is BaseTest {
         assets[2] = cbETH;
         fees[0] = 500;
         fees[1] = 500;
-        dexIds[0] = UNISWAP_V3_DEX_ID;
-        dexIds[1] = UNISWAP_V3_DEX_ID;
+        dexIds[0] = uint8(DexTypeMappings.UNISWAP_V3_ID);
+        dexIds[1] = uint8(DexTypeMappings.UNISWAP_V3_ID);
     }
 
     function get_USDC_CBETH_MultiPathCalldata(

@@ -65,7 +65,7 @@ contract CurveLightTest is BaseTest {
             data,
             cbETH,
             receiver,
-            uint8(60),
+            uint8(DexTypeMappings.CURVE_V1_STANDARD_ID),
             TRY_CRYPTO_CRV_USD_ETH,
             uint8(0),
             uint8(1),
@@ -89,7 +89,7 @@ contract CurveLightTest is BaseTest {
             data,
             WETH,
             receiver,
-            uint8(60),
+            uint8(DexTypeMappings.CURVE_V1_STANDARD_ID),
             TRY_CRYPTO_CRV_USD_ETH,
             uint8(1),
             uint8(0),
@@ -113,7 +113,7 @@ contract CurveLightTest is BaseTest {
             data,
             SUPEROBETH,
             receiver,
-            uint8(150), // NG
+            uint8(DexTypeMappings.CURVE_RECEIVED_ID), // NG
             SUPEROBETH_WETH_NG,
             uint8(0),
             uint8(1),

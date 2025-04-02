@@ -23,7 +23,7 @@ interface IF {
 contract SwapSplitTest is BaseTest {
     uint8 internal UNISWAP_V3_DEX_ID = 0;
     uint8 internal IZUMI_DEX_ID = 49;
-    uint8 internal UNISWAP_V2_DEX_ID = 100;
+
     address internal constant UNI_FACTORY = 0x33128a8fC17869897dcE68Ed026d694621f6FDfD;
     address internal constant UNI_V2_FACTORY = 0x8909Dc15e40173Ff4699343b6eB8132c65e18eC6;
     address internal constant IZI_FACTORY = 0x8c7d3063579BdB0b90997e18A770eaE32E1eBb08;
@@ -79,9 +79,10 @@ contract SwapSplitTest is BaseTest {
             uint16(0), // atomic
             assetOut,
             receiver,
-            UNISWAP_V3_DEX_ID,
+            uint8(DexTypeMappings.UNISWAP_V3_ID),
             // v3 pool data
             pool,
+            uint8(DexForkMappings.UNISWAP_V3), // <- the actual uni v3
             fee,
             uint16(0) // cll length
         ); //
@@ -91,9 +92,10 @@ contract SwapSplitTest is BaseTest {
             uint16(0), // atomic
             assetOut,
             receiver,
-            IZUMI_DEX_ID,
+            uint8(DexTypeMappings.IZI_ID),
             // v3 pool data
             pool,
+            uint8(DexForkMappings.IZI), // <- the actual izumi
             fee2,
             uint16(0) // cll length
         ); //
@@ -104,9 +106,10 @@ contract SwapSplitTest is BaseTest {
             uint16(0), // atomic
             assetOut,
             receiver,
-            UNISWAP_V3_DEX_ID,
+            uint8(DexTypeMappings.UNISWAP_V3_ID),
             // v3 pool data
             pool,
+            uint8(DexForkMappings.UNISWAP_V3), // <- the actual uni v3
             fee3,
             uint16(0) // cll length
         ); //

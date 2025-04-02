@@ -7,7 +7,7 @@ pragma solidity ^0.8.28;
 /******************************************************************************/
 
 import {DeltaErrors} from "../../shared/errors/Errors.sol";
-import {DexMappings} from "./dex/DexMappings.sol";
+import {DexTypeMappings} from "./dex/DexTypeMappings.sol";
 import {V4TypeGeneric} from "./dex/V4Type.sol";
 import {V3TypeGeneric} from "./dex/V3Type.sol";
 import {V2TypeGeneric} from "./dex/V2Type.sol";
@@ -17,7 +17,7 @@ import {LBSwapper} from "./dex/LBSwapper.sol";
 import {GMXSwapper} from "./dex/GMXSwapper.sol";
 import {SyncSwapper} from "./dex/SyncSwapper.sol";
 import {CurveSwapper} from "./dex/CurveSwapper.sol";
-import {BalancerSwapper} from "./dex/BalancerSwapper.sol";
+import {BalancerV2Swapper} from "./dex/BalancerV2Swapper.sol";
 import {BalancerV3Swapper} from "./dex/BalancerV3Swapper.sol";
 
 // solhint-disable max-line-length
@@ -74,9 +74,8 @@ abstract contract BaseSwapper is
     V4TypeGeneric,
     V3TypeGeneric,
     V2TypeGeneric,
-    DexMappings,
     BalancerV3Swapper,
-    BalancerSwapper,
+    BalancerV2Swapper,
     LBSwapper,
     DodoV2Swapper,
     WooFiSwapper,
@@ -315,9 +314,9 @@ abstract contract BaseSwapper is
         address receiver, // last step
         uint256 currentOffset
     ) internal returns (uint256, uint256) {
-        uint256 dexId;
+        uint256 dexTypeId;
         assembly {
-            dexId := shr(248, calldataload(currentOffset))
+            dexTypeId := shr(248, calldataload(currentOffset))
             currentOffset := add(currentOffset, 1)
         }
         ////////////////////////////////////////////////////
@@ -326,9 +325,8 @@ abstract contract BaseSwapper is
         ////////////////////////////////////////////////////
 
         // uniswapV3 style
-        if (dexId < UNISWAP_V3_MAX_ID) {
+        if (dexTypeId == DexTypeMappings.UNISWAP_V3_ID) {
             (amountIn, currentOffset) = _swapUniswapV3PoolExactInGeneric(
-                dexId,
                 amountIn,
                 tokenIn,
                 tokenOut,
@@ -338,9 +336,8 @@ abstract contract BaseSwapper is
             );
         }
         // iZi
-        else if (dexId == IZI_ID) {
+        else if (dexTypeId == DexTypeMappings.IZI_ID) {
             (amountIn, currentOffset) = _swapIZIPoolExactInGeneric(
-                dexId,
                 amountIn,
                 tokenIn,
                 tokenOut,
@@ -350,7 +347,7 @@ abstract contract BaseSwapper is
             );
         }
         // uni V4
-        else if (dexId == UNISWAP_V4_ID) {
+        else if (dexTypeId == DexTypeMappings.UNISWAP_V4_ID) {
             (amountIn, currentOffset) = _swapUniswapV4ExactInGeneric(
                 amountIn,
                 tokenIn,
@@ -360,19 +357,8 @@ abstract contract BaseSwapper is
                 payer //
             );
         }
-        // Balancer V2s
-        else if (dexId == BALANCER_V2_ID) {
-            (amountIn, currentOffset) = _swapBalancerExactIn(
-                tokenIn,
-                tokenOut,
-                amountIn,
-                receiver, //
-                payer,
-                currentOffset
-            );
-        }
         // Balancer V3s
-        else if (dexId == BALANCER_V3_ID) {
+        else if (dexTypeId == DexTypeMappings.BALANCER_V3_ID) {
             (amountIn, currentOffset) = _swapBalancerV3ExactInGeneric(
                 amountIn,
                 tokenIn,
@@ -382,38 +368,40 @@ abstract contract BaseSwapper is
                 payer //
             );
         }
-        // Curve pool types
-        else if (dexId < CURVE_V1_MAX_ID) {
-            // Curve standard pool
-            if (dexId == CURVE_V1_STANDARD_ID) {
-                (amountIn, currentOffset) = _swapCurveGeneral(
-                    tokenIn,
-                    tokenOut,
-                    amountIn,
-                    receiver, //
-                    payer,
-                    currentOffset
-                );
-            } else if (dexId == CURVE_FORK_ID) {
-                (amountIn, currentOffset) = _swapCurveFork(
-                    tokenIn,
-                    tokenOut,
-                    amountIn,
-                    receiver, //
-                    payer,
-                    currentOffset
-                );
-            } else {
-                assembly {
-                    mstore(0, INVALID_DEX)
-                    revert(0, 0x4)
-                }
-            }
+        // Balancer V2s
+        else if (dexTypeId == DexTypeMappings.BALANCER_V2_ID) {
+            (amountIn, currentOffset) = _swapBalancerExactIn(
+                tokenIn,
+                tokenOut,
+                amountIn,
+                receiver, //
+                payer,
+                currentOffset
+            );
+        }
+        // Curve standard pool
+        else if (dexTypeId == DexTypeMappings.CURVE_V1_STANDARD_ID) {
+            (amountIn, currentOffset) = _swapCurveGeneral(
+                tokenIn,
+                tokenOut,
+                amountIn,
+                receiver, //
+                payer,
+                currentOffset
+            );
+        } else if (dexTypeId == DexTypeMappings.CURVE_FORK_ID) {
+            (amountIn, currentOffset) = _swapCurveFork(
+                tokenIn,
+                tokenOut,
+                amountIn,
+                receiver, //
+                payer,
+                currentOffset
+            );
         }
         // uniswapV2 style
-        else if (dexId < UNISWAP_V2_MAX_ID) {
+        else if (dexTypeId == DexTypeMappings.UNISWAP_V2_ID) {
             (amountIn, currentOffset) = _swapUniswapV2PoolExactInGeneric(
-                dexId,
                 amountIn,
                 tokenIn,
                 tokenOut,
@@ -423,7 +411,7 @@ abstract contract BaseSwapper is
             );
         }
         // WOO Fi
-        else if (dexId == WOO_FI_ID) {
+        else if (dexTypeId == DexTypeMappings.WOO_FI_ID) {
             (amountIn, currentOffset) = _swapWooFiExactIn(
                 amountIn,
                 tokenIn,
@@ -434,7 +422,7 @@ abstract contract BaseSwapper is
             );
         }
         // Curve NG
-        else if (dexId == CURVE_RECEIVED_ID) {
+        else if (dexTypeId == DexTypeMappings.CURVE_RECEIVED_ID) {
             (amountIn, currentOffset) = _swapCurveReceived(
                 tokenIn,
                 amountIn,
@@ -444,7 +432,7 @@ abstract contract BaseSwapper is
             );
         }
         // GMX
-        else if (dexId < MAX_GMX_ID) {
+        else if (dexTypeId == DexTypeMappings.GMX_ID) {
             (amountIn, currentOffset) = _swapGMXExactIn(
                 amountIn,
                 tokenIn,
@@ -455,7 +443,7 @@ abstract contract BaseSwapper is
             );
         }
         // syncSwap style
-        else if (dexId == SYNC_SWAP_ID) {
+        else if (dexTypeId == DexTypeMappings.SYNC_SWAP_ID) {
             (amountIn, currentOffset) = _swapSyncExactIn(
                 amountIn,
                 tokenIn,
@@ -465,7 +453,7 @@ abstract contract BaseSwapper is
             );
         }
         // DODO V2
-        else if (dexId == DODO_ID) {
+        else if (dexTypeId == DexTypeMappings.DODO_ID) {
             (amountIn, currentOffset) = _swapDodoV2ExactIn(
                 amountIn,
                 tokenIn,
@@ -475,7 +463,7 @@ abstract contract BaseSwapper is
             );
         }
         // Moe LB
-        else if (dexId == LB_ID) {
+        else if (dexTypeId == DexTypeMappings.LB_ID) {
             (amountIn, currentOffset) = _swapLBexactIn(
                 amountIn,
                 tokenIn,
@@ -484,7 +472,7 @@ abstract contract BaseSwapper is
                 payer, //
                 currentOffset
             );
-        } else if (dexId == NATIVE_WRAP_ID) {
+        } else if (dexTypeId == DexTypeMappings.NATIVE_WRAP_ID) {
             (amountIn, currentOffset) = _wrapOrUnwrapSimple(
                 amountIn,
                 currentOffset //
