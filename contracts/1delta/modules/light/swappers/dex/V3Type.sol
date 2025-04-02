@@ -10,7 +10,8 @@ import {Masks} from "../../../shared/masks/Masks.sol";
 
 /**
  * @title Uniswap V3 type swapper contract
- * @notice Executes Cl swaps and pushing data to the callbacks
+ * @notice Executes Cl swaps and pushes data to the callbacks
+ * the data can be empty, the callback then jsut fills the swap
  */
 abstract contract V3TypeGeneric is Masks {
     constructor() {}

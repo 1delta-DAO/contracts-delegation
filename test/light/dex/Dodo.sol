@@ -14,6 +14,8 @@ import "../utils/CalldataLib.sol";
  * - supply, supplyCollateral, borrow, repay, erc4646Deposit, erc4646Withdraw
  */
 contract DodoLightTest is BaseTest {
+    using CalldataLib for bytes;
+
     uint256 internal constant forkBlock = 27970029;
     OneDeltaComposerLight oneDV2;
 
@@ -39,24 +41,21 @@ contract DodoLightTest is BaseTest {
     }
 
     function dodPoolWETHJOJOSwap(address receiver, uint256 amount) internal view returns (bytes memory data) {
-        data = abi.encodePacked(
-            uint8(ComposerCommands.SWAPS),
-            uint128(amount), //
-            uint128(1), //
+        // create head config
+        data = CalldataLib.swapHead(
+            amount,
+            1, // amountOut min
             WETH,
-            uint8(0), // swaps max index
-            uint8(0) // splits
-            // single split data (no data here)
-            // uint8(0), // swaps max index for inner path
+            false // no pre param
         );
-        data = abi.encodePacked(
-            data,
+        // no branching
+        data = data.attachBranch(0, 0, hex"");
+        data = data.dodoStyleSwap(
             SUPEROBETH,
             receiver,
-            uint8(DexTypeMappings.DODO_ID), // DODO
             DODO_WETH_JOJO,
-            uint8(1), // sell quote
-            uint16(0) // payMode <- user pays
+            CalldataLib.DodoSelector.SELL_QUOTE, // sell quote
+            CalldataLib.DexPayConfig.CALLER_PAYS // payMode <- user pays
         );
     }
 
@@ -83,6 +82,6 @@ contract DodoLightTest is BaseTest {
 
         uint256 balAfter = IERC20All(tokenOut).balanceOf(user);
         console.log("received", balAfter - balBefore);
-        assertApproxEqAbs(balAfter - balBefore, approxOut, approxOut * 10 / 100);
+        assertApproxEqAbs(balAfter - balBefore, approxOut, (approxOut * 10) / 100);
     }
 }

@@ -13,15 +13,250 @@ library CalldataLib {
         AMOUNT
     }
 
-    function nextGenDexUnlock(address singleton, uint8 id, bytes memory d) internal pure returns (bytes memory data) {
+    enum DexPayConfig {
+        CALLER_PAYS,
+        CONTRACT_PAYS,
+        FLASH
+    }
+
+    enum DodoSelector {
+        SELL_BASE,
+        SELL_QUOTE
+    }
+
+    // PathEdge internal constant NATIVE = PathEdge(0,0);
+
+    function nextGenDexUnlock(address singleton, uint256 id, bytes memory d) internal pure returns (bytes memory data) {
         data = abi.encodePacked(
             uint8(ComposerCommands.GEN_2025_SINGELTONS),
             uint8(Gen2025ActionIds.UNLOCK),
             singleton, // manager address
-            id, // validation Id
+            uint8(id), // validation Id
             uint16(d.length),
             d
         ); // swaps max index for inner path
+    }
+
+    function swapHead(uint256 amount, uint256 amountOutMin, address assetIn, bool preParam) internal pure returns (bytes memory data) {
+        return
+            abi.encodePacked(
+                uint8(ComposerCommands.SWAPS),
+                generateAmountBitmap(uint128(amount), preParam, false, false),
+                uint128(amountOutMin),
+                assetIn //
+            );
+    }
+
+    function attachBranch(bytes memory data, uint256 hops, uint256 splits, bytes memory splitsData) internal pure returns (bytes memory) {
+        if (hops != 0 && splits != 0) revert("Invalid branching");
+        if (splitsData.length > 0 && splits == 0) revert("No splits but split data provided");
+        return
+            abi.encodePacked(
+                data,
+                uint8(hops),
+                uint8(splits), //
+                splitsData
+            );
+    }
+
+    function uniswapV2StyleSwap(
+        address tokenOut,
+        address receiver,
+        uint256 forkId,
+        address pool,
+        uint256 feeDenom, //
+        DexPayConfig cfg,
+        bytes memory flashCalldata
+    ) internal pure returns (bytes memory data) {
+        if (uint256(cfg) < 2 && flashCalldata.length > 2) revert("Invalid config for v2 swap");
+        data = abi.encodePacked(
+            tokenOut,
+            receiver,
+            uint8(DexTypeMappings.UNISWAP_V2_ID),
+            pool,
+            uint16(feeDenom), // fee denom
+            uint8(forkId),
+            uint16(flashCalldata.length), // cll length <- user pays
+            bytes(cfg == DexPayConfig.FLASH ? flashCalldata : new bytes(0))
+        );
+    }
+
+    function balancerV2StyleSwap(
+        bytes memory currentData,
+        address tokenOut,
+        address receiver,
+        bytes32 poolId,
+        address balancerVault,
+        DexPayConfig cfg
+    ) internal pure returns (bytes memory data) {
+        if (cfg == DexPayConfig.FLASH) revert("Invalid config for v2 swap");
+        data = abi.encodePacked(
+            currentData,
+            tokenOut,
+            receiver,
+            uint8(DexTypeMappings.BALANCER_V2_ID),
+            poolId,
+            balancerVault,
+            uint16(uint256(cfg)) // cll length <- user pays
+        );
+    }
+
+    function uniswapV3StyleSwap(
+        bytes memory currentData,
+        address tokenOut,
+        address receiver,
+        uint256 forkId,
+        address pool,
+        uint256 feeTier, //
+        DexPayConfig cfg,
+        bytes memory flashCalldata
+    ) internal pure returns (bytes memory data) {
+        if (uint256(cfg) < 2 && flashCalldata.length > 2) revert("Invalid config for v2 swap");
+        data = abi.encodePacked(
+            currentData,
+            tokenOut,
+            receiver,
+            uint8(DexTypeMappings.UNISWAP_V3_ID),
+            pool,
+            uint8(forkId),
+            uint16(feeTier), // fee tier to validate pool
+            uint16(cfg == DexPayConfig.FLASH ? flashCalldata.length : uint256(cfg)), //
+            bytes(cfg == DexPayConfig.FLASH ? flashCalldata : new bytes(0))
+        );
+    }
+
+    function uniswapV4StyleSwap(
+        bytes memory currentData,
+        address tokenOut,
+        address receiver,
+        address poolManager,
+        uint256 feeTier, //
+        uint256 tickSpacing, //
+        address hooks, //
+        DexPayConfig cfg,
+        bytes memory hooksData
+    ) internal pure returns (bytes memory data) {
+        data = abi.encodePacked(
+            currentData,
+            tokenOut,
+            receiver,
+            uint8(DexTypeMappings.UNISWAP_V4_ID), // dexId !== poolId here
+            hooks,
+            poolManager,
+            uint24(feeTier), // fee tier to validate pool
+            uint24(tickSpacing),
+            uint8(cfg),
+            uint16(hooksData.length), //
+            bytes(hooksData)
+        );
+    }
+
+    function balancerV3StyleSwap(
+        bytes memory currentData,
+        address tokenOut,
+        address receiver,
+        address balancerV3Vault,
+        address pool,
+        DexPayConfig cfg,
+        bytes memory poolUserData
+    ) internal pure returns (bytes memory data) {
+        data = abi.encodePacked(
+            currentData,
+            tokenOut,
+            receiver,
+            uint8(DexTypeMappings.BALANCER_V3_ID), // dexId !== poolId here
+            pool,
+            balancerV3Vault,
+            uint8(cfg),
+            uint16(poolUserData.length), //
+            poolUserData
+        );
+    }
+
+    function izumiStyleSwap(
+        address tokenOut,
+        address receiver,
+        uint256 forkId,
+        address pool,
+        uint256 feeTier, //
+        DexPayConfig cfg,
+        bytes memory flashCalldata
+    ) internal pure returns (bytes memory data) {
+        if (uint256(cfg) < 2 && flashCalldata.length > 2) revert("Invalid config for v2 swap");
+        data = abi.encodePacked(
+            tokenOut,
+            receiver,
+            uint8(DexTypeMappings.IZI_ID),
+            pool,
+            uint8(forkId),
+            uint16(feeTier), // fee tier to validate pool
+            uint16(cfg == DexPayConfig.FLASH ? flashCalldata.length : uint256(cfg)), //
+            bytes(cfg == DexPayConfig.FLASH ? flashCalldata : new bytes(0))
+        );
+    }
+
+    function dodoStyleSwap(
+        bytes memory currentData,
+        address tokenOut,
+        address receiver,
+        address pool,
+        DodoSelector selector, //
+        DexPayConfig cfg
+    ) internal pure returns (bytes memory data) {
+        if (cfg == DexPayConfig.FLASH) revert("Flash not yet supported for dodo");
+        data = abi.encodePacked(
+            currentData,
+            tokenOut,
+            receiver,
+            uint8(DexTypeMappings.DODO_ID),
+            pool,
+            uint8(selector),
+            uint16(uint256(cfg)) //
+        );
+    }
+
+    function curveStyleSwap(
+        address tokenOut,
+        address receiver,
+        address pool,
+        uint256 indexIn, //
+        uint256 indexOut, //
+        uint256 selectorId, //
+        DexPayConfig cfg
+    ) internal pure returns (bytes memory data) {
+        if (cfg == DexPayConfig.FLASH) revert("Flash not yet supported for Curve");
+        data = abi.encodePacked(
+            tokenOut,
+            receiver,
+            uint8(DexTypeMappings.CURVE_V1_STANDARD_ID),
+            pool,
+            uint8(indexIn),
+            uint8(indexOut),
+            uint8(selectorId), // fee tier to validate pool
+            uint16(uint256(cfg)) //
+        );
+    }
+
+    function curveNGStyleSwap(
+        address tokenOut,
+        address receiver,
+        address pool,
+        uint256 indexIn, //
+        uint256 indexOut, //
+        uint256 selectorId, //
+        DexPayConfig cfg
+    ) internal pure returns (bytes memory data) {
+        if (cfg == DexPayConfig.FLASH) revert("Flash not yet supported for Curve");
+        data = abi.encodePacked(
+            tokenOut,
+            receiver,
+            uint8(DexTypeMappings.CURVE_RECEIVED_ID),
+            pool,
+            uint8(indexIn),
+            uint8(indexOut),
+            uint8(selectorId), // fee tier to validate pool
+            uint16(uint256(cfg)) //
+        );
     }
 
     function nextGenDexSettle(address singleton, uint256 nativeAmount) internal pure returns (bytes memory data) {

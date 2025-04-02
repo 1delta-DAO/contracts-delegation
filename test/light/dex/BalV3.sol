@@ -14,10 +14,11 @@ import {PoolKey, SwapParams, PS, BalanceDelta} from "./utils/UniV4Utils.sol";
  * We test Blancer v3 single swaps
  */
 contract BalV3LightTest is BaseTest {
+    using CalldataLib for bytes;
     uint256 internal constant forkBlock = 27970029;
     OneDeltaComposerLight oneDV2;
-    uint8 internal constant BALANCER_V3_POOL_ID = 0;
 
+    // balancer dex data
     address internal constant BALANCER_V3_VAULT = 0xbA1333333333a1BA1108E8412f11850A5C319bA9;
 
     address internal constant USDC_WETH_POOL = 0x1667832E66f158043754aE19461aD54D8b178E1E;
@@ -53,23 +54,23 @@ contract BalV3LightTest is BaseTest {
         address tokenOut,
         uint256 amount
     ) internal pure returns (bytes memory data) {
-        data = abi.encodePacked(
-            uint8(ComposerCommands.SWAPS),
-            uint128(amount), //
-            uint128(1), //
+        // create head config
+        data = CalldataLib.swapHead(
+            amount,
+            1, // amountOut min
             tokenIn,
-            uint8(0), // swaps max index
-            uint8(0) // splits
-        ); // swaps max index for inner path
-        data = abi.encodePacked(
-            data,
+            false // no pre param
+        );
+        // no branching
+        data = data.attachBranch(0, 0, hex"");
+        // attach swap
+        data = data.balancerV3StyleSwap(
             tokenOut,
             user,
-            uint8(DexTypeMappings.BALANCER_V3_ID), // dexId !== poolId here
-            USDC_WETH_POOL, // pool
             BALANCER_V3_VAULT,
-            uint8(0), // caller pays
-            uint16(0) // data length
+            USDC_WETH_POOL,
+            CalldataLib.DexPayConfig.CALLER_PAYS,
+            hex"" //
         );
     }
 
@@ -104,7 +105,7 @@ contract BalV3LightTest is BaseTest {
 
         bytes memory swap = CalldataLib.nextGenDexUnlock(
             BALANCER_V3_VAULT,
-            BALANCER_V3_POOL_ID,
+            DexForkMappings.BALANCER_V3, // this is also the poolId for the unlock
             dat //
         );
 
