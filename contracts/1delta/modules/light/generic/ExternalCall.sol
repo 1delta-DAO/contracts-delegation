@@ -59,7 +59,7 @@ abstract contract ExternalCall is Masks, DeltaErrors {
             mstore(add(ptr, 0x24), dataLength) // length
 
             // copy calldata
-            calldatacopy(add(ptr, 0x64), currentOffset, dataLength)
+            calldatacopy(add(ptr, 0x44), currentOffset, dataLength)
             if iszero(
                 call(
                     gas(),
