@@ -78,56 +78,14 @@ abstract contract UniV3Callbacks is V3ReferencesBase, ERC20Selectors, Masks, Del
 
     // zeroForOne = true
     function swapY2XCallback(uint256 x, uint256 y, bytes calldata) external {
-        address tokenIn;
-        address tokenOut;
-        address callerAddress;
-        uint256 calldataLength;
-        assembly {
-            let firstWord := calldataload(PATH_OFFSET_CALLBACK_V3)
-            callerAddress := shr(96, firstWord)
-            firstWord := calldataload(152)
-            tokenIn := shr(96, firstWord)
-            firstWord := calldataload(172)
-            tokenOut := shr(96, firstWord)
-            let dexId := and(UINT8_MASK, shr(88, firstWord))
-            calldataLength := and(UINT16_MASK, shr(56, firstWord))
+        (
+            address tokenIn, //
+            address callerAddress,
+            uint256 calldataLength
+        ) = _validateIzumiCallback();
 
-            ////////////////////////////////////////////////////
-            // Compute and validate pool address
-            ////////////////////////////////////////////////////
-            let s := mload(0x40)
-            switch dexId
-            case 0 {
-                mstore(s, IZI_FF_FACTORY)
-                let p := add(s, 21)
-                // Compute the inner hash in-place
-                switch lt(tokenIn, tokenOut)
-                case 0 {
-                    mstore(p, tokenOut)
-                    mstore(add(p, 32), tokenIn)
-                }
-                default {
-                    mstore(p, tokenIn)
-                    mstore(add(p, 32), tokenOut)
-                }
-                mstore(add(p, 64), and(UINT16_MASK, shr(72, firstWord)))
-                mstore(p, keccak256(p, 96))
-                p := add(p, 32)
-                mstore(p, IZI_POOL_INIT_CODE_HASH)
-            }
-            default {
-                revert(0, 0)
-            }
-            ////////////////////////////////////////////////////
-            // If the caller is not the calculated pool, we revert
-            ////////////////////////////////////////////////////
-            if xor(caller(), and(ADDRESS_MASK, keccak256(s, 85))) {
-                mstore(0x0, BAD_POOL)
-                revert(0x0, 0x4)
-            }
-        }
         clSwapCallback(
-            -int256(x), // izi pushses units, we map them here to avoid duplicate code
+            -int256(x), // izi pushses uints, we map them here to avoid duplicate code
             int256(y),
             tokenIn,
             callerAddress,
@@ -137,57 +95,15 @@ abstract contract UniV3Callbacks is V3ReferencesBase, ERC20Selectors, Masks, Del
 
     // zeroForOne = false
     function swapX2YCallback(uint256 x, uint256 y, bytes calldata) external {
-        address tokenIn;
-        address tokenOut;
-        address callerAddress;
-        uint256 calldataLength;
-        assembly {
-            let firstWord := calldataload(PATH_OFFSET_CALLBACK_V3)
-            callerAddress := shr(96, firstWord)
-            firstWord := calldataload(152)
-            tokenIn := shr(96, firstWord)
-            firstWord := calldataload(172)
-            tokenOut := shr(96, firstWord)
-            let dexId := and(UINT8_MASK, shr(88, firstWord))
-            calldataLength := and(UINT16_MASK, shr(56, firstWord))
+        (
+            address tokenIn, //
+            address callerAddress,
+            uint256 calldataLength
+        ) = _validateIzumiCallback();
 
-            ////////////////////////////////////////////////////
-            // Compute and validate pool address
-            ////////////////////////////////////////////////////
-            let s := mload(0x40)
-            switch dexId
-            case 0 {
-                mstore(s, IZI_FF_FACTORY)
-                let p := add(s, 21)
-                // Compute the inner hash in-place
-                switch lt(tokenIn, tokenOut)
-                case 0 {
-                    mstore(p, tokenOut)
-                    mstore(add(p, 32), tokenIn)
-                }
-                default {
-                    mstore(p, tokenIn)
-                    mstore(add(p, 32), tokenOut)
-                }
-                mstore(add(p, 64), and(UINT16_MASK, shr(72, firstWord)))
-                mstore(p, keccak256(p, 96))
-                p := add(p, 32)
-                mstore(p, IZI_POOL_INIT_CODE_HASH)
-            }
-            default {
-                revert(0, 0)
-            }
-            ////////////////////////////////////////////////////
-            // If the caller is not the calculated pool, we revert
-            ////////////////////////////////////////////////////
-            if xor(caller(), and(ADDRESS_MASK, keccak256(s, 85))) {
-                mstore(0x0, BAD_POOL)
-                revert(0x0, 0x4)
-            }
-        }
         clSwapCallback(
             int256(x),
-            -int256(y), // izi pushses units, we map them here to avoid duplicate code
+            -int256(y), // izi pushses uints, we map them here to avoid duplicate code
             tokenIn,
             callerAddress,
             calldataLength
@@ -276,6 +192,65 @@ abstract contract UniV3Callbacks is V3ReferencesBase, ERC20Selectors, Masks, Del
             197,
             calldataLength
         );
+    }
+
+    /**
+     * We need this one for 2 callbacks
+     */
+    function _validateIzumiCallback()
+        internal
+        view
+        returns (
+            address tokenIn,
+            address callerAddress, //
+            uint256 calldataLength
+        )
+    {
+        address tokenOut;
+        assembly {
+            let firstWord := calldataload(PATH_OFFSET_CALLBACK_V3)
+            callerAddress := shr(96, firstWord)
+            firstWord := calldataload(152)
+            tokenIn := shr(96, firstWord)
+            firstWord := calldataload(172)
+            tokenOut := shr(96, firstWord)
+            let dexId := and(UINT8_MASK, shr(88, firstWord))
+            calldataLength := and(UINT16_MASK, shr(56, firstWord))
+
+            ////////////////////////////////////////////////////
+            // Compute and validate pool address
+            ////////////////////////////////////////////////////
+            let s := mload(0x40)
+            switch dexId
+            case 0 {
+                mstore(s, IZI_FF_FACTORY)
+                let p := add(s, 21)
+                // Compute the inner hash in-place
+                switch lt(tokenIn, tokenOut)
+                case 0 {
+                    mstore(p, tokenOut)
+                    mstore(add(p, 32), tokenIn)
+                }
+                default {
+                    mstore(p, tokenIn)
+                    mstore(add(p, 32), tokenOut)
+                }
+                mstore(add(p, 64), and(UINT16_MASK, shr(72, firstWord)))
+                mstore(p, keccak256(p, 96))
+                p := add(p, 32)
+                mstore(p, IZI_POOL_INIT_CODE_HASH)
+            }
+            default {
+                revert(0, 0)
+            }
+            ////////////////////////////////////////////////////
+            // If the caller is not the calculated pool, we revert
+            ////////////////////////////////////////////////////
+            if xor(caller(), and(ADDRESS_MASK, keccak256(s, 85))) {
+                mstore(0x0, BAD_POOL)
+                revert(0x0, 0x4)
+            }
+        }
     }
 
     function _deltaComposeInternal(address callerAddress, uint256 paramPull, uint256 paramPush, uint256 offset, uint256 length) internal virtual {}
