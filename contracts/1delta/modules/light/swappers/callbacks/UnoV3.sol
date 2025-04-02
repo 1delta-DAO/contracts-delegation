@@ -34,14 +34,14 @@ abstract contract UniV3Callbacks is V3ReferencesBase, ERC20Selectors, Masks, Del
             tokenIn := shr(96, firstWord)
             firstWord := calldataload(172)
             tokenOut := shr(96, firstWord)
-            let dexId := and(UINT8_MASK, shr(88, firstWord))
+            let forkId := and(UINT8_MASK, shr(88, firstWord))
             calldataLength := and(UINT16_MASK, shr(56, firstWord))
 
             ////////////////////////////////////////////////////
             // Compute and validate pool address
             ////////////////////////////////////////////////////
             let s := mload(0x40)
-            switch dexId
+            switch forkId
             case 0 {
                 mstore(s, UNI_V3_FF_FACTORY)
                 let p := add(s, 21)
@@ -187,7 +187,7 @@ abstract contract UniV3Callbacks is V3ReferencesBase, ERC20Selectors, Masks, Del
             amountReceived,
             // the naive offset is 132
             // we skip the entire callback validation data
-            // that is tokens (+40), fee (+2), caller (+20), dexId (+1) datalength (+2)
+            // that is tokens (+40), fee (+2), caller (+20), forkId (+1) datalength (+2)
             // = 197
             197,
             calldataLength
@@ -214,14 +214,14 @@ abstract contract UniV3Callbacks is V3ReferencesBase, ERC20Selectors, Masks, Del
             tokenIn := shr(96, firstWord)
             firstWord := calldataload(172)
             tokenOut := shr(96, firstWord)
-            let dexId := and(UINT8_MASK, shr(88, firstWord))
+            let forkId := and(UINT8_MASK, shr(88, firstWord))
             calldataLength := and(UINT16_MASK, shr(56, firstWord))
 
             ////////////////////////////////////////////////////
             // Compute and validate pool address
             ////////////////////////////////////////////////////
             let s := mload(0x40)
-            switch dexId
+            switch forkId
             case 0 {
                 mstore(s, IZI_FF_FACTORY)
                 let p := add(s, 21)
