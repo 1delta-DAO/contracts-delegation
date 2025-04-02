@@ -55,8 +55,8 @@ abstract contract ExternalCall is Masks, DeltaErrors {
             currentOffset := add(16, currentOffset)
 
             mstore(ptr, COMPOSER_LEVEL2_COMPOSE)
-            mstore(add(ptr, 0x24), 0x20) // offset
-            mstore(add(ptr, 0x44), dataLength) // length
+            mstore(add(ptr, 0x4), 0x20) // offset
+            mstore(add(ptr, 0x24), dataLength) // length
 
             // copy calldata
             calldatacopy(add(ptr, 0x64), currentOffset, dataLength)
@@ -66,7 +66,7 @@ abstract contract ExternalCall is Masks, DeltaErrors {
                     target,
                     callValue,
                     ptr, //
-                    dataLength, // the length must be correct or the call will fail
+                    add(0x44, dataLength), //selector plus 0x44 (selector, offset, length)
                     0x0, // output = empty
                     0x0 // output size = zero
                 )
