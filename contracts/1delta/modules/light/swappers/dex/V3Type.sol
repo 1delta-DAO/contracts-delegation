@@ -79,11 +79,8 @@ abstract contract V3TypeGeneric is Masks {
             mstore(add(ptr, 196), shl(96, callerAddress))
             mstore(add(ptr, 216), shl(96, tokenIn))
             mstore(add(ptr, 236), shl(96, tokenOut))
-            // mstore8(add(ptr, 256), dexId)
-            // mstore(add(ptr, 257), shl(240, fee)) // fee
-            // mstore(add(ptr, 259), shl(240, clLength)) // calldataLength (within bytes)
             // Store furhter calldata (add 4 to length due to fee and clLength)
-            calldatacopy(add(ptr, 256), currentOffset, add(clLength, 4))
+            calldatacopy(add(ptr, 256), currentOffset, add(clLength, 5))
 
             switch zeroForOne
             case 0 {
@@ -188,7 +185,7 @@ abstract contract V3TypeGeneric is Masks {
                 mstore(add(ptr, 204), shl(96, tokenOut))
 
                 // Store furhter calldata
-                calldatacopy(add(ptr, 224), currentOffset, add(clLength, 4))
+                calldatacopy(add(ptr, 224), currentOffset, add(clLength, 5))
 
                 // Perform the external 'swap' call
                 if iszero(call(gas(), pool, 0, ptr, add(196, plStored), ptr, 32)) {
@@ -234,7 +231,7 @@ abstract contract V3TypeGeneric is Masks {
                 mstore(add(ptr, 204), shl(96, tokenOut))
 
                 // Store furhter calldata
-                calldatacopy(add(ptr, 224), currentOffset, add(clLength, 4))
+                calldatacopy(add(ptr, 224), currentOffset, add(clLength, 5))
 
                 // Perform the external 'swap' call
                 if iszero(call(gas(), pool, 0, ptr, add(196, plStored), ptr, 64)) {

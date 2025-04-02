@@ -97,7 +97,7 @@ abstract contract UniV3Callbacks is V3ReferencesBase, ERC20Selectors, Masks, Del
             ////////////////////////////////////////////////////
             let s := mload(0x40)
             switch dexId
-            case 49 {
+            case 0 {
                 mstore(s, IZI_FF_FACTORY)
                 let p := add(s, 21)
                 // Compute the inner hash in-place
@@ -122,8 +122,8 @@ abstract contract UniV3Callbacks is V3ReferencesBase, ERC20Selectors, Masks, Del
             // If the caller is not the calculated pool, we revert
             ////////////////////////////////////////////////////
             if xor(caller(), and(ADDRESS_MASK, keccak256(s, 85))) {
-                // mstore(0x0, BAD_POOL)
-                // revert(0x0, 0x4)
+                mstore(0x0, BAD_POOL)
+                revert(0x0, 0x4)
             }
         }
         clSwapCallback(
@@ -156,7 +156,7 @@ abstract contract UniV3Callbacks is V3ReferencesBase, ERC20Selectors, Masks, Del
             ////////////////////////////////////////////////////
             let s := mload(0x40)
             switch dexId
-            case 49 {
+            case 0 {
                 mstore(s, IZI_FF_FACTORY)
                 let p := add(s, 21)
                 // Compute the inner hash in-place
