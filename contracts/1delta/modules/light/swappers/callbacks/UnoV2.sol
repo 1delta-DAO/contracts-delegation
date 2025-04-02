@@ -32,19 +32,17 @@ abstract contract UniV2Callbacks is V2ReferencesBase, ERC20Selectors, Masks, Del
                 mstore(0, INVALID_FLASH_LOAN)
                 revert(0, 0x4)
             }
-            let firstWord := calldataload(PATH_OFFSET_CALLBACK_V2)
-            callerAddress := shr(96, firstWord)
-            
-            firstWord := calldataload(184)
-            tokenIn := shr(96, firstWord)
+            callerAddress := shr(96, calldataload(PATH_OFFSET_CALLBACK_V2))
 
-            firstWord := calldataload(204)
-            tokenOut := shr(96, firstWord)
+            // get tokens
+            tokenIn := shr(96, calldataload(184))
+            tokenOut := shr(96, calldataload(204))
 
-            firstWord := calldataload(224)
-            amountIn := shr(144, firstWord)
-            let dexId := and(UINT8_MASK, shr(136, firstWord))
-            calldataLength := and(UINT16_MASK, shr(120, firstWord))
+            // the next word has more parameters
+            let amountDexIdCalldataLength := calldataload(224)
+            amountIn := shr(144, amountDexIdCalldataLength)
+            let dexId := and(UINT8_MASK, shr(136, amountDexIdCalldataLength))
+            calldataLength := and(UINT16_MASK, shr(120, amountDexIdCalldataLength))
 
             let ptr := mload(0x40)
             switch lt(tokenIn, tokenOut)
