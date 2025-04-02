@@ -6,8 +6,6 @@ pragma solidity 0.8.28;
 * Author: Achthar | 1delta 
 /******************************************************************************/
 
-// solhint-disable max-line-length
-
 import {Masks} from "../../../shared/masks/Masks.sol";
 
 /**
@@ -41,7 +39,7 @@ abstract contract V3TypeGeneric is Masks {
             let pool := calldataload(currentOffset)
             // skip pool
             currentOffset := add(currentOffset, 20)
-            let clLength := and(UINT16_MASK, shr(64, pool))
+            let clLength := and(UINT16_MASK, shr(56, pool))
             pool := shr(
                 96,
                 pool // starts as first param
@@ -147,7 +145,7 @@ abstract contract V3TypeGeneric is Masks {
             let pool := calldataload(currentOffset)
             // skip pool
             currentOffset := add(currentOffset, 20)
-            let clLength := and(UINT16_MASK, shr(64, pool))
+            let clLength := and(UINT16_MASK, shr(56, pool))
             pool := shr(
                 96,
                 pool // starts as first param
