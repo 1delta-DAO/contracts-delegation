@@ -71,7 +71,7 @@ abstract contract V3TypeGeneric is Masks {
              * | 0      | 20             | caller               |
              * | 20     | 20             | tokenIn              |
              * | 40     | 20             | tokenOut             |
-             * | 60     | 1              | dexId                |
+             * | 60     | 1              | dexId                | <- we use calldatacopy from here
              * | 61     | 2              | fee                  |
              * | 63     | 2              | calldataLength       |
              * | 65     | calldataLength | calldata             |
@@ -179,16 +179,13 @@ abstract contract V3TypeGeneric is Masks {
                  * | 20     | 20             | tokenIn              |
                  * | 40     | 20             | tokenOut             |
                  * | 60     | 1              | dexId                |
-                 * | 61     | 2              | fee                  |
+                 * | 61     | 2              | fee                  | <- we use calldatacopy from here
                  * | 63     | 2              | calldataLength       |
                  * | 65     | calldataLength | calldata             |
                  */
                 mstore(add(ptr, 164), shl(96, callerAddress))
                 mstore(add(ptr, 184), shl(96, tokenIn))
                 mstore(add(ptr, 204), shl(96, tokenOut))
-                // mstore8(add(ptr, 224), dexId)
-                // mstore(add(ptr, 225), shl(240, fee)) // fee
-                // mstore(add(ptr, 227), shl(240, clLength)) // calldataLength (within bytes)
 
                 // Store furhter calldata
                 calldatacopy(add(ptr, 224), currentOffset, add(clLength, 4))
@@ -228,16 +225,13 @@ abstract contract V3TypeGeneric is Masks {
                  * | 20     | 20             | tokenIn              |
                  * | 40     | 20             | tokenOut             |
                  * | 60     | 1              | dexId                |
-                 * | 61     | 2              | fee                  |
+                 * | 61     | 2              | fee                  | <- we use calldatacopy from here
                  * | 63     | 2              | calldataLength       |
                  * | 65     | calldataLength | calldata             |
                  */
                 mstore(add(ptr, 164), shl(96, callerAddress))
                 mstore(add(ptr, 184), shl(96, tokenIn))
                 mstore(add(ptr, 204), shl(96, tokenOut))
-                // mstore8(add(ptr, 224), dexId)
-                // mstore(add(ptr, 225), shl(240, fee)) // fee
-                // mstore(add(ptr, 227), shl(240, clLength)) // calldataLength (within bytes)
 
                 // Store furhter calldata
                 calldatacopy(add(ptr, 224), currentOffset, add(clLength, 4))
