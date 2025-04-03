@@ -10,7 +10,6 @@ library DexForkMappings {
     uint256 internal constant ANY_V3 = 0xff;
     uint256 internal constant ANY_IZI = 0xff;
 
-
     // explicits
     uint256 internal constant UNISWAP_V4 = 0;
     uint256 internal constant BALANCER_V3 = 0;

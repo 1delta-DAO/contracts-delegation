@@ -21,10 +21,6 @@ interface IF {
  * - supply, supplyCollateral, borrow, repay, erc4646Deposit, erc4646Withdraw
  */
 contract SwapSingleTest is BaseTest {
-    uint8 internal UNISWAP_V3_DEX_ID = 0;
-    uint8 internal UNISWAP_V3_FORK_ID = 0;
-    uint8 internal IZUMI_DEX_ID = 49;
-    uint8 internal UNISWAP_V2_DEX_ID = 100;
     address internal constant UNI_FACTORY = 0x33128a8fC17869897dcE68Ed026d694621f6FDfD;
     address internal constant UNI_V2_FACTORY = 0x8909Dc15e40173Ff4699343b6eB8132c65e18eC6;
     address internal constant IZI_FACTORY = 0x8c7d3063579BdB0b90997e18A770eaE32E1eBb08;
