@@ -19,7 +19,7 @@ interface IERC20 {
 }
 
 contract V3QuoterTest is BaseTest {
-    uint256 internal constant forkBlock = 22190000;
+    uint256 internal constant forkBlock = 28493852;
 
     address internal constant UNI_FACTORY = 0x33128a8fC17869897dcE68Ed026d694621f6FDfD;
 
@@ -32,7 +32,7 @@ contract V3QuoterTest is BaseTest {
     address internal WETH_USDC_500_POOL;
 
     function setUp() public virtual {
-        _init(Chains.ETHEREUM_MAINNET, forkBlock);
+        _init(Chains.BASE, forkBlock);
 
         WETH = chain.getTokenAddress(Tokens.WETH);
         USDC = chain.getTokenAddress(Tokens.USDC);
@@ -104,7 +104,7 @@ contract V3QuoterTest is BaseTest {
             USDC, address(this), 0, WETH_USDC_500_POOL, 500, CalldataLib.DexPayConfig.CONTRACT_PAYS, new bytes(0)
         );
         // Get quote
-        uint256 quotedAmountOut = quoter.quote(path);
+        uint256 quotedAmountOut = quoter.quote(abi.encodePacked(swapBranch, path));
 
         // Get actual amount from a real swap
         uint256 balanceBefore = IERC20(USDC).balanceOf(address(this));
