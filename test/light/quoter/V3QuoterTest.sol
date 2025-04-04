@@ -104,7 +104,7 @@ contract V3QuoterTest is BaseTest {
             USDC, address(this), 0, WETH_USDC_500_POOL, 500, CalldataLib.DexPayConfig.CONTRACT_PAYS, new bytes(0)
         );
         // Get quote
-        uint256 quotedAmountOut = quoter.quote(abi.encodePacked(swapBranch, path));
+        uint256 quotedAmountOut = quoter.quote(abi.encodePacked(uint128(amountIn), uint128(0), USDC, swapBranch, path));
 
         // Get actual amount from a real swap
         uint256 balanceBefore = IERC20(USDC).balanceOf(address(this));
