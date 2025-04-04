@@ -92,7 +92,7 @@ contract V3QuoterTest is BaseTest {
         bytes memory swapCall = CalldataLib.uniswapV3StyleSwap(
             abi.encodePacked(swapHead, swapBranch),
             USDC,
-            address(this),
+            address(quoter),
             0,
             WETH_USDC_500_POOL,
             500,
@@ -101,7 +101,7 @@ contract V3QuoterTest is BaseTest {
         );
         // Use utility function to encode path
         bytes memory path = uniswapV3StyleSwap(
-            USDC, address(this), 0, WETH_USDC_500_POOL, 500, CalldataLib.DexPayConfig.CONTRACT_PAYS, new bytes(0)
+            USDC, address(quoter), 0, WETH_USDC_500_POOL, 500, CalldataLib.DexPayConfig.CONTRACT_PAYS, new bytes(0)
         );
         // Get quote
         uint256 quotedAmountOut = quoter.quote(abi.encodePacked(uint128(amountIn), uint128(0), USDC, swapBranch, path));
