@@ -11,15 +11,15 @@ contract QuoterLight is Masks, V3TypeQuoter, ERC20Selectors {
     error InvalidSplitFormat();
 
     function quote(bytes calldata data) external view returns (uint256 amountOut) {
-        return quoteExactInput();
+        return quoteExactInput(data);
     }
     //////////////////
 
-    function quoteExactInput() internal view returns (uint256) {
+    function quoteExactInput(bytes calldata data) internal view returns (uint256) {
         uint256 amountIn;
         uint256 minimumAmountReceived;
         address tokenIn;
-        uint256 currentOffset = 0;
+        uint256 currentOffset;
         /*
          * Store the data for the callback as follows
          * | Offset | Length (bytes) | Description          |
@@ -32,7 +32,8 @@ contract QuoterLight is Masks, V3TypeQuoter, ERC20Selectors {
          * `data` is a path matrix definition (see BaseSwapepr)
          */
         assembly {
-            minimumAmountReceived := calldataload(0x4)
+            currentOffset := data.offset
+            minimumAmountReceived := calldataload(currentOffset)
             amountIn := shr(128, minimumAmountReceived)
             minimumAmountReceived := and(UINT128_MASK, minimumAmountReceived)
             currentOffset := add(currentOffset, 32)

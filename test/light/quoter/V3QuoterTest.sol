@@ -85,6 +85,9 @@ contract V3QuoterTest is BaseTest {
      * END OF CALLDATA UTILS
      */
     function test_light_quoter_simple_swap() public {
+        /**
+         * WETH -> USDC (0,0)
+         */
         uint256 amountIn = 1 * 1e18; // 1 WETH
 
         bytes memory swapHead = CalldataLib.swapHead(amountIn, 0, WETH, false);
@@ -104,7 +107,7 @@ contract V3QuoterTest is BaseTest {
             USDC, address(quoter), 0, WETH_USDC_500_POOL, 500, CalldataLib.DexPayConfig.CONTRACT_PAYS, new bytes(0)
         );
         // Get quote
-        uint256 quotedAmountOut = quoter.quote(abi.encodePacked(uint128(amountIn), uint128(0), USDC, swapBranch, path));
+        uint256 quotedAmountOut = quoter.quote(abi.encodePacked(uint128(amountIn), uint128(0), WETH, swapBranch, path));
 
         // Get actual amount from a real swap
         uint256 balanceBefore = IERC20(USDC).balanceOf(address(this));
