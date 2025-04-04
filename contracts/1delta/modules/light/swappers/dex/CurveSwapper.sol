@@ -133,7 +133,7 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                 )
 
                 if iszero(success) {
-                    returndatacopy(0, 0, rdsize)
+                    returndatacopy(ptr, 0, rdsize)
                     revert(0, rdsize)
                 }
             }
@@ -199,8 +199,8 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                 mstore(add(ptr, 0x4), and(shr(88, curveData), UINT8_MASK))
                 mstore(add(ptr, 0x84), receiver) // receiver, set curveData accordingly
                 if iszero(call(gas(), pool, 0x0, ptr, 0xA4, ptr, 0x20)) {
-                    returndatacopy(0, 0, returndatasize())
-                    revert(0, returndatasize())
+                    returndatacopy(ptr, 0, returndatasize())
+                    revert(ptr, returndatasize())
                 }
                 curveData := 0
             }
@@ -209,8 +209,8 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                 mstore(ptr, EXCHANGE_INT)
                 mstore(add(ptr, 0x4), and(shr(88, curveData), UINT8_MASK))
                 if iszero(call(gas(), pool, 0x0, ptr, 0x84, ptr, 0x20)) {
-                    returndatacopy(0, 0, returndatasize())
-                    revert(0, returndatasize())
+                    returndatacopy(ptr, 0, returndatasize())
+                    revert(ptr, returndatasize())
                 }
                 curveData := MAX_UINT256
             }
@@ -220,8 +220,8 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                 mstore(add(ptr, 0x4), and(shr(88, curveData), UINT8_MASK))
                 mstore(add(ptr, 0x84), receiver) // receiver, set curveData accordingly
                 if iszero(call(gas(), pool, 0x0, ptr, 0xA4, ptr, 0x20)) {
-                    returndatacopy(0, 0, returndatasize())
-                    revert(0, returndatasize())
+                    returndatacopy(ptr, 0, returndatasize())
+                    revert(ptr, returndatasize())
                 }
                 curveData := 0
             }
@@ -231,8 +231,8 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                 mstore(add(ptr, 0x4), and(shr(88, curveData), UINT8_MASK))
 
                 if iszero(call(gas(), pool, 0x0, ptr, 0x84, ptr, 0x20)) {
-                    returndatacopy(0, 0, returndatasize())
-                    revert(0, returndatasize())
+                    returndatacopy(ptr, 0, returndatasize())
+                    revert(ptr, returndatasize())
                 }
                 curveData := MAX_UINT256
             }
@@ -242,8 +242,8 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                 mstore(add(ptr, 0x4), and(shr(88, curveData), UINT8_MASK))
                 mstore(add(ptr, 0x84), receiver)
                 if iszero(call(gas(), pool, 0x0, ptr, 0xA4, ptr, 0x20)) {
-                    returndatacopy(0, 0, returndatasize())
-                    revert(0, returndatasize())
+                    returndatacopy(ptr, 0, returndatasize())
+                    revert(ptr, returndatasize())
                 }
                 curveData := 0
             }
@@ -252,8 +252,8 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                 mstore(ptr, EXCHANGE_UNDERLYING_INT)
                 mstore(add(ptr, 0x4), and(shr(88, curveData), UINT8_MASK))
                 if iszero(call(gas(), pool, 0x0, ptr, 0x84, ptr, 0x20)) {
-                    returndatacopy(0, 0, returndatasize())
-                    revert(0, returndatasize())
+                    returndatacopy(ptr, 0, returndatasize())
+                    revert(ptr, returndatasize())
                 }
                 curveData := MAX_UINT256
             }
@@ -263,8 +263,8 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                 mstore(add(ptr, 0x4), and(shr(88, curveData), UINT8_MASK))
                 mstore(add(ptr, 0x84), receiver)
                 if iszero(call(gas(), pool, 0x0, ptr, 0xA4, ptr, 0x20)) {
-                    returndatacopy(0, 0, returndatasize())
-                    revert(0, returndatasize())
+                    returndatacopy(ptr, 0, returndatasize())
+                    revert(ptr, returndatasize())
                 }
                 curveData := 0
             }
@@ -273,8 +273,8 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                 mstore(ptr, EXCHANGE_UNDERLYING)
                 mstore(add(ptr, 0x4), and(shr(88, curveData), UINT8_MASK))
                 if iszero(call(gas(), pool, 0x0, ptr, 0x84, ptr, 0x20)) {
-                    returndatacopy(0, 0, returndatasize())
-                    revert(0, returndatasize())
+                    returndatacopy(ptr, 0, returndatasize())
+                    revert(ptr, returndatasize())
                 }
                 curveData := MAX_UINT256
             }
@@ -284,8 +284,8 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                 mstore(add(ptr, 0x4), and(shr(88, curveData), UINT8_MASK))
                 mstore(add(ptr, 0x84), MAX_UINT256) // deadline
                 if iszero(call(gas(), pool, 0x0, ptr, 0xA4, ptr, 0x20)) {
-                    returndatacopy(0, 0, returndatasize())
-                    revert(0, returndatasize())
+                    returndatacopy(ptr, 0, returndatasize())
+                    revert(ptr, returndatasize())
                 }
                 curveData := MAX_UINT256
             }
@@ -311,7 +311,7 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                     0,
                     ptr,
                     0x44,
-                    ptr,
+                    0,
                     32
                 )
 
@@ -326,14 +326,14 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                         iszero(rdsize), // no return data, or
                         and(
                             gt(rdsize, 31), // at least 32 bytes
-                            eq(mload(ptr), 1) // starts with uint256(1)
+                            eq(mload(0), 1) // starts with uint256(1)
                         )
                     )
                 )
 
                 if iszero(success) {
-                    returndatacopy(0, 0, rdsize)
-                    revert(0, rdsize)
+                    returndatacopy(ptr, 0, rdsize)
+                    revert(ptr, rdsize)
                 }
             }
             curveData := add(currentOffset, 25)
@@ -477,7 +477,7 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                 )
 
                 if iszero(success) {
-                    returndatacopy(0, 0, rdsize)
+                    returndatacopy(ptr, 0, rdsize)
                     revert(0, rdsize)
                 }
             }
@@ -539,7 +539,7 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                 )
 
                 if iszero(success) {
-                    returndatacopy(0, 0, rdsize)
+                    returndatacopy(ptr, 0, rdsize)
                     revert(0, rdsize)
                 }
             }
@@ -567,7 +567,7 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                 )
 
                 if iszero(success) {
-                    returndatacopy(0, 0, rdsize)
+                    returndatacopy(ptr, 0, rdsize)
                     revert(0, rdsize)
                 }
             }
