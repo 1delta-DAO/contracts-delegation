@@ -10,6 +10,7 @@ library DexTypeMappings {
 
     uint256 internal constant BALANCER_V2_ID = 3;
     uint256 internal constant UNISWAP_V2_ID = 6;
+    uint256 internal constant UNISWAP_V2_FOT_ID = 7;
 
     // all DEX that behave like curve
     // indexs as input

@@ -201,9 +201,10 @@ library CalldataLib {
         address receiver,
         address pool,
         DodoSelector selector, //
-        DexPayConfig cfg
+        uint256 poolId,
+        DexPayConfig cfg,
+        bytes memory flashCalldata
     ) internal pure returns (bytes memory data) {
-        if (cfg == DexPayConfig.FLASH) revert("Flash not yet supported for dodo");
         data = abi.encodePacked(
             currentData,
             tokenOut,
@@ -211,7 +212,9 @@ library CalldataLib {
             uint8(DexTypeMappings.DODO_ID),
             pool,
             uint8(selector),
-            uint16(uint256(cfg)) //
+            uint16(poolId),
+            uint16(cfg == DexPayConfig.FLASH ? flashCalldata.length : uint256(cfg)), //
+            bytes(cfg == DexPayConfig.FLASH ? flashCalldata : new bytes(0))
         );
     }
 

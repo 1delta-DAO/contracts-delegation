@@ -410,6 +410,17 @@ abstract contract BaseSwapper is
                 payer //
             );
         }
+        // uniswapV2 style
+        else if (dexTypeId == DexTypeMappings.UNISWAP_V2_FOT_ID) {
+            (amountIn, currentOffset) = _swapUniV2ExactInFOTGeneric(
+                amountIn,
+                tokenIn,
+                tokenOut,
+                receiver,
+                currentOffset,
+                payer //
+            );
+        }
         // WOO Fi
         else if (dexTypeId == DexTypeMappings.WOO_FI_ID) {
             (amountIn, currentOffset) = _swapWooFiExactIn(
@@ -457,6 +468,7 @@ abstract contract BaseSwapper is
             (amountIn, currentOffset) = _swapDodoV2ExactIn(
                 amountIn,
                 tokenIn,
+                tokenOut,
                 receiver,
                 payer, //
                 currentOffset
@@ -467,7 +479,6 @@ abstract contract BaseSwapper is
             (amountIn, currentOffset) = _swapLBexactIn(
                 amountIn,
                 tokenIn,
-                tokenOut,
                 receiver,
                 payer, //
                 currentOffset

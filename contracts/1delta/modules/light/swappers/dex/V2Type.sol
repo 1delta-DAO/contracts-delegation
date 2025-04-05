@@ -225,8 +225,8 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
                     )
 
                     if iszero(success) {
-                        returndatacopy(0, 0, rdsize)
-                        revert(0, rdsize)
+                        returndatacopy(ptr, 0, rdsize)
+                        revert(ptr, rdsize)
                     }
                 }
                 // transfer plain
@@ -253,8 +253,8 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
                     )
 
                     if iszero(success) {
-                        returndatacopy(0, 0, rdsize)
-                        revert(0, rdsize)
+                        returndatacopy(ptr, 0, rdsize)
+                        revert(ptr, rdsize)
                     }
                 }
                 ////////////////////////////////////////////////////
@@ -274,8 +274,8 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
                     )
                 ) {
                     // Forward the error
-                    returndatacopy(0, 0, returndatasize())
-                    revert(0, returndatasize())
+                    returndatacopy(ptr, 0, returndatasize())
+                    revert(ptr, returndatasize())
                 }
                 // update clLength as new offset
                 clLength := add(currentOffset, 25)
@@ -299,7 +299,7 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
         address receiver,
         uint256 currentOffset,
         address callerAddress
-    ) internal returns (uint256 buyAmount, uint256 clLength) {
+    ) internal returns (uint256 buyAmount, uint256) {
         assembly {
             let ptr := mload(0x40) // free memory pointer
 
@@ -311,9 +311,9 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
             // this is expected to be 10000 - x, where x is the poolfee in bps
             let poolFeeDenom := and(shr(80, pair), UINT16_MASK)
 
-            clLength := and(UINT16_MASK, shr(64, pair))
-
-            if iszero(clLength) {
+            // We only allow the caller to pay as otherwise, the fee is charged twice
+            switch and(UINT16_MASK, shr(64, pair))
+            case 0 {
                 // selector for transferFrom(address,address,uint256)
                 mstore(ptr, ERC20_TRANSFER_FROM)
                 mstore(add(ptr, 0x04), callerAddress)
@@ -338,9 +338,12 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
                 )
 
                 if iszero(success) {
-                    returndatacopy(0, 0, rdsize)
-                    revert(0, rdsize)
+                    returndatacopy(ptr, 0, rdsize)
+                    revert(ptr, rdsize)
                 }
+            }
+            default {
+                revert(0, 0)
             }
 
             pair := shr(96, pair)
@@ -423,10 +426,13 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
                     )
                 ) {
                     // Forward the error
-                    returndatacopy(0, 0, returndatasize())
-                    revert(0, returndatasize())
+                    returndatacopy(ptr, 0, returndatasize())
+                    revert(ptr, returndatasize())
                 }
             }
+            // update clLength as new offset
+            currentOffset := add(currentOffset, 25)
         }
+        return (buyAmount, currentOffset);
     }
 }

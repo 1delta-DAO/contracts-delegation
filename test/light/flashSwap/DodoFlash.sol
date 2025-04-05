@@ -9,6 +9,12 @@ import {BaseTest} from "../../shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
 import "../utils/CalldataLib.sol";
 
+interface DVMF {
+    function _REGISTRY_(address, address, uint256) external view returns (address);
+
+    function getDODOPool(address, address) external view returns (address[] memory);
+}
+
 /**
  * We test all morpho blue operations
  * - supply, supplyCollateral, borrow, repay, erc4646Deposit, erc4646Withdraw
@@ -19,7 +25,10 @@ contract DodoLightTest is BaseTest {
     uint256 internal constant forkBlock = 27970029;
     OneDeltaComposerLight oneDV2;
 
+    address internal constant DVM_FACTORY = 0x0226fCE8c969604C3A0AD19c37d1FAFac73e13c2;
     address internal constant DODO_WETH_JOJO = 0x0Df758CFe1DE840360a92424494776E8C7f29A9c;
+
+    uint256 internal constant DODO_WETH_JOJO_INDEX = 0;
 
     address internal USDC;
     address internal WETH;
@@ -40,7 +49,7 @@ contract DodoLightTest is BaseTest {
         oneDV2 = new OneDeltaComposerLight();
     }
 
-    function dodPoolWETHJOJOSwap(address receiver, uint256 amount) internal view returns (bytes memory data) {
+    function dodPoolWETHJOJOSwap(address receiver, uint256 amount, bytes memory callbackData) internal view returns (bytes memory data) {
         // create head config
         data = CalldataLib.swapHead(
             amount,
@@ -56,12 +65,12 @@ contract DodoLightTest is BaseTest {
             DODO_WETH_JOJO,
             CalldataLib.DodoSelector.SELL_QUOTE, // sell quote
             0,
-            CalldataLib.DexPayConfig.CALLER_PAYS, // payMode <- user pays
-            hex""
+            CalldataLib.DexPayConfig.FLASH, // payMode <- user pays
+            callbackData
         );
     }
 
-    function test_light_swap_dodo_single() external {
+    function test_light_flash_swap_dodo_single() external {
         vm.assume(user != address(0));
 
         address tokenIn = WETH;
@@ -72,10 +81,15 @@ contract DodoLightTest is BaseTest {
 
         vm.prank(user);
         IERC20All(tokenIn).approve(address(oneDV2), type(uint).max);
-
+        bytes memory transfer = CalldataLib.transferIn(
+            tokenIn,
+            DODO_WETH_JOJO,
+            amount //
+        );
         bytes memory swap = dodPoolWETHJOJOSwap(
             user,
-            amount //
+            amount, //
+            transfer
         );
 
         uint256 balBefore = IERC20All(tokenOut).balanceOf(user);
