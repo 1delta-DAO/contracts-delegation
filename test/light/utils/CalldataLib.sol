@@ -122,6 +122,24 @@ library CalldataLib {
         );
     }
 
+    function syncSwapStyleSwap(
+        bytes memory currentData,
+        address tokenOut,
+        address receiver,
+        address pool,
+        DexPayConfig cfg
+    ) internal pure returns (bytes memory data) {
+        if (cfg == DexPayConfig.FLASH) revert("Invalid config for v2 swap");
+        data = abi.encodePacked(
+            currentData,
+            tokenOut,
+            receiver,
+            uint8(DexTypeMappings.SYNC_SWAP_ID),
+            pool,
+            uint16(uint256(cfg)) // cll length <- user pays
+        );
+    }
+
     function uniswapV3StyleSwap(
         bytes memory currentData,
         address tokenOut,

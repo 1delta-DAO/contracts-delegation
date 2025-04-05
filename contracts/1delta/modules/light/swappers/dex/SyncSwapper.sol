@@ -23,7 +23,7 @@ abstract contract SyncSwapper is ERC20Selectors, Masks {
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
      * | 0      | 20             | pool                 |
-     * | 21     | 2              | pay flag             | <- 0: caller pays; 1: contract pays; greater: pre-funded
+     * | 20     | 2              | pay flag             | <- 0: caller pays; 1: contract pays; greater: pre-funded
      */
     function _swapSyncExactIn(
         uint256 fromAmount,
