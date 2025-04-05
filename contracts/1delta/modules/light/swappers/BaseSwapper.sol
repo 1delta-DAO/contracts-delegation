@@ -389,7 +389,9 @@ abstract contract BaseSwapper is
                 payer,
                 currentOffset
             );
-        } else if (dexTypeId == DexTypeMappings.CURVE_FORK_ID) {
+        }
+        // solidity-based forks of Curve
+        else if (dexTypeId == DexTypeMappings.CURVE_FORK_ID) {
             (amountIn, currentOffset) = _swapCurveFork(
                 tokenIn,
                 tokenOut,
@@ -474,7 +476,7 @@ abstract contract BaseSwapper is
                 currentOffset
             );
         }
-        // Moe LB
+        // Moe/Joe LB
         else if (dexTypeId == DexTypeMappings.LB_ID) {
             (amountIn, currentOffset) = _swapLBexactIn(
                 amountIn,

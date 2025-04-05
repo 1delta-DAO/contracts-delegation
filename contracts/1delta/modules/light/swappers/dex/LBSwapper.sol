@@ -40,7 +40,6 @@ abstract contract LBSwapper is ERC20Selectors, Masks {
                 // payFlag evaluation
                 switch payFlag
                 case 0 {
-                    pool := shr(96, pool)
                     // selector for transferFrom(address,address,uint256)
                     mstore(ptr, ERC20_TRANSFER_FROM)
                     mstore(add(ptr, 0x04), callerAddress)
@@ -50,7 +49,6 @@ abstract contract LBSwapper is ERC20Selectors, Masks {
                 }
                 // transfer plain
                 case 1 {
-                    pool := shr(96, pool)
                     // selector for transfer(address,uint256)
                     mstore(ptr, ERC20_TRANSFER)
                     mstore(add(ptr, 0x04), pool)

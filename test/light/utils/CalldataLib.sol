@@ -16,6 +16,7 @@ library CalldataLib {
     enum DexPayConfig {
         CALLER_PAYS,
         CONTRACT_PAYS,
+        PRE_FUND,
         FLASH
     }
 
@@ -97,6 +98,26 @@ library CalldataLib {
             uint8(DexTypeMappings.BALANCER_V2_ID),
             poolId,
             balancerVault,
+            uint16(uint256(cfg)) // cll length <- user pays
+        );
+    }
+
+    function lbStyleSwap(
+        bytes memory currentData,
+        address tokenOut,
+        address receiver,
+        address pool,
+        bool swapForY,
+        DexPayConfig cfg
+    ) internal pure returns (bytes memory data) {
+        if (cfg == DexPayConfig.FLASH) revert("Invalid config for v2 swap");
+        data = abi.encodePacked(
+            currentData,
+            tokenOut,
+            receiver,
+            uint8(DexTypeMappings.LB_ID),
+            pool,
+            uint8(swapForY ? 1 : 0),
             uint16(uint256(cfg)) // cll length <- user pays
         );
     }
@@ -215,6 +236,42 @@ library CalldataLib {
             uint16(poolId),
             uint16(cfg == DexPayConfig.FLASH ? flashCalldata.length : uint256(cfg)), //
             bytes(cfg == DexPayConfig.FLASH ? flashCalldata : new bytes(0))
+        );
+    }
+
+    function wooStyleSwap(
+        bytes memory currentData,
+        address tokenOut,
+        address receiver,
+        address pool,
+        DexPayConfig cfg
+    ) internal pure returns (bytes memory data) {
+        if (cfg == DexPayConfig.FLASH) revert("No flash for Woo");
+        data = abi.encodePacked(
+            currentData,
+            tokenOut,
+            receiver,
+            uint8(DexTypeMappings.WOO_FI_ID),
+            pool,
+            uint16(uint256(cfg)) //
+        );
+    }
+
+    function gmxStyleSwap(
+        bytes memory currentData,
+        address tokenOut,
+        address receiver,
+        address pool,
+        DexPayConfig cfg
+    ) internal pure returns (bytes memory data) {
+        if (cfg == DexPayConfig.FLASH) revert("No flash for Woo");
+        data = abi.encodePacked(
+            currentData,
+            tokenOut,
+            receiver,
+            uint8(DexTypeMappings.GMX_ID),
+            pool,
+            uint16(uint256(cfg)) //
         );
     }
 
