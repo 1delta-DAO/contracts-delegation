@@ -239,16 +239,17 @@ abstract contract V4TypeGeneric is ERC20Selectors, Masks {
             }
 
             /**
-             * If the pay mode is >=3, we assume deferred payment
+             * If the pay mode is >=2, we assume deferred payment
              * This means that the composer must manually settle
              * for the input amount
              * Warning: This should not be done for pools with
              * arbitrary hooks as these can have cases where
              * `amountIn` selected != actual `amountIn`
              */
-            if lt(tempVar, 3) {
+            if lt(tempVar, 2) {
                 /** Pull funds from payer */
                 switch iszero(tokenIn)
+                // nonnative
                 case 0 {
                     /** Sync pay asset */
 
@@ -330,6 +331,7 @@ abstract contract V4TypeGeneric is ERC20Selectors, Masks {
                     }
                     tempVar := 0
                 }
+                // native
                 default {
                     tempVar := fromAmount
                 }

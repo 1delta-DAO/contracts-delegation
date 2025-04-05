@@ -15,14 +15,14 @@ import {Masks} from "../../../shared/masks/Masks.sol";
  * @title DodoV2 swapper contract
  */
 abstract contract DodoV2Swapper is ERC20Selectors, Masks {
-    /** 
+    /**
      * We need this to avoid stack too deep in the overall context
      * if `clLength<3` no flash loan will be executed,
      * othewise, we skip the funding transfers
      * 0 is pulling from caller
      * 1 is transferring from contract
      * 2 is pre-funded
-     * 
+     *
      */
     function _dodoPrepare(
         uint256 amountIn,
@@ -38,8 +38,7 @@ abstract contract DodoV2Swapper is ERC20Selectors, Masks {
             clLength := and(UINT16_MASK, shr(56, dodoData))
 
             let ptr := mload(0x40)
-            switch lt(clLength, 3)
-            case 1 {
+            if lt(clLength, 2) {
                 let success
                 switch clLength
                 case 0 {

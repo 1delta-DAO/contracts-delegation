@@ -144,8 +144,11 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
             mstore(add(ptr, 100), 0x80) // bytes offset
 
             ////////////////////////////////////////////////////
-            // In case of a flash swap, we copy the calldata to
-            // the execution parameters
+            // This one is tricky:
+            // if data length is > 3, we assume a flash swap and defer payment
+            // if it is 0: we pull from caller,
+            //          1: we pay from contract, and
+            //          2: we assume pre-funding
             ////////////////////////////////////////////////////
             switch lt(clLength, 3)
             case 0 {
@@ -210,21 +213,19 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
                     let success := call(gas(), tokenIn, 0, ptr, 0x64, 0, 32)
 
                     let rdsize := returndatasize()
-                    // Check for ERC20 success. ERC20 tokens should return a boolean,
-                    // but some don't. We accept 0-length return data as success, or at
-                    // least 32 bytes that starts with a 32-byte boolean true.
-                    success := and(
-                        success, // call itself succeeded
-                        or(
-                            iszero(rdsize), // no return data, or
-                            and(
-                                gt(rdsize, 31), // at least 32 bytes
-                                eq(mload(0), 1) // starts with uint256(1)
+
+                    if iszero(
+                        and(
+                            success, // call itself succeeded
+                            or(
+                                iszero(rdsize), // no return data, or
+                                and(
+                                    gt(rdsize, 31), // at least 32 bytes
+                                    eq(mload(0), 1) // starts with uint256(1)
+                                )
                             )
                         )
-                    )
-
-                    if iszero(success) {
+                    ) {
                         returndatacopy(ptr, 0, rdsize)
                         revert(ptr, rdsize)
                     }
@@ -238,21 +239,19 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
                     let success := call(gas(), tokenIn, 0, ptr, 0x44, 0, 32)
 
                     let rdsize := returndatasize()
-                    // Check for ERC20 success. ERC20 tokens should return a boolean,
-                    // but some don't. We accept 0-length return data as success, or at
-                    // least 32 bytes that starts with a 32-byte boolean true.
-                    success := and(
-                        success, // call itself succeeded
-                        or(
-                            iszero(rdsize), // no return data, or
-                            and(
-                                gt(rdsize, 31), // at least 32 bytes
-                                eq(mload(0), 1) // starts with uint256(1)
+
+                    if iszero(
+                        and(
+                            success, // call itself succeeded
+                            or(
+                                iszero(rdsize), // no return data, or
+                                and(
+                                    gt(rdsize, 31), // at least 32 bytes
+                                    eq(mload(0), 1) // starts with uint256(1)
+                                )
                             )
                         )
-                    )
-
-                    if iszero(success) {
+                    ) {
                         returndatacopy(ptr, 0, rdsize)
                         revert(ptr, rdsize)
                     }
@@ -323,21 +322,18 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
                 let success := call(gas(), tokenIn, 0, ptr, 0x64, 0, 32)
 
                 let rdsize := returndatasize()
-                // Check for ERC20 success. ERC20 tokens should return a boolean,
-                // but some don't. We accept 0-length return data as success, or at
-                // least 32 bytes that starts with a 32-byte boolean true.
-                success := and(
-                    success, // call itself succeeded
-                    or(
-                        iszero(rdsize), // no return data, or
-                        and(
-                            gt(rdsize, 31), // at least 32 bytes
-                            eq(mload(0), 1) // starts with uint256(1)
+                if iszero(
+                    and(
+                        success, // call itself succeeded
+                        or(
+                            iszero(rdsize), // no return data, or
+                            and(
+                                gt(rdsize, 31), // at least 32 bytes
+                                eq(mload(0), 1) // starts with uint256(1)
+                            )
                         )
                     )
-                )
-
-                if iszero(success) {
+                ) {
                     returndatacopy(ptr, 0, rdsize)
                     revert(ptr, rdsize)
                 }
