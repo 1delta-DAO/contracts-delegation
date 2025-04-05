@@ -9,19 +9,10 @@ import {BaseTest} from "../../shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
 import "../utils/CalldataLib.sol";
 
-interface IF {
-    function getPool(address tokenA, address tokenB, uint24 fee) external view returns (address);
-
-    function pool(address tokenA, address tokenB, uint24 fee) external view returns (address);
-
-    function getPair(address tokenA, address tokenB) external view returns (address pair);
-}
-
 /**
- * We test all morpho blue operations
- * - supply, supplyCollateral, borrow, repay, erc4646Deposit, erc4646Withdraw
+ * Test Balancer v2 swaps
  */
-contract BalancerLightTest is BaseTest {
+contract BalV2LightTest is BaseTest {
     address internal constant BALANCER_V2_VAULT = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
     bytes32 internal constant WETH_RETH_PID = 0xc771c1a5905420daec317b154eb13e4198ba97d0000000000000000000000023;
     uint256 internal constant forkBlock = 27970029;

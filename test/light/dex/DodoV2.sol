@@ -10,10 +10,9 @@ import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
 import "../utils/CalldataLib.sol";
 
 /**
- * We test all morpho blue operations
- * - supply, supplyCollateral, borrow, repay, erc4646Deposit, erc4646Withdraw
+ * Test DodoV2 simple swaps
  */
-contract DodoLightTest is BaseTest {
+contract DodoV2LightTest is BaseTest {
     using CalldataLib for bytes;
 
     uint256 internal constant forkBlock = 27970029;

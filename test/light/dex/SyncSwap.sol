@@ -9,8 +9,8 @@ import {BaseTest} from "../../shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
 import "../utils/CalldataLib.sol";
 
-/** This is for TraderJoe / MerchantMoe LB */
-contract LBLightTest is BaseTest {
+/** This is for SyncSwap (Ritsu on Taiko) */
+contract SyncSwapLightTest is BaseTest {
     using CalldataLib for bytes;
 
     uint256 internal constant forkBlock = 536078;

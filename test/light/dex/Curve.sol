@@ -9,14 +9,6 @@ import {BaseTest} from "../../shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
 import "../utils/CalldataLib.sol";
 
-interface IF {
-    function getPool(address tokenA, address tokenB, uint24 fee) external view returns (address);
-
-    function pool(address tokenA, address tokenB, uint24 fee) external view returns (address);
-
-    function getPair(address tokenA, address tokenB) external view returns (address pair);
-}
-
 /**
  * We test Curve single swaps
  */
