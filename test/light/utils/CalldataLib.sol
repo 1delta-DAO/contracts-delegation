@@ -385,6 +385,16 @@ library CalldataLib {
         ); // 14 bytes
     }
 
+
+    function approve(address asset, address target) internal pure returns (bytes memory data) {
+        data = abi.encodePacked(
+            uint8(ComposerCommands.TRANSFERS),
+            uint8(TransferIds.APPROVE),
+            asset,
+            target //
+        ); // 14 bytes
+    }
+
     function unwrap(address receiver, uint256 amount, SweepType sweepType) internal pure returns (bytes memory data) {
         data = abi.encodePacked(
             uint8(ComposerCommands.TRANSFERS),
@@ -405,6 +415,7 @@ library CalldataLib {
     ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
+                approve(asset, pool), // always approve
                 uint8(ComposerCommands.FLASH_LOAN),
                 uint8(poolType),
                 poolId,

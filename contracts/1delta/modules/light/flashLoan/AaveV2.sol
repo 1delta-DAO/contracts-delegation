@@ -42,28 +42,6 @@ contract AaveV2FlashLoans is Slots, ERC20Selectors, Masks, DeltaErrors {
 
             // call flash loan
             let ptr := mload(0x40)
-
-            /**
-             * Approve Aave V2 pool, they pull funds from the caller
-             */
-            mstore(0x0, token)
-            mstore(0x20, CALL_MANAGEMENT_APPROVALS)
-            mstore(0x20, keccak256(0x0, 0x40))
-            mstore(0x0, pool)
-            let key := keccak256(0x0, 0x40)
-            // check if already approved
-            if iszero(sload(key)) {
-                // selector for approve(address,uint256)
-                mstore(ptr, ERC20_APPROVE)
-                mstore(add(ptr, 0x04), pool)
-                mstore(add(ptr, 0x24), MAX_UINT256)
-
-                if iszero(call(gas(), token, 0x0, ptr, 0x44, ptr, 32)) {
-                    revert(0x0, 0x0)
-                }
-                sstore(key, 1)
-            }
-
             // flashLoan(...) (See Aave V2 ILendingPool)
             mstore(ptr, 0xab9c4b5d00000000000000000000000000000000000000000000000000000000)
             mstore(add(ptr, 4), address()) // receiver is this address
