@@ -26,9 +26,8 @@ contract MorphoFlashLoans is Slots, ERC20Selectors, Masks, DeltaErrors {
             let slice := calldataload(currentOffset)
             // get token to loan
             let token := shr(96, calldataload(currentOffset))
-            currentOffset := add(currentOffset, 20)
+            // morpho-like pool as target
             let pool := shr(96, calldataload(add(currentOffset, 20)))
-            currentOffset := add(currentOffset, 20)
             // second calldata slice including amount annd params length
             slice := calldataload(add(currentOffset, 40))
             let amount := shr(144, slice) // shr will already mask uint112 here

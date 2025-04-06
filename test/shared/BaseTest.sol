@@ -20,7 +20,7 @@ contract BaseTest is Test {
     mapping(string => string) rpcOverrides;
 
     constructor() Test() {
-        rpcOverrides[Chains.ARBITRUM_ONE] = "https://arbitrum.drpc.org";
+        rpcOverrides[Chains.ARBITRUM_ONE] = "https://arb1.arbitrum.io/rpc";
     }
 
     /// @notice Initialize the chain for the test

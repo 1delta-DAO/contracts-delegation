@@ -247,8 +247,8 @@ abstract contract CompoundV2Lending is Slots, ERC20Selectors, Masks {
                     0x0 // output size = zero
                 )
             ) {
-                // returndatacopy(0, 0, returndatasize())
-                // revert(0, returndatasize())
+                returndatacopy(0, 0, returndatasize())
+                revert(0, returndatasize())
             }
 
             // transfer tokens only if the receiver is not this address
@@ -278,8 +278,8 @@ abstract contract CompoundV2Lending is Slots, ERC20Selectors, Masks {
                 )
 
                 if iszero(success) {
-                    // returndatacopy(0, 0, rdsize)
-                    // revert(0, rdsize)
+                    returndatacopy(0, 0, rdsize)
+                    revert(0, rdsize)
                 }
             }
         }
@@ -314,13 +314,33 @@ abstract contract CompoundV2Lending is Slots, ERC20Selectors, Masks {
             // skip cToken (end of data)
             currentOffset := add(currentOffset, 20)
 
-            let amount
-            // check if override is used
-            switch and(_PRE_PARAM, amountData)
-            case 0 {
-                amount := and(_UINT112_MASK, amountData)
-                // zero is this balance
-                if iszero(amount) {
+            switch iszero(underlying)
+            // case native
+            case 1 {
+                let amount
+                // check if override is used
+                switch and(_PRE_PARAM, amountData)
+                case 0 {
+                    amount := and(_UINT112_MASK, amountData)
+                    // zero is this balance
+                    if iszero(amount) {
+                        amount := selfbalance()
+                    }
+                }
+                default {
+                    amount := amountOverride
+                }
+
+                // selector for mint()
+                mstore(0, 0x1249c58b00000000000000000000000000000000000000000000000000000000)
+
+                if iszero(call(gas(), cToken, 0x0, 0x0, 0x4, 0x0, 0x0)) {
+                    returndatacopy(0x0, 0, returndatasize())
+                    revert(0x0, returndatasize())
+                }
+
+                // need to transfer collateral to receiver
+                if xor(receiver, address()) {
                     // selector for balanceOf(address)
                     mstore(0, ERC20_BALANCE_OF)
                     // add this address as parameter
@@ -329,7 +349,7 @@ abstract contract CompoundV2Lending is Slots, ERC20Selectors, Masks {
                     pop(
                         staticcall(
                             gas(),
-                            underlying, // token
+                            cToken, // token
                             0x0,
                             0x24,
                             0x0,
@@ -337,54 +357,100 @@ abstract contract CompoundV2Lending is Slots, ERC20Selectors, Masks {
                         )
                     )
                     // load the retrieved balance
-                    amount := mload(0x0)
+                    let cBalance := mload(0x0)
+
+                    let ptr := mload(0x40)
+                    // TRANSFER COLLATERAL
+                    // selector for transfer(address,uint256)
+                    mstore(ptr, ERC20_TRANSFER)
+                    mstore(add(ptr, 0x04), receiver)
+                    mstore(add(ptr, 0x24), cBalance)
+
+                    let success := call(gas(), cToken, 0, ptr, 0x44, ptr, 32)
+
+                    let rdsize := returndatasize()
+
+                    if iszero(
+                        and(
+                            success, // call itself succeeded
+                            or(
+                                iszero(rdsize), // no return data, or
+                                and(
+                                    gt(rdsize, 31), // at least 32 bytes
+                                    eq(mload(ptr), 1) // starts with uint256(1)
+                                )
+                            )
+                        )
+                    ) {
+                        returndatacopy(ptr, 0, rdsize)
+                        revert(ptr, rdsize)
+                    }
                 }
             }
+            // erc20 case
             default {
-                amount := amountOverride
-            }
-
-            let ptr := mload(0x40)
-
-            /**
-             * Approve cToken beforehand
-             */
-            mstore(0x0, underlying)
-            mstore(0x20, CALL_MANAGEMENT_APPROVALS)
-            mstore(0x20, keccak256(0x0, 0x40))
-            mstore(0x0, cToken)
-            let key := keccak256(0x0, 0x40)
-            // check if already approved
-            if iszero(sload(key)) {
-                // selector for approve(address,uint256)
-                mstore(ptr, ERC20_APPROVE)
-                mstore(add(ptr, 0x04), cToken)
-                mstore(add(ptr, 0x24), MAX_UINT256)
-
-                if iszero(call(gas(), underlying, 0x0, ptr, 0x44, 0x0, 0x0)) {
-                    revert(0x0, 0x0)
+                let amount
+                // check if override is used
+                switch and(_PRE_PARAM, amountData)
+                case 0 {
+                    amount := and(_UINT112_MASK, amountData)
+                    // zero is this balance
+                    if iszero(amount) {
+                        // selector for balanceOf(address)
+                        mstore(0, ERC20_BALANCE_OF)
+                        // add this address as parameter
+                        mstore(0x04, address())
+                        // call to token
+                        pop(
+                            staticcall(
+                                gas(),
+                                underlying, // token
+                                0x0,
+                                0x24,
+                                0x0,
+                                0x20
+                            )
+                        )
+                        // load the retrieved balance
+                        amount := mload(0x0)
+                    }
                 }
-                sstore(key, 1)
-            }
+                default {
+                    amount := amountOverride
+                }
 
-            // selector for mintBehalf(address,uint256)
-            mstore(ptr, 0x23323e0300000000000000000000000000000000000000000000000000000000)
-            mstore(add(ptr, 0x04), receiver)
-            mstore(add(ptr, 0x24), amount)
+                let ptr := mload(0x40)
 
-            let success := call(
-                gas(),
-                cToken,
-                0x0,
-                ptr, //
-                0x44, //
-                0x0, //
-                0x0 // output size = zero
-            )
+                /**
+                 * Approve cToken beforehand
+                 */
+                mstore(0x0, underlying)
+                mstore(0x20, CALL_MANAGEMENT_APPROVALS)
+                mstore(0x20, keccak256(0x0, 0x40))
+                mstore(0x0, cToken)
+                let key := keccak256(0x0, 0x40)
+                // check if already approved
+                if iszero(sload(key)) {
+                    // selector for approve(address,uint256)
+                    mstore(ptr, ERC20_APPROVE)
+                    mstore(add(ptr, 0x04), cToken)
+                    mstore(add(ptr, 0x24), MAX_UINT256)
 
-            if iszero(success) {
-                returndatacopy(ptr, 0, returndatasize())
-                revert(ptr, returndatasize())
+                    if iszero(call(gas(), underlying, 0x0, ptr, 0x44, 0x0, 0x0)) {
+                        revert(0x0, 0x0)
+                    }
+                    sstore(key, 1)
+                }
+
+                // selector for mintBehalf(address,uint256)
+                mstore(ptr, 0x23323e0300000000000000000000000000000000000000000000000000000000)
+                mstore(add(ptr, 0x04), receiver)
+                mstore(add(ptr, 0x24), amount)
+
+                if iszero(call(gas(), cToken, 0x0, ptr, 0x44, 0x0, 0x0)) {
+                    returndatacopy(ptr, 0, returndatasize())
+                    revert(ptr, returndatasize())
+                }
             }
         }
         return currentOffset;
@@ -415,80 +481,123 @@ abstract contract CompoundV2Lending is Slots, ERC20Selectors, Masks {
             // skip comet (end of data)
             currentOffset := add(currentOffset, 20)
 
-            let amount
-            // check if override is used
-            switch and(_PRE_PARAM, amountData)
-            case 0 {
-                amount := and(_UINT112_MASK, amountData)
-                switch amount
-                case 0 {
-                    // selector for balanceOf(address)
-                    mstore(0, ERC20_BALANCE_OF)
-                    // add this address as parameter
-                    mstore(0x04, address())
-                    // call to token
-                    pop(
-                        staticcall(
-                            gas(),
-                            underlying, // token
-                            0x0,
-                            0x24,
-                            0x0,
-                            0x20
-                        )
-                    )
-                    // load the retrieved balance
-                    amount := mload(0x0)
-                }
-                case 0xffffffffffffffffffffffffffff {
-                    amount := MAX_UINT256
-                }
-            }
-            default {
-                amount := amountOverride
-            }
-
             let ptr := mload(0x40)
 
-            /**
-             * Approve cToken beforehand if needed
-             */
-            mstore(0x0, underlying)
-            mstore(0x20, CALL_MANAGEMENT_APPROVALS)
-            mstore(0x20, keccak256(0x0, 0x40))
-            mstore(0x0, cToken)
-            let key := keccak256(0x0, 0x40)
-            // check if already approved
-            if iszero(sload(key)) {
-                // selector for approve(address,uint256)
-                mstore(ptr, ERC20_APPROVE)
-                mstore(add(ptr, 0x04), cToken)
-                mstore(add(ptr, 0x24), MAX_UINT256)
-
-                if iszero(call(gas(), underlying, 0x0, ptr, 0x44, 0x0, 0x0)) {
-                    revert(0x0, 0x0)
+            switch iszero(underlying)
+            // case native
+            case 1 {
+                let amount
+                // check if override is used
+                switch and(_PRE_PARAM, amountData)
+                case 0 {
+                    amount := and(_UINT112_MASK, amountData)
+                    switch amount
+                    case 0 {
+                        // load the retrieved balance
+                        amount := selfbalance()
+                    }
+                    case 0xffffffffffffffffffffffffffff {
+                        amount := MAX_UINT256
+                    }
                 }
-                sstore(key, 1)
+                default {
+                    amount := amountOverride
+                }
+
+                // selector for repayBorrowBehalf(address)
+                mstore(0, 0xe597461900000000000000000000000000000000000000000000000000000000)
+                mstore(4, receiver) // user
+
+                if iszero(
+                    call(
+                        gas(),
+                        cToken,
+                        0x0,
+                        0, // input = empty for fallback
+                        0x24, // input size = selector + address + uint256
+                        0, // output
+                        0x0 // output size = zero
+                    )
+                ) {
+                    returndatacopy(0x0, 0, returndatasize())
+                    revert(0x0, returndatasize())
+                }
             }
+            // case ERC20
+            default {
+                let amount
+                // check if override is used
+                switch and(_PRE_PARAM, amountData)
+                case 0 {
+                    amount := and(_UINT112_MASK, amountData)
+                    switch amount
+                    case 0 {
+                        // selector for balanceOf(address)
+                        mstore(0, ERC20_BALANCE_OF)
+                        // add this address as parameter
+                        mstore(0x04, address())
+                        // call to token
+                        pop(
+                            staticcall(
+                                gas(),
+                                underlying, // token
+                                0x0,
+                                0x24,
+                                0x0,
+                                0x20
+                            )
+                        )
+                        // load the retrieved balance
+                        amount := mload(0x0)
+                    }
+                    case 0xffffffffffffffffffffffffffff {
+                        amount := MAX_UINT256
+                    }
+                }
+                default {
+                    amount := amountOverride
+                }
 
-            // selector for repayBorrowBehalf(address,uint256)
-            mstore(ptr, 0x2608f81800000000000000000000000000000000000000000000000000000000)
-            mstore(add(ptr, 0x4), receiver) // user
-            mstore(add(ptr, 0x24), amount) // to this address
+                /**
+                 * Approve cToken beforehand if needed
+                 */
+                mstore(0x0, underlying)
+                mstore(0x20, CALL_MANAGEMENT_APPROVALS)
+                mstore(0x20, keccak256(0x0, 0x40))
+                mstore(0x0, cToken)
+                let key := keccak256(0x0, 0x40)
+                // check if already approved
+                if iszero(sload(key)) {
+                    // selector for approve(address,uint256)
+                    mstore(ptr, ERC20_APPROVE)
+                    mstore(add(ptr, 0x04), cToken)
+                    mstore(add(ptr, 0x24), MAX_UINT256)
 
-            if iszero(
-                call(
-                    gas(),
-                    cToken,
-                    0x0,
-                    ptr, // input = empty for fallback
-                    0x44, // input size = selector + address + uint256
-                    ptr, // output
-                    0x0 // output size = zero
-                )
-            ) {
-                returndatacopy(0x0, 0, returndatasize())
-                revert(0x0, returndatasize())
+                    if iszero(call(gas(), underlying, 0x0, ptr, 0x44, 0x0, 0x0)) {
+                        revert(0x0, 0x0)
+                    }
+                    sstore(key, 1)
+                }
+
+                // selector for repayBorrowBehalf(address,uint256)
+                mstore(ptr, 0x2608f81800000000000000000000000000000000000000000000000000000000)
+                mstore(add(ptr, 0x4), receiver) // user
+                mstore(add(ptr, 0x24), amount) // to this address
+
+                if iszero(
+                    call(
+                        gas(),
+                        cToken,
+                        0x0,
+                        ptr, // input = empty for fallback
+                        0x44, // input size = selector + address + uint256
+                        ptr, // output
+                        0x0 // output size = zero
+                    )
+                ) {
+                    returndatacopy(0x0, 0, returndatasize())
+                    revert(0x0, returndatasize())
+                }
             }
         }
         return currentOffset;
