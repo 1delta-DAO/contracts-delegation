@@ -16,43 +16,12 @@ import {ERC20Selectors} from "../../../shared/selectors/ERC20Selectors.sol";
  * @notice Contains main logic for uniswap-type callbacks and initiator functions
  */
 abstract contract DodoV2Callbacks is DodoV2ReferencesBase, ERC20Selectors, Masks, DeltaErrors {
+    /** selector _REGISTRY(address,address,uint256) - a mapping base->quote->index->pool */
     bytes32 private constant REGISTRY = 0xbdeb0a9100000000000000000000000000000000000000000000000000000000;
 
-    constructor() {}
-
-    // Dodo V2 DVM
-    function DVMFlashLoanCall(
-        address sender,
-        uint256 baseAmount,
-        uint256 quoteAmount, //
-        bytes calldata
-    ) external {
-        _validateDodoCall(sender, DVM_FACTORY, baseAmount, quoteAmount);
-    }
-
-    // Dodo V2 DPP
-    function DPPFlashLoanCall(
-        address sender,
-        uint256 baseAmount,
-        uint256 quoteAmount, //
-        bytes calldata
-    ) external {
-        _validateDodoCall(sender, DPP_FACTORY, baseAmount, quoteAmount);
-    }
-
-    // Dodo V2 DSP
-    function DSPFlashLoanCall(
-        address sender,
-        uint256 baseAmount,
-        uint256 quoteAmount, //
-        bytes calldata
-    ) external {
-        _validateDodoCall(sender, DSP_FACTORY, baseAmount, quoteAmount);
-    }
-
-    function _validateDodoCall(address sender, address factory, uint256 baseAmount, uint256 quoteAmount) private {
-        address quote;
-        address base;
+    function _validateAndExecuteDodoCall(address sender, address factory, uint256 baseAmount, uint256 quoteAmount) internal {
+        uint256 amountToPay;
+        uint256 amountReceived;
         address callerAddress;
         uint256 calldataLength;
         uint256 amountStored;
@@ -63,15 +32,15 @@ abstract contract DodoV2Callbacks is DodoV2ReferencesBase, ERC20Selectors, Masks
                 revert(0, 0x4)
             }
 
-            let firstWord := calldataload(164)
-            //caller
-            callerAddress := shr(96, firstWord)
-            firstWord := calldataload(184)
+            // caller
+            callerAddress := shr(96, calldataload(164))
+
+            /** the tokens are used to validate the callback */
+
             // base token
-            base := shr(96, firstWord)
-            firstWord := calldataload(204)
+            let base := shr(96, calldataload(184))
             // quote token
-            quote := shr(96, firstWord)
+            let quote := shr(96, calldataload(204))
 
             let ptr := mload(0x40)
             mstore(ptr, REGISTRY)
@@ -106,20 +75,7 @@ abstract contract DodoV2Callbacks is DodoV2ReferencesBase, ERC20Selectors, Masks
                 revert(0, 0x4)
             }
             amountStored := shr(144, amountStored)
-        }
-        _dodoCallback(baseAmount, quoteAmount, amountStored, callerAddress, calldataLength);
-    }
 
-    function _dodoCallback(
-        uint256 baseAmount,
-        uint256 quoteAmount, //
-        uint256 amountStored,
-        address callerAddress,
-        uint256 calldataLength
-    ) private {
-        uint256 amountToPay;
-        uint256 amountReceived;
-        assembly {
             switch gt(baseAmount, 0)
             case 1 {
                 amountReceived := baseAmount
@@ -141,6 +97,50 @@ abstract contract DodoV2Callbacks is DodoV2ReferencesBase, ERC20Selectors, Masks
             242,
             calldataLength
         );
+    }
+
+    /**
+     * Generic executor for dodoV2 callbacks
+     * Dodo can have 3 selectors as callbacks, we switch case thorugh them here
+     */
+    function _executeDodoV2IfSelector(bytes32 selector) internal {
+        bool isDodo;
+        address factoryAddress;
+        assembly {
+            switch selector
+            // DVMFlashLoanCall()
+            case 0xeb2021c300000000000000000000000000000000000000000000000000000000 {
+                factoryAddress := DVM_FACTORY
+                isDodo := 1
+            }
+            // DSPFlashLoanCall
+            case 0xd5b9979700000000000000000000000000000000000000000000000000000000 {
+                factoryAddress := DSP_FACTORY
+                isDodo := 1
+            }
+            // DPPFlashLoanCall
+            case 0x7ed1f1dd00000000000000000000000000000000000000000000000000000000 {
+                factoryAddress := DPP_FACTORY
+                isDodo := 1
+            }
+        }
+        if (isDodo) {
+            // since we now know it is dodo,
+            // we can proceed with validaiton and parameter loading
+            address sender;
+            uint256 amount0;
+            uint256 amount1;
+            assembly {
+                sender := calldataload(4)
+                amount0 := calldataload(36)
+                amount1 := calldataload(68)
+            }
+            _validateAndExecuteDodoCall(sender, factoryAddress, amount0, amount1);
+            // force return
+            assembly {
+                return(0, 0)
+            }
+        }
     }
 
     function _deltaComposeInternal(address callerAddress, uint256 paramPull, uint256 paramPush, uint256 offset, uint256 length) internal virtual {}
