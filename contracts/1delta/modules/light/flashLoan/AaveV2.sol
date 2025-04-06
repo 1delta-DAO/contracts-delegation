@@ -27,16 +27,18 @@ contract AaveV2FlashLoans is Slots, ERC20Selectors, Masks, DeltaErrors {
         assembly {
             // get token to loan
             let token := shr(96, calldataload(currentOffset))
-            currentOffset := add(currentOffset, 20)
-            let pool := shr(96, calldataload(currentOffset))
-            currentOffset := add(currentOffset, 20)
+
+            // target to call
+            let pool := shr(96, calldataload(add(currentOffset, 20)))
+
             // second calldata slice including amount annd params length
-            let slice := calldataload(currentOffset)
+            let slice := calldataload(add(currentOffset, 40))
             let amount := shr(144, slice) // shr will already mask uint112 here
             // length of params
             let calldataLength := and(UINT16_MASK, shr(128, slice))
 
-            currentOffset := add(currentOffset, 16)
+            // skip addresses and amount
+            currentOffset := add(currentOffset, 56)
 
             // call flash loan
             let ptr := mload(0x40)

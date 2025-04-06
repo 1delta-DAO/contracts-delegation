@@ -25,17 +25,17 @@ contract MorphoFlashLoans is Slots, ERC20Selectors, Masks, DeltaErrors {
         assembly {
             let slice := calldataload(currentOffset)
             // get token to loan
-            let token := and(ADDRESS_MASK, shr(96, slice))
+            let token := shr(96, calldataload(currentOffset))
             currentOffset := add(currentOffset, 20)
-            let pool := shr(96, calldataload(currentOffset))
+            let pool := shr(96, calldataload(add(currentOffset, 20)))
             currentOffset := add(currentOffset, 20)
             // second calldata slice including amount annd params length
-            slice := calldataload(currentOffset)
+            slice := calldataload(add(currentOffset, 40))
             let amount := shr(144, slice) // shr will already mask uint112 here
             // length of params
             let calldataLength := and(UINT16_MASK, shr(128, slice))
             // skip uint112 and uint16
-            currentOffset := add(currentOffset, 16)
+            currentOffset := add(currentOffset, 56)
 
             // morpho should be the primary choice
             let ptr := mload(0x40)
