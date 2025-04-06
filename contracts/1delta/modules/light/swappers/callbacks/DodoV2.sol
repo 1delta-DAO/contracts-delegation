@@ -27,6 +27,30 @@ abstract contract DodoV2Callbacks is DodoV2ReferencesBase, ERC20Selectors, Masks
         uint256 quoteAmount, //
         bytes calldata
     ) external {
+        _validateDodoCall(sender, DVM_FACTORY, baseAmount, quoteAmount);
+    }
+
+    // Dodo V2 DPP
+    function DPPFlashLoanCall(
+        address sender,
+        uint256 baseAmount,
+        uint256 quoteAmount, //
+        bytes calldata
+    ) external {
+        _validateDodoCall(sender, DPP_FACTORY, baseAmount, quoteAmount);
+    }
+
+    // Dodo V2 DSP
+    function DSPFlashLoanCall(
+        address sender,
+        uint256 baseAmount,
+        uint256 quoteAmount, //
+        bytes calldata
+    ) external {
+        _validateDodoCall(sender, DSP_FACTORY, baseAmount, quoteAmount);
+    }
+
+    function _validateDodoCall(address sender, address factory, uint256 baseAmount, uint256 quoteAmount) private {
         address quote;
         address base;
         address callerAddress;
@@ -58,7 +82,7 @@ abstract contract DodoV2Callbacks is DodoV2ReferencesBase, ERC20Selectors, Masks
             // store index
             mstore(add(ptr, 68), and(UINT16_MASK, shr(136, amountStored)))
 
-            /** 
+            /**
              * This call runs out of gas if the entry does not exist
              * due to `invalid opcode` (that is because they use immutable clones)
              * We limit the gas for this specific issue.
@@ -66,7 +90,7 @@ abstract contract DodoV2Callbacks is DodoV2ReferencesBase, ERC20Selectors, Masks
             if iszero(
                 staticcall(
                     10000, // limit the gas here
-                    DVM_FACTORY,
+                    factory,
                     ptr,
                     100, //
                     ptr,
