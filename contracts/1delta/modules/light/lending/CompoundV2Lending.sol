@@ -431,27 +431,6 @@ abstract contract CompoundV2Lending is Slots, ERC20Selectors, Masks {
 
                 let ptr := mload(0x40)
 
-                /**
-                 * Approve cToken beforehand
-                 */
-                mstore(0x0, underlying)
-                mstore(0x20, CALL_MANAGEMENT_APPROVALS)
-                mstore(0x20, keccak256(0x0, 0x40))
-                mstore(0x0, cToken)
-                let key := keccak256(0x0, 0x40)
-                // check if already approved
-                if iszero(sload(key)) {
-                    // selector for approve(address,uint256)
-                    mstore(ptr, ERC20_APPROVE)
-                    mstore(add(ptr, 0x04), cToken)
-                    mstore(add(ptr, 0x24), MAX_UINT256)
-
-                    if iszero(call(gas(), underlying, 0x0, ptr, 0x44, 0x0, 0x0)) {
-                        revert(0x0, 0x0)
-                    }
-                    sstore(key, 1)
-                }
-
                 // selector for mintBehalf(address,uint256)
                 mstore(ptr, 0x23323e0300000000000000000000000000000000000000000000000000000000)
                 mstore(add(ptr, 0x04), receiver)
@@ -566,27 +545,6 @@ abstract contract CompoundV2Lending is Slots, ERC20Selectors, Masks {
                 }
                 default {
                     amount := amountOverride
-                }
-
-                /**
-                 * Approve cToken beforehand if needed
-                 */
-                mstore(0x0, underlying)
-                mstore(0x20, CALL_MANAGEMENT_APPROVALS)
-                mstore(0x20, keccak256(0x0, 0x40))
-                mstore(0x0, cToken)
-                let key := keccak256(0x0, 0x40)
-                // check if already approved
-                if iszero(sload(key)) {
-                    // selector for approve(address,uint256)
-                    mstore(ptr, ERC20_APPROVE)
-                    mstore(add(ptr, 0x04), cToken)
-                    mstore(add(ptr, 0x24), MAX_UINT256)
-
-                    if iszero(call(gas(), underlying, 0x0, ptr, 0x44, 0x0, 0x0)) {
-                        revert(0x0, 0x0)
-                    }
-                    sstore(key, 1)
                 }
 
                 // selector for repayBorrowBehalf(address,uint256)

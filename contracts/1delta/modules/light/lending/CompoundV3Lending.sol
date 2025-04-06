@@ -233,27 +233,6 @@ abstract contract CompoundV3Lending is Slots, ERC20Selectors, Masks {
 
             let ptr := mload(0x40)
 
-            /**
-             * Approve comet beforehand
-             */
-            mstore(0x0, underlying)
-            mstore(0x20, CALL_MANAGEMENT_APPROVALS)
-            mstore(0x20, keccak256(0x0, 0x40))
-            mstore(0x0, comet)
-            let key := keccak256(0x0, 0x40)
-            // check if already approved
-            if iszero(sload(key)) {
-                // selector for approve(address,uint256)
-                mstore(ptr, ERC20_APPROVE)
-                mstore(add(ptr, 0x04), comet)
-                mstore(add(ptr, 0x24), MAX_UINT256)
-
-                if iszero(call(gas(), underlying, 0x0, ptr, 0x44, 0x0, 0x0)) {
-                    revert(0x0, 0x0)
-                }
-                sstore(key, 1)
-            }
-
             // selector supplyTo(address,address,uint256)
             mstore(ptr, 0x4232cd6300000000000000000000000000000000000000000000000000000000)
             mstore(add(ptr, 0x04), receiver)
@@ -327,27 +306,6 @@ abstract contract CompoundV3Lending is Slots, ERC20Selectors, Masks {
             }
 
             let ptr := mload(0x40)
-
-            /**
-             * Approve comet beforehand
-             */
-            mstore(0x0, underlying)
-            mstore(0x20, CALL_MANAGEMENT_APPROVALS)
-            mstore(0x20, keccak256(0x0, 0x40))
-            mstore(0x0, comet)
-            let key := keccak256(0x0, 0x40)
-            // check if already approved
-            if iszero(sload(key)) {
-                // selector for approve(address,uint256)
-                mstore(ptr, ERC20_APPROVE)
-                mstore(add(ptr, 0x04), comet)
-                mstore(add(ptr, 0x24), MAX_UINT256)
-
-                if iszero(call(gas(), underlying, 0x0, ptr, 0x44, 0x0, 0x0)) {
-                    revert(0x0, 0x0)
-                }
-                sstore(key, 1)
-            }
 
             // skip pool (end of data)
             currentOffset := add(currentOffset, 20)

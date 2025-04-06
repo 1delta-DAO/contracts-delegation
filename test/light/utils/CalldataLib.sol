@@ -385,8 +385,7 @@ library CalldataLib {
         ); // 14 bytes
     }
 
-
-    function approve(address asset, address target) internal pure returns (bytes memory data) {
+    function encodeApprove(address asset, address target) internal pure returns (bytes memory data) {
         data = abi.encodePacked(
             uint8(ComposerCommands.TRANSFERS),
             uint8(TransferIds.APPROVE),
@@ -415,7 +414,7 @@ library CalldataLib {
     ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
-                approve(asset, pool), // always approve
+                encodeApprove(asset, pool), // always approve
                 uint8(ComposerCommands.FLASH_LOAN),
                 uint8(poolType),
                 poolId,
@@ -427,6 +426,20 @@ library CalldataLib {
             );
     }
 
+    /** get the collateral asset from a packed Morpho market */
+    function getMorphoCollateral(bytes memory market) private pure returns (address collat) {
+        assembly {
+            collat := shr(96, mload(add(market, 52)))
+        }
+    }
+
+    /** get the loab asset from a packed Morpho market */
+    function getMorphoLoanAsset(bytes memory market) private pure returns (address collat) {
+        assembly {
+            collat := shr(96, mload(add(market, 32)))
+        }
+    }
+
     function morphoDepositCollateral(
         bytes memory market,
         uint256 assets,
@@ -436,6 +449,7 @@ library CalldataLib {
     ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
+                encodeApprove(getMorphoCollateral(market), morphoB), // always approve
                 uint8(ComposerCommands.LENDING), // 1
                 uint8(LenderOps.DEPOSIT), // 1
                 uint16(LenderIds.UP_TO_MORPHO), // 2
@@ -458,6 +472,7 @@ library CalldataLib {
     ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
+                encodeApprove(getMorphoLoanAsset(market), morphoB), // always approve
                 uint8(ComposerCommands.LENDING), // 1
                 uint8(LenderOps.DEPOSIT_LENDING_TOKEN), // 1
                 uint16(LenderIds.UP_TO_MORPHO), // 2
@@ -479,6 +494,7 @@ library CalldataLib {
     ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
+                encodeApprove(asset, vault), // always approve
                 uint8(ComposerCommands.ERC4646), // 1
                 uint8(0), // 1
                 asset, // 20
@@ -571,6 +587,7 @@ library CalldataLib {
     ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
+                encodeApprove(getMorphoLoanAsset(market), morphoB), // always approve
                 uint8(ComposerCommands.LENDING), // 1
                 uint8(LenderOps.REPAY), // 1
                 uint16(LenderIds.UP_TO_MORPHO), // 2
@@ -592,6 +609,7 @@ library CalldataLib {
     ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
+                encodeApprove(token, pool),
                 uint8(ComposerCommands.LENDING),
                 uint8(LenderOps.DEPOSIT),
                 uint16(LenderIds.UP_TO_AAVE_V3 - 1),
@@ -634,6 +652,7 @@ library CalldataLib {
     ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
+                encodeApprove(token, pool),
                 uint8(ComposerCommands.LENDING),
                 uint8(LenderOps.REPAY),
                 uint16(LenderIds.UP_TO_AAVE_V3 - 1),
@@ -676,6 +695,7 @@ library CalldataLib {
     ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
+                encodeApprove(token, pool),
                 uint8(ComposerCommands.LENDING),
                 uint8(LenderOps.DEPOSIT),
                 uint16(LenderIds.UP_TO_AAVE_V2 - 1),
@@ -718,6 +738,7 @@ library CalldataLib {
     ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
+                encodeApprove(token, pool),
                 uint8(ComposerCommands.LENDING),
                 uint8(LenderOps.REPAY),
                 uint16(LenderIds.UP_TO_AAVE_V2 - 1),
@@ -760,6 +781,7 @@ library CalldataLib {
     ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
+                encodeApprove(token, comet),
                 uint8(ComposerCommands.LENDING),
                 uint8(LenderOps.DEPOSIT),
                 uint16(LenderIds.UP_TO_COMPOUND_V3 - 1),
@@ -798,6 +820,7 @@ library CalldataLib {
     ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
+                encodeApprove(token, comet),
                 uint8(ComposerCommands.LENDING),
                 uint8(LenderOps.REPAY),
                 uint16(LenderIds.UP_TO_COMPOUND_V3 - 1),
@@ -838,6 +861,8 @@ library CalldataLib {
     ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
+                // no approves for native
+                token == address(0) ? new bytes(0) : encodeApprove(token, cToken),
                 uint8(ComposerCommands.LENDING),
                 uint8(LenderOps.DEPOSIT),
                 uint16(LenderIds.UP_TO_COMPOUND_V2 - 1),
@@ -876,6 +901,8 @@ library CalldataLib {
     ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
+                // no approves for native
+                token == address(0) ? new bytes(0) : encodeApprove(token, cToken),
                 uint8(ComposerCommands.LENDING),
                 uint8(LenderOps.REPAY),
                 uint16(LenderIds.UP_TO_COMPOUND_V2 - 1),

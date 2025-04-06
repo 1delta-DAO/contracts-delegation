@@ -288,27 +288,6 @@ abstract contract AaveLending is Slots, ERC20Selectors, Masks {
 
             let ptr := mload(0x40)
 
-            /**
-             * Approve pool beforehand
-             */
-            mstore(0x0, underlying)
-            mstore(0x20, CALL_MANAGEMENT_APPROVALS)
-            mstore(0x20, keccak256(0x0, 0x40))
-            mstore(0x0, pool)
-            let key := keccak256(0x0, 0x40)
-            // check if already approved
-            if iszero(sload(key)) {
-                // selector for approve(address,uint256)
-                mstore(ptr, ERC20_APPROVE)
-                mstore(add(ptr, 0x04), pool)
-                mstore(add(ptr, 0x24), MAX_UINT256)
-
-                if iszero(call(gas(), underlying, 0x0, ptr, 0x44, 0x0, 0x0)) {
-                    revert(0x0, 0x0)
-                }
-                sstore(key, 1)
-            }
-
             // selector supply(address,uint256,address,uint16)
             mstore(ptr, 0x617ba03700000000000000000000000000000000000000000000000000000000)
             mstore(add(ptr, 0x04), underlying)
@@ -381,28 +360,6 @@ abstract contract AaveLending is Slots, ERC20Selectors, Masks {
             }
 
             let ptr := mload(0x40)
-
-            /**
-             * Approve pool beforehand
-             */
-            mstore(0x0, underlying)
-            mstore(0x20, CALL_MANAGEMENT_APPROVALS)
-            mstore(0x20, keccak256(0x0, 0x40))
-            mstore(0x0, pool)
-            let key := keccak256(0x0, 0x40)
-            // check if already approved
-            if iszero(sload(key)) {
-                // selector for approve(address,uint256)
-                mstore(ptr, ERC20_APPROVE)
-                mstore(add(ptr, 0x04), pool)
-                mstore(add(ptr, 0x24), MAX_UINT256)
-
-                if iszero(call(gas(), underlying, 0x0, ptr, 0x44, 0x0, 0x0)) {
-                    revert(0x0, 0x0)
-                }
-                sstore(key, 1)
-            }
-
             // selector deposit(address,uint256,address,uint16)
             mstore(ptr, 0xe8eda9df00000000000000000000000000000000000000000000000000000000)
             mstore(add(ptr, 0x04), underlying)
@@ -499,27 +456,6 @@ abstract contract AaveLending is Slots, ERC20Selectors, Masks {
             currentOffset := add(currentOffset, 20)
 
             let ptr := mload(0x40)
-
-            /**
-             * Approve aave pool beforehand if needed
-             */
-            mstore(0x0, underlying)
-            mstore(0x20, CALL_MANAGEMENT_APPROVALS)
-            mstore(0x20, keccak256(0x0, 0x40))
-            mstore(0x0, pool)
-            let key := keccak256(0x0, 0x40)
-            // check if already approved
-            if iszero(sload(key)) {
-                // selector for approve(address,uint256)
-                mstore(ptr, ERC20_APPROVE)
-                mstore(add(ptr, 0x04), pool)
-                mstore(add(ptr, 0x24), MAX_UINT256)
-
-                if iszero(call(gas(), underlying, 0x0, ptr, 0x44, 0x0, 0x0)) {
-                    revert(0x0, 0x0)
-                }
-                sstore(key, 1)
-            }
 
             // some Aaves dropped the IR mode, mode=0 is these ones
             switch mode
