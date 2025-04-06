@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@1delta/asset-registry':
-        specifier: ^0.0.101
-        version: 0.0.101
+        specifier: ^0.0.102
+        version: 0.0.102
       '@chainlink/contracts':
         specifier: ^0.6.1
         version: 0.6.1(bufferutil@4.0.9)(ethers@5.8.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)
@@ -186,8 +186,8 @@ importers:
 
 packages:
 
-  '@1delta/asset-registry@0.0.101':
-    resolution: {integrity: sha512-gSmrl+PVM825BY5CpJlL0ayly0DqG9e8T3rdY0GWNROkKoESBnA9cgoC1QekSR6Rl/Lv6vdjxd9H4p3/RqHapA==}
+  '@1delta/asset-registry@0.0.102':
+    resolution: {integrity: sha512-Eh+CPs/Dj2cFOm9vZp6hO4pWQqccf1ropvdeApntggIY38q/m9l7wc2sH1su7dQNV+fKQCbY2PnYnpYiCVQGyw==}
     engines: {node: '>=20'}
 
   '@ampproject/remapping@2.3.0':
@@ -6762,7 +6762,7 @@ packages:
 
 snapshots:
 
-  '@1delta/asset-registry@0.0.101': {}
+  '@1delta/asset-registry@0.0.102': {}
 
   '@ampproject/remapping@2.3.0':
     dependencies:
