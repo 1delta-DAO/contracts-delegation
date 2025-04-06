@@ -308,7 +308,7 @@ async function main() {
 
       Object.entries(tokens).forEach(([reserve, lenderTokens]) => {
         const meta = ASSET_META[chainId]?.[reserve];
-        if (meta && !meta.assetGroup?.endsWith(")")) {
+        if (meta && !meta.assetGroup?.endsWith(")") || reserve === "0x0000000000000000000000000000000000000000") {
           data += `    lendingTokens[${chainConstant}][${lenderConstant}][${getAddress(
             reserve
           )}] = LenderTokens(${getAddress(

@@ -2376,6 +2376,11 @@ contract LenderRegistry {
             address(0),
             address(0)
         );
+        lendingTokens[Chains.BNB_SMART_CHAIN_MAINNET][Lenders.VENUS][0x0000000000000000000000000000000000000000] = LenderTokens(
+            0xA07c5b74C9B40447a954e1466938b865b6BBea36,
+            address(0),
+            address(0)
+        );
         lendingTokens[Chains.BNB_SMART_CHAIN_MAINNET][Lenders.VENUS][0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c] = LenderTokens(
             0x882C173bC7Ff3b7786CA16dfeD3DFFfb9Ee7847B,
             address(0),
@@ -2725,6 +2730,11 @@ contract LenderRegistry {
             address(0)
         );
         lendingControllers[Chains.ETHEREUM_MAINNET][Lenders.VENUS_CURVE] = 0x67aA3eCc5831a65A5Ba7be76BED3B5dc7DB60796;
+        lendingTokens[Chains.AVALANCHE_C_CHAIN][Lenders.BENQI][0x0000000000000000000000000000000000000000] = LenderTokens(
+            0x5C0401e81Bc07Ca70fAD469b451682c0d747Ef1c,
+            address(0),
+            address(0)
+        );
         lendingTokens[Chains.AVALANCHE_C_CHAIN][Lenders.BENQI][0x50b7545627a5162F82A992c33b87aDc75187B218] = LenderTokens(
             0xe194c4c5aC32a3C9ffDb358d9Bfd523a0B6d1568,
             address(0),

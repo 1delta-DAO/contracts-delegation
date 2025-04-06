@@ -77,33 +77,43 @@ abstract contract CompoundV2Lending is Slots, ERC20Selectors, Masks {
                 revert(ptr, returndatasize())
             }
             if xor(address(), receiver) {
-                // 4) TRANSFER TO RECIPIENT
-                // selector for transfer(address,uint256)
-                mstore(ptr, ERC20_TRANSFER)
-                mstore(add(ptr, 0x04), receiver)
-                mstore(add(ptr, 0x24), amount)
+                switch underlying
+                // native case
+                case 0 {
+                    if iszero(call(gas(), receiver, amount, 0, 0, 0, 0)) {
+                        revert(0, 0)
+                    }
+                }
+                // erc20 case
+                default {
+                    // 4) TRANSFER TO RECIPIENT
+                    // selector for transfer(address,uint256)
+                    mstore(ptr, ERC20_TRANSFER)
+                    mstore(add(ptr, 0x04), receiver)
+                    mstore(add(ptr, 0x24), amount)
 
-                let success := call(gas(), underlying, 0, ptr, 0x44, ptr, 32)
+                    let success := call(gas(), underlying, 0, ptr, 0x44, ptr, 32)
 
-                let rdsize := returndatasize()
+                    let rdsize := returndatasize()
 
-                // Check for ERC20 success. ERC20 tokens should return a boolean,
-                // but some don't. We accept 0-length return data as success, or at
-                // least 32 bytes that starts with a 32-byte boolean true.
-                success := and(
-                    success, // call itself succeeded
-                    or(
-                        iszero(rdsize), // no return data, or
-                        and(
-                            gt(rdsize, 31), // at least 32 bytes
-                            eq(mload(ptr), 1) // starts with uint256(1)
+                    // Check for ERC20 success. ERC20 tokens should return a boolean,
+                    // but some don't. We accept 0-length return data as success, or at
+                    // least 32 bytes that starts with a 32-byte boolean true.
+                    success := and(
+                        success, // call itself succeeded
+                        or(
+                            iszero(rdsize), // no return data, or
+                            and(
+                                gt(rdsize, 31), // at least 32 bytes
+                                eq(mload(ptr), 1) // starts with uint256(1)
+                            )
                         )
                     )
-                )
 
-                if iszero(success) {
-                    returndatacopy(ptr, 0, rdsize)
-                    revert(ptr, rdsize)
+                    if iszero(success) {
+                        returndatacopy(ptr, 0, rdsize)
+                        revert(ptr, rdsize)
+                    }
                 }
             }
         }
@@ -314,9 +324,9 @@ abstract contract CompoundV2Lending is Slots, ERC20Selectors, Masks {
             // skip cToken (end of data)
             currentOffset := add(currentOffset, 20)
 
-            switch iszero(underlying)
+            switch underlying
             // case native
-            case 1 {
+            case 0 {
                 let amount
                 // check if override is used
                 switch and(_PRE_PARAM, amountData)
@@ -334,7 +344,7 @@ abstract contract CompoundV2Lending is Slots, ERC20Selectors, Masks {
                 // selector for mint()
                 mstore(0, 0x1249c58b00000000000000000000000000000000000000000000000000000000)
 
-                if iszero(call(gas(), cToken, 0x0, 0x0, 0x4, 0x0, 0x0)) {
+                if iszero(call(gas(), cToken, amount, 0x0, 0x4, 0x0, 0x0)) {
                     returndatacopy(0x0, 0, returndatasize())
                     revert(0x0, returndatasize())
                 }
@@ -483,9 +493,9 @@ abstract contract CompoundV2Lending is Slots, ERC20Selectors, Masks {
 
             let ptr := mload(0x40)
 
-            switch iszero(underlying)
+            switch underlying
             // case native
-            case 1 {
+            case 0 {
                 let amount
                 // check if override is used
                 switch and(_PRE_PARAM, amountData)
@@ -512,7 +522,7 @@ abstract contract CompoundV2Lending is Slots, ERC20Selectors, Masks {
                     call(
                         gas(),
                         cToken,
-                        0x0,
+                        amount,
                         0, // input = empty for fallback
                         0x24, // input size = selector + address + uint256
                         0, // output

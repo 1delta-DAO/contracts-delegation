@@ -21,6 +21,7 @@ contract BaseTest is Test {
 
     constructor() Test() {
         rpcOverrides[Chains.ARBITRUM_ONE] = "https://arb1.arbitrum.io/rpc";
+        rpcOverrides[Chains.BNB_SMART_CHAIN_MAINNET] = "https://bsc-dataseed1.binance.org/";
     }
 
     /// @notice Initialize the chain for the test
@@ -42,8 +43,11 @@ contract BaseTest is Test {
         if (bytes(overrideRpc).length > 0) {
             rpcUrl = overrideRpc;
         }
-
-        vm.createSelectFork(rpcUrl, blockNumber);
+        if (blockNumber == 0) { // this means the latest block 
+            vm.createSelectFork(rpcUrl);
+        } else {
+            vm.createSelectFork(rpcUrl, blockNumber);
+        }
     }
 
     /// @notice Utility function for signing messages
@@ -65,9 +69,7 @@ contract BaseTest is Test {
     /**
      * delegate borrow (user to spender for underlying)
      */
-    function approveBorrowDelegation(address _user, address underlying, address spender, string memory lender)
-        internal
-    {
+    function approveBorrowDelegation(address _user, address underlying, address spender, string memory lender) internal {
         if (Lenders.isAave(lender)) {
             address instance = chain.getLendingTokens(underlying, lender).debt;
             vm.prank(_user);
@@ -99,9 +101,7 @@ contract BaseTest is Test {
     /**
      * delegate withdrawal (user to spender for underlying)
      */
-    function approveWithdrawalDelegation(address _user, address underlying, address spender, string memory lender)
-        internal
-    {
+    function approveWithdrawalDelegation(address _user, address underlying, address spender, string memory lender) internal {
         if (Lenders.isAave(lender)) {
             address instance = chain.getLendingTokens(underlying, lender).collateral;
             vm.prank(_user);
