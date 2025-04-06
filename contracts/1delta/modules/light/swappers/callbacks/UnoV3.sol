@@ -12,13 +12,10 @@ import {DeltaErrors} from "../../../shared/errors/Errors.sol";
 import {ERC20Selectors} from "../../../shared/selectors/ERC20Selectors.sol";
 
 /**
- * @title Contract Module for general Margin Trading on an borrow delegation compatible Lender
- * @notice Contains main logic for uniswap-type callbacks and initiator functions
+ * @title Uniswap V3 type callback implementations
  */
 abstract contract UniV3Callbacks is V3ReferencesBase, ERC20Selectors, Masks, DeltaErrors {
-    /// @dev the constant offset a path has for Uni V3 type swap callbacks
-    uint256 internal constant PATH_OFFSET_CALLBACK_V3 = 132;
-
+    /** This functione xecutes a simple transfer to shortcut the callback if there is no further calldata */
     function clSwapCallback(uint256 amountToPay, uint256 amountReceived, address tokenIn, address callerAddress, uint256 calldataLength) private {
         assembly {
             // one can pass no path to continue
@@ -101,6 +98,8 @@ abstract contract UniV3Callbacks is V3ReferencesBase, ERC20Selectors, Masks, Del
      * Generic UniswapV3 callback executor
      * The call looks like
      * ```function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata) external {...}```
+     * 
+     * Izumi deviates from this, we handle these below
      */
     function _executeUniV3IfSelector(bytes32 selector) internal {
         bytes32 codeHash;
