@@ -136,7 +136,7 @@ contract V3QuoterTest is BaseTest {
         console.log("Actual amount:", actualAmountOut);
     }
 
-    function multiPath(address[] memory assets, uint16[] memory fees, uint8[] memory dexIds, address receiver)
+    function multiPath(address[] memory assets, uint16[] memory fees, address receiver)
         internal
         view
         returns (bytes memory data)
@@ -146,29 +146,26 @@ contract V3QuoterTest is BaseTest {
             uint8(0) // no splits
         );
         for (uint256 i = 0; i < assets.length - 1; i++) {
-            address pool;
-            if (dexIds[i] == DexTypeMappings.UNISWAP_V3_ID) {
-                pool = IF(UNI_FACTORY).getPool(assets[i], assets[i + 1], fees[i]);
-            }
-            console.log("multiPath pool", pool, dexIds[i], assets[i] < assets[i + 1]);
+            address pool = IF(UNI_FACTORY).getPool(assets[i], assets[i + 1], fees[i]);
+
             address _receiver = i < assets.length - 2 ? address(quoter) : receiver;
             data = abi.encodePacked(
                 data, //
-                uint16(0),
-                // atomic
+                uint8(0),
+                uint8(0),
                 assets[i + 1], // nextToken
                 _receiver,
-                dexIds[i],
+                uint8(DexTypeMappings.UNISWAP_V3_ID),
                 pool,
                 uint8(0), // <-- we assume native protocol here
                 fees[i],
-                uint16(0)
+                uint16(CalldataLib.DexPayConfig.CALLER_PAYS),
+                new bytes(0)
             );
-            console.log("Path: ", i);
-            console.logBytes(data);
+            // console.log("Path: ", i);
+            // console.logBytes(data);
         }
-        console.log("multiPath data");
-        console.logBytes(data);
+
         return data;
     }
 
@@ -188,25 +185,20 @@ contract V3QuoterTest is BaseTest {
         fees[0] = 500;
         fees[1] = 500;
 
-        uint8[] memory dexIds = new uint8[](2);
-        dexIds[0] = uint8(DexTypeMappings.UNISWAP_V3_ID);
-        dexIds[1] = uint8(DexTypeMappings.UNISWAP_V3_ID);
-
-        bytes memory path = multiPath(assets, fees, dexIds, address(quoter));
+        bytes memory path = multiPath(assets, fees, address(quoter));
 
         // Get quote
         uint256 quotedAmountOut = quoter.quote(abi.encodePacked(uint128(amountIn), uint128(0), USDC, path));
 
-        //console.log("Quoted amount:", quotedAmountOut);
+        console.log("Quoted amount:", quotedAmountOut);
 
-        // Now execute actual swap to verify quote
-        bytes memory swapHead = CalldataLib.swapHead(amountIn, 0, USDC, false);
+        // actual swap,  pass in the quote
+        bytes memory swapHead = CalldataLib.swapHead(amountIn, quotedAmountOut, USDC, false);
 
         // Create the swap path for the composer
-        path = multiPath(assets, fees, dexIds, user);
+        path = multiPath(assets, fees, user);
         bytes memory swapCall = abi.encodePacked(swapHead, path);
 
-        // Get actual amount from a real swap
         uint256 balanceBefore = IERC20(cbETH).balanceOf(address(user));
 
         vm.prank(user);
@@ -216,8 +208,8 @@ contract V3QuoterTest is BaseTest {
         uint256 actualAmountOut = balanceAfter - balanceBefore;
 
         // Compare results
-        //assertApproxEqRel(quotedAmountOut, actualAmountOut, 0.01e18, "Quote doesn't match actual amount");
-        //console.log("Quote amount:", quotedAmountOut);
+        assertApproxEqRel(quotedAmountOut, actualAmountOut, 1, "Quote doesn't match actual amount");
+        console.log("Quote amount:", quotedAmountOut);
         console.log("Actual amount:", actualAmountOut);
     }
 }

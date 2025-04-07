@@ -19,22 +19,33 @@ abstract contract V3TypeQuoter is Masks {
      */
     function getV3TypeAmountOut(uint256 amountIn, address tokenIn, address tokenOut, uint256 currentOffset)
         internal
-        returns (uint256 amountOut, uint256)
+        returns (uint256 amountOut, uint256 newOffset)
     {
         address pool;
-        uint256 clLength;
+        uint8 forkId;
+        uint16 fee;
+        uint16 config;
         bool zeroForOne;
+
         assembly {
-            // get a word
-            let dt := calldataload(currentOffset)
-
-            // get pool address
-            pool := shr(96, dt)
-
-            // skip pool address
+            // Read pool address
+            pool := shr(96, calldataload(currentOffset))
             currentOffset := add(currentOffset, 20)
 
-            clLength := and(UINT16_MASK, shr(56, dt)) // shift 32-(20+1+2+2)=7 bytes
+            // Read fork ID
+            forkId := shr(248, calldataload(currentOffset))
+            currentOffset := add(currentOffset, 1)
+
+            // Read fee (as uint16)
+            fee := shr(240, calldataload(currentOffset))
+            currentOffset := add(currentOffset, 2)
+
+            // Read config
+            config := shr(240, calldataload(currentOffset))
+            currentOffset := add(currentOffset, 2)
+
+            // skip extra calldat bytes, if any
+            if gt(config, 1) { currentOffset := add(currentOffset, config) }
 
             zeroForOne := lt(tokenIn, tokenOut)
         }
@@ -46,9 +57,11 @@ abstract contract V3TypeQuoter is Masks {
             zeroForOne ? MIN_SQRT_RATIO : MAX_SQRT_RATIO, // price limit
             abi.encodePacked(tokenIn, tokenOut) // callback data
         ) {} catch (bytes memory reason) {
-            // Parse the revert reason to get the quote
             return (parseRevertReason(reason), currentOffset);
         }
+
+        // should not happen!
+        revert("Swap did not revert");
     }
 
     /**
