@@ -212,4 +212,69 @@ contract V3QuoterTest is BaseTest {
         console.log("Quote amount:", quotedAmountOut);
         console.log("Actual amount:", actualAmountOut);
     }
+
+    function test_light_quoter_split_swap() public {
+        /**
+         * WETH -> USDC (2 splits with different fees, 50/50)
+         */
+        uint256 amountIn = 1e18; // 1 WETH
+
+        address pool500 = IF(UNI_FACTORY).getPool(WETH, USDC, 500);
+        address pool3000 = IF(UNI_FACTORY).getPool(WETH, USDC, 3000);
+
+        // path 1
+        bytes memory path1 = uniswapV3StyleSwap(
+            USDC, address(quoter), 0, pool500, 500, CalldataLib.DexPayConfig.CALLER_PAYS, new bytes(0)
+        );
+
+        // path 2
+        bytes memory path2 = uniswapV3StyleSwap(
+            USDC, address(quoter), 0, pool3000, 3000, CalldataLib.DexPayConfig.CALLER_PAYS, new bytes(0)
+        );
+
+        // split branch (0,1) with 2 splits
+        bytes memory splitBranch = swapBranch(0, 1, abi.encodePacked((type(uint16).max / 2)));
+
+        // full quotes path
+        bytes memory quotePath = abi.encodePacked(
+            // branchHeader
+            splitBranch,
+            // Each individual swap is (0,0)
+            swapBranch(0, 0, ""), // <- split 1
+            path1,
+            swapBranch(0, 0, ""), // <- split 2
+            path2
+        );
+
+        // Get quote
+        uint256 quotedAmountOut = quoter.quote(abi.encodePacked(uint128(amountIn), uint128(0), WETH, quotePath));
+
+        console.log("Quoted amount:", quotedAmountOut);
+
+        // actual swap
+        bytes memory composerPath1 =
+            uniswapV3StyleSwap(USDC, user, 0, pool500, 500, CalldataLib.DexPayConfig.CALLER_PAYS, new bytes(0));
+
+        bytes memory composerPath2 =
+            uniswapV3StyleSwap(USDC, user, 0, pool3000, 3000, CalldataLib.DexPayConfig.CALLER_PAYS, new bytes(0));
+
+        bytes memory swapHead = CalldataLib.swapHead(amountIn, quotedAmountOut, WETH, false);
+        bytes memory swapPath =
+            abi.encodePacked(splitBranch, swapBranch(0, 0, ""), composerPath1, swapBranch(0, 0, ""), composerPath2);
+
+        bytes memory swapCall = abi.encodePacked(swapHead, swapPath);
+
+        uint256 balanceBefore = IERC20(USDC).balanceOf(address(user));
+
+        vm.prank(user);
+        composer.deltaCompose(swapCall);
+
+        uint256 balanceAfter = IERC20(USDC).balanceOf(address(user));
+        uint256 actualAmountOut = balanceAfter - balanceBefore;
+
+        // Compare results
+        assertApproxEqRel(quotedAmountOut, actualAmountOut, 1, "Quote doesn't match actual amount");
+        console.log("Quote amount:", quotedAmountOut);
+        console.log("Actual amount:", actualAmountOut);
+    }
 }

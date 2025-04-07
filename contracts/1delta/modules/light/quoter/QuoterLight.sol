@@ -56,7 +56,7 @@ contract QuoterLight is Masks, V3TypeQuoter, ERC20Selectors {
             } else {
                 // Split swap
                 (amountOut, currentOffset, nextToken) =
-                    _quoteSingleSwapOrSplit(amountIn, swapMaxIndex, tokenIn, address(this), currentOffset);
+                    _quoteSingleSwapOrSplit(amountIn, splitsMaxIndex, tokenIn, address(this), currentOffset);
             }
         } else {
             // Multi-hop swap
