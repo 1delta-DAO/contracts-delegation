@@ -10,17 +10,11 @@ contract QuoterLight is Masks, V3TypeQuoter, ERC20Selectors {
     error InvalidDexId();
     error InvalidSplitFormat();
 
-    function quote(bytes calldata data) external returns (uint256 amountOut) {
-        uint256 amountIn;
-        uint256 minimumAmountReceived;
+    function quote(uint256 amountIn, bytes calldata data) external returns (uint256 amountOut) {
         address tokenIn;
         uint256 currentOffset;
         assembly {
             currentOffset := data.offset
-            minimumAmountReceived := calldataload(currentOffset)
-            amountIn := shr(128, minimumAmountReceived)
-            minimumAmountReceived := and(UINT128_MASK, minimumAmountReceived)
-            currentOffset := add(currentOffset, 32)
             let dataStart := calldataload(currentOffset)
             tokenIn := shr(96, dataStart)
             currentOffset := add(20, currentOffset)

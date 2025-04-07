@@ -95,7 +95,7 @@ contract V3QuoterTest is BaseTest {
         bytes memory swapBranch = (new bytes(0)).attachBranch(0, 0, ""); //(0,0)
 
         // Get quote
-        uint256 quotedAmountOut = quoter.quote(abi.encodePacked(uint128(amountIn), uint128(0), WETH, swapBranch, path));
+        uint256 quotedAmountOut = quoter.quote(amountIn, abi.encodePacked(WETH, swapBranch, path));
 
         console.log("Quoted amount:", quotedAmountOut);
 
@@ -175,7 +175,7 @@ contract V3QuoterTest is BaseTest {
         bytes memory path = multiPath(assets, fees, address(quoter));
 
         // Get quote
-        uint256 quotedAmountOut = quoter.quote(abi.encodePacked(uint128(amountIn), uint128(0), USDC, path));
+        uint256 quotedAmountOut = quoter.quote(amountIn, abi.encodePacked(USDC, path));
 
         console.log("Quoted amount:", quotedAmountOut);
 
@@ -241,7 +241,7 @@ contract V3QuoterTest is BaseTest {
         );
 
         // Get quote (attach header manually)
-        uint256 quotedAmountOut = quoter.quote(abi.encodePacked(uint128(amountIn), uint128(0), WETH, quotePath));
+        uint256 quotedAmountOut = quoter.quote(amountIn, abi.encodePacked(WETH, quotePath));
 
         console.log("Quoted amount:", quotedAmountOut);
 
