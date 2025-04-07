@@ -55,7 +55,7 @@ contract MorphoFlashLoans is Slots, ERC20Selectors, Masks, DeltaErrors {
                     pool,
                     0x0,
                     ptr,
-                    add(calldataLength, 152), // = 10 * 32 + 4
+                    add(calldataLength, 152),
                     0x0,
                     0x0 //
                 )

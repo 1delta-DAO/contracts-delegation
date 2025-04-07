@@ -43,6 +43,10 @@ abstract contract ExternalCall is Masks, DeltaErrors {
             let dataLength := and(UINT16_MASK, shr(128, callValue))
             callValue := shr(144, callValue) // shr will already mask correctly
 
+            if iszero(callValue) {
+                callValue := selfbalance()
+            }
+
             // free memo ptr for populating the tx
             let ptr := mload(0x40)
 

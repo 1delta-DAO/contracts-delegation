@@ -23,7 +23,7 @@ contract AaveV2FlashLoans is Slots, ERC20Selectors, Masks, DeltaErrors {
      * | 54     | 2              | paramsLength                    |
      * | 56     | paramsLength   | params                          |
      */
-    function aaveV2FlashLoan(uint256 currentOffset, address callerAddress, uint256 poolId) internal returns (uint256) {
+    function aaveV2FlashLoan(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
             // get token to loan
             let token := shr(96, calldataload(currentOffset))
@@ -58,18 +58,16 @@ contract AaveV2FlashLoans is Slots, ERC20Selectors, Masks, DeltaErrors {
             mstore(add(ptr, 356), 1) // length modes
             mstore(add(ptr, 388), 0) // mode = 0
             ////////////////////////////////////////////////////
-            // We attach [souceId | caller] as first 21 bytes
-            // to the params
+            // We attach [caller] as first 20 bytes
             ////////////////////////////////////////////////////
-            mstore(add(ptr, 420), add(21, calldataLength)) // length calldata (plus 1 + address)
-            mstore8(add(ptr, 452), poolId) // source id <- this is crucial as we need this to validte the callback
+            mstore(add(ptr, 420), add(20, calldataLength)) // length calldata (plus 1 + address)
             // caller at the beginning
-            mstore(add(ptr, 453), shl(96, callerAddress))
+            mstore(add(ptr, 452), shl(96, callerAddress))
 
             // copy the calldataslice for the params
             calldatacopy(
-                add(ptr, 473), // next slot
-                currentOffset, // offset starts at 37, already incremented
+                add(ptr, 472), // next slot
+                currentOffset, // offset starts at 27, already incremented
                 calldataLength // copy given length
             ) // calldata
             if iszero(
@@ -78,7 +76,7 @@ contract AaveV2FlashLoans is Slots, ERC20Selectors, Masks, DeltaErrors {
                     pool,
                     0x0,
                     ptr,
-                    add(calldataLength, 473), // = 14 * 32 + 4 + 20 (caller)
+                    add(calldataLength, 472), // = 14 * 32 + 4 + 20 (caller)
                     0x0,
                     0x0 //
                 )

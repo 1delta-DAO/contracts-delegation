@@ -34,19 +34,11 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
         uint256 payback;
         assembly {
             calldataLength := params.length
-            // we expect at least an address
-            // and a sourceId (uint8)
-            // invalid params will lead to errors in the
-            // compose at the bottom
-            if lt(calldataLength, 21) {
-                mstore(0, INVALID_FLASH_LOAN)
-                revert(0, 0x4)
-            }
+
             // validate caller
             // - extract id from params
             let firstWord := calldataload(196)
-            // needs no uint8 masking as we shift 248 bits
-            let source := shr(248, firstWord)
+            let source := and(UINT8_MASK, shr(88, firstWord))
 
             // Validate the caller
             // We check that the caller is one of the lending pools
@@ -90,7 +82,7 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
             // From here on we have validated that the `origCaller`
             // was attached in the deltaCompose function
             // Otherwise, this would be a vulnerability
-            origCaller := and(ADDRESS_MASK, shr(88, firstWord))
+            origCaller := shr(96, firstWord)
             // shift / slice params
             calldataLength := sub(calldataLength, 21)
         }

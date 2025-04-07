@@ -20,7 +20,7 @@ contract BalancerV2FlashLoans is Slots, ERC20Selectors, Masks, DeltaErrors {
      * | 54     | 2              | paramsLength                    |
      * | 56     | paramsLength   | params                          |
      */
-    function balancerV2FlashLoan(uint256 currentOffset, address callerAddress, uint256 poolId) internal returns (uint256) {
+    function balancerV2FlashLoan(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
             // get token to loan
             let token := shr(96, calldataload(currentOffset))
@@ -48,11 +48,10 @@ contract BalancerV2FlashLoans is Slots, ERC20Selectors, Masks, DeltaErrors {
             mstore(add(ptr, 164), token) // asset
             mstore(add(ptr, 196), 1) // length amounts
             mstore(add(ptr, 228), amount) // amount
-            mstore(add(ptr, 260), add(21, calldataLength)) // length calldata
-            mstore8(add(ptr, 292), poolId) // source id
+            mstore(add(ptr, 260), add(20, calldataLength)) // length calldata
             // caller at the beginning
-            mstore(add(ptr, 293), shl(96, callerAddress))
-            calldatacopy(add(ptr, 313), currentOffset, calldataLength) // calldata
+            mstore(add(ptr, 292), shl(96, callerAddress))
+            calldatacopy(add(ptr, 312), currentOffset, calldataLength) // calldata
             // set entry flag
             sstore(FLASH_LOAN_GATEWAY_SLOT, 2)
             if iszero(
@@ -61,7 +60,7 @@ contract BalancerV2FlashLoans is Slots, ERC20Selectors, Masks, DeltaErrors {
                     pool,
                     0x0,
                     ptr,
-                    add(calldataLength, 345), // = 10 * 32 + 4
+                    add(calldataLength, 312), // = 10 * 32 + 4
                     0x0,
                     0x0 //
                 )

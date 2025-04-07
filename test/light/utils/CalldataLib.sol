@@ -458,13 +458,12 @@ library CalldataLib {
             abi.encodePacked(
                 encodeApprove(asset, pool), // always approve
                 uint8(ComposerCommands.FLASH_LOAN),
-                uint8(poolType),
-                poolId,
+                poolType,
                 asset, //
                 pool,
                 uint112(amount),
-                uint16(data.length),
-                data
+                uint16(data.length + 1),
+                abi.encodePacked(uint8(poolId), data)
             );
     }
 
@@ -487,7 +486,8 @@ library CalldataLib {
         uint256 assets,
         address receiver,
         bytes memory data, //
-        address morphoB
+        address morphoB,
+        uint256 pId
     ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
@@ -499,8 +499,8 @@ library CalldataLib {
                 uint128(assets), // 16
                 receiver,
                 morphoB,
-                uint16(data.length), // 2 @ 1 + 4*20
-                data
+                uint16(data.length > 0 ? data.length + 1 : 0), // 2 @ 1 + 4*20
+                data.length == 0 ? new bytes(0) : abi.encodePacked(uint8(pId), data)
             );
     }
 
@@ -510,7 +510,8 @@ library CalldataLib {
         uint256 assets,
         address receiver,
         bytes memory data,
-        address morphoB
+        address morphoB,
+        uint256 pId
     ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
@@ -522,8 +523,8 @@ library CalldataLib {
                 generateAmountBitmap(uint128(assets), false, isShares, false),
                 receiver,
                 morphoB,
-                uint16(data.length), // 2 @ 1 + 4*20
-                data
+                uint16(data.length > 0 ? data.length + 1 : 0), // 2 @ 1 + 4*20
+                data.length == 0 ? new bytes(0) : abi.encodePacked(uint8(pId), data)
             );
     }
 
@@ -625,7 +626,8 @@ library CalldataLib {
         uint256 assets,
         address receiver,
         bytes memory data,
-        address morphoB
+        address morphoB,
+        uint256 pId
     ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
@@ -637,8 +639,8 @@ library CalldataLib {
                 generateAmountBitmap(uint128(assets), false, isShares, unsafe),
                 receiver,
                 morphoB,
-                uint16(data.length), // 2 @ 1 + 4*20
-                data
+                uint16(data.length > 0 ? data.length + 1 : 0), // 2 @ 1 + 4*20
+                data.length == 0 ? new bytes(0) : abi.encodePacked(uint8(pId), data)
             );
     }
 

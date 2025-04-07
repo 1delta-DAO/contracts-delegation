@@ -49,6 +49,9 @@ abstract contract ExternalCallsGeneric is Slots, ERC20Selectors, Masks, DeltaErr
             let callValue := calldataload(add(currentOffset, 20))
             let dataLength := and(UINT16_MASK, shr(128, callValue))
             callValue := shr(144, callValue) // shr will already mask correctly
+            if iszero(callValue) {
+                callValue := selfbalance()
+            }
 
             // free memo ptr for populating the tx
             let ptr := mload(0x40)

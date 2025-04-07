@@ -45,17 +45,23 @@ contract MorphoFlashLoanCallback is Masks, DeltaErrors {
         uint256 calldataLength;
         assembly {
             calldataLength := params.length
-            // we expect at least an address
-            // and a sourceId (uint8)
-            // invalid params will lead to errors in the
-            // compose at the bottom
-            if lt(calldataLength, 21) {
-                mstore(0, INVALID_FLASH_LOAN)
-                revert(0, 0x4)
-            }
 
-            // Validate the caller - MUST be morpho
-            if xor(caller(), MORPHO_BLUE) {
+            // validate caller
+            // - extract id from params
+            let firstWord := calldataload(params.offset)
+            let source := and(UINT8_MASK, shr(88, firstWord))
+
+            // Validate the caller
+            // We check that the caller is a trusted morpho blue entity
+            switch source
+            case 0 {
+                if xor(caller(), MORPHO_BLUE) {
+                    mstore(0, INVALID_FLASH_LOAN)
+                    revert(0, 0x4)
+                }
+            }
+            // We revert on any other id
+            default {
                 mstore(0, INVALID_FLASH_LOAN)
                 revert(0, 0x4)
             }
@@ -63,13 +69,19 @@ contract MorphoFlashLoanCallback is Masks, DeltaErrors {
             // From here on we have validated that the `origCaller`
             // was attached in the deltaCompose function
             // Otherwise, this would be a vulnerability
-            origCaller := shr(96, calldataload(100))
+            origCaller := shr(96, firstWord)
             // shift / slice params
-            calldataLength := sub(calldataLength, 20)
+            calldataLength := sub(calldataLength, 21)
         }
         // within the flash loan, any compose operation
         // can be executed
-        _deltaComposeInternal(origCaller, amount, amount, 120, calldataLength);
+        _deltaComposeInternal(
+            origCaller,
+            amount,
+            amount,
+            120, // offset is constant
+            calldataLength
+        );
     }
 
     function _deltaComposeInternal(address callerAddress, uint256 paramPull, uint256 paramPush, uint256 offset, uint256 length) internal virtual {}
