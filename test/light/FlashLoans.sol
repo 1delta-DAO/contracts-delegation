@@ -156,7 +156,6 @@ contract FlashLoanLightTest is BaseTest {
     }
 
     function test_light_flash_loan_balancerV3() external {
-        address asset = WETH;
         address assetFlash = USDC;
         uint256 sweepAm = 30.0e18;
         vm.deal(address(oneD), sweepAm);
@@ -193,9 +192,7 @@ contract FlashLoanLightTest is BaseTest {
             sweep,
             settle
         );
-        console.log("---------------");
-        console.logBytes(takeFunds);
-        console.log("---------------");
+
         bytes memory unlock = CalldataLib.nextGenDexUnlock(
             BALANCER_V3_VAULT,
             DexForkMappings.BALANCER_V3,
@@ -204,7 +201,7 @@ contract FlashLoanLightTest is BaseTest {
         vm.prank(user);
         oneD.deltaCompose(unlock);
 
-        vm.expectRevert();
-        oneD.executeOperation(asset, 0, 9, user, unlock);
+        vm.expectRevert(bytes4(keccak256("BadPool()")));
+        oneD.balancerUnlockCallback(dp);
     }
 }

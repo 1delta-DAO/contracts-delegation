@@ -26,12 +26,11 @@ abstract contract UniV4Callbacks is V4ReferencesBase, ERC20Selectors, Masks, Del
         address callerAddress;
         uint256 length;
         assembly {
-            length := calldataload(36)
             let poolId := calldataload(136)
             callerAddress := and(ADDRESS_MASK, shr(88, poolId))
             poolId := shr(248, poolId)
             // cut off address and poolId
-            length := sub(length, 89)
+            length := sub(calldataload(36), 89)
 
             /** Ensure that the caller is the singleton of choice */
             switch poolId
