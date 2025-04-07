@@ -42,10 +42,10 @@ contract V3QuoterTest is BaseTest {
 
         WETH_USDC_500_POOL = IF(UNI_FACTORY).getPool(WETH, USDC, 500);
 
-        deal(WETH, address(this), 10 ether);
-        deal(USDC, address(this), 10000 * 1e6);
+        deal(WETH, address(user), 10 ether);
 
         // Approve composer
+        vm.prank(user);
         IERC20(WETH).approve(address(composer), 1 ether);
     }
 
@@ -90,33 +90,38 @@ contract V3QuoterTest is BaseTest {
          */
         uint256 amountIn = 1 * 1e18; // 1 WETH
 
-        bytes memory swapHead = CalldataLib.swapHead(amountIn, 0, WETH, false);
+        // Use utility function to encode path
+        bytes memory path = uniswapV3StyleSwap(
+            USDC, address(quoter), 0, WETH_USDC_500_POOL, 500, CalldataLib.DexPayConfig.CALLER_PAYS, new bytes(0)
+        );
+        // single swap branch (0,0)
         bytes memory swapBranch = swapBranch(0, 0, ""); //(0,0)
+
+        // Get quote
+        uint256 quotedAmountOut = quoter.quote(abi.encodePacked(uint128(amountIn), uint128(0), WETH, swapBranch, path));
+
+        console.log("Quoted amount:", quotedAmountOut);
+
+        // add quotedAmountOut as amountOutMin
+        bytes memory swapHead = CalldataLib.swapHead(amountIn, quotedAmountOut, WETH, false);
         bytes memory swapCall = CalldataLib.uniswapV3StyleSwap(
             abi.encodePacked(swapHead, swapBranch),
             USDC,
-            address(quoter),
+            user,
             0,
             WETH_USDC_500_POOL,
             500,
             CalldataLib.DexPayConfig.CALLER_PAYS,
             ""
         );
-        // Use utility function to encode path
-        bytes memory path = uniswapV3StyleSwap(
-            USDC, address(quoter), 0, WETH_USDC_500_POOL, 500, CalldataLib.DexPayConfig.CALLER_PAYS, new bytes(0)
-        );
-        // Get quote
-        uint256 quotedAmountOut = quoter.quote(abi.encodePacked(uint128(amountIn), uint128(0), WETH, swapBranch, path));
-
-        console.log("Quoted amount:", quotedAmountOut);
 
         // Get actual amount from a real swap
-        uint256 balanceBefore = IERC20(USDC).balanceOf(address(this));
+        uint256 balanceBefore = IERC20(USDC).balanceOf(address(user));
 
-        composer.deltaCompose(abi.encodePacked(swapHead, swapBranch, swapCall));
+        vm.prank(user);
+        composer.deltaCompose(abi.encodePacked(swapCall));
 
-        uint256 balanceAfter = IERC20(USDC).balanceOf(address(this));
+        uint256 balanceAfter = IERC20(USDC).balanceOf(address(user));
         uint256 actualAmountOut = balanceAfter - balanceBefore;
 
         // Compare results
