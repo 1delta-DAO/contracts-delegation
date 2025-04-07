@@ -29,7 +29,7 @@ abstract contract Gen2025DexActions is UniswapV4SingletonActions, BalancerV3Vaul
             transferOperation := shr(248, firstSlice)
             currentOffset := add(currentOffset, 1)
         }
-        if (transferOperation < Gen2025ActionIds.UNI_V4_SYNC) {
+        if (transferOperation < Gen2025ActionIds.BAL_V3_TAKE) {
             if (transferOperation == Gen2025ActionIds.UNLOCK) {
                 return _singletonUnlock(currentOffset, callerAddress);
             } else if (transferOperation == Gen2025ActionIds.UNI_V4_TAKE) {
@@ -45,7 +45,7 @@ abstract contract Gen2025DexActions is UniswapV4SingletonActions, BalancerV3Vaul
             if (transferOperation == Gen2025ActionIds.BAL_V3_TAKE) {
                 return _balancerV3Take(currentOffset, paramPull);
             } else if (transferOperation == Gen2025ActionIds.BAL_V3_SETTLE) {
-                return _balancerV3Settle(currentOffset, paramPull);
+                return _balancerV3Settle(currentOffset, paramPush);
             } else {
                 _invalidOperation();
             }

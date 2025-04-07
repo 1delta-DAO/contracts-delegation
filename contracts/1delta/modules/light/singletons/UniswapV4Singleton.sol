@@ -44,9 +44,6 @@ abstract contract UniswapV4SingletonActions is Masks, DeltaErrors {
             // free memo ptr for populating the tx
             let ptr := mload(0x40)
 
-            // increment offset to calldata start
-            currentOffset := add(22, currentOffset)
-
             mstore(ptr, TAKE)
             mstore(add(ptr, 4), asset) // offset
             mstore(add(ptr, 36), receiver)
@@ -84,9 +81,6 @@ abstract contract UniswapV4SingletonActions is Masks, DeltaErrors {
             currentOffset := add(20, currentOffset)
             let asset := shr(96, calldataload(currentOffset))
             currentOffset := add(20, currentOffset)
-
-            // increment offset to calldata start
-            currentOffset := add(22, currentOffset)
 
             mstore(0, SYNC)
             mstore(4, asset) // offset
@@ -126,7 +120,6 @@ abstract contract UniswapV4SingletonActions is Masks, DeltaErrors {
             currentOffset := add(16, currentOffset)
 
             mstore(0, SETTLE)
-
             if iszero(
                 call(
                     gas(),

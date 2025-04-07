@@ -24,12 +24,11 @@ abstract contract BalancerV3Callbacks is BalancerV3ReferencesBase, ERC20Selector
         uint256 length;
         uint poolId;
         assembly {
-            length := calldataload(36)
             poolId := calldataload(68)
             callerAddress := and(ADDRESS_MASK, shr(88, poolId))
             poolId := shr(248, poolId)
             // cut off address and poolId
-            length := sub(length, 21)
+            length := sub(calldataload(36), 21)
 
             /** Ensure that the caller is the singleton of choice */
             switch poolId
@@ -44,7 +43,6 @@ abstract contract BalancerV3Callbacks is BalancerV3ReferencesBase, ERC20Selector
                 revert(0x0, 0x4)
             }
         }
-
         /**
          * This is to execute swaps or flash laons
          * For swaps, one needs to bump the composer swap command in here

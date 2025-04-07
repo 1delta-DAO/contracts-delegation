@@ -38,6 +38,17 @@ library CalldataLib {
         ); // swaps max index for inner path
     }
 
+    function balancerV3Take(address singleton, address asset, address receiver, uint256 amount) internal pure returns (bytes memory data) {
+        data = abi.encodePacked(
+            uint8(ComposerCommands.GEN_2025_SINGELTONS),
+            uint8(Gen2025ActionIds.BAL_V3_TAKE),
+            singleton, // manager address
+            asset, // validation Id
+            receiver, // validation Id
+            uint128(amount)
+        ); // swaps max index for inner path
+    }
+
     function swapHead(uint256 amount, uint256 amountOutMin, address assetIn, bool preParam) internal pure returns (bytes memory data) {
         return
             abi.encodePacked(
@@ -383,7 +394,7 @@ library CalldataLib {
             uint8(Gen2025ActionIds.BAL_V3_SETTLE),
             singleton,
             asset,
-            uint128(amountHint) // manager address
+            uint128(amountHint >= type(uint120).max ? type(uint120).max : amountHint) // manager address
         ); // swaps max index for inner path
     }
 

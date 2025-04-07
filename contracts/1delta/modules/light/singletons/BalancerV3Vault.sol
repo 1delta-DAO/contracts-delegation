@@ -54,9 +54,6 @@ abstract contract BalancerV3VaultActions is Masks, DeltaErrors {
             // free memo ptr for populating the tx
             let ptr := mload(0x40)
 
-            // increment offset to calldata start
-            currentOffset := add(22, currentOffset)
-
             mstore(ptr, SEND_TO)
             mstore(add(ptr, 4), asset) // offset
             mstore(add(ptr, 36), receiver)
@@ -88,7 +85,7 @@ abstract contract BalancerV3VaultActions is Masks, DeltaErrors {
          * |--------|----------------|-------------------|
          * | 0      | 20             | manager           |
          * | 20     | 20             | asset             | <-- never native
-         * | 20     | 16             | amountHint        |
+         * | 40     | 16             | amountHint        |
          */
         assembly {
             let manager := shr(96, calldataload(currentOffset))

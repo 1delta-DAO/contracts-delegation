@@ -17,7 +17,6 @@ contract UnoV4LightTest is BaseTest {
     uint256 internal constant forkBlock = 27970029;
     OneDeltaComposerLight oneDV2;
     uint8 internal constant UNISWAP_V4_POOL_ID = 0;
-    uint8 internal constant UNISWAP_V4_DEX_ID = 55;
 
     address internal constant UNI_V4_PM = 0x498581fF718922c3f8e6A244956aF099B2652b2b;
 

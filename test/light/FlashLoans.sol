@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
+import {console} from "forge-std/console.sol";
 import {ComposerUtils, Commands} from "../shared/utils/ComposerUtils.sol";
 import {MorphoMathLib} from "./utils/MathLib.sol";
 import {MarketParams, IMorphoEverything} from "./utils/Morpho.sol";
@@ -23,14 +24,18 @@ contract FlashLoanLightTest is BaseTest {
     address internal GRANARY_POOL;
     address private BALANCER_V2_VAULT = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
 
+    // balancer dex data
+    address internal constant BALANCER_V3_VAULT = 0xbA1333333333a1BA1108E8412f11850A5C319bA9;
+
     address internal WETH;
+    address internal USDC;
 
     function setUp() public virtual {
         _init(Chains.BASE, forkBlock);
         AAVE_V3_POOL = chain.getLendingController(Lenders.AAVE_V3);
-        GRANARY_POOL = chain.getLendingController(Lenders.GRANARY);
         WETH = chain.getTokenAddress(Tokens.WETH);
-
+        USDC = chain.getTokenAddress(Tokens.USDC);
+        GRANARY_POOL = chain.getLendingController(Lenders.GRANARY);
         oneD = new OneDeltaComposerLight();
     }
 
@@ -148,5 +153,58 @@ contract FlashLoanLightTest is BaseTest {
 
         vm.expectRevert();
         oneD.executeOperation(asset, 0, 9, user, d);
+    }
+
+    function test_light_flash_loan_balancerV3() external {
+        address asset = WETH;
+        address assetFlash = USDC;
+        uint256 sweepAm = 30.0e18;
+        vm.deal(address(oneD), sweepAm);
+        uint256 amount = 432.0e6;
+        bytes memory dp = CalldataLib.sweep(
+            address(0),
+            user,
+            sweepAm, //
+            CalldataLib.SweepType.AMOUNT
+        );
+
+        bytes memory takeFunds = CalldataLib.balancerV3Take(
+            BALANCER_V3_VAULT,
+            assetFlash,
+            address(oneD),
+            amount //
+        );
+
+        bytes memory sweep = CalldataLib.sweep(
+            assetFlash,
+            BALANCER_V3_VAULT,
+            amount, //
+            CalldataLib.SweepType.AMOUNT
+        );
+
+        bytes memory settle = CalldataLib.nextGenDexSettleBalancer(
+            BALANCER_V3_VAULT,
+            assetFlash,
+            amount // type(uint).max //
+        );
+        takeFunds = abi.encodePacked(
+            takeFunds, //
+            dp,
+            sweep,
+            settle
+        );
+        console.log("---------------");
+        console.logBytes(takeFunds);
+        console.log("---------------");
+        bytes memory unlock = CalldataLib.nextGenDexUnlock(
+            BALANCER_V3_VAULT,
+            DexForkMappings.BALANCER_V3,
+            takeFunds //
+        );
+        vm.prank(user);
+        oneD.deltaCompose(unlock);
+
+        vm.expectRevert();
+        oneD.executeOperation(asset, 0, 9, user, unlock);
     }
 }

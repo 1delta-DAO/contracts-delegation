@@ -57,7 +57,7 @@ abstract contract SharedSingletonActions is Masks {
             mstore(add(ptr, 104), add(dataLength, 21)) // length for within cb selector
             mstore8(add(ptr, 136), poolId)
             mstore(add(ptr, 137), shl(96, callerAddress))
-            currentOffset := add(currentOffset, 21)
+            currentOffset := add(currentOffset, 23)
             // copy calldata
             calldatacopy(add(ptr, 157), currentOffset, dataLength)
             if iszero(
