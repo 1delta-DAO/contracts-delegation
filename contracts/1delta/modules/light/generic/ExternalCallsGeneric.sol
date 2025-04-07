@@ -22,8 +22,8 @@ abstract contract ExternalCallsGeneric is Slots, ERC20Selectors, Masks, DeltaErr
     /// @dev mask for selector in calldata
     bytes32 private constant SELECTOR_MASK = 0xffffffff00000000000000000000000000000000000000000000000000000000;
 
-    // InvalidSwapCall()
-    bytes4 private constant FORBIDDEN = 0xb1ab1ab1;
+    // Forbidden()
+    bytes4 private constant FORBIDDEN = 0xee90c468;
 
     function _callExternal(uint256 currentOffset) internal returns (uint256) {
         ////////////////////////////////////////////////////
