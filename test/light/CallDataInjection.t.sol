@@ -142,12 +142,36 @@ contract CallDataInjection is BaseTest {
             console.log("Attack failed - no tokens were stolen");
         }
     }
+
+    function test_light_callback_uniswapv2_injection() public {
+        address weth_usdc_pool = IF2(0x8909Dc15e40173Ff4699343b6eB8132c65e18eC6).getPair(WETH, USDC);
+        bytes4 uniV2SwapSelector = bytes4(0x022c0d9f);
+
+        // Set up victim with tokens and approvals
+        deal(WETH, address(user), 10 ether);
+        vm.prank(user);
+        IERC20(WETH).approve(address(composer), type(uint256).max);
+
+        // Record initial balances
+        uint256 victimInitialBalance = IERC20(WETH).balanceOf(address(user));
+
+        bytes memory transferCall = CalldataLib.transferIn(WETH, attacker, victimInitialBalance);
+
+        // vm.expectRevert(bytes4(0xbafe1c53));
+        vm.startPrank(attacker);
+        address(weth_usdc_pool).call(abi.encodeWithSelector(uniV2SwapSelector, 1, 0, address(composer), transferCall));
+        vm.stopPrank();
+    }
 }
 
 // Helper contracts and interfaces
 // -------------------------------------------------------------------------------------------------
 interface IF {
     function getPool(address tokenA, address tokenB, uint24 fee) external view returns (address);
+}
+
+interface IF2 {
+    function getPair(address, address) external view returns (address);
 }
 
 interface IERC20 {
