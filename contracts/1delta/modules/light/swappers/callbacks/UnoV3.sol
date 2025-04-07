@@ -7,6 +7,7 @@ pragma solidity 0.8.28;
 /******************************************************************************/
 
 import {V3ReferencesBase} from "./V3References.sol";
+import {ValidatorLib} from "./ValidatorLib.sol";
 import {Masks} from "../../../shared/masks/Masks.sol";
 import {DeltaErrors} from "../../../shared/errors/Errors.sol";
 import {ERC20Selectors} from "../../../shared/selectors/ERC20Selectors.sol";
@@ -104,7 +105,6 @@ abstract contract UniV3Callbacks is V3ReferencesBase, ERC20Selectors, Masks, Del
     function _executeUniV3IfSelector(bytes32 selector) internal {
         bytes32 codeHash;
         bytes32 ffFactoryAddress;
-        bool isUniV3;
         uint256 amountToPay;
         uint256 amountReceived;
         assembly {
@@ -130,7 +130,6 @@ abstract contract UniV3Callbacks is V3ReferencesBase, ERC20Selectors, Masks, Del
                     amountReceived := sub(0, _amount0)
                     amountToPay := _amount1
                 }
-                isUniV3 := 1
             }
             default {
                 // check if we do izumi
@@ -147,7 +146,6 @@ abstract contract UniV3Callbacks is V3ReferencesBase, ERC20Selectors, Masks, Del
                     }
                     amountToPay := calldataload(4)
                     amountReceived := calldataload(36)
-                    isUniV3 := 1
                 }
                 // SELECTOR_IZI_YX
                 case 0xd3e1c28400000000000000000000000000000000000000000000000000000000 {
@@ -161,12 +159,11 @@ abstract contract UniV3Callbacks is V3ReferencesBase, ERC20Selectors, Masks, Del
                     }
                     amountReceived := calldataload(4)
                     amountToPay := calldataload(36)
-                    isUniV3 := 1
                 }
             }
         }
 
-        if (isUniV3) {
+        if (ValidatorLib._hasData(ffFactoryAddress)) {
             uint256 calldataLength;
             address callerAddress;
             address tokenIn;

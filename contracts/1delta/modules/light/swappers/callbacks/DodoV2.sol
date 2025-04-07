@@ -7,6 +7,7 @@ pragma solidity 0.8.28;
 /******************************************************************************/
 
 import {DodoV2ReferencesBase} from "./DodoV2References.sol";
+import {ValidatorLib} from "./ValidatorLib.sol";
 import {Masks} from "../../../shared/masks/Masks.sol";
 import {DeltaErrors} from "../../../shared/errors/Errors.sol";
 import {ERC20Selectors} from "../../../shared/selectors/ERC20Selectors.sol";
@@ -103,27 +104,23 @@ abstract contract DodoV2Callbacks is DodoV2ReferencesBase, ERC20Selectors, Masks
      * Dodo can have 3 selectors as callbacks, we switch case thorugh them here
      */
     function _executeDodoV2IfSelector(bytes32 selector) internal {
-        bool isDodo;
         address factoryAddress;
         assembly {
             switch selector
             // DVMFlashLoanCall()
             case 0xeb2021c300000000000000000000000000000000000000000000000000000000 {
                 factoryAddress := DVM_FACTORY
-                isDodo := 1
             }
             // DSPFlashLoanCall
             case 0xd5b9979700000000000000000000000000000000000000000000000000000000 {
                 factoryAddress := DSP_FACTORY
-                isDodo := 1
             }
             // DPPFlashLoanCall
             case 0x7ed1f1dd00000000000000000000000000000000000000000000000000000000 {
                 factoryAddress := DPP_FACTORY
-                isDodo := 1
             }
         }
-        if (isDodo) {
+        if (ValidatorLib._hasAddress(factoryAddress)) {
             // since we now know it is dodo,
             // we can proceed with validaiton and parameter loading
             address sender;

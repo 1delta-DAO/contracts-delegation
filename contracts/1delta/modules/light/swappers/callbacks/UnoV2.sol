@@ -7,6 +7,7 @@ pragma solidity 0.8.28;
 /******************************************************************************/
 
 import {V2ReferencesBase} from "./V2References.sol";
+import {ValidatorLib} from "./ValidatorLib.sol";
 import {Masks} from "../../../shared/masks/Masks.sol";
 import {DeltaErrors} from "../../../shared/errors/Errors.sol";
 import {ERC20Selectors} from "../../../shared/selectors/ERC20Selectors.sol";
@@ -27,7 +28,6 @@ abstract contract UniV2Callbacks is V2ReferencesBase, ERC20Selectors, Masks, Del
     function _executeUniV2IfSelector(bytes32 selector) internal {
         bytes32 codeHash;
         bytes32 ffFactoryAddress;
-        bool isUniV2;
         assembly {
             if or(eq(selector, SELECTOR_UNIV2), eq(selector, SELECTOR_HOOK)) {
                 switch and(UINT8_MASK, shr(136, calldataload(224))) // forkId
@@ -38,11 +38,10 @@ abstract contract UniV2Callbacks is V2ReferencesBase, ERC20Selectors, Masks, Del
                 default {
                     revert(0, 0)
                 }
-                isUniV2 := 1
             }
         }
 
-        if (isUniV2) {
+        if (ValidatorLib._hasData(ffFactoryAddress)) {
             uint256 calldataLength;
             address callerAddress;
             uint256 amountIn;
