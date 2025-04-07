@@ -17,10 +17,12 @@ abstract contract V3TypeQuoter is Masks {
      * | 23     | 2              | calldataLength       |
      * | 25     | calldataLength | calldata             |
      */
-    function getV3TypeAmountOut(uint256 amountIn, address tokenIn, address tokenOut, uint256 currentOffset)
-        internal
-        returns (uint256 amountOut, uint256 newOffset)
-    {
+    function getV3TypeAmountOut(
+        uint256 amountIn,
+        address tokenIn,
+        address tokenOut,
+        uint256 currentOffset
+    ) internal returns (uint256 amountOut, uint256 newOffset) {
         address pool;
         uint8 forkId;
         uint16 fee;
@@ -45,18 +47,22 @@ abstract contract V3TypeQuoter is Masks {
             currentOffset := add(currentOffset, 2)
 
             // skip extra calldat bytes, if any
-            if gt(config, 1) { currentOffset := add(currentOffset, config) }
+            if gt(config, 1) {
+                currentOffset := add(currentOffset, config)
+            }
 
             zeroForOne := lt(tokenIn, tokenOut)
         }
 
-        try IUniswapV3Pool(pool).swap(
-            address(this), // quoter
-            zeroForOne,
-            int256(amountIn),
-            zeroForOne ? MIN_SQRT_RATIO : MAX_SQRT_RATIO, // price limit
-            abi.encodePacked(tokenIn, tokenOut) // callback data
-        ) {} catch (bytes memory reason) {
+        try
+            IUniswapV3Pool(pool).swap(
+                address(this), // quoter
+                zeroForOne,
+                int256(amountIn),
+                zeroForOne ? MIN_SQRT_RATIO : MAX_SQRT_RATIO, // price limit
+                abi.encodePacked(tokenIn, tokenOut) // callback data
+            )
+        {} catch (bytes memory reason) {
             return (parseRevertReason(reason), currentOffset);
         }
 
@@ -84,7 +90,7 @@ abstract contract V3TypeQuoter is Masks {
      * @param amount1Delta Amount of token1 delta
      * @param path Encoded path for callback
      */
-    function _v3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata path) internal view {
+    function _v3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata path) internal pure {
         // Extract token addresses from path
         address tokenIn;
         address tokenOut;
@@ -95,9 +101,9 @@ abstract contract V3TypeQuoter is Masks {
         }
 
         // Determine which amount is payment and which is received
-        (bool isExactInput, uint256 amountToPay, uint256 amountReceived) = amount0Delta > 0
-            ? (tokenIn < tokenOut, uint256(amount0Delta), uint256(-amount1Delta))
-            : (tokenOut < tokenIn, uint256(amount1Delta), uint256(-amount0Delta));
+        (bool isExactInput, uint256 amountReceived) = amount0Delta > 0
+            ? (tokenIn < tokenOut, uint256(-amount1Delta))
+            : (tokenOut < tokenIn, uint256(-amount0Delta));
 
         // For exact input, we revert with the received amount
         if (isExactInput) {
@@ -107,13 +113,7 @@ abstract contract V3TypeQuoter is Masks {
                 revert(ptr, 32)
             }
         } else {
-            // For exact output, we ensure the full output was received and revert with the input amount
-            if (amountOutCached != 0) require(amountReceived >= amountOutCached);
-            assembly {
-                let ptr := mload(0x40)
-                mstore(ptr, amountToPay)
-                revert(ptr, 32)
-            }
+            revert("Unsupported");
         }
     }
 
