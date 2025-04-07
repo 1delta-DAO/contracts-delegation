@@ -9,30 +9,21 @@ import {BaseTest} from "../../shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
 import "../utils/CalldataLib.sol";
 
-interface IF {
-    function getPool(address tokenA, address tokenB, uint24 fee) external view returns (address);
+contract WooLightTest is BaseTest {
+    using CalldataLib for bytes;
 
-    function pool(address tokenA, address tokenB, uint24 fee) external view returns (address);
-
-    function getPair(address tokenA, address tokenB) external view returns (address pair);
-}
-
-/**
- * We test all morpho blue operations
- * - supply, supplyCollateral, borrow, repay, erc4646Deposit, erc4646Withdraw
- */
-contract BalancerLightTest is BaseTest {
-    address internal constant BALANCER_V2_VAULT = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
-    bytes32 internal constant WETH_RETH_PID = 0xc771c1a5905420daec317b154eb13e4198ba97d0000000000000000000000023;
     uint256 internal constant forkBlock = 27970029;
     OneDeltaComposerLight oneDV2;
+
+    address internal constant WOO_POOL = 0x5520385bFcf07Ec87C4c53A7d8d65595Dff69FA4;
 
     address internal USDC;
     address internal WETH;
     address internal cbETH;
     address internal cbBTC;
     address internal LBTC;
-    address internal constant rETH = 0xB6fe221Fe9EeF5aBa221c348bA20A1Bf5e73624c;
+    address internal constant SUPEROBETH = 0xDBFeFD2e8460a6Ee4955A68582F85708BAEA60A3;
+    address internal constant JOJO = 0x0645bC5cDff2376089323Ac20Df4119e48e4BCc4;
 
     function setUp() public virtual {
         // initialize the chain
@@ -45,40 +36,37 @@ contract BalancerLightTest is BaseTest {
         oneDV2 = new OneDeltaComposerLight();
     }
 
-    function balancerWethRethSwap(address receiver, uint256 amount) internal view returns (bytes memory data) {
-        data = abi.encodePacked(
-            uint8(ComposerCommands.SWAPS),
-            uint128(amount), //
-            uint128(1), //
+    function wooPoolWETHcbBTCSwap(address receiver, uint256 amount) internal view returns (bytes memory data) {
+        // create head config
+        data = CalldataLib.swapHead(
+            amount,
+            1, // amountOut min
             WETH,
-            uint8(0), // swaps max index
-            uint8(0) // splits
-            // single split data (no data here)
-            // uint8(0), // swaps max index for inner path
+            false // no pre param
         );
-        data = abi.encodePacked(
-            data,
-            rETH,
+        // no branching
+        data = data.attachBranch(0, 0, hex"");
+        data = data.wooStyleSwap(
+            cbBTC,
             receiver,
-            uint8(DexTypeMappings.BALANCER_V2_ID), // 
-            WETH_RETH_PID,
-            BALANCER_V2_VAULT,
-            uint8(0) // payMode <- user pays
+            WOO_POOL,
+            CalldataLib.DexPayConfig.CALLER_PAYS //
         );
     }
 
-    function test_light_swap_balancer_single() external {
+    function test_light_swap_woo_single() external {
         vm.assume(user != address(0));
 
         address tokenIn = WETH;
-        address tokenOut = rETH;
+        address tokenOut = cbBTC;
         uint256 amount = 1.0e18;
+        uint256 approxOut = 2374448; // 0.02374448
         deal(tokenIn, user, amount);
 
         vm.prank(user);
         IERC20All(tokenIn).approve(address(oneDV2), type(uint).max);
 
-        bytes memory swap = balancerWethRethSwap(
+        bytes memory swap = wooPoolWETHcbBTCSwap(
             user,
             amount //
         );
@@ -89,6 +77,6 @@ contract BalancerLightTest is BaseTest {
 
         uint256 balAfter = IERC20All(tokenOut).balanceOf(user);
         console.log("received", balAfter - balBefore);
-        assertApproxEqAbs(balAfter - balBefore, amount, (amount * 20) / 100);
+        assertApproxEqAbs(balAfter - balBefore, approxOut, (approxOut * 10) / 100);
     }
 }

@@ -118,22 +118,20 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                 let success := call(gas(), tokenIn, 0, ptr, 0x64, 0, 32)
 
                 let rdsize := returndatasize()
-                // Check for ERC20 success. ERC20 tokens should return a boolean,
-                // but some don't. We accept 0-length return data as success, or at
-                // least 32 bytes that starts with a 32-byte boolean true.
-                success := and(
-                    success, // call itself succeeded
-                    or(
-                        iszero(rdsize), // no return data, or
-                        and(
-                            gt(rdsize, 31), // at least 32 bytes
-                            eq(mload(0), 1) // starts with uint256(1)
+
+                if iszero(
+                    and(
+                        success, // call itself succeeded
+                        or(
+                            iszero(rdsize), // no return data, or
+                            and(
+                                gt(rdsize, 31), // at least 32 bytes
+                                eq(mload(0), 1) // starts with uint256(1)
+                            )
                         )
                     )
-                )
-
-                if iszero(success) {
-                    returndatacopy(0, 0, rdsize)
+                ) {
+                    returndatacopy(ptr, 0, rdsize)
                     revert(0, rdsize)
                 }
             }
@@ -189,6 +187,7 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
             mstore(add(ptr, 0x44), amountIn)
             mstore(add(ptr, 0x64), 0) // min out
 
+            let success
             ////////////////////////////////////////////////////
             // Execute swap function
             ////////////////////////////////////////////////////
@@ -198,20 +197,14 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                 mstore(ptr, EXCHANGE_INT_WITH_RECEIVER)
                 mstore(add(ptr, 0x4), and(shr(88, curveData), UINT8_MASK))
                 mstore(add(ptr, 0x84), receiver) // receiver, set curveData accordingly
-                if iszero(call(gas(), pool, 0x0, ptr, 0xA4, ptr, 0x20)) {
-                    returndatacopy(0, 0, returndatasize())
-                    revert(0, returndatasize())
-                }
+                success := call(gas(), pool, 0x0, ptr, 0xA4, ptr, 0x20)
                 curveData := 0
             }
             case 1 {
                 // selector for exchange(int128,int128,uint256,uint256)
                 mstore(ptr, EXCHANGE_INT)
                 mstore(add(ptr, 0x4), and(shr(88, curveData), UINT8_MASK))
-                if iszero(call(gas(), pool, 0x0, ptr, 0x84, ptr, 0x20)) {
-                    returndatacopy(0, 0, returndatasize())
-                    revert(0, returndatasize())
-                }
+                success := call(gas(), pool, 0x0, ptr, 0x84, ptr, 0x20)
                 curveData := MAX_UINT256
             }
             case 2 {
@@ -219,10 +212,7 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                 mstore(ptr, EXCHANGE_WITH_RECEIVER)
                 mstore(add(ptr, 0x4), and(shr(88, curveData), UINT8_MASK))
                 mstore(add(ptr, 0x84), receiver) // receiver, set curveData accordingly
-                if iszero(call(gas(), pool, 0x0, ptr, 0xA4, ptr, 0x20)) {
-                    returndatacopy(0, 0, returndatasize())
-                    revert(0, returndatasize())
-                }
+                success := call(gas(), pool, 0x0, ptr, 0xA4, ptr, 0x20)
                 curveData := 0
             }
             case 3 {
@@ -230,10 +220,7 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                 mstore(ptr, EXCHANGE)
                 mstore(add(ptr, 0x4), and(shr(88, curveData), UINT8_MASK))
 
-                if iszero(call(gas(), pool, 0x0, ptr, 0x84, ptr, 0x20)) {
-                    returndatacopy(0, 0, returndatasize())
-                    revert(0, returndatasize())
-                }
+                success := call(gas(), pool, 0x0, ptr, 0x84, ptr, 0x20)
                 curveData := MAX_UINT256
             }
             case 4 {
@@ -241,20 +228,14 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                 mstore(ptr, EXCHANGE_UNDERLYING_INT_WITH_RECEIVER)
                 mstore(add(ptr, 0x4), and(shr(88, curveData), UINT8_MASK))
                 mstore(add(ptr, 0x84), receiver)
-                if iszero(call(gas(), pool, 0x0, ptr, 0xA4, ptr, 0x20)) {
-                    returndatacopy(0, 0, returndatasize())
-                    revert(0, returndatasize())
-                }
+                success := call(gas(), pool, 0x0, ptr, 0xA4, ptr, 0x20)
                 curveData := 0
             }
             case 5 {
                 // selector for exchange_underlying(int128,int128,uint256,uint256)
                 mstore(ptr, EXCHANGE_UNDERLYING_INT)
                 mstore(add(ptr, 0x4), and(shr(88, curveData), UINT8_MASK))
-                if iszero(call(gas(), pool, 0x0, ptr, 0x84, ptr, 0x20)) {
-                    returndatacopy(0, 0, returndatasize())
-                    revert(0, returndatasize())
-                }
+                success := call(gas(), pool, 0x0, ptr, 0x84, ptr, 0x20)
                 curveData := MAX_UINT256
             }
             case 6 {
@@ -262,20 +243,14 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                 mstore(ptr, EXCHANGE_UNDERLYING_WITH_RECEIVER)
                 mstore(add(ptr, 0x4), and(shr(88, curveData), UINT8_MASK))
                 mstore(add(ptr, 0x84), receiver)
-                if iszero(call(gas(), pool, 0x0, ptr, 0xA4, ptr, 0x20)) {
-                    returndatacopy(0, 0, returndatasize())
-                    revert(0, returndatasize())
-                }
+                success := call(gas(), pool, 0x0, ptr, 0xA4, ptr, 0x20)
                 curveData := 0
             }
             case 7 {
                 // selector for exchange_underlying(uint256,uint256,uint256,uint256)
                 mstore(ptr, EXCHANGE_UNDERLYING)
                 mstore(add(ptr, 0x4), and(shr(88, curveData), UINT8_MASK))
-                if iszero(call(gas(), pool, 0x0, ptr, 0x84, ptr, 0x20)) {
-                    returndatacopy(0, 0, returndatasize())
-                    revert(0, returndatasize())
-                }
+                success := call(gas(), pool, 0x0, ptr, 0x84, ptr, 0x20)
                 curveData := MAX_UINT256
             }
             case 200 {
@@ -283,14 +258,16 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                 mstore(ptr, SWAP)
                 mstore(add(ptr, 0x4), and(shr(88, curveData), UINT8_MASK))
                 mstore(add(ptr, 0x84), MAX_UINT256) // deadline
-                if iszero(call(gas(), pool, 0x0, ptr, 0xA4, ptr, 0x20)) {
-                    returndatacopy(0, 0, returndatasize())
-                    revert(0, returndatasize())
-                }
+                success := call(gas(), pool, 0x0, ptr, 0xA4, ptr, 0x20)
                 curveData := MAX_UINT256
             }
             default {
                 revert(0, 0)
+            }
+
+            if iszero(success) {
+                returndatacopy(ptr, 0, returndatasize())
+                revert(ptr, returndatasize())
             }
 
             amountOut := mload(ptr)
@@ -305,13 +282,13 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                 mstore(ptr, ERC20_TRANSFER)
                 mstore(add(ptr, 0x04), receiver)
                 mstore(add(ptr, 0x24), amountOut)
-                let success := call(
+                success := call(
                     gas(),
                     tokenOut, // tokenIn, pool + 5x uint8 (i,j,s,a)
                     0,
                     ptr,
                     0x44,
-                    ptr,
+                    0,
                     32
                 )
 
@@ -326,14 +303,14 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                         iszero(rdsize), // no return data, or
                         and(
                             gt(rdsize, 31), // at least 32 bytes
-                            eq(mload(ptr), 1) // starts with uint256(1)
+                            eq(mload(0), 1) // starts with uint256(1)
                         )
                     )
                 )
 
                 if iszero(success) {
-                    returndatacopy(0, 0, rdsize)
-                    revert(0, rdsize)
+                    returndatacopy(ptr, 0, rdsize)
+                    revert(ptr, rdsize)
                 }
             }
             curveData := add(currentOffset, 25)
@@ -477,8 +454,8 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                 )
 
                 if iszero(success) {
-                    returndatacopy(0, 0, rdsize)
-                    revert(0, rdsize)
+                    returndatacopy(ptr, 0, rdsize)
+                    revert(ptr, rdsize)
                 }
             }
             curveData := add(currentOffset, 25)
@@ -506,72 +483,60 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
         address receiver, //
         address callerAddress,
         uint256 currentOffset
-    ) internal returns (uint256 amountOut, uint256 curveData) {
+    )
+        internal
+        returns (
+            // assign payFlag then amountOut
+            uint256 payFlagAmountOut,
+            uint256 curveData
+        )
+    {
         assembly {
             let ptr := mload(0x40)
             curveData := calldataload(currentOffset)
 
             let pool := shr(96, curveData)
 
-            switch and(UINT16_MASK, shr(56, curveData))
-            case 0 {
-                // selector for transferFrom(address,address,uint256)
-                mstore(ptr, ERC20_TRANSFER_FROM)
-                mstore(add(ptr, 0x04), callerAddress)
-                mstore(add(ptr, 0x24), pool)
-                mstore(add(ptr, 0x44), amountIn)
+            payFlagAmountOut := and(UINT16_MASK, shr(56, curveData))
+            if lt(payFlagAmountOut, 2) {
+                let success
+                switch payFlagAmountOut
+                case 0 {
+                    // selector for transferFrom(address,address,uint256)
+                    mstore(ptr, ERC20_TRANSFER_FROM)
+                    mstore(add(ptr, 0x04), callerAddress)
+                    mstore(add(ptr, 0x24), pool)
+                    mstore(add(ptr, 0x44), amountIn)
 
-                let success := call(gas(), tokenIn, 0, ptr, 0x64, 0, 32)
+                    success := call(gas(), tokenIn, 0, ptr, 0x64, 0, 32)
+                }
+                // transfer plain
+                case 1 {
+                    // selector for transfer(address,uint256)
+                    mstore(ptr, ERC20_TRANSFER)
+                    mstore(add(ptr, 0x04), pool)
+                    mstore(add(ptr, 0x24), amountIn)
+                    success := call(gas(), tokenIn, 0, ptr, 0x44, 0, 32)
+                }
 
                 let rdsize := returndatasize()
-                // Check for ERC20 success. ERC20 tokens should return a boolean,
-                // but some don't. We accept 0-length return data as success, or at
-                // least 32 bytes that starts with a 32-byte boolean true.
-                success := and(
-                    success, // call itself succeeded
-                    or(
-                        iszero(rdsize), // no return data, or
-                        and(
-                            gt(rdsize, 31), // at least 32 bytes
-                            eq(mload(0), 1) // starts with uint256(1)
+
+                if iszero(
+                    and(
+                        success, // call itself succeeded
+                        or(
+                            iszero(rdsize), // no return data, or
+                            and(
+                                gt(rdsize, 31), // at least 32 bytes
+                                eq(mload(0), 1) // starts with uint256(1)
+                            )
                         )
                     )
-                )
-
-                if iszero(success) {
-                    returndatacopy(0, 0, rdsize)
+                ) {
+                    returndatacopy(ptr, 0, rdsize)
                     revert(0, rdsize)
                 }
             }
-            // transfer plain
-            case 1 {
-                // selector for transfer(address,uint256)
-                mstore(ptr, ERC20_TRANSFER)
-                mstore(add(ptr, 0x04), pool)
-                mstore(add(ptr, 0x24), amountIn)
-                let success := call(gas(), tokenIn, 0, ptr, 0x44, 0, 32)
-
-                let rdsize := returndatasize()
-                // Check for ERC20 success. ERC20 tokens should return a boolean,
-                // but some don't. We accept 0-length return data as success, or at
-                // least 32 bytes that starts with a 32-byte boolean true.
-                success := and(
-                    success, // call itself succeeded
-                    or(
-                        iszero(rdsize), // no return data, or
-                        and(
-                            gt(rdsize, 31), // at least 32 bytes
-                            eq(mload(0), 1) // starts with uint256(1)
-                        )
-                    )
-                )
-
-                if iszero(success) {
-                    returndatacopy(0, 0, rdsize)
-                    revert(0, rdsize)
-                }
-            }
-
             ////////////////////////////////////////////////////
             // Execute swap function
             ////////////////////////////////////////////////////
@@ -608,9 +573,9 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                 revert(0, returndatasize())
             }
 
-            amountOut := mload(0)
+            payFlagAmountOut := mload(0)
             curveData := add(currentOffset, 25)
         }
-        return (amountOut, curveData);
+        return (payFlagAmountOut, curveData);
     }
 }

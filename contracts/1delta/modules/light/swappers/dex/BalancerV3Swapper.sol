@@ -151,7 +151,7 @@ abstract contract BalancerV3Swapper is ERC20Selectors, Masks {
             }
 
             /**
-             * If the pay mode is >=2, we assume deferred payment
+             * If the pay mode is >=3, we assume deferred payment
              * This means that the composer must manually settle
              * for the input amount
              * Warning: This should not be done for pools with
@@ -159,6 +159,7 @@ abstract contract BalancerV3Swapper is ERC20Selectors, Masks {
              * `amountIn` selected != actual `amountIn`
              */
             if lt(tempVar, 2) {
+                let success
                 switch tempVar
                 case 0 {
                     // selector for transferFrom(address,address,uint256)
@@ -166,28 +167,7 @@ abstract contract BalancerV3Swapper is ERC20Selectors, Masks {
                     mstore(add(ptr, 0x04), callerAddress)
                     mstore(add(ptr, 0x24), vault)
                     mstore(add(ptr, 0x44), fromAmount)
-
-                    let success := call(gas(), tokenIn, 0, ptr, 0x64, 0, 32)
-
-                    let rdsize := returndatasize()
-                    // Check for ERC20 success. ERC20 tokens should return a boolean,
-                    // but some don't. We accept 0-length return data as success, or at
-                    // least 32 bytes that starts with a 32-byte boolean true.
-                    success := and(
-                        success, // call itself succeeded
-                        or(
-                            iszero(rdsize), // no return data, or
-                            and(
-                                gt(rdsize, 31), // at least 32 bytes
-                                eq(mload(0), 1) // starts with uint256(1)
-                            )
-                        )
-                    )
-
-                    if iszero(success) {
-                        returndatacopy(0, 0, rdsize)
-                        revert(0, rdsize)
-                    }
+                    success := call(gas(), tokenIn, 0, ptr, 0x64, 0, 32)
                 }
                 // transfer plain
                 case 1 {
@@ -195,13 +175,13 @@ abstract contract BalancerV3Swapper is ERC20Selectors, Masks {
                     mstore(ptr, ERC20_TRANSFER)
                     mstore(add(ptr, 0x04), vault)
                     mstore(add(ptr, 0x24), fromAmount)
-                    let success := call(gas(), tokenIn, 0, ptr, 0x44, 0, 32)
+                    success := call(gas(), tokenIn, 0, ptr, 0x44, 0, 32)
+                }
 
-                    let rdsize := returndatasize()
-                    // Check for ERC20 success. ERC20 tokens should return a boolean,
-                    // but some don't. We accept 0-length return data as success, or at
-                    // least 32 bytes that starts with a 32-byte boolean true.
-                    success := and(
+                let rdsize := returndatasize()
+
+                if iszero(
+                    and(
                         success, // call itself succeeded
                         or(
                             iszero(rdsize), // no return data, or
@@ -211,11 +191,9 @@ abstract contract BalancerV3Swapper is ERC20Selectors, Masks {
                             )
                         )
                     )
-
-                    if iszero(success) {
-                        returndatacopy(0, 0, rdsize)
-                        revert(0, rdsize)
-                    }
+                ) {
+                    returndatacopy(0, 0, rdsize)
+                    revert(0, rdsize)
                 }
 
                 /** Settle funds in vault */

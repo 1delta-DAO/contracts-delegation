@@ -42,27 +42,6 @@ abstract contract ERC4646Transfers is Slots, ERC20Selectors, Masks, DeltaErrors 
 
             let vaultContract := shr(96, calldataload(currentOffset))
 
-            /**
-             * Approve the vault beforehand for the depo amount
-             */
-            mstore(0x0, asset)
-            mstore(0x20, CALL_MANAGEMENT_APPROVALS)
-            mstore(0x20, keccak256(0x0, 0x40))
-            mstore(0x0, vaultContract)
-            let key := keccak256(0x0, 0x40)
-            // check if already approved
-            if iszero(sload(key)) {
-                // selector for approve(address,uint256)
-                mstore(ptr, ERC20_APPROVE)
-                mstore(add(ptr, 0x04), vaultContract)
-                mstore(add(ptr, 0x24), MAX_UINT256)
-
-                if iszero(call(gas(), asset, 0x0, ptr, 0x44, ptr, 32)) {
-                    revert(0x0, 0x0)
-                }
-                sstore(key, 1)
-            }
-
             currentOffset := add(currentOffset, 20)
 
             let amount := shr(128, calldataload(currentOffset))

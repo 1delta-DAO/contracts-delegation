@@ -249,6 +249,7 @@ abstract contract V4TypeGeneric is ERC20Selectors, Masks {
             if lt(tempVar, 2) {
                 /** Pull funds from payer */
                 switch iszero(tokenIn)
+                // nonnative
                 case 0 {
                     /** Sync pay asset */
 
@@ -330,6 +331,7 @@ abstract contract V4TypeGeneric is ERC20Selectors, Masks {
                     }
                     tempVar := 0
                 }
+                // native
                 default {
                     tempVar := fromAmount
                 }

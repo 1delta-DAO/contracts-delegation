@@ -15,19 +15,11 @@ import {ERC20Selectors} from "../../../shared/selectors/ERC20Selectors.sol";
  * @title Contract Module taking Balancer V3 callbacks
  */
 abstract contract BalancerV3Callbacks is BalancerV3ReferencesBase, ERC20Selectors, Masks, DeltaErrors {
-    /** 
+    /**
      * Callback from balancer V3 type vaults
      * Note that this selector is a custom choice
      */
-    function balancerUnlockCallback(
-        bytes calldata
-    )
-        external
-        returns (
-            // ignored - assigning it costs additional gas
-            bytes memory
-        )
-    {
+    function balancerUnlockCallback(bytes calldata) external {
         address callerAddress;
         uint256 length;
         uint poolId;

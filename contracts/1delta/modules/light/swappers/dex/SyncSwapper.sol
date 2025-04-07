@@ -23,7 +23,7 @@ abstract contract SyncSwapper is ERC20Selectors, Masks {
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
      * | 0      | 20             | pool                 |
-     * | 21     | 2              | pay flag             | <- 0: caller pays; 1: contract pays; greater: pre-funded
+     * | 20     | 2              | pay flag             | <- 0: caller pays; 1: contract pays; greater: pre-funded
      */
     function _swapSyncExactIn(
         uint256 fromAmount,
@@ -31,66 +31,51 @@ abstract contract SyncSwapper is ERC20Selectors, Masks {
         address receiver,
         address callerAddress,
         uint256 currentOffset //
-        ) internal returns (uint256 buyAmount, uint256) {
+    ) internal returns (uint256 buyAmount, uint256 payFlag) {
         assembly {
             let syncSwapData := calldataload(currentOffset)
             let pool := shr(96, syncSwapData)
 
             let ptr := mload(0x40)
-            switch and(UINT8_MASK, shr(72, syncSwapData))
-            case 0 {
-                // selector for transferFrom(address,address,uint256)
-                mstore(ptr, ERC20_TRANSFER_FROM)
-                mstore(add(ptr, 0x04), callerAddress)
-                mstore(add(ptr, 0x24), pool)
-                mstore(add(ptr, 0x44), fromAmount)
 
-                let success := call(gas(), tokenIn, 0, ptr, 0x64, 0, 32)
+            // facilitate payment if needed
+            payFlag := and(UINT8_MASK, shr(72, syncSwapData))
+            if lt(payFlag, 2) {
+                let success
+                switch payFlag
+                case 0 {
+                    // selector for transferFrom(address,address,uint256)
+                    mstore(ptr, ERC20_TRANSFER_FROM)
+                    mstore(add(ptr, 0x04), callerAddress)
+                    mstore(add(ptr, 0x24), pool)
+                    mstore(add(ptr, 0x44), fromAmount)
 
-                let rdsize := returndatasize()
-                // Check for ERC20 success. ERC20 tokens should return a boolean,
-                // but some don't. We accept 0-length return data as success, or at
-                // least 32 bytes that starts with a 32-byte boolean true.
-                success := and(
-                    success, // call itself succeeded
-                    or(
-                        iszero(rdsize), // no return data, or
-                        and(
-                            gt(rdsize, 31), // at least 32 bytes
-                            eq(mload(0), 1) // starts with uint256(1)
-                        )
-                    )
-                )
-
-                if iszero(success) {
-                    returndatacopy(0, 0, rdsize)
-                    revert(0, rdsize)
+                    success := call(gas(), tokenIn, 0, ptr, 0x64, 0, 32)
                 }
-            }
-            // transfer plain
-            case 1 {
-                // selector for transfer(address,uint256)
-                mstore(ptr, ERC20_TRANSFER)
-                mstore(add(ptr, 0x04), pool)
-                mstore(add(ptr, 0x24), fromAmount)
-                let success := call(gas(), tokenIn, 0, ptr, 0x44, 0, 32)
-
+                // transfer plain
+                case 1 {
+                    // selector for transfer(address,uint256)
+                    mstore(ptr, ERC20_TRANSFER)
+                    mstore(add(ptr, 0x04), pool)
+                    mstore(add(ptr, 0x24), fromAmount)
+                    success := call(gas(), tokenIn, 0, ptr, 0x44, 0, 32)
+                }
                 let rdsize := returndatasize()
                 // Check for ERC20 success. ERC20 tokens should return a boolean,
                 // but some don't. We accept 0-length return data as success, or at
                 // least 32 bytes that starts with a 32-byte boolean true.
-                success := and(
-                    success, // call itself succeeded
-                    or(
-                        iszero(rdsize), // no return data, or
-                        and(
-                            gt(rdsize, 31), // at least 32 bytes
-                            eq(mload(0), 1) // starts with uint256(1)
+                if iszero(
+                    and(
+                        success, // call itself succeeded
+                        or(
+                            iszero(rdsize), // no return data, or
+                            and(
+                                gt(rdsize, 31), // at least 32 bytes
+                                eq(mload(0), 1) // starts with uint256(1)
+                            )
                         )
                     )
-                )
-
-                if iszero(success) {
+                ) {
                     returndatacopy(0, 0, rdsize)
                     revert(0, rdsize)
                 }
@@ -128,7 +113,7 @@ abstract contract SyncSwapper is ERC20Selectors, Masks {
                 revert(0, returndatasize())
             }
             buyAmount := mload(add(ptr, 0x20))
-            currentOffset := add(currentOffset, 21)
+            currentOffset := add(currentOffset, 22)
         }
         return (buyAmount, currentOffset);
     }

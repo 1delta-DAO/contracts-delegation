@@ -7,123 +7,18 @@ pragma solidity 0.8.28;
 /******************************************************************************/
 
 import {V3ReferencesBase} from "./V3References.sol";
+import {ValidatorLib} from "./ValidatorLib.sol";
 import {Masks} from "../../../shared/masks/Masks.sol";
 import {DeltaErrors} from "../../../shared/errors/Errors.sol";
 import {ERC20Selectors} from "../../../shared/selectors/ERC20Selectors.sol";
 
 /**
- * @title Contract Module for general Margin Trading on an borrow delegation compatible Lender
- * @notice Contains main logic for uniswap-type callbacks and initiator functions
+ * @title Uniswap V3 type callback implementations
  */
 abstract contract UniV3Callbacks is V3ReferencesBase, ERC20Selectors, Masks, DeltaErrors {
-    /// @dev the constant offset a path has for Uni V3 type swap callbacks
-    uint256 internal constant PATH_OFFSET_CALLBACK_V3 = 132;
-
-    constructor() {}
-
-    // uniswap v3
-    function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata) external {
-        address tokenIn;
-        address tokenOut;
-        address callerAddress;
-        uint256 calldataLength;
+    /** This functione xecutes a simple transfer to shortcut the callback if there is no further calldata */
+    function clSwapCallback(uint256 amountToPay, uint256 amountReceived, address tokenIn, address callerAddress, uint256 calldataLength) private {
         assembly {
-            let firstWord := calldataload(PATH_OFFSET_CALLBACK_V3)
-            callerAddress := shr(96, firstWord)
-            firstWord := calldataload(152)
-            tokenIn := shr(96, firstWord)
-            firstWord := calldataload(172)
-            tokenOut := shr(96, firstWord)
-            let forkId := and(UINT8_MASK, shr(88, firstWord))
-            calldataLength := and(UINT16_MASK, shr(56, firstWord))
-
-            ////////////////////////////////////////////////////
-            // Compute and validate pool address
-            ////////////////////////////////////////////////////
-            let s := mload(0x40)
-            switch forkId
-            case 0 {
-                mstore(s, UNI_V3_FF_FACTORY)
-                let p := add(s, 21)
-                // Compute the inner hash in-place
-                switch lt(tokenIn, tokenOut)
-                case 0 {
-                    mstore(p, tokenOut)
-                    mstore(add(p, 32), tokenIn)
-                }
-                default {
-                    mstore(p, tokenIn)
-                    mstore(add(p, 32), tokenOut)
-                }
-                mstore(add(p, 64), and(UINT16_MASK, shr(72, firstWord)))
-                mstore(p, keccak256(p, 96))
-                p := add(p, 32)
-                mstore(p, UNI_POOL_INIT_CODE_HASH)
-            }
-            default {
-                revert(0, 0)
-            }
-            ////////////////////////////////////////////////////
-            // If the caller is not the calculated pool, we revert
-            ////////////////////////////////////////////////////
-            if xor(caller(), and(ADDRESS_MASK, keccak256(s, 85))) {
-                mstore(0x0, BAD_POOL)
-                revert(0x0, 0x4)
-            }
-        }
-        clSwapCallback(amount0Delta, amount1Delta, tokenIn, callerAddress, calldataLength);
-    }
-
-    // iZi callbacks
-
-    // zeroForOne = true
-    function swapY2XCallback(uint256 x, uint256 y, bytes calldata) external {
-        (
-            address tokenIn, //
-            address callerAddress,
-            uint256 calldataLength
-        ) = _validateIzumiCallback();
-
-        clSwapCallback(
-            -int256(x), // izi pushses uints, we map them here to avoid duplicate code
-            int256(y),
-            tokenIn,
-            callerAddress,
-            calldataLength
-        );
-    }
-
-    // zeroForOne = false
-    function swapX2YCallback(uint256 x, uint256 y, bytes calldata) external {
-        (
-            address tokenIn, //
-            address callerAddress,
-            uint256 calldataLength
-        ) = _validateIzumiCallback();
-
-        clSwapCallback(
-            int256(x),
-            -int256(y), // izi pushses uints, we map them here to avoid duplicate code
-            tokenIn,
-            callerAddress,
-            calldataLength
-        );
-    }
-
-    function clSwapCallback(int256 amount0Delta, int256 amount1Delta, address tokenIn, address callerAddress, uint256 calldataLength) private {
-        uint256 amountToPay;
-        uint256 amountReceived;
-        assembly {
-            switch sgt(amount0Delta, 0)
-            case 1 {
-                amountReceived := sub(0, amount1Delta)
-                amountToPay := amount0Delta
-            }
-            default {
-                amountReceived := sub(0, amount0Delta)
-                amountToPay := amount1Delta
-            }
-
             // one can pass no path to continue
             // we then assume the calldataLength as flag to
             // indicate the pay type
@@ -160,21 +55,19 @@ abstract contract UniV3Callbacks is V3ReferencesBase, ERC20Selectors, Masks, Del
                 }
 
                 let rdsize := returndatasize()
-                // Check for ERC20 success. ERC20 tokens should return a boolean,
-                // but some don't. We accept 0-length return data as success, or at
-                // least 32 bytes that starts with a 32-byte boolean true.
-                success := and(
-                    success, // call itself succeeded
-                    or(
-                        iszero(rdsize), // no return data, or
-                        and(
-                            gt(rdsize, 31), // at least 32 bytes
-                            eq(mload(ptr), 1) // starts with uint256(1)
+
+                if iszero(
+                    and(
+                        success, // call itself succeeded
+                        or(
+                            iszero(rdsize), // no return data, or
+                            and(
+                                gt(rdsize, 31), // at least 32 bytes
+                                eq(mload(ptr), 1) // starts with uint256(1)
+                            )
                         )
                     )
-                )
-
-                if iszero(success) {
+                ) {
                     returndatacopy(0, 0, rdsize)
                     revert(0, rdsize)
                 }
@@ -194,36 +87,93 @@ abstract contract UniV3Callbacks is V3ReferencesBase, ERC20Selectors, Masks, Del
         );
     }
 
-    /**
-     * We need this one for 2 callbacks
-     */
-    function _validateIzumiCallback()
-        internal
-        view
-        returns (
-            address tokenIn,
-            address callerAddress, //
-            uint256 calldataLength
-        )
-    {
-        address tokenOut;
-        assembly {
-            let firstWord := calldataload(PATH_OFFSET_CALLBACK_V3)
-            callerAddress := shr(96, firstWord)
-            firstWord := calldataload(152)
-            tokenIn := shr(96, firstWord)
-            firstWord := calldataload(172)
-            tokenOut := shr(96, firstWord)
-            let forkId := and(UINT8_MASK, shr(88, firstWord))
-            calldataLength := and(UINT16_MASK, shr(56, firstWord))
+    function _deltaComposeInternal(address callerAddress, uint256 paramPull, uint256 paramPush, uint256 offset, uint256 length) internal virtual {}
 
-            ////////////////////////////////////////////////////
-            // Compute and validate pool address
-            ////////////////////////////////////////////////////
-            let s := mload(0x40)
-            switch forkId
-            case 0 {
-                mstore(s, IZI_FF_FACTORY)
+    bytes32 private constant SELECTOR_IZI_XY = 0x1878068400000000000000000000000000000000000000000000000000000000;
+    bytes32 private constant SELECTOR_IZI_YX = 0xd3e1c28400000000000000000000000000000000000000000000000000000000;
+    bytes32 private constant SELECTOR_UNIV3 = 0xfa461e3300000000000000000000000000000000000000000000000000000000;
+    bytes32 private constant SELECTOR_ALGEBRA = 0x2c8958f600000000000000000000000000000000000000000000000000000000;
+    bytes32 private constant SELECTOR_PANCAKE = 0x23a69e7500000000000000000000000000000000000000000000000000000000;
+
+    /**
+     * Generic UniswapV3 callback executor
+     * The call looks like
+     * ```function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata) external {...}```
+     * 
+     * Izumi deviates from this, we handle these below
+     */
+    function _executeUniV3IfSelector(bytes32 selector) internal {
+        bytes32 codeHash;
+        bytes32 ffFactoryAddress;
+        uint256 amountToPay;
+        uint256 amountReceived;
+        assembly {
+            switch or(eq(selector, SELECTOR_UNIV3), eq(selector, SELECTOR_PANCAKE))
+            case 1 {
+                switch and(UINT8_MASK, shr(88, calldataload(172))) // forkId
+                case 0 {
+                    ffFactoryAddress := UNI_V3_FF_FACTORY
+                    codeHash := UNI_POOL_INIT_CODE_HASH
+                }
+                default {
+                    revert(0, 0)
+                }
+                let _amount0 := calldataload(4)
+                let _amount1 := calldataload(36)
+
+                switch sgt(_amount1, 0)
+                case 0 {
+                    amountReceived := sub(0, _amount1)
+                    amountToPay := _amount0
+                }
+                default {
+                    amountReceived := sub(0, _amount0)
+                    amountToPay := _amount1
+                }
+            }
+            default {
+                // check if we do izumi
+                switch selector
+                // SELECTOR_IZI_XY
+                case 0x1878068400000000000000000000000000000000000000000000000000000000 {
+                    switch and(UINT8_MASK, shr(88, calldataload(172))) // forkId
+                    case 0 {
+                        ffFactoryAddress := IZI_FF_FACTORY
+                        codeHash := IZI_POOL_INIT_CODE_HASH
+                    }
+                    default {
+                        revert(0, 0)
+                    }
+                    amountToPay := calldataload(4)
+                    amountReceived := calldataload(36)
+                }
+                // SELECTOR_IZI_YX
+                case 0xd3e1c28400000000000000000000000000000000000000000000000000000000 {
+                    switch and(UINT8_MASK, shr(88, calldataload(172))) // forkId
+                    case 0 {
+                        ffFactoryAddress := IZI_FF_FACTORY
+                        codeHash := IZI_POOL_INIT_CODE_HASH
+                    }
+                    default {
+                        revert(0, 0)
+                    }
+                    amountReceived := calldataload(4)
+                    amountToPay := calldataload(36)
+                }
+            }
+        }
+
+        if (ValidatorLib._hasData(ffFactoryAddress)) {
+            uint256 calldataLength;
+            address callerAddress;
+            address tokenIn;
+            assembly {
+                tokenIn := shr(96, calldataload(152))
+                let tokenOutAndFee := calldataload(172)
+                let tokenOut := shr(96, tokenOutAndFee)
+                calldataLength := and(UINT16_MASK, shr(56, tokenOutAndFee))
+                let s := mload(0x40)
+                mstore(s, ffFactoryAddress)
                 let p := add(s, 21)
                 // Compute the inner hash in-place
                 switch lt(tokenIn, tokenOut)
@@ -235,23 +185,33 @@ abstract contract UniV3Callbacks is V3ReferencesBase, ERC20Selectors, Masks, Del
                     mstore(p, tokenIn)
                     mstore(add(p, 32), tokenOut)
                 }
-                mstore(add(p, 64), and(UINT16_MASK, shr(72, firstWord)))
+                // this stores the fee
+                mstore(add(p, 64), and(UINT16_MASK, shr(72, tokenOutAndFee)))
                 mstore(p, keccak256(p, 96))
                 p := add(p, 32)
-                mstore(p, IZI_POOL_INIT_CODE_HASH)
+                mstore(p, codeHash)
+
+                ////////////////////////////////////////////////////
+                // If the caller is not the calculated pool, we revert
+                ////////////////////////////////////////////////////
+                if xor(caller(), and(ADDRESS_MASK, keccak256(s, 85))) {
+                    mstore(0x0, BAD_POOL)
+                    revert(0x0, 0x4)
+                }
+                // get original caller address
+                callerAddress := shr(96, calldataload(132))
             }
-            default {
-                revert(0, 0)
-            }
-            ////////////////////////////////////////////////////
-            // If the caller is not the calculated pool, we revert
-            ////////////////////////////////////////////////////
-            if xor(caller(), and(ADDRESS_MASK, keccak256(s, 85))) {
-                mstore(0x0, BAD_POOL)
-                revert(0x0, 0x4)
+            clSwapCallback(
+                amountToPay,
+                amountReceived, //
+                tokenIn,
+                callerAddress,
+                calldataLength
+            );
+            // force return
+            assembly {
+                return(0, 0)
             }
         }
     }
-
-    function _deltaComposeInternal(address callerAddress, uint256 paramPull, uint256 paramPush, uint256 offset, uint256 length) internal virtual {}
 }

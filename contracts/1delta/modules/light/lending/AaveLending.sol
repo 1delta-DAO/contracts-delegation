@@ -166,17 +166,34 @@ abstract contract AaveLending is Slots, ERC20Selectors, Masks {
             }
 
             let ptr := mload(0x40)
-            // selector borrow(address,uint256,uint256,uint16,address)
-            mstore(ptr, 0xa415bcad00000000000000000000000000000000000000000000000000000000)
-            mstore(add(ptr, 0x04), underlying)
-            mstore(add(ptr, 0x24), amount)
-            mstore(add(ptr, 0x44), mode)
-            mstore(add(ptr, 0x64), 0x0)
-            mstore(add(ptr, 0x84), callerAddress)
-            // call pool
-            if iszero(call(gas(), pool, 0x0, ptr, 0xA4, 0x0, 0x0)) {
-                returndatacopy(0x0, 0x0, returndatasize())
-                revert(0x0, returndatasize())
+            switch mode
+            case 0 {
+                // borrowing with no irMode (special aave forks)
+                // selector borrow(address,uint256,uint16,address)
+                mstore(ptr, 0x1d5d723700000000000000000000000000000000000000000000000000000000)
+                mstore(add(ptr, 0x04), underlying)
+                mstore(add(ptr, 0x24), amount)
+                mstore(add(ptr, 0x44), 0x0)
+                mstore(add(ptr, 0x64), callerAddress)
+                // call pool
+                if iszero(call(gas(), pool, 0x0, ptr, 0x84, 0x0, 0x0)) {
+                    returndatacopy(0x0, 0x0, returndatasize())
+                    revert(0x0, returndatasize())
+                }
+            }
+            default {
+                // selector borrow(address,uint256,uint256,uint16,address)
+                mstore(ptr, 0xa415bcad00000000000000000000000000000000000000000000000000000000)
+                mstore(add(ptr, 0x04), underlying)
+                mstore(add(ptr, 0x24), amount)
+                mstore(add(ptr, 0x44), mode)
+                mstore(add(ptr, 0x64), 0x0)
+                mstore(add(ptr, 0x84), callerAddress)
+                // call pool
+                if iszero(call(gas(), pool, 0x0, ptr, 0xA4, 0x0, 0x0)) {
+                    returndatacopy(0x0, 0x0, returndatasize())
+                    revert(0x0, returndatasize())
+                }
             }
 
             //  transfer underlying if needed
@@ -271,27 +288,6 @@ abstract contract AaveLending is Slots, ERC20Selectors, Masks {
 
             let ptr := mload(0x40)
 
-            /**
-             * Approve pool beforehand
-             */
-            mstore(0x0, underlying)
-            mstore(0x20, CALL_MANAGEMENT_APPROVALS)
-            mstore(0x20, keccak256(0x0, 0x40))
-            mstore(0x0, pool)
-            let key := keccak256(0x0, 0x40)
-            // check if already approved
-            if iszero(sload(key)) {
-                // selector for approve(address,uint256)
-                mstore(ptr, ERC20_APPROVE)
-                mstore(add(ptr, 0x04), pool)
-                mstore(add(ptr, 0x24), MAX_UINT256)
-
-                if iszero(call(gas(), underlying, 0x0, ptr, 0x44, 0x0, 0x0)) {
-                    revert(0x0, 0x0)
-                }
-                sstore(key, 1)
-            }
-
             // selector supply(address,uint256,address,uint16)
             mstore(ptr, 0x617ba03700000000000000000000000000000000000000000000000000000000)
             mstore(add(ptr, 0x04), underlying)
@@ -364,28 +360,6 @@ abstract contract AaveLending is Slots, ERC20Selectors, Masks {
             }
 
             let ptr := mload(0x40)
-
-            /**
-             * Approve pool beforehand
-             */
-            mstore(0x0, underlying)
-            mstore(0x20, CALL_MANAGEMENT_APPROVALS)
-            mstore(0x20, keccak256(0x0, 0x40))
-            mstore(0x0, pool)
-            let key := keccak256(0x0, 0x40)
-            // check if already approved
-            if iszero(sload(key)) {
-                // selector for approve(address,uint256)
-                mstore(ptr, ERC20_APPROVE)
-                mstore(add(ptr, 0x04), pool)
-                mstore(add(ptr, 0x24), MAX_UINT256)
-
-                if iszero(call(gas(), underlying, 0x0, ptr, 0x44, 0x0, 0x0)) {
-                    revert(0x0, 0x0)
-                }
-                sstore(key, 1)
-            }
-
             // selector deposit(address,uint256,address,uint16)
             mstore(ptr, 0xe8eda9df00000000000000000000000000000000000000000000000000000000)
             mstore(add(ptr, 0x04), underlying)
@@ -483,37 +457,32 @@ abstract contract AaveLending is Slots, ERC20Selectors, Masks {
 
             let ptr := mload(0x40)
 
-            /**
-             * Approve aave pool beforehand if needed
-             */
-            mstore(0x0, underlying)
-            mstore(0x20, CALL_MANAGEMENT_APPROVALS)
-            mstore(0x20, keccak256(0x0, 0x40))
-            mstore(0x0, pool)
-            let key := keccak256(0x0, 0x40)
-            // check if already approved
-            if iszero(sload(key)) {
-                // selector for approve(address,uint256)
-                mstore(ptr, ERC20_APPROVE)
-                mstore(add(ptr, 0x04), pool)
-                mstore(add(ptr, 0x24), MAX_UINT256)
-
-                if iszero(call(gas(), underlying, 0x0, ptr, 0x44, 0x0, 0x0)) {
-                    revert(0x0, 0x0)
+            // some Aaves dropped the IR mode, mode=0 is these ones
+            switch mode
+            case 0 {
+                // selector repay(address,uint256,address)
+                mstore(ptr, 0x5ceae9c400000000000000000000000000000000000000000000000000000000)
+                mstore(add(ptr, 0x04), underlying)
+                mstore(add(ptr, 0x24), amount)
+                mstore(add(ptr, 0x44), receiver)
+                // call pool
+                if iszero(call(gas(), pool, 0x0, ptr, 0x64, 0x0, 0x0)) {
+                    returndatacopy(0x0, 0x0, returndatasize())
+                    revert(0x0, returndatasize())
                 }
-                sstore(key, 1)
             }
-
-            // selector repay(address,uint256,uint256,address)
-            mstore(ptr, 0x573ade8100000000000000000000000000000000000000000000000000000000)
-            mstore(add(ptr, 0x04), underlying)
-            mstore(add(ptr, 0x24), amount)
-            mstore(add(ptr, 0x44), mode)
-            mstore(add(ptr, 0x64), receiver)
-            // call pool
-            if iszero(call(gas(), pool, 0x0, ptr, 0x84, 0x0, 0x0)) {
-                returndatacopy(0x0, 0x0, returndatasize())
-                revert(0x0, returndatasize())
+            default {
+                // selector repay(address,uint256,uint256,address)
+                mstore(ptr, 0x573ade8100000000000000000000000000000000000000000000000000000000)
+                mstore(add(ptr, 0x04), underlying)
+                mstore(add(ptr, 0x24), amount)
+                mstore(add(ptr, 0x44), mode)
+                mstore(add(ptr, 0x64), receiver)
+                // call pool
+                if iszero(call(gas(), pool, 0x0, ptr, 0x84, 0x0, 0x0)) {
+                    returndatacopy(0x0, 0x0, returndatasize())
+                    revert(0x0, returndatasize())
+                }
             }
         }
 

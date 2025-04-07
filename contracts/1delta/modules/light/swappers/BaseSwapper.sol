@@ -389,7 +389,9 @@ abstract contract BaseSwapper is
                 payer,
                 currentOffset
             );
-        } else if (dexTypeId == DexTypeMappings.CURVE_FORK_ID) {
+        }
+        // solidity-based forks of Curve
+        else if (dexTypeId == DexTypeMappings.CURVE_FORK_ID) {
             (amountIn, currentOffset) = _swapCurveFork(
                 tokenIn,
                 tokenOut,
@@ -402,6 +404,17 @@ abstract contract BaseSwapper is
         // uniswapV2 style
         else if (dexTypeId == DexTypeMappings.UNISWAP_V2_ID) {
             (amountIn, currentOffset) = _swapUniswapV2PoolExactInGeneric(
+                amountIn,
+                tokenIn,
+                tokenOut,
+                receiver,
+                currentOffset,
+                payer //
+            );
+        }
+        // uniswapV2 style
+        else if (dexTypeId == DexTypeMappings.UNISWAP_V2_FOT_ID) {
+            (amountIn, currentOffset) = _swapUniV2ExactInFOTGeneric(
                 amountIn,
                 tokenIn,
                 tokenOut,
@@ -457,17 +470,17 @@ abstract contract BaseSwapper is
             (amountIn, currentOffset) = _swapDodoV2ExactIn(
                 amountIn,
                 tokenIn,
+                tokenOut,
                 receiver,
                 payer, //
                 currentOffset
             );
         }
-        // Moe LB
+        // Moe/Joe LB
         else if (dexTypeId == DexTypeMappings.LB_ID) {
             (amountIn, currentOffset) = _swapLBexactIn(
                 amountIn,
                 tokenIn,
-                tokenOut,
                 receiver,
                 payer, //
                 currentOffset

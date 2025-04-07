@@ -27,40 +27,20 @@ contract AaveV3FlashLoans is Slots, ERC20Selectors, Masks, DeltaErrors {
         assembly {
             // get token to loan
             let token := shr(96, calldataload(currentOffset))
-            currentOffset := add(currentOffset, 20)
-            let pool := shr(96, calldataload(currentOffset))
-            currentOffset := add(currentOffset, 20)
+
+            // target to call
+            let pool := shr(96, calldataload(add(currentOffset, 20)))
+
             // second calldata slice including amount annd params length
-            let slice := calldataload(currentOffset)
+            let slice := calldataload(add(currentOffset, 40))
             let amount := shr(144, slice) // shr will already mask uint112 here
             // length of params
             let calldataLength := and(UINT16_MASK, shr(128, slice))
 
-            currentOffset := add(currentOffset, 16)
+            // skip addresses and amount
+            currentOffset := add(currentOffset, 56)
 
             let ptr := mload(0x40)
-
-            /**
-             * Approve Aave V3 pool, they pull funds from the caller
-             */
-            mstore(0x0, token)
-            mstore(0x20, CALL_MANAGEMENT_APPROVALS)
-            mstore(0x20, keccak256(0x0, 0x40))
-            mstore(0x0, pool)
-            let key := keccak256(0x0, 0x40)
-            // check if already approved
-            if iszero(sload(key)) {
-                // selector for approve(address,uint256)
-                mstore(ptr, ERC20_APPROVE)
-                mstore(add(ptr, 0x04), pool)
-                mstore(add(ptr, 0x24), MAX_UINT256)
-
-                if iszero(call(gas(), token, 0x0, ptr, 0x44, ptr, 32)) {
-                    revert(0x0, 0x0)
-                }
-                sstore(key, 1)
-            }
-
             // flashLoanSimple(...)
             mstore(ptr, 0x42b0b77c00000000000000000000000000000000000000000000000000000000)
             mstore(add(ptr, 4), address())

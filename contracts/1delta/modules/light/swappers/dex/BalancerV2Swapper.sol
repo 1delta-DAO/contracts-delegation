@@ -38,6 +38,7 @@ abstract contract BalancerV2Swapper is ERC20Selectors, Masks {
             balancerData := calldataload(add(32, currentOffset))
 
             let ptr := mload(0x40)
+            // only need to check whether we have to pull from caller
             if iszero(and(UINT8_MASK, shr(72, balancerData))) {
                 // selector for transferFrom(address,address,uint256)
                 mstore(ptr, ERC20_TRANSFER_FROM)
@@ -48,23 +49,21 @@ abstract contract BalancerV2Swapper is ERC20Selectors, Masks {
                 let success := call(gas(), tokenIn, 0, ptr, 0x64, 0, 32)
 
                 let rdsize := returndatasize()
-                // Check for ERC20 success. ERC20 tokens should return a boolean,
-                // but some don't. We accept 0-length return data as success, or at
-                // least 32 bytes that starts with a 32-byte boolean true.
-                success := and(
-                    success, // call itself succeeded
-                    or(
-                        iszero(rdsize), // no return data, or
-                        and(
-                            gt(rdsize, 31), // at least 32 bytes
-                            eq(mload(0), 1) // starts with uint256(1)
+
+                if iszero(
+                    and(
+                        success, // call itself succeeded
+                        or(
+                            iszero(rdsize), // no return data, or
+                            and(
+                                gt(rdsize, 31), // at least 32 bytes
+                                eq(mload(0), 1) // starts with uint256(1)
+                            )
                         )
                     )
-                )
-
-                if iszero(success) {
-                    returndatacopy(0, 0, rdsize)
-                    revert(0, rdsize)
+                ) {
+                    returndatacopy(ptr, 0, rdsize)
+                    revert(ptr, rdsize)
                 }
             }
 
@@ -117,11 +116,11 @@ abstract contract BalancerV2Swapper is ERC20Selectors, Masks {
                     ptr,
                     0x1C4,
                     0x0,
-                    0x20 // we do not use the return array
+                    0x20 // we use the return amount
                 )
             ) {
-                returndatacopy(0, 0, returndatasize())
-                revert(0, returndatasize())
+                returndatacopy(ptr, 0, returndatasize())
+                revert(ptr, returndatasize())
             }
 
             amountOut := mload(0x0)

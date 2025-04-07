@@ -10,15 +10,8 @@ import {BaseTest} from "../../shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
 import "../utils/CalldataLib.sol";
 
-interface IF {
-    function getPool(address tokenA, address tokenB, uint24 fee) external view returns (address);
-
-    function pool(address tokenA, address tokenB, uint24 fee) external view returns (address);
-
-    function getPair(address tokenA, address tokenB) external view returns (address pair);
-}
-
 contract FlashSwapTest is BaseTest {
+    using CalldataLib for bytes;
     uint8 internal constant UNI_V3_DEX_ID = 0;
 
     OneDeltaComposerLight oneDV2;
@@ -32,7 +25,6 @@ contract FlashSwapTest is BaseTest {
 
     uint256 internal constant forkBlock = 27970029;
     uint8 internal constant UNISWAP_V4_POOL_ID = 0;
-    uint8 internal constant UNISWAP_V4_DEX_ID = 55;
 
     address internal constant UNI_V4_PM = 0x498581fF718922c3f8e6A244956aF099B2652b2b;
 
@@ -53,25 +45,27 @@ contract FlashSwapTest is BaseTest {
         address tokenOut,
         uint256 amount
     ) internal pure returns (bytes memory data) {
-        data = abi.encodePacked(
-            uint8(ComposerCommands.SWAPS),
-            uint128(amount), //
-            uint128(1), //
+        // create head config
+        data = CalldataLib.swapHead(
+            amount,
+            1, // amountOut min
             tokenIn,
-            uint8(0), // swaps max index
-            uint8(0) // splits
-        ); // swaps max index for inner path
-        data = abi.encodePacked(
-            data,
+            false // no pre param
+        );
+        // no branching
+        data = data.attachBranch(0, 0, hex"");
+        // append swap
+        data = data.uniswapV4StyleSwap(
             tokenOut,
             user,
-            uint8(DexTypeMappings.UNISWAP_V4_ID), // dexId !== poolId here
-            address(0), // hook
             UNI_V4_PM,
-            uint24(500), // fee
-            uint24(10), // tick spacing
-            uint8(3), // nobody pays - settle later
-            uint16(0) // data length
+            CalldataLib.UniV4SwapParams(
+                500, //
+                10,
+                address(0),
+                hex""
+            ),
+            CalldataLib.DexPayConfig.PRE_FUND
         );
     }
 
@@ -107,15 +101,17 @@ contract FlashSwapTest is BaseTest {
             );
             settlementActions = abi.encodePacked(CalldataLib.unwrap(address(oneDV2), borrowAmount, CalldataLib.SweepType.AMOUNT), settlementActions);
 
+            deposit = abi.encodePacked(
+                swapAction, // the swap
+                deposit,
+                borrow,
+                settlementActions
+            );
+
             swapAction = CalldataLib.nextGenDexUnlock(
-                UNI_V4_PM,
+                UNI_V4_PM, //
                 UNISWAP_V4_POOL_ID,
-                abi.encodePacked(
-                    swapAction, // the swap
-                    deposit,
-                    borrow,
-                    settlementActions
-                ) //
+                deposit
             );
         }
 

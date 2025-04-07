@@ -10,24 +10,20 @@ import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
 import "../utils/CalldataLib.sol";
 
 /**
- * We test all morpho blue operations
- * - supply, supplyCollateral, borrow, repay, erc4646Deposit, erc4646Withdraw
+ * Test Balancer v2 swaps
  */
-contract DodoLightTest is BaseTest {
-    using CalldataLib for bytes;
-
+contract BalV2LightTest is BaseTest {
+    address internal constant BALANCER_V2_VAULT = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
+    bytes32 internal constant WETH_RETH_PID = 0xc771c1a5905420daec317b154eb13e4198ba97d0000000000000000000000023;
     uint256 internal constant forkBlock = 27970029;
     OneDeltaComposerLight oneDV2;
-
-    address internal constant DODO_WETH_JOJO = 0x0Df758CFe1DE840360a92424494776E8C7f29A9c;
 
     address internal USDC;
     address internal WETH;
     address internal cbETH;
     address internal cbBTC;
     address internal LBTC;
-    address internal constant SUPEROBETH = 0xDBFeFD2e8460a6Ee4955A68582F85708BAEA60A3;
-    address internal constant JOJO = 0x0645bC5cDff2376089323Ac20Df4119e48e4BCc4;
+    address internal constant rETH = 0xB6fe221Fe9EeF5aBa221c348bA20A1Bf5e73624c;
 
     function setUp() public virtual {
         // initialize the chain
@@ -40,38 +36,40 @@ contract DodoLightTest is BaseTest {
         oneDV2 = new OneDeltaComposerLight();
     }
 
-    function dodPoolWETHJOJOSwap(address receiver, uint256 amount) internal view returns (bytes memory data) {
-        // create head config
-        data = CalldataLib.swapHead(
-            amount,
-            1, // amountOut min
+    function balancerWethRethSwap(address receiver, uint256 amount) internal view returns (bytes memory data) {
+        data = abi.encodePacked(
+            uint8(ComposerCommands.SWAPS),
+            uint128(amount), //
+            uint128(1), //
             WETH,
-            false // no pre param
+            uint8(0), // swaps max index
+            uint8(0) // splits
+            // single split data (no data here)
+            // uint8(0), // swaps max index for inner path
         );
-        // no branching
-        data = data.attachBranch(0, 0, hex"");
-        data = data.dodoStyleSwap(
-            SUPEROBETH,
+        data = abi.encodePacked(
+            data,
+            rETH,
             receiver,
-            DODO_WETH_JOJO,
-            CalldataLib.DodoSelector.SELL_QUOTE, // sell quote
-            CalldataLib.DexPayConfig.CALLER_PAYS // payMode <- user pays
+            uint8(DexTypeMappings.BALANCER_V2_ID), // 
+            WETH_RETH_PID,
+            BALANCER_V2_VAULT,
+            uint8(0) // payMode <- user pays
         );
     }
 
-    function test_light_swap_dodo_single() external {
+    function test_light_swap_balancer_single() external {
         vm.assume(user != address(0));
 
         address tokenIn = WETH;
-        address tokenOut = JOJO;
+        address tokenOut = rETH;
         uint256 amount = 1.0e18;
-        uint256 approxOut = 21319114459675017318834;
         deal(tokenIn, user, amount);
 
         vm.prank(user);
         IERC20All(tokenIn).approve(address(oneDV2), type(uint).max);
 
-        bytes memory swap = dodPoolWETHJOJOSwap(
+        bytes memory swap = balancerWethRethSwap(
             user,
             amount //
         );
@@ -82,6 +80,6 @@ contract DodoLightTest is BaseTest {
 
         uint256 balAfter = IERC20All(tokenOut).balanceOf(user);
         console.log("received", balAfter - balBefore);
-        assertApproxEqAbs(balAfter - balBefore, approxOut, (approxOut * 10) / 100);
+        assertApproxEqAbs(balAfter - balBefore, amount, (amount * 20) / 100);
     }
 }

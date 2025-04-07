@@ -22,15 +22,7 @@ abstract contract UniV4Callbacks is V4ReferencesBase, ERC20Selectors, Masks, Del
      * This is mainly done to not have duplicate code and maintain
      * the same level of security by callback validation for both DEX types
      */
-    function unlockCallback(
-        bytes calldata
-    )
-        external
-        returns (
-            // ignored - assigning it costs additional gas
-            bytes memory
-        )
-    {
+    function unlockCallback(bytes calldata) external {
         address callerAddress;
         uint256 length;
         assembly {
@@ -71,10 +63,17 @@ abstract contract UniV4Callbacks is V4ReferencesBase, ERC20Selectors, Masks, Del
             //  32 length
             //  1 poolId
             //  20 address
-            // = 157
-            157,
+            // = 159
+            159,
             length //
         );
+
+        // return empty bytes
+        assembly {
+            mstore(0x0,0x0)
+            mstore(0x20,0x0)
+            return(0x0, 0x40)
+        }
     }
 
     /** A composer contract should override this */

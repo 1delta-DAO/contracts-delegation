@@ -16,6 +16,7 @@ library CalldataLib {
     enum DexPayConfig {
         CALLER_PAYS,
         CONTRACT_PAYS,
+        PRE_FUND,
         FLASH
     }
 
@@ -81,6 +82,37 @@ library CalldataLib {
         );
     }
 
+    struct UniV4SwapParams {
+        uint24 fee;
+        uint24 tickSpacing;
+        address hooks;
+        bytes hookData;
+    }
+
+    function uniswapV4StyleSwap(
+        bytes memory currentData,
+        address tokenOut,
+        address receiver,
+        address manager,
+        UniV4SwapParams memory swapParams,
+        DexPayConfig cfg
+    ) internal pure returns (bytes memory data) {
+        if (cfg == DexPayConfig.FLASH) revert("Invalid config for v2 swap");
+        data = abi.encodePacked(
+            currentData,
+            tokenOut,
+            receiver,
+            uint8(DexTypeMappings.UNISWAP_V4_ID),
+            swapParams.hooks,
+            manager,
+            swapParams.fee,
+            swapParams.tickSpacing,
+            uint8(uint256(cfg)), // cll length <- user pays
+            uint16(swapParams.hookData.length),
+            swapParams.hookData
+        );
+    }
+
     function balancerV2StyleSwap(
         bytes memory currentData,
         address tokenOut,
@@ -97,6 +129,44 @@ library CalldataLib {
             uint8(DexTypeMappings.BALANCER_V2_ID),
             poolId,
             balancerVault,
+            uint16(uint256(cfg)) // cll length <- user pays
+        );
+    }
+
+    function lbStyleSwap(
+        bytes memory currentData,
+        address tokenOut,
+        address receiver,
+        address pool,
+        bool swapForY,
+        DexPayConfig cfg
+    ) internal pure returns (bytes memory data) {
+        if (cfg == DexPayConfig.FLASH) revert("Invalid config for v2 swap");
+        data = abi.encodePacked(
+            currentData,
+            tokenOut,
+            receiver,
+            uint8(DexTypeMappings.LB_ID),
+            pool,
+            uint8(swapForY ? 1 : 0),
+            uint16(uint256(cfg)) // cll length <- user pays
+        );
+    }
+
+    function syncSwapStyleSwap(
+        bytes memory currentData,
+        address tokenOut,
+        address receiver,
+        address pool,
+        DexPayConfig cfg
+    ) internal pure returns (bytes memory data) {
+        if (cfg == DexPayConfig.FLASH) revert("Invalid config for v2 swap");
+        data = abi.encodePacked(
+            currentData,
+            tokenOut,
+            receiver,
+            uint8(DexTypeMappings.SYNC_SWAP_ID),
+            pool,
             uint16(uint256(cfg)) // cll length <- user pays
         );
     }
@@ -201,9 +271,10 @@ library CalldataLib {
         address receiver,
         address pool,
         DodoSelector selector, //
-        DexPayConfig cfg
+        uint256 poolId,
+        DexPayConfig cfg,
+        bytes memory flashCalldata
     ) internal pure returns (bytes memory data) {
-        if (cfg == DexPayConfig.FLASH) revert("Flash not yet supported for dodo");
         data = abi.encodePacked(
             currentData,
             tokenOut,
@@ -211,6 +282,44 @@ library CalldataLib {
             uint8(DexTypeMappings.DODO_ID),
             pool,
             uint8(selector),
+            uint16(poolId),
+            uint16(cfg == DexPayConfig.FLASH ? flashCalldata.length : uint256(cfg)), //
+            bytes(cfg == DexPayConfig.FLASH ? flashCalldata : new bytes(0))
+        );
+    }
+
+    function wooStyleSwap(
+        bytes memory currentData,
+        address tokenOut,
+        address receiver,
+        address pool,
+        DexPayConfig cfg
+    ) internal pure returns (bytes memory data) {
+        if (cfg == DexPayConfig.FLASH) revert("No flash for Woo");
+        data = abi.encodePacked(
+            currentData,
+            tokenOut,
+            receiver,
+            uint8(DexTypeMappings.WOO_FI_ID),
+            pool,
+            uint16(uint256(cfg)) //
+        );
+    }
+
+    function gmxStyleSwap(
+        bytes memory currentData,
+        address tokenOut,
+        address receiver,
+        address pool,
+        DexPayConfig cfg
+    ) internal pure returns (bytes memory data) {
+        if (cfg == DexPayConfig.FLASH) revert("No flash for Woo");
+        data = abi.encodePacked(
+            currentData,
+            tokenOut,
+            receiver,
+            uint8(DexTypeMappings.GMX_ID),
+            pool,
             uint16(uint256(cfg)) //
         );
     }
@@ -307,6 +416,15 @@ library CalldataLib {
         ); // 14 bytes
     }
 
+    function encodeApprove(address asset, address target) internal pure returns (bytes memory data) {
+        data = abi.encodePacked(
+            uint8(ComposerCommands.TRANSFERS),
+            uint8(TransferIds.APPROVE),
+            asset,
+            target //
+        ); // 14 bytes
+    }
+
     function unwrap(address receiver, uint256 amount, SweepType sweepType) internal pure returns (bytes memory data) {
         data = abi.encodePacked(
             uint8(ComposerCommands.TRANSFERS),
@@ -327,6 +445,7 @@ library CalldataLib {
     ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
+                encodeApprove(asset, pool), // always approve
                 uint8(ComposerCommands.FLASH_LOAN),
                 uint8(poolType),
                 poolId,
@@ -338,6 +457,20 @@ library CalldataLib {
             );
     }
 
+    /** get the collateral asset from a packed Morpho market */
+    function getMorphoCollateral(bytes memory market) private pure returns (address collat) {
+        assembly {
+            collat := shr(96, mload(add(market, 52)))
+        }
+    }
+
+    /** get the loab asset from a packed Morpho market */
+    function getMorphoLoanAsset(bytes memory market) private pure returns (address collat) {
+        assembly {
+            collat := shr(96, mload(add(market, 32)))
+        }
+    }
+
     function morphoDepositCollateral(
         bytes memory market,
         uint256 assets,
@@ -347,6 +480,7 @@ library CalldataLib {
     ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
+                encodeApprove(getMorphoCollateral(market), morphoB), // always approve
                 uint8(ComposerCommands.LENDING), // 1
                 uint8(LenderOps.DEPOSIT), // 1
                 uint16(LenderIds.UP_TO_MORPHO), // 2
@@ -369,6 +503,7 @@ library CalldataLib {
     ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
+                encodeApprove(getMorphoLoanAsset(market), morphoB), // always approve
                 uint8(ComposerCommands.LENDING), // 1
                 uint8(LenderOps.DEPOSIT_LENDING_TOKEN), // 1
                 uint16(LenderIds.UP_TO_MORPHO), // 2
@@ -390,6 +525,7 @@ library CalldataLib {
     ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
+                encodeApprove(asset, vault), // always approve
                 uint8(ComposerCommands.ERC4646), // 1
                 uint8(0), // 1
                 asset, // 20
@@ -482,6 +618,7 @@ library CalldataLib {
     ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
+                encodeApprove(getMorphoLoanAsset(market), morphoB), // always approve
                 uint8(ComposerCommands.LENDING), // 1
                 uint8(LenderOps.REPAY), // 1
                 uint16(LenderIds.UP_TO_MORPHO), // 2
@@ -503,6 +640,7 @@ library CalldataLib {
     ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
+                encodeApprove(token, pool),
                 uint8(ComposerCommands.LENDING),
                 uint8(LenderOps.DEPOSIT),
                 uint16(LenderIds.UP_TO_AAVE_V3 - 1),
@@ -545,6 +683,7 @@ library CalldataLib {
     ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
+                encodeApprove(token, pool),
                 uint8(ComposerCommands.LENDING),
                 uint8(LenderOps.REPAY),
                 uint16(LenderIds.UP_TO_AAVE_V3 - 1),
@@ -587,6 +726,7 @@ library CalldataLib {
     ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
+                encodeApprove(token, pool),
                 uint8(ComposerCommands.LENDING),
                 uint8(LenderOps.DEPOSIT),
                 uint16(LenderIds.UP_TO_AAVE_V2 - 1),
@@ -629,6 +769,7 @@ library CalldataLib {
     ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
+                encodeApprove(token, pool),
                 uint8(ComposerCommands.LENDING),
                 uint8(LenderOps.REPAY),
                 uint16(LenderIds.UP_TO_AAVE_V2 - 1),
@@ -671,6 +812,7 @@ library CalldataLib {
     ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
+                encodeApprove(token, comet),
                 uint8(ComposerCommands.LENDING),
                 uint8(LenderOps.DEPOSIT),
                 uint16(LenderIds.UP_TO_COMPOUND_V3 - 1),
@@ -709,6 +851,7 @@ library CalldataLib {
     ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
+                encodeApprove(token, comet),
                 uint8(ComposerCommands.LENDING),
                 uint8(LenderOps.REPAY),
                 uint16(LenderIds.UP_TO_COMPOUND_V3 - 1),
@@ -749,6 +892,8 @@ library CalldataLib {
     ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
+                // no approves for native
+                token == address(0) ? new bytes(0) : encodeApprove(token, cToken),
                 uint8(ComposerCommands.LENDING),
                 uint8(LenderOps.DEPOSIT),
                 uint16(LenderIds.UP_TO_COMPOUND_V2 - 1),
@@ -787,6 +932,8 @@ library CalldataLib {
     ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
+                // no approves for native
+                token == address(0) ? new bytes(0) : encodeApprove(token, cToken),
                 uint8(ComposerCommands.LENDING),
                 uint8(LenderOps.REPAY),
                 uint16(LenderIds.UP_TO_COMPOUND_V2 - 1),
