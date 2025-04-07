@@ -6,10 +6,7 @@ import {Masks} from "../../../shared/masks/Masks.sol";
 import {DeltaErrors} from "../../../shared/errors/Errors.sol";
 
 /**
- * @title Universal aggregator contract.
- *        Allows spot and margin swap aggregation
- *        Efficient baching through compact calldata usage.
- * @author 1delta Labs AG
+ * @title Take an Aave V2 flash loan callback
  */
 contract AaveV2FlashLoanCallback is Masks, DeltaErrors {
     // Aave v2s

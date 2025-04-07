@@ -6,10 +6,7 @@ import {Masks} from "../../../shared/masks/Masks.sol";
 import {DeltaErrors} from "../../../shared/errors/Errors.sol";
 
 /**
- * @title Universal aggregator contract.
- *        Allows spot and margin swap aggregation
- *        Efficient baching through compact calldata usage.
- * @author 1delta Labs AG
+ * @title All Morpho Blue flash callbacks
  */
 contract MorphoFlashLoanCallback is Masks, DeltaErrors {
     /// @dev Constant MorphoB address
