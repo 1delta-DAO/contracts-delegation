@@ -15,10 +15,13 @@ interface IF {
 
 interface IERC20 {
     function balanceOf(address account) external view returns (uint256);
+
     function approve(address spender, uint256 value) external returns (bool);
 }
 
 contract V3QuoterTest is BaseTest {
+    using CalldataLib for bytes;
+
     uint256 internal constant forkBlock = 28493852;
 
     address internal constant UNI_FACTORY = 0x33128a8fC17869897dcE68Ed026d694621f6FDfD;
@@ -55,16 +58,6 @@ contract V3QuoterTest is BaseTest {
         vm.stopPrank();
     }
 
-    /**
-     * CALLDATA UTILS
-     * TODO: could be moved to calldatalib
-     */
-    function swapBranch(uint256 hops, uint256 splits, bytes memory splitsData) internal pure returns (bytes memory) {
-        if (hops != 0 && splits != 0) revert("Invalid branching");
-        if (splitsData.length > 0 && splits == 0) revert("No splits but split data provided");
-        return abi.encodePacked(uint8(hops), uint8(splits), splitsData);
-    }
-
     function uniswapV3StyleSwap(
         address tokenOut,
         address receiver,
@@ -97,11 +90,9 @@ contract V3QuoterTest is BaseTest {
         uint256 amountIn = 1 * 1e18; // 1 WETH
 
         // Use utility function to encode path
-        bytes memory path = uniswapV3StyleSwap(
-            USDC, address(quoter), 0, WETH_USDC_500_POOL, 500, CalldataLib.DexPayConfig.CALLER_PAYS, new bytes(0)
-        );
+        bytes memory path = uniswapV3StyleSwap(USDC, address(quoter), 0, WETH_USDC_500_POOL, 500, CalldataLib.DexPayConfig.CALLER_PAYS, new bytes(0));
         // single swap branch (0,0)
-        bytes memory swapBranch = swapBranch(0, 0, ""); //(0,0)
+        bytes memory swapBranch = (new bytes(0)).attachBranch(0, 0, ""); //(0,0)
 
         // Get quote
         uint256 quotedAmountOut = quoter.quote(abi.encodePacked(uint128(amountIn), uint128(0), WETH, swapBranch, path));
@@ -136,11 +127,7 @@ contract V3QuoterTest is BaseTest {
         console.log("Actual amount:", actualAmountOut);
     }
 
-    function multiPath(address[] memory assets, uint16[] memory fees, address receiver)
-        internal
-        view
-        returns (bytes memory data)
-    {
+    function multiPath(address[] memory assets, uint16[] memory fees, address receiver) internal view returns (bytes memory data) {
         data = abi.encodePacked(
             uint8(fees.length - 1), // path max index
             uint8(0) // no splits
@@ -222,52 +209,77 @@ contract V3QuoterTest is BaseTest {
         address pool500 = IF(UNI_FACTORY).getPool(WETH, USDC, 500);
         address pool3000 = IF(UNI_FACTORY).getPool(WETH, USDC, 3000);
 
-        // path 1
-        bytes memory path1 = uniswapV3StyleSwap(
-            USDC, address(quoter), 0, pool500, 500, CalldataLib.DexPayConfig.CALLER_PAYS, new bytes(0)
-        );
-
-        // path 2
-        bytes memory path2 = uniswapV3StyleSwap(
-            USDC, address(quoter), 0, pool3000, 3000, CalldataLib.DexPayConfig.CALLER_PAYS, new bytes(0)
-        );
-
         // split branch (0,1) with 2 splits
-        bytes memory splitBranch = swapBranch(0, 1, abi.encodePacked((type(uint16).max / 2)));
 
-        // full quotes path
-        bytes memory quotePath = abi.encodePacked(
-            // branchHeader
-            splitBranch,
-            // Each individual swap is (0,0)
-            swapBranch(0, 0, ""), // <- split 1
-            path1,
-            swapBranch(0, 0, ""), // <- split 2
-            path2
+        bytes memory quotePath = CalldataLib.attachBranch(
+            "",
+            0,
+            1, // splits
+            abi.encodePacked((type(uint16).max / 2))
         );
 
-        // Get quote
+        quotePath = quotePath.attachBranch(0, 0, "");
+
+        quotePath = quotePath.uniswapV3StyleSwap( //
+            USDC,
+            address(quoter),
+            0, //
+            pool500,
+            500,
+            CalldataLib.DexPayConfig.CALLER_PAYS,
+            ""
+        );
+        quotePath = quotePath.attachBranch(0, 0, "");
+        quotePath = quotePath.uniswapV3StyleSwap( // //
+            USDC,
+            address(quoter),
+            0,
+            pool3000,
+            3000, //
+            CalldataLib.DexPayConfig.CALLER_PAYS,
+            ""
+        );
+
+        // Get quote (attach header manually)
         uint256 quotedAmountOut = quoter.quote(abi.encodePacked(uint128(amountIn), uint128(0), WETH, quotePath));
 
         console.log("Quoted amount:", quotedAmountOut);
 
         // actual swap
-        bytes memory composerPath1 =
-            uniswapV3StyleSwap(USDC, user, 0, pool500, 500, CalldataLib.DexPayConfig.CALLER_PAYS, new bytes(0));
 
-        bytes memory composerPath2 =
-            uniswapV3StyleSwap(USDC, user, 0, pool3000, 3000, CalldataLib.DexPayConfig.CALLER_PAYS, new bytes(0));
+        bytes memory swapPath = CalldataLib.swapHead(amountIn, quotedAmountOut, WETH, false);
 
-        bytes memory swapHead = CalldataLib.swapHead(amountIn, quotedAmountOut, WETH, false);
-        bytes memory swapPath =
-            abi.encodePacked(splitBranch, swapBranch(0, 0, ""), composerPath1, swapBranch(0, 0, ""), composerPath2);
+        swapPath = swapPath.attachBranch(
+            0,
+            1, // splits
+            abi.encodePacked((type(uint16).max / 2))
+        ); //
 
-        bytes memory swapCall = abi.encodePacked(swapHead, swapPath);
+        swapPath = swapPath.attachBranch(0, 0, ""); //
+        swapPath = swapPath.uniswapV3StyleSwap(
+            USDC,
+            user,
+            0, //
+            pool500,
+            500,
+            CalldataLib.DexPayConfig.CALLER_PAYS,
+            ""
+        );
+        swapPath = swapPath.attachBranch(0, 0, "");
+        swapPath = swapPath.uniswapV3StyleSwap( // //
+            USDC,
+            user,
+            0,
+            pool3000,
+            3000, //
+            CalldataLib.DexPayConfig.CALLER_PAYS,
+            ""
+        );
 
         uint256 balanceBefore = IERC20(USDC).balanceOf(address(user));
 
         vm.prank(user);
-        composer.deltaCompose(swapCall);
+        composer.deltaCompose(swapPath);
 
         uint256 balanceAfter = IERC20(USDC).balanceOf(address(user));
         uint256 actualAmountOut = balanceAfter - balanceBefore;
