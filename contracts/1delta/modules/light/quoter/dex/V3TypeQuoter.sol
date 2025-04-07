@@ -19,7 +19,6 @@ abstract contract V3TypeQuoter is Masks {
      */
     function getV3TypeAmountOut(uint256 amountIn, address tokenIn, address tokenOut, uint256 currentOffset)
         internal
-        view
         returns (uint256 amountOut, uint256)
     {
         address pool;
@@ -37,11 +36,7 @@ abstract contract V3TypeQuoter is Masks {
 
             clLength := and(UINT16_MASK, shr(56, dt)) // shift 32-(20+1+2+2)=7 bytes
 
-            zeroForOne :=
-                lt(
-                    tokenIn,
-                    tokenOut //
-                )
+            zeroForOne := lt(tokenIn, tokenOut)
         }
 
         try IUniswapV3Pool(pool).swap(
@@ -133,5 +128,5 @@ interface IUniswapV3Pool {
         int256 amountSpecified,
         uint160 sqrtPriceLimitX96,
         bytes calldata data
-    ) external view returns (int256 amount0, int256 amount1);
+    ) external returns (int256 amount0, int256 amount1);
 }

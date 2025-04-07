@@ -10,12 +10,12 @@ contract QuoterLight is Masks, V3TypeQuoter, ERC20Selectors {
     error InvalidDexId();
     error InvalidSplitFormat();
 
-    function quote(bytes calldata data) external view returns (uint256 amountOut) {
+    function quote(bytes calldata data) external returns (uint256 amountOut) {
         return quoteExactInput(data);
     }
     //////////////////
 
-    function quoteExactInput(bytes calldata data) internal view returns (uint256) {
+    function quoteExactInput(bytes calldata data) internal returns (uint256) {
         uint256 amountIn;
         uint256 minimumAmountReceived;
         address tokenIn;
@@ -69,7 +69,6 @@ contract QuoterLight is Masks, V3TypeQuoter, ERC20Selectors {
 
     function _quoteSwapSplitOrRoute(uint256 amountIn, address tokenIn, uint256 currentOffset)
         internal
-        view
         returns (uint256 amountOut)
     {
         uint256 swapMaxIndex;
@@ -104,7 +103,6 @@ contract QuoterLight is Masks, V3TypeQuoter, ERC20Selectors {
 
     function _quoteSingleSwap(uint256 amountIn, address tokenIn, address tokenOut, uint256 currentOffset)
         internal
-        view
         returns (uint256 amountOut, uint256)
     {
         uint256 dexTypeId;

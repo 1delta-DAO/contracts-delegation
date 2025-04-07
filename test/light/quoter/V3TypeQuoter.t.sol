@@ -46,7 +46,7 @@ contract V3QuoterTest is BaseTest {
         deal(USDC, address(this), 10000 * 1e6);
 
         // Approve composer
-        IERC20(WETH).approve(address(composer), type(uint256).max);
+        IERC20(WETH).approve(address(composer), 1 ether);
     }
 
     /**
@@ -99,20 +99,22 @@ contract V3QuoterTest is BaseTest {
             0,
             WETH_USDC_500_POOL,
             500,
-            CalldataLib.DexPayConfig.CONTRACT_PAYS,
+            CalldataLib.DexPayConfig.CALLER_PAYS,
             ""
         );
         // Use utility function to encode path
         bytes memory path = uniswapV3StyleSwap(
-            USDC, address(quoter), 0, WETH_USDC_500_POOL, 500, CalldataLib.DexPayConfig.CONTRACT_PAYS, new bytes(0)
+            USDC, address(quoter), 0, WETH_USDC_500_POOL, 500, CalldataLib.DexPayConfig.CALLER_PAYS, new bytes(0)
         );
         // Get quote
         uint256 quotedAmountOut = quoter.quote(abi.encodePacked(uint128(amountIn), uint128(0), WETH, swapBranch, path));
 
+        console.log("Quoted amount:", quotedAmountOut);
+
         // Get actual amount from a real swap
         uint256 balanceBefore = IERC20(USDC).balanceOf(address(this));
 
-        composer.deltaCompose(swapCall);
+        composer.deltaCompose(abi.encodePacked(swapHead, swapBranch, swapCall));
 
         uint256 balanceAfter = IERC20(USDC).balanceOf(address(this));
         uint256 actualAmountOut = balanceAfter - balanceBefore;
