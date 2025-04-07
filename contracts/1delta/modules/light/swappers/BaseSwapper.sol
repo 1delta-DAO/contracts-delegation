@@ -94,9 +94,9 @@ abstract contract BaseSwapper is
         address tokenIn,
         address callerAddress,
         uint256 currentOffset //
-    ) internal returns (uint256, uint256, address) {
-        uint256 amount = amountIn;
-        address _tokenIn = tokenIn;
+    ) internal returns (uint256 amount, uint256, address _tokenIn) {
+        amount = amountIn;
+        _tokenIn = tokenIn;
         uint256 i;
         while (true) {
             (amount, currentOffset, _tokenIn) = _singleSwapSplitOrRoute(
@@ -152,8 +152,7 @@ abstract contract BaseSwapper is
         address tokenIn,
         address callerAddress, // caller
         uint256 currentOffset
-    ) internal returns (uint256, uint256, address) {
-        address nextToken;
+    ) internal returns (uint256, uint256, address nextToken) {
         // no splits, single swap
         if (splitsMaxIndex == 0) {
             (amountIn, currentOffset, nextToken) = _singleSwapSplitOrRoute(
@@ -242,7 +241,7 @@ abstract contract BaseSwapper is
         address tokenIn,
         address callerAddress,
         uint256 currentOffset //
-    ) internal returns (uint256, uint256, address) {
+    ) internal returns (uint256 received, uint256, address nextToken) {
         uint256 swapMaxIndex;
         uint256 splitsMaxIndex;
         assembly {
@@ -253,8 +252,6 @@ abstract contract BaseSwapper is
         }
         // swapMaxIndex = 0 is simple single swap
         // that is where each single step MUST end
-        address nextToken;
-        uint256 received;
         if (swapMaxIndex == 0) {
             // splitsMaxIndex zero is single swap
             if (splitsMaxIndex == 0) {

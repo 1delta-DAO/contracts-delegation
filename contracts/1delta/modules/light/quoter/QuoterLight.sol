@@ -25,14 +25,14 @@ contract QuoterLight is Masks, V3TypeQuoter, ERC20Selectors {
             tokenIn := shr(96, dataStart)
             currentOffset := add(20, currentOffset)
         }
-        (uint256 amountOut,,) = _quoteSingleSwapSplitOrRoute(amountIn, tokenIn, currentOffset);
-        return amountOut;
+        (amountOut, , ) = _quoteSingleSwapSplitOrRoute(amountIn, tokenIn, currentOffset);
     }
 
-    function _quoteSingleSwapSplitOrRoute(uint256 amountIn, address tokenIn, uint256 currentOffset)
-        internal
-        returns (uint256 amountOut, uint256, address)
-    {
+    function _quoteSingleSwapSplitOrRoute(
+        uint256 amountIn,
+        address tokenIn,
+        uint256 currentOffset
+    ) internal returns (uint256 amountOut, uint256, address nextToken) {
         uint256 swapMaxIndex;
         uint256 splitsMaxIndex;
         assembly {
@@ -42,8 +42,6 @@ contract QuoterLight is Masks, V3TypeQuoter, ERC20Selectors {
             currentOffset := add(currentOffset, 2)
         }
 
-        address nextToken;
-        uint256 received;
         if (swapMaxIndex == 0) {
             // Single swap or split swap
             if (splitsMaxIndex == 0) {
@@ -55,21 +53,31 @@ contract QuoterLight is Masks, V3TypeQuoter, ERC20Selectors {
                 (amountOut, currentOffset) = _quoteSingleSwap(amountIn, tokenIn, nextToken, currentOffset);
             } else {
                 // Split swap
-                (amountOut, currentOffset, nextToken) =
-                    _quoteSingleSwapOrSplit(amountIn, splitsMaxIndex, tokenIn, address(this), currentOffset);
+                (amountOut, currentOffset, nextToken) = _quoteSingleSwapOrSplit(
+                    amountIn,
+                    splitsMaxIndex, //
+                    tokenIn,
+                    currentOffset
+                );
             }
         } else {
             // Multi-hop swap
-            (amountOut, currentOffset, nextToken) =
-                _quoteMultiHopSplitSwap(amountIn, swapMaxIndex, tokenIn, currentOffset);
+            (amountOut, currentOffset, nextToken) = _quoteMultiHopSplitSwap(
+                amountIn, //
+                swapMaxIndex,
+                tokenIn,
+                currentOffset
+            );
         }
         return (amountOut, currentOffset, nextToken);
     }
 
-    function _quoteSingleSwap(uint256 amountIn, address tokenIn, address tokenOut, uint256 currentOffset)
-        internal
-        returns (uint256 amountOut, uint256)
-    {
+    function _quoteSingleSwap(
+        uint256 amountIn,
+        address tokenIn,
+        address tokenOut,
+        uint256 currentOffset
+    ) internal returns (uint256 amountOut, uint256) {
         uint256 dexTypeId;
         assembly {
             dexTypeId := shr(248, calldataload(currentOffset))
@@ -82,12 +90,14 @@ contract QuoterLight is Masks, V3TypeQuoter, ERC20Selectors {
         }
     }
 
-    function _quoteMultiHopSplitSwap(uint256 amountIn, uint256 swapMaxIndex, address tokenIn, uint256 currentOffset)
-        internal
-        returns (uint256, uint256, address)
-    {
-        uint256 amount = amountIn;
-        address _tokenIn = tokenIn;
+    function _quoteMultiHopSplitSwap(
+        uint256 amountIn,
+        uint256 swapMaxIndex,
+        address tokenIn,
+        uint256 currentOffset
+    ) internal returns (uint256 amount, uint256, address _tokenIn) {
+        amount = amountIn;
+        _tokenIn = tokenIn;
         uint256 i;
         while (true) {
             (amount, currentOffset, _tokenIn) = _quoteSingleSwapSplitOrRoute(amount, _tokenIn, currentOffset);
@@ -132,7 +142,6 @@ contract QuoterLight is Masks, V3TypeQuoter, ERC20Selectors {
         uint256 amountIn,
         uint256 splitsMaxIndex,
         address tokenIn,
-        address callerAddress, // caller
         uint256 currentOffset
     ) internal returns (uint256, uint256, address) {
         address nextToken;
@@ -162,17 +171,16 @@ contract QuoterLight is Masks, V3TypeQuoter, ERC20Selectors {
                     }
                     default {
                         // splits are uint16s as share of uint16.max
-                        split :=
-                            div(
-                                mul(
-                                    and(
-                                        UINT16_MASK,
-                                        shr(sub(112, mul(i, 16)), splits) // read the uin16 in the splits sequence
-                                    ),
-                                    amountIn //
+                        split := div(
+                            mul(
+                                and(
+                                    UINT16_MASK,
+                                    shr(sub(112, mul(i, 16)), splits) // read the uin16 in the splits sequence
                                 ),
-                                UINT16_MASK //
-                            )
+                                amountIn //
+                            ),
+                            UINT16_MASK //
+                        )
                     }
                     i := add(i, 1)
                 }
