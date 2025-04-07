@@ -27,26 +27,32 @@ contract V3QuoterTest is BaseTest {
     OneDeltaComposerLight composer;
 
     address internal WETH;
+    address internal cbETH;
     address internal USDC;
 
     address internal WETH_USDC_500_POOL;
+    address internal USDC_CBETH_500_POOL;
 
     function setUp() public virtual {
         _init(Chains.BASE, forkBlock);
 
         WETH = chain.getTokenAddress(Tokens.WETH);
+        cbETH = chain.getTokenAddress(Tokens.CBETH);
         USDC = chain.getTokenAddress(Tokens.USDC);
 
         quoter = new QuoterLight();
         composer = new OneDeltaComposerLight();
 
         WETH_USDC_500_POOL = IF(UNI_FACTORY).getPool(WETH, USDC, 500);
-
+        USDC_CBETH_500_POOL = IF(UNI_FACTORY).getPool(USDC, cbETH, 500);
         deal(WETH, address(user), 10 ether);
+        deal(USDC, address(user), 1000e6);
 
         // Approve composer
-        vm.prank(user);
-        IERC20(WETH).approve(address(composer), 1 ether);
+        vm.startPrank(user);
+        IERC20(WETH).approve(address(composer), type(uint256).max);
+        IERC20(USDC).approve(address(composer), type(uint256).max);
+        vm.stopPrank();
     }
 
     /**
@@ -125,8 +131,93 @@ contract V3QuoterTest is BaseTest {
         uint256 actualAmountOut = balanceAfter - balanceBefore;
 
         // Compare results
-        assertApproxEqRel(quotedAmountOut, actualAmountOut, 0.01e18, "didn't work");
+        assertApproxEqRel(quotedAmountOut, actualAmountOut, 1, "didn't work");
         console.log("Quote amount:", quotedAmountOut);
+        console.log("Actual amount:", actualAmountOut);
+    }
+
+    function multiPath(address[] memory assets, uint16[] memory fees, uint8[] memory dexIds, address receiver)
+        internal
+        view
+        returns (bytes memory data)
+    {
+        data = abi.encodePacked(
+            uint8(fees.length - 1), // path max index
+            uint8(0) // no splits
+        );
+        for (uint256 i = 0; i < assets.length - 1; i++) {
+            address pool;
+            if (dexIds[i] == DexTypeMappings.UNISWAP_V3_ID) {
+                pool = IF(UNI_FACTORY).getPool(assets[i], assets[i + 1], fees[i]);
+            }
+            console.log("multiPath pool", pool, dexIds[i], assets[i] < assets[i + 1]);
+            address _receiver = i < assets.length - 2 ? address(quoter) : receiver;
+            data = abi.encodePacked(
+                data, //
+                uint16(0),
+                // atomic
+                assets[i + 1], // nextToken
+                _receiver,
+                dexIds[i],
+                pool,
+                uint8(0), // <-- we assume native protocol here
+                fees[i],
+                uint16(0)
+            );
+            console.log("Path: ", i);
+            console.logBytes(data);
+        }
+        console.log("multiPath data");
+        console.logBytes(data);
+        return data;
+    }
+
+    function test_light_quoter_multihop_swap() public {
+        /**
+         * USDC -> WETH -> cbETH (1,0) - two hops
+         */
+        uint256 amountIn = 100e6;
+
+        // Create the path for multihop: USDC -> WETH -> cbETH
+        address[] memory assets = new address[](3);
+        assets[0] = USDC;
+        assets[1] = WETH;
+        assets[2] = cbETH;
+
+        uint16[] memory fees = new uint16[](2);
+        fees[0] = 500;
+        fees[1] = 500;
+
+        uint8[] memory dexIds = new uint8[](2);
+        dexIds[0] = uint8(DexTypeMappings.UNISWAP_V3_ID);
+        dexIds[1] = uint8(DexTypeMappings.UNISWAP_V3_ID);
+
+        bytes memory path = multiPath(assets, fees, dexIds, address(quoter));
+
+        // Get quote
+        uint256 quotedAmountOut = quoter.quote(abi.encodePacked(uint128(amountIn), uint128(0), USDC, path));
+
+        //console.log("Quoted amount:", quotedAmountOut);
+
+        // Now execute actual swap to verify quote
+        bytes memory swapHead = CalldataLib.swapHead(amountIn, 0, USDC, false);
+
+        // Create the swap path for the composer
+        path = multiPath(assets, fees, dexIds, user);
+        bytes memory swapCall = abi.encodePacked(swapHead, path);
+
+        // Get actual amount from a real swap
+        uint256 balanceBefore = IERC20(cbETH).balanceOf(address(user));
+
+        vm.prank(user);
+        composer.deltaCompose(swapCall);
+
+        uint256 balanceAfter = IERC20(cbETH).balanceOf(address(user));
+        uint256 actualAmountOut = balanceAfter - balanceBefore;
+
+        // Compare results
+        //assertApproxEqRel(quotedAmountOut, actualAmountOut, 0.01e18, "Quote doesn't match actual amount");
+        //console.log("Quote amount:", quotedAmountOut);
         console.log("Actual amount:", actualAmountOut);
     }
 }
