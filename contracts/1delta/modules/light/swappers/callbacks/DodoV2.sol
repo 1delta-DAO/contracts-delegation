@@ -12,8 +12,7 @@ import {DeltaErrors} from "../../../shared/errors/Errors.sol";
 import {ERC20Selectors} from "../../../shared/selectors/ERC20Selectors.sol";
 
 /**
- * @title Contract Module for general Margin Trading on an borrow delegation compatible Lender
- * @notice Contains main logic for uniswap-type callbacks and initiator functions
+ * @title DodoV2 flah-loan callbacks
  */
 abstract contract DodoV2Callbacks is DodoV2ReferencesBase, ERC20Selectors, Masks, DeltaErrors {
     /** selector _REGISTRY(address,address,uint256) - a mapping base->quote->index->pool */
