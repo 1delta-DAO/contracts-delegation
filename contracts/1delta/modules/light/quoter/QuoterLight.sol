@@ -11,26 +11,10 @@ contract QuoterLight is Masks, V3TypeQuoter, ERC20Selectors {
     error InvalidSplitFormat();
 
     function quote(bytes calldata data) external returns (uint256 amountOut) {
-        return quoteExactInput(data);
-    }
-    //////////////////
-
-    function quoteExactInput(bytes calldata data) internal returns (uint256) {
         uint256 amountIn;
         uint256 minimumAmountReceived;
         address tokenIn;
         uint256 currentOffset;
-        /*
-         * Store the data for the callback as follows
-         * | Offset | Length (bytes) | Description          |
-         * |--------|----------------|----------------------|
-         * | 0      | 16             | amount               | <-- input amount
-         * | 16     | 16             | amountMax            | <-- slippage check
-         * | 32     | 20             | tokenIn              |
-         * | 52     | any            | data                 |
-         *
-         * `data` is a path matrix definition (see BaseSwapepr)
-         */
         assembly {
             currentOffset := data.offset
             minimumAmountReceived := calldataload(currentOffset)
@@ -40,29 +24,6 @@ contract QuoterLight is Masks, V3TypeQuoter, ERC20Selectors {
             let dataStart := calldataload(currentOffset)
             tokenIn := shr(96, dataStart)
             currentOffset := add(20, currentOffset)
-
-            /**
-             * if the amount is zero, we assume that the contract balance is swapped
-             */
-            if iszero(amountIn) {
-                // selector for balanceOf(address)
-                mstore(0, ERC20_BALANCE_OF)
-                // add this address as parameter
-                mstore(0x04, address())
-                // call to token
-                pop(
-                    staticcall(
-                        gas(),
-                        tokenIn, // collateral token
-                        0x0,
-                        0x24,
-                        0x0,
-                        0x20
-                    )
-                )
-                // load the retrieved balance
-                amountIn := mload(0x0)
-            }
         }
         (uint256 amountOut,,) = _quoteSingleSwapSplitOrRoute(amountIn, tokenIn, currentOffset);
         return amountOut;
@@ -77,7 +38,7 @@ contract QuoterLight is Masks, V3TypeQuoter, ERC20Selectors {
         assembly {
             let datas := calldataload(currentOffset)
             swapMaxIndex := shr(248, datas)
-            splitsMaxIndex := and(UINT8_MASK, shr(240, datas))
+            splitsMaxIndex := and(UINT8_MASK, shr(240, datas)) //next byte
             currentOffset := add(currentOffset, 2)
         }
 
