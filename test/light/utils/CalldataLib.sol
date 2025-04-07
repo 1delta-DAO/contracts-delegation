@@ -82,6 +82,37 @@ library CalldataLib {
         );
     }
 
+    struct UniV4SwapParams {
+        uint24 fee;
+        uint24 tickSpacing;
+        address hooks;
+        bytes hookData;
+    }
+
+    function uniswapV4StyleSwap(
+        bytes memory currentData,
+        address tokenOut,
+        address receiver,
+        address manager,
+        UniV4SwapParams memory swapParams,
+        DexPayConfig cfg
+    ) internal pure returns (bytes memory data) {
+        if (cfg == DexPayConfig.FLASH) revert("Invalid config for v2 swap");
+        data = abi.encodePacked(
+            currentData,
+            tokenOut,
+            receiver,
+            uint8(DexTypeMappings.UNISWAP_V4_ID),
+            swapParams.hooks,
+            manager,
+            swapParams.fee,
+            swapParams.tickSpacing,
+            uint8(uint256(cfg)), // cll length <- user pays
+            uint16(swapParams.hookData.length),
+            swapParams.hookData
+        );
+    }
+
     function balancerV2StyleSwap(
         bytes memory currentData,
         address tokenOut,
