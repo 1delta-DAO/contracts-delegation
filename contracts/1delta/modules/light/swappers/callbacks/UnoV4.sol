@@ -27,8 +27,9 @@ abstract contract UniV4Callbacks is V4ReferencesBase, ERC20Selectors, Masks, Del
         uint256 length;
         assembly {
             let poolId := calldataload(136)
-            callerAddress := and(ADDRESS_MASK, shr(88, poolId))
-            poolId := shr(248, poolId)
+            // callerAddress populates the first 20 bytes
+            callerAddress := shr(96, poolId)
+            poolId := and(UINT8_MASK, shr(88, poolId))
             // cut off address and poolId
             length := sub(calldataload(36), 89)
 
@@ -69,8 +70,8 @@ abstract contract UniV4Callbacks is V4ReferencesBase, ERC20Selectors, Masks, Del
 
         // return empty bytes
         assembly {
-            mstore(0x0,0x0)
-            mstore(0x20,0x0)
+            mstore(0x0, 0x0)
+            mstore(0x20, 0x0)
             return(0x0, 0x40)
         }
     }

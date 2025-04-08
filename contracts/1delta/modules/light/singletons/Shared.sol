@@ -26,14 +26,12 @@ abstract contract SharedSingletonActions is Masks {
          * | Offset | Length (bytes) | Description     |
          * |--------|----------------|-----------------|
          * | 0      | 20             | manager         |
-         * | 20     | 1              | poolId          |
-         * | 21     | 2              | length          |
-         * | 23     | length         | data            |
+         * | 20     | 2              | length          |
+         * | 22     | length         | data            |
          */
         assembly {
             let manager := calldataload(currentOffset)
-            let dataLength := and(UINT16_MASK, shr(72, manager))
-            let poolId := and(UINT8_MASK, shr(88, manager))
+            let dataLength := and(UINT16_MASK, shr(80, manager))
             manager := shr(96, manager)
 
             // free memo ptr for populating the tx
@@ -51,22 +49,23 @@ abstract contract SharedSingletonActions is Masks {
              */
             mstore(ptr, UNLOCK)
             mstore(add(ptr, 4), 0x20) // offset
-            mstore(add(ptr, 36), add(dataLength, 89)) // selector, address, poolId, offset, length 4+32+32+20+1
+            mstore(add(ptr, 36), add(dataLength, 88)) // selector, address, poolId, offset, length 4+32+32+20+1
             mstore(add(ptr, 68), CB_SELECTOR)
             mstore(add(ptr, 72), 0x20) // offset as for cb selector
-            mstore(add(ptr, 104), add(dataLength, 21)) // length for within cb selector
-            mstore8(add(ptr, 136), poolId)
-            mstore(add(ptr, 137), shl(96, callerAddress))
-            currentOffset := add(currentOffset, 23)
+            mstore(add(ptr, 104), add(dataLength, 20)) // length for within cb selector
+            mstore(add(ptr, 136), shl(96, callerAddress))
+
+            // increment by manager and dataLength
+            currentOffset := add(currentOffset, 22)
             // copy calldata
-            calldatacopy(add(ptr, 157), currentOffset, dataLength)
+            calldatacopy(add(ptr, 156), currentOffset, dataLength)
             if iszero(
                 call(
                     gas(),
                     manager,
                     0x0,
                     ptr, //
-                    add(dataLength, 157), // selector, 2x offset, 2x length, data * address + uint8
+                    add(dataLength, 156), // selector, 2x offset, 2x length, data * address + uint8
                     0x0, // output = empty
                     0x0 // output size = zero
                 )
@@ -74,8 +73,8 @@ abstract contract SharedSingletonActions is Masks {
                 returndatacopy(0, 0, returndatasize())
                 revert(0, returndatasize())
             }
-            // increment offset by data length, manager, poolId
-            currentOffset := add(add(currentOffset, 2), dataLength)
+            // increment offset by data length
+            currentOffset := add(currentOffset, dataLength)
         }
         return currentOffset;
     }

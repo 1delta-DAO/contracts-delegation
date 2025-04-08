@@ -22,11 +22,11 @@ abstract contract BalancerV3Callbacks is BalancerV3ReferencesBase, ERC20Selector
     function balancerUnlockCallback(bytes calldata) external {
         address callerAddress;
         uint256 length;
-        uint poolId;
+        uint256 poolId;
         assembly {
             poolId := calldataload(68)
-            callerAddress := and(ADDRESS_MASK, shr(88, poolId))
-            poolId := shr(248, poolId)
+            callerAddress := shr(96, poolId)
+            poolId := and(UINT8_MASK, shr(88, poolId))
             // cut off address and poolId
             length := sub(calldataload(36), 21)
 

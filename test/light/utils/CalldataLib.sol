@@ -32,8 +32,8 @@ library CalldataLib {
             uint8(ComposerCommands.GEN_2025_SINGELTONS),
             uint8(Gen2025ActionIds.UNLOCK),
             singleton, // manager address
-            uint8(id), // validation Id
-            uint16(d.length),
+            uint16(d.length + 1),
+            uint8(id),
             d
         ); // swaps max index for inner path
     }

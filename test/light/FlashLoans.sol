@@ -183,8 +183,14 @@ contract FlashLoanLightTest is BaseTest {
             amount,
             abi.encodePacked(dp, sweep) //
         );
+
+        uint gas = gasleft();
+
         vm.prank(user);
         oneD.deltaCompose(unlock);
+
+        gas = gas - gasleft();
+        console.log("gas", gas);
 
         vm.expectRevert(bytes4(keccak256("BadPool()")));
         oneD.balancerUnlockCallback(dp);
@@ -217,8 +223,14 @@ contract FlashLoanLightTest is BaseTest {
             amount,
             abi.encodePacked(dp, sweep) //
         );
+
+        uint gas = gasleft();
+
         vm.prank(user);
         oneD.deltaCompose(unlock);
+
+        gas = gas - gasleft();
+        console.log("gas", gas);
 
         vm.expectRevert(bytes4(keccak256("BadPool()")));
         oneD.unlockCallback(dp);
