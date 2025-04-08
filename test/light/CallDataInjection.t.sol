@@ -56,12 +56,6 @@ contract CallDataInjection is BaseTest {
         IERC20(WETH).approve(address(composer), type(uint256).max);
         vm.stopPrank();
 
-        uint256 victimInitialBalance = IERC20(WETH).balanceOf(address(user));
-        uint256 attackerInitialBalance = IERC20(WETH).balanceOf(address(attacker));
-
-        console.log("Victim initial WETH balance:", victimInitialBalance / 1e18, "WETH");
-        console.log("Attacker initial WETH balance:", attackerInitialBalance / 1e18, "WETH");
-
         bytes memory swapCall = CalldataLib.swapHead(10, 0, WETH, false).attachBranch(0, 0, new bytes(0)).uniswapV3StyleSwap(
             USDC,
             address(attacker),
@@ -74,28 +68,9 @@ contract CallDataInjection is BaseTest {
 
         // Execute swap through the composer contract
         vm.startPrank(attacker);
-        try composer.deltaCompose(swapCall) {
-            console.log("Swap completed");
-        } catch Error(string memory reason) {
-            console.log("Swap reverted with reason:", reason);
-        } catch {
-            console.log("Swap reverted without reason");
-        }
+        vm.expectRevert("Callback failed");
+        composer.deltaCompose(swapCall);
         vm.stopPrank();
-
-        // Check final balances
-        uint256 victimFinalBalance = IERC20(WETH).balanceOf(address(user));
-        uint256 attackerFinalBalance = IERC20(WETH).balanceOf(address(attacker));
-
-        console.log("Victim final WETH balance:", victimFinalBalance / 1e18, "WETH");
-        console.log("Attacker final WETH balance:", attackerFinalBalance / 1e18, "WETH");
-
-        // Verify if the attack was successful
-        if (attackerFinalBalance > attackerInitialBalance) {
-            console.log("ATTACK SUCCESSFUL: Attacker stole", (attackerFinalBalance - attackerInitialBalance) / 1e18, "WETH");
-        } else {
-            console.log("Attack failed - no tokens were stolen");
-        }
     }
 
     function test_light_callback_injection_direct_inject() public {
@@ -104,13 +79,7 @@ contract CallDataInjection is BaseTest {
         deal(WETH, address(user), 10 ether);
         vm.prank(user);
         IERC20(WETH).approve(address(composer), type(uint256).max);
-
-        // Record initial balances
         uint256 userInitialBalance = IERC20(WETH).balanceOf(address(user));
-        uint256 attackerInitialBalance = IERC20(WETH).balanceOf(address(attacker));
-
-        console.log("Victim initial WETH balance:", userInitialBalance / 1e18, "WETH");
-        console.log("Attacker initial WETH balance:", attackerInitialBalance / 1e18, "WETH");
 
         bytes memory transferCall = CalldataLib.transferIn(WETH, attacker, userInitialBalance);
         bytes memory maliciousCall = abi.encodePacked(
@@ -125,22 +94,10 @@ contract CallDataInjection is BaseTest {
 
         // try to execute the attack
         vm.startPrank(attacker);
-        address(composer).call(abi.encodeWithSelector(uniV3CallbackSelector, 1, 0, maliciousCall));
+        (bool success, bytes memory data) = address(composer).call(abi.encodeWithSelector(uniV3CallbackSelector, 1, 0, maliciousCall));
         vm.stopPrank();
-
-        // Check final balances
-        uint256 userFinalBalance = IERC20(WETH).balanceOf(address(user));
-        uint256 attackerFinalBalance = IERC20(WETH).balanceOf(address(attacker));
-
-        console.log("Victim final WETH balance:", userFinalBalance / 1e18, "WETH");
-        console.log("Attacker final WETH balance:", attackerFinalBalance / 1e18, "WETH");
-
-        // Verify if the attack was successful
-        if (attackerFinalBalance > attackerInitialBalance) {
-            console.log("ATTACK SUCCESSFUL: Attacker stole", (attackerFinalBalance - attackerInitialBalance) / 1e18, "WETH");
-        } else {
-            console.log("Attack failed - no tokens were stolen");
-        }
+        vm.assertEq(success, false);
+        vm.assertEq(data, abi.encodeWithSignature("BadPool()"));
     }
 
     function test_light_callback_uniswapv2_injection() public {
@@ -157,10 +114,12 @@ contract CallDataInjection is BaseTest {
 
         bytes memory transferCall = CalldataLib.transferIn(WETH, attacker, victimInitialBalance);
 
-        // vm.expectRevert(bytes4(0xbafe1c53));
-        vm.startPrank(attacker);
-        address(weth_usdc_pool).call(abi.encodeWithSelector(uniV2SwapSelector, 1, 0, address(composer), transferCall));
-        vm.stopPrank();
+        vm.prank(attacker);
+        (bool success, bytes memory data) = address(weth_usdc_pool).call(
+            abi.encodeWithSelector(uniV2SwapSelector, 1, 0, address(composer), transferCall)
+        );
+        vm.assertEq(success, false);
+        vm.assertEq(data, abi.encodeWithSelector(bytes4(0xbafe1c53)));
     }
 }
 
