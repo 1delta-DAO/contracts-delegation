@@ -7,8 +7,9 @@ import {OneDeltaComposerLight} from "light/Composer.sol";
 import {Chains, Tokens, Lenders} from "../data/LenderRegistry.sol";
 import {DexTypeMappings} from "light/swappers/dex/DexTypeMappings.sol";
 import {CalldataLib} from "./utils/CalldataLib.sol";
+import {DeltaErrors} from "modules/shared/errors/Errors.sol";
 
-contract CallDataInjection is BaseTest {
+contract CallDataInjection is BaseTest, DeltaErrors {
     using CalldataLib for bytes;
     uint256 internal constant forkBlock = 28493852;
 
@@ -119,7 +120,7 @@ contract CallDataInjection is BaseTest {
             abi.encodeWithSelector(uniV2SwapSelector, 1, 0, address(composer), transferCall)
         );
         vm.assertEq(success, false);
-        vm.assertEq(data, abi.encodeWithSelector(bytes4(0xbafe1c53)));
+        vm.assertEq(data, abi.encodeWithSelector(INVALID_CALLER));
     }
 }
 
