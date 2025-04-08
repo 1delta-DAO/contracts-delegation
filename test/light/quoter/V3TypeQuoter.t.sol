@@ -83,7 +83,7 @@ contract V3QuoterTest is BaseTest {
     /**
      * END OF CALLDATA UTILS
      */
-    function test_light_quoter_simple_swap() public {
+    function test_light_quoter_simple_swap_v3() public {
         /**
          * WETH -> USDC (0,0)
          */
@@ -93,9 +93,12 @@ contract V3QuoterTest is BaseTest {
         bytes memory path = uniswapV3StyleSwap(USDC, address(quoter), 0, WETH_USDC_500_POOL, 500, CalldataLib.DexPayConfig.CALLER_PAYS, new bytes(0));
         // single swap branch (0,0)
         bytes memory swapBranch = (new bytes(0)).attachBranch(0, 0, ""); //(0,0)
-
+        uint gas = gasleft();
         // Get quote
         uint256 quotedAmountOut = quoter.quote(amountIn, abi.encodePacked(WETH, swapBranch, path));
+
+        gas = gas - gasleft();
+        console.log("gas", gas);
 
         console.log("Quoted amount:", quotedAmountOut);
 
@@ -115,8 +118,13 @@ contract V3QuoterTest is BaseTest {
         // Get actual amount from a real swap
         uint256 balanceBefore = IERC20(USDC).balanceOf(address(user));
 
+        gas = gasleft();
+
         vm.prank(user);
         composer.deltaCompose(abi.encodePacked(swapCall));
+
+        gas = gas - gasleft();
+        console.log("gas", gas);
 
         uint256 balanceAfter = IERC20(USDC).balanceOf(address(user));
         uint256 actualAmountOut = balanceAfter - balanceBefore;

@@ -63,7 +63,7 @@ abstract contract V3TypeQuoter is Masks {
                 abi.encodePacked(tokenIn, tokenOut) // callback data
             )
         {} catch (bytes memory reason) {
-            return (parseRevertReason(reason), currentOffset);
+            return (_parseRevertReason(reason), currentOffset);
         }
 
         // should not happen!
@@ -75,7 +75,7 @@ abstract contract V3TypeQuoter is Masks {
      * @param reason Bytes reason from revert
      * @return value Extracted amount
      */
-    function parseRevertReason(bytes memory reason) internal pure returns (uint256) {
+    function _parseRevertReason(bytes memory reason) private pure returns (uint256) {
         if (reason.length != 32) {
             if (reason.length != 64) revert("Unexpected error");
             // For iZi or other variants that return two values

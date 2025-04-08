@@ -3,11 +3,13 @@ pragma solidity ^0.8.28;
 
 import {Masks} from "../../shared/masks/Masks.sol";
 import {DexTypeMappings} from "../swappers/dex/DexTypeMappings.sol";
+import {V4TypeQuoter} from "./dex/V4TypeQuoter.sol";
 import {V3TypeQuoter} from "./dex/V3TypeQuoter.sol";
 import {V2TypeQuoter} from "./dex/V2TypeQuoter.sol";
+import {DodoV2Quoter} from "./dex/DodoV2Quoter.sol";
 import {ERC20Selectors} from "../../shared/selectors/ERC20Selectors.sol";
 
-contract QuoterLight is V3TypeQuoter, V2TypeQuoter {
+contract QuoterLight is V4TypeQuoter, V3TypeQuoter, V2TypeQuoter, DodoV2Quoter {
     error InvalidDexId();
 
     function quote(uint256 amountIn, bytes calldata data) external returns (uint256 amountOut) {
@@ -81,9 +83,17 @@ contract QuoterLight is V3TypeQuoter, V2TypeQuoter {
         if (dexTypeId == DexTypeMappings.UNISWAP_V3_ID) {
             return getV3TypeAmountOut(amountIn, tokenIn, tokenOut, currentOffset);
         }
+        // uniswapV4 style
+        else if (dexTypeId == DexTypeMappings.UNISWAP_V4_ID) {
+            return _getV4TypeAmountOut(amountIn, tokenIn, tokenOut, currentOffset);
+        }
         // uniswapV2 style
         else if (dexTypeId == DexTypeMappings.UNISWAP_V2_ID) {
             return _getV2TypeAmountOut(amountIn, tokenIn, tokenOut, currentOffset);
+        }
+        // dodoV2 style
+        else if (dexTypeId == DexTypeMappings.DODO_ID) {
+            return _getDodoV2AmountOut(amountIn, currentOffset);
         } else {
             revert InvalidDexId();
         }
