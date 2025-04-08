@@ -42,7 +42,7 @@ contract BalancerV2FlashLoanCallback is Slots, Masks, DeltaErrors {
             switch source
             case 0 {
                 if xor(caller(), BALANCER_V2_VAULT) {
-                    mstore(0, INVALID_FLASH_LOAN)
+                    mstore(0, INVALID_CALLER)
                     revert(0, 0x4)
                 }
             }

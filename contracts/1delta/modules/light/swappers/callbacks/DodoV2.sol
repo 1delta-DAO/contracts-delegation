@@ -28,7 +28,7 @@ abstract contract DodoV2Callbacks is DodoV2ReferencesBase, ERC20Selectors, Masks
         assembly {
             // revert if sender param is not this address
             if xor(sender, address()) {
-                mstore(0, INVALID_FLASH_LOAN)
+                mstore(0, INVALID_CALLER)
                 revert(0, 0x4)
             }
 

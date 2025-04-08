@@ -53,7 +53,7 @@ contract MorphoFlashLoanCallback is Masks, DeltaErrors {
             switch source
             case 0 {
                 if xor(caller(), MORPHO_BLUE) {
-                    mstore(0, INVALID_FLASH_LOAN)
+                    mstore(0, INVALID_CALLER)
                     revert(0, 0x4)
                 }
             }

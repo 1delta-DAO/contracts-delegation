@@ -44,19 +44,19 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
             switch source
             case 0 {
                 if xor(caller(), AAVE_V3) {
-                    mstore(0, INVALID_FLASH_LOAN)
+                    mstore(0, INVALID_CALLER)
                     revert(0, 0x4)
                 }
             }
             case 1 {
                 if xor(caller(), AVALON) {
-                    mstore(0, INVALID_FLASH_LOAN)
+                    mstore(0, INVALID_CALLER)
                     revert(0, 0x4)
                 }
             }
             case 2 {
                 if xor(caller(), ZEROLEND) {
-                    mstore(0, INVALID_FLASH_LOAN)
+                    mstore(0, INVALID_CALLER)
                     revert(0, 0x4)
                 }
             }
