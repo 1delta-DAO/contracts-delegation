@@ -19,7 +19,6 @@ interface IF {
 }
 
 contract FlashSwapTest is BaseTest {
-
     address internal constant UNI_FACTORY = 0x33128a8fC17869897dcE68Ed026d694621f6FDfD;
     address internal constant UNI_V2_FACTORY = 0x8909Dc15e40173Ff4699343b6eB8132c65e18eC6;
     address internal constant IZI_FACTORY = 0x8c7d3063579BdB0b90997e18A770eaE32E1eBb08;
@@ -118,10 +117,16 @@ contract FlashSwapTest is BaseTest {
         // Check balances before action
         uint256 borrowBalanceBefore = chain.getDebtBalance(user, tokenIn, lender);
         uint256 collateralBefore = chain.getCollateralBalance(user, tokenOut, lender);
+        // print gas cost
+        {
+            uint gas = gasleft();
 
-        vm.prank(user);
-        oneDV2.deltaCompose(action);
+            vm.prank(user);
+            oneDV2.deltaCompose(action);
 
+            gas = gas - gasleft();
+            console.log("gas", gas);
+        }
         // Check balances after action
         uint256 borrowBalanceAfter = chain.getDebtBalance(user, tokenIn, lender);
         uint256 collateralAfter = chain.getCollateralBalance(user, tokenOut, lender);
