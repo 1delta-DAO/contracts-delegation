@@ -88,20 +88,21 @@ library CalldataLib {
             uint8(Gen2025ActionIds.BAL_V3_TAKE),
             singleton, // manager address
             asset, // validation Id
-            receiver, // 
+            receiver, //
             uint128(amount)
         ); // swaps max index for inner path
     }
 
-     function uniswapV4Sync(address singleton, address asset) internal pure returns (bytes memory data) {
-        data = asset == address(0) ? new bytes(0) : abi.encodePacked(
-            uint8(ComposerCommands.GEN_2025_SINGELTONS),
-            uint8(Gen2025ActionIds.UNI_V4_SYNC),
-            singleton, // manager address
-            asset // validation Id
-        ); // swaps max index for inner path
+    function uniswapV4Sync(address singleton, address asset) internal pure returns (bytes memory data) {
+        data = asset == address(0)
+            ? new bytes(0)
+            : abi.encodePacked(
+                uint8(ComposerCommands.GEN_2025_SINGELTONS),
+                uint8(Gen2025ActionIds.UNI_V4_SYNC),
+                singleton, // manager address
+                asset // validation Id
+            ); // swaps max index for inner path
     }
-
 
     function uniswapV4Take(address singleton, address asset, address receiver, uint256 amount) internal pure returns (bytes memory data) {
         data = abi.encodePacked(
@@ -109,7 +110,7 @@ library CalldataLib {
             uint8(Gen2025ActionIds.UNI_V4_TAKE),
             singleton, // manager address
             asset, // validation Id
-            receiver, // 
+            receiver, //
             uint128(amount)
         ); // swaps max index for inner path
     }
