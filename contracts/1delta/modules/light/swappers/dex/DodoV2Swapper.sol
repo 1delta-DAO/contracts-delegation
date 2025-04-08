@@ -154,10 +154,9 @@ abstract contract DodoV2Swapper is ERC20Selectors, Masks {
                  * | 0      | 20             | caller               |
                  * | 20     | 20             | base                 |
                  * | 40     | 20             | quote                |
-                 * | 60     | 14             | amountIn             | <- we bump amount in to ensure same bahavior as for uno v3
-                 * | 74     | 2              | pId                  | <- we use calldatacopy from here
-                 * | 76     | 2              | calldataLength       |
-                 * | 78     | calldataLength | calldata             |
+                 * | 60     | 2              | pId                  | <- we use calldatacopy from here
+                 * | 62     | 2              | calldataLength       |
+                 * | 64     | calldataLength | calldata             |
                  */
 
                 // this is for the next call
@@ -219,14 +218,11 @@ abstract contract DodoV2Swapper is ERC20Selectors, Masks {
                     mstore(add(ptrAfter, 204), shl(96, tokenIn))
                 }
 
-                // store amount
-                mstore(add(ptrAfter, 224), shl(144, amountIn))
-
                 mstore(add(ptrAfter, 68), address()) // receiver
                 mstore(add(ptrAfter, 100), 0x80) // bytes offset
-                mstore(add(ptrAfter, 132), add(78, clLength)) // 3x address + pId + length
+                mstore(add(ptrAfter, 132), add(64, clLength)) // 3x address + pId + length
 
-                calldatacopy(add(ptrAfter, 238), add(21, currentOffset), add(clLength, 4))
+                calldatacopy(add(ptrAfter, 224), add(21, currentOffset), add(clLength, 4))
 
                 // call swap, revert if invalid/undefined pair
                 if iszero(
@@ -235,7 +231,7 @@ abstract contract DodoV2Swapper is ERC20Selectors, Masks {
                         pool,
                         0x0,
                         ptrAfter,
-                        add(242, clLength), //
+                        add(228, clLength), //
                         0x0,
                         0x0
                     )

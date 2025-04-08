@@ -67,8 +67,8 @@ contract BalancerV2FlashLoanCallback is Slots, Masks, DeltaErrors {
         }
         // within the flash loan, any compose operation
         // can be executed
-        _deltaComposeInternal(origCaller, 0, 0, calldataOffset, calldataLength);
+        _deltaComposeInternal(origCaller, calldataOffset, calldataLength);
     }
 
-    function _deltaComposeInternal(address callerAddress, uint256 paramPull, uint256 paramPush, uint256 offset, uint256 length) internal virtual {}
+    function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual {}
 }

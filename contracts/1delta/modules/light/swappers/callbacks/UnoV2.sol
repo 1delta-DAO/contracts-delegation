@@ -28,9 +28,12 @@ abstract contract UniV2Callbacks is V2ReferencesBase, ERC20Selectors, Masks, Del
     function _executeUniV2IfSelector(bytes32 selector) internal {
         bytes32 codeHash;
         bytes32 ffFactoryAddress;
+        // this is a data strip that contains [tokenOut(20)|forkId(1)|calldataLength(2)|xxx...xxx(9)]
+        bytes32 outData;
         assembly {
+            outData := calldataload(204)
             if or(eq(selector, SELECTOR_UNIV2), eq(selector, SELECTOR_HOOK)) {
-                switch and(UINT8_MASK, shr(136, calldataload(224))) // forkId
+                switch and(UINT8_MASK, shr(88, outData)) // forkId
                 case 0 {
                     ffFactoryAddress := UNI_V2_FF_FACTORY
                     codeHash := CODE_HASH_UNI_V2
@@ -44,8 +47,6 @@ abstract contract UniV2Callbacks is V2ReferencesBase, ERC20Selectors, Masks, Del
         if (ValidatorLib._hasData(ffFactoryAddress)) {
             uint256 calldataLength;
             address callerAddress;
-            uint256 amountIn;
-            uint256 amountOut;
             assembly {
                 // revert if sender param is not this address
                 if xor(calldataload(4), address()) {
@@ -55,7 +56,8 @@ abstract contract UniV2Callbacks is V2ReferencesBase, ERC20Selectors, Masks, Del
 
                 // get tokens
                 let tokenIn := shr(96, calldataload(184))
-                let tokenOut := shr(96, calldataload(204))
+                calldataLength := and(UINT16_MASK, shr(72, outData))
+                let tokenOut := shr(96, outData)
 
                 let ptr := mload(0x40)
                 switch lt(tokenIn, tokenOut)
@@ -79,32 +81,16 @@ abstract contract UniV2Callbacks is V2ReferencesBase, ERC20Selectors, Masks, Del
                     revert(0x0, 0x4)
                 }
 
-                // get remaining params
-                let amount0 := calldataload(36)
-                amountIn := calldataload(224)
-                calldataLength := and(UINT16_MASK, shr(120, amountIn))
-                amountIn := shr(144, amountIn)
-
-                switch iszero(amount0)
-                case 1 {
-                    // amountOut is amount1
-                    amountOut := calldataload(68)
-                }
-                default {
-                    amountOut := amount0
-                }
                 // get caller address as provided in the call setup
                 callerAddress := shr(96, calldataload(164))
             }
             _deltaComposeInternal(
                 callerAddress,
-                amountIn,
-                amountOut,
                 // the naive offset is 164
                 // we skip the entire callback validation data
-                // that is tokens (+40), caller (+20), dexId (+1) datalength (+2) + amountIn (14)
-                // = 241
-                241,
+                // that is tokens (+40), caller (+20), dexId (+1) datalength (+2)
+                // = 227
+                227,
                 calldataLength
             );
             // force return
@@ -114,5 +100,5 @@ abstract contract UniV2Callbacks is V2ReferencesBase, ERC20Selectors, Masks, Del
         }
     }
 
-    function _deltaComposeInternal(address callerAddress, uint256 paramPull, uint256 paramPush, uint256 offset, uint256 length) internal virtual {}
+    function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual {}
 }

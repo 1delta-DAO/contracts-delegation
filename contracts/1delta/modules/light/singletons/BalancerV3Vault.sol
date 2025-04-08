@@ -24,7 +24,7 @@ abstract contract BalancerV3VaultActions is Masks, DeltaErrors {
 
     constructor() {}
 
-    function _balancerV3Take(uint256 currentOffset, uint256 amountOverride) internal returns (uint256) {
+    function _balancerV3Take(uint256 currentOffset) internal returns (uint256) {
         /*
          * | Offset | Length (bytes) | Description         |
          * |--------|----------------|---------------------|
@@ -42,15 +42,6 @@ abstract contract BalancerV3VaultActions is Masks, DeltaErrors {
             currentOffset := add(20, currentOffset)
             let amount := shr(128, calldataload(currentOffset))
 
-            // see whether we can get the pre param amount
-            switch and(_PRE_PARAM, amount)
-            case 1 {
-                amount := amountOverride
-            }
-            default {
-                // mask the bitmap
-                amount := and(UINT120_MASK, amount)
-            }
             // free memo ptr for populating the tx
             let ptr := mload(0x40)
 
@@ -79,7 +70,7 @@ abstract contract BalancerV3VaultActions is Masks, DeltaErrors {
         return currentOffset;
     }
 
-    function _balancerV3Settle(uint256 currentOffset, uint256 amountOverride) internal returns (uint256) {
+    function _balancerV3Settle(uint256 currentOffset) internal returns (uint256) {
         /*
          * | Offset | Length (bytes) | Description       |
          * |--------|----------------|-------------------|
@@ -94,19 +85,11 @@ abstract contract BalancerV3VaultActions is Masks, DeltaErrors {
             currentOffset := add(20, currentOffset)
             let amountHint := shr(128, calldataload(currentOffset))
 
-            // see whether we can get the pre param amount
-            switch and(_PRE_PARAM, amountHint)
-            case 1 {
-                amountHint := amountOverride
+            // we can settle exactly for the credit as for the B3 logic
+            if eq(amountHint, UINT128_MASK) {
+                amountHint := MAX_UINT256
             }
-            default {
-                // mask the bitmap
-                amountHint := and(UINT120_MASK, amountHint)
-                // we can settle exactly for the credit as for the B3 logic
-                if eq(amountHint, UINT120_MASK) {
-                    amountHint := MAX_UINT256
-                }
-            }
+
             currentOffset := add(16, currentOffset)
 
             let ptr := mload(0x40)

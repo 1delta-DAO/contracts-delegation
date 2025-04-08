@@ -19,9 +19,7 @@ import {SharedSingletonActions} from "./Shared.sol";
 abstract contract Gen2025DexActions is UniswapV4SingletonActions, BalancerV3VaultActions, SharedSingletonActions {
     function _gen2025DexActions(
         uint256 currentOffset,
-        address callerAddress,
-        uint256 paramPull,
-        uint256 paramPush //
+        address callerAddress
     ) internal returns (uint256) {
         uint256 transferOperation;
         assembly {
@@ -33,19 +31,19 @@ abstract contract Gen2025DexActions is UniswapV4SingletonActions, BalancerV3Vaul
             if (transferOperation == Gen2025ActionIds.UNLOCK) {
                 return _singletonUnlock(currentOffset, callerAddress);
             } else if (transferOperation == Gen2025ActionIds.UNI_V4_TAKE) {
-                return _unoV4Take(currentOffset, paramPull);
+                return _unoV4Take(currentOffset);
             } else if (transferOperation == Gen2025ActionIds.UNI_V4_SYNC) {
                 return _unoV4Sync(currentOffset);
             } else if (transferOperation == Gen2025ActionIds.UNI_V4_SETTLE) {
-                return _unoV4Settle(currentOffset, paramPush);
+                return _unoV4Settle(currentOffset);
             } else {
                 _invalidOperation();
             }
         } else {
             if (transferOperation == Gen2025ActionIds.BAL_V3_TAKE) {
-                return _balancerV3Take(currentOffset, paramPull);
+                return _balancerV3Take(currentOffset);
             } else if (transferOperation == Gen2025ActionIds.BAL_V3_SETTLE) {
-                return _balancerV3Settle(currentOffset, paramPush);
+                return _balancerV3Settle(currentOffset);
             } else {
                 _invalidOperation();
             }

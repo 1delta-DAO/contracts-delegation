@@ -26,7 +26,7 @@ contract ERC20Transfers is ERC20Selectors, Masks, DeltaErrors {
      * | 20     | 20             | receiver            |
      * | 40     | 16             | amount              |
      */
-    function _permit2TransferFrom(uint256 currentOffset, address callerAddress, uint256 amountOverride) internal returns (uint256) {
+    function _permit2TransferFrom(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         ////////////////////////////////////////////////////
         // Transfers tokens from caller to this address
         // zero amount flags that the entire balance is sent
@@ -36,34 +36,25 @@ contract ERC20Transfers is ERC20Selectors, Masks, DeltaErrors {
             let receiver := shr(96, calldataload(add(currentOffset, 20)))
             let amount := shr(128, calldataload(add(currentOffset, 40)))
 
-            // see whether we can get the pre param amount
-            switch and(_PRE_PARAM, amount)
-            case 1 {
-                amount := amountOverride
-            }
-            default {
-                // mask the bitmap
-                amount := and(UINT120_MASK, amount)
-                // when entering 0 as amount, use the callwe balance
-                if iszero(amount) {
-                    // selector for balanceOf(address)
-                    mstore(0, ERC20_BALANCE_OF)
-                    // add this address as parameter
-                    mstore(0x04, callerAddress)
-                    // call to token
-                    pop(
-                        staticcall(
-                            gas(),
-                            underlying, // token
-                            0x0,
-                            0x24,
-                            0x0,
-                            0x20
-                        )
+            // when entering 0 as amount, use the callwe balance
+            if iszero(amount) {
+                // selector for balanceOf(address)
+                mstore(0, ERC20_BALANCE_OF)
+                // add this address as parameter
+                mstore(0x04, callerAddress)
+                // call to token
+                pop(
+                    staticcall(
+                        gas(),
+                        underlying, // token
+                        0x0,
+                        0x24,
+                        0x0,
+                        0x20
                     )
-                    // load the retrieved balance
-                    amount := mload(0x0)
-                }
+                )
+                // load the retrieved balance
+                amount := mload(0x0)
             }
 
             let ptr := mload(0x40)
@@ -88,7 +79,7 @@ contract ERC20Transfers is ERC20Selectors, Masks, DeltaErrors {
      * | 20     | 20             | receiver            |
      * | 40     | 16             | amount              |
      */
-    function _transferFrom(uint256 currentOffset, address callerAddress, uint256 amountOverride) internal returns (uint256) {
+    function _transferFrom(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         ////////////////////////////////////////////////////
         // Transfers tokens from caller to this address
         // zero amount flags that the entire balance is sent
@@ -98,34 +89,25 @@ contract ERC20Transfers is ERC20Selectors, Masks, DeltaErrors {
             let receiver := shr(96, calldataload(add(currentOffset, 20)))
             let amount := shr(128, calldataload(add(currentOffset, 40)))
 
-            // see whether we can get the pre param amount
-            switch and(_PRE_PARAM, amount)
-            case 1 {
-                amount := amountOverride
-            }
-            default {
-                // mask the bitmap
-                amount := and(UINT120_MASK, amount)
-                // when entering 0 as amount, use the callwe balance
-                if iszero(amount) {
-                    // selector for balanceOf(address)
-                    mstore(0, ERC20_BALANCE_OF)
-                    // add this address as parameter
-                    mstore(0x04, callerAddress)
-                    // call to token
-                    pop(
-                        staticcall(
-                            gas(),
-                            underlying, // token
-                            0x0,
-                            0x24,
-                            0x0,
-                            0x20
-                        )
+            // when entering 0 as amount, use the callwe balance
+            if iszero(amount) {
+                // selector for balanceOf(address)
+                mstore(0, ERC20_BALANCE_OF)
+                // add this address as parameter
+                mstore(0x04, callerAddress)
+                // call to token
+                pop(
+                    staticcall(
+                        gas(),
+                        underlying, // token
+                        0x0,
+                        0x24,
+                        0x0,
+                        0x20
                     )
-                    // load the retrieved balance
-                    amount := mload(0x0)
-                }
+                )
+                // load the retrieved balance
+                amount := mload(0x0)
             }
 
             let ptr := mload(0x40) // free memory pointer
@@ -168,7 +150,7 @@ contract ERC20Transfers is ERC20Selectors, Masks, DeltaErrors {
      * | 40     | 1              | config              |
      * | 41     | 16             | amount              |
      */
-    function _sweep(uint256 currentOffset, uint256 preParam) internal returns (uint256) {
+    function _sweep(uint256 currentOffset) internal returns (uint256) {
         ////////////////////////////////////////////////////
         // Transfers either token or native balance from this
         // contract to receiver. Reverts if minAmount is
@@ -198,45 +180,37 @@ contract ERC20Transfers is ERC20Selectors, Masks, DeltaErrors {
             // Transfer token
             ////////////////////////////////////////////////////
             case 0 {
-                // check if we use the override
-                switch and(_PRE_PARAM, providedAmount)
-                case 1 {
-                    transferAmount := preParam
+                // for config = 0, the amount is the balance and we
+                // check that the balance is larger tha the amount provided
+                switch config
+                case 0 {
+                    // selector for balanceOf(address)
+                    mstore(0, ERC20_BALANCE_OF)
+                    // add this address as parameter
+                    mstore(0x04, address())
+                    // call to token
+                    pop(
+                        staticcall(
+                            gas(),
+                            underlying,
+                            0x0,
+                            0x24,
+                            0x0,
+                            0x20 //
+                        )
+                    )
+                    // load the retrieved balance
+                    transferAmount := mload(0x0)
+                    // revert if balance is not enough
+                    if lt(transferAmount, providedAmount) {
+                        mstore(0, SLIPPAGE)
+                        revert(0, 0x4)
+                    }
                 }
                 default {
-                    // mask away the top bitmap
-                    providedAmount := and(UINT120_MASK, providedAmount)
-                    // for config = 0, the amount is the balance and we
-                    // check that the balance is larger tha the amount provided
-                    switch config
-                    case 0 {
-                        // selector for balanceOf(address)
-                        mstore(0, ERC20_BALANCE_OF)
-                        // add this address as parameter
-                        mstore(0x04, address())
-                        // call to token
-                        pop(
-                            staticcall(
-                                gas(),
-                                underlying,
-                                0x0,
-                                0x24,
-                                0x0,
-                                0x20 //
-                            )
-                        )
-                        // load the retrieved balance
-                        transferAmount := mload(0x0)
-                        // revert if balance is not enough
-                        if lt(transferAmount, providedAmount) {
-                            mstore(0, SLIPPAGE)
-                            revert(0, 0x4)
-                        }
-                    }
-                    default {
-                        transferAmount := providedAmount
-                    }
+                    transferAmount := providedAmount
                 }
+
                 if gt(transferAmount, 0) {
                     let ptr := mload(0x40) // free memory pointer
 
@@ -270,27 +244,19 @@ contract ERC20Transfers is ERC20Selectors, Masks, DeltaErrors {
             // Transfer native
             ////////////////////////////////////////////////////
             default {
-                // pre-param - check if we use the override
-                switch and(_PRE_PARAM, providedAmount)
-                case 1 {
-                    transferAmount := preParam
+                switch config
+                case 0 {
+                    transferAmount := selfbalance()
+                    // revert if balance is not enough
+                    if lt(transferAmount, providedAmount) {
+                        mstore(0, SLIPPAGE)
+                        revert(0, 0x4)
+                    }
                 }
                 default {
-                    // mask away the top bitmap
-                    providedAmount := and(UINT120_MASK, providedAmount)
-                    switch config
-                    case 0 {
-                        transferAmount := selfbalance()
-                        // revert if balance is not enough
-                        if lt(transferAmount, providedAmount) {
-                            mstore(0, SLIPPAGE)
-                            revert(0, 0x4)
-                        }
-                    }
-                    default {
-                        transferAmount := providedAmount
-                    }
+                    transferAmount := providedAmount
                 }
+
                 if gt(transferAmount, 0) {
                     if iszero(
                         call(

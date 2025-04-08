@@ -159,27 +159,25 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
                  * | 0      | 20             | caller               |
                  * | 20     | 20             | tokenIn              |
                  * | 40     | 20             | tokenOut             |
-                 * | 60     | 14             | amountIn             | <- we bump amount in to ensure same bahavior as for uno v3
-                 * | 74     | 1              | forkId               |
-                 * | 75     | 2              | calldataLength       |
-                 * | 77     | calldataLength | calldata             |
+                 * | 60     | 1              | forkId               |
+                 * | 61     | 2              | calldataLength       |
+                 * | 63     | calldataLength | calldata             |
                  */
-                mstore(add(ptr, 132), add(clLength, 77)) // calldataLength (within bytes)
+                mstore(add(ptr, 132), add(clLength, 63)) // calldataLength (within bytes)
                 mstore(add(ptr, 164), shl(96, callerAddress))
                 mstore(add(ptr, 184), shl(96, tokenIn))
                 mstore(add(ptr, 204), shl(96, tokenOut))
-                mstore(add(ptr, 224), shl(144, amountIn))
                 // we skip to the forkId offset
                 currentOffset := add(22, currentOffset)
                 // Store callback  (incl forkId)
-                calldatacopy(add(ptr, 238), currentOffset, add(clLength, 3))
+                calldatacopy(add(ptr, 224), currentOffset, add(clLength, 3))
                 if iszero(
                     call(
                         gas(),
                         pool,
                         0x0,
                         ptr, // input selector
-                        add(241, clLength), // 164 + (63+clLength) + 14
+                        add(227, clLength), // 164 + (63+clLength)
                         0x0, // output = 0
                         0x0 // output size = 0
                     )

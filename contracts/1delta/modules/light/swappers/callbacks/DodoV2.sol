@@ -19,12 +19,9 @@ abstract contract DodoV2Callbacks is DodoV2ReferencesBase, ERC20Selectors, Masks
     /** selector _REGISTRY(address,address,uint256) - a mapping base->quote->index->pool */
     bytes32 private constant REGISTRY = 0xbdeb0a9100000000000000000000000000000000000000000000000000000000;
 
-    function _validateAndExecuteDodoCall(address sender, address factory, uint256 baseAmount, uint256 quoteAmount) internal {
-        uint256 amountToPay;
-        uint256 amountReceived;
+    function _validateAndExecuteDodoCall(address sender, address factory) internal {
         address callerAddress;
         uint256 calldataLength;
-        uint256 amountStored;
         assembly {
             // revert if sender param is not this address
             if xor(sender, address()) {
@@ -40,16 +37,18 @@ abstract contract DodoV2Callbacks is DodoV2ReferencesBase, ERC20Selectors, Masks
             // base token
             let base := shr(96, calldataload(184))
             // quote token
-            let quote := shr(96, calldataload(204))
+            let quote := calldataload(204)
 
             let ptr := mload(0x40)
             mstore(ptr, REGISTRY)
             mstore(add(ptr, 4), base)
-            mstore(add(ptr, 36), quote)
-            amountStored := calldataload(224)
-            calldataLength := and(UINT16_MASK, shr(112, amountStored))
+            let amountStored := calldataload(224)
+            calldataLength := and(UINT16_MASK, shr(64, quote))
             // store index
-            mstore(add(ptr, 68), and(UINT16_MASK, shr(136, amountStored)))
+            mstore(add(ptr, 68), and(UINT16_MASK, shr(80, quote)))
+            // get quote
+            quote := shr(96, quote)
+            mstore(add(ptr, 36), quote)
 
             /**
              * This call runs out of gas if the entry does not exist
@@ -74,27 +73,14 @@ abstract contract DodoV2Callbacks is DodoV2ReferencesBase, ERC20Selectors, Masks
                 mstore(0, INVALID_FLASH_LOAN)
                 revert(0, 0x4)
             }
-            amountStored := shr(144, amountStored)
-
-            switch gt(baseAmount, 0)
-            case 1 {
-                amountReceived := baseAmount
-                amountToPay := amountStored
-            }
-            default {
-                amountReceived := quoteAmount
-                amountToPay := amountStored
-            }
         }
         _deltaComposeInternal(
             callerAddress,
-            amountToPay,
-            amountReceived,
             // the naive offset is 164
             // we skip the entire callback validation data
-            // that is tokens (+40), index (+2), caller (+20), datalength (+2) + amount (14)
-            // = 242
-            242,
+            // that is tokens (+40), index (+2), caller (+20), datalength (+2)
+            // = 228
+            228,
             calldataLength
         );
     }
@@ -124,14 +110,10 @@ abstract contract DodoV2Callbacks is DodoV2ReferencesBase, ERC20Selectors, Masks
             // since we now know it is dodo,
             // we can proceed with validaiton and parameter loading
             address sender;
-            uint256 amount0;
-            uint256 amount1;
             assembly {
                 sender := calldataload(4)
-                amount0 := calldataload(36)
-                amount1 := calldataload(68)
             }
-            _validateAndExecuteDodoCall(sender, factoryAddress, amount0, amount1);
+            _validateAndExecuteDodoCall(sender, factoryAddress);
             // force return
             assembly {
                 return(0, 0)
@@ -139,5 +121,5 @@ abstract contract DodoV2Callbacks is DodoV2ReferencesBase, ERC20Selectors, Masks
         }
     }
 
-    function _deltaComposeInternal(address callerAddress, uint256 paramPull, uint256 paramPush, uint256 offset, uint256 length) internal virtual {}
+    function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual {}
 }

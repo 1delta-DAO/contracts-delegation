@@ -49,7 +49,7 @@ contract DodoLightTest is BaseTest {
         oneDV2 = new OneDeltaComposerLight();
     }
 
-    function dodPoolWETHJOJOSwap(address receiver, uint256 amount, bytes memory callbackData) internal view returns (bytes memory data) {
+    function dodOPoolWETHJOJOSwap(address receiver, uint256 amount, bytes memory callbackData) internal view returns (bytes memory data) {
         // create head config
         data = CalldataLib.swapHead(
             amount,
@@ -86,15 +86,21 @@ contract DodoLightTest is BaseTest {
             DODO_WETH_JOJO,
             amount //
         );
-        bytes memory swap = dodPoolWETHJOJOSwap(
+        bytes memory swap = dodOPoolWETHJOJOSwap(
             user,
             amount, //
             transfer
         );
 
         uint256 balBefore = IERC20All(tokenOut).balanceOf(user);
+
+        uint gas = gasleft();
+
         vm.prank(user);
         oneDV2.deltaCompose(swap);
+
+        gas = gas - gasleft();
+        console.log("gas", gas);
 
         uint256 balAfter = IERC20All(tokenOut).balanceOf(user);
         console.log("received", balAfter - balBefore);

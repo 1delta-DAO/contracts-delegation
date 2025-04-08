@@ -21,14 +21,13 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
      */
     function executeOperation(
         address,
-        uint256 flashAmount,
-        uint256 fee,
+        uint256,
+        uint256,
         address initiator,
         bytes calldata params // user params
     ) external returns (bool) {
         address origCaller;
         uint256 calldataLength;
-        uint256 payback;
         assembly {
             calldataLength := params.length
 
@@ -73,8 +72,6 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
                 mstore(0, INVALID_CALLER)
                 revert(0, 0x4)
             }
-            // compute amount to be paid back
-            payback := add(flashAmount, fee)
             // Slice the original caller off the beginnig of the calldata
             // From here on we have validated that the `origCaller`
             // was attached in the deltaCompose function
@@ -87,13 +84,11 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
         // can be executed
         _deltaComposeInternal(
             origCaller,
-            payback,
-            flashAmount,
             217, // 196 +21 as constant offset
             calldataLength
         );
         return true;
     }
 
-    function _deltaComposeInternal(address callerAddress, uint256 paramPull, uint256 paramPush, uint256 offset, uint256 length) internal virtual {}
+    function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual {}
 }

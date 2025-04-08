@@ -22,8 +22,6 @@ contract SwapCallbacks is
     // override the compose
     function _deltaComposeInternal(
         address callerAddress,
-        uint256 paramPull,
-        uint256 paramPush,
         uint256 offset,
         uint256 length
     )

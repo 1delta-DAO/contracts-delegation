@@ -22,8 +22,6 @@ contract AaveV2FlashLoanCallback is Masks, DeltaErrors {
         address initiator,
         bytes calldata params
     ) external returns (bool) {
-        uint256 amount;
-        uint256 toPay;
         address origCaller;
         uint256 calldataOffset;
         uint256 calldataLength;
@@ -67,17 +65,13 @@ contract AaveV2FlashLoanCallback is Masks, DeltaErrors {
             // shift / slice params
             calldataOffset := add(calldataOffset, 21)
             calldataLength := sub(calldataLength, 21)
-            // we load the amounts here from the raw calldata
-            // these are in the arrays of length 1
-            amount := calldataload(260)
-            toPay := add(amount, calldataload(324))
         }
         // within the flash loan, any compose operation
         // can be executed
         // we pass the payAmount and loaned amount for consistent usage
-        _deltaComposeInternal(origCaller, toPay, amount, calldataOffset, calldataLength);
+        _deltaComposeInternal(origCaller, calldataOffset, calldataLength);
         return true;
     }
 
-    function _deltaComposeInternal(address callerAddress, uint256 paramPull, uint256 paramPush, uint256 offset, uint256 length) internal virtual {}
+    function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual {}
 }

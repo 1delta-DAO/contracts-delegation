@@ -16,7 +16,7 @@ import {BaseSwapper} from "./BaseSwapper.sol";
  * Do NOT whitlist lending contracts or tokens!
  */
 abstract contract Swaps is BaseSwapper {
-    function _swap(uint256 currentOffset, address callerAddress, uint256 amountOverride) internal returns (uint256) {
+    function _swap(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         uint256 amountIn;
         uint256 minimumAmountReceived;
         address tokenIn;
@@ -40,35 +40,27 @@ abstract contract Swaps is BaseSwapper {
             tokenIn := shr(96, dataStart)
             currentOffset := add(20, currentOffset)
 
-            // if not pre-parametrized, check if balance is swapped
-            switch and(_PRE_PARAM, amountIn)
-            case 0 {
-                /**
-                 * if the amount is zero, we assume that the contract balance is swapped
-                 */
-                if iszero(amountIn) {
-                    // selector for balanceOf(address)
-                    mstore(0, ERC20_BALANCE_OF)
-                    // add this address as parameter
-                    mstore(0x04, address())
-                    // call to token
-                    pop(
-                        staticcall(
-                            gas(),
-                            tokenIn, // collateral token
-                            0x0,
-                            0x24,
-                            0x0,
-                            0x20
-                        )
+            /**
+             * if the amount is zero, we assume that the contract balance is swapped
+             */
+            if iszero(amountIn) {
+                // selector for balanceOf(address)
+                mstore(0, ERC20_BALANCE_OF)
+                // add this address as parameter
+                mstore(0x04, address())
+                // call to token
+                pop(
+                    staticcall(
+                        gas(),
+                        tokenIn, // collateral token
+                        0x0,
+                        0x24,
+                        0x0,
+                        0x20
                     )
-                    // load the retrieved balance
-                    amountIn := mload(0x0)
-                }
-            }
-            // pre parametrize
-            default {
-                amountIn := amountOverride
+                )
+                // load the retrieved balance
+                amountIn := mload(0x0)
             }
         }
         (amountIn, currentOffset, ) = _singleSwapSplitOrRoute(

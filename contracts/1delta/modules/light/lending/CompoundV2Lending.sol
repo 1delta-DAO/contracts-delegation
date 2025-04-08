@@ -29,7 +29,7 @@ abstract contract CompoundV2Lending is Slots, ERC20Selectors, Masks {
      * | 36     | 20             | receiver                        |
      * | 76     | 20             | cToken                          |
      */
-    function _borrowFromCompoundV2(uint256 currentOffset, address callerAddress, uint256 amountOverride) internal returns (uint256) {
+    function _borrowFromCompoundV2(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
             let ptr := mload(0x40)
             // Compound V3 types need to trasfer collateral tokens
@@ -48,15 +48,7 @@ abstract contract CompoundV2Lending is Slots, ERC20Selectors, Masks {
             // skip cToken
             currentOffset := add(currentOffset, 20)
 
-            let amount
-            // check if override is used
-            switch and(_PRE_PARAM, amountData)
-            case 0 {
-                amount := and(_UINT112_MASK, amountData)
-            }
-            default {
-                amount := amountOverride
-            }
+            let amount := and(UINT120_MASK, amountData)
 
             // selector for borrowBehlaf(address,uint256)
             mstore(ptr, 0x856e5bb300000000000000000000000000000000000000000000000000000000)
@@ -128,7 +120,7 @@ abstract contract CompoundV2Lending is Slots, ERC20Selectors, Masks {
      * | 36     | 20             | receiver                        |
      * | 76     | 20             | cToken                          |
      */
-    function _withdrawFromCompoundV2(uint256 currentOffset, address callerAddress, uint256 amountOverride) internal returns (uint256) {
+    function _withdrawFromCompoundV2(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
             let ptr := mload(0x40)
             // Compound V2 types need to trasfer collateral tokens
@@ -147,34 +139,26 @@ abstract contract CompoundV2Lending is Slots, ERC20Selectors, Masks {
             // skip cToken
             currentOffset := add(currentOffset, 20)
 
-            let amount
-            // check if override is used
-            switch and(_PRE_PARAM, amountData)
-            case 0 {
-                amount := and(_UINT112_MASK, amountData)
-                if eq(amount, 0xffffffffffffffffffffffffffff) {
-                    // selector for balanceOfUnderlying(address)
-                    mstore(0, 0x3af9e66900000000000000000000000000000000000000000000000000000000)
-                    // add caller address as parameter
-                    mstore(0x04, callerAddress)
-                    // call to token
-                    pop(
-                        call(
-                            gas(),
-                            cToken, // collateral token
-                            0x0,
-                            0x0,
-                            0x24,
-                            0x0,
-                            0x20
-                        )
+            let amount := and(UINT120_MASK, amountData)
+            if eq(amount, 0xffffffffffffffffffffffffffff) {
+                // selector for balanceOfUnderlying(address)
+                mstore(0, 0x3af9e66900000000000000000000000000000000000000000000000000000000)
+                // add caller address as parameter
+                mstore(0x04, callerAddress)
+                // call to token
+                pop(
+                    call(
+                        gas(),
+                        cToken, // collateral token
+                        0x0,
+                        0x0,
+                        0x24,
+                        0x0,
+                        0x20
                     )
-                    // load the retrieved balance
-                    amount := mload(0x0)
-                }
-            }
-            default {
-                amount := amountOverride
+                )
+                // load the retrieved balance
+                amount := mload(0x0)
             }
 
             // 1) CALCULTAE TRANSFER AMOUNT
@@ -307,7 +291,7 @@ abstract contract CompoundV2Lending is Slots, ERC20Selectors, Masks {
      * | 76     | 20             | cToken                          |
      */
     /// @notice Withdraw from lender lastgiven user address and lender Id
-    function _depositToCompoundV2(uint256 currentOffset, uint256 amountOverride) internal returns (uint256) {
+    function _depositToCompoundV2(uint256 currentOffset) internal returns (uint256) {
         assembly {
             let underlying := shr(96, calldataload(currentOffset))
             // offset for amoutn at lower bytes
@@ -328,17 +312,11 @@ abstract contract CompoundV2Lending is Slots, ERC20Selectors, Masks {
             // case native
             case 0 {
                 let amount
-                // check if override is used
-                switch and(_PRE_PARAM, amountData)
-                case 0 {
-                    amount := and(_UINT112_MASK, amountData)
-                    // zero is this balance
-                    if iszero(amount) {
-                        amount := selfbalance()
-                    }
-                }
-                default {
-                    amount := amountOverride
+
+                amount := and(UINT120_MASK, amountData)
+                // zero is this balance
+                if iszero(amount) {
+                    amount := selfbalance()
                 }
 
                 // selector for mint()
@@ -400,33 +378,27 @@ abstract contract CompoundV2Lending is Slots, ERC20Selectors, Masks {
             // erc20 case
             default {
                 let amount
-                // check if override is used
-                switch and(_PRE_PARAM, amountData)
-                case 0 {
-                    amount := and(_UINT112_MASK, amountData)
-                    // zero is this balance
-                    if iszero(amount) {
-                        // selector for balanceOf(address)
-                        mstore(0, ERC20_BALANCE_OF)
-                        // add this address as parameter
-                        mstore(0x04, address())
-                        // call to token
-                        pop(
-                            staticcall(
-                                gas(),
-                                underlying, // token
-                                0x0,
-                                0x24,
-                                0x0,
-                                0x20
-                            )
+
+                amount := and(UINT120_MASK, amountData)
+                // zero is this balance
+                if iszero(amount) {
+                    // selector for balanceOf(address)
+                    mstore(0, ERC20_BALANCE_OF)
+                    // add this address as parameter
+                    mstore(0x04, address())
+                    // call to token
+                    pop(
+                        staticcall(
+                            gas(),
+                            underlying, // token
+                            0x0,
+                            0x24,
+                            0x0,
+                            0x20
                         )
-                        // load the retrieved balance
-                        amount := mload(0x0)
-                    }
-                }
-                default {
-                    amount := amountOverride
+                    )
+                    // load the retrieved balance
+                    amount := mload(0x0)
                 }
 
                 let ptr := mload(0x40)
@@ -453,7 +425,7 @@ abstract contract CompoundV2Lending is Slots, ERC20Selectors, Masks {
      * | 36     | 20             | receiver                        |
      * | 76     | 20             | cToken                          |
      */
-    function _repayToCompoundV2(uint256 currentOffset, uint256 amountOverride) internal returns (uint256) {
+    function _repayToCompoundV2(uint256 currentOffset) internal returns (uint256) {
         assembly {
             let underlying := shr(96, calldataload(currentOffset))
             // offset for amoutn at lower bytes
@@ -475,22 +447,14 @@ abstract contract CompoundV2Lending is Slots, ERC20Selectors, Masks {
             switch underlying
             // case native
             case 0 {
-                let amount
-                // check if override is used
-                switch and(_PRE_PARAM, amountData)
+                let amount := and(UINT120_MASK, amountData)
+                switch amount
                 case 0 {
-                    amount := and(_UINT112_MASK, amountData)
-                    switch amount
-                    case 0 {
-                        // load the retrieved balance
-                        amount := selfbalance()
-                    }
-                    case 0xffffffffffffffffffffffffffff {
-                        amount := MAX_UINT256
-                    }
+                    // load the retrieved balance
+                    amount := selfbalance()
                 }
-                default {
-                    amount := amountOverride
+                case 0xffffffffffffffffffffffffffff {
+                    amount := MAX_UINT256
                 }
 
                 // selector for repayBorrowBehalf(address)
@@ -514,37 +478,29 @@ abstract contract CompoundV2Lending is Slots, ERC20Selectors, Masks {
             }
             // case ERC20
             default {
-                let amount
-                // check if override is used
-                switch and(_PRE_PARAM, amountData)
+                let amount := and(UINT120_MASK, amountData)
+                switch amount
                 case 0 {
-                    amount := and(_UINT112_MASK, amountData)
-                    switch amount
-                    case 0 {
-                        // selector for balanceOf(address)
-                        mstore(0, ERC20_BALANCE_OF)
-                        // add this address as parameter
-                        mstore(0x04, address())
-                        // call to token
-                        pop(
-                            staticcall(
-                                gas(),
-                                underlying, // token
-                                0x0,
-                                0x24,
-                                0x0,
-                                0x20
-                            )
+                    // selector for balanceOf(address)
+                    mstore(0, ERC20_BALANCE_OF)
+                    // add this address as parameter
+                    mstore(0x04, address())
+                    // call to token
+                    pop(
+                        staticcall(
+                            gas(),
+                            underlying, // token
+                            0x0,
+                            0x24,
+                            0x0,
+                            0x20
                         )
-                        // load the retrieved balance
-                        amount := mload(0x0)
-                    }
-                    case 0xffffffffffffffffffffffffffff {
-                        amount := MAX_UINT256
-                    }
+                    )
+                    // load the retrieved balance
+                    amount := mload(0x0)
                 }
-                default {
-                    amount := amountOverride
+                case 0xffffffffffffffffffffffffffff {
+                    amount := MAX_UINT256
                 }
 
                 // selector for repayBorrowBehalf(address,uint256)

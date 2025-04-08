@@ -51,7 +51,7 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks {
      * | 112    | 20             | receiver                        |
      * | 132    | 20             | morpho                          | <-- we allow all morphos (incl forks)
      */
-    function _morphoBorrow(uint256 currentOffset, address callerAddress, uint256 amountOverride) internal returns (uint256) {
+    function _morphoBorrow(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
             // morpho should be the primary choice
             let ptr := mload(0x40)
@@ -78,9 +78,6 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks {
              */
             switch and(_SHARES_MASK, lltvAndAmount)
             case 0 {
-                if and(_PRE_PARAM, lltvAndAmount) {
-                    borrowAm := amountOverride
-                }
                 mstore(add(ptr, 164), borrowAm) // assets
                 mstore(add(ptr, 196), 0) // shares
             }
@@ -133,7 +130,7 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks {
      * | 152    | 2              | calldataLength                  |
      * | 154    | calldataLength | calldata                        |
      */
-    function _morphoDeposit(uint256 currentOffset, address callerAddress, uint256 amountOverride) internal returns (uint256) {
+    function _morphoDeposit(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
             let ptrBase := mload(0x40)
             let ptr := add(128, ptrBase)
@@ -167,33 +164,27 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks {
              */
             switch and(_SHARES_MASK, lltvAndAmount)
             case 0 {
-                switch and(_PRE_PARAM, lltvAndAmount)
-                case 0 {
-                    /**
-                     * if the amount is zero, we assume that the contract balance is deposited
-                     */
-                    if iszero(amountToDeposit) {
-                        // selector for balanceOf(address)
-                        mstore(0, ERC20_BALANCE_OF)
-                        // add this address as parameter
-                        mstore(0x04, address())
-                        // call to token
-                        pop(
-                            staticcall(
-                                gas(),
-                                token, // collateral token
-                                0x0,
-                                0x24,
-                                0x0,
-                                0x20
-                            )
+                /**
+                 * if the amount is zero, we assume that the contract balance is deposited
+                 */
+                if iszero(amountToDeposit) {
+                    // selector for balanceOf(address)
+                    mstore(0, ERC20_BALANCE_OF)
+                    // add this address as parameter
+                    mstore(0x04, address())
+                    // call to token
+                    pop(
+                        staticcall(
+                            gas(),
+                            token, // collateral token
+                            0x0,
+                            0x24,
+                            0x0,
+                            0x20
                         )
-                        // load the retrieved balance
-                        amountToDeposit := mload(0x0)
-                    }
-                }
-                default {
-                    amountToDeposit := amountOverride
+                    )
+                    // load the retrieved balance
+                    amountToDeposit := mload(0x0)
                 }
 
                 mstore(add(ptr, 164), amountToDeposit) // assets
@@ -284,7 +275,7 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks {
      * | 152    | 2              | calldataLength                  |
      * | 154    | calldataLength | calldata                        |
      */
-    function _morphoDepositCollateral(uint256 currentOffset, address callerAddress, uint256 amountOverride) internal returns (uint256) {
+    function _morphoDepositCollateral(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
             // use two memory ranges
             let ptrBase := mload(0x40)
@@ -306,38 +297,31 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks {
             let lltvAndAmount := calldataload(currentOffset)
             mstore(add(ptr, 132), shr(128, lltvAndAmount)) // MarketParams.lltv
 
-            let amountToDeposit := and(UINT128_MASK, lltvAndAmount)
+            // we ignore flags as this only allows assets
+            let amountToDeposit := and(UINT120_MASK, lltvAndAmount)
             currentOffset := add(currentOffset, 32)
 
-            // check if override is used
-            switch and(_PRE_PARAM, amountToDeposit)
-            case 0 {
-                amountToDeposit := and(_UINT112_MASK, amountToDeposit)
-                /**
-                 * if the amount is zero, we assume that the contract balance is deposited
-                 */
-                if iszero(amountToDeposit) {
-                    // selector for balanceOf(address)
-                    mstore(0, ERC20_BALANCE_OF)
-                    // add this address as parameter
-                    mstore(0x04, address())
-                    // call to token
-                    pop(
-                        staticcall(
-                            gas(),
-                            token, // collateral token
-                            0x0,
-                            0x24,
-                            0x0,
-                            0x20
-                        )
+            /**
+             * if the amount is zero, we assume that the contract balance is deposited
+             */
+            if iszero(amountToDeposit) {
+                // selector for balanceOf(address)
+                mstore(0, ERC20_BALANCE_OF)
+                // add this address as parameter
+                mstore(0x04, address())
+                // call to token
+                pop(
+                    staticcall(
+                        gas(),
+                        token, // collateral token
+                        0x0,
+                        0x24,
+                        0x0,
+                        0x20
                     )
-                    // load the retrieved balance
-                    amountToDeposit := mload(0x0)
-                }
-            }
-            default {
-                amountToDeposit := amountOverride
+                )
+                // load the retrieved balance
+                amountToDeposit := mload(0x0)
             }
 
             // receiver address
@@ -385,7 +369,7 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks {
     }
 
     /// @notice Withdraw collateral from Morpho Blue
-    function _morphoWithdrawCollateral(uint256 currentOffset, address callerAddress, uint256 amountOverride) internal returns (uint256) {
+    function _morphoWithdrawCollateral(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
             // morpho should be the primary choice
             let ptr := mload(0x40)
@@ -408,14 +392,8 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks {
 
             mstore(add(ptr, 132), shr(128, lltvAndAmount)) // MarketParams.lltv
 
-            // use override if provided
-            switch and(_PRE_PARAM, lltvAndAmount)
-            case 0 {
-                lltvAndAmount := and(_UINT112_MASK, lltvAndAmount)
-            }
-            default {
-                lltvAndAmount := amountOverride
-            }
+            // get amount, ignore flags
+            lltvAndAmount := and(UINT120_MASK, lltvAndAmount)
 
             // amount
             mstore(add(ptr, 164), lltvAndAmount) // assets
@@ -452,7 +430,7 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks {
     }
 
     /// @notice Withdraw borrowAsset from Morpho
-    function _morphoWithdraw(uint256 currentOffset, address callerAddress, uint256 amountOverride) internal returns (uint256) {
+    function _morphoWithdraw(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
             // morpho should be the primary choice
             let ptrBase := mload(0x40)
@@ -470,7 +448,7 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks {
             let lltvAndAmount := calldataload(currentOffset)
             mstore(add(ptr, 132), shr(128, lltvAndAmount)) // MarketParams.lltv
 
-            let withdrawAm := and(_UINT112_MASK, lltvAndAmount)
+            let withdrawAm := and(UINT120_MASK, lltvAndAmount)
 
             currentOffset := add(currentOffset, 32)
 
@@ -488,38 +466,31 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks {
              */
             switch and(_SHARES_MASK, lltvAndAmount)
             case 0 {
-                switch and(_PRE_PARAM, lltvAndAmount)
-                case 0 {
-                    /**
-                     * Withdraw amount variations
-                     * type(uint120).max:    user supply balance
-                     * other:                amount provided
-                     */
-                    switch withdrawAm
-                    // maximum uint112 means withdraw everything
-                    case 0xffffffffffffffffffffffffffff {
-                        // we need to fetch user shares and just withdraw all shares
-                        // https://docs.morpho.org/morpho/tutorials/manage-positions/#repayAll
+                /**
+                 * Withdraw amount variations
+                 * type(uint120).max:    user supply balance
+                 * other:                amount provided
+                 */
+                switch withdrawAm
+                // maximum uint112 means withdraw everything
+                case 0xffffffffffffffffffffffffffff {
+                    // we need to fetch user shares and just withdraw all shares
+                    // https://docs.morpho.org/morpho/tutorials/manage-positions/#repayAll
 
-                        let marketId := keccak256(add(ptr, 4), 160)
-                        // position datas (1st slot of return data is the user shares)
-                        mstore(ptrBase, MORPHO_POSITION)
-                        mstore(add(ptrBase, 0x4), marketId)
-                        mstore(add(ptrBase, 0x24), callerAddress)
-                        if iszero(staticcall(gas(), morpho, ptrBase, 0x44, ptrBase, 0x20)) {
-                            revert(0x0, 0x0)
-                        }
-                        mstore(add(ptr, 164), 0) // assets
-                        mstore(add(ptr, 196), mload(ptrBase)) // shares
+                    let marketId := keccak256(add(ptr, 4), 160)
+                    // position datas (1st slot of return data is the user shares)
+                    mstore(ptrBase, MORPHO_POSITION)
+                    mstore(add(ptrBase, 0x4), marketId)
+                    mstore(add(ptrBase, 0x24), callerAddress)
+                    if iszero(staticcall(gas(), morpho, ptrBase, 0x44, ptrBase, 0x20)) {
+                        revert(0x0, 0x0)
                     }
-                    // explicit amount
-                    default {
-                        mstore(add(ptr, 164), withdrawAm) // assets
-                        mstore(add(ptr, 196), 0) // shares
-                    }
+                    mstore(add(ptr, 164), 0) // assets
+                    mstore(add(ptr, 196), mload(ptrBase)) // shares
                 }
+                // explicit amount
                 default {
-                    mstore(add(ptr, 164), amountOverride) // assets
+                    mstore(add(ptr, 164), withdrawAm) // assets
                     mstore(add(ptr, 196), 0) // shares
                 }
             }
@@ -553,8 +524,7 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks {
     /// @notice Withdraw from lender lastgiven user address and lender Id
     function _morphoRepay(
         uint256 currentOffset,
-        address callerAddress,
-        uint256 amountOverride
+        address callerAddress
     )
         internal
         returns (
@@ -581,7 +551,7 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks {
             tempData := calldataload(currentOffset)
             mstore(add(ptr, 132), shr(128, tempData)) // MarketParams.lltv
 
-            let repayAm := and(_UINT112_MASK, tempData)
+            let repayAm := and(UINT120_MASK, tempData)
             // skip amounts
             currentOffset := add(currentOffset, 32)
 
@@ -592,76 +562,45 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks {
             let morpho := shr(96, calldataload(currentOffset))
             currentOffset := add(currentOffset, 20)
 
-            // check if override is used
-            switch and(_PRE_PARAM, tempData)
-            case 0 {
-                /**
-                 * Logic tree
-                 *  if repayAmount is Max -> repay max shares
-                 *  else {
-                 *      if(unsafeFlag): repay amount unsafe
-                 *      if(shares flag): repay amount as shares (unsafe, determinsitic on-chain though)
-                 *      else repay amount safe (fetch balance and cap amount at balcne - will not revert if amount is too hiuh)
-                 *  }
-                 */
-                switch repayAm
-                // all or nothing
-                // fails if there are not enough funds in this contract
-                case 0xffffffffffffffffffffffffffff {
-                    // fetch user shares and repay all shares
-                    // will revert if balance in contract is not enough
-                    let marketId := keccak256(add(ptr, 4), 160)
-                    // position datas
-                    mstore(ptrBase, MORPHO_POSITION)
-                    mstore(add(ptrBase, 0x4), marketId)
-                    mstore(add(ptrBase, 0x24), receiver)
-                    if iszero(staticcall(gas(), morpho, ptrBase, 0x44, ptrBase, 0x40)) {
-                        revert(0x0, 0x0)
-                    }
-                    mstore(add(ptr, 164), 0) // assets
-                    mstore(add(ptr, 196), mload(add(ptrBase, 0x20))) // shares
+            /**
+             * Logic tree
+             *  if repayAmount is Max -> repay max shares
+             *  else {
+             *      if(unsafeFlag): repay amount unsafe
+             *      if(shares flag): repay amount as shares (unsafe, determinsitic on-chain though)
+             *      else repay amount safe (fetch balance and cap amount at balcne - will not revert if amount is too hiuh)
+             *  }
+             */
+            switch repayAm
+            // all or nothing
+            // fails if there are not enough funds in this contract
+            case 0xffffffffffffffffffffffffffff {
+                // fetch user shares and repay all shares
+                // will revert if balance in contract is not enough
+                let marketId := keccak256(add(ptr, 4), 160)
+                // position datas
+                mstore(ptrBase, MORPHO_POSITION)
+                mstore(add(ptrBase, 0x4), marketId)
+                mstore(add(ptrBase, 0x24), receiver)
+                if iszero(staticcall(gas(), morpho, ptrBase, 0x44, ptrBase, 0x40)) {
+                    revert(0x0, 0x0)
                 }
-                default {
-                    switch and(_UNSAFE_AMOUNT, tempData)
+                mstore(add(ptr, 164), 0) // assets
+                mstore(add(ptr, 196), mload(add(ptrBase, 0x20))) // shares
+            }
+            default {
+                switch and(_UNSAFE_AMOUNT, tempData)
+                case 0 {
+                    switch and(_SHARES_MASK, tempData)
                     case 0 {
-                        switch and(_SHARES_MASK, tempData)
-                        case 0 {
-                            // by shares
-                            mstore(add(ptr, 164), 0) // assets
-                            mstore(add(ptr, 196), repayAm) // shares
-                        }
-                        default {
-                            // zero balance means contract balance
-                            // creates unexpected behavior if this amount is used for shares!
-                            if iszero(repayAm) {
-                                // get balance
-                                mstore(0x0, ERC20_BALANCE_OF)
-                                mstore(0x04, address())
-                                if iszero(staticcall(gas(), token, 0x0, 0x24, 0x0, 0x20)) {
-                                    revert(0x0, 0x0)
-                                }
-                                repayAm := mload(0x0)
-                            }
-                            // by assets safe - will not revert if too much is repaid
-                            // we need to fetch everything and acrure interest
-                            // https://docs.morpho.org/morpho/tutorials/manage-positions/#repayAll
-
-                            // accrue interest
-                            // add accrueInterest (0x151c1ade)
-                            mstore(sub(ptr, 28), 0x151c1ade)
-                            if iszero(call(gas(), morpho, 0x0, ptr, 0xA4, 0x0, 0x0)) {
-                                revert(0x0, 0x0)
-                            }
-
-                            let marketId := keccak256(add(ptr, 4), 160)
-                            mstore(0x0, MORPHO_MARKET)
-                            mstore(0x4, marketId)
-                            if iszero(staticcall(gas(), morpho, 0x0, 0x24, ptrBase, 0x80)) {
-                                revert(0x0, 0x0)
-                            }
-                            let totalBorrowAssets := mload(add(ptrBase, 0x40))
-                            let totalBorrowShares := mload(add(ptrBase, 0x60))
-
+                        // by shares
+                        mstore(add(ptr, 164), 0) // assets
+                        mstore(add(ptr, 196), repayAm) // shares
+                    }
+                    default {
+                        // zero balance means contract balance
+                        // creates unexpected behavior if this amount is used for shares!
+                        if iszero(repayAm) {
                             // get balance
                             mstore(0x0, ERC20_BALANCE_OF)
                             mstore(0x04, address())
@@ -669,53 +608,74 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks {
                                 revert(0x0, 0x0)
                             }
                             repayAm := mload(0x0)
+                        }
+                        // by assets safe - will not revert if too much is repaid
+                        // we need to fetch everything and acrure interest
+                        // https://docs.morpho.org/morpho/tutorials/manage-positions/#repayAll
 
-                            // position datas
-                            mstore(ptrBase, MORPHO_POSITION)
-                            mstore(add(ptrBase, 0x4), marketId)
-                            mstore(add(ptrBase, 0x24), receiver)
-                            if iszero(staticcall(gas(), morpho, ptrBase, 0x44, ptrBase, 0x40)) {
-                                revert(0x0, 0x0)
-                            }
-                            let userBorrowShares := mload(add(ptrBase, 0x20))
+                        // accrue interest
+                        // add accrueInterest (0x151c1ade)
+                        mstore(sub(ptr, 28), 0x151c1ade)
+                        if iszero(call(gas(), morpho, 0x0, ptr, 0xA4, 0x0, 0x0)) {
+                            revert(0x0, 0x0)
+                        }
 
-                            // mulDivUp(shares, totalAssets + VIRTUAL_ASSETS, totalShares + VIRTUAL_SHARES);
-                            let maxAssets := add(totalBorrowShares, 1000000) // VIRTUAL_SHARES=1e6
-                            maxAssets := div(
-                                add(
-                                    mul(userBorrowShares, add(totalBorrowAssets, 1)), // VIRTUAL_ASSETS=1
-                                    sub(maxAssets, 1) //
-                                ),
-                                maxAssets //
-                            )
+                        let marketId := keccak256(add(ptr, 4), 160)
+                        mstore(0x0, MORPHO_MARKET)
+                        mstore(0x4, marketId)
+                        if iszero(staticcall(gas(), morpho, 0x0, 0x24, ptrBase, 0x80)) {
+                            revert(0x0, 0x0)
+                        }
+                        let totalBorrowAssets := mload(add(ptrBase, 0x40))
+                        let totalBorrowShares := mload(add(ptrBase, 0x60))
 
-                            // if maxAssets is greater than repay amount
-                            // we repay whatever is possible
-                            switch gt(maxAssets, repayAm)
-                            case 1 {
-                                mstore(add(ptr, 164), repayAm) // assets
-                                mstore(add(ptr, 196), 0) // shares
-                            }
-                            // otherwise, repay all shares, leaving no dust
-                            default {
-                                mstore(add(ptr, 164), 0) // assets
-                                mstore(add(ptr, 196), userBorrowShares) // shares
-                            }
+                        // get balance
+                        mstore(0x0, ERC20_BALANCE_OF)
+                        mstore(0x04, address())
+                        if iszero(staticcall(gas(), token, 0x0, 0x24, 0x0, 0x20)) {
+                            revert(0x0, 0x0)
+                        }
+                        repayAm := mload(0x0)
+
+                        // position datas
+                        mstore(ptrBase, MORPHO_POSITION)
+                        mstore(add(ptrBase, 0x4), marketId)
+                        mstore(add(ptrBase, 0x24), receiver)
+                        if iszero(staticcall(gas(), morpho, ptrBase, 0x44, ptrBase, 0x40)) {
+                            revert(0x0, 0x0)
+                        }
+                        let userBorrowShares := mload(add(ptrBase, 0x20))
+
+                        // mulDivUp(shares, totalAssets + VIRTUAL_ASSETS, totalShares + VIRTUAL_SHARES);
+                        let maxAssets := add(totalBorrowShares, 1000000) // VIRTUAL_SHARES=1e6
+                        maxAssets := div(
+                            add(
+                                mul(userBorrowShares, add(totalBorrowAssets, 1)), // VIRTUAL_ASSETS=1
+                                sub(maxAssets, 1) //
+                            ),
+                            maxAssets //
+                        )
+
+                        // if maxAssets is greater than repay amount
+                        // we repay whatever is possible
+                        switch gt(maxAssets, repayAm)
+                        case 1 {
+                            mstore(add(ptr, 164), repayAm) // assets
+                            mstore(add(ptr, 196), 0) // shares
+                        }
+                        // otherwise, repay all shares, leaving no dust
+                        default {
+                            mstore(add(ptr, 164), 0) // assets
+                            mstore(add(ptr, 196), userBorrowShares) // shares
                         }
                     }
-                    default {
-                        // by assets unsafe
-                        // reverts if repay amount is too high
-                        mstore(add(ptr, 164), repayAm) // assets
-                        mstore(add(ptr, 196), 0) // shares
-                    }
                 }
-            }
-            default {
-                // by assets unsafe using override
-                // reverts if repay amount is too high
-                mstore(add(ptr, 164), amountOverride) // assets
-                mstore(add(ptr, 196), 0) // shares
+                default {
+                    // by assets unsafe
+                    // reverts if repay amount is too high
+                    mstore(add(ptr, 164), repayAm) // assets
+                    mstore(add(ptr, 196), 0) // shares
+                }
             }
 
             mstore(add(ptr, 228), receiver) // onBehalfOf is the receiver here

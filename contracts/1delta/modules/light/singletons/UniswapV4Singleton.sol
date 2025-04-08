@@ -21,7 +21,7 @@ abstract contract UniswapV4SingletonActions is Masks, DeltaErrors {
     bytes32 private constant SETTLE = 0x11da60b400000000000000000000000000000000000000000000000000000000;
     bytes32 private constant SYNC = 0xa584119400000000000000000000000000000000000000000000000000000000;
 
-    function _unoV4Take(uint256 currentOffset, uint256 amountOverride) internal returns (uint256) {
+    function _unoV4Take(uint256 currentOffset) internal returns (uint256) {
         /*
          * | Offset | Length (bytes) | Description         |
          * |--------|----------------|---------------------|
@@ -38,9 +38,7 @@ abstract contract UniswapV4SingletonActions is Masks, DeltaErrors {
             let receiver := shr(96, calldataload(currentOffset))
             currentOffset := add(20, currentOffset)
             let amount := shr(128, calldataload(currentOffset))
-            if and(_PRE_PARAM, amount) {
-                amount := amountOverride
-            }
+
             // free memo ptr for populating the tx
             let ptr := mload(0x40)
 
@@ -103,7 +101,7 @@ abstract contract UniswapV4SingletonActions is Masks, DeltaErrors {
         return currentOffset;
     }
 
-    function _unoV4Settle(uint256 currentOffset, uint256 amountOverride) internal returns (uint256) {
+    function _unoV4Settle(uint256 currentOffset) internal returns (uint256) {
         /*
          * | Offset | Length (bytes) | Description       |
          * |--------|----------------|-------------------|
@@ -114,9 +112,7 @@ abstract contract UniswapV4SingletonActions is Masks, DeltaErrors {
             let manager := shr(96, calldataload(currentOffset))
             currentOffset := add(20, currentOffset)
             let amount := shr(128, calldataload(currentOffset))
-            if and(_PRE_PARAM, amount) {
-                amount := amountOverride
-            }
+
             currentOffset := add(16, currentOffset)
 
             mstore(0, SETTLE)

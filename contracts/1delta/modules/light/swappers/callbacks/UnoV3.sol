@@ -17,7 +17,7 @@ import {ERC20Selectors} from "../../../shared/selectors/ERC20Selectors.sol";
  */
 abstract contract UniV3Callbacks is V3ReferencesBase, ERC20Selectors, Masks, DeltaErrors {
     /** This functione xecutes a simple transfer to shortcut the callback if there is no further calldata */
-    function clSwapCallback(uint256 amountToPay, uint256 amountReceived, address tokenIn, address callerAddress, uint256 calldataLength) private {
+    function clSwapCallback(uint256 amountToPay, address tokenIn, address callerAddress, uint256 calldataLength) private {
         assembly {
             // one can pass no path to continue
             // we then assume the calldataLength as flag to
@@ -76,8 +76,6 @@ abstract contract UniV3Callbacks is V3ReferencesBase, ERC20Selectors, Masks, Del
         }
         _deltaComposeInternal(
             callerAddress,
-            amountToPay,
-            amountReceived,
             // the naive offset is 132
             // we skip the entire callback validation data
             // that is tokens (+40), fee (+2), caller (+20), forkId (+1) datalength (+2)
@@ -87,7 +85,7 @@ abstract contract UniV3Callbacks is V3ReferencesBase, ERC20Selectors, Masks, Del
         );
     }
 
-    function _deltaComposeInternal(address callerAddress, uint256 paramPull, uint256 paramPush, uint256 offset, uint256 length) internal virtual {}
+    function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual {}
 
     bytes32 private constant SELECTOR_IZI_XY = 0x1878068400000000000000000000000000000000000000000000000000000000;
     bytes32 private constant SELECTOR_IZI_YX = 0xd3e1c28400000000000000000000000000000000000000000000000000000000;
@@ -99,14 +97,15 @@ abstract contract UniV3Callbacks is V3ReferencesBase, ERC20Selectors, Masks, Del
      * Generic UniswapV3 callback executor
      * The call looks like
      * ```function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata) external {...}```
-     * 
+     *
      * Izumi deviates from this, we handle these below
      */
     function _executeUniV3IfSelector(bytes32 selector) internal {
         bytes32 codeHash;
         bytes32 ffFactoryAddress;
+        // we use the amount to pay as shorthand here to 
+        // allow paying without added calldata 
         uint256 amountToPay;
-        uint256 amountReceived;
         assembly {
             switch or(eq(selector, SELECTOR_UNIV3), eq(selector, SELECTOR_PANCAKE))
             case 1 {
@@ -123,11 +122,9 @@ abstract contract UniV3Callbacks is V3ReferencesBase, ERC20Selectors, Masks, Del
 
                 switch sgt(_amount1, 0)
                 case 0 {
-                    amountReceived := sub(0, _amount1)
                     amountToPay := _amount0
                 }
                 default {
-                    amountReceived := sub(0, _amount0)
                     amountToPay := _amount1
                 }
             }
@@ -145,7 +142,6 @@ abstract contract UniV3Callbacks is V3ReferencesBase, ERC20Selectors, Masks, Del
                         revert(0, 0)
                     }
                     amountToPay := calldataload(4)
-                    amountReceived := calldataload(36)
                 }
                 // SELECTOR_IZI_YX
                 case 0xd3e1c28400000000000000000000000000000000000000000000000000000000 {
@@ -157,7 +153,6 @@ abstract contract UniV3Callbacks is V3ReferencesBase, ERC20Selectors, Masks, Del
                     default {
                         revert(0, 0)
                     }
-                    amountReceived := calldataload(4)
                     amountToPay := calldataload(36)
                 }
             }
@@ -201,13 +196,7 @@ abstract contract UniV3Callbacks is V3ReferencesBase, ERC20Selectors, Masks, Del
                 // get original caller address
                 callerAddress := shr(96, calldataload(132))
             }
-            clSwapCallback(
-                amountToPay,
-                amountReceived, //
-                tokenIn,
-                callerAddress,
-                calldataLength
-            );
+            clSwapCallback(amountToPay, tokenIn, callerAddress, calldataLength);
             // force return
             assembly {
                 return(0, 0)

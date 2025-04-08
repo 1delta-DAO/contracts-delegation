@@ -1,7 +1,7 @@
 [profile.default]
 solc-version = "0.8.28"
 evm_version="cancun"
-optimizer_runs = 2_000
+optimizer_runs = 5_000
 src = "contracts/1delta"
 out = "out"
 libs = ["lib"]

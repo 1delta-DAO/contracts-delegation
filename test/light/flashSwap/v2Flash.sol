@@ -101,8 +101,8 @@ contract FlashSwapTest is BaseTest {
 
         address uniPool = IF(UNI_V2_FACTORY).getPair(tokenIn, tokenOut);
         // borrow and deposit with override amounts (optimal)
-        bytes memory borrow = CalldataLib.encodeAaveBorrow(tokenIn, true, 0, uniPool, 2, pool);
-        bytes memory action = CalldataLib.encodeAaveDeposit(tokenOut, true, 0, user, pool);
+        bytes memory borrow = CalldataLib.encodeAaveBorrow(tokenIn, false, borrowAmount, uniPool, 2, pool);
+        bytes memory action = CalldataLib.encodeAaveDeposit(tokenOut, false, 0, user, pool);
 
         action = v2poolFlashSwap(
             tokenIn,

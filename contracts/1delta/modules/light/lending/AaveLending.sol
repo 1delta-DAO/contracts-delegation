@@ -29,7 +29,7 @@ abstract contract AaveLending is Slots, ERC20Selectors, Masks {
      * | 96     | 20             | pool                            |
      */
     /// @notice Withdraw from lender lastgiven user address and lender Id
-    function _withdrawFromAave(uint256 currentOffset, address callerAddress, uint256 amountOverride) internal returns (uint256) {
+    function _withdrawFromAave(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
             let ptr := mload(0x40)
             // Aave types need to trasfer collateral tokens
@@ -45,39 +45,32 @@ abstract contract AaveLending is Slots, ERC20Selectors, Masks {
             // skip receiver
             currentOffset := add(currentOffset, 20)
 
-            let amount := and(_UINT112_MASK, amountData)
+            let amount := and(UINT120_MASK, amountData)
             // get aToken
             let collateralToken := shr(96, calldataload(currentOffset))
             // skip token
             currentOffset := add(currentOffset, 20)
 
-            // check if override is used
-            switch and(_PRE_PARAM, amountData)
-            case 0 {
-                // apply max if needed
-                switch amount
-                case 0xffffffffffffffffffffffffffff {
-                    // selector for balanceOf(address)
-                    mstore(0, ERC20_BALANCE_OF)
-                    // add caller address as parameter
-                    mstore(0x04, callerAddress)
-                    // call to token
-                    pop(
-                        staticcall(
-                            gas(),
-                            collateralToken, // collateral token
-                            0x0,
-                            0x24,
-                            0x0,
-                            0x20
-                        )
+            // apply max if needed
+            switch amount
+            case 0xffffffffffffffffffffffffffff {
+                // selector for balanceOf(address)
+                mstore(0, ERC20_BALANCE_OF)
+                // add caller address as parameter
+                mstore(0x04, callerAddress)
+                // call to token
+                pop(
+                    staticcall(
+                        gas(),
+                        collateralToken, // collateral token
+                        0x0,
+                        0x24,
+                        0x0,
+                        0x20
                     )
-                    // load the retrieved balance
-                    amount := mload(0x0)
-                }
-            }
-            default {
-                amount := amountOverride
+                )
+                // load the retrieved balance
+                amount := mload(0x0)
             }
 
             /** PREPARE TRANSFER_FROM USER */
@@ -136,7 +129,7 @@ abstract contract AaveLending is Slots, ERC20Selectors, Masks {
      * | 76     | 1              | mode                            |
      * | 77     | 20             | pool                            |
      */
-    function _borrowFromAave(uint256 currentOffset, address callerAddress, uint256 amountOverride) internal returns (uint256) {
+    function _borrowFromAave(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
             let underlying := shr(96, calldataload(currentOffset))
             // offset for amoutn at lower bytes
@@ -155,15 +148,7 @@ abstract contract AaveLending is Slots, ERC20Selectors, Masks {
             // skip pool (end of data)
             currentOffset := add(currentOffset, 20)
 
-            let amount
-            // check if override is used
-            switch and(_PRE_PARAM, amountData)
-            case 0 {
-                amount := and(_UINT112_MASK, amountData)
-            }
-            default {
-                amount := amountOverride
-            }
+            let amount := and(UINT120_MASK, amountData)
 
             let ptr := mload(0x40)
             switch mode
@@ -239,7 +224,7 @@ abstract contract AaveLending is Slots, ERC20Selectors, Masks {
      * | 76     | 20             | pool                            |
      */
     /// @notice Withdraw from lender lastgiven user address and lender Id
-    function _depositToAaveV3(uint256 currentOffset, uint256 amountOverride) internal returns (uint256) {
+    function _depositToAaveV3(uint256 currentOffset) internal returns (uint256) {
         assembly {
             let underlying := shr(96, calldataload(currentOffset))
             // offset for amoutn at lower bytes
@@ -256,34 +241,26 @@ abstract contract AaveLending is Slots, ERC20Selectors, Masks {
             // skip pool (end of data)
             currentOffset := add(currentOffset, 20)
 
-            let amount
-            // check if override is used
-            switch and(_PRE_PARAM, amountData)
-            case 0 {
-                amount := and(_UINT112_MASK, amountData)
-                // zero is this balance
-                if iszero(amount) {
-                    // selector for balanceOf(address)
-                    mstore(0, ERC20_BALANCE_OF)
-                    // add this address as parameter
-                    mstore(0x04, address())
-                    // call to token
-                    pop(
-                        staticcall(
-                            gas(),
-                            underlying, // token
-                            0x0,
-                            0x24,
-                            0x0,
-                            0x20
-                        )
+            let amount := and(UINT120_MASK, amountData)
+            // zero is this balance
+            if iszero(amount) {
+                // selector for balanceOf(address)
+                mstore(0, ERC20_BALANCE_OF)
+                // add this address as parameter
+                mstore(0x04, address())
+                // call to token
+                pop(
+                    staticcall(
+                        gas(),
+                        underlying, // token
+                        0x0,
+                        0x24,
+                        0x0,
+                        0x20
                     )
-                    // load the retrieved balance
-                    amount := mload(0x0)
-                }
-            }
-            default {
-                amount := amountOverride
+                )
+                // load the retrieved balance
+                amount := mload(0x0)
             }
 
             let ptr := mload(0x40)
@@ -312,7 +289,7 @@ abstract contract AaveLending is Slots, ERC20Selectors, Masks {
      * | 76     | 20             | pool                            |
      */
     /// @notice Withdraw from lender lastgiven user address and lender Id
-    function _depositToAaveV2(uint256 currentOffset, uint256 amountOverride) internal returns (uint256) {
+    function _depositToAaveV2(uint256 currentOffset) internal returns (uint256) {
         assembly {
             let underlying := shr(96, calldataload(currentOffset))
             // offset for amoutn at lower bytes
@@ -329,34 +306,26 @@ abstract contract AaveLending is Slots, ERC20Selectors, Masks {
             // skip pool (end of data)
             currentOffset := add(currentOffset, 20)
 
-            let amount
-            // check if override is used
-            switch and(_PRE_PARAM, amountData)
-            case 0 {
-                amount := and(_UINT112_MASK, amountData)
-                // zero is this balance
-                if iszero(amount) {
-                    // selector for balanceOf(address)
-                    mstore(0, ERC20_BALANCE_OF)
-                    // add this address as parameter
-                    mstore(0x04, address())
-                    // call to token
-                    pop(
-                        staticcall(
-                            gas(),
-                            underlying, // token
-                            0x0,
-                            0x24,
-                            0x0,
-                            0x20
-                        )
+            let amount := and(UINT120_MASK, amountData)
+            // zero is this balance
+            if iszero(amount) {
+                // selector for balanceOf(address)
+                mstore(0, ERC20_BALANCE_OF)
+                // add this address as parameter
+                mstore(0x04, address())
+                // call to token
+                pop(
+                    staticcall(
+                        gas(),
+                        underlying, // token
+                        0x0,
+                        0x24,
+                        0x0,
+                        0x20
                     )
-                    // load the retrieved balance
-                    amount := mload(0x0)
-                }
-            }
-            default {
-                amount := amountOverride
+                )
+                // load the retrieved balance
+                amount := mload(0x0)
             }
 
             let ptr := mload(0x40)
@@ -385,7 +354,7 @@ abstract contract AaveLending is Slots, ERC20Selectors, Masks {
      * | 76     | 20             | debtToken                       |
      * | 97     | 20             | pool                            |
      */
-    function _repayToAave(uint256 currentOffset, address callerAddress, uint256 amountOverride) internal returns (uint256) {
+    function _repayToAave(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
             let underlying := shr(96, calldataload(currentOffset))
             // offset for amoutn at lower bytes
@@ -400,54 +369,47 @@ abstract contract AaveLending is Slots, ERC20Selectors, Masks {
             // skip receiver & mode
             currentOffset := add(currentOffset, 21)
 
-            let amount
-            // check if override is used
-            switch and(_PRE_PARAM, amountData)
+            let amount := and(UINT120_MASK, amountData)
+            switch amount
             case 0 {
-                amount := and(_UINT112_MASK, amountData)
-                switch amount
-                case 0 {
-                    // selector for balanceOf(address)
-                    mstore(0, ERC20_BALANCE_OF)
-                    // add this address as parameter
-                    mstore(0x04, address())
-                    // call to token
-                    pop(
-                        staticcall(
-                            gas(),
-                            underlying, // token
-                            0x0,
-                            0x24,
-                            0x0,
-                            0x20
-                        )
+                // selector for balanceOf(address)
+                mstore(0, ERC20_BALANCE_OF)
+                // add this address as parameter
+                mstore(0x04, address())
+                // call to token
+                pop(
+                    staticcall(
+                        gas(),
+                        underlying, // token
+                        0x0,
+                        0x24,
+                        0x0,
+                        0x20
                     )
-                    // load the retrieved balance
-                    amount := mload(0x0)
-                }
-                case 0xffffffffffffffffffffffffffff {
-                    // selector for balanceOf(address)
-                    mstore(0, ERC20_BALANCE_OF)
-                    // add caller address as parameter
-                    mstore(0x04, callerAddress)
-                    // call to token
-                    pop(
-                        staticcall(
-                            gas(),
-                            shr(96, calldataload(currentOffset)), // debt token
-                            0x0,
-                            0x24,
-                            0x0,
-                            0x20
-                        )
+                )
+                // load the retrieved balance
+                amount := mload(0x0)
+            }
+            case 0xffffffffffffffffffffffffffff {
+                // selector for balanceOf(address)
+                mstore(0, ERC20_BALANCE_OF)
+                // add caller address as parameter
+                mstore(0x04, callerAddress)
+                // call to token
+                pop(
+                    staticcall(
+                        gas(),
+                        shr(96, calldataload(currentOffset)), // debt token
+                        0x0,
+                        0x24,
+                        0x0,
+                        0x20
                     )
-                    // load the retrieved balance
-                    amount := mload(0x0)
-                }
+                )
+                // load the retrieved balance
+                amount := mload(0x0)
             }
-            default {
-                amount := amountOverride
-            }
+
             // skip debt token
             currentOffset := add(currentOffset, 20)
             // get pool

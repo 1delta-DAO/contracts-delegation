@@ -54,8 +54,6 @@ abstract contract UniV4Callbacks is V4ReferencesBase, ERC20Selectors, Masks, Del
          */
         _deltaComposeInternal(
             callerAddress,
-            0,
-            0,
             // this is
             //  68 native (selector, offs, len)
             //  4 b3 selector
@@ -77,5 +75,5 @@ abstract contract UniV4Callbacks is V4ReferencesBase, ERC20Selectors, Masks, Del
     }
 
     /** A composer contract should override this */
-    function _deltaComposeInternal(address callerAddress, uint256 paramPull, uint256 paramPush, uint256 offset, uint256 length) internal virtual {}
+    function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual {}
 }

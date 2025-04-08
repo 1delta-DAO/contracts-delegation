@@ -18,25 +18,18 @@ contract Native is ERC20Selectors, Masks, DeltaErrors {
      * |--------|----------------|---------------------|
      * | 0      | 16             | amount              |
      */
-    function _wrap(uint256 currentOffset, uint256 amountOverride) internal virtual returns (uint256) {
+    function _wrap(uint256 currentOffset) internal virtual returns (uint256) {
         ////////////////////////////////////////////////////
         // Wrap native, only uses amount as uint128
         ////////////////////////////////////////////////////
         assembly {
             let amount := shr(128, calldataload(currentOffset))
-            // see whether we can get the pre param amount
-            switch and(_PRE_PARAM, amount)
-            case 1 {
-                amount := amountOverride
+
+            // zero is selfbalajnce
+            if iszero(amount) {
+                amount := selfbalance()
             }
-            default {
-                // mask the bitmap
-                amount := and(UINT120_MASK, amount)
-                // zero is selfbalajnce
-                if iszero(amount) {
-                    amount := selfbalance()
-                }
-            }
+
             if iszero(
                 call(
                     gas(),
@@ -64,7 +57,7 @@ contract Native is ERC20Selectors, Masks, DeltaErrors {
      * | 20     | 1              | config              |
      * | 21     | 16             | amount              |
      */
-    function _unwrap(uint256 currentOffset, uint256 preParam) internal virtual returns (uint256) {
+    function _unwrap(uint256 currentOffset) internal virtual returns (uint256) {
         ////////////////////////////////////////////////////
         // Transfers either token or native balance from this
         // contract to receiver. Reverts if minAmount is
@@ -85,34 +78,28 @@ contract Native is ERC20Selectors, Masks, DeltaErrors {
             providedAmount := and(UINT128_MASK, providedAmount)
 
             let transferAmount
-            // check if we use the override
-            switch and(_PRE_PARAM, providedAmount)
-            case 1 {
-                transferAmount := preParam
+
+            // mask away the top bitmap
+            providedAmount := and(UINT120_MASK, providedAmount)
+            // validate if config is zero, otherwise skip
+            switch config
+            case 0 {
+                // selector for balanceOf(address)
+                mstore(0x0, ERC20_BALANCE_OF)
+                // add this address as parameter
+                mstore(0x4, address())
+
+                // call to underlying
+                pop(staticcall(gas(), WRAPPED_NATIVE, 0x0, 0x24, 0x0, 0x20))
+
+                transferAmount := mload(0x0)
+                if lt(transferAmount, providedAmount) {
+                    mstore(0, SLIPPAGE)
+                    revert(0, 0x4)
+                }
             }
             default {
-                // mask away the top bitmap
-                providedAmount := and(UINT120_MASK, providedAmount)
-                // validate if config is zero, otherwise skip
-                switch config
-                case 0 {
-                    // selector for balanceOf(address)
-                    mstore(0x0, ERC20_BALANCE_OF)
-                    // add this address as parameter
-                    mstore(0x4, address())
-
-                    // call to underlying
-                    pop(staticcall(gas(), WRAPPED_NATIVE, 0x0, 0x24, 0x0, 0x20))
-
-                    transferAmount := mload(0x0)
-                    if lt(transferAmount, providedAmount) {
-                        mstore(0, SLIPPAGE)
-                        revert(0, 0x4)
-                    }
-                }
-                default {
-                    transferAmount := providedAmount
-                }
+                transferAmount := providedAmount
             }
 
             if gt(transferAmount, 0) {

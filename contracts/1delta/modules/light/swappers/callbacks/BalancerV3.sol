@@ -51,13 +51,11 @@ abstract contract BalancerV3Callbacks is BalancerV3ReferencesBase, ERC20Selector
          */
         _deltaComposeInternal(
             callerAddress,
-            0,
-            0,
             89, // natural offset is 68 plus selector plus addres plus poolId
             length //
         );
     }
 
     /** A composer contract should override this */
-    function _deltaComposeInternal(address callerAddress, uint256 paramPull, uint256 paramPush, uint256 offset, uint256 length) internal virtual {}
+    function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual {}
 }

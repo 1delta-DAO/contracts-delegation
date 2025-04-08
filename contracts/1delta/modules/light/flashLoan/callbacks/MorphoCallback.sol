@@ -15,29 +15,29 @@ contract MorphoFlashLoanCallback is Masks, DeltaErrors {
     /** Morpho blue callbacks */
 
     /// @dev Morpho Blue flash loan
-    function onMorphoFlashLoan(uint256 amount, bytes calldata params) external {
-        _onMorphoCallback(amount, params);
+    function onMorphoFlashLoan(uint256, bytes calldata params) external {
+        _onMorphoCallback(params);
     }
 
     /// @dev Morpho Blue supply callback
-    function onMorphoSupply(uint256 amount, bytes calldata params) external {
-        _onMorphoCallback(amount, params);
+    function onMorphoSupply(uint256, bytes calldata params) external {
+        _onMorphoCallback(params);
     }
 
     /// @dev Morpho Blue repay callback
-    function onMorphoRepay(uint256 amount, bytes calldata params) external {
-        _onMorphoCallback(amount, params);
+    function onMorphoRepay(uint256, bytes calldata params) external {
+        _onMorphoCallback(params);
     }
 
     /// @dev Morpho Blue supply collateral callback
-    function onMorphoSupplyCollateral(uint256 amount, bytes calldata params) external {
-        _onMorphoCallback(amount, params);
+    function onMorphoSupplyCollateral(uint256, bytes calldata params) external {
+        _onMorphoCallback(params);
     }
 
     /// @dev Morpho Blue is immutable and their flash loans are callbacks to msg.sender,
     /// Since it is universal batching and the same validation for all
     /// Morpho callbacks, we can use the same logic everywhere
-    function _onMorphoCallback(uint256 amount, bytes calldata params) internal {
+    function _onMorphoCallback(bytes calldata params) internal {
         address origCaller;
         uint256 calldataLength;
         assembly {
@@ -74,12 +74,10 @@ contract MorphoFlashLoanCallback is Masks, DeltaErrors {
         // can be executed
         _deltaComposeInternal(
             origCaller,
-            amount,
-            amount,
             120, // offset is constant
             calldataLength
         );
     }
 
-    function _deltaComposeInternal(address callerAddress, uint256 paramPull, uint256 paramPush, uint256 offset, uint256 length) internal virtual {}
+    function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual {}
 }

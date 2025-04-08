@@ -31,8 +31,6 @@ abstract contract UniversalLending is AaveLending, CompoundV3Lending, CompoundV2
      */
     function _lendingOperations(
         address callerAddress,
-        uint256 paramPull,
-        uint256 paramPush,
         uint256 currentOffset // params similar to deltaComposeInternal
     ) internal returns (uint256) {
         uint256 lendingOperation;
@@ -46,60 +44,60 @@ abstract contract UniversalLending is AaveLending, CompoundV3Lending, CompoundV2
         /** Deposit collateral */
         if (lendingOperation == LenderOps.DEPOSIT) {
             if (lender < LenderIds.UP_TO_AAVE_V3) {
-                return _depositToAaveV3(currentOffset, paramPush);
+                return _depositToAaveV3(currentOffset);
             } else if (lender < LenderIds.UP_TO_AAVE_V2) {
-                return _depositToAaveV2(currentOffset, paramPush);
+                return _depositToAaveV2(currentOffset);
             } else if (lender < LenderIds.UP_TO_COMPOUND_V3) {
-                return _depositToCompoundV3(currentOffset, paramPush);
+                return _depositToCompoundV3(currentOffset);
             } else if (lender < LenderIds.UP_TO_COMPOUND_V2) {
-                return _depositToCompoundV2(currentOffset, paramPush);
+                return _depositToCompoundV2(currentOffset);
             } else {
-                return _morphoDepositCollateral(currentOffset, callerAddress, paramPush);
+                return _morphoDepositCollateral(currentOffset, callerAddress);
             }
         }
         /** Borrow */
         else if (lendingOperation == LenderOps.BORROW) {
             if (lender < LenderIds.UP_TO_AAVE_V2) {
-                return _borrowFromAave(currentOffset, callerAddress, paramPull);
+                return _borrowFromAave(currentOffset, callerAddress);
             } else if (lender < LenderIds.UP_TO_COMPOUND_V3) {
-                return _borrowFromCompoundV3(currentOffset, callerAddress, paramPull);
+                return _borrowFromCompoundV3(currentOffset, callerAddress);
             } else if (lender < LenderIds.UP_TO_COMPOUND_V2) {
-                return _borrowFromCompoundV2(currentOffset, callerAddress, paramPull);
+                return _borrowFromCompoundV2(currentOffset, callerAddress);
             } else {
-                return _morphoBorrow(currentOffset, callerAddress, paramPull);
+                return _morphoBorrow(currentOffset, callerAddress);
             }
         }
         /** Repay */
         else if (lendingOperation == LenderOps.REPAY) {
             if (lender < LenderIds.UP_TO_AAVE_V2) {
-                return _repayToAave(currentOffset, callerAddress, paramPull);
+                return _repayToAave(currentOffset, callerAddress);
             } else if (lender < LenderIds.UP_TO_COMPOUND_V3) {
-                return _repayToCompoundV3(currentOffset, paramPush);
+                return _repayToCompoundV3(currentOffset);
             } else if (lender < LenderIds.UP_TO_COMPOUND_V2) {
-                return _repayToCompoundV2(currentOffset, paramPush);
+                return _repayToCompoundV2(currentOffset);
             } else {
-                return _morphoRepay(currentOffset, callerAddress, paramPush);
+                return _morphoRepay(currentOffset, callerAddress);
             }
         }
         /** Withdraw collateral */
         else if (lendingOperation == LenderOps.WITHDRAW) {
             if (lender < LenderIds.UP_TO_AAVE_V2) {
-                return _withdrawFromAave(currentOffset, callerAddress, paramPull);
+                return _withdrawFromAave(currentOffset, callerAddress);
             } else if (lender < LenderIds.UP_TO_COMPOUND_V3) {
-                return _withdrawFromCompoundV3(currentOffset, callerAddress, paramPull);
+                return _withdrawFromCompoundV3(currentOffset, callerAddress);
             } else if (lender < LenderIds.UP_TO_COMPOUND_V2) {
-                return _withdrawFromCompoundV2(currentOffset, callerAddress, paramPull);
+                return _withdrawFromCompoundV2(currentOffset, callerAddress);
             } else {
-                return _morphoWithdrawCollateral(currentOffset, callerAddress, paramPull);
+                return _morphoWithdrawCollateral(currentOffset, callerAddress);
             }
         }
         /** deposit lendingToken */
         else if (lendingOperation == LenderOps.DEPOSIT_LENDING_TOKEN) {
-            return _morphoDeposit(currentOffset, callerAddress, paramPush);
+            return _morphoDeposit(currentOffset, callerAddress);
         }
         /** withdraw lendingToken */
         else if (lendingOperation == LenderOps.WITHDRAW_LENDING_TOKEN) {
-            return _morphoWithdraw(currentOffset, callerAddress, paramPull);
+            return _morphoWithdraw(currentOffset, callerAddress);
         } else revert();
     }
 }
