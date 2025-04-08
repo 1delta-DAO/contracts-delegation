@@ -17,14 +17,14 @@ abstract contract DeltaErrors {
     // the compiler should drop these since they are unused
     // but it should still be included in the ABI to parse the
     // errors below
-    error InvalidDexId();
+    error Slippage();
     error NativeTransferFailed();
     error WrapFailed();
     error InvalidDex();
     error BadPool();
     error InvalidFlashLoan();
     error InvalidOperation();
-    error Slippage();
+    error InvalidCaller();
     error Target();
 
     // Slippage()
