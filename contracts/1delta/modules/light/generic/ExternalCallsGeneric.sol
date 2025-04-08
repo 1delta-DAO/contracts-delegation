@@ -14,9 +14,7 @@ import {DeltaErrors} from "../../shared/errors/Errors.sol";
 // solhint-disable max-line-length
 
 /**
- * @notice External call on whitelisted targets
- * This needs a whitelisting functions that stores the addresses in the correct slots
- * Do NOT whitlist lending contracts or tokens!
+ * @notice External call on any target - prevents `transferFrom` selector
  */
 abstract contract ExternalCallsGeneric is Slots, ERC20Selectors, Masks, DeltaErrors {
     /// @dev mask for selector in calldata
