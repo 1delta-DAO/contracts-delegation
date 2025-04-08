@@ -9,7 +9,7 @@ import {TransferIds} from "../enums/DeltaEnums.sol";
  * @title Token transfer contract - should work across all EVMs - user Uniswap style Permit2
  */
 contract Transfers is ERC20Transfers {
-    function _transfers(uint256 currentOffset, address callerAddress) internal returns (uint256) {
+    function _transfers(uint256 currentOffset, address callerAddress, uint256 paramPull, uint256 paramPush) internal returns (uint256) {
         uint256 transferOperation;
         assembly {
             let firstSlice := calldataload(currentOffset)
@@ -17,15 +17,15 @@ contract Transfers is ERC20Transfers {
             currentOffset := add(currentOffset, 1)
         }
         if (transferOperation == TransferIds.TRANSFER_FROM) {
-            return _transferFrom(currentOffset, callerAddress);
+            return _transferFrom(currentOffset, callerAddress, paramPull);
         } else if (transferOperation == TransferIds.SWEEP) {
-            return _sweep(currentOffset);
+            return _sweep(currentOffset, paramPush);
         } else if (transferOperation == TransferIds.WRAP_NATIVE) {
-            return _wrap(currentOffset);
+            return _wrap(currentOffset, paramPush);
         } else if (transferOperation == TransferIds.UNWRAP_WNATIVE) {
-            return _unwrap(currentOffset);
+            return _unwrap(currentOffset, paramPush);
         } else if (transferOperation == TransferIds.PERMIT2_TRANSFER_FROM) {
-            return _permit2TransferFrom(currentOffset, callerAddress);
+            return _permit2TransferFrom(currentOffset, callerAddress, paramPull);
         } else if (transferOperation == TransferIds.APPROVE) {
             return _approve(currentOffset);
         } else {
@@ -35,7 +35,7 @@ contract Transfers is ERC20Transfers {
 
     /** These need to be overridden withc chain-specific data */
 
-    function _wrap(uint256 currentOffset) internal virtual returns (uint256) {}
+    function _wrap(uint256 currentOffset, uint256 amountOverride) internal virtual returns (uint256) {}
 
-    function _unwrap(uint256 currentOffset) internal virtual returns (uint256) {}
+    function _unwrap(uint256 currentOffset, uint256 amountOverride) internal virtual returns (uint256) {}
 }

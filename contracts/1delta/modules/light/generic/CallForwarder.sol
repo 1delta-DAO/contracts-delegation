@@ -45,7 +45,7 @@ contract CallForwarder is Transfers, ExternalCallsGeneric {
             if (operation == ForwarderCommands.EXT_CALL) {
                 currentOffset = _callExternal(currentOffset);
             } else if (operation == ForwarderCommands.ASSET_HANDLING) {
-                currentOffset = _transfers(currentOffset, callerAddress);
+                currentOffset = _transfers(currentOffset, callerAddress, 0, 0);
             }
             // break criteria - we shifted to the end of the calldata
             if (currentOffset >= maxIndex) break;

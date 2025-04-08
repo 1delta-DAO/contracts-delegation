@@ -9,7 +9,6 @@ import "../../../contracts/1delta/modules/light/swappers/callbacks/DexForkMappin
 library CalldataLib {
     enum SweepType {
         VALIDATE,
-        BALANCE,
         AMOUNT
     }
 
@@ -470,7 +469,7 @@ library CalldataLib {
             uint8(TransferIds.TRANSFER_FROM),
             asset,
             receiver,
-            uint112(amount) //
+            uint128(amount) //
         ); // 2 + 20 + 20 + 14 = 56 bytes
     }
 
@@ -481,7 +480,7 @@ library CalldataLib {
             asset,
             receiver,
             sweepType,
-            uint112(amount) //
+            uint128(amount) //
         ); // 2 + 20 + 20 + 14 = 56 bytes
     }
 
@@ -489,7 +488,7 @@ library CalldataLib {
         data = abi.encodePacked(
             uint8(ComposerCommands.TRANSFERS),
             uint8(TransferIds.WRAP_NATIVE),
-            uint112(amount) //
+            uint128(amount) //
         ); // 14 bytes
     }
 
@@ -508,7 +507,7 @@ library CalldataLib {
             uint8(TransferIds.UNWRAP_WNATIVE),
             receiver,
             sweepType,
-            uint112(amount) //
+            uint128(amount) //
         ); // 14 bytes
     }
 
@@ -527,7 +526,7 @@ library CalldataLib {
                 poolType,
                 asset, //
                 pool,
-                uint112(amount),
+                uint128(amount),
                 uint16(data.length + 1),
                 abi.encodePacked(uint8(poolId), data)
             );

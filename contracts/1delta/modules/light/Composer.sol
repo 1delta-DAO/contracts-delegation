@@ -25,7 +25,7 @@ contract OneDeltaComposerLight is BaseComposer, FlashLoanCallbacks, SwapCallback
         uint256 paramPull,
         uint256 paramPush,
         uint256 currentOffset,
-        uint256 _length //
+        uint256 calldataLength //
     ) internal override(BaseComposer, FlashLoanCallbacks, SwapCallbacks) {
         return
             BaseComposer._deltaComposeInternal(
@@ -33,18 +33,18 @@ contract OneDeltaComposerLight is BaseComposer, FlashLoanCallbacks, SwapCallback
                 paramPull,
                 paramPush,
                 currentOffset,
-                _length //
+                calldataLength //
             );
     }
 
     /** Overrides for hard-coded wnative address */
 
-    function _wrap(uint256 currentOffset) internal override(Native, Transfers) returns (uint256) {
-        return Native._wrap(currentOffset);
+    function _wrap(uint256 currentOffset, uint256 amountOverride) internal override(Native, Transfers) returns (uint256) {
+        return Native._wrap(currentOffset, amountOverride);
     }
 
-    function _unwrap(uint256 currentOffset) internal override(Native, Transfers) returns (uint256) {
-        return Native._unwrap(currentOffset);
+    function _unwrap(uint256 currentOffset, uint256 amountOverride) internal override(Native, Transfers) returns (uint256) {
+        return Native._unwrap(currentOffset, amountOverride);
     }
 
     function _wrapOrUnwrapSimple(uint256 amount, uint256 currentOffset) internal override(Native, BaseSwapper) returns (uint256, uint256) {

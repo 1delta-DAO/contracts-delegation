@@ -19,9 +19,9 @@ contract AaveV3FlashLoans is Slots, ERC20Selectors, Masks, DeltaErrors {
      * |--------|----------------|---------------------------------|
      * | 0      | 20             | asset                           |
      * | 20     | 20             | pool                            | <-- we allow ANY aave v2 style pool here
-     * | 40     | 14             | amount                          |
-     * | 54     | 2              | paramsLength                    |
-     * | 56     | paramsLength   | params                          |
+     * | 40     | 16             | amount                          |
+     * | 56     | 2              | paramsLength                    |
+     * | 58     | paramsLength   | params                          |
      */
     function aaveV3FlashLoan(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
@@ -33,12 +33,12 @@ contract AaveV3FlashLoans is Slots, ERC20Selectors, Masks, DeltaErrors {
 
             // second calldata slice including amount annd params length
             let slice := calldataload(add(currentOffset, 40))
-            let amount := shr(144, slice) // shr will already mask uint112 here
+            let amount := shr(128, slice) // shr will already mask uint112 here
             // length of params
-            let calldataLength := and(UINT16_MASK, shr(128, slice))
+            let calldataLength := and(UINT16_MASK, shr(112, slice))
 
             // skip addresses and amount
-            currentOffset := add(currentOffset, 56)
+            currentOffset := add(currentOffset, 58)
 
             let ptr := mload(0x40)
             // flashLoanSimple(...)

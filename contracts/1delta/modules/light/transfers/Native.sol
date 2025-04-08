@@ -13,12 +13,30 @@ contract Native is ERC20Selectors, Masks, DeltaErrors {
     // wNative
     address internal constant WRAPPED_NATIVE = 0x4200000000000000000000000000000000000006;
 
-    function _wrap(uint256 currentOffset) internal virtual returns (uint256) {
+    /*
+     * | Offset | Length (bytes) | Description         |
+     * |--------|----------------|---------------------|
+     * | 0      | 16             | amount              |
+     */
+    function _wrap(uint256 currentOffset, uint256 amountOverride) internal virtual returns (uint256) {
         ////////////////////////////////////////////////////
-        // Wrap native, only uses amount as uint112
+        // Wrap native, only uses amount as uint128
         ////////////////////////////////////////////////////
         assembly {
-            let amount := shr(144, calldataload(currentOffset))
+            let amount := shr(128, calldataload(currentOffset))
+            // see whether we can get the pre param amount
+            switch and(_PRE_PARAM, amount)
+            case 1 {
+                amount := amountOverride
+            }
+            default {
+                // mask the bitmap
+                amount := and(UINT120_MASK, amount)
+                // zero is selfbalajnce
+                if iszero(amount) {
+                    amount := selfbalance()
+                }
+            }
             if iszero(
                 call(
                     gas(),
@@ -34,52 +52,69 @@ contract Native is ERC20Selectors, Masks, DeltaErrors {
                 mstore(0, WRAP)
                 revert(0, 0x4)
             }
-            currentOffset := add(currentOffset, 14)
+            currentOffset := add(currentOffset, 16)
         }
         return currentOffset;
     }
 
-    function _unwrap(uint256 currentOffset) internal virtual returns (uint256) {
+    /*
+     * | Offset | Length (bytes) | Description         |
+     * |--------|----------------|---------------------|
+     * | 0      | 20             | receiver            |
+     * | 20     | 1              | config              |
+     * | 21     | 16             | amount              |
+     */
+    function _unwrap(uint256 currentOffset, uint256 preParam) internal virtual returns (uint256) {
         ////////////////////////////////////////////////////
         // Transfers either token or native balance from this
         // contract to receiver. Reverts if minAmount is
         // less than the contract balance
-        // native asset is flagge via address(0) as parameter
-        //      bytes 1-20:                 receiver
-        //      bytes 20-21:                 config
-        //                                      0: sweep balance and validate against amount
-        //                                         fetches the balance and checks balance >= amount
-        //                                      1: transfer amount to receiver, skip validation
-        //      bytes 21-35:                 amount, either validation or transfer amount
+        //  config
+        //  0: sweep balance and validate against amount
+        //     fetches the balance and checks balance >= amount
+        //  1: transfer amount to receiver, skip validation
         ////////////////////////////////////////////////////
         assembly {
+            // load receiver
             let receiver := shr(96, calldataload(currentOffset))
-            let providedAmount := calldataload(add(currentOffset, 3))
+            // load so that amount is in the lower 14 bytes already
+            let providedAmount := calldataload(add(currentOffset, 5))
             // load config
-            let config := and(UINT8_MASK, shr(112, providedAmount))
-            providedAmount := and(_UINT112_MASK, providedAmount)
+            let config := and(UINT8_MASK, shr(128, providedAmount))
+            // mask amount
+            providedAmount := and(UINT128_MASK, providedAmount)
 
             let transferAmount
-            // validate if config is zero, otherwise skip
-            switch config
-            case 0 {
-                // selector for balanceOf(address)
-                mstore(0x0, ERC20_BALANCE_OF)
-                // add this address as parameter
-                mstore(0x4, address())
-
-                // call to underlying
-                pop(staticcall(gas(), WRAPPED_NATIVE, 0x0, 0x24, 0x0, 0x20))
-
-                transferAmount := mload(0x0)
-                if lt(transferAmount, providedAmount) {
-                    mstore(0, SLIPPAGE)
-                    revert(0, 0x4)
-                }
+            // check if we use the override
+            switch and(_PRE_PARAM, providedAmount)
+            case 1 {
+                transferAmount := preParam
             }
             default {
-                transferAmount := providedAmount
+                // mask away the top bitmap
+                providedAmount := and(UINT120_MASK, providedAmount)
+                // validate if config is zero, otherwise skip
+                switch config
+                case 0 {
+                    // selector for balanceOf(address)
+                    mstore(0x0, ERC20_BALANCE_OF)
+                    // add this address as parameter
+                    mstore(0x4, address())
+
+                    // call to underlying
+                    pop(staticcall(gas(), WRAPPED_NATIVE, 0x0, 0x24, 0x0, 0x20))
+
+                    transferAmount := mload(0x0)
+                    if lt(transferAmount, providedAmount) {
+                        mstore(0, SLIPPAGE)
+                        revert(0, 0x4)
+                    }
+                }
+                default {
+                    transferAmount := providedAmount
+                }
             }
+
             if gt(transferAmount, 0) {
                 // selector for withdraw(uint256)
                 mstore(0x0, 0x2e1a7d4d00000000000000000000000000000000000000000000000000000000)
@@ -120,12 +155,12 @@ contract Native is ERC20Selectors, Masks, DeltaErrors {
                     }
                 }
             }
-            currentOffset := add(currentOffset, 35)
+            currentOffset := add(currentOffset, 37)
         }
         return currentOffset;
     }
 
-    /** This one is for overring the DEX implementatio */
+    /** This one is for overring the DEX implementation */
     function _wrapOrUnwrapSimple(uint256 amount, uint256 currentOffset) internal virtual returns (uint256, uint256) {
         assembly {
             /**
