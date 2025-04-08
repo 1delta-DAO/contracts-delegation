@@ -23,6 +23,7 @@ contract FlashLoanLightTest is BaseTest {
     address internal AAVE_V3_POOL;
     address internal GRANARY_POOL;
     address private BALANCER_V2_VAULT = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
+    address internal constant UNI_V4_PM = 0x498581fF718922c3f8e6A244956aF099B2652b2b;
 
     // balancer dex data
     address internal constant BALANCER_V3_VAULT = 0xbA1333333333a1BA1108E8412f11850A5C319bA9;
@@ -167,13 +168,6 @@ contract FlashLoanLightTest is BaseTest {
             CalldataLib.SweepType.AMOUNT
         );
 
-        bytes memory takeFunds = CalldataLib.balancerV3Take(
-            BALANCER_V3_VAULT,
-            assetFlash,
-            address(oneD),
-            amount //
-        );
-
         bytes memory sweep = CalldataLib.sweep(
             assetFlash,
             BALANCER_V3_VAULT,
@@ -181,27 +175,52 @@ contract FlashLoanLightTest is BaseTest {
             CalldataLib.SweepType.AMOUNT
         );
 
-        bytes memory settle = CalldataLib.nextGenDexSettleBalancer(
-            BALANCER_V3_VAULT,
-            assetFlash,
-            amount // type(uint).max //
-        );
-        takeFunds = abi.encodePacked(
-            takeFunds, //
-            dp,
-            sweep,
-            settle
-        );
-
-        bytes memory unlock = CalldataLib.nextGenDexUnlock(
+        bytes memory unlock = CalldataLib.balancerV3FlashLoan(
             BALANCER_V3_VAULT,
             DexForkMappings.BALANCER_V3,
-            takeFunds //
+            assetFlash,
+            address(oneD),
+            amount,
+            abi.encodePacked(dp, sweep) //
         );
         vm.prank(user);
         oneD.deltaCompose(unlock);
 
         vm.expectRevert(bytes4(keccak256("BadPool()")));
         oneD.balancerUnlockCallback(dp);
+    }
+
+    function test_light_flash_loan_uniswapV4() external {
+        address assetFlash = USDC;
+        uint256 sweepAm = 30.0e18;
+        vm.deal(address(oneD), sweepAm);
+        uint256 amount = 432.0e6;
+        bytes memory dp = CalldataLib.sweep(
+            address(0),
+            user,
+            sweepAm, //
+            CalldataLib.SweepType.AMOUNT
+        );
+
+        bytes memory sweep = CalldataLib.sweep(
+            assetFlash,
+            UNI_V4_PM,
+            amount, //
+            CalldataLib.SweepType.AMOUNT
+        );
+
+        bytes memory unlock = CalldataLib.uniswapV4FlashLoan(
+            UNI_V4_PM,
+            DexForkMappings.UNISWAP_V4,
+            assetFlash,
+            address(oneD),
+            amount,
+            abi.encodePacked(dp, sweep) //
+        );
+        vm.prank(user);
+        oneD.deltaCompose(unlock);
+
+        vm.expectRevert(bytes4(keccak256("BadPool()")));
+        oneD.unlockCallback(dp);
     }
 }

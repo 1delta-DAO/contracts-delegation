@@ -38,13 +38,78 @@ library CalldataLib {
         ); // swaps max index for inner path
     }
 
+    function balancerV3FlashLoan(
+        address singleton,
+        uint256 poolId,
+        address asset,
+        address receiver,
+        uint256 amount, //
+        bytes memory flashData
+    ) internal pure returns (bytes memory data) {
+        bytes memory take = balancerV3Take(singleton, asset, receiver, amount);
+        bytes memory settle = nextGenDexSettleBalancer(singleton, asset, amount);
+        data = nextGenDexUnlock(
+            singleton,
+            poolId,
+            abi.encodePacked(
+                take,
+                flashData,
+                settle //
+            )
+        );
+    }
+
+    function uniswapV4FlashLoan(
+        address singleton,
+        uint256 poolId,
+        address asset,
+        address receiver,
+        uint256 amount, //
+        bytes memory flashData
+    ) internal pure returns (bytes memory data) {
+        bytes memory take = uniswapV4Take(singleton, asset, receiver, amount);
+        bytes memory settle = nextGenDexSettle(singleton, asset == address(0) ? amount : 0);
+        bytes memory sync = uniswapV4Sync(singleton, asset);
+        data = nextGenDexUnlock(
+            singleton,
+            poolId,
+            abi.encodePacked(
+                take,
+                sync, // sync after taking is needed
+                flashData,
+                settle //
+            )
+        );
+    }
+
     function balancerV3Take(address singleton, address asset, address receiver, uint256 amount) internal pure returns (bytes memory data) {
         data = abi.encodePacked(
             uint8(ComposerCommands.GEN_2025_SINGELTONS),
             uint8(Gen2025ActionIds.BAL_V3_TAKE),
             singleton, // manager address
             asset, // validation Id
-            receiver, // validation Id
+            receiver, // 
+            uint128(amount)
+        ); // swaps max index for inner path
+    }
+
+     function uniswapV4Sync(address singleton, address asset) internal pure returns (bytes memory data) {
+        data = asset == address(0) ? new bytes(0) : abi.encodePacked(
+            uint8(ComposerCommands.GEN_2025_SINGELTONS),
+            uint8(Gen2025ActionIds.UNI_V4_SYNC),
+            singleton, // manager address
+            asset // validation Id
+        ); // swaps max index for inner path
+    }
+
+
+    function uniswapV4Take(address singleton, address asset, address receiver, uint256 amount) internal pure returns (bytes memory data) {
+        data = abi.encodePacked(
+            uint8(ComposerCommands.GEN_2025_SINGELTONS),
+            uint8(Gen2025ActionIds.UNI_V4_TAKE),
+            singleton, // manager address
+            asset, // validation Id
+            receiver, // 
             uint128(amount)
         ); // swaps max index for inner path
     }
