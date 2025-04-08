@@ -9,13 +9,8 @@ interface IUniswapV4Poolmanager {
 }
 
 abstract contract V4TypeQuoter is Masks {
-    /// @dev Transient storage variable used to check a safety condition in exact output swaps
-    uint256 private amountOutCached;
     /** We need all these selectors for executing a single swap */
     bytes32 private constant SWAP = 0xf3cd914c00000000000000000000000000000000000000000000000000000000;
-    bytes32 private constant TAKE = 0x0b0d9c0900000000000000000000000000000000000000000000000000000000;
-    bytes32 private constant SETTLE = 0x11da60b400000000000000000000000000000000000000000000000000000000;
-    bytes32 private constant SYNC = 0xa584119400000000000000000000000000000000000000000000000000000000;
     bytes32 private constant EXTTLOAD = 0x9bf6645f00000000000000000000000000000000000000000000000000000000;
 
     constructor() {}

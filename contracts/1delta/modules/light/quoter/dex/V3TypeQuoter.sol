@@ -5,9 +5,6 @@ import {Masks} from "../../../shared/masks/Masks.sol";
 import {DexTypeMappings} from "../../swappers/dex/DexTypeMappings.sol";
 
 abstract contract V3TypeQuoter is Masks {
-    /// @dev Transient storage variable used to check a safety condition in exact output swaps
-    uint256 private amountOutCached;
-
     /*
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
