@@ -4,11 +4,11 @@ pragma solidity ^0.8.28;
 import {Masks} from "../../shared/masks/Masks.sol";
 import {DexTypeMappings} from "../swappers/dex/DexTypeMappings.sol";
 import {V3TypeQuoter} from "./dex/V3TypeQuoter.sol";
+import {V2TypeQuoter} from "./dex/V2TypeQuoter.sol";
 import {ERC20Selectors} from "../../shared/selectors/ERC20Selectors.sol";
 
-contract QuoterLight is Masks, V3TypeQuoter, ERC20Selectors {
+contract QuoterLight is V3TypeQuoter, V2TypeQuoter {
     error InvalidDexId();
-    error InvalidSplitFormat();
 
     function quote(uint256 amountIn, bytes calldata data) external returns (uint256 amountOut) {
         address tokenIn;
@@ -77,8 +77,13 @@ contract QuoterLight is Masks, V3TypeQuoter, ERC20Selectors {
             dexTypeId := shr(248, calldataload(currentOffset))
             currentOffset := add(currentOffset, 1)
         }
+        // uniswapV3 style
         if (dexTypeId == DexTypeMappings.UNISWAP_V3_ID) {
             return getV3TypeAmountOut(amountIn, tokenIn, tokenOut, currentOffset);
+        }
+        // uniswapV2 style
+        else if (dexTypeId == DexTypeMappings.UNISWAP_V2_ID) {
+            return _getV2TypeAmountOut(amountIn, tokenIn, tokenOut, currentOffset);
         } else {
             revert InvalidDexId();
         }
