@@ -26,6 +26,7 @@ abstract contract DeltaErrors {
     error InvalidOperation();
     error InvalidCaller();
     error Target();
+    error InvalidDexId();
 
     // Slippage()
     bytes4 internal constant SLIPPAGE = 0x7dd37f70;
@@ -45,6 +46,8 @@ abstract contract DeltaErrors {
     bytes4 internal constant INVALID_CALLER = 0x48f5c3ed;
     // Target()
     bytes4 internal constant INVALID_TARGET = 0x4fe6f55f;
+    // InvalidDexId()
+    bytes4 internal constant INVALID_DEX_ID = 0x0bbef348;
 
     function _invalidOperation() internal pure {
         assembly {
