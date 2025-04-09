@@ -11,7 +11,8 @@ import {DeltaErrors} from "../../shared/errors/Errors.sol";
  */
 contract ERC20Transfers is ERC20Selectors, Masks, DeltaErrors {
     // approval slot
-    bytes32 private constant CALL_MANAGEMENT_APPROVALS = 0x1aae13105d9b6581c36534caba5708726e5ea1e03175e823c989a5756966d1f3;
+    bytes32 private constant CALL_MANAGEMENT_APPROVALS =
+        0x1aae13105d9b6581c36534caba5708726e5ea1e03175e823c989a5756966d1f3;
 
     /// @notice fixed selector transferFrom(...) on permit2
     bytes32 private constant PERMIT2_TRANSFER_FROM = 0x36c7851600000000000000000000000000000000000000000000000000000000;
@@ -207,9 +208,7 @@ contract ERC20Transfers is ERC20Selectors, Masks, DeltaErrors {
                         revert(0, 0x4)
                     }
                 }
-                default {
-                    transferAmount := providedAmount
-                }
+                default { transferAmount := providedAmount }
 
                 if gt(transferAmount, 0) {
                     let ptr := mload(0x40) // free memory pointer
@@ -253,16 +252,14 @@ contract ERC20Transfers is ERC20Selectors, Masks, DeltaErrors {
                         revert(0, 0x4)
                     }
                 }
-                default {
-                    transferAmount := providedAmount
-                }
+                default { transferAmount := providedAmount }
 
                 if gt(transferAmount, 0) {
                     if iszero(
                         call(
                             gas(),
                             receiver,
-                            providedAmount,
+                            transferAmount,
                             0x0, // input = empty for fallback/receive
                             0x0, // input size = zero
                             0x0, // output = empty
