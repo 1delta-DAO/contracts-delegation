@@ -16,10 +16,7 @@ abstract contract DodoV2Quoter is Masks {
      * | 25     | clLength       | calldata             | calldata for fash loan
      */
     /// @dev calculate amountOut for dodoV2 style pools - does not require overflow checks
-    function _getDodoV2AmountOut(
-        uint256 sellAmount,
-        uint256 currentOffset
-    ) internal view returns (uint256 amountOut, uint256 newOffset) {
+    function _getDodoV2AmountOut(uint256 sellAmount, uint256 currentOffset) internal view returns (uint256 amountOut, uint256 newOffset) {
         address pair;
         uint256 sellQuote;
         uint clLength;

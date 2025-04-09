@@ -3,12 +3,13 @@ pragma solidity ^0.8.28;
 
 import {Masks} from "../../../shared/masks/Masks.sol";
 import {DexTypeMappings} from "../../swappers/dex/DexTypeMappings.sol";
+import {QuoterUtils} from "./utils/QuoterUtils.sol";
 
 interface IUniswapV4Poolmanager {
     function unlock(bytes calldata data) external returns (bytes memory);
 }
 
-abstract contract V4TypeQuoter is Masks {
+abstract contract V4TypeQuoter is QuoterUtils, Masks {
     /** We need all these selectors for executing a single swap */
     bytes32 private constant SWAP = 0xf3cd914c00000000000000000000000000000000000000000000000000000000;
     bytes32 private constant EXTTLOAD = 0x9bf6645f00000000000000000000000000000000000000000000000000000000;
@@ -261,67 +262,4 @@ abstract contract V4TypeQuoter is Masks {
             revert(ptr, 32)
         }
     }
-
-    /**
-     * @notice Parse a revert reason returned from a swap call
-     * @param reason Bytes reason from revert
-     * @return value Extracted amount
-     */
-    function parseRevertReason(bytes memory reason) private pure returns (uint256) {
-        if (reason.length != 32) {
-            if (reason.length != 64) revert("Unexpected error");
-            // For iZi or other variants that return two values
-            return abi.decode(reason, (uint256));
-        }
-        return abi.decode(reason, (uint256));
-    }
-
-    // /**
-    //  * @notice Callback for Uniswap V3 swap
-    //  * @param amount0Delta Amount of token0 delta
-    //  * @param amount1Delta Amount of token1 delta
-    //  * @param path Encoded path for callback
-    //  */
-    // function _v3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata path) internal pure {
-    //     // Extract token addresses from path
-    //     address tokenIn;
-    //     address tokenOut;
-
-    //     assembly {
-    //         tokenIn := shr(96, calldataload(path.offset))
-    //         tokenOut := shr(96, calldataload(add(path.offset, 20)))
-    //     }
-
-    //     // Determine which amount is payment and which is received
-    //     (bool isExactInput, uint256 amountReceived) = amount0Delta > 0
-    //         ? (tokenIn < tokenOut, uint256(-amount1Delta))
-    //         : (tokenOut < tokenIn, uint256(-amount0Delta));
-
-    //     // For exact input, we revert with the received amount
-    //     if (isExactInput) {
-    //         assembly {
-    //             let ptr := mload(0x40)
-    //             mstore(ptr, amountReceived)
-    //             revert(ptr, 32)
-    //         }
-    //     } else {
-    //         revert("Unsupported");
-    //     }
-    // }
-
-    // // Fallback to handle swap callbacks from different pools
-    // fallback() external {
-    //     bytes calldata path;
-    //     int256 amount0Delta;
-    //     int256 amount1Delta;
-
-    //     assembly {
-    //         amount0Delta := calldataload(0x4)
-    //         amount1Delta := calldataload(0x24)
-    //         path.length := calldataload(0x64)
-    //         path.offset := 132
-    //     }
-
-    //     _v3SwapCallback(amount0Delta, amount1Delta, path);
-    // }
 }

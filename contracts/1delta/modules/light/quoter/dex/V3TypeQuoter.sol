@@ -3,8 +3,9 @@ pragma solidity ^0.8.28;
 
 import {Masks} from "../../../shared/masks/Masks.sol";
 import {DexTypeMappings} from "../../swappers/dex/DexTypeMappings.sol";
+import {QuoterUtils} from "./utils/QuoterUtils.sol";
 
-abstract contract V3TypeQuoter is Masks {
+abstract contract V3TypeQuoter is QuoterUtils, Masks {
     /*
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
@@ -60,25 +61,11 @@ abstract contract V3TypeQuoter is Masks {
                 abi.encodePacked(tokenIn, tokenOut) // callback data
             )
         {} catch (bytes memory reason) {
-            return (_parseRevertReason(reason), currentOffset);
+            return (parseRevertReason(reason), currentOffset);
         }
 
         // should not happen!
         revert("Swap did not revert");
-    }
-
-    /**
-     * @notice Parse a revert reason returned from a swap call
-     * @param reason Bytes reason from revert
-     * @return value Extracted amount
-     */
-    function _parseRevertReason(bytes memory reason) private pure returns (uint256) {
-        if (reason.length != 32) {
-            if (reason.length != 64) revert("Unexpected error");
-            // For iZi or other variants that return two values
-            return abi.decode(reason, (uint256));
-        }
-        return abi.decode(reason, (uint256));
     }
 
     /**
