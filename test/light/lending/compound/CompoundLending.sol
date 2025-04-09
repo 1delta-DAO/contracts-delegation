@@ -1,14 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {ComposerUtils, Commands} from "../shared/utils/ComposerUtils.sol";
-import {MarketParams, IMorphoEverything} from "./utils/Morpho.sol";
-
-import {OneDeltaComposerLight} from "../../contracts/1delta/modules/light/Composer.sol";
-import {IERC20All} from "../shared/interfaces/IERC20All.sol";
-import {BaseTest} from "../shared/BaseTest.sol";
-import {Chains, Tokens, Lenders} from "../data/LenderRegistry.sol";
-import "./utils/CalldataLib.sol";
+import {ComposerUtils, Commands} from "test/shared/utils/ComposerUtils.sol";
+import {OneDeltaComposerLight} from "light/Composer.sol";
+import {IERC20All} from "test/shared/interfaces/IERC20All.sol";
+import {BaseTest} from "test/shared/BaseTest.sol";
+import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
+import "test/light/utils/CalldataLib.sol";
 
 /**
  * We test all morpho blue operations

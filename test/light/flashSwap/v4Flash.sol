@@ -1,17 +1,18 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {MarketParams, IMorphoEverything} from "../utils/Morpho.sol";
+import {MarketParams, IMorphoEverything} from "test/light/lending/utils/Morpho.sol";
 
 import {console} from "forge-std/console.sol";
-import {OneDeltaComposerLight} from "../../../contracts/1delta/modules/light/Composer.sol";
-import {IERC20All} from "../../shared/interfaces/IERC20All.sol";
-import {BaseTest} from "../../shared/BaseTest.sol";
-import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
-import "../utils/CalldataLib.sol";
+import {OneDeltaComposerLight} from "light/Composer.sol";
+import {IERC20All} from "test/shared/interfaces/IERC20All.sol";
+import {BaseTest} from "test/shared/BaseTest.sol";
+import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
+import "test/light/utils/CalldataLib.sol";
 
 contract FlashSwapTest is BaseTest {
     using CalldataLib for bytes;
+
     uint8 internal constant UNI_V3_DEX_ID = 0;
 
     OneDeltaComposerLight oneDV2;
@@ -99,7 +100,9 @@ contract FlashSwapTest is BaseTest {
                 UNI_V4_PM, //
                 borrowAmount
             );
-            settlementActions = abi.encodePacked(CalldataLib.unwrap(address(oneDV2), borrowAmount, CalldataLib.SweepType.AMOUNT), settlementActions);
+            settlementActions = abi.encodePacked(
+                CalldataLib.unwrap(address(oneDV2), borrowAmount, CalldataLib.SweepType.AMOUNT), settlementActions
+            );
 
             deposit = abi.encodePacked(
                 swapAction, // the swap
@@ -119,7 +122,7 @@ contract FlashSwapTest is BaseTest {
         uint256 borrowBalanceBefore = chain.getDebtBalance(user, WETH, lender);
         uint256 collateralBefore = chain.getCollateralBalance(user, tokenOut, lender);
 
-        uint gas = gasleft();
+        uint256 gas = gasleft();
 
         vm.prank(user);
         oneDV2.deltaCompose(swapAction);

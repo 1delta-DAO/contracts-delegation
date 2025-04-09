@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {MarketParams, IMorphoEverything} from "./utils/Morpho.sol";
-import {OneDeltaComposerLight} from "../../contracts/1delta/modules/light/Composer.sol";
-import {IERC20All} from "../shared/interfaces/IERC20All.sol";
-import {BaseTest} from "../shared/BaseTest.sol";
-import {Chains, Tokens, Lenders} from "../data/LenderRegistry.sol";
-import "./utils/CalldataLib.sol";
+import {MarketParams, IMorphoEverything} from "test/light/lending/utils/Morpho.sol";
+import {OneDeltaComposerLight} from "light/Composer.sol";
+import {IERC20All} from "test/shared/interfaces/IERC20All.sol";
+import {BaseTest} from "test/shared/BaseTest.sol";
+import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
+import "test/light/utils/CalldataLib.sol";
 
 contract CompoundV2NativeComposerLightTest is BaseTest {
     uint16 internal constant COMPOUND_V2_ID = 3000;
@@ -121,8 +121,12 @@ contract CompoundV2NativeComposerLightTest is BaseTest {
         oneDV2.deltaCompose(abi.encodePacked(transferTo, d));
     }
 
-    /** native can only be borrowed directly */
-    function borrowNativeFromCompoundV2(address token, address userAddress, uint256 amountToBorrow, address comptroller) internal {
+    /**
+     * native can only be borrowed directly
+     */
+    function borrowNativeFromCompoundV2(address token, address userAddress, uint256 amountToBorrow, address comptroller)
+        internal
+    {
         vm.prank(userAddress);
         IERC20All(comptroller).updateDelegate(address(oneDV2), true);
 
@@ -138,5 +142,5 @@ contract CompoundV2NativeComposerLightTest is BaseTest {
 }
 
 interface VenusBorrow {
-    function borrow(uint) external returns (uint);
+    function borrow(uint256) external returns (uint256);
 }

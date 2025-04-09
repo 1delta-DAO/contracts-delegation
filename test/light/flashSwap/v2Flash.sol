@@ -1,14 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {MarketParams, IMorphoEverything} from "../utils/Morpho.sol";
-
 import {console} from "forge-std/console.sol";
-import {OneDeltaComposerLight} from "../../../contracts/1delta/modules/light/Composer.sol";
-import {IERC20All} from "../../shared/interfaces/IERC20All.sol";
-import {BaseTest} from "../../shared/BaseTest.sol";
-import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
-import "../utils/CalldataLib.sol";
+import {OneDeltaComposerLight} from "light/Composer.sol";
+import {IERC20All} from "test/shared/interfaces/IERC20All.sol";
+import {BaseTest} from "test/shared/BaseTest.sol";
+import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
+import "test/light/utils/CalldataLib.sol";
 
 interface IF {
     function getPool(address tokenA, address tokenB, uint24 fee) external view returns (address);
@@ -56,12 +54,13 @@ contract FlashSwapTest is BaseTest {
         data = abi.encodePacked(
             uint8(ComposerCommands.SWAPS),
             uint128(amount), //
-            uint128(1), //
+            uint128(1),
+            //
             assetIn,
             uint8(0), // swaps max index
             uint8(0) // splits
-            // single split data (no data here)
-            // uint8(0), // swaps max index for inner path
+                // single split data (no data here)
+                // uint8(0), // swaps max index for inner path
         );
         console.log("callbackData.length", callbackData.length);
         console.logBytes(callbackData);
@@ -88,9 +87,9 @@ contract FlashSwapTest is BaseTest {
         address tokenIn = USDC;
         address tokenOut = WETH;
         address pool = AAVE_V3_POOL;
-        uint256 amount = 0.10e18;
+        uint256 amount = 0.1e18;
         uint256 borrowAmount = 200.0e6;
-        deal(tokenOut, user, 0.10e18);
+        deal(tokenOut, user, 0.1e18);
 
         depositToAave(tokenOut, user, amount, pool);
 

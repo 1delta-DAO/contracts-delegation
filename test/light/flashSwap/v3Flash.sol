@@ -1,14 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {MarketParams, IMorphoEverything} from "../utils/Morpho.sol";
-
 import {console} from "forge-std/console.sol";
-import {OneDeltaComposerLight} from "../../../contracts/1delta/modules/light/Composer.sol";
-import {IERC20All} from "../../shared/interfaces/IERC20All.sol";
-import {BaseTest} from "../../shared/BaseTest.sol";
-import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
-import "../utils/CalldataLib.sol";
+import {OneDeltaComposerLight} from "light/Composer.sol";
+import {IERC20All} from "test/shared/interfaces/IERC20All.sol";
+import {BaseTest} from "test/shared/BaseTest.sol";
+import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
+import "test/light/utils/CalldataLib.sol";
 
 interface IF {
     function getPool(address tokenA, address tokenB, uint24 fee) external view returns (address);
@@ -57,12 +55,13 @@ contract FlashSwapTest is BaseTest {
         data = abi.encodePacked(
             uint8(ComposerCommands.SWAPS),
             uint128(amount), //
-            uint128(1), //
+            uint128(1),
+            //
             assetIn,
             uint8(0), // swaps max index
             uint8(0) // splits
-            // single split data (no data here)
-            // uint8(0), // swaps max index for inner path
+                // single split data (no data here)
+                // uint8(0), // swaps max index for inner path
         );
         data = abi.encodePacked(
             data,
@@ -119,7 +118,7 @@ contract FlashSwapTest is BaseTest {
         uint256 collateralBefore = chain.getCollateralBalance(user, tokenOut, lender);
         // print gas cost
         {
-            uint gas = gasleft();
+            uint256 gas = gasleft();
 
             vm.prank(user);
             oneDV2.deltaCompose(action);
@@ -213,7 +212,8 @@ contract FlashSwapTest is BaseTest {
         action = v3poolFlashSwap(
             tokenIn,
             tokenOut, //
-            500, // first pool
+            500,
+            // first pool
             uint8(DexTypeMappings.UNISWAP_V3_ID),
             address(oneDV2),
             borrowAmount / 2,
@@ -228,7 +228,8 @@ contract FlashSwapTest is BaseTest {
         action = v3poolFlashSwap(
             tokenIn,
             tokenOut, //
-            3000, // second pool
+            3000,
+            // second pool
             uint8(DexTypeMappings.UNISWAP_V3_ID),
             address(oneDV2),
             borrowAmount / 2,
