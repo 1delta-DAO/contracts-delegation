@@ -2,14 +2,14 @@
 pragma solidity ^0.8.19;
 
 import {console} from "forge-std/console.sol";
-import {MorphoMathLib} from "./utils/MathLib.sol";
-import {MarketParams, IMorphoEverything} from "./utils/Morpho.sol";
+import {MorphoMathLib} from "../utils/MathLib.sol";
+import {MarketParams, IMorphoEverything} from "../utils/Morpho.sol";
 
-import {OneDeltaComposerLight} from "../../contracts/1delta/modules/light/Composer.sol";
-import {IERC20All} from "../shared/interfaces/IERC20All.sol";
-import {BaseTest} from "../shared/BaseTest.sol";
-import {Chains, Tokens, Lenders} from "../data/LenderRegistry.sol";
-import "./utils/CalldataLib.sol";
+import {OneDeltaComposerLight} from "light/Composer.sol";
+import {IERC20All} from "test/shared/interfaces/IERC20All.sol";
+import {BaseTest} from "test/shared/BaseTest.sol";
+import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
+import "test/light/utils/CalldataLib.sol";
 
 /**
  * We test all CalldataLib.morpho blue operations
@@ -57,13 +57,12 @@ contract MorphoBlueTest is BaseTest {
         uint256 _data = uint160(nonce);
         if (allow) _data = (_data & ~UPPER_BIT) | UPPER_BIT;
 
-        return
-            abi.encodePacked(
-                _data,
-                uint32(423),
-                uint256(674321764327), //
-                uint256(943209784329784327982)
-            );
+        return abi.encodePacked(
+            _data,
+            uint32(423),
+            uint256(674321764327), //
+            uint256(943209784329784327982)
+        );
     }
 
     function test_light_lending_morpho_permit() external {
@@ -95,7 +94,7 @@ contract MorphoBlueTest is BaseTest {
 
         uint256 withdrawAssets = 0.5e8;
 
-        (, , uint128 collateralBefore) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
+        (,, uint128 collateralBefore) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
         uint256 underlyingBefore = IERC20All(LBTC).balanceOf(user);
 
         bytes memory withdrawCall = CalldataLib.morphoWithdrawCollateral(
@@ -111,7 +110,7 @@ contract MorphoBlueTest is BaseTest {
         vm.prank(user);
         oneD.deltaCompose(withdrawCall);
 
-        (, , uint128 collateralAfter) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
+        (,, uint128 collateralAfter) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
         uint256 underlyingAfter = IERC20All(LBTC).balanceOf(user);
 
         assertApproxEqAbs(collateralAfter, assets - withdrawAssets, 0);
@@ -145,9 +144,10 @@ contract MorphoBlueTest is BaseTest {
         oneD.deltaCompose(borrowCall);
 
         // get market data
-        (, , uint128 totalBorrowAssets, uint128 totalBorrowShares, , ) = IMorphoEverything(MORPHO).market(marketId(LBTC_USDC_MARKET));
+        (,, uint128 totalBorrowAssets, uint128 totalBorrowShares,,) =
+            IMorphoEverything(MORPHO).market(marketId(LBTC_USDC_MARKET));
 
-        (, uint128 borrowShares, ) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
+        (, uint128 borrowShares,) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
         uint256 borrowBalanceAfter = borrowShares.toAssetsDown(totalBorrowAssets, totalBorrowShares);
 
         assertEq(borrowBalanceAfter, borrowAssets);
@@ -200,7 +200,7 @@ contract MorphoBlueTest is BaseTest {
         vm.prank(user);
         oneD.deltaCompose(abi.encodePacked(transferTo, repayCall));
 
-        (, uint128 borrowShares, ) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
+        (, uint128 borrowShares,) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
         assertApproxEqAbs(borrowShares, 0, 1);
     }
 
@@ -214,7 +214,8 @@ contract MorphoBlueTest is BaseTest {
         uint256 borrowAssets = 30_000.0e6;
         depositCollateralToMorpho(user, assets);
 
-        bytes memory borrowCall = CalldataLib.morphoBorrow(encodeMarket(LBTC_USDC_MARKET), false, borrowAssets, user, MORPHO);
+        bytes memory borrowCall =
+            CalldataLib.morphoBorrow(encodeMarket(LBTC_USDC_MARKET), false, borrowAssets, user, MORPHO);
 
         vm.prank(user);
         IMorphoEverything(MORPHO).setAuthorization(address(oneD), true);
@@ -222,9 +223,11 @@ contract MorphoBlueTest is BaseTest {
         vm.prank(user);
         oneD.deltaCompose(borrowCall);
 
-        (, uint128 borrowShares, ) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
+        (, uint128 borrowShares,) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
 
-        bytes memory repayCall = CalldataLib.morphoRepay(encodeMarket(LBTC_USDC_MARKET), true, false, borrowShares, user, hex"", MORPHO, MORPHO_ID);
+        bytes memory repayCall = CalldataLib.morphoRepay(
+            encodeMarket(LBTC_USDC_MARKET), true, false, borrowShares, user, hex"", MORPHO, MORPHO_ID
+        );
 
         vm.prank(user);
         IERC20All(borrowAsset).approve(address(oneD), type(uint256).max);
@@ -238,7 +241,7 @@ contract MorphoBlueTest is BaseTest {
         vm.prank(user);
         oneD.deltaCompose(abi.encodePacked(transferTo, repayCall));
 
-        (, uint128 borrowSharesAfter, ) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
+        (, uint128 borrowSharesAfter,) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
         assertApproxEqAbs(borrowSharesAfter, 0, 1);
     }
 
@@ -353,7 +356,7 @@ contract MorphoBlueTest is BaseTest {
         vm.prank(user);
         oneD.deltaCompose(abi.encodePacked(transferTo, repayCall));
 
-        (, uint128 borrowShares, ) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
+        (, uint128 borrowShares,) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
         assertEq(borrowShares, 0);
 
         // console.logBytes32(marketId(LBTC_USDC_MARKET));
@@ -387,7 +390,7 @@ contract MorphoBlueTest is BaseTest {
 
         vm.prank(user);
         oneD.deltaCompose(abi.encodePacked(transferTo, deposit));
-        (uint256 supplyShares, , ) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
+        (uint256 supplyShares,,) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
 
         (
             uint128 totalSupplyAssets,
@@ -395,7 +398,6 @@ contract MorphoBlueTest is BaseTest {
             ,
             ,
             ,
-
         ) = IMorphoEverything(MORPHO).market(marketId(LBTC_USDC_MARKET));
 
         uint256 assetsSupplied = supplyShares.toAssetsDown(totalSupplyAssets, totalSupplyShares);
@@ -439,7 +441,7 @@ contract MorphoBlueTest is BaseTest {
 
         vm.prank(user);
         oneD.deltaCompose(abi.encodePacked(transferTo, deposit));
-        (uint256 supplyShares, , ) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
+        (uint256 supplyShares,,) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
 
         (
             uint128 totalSupplyAssets,
@@ -447,7 +449,6 @@ contract MorphoBlueTest is BaseTest {
             ,
             ,
             ,
-
         ) = IMorphoEverything(MORPHO).market(marketId(LBTC_USDC_MARKET));
 
         uint256 assetsSupplied = supplyShares.toAssetsDown(totalSupplyAssets, totalSupplyShares);
@@ -483,7 +484,7 @@ contract MorphoBlueTest is BaseTest {
         oneD.deltaCompose(withdrawCall);
 
         uint256 balAfter = IERC20All(loan).balanceOf(user);
-        (uint256 supplyShares, , ) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
+        (uint256 supplyShares,,) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
         assertApproxEqAbs(balAfter - bal, loanAssetAm - loanAssetAmWithdraw, 0);
         (
             uint128 totalSupplyAssets,
@@ -491,7 +492,6 @@ contract MorphoBlueTest is BaseTest {
             ,
             ,
             ,
-
         ) = IMorphoEverything(MORPHO).market(marketId(LBTC_USDC_MARKET));
 
         uint256 assetsSupplied = supplyShares.toAssetsDown(totalSupplyAssets, totalSupplyShares);
@@ -526,7 +526,7 @@ contract MorphoBlueTest is BaseTest {
         oneD.deltaCompose(withdrawCall);
 
         uint256 balAfter = IERC20All(loan).balanceOf(user);
-        (uint256 supplyShares, , ) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
+        (uint256 supplyShares,,) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
         assertApproxEqAbs(balAfter - bal, loanAssetAm - 1, 0);
 
         (
@@ -535,7 +535,6 @@ contract MorphoBlueTest is BaseTest {
             ,
             ,
             ,
-
         ) = IMorphoEverything(MORPHO).market(marketId(LBTC_USDC_MARKET));
 
         uint256 assetsSupplied = supplyShares.toAssetsDown(totalSupplyAssets, totalSupplyShares);
@@ -569,7 +568,7 @@ contract MorphoBlueTest is BaseTest {
 
         vm.prank(user);
         oneD.deltaCompose(abi.encodePacked(transferTo, deposit));
-        (, , uint128 collateralAmount) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
+        (,, uint128 collateralAmount) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
         assertApproxEqAbs(assets, collateralAmount, 0);
     }
 
@@ -609,7 +608,7 @@ contract MorphoBlueTest is BaseTest {
 
         vm.prank(user);
         oneD.deltaCompose(abi.encodePacked(transferTo, deposit));
-        (, , uint128 collateralAmount) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
+        (,, uint128 collateralAmount) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
         assertApproxEqAbs(assets, collateralAmount, 0);
         assertApproxEqAbs(IERC20All(WETH).balanceOf(user), recoverWeth, 0);
     }

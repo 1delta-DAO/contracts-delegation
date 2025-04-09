@@ -1,42 +1,43 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {MarketParams, IMorphoEverything} from "./utils/Morpho.sol";
+import {OneDeltaComposerLight} from "light/Composer.sol";
+import {IERC20All} from "test/shared/interfaces/IERC20All.sol";
+import {BaseTest} from "test/shared/BaseTest.sol";
+import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
+import "test/light/utils/CalldataLib.sol";
 
-import {OneDeltaComposerLight} from "../../contracts/1delta/modules/light/Composer.sol";
-import {IERC20All} from "../shared/interfaces/IERC20All.sol";
-import {BaseTest} from "../shared/BaseTest.sol";
-import {Chains, Tokens, Lenders} from "../data/LenderRegistry.sol";
-import "./utils/CalldataLib.sol";
+contract CompoundV2ComposerLightTest is BaseTest {
+    uint16 internal constant COMPOUND_V2_ID = 3000;
 
-contract AaveV2LightTest is BaseTest {
-    uint16 internal constant GRANARY = 1000;
     OneDeltaComposerLight oneDV2;
-    address internal LBTC;
+
     address internal USDC;
-    address internal GRANARY_POOL;
+    address internal WETH;
+    address internal VENUS_COMPTROLLER;
     string internal lender;
 
-    uint256 internal constant forkBlock = 26696865;
+    uint256 internal constant forkBlock = 290934482;
 
     function setUp() public virtual {
         // initialize the chain
-        _init(Chains.BASE, forkBlock);
-        lender = Lenders.GRANARY;
-        LBTC = chain.getTokenAddress(Tokens.LBTC);
+        _init(Chains.ARBITRUM_ONE, forkBlock);
+        lender = Lenders.VENUS;
         USDC = chain.getTokenAddress(Tokens.USDC);
-        GRANARY_POOL = chain.getLendingController(lender);
+        WETH = chain.getTokenAddress(Tokens.WETH);
+        VENUS_COMPTROLLER = chain.getLendingController(lender);
 
         oneDV2 = new OneDeltaComposerLight();
     }
 
-    function test_light_lending_granary_deposit() external {
+    function test_light_lending_compoundV2_deposit() external {
         vm.assume(user != address(0));
 
         address token = USDC;
-        address pool = GRANARY_POOL;
-        deal(token, user, 1000.0e6);
         uint256 amount = 100.0e6;
+        deal(token, user, amount);
+
+        address cToken = _getCollateralToken(token);
 
         vm.prank(user);
         IERC20All(token).approve(address(oneDV2), type(uint256).max);
@@ -51,7 +52,7 @@ contract AaveV2LightTest is BaseTest {
             amount //
         );
 
-        bytes memory d = CalldataLib.encodeAaveV2Deposit(token, false, amount, user, pool);
+        bytes memory d = CalldataLib.encodeCompoundV2Deposit(token, false, amount, user, cToken);
 
         vm.prank(user);
         oneDV2.deltaCompose(abi.encodePacked(transferTo, d));
@@ -66,19 +67,23 @@ contract AaveV2LightTest is BaseTest {
         assertApproxEqAbs(underlyingBefore - underlyingAfter, amount, 1);
     }
 
-    function test_light_lending_granary_borrow() external {
+    function test_light_lending_compoundV2_borrow() external {
         vm.assume(user != address(0));
 
+        address depositToken = WETH;
         address token = USDC;
-        address pool = GRANARY_POOL;
-        deal(token, user, 1000.0e6);
-        uint256 amount = 100.0e6;
+        address comptroller = VENUS_COMPTROLLER;
 
-        depositToAave(token, user, amount, pool);
+        address cToken = _getCollateralToken(token);
+        uint256 amount = 1.0e18;
+        deal(token, user, amount);
+
+        depositToCompoundV2(depositToken, user, amount, comptroller);
+
         approveBorrowDelegation(user, token, address(oneDV2), lender);
 
         uint256 amountToBorrow = 10.0e6;
-        bytes memory d = CalldataLib.encodeAaveV2Borrow(token, false, amountToBorrow, user, 2, pool);
+        bytes memory d = CalldataLib.encodeCompoundV2Borrow(token, false, amountToBorrow, user, cToken);
 
         // Check balances before borrowing
         uint256 borrowBalanceBefore = chain.getDebtBalance(user, token, lender);
@@ -92,27 +97,27 @@ contract AaveV2LightTest is BaseTest {
         uint256 underlyingAfter = IERC20All(token).balanceOf(user);
 
         // Assert debt increased by borrowed amount
-        assertApproxEqAbs(borrowBalanceAfter - borrowBalanceBefore, amountToBorrow, 0);
+        assertApproxEqAbs(borrowBalanceAfter - borrowBalanceBefore, amountToBorrow, 1);
         // Assert underlying increased by borrowed amount
-        assertApproxEqAbs(underlyingAfter - underlyingBefore, amountToBorrow, 0);
+        assertApproxEqAbs(underlyingAfter - underlyingBefore, amountToBorrow, 1);
     }
 
-    function test_light_lending_granary_withdraw() external {
+    function test_light_lending_compoundV2_withdraw() external {
         vm.assume(user != address(0));
 
         address token = USDC;
-        address pool = GRANARY_POOL;
-        deal(token, user, 1000.0e6);
+        address comptroller = VENUS_COMPTROLLER;
         uint256 amount = 100.0e6;
+        deal(token, user, amount);
 
-        depositToAave(token, user, amount, pool);
+        depositToCompoundV2(token, user, amount, comptroller);
 
-        address aToken = _getCollateralToken(token);
+        address cToken = _getCollateralToken(token);
 
         approveWithdrawalDelegation(user, token, address(oneDV2), lender);
 
         uint256 amountToWithdraw = 10.0e6;
-        bytes memory d = CalldataLib.encodeAaveV2Withdraw(token, false, amountToWithdraw, user, aToken, pool);
+        bytes memory d = CalldataLib.encodeCompoundV2Withdraw(token, false, amountToWithdraw, user, cToken);
 
         // Check balances before withdrawal
         uint256 collateralBefore = chain.getCollateralBalance(user, token, lender);
@@ -131,18 +136,20 @@ contract AaveV2LightTest is BaseTest {
         assertApproxEqAbs(underlyingAfter - underlyingBefore, amountToWithdraw, 1);
     }
 
-    function test_light_lending_granary_repay() external {
+    function test_light_lending_compoundV2_repay() external {
         vm.assume(user != address(0));
 
+        address depositToken = WETH;
         address token = USDC;
-        address pool = GRANARY_POOL;
-        deal(token, user, 1000.0e6);
-        uint256 amount = 100.0e6;
+        address comptroller = VENUS_COMPTROLLER;
 
-        depositToAave(token, user, amount, pool);
+        uint256 amount = 1.0e18;
+        deal(token, user, amount);
+
+        depositToCompoundV2(depositToken, user, amount, comptroller);
 
         uint256 amountToBorrow = 10.0e6;
-        borrowFromAave(token, user, amountToBorrow, pool);
+        borrowFromCompoundV2(token, user, amountToBorrow, comptroller);
 
         vm.prank(user);
         IERC20All(token).approve(address(oneDV2), type(uint256).max);
@@ -155,9 +162,8 @@ contract AaveV2LightTest is BaseTest {
             amountToRepay //
         );
 
-        address vToken = _getDebtToken(token);
-
-        bytes memory d = CalldataLib.encodeAaveV2Repay(token, false, amountToRepay, user, 2, vToken, pool);
+        address cToken = _getCollateralToken(token);
+        bytes memory d = CalldataLib.encodeCompoundV2Repay(token, false, amountToRepay, user, cToken);
 
         // Check balances before repay
         uint256 debtBefore = chain.getDebtBalance(user, token, lender);
@@ -176,8 +182,14 @@ contract AaveV2LightTest is BaseTest {
         assertApproxEqAbs(underlyingBefore - underlyingAfter, amountToRepay, 1);
     }
 
-    function depositToAave(address token, address userAddress, uint256 amount, address pool) internal {
-        deal(token, userAddress, 1000.0e6);
+    function depositToCompoundV2(address token, address userAddress, uint256 amount, address comptroller) internal {
+        deal(token, userAddress, amount);
+
+        address[] memory cTokens = new address[](1);
+        cTokens[0] = _getCollateralToken(token);
+
+        vm.prank(userAddress);
+        IERC20All(comptroller).enterMarkets(cTokens);
 
         vm.prank(userAddress);
         IERC20All(token).approve(address(oneDV2), type(uint256).max);
@@ -188,25 +200,24 @@ contract AaveV2LightTest is BaseTest {
             amount //
         );
 
-        bytes memory d = CalldataLib.encodeAaveV2Deposit(token, false, amount, userAddress, pool);
+        address cToken = _getCollateralToken(token);
+        bytes memory d = CalldataLib.encodeCompoundV2Deposit(token, false, amount, userAddress, cToken);
 
         vm.prank(userAddress);
         oneDV2.deltaCompose(abi.encodePacked(transferTo, d));
     }
 
-    function borrowFromAave(address token, address userAddress, uint256 amountToBorrow, address pool) internal {
-        address vToken = _getDebtToken(token);
+    function borrowFromCompoundV2(address token, address userAddress, uint256 amountToBorrow, address comptroller)
+        internal
+    {
         vm.prank(userAddress);
-        IERC20All(vToken).approveDelegation(address(oneDV2), type(uint256).max);
+        IERC20All(comptroller).updateDelegate(address(oneDV2), true);
 
-        bytes memory d = CalldataLib.encodeAaveV2Borrow(token, false, amountToBorrow, userAddress, 2, pool);
+        address cToken = _getCollateralToken(token);
+        bytes memory d = CalldataLib.encodeCompoundV2Borrow(token, false, amountToBorrow, userAddress, cToken);
 
         vm.prank(userAddress);
         oneDV2.deltaCompose(d);
-    }
-
-    function _getDebtToken(address token) internal view returns (address) {
-        return chain.getLendingTokens(token, lender).debt;
     }
 
     function _getCollateralToken(address token) internal view returns (address) {

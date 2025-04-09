@@ -2,17 +2,15 @@
 pragma solidity ^0.8.19;
 
 import {console} from "forge-std/console.sol";
-import {ComposerUtils, Commands} from "../shared/utils/ComposerUtils.sol";
-import {MorphoMathLib} from "./utils/MathLib.sol";
-import {MarketParams, IMorphoEverything} from "./utils/Morpho.sol";
-
-import {OneDeltaComposerLight} from "../../contracts/1delta/modules/light/Composer.sol";
-import {IERC20All} from "../shared/interfaces/IERC20All.sol";
-import {BaseTest} from "../shared/BaseTest.sol";
-import {Chains, Tokens, Lenders} from "../data/LenderRegistry.sol";
-import "./utils/CalldataLib.sol";
+import {ComposerUtils, Commands} from "test/shared/utils/ComposerUtils.sol";
+import {OneDeltaComposerLight} from "light/Composer.sol";
+import {IERC20All} from "test/shared/interfaces/IERC20All.sol";
+import {BaseTest} from "test/shared/BaseTest.sol";
+import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
+import "test/light/utils/CalldataLib.sol";
 import {DeltaErrors} from "modules/shared/errors/Errors.sol";
 import {StdStyle as S} from "forge-std/StdStyle.sol";
+import {MorphoMathLib} from "test/light/lending/utils/MathLib.sol";
 
 contract TransfersLightTest is BaseTest, DeltaErrors {
     using MorphoMathLib for uint256;

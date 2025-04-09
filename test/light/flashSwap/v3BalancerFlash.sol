@@ -1,14 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {MarketParams, IMorphoEverything} from "../utils/Morpho.sol";
-
 import {console} from "forge-std/console.sol";
-import {OneDeltaComposerLight} from "../../../contracts/1delta/modules/light/Composer.sol";
-import {IERC20All} from "../../shared/interfaces/IERC20All.sol";
-import {BaseTest} from "../../shared/BaseTest.sol";
-import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
-import "../utils/CalldataLib.sol";
+import {OneDeltaComposerLight} from "light/Composer.sol";
+import {IERC20All} from "test/shared/interfaces/IERC20All.sol";
+import {BaseTest} from "test/shared/BaseTest.sol";
+import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
+import "test/light/utils/CalldataLib.sol";
 
 contract BalancerFlashSwapTest is BaseTest {
     uint8 internal constant UNI_V3_DEX_ID = 0;
@@ -48,7 +46,8 @@ contract BalancerFlashSwapTest is BaseTest {
         data = abi.encodePacked(
             uint8(ComposerCommands.SWAPS),
             uint128(amount), //
-            uint128(1), //
+            uint128(1),
+            //
             tokenIn,
             uint8(0), // swaps max index
             uint8(0) // splits
@@ -88,7 +87,8 @@ contract BalancerFlashSwapTest is BaseTest {
         bytes memory swapAction = balV3Swap(address(oneDV2), tokenIn, tokenOut, borrowAmount);
         {
             // borrow and deposit with override amounts (optimal)
-            bytes memory borrow = CalldataLib.encodeAaveBorrow(tokenIn, false, borrowAmount, address(BALANCER_V3_VAULT), 2, pool);
+            bytes memory borrow =
+                CalldataLib.encodeAaveBorrow(tokenIn, false, borrowAmount, address(BALANCER_V3_VAULT), 2, pool);
             bytes memory deposit = CalldataLib.encodeAaveDeposit(tokenOut, false, 0, user, pool);
 
             bytes memory settlementActions = CalldataLib.nextGenDexSettleBalancer(
@@ -112,7 +112,7 @@ contract BalancerFlashSwapTest is BaseTest {
         uint256 borrowBalanceBefore = chain.getDebtBalance(user, tokenIn, lender);
         uint256 collateralBefore = chain.getCollateralBalance(user, tokenOut, lender);
 
-        uint gas = gasleft();
+        uint256 gas = gasleft();
 
         vm.prank(user);
         oneDV2.deltaCompose(swapAction);
