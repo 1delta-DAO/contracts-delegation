@@ -44,7 +44,7 @@ abstract contract BalancerV3Swapper is ERC20Selectors, Masks {
      * | 20     | 20             | manager              |
      * | 40     | 1              | payFlag              |
      * | 41     | 2              | calldataLength       | <- this here might be pool-dependent, cannot be used as flag
-     * | 42     | calldataLength | calldata             |
+     * | 43     | calldataLength | calldata             |
      */
     function _swapBalancerV3ExactInGeneric(
         uint256 fromAmount,

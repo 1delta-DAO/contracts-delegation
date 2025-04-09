@@ -5,11 +5,12 @@ import {Masks} from "../../shared/masks/Masks.sol";
 import {DexTypeMappings} from "../swappers/dex/DexTypeMappings.sol";
 import {V4TypeQuoter} from "./dex/V4TypeQuoter.sol";
 import {V3TypeQuoter} from "./dex/V3TypeQuoter.sol";
+import {BalancerV3Quoter} from "./dex/BalancerV3Quoter.sol";
 import {V2TypeQuoter} from "./dex/V2TypeQuoter.sol";
 import {DodoV2Quoter} from "./dex/DodoV2Quoter.sol";
 import {ERC20Selectors} from "../../shared/selectors/ERC20Selectors.sol";
 
-contract QuoterLight is V4TypeQuoter, V3TypeQuoter, V2TypeQuoter, DodoV2Quoter {
+contract QuoterLight is BalancerV3Quoter, V4TypeQuoter, V3TypeQuoter, V2TypeQuoter, DodoV2Quoter {
     error InvalidDexId();
 
     function quote(uint256 amountIn, bytes calldata data) external returns (uint256 amountOut) {
@@ -86,6 +87,10 @@ contract QuoterLight is V4TypeQuoter, V3TypeQuoter, V2TypeQuoter, DodoV2Quoter {
         // uniswapV4 style
         else if (dexTypeId == DexTypeMappings.UNISWAP_V4_ID) {
             return _getV4TypeAmountOut(amountIn, tokenIn, tokenOut, currentOffset);
+        }
+        // balancer V3 style
+        else if (dexTypeId == DexTypeMappings.BALANCER_V3_ID) {
+            return _getBalancerV3TypeAmountOut(amountIn, tokenIn, tokenOut, currentOffset);
         }
         // uniswapV2 style
         else if (dexTypeId == DexTypeMappings.UNISWAP_V2_ID) {
