@@ -39,7 +39,7 @@ contract DodoV2LightTest is BaseTest {
         oneDV2 = new OneDeltaComposerLight();
     }
 
-    function dodPoolWETHJOJOSwap(address receiver, uint256 amount) internal view returns (bytes memory data) {
+    function dodoPoolWETHJOJOSwap(address receiver, uint256 amount) internal view returns (bytes memory data) {
         // create head config
         data = CalldataLib.swapHead(
             amount,
@@ -72,7 +72,7 @@ contract DodoV2LightTest is BaseTest {
         vm.prank(user);
         IERC20All(tokenIn).approve(address(oneDV2), type(uint).max);
 
-        bytes memory swap = dodPoolWETHJOJOSwap(
+        bytes memory swap = dodoPoolWETHJOJOSwap(
             user,
             amount //
         );

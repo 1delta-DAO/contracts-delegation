@@ -93,7 +93,7 @@ contract QuoterLight is BalancerV3Quoter, V4TypeQuoter, V3TypeQuoter, V2TypeQuot
             return _getBalancerV3TypeAmountOut(amountIn, tokenIn, tokenOut, currentOffset);
         }
         // uniswapV3 style
-        if (dexTypeId == DexTypeMappings.IZI_ID) {
+        else if (dexTypeId == DexTypeMappings.IZI_ID) {
             return _getIzumiAmountOut(amountIn, tokenIn, tokenOut, currentOffset);
         }
         // uniswapV2 style
