@@ -87,7 +87,7 @@ contract IzumiQuoterTest is BaseTest {
         /**
          * WETH -> USDC (0,0)
          */
-        uint256 amountIn = 1 * 1e18; // 1 WETH
+        uint256 amountIn = 0.01e18; // 1 WETH
 
         // Use utility function to encode path
         bytes memory path = izumiV3StyleSwap(USDC, address(quoter), 0, WETH_USDC_500_POOL, 500, CalldataLib.DexPayConfig.CALLER_PAYS, new bytes(0));
