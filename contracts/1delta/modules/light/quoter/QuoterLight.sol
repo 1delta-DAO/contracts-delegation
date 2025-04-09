@@ -82,7 +82,7 @@ contract QuoterLight is BalancerV3Quoter, V4TypeQuoter, V3TypeQuoter, V2TypeQuot
         }
         // uniswapV3 style
         if (dexTypeId == DexTypeMappings.UNISWAP_V3_ID) {
-            return getV3TypeAmountOut(amountIn, tokenIn, tokenOut, currentOffset);
+            return _getV3TypeAmountOut(amountIn, tokenIn, tokenOut, currentOffset);
         }
         // uniswapV4 style
         else if (dexTypeId == DexTypeMappings.UNISWAP_V4_ID) {
@@ -91,6 +91,10 @@ contract QuoterLight is BalancerV3Quoter, V4TypeQuoter, V3TypeQuoter, V2TypeQuot
         // balancer V3 style
         else if (dexTypeId == DexTypeMappings.BALANCER_V3_ID) {
             return _getBalancerV3TypeAmountOut(amountIn, tokenIn, tokenOut, currentOffset);
+        }
+        // uniswapV3 style
+        if (dexTypeId == DexTypeMappings.IZI_ID) {
+            return _getIzumiAmountOut(amountIn, tokenIn, tokenOut, currentOffset);
         }
         // uniswapV2 style
         else if (dexTypeId == DexTypeMappings.UNISWAP_V2_ID) {
