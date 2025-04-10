@@ -69,6 +69,14 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
     }
 
     /**
+     * @dev Uniswap V4 flash loan
+     */
+    function unlockCallback(bytes calldata data) external requireInExecution {
+        // execute further operations
+        _decodeAndExecute(data);
+    }
+
+    /**
      * @dev Morpho flash loan
      */
     function onMorphoFlashLoan(uint256, bytes calldata params) external requireInExecution {
@@ -170,17 +178,17 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
         }
     }
 
-    function onInstall(bytes calldata data) external {
+    function onInstall(bytes calldata) external {
         if (initialized[msg.sender]) revert AlreadyInitialized();
         initialized[msg.sender] = true;
     }
 
-    function onUninstall(bytes calldata data) external {
+    function onUninstall(bytes calldata) external {
         if (!initialized[msg.sender]) revert NotInitialized();
         initialized[msg.sender] = false;
     }
 
-    function isModuleType(uint256 moduleTypeId) external view returns (bool) {
+    function isModuleType(uint256 moduleTypeId) external pure returns (bool) {
         return moduleTypeId == 2;
     }
 

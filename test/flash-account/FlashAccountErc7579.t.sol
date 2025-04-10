@@ -25,9 +25,8 @@ struct Execution {
 }
 
 library ExecLib {
-    function get2771CallData(bytes calldata cd) internal view returns (bytes memory callData) {
+    function get2771CallData(bytes calldata) internal view returns (bytes memory callData) {
         /// @solidity memory-safe-assembly
-        (cd);
         assembly {
             // as per solidity docs
             function allocate(length) -> pos {
@@ -451,15 +450,16 @@ contract FlashAccountErc7579Test is Test {
         op = _signUserOp(op, privateKey);
     }
 
-    function _encodeNonce(address validator_, uint64 nonce_) internal returns (uint256 nonce) {
-        /**
-         * Nonce structure
-         *     [3 bytes empty][1 bytes validation mode][20 bytes validator][8 bytes nonce]
-         */
-        // Validation modes
-        // bytes1 constant MODE_VALIDATION = 0x00;
-        // bytes1 constant MODE_MODULE_ENABLE = 0x01;
+    function _encodeNonce(address validator_, uint64 nonce_) internal pure returns (uint256 nonce) {
+
         assembly {
+            /**
+             * Nonce structure
+             *     [3 bytes empty][1 bytes validation mode][20 bytes validator][8 bytes nonce]
+             */
+            // Validation modes
+            // bytes1 constant MODE_VALIDATION = 0x00;
+            // bytes1 constant MODE_MODULE_ENABLE = 0x01;
             nonce := shl(64, validator_)
             let mode := shl(224, 0x0)
             nonce := or(nonce, mode)
@@ -468,7 +468,7 @@ contract FlashAccountErc7579Test is Test {
     }
 
     function _signUserOp(PackedUserOperation memory op, uint256 privateKey)
-        internal
+        internal view
         returns (PackedUserOperation memory)
     {
         bytes32 userOpHash = entryPoint.getUserOpHash(op);
