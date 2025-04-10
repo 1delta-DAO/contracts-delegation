@@ -43,6 +43,12 @@ abstract contract ExternalCallsGeneric is Slots, ERC20Selectors, Masks, DeltaErr
             // get first three addresses
             let target := shr(96, calldataload(currentOffset))
 
+            // prevent calls to permit2
+            if eq(target, 0x000000000022D473030F116dDEE9F6B43aC78BA3) {
+                mstore(0x0, FORBIDDEN)
+                revert(0x0, 0x4)
+            }
+
             // get msg.value for call
             let callValue := calldataload(add(currentOffset, 20))
             let dataLength := and(UINT16_MASK, shr(128, callValue))

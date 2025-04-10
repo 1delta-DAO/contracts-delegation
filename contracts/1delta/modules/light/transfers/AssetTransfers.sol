@@ -9,10 +9,9 @@ import {DeltaErrors} from "../../shared/errors/Errors.sol";
 /**
  * @title Token transfer contract - should work across all EVMs - use Uniswap style Permit2
  */
-contract ERC20Transfers is ERC20Selectors, Masks, DeltaErrors {
+contract AssetTransfers is ERC20Selectors, Masks, DeltaErrors {
     // approval slot
-    bytes32 private constant CALL_MANAGEMENT_APPROVALS =
-        0x1aae13105d9b6581c36534caba5708726e5ea1e03175e823c989a5756966d1f3;
+    bytes32 private constant CALL_MANAGEMENT_APPROVALS = 0x1aae13105d9b6581c36534caba5708726e5ea1e03175e823c989a5756966d1f3;
 
     /// @notice fixed selector transferFrom(...) on permit2
     bytes32 private constant PERMIT2_TRANSFER_FROM = 0x36c7851600000000000000000000000000000000000000000000000000000000;
@@ -147,7 +146,7 @@ contract ERC20Transfers is ERC20Selectors, Masks, DeltaErrors {
      * | Offset | Length (bytes) | Description         |
      * |--------|----------------|---------------------|
      * | 0      | 20             | asset               |
-     * | 20     | 20             | receiver            |
+     * | 20     | 20             | receiver            | <- use wrapped native here to wrap
      * | 40     | 1              | config              |
      * | 41     | 16             | amount              |
      */
@@ -208,7 +207,9 @@ contract ERC20Transfers is ERC20Selectors, Masks, DeltaErrors {
                         revert(0, 0x4)
                     }
                 }
-                default { transferAmount := providedAmount }
+                default {
+                    transferAmount := providedAmount
+                }
 
                 if gt(transferAmount, 0) {
                     let ptr := mload(0x40) // free memory pointer
@@ -252,7 +253,9 @@ contract ERC20Transfers is ERC20Selectors, Masks, DeltaErrors {
                         revert(0, 0x4)
                     }
                 }
-                default { transferAmount := providedAmount }
+                default {
+                    transferAmount := providedAmount
+                }
 
                 if gt(transferAmount, 0) {
                     if iszero(
@@ -315,6 +318,105 @@ contract ERC20Transfers is ERC20Selectors, Masks, DeltaErrors {
                 sstore(key, 1)
             }
             currentOffset := add(currentOffset, 40)
+        }
+        return currentOffset;
+    }
+
+    /*
+     * | Offset | Length (bytes) | Description         |
+     * |--------|----------------|---------------------|
+     * | 0      | 20             | wrappedNativeAddress|
+     * | 20     | 20             | receiver            |
+     * | 40     | 1              | config              |
+     * | 41     | 16             | amount              |
+     */
+    function _unwrap(uint256 currentOffset) internal virtual returns (uint256) {
+        ////////////////////////////////////////////////////
+        // Transfers either token or native balance from this
+        // contract to receiver. Reverts if minAmount is
+        // less than the contract balance
+        //  config
+        //  0: sweep balance and validate against amount
+        //     fetches the balance and checks balance >= amount
+        //  1: transfer amount to receiver, skip validation
+        ////////////////////////////////////////////////////
+        assembly {
+            // load receiver
+            let wrapperAsset := shr(96, calldataload(currentOffset))
+            // load receiver
+            let receiver := shr(96, calldataload(add(currentOffset, 20)))
+            // load so that amount is in the lower 14 bytes already
+            let providedAmount := calldataload(add(currentOffset, 25))
+            // load config
+            let config := and(UINT8_MASK, shr(128, providedAmount))
+            // mask amount
+            providedAmount := and(UINT128_MASK, providedAmount)
+
+            let transferAmount
+
+            // mask away the top bitmap
+            providedAmount := and(UINT120_MASK, providedAmount)
+            // validate if config is zero, otherwise skip
+            switch config
+            case 0 {
+                // selector for balanceOf(address)
+                mstore(0x0, ERC20_BALANCE_OF)
+                // add this address as parameter
+                mstore(0x4, address())
+
+                // call to underlying
+                pop(staticcall(gas(), wrapperAsset, 0x0, 0x24, 0x0, 0x20))
+
+                transferAmount := mload(0x0)
+                if lt(transferAmount, providedAmount) {
+                    mstore(0, SLIPPAGE)
+                    revert(0, 0x4)
+                }
+            }
+            default {
+                transferAmount := providedAmount
+            }
+
+            if gt(transferAmount, 0) {
+                // selector for withdraw(uint256)
+                mstore(0x0, 0x2e1a7d4d00000000000000000000000000000000000000000000000000000000)
+                mstore(0x4, transferAmount)
+                if iszero(
+                    call(
+                        gas(),
+                        wrapperAsset,
+                        0x0, // no ETH
+                        0x0, // start of data
+                        0x24, // input size = selector plus amount
+                        0x0, // output = empty
+                        0x0 // output size = zero
+                    )
+                ) {
+                    // should only revert if receiver cannot receive native
+                    mstore(0, NATIVE_TRANSFER)
+                    revert(0, 0x4)
+                }
+                // transfer to receiver if different from this address
+                if xor(receiver, address()) {
+                    // transfer native to receiver
+                    if iszero(
+                        call(
+                            gas(),
+                            receiver,
+                            transferAmount,
+                            0x0, // input = empty for fallback
+                            0x0, // input size = zero
+                            0x0, // output = empty
+                            0x0 // output size = zero
+                        )
+                    ) {
+                        // should only revert if receiver cannot receive native
+                        mstore(0, NATIVE_TRANSFER)
+                        revert(0, 0x4)
+                    }
+                }
+            }
+            currentOffset := add(currentOffset, 57)
         }
         return currentOffset;
     }

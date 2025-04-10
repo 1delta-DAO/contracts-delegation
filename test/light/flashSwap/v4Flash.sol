@@ -101,7 +101,7 @@ contract FlashSwapTest is BaseTest {
                 borrowAmount
             );
             settlementActions = abi.encodePacked(
-                CalldataLib.unwrap(address(oneDV2), borrowAmount, CalldataLib.SweepType.AMOUNT), settlementActions
+                CalldataLib.unwrap(WETH, address(oneDV2), borrowAmount, CalldataLib.SweepType.AMOUNT), settlementActions
             );
 
             deposit = abi.encodePacked(

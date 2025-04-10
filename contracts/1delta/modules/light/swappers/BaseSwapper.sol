@@ -14,6 +14,7 @@ import {V2TypeGeneric} from "./dex/V2Type.sol";
 import {WooFiSwapper} from "./dex/WooFi.sol";
 import {DodoV2Swapper} from "./dex/DodoV2Swapper.sol";
 import {LBSwapper} from "./dex/LBSwapper.sol";
+import {NativeWrapper} from "./dex/NativeWrapper.sol";
 import {GMXSwapper} from "./dex/GMXSwapper.sol";
 import {SyncSwapper} from "./dex/SyncSwapper.sol";
 import {CurveSwapper} from "./dex/CurveSwapper.sol";
@@ -71,6 +72,7 @@ import {BalancerV3Swapper} from "./dex/BalancerV3Swapper.sol";
  *             Solidly:121 - 130
  */
 abstract contract BaseSwapper is
+    NativeWrapper,
     V4TypeGeneric,
     V3TypeGeneric,
     V2TypeGeneric,
@@ -495,6 +497,4 @@ abstract contract BaseSwapper is
         }
         return (amountIn, currentOffset);
     }
-
-    function _wrapOrUnwrapSimple(uint256 amount, uint256 currentOffset) internal virtual returns (uint256, uint256) {}
 }

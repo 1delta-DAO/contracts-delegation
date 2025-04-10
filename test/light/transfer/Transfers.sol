@@ -160,7 +160,6 @@ contract TransfersLightTest is BaseTest, DeltaErrors {
         uint256 initialAmount = 1 ether;
         uint256 sweepAmount = 5 ether;
         vm.deal(address(oneD), initialAmount);
-        uint256 userInitialBalance = user.balance;
 
         bytes memory data = CalldataLib.sweep(address(0), user, sweepAmount, CalldataLib.SweepType.AMOUNT);
 
@@ -173,7 +172,6 @@ contract TransfersLightTest is BaseTest, DeltaErrors {
         uint256 initialAmount = 1 ether;
         uint256 sweepAmount = 5 ether;
         vm.deal(address(oneD), initialAmount);
-        uint256 userInitialBalance = user.balance;
 
         bytes memory data = CalldataLib.sweep(address(0), user, sweepAmount, CalldataLib.SweepType.VALIDATE);
 
@@ -229,7 +227,7 @@ contract TransfersLightTest is BaseTest, DeltaErrors {
         uint256 initialAmount = 1 ether;
         vm.deal(address(oneD), initialAmount);
 
-        bytes memory wrapData = CalldataLib.wrap(initialAmount);
+        bytes memory wrapData = CalldataLib.wrap(initialAmount, WETH);
 
         vm.prank(user);
         oneD.deltaCompose(wrapData);
@@ -238,7 +236,7 @@ contract TransfersLightTest is BaseTest, DeltaErrors {
         assertEq(IERC20All(WETH).balanceOf(address(oneD)), initialAmount);
 
         // Then unwrap
-        bytes memory unwrapData = CalldataLib.unwrap(user, 0, CalldataLib.SweepType.VALIDATE);
+        bytes memory unwrapData = CalldataLib.unwrap(WETH, user, 0, CalldataLib.SweepType.VALIDATE);
 
         uint256 userInitialBalance = user.balance;
 
