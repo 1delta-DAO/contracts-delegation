@@ -149,7 +149,7 @@ contract FlashAccountErc7579Test is Test {
 
         bootstrap = INexusBootstrap(NEXUS_BOOTSTRAP_ADDRESS);
 
-        _createAndSetupAccount();
+        account = _createAndSetupAccount(user, PRIVATE_KEY);
 
         // print addresses
         console.log("--------------------------------");
@@ -315,12 +315,12 @@ contract FlashAccountErc7579Test is Test {
     // Helper functions
     // ------------------------------------------------------------
 
-    function _createAndSetupAccount() internal {
+    function _createAndSetupAccount(address user_, uint256 pk) internal returns (address) {
         // Create validator config
         BootstrapConfig[] memory validators = new BootstrapConfig[](1);
         validators[0] = BootstrapConfig({
             module: NEXUS_K1_VALIDATOR_ADDRESS,
-            data: abi.encodePacked(user) // validator init data is the owner address
+            data: abi.encodePacked(user_) // validator init data is the owner address
         });
 
         // Create executor config for flash loan module
@@ -354,17 +354,19 @@ contract FlashAccountErc7579Test is Test {
             abi.encodeWithSelector(INexusFactory.computeAccountAddress.selector, initData, bytes32(0))
         );
         require(success, "Failed to get account address");
-        account = abi.decode(data, (address));
+        address account_ = abi.decode(data, (address));
 
         PackedUserOperation[] memory ops = new PackedUserOperation[](1);
-        ops[0] = _createUserOp({sender: account, privateKey: PRIVATE_KEY, nounce: 0, calldata_: "", initCode: initCode});
+        ops[0] = _createUserOp({sender: account_, privateKey: pk, nounce: 0, calldata_: "", initCode: initCode});
 
         // Fund account BEFORE the operation
-        vm.deal(address(account), 100 ether);
+        vm.deal(address(account_), 100 ether);
 
         // Execute the operation
-        vm.prank(user);
-        entryPoint.handleOps(ops, payable(user));
+        vm.prank(user_);
+        entryPoint.handleOps(ops, payable(user_));
+
+        return account_;
     }
 
     function _createUninitializedAccount(address user_, uint256 pk) internal returns (address) {
