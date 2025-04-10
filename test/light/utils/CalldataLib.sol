@@ -311,35 +311,6 @@ library CalldataLib {
             );
     }
 
-    function uniswapV4StyleSwap(
-        bytes memory currentData,
-        address tokenOut,
-        address receiver,
-        address poolManager,
-        uint256 feeTier, //
-        uint256 tickSpacing,
-        //
-        address hooks,
-        //
-        DexPayConfig cfg,
-        bytes memory hooksData
-    ) internal pure returns (bytes memory) {
-        return
-            abi.encodePacked(
-                currentData,
-                tokenOut,
-                receiver,
-                uint8(DexTypeMappings.UNISWAP_V4_ID), // dexId !== poolId here
-                hooks,
-                poolManager,
-                uint24(feeTier), // fee tier to validate pool
-                uint24(tickSpacing),
-                uint8(cfg),
-                uint16(hooksData.length), //
-                bytes(hooksData)
-            );
-    }
-
     function balancerV3StyleSwap(
         bytes memory currentData,
         address tokenOut,
