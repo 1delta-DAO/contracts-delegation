@@ -90,10 +90,10 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
         }
     }
 
-    // /// @notice Execute a flash loan
-    // /// @param flashLoanProvider The flashloan provider address
-    // /// @param dataOffset The offset of the calldata that indicates the start of the flashloan calldata
-    // /// @param data The calldata that will be passed as the data to flashloan execute function
+    /// @notice Execute a flash loan
+    /// @param flashLoanProvider The flashloan provider address
+    /// @param dataOffset The offset of the calldata that indicates the start of the flashloan calldata
+    /// @param data The calldata that will be passed as the data to flashloan execute function
     function flashLoan(address flashLoanProvider, uint256 dataOffset, bytes calldata data) external setInExecution {
         if (!initialized[msg.sender]) revert NotInitialized();
         if (data.length == 0 || dataOffset <= 4) {
