@@ -155,7 +155,7 @@ contract FlashAccountErc7579Test is Test {
         console.log("--------------------------------");
     }
 
-    function testFlashLoanOnAave() public {
+    function test_flash_account_module_aave_v3_flash_loan() public {
         uint128 flashLoanPremiumTotal = aavePool.FLASHLOAN_PREMIUM_TOTAL();
         uint256 amountToBorrow = 1e9; // 1000 USDC
         uint256 aavePremium = PercentageMath.percentMul(amountToBorrow, flashLoanPremiumTotal);
@@ -212,9 +212,37 @@ contract FlashAccountErc7579Test is Test {
         entryPoint.handleOps(ops, payable(address(0x1)));
     }
 
-    function testModuleInstallation() public {
+    function test_flash_account_module_eoa_flash_loan_reverts() public {
+        uint256 amountToBorrow = 1000e6;
+
+        bytes memory aaveFlashLoanCalldata = abi.encodeWithSelector(
+            IPool.flashLoanSimple.selector,
+            address(module),
+            USDC,
+            amountToBorrow,
+            // the repay calldata is empty, because the module should revert before handling the flash loan
+            abi.encodePacked(ModeLib.encodeSimpleBatch(), ""),
+            0
+        );
+
+        // Create the call to the module
+        bytes memory flashloanCallData = abi.encodeWithSelector(
+            FlashAccountErc7579.flashLoan.selector, address(aavePool), uint256(100), aaveFlashLoanCalldata
+        );
+
+        // should revert
+        vm.prank(user);
+        vm.expectRevert(FlashAccountErc7579.NotInitialized.selector);
+        (bool success,) = address(module).call(flashloanCallData);
+    }
+
+    function test_flash_account_module_installation() public {
         assertTrue(module.isInitialized(address(account)));
     }
+
+    // ------------------------------------------------------------
+    // Helper functions
+    // ------------------------------------------------------------
 
     function _createAndSetupAccount() internal {
         // Create validator config
