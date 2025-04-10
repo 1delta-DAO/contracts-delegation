@@ -109,6 +109,10 @@ contract FlashAccountErc7579Test is Test {
         uint16 indexed referralCode
     );
 
+    event UserOperationRevertReason(
+        bytes32 indexed userOpHash, address indexed sender, uint256 nonce, bytes revertReason
+    );
+
     address public constant MAINNET_ENTRYPOINT_ADDRESS = 0x0000000071727De22E5E9d8BAf0edAc6f37da032;
     address public constant NEXUS_BOOTSTRAP_ADDRESS = 0x879fa30248eeb693dcCE3eA94a743622170a3658;
     address public constant NEXUS_ACCOUNT_FACTORY_ADDRESS = 0x000000c3A93d2c5E02Cb053AC675665b1c4217F9;
@@ -204,7 +208,7 @@ contract FlashAccountErc7579Test is Test {
         );
 
         PackedUserOperation[] memory ops = new PackedUserOperation[](1);
-        ops[0] = _createUserOp({nounce: 1, calldata_: execute, initCode: ""});
+        ops[0] = _createUserOp({sender: account, privateKey: PRIVATE_KEY, nounce: 1, calldata_: execute, initCode: ""});
 
         vm.prank(user);
         // vm.expectEmit(true, true, true, false);
@@ -234,6 +238,73 @@ contract FlashAccountErc7579Test is Test {
         vm.prank(user);
         vm.expectRevert(FlashAccountErc7579.NotInitialized.selector);
         (bool success,) = address(module).call(flashloanCallData);
+    }
+
+    function test_flash_account_module_uninitialized_account_reverts() public {
+        // Create a new account that hasn't initialized the module
+        uint256 pk = 0x123456;
+        address user_ = vm.addr(pk);
+        vm.deal(user_, 1 ether);
+
+        // create smart account
+        address acc_ = _createUninitializedAccount(user_, pk);
+
+        // flash loan
+        uint128 flashLoanPremiumTotal = aavePool.FLASHLOAN_PREMIUM_TOTAL();
+        uint256 amountToBorrow = 1e9; // 1000 USDC
+        uint256 aavePremium = PercentageMath.percentMul(amountToBorrow, flashLoanPremiumTotal);
+        uint256 totalDebt = amountToBorrow + aavePremium;
+
+        deal(USDC, address(acc_), aavePremium); // fund account with aave premium
+
+        Execution[] memory repayExec = new Execution[](2);
+
+        repayExec[0] = Execution({
+            target: USDC,
+            value: 0,
+            callData: abi.encodeWithSelector(IERC20.transfer.selector, address(module), aavePremium)
+        });
+
+        repayExec[1] = Execution({
+            target: address(module),
+            value: 0,
+            callData: abi.encodeWithSelector(
+                FlashAccountErc7579.handleRepay.selector,
+                abi.encode(USDC, abi.encodeWithSelector(IERC20.approve.selector, address(aavePool), totalDebt))
+            )
+        });
+
+        bytes memory repayCalldata = ExecLib.encodeBatch(repayExec);
+        console.logBytes(repayCalldata);
+
+        bytes memory aaveFlashLoanCalldata = abi.encodeWithSelector(
+            IPool.flashLoanSimple.selector,
+            address(module),
+            USDC,
+            amountToBorrow,
+            abi.encodePacked(ModeLib.encodeSimpleBatch(), repayCalldata),
+            0
+        );
+
+        bytes memory flashloanCallData = abi.encodeWithSelector(
+            FlashAccountErc7579.flashLoan.selector, address(aavePool), uint256(100), aaveFlashLoanCalldata
+        );
+
+        bytes memory execute = abi.encodeWithSignature(
+            "execute(bytes32,bytes)",
+            ModeLib.encodeSimpleSingle(),
+            abi.encodePacked(address(module), uint256(0), flashloanCallData)
+        );
+
+        PackedUserOperation[] memory ops = new PackedUserOperation[](1);
+        ops[0] = _createUserOp({sender: acc_, privateKey: pk, nounce: 1, calldata_: execute, initCode: ""});
+
+        vm.prank(user_);
+        // it is possible to check the revert reason, but the complete event log should be read and parsed
+        vm.expectEmit(true, false, false, false);
+        emit UserOperationRevertReason(entryPoint.getUserOpHash(ops[0]), address(0), 0, new bytes(0));
+
+        entryPoint.handleOps(ops, payable(address(0x1)));
     }
 
     function test_flash_account_module_installation() public {
@@ -286,7 +357,7 @@ contract FlashAccountErc7579Test is Test {
         account = abi.decode(data, (address));
 
         PackedUserOperation[] memory ops = new PackedUserOperation[](1);
-        ops[0] = _createUserOp({nounce: 0, calldata_: "", initCode: initCode});
+        ops[0] = _createUserOp({sender: account, privateKey: PRIVATE_KEY, nounce: 0, calldata_: "", initCode: initCode});
 
         // Fund account BEFORE the operation
         vm.deal(address(account), 100 ether);
@@ -296,23 +367,76 @@ contract FlashAccountErc7579Test is Test {
         entryPoint.handleOps(ops, payable(user));
     }
 
+    function _createUninitializedAccount(address user_, uint256 pk) internal returns (address) {
+        // Create validator config
+        BootstrapConfig[] memory validators = new BootstrapConfig[](1);
+        validators[0] = BootstrapConfig({
+            module: NEXUS_K1_VALIDATOR_ADDRESS,
+            data: abi.encodePacked(user_) // validator init data is the owner address
+        });
+
+        // Create executor config
+        BootstrapConfig[] memory executors = new BootstrapConfig[](0);
+
+        // Empty hook and fallbacks
+        BootstrapConfig memory hook = BootstrapConfig({module: address(0), data: ""});
+        BootstrapConfig[] memory fallbacks = new BootstrapConfig[](0);
+
+        // Get initialization data from bootstrap
+        bytes memory initData = bootstrap.getInitNexusCalldata(
+            validators,
+            executors,
+            hook,
+            fallbacks,
+            IERC7484(address(0)), // no registry
+            new address[](0), // no attesters
+            0 // no threshold
+        );
+
+        bytes memory initCode = abi.encodePacked(
+            address(factory), abi.encodeWithSelector(INexusFactory.createAccount.selector, initData, bytes32(0))
+        );
+
+        // get sender address
+        (bool success, bytes memory data) = address(factory).staticcall(
+            abi.encodeWithSelector(INexusFactory.computeAccountAddress.selector, initData, bytes32(0))
+        );
+        require(success, "Failed to get account address");
+        address account_ = abi.decode(data, (address));
+
+        PackedUserOperation[] memory ops = new PackedUserOperation[](1);
+        ops[0] = _createUserOp({sender: account_, privateKey: pk, nounce: 0, calldata_: "", initCode: initCode});
+
+        // Fund account BEFORE the operation
+        vm.deal(address(account_), 100 ether);
+
+        // Execute the operation
+        vm.prank(user_);
+        entryPoint.handleOps(ops, payable(user_));
+
+        return account_;
+    }
+
     /**
      * @notice Creates a user operation with the given nounce and calldata
      * @param nounce The nounce for the user operation
      * @param calldata_ The calldata for the user operation
      * @return op The signed user operation
      */
-    function _createUserOp(uint64 nounce, bytes memory calldata_, bytes memory initCode)
-        internal
-        returns (PackedUserOperation memory op)
-    {
+    function _createUserOp(
+        address sender,
+        uint256 privateKey,
+        uint64 nounce,
+        bytes memory calldata_,
+        bytes memory initCode
+    ) internal returns (PackedUserOperation memory op) {
         uint128 verificationGasLimit = 2_000_000;
         uint128 callGasLimit = 2_000_000;
         uint128 maxPriorityFeePerGas = 1 gwei;
         uint128 maxFeePerGas = 100 gwei;
 
         op = PackedUserOperation({
-            sender: account,
+            sender: sender,
             nonce: _encodeNonce(NEXUS_K1_VALIDATOR_ADDRESS, uint64(nounce)),
             initCode: initCode,
             callData: calldata_,
@@ -322,7 +446,7 @@ contract FlashAccountErc7579Test is Test {
             paymasterAndData: "",
             signature: ""
         });
-        op = _signUserOp(op);
+        op = _signUserOp(op, privateKey);
     }
 
     function _encodeNonce(address validator_, uint64 nonce_) internal returns (uint256 nonce) {
@@ -341,10 +465,13 @@ contract FlashAccountErc7579Test is Test {
         }
     }
 
-    function _signUserOp(PackedUserOperation memory op) internal returns (PackedUserOperation memory) {
+    function _signUserOp(PackedUserOperation memory op, uint256 privateKey)
+        internal
+        returns (PackedUserOperation memory)
+    {
         bytes32 userOpHash = entryPoint.getUserOpHash(op);
         bytes32 signHash = MessageHashUtils.toEthSignedMessageHash(userOpHash);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(PRIVATE_KEY, signHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, signHash);
         op.signature = abi.encodePacked(r, s, v);
         return op;
     }
