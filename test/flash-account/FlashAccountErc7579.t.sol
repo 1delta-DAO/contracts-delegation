@@ -99,6 +99,16 @@ library ExecLib {
 contract FlashAccountErc7579Test is Test {
     using MessageHashUtils for bytes32;
 
+    event FlashLoan(
+        address indexed target,
+        address initiator,
+        address indexed asset,
+        uint256 amount,
+        uint256 interestRateMode,
+        uint256 premium,
+        uint16 indexed referralCode
+    );
+
     address public constant MAINNET_ENTRYPOINT_ADDRESS = 0x0000000071727De22E5E9d8BAf0edAc6f37da032;
     address public constant NEXUS_BOOTSTRAP_ADDRESS = 0x879fa30248eeb693dcCE3eA94a743622170a3658;
     address public constant NEXUS_ACCOUNT_FACTORY_ADDRESS = 0x000000c3A93d2c5E02Cb053AC675665b1c4217F9;
@@ -154,11 +164,13 @@ contract FlashAccountErc7579Test is Test {
         deal(USDC, address(account), aavePremium); // fund account with aave premium
 
         Execution[] memory repayExec = new Execution[](2);
+
         repayExec[0] = Execution({
             target: USDC,
             value: 0,
             callData: abi.encodeWithSelector(IERC20.transfer.selector, address(module), aavePremium)
         });
+
         repayExec[1] = Execution({
             target: address(module),
             value: 0,
@@ -169,6 +181,8 @@ contract FlashAccountErc7579Test is Test {
         });
 
         bytes memory repayCalldata = ExecLib.encodeBatch(repayExec);
+        console.log("repayCalldata length", repayCalldata.length);
+        console.logBytes(repayCalldata);
 
         bytes memory aaveFlashLoanCalldata = abi.encodeWithSelector(
             IPool.flashLoanSimple.selector,
@@ -193,6 +207,8 @@ contract FlashAccountErc7579Test is Test {
         ops[0] = _createUserOp({nounce: 1, calldata_: execute, initCode: ""});
 
         vm.prank(user);
+        // vm.expectEmit(true, true, true, false);
+        // emit FlashLoan(address(module), address(account), USDC, amountToBorrow, 0, aavePremium, 0);
         entryPoint.handleOps(ops, payable(address(0x1)));
     }
 

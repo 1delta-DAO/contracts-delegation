@@ -90,10 +90,10 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
         }
     }
 
-    /// @notice Execute a flash loan
-    /// @param flashLoanProvider The flashloan provider address
-    /// @param dataOffset The offset of the calldata that indicates the start of the flashloan calldata
-    /// @param data The calldata that will be passed as the data to flashloan execute function
+    // /// @notice Execute a flash loan
+    // /// @param flashLoanProvider The flashloan provider address
+    // /// @param dataOffset The offset of the calldata that indicates the start of the flashloan calldata
+    // /// @param data The calldata that will be passed as the data to flashloan execute function
     function flashLoan(address flashLoanProvider, uint256 dataOffset, bytes calldata data) external setInExecution {
         if (!initialized[msg.sender]) revert NotInitialized();
         if (data.length == 0 || dataOffset <= 4) {
@@ -101,6 +101,7 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
             revert InvalidCall();
         }
 
+        /// @dev inject msg.sender into the calldata of flashloan request
         // Create a new memory buffer with extra space for msg.sender (20 bytes)
         bytes memory memData = new bytes(data.length + 20);
 
@@ -125,7 +126,7 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
             // Read the params length
             let paramsLength := calldataload(paramsDataPos)
 
-            // Store the updated params offset (unchanged since we're only modifying the params data)
+            // Store the updated params offset
             mstore(add(memPtr, dataOffset), paramsOffset)
 
             // Calculate where the params data will be in our new buffer
@@ -193,7 +194,7 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
     function _decodeAndExecute(bytes calldata params) internal {
         // extract sender address and data
         address sender = address(uint160(uint256(bytes32(params[0:32])) >> 96));
-        bytes memory data = params[32:];
+        bytes memory data = params[52:];
         // execute, using batch mode
         INexus(sender).executeFromExecutor(ModeLib.encodeSimpleBatch(), data);
     }
