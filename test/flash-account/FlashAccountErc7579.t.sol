@@ -2,28 +2,109 @@
 pragma solidity ^0.8.28;
 
 import {Test} from "forge-std/Test.sol";
-import {FlashAccountErc7579} from "../../contracts/1delta/flash-account/FlashAccountErc7579.sol";
-import {EntryPoint} from "account-abstraction/core/EntryPoint.sol";
-import {PackedUserOperation} from "account-abstraction/core/UserOperationLib.sol";
+import {StdStyle} from "forge-std/StdStyle.sol";
+import {console} from "forge-std/console.sol";
+import {FlashAccountErc7579} from "contracts/1delta/flash-account/FlashAccountErc7579.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IPool} from "aave-v3-core/interfaces/IPool.sol";
-import {IPoolAddressesProvider} from "aave-v3-core/interfaces/IPoolAddressesProvider.sol";
-import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
-import {NexusBootstrap, BootstrapConfig} from "nexus/contracts/utils/NexusBootstrap.sol";
-import {IERC7484} from "nexus/contracts/interfaces/IERC7484.sol";
-import {K1Validator} from "nexus/contracts/modules/validators/K1Validator.sol";
-import {NexusAccountFactory} from "nexus/contracts/factory/NexusAccountFactory.sol";
-import {Nexus} from "nexus/contracts/Nexus.sol";
-import "nexus/contracts/lib/ModeLib.sol"; // ModeLib and types for execution mode
-import {PercentageMath} from "aave-v3-core/protocol/libraries/math/PercentageMath.sol";
-import {ExecLib} from "nexus/contracts/lib/ExecLib.sol";
-import {Execution} from "nexus/contracts/types/DataTypes.sol";
+import {IPool} from "./interfaces/IPool.sol";
+import {IPoolAddressesProvider} from "./interfaces/IPoolAddressesProvider.sol";
+import "contracts/1delta/flash-account/utils/ModeLib.sol";
+import {IEntryPoint, PackedUserOperation} from "./interfaces/IEntryPoint.sol";
+import {INexusBootstrap, BootstrapConfig, IERC7484} from "./interfaces/INexusBootstrap.sol";
+import {INexusFactory} from "./interfaces/INexusFactory.sol";
+import {PercentageMath} from "./utils/PercentageMath.sol";
+
+struct Execution {
+    /// @notice The target address for the transaction
+    address target;
+    /// @notice The value in wei to send with the transaction
+    uint256 value;
+    /// @notice The calldata for the transaction
+    bytes callData;
+}
+
+library ExecLib {
+    function get2771CallData(bytes calldata cd) internal view returns (bytes memory callData) {
+        /// @solidity memory-safe-assembly
+        (cd);
+        assembly {
+            // as per solidity docs
+            function allocate(length) -> pos {
+                pos := mload(0x40)
+                mstore(0x40, add(pos, length))
+            }
+
+            callData := allocate(add(calldatasize(), 0x20)) //allocate extra 0x20 to store length
+            mstore(callData, add(calldatasize(), 0x14)) //store length, extra 0x14 is for msg.sender address
+            calldatacopy(add(callData, 0x20), 0, calldatasize())
+
+            // The msg.sender address is shifted to the left by 12 bytes to remove the padding
+            // Then the address without padding is stored right after the calldata
+            let senderPtr := allocate(0x14)
+            mstore(senderPtr, shl(96, caller()))
+        }
+    }
+
+    function decodeBatch(bytes calldata callData) internal pure returns (Execution[] calldata executionBatch) {
+        /*
+         * Batch Call Calldata Layout
+         * Offset (in bytes)    | Length (in bytes) | Contents
+         * 0x0                  | 0x4               | bytes4 function selector
+         * 0x4                  | -                 |
+        abi.encode(IERC7579Execution.Execution[])
+         */
+        assembly ("memory-safe") {
+            let dataPointer := add(callData.offset, calldataload(callData.offset))
+
+            // Extract the ERC7579 Executions
+            executionBatch.offset := add(dataPointer, 32)
+            executionBatch.length := calldataload(dataPointer)
+        }
+    }
+
+    function encodeBatch(Execution[] memory executions) internal pure returns (bytes memory callData) {
+        callData = abi.encode(executions);
+    }
+
+    function decodeSingle(bytes calldata executionCalldata)
+        internal
+        pure
+        returns (address target, uint256 value, bytes calldata callData)
+    {
+        target = address(bytes20(executionCalldata[0:20]));
+        value = uint256(bytes32(executionCalldata[20:52]));
+        callData = executionCalldata[52:];
+    }
+
+    function decodeDelegateCall(bytes calldata executionCalldata)
+        internal
+        pure
+        returns (address delegate, bytes calldata callData)
+    {
+        // destructure executionCallData according to single exec
+        delegate = address(uint160(bytes20(executionCalldata[0:20])));
+        callData = executionCalldata[20:];
+    }
+
+    function encodeSingle(address target, uint256 value, bytes memory callData)
+        internal
+        pure
+        returns (bytes memory userOpCalldata)
+    {
+        userOpCalldata = abi.encodePacked(target, value, callData);
+    }
+}
 
 contract FlashAccountErc7579Test is Test {
     using MessageHashUtils for bytes32;
 
     address public constant MAINNET_ENTRYPOINT_ADDRESS = 0x0000000071727De22E5E9d8BAf0edAc6f37da032;
+    address public constant NEXUS_BOOTSTRAP_ADDRESS = 0x879fa30248eeb693dcCE3eA94a743622170a3658;
+    address public constant NEXUS_ACCOUNT_FACTORY_ADDRESS = 0x000000c3A93d2c5E02Cb053AC675665b1c4217F9;
+    address public constant NEXUS_IMPLEMENTATION_ADDRESS = 0x000000aC74357BFEa72BBD0781833631F732cf19;
+    address public constant NEXUS_K1_VALIDATOR_ADDRESS = 0x0000002D6DB27c52E3C11c1Cf24072004AC75cBa;
+    address public constant NEXUS_K1_VALIDATOR_FACTORY_ADDRESS = 0x2828A0E0f36d8d8BeAE95F00E2BbF235e4230fAc;
     address public constant AAVE_POOL_ADDRESSES_PROVIDER = 0x2f39d218133AFaB8F2B819B1066c7E434Ad94E9e;
     address public constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
@@ -34,14 +115,11 @@ contract FlashAccountErc7579Test is Test {
 
     // Contracts
     FlashAccountErc7579 public module;
-    EntryPoint public entryPoint;
+    IEntryPoint public entryPoint;
     IPool public aavePool;
     address public account;
-    NexusBootstrap public bootstrap;
-    // MockValidator public validator;
-    K1Validator public validator;
-    NexusAccountFactory public factory;
-    Nexus public implementation;
+    INexusBootstrap public bootstrap;
+    INexusFactory public factory;
 
     function setUp() public {
         // Fork from a recent block to ensure all contracts are deployed
@@ -50,17 +128,21 @@ contract FlashAccountErc7579Test is Test {
         user = vm.addr(PRIVATE_KEY);
         vm.deal(user, 100 ether);
 
-        entryPoint = EntryPoint(payable(MAINNET_ENTRYPOINT_ADDRESS));
+        entryPoint = IEntryPoint(payable(MAINNET_ENTRYPOINT_ADDRESS));
         module = new FlashAccountErc7579();
         aavePool = IPool(IPoolAddressesProvider(AAVE_POOL_ADDRESSES_PROVIDER).getPool());
-        // validator = new MockValidator();
-        validator = new K1Validator();
-        implementation = new Nexus(MAINNET_ENTRYPOINT_ADDRESS);
-        factory = new NexusAccountFactory(address(implementation), user);
+        factory = INexusFactory(NEXUS_ACCOUNT_FACTORY_ADDRESS);
 
-        bootstrap = new NexusBootstrap();
+        bootstrap = INexusBootstrap(NEXUS_BOOTSTRAP_ADDRESS);
 
         _createAndSetupAccount();
+
+        // print addresses
+        console.log("--------------------------------");
+        console.log(StdStyle.blue("account"), account);
+        console.log(StdStyle.blue("module"), address(module));
+        console.log(StdStyle.blue("aavePool"), address(aavePool));
+        console.log("--------------------------------");
     }
 
     function testFlashLoanOnAave() public {
@@ -122,7 +204,7 @@ contract FlashAccountErc7579Test is Test {
         // Create validator config
         BootstrapConfig[] memory validators = new BootstrapConfig[](1);
         validators[0] = BootstrapConfig({
-            module: address(validator),
+            module: NEXUS_K1_VALIDATOR_ADDRESS,
             data: abi.encodePacked(user) // validator init data is the owner address
         });
 
@@ -149,12 +231,12 @@ contract FlashAccountErc7579Test is Test {
         );
 
         bytes memory initCode = abi.encodePacked(
-            address(factory), abi.encodeWithSelector(NexusAccountFactory.createAccount.selector, initData, bytes32(0))
+            address(factory), abi.encodeWithSelector(INexusFactory.createAccount.selector, initData, bytes32(0))
         );
 
         // get sender address
         (bool success, bytes memory data) = address(factory).staticcall(
-            abi.encodeWithSelector(NexusAccountFactory.computeAccountAddress.selector, initData, bytes32(0))
+            abi.encodeWithSelector(INexusFactory.computeAccountAddress.selector, initData, bytes32(0))
         );
         require(success, "Failed to get account address");
         account = abi.decode(data, (address));
@@ -168,8 +250,6 @@ contract FlashAccountErc7579Test is Test {
         // Execute the operation
         vm.prank(user);
         entryPoint.handleOps(ops, payable(user));
-        // Fund account
-        vm.deal(address(account), 100 ether);
     }
 
     /**
@@ -189,7 +269,7 @@ contract FlashAccountErc7579Test is Test {
 
         op = PackedUserOperation({
             sender: account,
-            nonce: _encodeNonce(address(validator), uint64(nounce)),
+            nonce: _encodeNonce(NEXUS_K1_VALIDATOR_ADDRESS, uint64(nounce)),
             initCode: initCode,
             callData: calldata_,
             accountGasLimits: bytes32((uint256(verificationGasLimit) << 128) | callGasLimit),
@@ -201,7 +281,7 @@ contract FlashAccountErc7579Test is Test {
         op = _signUserOp(op);
     }
 
-    function _encodeNonce(address validator_, uint64 nounce_) internal returns (uint256 nounce) {
+    function _encodeNonce(address validator_, uint64 nonce_) internal returns (uint256 nonce) {
         /**
          * Nonce structure
          *     [3 bytes empty][1 bytes validation mode][20 bytes validator][8 bytes nonce]
@@ -210,10 +290,10 @@ contract FlashAccountErc7579Test is Test {
         // bytes1 constant MODE_VALIDATION = 0x00;
         // bytes1 constant MODE_MODULE_ENABLE = 0x01;
         assembly {
-            nounce := shl(64, validator_)
+            nonce := shl(64, validator_)
             let mode := shl(224, 0x0)
-            nounce := or(nounce, mode)
-            nounce := or(nounce, nounce_) // 8 bytes nounce
+            nonce := or(nonce, mode)
+            nonce := or(nonce, nonce_) // 8 bytes nounce
         }
     }
 

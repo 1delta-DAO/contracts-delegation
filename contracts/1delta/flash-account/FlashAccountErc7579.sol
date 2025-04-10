@@ -3,8 +3,8 @@ pragma solidity ^0.8.28;
 
 import {IExecutor} from "./interfaces/IExecuter.sol";
 import {ExecutionLock} from "./ExecutionLock.sol";
-import {INexus} from "nexus/contracts/interfaces/INexus.sol";
-import "nexus/contracts/lib/ModeLib.sol";
+import {INexus} from "./interfaces/INexus.sol";
+import "./utils/ModeLib.sol";
 
 /// @title FlashAccountErc7579
 /// @notice A module that allows a smart account to handle flash loan callbacks
@@ -91,7 +91,7 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
     }
 
     /// @notice Execute a flash loan
-    /// @param flashLoanProvider The destination address
+    /// @param flashLoanProvider The flashloan provider address
     /// @param dataOffset The offset of the calldata that indicates the start of the flashloan calldata
     /// @param data The calldata that will be passed as the data to flashloan execute function
     function flashLoan(address flashLoanProvider, uint256 dataOffset, bytes calldata data) external setInExecution {

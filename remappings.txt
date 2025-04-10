@@ -4,7 +4,3 @@ ds-test/=contracts/ds-test/
 @chainlink/contracts/=node_modules/@chainlink/contracts/
 base64-sol/=lib/base64/
 hardhat/=node_modules/hardhat/
-nexus/=lib/nexus/
-aave-v3-core/=lib/aave-v3-core/contracts/
-account-abstraction/=lib/account-abstraction/contracts/
-nexus/=lib/nexus/

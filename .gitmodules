@@ -10,12 +10,3 @@
 [submodule "lib/base64"]
 	path = lib/base64
 	url = https://github.com/Brechtpd/base64
-[submodule "lib/nexus"]
-	path = lib/nexus
-	url = https://github.com/bcnmy/nexus
-[submodule "lib/aave-v3-core"]
-	path = lib/aave-v3-core
-	url = https://github.com/aave/aave-v3-core
-[submodule "lib/account-abstraction"]
-	path = lib/account-abstraction
-	url = https://github.com/eth-infinitism/account-abstraction
