@@ -8,8 +8,11 @@ import {IERC20All} from "../../shared/interfaces/IERC20All.sol";
 import {BaseTest} from "../../shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
 import "../utils/CalldataLib.sol";
+import {DexPayConfig} from "contracts/1delta/modules/light/enums/MiscEnums.sol";
+/**
+ * This is for SyncSwap (Ritsu on Taiko)
+ */
 
-/** This is for SyncSwap (Ritsu on Taiko) */
 contract SyncSwapLightTest is BaseTest {
     using CalldataLib for bytes;
 
@@ -45,7 +48,7 @@ contract SyncSwapLightTest is BaseTest {
             USDC,
             receiver,
             RITSU_USDC_WETH,
-            CalldataLib.DexPayConfig.CALLER_PAYS //
+            DexPayConfig.CALLER_PAYS //
         );
     }
 
@@ -59,7 +62,7 @@ contract SyncSwapLightTest is BaseTest {
         deal(tokenIn, user, amount);
 
         vm.prank(user);
-        IERC20All(tokenIn).approve(address(oneDV2), type(uint).max);
+        IERC20All(tokenIn).approve(address(oneDV2), type(uint256).max);
 
         bytes memory swap = syncPoolWETHUSDCSwap(
             user,

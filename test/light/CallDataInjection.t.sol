@@ -9,6 +9,7 @@ import {Chains, Tokens, Lenders} from "../data/LenderRegistry.sol";
 import {DexTypeMappings} from "light/swappers/dex/DexTypeMappings.sol";
 import {CalldataLib} from "./utils/CalldataLib.sol";
 import {DeltaErrors} from "modules/shared/errors/Errors.sol";
+import {DexPayConfig} from "light/enums/MiscEnums.sol";
 
 contract CallDataInjection is BaseTest, DeltaErrors {
     using CalldataLib for bytes;
@@ -62,7 +63,7 @@ contract CallDataInjection is BaseTest, DeltaErrors {
 
         bytes memory swapCall = CalldataLib.swapHead(10, 0, WETH, false).attachBranch(0, 0, new bytes(0))
             .uniswapV3StyleSwap(
-            USDC, address(attacker), 0, address(maliciousPool), 500, CalldataLib.DexPayConfig.CALLER_PAYS, new bytes(0)
+            USDC, address(attacker), 0, address(maliciousPool), 500, DexPayConfig.CALLER_PAYS, new bytes(0)
         );
 
         // Execute swap through the composer contract
@@ -139,7 +140,7 @@ contract CallDataInjection is BaseTest, DeltaErrors {
             abi.encodePacked(
                 CalldataLib.swapHead(10, 0, WETH, false).attachBranch(0, 0, new bytes(0)),
                 CalldataLib.uniswapV2StyleSwap(
-                    USDC, attacker, 0, address(maliciousPool), 9970, CalldataLib.DexPayConfig.PRE_FUND, new bytes(1111)
+                    USDC, attacker, 0, address(maliciousPool), 9970, DexPayConfig.PRE_FUND, new bytes(1111)
                 )
             )
         );

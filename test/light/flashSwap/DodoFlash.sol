@@ -8,6 +8,7 @@ import {IERC20All} from "../../shared/interfaces/IERC20All.sol";
 import {BaseTest} from "../../shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
 import "../utils/CalldataLib.sol";
+import {DexPayConfig, DodoSelector} from "contracts/1delta/modules/light/enums/MiscEnums.sol";
 
 interface DVMF {
     function _REGISTRY_(address, address, uint256) external view returns (address);
@@ -49,7 +50,11 @@ contract DodoLightTest is BaseTest {
         oneDV2 = new OneDeltaComposerLight();
     }
 
-    function dodOPoolWETHJOJOSwap(address receiver, uint256 amount, bytes memory callbackData) internal view returns (bytes memory data) {
+    function dodOPoolWETHJOJOSwap(address receiver, uint256 amount, bytes memory callbackData)
+        internal
+        view
+        returns (bytes memory data)
+    {
         // create head config
         data = CalldataLib.swapHead(
             amount,
@@ -63,9 +68,9 @@ contract DodoLightTest is BaseTest {
             JOJO,
             receiver,
             DODO_WETH_JOJO,
-            CalldataLib.DodoSelector.SELL_QUOTE, // sell quote
+            DodoSelector.SELL_QUOTE, // sell quote
             0,
-            CalldataLib.DexPayConfig.FLASH, // payMode <- user pays
+            DexPayConfig.FLASH, // payMode <- user pays
             callbackData
         );
     }
@@ -80,7 +85,7 @@ contract DodoLightTest is BaseTest {
         deal(tokenIn, user, amount);
 
         vm.prank(user);
-        IERC20All(tokenIn).approve(address(oneDV2), type(uint).max);
+        IERC20All(tokenIn).approve(address(oneDV2), type(uint256).max);
         bytes memory transfer = CalldataLib.transferIn(
             tokenIn,
             DODO_WETH_JOJO,
@@ -94,7 +99,7 @@ contract DodoLightTest is BaseTest {
 
         uint256 balBefore = IERC20All(tokenOut).balanceOf(user);
 
-        uint gas = gasleft();
+        uint256 gas = gasleft();
 
         vm.prank(user);
         oneDV2.deltaCompose(swap);

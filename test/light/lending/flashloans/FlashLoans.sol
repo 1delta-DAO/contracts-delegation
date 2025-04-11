@@ -11,6 +11,7 @@ import {IERC20All} from "test/shared/interfaces/IERC20All.sol";
 import {BaseTest} from "test/shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
 import "test/light/utils/CalldataLib.sol";
+import {SweepType} from "contracts/1delta/modules/light/enums/MiscEnums.sol";
 
 contract FlashLoanLightTest is BaseTest {
     using MorphoMathLib for uint256;
@@ -51,7 +52,7 @@ contract FlashLoanLightTest is BaseTest {
             address(0),
             user,
             sweepAm, //
-            CalldataLib.SweepType.AMOUNT
+            SweepType.AMOUNT
         );
         bytes memory d = CalldataLib.encodeFlashLoan(
             asset,
@@ -78,7 +79,7 @@ contract FlashLoanLightTest is BaseTest {
             address(0),
             user,
             sweepAm, //
-            CalldataLib.SweepType.AMOUNT
+            SweepType.AMOUNT
         );
         bytes memory d = CalldataLib.encodeFlashLoan(
             asset,
@@ -105,7 +106,7 @@ contract FlashLoanLightTest is BaseTest {
             address(0),
             user,
             sweepAm, //
-            CalldataLib.SweepType.AMOUNT
+            SweepType.AMOUNT
         );
         bytes memory d = CalldataLib.encodeFlashLoan(
             asset,
@@ -132,14 +133,14 @@ contract FlashLoanLightTest is BaseTest {
             address(0),
             user,
             sweepAm, //
-            CalldataLib.SweepType.AMOUNT
+            SweepType.AMOUNT
         );
 
         bytes memory t = CalldataLib.sweep(
             asset,
             BALANCER_V2_VAULT,
             amount, //
-            CalldataLib.SweepType.AMOUNT
+            SweepType.AMOUNT
         );
         bytes memory d = CalldataLib.encodeFlashLoan(
             asset,
@@ -165,14 +166,14 @@ contract FlashLoanLightTest is BaseTest {
             address(0),
             user,
             sweepAm, //
-            CalldataLib.SweepType.AMOUNT
+            SweepType.AMOUNT
         );
 
         bytes memory sweep = CalldataLib.sweep(
             assetFlash,
             BALANCER_V3_VAULT,
             amount, //
-            CalldataLib.SweepType.AMOUNT
+            SweepType.AMOUNT
         );
 
         bytes memory unlock = CalldataLib.balancerV3FlashLoan(
@@ -205,14 +206,14 @@ contract FlashLoanLightTest is BaseTest {
             address(0),
             user,
             sweepAm, //
-            CalldataLib.SweepType.AMOUNT
+            SweepType.AMOUNT
         );
 
         bytes memory sweep = CalldataLib.sweep(
             assetFlash,
             UNI_V4_PM,
             amount, //
-            CalldataLib.SweepType.AMOUNT
+            SweepType.AMOUNT
         );
 
         bytes memory unlock = CalldataLib.uniswapV4FlashLoan(

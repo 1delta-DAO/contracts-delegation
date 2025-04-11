@@ -8,10 +8,11 @@ import {IERC20All} from "../../shared/interfaces/IERC20All.sol";
 import {BaseTest} from "../../shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
 import "../utils/CalldataLib.sol";
-
+import {DexPayConfig, DodoSelector} from "contracts/1delta/modules/light/enums/MiscEnums.sol";
 /**
  * Test DodoV2 simple swaps
  */
+
 contract DodoV2LightTest is BaseTest {
     using CalldataLib for bytes;
 
@@ -53,9 +54,9 @@ contract DodoV2LightTest is BaseTest {
             JOJO,
             receiver,
             DODO_WETH_JOJO,
-            CalldataLib.DodoSelector.SELL_QUOTE, // sell quote
+            DodoSelector.SELL_QUOTE, // sell quote
             0,
-            CalldataLib.DexPayConfig.CALLER_PAYS, // payMode <- user pays
+            DexPayConfig.CALLER_PAYS, // payMode <- user pays
             hex""
         );
     }
@@ -70,7 +71,7 @@ contract DodoV2LightTest is BaseTest {
         deal(tokenIn, user, amount);
 
         vm.prank(user);
-        IERC20All(tokenIn).approve(address(oneDV2), type(uint).max);
+        IERC20All(tokenIn).approve(address(oneDV2), type(uint256).max);
 
         bytes memory swap = dodoPoolWETHJOJOSwap(
             user,

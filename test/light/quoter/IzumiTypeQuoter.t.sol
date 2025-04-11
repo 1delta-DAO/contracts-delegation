@@ -8,6 +8,7 @@ import "../../shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
 import {DexTypeMappings} from "../../../contracts/1delta/modules/light/swappers/dex/DexTypeMappings.sol";
 import {CalldataLib} from "../utils/CalldataLib.sol";
+import {DexPayConfig} from "contracts/1delta/modules/light/enums/MiscEnums.sol";
 
 interface IF {
     function pool(address tokenA, address tokenB, uint24 fee) external view returns (address);
@@ -64,7 +65,7 @@ contract IzumiQuoterTest is BaseTest {
         uint256 forkId,
         address pool,
         uint256 feeTier, //
-        CalldataLib.DexPayConfig cfg,
+        DexPayConfig cfg,
         bytes memory flashCalldata
     ) internal pure returns (bytes memory data) {
         if (uint256(cfg) < 2 && flashCalldata.length > 2) revert("Invalid config for v3 swap");
@@ -75,8 +76,8 @@ contract IzumiQuoterTest is BaseTest {
             pool,
             uint8(forkId),
             uint16(feeTier), // fee tier to validate pool
-            uint16(cfg == CalldataLib.DexPayConfig.FLASH ? flashCalldata.length : uint256(cfg)), //
-            bytes(cfg == CalldataLib.DexPayConfig.FLASH ? flashCalldata : new bytes(0))
+            uint16(cfg == DexPayConfig.FLASH ? flashCalldata.length : uint256(cfg)), //
+            bytes(cfg == DexPayConfig.FLASH ? flashCalldata : new bytes(0))
         );
     }
 
@@ -90,10 +91,11 @@ contract IzumiQuoterTest is BaseTest {
         uint256 amountIn = 0.01e18; // 1 WETH
 
         // Use utility function to encode path
-        bytes memory path = izumiV3StyleSwap(USDC, address(quoter), 0, WETH_USDC_500_POOL, 500, CalldataLib.DexPayConfig.CALLER_PAYS, new bytes(0));
+        bytes memory path =
+            izumiV3StyleSwap(USDC, address(quoter), 0, WETH_USDC_500_POOL, 500, DexPayConfig.CALLER_PAYS, new bytes(0));
         // single swap branch (0,0)
         bytes memory swapBranch = (new bytes(0)).attachBranch(0, 0, ""); //(0,0)
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         // Get quote
         uint256 quotedAmountOut = quoter.quote(amountIn, abi.encodePacked(WETH, swapBranch, path));
 
@@ -105,14 +107,7 @@ contract IzumiQuoterTest is BaseTest {
         // add quotedAmountOut as amountOutMin
         bytes memory swapHead = CalldataLib.swapHead(amountIn, quotedAmountOut, WETH, false);
         bytes memory swapCall = CalldataLib.izumiV3StyleSwap(
-            abi.encodePacked(swapHead, swapBranch),
-            USDC,
-            user,
-            0,
-            WETH_USDC_500_POOL,
-            500,
-            CalldataLib.DexPayConfig.CALLER_PAYS,
-            ""
+            abi.encodePacked(swapHead, swapBranch), USDC, user, 0, WETH_USDC_500_POOL, 500, DexPayConfig.CALLER_PAYS, ""
         );
 
         // Get actual amount from a real swap
@@ -135,7 +130,11 @@ contract IzumiQuoterTest is BaseTest {
         console.log("Actual amount:", actualAmountOut);
     }
 
-    function multiPath(address[] memory assets, uint16[] memory fees, address receiver) internal view returns (bytes memory data) {
+    function multiPath(address[] memory assets, uint16[] memory fees, address receiver)
+        internal
+        view
+        returns (bytes memory data)
+    {
         data = abi.encodePacked(
             uint8(fees.length - 1), // path max index
             uint8(0) // no splits
@@ -154,7 +153,7 @@ contract IzumiQuoterTest is BaseTest {
                 pool,
                 uint8(0), // <-- we assume native protocol here
                 fees[i],
-                uint16(CalldataLib.DexPayConfig.CALLER_PAYS),
+                uint16(DexPayConfig.CALLER_PAYS),
                 new bytes(0)
             );
             // console.log("Path: ", i);
@@ -234,7 +233,7 @@ contract IzumiQuoterTest is BaseTest {
             0, //
             pool500,
             500,
-            CalldataLib.DexPayConfig.CALLER_PAYS,
+            DexPayConfig.CALLER_PAYS,
             ""
         );
         quotePath = quotePath.attachBranch(0, 0, "");
@@ -244,7 +243,7 @@ contract IzumiQuoterTest is BaseTest {
             0,
             pool3000,
             3000, //
-            CalldataLib.DexPayConfig.CALLER_PAYS,
+            DexPayConfig.CALLER_PAYS,
             ""
         );
 
@@ -262,15 +261,15 @@ contract IzumiQuoterTest is BaseTest {
             1, // splits
             abi.encodePacked((type(uint16).max / 2))
         ); //
-
-        swapPath = swapPath.attachBranch(0, 0, ""); //
+        swapPath = swapPath.attachBranch(0, 0, "");
+        //
         swapPath = swapPath.izumiV3StyleSwap(
             USDC,
             user,
             0, //
             pool500,
             500,
-            CalldataLib.DexPayConfig.CALLER_PAYS,
+            DexPayConfig.CALLER_PAYS,
             ""
         );
         swapPath = swapPath.attachBranch(0, 0, "");
@@ -280,7 +279,7 @@ contract IzumiQuoterTest is BaseTest {
             0,
             pool3000,
             3000, //
-            CalldataLib.DexPayConfig.CALLER_PAYS,
+            DexPayConfig.CALLER_PAYS,
             ""
         );
 

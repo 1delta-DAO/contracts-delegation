@@ -9,6 +9,7 @@ import "../../shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
 import {DexTypeMappings} from "../../../contracts/1delta/modules/light/swappers/dex/DexTypeMappings.sol";
 import "../utils/CalldataLib.sol";
+import {DexPayConfig} from "contracts/1delta/modules/light/enums/MiscEnums.sol";
 
 interface IF {
     function getPool(address tokenA, address tokenB, uint24 fee) external view returns (address);
@@ -71,7 +72,7 @@ contract BalancerV3QuoterTest is BaseTest {
             user,
             BALANCER_V3_VAULT,
             USDC_WETH_POOL,
-            CalldataLib.DexPayConfig.CALLER_PAYS,
+            DexPayConfig.CALLER_PAYS,
             hex"" //
         );
     }
@@ -80,7 +81,6 @@ contract BalancerV3QuoterTest is BaseTest {
      * END OF CALLDATA UTILS
      */
     function test_light_quoter_simple_swap_balancerv3() public {
-
         /**
          * WETH -> USDC (0,0)
          */
@@ -89,7 +89,7 @@ contract BalancerV3QuoterTest is BaseTest {
         // Use utility function to encode path
         bytes memory path = balancerV3Swap(user, WETH, USDC);
 
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         // Get quote
         uint256 quotedAmountOut = quoter.quote(amountIn, path);
 

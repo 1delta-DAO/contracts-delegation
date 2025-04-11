@@ -8,6 +8,7 @@ import {IERC20All} from "../../shared/interfaces/IERC20All.sol";
 import {BaseTest} from "../../shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
 import "../utils/CalldataLib.sol";
+import {DexPayConfig} from "contracts/1delta/modules/light/enums/MiscEnums.sol";
 
 contract GmxLightTest is BaseTest {
     using CalldataLib for bytes;
@@ -48,7 +49,7 @@ contract GmxLightTest is BaseTest {
             USDC,
             receiver,
             GMX_POOL,
-            CalldataLib.DexPayConfig.CALLER_PAYS //
+            DexPayConfig.CALLER_PAYS //
         );
     }
 
@@ -62,7 +63,7 @@ contract GmxLightTest is BaseTest {
         deal(tokenIn, user, amount);
 
         vm.prank(user);
-        IERC20All(tokenIn).approve(address(oneDV2), type(uint).max);
+        IERC20All(tokenIn).approve(address(oneDV2), type(uint256).max);
 
         bytes memory swap = gmxPoolWETHUSDCSwap(
             user,

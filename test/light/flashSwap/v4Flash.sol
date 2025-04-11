@@ -2,7 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {MarketParams, IMorphoEverything} from "test/light/lending/utils/Morpho.sol";
-
+import {DexPayConfig, SweepType} from "contracts/1delta/modules/light/enums/MiscEnums.sol";
 import {console} from "forge-std/console.sol";
 import {OneDeltaComposerLight} from "light/Composer.sol";
 import {IERC20All} from "test/shared/interfaces/IERC20All.sol";
@@ -60,13 +60,11 @@ contract FlashSwapTest is BaseTest {
             tokenOut,
             user,
             UNI_V4_PM,
-            CalldataLib.UniV4SwapParams(
-                500, //
-                10,
-                address(0),
-                hex""
-            ),
-            CalldataLib.DexPayConfig.PRE_FUND
+            500, //
+            10,
+            address(0),
+            hex"",
+            DexPayConfig.PRE_FUND
         );
     }
 
@@ -101,7 +99,7 @@ contract FlashSwapTest is BaseTest {
                 borrowAmount
             );
             settlementActions = abi.encodePacked(
-                CalldataLib.unwrap(WETH, address(oneDV2), borrowAmount, CalldataLib.SweepType.AMOUNT), settlementActions
+                CalldataLib.unwrap(WETH, address(oneDV2), borrowAmount, SweepType.AMOUNT), settlementActions
             );
 
             deposit = abi.encodePacked(

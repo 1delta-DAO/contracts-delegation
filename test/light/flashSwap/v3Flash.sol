@@ -7,6 +7,7 @@ import {IERC20All} from "test/shared/interfaces/IERC20All.sol";
 import {BaseTest} from "test/shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
 import "test/light/utils/CalldataLib.sol";
+import {SweepType} from "contracts/1delta/modules/light/enums/MiscEnums.sol";
 
 interface IF {
     function getPool(address tokenA, address tokenB, uint24 fee) external view returns (address);
@@ -195,7 +196,7 @@ contract FlashSwapTest is BaseTest {
             tokenIn,
             uniPool,
             borrowAmount / 2, // split payment for first pool
-            CalldataLib.SweepType.AMOUNT //
+            SweepType.AMOUNT //
         );
 
         uniPool = IF(UNI_FACTORY).getPool(tokenIn, tokenOut, 3000);
@@ -205,7 +206,7 @@ contract FlashSwapTest is BaseTest {
                 tokenIn,
                 uniPool, // pay second pool
                 borrowAmount / 2, // split payment for second pool
-                CalldataLib.SweepType.AMOUNT //
+                SweepType.AMOUNT //
             )
         );
 

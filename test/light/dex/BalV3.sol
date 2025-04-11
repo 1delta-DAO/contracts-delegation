@@ -9,12 +9,14 @@ import {BaseTest} from "../../shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
 import "../utils/CalldataLib.sol";
 import {PoolKey, SwapParams, PS, BalanceDelta} from "./utils/UniV4Utils.sol";
-
+import {DexPayConfig} from "contracts/1delta/modules/light/enums/MiscEnums.sol";
 /**
  * We test Blancer v3 single swaps
  */
+
 contract BalV3LightTest is BaseTest {
     using CalldataLib for bytes;
+
     uint256 internal constant forkBlock = 27970029;
     OneDeltaComposerLight oneDV2;
 
@@ -69,7 +71,7 @@ contract BalV3LightTest is BaseTest {
             user,
             BALANCER_V3_VAULT,
             USDC_WETH_POOL,
-            CalldataLib.DexPayConfig.CALLER_PAYS,
+            DexPayConfig.CALLER_PAYS,
             hex"" //
         );
     }
@@ -86,7 +88,7 @@ contract BalV3LightTest is BaseTest {
         deal(tokenIn, user, amount);
 
         vm.prank(user);
-        IERC20All(tokenIn).approve(address(oneDV2), type(uint).max);
+        IERC20All(tokenIn).approve(address(oneDV2), type(uint256).max);
 
         // console.logBytes(
         //     abi.encodeWithSelector(
@@ -111,7 +113,7 @@ contract BalV3LightTest is BaseTest {
 
         uint256 balBefore = IERC20All(tokenOut).balanceOf(user);
 
-        uint gas = gasleft();
+        uint256 gas = gasleft();
 
         vm.prank(user);
         oneDV2.deltaCompose(swap);
