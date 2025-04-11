@@ -2,7 +2,6 @@
 
 pragma solidity 0.8.28;
 
-import {Slots} from "../../shared/storage/Slots.sol";
 import {ERC20Selectors} from "../../shared/selectors/ERC20Selectors.sol";
 import {Masks} from "../../shared/masks/Masks.sol";
 import {DeltaErrors} from "../../shared/errors/Errors.sol";
@@ -13,7 +12,7 @@ import {DeltaErrors} from "../../shared/errors/Errors.sol";
  *        Efficient baching through compact calldata usage.
  * @author 1delta Labs AG
  */
-contract AaveV3FlashLoans is Slots, ERC20Selectors, Masks, DeltaErrors {
+contract AaveV3FlashLoans is ERC20Selectors, Masks, DeltaErrors {
     /*
      * | Offset | Length (bytes) | Description                     |
      * |--------|----------------|---------------------------------|

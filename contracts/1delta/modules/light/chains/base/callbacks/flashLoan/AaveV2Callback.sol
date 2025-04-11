@@ -2,34 +2,32 @@
 
 pragma solidity 0.8.28;
 
-import {Slots} from "../../slots/Slots.sol";
-import {Masks} from "../../../shared/masks/Masks.sol";
-import {DeltaErrors} from "../../../shared/errors/Errors.sol";
+import {Masks} from "../../../../../shared/masks/Masks.sol";
+import {DeltaErrors} from "../../../../../shared/errors/Errors.sol";
 
 /**
- * Flash loaning through BalancerV2
+ * @title Take an Aave V2 flash loan callback
  */
-contract BalancerV2FlashLoanCallback is Slots, Masks, DeltaErrors {
-    // Balancer V2 vault
-    address private constant BALANCER_V2_VAULT = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
+contract AaveV2FlashLoanCallback is Masks, DeltaErrors {
+    // Aave v2s
+    address private constant GRANARY = 0xB702cE183b4E1Faa574834715E5D4a6378D0eEd3;
 
     /**
-     * @dev Balancer flash loan call
-     * Gated via flash loan gateway flag to prevent calls from sources other than this contract
+     * @dev Aave V2 style flash loan callback
      */
-    function receiveFlashLoan(
+    function executeOperation(
         address[] calldata,
         uint256[] calldata,
-        uint256[] calldata,
-        bytes calldata params //
-    ) external {
+        uint256[] calldata, // we assume that the data is known to the caller in advance
+        address initiator,
+        bytes calldata params
+    ) external returns (bool) {
         address origCaller;
         uint256 calldataOffset;
         uint256 calldataLength;
         assembly {
             calldataOffset := params.offset
             calldataLength := params.length
-
             // validate caller
             // - extract id from params
             let firstWord := calldataload(calldataOffset)
@@ -41,7 +39,7 @@ contract BalancerV2FlashLoanCallback is Slots, Masks, DeltaErrors {
             // the `initiator` paramter the caller of `flashLoan`
             switch source
             case 0 {
-                if xor(caller(), BALANCER_V2_VAULT) {
+                if xor(caller(), GRANARY) {
                     mstore(0, INVALID_CALLER)
                     revert(0, 0x4)
                 }
@@ -51,8 +49,11 @@ contract BalancerV2FlashLoanCallback is Slots, Masks, DeltaErrors {
                 mstore(0, INVALID_FLASH_LOAN)
                 revert(0, 0x4)
             }
-            // check that the entry flag is
-            if iszero(eq(2, sload(FLASH_LOAN_GATEWAY_SLOT))) {
+            // We require to self-initiate
+            // this prevents caller impersonation,
+            // but ONLY if the caller address is
+            // an Aave V2 type lending pool
+            if xor(address(), initiator) {
                 mstore(0, INVALID_CALLER)
                 revert(0, 0x4)
             }
@@ -67,7 +68,9 @@ contract BalancerV2FlashLoanCallback is Slots, Masks, DeltaErrors {
         }
         // within the flash loan, any compose operation
         // can be executed
+        // we pass the payAmount and loaned amount for consistent usage
         _deltaComposeInternal(origCaller, calldataOffset, calldataLength);
+        return true;
     }
 
     function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual {}

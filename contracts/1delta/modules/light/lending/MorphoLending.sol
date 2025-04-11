@@ -2,7 +2,6 @@
 
 pragma solidity ^0.8.28;
 
-import {Slots} from "../../shared/storage/Slots.sol";
 import {ERC20Selectors} from "../../shared/selectors/ERC20Selectors.sol";
 import {Masks} from "../../shared/masks/Masks.sol";
 
@@ -13,7 +12,7 @@ import {Masks} from "../../shared/masks/Masks.sol";
 /**
  * @notice Lending base contract that wraps Morpho Blue
  */
-abstract contract MorphoLending is Slots, ERC20Selectors, Masks {
+abstract contract MorphoLending is ERC20Selectors, Masks {
     /// @dev Constant MorphoB address
     // address internal constant MORPHO_BLUE = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
 
@@ -201,28 +200,6 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks {
 
             let morpho := shr(96, calldataload(currentOffset))
             currentOffset := add(currentOffset, 20)
-
-            /**
-             * Approve MB beforehand for the depo amount
-             * Slot: keccak256(MorphoBlue, keccak256(token, CALL_MANAGEMENT_APPROVALS))
-             */
-            mstore(0x0, token)
-            mstore(0x20, CALL_MANAGEMENT_APPROVALS)
-            mstore(0x20, keccak256(0x0, 0x40))
-            mstore(0x0, morpho)
-            let key := keccak256(0x0, 0x40)
-            // check if already approved
-            if iszero(sload(key)) {
-                // selector for approve(address,uint256)
-                mstore(ptrBase, ERC20_APPROVE)
-                mstore(add(ptrBase, 0x04), morpho)
-                mstore(add(ptrBase, 0x24), MAX_UINT256)
-
-                if iszero(call(gas(), token, 0x0, ptrBase, 0x44, 0x0, 0x0)) {
-                    revert(0x0, 0x0)
-                }
-                sstore(key, 1)
-            }
 
             // get calldatalength
             let calldataLength := and(UINT16_MASK, shr(240, calldataload(currentOffset)))
@@ -691,26 +668,6 @@ abstract contract MorphoLending is Slots, ERC20Selectors, Masks {
                 mstore(add(ptr, 324), shl(96, callerAddress)) // caller
                 calldatacopy(add(ptr, 344), currentOffset, calldataLength) // calldata
                 currentOffset := add(currentOffset, calldataLength)
-            }
-
-            /**
-             * Approve MB beforehand for the repay amount
-             */
-            mstore(0x0, token)
-            mstore(0x20, CALL_MANAGEMENT_APPROVALS)
-            mstore(0x20, keccak256(0x0, 0x40))
-            mstore(0x0, morpho)
-            let key := keccak256(0x0, 0x40)
-            // check if already approved
-            if iszero(sload(key)) {
-                // selector for approve(address,uint256)
-                mstore(ptrBase, ERC20_APPROVE)
-                mstore(add(ptrBase, 0x04), morpho)
-                mstore(add(ptrBase, 0x24), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff)
-                if iszero(call(gas(), token, 0x0, ptrBase, 0x44, ptrBase, 0x0)) {
-                    revert(0x0, 0x0)
-                }
-                sstore(key, 1)
             }
 
             // repay(...)

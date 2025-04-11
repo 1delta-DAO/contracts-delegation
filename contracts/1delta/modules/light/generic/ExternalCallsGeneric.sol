@@ -2,7 +2,6 @@
 
 pragma solidity ^0.8.28;
 
-import {Slots} from "../../shared/storage/Slots.sol";
 import {ERC20Selectors} from "../../shared/selectors/ERC20Selectors.sol";
 import {Masks} from "../../shared/masks/Masks.sol";
 import {DeltaErrors} from "../../shared/errors/Errors.sol";
@@ -16,7 +15,7 @@ import {DeltaErrors} from "../../shared/errors/Errors.sol";
 /**
  * @notice External call on any target - prevents `transferFrom` selector
  */
-abstract contract ExternalCallsGeneric is Slots, ERC20Selectors, Masks, DeltaErrors {
+abstract contract ExternalCallsGeneric is ERC20Selectors, Masks, DeltaErrors {
     /// @dev mask for selector in calldata
     bytes32 private constant SELECTOR_MASK = 0xffffffff00000000000000000000000000000000000000000000000000000000;
 

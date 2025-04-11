@@ -2,9 +2,9 @@
 
 pragma solidity 0.8.28;
 
-import {Slots} from "../../slots/Slots.sol";
-import {Masks} from "../../../shared/masks/Masks.sol";
-import {DeltaErrors} from "../../../shared/errors/Errors.sol";
+import {Slots} from "../../../../slots/Slots.sol";
+import {Masks} from "../../../../../shared/masks/Masks.sol";
+import {DeltaErrors} from "../../../../../shared/errors/Errors.sol";
 
 /**
  * Flash loaning through BalancerV2
