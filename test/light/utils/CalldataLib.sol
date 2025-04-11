@@ -568,6 +568,14 @@ library CalldataLib {
         return abi.encodePacked(uint8(poolId), data);
     }
 
+    function encodeMorphoMarket(address loanToken, address collateralToken, address oracle, address irm, uint256 lltv)
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(loanToken, collateralToken, oracle, irm, uint128(lltv));
+    }
+
     function morphoDepositCollateral(
         bytes memory market,
         uint256 assets,

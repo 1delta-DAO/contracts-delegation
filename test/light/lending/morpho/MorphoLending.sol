@@ -614,7 +614,7 @@ contract MorphoBlueTest is BaseTest {
     }
 
     function encodeMarket(MarketParams memory m) internal pure returns (bytes memory) {
-        return abi.encodePacked(m.loanToken, m.collateralToken, m.oracle, m.irm, uint128(m.lltv));
+        return CalldataLib.encodeMorphoMarket(m.loanToken, m.collateralToken, m.oracle, m.irm, m.lltv);
     }
 
     function depositCollateralToMorpho(address userAddr, uint256 amount) internal {
