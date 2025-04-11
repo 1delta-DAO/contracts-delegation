@@ -9,6 +9,7 @@ import {BaseTest} from "../shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "../data/LenderRegistry.sol";
 import "../../contracts/1delta/test/TrivialMockRouter.sol";
 import "./utils/CalldataLib.sol";
+import {SweepType} from "contracts/1delta/modules/light/enums/MiscEnums.sol";
 
 interface IF {
     function getPool(address tokenA, address tokenB, uint24 fee) external view returns (address);
@@ -53,7 +54,7 @@ contract ExternalCallsTest is BaseTest {
             asset,
             receiver,
             amount, //
-            CalldataLib.SweepType.AMOUNT
+            SweepType.AMOUNT
         );
 
         data = abi.encodePacked(

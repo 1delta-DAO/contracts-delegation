@@ -4,7 +4,7 @@ pragma solidity ^0.8.19;
 import {console} from "forge-std/console.sol";
 import {MorphoMathLib} from "../utils/MathLib.sol";
 import {MarketParams, IMorphoEverything} from "../utils/Morpho.sol";
-
+import {SweepType} from "contracts/1delta/modules/light/enums/MiscEnums.sol";
 import {OneDeltaComposerLight} from "light/Composer.sol";
 import {IERC20All} from "test/shared/interfaces/IERC20All.sol";
 import {BaseTest} from "test/shared/BaseTest.sol";
@@ -276,7 +276,7 @@ contract MorphoBlueTest is BaseTest {
             WETH,
             user,
             recoverWeth,
-            CalldataLib.SweepType.VALIDATE //
+            SweepType.VALIDATE //
         );
 
         bytes memory repayCall = CalldataLib.morphoRepay(
@@ -424,7 +424,7 @@ contract MorphoBlueTest is BaseTest {
             WETH,
             user,
             recoverWeth,
-            CalldataLib.SweepType.VALIDATE //
+            SweepType.VALIDATE //
         );
 
         bytes memory deposit = CalldataLib.morphoDeposit(
@@ -592,7 +592,7 @@ contract MorphoBlueTest is BaseTest {
             WETH,
             user,
             recoverWeth,
-            CalldataLib.SweepType.VALIDATE //
+            SweepType.VALIDATE //
         );
 
         bytes memory deposit = CalldataLib.morphoDepositCollateral(

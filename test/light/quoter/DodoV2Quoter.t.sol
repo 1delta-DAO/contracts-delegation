@@ -9,6 +9,7 @@ import "../../shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
 import {DexTypeMappings} from "../../../contracts/1delta/modules/light/swappers/dex/DexTypeMappings.sol";
 import "../utils/CalldataLib.sol";
+import {DexPayConfig, DodoSelector} from "contracts/1delta/modules/light/enums/MiscEnums.sol";
 
 interface IF {
     function getPool(address tokenA, address tokenB, uint24 fee) external view returns (address);
@@ -66,9 +67,9 @@ contract V4QuoterTest is BaseTest {
             JOJO,
             receiver,
             DODO_WETH_JOJO,
-            CalldataLib.DodoSelector.SELL_QUOTE, // sell quote
+            DodoSelector.SELL_QUOTE, // sell quote
             0,
-            CalldataLib.DexPayConfig.CALLER_PAYS, // payMode <- user pays
+            DexPayConfig.CALLER_PAYS, // payMode <- user pays
             hex""
         );
     }
@@ -85,7 +86,7 @@ contract V4QuoterTest is BaseTest {
         // Use utility function to encode path
         bytes memory path = dodoPoolWETHJOJOSwap(user);
 
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         // Get quote
         uint256 quotedAmountOut = quoter.quote(amountIn, path);
 

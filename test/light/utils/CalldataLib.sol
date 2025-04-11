@@ -5,32 +5,16 @@ import "contracts/1delta/modules/light/enums/DeltaEnums.sol";
 import "contracts/1delta/modules/light/enums/ForwarderEnums.sol";
 import "contracts/1delta/modules/light/swappers/dex/DexTypeMappings.sol";
 import "contracts/1delta/modules/light/swappers/callbacks/DexForkMappings.sol";
+import {DexPayConfig, SweepType, DodoSelector} from "contracts/1delta/modules/light/enums/MiscEnums.sol";
 
+/**
+ * Calldatalib do and don't:
+ * - Don't nest abi.encodePacked calls, create a helper function to encode the inner encode call
+ * - Return the encoded data directly (return abi.encodePacked(...)), don't assign to a variable
+ * - Don't use structs
+ * - Add enums in separate files (e.g DeltaEnums, ForwarderEnums, ...)
+ */
 library CalldataLib {
-    enum SweepType {
-        VALIDATE,
-        AMOUNT
-    }
-
-    enum DexPayConfig {
-        CALLER_PAYS,
-        CONTRACT_PAYS,
-        PRE_FUND,
-        FLASH
-    }
-
-    enum DodoSelector {
-        SELL_BASE,
-        SELL_QUOTE
-    }
-
-    struct UniV4SwapParams {
-        uint24 fee;
-        uint24 tickSpacing;
-        address hooks;
-        bytes hookData;
-    }
-
     function permit2TransferFrom(address token, address receiver, uint256 amount)
         internal
         pure
@@ -201,7 +185,10 @@ library CalldataLib {
         address tokenOut,
         address receiver,
         address manager,
-        UniV4SwapParams memory swapParams,
+        uint24 fee,
+        uint24 tickSpacing,
+        address hooks,
+        bytes memory hookData,
         DexPayConfig cfg
     ) internal pure returns (bytes memory) {
         if (cfg == DexPayConfig.FLASH) revert("Invalid config for v2 swap");
@@ -210,13 +197,13 @@ library CalldataLib {
             tokenOut,
             receiver,
             uint8(DexTypeMappings.UNISWAP_V4_ID),
-            swapParams.hooks,
+            hooks,
             manager,
-            swapParams.fee,
-            swapParams.tickSpacing,
+            fee,
+            tickSpacing,
             uint8(uint256(cfg)), // cll length <- user pays
-            uint16(swapParams.hookData.length),
-            swapParams.hookData
+            uint16(hookData.length),
+            hookData
         );
     }
 
