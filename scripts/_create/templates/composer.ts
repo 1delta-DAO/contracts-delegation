@@ -1,13 +1,13 @@
 
 
-export const composerTemplate = (name: string) => `
+export const templateComposer = (name: string) => `
 // SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity 0.8.28;
 
 import {BaseComposer} from "../../BaseComposer.sol";
-import {FlashLoanCallbacks} from "../../flashLoan/callbacks/FlashLoanCallbacks.sol";
 import {SwapCallbacks} from "../../swappers/callbacks/SwapCallbacks.sol";
+import {FlashLoanCallbacks} from "./callbacks/flashLoan/FlashLoanCallbacks.sol";
 
 /**
  * @title Chain-dependent Universal aggregator contract.

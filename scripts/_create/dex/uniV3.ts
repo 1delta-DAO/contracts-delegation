@@ -76,7 +76,7 @@ const SOLIDLY_V3 = {
 // src/core/univ3forks/AerodromeSlipstream.sol
 
 const aerodromeInitHash = "0xffb9af9ea6d9e39da47392ecc7055277b9915b8bfc9f83f105821b7791a6ae30"; // ERC1167 proxy
-const AERODROME_V3 = {
+const AERODROME_SLIPSTREAM = {
     factories: {
         [Chain.BASE]: "0x5e7BB104d84c7CB9B682AaC2F3d509f5F406809A",
     },
@@ -144,21 +144,6 @@ const PANCAKESWAP_V3 = {
     }
 }
 
-
-const MAVERICK_V2 = {
-    codeHash: { default: "0xbb7b783eb4b8ca46925c5384a6b9919df57cb83da8f76e37291f58d0dd5c439a" },
-
-    // https://docs.mav.xyz/technical-reference/contract-addresses/v2-contract-addresses
-    // For chains: mainnet, base, bnb, arbitrum, scroll, sepolia
-    factories: {
-        [Chain.ETHEREUM_MAINNET]: "0x0A7e848Aca42d879EF06507Fca0E7b33A0a63c1e",
-        [Chain.BASE]: "0x0A7e848Aca42d879EF06507Fca0E7b33A0a63c1e",
-        [Chain.BNB_SMART_CHAIN_MAINNET]: "0x0A7e848Aca42d879EF06507Fca0E7b33A0a63c1e",
-        [Chain.ARBITRUM_ONE]: "0x0A7e848Aca42d879EF06507Fca0E7b33A0a63c1e",
-        [Chain.SCROLL]: "0x0A7e848Aca42d879EF06507Fca0E7b33A0a63c1e"
-    }
-}
-
 const IZUMI = {
     factories: {
         [Chain.MANTLE]: '0x45e5F26451CDB01B0fA1f8582E0aAD9A6F27C218',
@@ -185,6 +170,7 @@ export const UNISWAP_V3_FORKS: { [s: string]: UniswapV3Info } = {
     [DexProtocol.ALIENBASE_V3]: ALIENBASE_V3,
     [DexProtocol.BASEX_V3]: BASEX_V3,
     [DexProtocol.KINETIX_V3]: KINETIX_V3,
+    [DexProtocol.AERODROME_SLIPSTREAM]: AERODROME_SLIPSTREAM,
 }
 
 export const IZUMI_FORKS: { [s: string]: UniswapV3Info } = {

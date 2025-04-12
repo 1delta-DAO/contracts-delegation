@@ -4,8 +4,8 @@ export const templateAaveV3 = (addressContants: string, switchCaseContent: strin
 
 pragma solidity 0.8.28;
 
-import {Masks} from "../../../shared/masks/Masks.sol";
-import {DeltaErrors} from "../../../shared/errors/Errors.sol";
+import {Masks} from "../../../../../shared/masks/Masks.sol";
+import {DeltaErrors} from "../../../../../shared/errors/Errors.sol";
 
 /**
  * @title Take an Aave v3 flash loan callback
