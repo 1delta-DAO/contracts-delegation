@@ -1,22 +1,13 @@
 import { Chain } from "@1delta/asset-registry";
 import { DexProtocol } from "./dexs";
 
-
-const UNISWAP_V4_PM = {
-    [Chain.ETHEREUM_MAINNET]: "0x000000000004444c5dc75cB358380D2e3dE08A90",
-    [Chain.ARBITRUM_ONE]: "0x360E68faCcca8cA495c1B759Fd9EEe466db9FB32",
-    [Chain.AVALANCHE_C_CHAIN]: "0x06380C0e0912312B5150364B9DC4542BA0DbBc85",
-    [Chain.BASE]: "0x498581fF718922c3f8e6A244956aF099B2652b2b",
-    [Chain.BLAST]: "0x1631559198A9e474033433b2958daBC135ab6446",
-    [Chain.BNB_SMART_CHAIN_MAINNET]: "0x28e2Ea090877bF75740558f6BFB36A5ffeE9e9dF",
-    [Chain.OP_MAINNET]: "0x9a13F98Cb987694C9F086b1F5eB990EeA8264Ec3",
-    [Chain.POLYGON_MAINNET]: "0x67366782805870060151383F4BbFF9daB53e5cD6",
-    [Chain.WORLD_CHAIN]: "0xb1860D529182ac3BC1F51Fa2ABd56662b7D13f33",
-}
-
 const uniswapV3InitHash = "0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54";
 
-const UNISWAP_V3 = {
+const uniswapV3CallbackSelector = "0xfa461e3300000000000000000000000000000000000000000000000000000000";
+const pancakeV3CallbackSelector = "0x23a69e7500000000000000000000000000000000000000000000000000000000";
+const algebraV3CallbackSelector = "0x2c8958f600000000000000000000000000000000000000000000000000000000";
+
+const UNISWAP_V3:UniswapV3Info = {
     factories: {
         [Chain.ETHEREUM_MAINNET]: "0x1F98431c8aD98523631AE4a59f267346ea31F984",
         [Chain.BASE]: "0x33128a8fC17869897dcE68Ed026d694621f6FDfD",
@@ -31,36 +22,83 @@ const UNISWAP_V3 = {
         [Chain.GNOSIS]: "0xe32F7dD7e3f098D518ff19A22d5f028e076489B1",
         [Chain.SONIC_MAINNET]: "0xcb2436774C3e191c85056d248EF4260ce5f27A9D",
         [Chain.INK]: "0x640887A9ba3A9C53Ed27D0F7e8246A4F933f3424",
-        [Chain.HEMI_NETWORK]: "0x346239972d1fa486FC4a521031BC81bFB7D6e8a4"
+        [Chain.HEMI_NETWORK]: "0x346239972d1fa486FC4a521031BC81bFB7D6e8a4",
+        [Chain.OP_MAINNET]: "0x1F98431c8aD98523631AE4a59f267346ea31F984",
+        [Chain.ARBITRUM_ONE]: "0x1F98431c8aD98523631AE4a59f267346ea31F984",
+        [Chain.POLYGON_MAINNET]: "0x1F98431c8aD98523631AE4a59f267346ea31F984",
+        [Chain.CELO_MAINNET]: "0xAfE208a311B21f13EF87E33A90049fC17A7acDEc",
+        [Chain.ZKSYNC_MAINNET]: "0x8FdA5a7a8dCA67BBcDd10F02Fa0649A937215422",
+        [Chain.BOBA_NETWORK]: "0xFFCd7Aed9C627E82A765c3247d562239507f6f1B",
+        [Chain.POLYGON_ZKEVM]: "0xff83c3c800Fec21de45C5Ec30B69ddd5Ee60DFC2",
+        [Chain.MOONBEAM]: "0x28f1158795A3585CaAA3cD6469CD65382b89BB70",
+        [Chain.FILECOIN___MAINNET]: "0xB4C47eD546Fc31E26470a186eC2C5F19eF09BA41",
+        [Chain.ROOTSTOCK_MAINNET]: "0xaF37EC98A00FD63689CF3060BF3B6784E00caD82",
+        [Chain.ZORA]: "0x7145F8aeef1f6510E92164038E1B6F8cB2c42Cbb",
+        [Chain.SEI_NETWORK]: "0x75FC67473A91335B5b8F8821277262a13B38c9b3",
+        [Chain.MANTA_PACIFIC_MAINNET]: "0x06D830e15081f65923674268121FF57Cc54e4e23",
+        [Chain.REDSTONE]: "0xece75613Aa9b1680f0421E5B2eF376DF68aa83Bb",
+        [Chain.LISK]: "0x0d922Fb1Bc191F64970ac40376643808b4B74Df9",
+        [Chain.BOB]: "0xcb2436774C3e191c85056d248EF4260ce5f27A9D",
+        // [Chain.ZERO]: "0xA1160e73B63F322ae88cC2d8E700833e71D0b2a1",
+        [Chain.METAL_L2]: "0xcb2436774C3e191c85056d248EF4260ce5f27A9D",
+        [Chain.CYBER_MAINNET]: "0x9701158fcF072c6852FD83B54D237e0cf5910C08",
+        [Chain.SAGA]: "0x454050C4c9190390981Ac4b8d5AFcd7aC65eEffa",
+        [Chain.CORN]: "0xcb2436774C3e191c85056d248EF4260ce5f27A9D",
+        [Chain.SHAPE]: "0xeCf9288395797Da137f663a7DD0F0CDF918776F8",
+        [Chain.ABSTRACT]: "0xA1160e73B63F322ae88cC2d8E700833e71D0b2a1",
+        [Chain.TELOS_EVM_MAINNET]: "0xcb2436774C3e191c85056d248EF4260ce5f27A9D",
+        [Chain.LIGHTLINK_PHOENIX_MAINNET]: "0xcb2436774C3e191c85056d248EF4260ce5f27A9D",
+        [Chain.GOAT_NETWORK]: "0xcb2436774C3e191c85056d248EF4260ce5f27A9D",
+
     },
-    codeHash: { default: uniswapV3InitHash }
+    codeHash: { default: uniswapV3InitHash },
+    callbackSelector: uniswapV3CallbackSelector
 }
 
-const SUSHISWAP_V3 = {
+const SUSHISWAP_V3:UniswapV3Info = {
     factories: {
-        [Chain.ETHEREUM_MAINNET]: "0xbACEB8eC6b9355Dfc0269C18bac9d6E2Bdc29C4F",
-        [Chain.BASE]: "0xc35DADB65012eC5796536bD9864eD8773aBc74C4", // Base, Linea
-        [Chain.LINEA]: "0xc35DADB65012eC5796536bD9864eD8773aBc74C4", // Base, Linea
         [Chain.ARBITRUM_ONE]: "0x1af415a1EbA07a4986a52B6f2e7dE7003D82231e",
+        [Chain.ARBITRUM_NOVA]: "0xaa26771d497814E81D305c511Efbb3ceD90BF5bd",
         [Chain.AVALANCHE_C_CHAIN]: "0x3e603C14aF37EBdaD31709C4f848Fc6aD5BEc715",
-        [Chain.BLAST_MAINNET]: "0x7680D4B43f3d1d54d6cfEeB2169463bFa7a6cf0d",
+        [Chain.BASE]: "0xc35DADB65012eC5796536bD9864eD8773aBc74C4",
+        [Chain.BLAST]: "0x7680D4B43f3d1d54d6cfEeB2169463bFa7a6cf0d",
+        [Chain.BOBA_NETWORK]: "0x0BE808376Ecb75a5CF9bB6D237d16cd37893d904",
         [Chain.BNB_SMART_CHAIN_MAINNET]: "0x126555dd55a39328F69400d6aE4F782Bd4C34ABb",
-        [Chain.OP_MAINNET]: "0x9c6522117e2ed1fE5bdb72bb0eD5E3f2bdE7DBe0",
-        [Chain.POLYGON_MAINNET]: "0x917933899c6a5F8E37F31E19f92CdBFF7e8FF0e2",
-        [Chain.SCROLL]: "0x46B3fDF7b5CDe91Ac049936bF0bDb12c5d22202e",
+        [Chain.BITTORRENT_CHAIN_MAINNET]: "0xBBDe1d67297329148Fe1ED5e6B00114842728e65",
+        [Chain.CELO_MAINNET]: "0x93395129bd3fcf49d95730D3C2737c17990fF328",
+        [Chain.CORE_BLOCKCHAIN_MAINNET]: "0xc35DADB65012eC5796536bD9864eD8773aBc74C4",
+        [Chain.ETHEREUM_MAINNET]: "0xbACEB8eC6b9355Dfc0269C18bac9d6E2Bdc29C4F",
+        [Chain.FANTOM_OPERA]: "0x7770978eED668a3ba661d51a773d3a992Fc9DDCB",
+        [Chain.FILECOIN___MAINNET]: "0xc35DADB65012eC5796536bD9864eD8773aBc74C4",
+        [Chain.FUSE_MAINNET]: "0x1b9d177CcdeA3c79B6c8F40761fc8Dc9d0500EAa",
         [Chain.GNOSIS]: "0xf78031CBCA409F2FB6876BDFDBc1b2df24cF9bEf",
-        [Chain.HEMI_NETWORK]: '0xCdBCd51a5E8728E0AF4895ce5771b7d17fF71959',
+        [Chain.HAQQ_NETWORK]: "0xc35DADB65012eC5796536bD9864eD8773aBc74C4",
+        [Chain.KAVA]: "0x1e9B24073183d5c6B7aE5FB4b8f0b1dd83FDC77a",
+        [Chain.LINEA]: "0xc35DADB65012eC5796536bD9864eD8773aBc74C4",
+        [Chain.METIS_ANDROMEDA_MAINNET]: "0x145d82bCa93cCa2AE057D1c6f26245d1b9522E6F",
+        [Chain.MOONBEAM]: "0x2ecd58F51819E8F8BA08A650BEA04Fc0DEa1d523",
+        [Chain.MOONRIVER]: "0x2F255d3f3C0A3726c6c99E74566c4b18E36E3ce6",
+        [Chain.OPBNB_MAINNET]: "0x9c6522117e2ed1fE5bdb72bb0eD5E3f2bdE7DBe0",
+        [Chain.POLYGON_MAINNET]: "0x917933899c6a5F8E37F31E19f92CdBFF7e8FF0e2",
+        [Chain.POLYGON_ZKEVM]: "0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506",
+        [Chain.ROOTSTOCK_MAINNET]: "0x46B3fDF7b5CDe91Ac049936bF0bDb12c5d22202e",
+        [Chain.SCROLL]: "0x46B3fDF7b5CDe91Ac049936bF0bDb12c5d22202e",
+        [Chain.SKALE_EUROPA_HUB]: "0x51d15889b66A2c919dBbD624d53B47a9E8feC4bB",
+        [Chain.THUNDERCORE_MAINNET]: "0xc35DADB65012eC5796536bD9864eD8773aBc74C4",
+        [Chain.ZETACHAIN_MAINNET]: "0xB45e53277a7e0F1D35f2a77160e91e25507f1763",
+
     },
     codeHash: {
         default: uniswapV3InitHash,
         [Chain.BLAST]: "0x8e13daee7f5a62e37e71bf852bcd44e7d16b90617ed2b17c24c2ee62411c5bae",
-    }
+    },
+    callbackSelector: uniswapV3CallbackSelector
 }
 
 const solidlyV3Factory = "0x70Fe4a44EA505cFa3A57b95cF2862D4fd5F0f687"
 const solidlyV3InitHash = "0xe9b68c5f77858eecac2e651646e208175e9b1359d68d0e14fc69f8c54e5010bf";
 
-const SOLIDLY_V3 = {
+const SOLIDLY_V3:UniswapV3Info = {
     factories: {
         [Chain.ETHEREUM_MAINNET]: solidlyV3Factory,
         [Chain.BASE]: solidlyV3Factory,
@@ -68,41 +106,44 @@ const SOLIDLY_V3 = {
     },
     codeHash: {
         default: solidlyV3InitHash
-    }
-
+    },
+    callbackSelector: uniswapV3CallbackSelector
 }
 
 
 // src/core/univ3forks/AerodromeSlipstream.sol
 
 const aerodromeInitHash = "0xffb9af9ea6d9e39da47392ecc7055277b9915b8bfc9f83f105821b7791a6ae30"; // ERC1167 proxy
-const AERODROME_SLIPSTREAM = {
+const AERODROME_SLIPSTREAM:UniswapV3Info = {
     factories: {
         [Chain.BASE]: "0x5e7BB104d84c7CB9B682AaC2F3d509f5F406809A",
     },
-    codeHash: { default: aerodromeInitHash }
+    codeHash: { default: aerodromeInitHash },
+    callbackSelector: uniswapV3CallbackSelector
 }
 
 // src/core/univ3forks/AlienBaseV3.sol
 
-const ALIENBASE_V3 = {
+const ALIENBASE_V3:UniswapV3Info = {
     factories: { [Chain.BASE]: "0x0Fd83557b2be93617c9C1C1B6fd549401C74558C" },
     codeHash: {
         default: uniswapV3InitHash
-    }
+    },
+    callbackSelector: uniswapV3CallbackSelector
 };
 
 // src/core/univ3forks/BaseX.sol
 
-const BASEX_V3 = {
+const BASEX_V3:UniswapV3Info = {
     factories: { [Chain.BASE]: "0x38015D05f4fEC8AFe15D7cc0386a126574e8077B" },
     codeHash: {
         default: uniswapV3InitHash
-    }
+    },
+    callbackSelector: uniswapV3CallbackSelector
 };
 
 // src/core/univ3forks/DackieSwapV3.sol
-const DACKIESWAP_V3 = {
+const DACKIESWAP_V3:UniswapV3Info = {
     factories: {
         [Chain.BASE]: "0x4f205D69834f9B101b9289F7AFFAc9B77B3fF9b7",
         [Chain.OP_MAINNET]: "0xa466ebCfa58848Feb6D8022081f1C21a884889bB",
@@ -113,24 +154,26 @@ const DACKIESWAP_V3 = {
     codeHash: {
         default: uniswapV3InitHash,
         [Chain.BLAST]: "0x9173e4373ab542649f2f059b10eaab2181ad82cc2e70cf51cf9d9fa8a144a2af"
-    }
+    },
+    callbackSelector: pancakeV3CallbackSelector
 }
 
 
 // src/core/univ3forks/KinetixV3.sol
-const KINETIX_V3 = {
+const KINETIX_V3:UniswapV3Info = {
     factories: {
         [Chain.BASE]: "0xdDF5a3259a88Ab79D5530eB3eB14c1C92CD97FCf",
     },
     codeHash: {
         default: uniswapV3InitHash,
-    }
+    },
+    callbackSelector: uniswapV3CallbackSelector
 }
 
 
 // src/core/univ3forks/PancakeSwapV3.sol
 const pancakeSwapV3InitHash = "0x6ce8eb472fa82df5469c6ab6d485f17c3ad13c8cd7af59b3d4a8026c5ce0f7e2";
-const PANCAKESWAP_V3 = {
+const PANCAKESWAP_V3:UniswapV3Info = {
     factories: {
         [Chain.ETHEREUM_MAINNET]: "0x41ff9AA7e16B8B1a8a8dc4f0eFacd93D02d071c9",
         [Chain.BNB_SMART_CHAIN_MAINNET]: "0x41ff9AA7e16B8B1a8a8dc4f0eFacd93D02d071c9",
@@ -138,27 +181,64 @@ const PANCAKESWAP_V3 = {
         [Chain.ARBITRUM_ONE]: "0x41ff9AA7e16B8B1a8a8dc4f0eFacd93D02d071c9",
         [Chain.POLYGON_ZKEVM]: "0x41ff9AA7e16B8B1a8a8dc4f0eFacd93D02d071c9",
         [Chain.ZKSYNC_MAINNET]: "0x7f71382044A6a62595D5D357fE75CA8199123aD6",
+        [Chain.LINEA]: "0x41ff9AA7e16B8B1a8a8dc4f0eFacd93D02d071c9",
+        [Chain.OPBNB_MAINNET]: "0x41ff9AA7e16B8B1a8a8dc4f0eFacd93D02d071c9",
     },
     codeHash: {
         default: pancakeSwapV3InitHash,
-    }
+    },
+    callbackSelector: pancakeV3CallbackSelector
 }
 
-const IZUMI = {
+const IZUMI:UniswapV3Info = {
     factories: {
+        [Chain.ETHEREUM_MAINNET]: "0x93BB94a0d5269cb437A1F71FF3a77AB753844422",
         [Chain.MANTLE]: '0x45e5F26451CDB01B0fA1f8582E0aAD9A6F27C218',
         [Chain.POLYGON_MAINNET]: '0xcA7e21764CD8f7c1Ec40e651E25Da68AeD096037',
         [Chain.TAIKO_ALETHIA]: '0x8c7d3063579BdB0b90997e18A770eaE32E1eBb08',
         [Chain.ARBITRUM_ONE]: '0xCFD8A067e1fa03474e79Be646c5f6b6A27847399',
         [Chain.HEMI_NETWORK]: '0x8c7d3063579BdB0b90997e18A770eaE32E1eBb08',
+        [Chain.METER_MAINNET]: '0xed31C5a9C764761C3A699E2732183ba5d6EAcC35',
+        [Chain.ZKSYNC_MAINNET]: '0x575Bfc57B0D3eA0d31b132D622643e71735A6957',
+        [Chain.ONTOLOGY_MAINNET]: '0x032b241De86a8660f1Ae0691a4760B426EA246d7',
+        [Chain.LINEA]: '0x45e5F26451CDB01B0fA1f8582E0aAD9A6F27C218',
+        [Chain.ETHEREUM_CLASSIC]: '0x79D175eF5fBe31b5D84B3ee359fcbBB466153E39',
+        [Chain.BASE]: '0x8c7d3063579BdB0b90997e18A770eaE32E1eBb08',
+        [Chain.OPBNB_MAINNET]: '0x8c7d3063579BdB0b90997e18A770eaE32E1eBb08',
+        [Chain.KROMA]: '0x8c7d3063579BdB0b90997e18A770eaE32E1eBb08',
+        [Chain.MANTA_PACIFIC_MAINNET]: '0x8c7d3063579BdB0b90997e18A770eaE32E1eBb08',
+        [Chain.SCROLL]: '0x8c7d3063579BdB0b90997e18A770eaE32E1eBb08',
+        [Chain.ZKFAIR_MAINNET]: '0x8c7d3063579BdB0b90997e18A770eaE32E1eBb08',
+        [Chain.ZETACHAIN_MAINNET]: '0x8c7d3063579BdB0b90997e18A770eaE32E1eBb08',
+        [Chain.MERLIN_MAINNET]: '0xE29a6620DAc789B8a76e9b9eC8fE9B7cf2B663D5',
+        [Chain.BLAST]: '0x5162f29E9626CF7186ec40ab97D92230B428ff2d',
+        [Chain.ZKLINK_NOVA_MAINNET]: '0x33D9936b7B7BC155493446B5E6dDC0350EB83AEC',
+        [Chain.MODE]: '0x8c7d3063579BdB0b90997e18A770eaE32E1eBb08',
+        [Chain.MAP_PROTOCOL]: '0x8c7d3063579BdB0b90997e18A770eaE32E1eBb08',
+        // [Chain.ANVN]: '0x8c7d3063579BdB0b90997e18A770eaE32E1eBb08',
+        [Chain.X_LAYER_MAINNET]: '0xBf8F8Ef2d2a534773c61682Ea7cF5323a324B188',
+        [Chain.BOB]: '0x8c7d3063579BdB0b90997e18A770eaE32E1eBb08',
+        [Chain.KAIA_MAINNET]: '0x8c7d3063579BdB0b90997e18A770eaE32E1eBb08',
+        [Chain.KAVA]: '0x8c7d3063579BdB0b90997e18A770eaE32E1eBb08',
+        [Chain.ROOTSTOCK_MAINNET]: '0x8c7d3063579BdB0b90997e18A770eaE32E1eBb08',
+        // [Chain.CYBER]: '0x8c7d3063579BdB0b90997e18A770eaE32E1eBb08',
+        [Chain.CORE_BLOCKCHAIN_MAINNET]: '0x8c7d3063579BdB0b90997e18A770eaE32E1eBb08',
+        [Chain.NEON_EVM_MAINNET]: '0x3EF68D3f7664b2805D4E88381b64868a56f88bC4',
+        [Chain.GRAVITY_ALPHA_MAINNET]: '0x8c7d3063579BdB0b90997e18A770eaE32E1eBb08',
+        [Chain.EVM_ON_FLOW]: '0x8c7d3063579BdB0b90997e18A770eaE32E1eBb08',
+        [Chain.IOTEX_NETWORK_MAINNET]: '0x8c7d3063579BdB0b90997e18A770eaE32E1eBb08',
+        [Chain.MORPH]: '0x8c7d3063579BdB0b90997e18A770eaE32E1eBb08',
+        [Chain.HASHKEY_CHAIN]: '0x110dE362cc436D7f54210f96b8C7652C2617887D',
+        [Chain.PLUME_MAINNET]: '0x8c7d3063579BdB0b90997e18A770eaE32E1eBb08',
     },
-    codeHash: { default: "0xbe0bfe068cdd78cafa3ddd44e214cfa4e412c15d7148e932f8043fe883865e40" }
+    codeHash: { default: "0xbe0bfe068cdd78cafa3ddd44e214cfa4e412c15d7148e932f8043fe883865e40" },
 }
 
 
 interface UniswapV3Info {
     factories: { [chain: string]: string },
     codeHash: { [chainOrDefault: string]: string },
+    callbackSelector?: string,
 }
 
 export const UNISWAP_V3_FORKS: { [s: string]: UniswapV3Info } = {

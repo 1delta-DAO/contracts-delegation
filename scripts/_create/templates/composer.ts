@@ -6,7 +6,7 @@ export const templateComposer = (name: string) => `
 pragma solidity 0.8.28;
 
 import {BaseComposer} from "../../BaseComposer.sol";
-import {SwapCallbacks} from "../../swappers/callbacks/SwapCallbacks.sol";
+import {SwapCallbacks} from "./callbacks/flashSwap/SwapCallbacks.sol";
 import {FlashLoanCallbacks} from "./callbacks/flashLoan/FlashLoanCallbacks.sol";
 
 /**

@@ -1,5 +1,9 @@
 
 export enum DexProtocol {
+  // Balancer V3
+  BALANCER_V3 = 'BALANCER_V3',
+  // V4
+  UNISWAP_V4 = 'UNISWAP_V4',
   // V2
   UNISWAP_V2 = 'UNISWAP_V2',
   PANCAKESWAP_V2 = 'PANCAKESWAP_V2',
