@@ -110,9 +110,20 @@ const SUSHI_V2: UniswapV2Info = {
         [Chain.THUNDERCORE_MAINNET]: "0xB45e53277a7e0F1D35f2a77160e91e25507f1763",
         [Chain.GNOSIS]: "0xc35DADB65012eC5796536bD9864eD8773aBc74C4",
         [Chain.ZETACHAIN_MAINNET]: "0x33d91116e0370970444B0281AB117e161fEbFcdD",
+        [Chain.HEMI_NETWORK]: "0x9B3336186a38E1b6c21955d112dbb0343Ee061eE",
 
     },
     codeHash: { default: uniswapV2InitHash },
+    callbackSelector: uniV2CallbackSelector
+}
+
+
+const PASS: UniswapV2Info = {
+    factories: {
+        [Chain.HEMI_NETWORK]: "0x242c913Ff5FE010430A709baab977e88435b7EBF",
+
+    },
+    codeHash: { default: "0xd040a901beef1fe03d5f83aff62cc341aa8fa949dcdaa516b1adcfae94ada0db" },
     callbackSelector: uniV2CallbackSelector
 }
 
@@ -127,4 +138,5 @@ export const UNISWAP_V2_FORKS: { [s: string]: UniswapV2Info } = {
     [DexProtocol.UNISWAP_V2]: UNISWAP_V2,
     [DexProtocol.SUSHISWAP_V2]: SUSHI_V2,
     [DexProtocol.PANCAKESWAP_V2]: PANCAKE_V2,
+    [DexProtocol.PASS]: PASS,
 }

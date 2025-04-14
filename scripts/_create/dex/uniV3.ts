@@ -7,7 +7,7 @@ const uniswapV3CallbackSelector = "0xfa461e3300000000000000000000000000000000000
 const pancakeV3CallbackSelector = "0x23a69e7500000000000000000000000000000000000000000000000000000000";
 const algebraV3CallbackSelector = "0x2c8958f600000000000000000000000000000000000000000000000000000000";
 
-const UNISWAP_V3:UniswapV3Info = {
+const UNISWAP_V3: UniswapV3Info = {
     factories: {
         [Chain.ETHEREUM_MAINNET]: "0x1F98431c8aD98523631AE4a59f267346ea31F984",
         [Chain.BASE]: "0x33128a8fC17869897dcE68Ed026d694621f6FDfD",
@@ -55,7 +55,7 @@ const UNISWAP_V3:UniswapV3Info = {
     callbackSelector: uniswapV3CallbackSelector
 }
 
-const SUSHISWAP_V3:UniswapV3Info = {
+const SUSHISWAP_V3: UniswapV3Info = {
     factories: {
         [Chain.ARBITRUM_ONE]: "0x1af415a1EbA07a4986a52B6f2e7dE7003D82231e",
         [Chain.ARBITRUM_NOVA]: "0xaa26771d497814E81D305c511Efbb3ceD90BF5bd",
@@ -86,6 +86,7 @@ const SUSHISWAP_V3:UniswapV3Info = {
         [Chain.SKALE_EUROPA_HUB]: "0x51d15889b66A2c919dBbD624d53B47a9E8feC4bB",
         [Chain.THUNDERCORE_MAINNET]: "0xc35DADB65012eC5796536bD9864eD8773aBc74C4",
         [Chain.ZETACHAIN_MAINNET]: "0xB45e53277a7e0F1D35f2a77160e91e25507f1763",
+        [Chain.HEMI_NETWORK]: "0xCdBCd51a5E8728E0AF4895ce5771b7d17fF71959",
 
     },
     codeHash: {
@@ -98,7 +99,7 @@ const SUSHISWAP_V3:UniswapV3Info = {
 const solidlyV3Factory = "0x70Fe4a44EA505cFa3A57b95cF2862D4fd5F0f687"
 const solidlyV3InitHash = "0xe9b68c5f77858eecac2e651646e208175e9b1359d68d0e14fc69f8c54e5010bf";
 
-const SOLIDLY_V3:UniswapV3Info = {
+const SOLIDLY_V3: UniswapV3Info = {
     factories: {
         [Chain.ETHEREUM_MAINNET]: solidlyV3Factory,
         [Chain.BASE]: solidlyV3Factory,
@@ -114,7 +115,7 @@ const SOLIDLY_V3:UniswapV3Info = {
 // src/core/univ3forks/AerodromeSlipstream.sol
 
 const aerodromeInitHash = "0xffb9af9ea6d9e39da47392ecc7055277b9915b8bfc9f83f105821b7791a6ae30"; // ERC1167 proxy
-const AERODROME_SLIPSTREAM:UniswapV3Info = {
+const AERODROME_SLIPSTREAM: UniswapV3Info = {
     factories: {
         [Chain.BASE]: "0x5e7BB104d84c7CB9B682AaC2F3d509f5F406809A",
     },
@@ -124,7 +125,7 @@ const AERODROME_SLIPSTREAM:UniswapV3Info = {
 
 // src/core/univ3forks/AlienBaseV3.sol
 
-const ALIENBASE_V3:UniswapV3Info = {
+const ALIENBASE_V3: UniswapV3Info = {
     factories: { [Chain.BASE]: "0x0Fd83557b2be93617c9C1C1B6fd549401C74558C" },
     codeHash: {
         default: uniswapV3InitHash
@@ -134,7 +135,7 @@ const ALIENBASE_V3:UniswapV3Info = {
 
 // src/core/univ3forks/BaseX.sol
 
-const BASEX_V3:UniswapV3Info = {
+const BASEX_V3: UniswapV3Info = {
     factories: { [Chain.BASE]: "0x38015D05f4fEC8AFe15D7cc0386a126574e8077B" },
     codeHash: {
         default: uniswapV3InitHash
@@ -143,7 +144,7 @@ const BASEX_V3:UniswapV3Info = {
 };
 
 // src/core/univ3forks/DackieSwapV3.sol
-const DACKIESWAP_V3:UniswapV3Info = {
+const DACKIESWAP_V3: UniswapV3Info = {
     factories: {
         [Chain.BASE]: "0x4f205D69834f9B101b9289F7AFFAc9B77B3fF9b7",
         [Chain.OP_MAINNET]: "0xa466ebCfa58848Feb6D8022081f1C21a884889bB",
@@ -160,7 +161,7 @@ const DACKIESWAP_V3:UniswapV3Info = {
 
 
 // src/core/univ3forks/KinetixV3.sol
-const KINETIX_V3:UniswapV3Info = {
+const KINETIX_V3: UniswapV3Info = {
     factories: {
         [Chain.BASE]: "0xdDF5a3259a88Ab79D5530eB3eB14c1C92CD97FCf",
     },
@@ -170,10 +171,20 @@ const KINETIX_V3:UniswapV3Info = {
     callbackSelector: uniswapV3CallbackSelector
 }
 
+const DTX: UniswapV3Info = {
+    factories: {
+        [Chain.TAIKO_ALETHIA]: '0xfCA1AEf282A99390B62Ca8416a68F5747716260c',
+    },
+    codeHash: {
+        [Chain.TAIKO_ALETHIA]: uniswapV3InitHash
+    },
+    callbackSelector: uniswapV3CallbackSelector
+}
+
 
 // src/core/univ3forks/PancakeSwapV3.sol
 const pancakeSwapV3InitHash = "0x6ce8eb472fa82df5469c6ab6d485f17c3ad13c8cd7af59b3d4a8026c5ce0f7e2";
-const PANCAKESWAP_V3:UniswapV3Info = {
+const PANCAKESWAP_V3: UniswapV3Info = {
     factories: {
         [Chain.ETHEREUM_MAINNET]: "0x41ff9AA7e16B8B1a8a8dc4f0eFacd93D02d071c9",
         [Chain.BNB_SMART_CHAIN_MAINNET]: "0x41ff9AA7e16B8B1a8a8dc4f0eFacd93D02d071c9",
@@ -190,7 +201,99 @@ const PANCAKESWAP_V3:UniswapV3Info = {
     callbackSelector: pancakeV3CallbackSelector
 }
 
-const IZUMI:UniswapV3Info = {
+const PANKO_V3: UniswapV3Info = {
+    factories: {
+        [Chain.TAIKO_ALETHIA]: "0x7DD105453D0AEf177743F5461d7472cC779e63f7",
+    },
+    codeHash: {
+        default: pancakeSwapV3InitHash,
+    },
+    callbackSelector: pancakeV3CallbackSelector
+}
+
+const FUSIONX_V3: UniswapV3Info = {
+    factories: {
+        [Chain.MANTLE]: "0x7DD105453D0AEf177743F5461d7472cC779e63f7",
+    },
+    codeHash: {
+        default: "0x1bce652aaa6528355d7a339037433a20cd28410e3967635ba8d2ddb037440dbf",
+    },
+    callbackSelector: "0xae067e0f00000000000000000000000000000000000000000000000000000000"
+}
+
+const AGNI: UniswapV3Info = {
+    factories: {
+        [Chain.MANTLE]: "0xe9827b4ebeb9ae41fc57efdddd79edddc2ea4d03",
+    },
+    codeHash: {
+        default: "0x1bce652aaa6528355d7a339037433a20cd28410e3967635ba8d2ddb037440dbf",
+    },
+    callbackSelector: "0x5bee97a300000000000000000000000000000000000000000000000000000000"
+}
+
+const METHLAB: UniswapV3Info = {
+    factories: {
+        [Chain.MANTLE]: "0x8f140fc3e9211b8dc2fc1d7ee3292f6817c5dd5d",
+    },
+    codeHash: {
+        default: "0xacd26fbb15704ae5e5fe7342ea8ebace020e4fa5ad4a03122ce1678278cf382b",
+    },
+    callbackSelector: uniswapV3CallbackSelector
+}
+
+const QUICKSWAP: UniswapV3Info = {
+    factories: {
+        [Chain.MANTLE]: "0x2D98E2FA9da15aa6dC9581AB097Ced7af697CB92",
+    },
+    codeHash: {
+        default: "0x6ec6c9c8091d160c0aa74b2b14ba9c1717e95093bd3ac085cee99a49aab294a4",
+    },
+    callbackSelector: algebraV3CallbackSelector
+}
+
+const SWAPSICLE: UniswapV3Info = {
+    factories: {
+        [Chain.MANTLE]: '0x9dE2dEA5c68898eb4cb2DeaFf357DFB26255a4aa',
+        [Chain.TAIKO_ALETHIA]: '0xb68b27a1c93A52d698EecA5a759E2E4469432C09',
+    },
+    codeHash: {
+        [Chain.MANTLE]: '0x177d5fbf994f4d130c008797563306f1a168dc689f81b2fa23b4396931014d91',
+        [Chain.TAIKO_ALETHIA]: '0xf96d2474815c32e070cd63233f06af5413efc5dcb430aee4ff18cc29007c562d'
+    },
+    callbackSelector: algebraV3CallbackSelector
+}
+
+const HENJIN: UniswapV3Info = {
+    factories: {
+        [Chain.TAIKO_ALETHIA]: '0x0d22b434E478386Cd3564956BFc722073B3508f6',
+    },
+    codeHash: {
+        [Chain.TAIKO_ALETHIA]: '0x4b9e4a8044ce5695e06fce9421a63b6f5c3db8a561eebb30ea4c775469e36eaf'
+    },
+    callbackSelector: algebraV3CallbackSelector
+}
+
+const CAMELOT: UniswapV3Info = {
+    factories: {
+        [Chain.ARBITRUM_ONE]: '0x6Dd3FB9653B10e806650F107C3B5A0a6fF974F65',
+    },
+    codeHash: {
+        [Chain.ARBITRUM_ONE]: '0x6c1bebd370ba84753516bc1393c0d0a6c645856da55f5393ac8ab3d6dbc861d3'
+    },
+    callbackSelector: algebraV3CallbackSelector
+}
+
+const ATLAS: UniswapV3Info = {
+    factories: {
+        [Chain.HEMI_NETWORK]: '0x6b46AE0e60E0E7a2F8614b3f1dCBf6D5a0102991',
+    },
+    codeHash: {
+        [Chain.HEMI_NETWORK]: '0xb3fc09be5eb433d99b1ec89fd8435aaf5ffea75c1879e19028aa2414a14b3c85'
+    },
+    callbackSelector: algebraV3CallbackSelector
+}
+
+const IZUMI: UniswapV3Info = {
     factories: {
         [Chain.ETHEREUM_MAINNET]: "0x93BB94a0d5269cb437A1F71FF3a77AB753844422",
         [Chain.MANTLE]: '0x45e5F26451CDB01B0fA1f8582E0aAD9A6F27C218',
@@ -251,6 +354,16 @@ export const UNISWAP_V3_FORKS: { [s: string]: UniswapV3Info } = {
     [DexProtocol.BASEX_V3]: BASEX_V3,
     [DexProtocol.KINETIX_V3]: KINETIX_V3,
     [DexProtocol.AERODROME_SLIPSTREAM]: AERODROME_SLIPSTREAM,
+    [DexProtocol.QUICKSWAP_V3]: QUICKSWAP,
+    [DexProtocol.HENJIN]: HENJIN,
+    [DexProtocol.SWAPSICLE]: SWAPSICLE,
+    [DexProtocol.AGNI]: AGNI,
+    [DexProtocol.FUSIONX_V3]: FUSIONX_V3,
+    [DexProtocol.METHLAB]: METHLAB,
+    [DexProtocol.PANKO]: PANKO_V3,
+    [DexProtocol.CAMELOT]: CAMELOT,
+    [DexProtocol.DTX]: DTX,
+    [DexProtocol.ATLAS]: ATLAS,
 }
 
 export const IZUMI_FORKS: { [s: string]: UniswapV3Info } = {

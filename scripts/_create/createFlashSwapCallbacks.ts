@@ -198,7 +198,16 @@ async function main() {
                 constantsDataV3 += createffAddressConstant(pool, entityName, codeHash!)
                 switchCaseContentV3 += createCase(entityName, String(i))
             })
-            switchCaseContentV3 += `}\n`
+            switchCaseContentV3 += `
+                let _amount1 := calldataload(36)
+                switch sgt(_amount1, 0)
+                case 1 {
+                    amountToPay := _amount1
+                }
+                default {
+                    amountToPay := calldataload(4)
+                }
+            }\n`
         })
 
         /**

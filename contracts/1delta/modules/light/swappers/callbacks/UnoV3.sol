@@ -103,8 +103,8 @@ abstract contract UniV3Callbacks is V3ReferencesBase, ERC20Selectors, Masks, Del
     function _executeUniV3IfSelector(bytes32 selector) internal {
         bytes32 codeHash;
         bytes32 ffFactoryAddress;
-        // we use the amount to pay as shorthand here to 
-        // allow paying without added calldata 
+        // we use the amount to pay as shorthand here to
+        // allow paying without added calldata
         uint256 amountToPay;
         assembly {
             switch or(eq(selector, SELECTOR_UNIV3), eq(selector, SELECTOR_PANCAKE))
@@ -117,15 +117,14 @@ abstract contract UniV3Callbacks is V3ReferencesBase, ERC20Selectors, Masks, Del
                 default {
                     revert(0, 0)
                 }
-                let _amount0 := calldataload(4)
-                let _amount1 := calldataload(36)
 
+                let _amount1 := calldataload(36)
                 switch sgt(_amount1, 0)
-                case 0 {
-                    amountToPay := _amount0
+                case 1 {
+                    amountToPay := _amount1
                 }
                 default {
-                    amountToPay := _amount1
+                    amountToPay := calldataload(4)
                 }
             }
             default {

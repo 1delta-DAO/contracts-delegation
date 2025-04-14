@@ -22,6 +22,7 @@ export enum DexProtocol {
   MANTLESWAP = 'MANTLESWAP',
   DTX_V1 = 'DTX_V1',
   TAIKOSWAP = 'TAIKOSWAP',
+  ATLAS = 'ATLAS',
   PASS = 'PASS',
   // exotic
   DODO_V1 = 'DODO_V1',
