@@ -5,4 +5,5 @@ ds-test/=contracts/ds-test/
 base64-sol/=lib/base64/
 hardhat/=node_modules/hardhat/
 light/=contracts/1delta/modules/light/
+plugins/=test/shared/composers/
 modules/=contracts/1delta/modules/

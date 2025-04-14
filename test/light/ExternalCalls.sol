@@ -10,6 +10,7 @@ import {Chains, Tokens, Lenders} from "../data/LenderRegistry.sol";
 import "../../contracts/1delta/test/TrivialMockRouter.sol";
 import "./utils/CalldataLib.sol";
 import {SweepType} from "contracts/1delta/modules/light/enums/MiscEnums.sol";
+import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 
 interface IF {
     function getPool(address tokenA, address tokenB, uint24 fee) external view returns (address);
@@ -26,7 +27,7 @@ interface IF {
 contract ExternalCallsTest is BaseTest {
     CallForwarder cf;
 
-    OneDeltaComposerLight oneDV2;
+    IComposerLike oneDV2;
     TrivialMockRouter router;
 
     uint256 internal constant forkBlock = 26696865;
@@ -39,14 +40,16 @@ contract ExternalCallsTest is BaseTest {
 
     function setUp() public virtual {
         // initialize the chain
-        _init(Chains.BASE, forkBlock);
+        string memory chainName = Chains.BASE;
+
+        _init(chainName, forkBlock);
         LBTC = chain.getTokenAddress(Tokens.LBTC);
         WETH = chain.getTokenAddress(Tokens.WETH);
         cbETH = chain.getTokenAddress(Tokens.CBETH);
         cbBTC = chain.getTokenAddress(Tokens.CBBTC);
         USDC = chain.getTokenAddress(Tokens.USDC);
         cf = new CallForwarder();
-        oneDV2 = new OneDeltaComposerLight();
+        oneDV2 = ComposerPlugin.getComposer(chainName);
     }
 
     function extCall(address asset, uint256 amount, address receiver) internal view returns (bytes memory data) {
@@ -70,7 +73,7 @@ contract ExternalCallsTest is BaseTest {
         vm.assume(user != address(0));
 
         address tokenIn = address(0);
-        address tokenOut = WETH;
+        // address tokenOut = WETH;
 
         uint256 amount = 100.0e6;
         deal(user, amount);

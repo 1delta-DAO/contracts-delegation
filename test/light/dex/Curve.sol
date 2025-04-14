@@ -8,13 +8,14 @@ import {IERC20All} from "../../shared/interfaces/IERC20All.sol";
 import {BaseTest} from "../../shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
 import "../utils/CalldataLib.sol";
+import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 
 /**
  * We test Curve single swaps
  */
 contract CurveLightTest is BaseTest {
     uint256 internal constant forkBlock = 27970029;
-    OneDeltaComposerLight oneDV2;
+    IComposerLike oneDV2;
 
     uint8 internal constant EXCHANGE_UNDERLYING_SELECTOR_WITH_RECEIVER = 6;
     uint8 internal constant EXCHANGE_UNDERLYING_NATIVE_IN_SELECTOR_WITH_RECEIVER = 8;
@@ -33,13 +34,15 @@ contract CurveLightTest is BaseTest {
 
     function setUp() public virtual {
         // initialize the chain
-        _init(Chains.BASE, forkBlock);
+        string memory chainName = Chains.BASE;
+        
+        _init(chainName, forkBlock);
         LBTC = chain.getTokenAddress(Tokens.LBTC);
         WETH = chain.getTokenAddress(Tokens.WETH);
         cbETH = chain.getTokenAddress(Tokens.CBETH);
         cbBTC = chain.getTokenAddress(Tokens.CBBTC);
         USDC = chain.getTokenAddress(Tokens.USDC);
-        oneDV2 = new OneDeltaComposerLight();
+        oneDV2 = ComposerPlugin.getComposer(chainName);
     }
 
     function curvePoolETHcbETHSwap(address receiver, uint256 amount) internal view returns (bytes memory data) {

@@ -6,11 +6,12 @@ import {IERC20All} from "test/shared/interfaces/IERC20All.sol";
 import {BaseTest} from "test/shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
 import "test/light/utils/CalldataLib.sol";
+import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 
 contract CompoundV2ComposerLightTest is BaseTest {
     uint16 internal constant COMPOUND_V2_ID = 3000;
 
-    OneDeltaComposerLight oneDV2;
+    IComposerLike oneDV2;
 
     address internal USDC;
     address internal WETH;
@@ -21,13 +22,15 @@ contract CompoundV2ComposerLightTest is BaseTest {
 
     function setUp() public virtual {
         // initialize the chain
-        _init(Chains.ARBITRUM_ONE, forkBlock);
+        string memory chainName = Chains.ARBITRUM_ONE;
+
+        _init(chainName, forkBlock);
         lender = Lenders.VENUS;
         USDC = chain.getTokenAddress(Tokens.USDC);
         WETH = chain.getTokenAddress(Tokens.WETH);
         VENUS_COMPTROLLER = chain.getLendingController(lender);
 
-        oneDV2 = new OneDeltaComposerLight();
+        oneDV2 = ComposerPlugin.getComposer(chainName);
     }
 
     function test_light_lending_compoundV2_deposit() external {
@@ -207,9 +210,7 @@ contract CompoundV2ComposerLightTest is BaseTest {
         oneDV2.deltaCompose(abi.encodePacked(transferTo, d));
     }
 
-    function borrowFromCompoundV2(address token, address userAddress, uint256 amountToBorrow, address comptroller)
-        internal
-    {
+    function borrowFromCompoundV2(address token, address userAddress, uint256 amountToBorrow, address comptroller) internal {
         vm.prank(userAddress);
         IERC20All(comptroller).updateDelegate(address(oneDV2), true);
 

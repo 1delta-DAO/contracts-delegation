@@ -10,6 +10,7 @@ import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
 import {DexTypeMappings} from "../../../contracts/1delta/modules/light/swappers/dex/DexTypeMappings.sol";
 import "../utils/CalldataLib.sol";
 import {DexPayConfig} from "contracts/1delta/modules/light/enums/MiscEnums.sol";
+import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 
 interface IF {
     function getPool(address tokenA, address tokenB, uint24 fee) external view returns (address);
@@ -32,21 +33,23 @@ contract BalancerV3QuoterTest is BaseTest {
     address internal constant USDC_WETH_POOL = 0x1667832E66f158043754aE19461aD54D8b178E1E;
 
     QuoterLight quoter;
-    OneDeltaComposerLight composer;
+    IComposerLike composer;
 
     address internal WETH;
     address internal cbETH;
     address internal USDC;
 
     function setUp() public virtual {
-        _init(Chains.BASE, forkBlock);
+        string memory chainName = Chains.BASE;
+        
+        _init(chainName, forkBlock);
 
         WETH = chain.getTokenAddress(Tokens.WETH);
         cbETH = chain.getTokenAddress(Tokens.CBETH);
         USDC = chain.getTokenAddress(Tokens.USDC);
 
         quoter = new QuoterLight();
-        composer = new OneDeltaComposerLight();
+        composer = ComposerPlugin.getComposer(chainName);
 
         deal(WETH, address(user), 10 ether);
         deal(USDC, address(user), 1000e6);

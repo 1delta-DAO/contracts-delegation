@@ -20,7 +20,7 @@ contract BaseTest is Test {
     mapping(string => string) rpcOverrides;
 
     constructor() Test() {
-        rpcOverrides[Chains.ARBITRUM_ONE] = "https://arb1.arbitrum.io/rpc";
+        rpcOverrides[Chains.ARBITRUM_ONE] = "https://arbitrum.drpc.org";
         rpcOverrides[Chains.BNB_SMART_CHAIN_MAINNET] = "https://bsc-dataseed1.binance.org/";
     }
 
@@ -43,7 +43,8 @@ contract BaseTest is Test {
         if (bytes(overrideRpc).length > 0) {
             rpcUrl = overrideRpc;
         }
-        if (blockNumber == 0) { // this means the latest block 
+        if (blockNumber == 0) {
+            // this means the latest block
             vm.createSelectFork(rpcUrl);
         } else {
             vm.createSelectFork(rpcUrl, blockNumber);

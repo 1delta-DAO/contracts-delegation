@@ -12,6 +12,7 @@ import {DeltaErrors} from "modules/shared/errors/Errors.sol";
 import {StdStyle as S} from "forge-std/StdStyle.sol";
 import {MorphoMathLib} from "test/light/lending/utils/MathLib.sol";
 import {SweepType} from "contracts/1delta/modules/light/enums/MiscEnums.sol";
+import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 
 contract TransfersLightTest is BaseTest, DeltaErrors {
     using MorphoMathLib for uint256;
@@ -33,7 +34,9 @@ contract TransfersLightTest is BaseTest, DeltaErrors {
     address internal USDC;
 
     function setUp() public virtual {
-        _init(Chains.BASE, forkBlock);
+        string memory chainName = Chains.BASE;
+        
+        _init(chainName, forkBlock);
         AAVE_V3_POOL = chain.getLendingController(Lenders.AAVE_V3);
         WETH = chain.getTokenAddress(Tokens.WETH);
         USDC = chain.getTokenAddress(Tokens.USDC);

@@ -54,9 +54,6 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
                     codeHash := PANCAKESWAP_V2_CODE_HASH
                 }
             }
-            default {
-                revert(0, 0)
-            }
         }
 
         if (ValidatorLib._hasData(ffFactoryAddress)) {

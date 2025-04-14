@@ -5,7 +5,7 @@ import {console} from "forge-std/console.sol";
 import {MorphoMathLib} from "../utils/MathLib.sol";
 import {MarketParams, IMorphoEverything} from "../utils/Morpho.sol";
 import {SweepType} from "contracts/1delta/modules/light/enums/MiscEnums.sol";
-import {OneDeltaComposerLight} from "light/Composer.sol";
+import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 import {IERC20All} from "test/shared/interfaces/IERC20All.sol";
 import {BaseTest} from "test/shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
@@ -19,7 +19,7 @@ contract MorphoBlueTest is BaseTest {
     using MorphoMathLib for uint256;
     using MorphoMathLib for uint128;
 
-    OneDeltaComposerLight oneD;
+    IComposerLike oneD;
 
     uint256 internal constant forkBlock = 26696865;
     uint256 internal constant MORPHO_ID = 0;
@@ -33,9 +33,11 @@ contract MorphoBlueTest is BaseTest {
     MarketParams LBTC_USDC_MARKET;
 
     function setUp() public virtual {
-        _init(Chains.BASE, forkBlock);
+        string memory chainName = Chains.BASE;
+        
+        _init(chainName, forkBlock);
 
-        oneD = new OneDeltaComposerLight();
+        oneD = ComposerPlugin.getComposer(chainName);
         // initialize the addresses
         LBTC = chain.getTokenAddress(Tokens.LBTC);
         USDC = chain.getTokenAddress(Tokens.USDC);
@@ -94,7 +96,6 @@ contract MorphoBlueTest is BaseTest {
 
         uint256 withdrawAssets = 0.5e8;
 
-        (,, uint128 collateralBefore) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
         uint256 underlyingBefore = IERC20All(LBTC).balanceOf(user);
 
         bytes memory withdrawCall = CalldataLib.morphoWithdrawCollateral(
@@ -123,11 +124,8 @@ contract MorphoBlueTest is BaseTest {
 
         uint256 assets = 1.0e8;
 
-        address borrowAsset = USDC;
         uint256 borrowAssets = 30_000.0e6;
         depositCollateralToMorpho(user, assets);
-
-        uint256 underlyingBefore = IERC20All(borrowAsset).balanceOf(user);
 
         bytes memory borrowCall = CalldataLib.morphoBorrow(
             encodeMarket(LBTC_USDC_MARKET),

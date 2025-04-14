@@ -10,6 +10,7 @@ import {DexTypeMappings} from "light/swappers/dex/DexTypeMappings.sol";
 import {CalldataLib} from "./utils/CalldataLib.sol";
 import {DeltaErrors} from "modules/shared/errors/Errors.sol";
 import {DexPayConfig} from "light/enums/MiscEnums.sol";
+import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 
 contract CallDataInjection is BaseTest, DeltaErrors {
     using CalldataLib for bytes;
@@ -19,7 +20,7 @@ contract CallDataInjection is BaseTest, DeltaErrors {
     address internal constant UNI_FACTORY = 0x33128a8fC17869897dcE68Ed026d694621f6FDfD;
     address internal constant UNI_V2_FACTORY = 0x8909Dc15e40173Ff4699343b6eB8132c65e18eC6;
 
-    OneDeltaComposerLight composer;
+    IComposerLike composer;
 
     address internal WETH;
     address internal USDC;
@@ -28,12 +29,14 @@ contract CallDataInjection is BaseTest, DeltaErrors {
     address internal attacker;
 
     function setUp() public virtual {
-        _init(Chains.BASE, forkBlock);
+        string memory chainName = Chains.BASE;
+        
+        _init(chainName, forkBlock);
 
         WETH = chain.getTokenAddress(Tokens.WETH);
         USDC = chain.getTokenAddress(Tokens.USDC);
 
-        composer = new OneDeltaComposerLight();
+        composer = ComposerPlugin.getComposer(chainName);
 
         WETH_USDC_500_POOL = IF(UNI_FACTORY).getPool(WETH, USDC, 500);
 

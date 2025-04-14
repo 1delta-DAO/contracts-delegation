@@ -9,13 +9,14 @@ import {IERC20All} from "test/shared/interfaces/IERC20All.sol";
 import {BaseTest} from "test/shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
 import "test/light/utils/CalldataLib.sol";
+import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 
 contract FlashSwapTest is BaseTest {
     using CalldataLib for bytes;
 
     uint8 internal constant UNI_V3_DEX_ID = 0;
 
-    OneDeltaComposerLight oneDV2;
+    IComposerLike oneDV2;
 
     address internal USDC;
     address internal WETH;
@@ -31,13 +32,15 @@ contract FlashSwapTest is BaseTest {
 
     function setUp() public virtual {
         // initialize the chain
-        _init(Chains.BASE, forkBlock);
+        string memory chainName = Chains.BASE;
+
+        _init(chainName, forkBlock);
         lender = Lenders.AAVE_V3;
         USDC = chain.getTokenAddress(Tokens.USDC);
         WETH = chain.getTokenAddress(Tokens.WETH);
         AAVE_V3_POOL = chain.getLendingController(lender);
 
-        oneDV2 = new OneDeltaComposerLight();
+        oneDV2 = ComposerPlugin.getComposer(chainName);
     }
 
     function unoV4Swap(
@@ -98,9 +101,7 @@ contract FlashSwapTest is BaseTest {
                 UNI_V4_PM, //
                 borrowAmount
             );
-            settlementActions = abi.encodePacked(
-                CalldataLib.unwrap(WETH, address(oneDV2), borrowAmount, SweepType.AMOUNT), settlementActions
-            );
+            settlementActions = abi.encodePacked(CalldataLib.unwrap(WETH, address(oneDV2), borrowAmount, SweepType.AMOUNT), settlementActions);
 
             deposit = abi.encodePacked(
                 swapAction, // the swap

@@ -9,13 +9,14 @@ import {BaseTest} from "../../shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
 import "../utils/CalldataLib.sol";
 import {PoolKey, SwapParams, PS, BalanceDelta} from "./utils/UniV4Utils.sol";
+import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 
 /**
  * We test UniV4 single swaps
  */
 contract UnoV4LightTest is BaseTest {
     uint256 internal constant forkBlock = 27970029;
-    OneDeltaComposerLight oneDV2;
+    IComposerLike oneDV2;
     uint8 internal constant UNISWAP_V4_POOL_ID = 0;
 
     address internal constant UNI_V4_PM = 0x498581fF718922c3f8e6A244956aF099B2652b2b;
@@ -28,12 +29,14 @@ contract UnoV4LightTest is BaseTest {
 
     function setUp() public virtual {
         // initialize the chain
-        _init(Chains.BASE, forkBlock);
+        string memory chainName = Chains.BASE;
+        
+        _init(chainName, forkBlock);
         WETH = chain.getTokenAddress(Tokens.WETH);
         cbETH = chain.getTokenAddress(Tokens.CBETH);
         cbBTC = chain.getTokenAddress(Tokens.CBBTC);
         USDC = chain.getTokenAddress(Tokens.USDC);
-        oneDV2 = new OneDeltaComposerLight();
+        oneDV2 = ComposerPlugin.getComposer(chainName);
     }
 
     function unoV4Swap(

@@ -6,17 +6,17 @@ import {ComposerUtils, Commands} from "test/shared/utils/ComposerUtils.sol";
 import {MorphoMathLib} from "test/light/lending/utils/MathLib.sol";
 import {MarketParams, IMorphoEverything} from "test/light/lending/utils/Morpho.sol";
 
-import {OneDeltaComposerLight} from "light/Composer.sol";
 import {IERC20All} from "test/shared/interfaces/IERC20All.sol";
 import {BaseTest} from "test/shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
 import "test/light/utils/CalldataLib.sol";
 import {SweepType} from "contracts/1delta/modules/light/enums/MiscEnums.sol";
+import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 
 contract FlashLoanLightTest is BaseTest {
     using MorphoMathLib for uint256;
 
-    OneDeltaComposerLight oneD;
+    IComposerLike oneD;
 
     uint256 internal constant forkBlock = 26696865;
 
@@ -33,12 +33,15 @@ contract FlashLoanLightTest is BaseTest {
     address internal USDC;
 
     function setUp() public virtual {
-        _init(Chains.BASE, forkBlock);
+        string memory chainName = Chains.BASE;
+
+        _init(chainName, forkBlock);
+
+        oneD = ComposerPlugin.getComposer(chainName);
         AAVE_V3_POOL = chain.getLendingController(Lenders.AAVE_V3);
         WETH = chain.getTokenAddress(Tokens.WETH);
         USDC = chain.getTokenAddress(Tokens.USDC);
         GRANARY_POOL = chain.getLendingController(Lenders.GRANARY);
-        oneD = new OneDeltaComposerLight();
     }
 
     uint256 internal constant UPPER_BIT = 1 << 255;
@@ -194,7 +197,10 @@ contract FlashLoanLightTest is BaseTest {
         console.log("gas", gas);
 
         vm.expectRevert(bytes4(keccak256("BadPool()")));
-        oneD.balancerUnlockCallback(dp);
+        oneD.balancerUnlockCallback(abi.encodePacked(address(99), uint8(1), dp));
+
+        vm.expectRevert(bytes4(keccak256("InvalidCaller()")));
+        oneD.balancerUnlockCallback(abi.encodePacked(address(99), uint8(0), dp));
     }
 
     function test_light_flash_loan_uniswapV4() external {
@@ -234,6 +240,9 @@ contract FlashLoanLightTest is BaseTest {
         console.log("gas", gas);
 
         vm.expectRevert(bytes4(keccak256("BadPool()")));
-        oneD.unlockCallback(dp);
+        oneD.unlockCallback(abi.encodeWithSelector(oneD.balancerUnlockCallback.selector, abi.encodePacked(address(99), uint8(1), dp)));
+
+        vm.expectRevert(bytes4(keccak256("InvalidCaller()")));
+        oneD.unlockCallback(abi.encodeWithSelector(oneD.balancerUnlockCallback.selector, abi.encodePacked(address(99), uint8(0), dp)));
     }
 }

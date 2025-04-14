@@ -28,7 +28,9 @@ contract ERC4646Test is BaseTest {
 
     function setUp() public virtual {
         // initialize the chain
-        _init(Chains.BASE, forkBlock);
+        string memory chainName = Chains.BASE;
+        
+        _init(chainName, forkBlock);
 
         USDC = chain.getTokenAddress(Tokens.USDC);
 

@@ -6,12 +6,13 @@ import {IERC20All} from "test/shared/interfaces/IERC20All.sol";
 import {BaseTest} from "test/shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
 import "test/light/utils/CalldataLib.sol";
+import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 
 /**
  * Special Aave V3s that have no mode (e.g. YLDR)
  */
 contract AaveV3NoModesLightTest is BaseTest {
-    OneDeltaComposerLight oneDV2;
+    IComposerLike oneDV2;
     address internal LBTC;
     address internal USDC;
     address internal POOL;
@@ -21,13 +22,15 @@ contract AaveV3NoModesLightTest is BaseTest {
 
     function setUp() public virtual {
         // initialize the chain
-        _init(Chains.BASE, forkBlock);
+        string memory chainName = Chains.BASE;
+        
+        _init(chainName, forkBlock);
         lender = Lenders.YLDR;
         LBTC = chain.getTokenAddress(Tokens.LBTC);
         USDC = chain.getTokenAddress(Tokens.USDC);
         POOL = chain.getLendingController(lender);
 
-        oneDV2 = new OneDeltaComposerLight();
+        oneDV2 = ComposerPlugin.getComposer(chainName);
     }
 
     function test_light_lending_yldr_borrow() external {

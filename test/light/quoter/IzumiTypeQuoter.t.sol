@@ -9,6 +9,7 @@ import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
 import {DexTypeMappings} from "../../../contracts/1delta/modules/light/swappers/dex/DexTypeMappings.sol";
 import {CalldataLib} from "../utils/CalldataLib.sol";
 import {DexPayConfig} from "contracts/1delta/modules/light/enums/MiscEnums.sol";
+import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 
 interface IF {
     function pool(address tokenA, address tokenB, uint24 fee) external view returns (address);
@@ -28,7 +29,7 @@ contract IzumiQuoterTest is BaseTest {
     address internal constant IZI_FACTORY = 0x8c7d3063579BdB0b90997e18A770eaE32E1eBb08;
 
     QuoterLight quoter;
-    OneDeltaComposerLight composer;
+    IComposerLike composer;
 
     address internal WETH;
     address internal cbETH;
@@ -38,14 +39,16 @@ contract IzumiQuoterTest is BaseTest {
     address internal USDC_CBETH_500_POOL;
 
     function setUp() public virtual {
-        _init(Chains.BASE, forkBlock);
+        string memory chainName = Chains.BASE;
+        
+        _init(chainName, forkBlock);
 
         WETH = chain.getTokenAddress(Tokens.WETH);
         cbETH = chain.getTokenAddress(Tokens.CBETH);
         USDC = chain.getTokenAddress(Tokens.USDC);
 
         quoter = new QuoterLight();
-        composer = new OneDeltaComposerLight();
+        composer = ComposerPlugin.getComposer(chainName);
 
         WETH_USDC_500_POOL = IF(IZI_FACTORY).pool(WETH, USDC, 500);
         USDC_CBETH_500_POOL = IF(IZI_FACTORY).pool(USDC, cbETH, 500);

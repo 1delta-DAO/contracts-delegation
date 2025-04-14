@@ -9,6 +9,7 @@ import {BaseTest} from "../../shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
 import "../utils/CalldataLib.sol";
 import {DexPayConfig, DodoSelector} from "contracts/1delta/modules/light/enums/MiscEnums.sol";
+import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 
 interface DVMF {
     function _REGISTRY_(address, address, uint256) external view returns (address);
@@ -24,7 +25,7 @@ contract DodoLightTest is BaseTest {
     using CalldataLib for bytes;
 
     uint256 internal constant forkBlock = 27970029;
-    OneDeltaComposerLight oneDV2;
+    IComposerLike oneDV2;
 
     address internal constant DVM_FACTORY = 0x0226fCE8c969604C3A0AD19c37d1FAFac73e13c2;
     address internal constant DODO_WETH_JOJO = 0x0Df758CFe1DE840360a92424494776E8C7f29A9c;
@@ -41,20 +42,18 @@ contract DodoLightTest is BaseTest {
 
     function setUp() public virtual {
         // initialize the chain
-        _init(Chains.BASE, forkBlock);
+        string memory chainName = Chains.BASE;
+
+        _init(chainName, forkBlock);
         LBTC = chain.getTokenAddress(Tokens.LBTC);
         WETH = chain.getTokenAddress(Tokens.WETH);
         cbETH = chain.getTokenAddress(Tokens.CBETH);
         cbBTC = chain.getTokenAddress(Tokens.CBBTC);
         USDC = chain.getTokenAddress(Tokens.USDC);
-        oneDV2 = new OneDeltaComposerLight();
+        oneDV2 = ComposerPlugin.getComposer(chainName);
     }
 
-    function dodOPoolWETHJOJOSwap(address receiver, uint256 amount, bytes memory callbackData)
-        internal
-        view
-        returns (bytes memory data)
-    {
+    function dodOPoolWETHJOJOSwap(address receiver, uint256 amount, bytes memory callbackData) internal view returns (bytes memory data) {
         // create head config
         data = CalldataLib.swapHead(
             amount,

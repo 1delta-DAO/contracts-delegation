@@ -10,6 +10,7 @@ import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
 import "../utils/CalldataLib.sol";
 import {PoolKey, SwapParams, PS, BalanceDelta} from "./utils/UniV4Utils.sol";
 import {DexPayConfig} from "contracts/1delta/modules/light/enums/MiscEnums.sol";
+import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 /**
  * We test Blancer v3 single swaps
  */
@@ -18,7 +19,7 @@ contract BalV3LightTest is BaseTest {
     using CalldataLib for bytes;
 
     uint256 internal constant forkBlock = 27970029;
-    OneDeltaComposerLight oneDV2;
+    IComposerLike oneDV2;
 
     // balancer dex data
     address internal constant BALANCER_V3_VAULT = 0xbA1333333333a1BA1108E8412f11850A5C319bA9;
@@ -35,12 +36,14 @@ contract BalV3LightTest is BaseTest {
 
     function setUp() public virtual {
         // initialize the chain
-        _init(Chains.BASE, forkBlock);
+        string memory chainName = Chains.BASE;
+        
+        _init(chainName, forkBlock);
         WETH = chain.getTokenAddress(Tokens.WETH);
         cbETH = chain.getTokenAddress(Tokens.CBETH);
         cbBTC = chain.getTokenAddress(Tokens.CBBTC);
         USDC = chain.getTokenAddress(Tokens.USDC);
-        oneDV2 = new OneDeltaComposerLight();
+        oneDV2 = ComposerPlugin.getComposer(chainName);
         pkUSDCETH = PoolKey(
             address(0),
             USDC,

@@ -32,9 +32,6 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
             outData := calldataload(204)
             switch selector
             ${switchCaseContent}
-            default {
-                revert(0, 0)
-            }
         }
 
         if (ValidatorLib._hasData(ffFactoryAddress)) {

@@ -7,11 +7,12 @@ import {IERC20All} from "test/shared/interfaces/IERC20All.sol";
 import {BaseTest} from "test/shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
 import "test/light/utils/CalldataLib.sol";
+import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 
 contract CompoundV2NativeComposerLightTest is BaseTest {
     uint16 internal constant COMPOUND_V2_ID = 3000;
 
-    OneDeltaComposerLight oneDV2;
+    IComposerLike oneDV2;
 
     address internal USDC;
     // address internal WETH;
@@ -23,14 +24,18 @@ contract CompoundV2NativeComposerLightTest is BaseTest {
 
     function setUp() public virtual {
         // initialize the chain
-        _init(Chains.BNB_SMART_CHAIN_MAINNET, forkBlock);
+        string memory chainName = Chains.BNB_SMART_CHAIN_MAINNET;
+
+        _init(chainName, forkBlock);
+
         lender = Lenders.VENUS;
         USDC = chain.getTokenAddress(Tokens.USDC);
         // WETH = chain.getTokenAddress(Tokens.WETH);
         WBNB = chain.getTokenAddress(Tokens.WBNB);
         VENUS_COMPTROLLER = chain.getLendingController(lender);
 
-        oneDV2 = new OneDeltaComposerLight();
+        // use base for the non chain-specific integration of lenders
+        oneDV2 = ComposerPlugin.getComposer(Chains.BASE);
     }
 
     function test_light_lending_compoundV2_deposit_native() external {
@@ -124,9 +129,7 @@ contract CompoundV2NativeComposerLightTest is BaseTest {
     /**
      * native can only be borrowed directly
      */
-    function borrowNativeFromCompoundV2(address token, address userAddress, uint256 amountToBorrow, address comptroller)
-        internal
-    {
+    function borrowNativeFromCompoundV2(address token, address userAddress, uint256 amountToBorrow, address comptroller) internal {
         vm.prank(userAddress);
         IERC20All(comptroller).updateDelegate(address(oneDV2), true);
 

@@ -9,6 +9,7 @@ import {BaseTest} from "../../shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
 import "../utils/CalldataLib.sol";
 import {DexPayConfig} from "contracts/1delta/modules/light/enums/MiscEnums.sol";
+import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 /**
  * This is for TraderJoe / MerchantMoe LB
  */
@@ -17,7 +18,7 @@ contract LBLightTest is BaseTest {
     using CalldataLib for bytes;
 
     uint256 internal constant forkBlock = 77869637;
-    OneDeltaComposerLight oneDV2;
+    IComposerLike oneDV2;
 
     address internal constant LB_USDE_USDT = 0x7ccD8a769d466340Fff36c6e10fFA8cf9077D988;
 
@@ -27,13 +28,15 @@ contract LBLightTest is BaseTest {
     address internal USDE;
 
     function setUp() public virtual {
+        string memory chainName = Chains.MANTLE;
         // initialize the chain
-        _init(Chains.MANTLE, forkBlock);
+        _init(chainName, forkBlock);
         USDE = chain.getTokenAddress(Tokens.USDE);
         WETH = chain.getTokenAddress(Tokens.WETH);
         USDT = chain.getTokenAddress(Tokens.USDT);
         USDC = chain.getTokenAddress(Tokens.USDC);
-        oneDV2 = new OneDeltaComposerLight();
+        // we can use base here as the LB is not chain-dependent
+        oneDV2 = ComposerPlugin.getComposer(Chains.BASE);
     }
 
     function lbPoolUSDEUSDTSwap(address receiver, uint256 amount) internal view returns (bytes memory data) {

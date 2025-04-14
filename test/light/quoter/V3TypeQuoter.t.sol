@@ -9,6 +9,7 @@ import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
 import {DexTypeMappings} from "../../../contracts/1delta/modules/light/swappers/dex/DexTypeMappings.sol";
 import {CalldataLib} from "../utils/CalldataLib.sol";
 import {DexPayConfig} from "contracts/1delta/modules/light/enums/MiscEnums.sol";
+import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 
 interface IF {
     function getPool(address tokenA, address tokenB, uint24 fee) external view returns (address);
@@ -28,7 +29,7 @@ contract V3QuoterTest is BaseTest {
     address internal constant UNI_FACTORY = 0x33128a8fC17869897dcE68Ed026d694621f6FDfD;
 
     QuoterLight quoter;
-    OneDeltaComposerLight composer;
+    IComposerLike composer;
 
     address internal WETH;
     address internal cbETH;
@@ -38,14 +39,16 @@ contract V3QuoterTest is BaseTest {
     address internal USDC_CBETH_500_POOL;
 
     function setUp() public virtual {
-        _init(Chains.BASE, forkBlock);
+        string memory chainName = Chains.BASE;
+
+        _init(chainName, forkBlock);
 
         WETH = chain.getTokenAddress(Tokens.WETH);
         cbETH = chain.getTokenAddress(Tokens.CBETH);
         USDC = chain.getTokenAddress(Tokens.USDC);
 
         quoter = new QuoterLight();
-        composer = new OneDeltaComposerLight();
+        composer = ComposerPlugin.getComposer(chainName);
 
         WETH_USDC_500_POOL = IF(UNI_FACTORY).getPool(WETH, USDC, 500);
         USDC_CBETH_500_POOL = IF(UNI_FACTORY).getPool(USDC, cbETH, 500);
@@ -91,9 +94,7 @@ contract V3QuoterTest is BaseTest {
         uint256 amountIn = 1 * 1e18; // 1 WETH
 
         // Use utility function to encode path
-        bytes memory path = uniswapV3StyleSwap(
-            USDC, address(quoter), 0, WETH_USDC_500_POOL, 500, DexPayConfig.CALLER_PAYS, new bytes(0)
-        );
+        bytes memory path = uniswapV3StyleSwap(USDC, address(quoter), 0, WETH_USDC_500_POOL, 500, DexPayConfig.CALLER_PAYS, new bytes(0));
         // single swap branch (0,0)
         bytes memory swapBranch = (new bytes(0)).attachBranch(0, 0, ""); //(0,0)
         uint256 gas = gasleft();
@@ -108,7 +109,14 @@ contract V3QuoterTest is BaseTest {
         // add quotedAmountOut as amountOutMin
         bytes memory swapHead = CalldataLib.swapHead(amountIn, quotedAmountOut, WETH, false);
         bytes memory swapCall = CalldataLib.uniswapV3StyleSwap(
-            abi.encodePacked(swapHead, swapBranch), USDC, user, 0, WETH_USDC_500_POOL, 500, DexPayConfig.CALLER_PAYS, ""
+            abi.encodePacked(swapHead, swapBranch),
+            USDC,
+            user,
+            0,
+            WETH_USDC_500_POOL,
+            500,
+            DexPayConfig.CALLER_PAYS,
+            ""
         );
 
         // Get actual amount from a real swap
@@ -131,11 +139,7 @@ contract V3QuoterTest is BaseTest {
         console.log("Actual amount:", actualAmountOut);
     }
 
-    function multiPath(address[] memory assets, uint16[] memory fees, address receiver)
-        internal
-        view
-        returns (bytes memory data)
-    {
+    function multiPath(address[] memory assets, uint16[] memory fees, address receiver) internal view returns (bytes memory data) {
         data = abi.encodePacked(
             uint8(fees.length - 1), // path max index
             uint8(0) // no splits

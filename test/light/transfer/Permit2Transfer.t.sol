@@ -9,6 +9,7 @@ import {CalldataLib} from "test/light/utils/CalldataLib.sol";
 import {DeltaErrors} from "modules/shared/errors/Errors.sol";
 import {IERC20All} from "test/shared/interfaces/IERC20All.sol";
 import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
+import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 
 contract Permit2TransferTest is BaseTest, DeltaErrors {
     using CalldataLib for bytes;
@@ -24,7 +25,9 @@ contract Permit2TransferTest is BaseTest, DeltaErrors {
     uint256 internal blockTimestamp;
 
     function setUp() public virtual {
-        _init(Chains.BASE, forkBlock);
+        string memory chainName = Chains.BASE;
+        
+        _init(chainName, forkBlock);
         blockTimestamp = vm.getBlockTimestamp();
         vm.warp(blockTimestamp);
 

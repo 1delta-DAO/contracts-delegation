@@ -7,6 +7,7 @@ import {IERC20All} from "test/shared/interfaces/IERC20All.sol";
 import {BaseTest} from "test/shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
 import "test/light/utils/CalldataLib.sol";
+import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 
 /**
  * We test all morpho blue operations
@@ -15,7 +16,7 @@ import "test/light/utils/CalldataLib.sol";
 contract CompoundV3ComposerLightTest is BaseTest {
     uint16 internal constant COMPOUND_V3_ID = 2000;
 
-    OneDeltaComposerLight oneDV2;
+    IComposerLike oneDV2;
 
     address internal USDC;
     address internal COMPOUND_V3_USDC_COMET;
@@ -26,13 +27,15 @@ contract CompoundV3ComposerLightTest is BaseTest {
 
     function setUp() public virtual {
         // initialize the chain
-        _init(Chains.BASE, forkBlock);
+        string memory chainName = Chains.BASE;
+        
+        _init(chainName, forkBlock);
         lender = Lenders.COMPOUND_V3_USDC;
         USDC = chain.getTokenAddress(Tokens.USDC);
         COMPOUND_V3_USDC_COMET = chain.getLendingController(lender);
         WETH = chain.getTokenAddress(Tokens.WETH);
 
-        oneDV2 = new OneDeltaComposerLight();
+        oneDV2 = ComposerPlugin.getComposer(chainName);
     }
 
     function test_light_lending_compoundV3_deposit() external {

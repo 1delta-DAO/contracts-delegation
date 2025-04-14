@@ -1,4 +1,4 @@
-import { Chain } from "@1delta/asset-registry";
+import { Chain, CHAIN_INFO } from "@1delta/asset-registry";
 
 export const CREATE_CHAIN_IDS = [
     Chain.ARBITRUM_ONE,
@@ -42,3 +42,10 @@ export function sortForks<T>(arr: T[], field: keyof T) {
         ...rest
     ]
 }
+
+export function toCamelCaseWithFirstUpper(str: string) {
+    const camel = str.replace(/-([a-z])/g, (_, char) => char.toUpperCase());
+    return camel.charAt(0).toUpperCase() + camel.slice(1);
+}
+
+export const getChainKey = (chainId: string) => CHAIN_INFO[chainId].key!

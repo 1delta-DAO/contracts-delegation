@@ -16,7 +16,8 @@ import { UNISWAP_V4_FORKS } from "./dex/uniV4";
 import { templateUniV4 } from "./templates/flashSwap/uniV4Callback";
 import { BALANCER_V3_FORKS } from "./dex/balancerV3";
 import { templateBalancerV3 } from "./templates/flashSwap/balancerV3Callback";
-import { CREATE_CHAIN_IDS, sortForks } from "./config";
+import { CREATE_CHAIN_IDS, getChainKey, sortForks } from "./config";
+import { composerTestImports } from "./templates/test/composerImport";
 
 
 function createConstant(pool: string, lender: string) {
@@ -67,14 +68,6 @@ interface DexIdData {
     codeHash?: string
     callbackSelector?: string
 }
-
-
-function toCamelCaseWithFirstUpper(str: string) {
-    const camel = str.replace(/-([a-z])/g, (_, char) => char.toUpperCase());
-    return camel.charAt(0).toUpperCase() + camel.slice(1);
-}
-
-const getChainKey = (chainId: string) => CHAIN_INFO[chainId].key!
 
 async function main() {
     const chains = CREATE_CHAIN_IDS
@@ -310,6 +303,10 @@ async function main() {
 
         console.log(`Generated flash swap callbacks on ${chain}`);
     }
+
+    const composerTestImport = "./test/shared/composers/ComposerPlugin.sol";
+    fs.writeFileSync(composerTestImport, composerTestImports(chains));
+
 }
 
 main()

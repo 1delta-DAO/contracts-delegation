@@ -9,6 +9,7 @@ import {BaseTest} from "../../shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
 import "../utils/CalldataLib.sol";
 import {DexPayConfig} from "contracts/1delta/modules/light/enums/MiscEnums.sol";
+import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 /**
  * This is for SyncSwap (Ritsu on Taiko)
  */
@@ -17,7 +18,7 @@ contract SyncSwapLightTest is BaseTest {
     using CalldataLib for bytes;
 
     uint256 internal constant forkBlock = 536078;
-    OneDeltaComposerLight oneDV2;
+    IComposerLike oneDV2;
 
     address internal constant RITSU_USDC_WETH = 0x424Fab7bfA3E3Dd0e5BB96771fFAa72fe566200e;
 
@@ -26,12 +27,13 @@ contract SyncSwapLightTest is BaseTest {
     address internal USDT;
 
     function setUp() public virtual {
+        string memory chainName = Chains.TAIKO_ALETHIA;
         // initialize the chain
-        _init(Chains.TAIKO_ALETHIA, forkBlock);
+        _init(chainName, forkBlock);
         WETH = chain.getTokenAddress(Tokens.WETH);
         USDT = chain.getTokenAddress(Tokens.USDT);
         USDC = chain.getTokenAddress(Tokens.USDC);
-        oneDV2 = new OneDeltaComposerLight();
+        oneDV2 = ComposerPlugin.getComposer(chainName);
     }
 
     function syncPoolWETHUSDCSwap(address receiver, uint256 amount) internal view returns (bytes memory data) {
