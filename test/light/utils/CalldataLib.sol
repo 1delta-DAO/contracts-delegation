@@ -13,6 +13,7 @@ import {DexPayConfig, SweepType, DodoSelector} from "contracts/1delta/modules/li
  * - Return the encoded data directly (return abi.encodePacked(...)), don't assign to a variable
  * - Don't use structs
  * - Add enums in separate files (e.g DeltaEnums, ForwarderEnums, ...)
+ * - use if condition to revert (no require statements)
  */
 library CalldataLib {
     function permit2TransferFrom(address token, address receiver, uint256 amount)
