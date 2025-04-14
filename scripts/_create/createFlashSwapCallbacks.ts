@@ -134,7 +134,6 @@ async function main() {
         // uni V4
         Object.entries(UNISWAP_V4_FORKS).forEach(([dex, maps], i) => {
             Object.entries(maps.pm).forEach(([chains, address]) => {
-                console.log("chain", chain, chains, address)
                 if (chains === chain) {
                     dexIdsUniV4.push({
                         entityName: dex,
@@ -171,10 +170,8 @@ async function main() {
             "entityId"
         )
         const slectorsV2 = uniq(dexIdsUniV2.map(s => s.callbackSelector!))
-        // console.log("entityIds", dexIdsUniV2)
         slectorsV2.forEach(sel => {
             const idsForSelector = dexIdsUniV2.filter(a => a.callbackSelector === sel)
-            // console.log("idsForSelector", idsForSelector)
             switchCaseContentV2 += createCaseSelectorV2(sel)
             idsForSelector.forEach(({ pool, entityName, codeHash }, i) => {
                 constantsDataV2 += createffAddressConstant(pool, entityName, codeHash!)
@@ -228,8 +225,6 @@ async function main() {
 
         })
 
-
-console.log("dexIdsUniV4", dexIdsUniV4)
         /**
          * Balncer V3
          */

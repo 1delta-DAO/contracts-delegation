@@ -2,7 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {console} from "forge-std/console.sol";
-import {OneDeltaComposerLight} from "../../../contracts/1delta/modules/light/Composer.sol";
+import {OneDeltaComposerBase} from "../../../contracts/1delta/modules/light/chains/base/Composer.sol";
 import {IERC20All} from "../../shared/interfaces/IERC20All.sol";
 import {BaseTest} from "../../shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
@@ -25,7 +25,7 @@ contract SwapHopsLightTest is BaseTest {
     address internal constant UNI_V2_FACTORY = 0x8909Dc15e40173Ff4699343b6eB8132c65e18eC6;
     address internal constant IZI_FACTORY = 0x8c7d3063579BdB0b90997e18A770eaE32E1eBb08;
     uint256 internal constant forkBlock = 26696865;
-    OneDeltaComposerLight oneDV2;
+    OneDeltaComposerBase oneDV2;
 
     address internal USDC;
     address internal WETH;
@@ -42,7 +42,7 @@ contract SwapHopsLightTest is BaseTest {
         cbETH = chain.getTokenAddress(Tokens.CBETH);
         cbBTC = chain.getTokenAddress(Tokens.CBBTC);
         USDC = chain.getTokenAddress(Tokens.USDC);
-        oneDV2 = new OneDeltaComposerLight();
+        oneDV2 = new OneDeltaComposerBase();
     }
 
     function multiPath(
