@@ -16,7 +16,7 @@ import { UNISWAP_V4_FORKS } from "./dex/uniV4";
 import { templateUniV4 } from "./templates/flashSwap/uniV4Callback";
 import { BALANCER_V3_FORKS } from "./dex/balancerV3";
 import { templateBalancerV3 } from "./templates/flashSwap/balancerV3Callback";
-import { CREATE_CHAIN_IDS } from "./config";
+import { CREATE_CHAIN_IDS, sortForks } from "./config";
 
 
 function createConstant(pool: string, lender: string) {
@@ -89,7 +89,7 @@ async function main() {
                 if (chains === chain) {
                     dexIdsUniV2.push({
                         entityName: dex,
-                        entityId: "0",
+                        entityId: maps.forkId,
                         pool: address,
                         codeHash: maps.codeHash[chain] ?? maps.codeHash.default,
                         callbackSelector: maps.callbackSelector,
@@ -106,7 +106,7 @@ async function main() {
                 if (chains === chain) {
                     dexIdsUniV3.push({
                         entityName: dex,
-                        entityId: "0",
+                        entityId: maps.forkId,
                         pool: address,
                         codeHash: maps.codeHash[chain] ?? maps.codeHash.default,
                         callbackSelector: maps.callbackSelector,
@@ -122,7 +122,7 @@ async function main() {
                 if (chains === chain) {
                     dexIdsIzumi.push({
                         entityName: dex,
-                        entityId: "0",
+                        entityId: maps.forkId,
                         pool: address,
                         codeHash: maps.codeHash[chain] ?? maps.codeHash.default
                     })
@@ -133,11 +133,12 @@ async function main() {
         let dexIdsUniV4: DexIdData[] = []
         // uni V4
         Object.entries(UNISWAP_V4_FORKS).forEach(([dex, maps], i) => {
-            Object.entries(maps).forEach(([chains, address]) => {
+            Object.entries(maps.pm).forEach(([chains, address]) => {
+                console.log("chain", chain, chains, address)
                 if (chains === chain) {
                     dexIdsUniV4.push({
                         entityName: dex,
-                        entityId: "0",
+                        entityId: maps.forkId,
                         pool: address,
                     })
                 }
@@ -148,11 +149,11 @@ async function main() {
         let dexIdsBalancerV3: DexIdData[] = []
         // uni V4
         Object.entries(BALANCER_V3_FORKS).forEach(([dex, maps], i) => {
-            Object.entries(maps).forEach(([chains, address]) => {
+            Object.entries(maps.vault).forEach(([chains, address]) => {
                 if (chains === chain) {
                     dexIdsBalancerV3.push({
                         entityName: dex,
-                        entityId: "0",
+                        entityId: maps.forkId,
                         pool: address,
                     })
                 }
@@ -165,9 +166,10 @@ async function main() {
          */
         let constantsDataV2 = ``
         let switchCaseContentV2 = ``
-        dexIdsUniV2 = dexIdsUniV2
-            .sort((a, b) => a.entityName < b.entityName ? -1 : 1)
-            .map((a, i) => ({ ...a, entityId: String(i) }))
+        dexIdsUniV2 = sortForks(
+            dexIdsUniV2,
+            "entityId"
+        )
         const slectorsV2 = uniq(dexIdsUniV2.map(s => s.callbackSelector!))
         // console.log("entityIds", dexIdsUniV2)
         slectorsV2.forEach(sel => {
@@ -186,9 +188,10 @@ async function main() {
          */
         let constantsDataV3 = ``
         let switchCaseContentV3 = ``
-        dexIdsUniV3 = dexIdsUniV3
-            .sort((a, b) => a.entityName < b.entityName ? -1 : 1)
-            .map((a, i) => ({ ...a, entityId: String(i) }))
+        dexIdsUniV3 = sortForks(
+            dexIdsUniV3,
+            "entityId"
+        )
         const slectorsV3 = uniq(dexIdsUniV3.map(s => s.callbackSelector!))
         // console.log("entityIds", dexIdsUniV3)
         slectorsV3.forEach(sel => {
@@ -215,9 +218,9 @@ async function main() {
          */
         let constantsDataV4 = ``
         let switchCaseContentV4 = ``
-        dexIdsUniV4 = dexIdsUniV4
-            .sort((a, b) => a.entityName < b.entityName ? -1 : 1)
-            .map((a, i) => ({ ...a, entityId: String(i) }))
+        dexIdsUniV4 = sortForks(dexIdsUniV4,
+            "entityId"
+        )
         // console.log("entityIds", dexIdsUniV4)
         dexIdsUniV4.forEach(({ pool, entityName, codeHash }, i) => {
             constantsDataV4 += createConstant(pool, entityName)
@@ -226,7 +229,7 @@ async function main() {
         })
 
 
-
+console.log("dexIdsUniV4", dexIdsUniV4)
         /**
          * Balncer V3
          */
@@ -234,7 +237,6 @@ async function main() {
         let switchCaseContentBalancerV3 = ``
         dexIdsBalancerV3 = dexIdsBalancerV3
             .sort((a, b) => a.entityName < b.entityName ? -1 : 1)
-            .map((a, i) => ({ ...a, entityId: String(i) }))
         // console.log("entityIds", dexIdsBalancerV3)
         dexIdsBalancerV3.forEach(({ pool, entityName, codeHash }, i) => {
             constantsDataBalancerV3 += createConstant(pool, entityName)
@@ -250,7 +252,6 @@ async function main() {
         let switchCaseContentIzumi = ``
         dexIdsIzumi = dexIdsIzumi
             .sort((a, b) => a.entityName < b.entityName ? -1 : 1)
-            .map((a, i) => ({ ...a, entityId: String(i) }))
         // console.log("entityIds", dexIdsIzumi)
         dexIdsIzumi.forEach(({ pool, entityName, codeHash }, i) => {
             constantsDataIzumi += createffAddressConstant(pool, entityName, codeHash!)
@@ -302,11 +303,9 @@ async function main() {
             ));
         }
 
-
-
-        const filePathV3 = flashSwapCallbackDir + "SwapCallbacks.sol";
-        fs.writeFileSync(filePathV3, templateSwapCallbacks(
-            false,
+        const filePathSwapCallbacks = flashSwapCallbackDir + "SwapCallbacks.sol";
+        fs.writeFileSync(filePathSwapCallbacks, templateSwapCallbacks(
+            dexIdsUniV4.length > 0,
             dexIdsUniV3.length > 0,
             dexIdsUniV2.length > 0,
             Boolean(dodoData),

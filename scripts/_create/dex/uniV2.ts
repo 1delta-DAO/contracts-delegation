@@ -28,7 +28,8 @@ const UNISWAP_V2: UniswapV2Info = {
         // [Chain.HEMI_NETWORK]: ""
     },
     codeHash: { default: uniswapV2InitHash },
-    callbackSelector: uniV2CallbackSelector
+    callbackSelector: uniV2CallbackSelector,
+    forkId: "0"
 }
 
 const PANCAKE_V2: UniswapV2Info = {
@@ -55,7 +56,8 @@ const PANCAKE_V2: UniswapV2Info = {
         // [Chain.HEMI_NETWORK]: ""
     },
     codeHash: { default: pancakeV2CodeHash },
-    callbackSelector: pancakeV2CallbackSelector
+    callbackSelector: pancakeV2CallbackSelector,
+    forkId: "0"
 }
 
 
@@ -114,7 +116,8 @@ const SUSHI_V2: UniswapV2Info = {
 
     },
     codeHash: { default: uniswapV2InitHash },
-    callbackSelector: uniV2CallbackSelector
+    callbackSelector: uniV2CallbackSelector,
+    forkId: "1"
 }
 
 
@@ -124,7 +127,8 @@ const PASS: UniswapV2Info = {
 
     },
     codeHash: { default: "0xd040a901beef1fe03d5f83aff62cc341aa8fa949dcdaa516b1adcfae94ada0db" },
-    callbackSelector: uniV2CallbackSelector
+    callbackSelector: uniV2CallbackSelector,
+    forkId: "0"
 }
 
 
@@ -132,6 +136,7 @@ interface UniswapV2Info {
     factories: { [chain: string]: string },
     codeHash: { [chainOrDefault: string]: string },
     callbackSelector: string,
+    forkId: string
 }
 
 export const UNISWAP_V2_FORKS: { [s: string]: UniswapV2Info } = {

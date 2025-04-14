@@ -14,3 +14,31 @@ export const CREATE_CHAIN_IDS = [
     // Chain.SONIC_MAINNET,
     // Chain.ETHEREUM_MAINNET
 ]
+
+export function sortForks<T>(arr: T[], field: keyof T) {
+
+    let unis: T[] = []
+    let sushis: T[] = []
+    let pancakes: T[] = []
+    let rest: T[] = []
+
+    arr.forEach(a => {
+        if (String(a[field]).includes("UNISWAP")) {
+            unis.push(a)
+        } else
+            if (String(a[field]).includes("SUSHI")) {
+                sushis.push(a)
+            } else
+                if (String(a[field]).includes("PANCAKE")) {
+                    pancakes.push(a)
+                } else
+                    rest.push(a)
+
+    })
+    return [
+        ...unis,
+        ...sushis,
+        ...pancakes,
+        ...rest
+    ]
+}

@@ -52,7 +52,8 @@ const UNISWAP_V3: UniswapV3Info = {
 
     },
     codeHash: { default: uniswapV3InitHash },
-    callbackSelector: uniswapV3CallbackSelector
+    callbackSelector: uniswapV3CallbackSelector,
+    forkId: "0"
 }
 
 const SUSHISWAP_V3: UniswapV3Info = {
@@ -93,7 +94,8 @@ const SUSHISWAP_V3: UniswapV3Info = {
         default: uniswapV3InitHash,
         [Chain.BLAST]: "0x8e13daee7f5a62e37e71bf852bcd44e7d16b90617ed2b17c24c2ee62411c5bae",
     },
-    callbackSelector: uniswapV3CallbackSelector
+    callbackSelector: uniswapV3CallbackSelector,
+    forkId: "1"
 }
 
 const solidlyV3Factory = "0x70Fe4a44EA505cFa3A57b95cF2862D4fd5F0f687"
@@ -108,7 +110,8 @@ const SOLIDLY_V3: UniswapV3Info = {
     codeHash: {
         default: solidlyV3InitHash
     },
-    callbackSelector: uniswapV3CallbackSelector
+    callbackSelector: uniswapV3CallbackSelector,
+    forkId: "2"
 }
 
 
@@ -120,7 +123,8 @@ const AERODROME_SLIPSTREAM: UniswapV3Info = {
         [Chain.BASE]: "0x5e7BB104d84c7CB9B682AaC2F3d509f5F406809A",
     },
     codeHash: { default: aerodromeInitHash },
-    callbackSelector: uniswapV3CallbackSelector
+    callbackSelector: uniswapV3CallbackSelector,
+    forkId: "5"
 }
 
 // src/core/univ3forks/AlienBaseV3.sol
@@ -130,7 +134,8 @@ const ALIENBASE_V3: UniswapV3Info = {
     codeHash: {
         default: uniswapV3InitHash
     },
-    callbackSelector: uniswapV3CallbackSelector
+    callbackSelector: uniswapV3CallbackSelector,
+    forkId: "6"
 };
 
 // src/core/univ3forks/BaseX.sol
@@ -140,7 +145,8 @@ const BASEX_V3: UniswapV3Info = {
     codeHash: {
         default: uniswapV3InitHash
     },
-    callbackSelector: uniswapV3CallbackSelector
+    callbackSelector: uniswapV3CallbackSelector,
+    forkId: "7"
 };
 
 // src/core/univ3forks/DackieSwapV3.sol
@@ -156,7 +162,8 @@ const DACKIESWAP_V3: UniswapV3Info = {
         default: uniswapV3InitHash,
         [Chain.BLAST]: "0x9173e4373ab542649f2f059b10eaab2181ad82cc2e70cf51cf9d9fa8a144a2af"
     },
-    callbackSelector: pancakeV3CallbackSelector
+    callbackSelector: pancakeV3CallbackSelector,
+    forkId: "1"
 }
 
 
@@ -168,7 +175,8 @@ const KINETIX_V3: UniswapV3Info = {
     codeHash: {
         default: uniswapV3InitHash,
     },
-    callbackSelector: uniswapV3CallbackSelector
+    callbackSelector: uniswapV3CallbackSelector,
+    forkId: "8"
 }
 
 const DTX: UniswapV3Info = {
@@ -178,7 +186,8 @@ const DTX: UniswapV3Info = {
     codeHash: {
         [Chain.TAIKO_ALETHIA]: uniswapV3InitHash
     },
-    callbackSelector: uniswapV3CallbackSelector
+    callbackSelector: uniswapV3CallbackSelector,
+    forkId: "9"
 }
 
 
@@ -198,7 +207,8 @@ const PANCAKESWAP_V3: UniswapV3Info = {
     codeHash: {
         default: pancakeSwapV3InitHash,
     },
-    callbackSelector: pancakeV3CallbackSelector
+    callbackSelector: pancakeV3CallbackSelector,
+    forkId: "0"
 }
 
 const PANKO_V3: UniswapV3Info = {
@@ -208,7 +218,8 @@ const PANKO_V3: UniswapV3Info = {
     codeHash: {
         default: pancakeSwapV3InitHash,
     },
-    callbackSelector: pancakeV3CallbackSelector
+    callbackSelector: pancakeV3CallbackSelector,
+    forkId: "1"
 }
 
 const FUSIONX_V3: UniswapV3Info = {
@@ -218,7 +229,8 @@ const FUSIONX_V3: UniswapV3Info = {
     codeHash: {
         default: "0x1bce652aaa6528355d7a339037433a20cd28410e3967635ba8d2ddb037440dbf",
     },
-    callbackSelector: "0xae067e0f00000000000000000000000000000000000000000000000000000000"
+    callbackSelector: "0xae067e0f00000000000000000000000000000000000000000000000000000000",
+    forkId: "0"
 }
 
 const AGNI: UniswapV3Info = {
@@ -228,7 +240,8 @@ const AGNI: UniswapV3Info = {
     codeHash: {
         default: "0x1bce652aaa6528355d7a339037433a20cd28410e3967635ba8d2ddb037440dbf",
     },
-    callbackSelector: "0x5bee97a300000000000000000000000000000000000000000000000000000000"
+    callbackSelector: "0x5bee97a300000000000000000000000000000000000000000000000000000000",
+    forkId: "0"
 }
 
 const METHLAB: UniswapV3Info = {
@@ -238,7 +251,8 @@ const METHLAB: UniswapV3Info = {
     codeHash: {
         default: "0xacd26fbb15704ae5e5fe7342ea8ebace020e4fa5ad4a03122ce1678278cf382b",
     },
-    callbackSelector: uniswapV3CallbackSelector
+    callbackSelector: uniswapV3CallbackSelector,
+    forkId: "10"
 }
 
 const QUICKSWAP: UniswapV3Info = {
@@ -248,7 +262,8 @@ const QUICKSWAP: UniswapV3Info = {
     codeHash: {
         default: "0x6ec6c9c8091d160c0aa74b2b14ba9c1717e95093bd3ac085cee99a49aab294a4",
     },
-    callbackSelector: algebraV3CallbackSelector
+    callbackSelector: algebraV3CallbackSelector,
+    forkId: "0"
 }
 
 const SWAPSICLE: UniswapV3Info = {
@@ -260,7 +275,8 @@ const SWAPSICLE: UniswapV3Info = {
         [Chain.MANTLE]: '0x177d5fbf994f4d130c008797563306f1a168dc689f81b2fa23b4396931014d91',
         [Chain.TAIKO_ALETHIA]: '0xf96d2474815c32e070cd63233f06af5413efc5dcb430aee4ff18cc29007c562d'
     },
-    callbackSelector: algebraV3CallbackSelector
+    callbackSelector: algebraV3CallbackSelector,
+    forkId: "1"
 }
 
 const HENJIN: UniswapV3Info = {
@@ -270,7 +286,8 @@ const HENJIN: UniswapV3Info = {
     codeHash: {
         [Chain.TAIKO_ALETHIA]: '0x4b9e4a8044ce5695e06fce9421a63b6f5c3db8a561eebb30ea4c775469e36eaf'
     },
-    callbackSelector: algebraV3CallbackSelector
+    callbackSelector: algebraV3CallbackSelector,
+    forkId: "2"
 }
 
 const CAMELOT: UniswapV3Info = {
@@ -280,7 +297,8 @@ const CAMELOT: UniswapV3Info = {
     codeHash: {
         [Chain.ARBITRUM_ONE]: '0x6c1bebd370ba84753516bc1393c0d0a6c645856da55f5393ac8ab3d6dbc861d3'
     },
-    callbackSelector: algebraV3CallbackSelector
+    callbackSelector: algebraV3CallbackSelector,
+    forkId: "3"
 }
 
 const ATLAS: UniswapV3Info = {
@@ -290,7 +308,8 @@ const ATLAS: UniswapV3Info = {
     codeHash: {
         [Chain.HEMI_NETWORK]: '0xb3fc09be5eb433d99b1ec89fd8435aaf5ffea75c1879e19028aa2414a14b3c85'
     },
-    callbackSelector: algebraV3CallbackSelector
+    callbackSelector: algebraV3CallbackSelector,
+    forkId: "4"
 }
 
 const IZUMI: UniswapV3Info = {
@@ -335,6 +354,7 @@ const IZUMI: UniswapV3Info = {
         [Chain.PLUME_MAINNET]: '0x8c7d3063579BdB0b90997e18A770eaE32E1eBb08',
     },
     codeHash: { default: "0xbe0bfe068cdd78cafa3ddd44e214cfa4e412c15d7148e932f8043fe883865e40" },
+    forkId: "0"
 }
 
 
@@ -342,6 +362,7 @@ interface UniswapV3Info {
     factories: { [chain: string]: string },
     codeHash: { [chainOrDefault: string]: string },
     callbackSelector?: string,
+    forkId: string,
 }
 
 export const UNISWAP_V3_FORKS: { [s: string]: UniswapV3Info } = {
