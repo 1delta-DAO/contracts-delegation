@@ -122,6 +122,8 @@ contract FlashAccountErc7579Test is Test {
     address public constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
+    bytes32 public constant IN_EXECUTION_SLOT = 0x3c25485dd7fcb5b79c6e101a51e4ac1d265adde8f4b2805851861db54821825d;
+
     // Test user
     uint256 public constant PRIVATE_KEY = 0x1de17a;
     address public user;
@@ -310,6 +312,52 @@ contract FlashAccountErc7579Test is Test {
         assertTrue(module.isInitialized(address(account)));
     }
 
+    function test_flash_account_module_attack_malicious_call_reverts() public {
+        // Attacker address
+        uint256 attackerPk = 0xa77ac;
+        address attacker = vm.addr(attackerPk);
+        vm.deal(attacker, 1 ether);
+        // create the attacker account
+        address attackerAccount = _createAndSetupAccount(attacker, attackerPk);
+
+        deal(USDC, attackerAccount, 1e6);
+
+        bytes memory maliciousData = abi.encodeWithSelector(
+            IPool.flashLoanSimple.selector,
+            address(module),
+            USDC,
+            1e6, // Small amount
+            new bytes(1 << 10), // random data
+            0
+        );
+
+        bytes memory flashloanCallData =
+            abi.encodeWithSelector(FlashAccountErc7579.flashLoan.selector, address(0x100), uint256(100), maliciousData);
+
+        bytes memory execute = abi.encodeWithSignature(
+            "execute(bytes32,bytes)",
+            ModeLib.encodeSimpleSingle(),
+            abi.encodePacked(address(module), uint256(0), flashloanCallData)
+        );
+
+        PackedUserOperation[] memory ops = new PackedUserOperation[](1);
+        ops[0] = _createUserOp({
+            sender: attackerAccount,
+            privateKey: attackerPk,
+            nounce: 1,
+            calldata_: execute,
+            initCode: ""
+        });
+
+        vm.prank(attacker);
+        entryPoint.handleOps(ops, payable(address(0x1)));
+
+        // load the execution lock storage slot
+        bytes32 slot = keccak256(abi.encode(address(attackerAccount), IN_EXECUTION_SLOT));
+        bytes32 inExecution = vm.load(address(module), slot);
+        vm.assertEq(uint256(inExecution), 1); // not in execution
+    }
+
     // ------------------------------------------------------------
     // Helper functions
     // ------------------------------------------------------------
@@ -451,7 +499,6 @@ contract FlashAccountErc7579Test is Test {
     }
 
     function _encodeNonce(address validator_, uint64 nonce_) internal pure returns (uint256 nonce) {
-
         assembly {
             /**
              * Nonce structure
@@ -468,7 +515,8 @@ contract FlashAccountErc7579Test is Test {
     }
 
     function _signUserOp(PackedUserOperation memory op, uint256 privateKey)
-        internal view
+        internal
+        view
         returns (PackedUserOperation memory)
     {
         bytes32 userOpHash = entryPoint.getUserOpHash(op);
