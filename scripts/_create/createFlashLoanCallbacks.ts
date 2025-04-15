@@ -11,6 +11,7 @@ import { templateMorphoBlue } from "./templates/flashLoan/morphoCallback";
 import { templateBalancerV2 } from "./templates/flashLoan/balancerV2Callback";
 import { templateComposer } from "./templates/composer";
 import { CREATE_CHAIN_IDS, getChainKey, toCamelCaseWithFirstUpper } from "./config";
+import { FLASH_LOAN_IDS } from "./flashLoan/flashLoanIds";
 
 
 function createConstant(pool: string, lender: string) {
@@ -42,24 +43,36 @@ async function main() {
         let lenderIdsAaveV2: LenderIdData[] = []
         let lenderIdsAaveV3: LenderIdData[] = []
         // aave
-        Object.entries(AAVE_FORK_POOL_DATA).forEach(([lender, maps], i) => {
+        Object.entries(AAVE_FORK_POOL_DATA).forEach(([lender, maps]) => {
             Object.entries(maps).forEach(([chains, e]) => {
                 if (chains === chain) {
                     if (AAVE_V2_LENDERS.includes(lender as any)) {
-                        lenderIdsAaveV2.push({ entityName: lender, entityId: "0", pool: e.pool })
+                        lenderIdsAaveV2.push({
+                            entityName: lender,
+                            entityId: FLASH_LOAN_IDS[lender].toString(),
+                            pool: e.pool
+                        })
                     }
                     if (AAVE_V3_LENDERS.includes(lender as any)) {
-                        lenderIdsAaveV3.push({ entityName: lender, entityId: "0", pool: e.pool })
+                        lenderIdsAaveV3.push({
+                            entityName: lender,
+                            entityId: FLASH_LOAN_IDS[lender].toString(),
+                            pool: e.pool
+                        })
                     }
                 }
             });
         });
 
         let lenderIdsMorphoBlue: LenderIdData[] = []
-        Object.entries(MORPHO_BLUE_POOL_DATA).forEach(([lender, maps], i) => {
+        Object.entries(MORPHO_BLUE_POOL_DATA).forEach(([lender, maps]) => {
             Object.entries(maps).forEach(([chains, e]) => {
                 if (chains === chain) {
-                    lenderIdsMorphoBlue.push({ entityName: lender, entityId: "0", pool: e })
+                    lenderIdsMorphoBlue.push({
+                        entityName: lender,
+                        entityId: FLASH_LOAN_IDS[lender].toString(),
+                        pool: e
+                    })
 
                 }
             });
@@ -67,10 +80,14 @@ async function main() {
 
 
         let poolIdsMBalancerV2: LenderIdData[] = []
-        Object.entries(BALANCER_V2_FORKS).forEach(([lender, maps], i) => {
+        Object.entries(BALANCER_V2_FORKS).forEach(([lender, maps]) => {
             Object.entries(maps).forEach(([chains, e]) => {
                 if (chains === chain) {
-                    poolIdsMBalancerV2.push({ entityName: lender, entityId: "0", pool: e })
+                    poolIdsMBalancerV2.push({
+                        entityName: lender,
+                        entityId: FLASH_LOAN_IDS[lender].toString(),
+                        pool: e
+                    })
                 }
             });
         });
@@ -82,12 +99,11 @@ async function main() {
         let constantsDataV2 = ``
         let switchCaseContentV2 = ``
         lenderIdsAaveV2 = lenderIdsAaveV2
-            .sort((a, b) => a.entityName < b.entityName ? -1 : 1)
-            .map((a, i) => ({ ...a, lenderId: String(i) }))
+            .sort((a, b) => Number(a.entityId) < Number(b.entityId) ? -1 : 1)
         // console.log("lenderIds", lenderIdsAaveV2)
-        lenderIdsAaveV2.forEach(({ pool, entityName: lender }, i) => {
-            constantsDataV2 += createConstant(pool, lender)
-            switchCaseContentV2 += createCase(lender, String(i))
+        lenderIdsAaveV2.forEach(({ pool, entityName, entityId }) => {
+            constantsDataV2 += createConstant(pool, entityName)
+            switchCaseContentV2 += createCase(entityName, entityId)
         })
 
         /**
@@ -96,12 +112,11 @@ async function main() {
         let constantsDataV3 = ``
         let switchCaseContentV3 = ``
         lenderIdsAaveV3 = lenderIdsAaveV3
-            .sort((a, b) => a.entityName < b.entityName ? -1 : 1)
-            .map((a, i) => ({ ...a, lenderId: String(i) }))
+            .sort((a, b) => Number(a.entityId) < Number(b.entityId) ? -1 : 1)
         // console.log("lenderIds", lenderIdsAaveV3)
-        lenderIdsAaveV3.forEach(({ pool, entityName: lender }, i) => {
-            constantsDataV3 += createConstant(pool, lender)
-            switchCaseContentV3 += createCase(lender, String(i))
+        lenderIdsAaveV3.forEach(({ pool, entityName, entityId }) => {
+            constantsDataV3 += createConstant(pool, entityName)
+            switchCaseContentV3 += createCase(entityName, entityId)
         })
 
         /**
@@ -110,12 +125,11 @@ async function main() {
         let constantsDataMorpho = ``
         let switchCaseContentMorpho = ``
         lenderIdsMorphoBlue = lenderIdsMorphoBlue
-            .sort((a, b) => a.entityName < b.entityName ? -1 : 1)
-            .map((a, i) => ({ ...a, lenderId: String(i) }))
+            .sort((a, b) => Number(a.entityId) < Number(b.entityId) ? -1 : 1)
         // console.log("lenderIds", lenderIdsMorphoBlue)
-        lenderIdsMorphoBlue.forEach(({ pool, entityName: lender }, i) => {
-            constantsDataMorpho += createConstant(pool, lender)
-            switchCaseContentMorpho += createCase(lender, String(i))
+        lenderIdsMorphoBlue.forEach(({ pool, entityName, entityId }) => {
+            constantsDataMorpho += createConstant(pool, entityName)
+            switchCaseContentMorpho += createCase(entityName, entityId)
         })
 
         /**
@@ -124,12 +138,11 @@ async function main() {
         let constantsDataBalancerV2 = ``
         let switchCaseContentBalancerV2 = ``
         poolIdsMBalancerV2 = poolIdsMBalancerV2
-            .sort((a, b) => a.entityName < b.entityName ? -1 : 1)
-            .map((a, i) => ({ ...a, lenderId: String(i) }))
+            .sort((a, b) => Number(a.entityId) < Number(b.entityId) ? -1 : 1)
         // console.log("lenderIds", poolIdsMBalancerV2)
-        poolIdsMBalancerV2.forEach(({ pool, entityName: lender }, i) => {
-            constantsDataBalancerV2 += createConstant(pool, lender)
-            switchCaseContentBalancerV2 += createCase(lender, String(i))
+        poolIdsMBalancerV2.forEach(({ pool, entityName, entityId }) => {
+            constantsDataBalancerV2 += createConstant(pool, entityName)
+            switchCaseContentBalancerV2 += createCase(entityName, entityId)
         })
 
 

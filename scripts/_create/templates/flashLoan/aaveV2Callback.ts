@@ -13,7 +13,6 @@ import {DeltaErrors} from "../../../../../shared/errors/Errors.sol";
 contract AaveV2FlashLoanCallback is Masks, DeltaErrors {
     // Aave v2s
     ${addressContants}
-
     /**
      * @dev Aave V2 style flash loan callback
      */

@@ -1,3 +1,4 @@
+
 // SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity 0.8.28;
@@ -15,25 +16,26 @@ import {ERC20Selectors} from "../../../../../shared/selectors/ERC20Selectors.sol
  */
 abstract contract UniV3Callbacks is ERC20Selectors, Masks, DeltaErrors {
     // factory ff addresses
-
-    bytes32 private constant UNISWAP_V3_FF_FACTORY = 0xff75FC67473A91335B5b8F8821277262a13B38c9b30000000000000000000000;
-    bytes32 private constant UNISWAP_V3_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
-
-    bytes32 private constant DTX_FF_FACTORY = 0xfffCA1AEf282A99390B62Ca8416a68F5747716260c0000000000000000000000;
-    bytes32 private constant DTX_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
-
-    bytes32 private constant HENJIN_FF_FACTORY = 0xff0d22b434E478386Cd3564956BFc722073B3508f60000000000000000000000;
-    bytes32 private constant HENJIN_CODE_HASH = 0x4b9e4a8044ce5695e06fce9421a63b6f5c3db8a561eebb30ea4c775469e36eaf;
-
-    bytes32 private constant SWAPSICLE_FF_FACTORY = 0xffb68b27a1c93A52d698EecA5a759E2E4469432C090000000000000000000000;
-    bytes32 private constant SWAPSICLE_CODE_HASH = 0xf96d2474815c32e070cd63233f06af5413efc5dcb430aee4ff18cc29007c562d;
-
-    bytes32 private constant PANKO_FF_FACTORY = 0xff7DD105453D0AEf177743F5461d7472cC779e63f70000000000000000000000;
-    bytes32 private constant PANKO_CODE_HASH = 0x6ce8eb472fa82df5469c6ab6d485f17c3ad13c8cd7af59b3d4a8026c5ce0f7e2;
-
-    bytes32 private constant IZUMI_FF_FACTORY = 0xff8c7d3063579BdB0b90997e18A770eaE32E1eBb080000000000000000000000;
-    bytes32 private constant IZUMI_CODE_HASH = 0xbe0bfe068cdd78cafa3ddd44e214cfa4e412c15d7148e932f8043fe883865e40;
-
+    
+            bytes32 private constant UNISWAP_V3_FF_FACTORY = 0xff75FC67473A91335B5b8F8821277262a13B38c9b30000000000000000000000;
+            bytes32 private constant UNISWAP_V3_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
+           
+            bytes32 private constant DTX_FF_FACTORY = 0xfffCA1AEf282A99390B62Ca8416a68F5747716260c0000000000000000000000;
+            bytes32 private constant DTX_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
+           
+            bytes32 private constant HENJIN_FF_FACTORY = 0xff0d22b434E478386Cd3564956BFc722073B3508f60000000000000000000000;
+            bytes32 private constant HENJIN_CODE_HASH = 0x4b9e4a8044ce5695e06fce9421a63b6f5c3db8a561eebb30ea4c775469e36eaf;
+           
+            bytes32 private constant SWAPSICLE_FF_FACTORY = 0xffb68b27a1c93A52d698EecA5a759E2E4469432C090000000000000000000000;
+            bytes32 private constant SWAPSICLE_CODE_HASH = 0xf96d2474815c32e070cd63233f06af5413efc5dcb430aee4ff18cc29007c562d;
+           
+            bytes32 private constant PANKO_FF_FACTORY = 0xff7DD105453D0AEf177743F5461d7472cC779e63f70000000000000000000000;
+            bytes32 private constant PANKO_CODE_HASH = 0x6ce8eb472fa82df5469c6ab6d485f17c3ad13c8cd7af59b3d4a8026c5ce0f7e2;
+           
+    
+            bytes32 private constant IZUMI_FF_FACTORY = 0xff8c7d3063579BdB0b90997e18A770eaE32E1eBb080000000000000000000000;
+            bytes32 private constant IZUMI_CODE_HASH = 0xbe0bfe068cdd78cafa3ddd44e214cfa4e412c15d7148e932f8043fe883865e40;
+           
     /** This functione xecutes a simple transfer to shortcut the callback if there is no further calldata */
     function clSwapCallback(uint256 amountToPay, address tokenIn, address callerAddress, uint256 calldataLength) private {
         assembly {
@@ -104,7 +106,7 @@ abstract contract UniV3Callbacks is ERC20Selectors, Masks, DeltaErrors {
     }
 
     function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual {}
-
+    
     /**
      * Generic UniswapV3 callback executor
      * The call looks like
@@ -115,21 +117,24 @@ abstract contract UniV3Callbacks is ERC20Selectors, Masks, DeltaErrors {
     function _executeUniV3IfSelector(bytes32 selector) internal {
         bytes32 codeHash;
         bytes32 ffFactoryAddress;
-        // we use the amount to pay as shorthand here to
-        // allow paying without added calldata
+        // we use the amount to pay as shorthand here to 
+        // allow paying without added calldata 
         uint256 amountToPay;
         assembly {
             switch selector
             case 0xfa461e3300000000000000000000000000000000000000000000000000000000 {
                 switch and(UINT8_MASK, shr(88, calldataload(172)))
-                case 0 {
-                    ffFactoryAddress := UNISWAP_V3_FF_FACTORY
-                    codeHash := UNISWAP_V3_CODE_HASH
-                }
-                case 1 {
-                    ffFactoryAddress := DTX_FF_FACTORY
-                    codeHash := DTX_CODE_HASH
-                }
+
+    case 0 {
+                ffFactoryAddress := UNISWAP_V3_FF_FACTORY
+                codeHash := UNISWAP_V3_CODE_HASH
+
+            }
+case 1 {
+                ffFactoryAddress := DTX_FF_FACTORY
+                codeHash := DTX_CODE_HASH
+
+            }
 
                 let _amount1 := calldataload(36)
                 switch sgt(_amount1, 0)
@@ -140,16 +145,19 @@ abstract contract UniV3Callbacks is ERC20Selectors, Masks, DeltaErrors {
                     amountToPay := calldataload(4)
                 }
             }
-            case 0x2c8958f600000000000000000000000000000000000000000000000000000000 {
+case 0x2c8958f600000000000000000000000000000000000000000000000000000000 {
                 switch and(UINT8_MASK, shr(88, calldataload(172)))
-                case 0 {
-                    ffFactoryAddress := HENJIN_FF_FACTORY
-                    codeHash := HENJIN_CODE_HASH
-                }
-                case 1 {
-                    ffFactoryAddress := SWAPSICLE_FF_FACTORY
-                    codeHash := SWAPSICLE_CODE_HASH
-                }
+
+    case 0 {
+                ffFactoryAddress := HENJIN_FF_FACTORY
+                codeHash := HENJIN_CODE_HASH
+
+            }
+case 1 {
+                ffFactoryAddress := SWAPSICLE_FF_FACTORY
+                codeHash := SWAPSICLE_CODE_HASH
+
+            }
 
                 let _amount1 := calldataload(36)
                 switch sgt(_amount1, 0)
@@ -160,12 +168,14 @@ abstract contract UniV3Callbacks is ERC20Selectors, Masks, DeltaErrors {
                     amountToPay := calldataload(4)
                 }
             }
-            case 0x23a69e7500000000000000000000000000000000000000000000000000000000 {
+case 0x23a69e7500000000000000000000000000000000000000000000000000000000 {
                 switch and(UINT8_MASK, shr(88, calldataload(172)))
-                case 0 {
-                    ffFactoryAddress := PANKO_FF_FACTORY
-                    codeHash := PANKO_CODE_HASH
-                }
+
+    case 0 {
+                ffFactoryAddress := PANKO_FF_FACTORY
+                codeHash := PANKO_CODE_HASH
+
+            }
 
                 let _amount1 := calldataload(36)
                 switch sgt(_amount1, 0)
@@ -176,6 +186,7 @@ abstract contract UniV3Callbacks is ERC20Selectors, Masks, DeltaErrors {
                     amountToPay := calldataload(4)
                 }
             }
+
             default {
                 // check if we do izumi
                 switch selector
@@ -183,9 +194,11 @@ abstract contract UniV3Callbacks is ERC20Selectors, Masks, DeltaErrors {
                 case 0x1878068400000000000000000000000000000000000000000000000000000000 {
                     switch and(UINT8_MASK, shr(88, calldataload(172))) // forkId
                     case 0 {
-                        ffFactoryAddress := IZUMI_FF_FACTORY
-                        codeHash := IZUMI_CODE_HASH
-                    }
+                ffFactoryAddress := IZUMI_FF_FACTORY
+                codeHash := IZUMI_CODE_HASH
+
+            }
+
                     default {
                         revert(0, 0)
                     }
@@ -195,9 +208,11 @@ abstract contract UniV3Callbacks is ERC20Selectors, Masks, DeltaErrors {
                 case 0xd3e1c28400000000000000000000000000000000000000000000000000000000 {
                     switch and(UINT8_MASK, shr(88, calldataload(172))) // forkId
                     case 0 {
-                        ffFactoryAddress := IZUMI_FF_FACTORY
-                        codeHash := IZUMI_CODE_HASH
-                    }
+                ffFactoryAddress := IZUMI_FF_FACTORY
+                codeHash := IZUMI_CODE_HASH
+
+            }
+
                     default {
                         revert(0, 0)
                     }
@@ -252,3 +267,4 @@ abstract contract UniV3Callbacks is ERC20Selectors, Masks, DeltaErrors {
         }
     }
 }
+

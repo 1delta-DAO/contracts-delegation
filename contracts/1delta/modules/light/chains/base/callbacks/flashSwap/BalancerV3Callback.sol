@@ -1,3 +1,4 @@
+
 // SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity 0.8.28;
@@ -33,11 +34,12 @@ abstract contract BalancerV3Callbacks is Masks, DeltaErrors {
             /** Ensure that the caller is the singleton of choice */
             switch poolId
             case 0 {
-                if xor(caller(), BALANCER_V3) {
-                    mstore(0, INVALID_CALLER)
-                    revert(0, 0x4)
-                }
-            }
+        if xor(caller(), BALANCER_V3) {
+            mstore(0, INVALID_CALLER)
+            revert(0, 0x4)
+        }
+    }
+
             default {
                 mstore(0x0, BAD_POOL)
                 revert(0x0, 0x4)

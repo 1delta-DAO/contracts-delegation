@@ -1,3 +1,4 @@
+
 // SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity 0.8.28;
@@ -10,10 +11,10 @@ import {DodoV2Callbacks} from "./DodoV2Callback.sol";
  * @title Swap Callback executor
  * @author 1delta Labs AG
  */
-contract SwapCallbacks is
-    UniV3Callbacks,
-    UniV2Callbacks,
-    DodoV2Callbacks //
+contract SwapCallbacks is 
+UniV3Callbacks,
+UniV2Callbacks,
+DodoV2Callbacks//
 {
     // override the compose
     function _deltaComposeInternal(
@@ -25,8 +26,8 @@ contract SwapCallbacks is
         virtual
         override(
             UniV3Callbacks,
-            UniV2Callbacks,
-            DodoV2Callbacks //
+UniV2Callbacks,
+DodoV2Callbacks//
         )
     {}
 
@@ -59,3 +60,4 @@ contract SwapCallbacks is
         }
     }
 }
+

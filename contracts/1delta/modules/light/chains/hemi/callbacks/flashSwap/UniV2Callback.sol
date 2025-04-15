@@ -1,3 +1,4 @@
+
 // SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity 0.8.28;
@@ -15,13 +16,13 @@ import {DeltaErrors} from "../../../../../shared/errors/Errors.sol";
  */
 abstract contract UniV2Callbacks is Masks, DeltaErrors {
     // factories
-
-    bytes32 private constant SUSHISWAP_V2_FF_FACTORY = 0xff9B3336186a38E1b6c21955d112dbb0343Ee061eE0000000000000000000000;
-    bytes32 private constant SUSHISWAP_V2_CODE_HASH = 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f;
-
-    bytes32 private constant PASS_FF_FACTORY = 0xff242c913Ff5FE010430A709baab977e88435b7EBF0000000000000000000000;
-    bytes32 private constant PASS_CODE_HASH = 0xd040a901beef1fe03d5f83aff62cc341aa8fa949dcdaa516b1adcfae94ada0db;
-
+    
+            bytes32 private constant SUSHISWAP_V2_FF_FACTORY = 0xff9B3336186a38E1b6c21955d112dbb0343Ee061eE0000000000000000000000;
+            bytes32 private constant SUSHISWAP_V2_CODE_HASH = 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f;
+           
+            bytes32 private constant PASS_FF_FACTORY = 0xff242c913Ff5FE010430A709baab977e88435b7EBF0000000000000000000000;
+            bytes32 private constant PASS_CODE_HASH = 0xd040a901beef1fe03d5f83aff62cc341aa8fa949dcdaa516b1adcfae94ada0db;
+           
     /**
      * Generic Uniswap v2 style callbck executor
      */
@@ -35,15 +36,19 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
             switch selector
             case 0x10d1e85c00000000000000000000000000000000000000000000000000000000 {
                 switch and(UINT8_MASK, shr(88, outData))
-                case 0 {
-                    ffFactoryAddress := SUSHISWAP_V2_FF_FACTORY
-                    codeHash := SUSHISWAP_V2_CODE_HASH
-                }
-                case 1 {
-                    ffFactoryAddress := PASS_FF_FACTORY
-                    codeHash := PASS_CODE_HASH
-                }
+
+    case 0 {
+                ffFactoryAddress := SUSHISWAP_V2_FF_FACTORY
+                codeHash := SUSHISWAP_V2_CODE_HASH
+
             }
+case 1 {
+                ffFactoryAddress := PASS_FF_FACTORY
+                codeHash := PASS_CODE_HASH
+
+            }
+}
+
         }
 
         if (ValidatorLib._hasData(ffFactoryAddress)) {

@@ -1,3 +1,4 @@
+
 // SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity 0.8.28;
@@ -38,12 +39,13 @@ contract AaveV2FlashLoanCallback is Masks, DeltaErrors {
             // This is a crucial check since this makes
             // the initiator paramter the caller of flashLoan
             switch source
-            case 0 {
+            case 7 {
                 if xor(caller(), GRANARY) {
                     mstore(0, INVALID_CALLER)
                     revert(0, 0x4)
                 }
             }
+
             // We revert on any other id
             default {
                 mstore(0, INVALID_FLASH_LOAN)

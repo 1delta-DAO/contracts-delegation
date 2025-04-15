@@ -1,3 +1,4 @@
+
 // SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity 0.8.28;
@@ -40,12 +41,13 @@ contract BalancerV2FlashLoanCallback is Slots, Masks, DeltaErrors {
             // This is a crucial check since this makes
             // the initiator paramter the caller of flashLoan
             switch source
-            case 0 {
+            case 1 {
                 if xor(caller(), SYMMETRIC) {
                     mstore(0, INVALID_CALLER)
                     revert(0, 0x4)
                 }
             }
+
             // We revert on any other id
             default {
                 mstore(0, INVALID_FLASH_LOAN)

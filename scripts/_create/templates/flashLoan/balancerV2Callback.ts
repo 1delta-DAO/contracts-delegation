@@ -14,7 +14,6 @@ import {DeltaErrors} from "../../../../../shared/errors/Errors.sol";
 contract BalancerV2FlashLoanCallback is Slots, Masks, DeltaErrors {
     // Balancer V2 vaults
     ${addressContants}
-
     /**
      * @dev Balancer flash loan call
      * Gated via flash loan gateway flag to prevent calls from sources other than this contract

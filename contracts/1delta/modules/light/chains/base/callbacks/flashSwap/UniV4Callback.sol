@@ -1,3 +1,4 @@
+
 // SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity 0.8.28;
@@ -36,11 +37,12 @@ abstract contract UniV4Callbacks is Masks, DeltaErrors {
             /** Ensure that the caller is the singleton of choice */
             switch poolId
             case 0 {
-                if xor(caller(), UNISWAP_V4) {
-                    mstore(0, INVALID_CALLER)
-                    revert(0, 0x4)
-                }
-            }
+        if xor(caller(), UNISWAP_V4) {
+            mstore(0, INVALID_CALLER)
+            revert(0, 0x4)
+        }
+    }
+
             default {
                 mstore(0x0, BAD_POOL)
                 revert(0x0, 0x4)
@@ -77,3 +79,5 @@ abstract contract UniV4Callbacks is Masks, DeltaErrors {
     /** A composer contract should override this */
     function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual {}
 }
+
+

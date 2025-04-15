@@ -13,7 +13,6 @@ import {DeltaErrors} from "../../../../../shared/errors/Errors.sol";
 contract MorphoFlashLoanCallback is Masks, DeltaErrors {
     /// @dev Constant MorphoB address
     ${addressContants}
-
     /** Morpho blue callbacks */
 
     /// @dev Morpho Blue flash loan

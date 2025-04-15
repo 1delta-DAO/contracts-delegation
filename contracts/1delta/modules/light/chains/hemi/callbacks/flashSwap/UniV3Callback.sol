@@ -1,3 +1,4 @@
+
 // SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity 0.8.28;
@@ -15,19 +16,20 @@ import {ERC20Selectors} from "../../../../../shared/selectors/ERC20Selectors.sol
  */
 abstract contract UniV3Callbacks is ERC20Selectors, Masks, DeltaErrors {
     // factory ff addresses
-
-    bytes32 private constant UNISWAP_V3_FF_FACTORY = 0xff346239972d1fa486FC4a521031BC81bFB7D6e8a40000000000000000000000;
-    bytes32 private constant UNISWAP_V3_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
-
-    bytes32 private constant SUSHISWAP_V3_FF_FACTORY = 0xffCdBCd51a5E8728E0AF4895ce5771b7d17fF719590000000000000000000000;
-    bytes32 private constant SUSHISWAP_V3_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
-
-    bytes32 private constant ATLAS_FF_FACTORY = 0xff6b46AE0e60E0E7a2F8614b3f1dCBf6D5a01029910000000000000000000000;
-    bytes32 private constant ATLAS_CODE_HASH = 0xb3fc09be5eb433d99b1ec89fd8435aaf5ffea75c1879e19028aa2414a14b3c85;
-
-    bytes32 private constant IZUMI_FF_FACTORY = 0xff8c7d3063579BdB0b90997e18A770eaE32E1eBb080000000000000000000000;
-    bytes32 private constant IZUMI_CODE_HASH = 0xbe0bfe068cdd78cafa3ddd44e214cfa4e412c15d7148e932f8043fe883865e40;
-
+    
+            bytes32 private constant UNISWAP_V3_FF_FACTORY = 0xff346239972d1fa486FC4a521031BC81bFB7D6e8a40000000000000000000000;
+            bytes32 private constant UNISWAP_V3_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
+           
+            bytes32 private constant SUSHISWAP_V3_FF_FACTORY = 0xffCdBCd51a5E8728E0AF4895ce5771b7d17fF719590000000000000000000000;
+            bytes32 private constant SUSHISWAP_V3_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
+           
+            bytes32 private constant ATLAS_FF_FACTORY = 0xff6b46AE0e60E0E7a2F8614b3f1dCBf6D5a01029910000000000000000000000;
+            bytes32 private constant ATLAS_CODE_HASH = 0xb3fc09be5eb433d99b1ec89fd8435aaf5ffea75c1879e19028aa2414a14b3c85;
+           
+    
+            bytes32 private constant IZUMI_FF_FACTORY = 0xff8c7d3063579BdB0b90997e18A770eaE32E1eBb080000000000000000000000;
+            bytes32 private constant IZUMI_CODE_HASH = 0xbe0bfe068cdd78cafa3ddd44e214cfa4e412c15d7148e932f8043fe883865e40;
+           
     /** This functione xecutes a simple transfer to shortcut the callback if there is no further calldata */
     function clSwapCallback(uint256 amountToPay, address tokenIn, address callerAddress, uint256 calldataLength) private {
         assembly {
@@ -98,7 +100,7 @@ abstract contract UniV3Callbacks is ERC20Selectors, Masks, DeltaErrors {
     }
 
     function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual {}
-
+    
     /**
      * Generic UniswapV3 callback executor
      * The call looks like
@@ -109,21 +111,24 @@ abstract contract UniV3Callbacks is ERC20Selectors, Masks, DeltaErrors {
     function _executeUniV3IfSelector(bytes32 selector) internal {
         bytes32 codeHash;
         bytes32 ffFactoryAddress;
-        // we use the amount to pay as shorthand here to
-        // allow paying without added calldata
+        // we use the amount to pay as shorthand here to 
+        // allow paying without added calldata 
         uint256 amountToPay;
         assembly {
             switch selector
             case 0xfa461e3300000000000000000000000000000000000000000000000000000000 {
                 switch and(UINT8_MASK, shr(88, calldataload(172)))
-                case 0 {
-                    ffFactoryAddress := UNISWAP_V3_FF_FACTORY
-                    codeHash := UNISWAP_V3_CODE_HASH
-                }
-                case 1 {
-                    ffFactoryAddress := SUSHISWAP_V3_FF_FACTORY
-                    codeHash := SUSHISWAP_V3_CODE_HASH
-                }
+
+    case 0 {
+                ffFactoryAddress := UNISWAP_V3_FF_FACTORY
+                codeHash := UNISWAP_V3_CODE_HASH
+
+            }
+case 1 {
+                ffFactoryAddress := SUSHISWAP_V3_FF_FACTORY
+                codeHash := SUSHISWAP_V3_CODE_HASH
+
+            }
 
                 let _amount1 := calldataload(36)
                 switch sgt(_amount1, 0)
@@ -134,12 +139,14 @@ abstract contract UniV3Callbacks is ERC20Selectors, Masks, DeltaErrors {
                     amountToPay := calldataload(4)
                 }
             }
-            case 0x2c8958f600000000000000000000000000000000000000000000000000000000 {
+case 0x2c8958f600000000000000000000000000000000000000000000000000000000 {
                 switch and(UINT8_MASK, shr(88, calldataload(172)))
-                case 0 {
-                    ffFactoryAddress := ATLAS_FF_FACTORY
-                    codeHash := ATLAS_CODE_HASH
-                }
+
+    case 0 {
+                ffFactoryAddress := ATLAS_FF_FACTORY
+                codeHash := ATLAS_CODE_HASH
+
+            }
 
                 let _amount1 := calldataload(36)
                 switch sgt(_amount1, 0)
@@ -150,6 +157,7 @@ abstract contract UniV3Callbacks is ERC20Selectors, Masks, DeltaErrors {
                     amountToPay := calldataload(4)
                 }
             }
+
             default {
                 // check if we do izumi
                 switch selector
@@ -157,9 +165,11 @@ abstract contract UniV3Callbacks is ERC20Selectors, Masks, DeltaErrors {
                 case 0x1878068400000000000000000000000000000000000000000000000000000000 {
                     switch and(UINT8_MASK, shr(88, calldataload(172))) // forkId
                     case 0 {
-                        ffFactoryAddress := IZUMI_FF_FACTORY
-                        codeHash := IZUMI_CODE_HASH
-                    }
+                ffFactoryAddress := IZUMI_FF_FACTORY
+                codeHash := IZUMI_CODE_HASH
+
+            }
+
                     default {
                         revert(0, 0)
                     }
@@ -169,9 +179,11 @@ abstract contract UniV3Callbacks is ERC20Selectors, Masks, DeltaErrors {
                 case 0xd3e1c28400000000000000000000000000000000000000000000000000000000 {
                     switch and(UINT8_MASK, shr(88, calldataload(172))) // forkId
                     case 0 {
-                        ffFactoryAddress := IZUMI_FF_FACTORY
-                        codeHash := IZUMI_CODE_HASH
-                    }
+                ffFactoryAddress := IZUMI_FF_FACTORY
+                codeHash := IZUMI_CODE_HASH
+
+            }
+
                     default {
                         revert(0, 0)
                     }
@@ -226,3 +238,4 @@ abstract contract UniV3Callbacks is ERC20Selectors, Masks, DeltaErrors {
         }
     }
 }
+

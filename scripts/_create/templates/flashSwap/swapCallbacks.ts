@@ -52,7 +52,6 @@ export const templateSwapCallbacks = (
 pragma solidity 0.8.28;
 
 ${cbs.map(a => a.imports + `\n`).join("")}
-
 /**
  * @title Swap Callback executor
  * @author 1delta Labs AG

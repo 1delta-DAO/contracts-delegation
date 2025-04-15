@@ -1,3 +1,4 @@
+
 // SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity 0.8.28;
@@ -11,9 +12,9 @@ import {DeltaErrors} from "../../../../../shared/errors/Errors.sol";
 contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
     // Aave V3 style lender pool addresses
     address private constant AAVE_V3 = 0xA238Dd80C259a72e81d7e4664a9801593F98d1c5;
-    address private constant AVALON = 0x6374a1F384737bcCCcD8fAE13064C18F7C8392e5;
-    address private constant YLDR = 0x5425afD90Bd1AAD68d5bADCB80390101a2750bc5;
-    address private constant ZEROLEND = 0x766f21277087E18967c1b10bF602d8Fe56d0c671;
+address private constant ZEROLEND = 0x766f21277087E18967c1b10bF602d8Fe56d0c671;
+address private constant AVALON = 0x6374a1F384737bcCCcD8fAE13064C18F7C8392e5;
+address private constant YLDR = 0x5425afD90Bd1AAD68d5bADCB80390101a2750bc5;
 
     /**
      * @dev Aave V3 style flash loan callback
@@ -46,24 +47,25 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
                     revert(0, 0x4)
                 }
             }
-            case 1 {
-                if xor(caller(), AVALON) {
-                    mstore(0, INVALID_CALLER)
-                    revert(0, 0x4)
-                }
-            }
-            case 2 {
-                if xor(caller(), YLDR) {
-                    mstore(0, INVALID_CALLER)
-                    revert(0, 0x4)
-                }
-            }
-            case 3 {
+case 20 {
                 if xor(caller(), ZEROLEND) {
                     mstore(0, INVALID_CALLER)
                     revert(0, 0x4)
                 }
             }
+case 50 {
+                if xor(caller(), AVALON) {
+                    mstore(0, INVALID_CALLER)
+                    revert(0, 0x4)
+                }
+            }
+case 100 {
+                if xor(caller(), YLDR) {
+                    mstore(0, INVALID_CALLER)
+                    revert(0, 0x4)
+                }
+            }
+
             // We revert on any other id
             default {
                 mstore(0, INVALID_FLASH_LOAN)
@@ -97,3 +99,4 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
 
     function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual {}
 }
+

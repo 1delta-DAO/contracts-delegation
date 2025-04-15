@@ -25,7 +25,6 @@ abstract contract UniV3Callbacks is ERC20Selectors, Masks, DeltaErrors {
     // factory ff addresses
     ${ffFactoryAddressContants}
     ${ffFactoryAddressContantsIzumi}
-
     /** This functione xecutes a simple transfer to shortcut the callback if there is no further calldata */
     function clSwapCallback(uint256 amountToPay, address tokenIn, address callerAddress, uint256 calldataLength) private {
         assembly {

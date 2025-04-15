@@ -19,7 +19,6 @@ import {DeltaErrors} from "../../../../../shared/errors/Errors.sol";
 abstract contract UniV2Callbacks is Masks, DeltaErrors {
     // factories
     ${ffFactoryAddressContants}
-
     /**
      * Generic Uniswap v2 style callbck executor
      */

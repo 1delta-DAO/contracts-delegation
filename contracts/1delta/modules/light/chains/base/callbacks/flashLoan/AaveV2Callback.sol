@@ -1,3 +1,4 @@
+
 // SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity 0.8.28;
@@ -11,7 +12,7 @@ import {DeltaErrors} from "../../../../../shared/errors/Errors.sol";
 contract AaveV2FlashLoanCallback is Masks, DeltaErrors {
     // Aave v2s
     address private constant GRANARY = 0xB702cE183b4E1Faa574834715E5D4a6378D0eEd3;
-    address private constant POLTER = 0x33CA62504cebAB919f0FCa94562413ee121A9798;
+address private constant POLTER = 0x33CA62504cebAB919f0FCa94562413ee121A9798;
 
     /**
      * @dev Aave V2 style flash loan callback
@@ -39,18 +40,19 @@ contract AaveV2FlashLoanCallback is Masks, DeltaErrors {
             // This is a crucial check since this makes
             // the initiator paramter the caller of flashLoan
             switch source
-            case 0 {
+            case 7 {
                 if xor(caller(), GRANARY) {
                     mstore(0, INVALID_CALLER)
                     revert(0, 0x4)
                 }
             }
-            case 1 {
+case 11 {
                 if xor(caller(), POLTER) {
                     mstore(0, INVALID_CALLER)
                     revert(0, 0x4)
                 }
             }
+
             // We revert on any other id
             default {
                 mstore(0, INVALID_FLASH_LOAN)

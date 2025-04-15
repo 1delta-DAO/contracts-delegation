@@ -1,3 +1,4 @@
+
 // SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity 0.8.28;
@@ -15,16 +16,16 @@ import {DeltaErrors} from "../../../../../shared/errors/Errors.sol";
  */
 abstract contract UniV2Callbacks is Masks, DeltaErrors {
     // factories
-
-    bytes32 private constant UNISWAP_V2_FF_FACTORY = 0xfff1D7CC64Fb4452F05c498126312eBE29f30Fbcf90000000000000000000000;
-    bytes32 private constant UNISWAP_V2_CODE_HASH = 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f;
-
-    bytes32 private constant SUSHISWAP_V2_FF_FACTORY = 0xffc35DADB65012eC5796536bD9864eD8773aBc74C40000000000000000000000;
-    bytes32 private constant SUSHISWAP_V2_CODE_HASH = 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f;
-
-    bytes32 private constant PANCAKESWAP_V2_FF_FACTORY = 0xff02a84c1b3BBD7401a5f7fa98a384EBC70bB5749E0000000000000000000000;
-    bytes32 private constant PANCAKESWAP_V2_CODE_HASH = 0x00fb7f630766e6a796048ea87d01acd3068e8ff67d078148a3fa3f4a84f69bd5;
-
+    
+            bytes32 private constant UNISWAP_V2_FF_FACTORY = 0xfff1D7CC64Fb4452F05c498126312eBE29f30Fbcf90000000000000000000000;
+            bytes32 private constant UNISWAP_V2_CODE_HASH = 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f;
+           
+            bytes32 private constant SUSHISWAP_V2_FF_FACTORY = 0xffc35DADB65012eC5796536bD9864eD8773aBc74C40000000000000000000000;
+            bytes32 private constant SUSHISWAP_V2_CODE_HASH = 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f;
+           
+            bytes32 private constant PANCAKESWAP_V2_FF_FACTORY = 0xff02a84c1b3BBD7401a5f7fa98a384EBC70bB5749E0000000000000000000000;
+            bytes32 private constant PANCAKESWAP_V2_CODE_HASH = 0x00fb7f630766e6a796048ea87d01acd3068e8ff67d078148a3fa3f4a84f69bd5;
+           
     /**
      * Generic Uniswap v2 style callbck executor
      */
@@ -38,22 +39,28 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
             switch selector
             case 0x10d1e85c00000000000000000000000000000000000000000000000000000000 {
                 switch and(UINT8_MASK, shr(88, outData))
-                case 0 {
-                    ffFactoryAddress := UNISWAP_V2_FF_FACTORY
-                    codeHash := UNISWAP_V2_CODE_HASH
-                }
-                case 1 {
-                    ffFactoryAddress := SUSHISWAP_V2_FF_FACTORY
-                    codeHash := SUSHISWAP_V2_CODE_HASH
-                }
+
+    case 0 {
+                ffFactoryAddress := UNISWAP_V2_FF_FACTORY
+                codeHash := UNISWAP_V2_CODE_HASH
+
             }
-            case 0x8480081200000000000000000000000000000000000000000000000000000000 {
+case 1 {
+                ffFactoryAddress := SUSHISWAP_V2_FF_FACTORY
+                codeHash := SUSHISWAP_V2_CODE_HASH
+
+            }
+}
+case 0x8480081200000000000000000000000000000000000000000000000000000000 {
                 switch and(UINT8_MASK, shr(88, outData))
-                case 0 {
-                    ffFactoryAddress := PANCAKESWAP_V2_FF_FACTORY
-                    codeHash := PANCAKESWAP_V2_CODE_HASH
-                }
+
+    case 0 {
+                ffFactoryAddress := PANCAKESWAP_V2_FF_FACTORY
+                codeHash := PANCAKESWAP_V2_CODE_HASH
+
             }
+}
+
         }
 
         if (ValidatorLib._hasData(ffFactoryAddress)) {
