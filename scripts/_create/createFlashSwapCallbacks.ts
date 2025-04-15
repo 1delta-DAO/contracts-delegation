@@ -19,11 +19,12 @@ import { templateBalancerV3 } from "./templates/flashSwap/balancerV3Callback";
 import { CREATE_CHAIN_IDS, getChainKey, sortForks } from "./config";
 import { composerTestImports } from "./templates/test/composerImport";
 
-
+/** simple address import */
 function createConstant(pool: string, lender: string) {
     return `address private constant ${lender} = ${getAddress(pool)};\n`
 }
 
+/** constants imports for uni V2s and V3s */
 function createffAddressConstant(pool: string, dexName: string, codeHash: string) {
     return `
             bytes32 private constant ${dexName}_FF_FACTORY = ${getAddress(pool).replace("0x", "0xff")}0000000000000000000000;
@@ -32,6 +33,7 @@ function createffAddressConstant(pool: string, dexName: string, codeHash: string
 }
 
 
+/** createCase function for uni V2s and V3s */
 function createCase(entityName: string, entityId: string) {
     return `case ${entityId} {
                 ffFactoryAddress := ${entityName}_FF_FACTORY
@@ -40,7 +42,8 @@ function createCase(entityName: string, entityId: string) {
             }\n`
 }
 
-function createCaseV4(entityName: string, entityId: string) {
+/** switch case for uni V4s and balancer V3 */
+function createCaseUniV4BalV3(entityName: string, entityId: string) {
     return `case ${entityId} {
         if xor(caller(), ${entityName}) {
             mstore(0, INVALID_CALLER)
@@ -49,12 +52,14 @@ function createCaseV4(entityName: string, entityId: string) {
     }\n`
 }
 
+/** selector head for uni V2s */
 function createCaseSelectorV2(selector: string) {
     return `case ${selector} {
                 switch and(UINT8_MASK, shr(88, outData))\n
     `
 }
 
+/** selector head for uni V3s */
 function createCaseSelectorV3(selector: string) {
     return `case ${selector} {
                 switch and(UINT8_MASK, shr(88, calldataload(172)))\n
@@ -75,6 +80,9 @@ async function main() {
     for (let i = 0; i < chains.length; i++) {
         const chain = chains[i]
         const key = getChainKey(chain)
+
+        /** Create  `DexIdData` for each entity - these have additional info vs. flash loans */
+
         let dexIdsUniV2: DexIdData[] = []
         // aave
         Object.entries(UNISWAP_V2_FORKS).forEach(([dex, maps], i) => {
@@ -153,6 +161,12 @@ async function main() {
         });
 
 
+        /** 
+         * Create the imports similar to the flash loans
+         * 2 parts, `constantsData` and `switchCaseContent`
+         * based on the templates. 
+         */
+
         /**
          * Uni V2
          */
@@ -191,6 +205,10 @@ async function main() {
                 constantsDataV3 += createffAddressConstant(pool, entityName, codeHash!)
                 switchCaseContentV3 += createCase(entityName, String(i))
             })
+            /** 
+             * For uni V3, after each selector, we need to identifty the input amount 
+             * Variants like Iumi do this differently, as such, we do it by selector
+             */
             switchCaseContentV3 += `
                 let _amount1 := calldataload(36)
                 switch sgt(_amount1, 0)
@@ -214,7 +232,7 @@ async function main() {
         // console.log("entityIds", dexIdsUniV4)
         dexIdsUniV4.forEach(({ pool, entityName, codeHash }, i) => {
             constantsDataV4 += createConstant(pool, entityName)
-            switchCaseContentV4 += createCaseV4(entityName, String(i))
+            switchCaseContentV4 += createCaseUniV4BalV3(entityName, String(i))
 
         })
 
@@ -228,7 +246,7 @@ async function main() {
         // console.log("entityIds", dexIdsBalancerV3)
         dexIdsBalancerV3.forEach(({ pool, entityName, codeHash }, i) => {
             constantsDataBalancerV3 += createConstant(pool, entityName)
-            switchCaseContentBalancerV3 += createCaseV4(entityName, String(i))
+            switchCaseContentBalancerV3 += createCaseUniV4BalV3(entityName, String(i))
 
         })
 
@@ -245,6 +263,9 @@ async function main() {
             constantsDataIzumi += createffAddressConstant(pool, entityName, codeHash!)
             switchCaseContentIzumi += createCase(entityName, String(i))
         })
+
+
+        /** Write files */
 
         const flashSwapCallbackDir = `./contracts/1delta/modules/light/chains/${key}/callbacks/flashSwap/`
         fs.mkdirSync(flashSwapCallbackDir, { recursive: true });

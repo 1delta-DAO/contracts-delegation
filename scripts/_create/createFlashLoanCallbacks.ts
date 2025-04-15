@@ -1,6 +1,6 @@
 
 
-import { AAVE_FORK_POOL_DATA, AAVE_V2_LENDERS, AAVE_V3_LENDERS, Chain, CHAIN_INFO, MORPHO_BLUE_POOL_DATA } from "@1delta/asset-registry";
+import { AAVE_FORK_POOL_DATA, AAVE_V2_LENDERS, AAVE_V3_LENDERS, MORPHO_BLUE_POOL_DATA } from "@1delta/asset-registry";
 import { getAddress } from "ethers/lib/utils";
 import * as fs from "fs";
 import { templateAaveV2 } from "./templates/flashLoan/aaveV2Callback";
@@ -13,11 +13,12 @@ import { templateComposer } from "./templates/composer";
 import { CREATE_CHAIN_IDS, getChainKey, toCamelCaseWithFirstUpper } from "./config";
 import { FLASH_LOAN_IDS } from "./flashLoan/flashLoanIds";
 
-
+/** constant for the head part */
 function createConstant(pool: string, lender: string) {
     return `address private constant ${lender} = ${getAddress(pool)};\n`
 }
 
+/** switch-case entry for flash loan that validates a caller */
 function createCase(lender: string, lenderId: string) {
     return `case ${lenderId} {
                 if xor(caller(), ${lender}) {
@@ -27,7 +28,7 @@ function createCase(lender: string, lenderId: string) {
             }\n`
 }
 
-interface LenderIdData {
+interface FlashLoanIdData {
     entityName: string
     entityId: string
     pool: string
@@ -40,8 +41,11 @@ async function main() {
     for (let i = 0; i < chains.length; i++) {
         const chain = chains[i]
         const key = getChainKey(chain)
-        let lenderIdsAaveV2: LenderIdData[] = []
-        let lenderIdsAaveV3: LenderIdData[] = []
+
+        /** Create  `FlashLoanIdData` for each entity */
+
+        let lenderIdsAaveV2: FlashLoanIdData[] = []
+        let lenderIdsAaveV3: FlashLoanIdData[] = []
         // aave
         Object.entries(AAVE_FORK_POOL_DATA).forEach(([lender, maps]) => {
             Object.entries(maps).forEach(([chains, e]) => {
@@ -64,7 +68,7 @@ async function main() {
             });
         });
 
-        let lenderIdsMorphoBlue: LenderIdData[] = []
+        let lenderIdsMorphoBlue: FlashLoanIdData[] = []
         Object.entries(MORPHO_BLUE_POOL_DATA).forEach(([lender, maps]) => {
             Object.entries(maps).forEach(([chains, e]) => {
                 if (chains === chain) {
@@ -79,7 +83,7 @@ async function main() {
         });
 
 
-        let poolIdsMBalancerV2: LenderIdData[] = []
+        let poolIdsMBalancerV2: FlashLoanIdData[] = []
         Object.entries(BALANCER_V2_FORKS).forEach(([lender, maps]) => {
             Object.entries(maps).forEach(([chains, e]) => {
                 if (chains === chain) {
@@ -93,6 +97,12 @@ async function main() {
         });
 
 
+        /** 
+         * Create code snippets
+         * `constantsData` for the head constants
+         * `switchCaseContent` for the switch-case validation parts
+         */
+
         /**
          * Aave V2
          */
@@ -100,7 +110,6 @@ async function main() {
         let switchCaseContentV2 = ``
         lenderIdsAaveV2 = lenderIdsAaveV2
             .sort((a, b) => Number(a.entityId) < Number(b.entityId) ? -1 : 1)
-        // console.log("lenderIds", lenderIdsAaveV2)
         lenderIdsAaveV2.forEach(({ pool, entityName, entityId }) => {
             constantsDataV2 += createConstant(pool, entityName)
             switchCaseContentV2 += createCase(entityName, entityId)
@@ -113,7 +122,6 @@ async function main() {
         let switchCaseContentV3 = ``
         lenderIdsAaveV3 = lenderIdsAaveV3
             .sort((a, b) => Number(a.entityId) < Number(b.entityId) ? -1 : 1)
-        // console.log("lenderIds", lenderIdsAaveV3)
         lenderIdsAaveV3.forEach(({ pool, entityName, entityId }) => {
             constantsDataV3 += createConstant(pool, entityName)
             switchCaseContentV3 += createCase(entityName, entityId)
@@ -126,7 +134,6 @@ async function main() {
         let switchCaseContentMorpho = ``
         lenderIdsMorphoBlue = lenderIdsMorphoBlue
             .sort((a, b) => Number(a.entityId) < Number(b.entityId) ? -1 : 1)
-        // console.log("lenderIds", lenderIdsMorphoBlue)
         lenderIdsMorphoBlue.forEach(({ pool, entityName, entityId }) => {
             constantsDataMorpho += createConstant(pool, entityName)
             switchCaseContentMorpho += createCase(entityName, entityId)
@@ -139,13 +146,12 @@ async function main() {
         let switchCaseContentBalancerV2 = ``
         poolIdsMBalancerV2 = poolIdsMBalancerV2
             .sort((a, b) => Number(a.entityId) < Number(b.entityId) ? -1 : 1)
-        // console.log("lenderIds", poolIdsMBalancerV2)
         poolIdsMBalancerV2.forEach(({ pool, entityName, entityId }) => {
             constantsDataBalancerV2 += createConstant(pool, entityName)
             switchCaseContentBalancerV2 += createCase(entityName, entityId)
         })
 
-
+        /** Write files */
 
         const flashLoanCallbackDir = `./contracts/1delta/modules/light/chains/${key}/callbacks/flashLoan/`
         fs.mkdirSync(flashLoanCallbackDir, { recursive: true });
