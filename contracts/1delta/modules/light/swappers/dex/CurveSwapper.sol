@@ -2,10 +2,6 @@
 
 pragma solidity 0.8.28;
 
-/******************************************************************************\
-* Author: Achthar | 1delta 
-/******************************************************************************/
-
 // solhint-disable max-line-length
 
 import {ERC20Selectors} from "../../../shared/selectors/ERC20Selectors.sol";
@@ -19,7 +15,9 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
     // approval slot
     bytes32 private constant CALL_MANAGEMENT_APPROVALS = 0x1aae13105d9b6581c36534caba5708726e5ea1e03175e823c989a5756966d1f3;
 
-    /** Standard curve pool selectors */
+    /**
+     * Standard curve pool selectors
+     */
 
     ////////////////////////////////////////////////////
     // General info on the selectors for Curve:
@@ -191,7 +189,8 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
             ////////////////////////////////////////////////////
             // Execute swap function
             ////////////////////////////////////////////////////
-            switch and(shr(72, curveData), UINT8_MASK) // selectorId
+            switch and(shr(72, curveData), UINT8_MASK)
+            // selectorId
             case 0 {
                 // selector for exchange(int128,int128,uint256,uint256,address)
                 mstore(ptr, EXCHANGE_INT_WITH_RECEIVER)
@@ -261,9 +260,7 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                 success := call(gas(), pool, 0x0, ptr, 0xA4, ptr, 0x20)
                 curveData := MAX_UINT256
             }
-            default {
-                revert(0, 0)
-            }
+            default { revert(0, 0) }
 
             if iszero(success) {
                 returndatacopy(ptr, 0, returndatasize())
@@ -282,31 +279,33 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                 mstore(ptr, ERC20_TRANSFER)
                 mstore(add(ptr, 0x04), receiver)
                 mstore(add(ptr, 0x24), amountOut)
-                success := call(
-                    gas(),
-                    tokenOut, // tokenIn, pool + 5x uint8 (i,j,s,a)
-                    0,
-                    ptr,
-                    0x44,
-                    0,
-                    32
-                )
+                success :=
+                    call(
+                        gas(),
+                        tokenOut, // tokenIn, pool + 5x uint8 (i,j,s,a)
+                        0,
+                        ptr,
+                        0x44,
+                        0,
+                        32
+                    )
 
                 let rdsize := returndatasize()
 
                 // Check for ERC20 success. ERC20 tokens should return a boolean,
                 // but some don't. We accept 0-length return data as success, or at
                 // least 32 bytes that starts with a 32-byte boolean true.
-                success := and(
-                    success, // call itself succeeded
-                    or(
-                        iszero(rdsize), // no return data, or
-                        and(
-                            gt(rdsize, 31), // at least 32 bytes
-                            eq(mload(0), 1) // starts with uint256(1)
+                success :=
+                    and(
+                        success, // call itself succeeded
+                        or(
+                            iszero(rdsize), // no return data, or
+                            and(
+                                gt(rdsize, 31), // at least 32 bytes
+                                eq(mload(0), 1) // starts with uint256(1)
+                            )
                         )
                     )
-                )
 
                 if iszero(success) {
                     returndatacopy(ptr, 0, rdsize)
@@ -383,7 +382,8 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
             ////////////////////////////////////////////////////
 
             // get selector
-            switch and(shr(72, curveData), UINT8_MASK) // selectorId
+            switch and(shr(72, curveData), UINT8_MASK)
+            // selectorId
             case 3 {
                 // selector for exchange(int128,int128,uint256,uint256,address)
                 mstore(ptr, EXCHANGE)
@@ -392,9 +392,7 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                 // selector for exchange(int128,int128,uint256,uint256)
                 mstore(ptr, EXCHANGE_UNDERLYING)
             }
-            default {
-                revert(0, 0)
-            }
+            default { revert(0, 0) }
 
             mstore(add(ptr, 0x4), and(shr(88, curveData), UINT8_MASK))
             mstore(add(ptr, 0x24), and(shr(80, curveData), UINT8_MASK))
@@ -427,31 +425,33 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                 mstore(ptr, ERC20_TRANSFER)
                 mstore(add(ptr, 0x04), receiver)
                 mstore(add(ptr, 0x24), amountOut)
-                let success := call(
-                    gas(),
-                    tokenOut, // tokenIn, pool + 5x uint8 (i,j,s,a)
-                    0,
-                    ptr,
-                    0x44,
-                    ptr,
-                    32
-                )
+                let success :=
+                    call(
+                        gas(),
+                        tokenOut, // tokenIn, pool + 5x uint8 (i,j,s,a)
+                        0,
+                        ptr,
+                        0x44,
+                        ptr,
+                        32
+                    )
 
                 let rdsize := returndatasize()
 
                 // Check for ERC20 success. ERC20 tokens should return a boolean,
                 // but some don't. We accept 0-length return data as success, or at
                 // least 32 bytes that starts with a 32-byte boolean true.
-                success := and(
-                    success, // call itself succeeded
-                    or(
-                        iszero(rdsize), // no return data, or
-                        and(
-                            gt(rdsize, 31), // at least 32 bytes
-                            eq(mload(ptr), 1) // starts with uint256(1)
+                success :=
+                    and(
+                        success, // call itself succeeded
+                        or(
+                            iszero(rdsize), // no return data, or
+                            and(
+                                gt(rdsize, 31), // at least 32 bytes
+                                eq(mload(ptr), 1) // starts with uint256(1)
+                            )
                         )
                     )
-                )
 
                 if iszero(success) {
                     returndatacopy(ptr, 0, rdsize)
@@ -549,9 +549,7 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                 // selector for exchange_received(uint256,uint256,uint256,uint256,address)
                 mstore(ptr, EXCHANGE_RECEIVED_WITH_RECEIVER)
             }
-            default {
-                revert(0, 0)
-            }
+            default { revert(0, 0) }
 
             mstore(add(ptr, 0x4), and(shr(88, curveData), UINT8_MASK)) // indexIn
             mstore(add(ptr, 0x24), and(shr(80, curveData), UINT8_MASK)) // indexOut

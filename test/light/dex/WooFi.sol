@@ -30,7 +30,7 @@ contract WooLightTest is BaseTest {
     function setUp() public virtual {
         // initialize the chain
         string memory chainName = Chains.BASE;
-        
+
         _init(chainName, forkBlock);
         LBTC = chain.getTokenAddress(Tokens.LBTC);
         WETH = chain.getTokenAddress(Tokens.WETH);

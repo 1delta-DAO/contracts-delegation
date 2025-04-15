@@ -2,10 +2,6 @@
 
 pragma solidity 0.8.28;
 
-/******************************************************************************\
-* Author: Achthar | 1delta 
-/******************************************************************************/
-
 import {ERC20Selectors} from "../../../shared/selectors/ERC20Selectors.sol";
 import {Masks} from "../../../shared/masks/Masks.sol";
 
@@ -15,7 +11,7 @@ import {Masks} from "../../../shared/masks/Masks.sol";
  * Ergo, if Uniswap v4 is in the path (no matter how many times), one has to push
  * the swap data and execution into the UniswapV4.unlock
  * This should be usable together with flash loans from their singleton
- * 
+ *
  * Cannot unlock multiple times!
  *
  * The execution of a swap follows the steps:
@@ -35,7 +31,9 @@ import {Masks} from "../../../shared/masks/Masks.sol";
  * This is a bit annoying to implement and for this first version we skip it
  */
 abstract contract V4TypeGeneric is ERC20Selectors, Masks {
-    /** We need all these selectors for executing a single swap */
+    /**
+     * We need all these selectors for executing a single swap
+     */
     bytes32 private constant SWAP = 0xf3cd914c00000000000000000000000000000000000000000000000000000000;
     bytes32 private constant TAKE = 0x0b0d9c0900000000000000000000000000000000000000000000000000000000;
     bytes32 private constant SETTLE = 0x11da60b400000000000000000000000000000000000000000000000000000000;
@@ -113,7 +111,9 @@ abstract contract V4TypeGeneric is ERC20Selectors, Masks {
             // Store swap selector
             mstore(ptr, SWAP)
 
-            /** PoolKey  (2/2) */
+            /**
+             * PoolKey  (2/2)
+             */
 
             // Store fee
             mstore(add(ptr, 68), and(UINT24_MASK, shr(72, pool)))
@@ -121,17 +121,20 @@ abstract contract V4TypeGeneric is ERC20Selectors, Masks {
             // Store tickSpacing
             mstore(add(ptr, 100), and(UINT24_MASK, shr(48, pool)))
 
-            pool := shr(
-                96,
-                pool // starts as first param
-            )
+            pool :=
+                shr(
+                    96,
+                    pool // starts as first param
+                )
 
             // Store data offset
             mstore(add(ptr, 260), 0x120)
             // Store data length
             mstore(add(ptr, 292), clLength)
 
-            /** SwapParams */
+            /**
+             * SwapParams
+             */
 
             // Store fromAmount
             mstore(add(ptr, 196), sub(0, fromAmount))
@@ -141,12 +144,15 @@ abstract contract V4TypeGeneric is ERC20Selectors, Masks {
                 calldatacopy(add(ptr, 324), currentOffset, clLength)
             }
 
-            switch lt(tokenIn, tokenOut) // zeroForOne
+            switch lt(tokenIn, tokenOut)
+            // zeroForOne
             case 1 {
                 // Store zeroForOne
                 mstore(add(ptr, 164), 1)
 
-                /** PoolKey  (1/2) */
+                /**
+                 * PoolKey  (1/2)
+                 */
 
                 // Store ccy0
                 mstore(add(ptr, 4), tokenIn)
@@ -160,7 +166,9 @@ abstract contract V4TypeGeneric is ERC20Selectors, Masks {
                 // Store zeroForOne
                 mstore(add(ptr, 164), 0)
 
-                /** PoolKey  (1/2) */
+                /**
+                 * PoolKey  (1/2)
+                 */
 
                 // Store ccy0
                 mstore(add(ptr, 4), tokenOut)
@@ -183,7 +191,6 @@ abstract contract V4TypeGeneric is ERC20Selectors, Masks {
              * Load actual deltas from pool manager
              * This is recommended in the docs
              */
-
             mstore(ptr, EXTTLOAD)
             mstore(add(ptr, 4), 0x20) // offset
             mstore(add(ptr, 36), 2) // array length
@@ -207,17 +214,16 @@ abstract contract V4TypeGeneric is ERC20Selectors, Masks {
                     ptr,
                     0x80 // output (offset, length, data0, data1)
                 )
-            ) {
-                revert(0, 0)
-            }
+            ) { revert(0, 0) }
 
             // 1st array output element
             fromAmount := sub(0, mload(add(ptr, 0x40)))
             // 2nd array output element
             receivedAmount := mload(add(ptr, 0x60))
 
-            /** Pull funds to receiver */
-
+            /**
+             * Pull funds to receiver
+             */
             mstore(ptr, TAKE)
             mstore(add(ptr, 4), tokenOut) //
             mstore(add(ptr, 36), receiver)
@@ -229,7 +235,8 @@ abstract contract V4TypeGeneric is ERC20Selectors, Masks {
                     pool,
                     0x0,
                     ptr, //
-                    100, // selector, offset, length, data
+                    100,
+                    // selector, offset, length, data
                     0x0, // output = empty
                     0x0 // output size = zero
                 )
@@ -247,12 +254,15 @@ abstract contract V4TypeGeneric is ERC20Selectors, Masks {
              * `amountIn` selected != actual `amountIn`
              */
             if lt(tempVar, 2) {
-                /** Pull funds from payer */
+                /**
+                 * Pull funds from payer
+                 */
                 switch iszero(tokenIn)
                 // nonnative
                 case 0 {
-                    /** Sync pay asset */
-
+                    /**
+                     * Sync pay asset
+                     */
                     mstore(0, SYNC)
                     mstore(4, tokenIn) // offset
 
@@ -262,7 +272,8 @@ abstract contract V4TypeGeneric is ERC20Selectors, Masks {
                             pool,
                             0x0,
                             0, //
-                            36, // selector, offset, length, data
+                            36,
+                            // selector, offset, length, data
                             0x0, // output = empty
                             0x0 // output size = zero
                         )
@@ -285,16 +296,17 @@ abstract contract V4TypeGeneric is ERC20Selectors, Masks {
                         // Check for ERC20 success. ERC20 tokens should return a boolean,
                         // but some don't. We accept 0-length return data as success, or at
                         // least 32 bytes that starts with a 32-byte boolean true.
-                        success := and(
-                            success, // call itself succeeded
-                            or(
-                                iszero(rdsize), // no return data, or
-                                and(
-                                    gt(rdsize, 31), // at least 32 bytes
-                                    eq(mload(0), 1) // starts with uint256(1)
+                        success :=
+                            and(
+                                success, // call itself succeeded
+                                or(
+                                    iszero(rdsize), // no return data, or
+                                    and(
+                                        gt(rdsize, 31), // at least 32 bytes
+                                        eq(mload(0), 1) // starts with uint256(1)
+                                    )
                                 )
                             )
-                        )
 
                         if iszero(success) {
                             returndatacopy(0, 0, rdsize)
@@ -313,16 +325,17 @@ abstract contract V4TypeGeneric is ERC20Selectors, Masks {
                         // Check for ERC20 success. ERC20 tokens should return a boolean,
                         // but some don't. We accept 0-length return data as success, or at
                         // least 32 bytes that starts with a 32-byte boolean true.
-                        success := and(
-                            success, // call itself succeeded
-                            or(
-                                iszero(rdsize), // no return data, or
-                                and(
-                                    gt(rdsize, 31), // at least 32 bytes
-                                    eq(mload(0), 1) // starts with uint256(1)
+                        success :=
+                            and(
+                                success, // call itself succeeded
+                                or(
+                                    iszero(rdsize), // no return data, or
+                                    and(
+                                        gt(rdsize, 31), // at least 32 bytes
+                                        eq(mload(0), 1) // starts with uint256(1)
+                                    )
                                 )
                             )
-                        )
 
                         if iszero(success) {
                             returndatacopy(0, 0, rdsize)
@@ -332,10 +345,10 @@ abstract contract V4TypeGeneric is ERC20Selectors, Masks {
                     tempVar := 0
                 }
                 // native
-                default {
-                    tempVar := fromAmount
-                }
-                /** Settle funds in pool manager */
+                default { tempVar := fromAmount }
+                /**
+                 * Settle funds in pool manager
+                 */
 
                 // settle amount
                 mstore(0, SETTLE)
@@ -345,7 +358,8 @@ abstract contract V4TypeGeneric is ERC20Selectors, Masks {
                         pool,
                         tempVar,
                         0, //
-                        4, // selector, offset, length, data
+                        4,
+                        // selector, offset, length, data
                         0x0, // output = empty
                         0x0 // output size = zero
                     )

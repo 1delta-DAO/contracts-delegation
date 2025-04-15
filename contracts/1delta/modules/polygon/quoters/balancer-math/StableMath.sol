@@ -56,14 +56,16 @@ library StableMath {
     // solhint-disable-previous-line max-line-length
     function _calculateInvariant(uint256 amplificationParameter, uint256[] memory balances) internal pure returns (uint256) {
         unchecked {
-            /**********************************************************************************************
-            // invariant                                                                                 //
-            // D = invariant                                                  D^(n+1)                    //
-            // A = amplification coefficient      A  n^n S + D = A D n^n + -----------                   //
-            // S = sum of balances                                             n^n P                     //
-            // P = product of balances                                                                   //
-            // n = number of tokens                                                                      //
-            **********************************************************************************************/
+            /**
+             *
+             *         // invariant                                                                                 //
+             *         // D = invariant                                                  D^(n+1)                    //
+             *         // A = amplification coefficient      A  n^n S + D = A D n^n + -----------                   //
+             *         // S = sum of balances                                             n^n P                     //
+             *         // P = product of balances                                                                   //
+             *         // n = number of tokens                                                                      //
+             *
+             */
 
             // Always round down, to match Vyper's arithmetic (which always truncates).
 
@@ -121,18 +123,24 @@ library StableMath {
         uint256 tokenIndexOut,
         uint256 tokenAmountIn,
         uint256 invariant
-    ) internal pure returns (uint256) {
-        /**************************************************************************************************************
-        // outGivenIn token x for y - polynomial equation to solve                                                   //
-        // ay = amount out to calculate                                                                              //
-        // by = balance token out                                                                                    //
-        // y = by - ay (finalBalanceOut)                                                                             //
-        // D = invariant                                               D                     D^(n+1)                 //
-        // A = amplification coefficient               y^2 + ( S + ----------  - D) * y -  ------------- = 0         //
-        // n = number of tokens                                    (A * n^n)               A * n^2n * P              //
-        // S = sum of final balances but y                                                                           //
-        // P = product of final balances but y                                                                       //
-        **************************************************************************************************************/
+    )
+        internal
+        pure
+        returns (uint256)
+    {
+        /**
+         *
+         *     // outGivenIn token x for y - polynomial equation to solve                                                   //
+         *     // ay = amount out to calculate                                                                              //
+         *     // by = balance token out                                                                                    //
+         *     // y = by - ay (finalBalanceOut)                                                                             //
+         *     // D = invariant                                               D                     D^(n+1)                 //
+         *     // A = amplification coefficient               y^2 + ( S + ----------  - D) * y -  ------------- = 0         //
+         *     // n = number of tokens                                    (A * n^n)               A * n^2n * P              //
+         *     // S = sum of final balances but y                                                                           //
+         *     // P = product of final balances but y                                                                       //
+         *
+         */
 
         // Amount out, so we round down overall.
         balances[tokenIndexIn] = balances[tokenIndexIn].add(tokenAmountIn);
@@ -156,19 +164,25 @@ library StableMath {
         uint256 tokenIndexOut,
         uint256 tokenAmountOut,
         uint256 invariant
-    ) internal pure returns (uint256) {
+    )
+        internal
+        pure
+        returns (uint256)
+    {
         unchecked {
-            /**************************************************************************************************************
-        // inGivenOut token x for y - polynomial equation to solve                                                   //
-        // ax = amount in to calculate                                                                               //
-        // bx = balance token in                                                                                     //
-        // x = bx + ax (finalBalanceIn)                                                                              //
-        // D = invariant                                                D                     D^(n+1)                //
-        // A = amplification coefficient               x^2 + ( S + ----------  - D) * x -  ------------- = 0         //
-        // n = number of tokens                                     (A * n^n)               A * n^2n * P             //
-        // S = sum of final balances but x                                                                           //
-        // P = product of final balances but x                                                                       //
-        **************************************************************************************************************/
+            /**
+             *
+             *     // inGivenOut token x for y - polynomial equation to solve                                                   //
+             *     // ax = amount in to calculate                                                                               //
+             *     // bx = balance token in                                                                                     //
+             *     // x = bx + ax (finalBalanceIn)                                                                              //
+             *     // D = invariant                                                D                     D^(n+1)                //
+             *     // A = amplification coefficient               x^2 + ( S + ----------  - D) * x -  ------------- = 0         //
+             *     // n = number of tokens                                     (A * n^n)               A * n^2n * P             //
+             *     // S = sum of final balances but x                                                                           //
+             *     // P = product of final balances but x                                                                       //
+             *
+             */
 
             // Amount in, so we round up overall.
             balances[tokenIndexOut] = balances[tokenIndexOut].sub(tokenAmountOut);
@@ -190,7 +204,11 @@ library StableMath {
         uint256 bptTotalSupply,
         uint256 currentInvariant,
         uint256 swapFeePercentage
-    ) internal pure returns (uint256) {
+    )
+        internal
+        pure
+        returns (uint256)
+    {
         // BPT out, so we round down overall.
 
         // First loop calculates the sum of all token balances, which will be used to calculate
@@ -247,7 +265,11 @@ library StableMath {
         uint256 bptTotalSupply,
         uint256 currentInvariant,
         uint256 swapFeePercentage
-    ) internal pure returns (uint256) {
+    )
+        internal
+        pure
+        returns (uint256)
+    {
         // Token in, so we round up overall.
 
         uint256 newInvariant = bptTotalSupply.add(bptAmountOut).divUp(bptTotalSupply).mulUp(currentInvariant);
@@ -286,7 +308,11 @@ library StableMath {
         uint256 bptTotalSupply,
         uint256 currentInvariant,
         uint256 swapFeePercentage
-    ) internal pure returns (uint256) {
+    )
+        internal
+        pure
+        returns (uint256)
+    {
         // BPT in, so we round up overall.
 
         // First loop calculates the sum of all token balances, which will be used to calculate
@@ -339,7 +365,11 @@ library StableMath {
         uint256 bptTotalSupply,
         uint256 currentInvariant,
         uint256 swapFeePercentage
-    ) internal pure returns (uint256) {
+    )
+        internal
+        pure
+        returns (uint256)
+    {
         // Token out, so we round down overall.
 
         uint256 newInvariant = bptTotalSupply.sub(bptAmountIn).divUp(bptTotalSupply).mulUp(currentInvariant);
@@ -376,7 +406,11 @@ library StableMath {
         uint256[] memory balances,
         uint256 invariant,
         uint256 tokenIndex
-    ) internal pure returns (uint256) {
+    )
+        internal
+        pure
+        returns (uint256)
+    {
         // Rounds result up overall
 
         uint256 ampTimesTotal = amplificationParameter * balances.length;

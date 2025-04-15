@@ -2,10 +2,6 @@
 
 pragma solidity ^0.8.28;
 
-/******************************************************************************\
-* Author: Achthar | 1delta 
-/******************************************************************************/
-
 import {DeltaErrors} from "../shared/errors/Errors.sol";
 import {PermitUtils} from "../shared/permit/PermitUtils.sol";
 import {DexMappings} from "../shared/swapper/DexMappings.sol";
@@ -27,14 +23,14 @@ import {CurveForkSwapper} from "./swappers/CurveFork.sol";
  *             Uni V2: 100 - 110
  *             Solidly:121 - 130
  */
-abstract contract BaseSwapper is 
-    DeltaErrors, 
-    PermitUtils, 
-    UnoSwapper, 
+abstract contract BaseSwapper is
+    DeltaErrors,
+    PermitUtils,
+    UnoSwapper,
     DexMappings,
     ExoticOffsets,
-    DodoV2Swapper, 
-    BalancerSwapper, 
+    DodoV2Swapper,
+    BalancerSwapper,
     SyncSwapper,
     CurveForkSwapper //
 {
@@ -42,7 +38,7 @@ abstract contract BaseSwapper is
      * Swaps exact in internally using all implemented Dexs
      * Will NOT use a flash swap
      * The dexId is assumed to be fetched before in a prefunding action
-     * As such, the parameter can be plugged in here directly 
+     * As such, the parameter can be plugged in here directly
      * @param amountIn sell amount
      * @param dexId dex identifier
      * @return amountOut buy amount
@@ -54,7 +50,10 @@ abstract contract BaseSwapper is
         address receiver, // last step
         uint256 pathOffset,
         uint256 pathLength
-    ) internal returns (uint256 amountOut) {
+    )
+        internal
+        returns (uint256 amountOut)
+    {
         address currentReceiver;
         ////////////////////////////////////////////////////
         // We switch-case through the different pool types
@@ -68,13 +67,15 @@ abstract contract BaseSwapper is
         // uniswapV3 style
         if (dexId < UNISWAP_V3_MAX_ID) {
             assembly {
-                switch lt(pathLength, MAX_SINGLE_LENGTH_UNOSWAP_HIGH) // maxLength = 66 for single path
-                case 1 { currentReceiver := receiver}
+                switch lt(pathLength, MAX_SINGLE_LENGTH_UNOSWAP_HIGH)
+                // maxLength = 66 for single path
+                case 1 { currentReceiver := receiver }
                 default {
                     dexId := and(calldataload(add(pathOffset, 34)), UINT8_MASK) // SKIP_LENGTH_UNOSWAP - 10
-                    switch gt(dexId, 99) 
+                    switch gt(dexId, 99)
                     case 1 {
-                        currentReceiver := shr(
+                        currentReceiver :=
+                            shr(
                                 96,
                                 calldataload(
                                     add(
@@ -84,9 +85,7 @@ abstract contract BaseSwapper is
                                 ) // poolAddress
                             )
                     }
-                    default {
-                        currentReceiver := address()
-                    }
+                    default { currentReceiver := address() }
                 }
             }
             amountIn = _swapUniswapV3PoolExactIn(
@@ -105,13 +104,15 @@ abstract contract BaseSwapper is
         // iZi
         else if (dexId == IZI_ID) {
             assembly {
-                switch lt(pathLength, MAX_SINGLE_LENGTH_UNOSWAP_HIGH) // same as for Uni V3 CL
-                case 1 { currentReceiver := receiver}
+                switch lt(pathLength, MAX_SINGLE_LENGTH_UNOSWAP_HIGH)
+                // same as for Uni V3 CL
+                case 1 { currentReceiver := receiver }
                 default {
                     dexId := and(calldataload(add(pathOffset, 34)), UINT8_MASK) // SKIP_LENGTH_UNOSWAP - 10
-                    switch gt(dexId, 99) 
+                    switch gt(dexId, 99)
                     case 1 {
-                        currentReceiver := shr(
+                        currentReceiver :=
+                            shr(
                                 96,
                                 calldataload(
                                     add(
@@ -121,32 +122,25 @@ abstract contract BaseSwapper is
                                 ) // poolAddress
                             )
                     }
-                    default {
-                        currentReceiver := address()
-                    }
+                    default { currentReceiver := address() }
                 }
             }
-            amountIn = _swapIZIPoolExactIn(
-                amountIn,
-                0,
-                payer,
-                currentReceiver,
-                pathOffset,
-                64
-            );
+            amountIn = _swapIZIPoolExactIn(amountIn, 0, payer, currentReceiver, pathOffset, 64);
             assembly {
                 pathOffset := add(pathOffset, SKIP_LENGTH_UNOSWAP)
                 pathLength := sub(pathLength, SKIP_LENGTH_UNOSWAP)
             }
         } else if (dexId == CURVE_V1_STANDARD_ID) {
             assembly {
-                switch lt(pathLength, MAX_SINGLE_LENGTH_CURVE_HIGH) // MAX_SINGLE_LENGTH_CURVE + 1
-                case 1 { currentReceiver := receiver}
+                switch lt(pathLength, MAX_SINGLE_LENGTH_CURVE_HIGH)
+                // MAX_SINGLE_LENGTH_CURVE + 1
+                case 1 { currentReceiver := receiver }
                 default {
                     dexId := and(calldataload(add(pathOffset, 35)), UINT8_MASK)
-                    switch gt(dexId, 99) 
+                    switch gt(dexId, 99)
                     case 1 {
-                        currentReceiver := shr(
+                        currentReceiver :=
+                            shr(
                                 96,
                                 calldataload(
                                     add(
@@ -156,9 +150,7 @@ abstract contract BaseSwapper is
                                 ) // poolAddress
                             )
                     }
-                    default {
-                        currentReceiver := address()
-                    }
+                    default { currentReceiver := address() }
                 }
             }
             amountIn = _swapCurveGeneral(pathOffset, amountIn, payer, currentReceiver);
@@ -168,13 +160,15 @@ abstract contract BaseSwapper is
             }
         } else if (dexId == CURVE_FORK_ID) {
             assembly {
-                switch lt(pathLength, MAX_SINGLE_LENGTH_CURVE_HIGH) // MAX_SINGLE_LENGTH_CURVE + 1
-                case 1 { currentReceiver := receiver}
+                switch lt(pathLength, MAX_SINGLE_LENGTH_CURVE_HIGH)
+                // MAX_SINGLE_LENGTH_CURVE + 1
+                case 1 { currentReceiver := receiver }
                 default {
                     dexId := and(calldataload(add(pathOffset, 35)), UINT8_MASK)
-                    switch gt(dexId, 99) 
+                    switch gt(dexId, 99)
                     case 1 {
-                        currentReceiver := shr(
+                        currentReceiver :=
+                            shr(
                                 96,
                                 calldataload(
                                     add(
@@ -184,9 +178,7 @@ abstract contract BaseSwapper is
                                 ) // poolAddress
                             )
                     }
-                    default {
-                        currentReceiver := address()
-                    }
+                    default { currentReceiver := address() }
                 }
             }
             amountIn = _swapCurveFork(pathOffset, amountIn, payer, currentReceiver);
@@ -198,33 +190,28 @@ abstract contract BaseSwapper is
         // Balancer V2 Fork
         else if (dexId == BALANCER_V2_FORK_ID) {
             assembly {
-                switch lt(pathLength, MAX_SINGLE_LENGTH_BALANCER_V2_HIGH) // MAX_SINGLE_LENGTH_BALANCER_V2 + 1
-                case 1 { currentReceiver := receiver}
+                switch lt(pathLength, MAX_SINGLE_LENGTH_BALANCER_V2_HIGH)
+                // MAX_SINGLE_LENGTH_BALANCER_V2 + 1
+                case 1 { currentReceiver := receiver }
                 default {
                     dexId := and(calldataload(add(pathOffset, 45)), UINT8_MASK) // SKIP_LENGTH_BALANCER_V2 - 10
-                    switch gt(dexId, 99) 
+                    switch gt(dexId, 99)
                     case 1 {
-                        currentReceiver := shr(
+                        currentReceiver :=
+                            shr(
                                 96,
                                 calldataload(
                                     add(
                                         pathOffset,
-                                        RECEIVER_OFFSET_BALANCER_V2 // 
+                                        RECEIVER_OFFSET_BALANCER_V2 //
                                     )
                                 ) // poolAddress
                             )
                     }
-                    default {
-                        currentReceiver := address()
-                    }
+                    default { currentReceiver := address() }
                 }
             }
-            amountIn = _swapBalancerExactIn(
-                payer,
-                amountIn,
-                currentReceiver,
-                pathOffset
-            );
+            amountIn = _swapBalancerExactIn(payer, amountIn, currentReceiver, pathOffset);
             assembly {
                 pathOffset := add(pathOffset, SKIP_LENGTH_BALANCER_V2)
                 pathLength := sub(pathLength, SKIP_LENGTH_BALANCER_V2)
@@ -234,12 +221,13 @@ abstract contract BaseSwapper is
         else if (dexId < UNISWAP_V2_MAX_ID) {
             assembly {
                 switch lt(pathLength, MAX_SINGLE_LENGTH_UNOSWAP_HIGH)
-                case 1 { currentReceiver := receiver}
+                case 1 { currentReceiver := receiver }
                 default {
                     dexId := and(calldataload(add(pathOffset, 34)), UINT8_MASK) // SKIP_LENGTH_UNOSWAP - 10
-                    switch gt(dexId, 99) 
+                    switch gt(dexId, 99)
                     case 1 {
-                        currentReceiver := shr(
+                        currentReceiver :=
+                            shr(
                                 96,
                                 calldataload(
                                     add(
@@ -249,9 +237,7 @@ abstract contract BaseSwapper is
                                 ) // poolAddress
                             )
                     }
-                    default {
-                        currentReceiver := address()
-                    }
+                    default { currentReceiver := address() }
                 }
             }
             amountIn = swapUniV2ExactInComplete(
@@ -271,13 +257,15 @@ abstract contract BaseSwapper is
         // Curve NG
         else if (dexId == CURVE_RECEIVED_ID) {
             assembly {
-                switch lt(pathLength, MAX_SINGLE_LENGTH_CURVE_HIGH) // 
-                case 1 { currentReceiver := receiver}
+                switch lt(pathLength, MAX_SINGLE_LENGTH_CURVE_HIGH)
+                //
+                case 1 { currentReceiver := receiver }
                 default {
                     dexId := and(calldataload(add(pathOffset, 35)), UINT8_MASK)
-                    switch gt(dexId, 99) 
+                    switch gt(dexId, 99)
                     case 1 {
-                        currentReceiver := shr(
+                        currentReceiver :=
+                            shr(
                                 96,
                                 calldataload(
                                     add(
@@ -287,9 +275,7 @@ abstract contract BaseSwapper is
                                 ) // poolAddress
                             )
                     }
-                    default {
-                        currentReceiver := address()
-                    }
+                    default { currentReceiver := address() }
                 }
             }
             amountIn = _swapCurveReceived(pathOffset, amountIn, currentReceiver);
@@ -302,12 +288,13 @@ abstract contract BaseSwapper is
         else if (dexId == SYNC_SWAP_ID) {
             assembly {
                 switch lt(pathLength, MAX_SINGLE_LENGTH_ADDRESS_HIGH)
-                case 1 { currentReceiver := receiver}
+                case 1 { currentReceiver := receiver }
                 default {
                     dexId := and(calldataload(add(pathOffset, 32)), UINT8_MASK) // SKIP_LENGTH_SYNCSWAP - 10
-                    switch gt(dexId, 99) 
+                    switch gt(dexId, 99)
                     case 1 {
-                        currentReceiver := shr(
+                        currentReceiver :=
+                            shr(
                                 96,
                                 calldataload(
                                     add(
@@ -317,9 +304,7 @@ abstract contract BaseSwapper is
                                 ) // poolAddress
                             )
                     }
-                    default {
-                        currentReceiver := address()
-                    }
+                    default { currentReceiver := address() }
                 }
             }
             amountIn = swapSyncExactIn(
@@ -332,17 +317,19 @@ abstract contract BaseSwapper is
             }
         }
         // DODO V2
-        else if(dexId == DODO_ID) {
+        else if (dexId == DODO_ID) {
             address pair;
             uint8 sellQuote;
             assembly {
-                switch lt(pathLength, MAX_SINGLE_LENGTH_ADDRESS_AND_PARAM_HIGH) // same as V2
-                case 1 { currentReceiver := receiver}
+                switch lt(pathLength, MAX_SINGLE_LENGTH_ADDRESS_AND_PARAM_HIGH)
+                // same as V2
+                case 1 { currentReceiver := receiver }
                 default {
                     dexId := and(calldataload(add(pathOffset, 33)), UINT8_MASK)
-                    switch gt(dexId, 99) 
+                    switch gt(dexId, 99)
                     case 1 {
-                        currentReceiver := shr(
+                        currentReceiver :=
+                            shr(
                                 96,
                                 calldataload(
                                     add(
@@ -352,30 +339,23 @@ abstract contract BaseSwapper is
                                 ) // poolAddress
                             )
                     }
-                    default {
-                        currentReceiver := address()
-                    }
+                    default { currentReceiver := address() }
                 }
                 let params := calldataload(add(pathOffset, 11))
                 pair := shr(8, params)
                 sellQuote := and(UINT8_MASK, params)
             }
-            amountIn = swapDodoV2ExactIn(
-                sellQuote,
-                pair,
-                currentReceiver
-            );
+            amountIn = swapDodoV2ExactIn(sellQuote, pair, currentReceiver);
             assembly {
                 pathOffset := add(pathOffset, SKIP_LENGTH_ADDRESS_AND_PARAM)
                 pathLength := sub(pathLength, SKIP_LENGTH_ADDRESS_AND_PARAM)
             }
-        }
-        else {
+        } else {
             assembly {
                 mstore(0, INVALID_DEX)
-                revert (0, 0x4)
+                revert(0, 0x4)
             }
-         }
+        }
 
         ////////////////////////////////////////////////////
         // We recursively re-call this function until the
@@ -387,7 +367,9 @@ abstract contract BaseSwapper is
             // always this contract
             ////////////////////////////////////////////////////
             return swapExactIn(amountIn, dexId, address(this), receiver, pathOffset, pathLength);
-        } else return amountIn;
+        } else {
+            return amountIn;
+        }
     }
 
     /**
@@ -405,16 +387,20 @@ abstract contract BaseSwapper is
         address receiver, // last step
         uint256 pathOffset,
         uint256 pathLength
-    ) internal returns (uint256 amountOut) {
+    )
+        internal
+        returns (uint256 amountOut)
+    {
         address currentReceiver;
         assembly {
             switch lt(pathLength, MAX_SINGLE_LENGTH_UNOSWAP_HIGH)
-            case 1 { currentReceiver := receiver}
+            case 1 { currentReceiver := receiver }
             default {
                 dexId := and(calldataload(add(pathOffset, 34)), UINT8_MASK) // SKIP_LENGTH_UNOSWAP - 10
-                switch gt(dexId, 99) 
+                switch gt(dexId, 99)
                 case 1 {
-                    currentReceiver := shr(
+                    currentReceiver :=
+                        shr(
                             96,
                             calldataload(
                                 add(
@@ -424,16 +410,10 @@ abstract contract BaseSwapper is
                             ) // poolAddress
                         )
                 }
-                default {
-                    currentReceiver := address()
-                }
+                default { currentReceiver := address() }
             }
         }
-        amountIn = swapUniV2ExactInFOT(
-            amountIn,
-            currentReceiver,
-            pathOffset
-        );
+        amountIn = swapUniV2ExactInFOT(amountIn, currentReceiver, pathOffset);
         assembly {
             pathOffset := add(pathOffset, SKIP_LENGTH_UNOSWAP)
             pathLength := sub(pathLength, SKIP_LENGTH_UNOSWAP)
@@ -444,6 +424,8 @@ abstract contract BaseSwapper is
         ////////////////////////////////////////////////////
         if (pathLength > 30) {
             return swapExactIn(amountIn, dexId, address(this), receiver, pathOffset, pathLength);
-        } else return amountIn;
+        } else {
+            return amountIn;
+        }
     }
 }

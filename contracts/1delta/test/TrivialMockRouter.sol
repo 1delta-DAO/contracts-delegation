@@ -4,24 +4,24 @@ pragma solidity >=0.8.0;
 import "./ERC20.sol";
 
 contract TrivialMockRouter {
-    uint payoutAmount;
+    uint256 payoutAmount;
     address token;
 
     constructor(address payoutToken) {
         token = payoutToken;
     }
 
-    function setPayout(uint amount) external {
+    function setPayout(uint256 amount) external {
         payoutAmount = amount;
     }
 
-    function swap(address assetIn, uint amountIn, address to) public {
+    function swap(address assetIn, uint256 amountIn, address to) public {
         ERC20(assetIn).transferFrom(msg.sender, address(this), amountIn);
         if (token != address(0)) ERC20(token).transfer(to, payoutAmount);
         else payable(to).call{value: payoutAmount}("");
     }
 
-    function encodeSwap(address assetIn, uint amountIn, address to) public pure returns (bytes memory data) {
+    function encodeSwap(address assetIn, uint256 amountIn, address to) public pure returns (bytes memory data) {
         data = abi.encodeWithSelector(this.swap.selector, assetIn, amountIn, to);
     }
 

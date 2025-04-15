@@ -93,19 +93,19 @@ contract StratumCurveTest is DeltaSetup {
         assertApproxEqAbs(balanceIn, amountIn, 0);
     }
 
-    /** STRATUM PATH BUILDERS */
-
+    /**
+     * STRATUM PATH BUILDERS
+     */
     function getSpotExactInSingleStratumEth(address tokenIn, address tokenOut) internal pure returns (bytes memory data) {
-        return
-            abi.encodePacked(
-                tokenIn,
-                uint8(0),
-                DexMappingsMantle.STRATUM_CURVE,
-                STRATUM_ETH_POOL,
-                abi.encodePacked(getTokenIdEth(tokenIn), getTokenIdEth(tokenOut)),
-                SWAP_ID,
-                tokenOut
-            );
+        return abi.encodePacked(
+            tokenIn,
+            uint8(0),
+            DexMappingsMantle.STRATUM_CURVE,
+            STRATUM_ETH_POOL,
+            abi.encodePacked(getTokenIdEth(tokenIn), getTokenIdEth(tokenOut)),
+            SWAP_ID,
+            tokenOut
+        );
     }
 
     function getTokenIdEth(address t) internal pure returns (uint8) {
@@ -115,31 +115,23 @@ contract StratumCurveTest is DeltaSetup {
 
     function getSpotExactInSingleStratumUsd(address tokenIn, address tokenOut) internal pure returns (bytes memory data) {
         uint8 poolId = DexMappingsMantle.STRATUM_CURVE;
-        return
-            abi.encodePacked(
-                tokenIn,
-                uint8(0),
-                poolId,
-                STRATUM_3POOL_2,
-                abi.encodePacked(getTokenIdUSD(tokenIn), getTokenIdUSD(tokenOut)),
-                SWAP_ID,
-                tokenOut,
-                uint8(99),
-                uint8(0)
-            );
+        return abi.encodePacked(
+            tokenIn,
+            uint8(0),
+            poolId,
+            STRATUM_3POOL_2,
+            abi.encodePacked(getTokenIdUSD(tokenIn), getTokenIdUSD(tokenOut)),
+            SWAP_ID,
+            tokenOut,
+            uint8(99),
+            uint8(0)
+        );
     }
 
     function getQuoteExactInSingleStratumEth(address tokenIn, address tokenOut) internal pure returns (bytes memory data) {
         uint8 poolId = DexMappingsMantle.STRATUM_CURVE;
         return
-            abi.encodePacked(
-                tokenIn,
-                poolId,
-                STRATUM_ETH_POOL,
-                abi.encodePacked(getTokenIdEth(tokenIn), getTokenIdEth(tokenOut)),
-                SWAP_ID,
-                tokenOut
-            );
+            abi.encodePacked(tokenIn, poolId, STRATUM_ETH_POOL, abi.encodePacked(getTokenIdEth(tokenIn), getTokenIdEth(tokenOut)), SWAP_ID, tokenOut);
     }
 
     function getTokenIdUSD(address t) internal pure returns (uint8) {

@@ -25,7 +25,10 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
         uint256,
         address initiator,
         bytes calldata params // user params
-    ) external returns (bool) {
+    )
+        external
+        returns (bool)
+    {
         address origCaller;
         uint256 calldataLength;
         assembly {

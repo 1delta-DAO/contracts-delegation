@@ -2,10 +2,6 @@
 
 pragma solidity 0.8.28;
 
-/******************************************************************************\
-* Author: Achthar | 1delta 
-/******************************************************************************/
-
 import {ERC20Selectors} from "../../../shared/selectors/ERC20Selectors.sol";
 import {Masks} from "../../../shared/masks/Masks.sol";
 
@@ -27,7 +23,10 @@ abstract contract GMXSwapper is ERC20Selectors, Masks {
         address receiver, //
         address callerAddress,
         uint256 currentOffset
-    ) internal returns (uint256 amountOut, uint256) {
+    )
+        internal
+        returns (uint256 amountOut, uint256)
+    {
         assembly {
             let ptr := mload(0x40)
 

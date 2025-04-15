@@ -13,7 +13,11 @@ abstract contract V2TypeQuoter {
         uint256 sellAmount,
         uint256 feeDenom,
         uint256 _pId // to identify the fee
-    ) internal view returns (uint256 buyAmount) {
+    )
+        internal
+        view
+        returns (uint256 buyAmount)
+    {
         assembly {
             // Compute the buy amount based on the pair reserves.
             {
@@ -29,9 +33,7 @@ abstract contract V2TypeQuoter {
                         revert(0, returndatasize())
                     }
                     // Revert if the pair contract does not return at least two words.
-                    if lt(returndatasize(), 0x40) {
-                        revert(0, 0)
-                    }
+                    if lt(returndatasize(), 0x40) { revert(0, 0) }
 
                     let sellReserve
                     let buyReserve
@@ -89,7 +91,11 @@ abstract contract V2TypeQuoter {
         uint256 buyAmount,
         uint256 feeDenom,
         uint256 pId // poolId
-    ) internal view returns (uint256 x) {
+    )
+        internal
+        view
+        returns (uint256 x)
+    {
         assembly {
             let ptr := mload(0x40)
             // Call pair.getReserves(), store the results at `screp space`
@@ -99,9 +105,7 @@ abstract contract V2TypeQuoter {
                 revert(0, returndatasize())
             }
             // Revert if the pair contract does not return at least two words.
-            if lt(returndatasize(), 0x40) {
-                revert(0, 0)
-            }
+            if lt(returndatasize(), 0x40) { revert(0, 0) }
 
             // Compute the sell amount based on the pair reserves.
             {
@@ -120,23 +124,22 @@ abstract contract V2TypeQuoter {
                         buyReserve := mload(0x20)
                     }
                     // we ensure that the pair has enough funds
-                    if gt(buyAmount, buyReserve) {
-                        revert(0, 0)
-                    }
+                    if gt(buyAmount, buyReserve) { revert(0, 0) }
 
                     // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
                     // x = (reserveIn * amountOut * 10000) /
                     //     ((reserveOut - amountOut) * feeAm) + 1;
-                    x := add(
-                        div(
-                            mul(mul(sellReserve, buyAmount), 10000),
-                            mul(
-                                sub(buyReserve, buyAmount),
-                                feeDenom // adjust for Velo fee
-                            )
-                        ),
-                        1
-                    )
+                    x :=
+                        add(
+                            div(
+                                mul(mul(sellReserve, buyAmount), 10000),
+                                mul(
+                                    sub(buyReserve, buyAmount),
+                                    feeDenom // adjust for Velo fee
+                                )
+                            ),
+                            1
+                        )
                 }
                 // covers solidly forks for stable pools (>=135)
                 default {
@@ -164,9 +167,7 @@ abstract contract V2TypeQuoter {
                             revert(0, returndatasize())
                         }
                         // Revert if the pair contract does not return at least two words.
-                        if lt(returndatasize(), 0x40) {
-                            revert(0, 0)
-                        }
+                        if lt(returndatasize(), 0x40) { revert(0, 0) }
                         // assign reserves to in/out
                         let _reserveOutScaled
                         switch lt(tokenIn, tokenOut)
@@ -174,101 +175,90 @@ abstract contract V2TypeQuoter {
                             _reserveInScaled := div(mul(mload(0x0), SCALE_18), _decimalsIn)
                             let buyReserve := mload(0x20)
                             // we ensure that the pair has enough funds
-                            if gt(buyAmount, buyReserve) {
-                                revert(0, 0)
-                            }
+                            if gt(buyAmount, buyReserve) { revert(0, 0) }
                             _reserveOutScaled := div(mul(buyReserve, SCALE_18), _decimalsOut_xy)
                         }
                         default {
                             _reserveInScaled := div(mul(mload(0x20), SCALE_18), _decimalsIn)
                             let buyReserve := mload(0x0)
                             // we ensure that the pair has enough funds
-                            if gt(buyAmount, buyReserve) {
-                                revert(0, 0)
-                            }
+                            if gt(buyAmount, buyReserve) { revert(0, 0) }
                             _reserveOutScaled := div(mul(buyReserve, SCALE_18), _decimalsOut_xy)
                         }
                         y0 := sub(_reserveOutScaled, div(mul(buyAmount, SCALE_18), _decimalsOut_xy))
                         x := _reserveInScaled
                         // get xy
-                        _decimalsOut_xy := div(
-                            mul(
-                                div(mul(_reserveInScaled, _reserveOutScaled), SCALE_18),
-                                add(
-                                    div(mul(_reserveInScaled, _reserveInScaled), SCALE_18), //
-                                    div(mul(_reserveOutScaled, _reserveOutScaled), SCALE_18)
-                                )
-                            ),
-                            SCALE_18
-                        )
+                        _decimalsOut_xy :=
+                            div(
+                                mul(
+                                    div(mul(_reserveInScaled, _reserveOutScaled), SCALE_18),
+                                    add(
+                                        div(mul(_reserveInScaled, _reserveInScaled), SCALE_18), //
+                                        div(mul(_reserveOutScaled, _reserveOutScaled), SCALE_18)
+                                    )
+                                ),
+                                SCALE_18
+                            )
                     }
                     // for-loop for approximation
                     let i := 0
-                    for {
-
-                    } lt(i, 255) {
-
-                    } {
+                    for {} lt(i, 255) {} {
                         let x_prev := x
-                        let k := add(
-                            div(mul(x, div(mul(div(mul(y0, y0), SCALE_18), y0), SCALE_18)), SCALE_18),
-                            div(mul(y0, div(mul(div(mul(x, x), SCALE_18), x), SCALE_18)), SCALE_18)
-                        )
+                        let k :=
+                            add(
+                                div(mul(x, div(mul(div(mul(y0, y0), SCALE_18), y0), SCALE_18)), SCALE_18),
+                                div(mul(y0, div(mul(div(mul(x, x), SCALE_18), x), SCALE_18)), SCALE_18)
+                            )
                         switch lt(k, _decimalsOut_xy)
                         case 1 {
-                            x := add(
-                                x,
-                                div(
-                                    mul(sub(_decimalsOut_xy, k), SCALE_18),
-                                    add(
-                                        div(mul(mul(3, y0), div(mul(x, x), SCALE_18)), SCALE_18),
-                                        div(
-                                            mul(div(mul(y0, y0), SCALE_18), y0), //
-                                            SCALE_18
+                            x :=
+                                add(
+                                    x,
+                                    div(
+                                        mul(sub(_decimalsOut_xy, k), SCALE_18),
+                                        add(
+                                            div(mul(mul(3, y0), div(mul(x, x), SCALE_18)), SCALE_18),
+                                            div(
+                                                mul(div(mul(y0, y0), SCALE_18), y0), //
+                                                SCALE_18
+                                            )
                                         )
                                     )
                                 )
-                            )
                         }
                         default {
-                            x := sub(
-                                x,
-                                div(
-                                    mul(sub(k, _decimalsOut_xy), SCALE_18),
-                                    add(
-                                        div(
-                                            mul(mul(3, y0), div(mul(x, x), SCALE_18)), //
-                                            SCALE_18
-                                        ),
-                                        div(mul(div(mul(y0, y0), SCALE_18), y0), SCALE_18)
+                            x :=
+                                sub(
+                                    x,
+                                    div(
+                                        mul(sub(k, _decimalsOut_xy), SCALE_18),
+                                        add(
+                                            div(
+                                                mul(mul(3, y0), div(mul(x, x), SCALE_18)), //
+                                                SCALE_18
+                                            ),
+                                            div(mul(div(mul(y0, y0), SCALE_18), y0), SCALE_18)
+                                        )
                                     )
                                 )
-                            )
                         }
                         switch gt(x, x_prev)
-                        case 1 {
-                            if lt(sub(x, x_prev), 2) {
-                                break
-                            }
-                        }
-                        default {
-                            if lt(sub(x_prev, x), 2) {
-                                break
-                            }
-                        }
+                        case 1 { if lt(sub(x, x_prev), 2) { break } }
+                        default { if lt(sub(x_prev, x), 2) { break } }
                         i := add(i, 1)
                     }
                     // calculate and adjust the result (reserveInNew - reserveIn) * 10k / (10k - fee)
-                    x := add(
-                        div(
+                    x :=
+                        add(
                             div(
-                                mul(mul(sub(x, _reserveInScaled), _decimalsIn), 10000),
-                                feeDenom // 10000 - fee
+                                div(
+                                    mul(mul(sub(x, _reserveInScaled), _decimalsIn), 10000),
+                                    feeDenom // 10000 - fee
+                                ),
+                                SCALE_18
                             ),
-                            SCALE_18
-                        ),
-                        1 // rounding up
-                    )
+                            1 // rounding up
+                        )
                 }
             }
         }

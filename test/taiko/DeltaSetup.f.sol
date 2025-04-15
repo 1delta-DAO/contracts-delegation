@@ -60,8 +60,9 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
     mapping(address => mapping(uint16 => address)) internal collateralTokens;
     mapping(address => mapping(uint16 => address)) internal debtTokens;
 
-    /** SELECTOR GETTERS */
-
+    /**
+     * SELECTOR GETTERS
+     */
     function managementSelectors() internal pure returns (bytes4[] memory selectors) {
         selectors = new bytes4[](13);
         // setters
@@ -90,19 +91,25 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
 
     function flashAggregatorSelectors() internal pure returns (bytes4[] memory selectors) {
         selectors = new bytes4[](26);
-        /** margin */
+        /**
+         * margin
+         */
         selectors[0] = IFlashAggregator.flashSwapExactIn.selector;
         selectors[1] = IFlashAggregator.flashSwapExactOut.selector;
         selectors[2] = IFlashAggregator.flashSwapAllIn.selector;
         selectors[3] = IFlashAggregator.flashSwapAllOut.selector;
-        /** spot */
+        /**
+         * spot
+         */
         selectors[4] = IFlashAggregator.swapExactOutSpot.selector;
         selectors[5] = IFlashAggregator.swapExactOutSpotSelf.selector;
         selectors[6] = IFlashAggregator.swapExactInSpot.selector;
         selectors[7] = IFlashAggregator.swapAllOutSpot.selector;
         selectors[8] = IFlashAggregator.swapAllOutSpotSelf.selector;
         selectors[9] = IFlashAggregator.swapAllInSpot.selector;
-        /** callbacks */
+        /**
+         * callbacks
+         */
         selectors[10] = IFlashAggregator.fusionXV3SwapCallback.selector;
         selectors[11] = IFlashAggregator.agniSwapCallback.selector;
         selectors[12] = IFlashAggregator.algebraSwapCallback.selector;
@@ -123,8 +130,9 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
         return selectors;
     }
 
-    /** DEPLOY PROZY AND MODULES */
-
+    /**
+     * DEPLOY PROZY AND MODULES
+     */
     function deployDelta() internal virtual {
         ConfigModule _config = new ConfigModule();
         brokerProxyAddress = address(new DeltaBrokerProxyGen2(address(this), address(_config)));
@@ -172,8 +180,9 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
         management = IManagement(brokerProxyAddress);
     }
 
-    /** ADD AND APPROVE LENDER TOKENS */
-
+    /**
+     * ADD AND APPROVE LENDER TOKENS
+     */
     function initializeDeltaBase() internal virtual {
         testQuoter = new PoolGetter();
         quoter = new QuoterTaiko();
@@ -182,11 +191,7 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
     function initializeDeltaHana() internal virtual {
         // hana
         management.addGeneralLenderTokens(
-            TokensTaiko.USDC,
-            HanaTaikoAssets.USDC_A_TOKEN,
-            HanaTaikoAssets.USDC_V_TOKEN,
-            HanaTaikoAssets.USDC_S_TOKEN,
-            LenderMappingsTaiko.HANA_ID
+            TokensTaiko.USDC, HanaTaikoAssets.USDC_A_TOKEN, HanaTaikoAssets.USDC_V_TOKEN, HanaTaikoAssets.USDC_S_TOKEN, LenderMappingsTaiko.HANA_ID
         );
         management.addGeneralLenderTokens(
             TokensTaiko.TAIKO,
@@ -196,11 +201,7 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
             LenderMappingsTaiko.HANA_ID
         );
         management.addGeneralLenderTokens(
-            TokensTaiko.WETH,
-            HanaTaikoAssets.WETH_A_TOKEN,
-            HanaTaikoAssets.WETH_V_TOKEN,
-            HanaTaikoAssets.WETH_S_TOKEN,
-            LenderMappingsTaiko.HANA_ID
+            TokensTaiko.WETH, HanaTaikoAssets.WETH_A_TOKEN, HanaTaikoAssets.WETH_V_TOKEN, HanaTaikoAssets.WETH_S_TOKEN, LenderMappingsTaiko.HANA_ID
         );
 
         collateralTokens[TokensTaiko.USDC][LenderMappingsTaiko.HANA_ID] = HanaTaikoAssets.USDC_A_TOKEN;
@@ -351,8 +352,9 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
         initializeDeltaBase();
     }
 
-    /** DEPOSIT AND OPEN TO SPIN UP POSITIONS */
-
+    /**
+     * DEPOSIT AND OPEN TO SPIN UP POSITIONS
+     */
     function execDeposit(address user, address asset, uint256 depositAmount, uint16 lenderId) internal {
         deal(asset, user, depositAmount);
 
@@ -410,7 +412,9 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
         uint256 checkAmount,
         bytes memory path, //
         uint16 lenderId
-    ) internal {
+    )
+        internal
+    {
         address debtAsset = debtTokens[borrowAsset][lenderId];
         deal(asset, user, depositAmount);
 
@@ -449,7 +453,9 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
         uint256 checkAmount,
         bytes memory path, //
         uint16 lenderId
-    ) internal {
+    )
+        internal
+    {
         address debtAsset = debtTokens[borrowAsset][lenderId];
         deal(asset, user, depositAmount);
 
@@ -479,15 +485,18 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
     }
 
-    /** HELPER FUNCTIONS */
+    /**
+     * HELPER FUNCTIONS
+     */
 
-    /** OPEN */
-
+    /**
+     * OPEN
+     */
     function getOpenExactInSingle(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
         uint16 fee = DEX_FEE_LOW;
         uint8 poolId = DexMappingsTaiko.UNI_V3;
         address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
-        (uint8 actionId, , uint8 endId) = getOpenExactInFlags();
+        (uint8 actionId,, uint8 endId) = getOpenExactInFlags();
         return abi.encodePacked(tokenIn, actionId, poolId, pool, fee, tokenOut, lenderId, endId);
     }
 
@@ -495,7 +504,7 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
         uint16 fee = uint16(DEX_FEE_LOW_HIGH);
         uint8 poolId = DexMappingsTaiko.IZUMI;
         address pool = testQuoter.getiZiPool(tokenIn, tokenOut, fee);
-        (uint8 actionId, , uint8 endId) = getOpenExactInFlags();
+        (uint8 actionId,, uint8 endId) = getOpenExactInFlags();
         return abi.encodePacked(tokenIn, actionId, poolId, pool, fee, tokenOut, lenderId, endId);
     }
 
@@ -517,7 +526,7 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
         uint16 fee = DEX_FEE_LOW;
         uint8 poolId = DexMappingsTaiko.UNI_V3;
         address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
-        (uint8 actionId, , uint8 endId) = getOpenExactOutFlags();
+        (uint8 actionId,, uint8 endId) = getOpenExactOutFlags();
         return abi.encodePacked(tokenOut, actionId, poolId, pool, fee, tokenIn, lenderId, endId);
     }
 
@@ -545,13 +554,14 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
         return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenIn, lenderId, endId);
     }
 
-    /** CLOSE */
-
+    /**
+     * CLOSE
+     */
     function getCloseExactOutSingle(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
         uint16 fee = DEX_FEE_LOW;
         uint8 poolId = DexMappingsTaiko.UNI_V3;
         address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
-        (uint8 actionId, , uint8 endId) = getCloseExactOutFlags();
+        (uint8 actionId,, uint8 endId) = getCloseExactOutFlags();
         return abi.encodePacked(tokenOut, actionId, poolId, pool, fee, tokenIn, lenderId, endId);
     }
 
@@ -559,7 +569,7 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
         uint16 fee = DEX_FEE_LOW;
         uint8 poolId = DexMappingsTaiko.UNI_V3;
         address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
-        (uint8 actionId, , uint8 endId) = getCloseExactInFlags();
+        (uint8 actionId,, uint8 endId) = getCloseExactInFlags();
         return abi.encodePacked(tokenIn, actionId, poolId, pool, fee, tokenOut, lenderId, endId);
     }
 
@@ -587,13 +597,14 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
         return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenIn, lenderId, endId);
     }
 
-    /** COLLATERAL SWAP */
-
+    /**
+     * COLLATERAL SWAP
+     */
     function getCollateralSwapExactInSingle(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
         uint16 fee = DEX_FEE_LOW;
         uint8 poolId = DexMappingsTaiko.UNI_V3;
         address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
-        (uint8 actionId, , uint8 endId) = getCollateralSwapExactInFlags();
+        (uint8 actionId,, uint8 endId) = getCollateralSwapExactInFlags();
         return abi.encodePacked(tokenIn, actionId, poolId, pool, fee, tokenOut, lenderId, endId);
     }
 
@@ -601,7 +612,7 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
         uint16 fee = DEX_FEE_LOW;
         uint8 poolId = DexMappingsTaiko.UNI_V3;
         address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
-        (uint8 actionId, , uint8 endId) = getCollateralSwapExactOutFlags();
+        (uint8 actionId,, uint8 endId) = getCollateralSwapExactOutFlags();
         return abi.encodePacked(tokenOut, actionId, poolId, pool, fee, tokenIn, lenderId, endId);
     }
 
@@ -629,13 +640,14 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
         return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenIn, lenderId, endId);
     }
 
-    /** DEBT SWAP */
-
+    /**
+     * DEBT SWAP
+     */
     function getDebtSwapExactInSingle(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
         uint16 fee = uint16(DEX_FEE_LOW_MEDIUM);
         uint8 poolId = DexMappingsTaiko.UNI_V3;
         address pool = testQuoter.v3TypePool(tokenOut, tokenIn, fee, poolId);
-        (uint8 actionId, , uint8 endId) = getDebtSwapExactInFlags();
+        (uint8 actionId,, uint8 endId) = getDebtSwapExactInFlags();
         return abi.encodePacked(tokenIn, actionId, poolId, pool, fee, tokenOut, lenderId, endId);
     }
 
@@ -643,7 +655,7 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
         uint16 fee = uint16(DEX_FEE_LOW_MEDIUM);
         uint8 poolId = DexMappingsTaiko.UNI_V3;
         address pool = testQuoter.v3TypePool(tokenOut, tokenIn, fee, poolId);
-        (uint8 actionId, , uint8 endId) = getDebtSwapExactOutFlags();
+        (uint8 actionId,, uint8 endId) = getDebtSwapExactOutFlags();
         return abi.encodePacked(tokenOut, actionId, poolId, pool, fee, tokenIn, lenderId, endId);
     }
 
@@ -664,7 +676,11 @@ contract DeltaSetup is AddressesTaiko, ComposerUtils, Script, Test {
         uint256 swapAmount,
         uint256 checkAmount,
         uint16 lenderId
-    ) internal view returns (TestParamsOpen memory p) {
+    )
+        internal
+        view
+        returns (TestParamsOpen memory p)
+    {
         p = TestParamsOpen(
             borrowAsset, //
             collateralAsset,

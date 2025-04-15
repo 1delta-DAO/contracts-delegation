@@ -38,7 +38,9 @@ contract MorphoFlashLoans is ERC20Selectors, Masks, DeltaErrors {
             // morpho should be the primary choice
             let ptr := mload(0x40)
 
-            /** Prepare call */
+            /**
+             * Prepare call
+             */
 
             // flashLoan(...)
             mstore(ptr, 0xe0232b4200000000000000000000000000000000000000000000000000000000)

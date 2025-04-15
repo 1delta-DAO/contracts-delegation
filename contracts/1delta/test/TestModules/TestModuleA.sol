@@ -6,7 +6,7 @@ import "hardhat/console.sol";
 contract TestModuleA {
     event TestEvent(address something);
 
-    function testAFunc1(uint a) external {
+    function testAFunc1(uint256 a) external {
         console.log("FuncA1");
     }
 
@@ -51,12 +51,8 @@ contract TestModuleA {
     function g(uint256[] calldata x, uint256 index) external returns (uint256 val) {
         assembly {
             switch lt(val, x.length)
-            case 0 {
-                val := 0xFF
-            }
-            default {
-                val := calldataload(add(x.offset, mul(index, 32)))
-            }
+            case 0 { val := 0xFF }
+            default { val := calldataload(add(x.offset, mul(index, 32))) }
         }
     }
 

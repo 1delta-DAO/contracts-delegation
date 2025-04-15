@@ -19,7 +19,7 @@ abstract contract DodoV2Quoter is Masks {
     function _getDodoV2AmountOut(uint256 sellAmount, uint256 currentOffset) internal view returns (uint256 amountOut, uint256 newOffset) {
         address pair;
         uint256 sellQuote;
-        uint clLength;
+        uint256 clLength;
         assembly {
             let dodoData := calldataload(currentOffset)
             clLength := and(UINT16_MASK, shr(56, dodoData))
@@ -30,12 +30,8 @@ abstract contract DodoV2Quoter is Masks {
         amountOut = _getDodoV2AmountOut(pair, sellQuote, sellAmount);
         assembly {
             switch lt(clLength, 3)
-            case 1 {
-                newOffset := add(25, currentOffset)
-            }
-            default {
-                newOffset := add(add(25, currentOffset), clLength)
-            }
+            case 1 { newOffset := add(25, currentOffset) }
+            default { newOffset := add(add(25, currentOffset), clLength) }
         }
     }
 

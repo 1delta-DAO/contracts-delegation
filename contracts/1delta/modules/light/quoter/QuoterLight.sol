@@ -22,14 +22,17 @@ contract QuoterLight is BalancerV3Quoter, V4TypeQuoter, V3TypeQuoter, V2TypeQuot
             tokenIn := shr(96, dataStart)
             currentOffset := add(20, currentOffset)
         }
-        (amountOut, , ) = _quoteSingleSwapSplitOrRoute(amountIn, tokenIn, currentOffset);
+        (amountOut,,) = _quoteSingleSwapSplitOrRoute(amountIn, tokenIn, currentOffset);
     }
 
     function _quoteSingleSwapSplitOrRoute(
         uint256 amountIn,
         address tokenIn,
         uint256 currentOffset
-    ) internal returns (uint256 amountOut, uint256, address nextToken) {
+    )
+        internal
+        returns (uint256 amountOut, uint256, address nextToken)
+    {
         uint256 swapMaxIndex;
         uint256 splitsMaxIndex;
         assembly {
@@ -74,7 +77,10 @@ contract QuoterLight is BalancerV3Quoter, V4TypeQuoter, V3TypeQuoter, V2TypeQuot
         address tokenIn,
         address tokenOut,
         uint256 currentOffset
-    ) internal returns (uint256 amountOut, uint256) {
+    )
+        internal
+        returns (uint256 amountOut, uint256)
+    {
         uint256 dexTypeId;
         assembly {
             dexTypeId := shr(248, calldataload(currentOffset))
@@ -113,7 +119,10 @@ contract QuoterLight is BalancerV3Quoter, V4TypeQuoter, V3TypeQuoter, V2TypeQuot
         uint256 swapMaxIndex,
         address tokenIn,
         uint256 currentOffset
-    ) internal returns (uint256 amount, uint256, address _tokenIn) {
+    )
+        internal
+        returns (uint256 amount, uint256, address _tokenIn)
+    {
         amount = amountIn;
         _tokenIn = tokenIn;
         uint256 i;
@@ -161,7 +170,10 @@ contract QuoterLight is BalancerV3Quoter, V4TypeQuoter, V3TypeQuoter, V2TypeQuot
         uint256 splitsMaxIndex,
         address tokenIn,
         uint256 currentOffset
-    ) internal returns (uint256, uint256, address) {
+    )
+        internal
+        returns (uint256, uint256, address)
+    {
         address nextToken;
         // no splits, single swap
         if (splitsMaxIndex == 0) {
@@ -189,16 +201,17 @@ contract QuoterLight is BalancerV3Quoter, V4TypeQuoter, V3TypeQuoter, V2TypeQuot
                     }
                     default {
                         // splits are uint16s as share of uint16.max
-                        split := div(
-                            mul(
-                                and(
-                                    UINT16_MASK,
-                                    shr(sub(112, mul(i, 16)), splits) // read the uin16 in the splits sequence
+                        split :=
+                            div(
+                                mul(
+                                    and(
+                                        UINT16_MASK,
+                                        shr(sub(112, mul(i, 16)), splits) // read the uin16 in the splits sequence
+                                    ),
+                                    amountIn //
                                 ),
-                                amountIn //
-                            ),
-                            UINT16_MASK //
-                        )
+                                UINT16_MASK //
+                            )
                     }
                     i := add(i, 1)
                 }

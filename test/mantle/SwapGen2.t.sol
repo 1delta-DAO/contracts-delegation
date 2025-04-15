@@ -501,15 +501,14 @@ contract SwapGen2Test is DeltaSetup {
     function getSpotExactInSingleGen2FusionX(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint8 poolId = DexMappingsMantle.FUSION_X_V2;
         address pool = testQuoter.v2TypePairAddress(tokenIn, tokenOut, poolId);
-        return
-            abi.encodePacked(
-                tokenIn,
-                uint8(0),
-                poolId,
-                pool,
-                getV2PairFeeDenom(poolId, pool), //
-                tokenOut
-            );
+        return abi.encodePacked(
+            tokenIn,
+            uint8(0),
+            poolId,
+            pool,
+            getV2PairFeeDenom(poolId, pool), //
+            tokenOut
+        );
     }
 
     function getSpotExactOutSingleGen2(address tokenOut, address tokenIn) internal view returns (bytes memory data) {
@@ -522,29 +521,27 @@ contract SwapGen2Test is DeltaSetup {
     function getSpotExactOutSingleSolidlyGen2(address tokenOut, address tokenIn) internal view returns (bytes memory data) {
         uint8 poolId = DexMappingsMantle.CLEO_V1_STABLE;
         address pool = testQuoter.v2TypePairAddress(tokenIn, tokenOut, poolId);
-        return
-            abi.encodePacked(
-                tokenIn,
-                uint8(0),
-                poolId,
-                pool,
-                getV2PairFeeDenom(poolId, pool), //
-                tokenOut
-            );
+        return abi.encodePacked(
+            tokenIn,
+            uint8(0),
+            poolId,
+            pool,
+            getV2PairFeeDenom(poolId, pool), //
+            tokenOut
+        );
     }
 
     function getSpotExactOutSingleV2Gen2(address tokenOut, address tokenIn) internal view returns (bytes memory data) {
         uint8 poolId = DexMappingsMantle.MERCHANT_MOE;
         address pool = testQuoter.v2TypePairAddress(tokenIn, tokenOut, poolId);
-        return
-            abi.encodePacked(
-                tokenIn,
-                uint8(0),
-                poolId,
-                pool,
-                getV2PairFeeDenom(poolId, pool), //
-                tokenOut
-            );
+        return abi.encodePacked(
+            tokenIn,
+            uint8(0),
+            poolId,
+            pool,
+            getV2PairFeeDenom(poolId, pool), //
+            tokenOut
+        );
     }
 
     function getPathDataV3()
@@ -688,9 +685,13 @@ contract SwapGen2Test is DeltaSetup {
         uint8[] memory actions,
         uint8[] memory pIds,
         uint16[] memory fees
-    ) internal view returns (bytes memory path) {
+    )
+        internal
+        view
+        returns (bytes memory path)
+    {
         path = abi.encodePacked(tokens[0]);
-        for (uint i = 1; i < tokens.length; i++) {
+        for (uint256 i = 1; i < tokens.length; i++) {
             uint8 pId = pIds[i - 1];
             if (pId <= DexMappingsMantle.UNISWAP_V3_MAX_ID) {
                 address pool = testQuoter.v3TypePool(tokens[i - 1], tokens[i], fees[i - 1], pId);
@@ -769,14 +770,13 @@ contract SwapGen2Test is DeltaSetup {
     function getSpotExactInSingleGen2Solidly(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint8 poolId = DexMappingsMantle.CLEO_V1_STABLE;
         address pool = testQuoter.v2TypePairAddress(tokenIn, tokenOut, poolId);
-        return
-            abi.encodePacked(
-                tokenIn,
-                uint8(0),
-                poolId,
-                pool,
-                getV2PairFeeDenom(poolId, pool), //
-                tokenOut
-            );
+        return abi.encodePacked(
+            tokenIn,
+            uint8(0),
+            poolId,
+            pool,
+            getV2PairFeeDenom(poolId, pool), //
+            tokenOut
+        );
     }
 }

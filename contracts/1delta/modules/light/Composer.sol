@@ -21,12 +21,14 @@ contract OneDeltaComposerLight is BaseComposer, FlashLoanCallbacks, SwapCallback
         address callerAddress,
         uint256 currentOffset,
         uint256 calldataLength //
-    ) internal override(BaseComposer, FlashLoanCallbacks, SwapCallbacks) {
-        return
-            BaseComposer._deltaComposeInternal(
-                callerAddress,
-                currentOffset,
-                calldataLength //
-            );
+    )
+        internal
+        override(BaseComposer, FlashLoanCallbacks, SwapCallbacks)
+    {
+        return BaseComposer._deltaComposeInternal(
+            callerAddress,
+            currentOffset,
+            calldataLength //
+        );
     }
 }

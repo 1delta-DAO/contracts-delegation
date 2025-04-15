@@ -53,13 +53,17 @@ contract SwapHopsAndSplitsLightTest is BaseTest {
         uint16[] memory fees,
         uint8[] memory dexIds,
         address receiver
-    ) internal view returns (bytes memory data) {
+    )
+        internal
+        view
+        returns (bytes memory data)
+    {
         printPath(assets);
         data = abi.encodePacked(
             uint8(fees.length - 1), // path max index
             uint8(0) // no splits
         );
-        for (uint i = 0; i < assets.length - 1; i++) {
+        for (uint256 i = 0; i < assets.length - 1; i++) {
             address pool;
             if (dexIds[i] == DexTypeMappings.UNISWAP_V3_ID) {
                 pool = IF(UNI_FACTORY).getPool(assets[i], assets[i + 1], fees[i]);
@@ -71,7 +75,8 @@ contract SwapHopsAndSplitsLightTest is BaseTest {
             if (i == 0) {
                 data = abi.encodePacked(
                     data, //
-                    uint16(0), // atomic
+                    uint16(0),
+                    // atomic
                     assets[i + 1], // nextToken
                     _receiver,
                     dexIds[i],
@@ -83,7 +88,8 @@ contract SwapHopsAndSplitsLightTest is BaseTest {
             } else {
                 data = abi.encodePacked(
                     data, //
-                    uint16(0), // atomic
+                    uint16(0),
+                    // atomic
                     assets[i + 1], // nextToken
                     _receiver,
                     dexIds[i],
@@ -98,7 +104,7 @@ contract SwapHopsAndSplitsLightTest is BaseTest {
 
     function printPath(address[] memory assets) internal view {
         console.log("-----------------------------");
-        for (uint i = 0; i < assets.length; i++) {
+        for (uint256 i = 0; i < assets.length; i++) {
             console.log("          |         ");
             console.log(IERC20All(assets[i]).symbol(), assets[i]);
             if (i < assets.length - 1) console.log("          |         ");
@@ -129,7 +135,11 @@ contract SwapHopsAndSplitsLightTest is BaseTest {
 
     function get_USDC_WETH_MultiPathCalldata(
         address receiver //
-    ) internal view returns (bytes memory data) {
+    )
+        internal
+        view
+        returns (bytes memory data)
+    {
         (
             address[] memory assets, //
             uint16[] memory fees,
@@ -157,7 +167,8 @@ contract SwapHopsAndSplitsLightTest is BaseTest {
         data = abi.encodePacked(
             uint8(ComposerCommands.SWAPS),
             uint128(amount), //
-            uint128(1), //
+            uint128(1),
+            //
             assetIn,
             uint8(1), // swaps max index
             uint8(0) // splits
@@ -196,12 +207,11 @@ contract SwapHopsAndSplitsLightTest is BaseTest {
             fee2,
             uint16(0) // cll length
         ); //
-
         data = abi.encodePacked(
             data,
             get_USDC_WETH_MultiPathCalldata(v2pool) //
-        ); //
-
+        );
+        //
         data = abi.encodePacked(
             data,
             uint16(0), // atomic
@@ -228,7 +238,8 @@ contract SwapHopsAndSplitsLightTest is BaseTest {
         data = abi.encodePacked(
             uint8(ComposerCommands.SWAPS),
             uint128(amount), //
-            uint128(1), //
+            uint128(1),
+            //
             assetIn,
             uint8(1), // 2 hops
             uint8(0) // no splits
@@ -267,12 +278,11 @@ contract SwapHopsAndSplitsLightTest is BaseTest {
             fee2,
             uint16(0) // cll length
         ); //
-
         data = abi.encodePacked(
             data,
             get_USDC_WETH_MultiPathCalldata(address(oneDV2)) //
-        ); //
-
+        );
+        //
         pool = IF(UNI_FACTORY).getPool(assetOut, cbETH, 500);
         data = abi.encodePacked(
             data,
@@ -299,7 +309,7 @@ contract SwapHopsAndSplitsLightTest is BaseTest {
         uint256 amount = 100.0e6;
 
         vm.prank(user);
-        IERC20All(tokenIn).approve(address(oneDV2), type(uint).max);
+        IERC20All(tokenIn).approve(address(oneDV2), type(uint256).max);
 
         uint256 balBefore = IERC20All(tokenOut).balanceOf(user);
         // USDC ----------> WETH
@@ -330,7 +340,7 @@ contract SwapHopsAndSplitsLightTest is BaseTest {
         uint256 amount = 100.0e6;
 
         vm.prank(user);
-        IERC20All(tokenIn).approve(address(oneDV2), type(uint).max);
+        IERC20All(tokenIn).approve(address(oneDV2), type(uint256).max);
 
         uint256 balBefore = IERC20All(tokenOut).balanceOf(user);
         // USDC ----------> WETH

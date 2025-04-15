@@ -2,10 +2,6 @@
 
 pragma solidity 0.8.28;
 
-/******************************************************************************\
-* Author: Achthar | 1delta 
-/******************************************************************************/
-
 import {DodoV2ReferencesBase} from "./DodoV2References.sol";
 import {ValidatorLib} from "./ValidatorLib.sol";
 import {Masks} from "../../../shared/masks/Masks.sol";
@@ -16,7 +12,9 @@ import {ERC20Selectors} from "../../../shared/selectors/ERC20Selectors.sol";
  * @title DodoV2 flah-loan callbacks
  */
 abstract contract DodoV2Callbacks is DodoV2ReferencesBase, ERC20Selectors, Masks, DeltaErrors {
-    /** selector _REGISTRY(address,address,uint256) - a mapping base->quote->index->pool */
+    /**
+     * selector _REGISTRY(address,address,uint256) - a mapping base->quote->index->pool
+     */
     bytes32 private constant REGISTRY = 0xbdeb0a9100000000000000000000000000000000000000000000000000000000;
 
     function _validateAndExecuteDodoCall(address sender, address factory) internal {
@@ -32,7 +30,9 @@ abstract contract DodoV2Callbacks is DodoV2ReferencesBase, ERC20Selectors, Masks
             // caller
             callerAddress := shr(96, calldataload(164))
 
-            /** the tokens are used to validate the callback */
+            /**
+             * the tokens are used to validate the callback
+             */
 
             // base token
             let base := shr(96, calldataload(184))
@@ -94,17 +94,11 @@ abstract contract DodoV2Callbacks is DodoV2ReferencesBase, ERC20Selectors, Masks
         assembly {
             switch selector
             // DVMFlashLoanCall()
-            case 0xeb2021c300000000000000000000000000000000000000000000000000000000 {
-                factoryAddress := DVM_FACTORY
-            }
+            case 0xeb2021c300000000000000000000000000000000000000000000000000000000 { factoryAddress := DVM_FACTORY }
             // DSPFlashLoanCall
-            case 0xd5b9979700000000000000000000000000000000000000000000000000000000 {
-                factoryAddress := DSP_FACTORY
-            }
+            case 0xd5b9979700000000000000000000000000000000000000000000000000000000 { factoryAddress := DSP_FACTORY }
             // DPPFlashLoanCall
-            case 0x7ed1f1dd00000000000000000000000000000000000000000000000000000000 {
-                factoryAddress := DPP_FACTORY
-            }
+            case 0x7ed1f1dd00000000000000000000000000000000000000000000000000000000 { factoryAddress := DPP_FACTORY }
         }
         if (ValidatorLib._hasAddress(factoryAddress)) {
             // since we now know it is dodo,

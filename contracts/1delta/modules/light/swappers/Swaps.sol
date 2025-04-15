@@ -4,10 +4,6 @@ pragma solidity ^0.8.28;
 
 import {BaseSwapper} from "./BaseSwapper.sol";
 
-/******************************************************************************\
-* Author: Achthar | 1delta 
-/******************************************************************************/
-
 // solhint-disable max-line-length
 
 /**
@@ -63,7 +59,7 @@ abstract contract Swaps is BaseSwapper {
                 amountIn := mload(0x0)
             }
         }
-        (amountIn, currentOffset, ) = _singleSwapSplitOrRoute(
+        (amountIn, currentOffset,) = _singleSwapSplitOrRoute(
             amountIn,
             tokenIn,
             callerAddress,

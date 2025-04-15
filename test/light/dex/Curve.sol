@@ -35,7 +35,7 @@ contract CurveLightTest is BaseTest {
     function setUp() public virtual {
         // initialize the chain
         string memory chainName = Chains.BASE;
-        
+
         _init(chainName, forkBlock);
         LBTC = chain.getTokenAddress(Tokens.LBTC);
         WETH = chain.getTokenAddress(Tokens.WETH);
@@ -49,12 +49,13 @@ contract CurveLightTest is BaseTest {
         data = abi.encodePacked(
             uint8(ComposerCommands.SWAPS),
             uint128(amount), //
-            uint128(1), //
+            uint128(1),
+            //
             WETH,
             uint8(0), // swaps max index
             uint8(0) // splits
-            // single split data (no data here)
-            // uint8(0), // swaps max index for inner path
+                // single split data (no data here)
+                // uint8(0), // swaps max index for inner path
         );
         data = abi.encodePacked(
             data,
@@ -73,12 +74,13 @@ contract CurveLightTest is BaseTest {
         data = abi.encodePacked(
             uint8(ComposerCommands.SWAPS),
             uint128(amount), //
-            uint128(1), //
+            uint128(1),
+            //
             cbETH,
             uint8(0), // swaps max index
             uint8(0) // splits
-            // single split data (no data here)
-            // uint8(0), // swaps max index for inner path
+                // single split data (no data here)
+                // uint8(0), // swaps max index for inner path
         );
         data = abi.encodePacked(
             data,
@@ -97,12 +99,13 @@ contract CurveLightTest is BaseTest {
         data = abi.encodePacked(
             uint8(ComposerCommands.SWAPS),
             uint128(amount), //
-            uint128(1), //
+            uint128(1),
+            //
             WETH,
             uint8(0), // swaps max index
             uint8(0) // splits
-            // single split data (no data here)
-            // uint8(0), // swaps max index for inner path
+                // single split data (no data here)
+                // uint8(0), // swaps max index for inner path
         );
         data = abi.encodePacked(
             data,
@@ -126,7 +129,7 @@ contract CurveLightTest is BaseTest {
         deal(tokenIn, user, amount);
 
         vm.prank(user);
-        IERC20All(tokenIn).approve(address(oneDV2), type(uint).max);
+        IERC20All(tokenIn).approve(address(oneDV2), type(uint256).max);
 
         bytes memory swap = curvePoolETHcbETHSwap(
             user,
@@ -151,7 +154,7 @@ contract CurveLightTest is BaseTest {
         deal(tokenIn, user, amount);
 
         vm.prank(user);
-        IERC20All(tokenIn).approve(address(oneDV2), type(uint).max);
+        IERC20All(tokenIn).approve(address(oneDV2), type(uint256).max);
 
         bytes memory swap = curvePoolcbETHETHSwap(
             user,
@@ -175,7 +178,7 @@ contract CurveLightTest is BaseTest {
         deal(tokenIn, user, amount);
 
         vm.prank(user);
-        IERC20All(tokenIn).approve(address(oneDV2), type(uint).max);
+        IERC20All(tokenIn).approve(address(oneDV2), type(uint256).max);
 
         bytes memory swap = curvePoolNGUSDCUSDMSwap(
             user,

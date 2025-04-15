@@ -5,10 +5,6 @@ pragma solidity ^0.8.28;
 import {ERC20Selectors} from "../../shared/selectors/ERC20Selectors.sol";
 import {Masks} from "../../shared/masks/Masks.sol";
 
-/******************************************************************************\
-* Author: Achthar | 1delta 
-/******************************************************************************/
-
 // solhint-disable max-line-length
 
 /**
@@ -70,11 +66,7 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
             if xor(address(), receiver) {
                 switch underlying
                 // native case
-                case 0 {
-                    if iszero(call(gas(), receiver, amount, 0, 0, 0, 0)) {
-                        revert(0, 0)
-                    }
-                }
+                case 0 { if iszero(call(gas(), receiver, amount, 0, 0, 0, 0)) { revert(0, 0) } }
                 // erc20 case
                 default {
                     // 4) TRANSFER TO RECIPIENT
@@ -90,16 +82,17 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                     // Check for ERC20 success. ERC20 tokens should return a boolean,
                     // but some don't. We accept 0-length return data as success, or at
                     // least 32 bytes that starts with a 32-byte boolean true.
-                    success := and(
-                        success, // call itself succeeded
-                        or(
-                            iszero(rdsize), // no return data, or
-                            and(
-                                gt(rdsize, 31), // at least 32 bytes
-                                eq(mload(ptr), 1) // starts with uint256(1)
+                    success :=
+                        and(
+                            success, // call itself succeeded
+                            or(
+                                iszero(rdsize), // no return data, or
+                                and(
+                                    gt(rdsize, 31), // at least 32 bytes
+                                    eq(mload(ptr), 1) // starts with uint256(1)
+                                )
                             )
                         )
-                    )
 
                     if iszero(success) {
                         returndatacopy(ptr, 0, rdsize)
@@ -185,13 +178,14 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
             let refAmount := mload(0x0)
 
             // calculate collateral token amount, rounding up
-            let cTokenTransferAmount := add(
-                div(
-                    mul(amount, 1000000000000000000), // multiply with 1e18
-                    refAmount // divide by rate
-                ),
-                1
-            )
+            let cTokenTransferAmount :=
+                add(
+                    div(
+                        mul(amount, 1000000000000000000), // multiply with 1e18
+                        refAmount // divide by rate
+                    ),
+                    1
+                )
             // FETCH BALANCE
             // selector for balanceOf(address)
             mstore(0x0, ERC20_BALANCE_OF)
@@ -205,9 +199,7 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
             refAmount := mload(0x0)
 
             // floor to the balance
-            if gt(cTokenTransferAmount, refAmount) {
-                cTokenTransferAmount := refAmount
-            }
+            if gt(cTokenTransferAmount, refAmount) { cTokenTransferAmount := refAmount }
 
             // 2) TRANSFER VTOKENS
 
@@ -259,16 +251,17 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                 // Check for ERC20 success. ERC20 tokens should return a boolean,
                 // but some don't. We accept 0-length return data as success, or at
                 // least 32 bytes that starts with a 32-byte boolean true.
-                success := and(
-                    success, // call itself succeeded
-                    or(
-                        iszero(rdsize), // no return data, or
-                        and(
-                            gt(rdsize, 31), // at least 32 bytes
-                            eq(mload(ptr), 1) // starts with uint256(1)
+                success :=
+                    and(
+                        success, // call itself succeeded
+                        or(
+                            iszero(rdsize), // no return data, or
+                            and(
+                                gt(rdsize, 31), // at least 32 bytes
+                                eq(mload(ptr), 1) // starts with uint256(1)
+                            )
                         )
                     )
-                )
 
                 if iszero(success) {
                     returndatacopy(0, 0, rdsize)
@@ -314,9 +307,7 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
 
                 amount := and(UINT120_MASK, amountData)
                 // zero is this balance
-                if iszero(amount) {
-                    amount := selfbalance()
-                }
+                if iszero(amount) { amount := selfbalance() }
 
                 // selector for mint()
                 mstore(0, 0x1249c58b00000000000000000000000000000000000000000000000000000000)
@@ -452,9 +443,7 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                     // load the retrieved balance
                     amount := selfbalance()
                 }
-                case 0xffffffffffffffffffffffffffff {
-                    amount := MAX_UINT256
-                }
+                case 0xffffffffffffffffffffffffffff { amount := MAX_UINT256 }
 
                 // selector for repayBorrowBehalf(address)
                 mstore(0, 0xe597461900000000000000000000000000000000000000000000000000000000)
@@ -498,9 +487,7 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                     // load the retrieved balance
                     amount := mload(0x0)
                 }
-                case 0xffffffffffffffffffffffffffff {
-                    amount := MAX_UINT256
-                }
+                case 0xffffffffffffffffffffffffffff { amount := MAX_UINT256 }
 
                 // selector for repayBorrowBehalf(address,uint256)
                 mstore(ptr, 0x2608f81800000000000000000000000000000000000000000000000000000000)

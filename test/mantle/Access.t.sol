@@ -4,7 +4,6 @@ pragma solidity ^0.8.19;
 import "./DeltaSetup.f.sol";
 
 contract AccessTests is DeltaSetup {
-
     address internal attacker = 0x0c38845C2587e2fb0b7fba1cfB27f260F74066Aa;
 
     function test_mantle_flash_loan_operation_gatekeep() external {
@@ -48,8 +47,8 @@ contract AccessTests is DeltaSetup {
     }
 
     function test_mantle_v2_gatekeep() external {
-        uint amount0 = 21233;
-        uint amount1 = 2112324324432;
+        uint256 amount0 = 21233;
+        uint256 amount1 = 2112324324432;
 
         // some data
         bytes memory data = abi.encodePacked(TokensMantle.WMNT);
@@ -67,7 +66,7 @@ contract AccessTests is DeltaSetup {
             amount0,
             amount1,
             brokerProxyAddress,
-            abi.encodePacked(TokensMantle.aUSD,uint8(0), DexMappingsMantle.CLEO_V1_STABLE, pool, uint16(0), TokensMantle.USDC) // the data here makes the `badPool` check pass
+            abi.encodePacked(TokensMantle.aUSD, uint8(0), DexMappingsMantle.CLEO_V1_STABLE, pool, uint16(0), TokensMantle.USDC) // the data here makes the `badPool` check pass
         );
     }
 }

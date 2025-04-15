@@ -26,7 +26,7 @@ contract Permit2TransferTest is BaseTest, DeltaErrors {
 
     function setUp() public virtual {
         string memory chainName = Chains.BASE;
-        
+
         _init(chainName, forkBlock);
         blockTimestamp = vm.getBlockTimestamp();
         vm.warp(blockTimestamp);
@@ -53,16 +53,10 @@ contract Permit2TransferTest is BaseTest, DeltaErrors {
         uint48 nonce = 0; // First transaction
         uint256 sigDeadline = blockTimestamp + 1 hours;
 
-        bytes memory signature =
-            signPermit2(USDC, uint160(transferAmount), expiration, nonce, address(oneD), sigDeadline);
+        bytes memory signature = signPermit2(USDC, uint160(transferAmount), expiration, nonce, address(oneD), sigDeadline);
 
         IPermit2.PermitSingle memory permitSingle = IPermit2.PermitSingle({
-            details: IPermit2.PermitDetails({
-                token: USDC,
-                amount: uint160(transferAmount),
-                expiration: expiration,
-                nonce: nonce
-            }),
+            details: IPermit2.PermitDetails({token: USDC, amount: uint160(transferAmount), expiration: expiration, nonce: nonce}),
             spender: address(oneD),
             sigDeadline: sigDeadline
         });
@@ -88,7 +82,11 @@ contract Permit2TransferTest is BaseTest, DeltaErrors {
         uint48 nonce,
         address spender,
         uint256 sigDeadline
-    ) internal view returns (bytes memory) {
+    )
+        internal
+        view
+        returns (bytes memory)
+    {
         // Permit2 EIP712Domain
         bytes32 DOMAIN_SEPARATOR = IPermit2(PERMIT2).DOMAIN_SEPARATOR();
 
@@ -111,16 +109,14 @@ contract Permit2TransferTest is BaseTest, DeltaErrors {
 
     function hash(IPermit2.PermitSingle memory permitSingle) internal pure returns (bytes32) {
         bytes32 permitHash = _hashPermitDetails(permitSingle.details);
-        return
-            keccak256(abi.encode(_PERMIT_SINGLE_TYPEHASH, permitHash, permitSingle.spender, permitSingle.sigDeadline));
+        return keccak256(abi.encode(_PERMIT_SINGLE_TYPEHASH, permitHash, permitSingle.spender, permitSingle.sigDeadline));
     }
 
     function _hashPermitDetails(IPermit2.PermitDetails memory details) private pure returns (bytes32) {
         return keccak256(abi.encode(_PERMIT_DETAILS_TYPEHASH, details));
     }
 
-    bytes32 public constant _PERMIT_DETAILS_TYPEHASH =
-        keccak256("PermitDetails(address token,uint160 amount,uint48 expiration,uint48 nonce)");
+    bytes32 public constant _PERMIT_DETAILS_TYPEHASH = keccak256("PermitDetails(address token,uint160 amount,uint48 expiration,uint48 nonce)");
 
     bytes32 public constant _PERMIT_SINGLE_TYPEHASH = keccak256(
         "PermitSingle(PermitDetails details,address spender,uint256 sigDeadline)PermitDetails(address token,uint160 amount,uint48 expiration,uint48 nonce)"

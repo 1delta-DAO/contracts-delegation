@@ -2,10 +2,6 @@
 
 pragma solidity 0.8.28;
 
-/******************************************************************************\
-* Author: Achthar | 1delta 
-/******************************************************************************/
-
 import {ERC20Selectors} from "../../../shared/selectors/ERC20Selectors.sol";
 import {Masks} from "../../../shared/masks/Masks.sol";
 
@@ -32,7 +28,10 @@ abstract contract BalancerV2Swapper is ERC20Selectors, Masks {
         address receiver,
         address callerAddress,
         uint256 currentOffset //
-    ) internal returns (uint256 amountOut, uint256 balancerData) {
+    )
+        internal
+        returns (uint256 amountOut, uint256 balancerData)
+    {
         assembly {
             // balancer vault plus pay flag
             balancerData := calldataload(add(32, currentOffset))

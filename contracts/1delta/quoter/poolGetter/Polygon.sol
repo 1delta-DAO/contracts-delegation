@@ -15,7 +15,7 @@ contract PoolGetter {
 
     /// @dev Mask of lower 3 bytes.
     uint256 internal constant UINT24_MASK = 0xffffff;
-    
+
     // _FF_ is given as follows: bytes32((uint256(0xff) << 248) | (uint256(uint160(address)) << 88));
 
     bytes32 internal constant SMARDEX_FF_FACTORY = 0xff9A1e1681f6D59Ca051776410465AfAda6384398f0000000000000000000000;
@@ -151,9 +151,7 @@ contract PoolGetter {
                 pool := and(ADDRESS_MASK, keccak256(s, 85))
             }
             // Unsupported
-            default {
-                revert(0, 0)
-            }
+            default { revert(0, 0) }
         }
     }
 
@@ -311,9 +309,7 @@ contract PoolGetter {
 
                 pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
             }
-            default {
-                revert(0, 0)
-            }
+            default { revert(0, 0) }
         }
     }
 }

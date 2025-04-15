@@ -10,7 +10,9 @@ interface IUniswapV4Poolmanager {
 }
 
 abstract contract V4TypeQuoter is QuoterUtils, Masks {
-    /** We need all these selectors for executing a single swap */
+    /**
+     * We need all these selectors for executing a single swap
+     */
     bytes32 private constant SWAP = 0xf3cd914c00000000000000000000000000000000000000000000000000000000;
     bytes32 private constant EXTTLOAD = 0x9bf6645f00000000000000000000000000000000000000000000000000000000;
 
@@ -84,17 +86,15 @@ abstract contract V4TypeQuoter is QuoterUtils, Masks {
             calldataForCallback.length := add(49, clLength)
         }
 
-        try
-            IUniswapV4Poolmanager(manager).unlock(
-                abi.encodePacked(
-                    // add quoite-relevant data
-                    uint128(fromAmount),
-                    tokenIn, //
-                    tokenOut,
-                    calldataForCallback
-                )
+        try IUniswapV4Poolmanager(manager).unlock(
+            abi.encodePacked(
+                // add quoite-relevant data
+                uint128(fromAmount),
+                tokenIn, //
+                tokenOut,
+                calldataForCallback
             )
-        {} catch (bytes memory reason) {
+        ) {} catch (bytes memory reason) {
             return (parseRevertReason(reason), currentOffset);
         }
         revert("Did not revert in V4 CB");
@@ -116,7 +116,9 @@ abstract contract V4TypeQuoter is QuoterUtils, Masks {
         address tokenIn,
         address tokenOut, //
         uint256 currentOffset
-    ) internal {
+    )
+        internal
+    {
         uint256 tempVar;
         // struct PoolKey {
         //     address currency0; 4
@@ -160,7 +162,9 @@ abstract contract V4TypeQuoter is QuoterUtils, Masks {
             // Store swap selector
             mstore(ptr, SWAP)
 
-            /** PoolKey  (2/2) */
+            /**
+             * PoolKey  (2/2)
+             */
 
             // Store fee
             mstore(add(ptr, 68), and(UINT24_MASK, shr(72, pool)))
@@ -168,17 +172,20 @@ abstract contract V4TypeQuoter is QuoterUtils, Masks {
             // Store tickSpacing
             mstore(add(ptr, 100), and(UINT24_MASK, shr(48, pool)))
 
-            pool := shr(
-                96,
-                pool // starts as first param
-            )
+            pool :=
+                shr(
+                    96,
+                    pool // starts as first param
+                )
 
             // Store data offset
             mstore(add(ptr, 260), 0x120)
             // Store data length
             mstore(add(ptr, 292), clLength)
 
-            /** SwapParams */
+            /**
+             * SwapParams
+             */
 
             // Store fromAmount
             mstore(add(ptr, 196), sub(0, fromAmount))
@@ -188,12 +195,15 @@ abstract contract V4TypeQuoter is QuoterUtils, Masks {
             //     calldatacopy(add(ptr, 324), currentOffset, clLength)
             // }
 
-            switch lt(tokenIn, tokenOut) // zeroForOne
+            switch lt(tokenIn, tokenOut)
+            // zeroForOne
             case 1 {
                 // Store zeroForOne
                 mstore(add(ptr, 164), 1)
 
-                /** PoolKey  (1/2) */
+                /**
+                 * PoolKey  (1/2)
+                 */
 
                 // Store ccy0
                 mstore(add(ptr, 4), tokenIn)
@@ -207,7 +217,9 @@ abstract contract V4TypeQuoter is QuoterUtils, Masks {
                 // Store zeroForOne
                 mstore(add(ptr, 164), 0)
 
-                /** PoolKey  (1/2) */
+                /**
+                 * PoolKey  (1/2)
+                 */
 
                 // Store ccy0
                 mstore(add(ptr, 4), tokenOut)
@@ -230,7 +242,6 @@ abstract contract V4TypeQuoter is QuoterUtils, Masks {
              * Load actual deltas from pool manager
              * This is recommended in the docs
              */
-
             mstore(ptr, EXTTLOAD)
             mstore(add(ptr, 4), 0x20) // offset
             mstore(add(ptr, 36), 2) // array length
@@ -254,9 +265,7 @@ abstract contract V4TypeQuoter is QuoterUtils, Masks {
                     ptr,
                     0x80 // output (offset, length, data0, data1)
                 )
-            ) {
-                revert(0, 0)
-            }
+            ) { revert(0, 0) }
 
             mstore(ptr, mload(add(ptr, 0x60)))
             revert(ptr, 32)

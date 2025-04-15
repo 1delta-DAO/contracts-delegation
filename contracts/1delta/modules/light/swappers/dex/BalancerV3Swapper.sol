@@ -2,10 +2,6 @@
 
 pragma solidity 0.8.28;
 
-/******************************************************************************\
-* Author: Achthar | 1delta 
-/******************************************************************************/
-
 // solhint-disable max-line-length
 
 import {ERC20Selectors} from "../../../shared/selectors/ERC20Selectors.sol";
@@ -28,7 +24,9 @@ import {Masks} from "../../../shared/masks/Masks.sol";
  *
  */
 abstract contract BalancerV3Swapper is ERC20Selectors, Masks {
-    /** We need all these selectors for executing a single swap */
+    /**
+     * We need all these selectors for executing a single swap
+     */
     bytes32 private constant SWAP = 0x2bfb780c00000000000000000000000000000000000000000000000000000000;
     /// @notice same selector string name as for UniV4, different params for balancer
     bytes32 private constant SETTLE = 0x15afd40900000000000000000000000000000000000000000000000000000000;
@@ -128,8 +126,9 @@ abstract contract BalancerV3Swapper is ERC20Selectors, Masks {
             fromAmount := mload(add(ptr, 0x20))
             receivedAmount := mload(add(ptr, 0x40))
 
-            /** Pull funds to receiver */
-
+            /**
+             * Pull funds to receiver
+             */
             mstore(ptr, SEND_TO)
             mstore(add(ptr, 4), tokenOut) //
             mstore(add(ptr, 36), receiver)
@@ -141,7 +140,8 @@ abstract contract BalancerV3Swapper is ERC20Selectors, Masks {
                     vault,
                     0x0,
                     ptr, //
-                    100, // selector, offset, length, data
+                    100,
+                    // selector, offset, length, data
                     0x0, // output = empty
                     0x0 // output size = zero
                 )
@@ -196,7 +196,9 @@ abstract contract BalancerV3Swapper is ERC20Selectors, Masks {
                     revert(0, rdsize)
                 }
 
-                /** Settle funds in vault */
+                /**
+                 * Settle funds in vault
+                 */
 
                 // settle amount
                 mstore(ptr, SETTLE)
@@ -208,7 +210,8 @@ abstract contract BalancerV3Swapper is ERC20Selectors, Masks {
                         vault,
                         0x0, // no native
                         ptr, //
-                        68, // selector, offset, length, data
+                        68,
+                        // selector, offset, length, data
                         0x0, // output = empty
                         0x0 // output size = zero
                     )

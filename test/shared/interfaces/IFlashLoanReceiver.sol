@@ -8,14 +8,17 @@ interface IFlashLoanReceiver {
         uint256,
         address initiator,
         bytes calldata params // user params
-    ) external returns (bool);
+    )
+        external
+        returns (bool);
 
     function receiveFlashLoan(
         address[] calldata,
         uint256[] calldata,
         uint256[] calldata,
         bytes calldata params //
-    ) external;
+    )
+        external;
 }
 
 interface IFlashLoanReceiverAaveV2 {
@@ -25,5 +28,7 @@ interface IFlashLoanReceiverAaveV2 {
         uint256[] calldata premiums,
         address initiator,
         bytes calldata params
-    ) external returns (bool);
+    )
+        external
+        returns (bool);
 }

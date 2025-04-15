@@ -14,12 +14,7 @@ abstract contract TokenTransfer {
     /// @param owner The owner of the tokens.
     /// @param to The recipient of the tokens.
     /// @param amount The amount of `token` to transfer.
-    function _transferERC20TokensFrom(
-        address token,
-        address owner,
-        address to,
-        uint256 amount
-    ) internal {
+    function _transferERC20TokensFrom(address token, address owner, address to, uint256 amount) internal {
         assembly {
             let ptr := mload(0x40) // free memory pointer
 
@@ -36,16 +31,17 @@ abstract contract TokenTransfer {
             // Check for ERC20 success. ERC20 tokens should return a boolean,
             // but some don't. We accept 0-length return data as success, or at
             // least 32 bytes that starts with a 32-byte boolean true.
-            success := and(
-                success, // call itself succeeded
-                or(
-                    iszero(rdsize), // no return data, or
-                    and(
-                        gt(rdsize, 31), // at least 32 bytes
-                        eq(mload(ptr), 1) // starts with uint256(1)
+            success :=
+                and(
+                    success, // call itself succeeded
+                    or(
+                        iszero(rdsize), // no return data, or
+                        and(
+                            gt(rdsize, 31), // at least 32 bytes
+                            eq(mload(ptr), 1) // starts with uint256(1)
+                        )
                     )
                 )
-            )
 
             if iszero(success) {
                 returndatacopy(ptr, 0, rdsize)
@@ -58,11 +54,7 @@ abstract contract TokenTransfer {
     /// @param token The token to spend.
     /// @param to The recipient of the tokens.
     /// @param amount The amount of `token` to transfer.
-    function _transferERC20Tokens(
-        address token,
-        address to,
-        uint256 amount
-    ) internal {
+    function _transferERC20Tokens(address token, address to, uint256 amount) internal {
         assembly {
             let ptr := mload(0x40) // free memory pointer
 
@@ -78,16 +70,17 @@ abstract contract TokenTransfer {
             // Check for ERC20 success. ERC20 tokens should return a boolean,
             // but some don't. We accept 0-length return data as success, or at
             // least 32 bytes that starts with a 32-byte boolean true.
-            success := and(
-                success, // call itself succeeded
-                or(
-                    iszero(rdsize), // no return data, or
-                    and(
-                        gt(rdsize, 31), // at least 32 bytes
-                        eq(mload(ptr), 1) // starts with uint256(1)
+            success :=
+                and(
+                    success, // call itself succeeded
+                    or(
+                        iszero(rdsize), // no return data, or
+                        and(
+                            gt(rdsize, 31), // at least 32 bytes
+                            eq(mload(ptr), 1) // starts with uint256(1)
+                        )
                     )
                 )
-            )
 
             if iszero(success) {
                 returndatacopy(ptr, 0, rdsize)
@@ -110,9 +103,7 @@ abstract contract TokenTransfer {
                         0x0, // output = empty
                         0x0 // output size = zero
                     )
-                ) {
-                    revert(0, 0) // revert when native transfer fails
-                }
+                ) { revert(0, 0) } // revert when native transfer fails
             }
         }
     }
@@ -130,9 +121,7 @@ abstract contract TokenTransfer {
                     0x0, // output = empty
                     0x0 // output size = zero
                 )
-            ) {
-                revert(0, 0) // revert when native transfer fails
-            }
+            ) { revert(0, 0) } // revert when native transfer fails
         }
     }
 
@@ -161,17 +150,11 @@ abstract contract TokenTransfer {
                     0x0, // output = empty
                     0x0 // output size = zero
                 )
-            ) {
-                revert(0, 0) // revert when native transfer fails
-            }
+            ) { revert(0, 0) } // revert when native transfer fails
         }
     }
 
-    function _approve(
-        address token,
-        address to,
-        uint256 value
-    ) internal {
+    function _approve(address token, address to, uint256 value) internal {
         assembly {
             let ptr := mload(0x40) // free memory pointer
 
@@ -198,9 +181,7 @@ abstract contract TokenTransfer {
             // call to underlying
             let success := staticcall(gas(), underlying, 0x0, 0x24, 0x0, 0x20)
             // revert if no success or returndatasize is less than 32 bytes
-            if or(iszero(success), lt(returndatasize(), 0x20)) {
-                revert(0, 0)
-            }
+            if or(iszero(success), lt(returndatasize(), 0x20)) { revert(0, 0) }
             // load entity balance
             entityBalance := mload(0x0)
         }

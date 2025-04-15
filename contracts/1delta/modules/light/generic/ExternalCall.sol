@@ -5,10 +5,6 @@ pragma solidity ^0.8.28;
 import {Masks} from "../../shared/masks/Masks.sol";
 import {DeltaErrors} from "../../shared/errors/Errors.sol";
 
-/******************************************************************************\
-* Author: Achthar | 1delta 
-/******************************************************************************/
-
 // solhint-disable max-line-length
 
 /**
@@ -43,9 +39,7 @@ abstract contract ExternalCall is Masks, DeltaErrors {
             let dataLength := and(UINT16_MASK, shr(128, callValue))
             callValue := shr(144, callValue) // shr will already mask correctly
 
-            if iszero(callValue) {
-                callValue := selfbalance()
-            }
+            if iszero(callValue) { callValue := selfbalance() }
 
             // free memo ptr for populating the tx
             let ptr := mload(0x40)
@@ -70,7 +64,8 @@ abstract contract ExternalCall is Masks, DeltaErrors {
                     target,
                     callValue,
                     ptr, //
-                    add(0x44, dataLength), //selector plus 0x44 (selector, offset, length)
+                    add(0x44, dataLength),
+                    //selector plus 0x44 (selector, offset, length)
                     0x0, // output = empty
                     0x0 // output size = zero
                 )

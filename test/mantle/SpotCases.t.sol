@@ -4,7 +4,11 @@ pragma solidity ^0.8.19;
 import "./DeltaSetup.f.sol";
 
 contract MarginOpenTest is DeltaSetup {
-    function test_margin_mantle_spot_exact_in_izi() external /** address user, uint8 lenderId */ {
+    function test_margin_mantle_spot_exact_in_izi() external 
+    /**
+     * address user, uint8 lenderId
+     */
+    {
         address user = testUser;
         vm.assume(user != address(0));
 
@@ -42,7 +46,11 @@ contract MarginOpenTest is DeltaSetup {
         assertApproxEqAbs(13318419467531051937, balance, 1);
     }
 
-    function test_margin_mantle_spot_exact_out_izi() external /** address user, uint8 lenderId */ {
+    function test_margin_mantle_spot_exact_out_izi() external 
+    /**
+     * address user, uint8 lenderId
+     */
+    {
         address user = testUser;
         vm.assume(user != address(0));
 
@@ -81,7 +89,11 @@ contract MarginOpenTest is DeltaSetup {
         assertApproxEqAbs(amountToSwap, balance, 1e7);
     }
 
-    function test_margin_mantle_spot_exact_out_native_in() external /** address user, uint8 lenderId */ {
+    function test_margin_mantle_spot_exact_out_native_in() external 
+    /**
+     * address user, uint8 lenderId
+     */
+    {
         address user = testUser;
         vm.assume(user != address(0));
 
@@ -128,7 +140,11 @@ contract MarginOpenTest is DeltaSetup {
         assertApproxEqAbs(amountToSwap, balance, 1e7);
     }
 
-    function test_margin_mantle_spot_exact_out_native_in_multi() external /** address user, uint8 lenderId */ {
+    function test_margin_mantle_spot_exact_out_native_in_multi() external 
+    /**
+     * address user, uint8 lenderId
+     */
+    {
         address user = testUser;
         vm.assume(user != address(0));
 
@@ -175,7 +191,11 @@ contract MarginOpenTest is DeltaSetup {
         assertApproxEqAbs(amountToSwap, balance, 1e7);
     }
 
-    function test_margin_mantle_spot_exact_in_izi_reverted() external /** address user, uint8 lenderId */ {
+    function test_margin_mantle_spot_exact_in_izi_reverted() external 
+    /**
+     * address user, uint8 lenderId
+     */
+    {
         address user = testUser;
         vm.assume(user != address(0));
 
@@ -213,7 +233,11 @@ contract MarginOpenTest is DeltaSetup {
         assertApproxEqAbs(29850074, balance, 1);
     }
 
-    function test_margin_mantle_spot_exact_out_izi_reverted() external /** address user, uint8 lenderId */ {
+    function test_margin_mantle_spot_exact_out_izi_reverted() external 
+    /**
+     * address user, uint8 lenderId
+     */
+    {
         address user = testUser;
         vm.assume(user != address(0));
 

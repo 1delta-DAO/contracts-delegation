@@ -2,7 +2,9 @@
 
 pragma solidity 0.8.28;
 
-/** This is to check whether the provided parameter is nonempty */
+/**
+ * This is to check whether the provided parameter is nonempty
+ */
 library ValidatorLib {
     function _hasData(bytes32 data) internal pure returns (bool hasData) {
         assembly {

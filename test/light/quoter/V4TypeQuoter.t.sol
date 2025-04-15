@@ -90,7 +90,7 @@ contract V4QuoterTest is BaseTest {
         // Use utility function to encode path
         bytes memory path = unoV4Swap(WETH, USDC, user);
 
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         // Get quote
         uint256 quotedAmountOut = quoter.quote(amountIn, path);
 

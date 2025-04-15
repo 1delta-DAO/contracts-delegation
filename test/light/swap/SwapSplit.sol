@@ -41,7 +41,7 @@ contract SwapSplitTest is BaseTest {
     function setUp() public virtual {
         // initialize the chain
         string memory chainName = Chains.BASE;
-        
+
         _init(chainName, forkBlock);
         LBTC = chain.getTokenAddress(Tokens.LBTC);
         WETH = chain.getTokenAddress(Tokens.WETH);
@@ -63,13 +63,18 @@ contract SwapSplitTest is BaseTest {
         uint16 fee3,
         address receiver,
         uint256 amount
-    ) internal view returns (bytes memory data) {
+    )
+        internal
+        view
+        returns (bytes memory data)
+    {
         address pool = IF(UNI_FACTORY).getPool(assetIn, assetOut, fee);
         // head
         data = abi.encodePacked(
             uint8(ComposerCommands.SWAPS),
             uint128(amount), //
-            uint128(1), //
+            uint128(1),
+            //
             assetIn,
             uint8(0), // swaps max index
             uint8(2), // splits
@@ -102,7 +107,6 @@ contract SwapSplitTest is BaseTest {
             fee2,
             uint16(0) // cll length
         ); //
-
         pool = IF(UNI_FACTORY).getPool(assetIn, assetOut, fee2);
         data = abi.encodePacked(
             data,
@@ -130,7 +134,7 @@ contract SwapSplitTest is BaseTest {
         uint256 amount = 100.0e6;
 
         vm.prank(user);
-        IERC20All(tokenIn).approve(address(oneDV2), type(uint).max);
+        IERC20All(tokenIn).approve(address(oneDV2), type(uint256).max);
 
         bytes memory swap = v3poolSplitSwap(
             tokenIn,

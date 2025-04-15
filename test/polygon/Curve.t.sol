@@ -6,7 +6,6 @@ import "../shared/interfaces/ICurvePool.sol";
 import "./DeltaSetup.f.sol";
 
 contract CurveTestPolygon is DeltaSetup {
-
     uint8 internal constant EXCHANGE_META_SELECTOR_WITH_RECEIVER = 0;
     uint8 internal constant EXCHANGE_META_SELECTOR = 1;
 
@@ -60,7 +59,7 @@ contract CurveTestPolygon is DeltaSetup {
         IERC20All(assetIn).approve(address(brokerProxyAddress), amount);
 
         vm.prank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
@@ -87,10 +86,7 @@ contract CurveTestPolygon is DeltaSetup {
         );
 
         bytes memory data = abi.encodePacked(
-            uint8(Commands.SWAP_EXACT_IN),
-            user,
-            encodeSwapAmountParams(amount, amountMin, false, dataSwapFirst.length),
-            dataSwapFirst
+            uint8(Commands.SWAP_EXACT_IN), user, encodeSwapAmountParams(amount, amountMin, false, dataSwapFirst.length), dataSwapFirst
         );
 
         uint256 bal = IERC20All(assetOut).balanceOf(user);
@@ -99,7 +95,7 @@ contract CurveTestPolygon is DeltaSetup {
         IERC20All(assetIn).approve(address(brokerProxyAddress), amount);
 
         vm.prank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
@@ -126,10 +122,7 @@ contract CurveTestPolygon is DeltaSetup {
         );
 
         bytes memory data = abi.encodePacked(
-            uint8(Commands.SWAP_EXACT_IN),
-            user,
-            encodeSwapAmountParams(amount, amountMin, false, dataSwapFirst.length),
-            dataSwapFirst
+            uint8(Commands.SWAP_EXACT_IN), user, encodeSwapAmountParams(amount, amountMin, false, dataSwapFirst.length), dataSwapFirst
         );
 
         uint256 bal = IERC20All(assetOut).balanceOf(user);
@@ -138,7 +131,7 @@ contract CurveTestPolygon is DeltaSetup {
         IERC20All(assetIn).approve(address(brokerProxyAddress), amount);
 
         vm.prank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
@@ -146,7 +139,6 @@ contract CurveTestPolygon is DeltaSetup {
 
         assertApproxEqAbs(bal, 190282375600575470590, 0);
     }
-
 
     function test_polygon_curve_ng_single_route_exact_in() external {
         address user = testUser;
@@ -166,10 +158,7 @@ contract CurveTestPolygon is DeltaSetup {
         );
 
         bytes memory data = abi.encodePacked(
-            uint8(Commands.SWAP_EXACT_IN),
-            user,
-            encodeSwapAmountParams(amount, amountMin, false, dataSwapFirst.length),
-            dataSwapFirst
+            uint8(Commands.SWAP_EXACT_IN), user, encodeSwapAmountParams(amount, amountMin, false, dataSwapFirst.length), dataSwapFirst
         );
 
         uint256 bal = IERC20All(assetOut).balanceOf(user);
@@ -178,7 +167,7 @@ contract CurveTestPolygon is DeltaSetup {
         IERC20All(assetIn).approve(address(brokerProxyAddress), amount);
 
         vm.prank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
@@ -189,7 +178,7 @@ contract CurveTestPolygon is DeltaSetup {
 
     function test_polygon_curve_ng_exact_out() external {
         address user = testUser;
-        uint gas;
+        uint256 gas;
         uint256 amount = 20000.0e6;
         uint256 amountMax = 21000.0e18;
 
@@ -205,12 +194,8 @@ contract CurveTestPolygon is DeltaSetup {
             getCurveNGIndexes(assetIn)
         );
 
-        bytes memory data = abi.encodePacked(
-            uint8(Commands.SWAP_EXACT_OUT),
-            user,
-            encodeSwapAmountParams(amount, amountMax, false, dataCurveNg.length),
-            dataCurveNg
-        );
+        bytes memory data =
+            abi.encodePacked(uint8(Commands.SWAP_EXACT_OUT), user, encodeSwapAmountParams(amount, amountMax, false, dataCurveNg.length), dataCurveNg);
 
         vm.prank(user);
         IERC20All(assetIn).approve(address(brokerProxyAddress), amountMax * 2);
@@ -228,7 +213,7 @@ contract CurveTestPolygon is DeltaSetup {
 
     function test_polygon_curve_ng_exact_out_inverse() external {
         address user = testUser;
-        uint gas;
+        uint256 gas;
         uint256 amount = 2000.0e18;
         uint256 amountMax = 2100.0e6;
 
@@ -244,12 +229,8 @@ contract CurveTestPolygon is DeltaSetup {
             getCurveNGIndexes(assetIn)
         );
 
-        bytes memory data = abi.encodePacked(
-            uint8(Commands.SWAP_EXACT_OUT),
-            user,
-            encodeSwapAmountParams(amount, amountMax, false, dataCurveNg.length),
-            dataCurveNg
-        );
+        bytes memory data =
+            abi.encodePacked(uint8(Commands.SWAP_EXACT_OUT), user, encodeSwapAmountParams(amount, amountMax, false, dataCurveNg.length), dataCurveNg);
 
         vm.prank(user);
         IERC20All(assetIn).approve(address(brokerProxyAddress), amountMax * 2);
@@ -284,10 +265,7 @@ contract CurveTestPolygon is DeltaSetup {
         );
 
         bytes memory data = abi.encodePacked(
-            uint8(Commands.SWAP_EXACT_IN),
-            user,
-            encodeSwapAmountParams(amount, amountMin, false, dataSwapFirst.length),
-            dataSwapFirst
+            uint8(Commands.SWAP_EXACT_IN), user, encodeSwapAmountParams(amount, amountMin, false, dataSwapFirst.length), dataSwapFirst
         );
 
         uint256 bal = IERC20All(assetOut).balanceOf(user);
@@ -296,7 +274,7 @@ contract CurveTestPolygon is DeltaSetup {
         IERC20All(assetIn).approve(address(brokerProxyAddress), amount);
 
         vm.prank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
@@ -324,10 +302,7 @@ contract CurveTestPolygon is DeltaSetup {
         );
 
         bytes memory data = abi.encodePacked(
-            uint8(Commands.SWAP_EXACT_IN),
-            user,
-            encodeSwapAmountParams(amount, amountMin, false, dataSwapFirst.length),
-            dataSwapFirst
+            uint8(Commands.SWAP_EXACT_IN), user, encodeSwapAmountParams(amount, amountMin, false, dataSwapFirst.length), dataSwapFirst
         );
 
         uint256 bal = IERC20All(assetOut).balanceOf(user);
@@ -336,7 +311,7 @@ contract CurveTestPolygon is DeltaSetup {
         IERC20All(assetIn).approve(address(brokerProxyAddress), amount);
 
         vm.prank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
@@ -369,7 +344,7 @@ contract CurveTestPolygon is DeltaSetup {
     }
 
     function getCurveIndex(address asset, address pool) internal view returns (uint8) {
-        for (uint i; i < 6; i++) {
+        for (uint256 i; i < 6; i++) {
             address coinGotten = ICoinGetter(pool).coins(i);
             if (coinGotten == asset) {
                 return uint8(i);
@@ -413,7 +388,11 @@ contract CurveTestPolygon is DeltaSetup {
         uint8 pId,
         uint8 selectorId,
         bytes memory data
-    ) internal pure returns (bytes memory) {
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
         uint8 action = 0;
         return abi.encodePacked(tokenIn, action, pId, data, selectorId, tokenOut);
     }
@@ -424,7 +403,11 @@ contract CurveTestPolygon is DeltaSetup {
         uint8 pId,
         uint8 selectorId,
         bytes memory data
-    ) internal pure returns (bytes memory) {
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
         uint8 action = 0;
         return abi.encodePacked(tokenIn, action, pId, data, selectorId, tokenOut);
     }
@@ -435,7 +418,11 @@ contract CurveTestPolygon is DeltaSetup {
         uint8 pId,
         uint8 selectorId,
         bytes memory data
-    ) internal pure returns (bytes memory) {
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
         uint8 action = 0;
         return abi.encodePacked(tokenOut, action, pId, data, selectorId, tokenIn, uint8(0), uint8(99));
     }
@@ -445,12 +432,16 @@ contract CurveTestPolygon is DeltaSetup {
         address tokenOut,
         uint8 pId,
         bytes memory data
-    ) internal pure returns (bytes memory) {
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
         uint8 action = 0;
         return abi.encodePacked(tokenIn, action, pId, data, uint8(1), tokenOut);
     }
 }
 
 interface ICoinGetter {
-    function coins(uint arg0) external view returns (address);
+    function coins(uint256 arg0) external view returns (address);
 }

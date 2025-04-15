@@ -23,7 +23,11 @@ abstract contract V2TypeQuoter is ERC20Selectors, Masks {
         address tokenIn,
         address tokenOut,
         uint256 currentOffset
-    ) internal view returns (uint256, uint256) {
+    )
+        internal
+        view
+        returns (uint256, uint256)
+    {
         uint256 buyAmount;
         uint256 clLength;
         assembly {
@@ -46,9 +50,7 @@ abstract contract V2TypeQuoter is ERC20Selectors, Masks {
                         revert(0, returndatasize())
                     }
                     // Revert if the pair contract does not return at least two words.
-                    if lt(returndatasize(), 0x40) {
-                        revert(0, 0)
-                    }
+                    if lt(returndatasize(), 0x40) { revert(0, 0) }
 
                     let sellReserve
                     let buyReserve

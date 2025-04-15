@@ -35,7 +35,7 @@ contract FlashSwapTest is BaseTest {
     function setUp() public virtual {
         // initialize the chain
         string memory chainName = Chains.BASE;
-        
+
         _init(chainName, forkBlock);
         lender = Lenders.AAVE_V3;
         USDC = chain.getTokenAddress(Tokens.USDC);
@@ -53,7 +53,11 @@ contract FlashSwapTest is BaseTest {
         address receiver,
         uint256 amount,
         bytes memory callbackData
-    ) internal view returns (bytes memory data) {
+    )
+        internal
+        view
+        returns (bytes memory data)
+    {
         address pool = IF(UNI_FACTORY).getPool(assetIn, assetOut, fee);
         console.log("pool", pool);
         data = abi.encodePacked(

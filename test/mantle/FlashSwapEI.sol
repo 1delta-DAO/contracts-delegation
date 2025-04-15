@@ -35,11 +35,8 @@ contract FlashSwapExacInTest is DeltaSetup {
 
         bytes memory swapPath = getSpotExactInSingleStratumMETH(asset);
 
-        bytes memory data = abi.encodePacked(
-            uint8(Commands.FLASH_SWAP_EXACT_IN),
-            encodeSwapAmountParams(amountIn, minimumOut, true, swapPath.length),
-            swapPath
-        );
+        bytes memory data =
+            abi.encodePacked(uint8(Commands.FLASH_SWAP_EXACT_IN), encodeSwapAmountParams(amountIn, minimumOut, true, swapPath.length), swapPath);
         data = abi.encodePacked(
             data,
             sweep(
@@ -55,7 +52,7 @@ contract FlashSwapExacInTest is DeltaSetup {
         uint256 assetBalance = IERC20All(asset).balanceOf(user);
 
         vm.prank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
@@ -86,11 +83,8 @@ contract FlashSwapExacInTest is DeltaSetup {
         // since we use MerchantMode, we expect a loss inn execution, we have to contribute this amount
         uint256 residual = quoted >= amountIn ? 0 : amountIn - quoted;
 
-        bytes memory data = abi.encodePacked(
-            uint8(Commands.FLASH_SWAP_EXACT_IN),
-            encodeSwapAmountParams(amountIn, minimumOut, true, swapPath.length),
-            swapPath
-        );
+        bytes memory data =
+            abi.encodePacked(uint8(Commands.FLASH_SWAP_EXACT_IN), encodeSwapAmountParams(amountIn, minimumOut, true, swapPath.length), swapPath);
         data = abi.encodePacked(
             transferIn(
                 asset,
@@ -114,7 +108,7 @@ contract FlashSwapExacInTest is DeltaSetup {
         uint256 assetBalance = IERC20All(asset).balanceOf(user);
 
         vm.prank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
@@ -146,11 +140,8 @@ contract FlashSwapExacInTest is DeltaSetup {
 
         uint256 minimumOut = quoted;
 
-        bytes memory data = abi.encodePacked(
-            uint8(Commands.FLASH_SWAP_EXACT_IN),
-            encodeSwapAmountParams(amountIn, minimumOut, true, swapPath.length),
-            swapPath
-        );
+        bytes memory data =
+            abi.encodePacked(uint8(Commands.FLASH_SWAP_EXACT_IN), encodeSwapAmountParams(amountIn, minimumOut, true, swapPath.length), swapPath);
 
         data = abi.encodePacked(
             transferIn(
@@ -174,7 +165,7 @@ contract FlashSwapExacInTest is DeltaSetup {
         uint256 assetBalance = IERC20All(assetOut).balanceOf(user);
 
         vm.prank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
@@ -203,11 +194,8 @@ contract FlashSwapExacInTest is DeltaSetup {
         deal(asset, user, amountIn);
 
         uint256 minimumOut = quoted;
-        bytes memory data = abi.encodePacked(
-            uint8(Commands.FLASH_SWAP_EXACT_IN),
-            encodeSwapAmountParams(amountIn, minimumOut, true, swapPath.length),
-            swapPath
-        );
+        bytes memory data =
+            abi.encodePacked(uint8(Commands.FLASH_SWAP_EXACT_IN), encodeSwapAmountParams(amountIn, minimumOut, true, swapPath.length), swapPath);
         data = abi.encodePacked(
             transferIn(
                 asset,
@@ -228,7 +216,7 @@ contract FlashSwapExacInTest is DeltaSetup {
         uint256 assetBalance = IERC20All(assetOut).balanceOf(user);
 
         vm.prank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
@@ -258,11 +246,8 @@ contract FlashSwapExacInTest is DeltaSetup {
         deal(asset, user, amountIn);
 
         uint256 minimumOut = quoted;
-        bytes memory data = abi.encodePacked(
-            uint8(Commands.FLASH_SWAP_EXACT_IN),
-            encodeSwapAmountParams(amountIn, minimumOut, true, swapPath.length),
-            swapPath
-        );
+        bytes memory data =
+            abi.encodePacked(uint8(Commands.FLASH_SWAP_EXACT_IN), encodeSwapAmountParams(amountIn, minimumOut, true, swapPath.length), swapPath);
         data = abi.encodePacked(
             transferIn(
                 asset,
@@ -284,7 +269,7 @@ contract FlashSwapExacInTest is DeltaSetup {
         uint256 assetBalance = IERC20All(assetOut).balanceOf(user);
 
         vm.prank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
@@ -309,11 +294,8 @@ contract FlashSwapExacInTest is DeltaSetup {
         deal(asset, user, amountIn);
 
         uint256 minimumOut = quoted;
-        bytes memory data = abi.encodePacked(
-            uint8(Commands.FLASH_SWAP_EXACT_IN),
-            encodeSwapAmountParams(amountIn, minimumOut, true, swapPath.length),
-            swapPath
-        );
+        bytes memory data =
+            abi.encodePacked(uint8(Commands.FLASH_SWAP_EXACT_IN), encodeSwapAmountParams(amountIn, minimumOut, true, swapPath.length), swapPath);
         data = abi.encodePacked(
             transferIn(
                 asset,
@@ -335,7 +317,7 @@ contract FlashSwapExacInTest is DeltaSetup {
         uint256 assetBalance = IERC20All(assetOut).balanceOf(user);
 
         vm.prank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
@@ -345,8 +327,9 @@ contract FlashSwapExacInTest is DeltaSetup {
         assertApproxEqAbs(quoted, assetBalance, 0);
     }
 
-    /** PATH BUILDERS */
-
+    /**
+     * PATH BUILDERS
+     */
     function getTokenIdEth(address t) internal pure returns (uint8) {
         if (t == TokensMantle.METH) return 1;
         else return 0;
@@ -360,15 +343,14 @@ contract FlashSwapExacInTest is DeltaSetup {
     }
 
     function getSpotExactInSingleStratumMETH(address token) internal view returns (bytes memory data) {
-        return
-            abi.encodePacked(
-                getSpotExactInAgni(token, TokensMantle.METH),
-                ZERO_8,
-                DexMappingsMantle.STRATUM_CURVE,
-                STRATUM_ETH_POOL,
-                abi.encodePacked(getTokenIdEth(TokensMantle.METH), getTokenIdEth(token), STRATUM_SWAP_ID),
-                token
-            );
+        return abi.encodePacked(
+            getSpotExactInAgni(token, TokensMantle.METH),
+            ZERO_8,
+            DexMappingsMantle.STRATUM_CURVE,
+            STRATUM_ETH_POOL,
+            abi.encodePacked(getTokenIdEth(TokensMantle.METH), getTokenIdEth(token), STRATUM_SWAP_ID),
+            token
+        );
     }
 
     function getSpotExactInAgniQuoter(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
@@ -382,51 +364,47 @@ contract FlashSwapExacInTest is DeltaSetup {
     }
 
     function getSpotExactInSingleStratumMETHQuoter(address token) internal view returns (bytes memory data) {
-        return
-            abi.encodePacked(
-                getSpotExactInAgniQuoter(token, TokensMantle.METH),
-                DexMappingsMantle.STRATUM_CURVE,
-                abi.encodePacked(STRATUM_ETH_POOL, getTokenIdEth(TokensMantle.METH), getTokenIdEth(token), STRATUM_SWAP_ID),
-                token
-            );
+        return abi.encodePacked(
+            getSpotExactInAgniQuoter(token, TokensMantle.METH),
+            DexMappingsMantle.STRATUM_CURVE,
+            abi.encodePacked(STRATUM_ETH_POOL, getTokenIdEth(TokensMantle.METH), getTokenIdEth(token), STRATUM_SWAP_ID),
+            token
+        );
     }
 
     function getSpotExactInDoubleStratumMETHV2_3Pool(address token) internal view returns (bytes memory data) {
         uint8 poolId = DexMappingsMantle.MERCHANT_MOE;
         address pool = testQuoter.v2TypePairAddress(token, TokensMantle.METH, poolId);
-        return
-            abi.encodePacked(
-                getSpotExactInAgni(token, TokensMantle.METH),
-                ZERO_8,
-                DexMappingsMantle.STRATUM_CURVE,
-                abi.encodePacked(STRATUM_ETH_POOL, getTokenIdEth(TokensMantle.METH), getTokenIdEth(token), STRATUM_SWAP_ID),
-                token,
-                abi.encodePacked(ZERO_8, DexMappingsMantle.MERCHANT_MOE, pool, MERCHANT_MOE_FEE_DENOM, TokensMantle.METH)
-            );
+        return abi.encodePacked(
+            getSpotExactInAgni(token, TokensMantle.METH),
+            ZERO_8,
+            DexMappingsMantle.STRATUM_CURVE,
+            abi.encodePacked(STRATUM_ETH_POOL, getTokenIdEth(TokensMantle.METH), getTokenIdEth(token), STRATUM_SWAP_ID),
+            token,
+            abi.encodePacked(ZERO_8, DexMappingsMantle.MERCHANT_MOE, pool, MERCHANT_MOE_FEE_DENOM, TokensMantle.METH)
+        );
     }
 
     function getSpotExactInDoubleStratumMETHV2_3Pool_V3Last(address token) internal view returns (bytes memory data) {
-        return
-            abi.encodePacked(
-                getSpotExactInMoe(token, TokensMantle.METH),
-                ZERO_8, // action
-                DexMappingsMantle.STRATUM_CURVE,
-                STRATUM_ETH_POOL,
-                abi.encodePacked(getTokenIdEth(TokensMantle.METH), getTokenIdEth(token), STRATUM_SWAP_ID),
-                getSpotExactInAgni(token, TokensMantle.METH)
-            );
+        return abi.encodePacked(
+            getSpotExactInMoe(token, TokensMantle.METH),
+            ZERO_8, // action
+            DexMappingsMantle.STRATUM_CURVE,
+            STRATUM_ETH_POOL,
+            abi.encodePacked(getTokenIdEth(TokensMantle.METH), getTokenIdEth(token), STRATUM_SWAP_ID),
+            getSpotExactInAgni(token, TokensMantle.METH)
+        );
     }
 
     function getSpotExactInDoubleStratumMETHV2(address token) internal view returns (bytes memory data) {
-        return
-            abi.encodePacked(
-                getSpotExactInMoe(token, TokensMantle.METH),
-                ZERO_8, // action
-                DexMappingsMantle.STRATUM_CURVE,
-                STRATUM_ETH_POOL,
-                abi.encodePacked(getTokenIdEth(TokensMantle.METH), getTokenIdEth(token), STRATUM_SWAP_ID),
-                token
-            );
+        return abi.encodePacked(
+            getSpotExactInMoe(token, TokensMantle.METH),
+            ZERO_8, // action
+            DexMappingsMantle.STRATUM_CURVE,
+            STRATUM_ETH_POOL,
+            abi.encodePacked(getTokenIdEth(TokensMantle.METH), getTokenIdEth(token), STRATUM_SWAP_ID),
+            token
+        );
     }
 
     function getSpotExactInMoe(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
@@ -436,33 +414,35 @@ contract FlashSwapExacInTest is DeltaSetup {
     }
 
     function getSpotExactInDoubleStratumMETHQuoterWithV2(address token) internal view returns (bytes memory data) {
-        return
-            abi.encodePacked(
-                getSpotExactInMoeQuoter(token, TokensMantle.METH),
-                DexMappingsMantle.STRATUM_CURVE,
-                abi.encodePacked(STRATUM_ETH_POOL, getTokenIdEth(TokensMantle.METH), getTokenIdEth(token), STRATUM_SWAP_ID),
-                token
-            );
+        return abi.encodePacked(
+            getSpotExactInMoeQuoter(token, TokensMantle.METH),
+            DexMappingsMantle.STRATUM_CURVE,
+            abi.encodePacked(STRATUM_ETH_POOL, getTokenIdEth(TokensMantle.METH), getTokenIdEth(token), STRATUM_SWAP_ID),
+            token
+        );
     }
 
     function getSpotExactInDoubleStratumMETHQuoterWithV2_3Pools(address token) internal view returns (bytes memory data) {
-        return
+        return abi.encodePacked(
+            getSpotExactInAgniQuoter(token, TokensMantle.METH),
+            DexMappingsMantle.STRATUM_CURVE,
+            abi.encodePacked(STRATUM_ETH_POOL, getTokenIdEth(TokensMantle.METH), getTokenIdEth(token), STRATUM_SWAP_ID),
+            token,
             abi.encodePacked(
-                getSpotExactInAgniQuoter(token, TokensMantle.METH),
-                DexMappingsMantle.STRATUM_CURVE,
-                abi.encodePacked(STRATUM_ETH_POOL, getTokenIdEth(TokensMantle.METH), getTokenIdEth(token), STRATUM_SWAP_ID),
-                token,
-                abi.encodePacked(DexMappingsMantle.MERCHANT_MOE, testQuoter.v2TypePairAddress(token, TokensMantle.METH, DexMappingsMantle.MERCHANT_MOE), MERCHANT_MOE_FEE_DENOM, TokensMantle.METH)
-            );
+                DexMappingsMantle.MERCHANT_MOE,
+                testQuoter.v2TypePairAddress(token, TokensMantle.METH, DexMappingsMantle.MERCHANT_MOE),
+                MERCHANT_MOE_FEE_DENOM,
+                TokensMantle.METH
+            )
+        );
     }
 
     function getSpotExactInDoubleStratumMETHQuoterWithV2_3Pools_V3Last(address token) internal view returns (bytes memory data) {
-        return
-            abi.encodePacked(
-                getSpotExactInMoeQuoter(token, TokensMantle.METH),
-                DexMappingsMantle.STRATUM_CURVE,
-                abi.encodePacked(STRATUM_ETH_POOL, getTokenIdEth(TokensMantle.METH), getTokenIdEth(token), STRATUM_SWAP_ID),
-                getSpotExactInAgniQuoter(token, TokensMantle.METH)
-            );
+        return abi.encodePacked(
+            getSpotExactInMoeQuoter(token, TokensMantle.METH),
+            DexMappingsMantle.STRATUM_CURVE,
+            abi.encodePacked(STRATUM_ETH_POOL, getTokenIdEth(TokensMantle.METH), getTokenIdEth(token), STRATUM_SWAP_ID),
+            getSpotExactInAgniQuoter(token, TokensMantle.METH)
+        );
     }
 }

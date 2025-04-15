@@ -34,13 +34,13 @@ interface ILendingTools {
     function approveDelegation(address delegatee, uint256 amount) external;
 
     // compound V2
-    function balanceOfUnderlying(address owner) external returns (uint);
+    function balanceOfUnderlying(address owner) external returns (uint256);
 
-    function borrowBalanceCurrent(address account) external returns (uint);
+    function borrowBalanceCurrent(address account) external returns (uint256);
 
-    function enterMarkets(address[] calldata vTokens) external returns (uint[] memory);
+    function enterMarkets(address[] calldata vTokens) external returns (uint256[] memory);
 
-    function exitMarket(address vToken) external returns (uint);
+    function exitMarket(address vToken) external returns (uint256);
 
     // delegation
     function updateDelegate(address delegate, bool allowBorrows) external;

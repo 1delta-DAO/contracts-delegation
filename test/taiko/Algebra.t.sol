@@ -11,7 +11,6 @@ interface IHasFactory {
  * Tests Uni V3 style DEX
  */
 contract UniV3TypeTest is DeltaSetup {
-
     function setUp() public virtual override {
         vm.createSelectFork({blockNumber: 745292, urlOrAlias: "https://rpc.mainnet.taiko.xyz"});
 
@@ -61,8 +60,9 @@ contract UniV3TypeTest is DeltaSetup {
         assertApproxEqAbs(balanceIn, amountIn, 0);
     }
 
-    /** UNISWAP FORK PATH BUILDERS */
-
+    /**
+     * UNISWAP FORK PATH BUILDERS
+     */
     function getSpotExactInSingleSgUSDC(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = 0;
         uint8 poolId = DexMappingsTaiko.SWAPSICLE;

@@ -5,13 +5,13 @@ pragma solidity ^0.8.28;
 import {WithVenusStorage} from "../../storage/VenusStorage.sol";
 
 interface IVT {
-    function exchangeRateStored() external view returns (uint);
+    function exchangeRateStored() external view returns (uint256);
 
-    function balanceOfUnderlying(address a) external returns (uint);
+    function balanceOfUnderlying(address a) external returns (uint256);
 
-    function redeemUnderlying(uint redeemAmount) external returns (uint);
+    function redeemUnderlying(uint256 redeemAmount) external returns (uint256);
 
-    function redeem(uint redeemAmount) external returns (uint);
+    function redeem(uint256 redeemAmount) external returns (uint256);
 }
 
 /**
@@ -84,15 +84,16 @@ abstract contract LendingOps is WithVenusStorage {
                 // selector for mint()
                 mstore(ptr, 0x1249c58b00000000000000000000000000000000000000000000000000000000)
 
-                let success := call(
-                    gas(),
-                    _cNative,
-                    amount, // amount in ETH
-                    ptr, // input selector
-                    0x4, // input size = selector
-                    0x0, // output
-                    0x0 // output size = zero
-                )
+                let success :=
+                    call(
+                        gas(),
+                        _cNative,
+                        amount, // amount in ETH
+                        ptr, // input selector
+                        0x4, // input size = selector
+                        0x0, // output
+                        0x0 // output size = zero
+                    )
                 let rdsize := returndatasize()
 
                 if iszero(success) {
@@ -105,15 +106,16 @@ abstract contract LendingOps is WithVenusStorage {
                 mstore(ptr, 0xa0712d6800000000000000000000000000000000000000000000000000000000)
                 mstore(add(ptr, 0x4), amount)
 
-                let success := call(
-                    gas(),
-                    _cAsset,
-                    0x0,
-                    ptr, // input = selector and data
-                    0x24, // input size = 4 + 32
-                    ptr, // output
-                    0x0 // output size = zero
-                )
+                let success :=
+                    call(
+                        gas(),
+                        _cAsset,
+                        0x0,
+                        ptr, // input = selector and data
+                        0x24, // input size = 4 + 32
+                        ptr, // output
+                        0x0 // output size = zero
+                    )
                 let rdsize := returndatasize()
 
                 if iszero(success) {
@@ -151,16 +153,17 @@ abstract contract LendingOps is WithVenusStorage {
             // Check for ERC20 success. ERC20 tokens should return a boolean,
             // but some don't. We accept 0-length return data as success, or at
             // least 32 bytes that starts with a 32-byte boolean true.
-            success := and(
-                success, // call itself succeeded
-                or(
-                    iszero(rdsize), // no return data, or
-                    and(
-                        gt(rdsize, 31), // at least 32 bytes
-                        eq(mload(ptr), 1) // starts with uint256(1)
+            success :=
+                and(
+                    success, // call itself succeeded
+                    or(
+                        iszero(rdsize), // no return data, or
+                        and(
+                            gt(rdsize, 31), // at least 32 bytes
+                            eq(mload(ptr), 1) // starts with uint256(1)
+                        )
                     )
                 )
-            )
 
             if iszero(success) {
                 returndatacopy(ptr, 0, rdsize)
@@ -173,7 +176,7 @@ abstract contract LendingOps is WithVenusStorage {
      * @notice Withdrawal from Venus, delegated from user
      * 1) calculate vToken amount to transfer
      *  -> note that we have to round up here since we MUST make sure that we receive amount
-        -> as such, we have to fetch the user balance and see whether the rounding overflows the balance
+     *     -> as such, we have to fetch the user balance and see whether the rounding overflows the balance
      * 2) transfer vTokens from user
      * 3) withdraw / redeem underlying
      * 4) send funds to recever
@@ -213,13 +216,14 @@ abstract contract LendingOps is WithVenusStorage {
             let refAmount := mload(ptr)
 
             // calculate collateral token amount, rounding up
-            let transferAmount := add(
-                div(
-                    mul(amount, 1000000000000000000), // multiply with 1e18
-                    refAmount // divide by rate
-                ),
-                1
-            )
+            let transferAmount :=
+                add(
+                    div(
+                        mul(amount, 1000000000000000000), // multiply with 1e18
+                        refAmount // divide by rate
+                    ),
+                    1
+                )
             // FETCH BALANCE
             // selector for balanceOf(address)
             mstore(ptr, 0x70a0823100000000000000000000000000000000000000000000000000000000)
@@ -233,9 +237,7 @@ abstract contract LendingOps is WithVenusStorage {
             refAmount := mload(ptr)
 
             // floor to the balance
-            if gt(transferAmount, refAmount) {
-                transferAmount := refAmount
-            }
+            if gt(transferAmount, refAmount) { transferAmount := refAmount }
 
             // 2) TRANSFER VTOKENS
 
@@ -259,15 +261,16 @@ abstract contract LendingOps is WithVenusStorage {
             mstore(ptr, 0xdb006a7500000000000000000000000000000000000000000000000000000000)
             mstore(add(ptr, 0x4), transferAmount)
 
-            success := call(
-                gas(),
-                _cAsset,
-                0x0,
-                ptr, // input = selector
-                0x24, // input selector + uint256
-                ptr, // output
-                0x0 // output size = zero
-            )
+            success :=
+                call(
+                    gas(),
+                    _cAsset,
+                    0x0,
+                    ptr, // input = selector
+                    0x24, // input selector + uint256
+                    ptr, // output
+                    0x0 // output size = zero
+                )
             rdsize := returndatasize()
 
             if iszero(success) {
@@ -312,15 +315,16 @@ abstract contract LendingOps is WithVenusStorage {
             mstore(add(ptr, 0x4), onBehalfOf) // user
             mstore(add(ptr, 0x24), amount) // to this address
 
-            let success := call(
-                gas(),
-                _cAsset,
-                0x0,
-                ptr, // input = empty for fallback
-                0x44, // input size = selector + address + uint256
-                ptr, // output
-                0x0 // output size = zero
-            )
+            let success :=
+                call(
+                    gas(),
+                    _cAsset,
+                    0x0,
+                    ptr, // input = empty for fallback
+                    0x44, // input size = selector + address + uint256
+                    ptr, // output
+                    0x0 // output size = zero
+                )
             let rdsize := returndatasize()
 
             if iszero(success) {
@@ -346,15 +350,16 @@ abstract contract LendingOps is WithVenusStorage {
             mstore(add(ptr, 0x4), onBehalfOf) // user
             mstore(add(ptr, 0x24), amount) // to this address
 
-            let success := call(
-                gas(),
-                _cAsset,
-                0x0, // no ETH sent
-                ptr, // input selector
-                0x44, // input size = selector + address + uint256
-                ptr, // output
-                0x0 // output size = zero
-            )
+            let success :=
+                call(
+                    gas(),
+                    _cAsset,
+                    0x0, // no ETH sent
+                    ptr, // input selector
+                    0x44, // input size = selector + address + uint256
+                    ptr, // output
+                    0x0 // output size = zero
+                )
             let rdsize := returndatasize()
 
             if iszero(success) {

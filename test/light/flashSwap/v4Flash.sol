@@ -48,7 +48,11 @@ contract FlashSwapTest is BaseTest {
         address tokenIn,
         address tokenOut,
         uint256 amount
-    ) internal pure returns (bytes memory data) {
+    )
+        internal
+        pure
+        returns (bytes memory data)
+    {
         // create head config
         data = CalldataLib.swapHead(
             amount,

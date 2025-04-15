@@ -66,7 +66,7 @@
     "gas": "cross-env REPORT_GAS=true hardhat test",
     "coverage": "cross-env HARDHAT_DEPLOY_FIXTURE=true hardhat coverage",
     "dev": "hardhat node --watch --export contractsInfo.json",
-    "create-composer": "tsx scripts/_create/createFlashLoanCallbacks.ts & tsx scripts/_create/createFlashSwapCallbacks.ts",
+    "create-composer": "tsx scripts/_create/createFlashLoanCallbacks.ts & tsx scripts/_create/createFlashSwapCallbacks.ts & forge fmt",
     "local:dev": "hardhat --network localhost deploy --watch",
     "execute": "node ./_scripts.js run",
     "deploy": "node ./_scripts.js deploy",

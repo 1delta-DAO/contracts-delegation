@@ -26,7 +26,7 @@ abstract contract BalancerV3Quoter is QuoterUtils, Masks {
      * This is mainly done to not have duplicate code and maintain
      * the same level of security by callback validation for both DEX types
      */
-    function balancerQueryCallback(bytes calldata data) external returns (uint) {
+    function balancerQueryCallback(bytes calldata data) external returns (uint256) {
         uint256 currentOffset;
         uint256 amountIn;
         address tokenIn;
@@ -61,7 +61,10 @@ abstract contract BalancerV3Quoter is QuoterUtils, Masks {
         address tokenIn,
         address tokenOut,
         uint256 currentOffset
-    ) internal returns (uint256 receivedAmount, uint256) {
+    )
+        internal
+        returns (uint256 receivedAmount, uint256)
+    {
         address manager;
         uint256 clLength;
         // solhint-disable-next-line no-inline-assembly
@@ -76,20 +79,19 @@ abstract contract BalancerV3Quoter is QuoterUtils, Masks {
             calldataForCallback.offset := currentOffset
             calldataForCallback.length := add(43, clLength)
         }
-        try
-            IBalancerV3VaultSelectors(manager).unlock(
-                abi.encodeCall(
-                    this.balancerQueryCallback,
-                    abi.encodePacked(
-                        // add quoite-relevant data
-                        uint128(fromAmount),
-                        tokenIn, //
-                        tokenOut, // ,
-                        calldataForCallback
-                    )
+        try IBalancerV3VaultSelectors(manager).unlock(
+            abi.encodeCall(
+                this.balancerQueryCallback,
+                abi.encodePacked(
+                    // add quoite-relevant data
+                    uint128(fromAmount),
+                    tokenIn, //
+                    tokenOut,
+                    // ,
+                    calldataForCallback
                 )
             )
-        {} catch (bytes memory result) {
+        ) {} catch (bytes memory result) {
             receivedAmount = abi.decode(result, (uint256));
             assembly {
                 currentOffset := add(add(currentOffset, 43), clLength)
@@ -100,7 +102,9 @@ abstract contract BalancerV3Quoter is QuoterUtils, Masks {
         revert("Should not succeed");
     }
 
-    /** We need all these selectors for executing a single swap */
+    /**
+     * We need all these selectors for executing a single swap
+     */
     bytes32 private constant SWAP = 0x2bfb780c00000000000000000000000000000000000000000000000000000000;
 
     /*
@@ -117,7 +121,9 @@ abstract contract BalancerV3Quoter is QuoterUtils, Masks {
         address tokenIn, //
         address tokenOut,
         uint256 currentOffset
-    ) internal {
+    )
+        internal
+    {
         uint256 tempVar;
         // enum SwapKind {
         //     EXACT_IN,

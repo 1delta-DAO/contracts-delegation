@@ -5,10 +5,6 @@ pragma solidity ^0.8.28;
 import {ERC20Selectors} from "../../shared/selectors/ERC20Selectors.sol";
 import {Masks} from "../../shared/masks/Masks.sol";
 
-/******************************************************************************\
-* Author: Achthar | 1delta 
-/******************************************************************************/
-
 /**
  * @notice Lending base contract that wraps Morpho Blue
  */
@@ -459,9 +455,7 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
                     mstore(ptrBase, MORPHO_POSITION)
                     mstore(add(ptrBase, 0x4), marketId)
                     mstore(add(ptrBase, 0x24), callerAddress)
-                    if iszero(staticcall(gas(), morpho, ptrBase, 0x44, ptrBase, 0x20)) {
-                        revert(0x0, 0x0)
-                    }
+                    if iszero(staticcall(gas(), morpho, ptrBase, 0x44, ptrBase, 0x20)) { revert(0x0, 0x0) }
                     mstore(add(ptr, 164), 0) // assets
                     mstore(add(ptr, 196), mload(ptrBase)) // shares
                 }
@@ -559,9 +553,7 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
                 mstore(ptrBase, MORPHO_POSITION)
                 mstore(add(ptrBase, 0x4), marketId)
                 mstore(add(ptrBase, 0x24), receiver)
-                if iszero(staticcall(gas(), morpho, ptrBase, 0x44, ptrBase, 0x40)) {
-                    revert(0x0, 0x0)
-                }
+                if iszero(staticcall(gas(), morpho, ptrBase, 0x44, ptrBase, 0x40)) { revert(0x0, 0x0) }
                 mstore(add(ptr, 164), 0) // assets
                 mstore(add(ptr, 196), mload(add(ptrBase, 0x20))) // shares
             }
@@ -581,9 +573,7 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
                             // get balance
                             mstore(0x0, ERC20_BALANCE_OF)
                             mstore(0x04, address())
-                            if iszero(staticcall(gas(), token, 0x0, 0x24, 0x0, 0x20)) {
-                                revert(0x0, 0x0)
-                            }
+                            if iszero(staticcall(gas(), token, 0x0, 0x24, 0x0, 0x20)) { revert(0x0, 0x0) }
                             repayAm := mload(0x0)
                         }
                         // by assets safe - will not revert if too much is repaid
@@ -593,45 +583,38 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
                         // accrue interest
                         // add accrueInterest (0x151c1ade)
                         mstore(sub(ptr, 28), 0x151c1ade)
-                        if iszero(call(gas(), morpho, 0x0, ptr, 0xA4, 0x0, 0x0)) {
-                            revert(0x0, 0x0)
-                        }
+                        if iszero(call(gas(), morpho, 0x0, ptr, 0xA4, 0x0, 0x0)) { revert(0x0, 0x0) }
 
                         let marketId := keccak256(add(ptr, 4), 160)
                         mstore(0x0, MORPHO_MARKET)
                         mstore(0x4, marketId)
-                        if iszero(staticcall(gas(), morpho, 0x0, 0x24, ptrBase, 0x80)) {
-                            revert(0x0, 0x0)
-                        }
+                        if iszero(staticcall(gas(), morpho, 0x0, 0x24, ptrBase, 0x80)) { revert(0x0, 0x0) }
                         let totalBorrowAssets := mload(add(ptrBase, 0x40))
                         let totalBorrowShares := mload(add(ptrBase, 0x60))
 
                         // get balance
                         mstore(0x0, ERC20_BALANCE_OF)
                         mstore(0x04, address())
-                        if iszero(staticcall(gas(), token, 0x0, 0x24, 0x0, 0x20)) {
-                            revert(0x0, 0x0)
-                        }
+                        if iszero(staticcall(gas(), token, 0x0, 0x24, 0x0, 0x20)) { revert(0x0, 0x0) }
                         repayAm := mload(0x0)
 
                         // position datas
                         mstore(ptrBase, MORPHO_POSITION)
                         mstore(add(ptrBase, 0x4), marketId)
                         mstore(add(ptrBase, 0x24), receiver)
-                        if iszero(staticcall(gas(), morpho, ptrBase, 0x44, ptrBase, 0x40)) {
-                            revert(0x0, 0x0)
-                        }
+                        if iszero(staticcall(gas(), morpho, ptrBase, 0x44, ptrBase, 0x40)) { revert(0x0, 0x0) }
                         let userBorrowShares := mload(add(ptrBase, 0x20))
 
                         // mulDivUp(shares, totalAssets + VIRTUAL_ASSETS, totalShares + VIRTUAL_SHARES);
                         let maxAssets := add(totalBorrowShares, 1000000) // VIRTUAL_SHARES=1e6
-                        maxAssets := div(
-                            add(
-                                mul(userBorrowShares, add(totalBorrowAssets, 1)), // VIRTUAL_ASSETS=1
-                                sub(maxAssets, 1) //
-                            ),
-                            maxAssets //
-                        )
+                        maxAssets :=
+                            div(
+                                add(
+                                    mul(userBorrowShares, add(totalBorrowAssets, 1)), // VIRTUAL_ASSETS=1
+                                    sub(maxAssets, 1) //
+                                ),
+                                maxAssets //
+                            )
 
                         // if maxAssets is greater than repay amount
                         // we repay whatever is possible

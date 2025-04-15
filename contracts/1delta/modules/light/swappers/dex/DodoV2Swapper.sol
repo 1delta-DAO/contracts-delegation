@@ -2,10 +2,6 @@
 
 pragma solidity 0.8.28;
 
-/******************************************************************************\
-* Author: Achthar | 1delta 
-/******************************************************************************/
-
 // solhint-disable max-line-length
 
 import {ERC20Selectors} from "../../../shared/selectors/ERC20Selectors.sol";
@@ -30,7 +26,10 @@ abstract contract DodoV2Swapper is ERC20Selectors, Masks {
         address receiver,
         address callerAddress,
         uint256 currentOffset
-    ) private returns (uint256 dodoData, address pool, uint256 clLength) {
+    )
+        private
+        returns (uint256 dodoData, address pool, uint256 clLength)
+    {
         assembly {
             dodoData := calldataload(currentOffset)
             pool := shr(96, dodoData)
@@ -116,7 +115,10 @@ abstract contract DodoV2Swapper is ERC20Selectors, Masks {
         address receiver,
         address callerAddress,
         uint256 currentOffset
-    ) internal returns (uint256 amountOut, uint256 clLength) {
+    )
+        internal
+        returns (uint256 amountOut, uint256 clLength)
+    {
         address pool;
         (amountOut, pool, clLength) = _dodoPrepare(
             amountIn,
@@ -128,9 +130,7 @@ abstract contract DodoV2Swapper is ERC20Selectors, Masks {
         assembly {
             let ptr := mload(0x40)
             switch lt(clLength, 3)
-            case 1 {
-                currentOffset := add(25, currentOffset)
-            }
+            case 1 { currentOffset := add(25, currentOffset) }
             default {
                 let ptrAfter := add(ptr, 256)
 

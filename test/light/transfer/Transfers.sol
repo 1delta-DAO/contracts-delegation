@@ -35,7 +35,7 @@ contract TransfersLightTest is BaseTest, DeltaErrors {
 
     function setUp() public virtual {
         string memory chainName = Chains.BASE;
-        
+
         _init(chainName, forkBlock);
         AAVE_V3_POOL = chain.getLendingController(Lenders.AAVE_V3);
         WETH = chain.getTokenAddress(Tokens.WETH);

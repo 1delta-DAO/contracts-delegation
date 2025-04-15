@@ -37,7 +37,7 @@ contract BalV3LightTest is BaseTest {
     function setUp() public virtual {
         // initialize the chain
         string memory chainName = Chains.BASE;
-        
+
         _init(chainName, forkBlock);
         WETH = chain.getTokenAddress(Tokens.WETH);
         cbETH = chain.getTokenAddress(Tokens.CBETH);
@@ -58,7 +58,11 @@ contract BalV3LightTest is BaseTest {
         address tokenIn,
         address tokenOut,
         uint256 amount
-    ) internal pure returns (bytes memory data) {
+    )
+        internal
+        pure
+        returns (bytes memory data)
+    {
         // create head config
         data = CalldataLib.swapHead(
             amount,

@@ -2,10 +2,6 @@
 
 pragma solidity 0.8.28;
 
-/******************************************************************************\
-* Author: Achthar | 1delta 
-/******************************************************************************/
-
 // solhint-disable max-line-length
 
 import {ERC20Selectors} from "../../../shared/selectors/ERC20Selectors.sol";
@@ -66,10 +62,11 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
 
             // Compute the buy amount based on the pair reserves.
 
-            let zeroForOne := lt(
-                tokenIn,
-                tokenOut //
-            )
+            let zeroForOne :=
+                lt(
+                    tokenIn,
+                    tokenOut //
+                )
 
             switch lt(
                 and(UINT8_MASK, shr(88, pool)), // this is the forkId
@@ -103,10 +100,11 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
 
                 // compute out amount
                 poolFeeDenom := mul(amountIn, poolFeeDenom)
-                buyAmount := div(
-                    mul(poolFeeDenom, buyAmount),
-                    add(poolFeeDenom, mul(reserveIn, 10000)) //
-                )
+                buyAmount :=
+                    div(
+                        mul(poolFeeDenom, buyAmount),
+                        add(poolFeeDenom, mul(reserveIn, 10000)) //
+                    )
             }
             // all solidly-based protocols
             default {
@@ -296,7 +294,10 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
         address receiver,
         uint256 currentOffset,
         address callerAddress
-    ) internal returns (uint256 buyAmount, uint256) {
+    )
+        internal
+        returns (uint256 buyAmount, uint256)
+    {
         assembly {
             let ptr := mload(0x40) // free memory pointer
 
@@ -336,19 +337,18 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
                     revert(ptr, rdsize)
                 }
             }
-            default {
-                revert(0, 0)
-            }
+            default { revert(0, 0) }
 
             pair := shr(96, pair)
             // we define this as token in and later re-assign this to
             // reserve in to prevent stack too deep errors
             // Compute the buy amount based on the pair reserves.
             {
-                let zeroForOne := lt(
-                    tokenIn,
-                    tokenOut // tokenOut
-                )
+                let zeroForOne :=
+                    lt(
+                        tokenIn,
+                        tokenOut // tokenOut
+                    )
                 // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
                 // buyAmount = (pairSellAmount * feeAm * buyReserve) /
                 //     (pairSellAmount * feeAm + sellReserve * 1000);
@@ -359,9 +359,7 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
                     revert(0, returndatasize())
                 }
                 // Revert if the pair contract does not return at least two words.
-                if lt(returndatasize(), 0x40) {
-                    revert(0, 0)
-                }
+                if lt(returndatasize(), 0x40) { revert(0, 0) }
                 let sellReserve
                 switch zeroForOne
                 case 1 {

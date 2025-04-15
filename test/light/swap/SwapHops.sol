@@ -38,7 +38,7 @@ contract SwapHopsLightTest is BaseTest {
     function setUp() public virtual {
         // initialize the chain
         string memory chainName = Chains.BASE;
-        
+
         _init(chainName, forkBlock);
         LBTC = chain.getTokenAddress(Tokens.LBTC);
         WETH = chain.getTokenAddress(Tokens.WETH);
@@ -53,13 +53,17 @@ contract SwapHopsLightTest is BaseTest {
         uint16[] memory fees,
         uint8[] memory dexIds,
         address receiver
-    ) internal view returns (bytes memory data) {
+    )
+        internal
+        view
+        returns (bytes memory data)
+    {
         printPath(assets);
         data = abi.encodePacked(
             uint8(fees.length - 1), // path max index
             uint8(0) // no splits
         );
-        for (uint i = 0; i < assets.length - 1; i++) {
+        for (uint256 i = 0; i < assets.length - 1; i++) {
             address pool;
             if (dexIds[i] == DexTypeMappings.UNISWAP_V3_ID) {
                 pool = IF(UNI_FACTORY).getPool(assets[i], assets[i + 1], fees[i]);
@@ -71,7 +75,8 @@ contract SwapHopsLightTest is BaseTest {
             if (i == 0) {
                 data = abi.encodePacked(
                     data, //
-                    uint16(0), // atomic
+                    uint16(0),
+                    // atomic
                     assets[i + 1], // nextToken
                     _receiver,
                     dexIds[i],
@@ -83,7 +88,8 @@ contract SwapHopsLightTest is BaseTest {
             } else {
                 data = abi.encodePacked(
                     data, //
-                    uint16(0), // atomic
+                    uint16(0),
+                    // atomic
                     assets[i + 1], // nextToken
                     _receiver,
                     dexIds[i],
@@ -98,7 +104,7 @@ contract SwapHopsLightTest is BaseTest {
 
     function printPath(address[] memory assets) internal view {
         console.log("-----------------------------");
-        for (uint i = 0; i < assets.length; i++) {
+        for (uint256 i = 0; i < assets.length; i++) {
             console.log("          |         ");
             console.log(IERC20All(assets[i]).symbol(), assets[i]);
             if (i < assets.length - 1) console.log("          |         ");
@@ -129,20 +135,23 @@ contract SwapHopsLightTest is BaseTest {
 
     function get_USDC_CBETH_MultiPathCalldata(
         address receiver //
-    ) internal view returns (bytes memory data) {
+    )
+        internal
+        view
+        returns (bytes memory data)
+    {
         (
             address[] memory assets, //
             uint16[] memory fees,
             uint8[] memory dexIds
         ) = getPath_USDC_CBETH();
 
-        return
-            multiPath(
-                assets,
-                fees,
-                dexIds,
-                receiver //
-            );
+        return multiPath(
+            assets,
+            fees,
+            dexIds,
+            receiver //
+        );
     }
 
     function test_light_swap_v3_route_no_splits() external {
@@ -153,7 +162,7 @@ contract SwapHopsLightTest is BaseTest {
         uint256 amount = 100.0e6;
 
         vm.prank(user);
-        IERC20All(tokenIn).approve(address(oneDV2), type(uint).max);
+        IERC20All(tokenIn).approve(address(oneDV2), type(uint256).max);
 
         // route swap no splits
         // USDC -> cbBTC -> WETH
@@ -161,7 +170,8 @@ contract SwapHopsLightTest is BaseTest {
             abi.encodePacked( //
                 uint8(ComposerCommands.SWAPS),
                 uint128(amount), //
-                uint128(1), //
+                uint128(1),
+                //
                 tokenIn
             ),
             get_USDC_CBETH_MultiPathCalldata(user)

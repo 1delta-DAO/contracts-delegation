@@ -6,7 +6,11 @@ import "./DeltaSetup.f.sol";
 contract SwapGen2Test is DeltaSetup {
     uint256 DEFAULT_IR_MODE = 2; // variable
 
-    function test_mantle_gen_2_open_exact_in() external /** address user, uint16 lenderId */ {
+    function test_mantle_gen_2_open_exact_in() external 
+    /**
+     * address user, uint16 lenderId
+     */
+    {
         address user = testUser;
         uint16 lenderId = LenderMappingsMantle.LENDLE_ID;
         vm.assume(user != address(0));
@@ -56,7 +60,11 @@ contract SwapGen2Test is DeltaSetup {
         assertApproxEqAbs(amountToSwap, balanceDebt, 1e6);
     }
 
-    function test_mantle_gen_2_open_exact_in_composer() external /** address user, uint16 lenderId */ {
+    function test_mantle_gen_2_open_exact_in_composer() external 
+    /**
+     * address user, uint16 lenderId
+     */
+    {
         address user = testUser;
         uint16 lenderId = LenderMappingsMantle.LENDLE_ID;
         vm.assume(user != address(0));
@@ -102,7 +110,11 @@ contract SwapGen2Test is DeltaSetup {
         assertApproxEqAbs(amountToSwap, balanceDebt, 1e6);
     }
 
-    function test_mantle_gen_2_open_exact_in_multi() external /** address user, uint16 lenderId */ {
+    function test_mantle_gen_2_open_exact_in_multi() external 
+    /**
+     * address user, uint16 lenderId
+     */
+    {
         address user = testUser;
         uint16 lenderId = LenderMappingsMantle.LENDLE_ID;
         vm.assume(user != address(0));
@@ -132,7 +144,7 @@ contract SwapGen2Test is DeltaSetup {
         IERC20All(debtToken).approveDelegation(brokerProxyAddress, amountToSwap);
         bytes memory data;
         {
-            uint256 minimumOut = 0.90e6;
+            uint256 minimumOut = 0.9e6;
             data = encodeFlashSwap(
                 Commands.FLASH_SWAP_EXACT_IN,
                 amountToSwap, //
@@ -153,7 +165,11 @@ contract SwapGen2Test is DeltaSetup {
         assertApproxEqAbs(amountToSwap, balanceDebt, 1e6);
     }
 
-    function test_mantle_gen_2_open_exact_in_multi_mixed() external /** address user, uint16 lenderId */ {
+    function test_mantle_gen_2_open_exact_in_multi_mixed() external 
+    /**
+     * address user, uint16 lenderId
+     */
+    {
         address user = testUser;
         uint16 lenderId = LenderMappingsMantle.LENDLE_ID;
         vm.assume(user != address(0));
@@ -182,7 +198,7 @@ contract SwapGen2Test is DeltaSetup {
         IERC20All(debtToken).approveDelegation(brokerProxyAddress, amountToSwap);
         bytes memory data;
         {
-            uint256 minimumOut = 0.90e6;
+            uint256 minimumOut = 0.9e6;
             data = encodeFlashSwap(
                 Commands.FLASH_SWAP_EXACT_IN,
                 amountToSwap, //
@@ -203,7 +219,11 @@ contract SwapGen2Test is DeltaSetup {
         assertApproxEqAbs(amountToSwap, balanceDebt, 1e6);
     }
 
-    function test_mantle_gen_2_open_exact_in_multi_mixed_double_v2() external /** address user, uint16 lenderId */ {
+    function test_mantle_gen_2_open_exact_in_multi_mixed_double_v2() external 
+    /**
+     * address user, uint16 lenderId
+     */
+    {
         address user = testUser;
         uint16 lenderId = LenderMappingsMantle.LENDLE_ID;
         vm.assume(user != address(0));
@@ -232,7 +252,7 @@ contract SwapGen2Test is DeltaSetup {
         IERC20All(debtToken).approveDelegation(brokerProxyAddress, amountToSwap);
         bytes memory data;
         {
-            uint256 minimumOut = 0.90e6;
+            uint256 minimumOut = 0.9e6;
             data = encodeFlashSwap(
                 Commands.FLASH_SWAP_EXACT_IN,
                 amountToSwap, //
@@ -337,9 +357,13 @@ contract SwapGen2Test is DeltaSetup {
         uint16[] memory fees,
         uint16 lenderId,
         uint8 endId
-    ) internal view returns (bytes memory path) {
+    )
+        internal
+        view
+        returns (bytes memory path)
+    {
         path = abi.encodePacked(tokens[0]);
-        for (uint i = 1; i < tokens.length; i++) {
+        for (uint256 i = 1; i < tokens.length; i++) {
             uint8 pId = pIds[i - 1];
             if (pId < 50) {
                 address pool = testQuoter.v3TypePool(tokens[i - 1], tokens[i], fees[i - 1], pId);

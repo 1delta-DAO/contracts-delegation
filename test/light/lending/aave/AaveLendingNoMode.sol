@@ -23,7 +23,7 @@ contract AaveV3NoModesLightTest is BaseTest {
     function setUp() public virtual {
         // initialize the chain
         string memory chainName = Chains.BASE;
-        
+
         _init(chainName, forkBlock);
         lender = Lenders.YLDR;
         LBTC = chain.getTokenAddress(Tokens.LBTC);

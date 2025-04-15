@@ -18,8 +18,9 @@ contract AddressesPolygon {
 
     address internal constant CRV_NG_USDN_CRVUSD = 0x5225010A0AE133B357861782B0B865a48471b2C5;
 
-    /** DEX CONFIG */
-
+    /**
+     * DEX CONFIG
+     */
     uint16 internal DEX_FEE_STABLES = 100;
     uint16 internal DEX_FEE_LOW_MEDIUM = 2500;
     uint16 internal DEX_FEE_LOW_HIGH = 3000;
@@ -36,8 +37,9 @@ contract AddressesPolygon {
 
     uint8 internal WOO_FI = 150;
 
-    /** TRADE TYPE FLAG GETTERS */
-
+    /**
+     * TRADE TYPE FLAG GETTERS
+     */
     function getOpenExactInFlags() internal pure returns (uint8 flagStart, uint8 flagMiddle, uint8 flagEnd) {
         return (3, 0, 2);
     }

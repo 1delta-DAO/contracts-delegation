@@ -8,10 +8,6 @@ import {CompoundV2Lending} from "./CompoundV2Lending.sol";
 import {MorphoLending} from "./MorphoLending.sol";
 import {LenderIds, LenderOps} from "../enums/DeltaEnums.sol";
 
-/******************************************************************************\
-* Author: Achthar | 1delta 
-/******************************************************************************/
-
 // solhint-disable max-line-length
 
 /**
@@ -32,7 +28,10 @@ abstract contract UniversalLending is AaveLending, CompoundV3Lending, CompoundV2
     function _lendingOperations(
         address callerAddress,
         uint256 currentOffset // params similar to deltaComposeInternal
-    ) internal returns (uint256) {
+    )
+        internal
+        returns (uint256)
+    {
         uint256 lendingOperation;
         uint256 lender;
         assembly {
@@ -41,7 +40,9 @@ abstract contract UniversalLending is AaveLending, CompoundV3Lending, CompoundV2
             lender := and(UINT16_MASK, shr(232, slice))
             currentOffset := add(currentOffset, 3)
         }
-        /** Deposit collateral */
+        /**
+         * Deposit collateral
+         */
         if (lendingOperation == LenderOps.DEPOSIT) {
             if (lender < LenderIds.UP_TO_AAVE_V3) {
                 return _depositToAaveV3(currentOffset);
@@ -55,7 +56,9 @@ abstract contract UniversalLending is AaveLending, CompoundV3Lending, CompoundV2
                 return _morphoDepositCollateral(currentOffset, callerAddress);
             }
         }
-        /** Borrow */
+        /**
+         * Borrow
+         */
         else if (lendingOperation == LenderOps.BORROW) {
             if (lender < LenderIds.UP_TO_AAVE_V2) {
                 return _borrowFromAave(currentOffset, callerAddress);
@@ -67,7 +70,9 @@ abstract contract UniversalLending is AaveLending, CompoundV3Lending, CompoundV2
                 return _morphoBorrow(currentOffset, callerAddress);
             }
         }
-        /** Repay */
+        /**
+         * Repay
+         */
         else if (lendingOperation == LenderOps.REPAY) {
             if (lender < LenderIds.UP_TO_AAVE_V2) {
                 return _repayToAave(currentOffset, callerAddress);
@@ -79,7 +84,9 @@ abstract contract UniversalLending is AaveLending, CompoundV3Lending, CompoundV2
                 return _morphoRepay(currentOffset, callerAddress);
             }
         }
-        /** Withdraw collateral */
+        /**
+         * Withdraw collateral
+         */
         else if (lendingOperation == LenderOps.WITHDRAW) {
             if (lender < LenderIds.UP_TO_AAVE_V2) {
                 return _withdrawFromAave(currentOffset, callerAddress);
@@ -91,13 +98,19 @@ abstract contract UniversalLending is AaveLending, CompoundV3Lending, CompoundV2
                 return _morphoWithdrawCollateral(currentOffset, callerAddress);
             }
         }
-        /** deposit lendingToken */
+        /**
+         * deposit lendingToken
+         */
         else if (lendingOperation == LenderOps.DEPOSIT_LENDING_TOKEN) {
             return _morphoDeposit(currentOffset, callerAddress);
         }
-        /** withdraw lendingToken */
+        /**
+         * withdraw lendingToken
+         */
         else if (lendingOperation == LenderOps.WITHDRAW_LENDING_TOKEN) {
             return _morphoWithdraw(currentOffset, callerAddress);
-        } else revert();
+        } else {
+            revert();
+        }
     }
 }

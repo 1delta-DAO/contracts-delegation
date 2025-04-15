@@ -40,7 +40,7 @@ contract IzumiQuoterTest is BaseTest {
 
     function setUp() public virtual {
         string memory chainName = Chains.BASE;
-        
+
         _init(chainName, forkBlock);
 
         WETH = chain.getTokenAddress(Tokens.WETH);
@@ -70,7 +70,11 @@ contract IzumiQuoterTest is BaseTest {
         uint256 feeTier, //
         DexPayConfig cfg,
         bytes memory flashCalldata
-    ) internal pure returns (bytes memory data) {
+    )
+        internal
+        pure
+        returns (bytes memory data)
+    {
         if (uint256(cfg) < 2 && flashCalldata.length > 2) revert("Invalid config for v3 swap");
         data = abi.encodePacked(
             tokenOut,
@@ -94,8 +98,7 @@ contract IzumiQuoterTest is BaseTest {
         uint256 amountIn = 0.01e18; // 1 WETH
 
         // Use utility function to encode path
-        bytes memory path =
-            izumiV3StyleSwap(USDC, address(quoter), 0, WETH_USDC_500_POOL, 500, DexPayConfig.CALLER_PAYS, new bytes(0));
+        bytes memory path = izumiV3StyleSwap(USDC, address(quoter), 0, WETH_USDC_500_POOL, 500, DexPayConfig.CALLER_PAYS, new bytes(0));
         // single swap branch (0,0)
         bytes memory swapBranch = (new bytes(0)).attachBranch(0, 0, ""); //(0,0)
         uint256 gas = gasleft();
@@ -109,9 +112,8 @@ contract IzumiQuoterTest is BaseTest {
 
         // add quotedAmountOut as amountOutMin
         bytes memory swapHead = CalldataLib.swapHead(amountIn, quotedAmountOut, WETH, false);
-        bytes memory swapCall = CalldataLib.izumiV3StyleSwap(
-            abi.encodePacked(swapHead, swapBranch), USDC, user, 0, WETH_USDC_500_POOL, 500, DexPayConfig.CALLER_PAYS, ""
-        );
+        bytes memory swapCall =
+            CalldataLib.izumiV3StyleSwap(abi.encodePacked(swapHead, swapBranch), USDC, user, 0, WETH_USDC_500_POOL, 500, DexPayConfig.CALLER_PAYS, "");
 
         // Get actual amount from a real swap
         uint256 balanceBefore = IERC20(USDC).balanceOf(address(user));
@@ -133,11 +135,7 @@ contract IzumiQuoterTest is BaseTest {
         console.log("Actual amount:", actualAmountOut);
     }
 
-    function multiPath(address[] memory assets, uint16[] memory fees, address receiver)
-        internal
-        view
-        returns (bytes memory data)
-    {
+    function multiPath(address[] memory assets, uint16[] memory fees, address receiver) internal view returns (bytes memory data) {
         data = abi.encodePacked(
             uint8(fees.length - 1), // path max index
             uint8(0) // no splits

@@ -70,7 +70,11 @@ contract V3QuoterTest is BaseTest {
         uint256 feeTier, //
         DexPayConfig cfg,
         bytes memory flashCalldata
-    ) internal pure returns (bytes memory data) {
+    )
+        internal
+        pure
+        returns (bytes memory data)
+    {
         if (uint256(cfg) < 2 && flashCalldata.length > 2) revert("Invalid config for v3 swap");
         data = abi.encodePacked(
             tokenOut,
@@ -109,14 +113,7 @@ contract V3QuoterTest is BaseTest {
         // add quotedAmountOut as amountOutMin
         bytes memory swapHead = CalldataLib.swapHead(amountIn, quotedAmountOut, WETH, false);
         bytes memory swapCall = CalldataLib.uniswapV3StyleSwap(
-            abi.encodePacked(swapHead, swapBranch),
-            USDC,
-            user,
-            0,
-            WETH_USDC_500_POOL,
-            500,
-            DexPayConfig.CALLER_PAYS,
-            ""
+            abi.encodePacked(swapHead, swapBranch), USDC, user, 0, WETH_USDC_500_POOL, 500, DexPayConfig.CALLER_PAYS, ""
         );
 
         // Get actual amount from a real swap

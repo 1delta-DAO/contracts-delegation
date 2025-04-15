@@ -185,8 +185,9 @@ contract PancakeTypeTest is DeltaSetup {
         assertApproxEqAbs(balanceIn, amountIn, 0);
     }
 
-    /** UNISWAP FORK PATH BUILDERS */
-
+    /**
+     * UNISWAP FORK PATH BUILDERS
+     */
     function getSpotExactInSingleSgUSDC(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = 2500;
         uint8 poolId = DexMappingsTaiko.PANKO_DEX_ID;
@@ -194,8 +195,9 @@ contract PancakeTypeTest is DeltaSetup {
         return abi.encodePacked(tokenIn, uint8(0), poolId, pool, fee, tokenOut);
     }
 
-    /** V3 STYLE */
-
+    /**
+     * V3 STYLE
+     */
     function getQuoterExactInSingleSgUSDC(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = 2500;
         uint8 poolId = DexMappingsTaiko.PANKO_DEX_ID;
@@ -211,8 +213,9 @@ contract PancakeTypeTest is DeltaSetup {
         return abi.encodePacked(tokenIn, uint8(0), poolId, pool, indexIn, indexOut, PANCAKE_STABLE_SELECTOR, tokenOut);
     }
 
-    /** STABLE STYLE */
-
+    /**
+     * STABLE STYLE
+     */
     function getQuoterStableExactInSingleSgUSDC(address tokenIn, address tokenOut) internal pure returns (bytes memory data) {
         uint8 poolId = DexMappingsTaiko.PANKO_STABLE_DEX_ID;
         uint8 indexIn = uint8(getPankoStableIndex(tokenIn));
@@ -221,14 +224,15 @@ contract PancakeTypeTest is DeltaSetup {
         return abi.encodePacked(tokenIn, poolId, pool, indexIn, indexOut, PANCAKE_STABLE_SELECTOR, tokenOut);
     }
 
-    function getPankoStableIndex(address token) internal pure returns (uint) {
+    function getPankoStableIndex(address token) internal pure returns (uint256) {
         if (token == TokensTaiko.USDC) return 0;
         else if (token == TokensTaiko.USDT) return 1;
         else revert();
     }
 
-    /** MULTI */
-
+    /**
+     * MULTI
+     */
     function getSpotExactInMultiSgUSDC(address tokenIn, address mid, address tokenOut) internal view returns (bytes memory data) {
         uint8 poolId = DexMappingsTaiko.PANKO_STABLE_DEX_ID;
         uint8 indexIn = uint8(getPankoStableIndex(tokenIn));

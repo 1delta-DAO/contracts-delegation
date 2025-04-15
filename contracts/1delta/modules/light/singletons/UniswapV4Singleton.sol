@@ -6,10 +6,6 @@ import {Masks} from "../../shared/masks/Masks.sol";
 import {DeltaErrors} from "../../shared/errors/Errors.sol";
 import {Gen2025ActionIds} from "../enums/DeltaEnums.sol";
 
-/******************************************************************************\
-* Author: Achthar | 1delta 
-/******************************************************************************/
-
 // solhint-disable max-line-length
 
 /**
@@ -53,7 +49,8 @@ abstract contract UniswapV4SingletonActions is Masks, DeltaErrors {
                     manager,
                     0x0,
                     ptr, //
-                    100, // selector, offset, length, data
+                    100,
+                    // selector, offset, length, data
                     0x0, // output = empty
                     0x0 // output size = zero
                 )
@@ -89,7 +86,8 @@ abstract contract UniswapV4SingletonActions is Masks, DeltaErrors {
                     manager,
                     0x0,
                     0, //
-                    36, // selector, offset, length, data
+                    36,
+                    // selector, offset, length, data
                     0x0, // output = empty
                     0x0 // output size = zero
                 )
@@ -122,7 +120,8 @@ abstract contract UniswapV4SingletonActions is Masks, DeltaErrors {
                     manager,
                     amount,
                     0, //
-                    4, // selector, offset, length, data
+                    4,
+                    // selector, offset, length, data
                     0x0, // output = empty
                     0x0 // output size = zero
                 )

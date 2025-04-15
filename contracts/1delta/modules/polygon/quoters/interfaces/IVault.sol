@@ -19,9 +19,7 @@ pragma solidity >=0.8.0 <0.9.0;
  * don't override one of these declarations.
  */
 interface IVault {
-    function getPoolTokens(
-        bytes32 poolId
-    )
+    function getPoolTokens(bytes32 poolId)
         external
         view
         returns (

@@ -20,7 +20,7 @@ contract Transfers is AssetTransfers {
             return _transferFrom(currentOffset, callerAddress);
         } else if (transferOperation == TransferIds.SWEEP) {
             return _sweep(currentOffset);
-        }  else if (transferOperation == TransferIds.UNWRAP_WNATIVE) {
+        } else if (transferOperation == TransferIds.UNWRAP_WNATIVE) {
             return _unwrap(currentOffset);
         } else if (transferOperation == TransferIds.PERMIT2_TRANSFER_FROM) {
             return _permit2TransferFrom(currentOffset, callerAddress);

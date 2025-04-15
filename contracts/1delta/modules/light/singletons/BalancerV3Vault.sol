@@ -6,10 +6,6 @@ import {Masks} from "../../shared/masks/Masks.sol";
 import {DeltaErrors} from "../../shared/errors/Errors.sol";
 import {Gen2025ActionIds} from "../enums/DeltaEnums.sol";
 
-/******************************************************************************\
-* Author: Achthar | 1delta 
-/******************************************************************************/
-
 // solhint-disable max-line-length
 
 /**
@@ -56,7 +52,8 @@ abstract contract BalancerV3VaultActions is Masks, DeltaErrors {
                     manager,
                     0x0,
                     ptr, //
-                    100, // selector, offset, length, data
+                    100,
+                    // selector, offset, length, data
                     0x0, // output = empty
                     0x0 // output size = zero
                 )
@@ -86,9 +83,7 @@ abstract contract BalancerV3VaultActions is Masks, DeltaErrors {
             let amountHint := shr(128, calldataload(currentOffset))
 
             // we can settle exactly for the credit as for the B3 logic
-            if eq(amountHint, UINT128_MASK) {
-                amountHint := MAX_UINT256
-            }
+            if eq(amountHint, UINT128_MASK) { amountHint := MAX_UINT256 }
 
             currentOffset := add(16, currentOffset)
 
@@ -103,7 +98,8 @@ abstract contract BalancerV3VaultActions is Masks, DeltaErrors {
                     manager,
                     0x0, // no native
                     ptr, //
-                    68, // selector, offset, length, data
+                    68,
+                    // selector, offset, length, data
                     0x0, // output = empty
                     0x0 // output size = zero
                 )

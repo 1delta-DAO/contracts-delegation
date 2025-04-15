@@ -246,8 +246,9 @@ contract MarginOpenTest is DeltaSetup {
         assertApproxEqAbs(balance, params.amountToDeposit + params.swapAmount, 0);
     }
 
-    /** THE FOLLOWING TESTS CHECK THE CALLBACK FOR V2 */
-
+    /**
+     * THE FOLLOWING TESTS CHECK THE CALLBACK FOR V2
+     */
     function test_margin_mantle_open_exact_in_v2(uint8 lenderIndex) external {
         TestParamsOpen memory params;
         address user = testUser;

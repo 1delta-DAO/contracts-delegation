@@ -5,10 +5,6 @@ pragma solidity ^0.8.28;
 import {Masks} from "../../shared/masks/Masks.sol";
 import {Gen2025ActionIds} from "../enums/DeltaEnums.sol";
 
-/******************************************************************************\
-* Author: Achthar | 1delta 
-/******************************************************************************/
-
 // solhint-disable max-line-length
 
 abstract contract SharedSingletonActions is Masks {
@@ -65,7 +61,8 @@ abstract contract SharedSingletonActions is Masks {
                     manager,
                     0x0,
                     ptr, //
-                    add(dataLength, 156), // selector, 2x offset, 2x length, data * address + uint8
+                    add(dataLength, 156),
+                    // selector, 2x offset, 2x length, data * address + uint8
                     0x0, // output = empty
                     0x0 // output size = zero
                 )

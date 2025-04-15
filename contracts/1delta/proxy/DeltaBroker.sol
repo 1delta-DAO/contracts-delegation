@@ -2,10 +2,11 @@
 
 pragma solidity ^0.8.0;
 
-/******************************************************************************\
-* Author: Achthar <achim@1delta.io>
-/******************************************************************************/
-
+/**
+ * \
+ * Author: Achthar <achim@1delta.io>
+ * /*****************************************************************************
+ */
 import {LibModules} from "./libraries/LibModules.sol";
 import {IModuleConfig} from "./interfaces/IModuleConfig.sol";
 
@@ -45,11 +46,7 @@ contract DeltaBrokerProxy {
             // Pointer to the end of `tracker`.
             end := add(tracker, end)
 
-            for {
-
-            } 1 {
-
-            } {
+            for {} 1 {} {
                 // The offset of the current bytes in the calldata.
                 let o := add(data.offset, mload(tracker))
                 let m := add(currentOffset, 0x40)
@@ -60,10 +57,11 @@ contract DeltaBrokerProxy {
                     calldataload(o) // The length of the current bytes.
                 )
                 // determine the selector
-                let target := and(
-                    mload(m), // calldata was copied to 0, we load the selector from there
-                    0xFFFFFFFF00000000000000000000000000000000000000000000000000000000
-                )
+                let target :=
+                    and(
+                        mload(m), // calldata was copied to 0, we load the selector from there
+                        0xFFFFFFFF00000000000000000000000000000000000000000000000000000000
+                    )
                 mstore(0x00, target)
                 mstore(0x20, impls.slot)
                 let slot := keccak256(0x00, 0x40)
@@ -81,9 +79,7 @@ contract DeltaBrokerProxy {
                     revert(0x00, returndatasize())
                 }
                 tracker := add(tracker, 0x20)
-                if iszero(lt(tracker, end)) {
-                    break
-                }
+                if iszero(lt(tracker, end)) { break }
             }
         }
     }
@@ -116,9 +112,7 @@ contract DeltaBrokerProxy {
             let success := delegatecall(gas(), target, 0x40, cdlen, 0x00, 0x00)
             let rdlen := returndatasize()
             returndatacopy(0x00, 0x00, rdlen)
-            if success {
-                return(0x00, rdlen)
-            }
+            if success { return(0x00, rdlen) }
             revert(0x00, rdlen)
         }
     }

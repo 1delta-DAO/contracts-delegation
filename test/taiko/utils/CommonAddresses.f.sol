@@ -23,8 +23,9 @@ contract AddressesTaiko {
     // users
     address internal testUser = 0xaaaa4a3F69b6DB76889bDfa4edBe1c0BB57BAA5c;
 
-    /** DEX CONFIG */
-
+    /**
+     * DEX CONFIG
+     */
     uint16 internal constant DEX_FEE_STABLES = 100;
     uint16 internal constant DEX_FEE_LOW_MEDIUM = 2500;
     uint16 internal constant DEX_FEE_LOW_HIGH = 3000;
@@ -42,9 +43,9 @@ contract AddressesTaiko {
         return 0;
     }
 
-
-    /** TRADE TYPE FLAG GETTERS */
-
+    /**
+     * TRADE TYPE FLAG GETTERS
+     */
     function getOpenExactInFlags() internal pure returns (uint8 flagStart, uint8 flagMiddle, uint8 flagEnd) {
         return (3, 0, 2);
     }

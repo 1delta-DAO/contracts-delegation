@@ -207,9 +207,7 @@ contract AssetTransfers is ERC20Selectors, Masks, DeltaErrors {
                         revert(0, 0x4)
                     }
                 }
-                default {
-                    transferAmount := providedAmount
-                }
+                default { transferAmount := providedAmount }
 
                 if gt(transferAmount, 0) {
                     let ptr := mload(0x40) // free memory pointer
@@ -253,9 +251,7 @@ contract AssetTransfers is ERC20Selectors, Masks, DeltaErrors {
                         revert(0, 0x4)
                     }
                 }
-                default {
-                    transferAmount := providedAmount
-                }
+                default { transferAmount := providedAmount }
 
                 if gt(transferAmount, 0) {
                     if iszero(
@@ -373,9 +369,7 @@ contract AssetTransfers is ERC20Selectors, Masks, DeltaErrors {
                     revert(0, 0x4)
                 }
             }
-            default {
-                transferAmount := providedAmount
-            }
+            default { transferAmount := providedAmount }
 
             if gt(transferAmount, 0) {
                 // selector for withdraw(uint256)

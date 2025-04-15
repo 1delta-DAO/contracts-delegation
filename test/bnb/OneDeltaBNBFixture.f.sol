@@ -71,9 +71,8 @@ contract OneDeltaBNBFixture is CommonBNBAddresses, Test {
         // add all modules
         config.configureModules(_moduleConfig);
 
-
         // add asset data
-        for (uint i; i < assets.length; i++) {
+        for (uint256 i; i < assets.length; i++) {
             address asset = assets[i];
             management.addCollateralToken(asset, vTokens[i]);
         }
@@ -90,10 +89,10 @@ contract OneDeltaBNBFixture is CommonBNBAddresses, Test {
         deployAndInit1delta();
         address asset;
         // fund 10 first assets
-        for (uint i; i < 10; i++) {
+        for (uint256 i; i < 10; i++) {
             asset = assets[i];
             vm.startPrank(asset);
-            uint balance = IERC20Minimal(asset).balanceOf(asset);
+            uint256 balance = IERC20Minimal(asset).balanceOf(asset);
             if (balance > 0) IERC20Minimal(asset).transfer(address(this), balance);
             vm.stopPrank();
         }

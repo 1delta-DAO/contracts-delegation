@@ -5,10 +5,6 @@ pragma solidity ^0.8.28;
 import {Slots} from "../shared/storage/Slots.sol";
 import {ERC20Selectors} from "../shared/selectors/ERC20Selectors.sol";
 
-/******************************************************************************\
-* Author: Achthar | 1delta 
-/******************************************************************************/
-
 // solhint-disable max-line-length
 
 /**
@@ -54,7 +50,9 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                 mstore(0x20, COLLATERAL_TOKENS_SLOT)
                 let collateralToken := sload(keccak256(0x0, 0x40))
 
-                /** PREPARE TRANSFER_FROM USER */
+                /**
+                 * PREPARE TRANSFER_FROM USER
+                 */
 
                 // selector for transferFrom(address,address,uint256)
                 mstore(ptr, ERC20_TRANSFER_FROM)
@@ -66,16 +64,17 @@ abstract contract BaseLending is Slots, ERC20Selectors {
 
                 let rdsize := returndatasize()
 
-                success := and(
-                    success, // call itself succeeded
-                    or(
-                        iszero(rdsize), // no return data, or
-                        and(
-                            gt(rdsize, 31), // at least 32 bytes
-                            eq(mload(0x0), 1) // starts with uint256(1)
+                success :=
+                    and(
+                        success, // call itself succeeded
+                        or(
+                            iszero(rdsize), // no return data, or
+                            and(
+                                gt(rdsize, 31), // at least 32 bytes
+                                eq(mload(0x0), 1) // starts with uint256(1)
+                            )
                         )
                     )
-                )
 
                 if iszero(success) {
                     returndatacopy(0x0, 0x0, rdsize)
@@ -91,15 +90,9 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                 let pool
                 // assign lending pool
                 switch _lenderId
-                case 0 {
-                    pool := AAVE_V3
-                }
-                case 900 {
-                    pool := YLDR
-                }
-                case 1000 {
-                    pool := AAVE_V2
-                }
+                case 0 { pool := AAVE_V3 }
+                case 900 { pool := YLDR }
+                case 1000 { pool := AAVE_V2 }
                 default {
                     mstore(0x0, _lenderId)
                     mstore(0x20, LENDING_POOL_SLOT)
@@ -120,12 +113,8 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                 case 1 {
                     let cometPool
                     switch _lenderId
-                    case 2000 {
-                        cometPool := COMET_USDC
-                    }
-                    case 2001 {
-                        cometPool := COMET_USDT
-                    }
+                    case 2000 { cometPool := COMET_USDC }
+                    case 2001 { cometPool := COMET_USDT }
                     // default: load comet from storage
                     // if it is not provided directly
                     default {
@@ -181,12 +170,8 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                 default {
                     let pool
                     switch _lenderId
-                    case 0 {
-                        pool := AAVE_V3
-                    }
-                    case 2000 {
-                        pool := AAVE_V2
-                    }
+                    case 0 { pool := AAVE_V3 }
+                    case 2000 { pool := AAVE_V2 }
                     default {
                         mstore(0x0, _lenderId)
                         mstore(0x20, LENDING_POOL_SLOT)
@@ -224,16 +209,17 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                     // Check for ERC20 success. ERC20 tokens should return a boolean,
                     // but some don't. We accept 0-length return data as success, or at
                     // least 32 bytes that starts with a 32-byte boolean true.
-                    success := and(
-                        success, // call itself succeeded
-                        or(
-                            iszero(rdsize), // no return data, or
-                            and(
-                                gt(rdsize, 31), // at least 32 bytes
-                                eq(mload(ptr), 1) // starts with uint256(1)
+                    success :=
+                        and(
+                            success, // call itself succeeded
+                            or(
+                                iszero(rdsize), // no return data, or
+                                and(
+                                    gt(rdsize, 31), // at least 32 bytes
+                                    eq(mload(ptr), 1) // starts with uint256(1)
+                                )
                             )
                         )
-                    )
 
                     if iszero(success) {
                         returndatacopy(0, 0, rdsize)
@@ -246,12 +232,8 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                 case 1 {
                     let cometPool
                     switch _lenderId
-                    case 2000 {
-                        cometPool := COMET_USDC
-                    }
-                    case 2001 {
-                        cometPool := COMET_USDT
-                    }
+                    case 2000 { cometPool := COMET_USDC }
+                    case 2001 { cometPool := COMET_USDT }
                     // default: load comet from storage
                     // if it is not provided directly
                     default {
@@ -300,12 +282,8 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                     let pool
                     // assign lending pool
                     switch _lenderId
-                    case 0 {
-                        pool := AAVE_V3
-                    }
-                    case 900 {
-                        pool := YLDR
-                    }
+                    case 0 { pool := AAVE_V3 }
+                    case 900 { pool := YLDR }
                     default {
                         mstore(0x0, _lenderId)
                         mstore(0x20, LENDING_POOL_SLOT)
@@ -324,9 +302,7 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                 case 0 {
                     let pool
                     switch _lenderId
-                    case 1000 {
-                        pool := AAVE_V2
-                    }
+                    case 1000 { pool := AAVE_V2 }
                     default {
                         mstore(0x0, _lenderId)
                         mstore(0x20, LENDING_POOL_SLOT)
@@ -354,12 +330,8 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                 case 1 {
                     let cometPool
                     switch _lenderId
-                    case 2000 {
-                        cometPool := COMET_USDC
-                    }
-                    case 2001 {
-                        cometPool := COMET_USDT
-                    }
+                    case 2000 { cometPool := COMET_USDC }
+                    case 2001 { cometPool := COMET_USDT }
                     // default: load comet from storage
                     // if it is not provided directly
                     default {
@@ -414,12 +386,8 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                 default {
                     let pool
                     switch _lenderId
-                    case 0 {
-                        pool := AAVE_V3
-                    }
-                    case 1000 {
-                        pool := AAVE_V3
-                    }
+                    case 0 { pool := AAVE_V3 }
+                    case 1000 { pool := AAVE_V3 }
                     default {
                         mstore(0x0, _lenderId)
                         mstore(0x20, LENDING_POOL_SLOT)
@@ -447,12 +415,8 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                 case 1 {
                     let cometPool
                     switch _lenderId
-                    case 2000 {
-                        cometPool := COMET_USDC
-                    }
-                    case 2001 {
-                        cometPool := COMET_USDT
-                    }
+                    case 2000 { cometPool := COMET_USDC }
+                    case 2001 { cometPool := COMET_USDT }
                     // default: load comet from storage
                     // if it is not provided directly
                     default {

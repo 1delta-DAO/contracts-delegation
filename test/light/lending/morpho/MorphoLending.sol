@@ -34,7 +34,7 @@ contract MorphoBlueTest is BaseTest {
 
     function setUp() public virtual {
         string memory chainName = Chains.BASE;
-        
+
         _init(chainName, forkBlock);
 
         oneD = ComposerPlugin.getComposer(chainName);
@@ -44,13 +44,8 @@ contract MorphoBlueTest is BaseTest {
         WETH = chain.getTokenAddress(Tokens.WETH);
 
         // initialize the market
-        LBTC_USDC_MARKET = MarketParams(
-            USDC,
-            LBTC,
-            0x6E877Ff82A5ED6cB4f4789c27D9F9B1d54388e4F,
-            0x46415998764C29aB2a25CbeA6254146D50D22687,
-            860000000000000000
-        );
+        LBTC_USDC_MARKET =
+            MarketParams(USDC, LBTC, 0x6E877Ff82A5ED6cB4f4789c27D9F9B1d54388e4F, 0x46415998764C29aB2a25CbeA6254146D50D22687, 860000000000000000);
     }
 
     uint256 internal constant UPPER_BIT = 1 << 255;
@@ -142,8 +137,7 @@ contract MorphoBlueTest is BaseTest {
         oneD.deltaCompose(borrowCall);
 
         // get market data
-        (,, uint128 totalBorrowAssets, uint128 totalBorrowShares,,) =
-            IMorphoEverything(MORPHO).market(marketId(LBTC_USDC_MARKET));
+        (,, uint128 totalBorrowAssets, uint128 totalBorrowShares,,) = IMorphoEverything(MORPHO).market(marketId(LBTC_USDC_MARKET));
 
         (, uint128 borrowShares,) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
         uint256 borrowBalanceAfter = borrowShares.toAssetsDown(totalBorrowAssets, totalBorrowShares);
@@ -212,8 +206,7 @@ contract MorphoBlueTest is BaseTest {
         uint256 borrowAssets = 30_000.0e6;
         depositCollateralToMorpho(user, assets);
 
-        bytes memory borrowCall =
-            CalldataLib.morphoBorrow(encodeMarket(LBTC_USDC_MARKET), false, borrowAssets, user, MORPHO);
+        bytes memory borrowCall = CalldataLib.morphoBorrow(encodeMarket(LBTC_USDC_MARKET), false, borrowAssets, user, MORPHO);
 
         vm.prank(user);
         IMorphoEverything(MORPHO).setAuthorization(address(oneD), true);
@@ -223,9 +216,7 @@ contract MorphoBlueTest is BaseTest {
 
         (, uint128 borrowShares,) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
 
-        bytes memory repayCall = CalldataLib.morphoRepay(
-            encodeMarket(LBTC_USDC_MARKET), true, false, borrowShares, user, hex"", MORPHO, MORPHO_ID
-        );
+        bytes memory repayCall = CalldataLib.morphoRepay(encodeMarket(LBTC_USDC_MARKET), true, false, borrowShares, user, hex"", MORPHO, MORPHO_ID);
 
         vm.prank(user);
         IERC20All(borrowAsset).approve(address(oneD), type(uint256).max);

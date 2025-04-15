@@ -133,8 +133,9 @@ contract GeneralMoeLBTest is DeltaSetup {
         assertApproxEqAbs(balanceIn, amountIn, 0);
     }
 
-    /** UNISWAP FORK PATH BUILDERS */
-
+    /**
+     * UNISWAP FORK PATH BUILDERS
+     */
     function getSpotExactInSinglePuff(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint16 fee = 3000;
         uint8 poolId = DexMappingsMantle.METHLAB_POOL_ID;

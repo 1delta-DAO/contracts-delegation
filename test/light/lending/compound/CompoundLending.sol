@@ -28,7 +28,7 @@ contract CompoundV3ComposerLightTest is BaseTest {
     function setUp() public virtual {
         // initialize the chain
         string memory chainName = Chains.BASE;
-        
+
         _init(chainName, forkBlock);
         lender = Lenders.COMPOUND_V3_USDC;
         USDC = chain.getTokenAddress(Tokens.USDC);
@@ -120,9 +120,7 @@ contract CompoundV3ComposerLightTest is BaseTest {
         approveWithdrawalDelegation(user, token, address(oneDV2), lender);
 
         uint256 amountToWithdraw = 10.0e6;
-        bytes memory d = CalldataLib.encodeCompoundV3Withdraw(
-            token, false, amountToWithdraw, user, comet, token == chain.getCometToBase(lender)
-        );
+        bytes memory d = CalldataLib.encodeCompoundV3Withdraw(token, false, amountToWithdraw, user, comet, token == chain.getCometToBase(lender));
 
         // Check balances before withdrawal
         uint256 collateralBefore = chain.getCollateralBalance(user, token, lender);

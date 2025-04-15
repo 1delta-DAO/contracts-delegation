@@ -2,10 +2,6 @@
 
 pragma solidity 0.8.28;
 
-/******************************************************************************\
-* Author: Achthar | 1delta 
-/******************************************************************************/
-
 import {ERC20Selectors} from "../../../shared/selectors/ERC20Selectors.sol";
 import {Masks} from "../../../shared/masks/Masks.sol";
 
@@ -27,7 +23,10 @@ abstract contract LBSwapper is ERC20Selectors, Masks {
         address receiver,
         address callerAddress,
         uint256 currentOffset //
-    ) internal returns (uint256 amountOut, uint256 payFlag) {
+    )
+        internal
+        returns (uint256 amountOut, uint256 payFlag)
+    {
         assembly {
             let ptr := mload(0x40)
             let lbData := calldataload(currentOffset)
@@ -93,12 +92,8 @@ abstract contract LBSwapper is ERC20Selectors, Masks {
             }
             // the swap call returns both amounts encoded into a single bytes32 as (amountX,amountY)
             switch swapForY
-            case 0 {
-                amountOut := and(mload(ptr), 0xffffffffffffffffffffffffffffffff)
-            }
-            default {
-                amountOut := shr(128, mload(ptr))
-            }
+            case 0 { amountOut := and(mload(ptr), 0xffffffffffffffffffffffffffffffff) }
+            default { amountOut := shr(128, mload(ptr)) }
 
             currentOffset := add(currentOffset, 21)
         }

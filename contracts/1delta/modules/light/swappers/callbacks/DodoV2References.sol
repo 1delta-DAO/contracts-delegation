@@ -2,10 +2,6 @@
 
 pragma solidity 0.8.28;
 
-/******************************************************************************\
-* Author: Achthar | 1delta 
-/******************************************************************************/
-
 /**
  * Dodo has a registry mapping in their respective factory
  * By providing quote and base token together with the index in the array, the caller can validate the callback

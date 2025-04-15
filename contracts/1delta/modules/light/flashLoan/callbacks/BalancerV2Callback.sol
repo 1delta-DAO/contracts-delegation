@@ -22,7 +22,9 @@ contract BalancerV2FlashLoanCallback is Slots, Masks, DeltaErrors {
         uint256[] calldata,
         uint256[] calldata,
         bytes calldata params //
-    ) external {
+    )
+        external
+    {
         address origCaller;
         uint256 calldataOffset;
         uint256 calldataLength;

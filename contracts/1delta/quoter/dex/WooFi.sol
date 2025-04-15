@@ -12,9 +12,7 @@ abstract contract WooFiQuoter {
             mstore(0xB04, tokenIn)
             mstore(0xB24, tokenOut)
             mstore(0xB44, amountIn)
-            if iszero(staticcall(gas(), WOO_ROUTER, 0xB00, 0x64, 0xB00, 0x20)) {
-                revert(0, 0)
-            }
+            if iszero(staticcall(gas(), WOO_ROUTER, 0xB00, 0x64, 0xB00, 0x20)) { revert(0, 0) }
 
             amountOut := mload(0xB00)
         }

@@ -2,10 +2,6 @@
 
 pragma solidity 0.8.28;
 
-/******************************************************************************\
-* Author: Achthar | 1delta 
-/******************************************************************************/
-
 // solhint-disable max-line-length
 
 import {ERC20Selectors} from "../../../shared/selectors/ERC20Selectors.sol";
@@ -21,7 +17,8 @@ abstract contract NativeWrapper is ERC20Selectors, Masks {
     bytes4 private constant WRAP = 0xc30d93ce;
 
     // InvalidDex()
-    /** This one is for overring the DEX implementation
+    /**
+     * This one is for overring the DEX implementation
      * | Offset | Length (bytes) | Description         |
      * |--------|----------------|---------------------|
      * | 0      | 20             | wrappedNativeAddress|

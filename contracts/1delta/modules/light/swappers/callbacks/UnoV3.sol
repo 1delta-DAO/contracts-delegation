@@ -2,10 +2,6 @@
 
 pragma solidity 0.8.28;
 
-/******************************************************************************\
-* Author: Achthar | 1delta 
-/******************************************************************************/
-
 import {V3ReferencesBase} from "./V3References.sol";
 import {ValidatorLib} from "./ValidatorLib.sol";
 import {Masks} from "../../../shared/masks/Masks.sol";
@@ -16,7 +12,9 @@ import {ERC20Selectors} from "../../../shared/selectors/ERC20Selectors.sol";
  * @title Uniswap V3 type callback implementations
  */
 abstract contract UniV3Callbacks is V3ReferencesBase, ERC20Selectors, Masks, DeltaErrors {
-    /** This functione xecutes a simple transfer to shortcut the callback if there is no further calldata */
+    /**
+     * This functione xecutes a simple transfer to shortcut the callback if there is no further calldata
+     */
     function clSwapCallback(uint256 amountToPay, address tokenIn, address callerAddress, uint256 calldataLength) private {
         assembly {
             // one can pass no path to continue
@@ -43,15 +41,16 @@ abstract contract UniV3Callbacks is V3ReferencesBase, ERC20Selectors, Masks, Del
                     mstore(ptr, ERC20_TRANSFER)
                     mstore(add(ptr, 0x04), caller())
                     mstore(add(ptr, 0x24), amountToPay)
-                    success := call(
-                        gas(),
-                        tokenIn, // tokenIn, pool + 5x uint8 (i,j,s,a)
-                        0,
-                        ptr,
-                        0x44,
-                        ptr,
-                        32
-                    )
+                    success :=
+                        call(
+                            gas(),
+                            tokenIn, // tokenIn, pool + 5x uint8 (i,j,s,a)
+                            0,
+                            ptr,
+                            0x44,
+                            ptr,
+                            32
+                        )
                 }
 
                 let rdsize := returndatasize()
@@ -109,49 +108,42 @@ abstract contract UniV3Callbacks is V3ReferencesBase, ERC20Selectors, Masks, Del
         assembly {
             switch or(eq(selector, SELECTOR_UNIV3), eq(selector, SELECTOR_PANCAKE))
             case 1 {
-                switch and(UINT8_MASK, shr(88, calldataload(172))) // forkId
+                switch and(UINT8_MASK, shr(88, calldataload(172)))
+                // forkId
                 case 0 {
                     ffFactoryAddress := UNI_V3_FF_FACTORY
                     codeHash := UNI_POOL_INIT_CODE_HASH
                 }
-                default {
-                    revert(0, 0)
-                }
+                default { revert(0, 0) }
 
                 let _amount1 := calldataload(36)
                 switch sgt(_amount1, 0)
-                case 1 {
-                    amountToPay := _amount1
-                }
-                default {
-                    amountToPay := calldataload(4)
-                }
+                case 1 { amountToPay := _amount1 }
+                default { amountToPay := calldataload(4) }
             }
             default {
                 // check if we do izumi
                 switch selector
                 // SELECTOR_IZI_XY
                 case 0x1878068400000000000000000000000000000000000000000000000000000000 {
-                    switch and(UINT8_MASK, shr(88, calldataload(172))) // forkId
+                    switch and(UINT8_MASK, shr(88, calldataload(172)))
+                    // forkId
                     case 0 {
                         ffFactoryAddress := IZI_FF_FACTORY
                         codeHash := IZI_POOL_INIT_CODE_HASH
                     }
-                    default {
-                        revert(0, 0)
-                    }
+                    default { revert(0, 0) }
                     amountToPay := calldataload(4)
                 }
                 // SELECTOR_IZI_YX
                 case 0xd3e1c28400000000000000000000000000000000000000000000000000000000 {
-                    switch and(UINT8_MASK, shr(88, calldataload(172))) // forkId
+                    switch and(UINT8_MASK, shr(88, calldataload(172)))
+                    // forkId
                     case 0 {
                         ffFactoryAddress := IZI_FF_FACTORY
                         codeHash := IZI_POOL_INIT_CODE_HASH
                     }
-                    default {
-                        revert(0, 0)
-                    }
+                    default { revert(0, 0) }
                     amountToPay := calldataload(36)
                 }
             }

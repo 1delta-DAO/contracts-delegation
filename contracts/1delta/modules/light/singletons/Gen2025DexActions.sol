@@ -7,20 +7,13 @@ import {UniswapV4SingletonActions} from "./UniswapV4Singleton.sol";
 import {BalancerV3VaultActions} from "./BalancerV3Vault.sol";
 import {SharedSingletonActions} from "./Shared.sol";
 
-/******************************************************************************\
-* Author: Achthar | 1delta 
-/******************************************************************************/
-
 // solhint-disable max-line-length
 
 /**
  * @notice Everything Uniswap V4 & Balancer V3, the major upgrades for DEXs in 2025
  */
 abstract contract Gen2025DexActions is UniswapV4SingletonActions, BalancerV3VaultActions, SharedSingletonActions {
-    function _gen2025DexActions(
-        uint256 currentOffset,
-        address callerAddress
-    ) internal returns (uint256) {
+    function _gen2025DexActions(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         uint256 transferOperation;
         assembly {
             let firstSlice := calldataload(currentOffset)

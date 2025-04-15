@@ -2,10 +2,6 @@
 
 pragma solidity 0.8.28;
 
-/******************************************************************************\
-* Author: Achthar | 1delta 
-/******************************************************************************/
-
 import {V2ReferencesBase} from "./V2References.sol";
 import {ValidatorLib} from "./ValidatorLib.sol";
 import {Masks} from "../../../shared/masks/Masks.sol";
@@ -33,14 +29,13 @@ abstract contract UniV2Callbacks is V2ReferencesBase, ERC20Selectors, Masks, Del
         assembly {
             outData := calldataload(204)
             if or(eq(selector, SELECTOR_UNIV2), eq(selector, SELECTOR_HOOK)) {
-                switch and(UINT8_MASK, shr(88, outData)) // forkId
+                switch and(UINT8_MASK, shr(88, outData))
+                // forkId
                 case 0 {
                     ffFactoryAddress := UNI_V2_FF_FACTORY
                     codeHash := CODE_HASH_UNI_V2
                 }
-                default {
-                    revert(0, 0)
-                }
+                default { revert(0, 0) }
             }
         }
 

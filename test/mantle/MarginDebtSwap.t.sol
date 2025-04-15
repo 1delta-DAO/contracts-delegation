@@ -232,8 +232,9 @@ contract MarginDebtSwapTest is DeltaSetup {
         assertApproxEqAbs(amountToLeverage, balance, 1);
     }
 
-    /** TEST V2 CALLBACKS */
-
+    /**
+     * TEST V2 CALLBACKS
+     */
     function test_margin_mantle_debt_exact_in_v2(uint8 lenderIndex) external {
         address user = testUser;
         vm.assume(user != address(0) && validLenderIndex(lenderIndex));

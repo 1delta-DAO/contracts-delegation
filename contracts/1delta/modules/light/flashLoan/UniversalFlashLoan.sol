@@ -18,7 +18,9 @@ contract UniversalFlashLoan is
     AaveV3FlashLoans,
     BalancerV2FlashLoans //
 {
-    /** All flash ones in one function -what do you need more? */
+    /**
+     * All flash ones in one function -what do you need more?
+     */
     function _universalFlashLoan(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         uint256 flashLoanType; // architecture type
         assembly {

@@ -30,7 +30,7 @@ contract UnoV4LightTest is BaseTest {
     function setUp() public virtual {
         // initialize the chain
         string memory chainName = Chains.BASE;
-        
+
         _init(chainName, forkBlock);
         WETH = chain.getTokenAddress(Tokens.WETH);
         cbETH = chain.getTokenAddress(Tokens.CBETH);
@@ -44,11 +44,16 @@ contract UnoV4LightTest is BaseTest {
         address tokenIn,
         address tokenOut,
         uint256 amount
-    ) internal pure returns (bytes memory data) {
+    )
+        internal
+        pure
+        returns (bytes memory data)
+    {
         data = abi.encodePacked(
             uint8(ComposerCommands.SWAPS),
             uint128(amount), //
-            uint128(1), //
+            uint128(1),
+            //
             tokenIn,
             uint8(0), // swaps max index
             uint8(0) // splits
@@ -84,7 +89,7 @@ contract UnoV4LightTest is BaseTest {
 
         if (tokenIn != ETH) {
             vm.prank(user);
-            IERC20All(tokenIn).approve(address(oneDV2), type(uint).max);
+            IERC20All(tokenIn).approve(address(oneDV2), type(uint256).max);
         }
 
         // console.logBytes(
@@ -114,7 +119,7 @@ contract UnoV4LightTest is BaseTest {
 
         uint256 balBefore = IERC20All(tokenOut).balanceOf(user);
 
-        uint gas = gasleft();
+        uint256 gas = gasleft();
 
         if (tokenIn != ETH) {
             vm.prank(user);

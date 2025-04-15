@@ -5,10 +5,6 @@ pragma solidity ^0.8.28;
 import {Slots} from "../shared/storage/Slots.sol";
 import {ERC20Selectors} from "../shared/selectors/ERC20Selectors.sol";
 
-/******************************************************************************\
-* Author: Achthar | 1delta 
-/******************************************************************************/
-
 // solhint-disable max-line-length
 
 /**
@@ -57,7 +53,9 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                 mstore(0x20, COLLATERAL_TOKENS_SLOT)
                 let collateralToken := sload(keccak256(0x0, 0x40))
 
-                /** PREPARE TRANSFER_FROM USER */
+                /**
+                 * PREPARE TRANSFER_FROM USER
+                 */
 
                 // selector for transferFrom(address,address,uint256)
                 mstore(ptr, ERC20_TRANSFER_FROM)
@@ -69,16 +67,17 @@ abstract contract BaseLending is Slots, ERC20Selectors {
 
                 let rdsize := returndatasize()
 
-                success := and(
-                    success, // call itself succeeded
-                    or(
-                        iszero(rdsize), // no return data, or
-                        and(
-                            gt(rdsize, 31), // at least 32 bytes
-                            eq(mload(0x0), 1) // starts with uint256(1)
+                success :=
+                    and(
+                        success, // call itself succeeded
+                        or(
+                            iszero(rdsize), // no return data, or
+                            and(
+                                gt(rdsize, 31), // at least 32 bytes
+                                eq(mload(0x0), 1) // starts with uint256(1)
+                            )
                         )
                     )
-                )
 
                 if iszero(success) {
                     returndatacopy(0x0, 0x0, rdsize)
@@ -94,21 +93,11 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                 let pool
                 // assign lending pool
                 switch _lenderId
-                case 0 {
-                    pool := AAVE_V3
-                }
-                case 900 {
-                    pool := YLDR
-                }
-                case 100 {
-                    pool := AVALON
-                }
-                case 101 {
-                    pool := AVALON_PUMP_BTC
-                }
-                case 1000 {
-                    pool := GRANARY
-                }
+                case 0 { pool := AAVE_V3 }
+                case 900 { pool := YLDR }
+                case 100 { pool := AVALON }
+                case 101 { pool := AVALON_PUMP_BTC }
+                case 1000 { pool := GRANARY }
                 default {
                     mstore(0x0, _lenderId)
                     mstore(0x20, LENDING_POOL_SLOT)
@@ -129,18 +118,10 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                 case 1 {
                     let cometPool
                     switch _lenderId
-                    case 2000 {
-                        cometPool := COMET_USDC
-                    }
-                    case 2001 {
-                        cometPool := COMET_WETH
-                    }
-                    case 2002 {
-                        cometPool := COMET_USDT
-                    }
-                    case 2003 {
-                        cometPool := COMET_USDCE
-                    }
+                    case 2000 { cometPool := COMET_USDC }
+                    case 2001 { cometPool := COMET_WETH }
+                    case 2002 { cometPool := COMET_USDT }
+                    case 2003 { cometPool := COMET_USDCE }
                     // default: load comet from storage
                     // if it is not provided directly
                     default {
@@ -195,13 +176,14 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                     let refAmount := mload(0x0)
 
                     // calculate collateral token amount, rounding up
-                    let transferAmount := add(
-                        div(
-                            mul(_amount, 1000000000000000000), // multiply with 1e18
-                            refAmount // divide by rate
-                        ),
-                        1
-                    )
+                    let transferAmount :=
+                        add(
+                            div(
+                                mul(_amount, 1000000000000000000), // multiply with 1e18
+                                refAmount // divide by rate
+                            ),
+                            1
+                        )
                     // FETCH BALANCE
                     // selector for balanceOf(address)
                     mstore(0x0, ERC20_BALANCE_OF)
@@ -215,9 +197,7 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                     refAmount := mload(0x0)
 
                     // floor to the balance
-                    if gt(transferAmount, refAmount) {
-                        transferAmount := refAmount
-                    }
+                    if gt(transferAmount, refAmount) { transferAmount := refAmount }
 
                     // 2) TRANSFER VTOKENS
 
@@ -269,16 +249,17 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                         // Check for ERC20 success. ERC20 tokens should return a boolean,
                         // but some don't. We accept 0-length return data as success, or at
                         // least 32 bytes that starts with a 32-byte boolean true.
-                        success := and(
-                            success, // call itself succeeded
-                            or(
-                                iszero(rdsize), // no return data, or
-                                and(
-                                    gt(rdsize, 31), // at least 32 bytes
-                                    eq(mload(ptr), 1) // starts with uint256(1)
+                        success :=
+                            and(
+                                success, // call itself succeeded
+                                or(
+                                    iszero(rdsize), // no return data, or
+                                    and(
+                                        gt(rdsize, 31), // at least 32 bytes
+                                        eq(mload(ptr), 1) // starts with uint256(1)
+                                    )
                                 )
                             )
-                        )
 
                         if iszero(success) {
                             returndatacopy(ptr, 0, rdsize)
@@ -314,21 +295,11 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                 default {
                     let pool
                     switch _lenderId
-                    case 0 {
-                        pool := AAVE_V3
-                    }
-                    case 900 {
-                        pool := YLDR
-                    }
-                    case 100 {
-                        pool := AVALON
-                    }
-                    case 101 {
-                        pool := AVALON_PUMP_BTC
-                    }
-                    case 1000 {
-                        pool := GRANARY
-                    }
+                    case 0 { pool := AAVE_V3 }
+                    case 900 { pool := YLDR }
+                    case 100 { pool := AVALON }
+                    case 101 { pool := AVALON_PUMP_BTC }
+                    case 1000 { pool := GRANARY }
                     default {
                         mstore(0x0, _lenderId)
                         mstore(0x20, LENDING_POOL_SLOT)
@@ -366,16 +337,17 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                     // Check for ERC20 success. ERC20 tokens should return a boolean,
                     // but some don't. We accept 0-length return data as success, or at
                     // least 32 bytes that starts with a 32-byte boolean true.
-                    success := and(
-                        success, // call itself succeeded
-                        or(
-                            iszero(rdsize), // no return data, or
-                            and(
-                                gt(rdsize, 31), // at least 32 bytes
-                                eq(mload(ptr), 1) // starts with uint256(1)
+                    success :=
+                        and(
+                            success, // call itself succeeded
+                            or(
+                                iszero(rdsize), // no return data, or
+                                and(
+                                    gt(rdsize, 31), // at least 32 bytes
+                                    eq(mload(ptr), 1) // starts with uint256(1)
+                                )
                             )
                         )
-                    )
 
                     if iszero(success) {
                         returndatacopy(0, 0, rdsize)
@@ -388,18 +360,10 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                 case 1 {
                     let cometPool
                     switch _lenderId
-                    case 2000 {
-                        cometPool := COMET_USDC
-                    }
-                    case 2001 {
-                        cometPool := COMET_WETH
-                    }
-                    case 2002 {
-                        cometPool := COMET_USDT
-                    }
-                    case 2003 {
-                        cometPool := COMET_USDCE
-                    }
+                    case 2000 { cometPool := COMET_USDC }
+                    case 2001 { cometPool := COMET_WETH }
+                    case 2002 { cometPool := COMET_USDT }
+                    case 2003 { cometPool := COMET_USDCE }
                     // default: load comet from storage
                     // if it is not provided directly
                     default {
@@ -459,16 +423,17 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                         // Check for ERC20 success. ERC20 tokens should return a boolean,
                         // but some don't. We accept 0-length return data as success, or at
                         // least 32 bytes that starts with a 32-byte boolean true.
-                        success := and(
-                            success, // call itself succeeded
-                            or(
-                                iszero(rdsize), // no return data, or
-                                and(
-                                    gt(rdsize, 31), // at least 32 bytes
-                                    eq(mload(ptr), 1) // starts with uint256(1)
+                        success :=
+                            and(
+                                success, // call itself succeeded
+                                or(
+                                    iszero(rdsize), // no return data, or
+                                    and(
+                                        gt(rdsize, 31), // at least 32 bytes
+                                        eq(mload(ptr), 1) // starts with uint256(1)
+                                    )
                                 )
                             )
-                        )
 
                         if iszero(success) {
                             returndatacopy(ptr, 0, rdsize)
@@ -497,18 +462,10 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                     let pool
                     // assign lending pool
                     switch _lenderId
-                    case 0 {
-                        pool := AAVE_V3
-                    }
-                    case 900 {
-                        pool := YLDR
-                    }
-                    case 100 {
-                        pool := AVALON
-                    }
-                    case 101 {
-                        pool := AVALON_PUMP_BTC
-                    }
+                    case 0 { pool := AAVE_V3 }
+                    case 900 { pool := YLDR }
+                    case 100 { pool := AVALON }
+                    case 101 { pool := AVALON_PUMP_BTC }
                     default {
                         mstore(0x0, _lenderId)
                         mstore(0x20, LENDING_POOL_SLOT)
@@ -534,9 +491,7 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                     let pool
                     // assign lending pool
                     switch _lenderId
-                    case 1000 {
-                        pool := GRANARY
-                    }
+                    case 1000 { pool := GRANARY }
                     default {
                         mstore(0x0, _lenderId)
                         mstore(0x20, LENDING_POOL_SLOT)
@@ -558,18 +513,10 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                 case 1 {
                     let cometPool
                     switch _lenderId
-                    case 2000 {
-                        cometPool := COMET_USDC
-                    }
-                    case 2001 {
-                        cometPool := COMET_WETH
-                    }
-                    case 2002 {
-                        cometPool := COMET_USDT
-                    }
-                    case 2003 {
-                        cometPool := COMET_USDCE
-                    }
+                    case 2000 { cometPool := COMET_USDC }
+                    case 2001 { cometPool := COMET_WETH }
+                    case 2002 { cometPool := COMET_USDT }
+                    case 2003 { cometPool := COMET_USDCE }
                     // default: load comet from storage
                     // if it is not provided directly
                     default {
@@ -602,15 +549,16 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                     mstore(add(ptr, 0x04), _to)
                     mstore(add(ptr, 0x24), _amount)
 
-                    let success := call(
-                        gas(),
-                        collateralToken,
-                        0x0,
-                        ptr, // input = selector and data
-                        0x44, // input size = 4 + 64
-                        0x0, // output
-                        0x0 // output size = zero
-                    )
+                    let success :=
+                        call(
+                            gas(),
+                            collateralToken,
+                            0x0,
+                            ptr, // input = selector and data
+                            0x44, // input size = 4 + 64
+                            0x0, // output
+                            0x0 // output size = zero
+                        )
 
                     if iszero(success) {
                         returndatacopy(ptr, 0, returndatasize())
@@ -645,18 +593,10 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                 default {
                     let pool
                     switch _lenderId
-                    case 0 {
-                        pool := AAVE_V3
-                    }
-                    case 100 {
-                        pool := AVALON
-                    }
-                    case 101 {
-                        pool := AVALON_PUMP_BTC
-                    }
-                    case 1000 {
-                        pool := GRANARY
-                    }
+                    case 0 { pool := AAVE_V3 }
+                    case 100 { pool := AVALON }
+                    case 101 { pool := AVALON_PUMP_BTC }
+                    case 1000 { pool := GRANARY }
                     default {
                         mstore(0x0, _lenderId)
                         mstore(0x20, LENDING_POOL_SLOT)
@@ -684,18 +624,10 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                 case 1 {
                     let cometPool
                     switch _lenderId
-                    case 2000 {
-                        cometPool := COMET_USDC
-                    }
-                    case 2001 {
-                        cometPool := COMET_WETH
-                    }
-                    case 2002 {
-                        cometPool := COMET_USDT
-                    }
-                    case 2003 {
-                        cometPool := COMET_USDCE
-                    }
+                    case 2000 { cometPool := COMET_USDC }
+                    case 2001 { cometPool := COMET_WETH }
+                    case 2002 { cometPool := COMET_USDT }
+                    case 2003 { cometPool := COMET_USDCE }
                     // default: load comet from storage
                     // if it is not provided directly
                     default {

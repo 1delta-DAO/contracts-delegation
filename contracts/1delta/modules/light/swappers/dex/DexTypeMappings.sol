@@ -4,7 +4,7 @@ pragma solidity ^0.8.28;
 
 library DexTypeMappings {
     uint256 internal constant UNISWAP_V3_ID = 0;
-    uint256 internal constant IZI_ID =  1;
+    uint256 internal constant IZI_ID = 1;
     uint256 internal constant UNISWAP_V4_ID = 2;
     uint256 internal constant BALANCER_V3_ID = 4;
 

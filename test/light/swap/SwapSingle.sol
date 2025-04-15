@@ -38,7 +38,7 @@ contract SwapSingleTest is BaseTest {
     function setUp() public virtual {
         // initialize the chain
         string memory chainName = Chains.BASE;
-        
+
         _init(chainName, forkBlock);
         LBTC = chain.getTokenAddress(Tokens.LBTC);
         WETH = chain.getTokenAddress(Tokens.WETH);
@@ -56,17 +56,22 @@ contract SwapSingleTest is BaseTest {
         uint16 fee,
         address receiver,
         uint256 amount
-    ) internal view returns (bytes memory data) {
+    )
+        internal
+        view
+        returns (bytes memory data)
+    {
         address pool = IF(UNI_FACTORY).getPool(assetIn, assetOut, fee);
         data = abi.encodePacked(
             uint8(ComposerCommands.SWAPS),
             uint128(amount), //
-            uint128(1), //
+            uint128(1),
+            //
             assetIn,
             uint8(0), // swaps max index
             uint8(0) // splits
-            // single split data (no data here)
-            // uint8(0), // swaps max index for inner path
+                // single split data (no data here)
+                // uint8(0), // swaps max index for inner path
         );
         data = abi.encodePacked(
             data,
@@ -91,7 +96,7 @@ contract SwapSingleTest is BaseTest {
         uint256 amount = 100.0e6;
 
         vm.prank(user);
-        IERC20All(tokenIn).approve(address(oneDV2), type(uint).max);
+        IERC20All(tokenIn).approve(address(oneDV2), type(uint256).max);
 
         bytes memory swap = v3poolSwap(
             tokenIn,

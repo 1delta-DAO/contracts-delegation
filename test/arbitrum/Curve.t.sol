@@ -50,7 +50,7 @@ contract CurveTestArbitrum is DeltaSetup {
         IERC20All(assetIn).approve(address(brokerProxyAddress), amount);
 
         vm.prank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
@@ -77,10 +77,7 @@ contract CurveTestArbitrum is DeltaSetup {
         );
 
         bytes memory data = abi.encodePacked(
-            uint8(Commands.SWAP_EXACT_IN),
-            user,
-            encodeSwapAmountParams(amount, amountMin, false, dataSwapFirst.length),
-            dataSwapFirst
+            uint8(Commands.SWAP_EXACT_IN), user, encodeSwapAmountParams(amount, amountMin, false, dataSwapFirst.length), dataSwapFirst
         );
 
         uint256 bal = IERC20All(assetOut).balanceOf(user);
@@ -89,7 +86,7 @@ contract CurveTestArbitrum is DeltaSetup {
         IERC20All(assetIn).approve(address(brokerProxyAddress), amount);
 
         vm.prank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
@@ -130,7 +127,11 @@ contract CurveTestArbitrum is DeltaSetup {
         uint8 pId,
         uint8 selectorId,
         bytes memory data
-    ) internal pure returns (bytes memory) {
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
         uint8 action = 0;
         return abi.encodePacked(tokenIn, action, pId, data, selectorId, tokenOut);
     }
@@ -141,7 +142,11 @@ contract CurveTestArbitrum is DeltaSetup {
         uint8 pId,
         uint8 selectorId,
         bytes memory data
-    ) internal pure returns (bytes memory) {
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
         uint8 action = 0;
         return abi.encodePacked(tokenIn, action, pId, data, selectorId, tokenOut);
     }
@@ -152,9 +157,12 @@ contract CurveTestArbitrum is DeltaSetup {
         uint8 pId,
         uint8 selectorId,
         bytes memory data
-    ) internal pure returns (bytes memory) {
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
         uint8 action = 0;
         return abi.encodePacked(tokenOut, action, pId, data, selectorId, tokenIn, uint8(0), uint8(99));
     }
-
 }

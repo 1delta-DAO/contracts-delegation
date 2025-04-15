@@ -5,10 +5,6 @@ pragma solidity ^0.8.28;
 import {ERC20Selectors} from "../../shared/selectors/ERC20Selectors.sol";
 import {Masks} from "../../shared/masks/Masks.sol";
 
-/******************************************************************************\
-* Author: Achthar | 1delta 
-/******************************************************************************/
-
 // solhint-disable max-line-length
 
 /**
@@ -268,9 +264,7 @@ abstract contract CompoundV3Lending is ERC20Selectors, Masks {
                 // load the retrieved balance
                 amount := mload(0x0)
             }
-            case 0xffffffffffffffffffffffffffff {
-                amount := MAX_UINT256
-            }
+            case 0xffffffffffffffffffffffffffff { amount := MAX_UINT256 }
 
             let ptr := mload(0x40)
 

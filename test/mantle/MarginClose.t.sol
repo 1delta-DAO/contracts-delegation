@@ -216,7 +216,7 @@ contract MarginCloseTest is DeltaSetup {
         uint256 borrowBalance = IERC20All(debtAsset).balanceOf(user);
         uint256 balance = IERC20All(collateralAsset).balanceOf(user);
 
-       bytes memory data = encodeFlashSwap(
+        bytes memory data = encodeFlashSwap(
             Commands.FLASH_SWAP_EXACT_IN,
             0, // max
             minimumOut,
@@ -224,7 +224,7 @@ contract MarginCloseTest is DeltaSetup {
             swapPath
         );
 
-console.log("------------a");
+        console.log("------------a");
         vm.prank(user);
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
 
@@ -291,8 +291,9 @@ console.log("------------a");
         assertApproxEqAbs(amountToLeverage, borrowBalance, 1);
     }
 
-    /** TESTS FOR THE V2 CALLBACKS */
-
+    /**
+     * TESTS FOR THE V2 CALLBACKS
+     */
     function test_margin_mantle_close_exact_in_v2(uint8 lenderIndex) external {
         address user = testUser;
         vm.assume(user != address(0) && validLenderIndex(lenderIndex));
@@ -322,7 +323,7 @@ console.log("------------a");
 
         bytes memory data = encodeFlashSwap(
             Commands.FLASH_SWAP_EXACT_IN,
-            amountIn, // 
+            amountIn, //
             minimumOut,
             false,
             swapPath
@@ -369,7 +370,7 @@ console.log("------------a");
 
         bytes memory data = encodeFlashSwap(
             Commands.FLASH_SWAP_EXACT_IN,
-            amountIn, // 
+            amountIn, //
             minimumOut,
             false,
             swapPath
@@ -416,7 +417,7 @@ console.log("------------a");
 
         bytes memory data = encodeFlashSwap(
             Commands.FLASH_SWAP_EXACT_OUT,
-            amountOut, // 
+            amountOut, //
             amountInMaximum,
             false,
             swapPath

@@ -7,10 +7,6 @@ import {ERC20Selectors} from "../../shared/selectors/ERC20Selectors.sol";
 import {ERC4646Transfers} from "./ERC4646Transfers.sol";
 import {ERC4646Ids} from "../enums/DeltaEnums.sol";
 
-/******************************************************************************\
-* Author: Achthar | 1delta 
-/******************************************************************************/
-
 /**
  * @notice ERC4646 deposit and withdraw actions
  */
@@ -22,11 +18,15 @@ abstract contract ERC4646Operations is ERC4646Transfers {
             erc4646Operation := shr(248, calldataload(currentOffset))
             currentOffset := add(currentOffset, 1)
         }
-        /** ERC6464 deposit */
+        /**
+         * ERC6464 deposit
+         */
         if (erc4646Operation == ERC4646Ids.DEPOSIT) {
             currentOffset = _erc4646Deposit(currentOffset);
         }
-        /** ERC6464 withdraw */
+        /**
+         * ERC6464 withdraw
+         */
         else if (erc4646Operation == ERC4646Ids.WITHDRAW) {
             currentOffset = _erc4646Withdraw(currentOffset, callerAddress);
         } else {

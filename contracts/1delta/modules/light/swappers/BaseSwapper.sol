@@ -2,10 +2,6 @@
 
 pragma solidity ^0.8.28;
 
-/******************************************************************************\
-* Author: Achthar | 1delta 
-/******************************************************************************/
-
 import {DeltaErrors} from "../../shared/errors/Errors.sol";
 import {DexTypeMappings} from "./dex/DexTypeMappings.sol";
 import {V4TypeGeneric} from "./dex/V4Type.sol";
@@ -28,41 +24,41 @@ import {BalancerV3Swapper} from "./dex/BalancerV3Swapper.sol";
  * Every element in a matrix can be another matrix
  * The nesting stops at a (0,0) entry
  * E.g. a multihop with each hop having 2 splits is identified as
- * (1,0)  <-- 1 as row implicates a multihop of length 2 (max index is 1)                 
+ * (1,0)  <-- 1 as row implicates a multihop of length 2 (max index is 1)
  *      \
- *      (0,1)  --------------- (0,1)   <- the 1s in the columns indicate that  
+ *      (0,1)  --------------- (0,1)   <- the 1s in the columns indicate that
  *        |                      |        there are 2 splits in each sub step
  *        ├(0,0)**               ├(0,0)
- *        |                      | 
+ *        |                      |
  *        ├(1,0)                 ├(0,0)  <- the (0,0) entries indicate an atomic swap (e.g. a uni V2 swap)
  *           \
  *          (0,0)  --- (0,0)  <- this is a branching multihip within a split (indicated by (1,0)
- *                               the output token is expected to be the same as for the 
+ *                               the output token is expected to be the same as for the
  *                               prior split in **
- * 
+ *
  * The logic accumulates values per column to enable consistent multihops without additional balance reads
- * 
- * Multihops progressively update value (in amount -> out amount) too always ensure that values 
+ *
+ * Multihops progressively update value (in amount -> out amount) too always ensure that values
  * within sub splits ((x,0) or (0,y)) are correctly accumulated
- * 
+ *
  * A case like (1,2) is a violation as we always demand a clear gruping of the branch
- * This is intuitive as we cannot have a split and a multihop at the same time. 
- * 
+ * This is intuitive as we cannot have a split and a multihop at the same time.
+ *
  * Every node with (x,0) is expected to have consistent multihop connections
- * 
+ *
  * Every node with (0,y) is expected to have sub nodes and path that have all the same output currency
  *
  * Swap execution is always along rows then columns
  * In the example above, we indicate a multihop
  * Each hop has length 0 (single swap) but 1 split
  * Each split is a single swap (0,0)
- * 
+ *
  * This allows arbitrary deep nesting of sub-routes and splits
- * 
+ *
  * Rows are prioritized over columns.
  * /
-
-/**
+ *
+ * /**
  * @title Base swapper contract
  * @notice Contains basic logic for swap executions with DEXs
  * DEX Id layout:
@@ -96,7 +92,10 @@ abstract contract BaseSwapper is
         address tokenIn,
         address callerAddress,
         uint256 currentOffset //
-    ) internal returns (uint256 amount, uint256, address _tokenIn) {
+    )
+        internal
+        returns (uint256 amount, uint256, address _tokenIn)
+    {
         amount = amountIn;
         _tokenIn = tokenIn;
         uint256 i;
@@ -154,7 +153,10 @@ abstract contract BaseSwapper is
         address tokenIn,
         address callerAddress, // caller
         uint256 currentOffset
-    ) internal returns (uint256, uint256, address nextToken) {
+    )
+        internal
+        returns (uint256, uint256, address nextToken)
+    {
         // no splits, single swap
         if (splitsMaxIndex == 0) {
             (amountIn, currentOffset, nextToken) = _singleSwapSplitOrRoute(
@@ -182,16 +184,17 @@ abstract contract BaseSwapper is
                     }
                     default {
                         // splits are uint16s as share of uint16.max
-                        split := div(
-                            mul(
-                                and(
-                                    UINT16_MASK,
-                                    shr(sub(112, mul(i, 16)), splits) // read the uin16 in the splits sequence
+                        split :=
+                            div(
+                                mul(
+                                    and(
+                                        UINT16_MASK,
+                                        shr(sub(112, mul(i, 16)), splits) // read the uin16 in the splits sequence
+                                    ),
+                                    amountIn //
                                 ),
-                                amountIn //
-                            ),
-                            UINT16_MASK //
-                        )
+                                UINT16_MASK //
+                            )
                     }
                     i := add(i, 1)
                 }
@@ -243,7 +246,10 @@ abstract contract BaseSwapper is
         address tokenIn,
         address callerAddress,
         uint256 currentOffset //
-    ) internal returns (uint256 received, uint256, address nextToken) {
+    )
+        internal
+        returns (uint256 received, uint256, address nextToken)
+    {
         uint256 swapMaxIndex;
         uint256 splitsMaxIndex;
         assembly {
@@ -312,7 +318,10 @@ abstract contract BaseSwapper is
         address payer, // first step
         address receiver, // last step
         uint256 currentOffset
-    ) internal returns (uint256, uint256) {
+    )
+        internal
+        returns (uint256, uint256)
+    {
         uint256 dexTypeId;
         assembly {
             dexTypeId := shr(248, calldataload(currentOffset))

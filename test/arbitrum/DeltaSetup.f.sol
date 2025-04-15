@@ -65,8 +65,9 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
     mapping(address => mapping(uint16 => address)) internal collateralTokens;
     mapping(address => mapping(uint16 => address)) internal debtTokens;
 
-    /** SELECTOR GETTERS */
-
+    /**
+     * SELECTOR GETTERS
+     */
     function managementSelectors() internal pure returns (bytes4[] memory selectors) {
         selectors = new bytes4[](15);
         // setters
@@ -91,19 +92,25 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
 
     function flashAggregatorSelectors() internal pure returns (bytes4[] memory selectors) {
         selectors = new bytes4[](27);
-        /** margin */
+        /**
+         * margin
+         */
         selectors[0] = IFlashAggregator.flashSwapExactIn.selector;
         selectors[1] = IFlashAggregator.flashSwapExactOut.selector;
         selectors[2] = IFlashAggregator.flashSwapAllIn.selector;
         selectors[3] = IFlashAggregator.flashSwapAllOut.selector;
-        /** spot */
+        /**
+         * spot
+         */
         selectors[4] = IFlashAggregator.swapExactOutSpot.selector;
         selectors[5] = IFlashAggregator.swapExactOutSpotSelf.selector;
         selectors[6] = IFlashAggregator.swapExactInSpot.selector;
         selectors[7] = IFlashAggregator.swapAllOutSpot.selector;
         selectors[8] = IFlashAggregator.swapAllOutSpotSelf.selector;
         selectors[9] = IFlashAggregator.swapAllInSpot.selector;
-        /** callbacks */
+        /**
+         * callbacks
+         */
         selectors[10] = IFlashAggregator.fusionXV3SwapCallback.selector;
         selectors[11] = IFlashAggregator.agniSwapCallback.selector;
         selectors[12] = IFlashAggregator.algebraSwapCallback.selector;
@@ -125,8 +132,9 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
         return selectors;
     }
 
-    /** DEPLOY PROZY AND MODULES */
-
+    /**
+     * DEPLOY PROZY AND MODULES
+     */
     function deployDelta() internal virtual {
         ConfigModule _config = new ConfigModule();
         brokerProxyAddress = address(new DeltaBrokerProxyGen2(address(this), address(_config)));
@@ -150,8 +158,9 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
         management = IManagement(brokerProxyAddress);
     }
 
-    /** ADD AND APPROVE LENDER TOKENS */
-
+    /**
+     * ADD AND APPROVE LENDER TOKENS
+     */
     function intitializeFullDelta() internal virtual {
         deployDelta();
         initializeDeltaBase();
@@ -166,32 +175,16 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
     function initializeDeltaAaveV3() internal virtual {
         // aave v3
         management.addGeneralLenderTokens(
-            TokensArbitrum.USDC,
-            AaveV3ArbitrumAssets.USDC_A_TOKEN,
-            AaveV3ArbitrumAssets.USDC_V_TOKEN,
-            address(0),
-            LenderMappingsArbitrum.AAVE_V3
+            TokensArbitrum.USDC, AaveV3ArbitrumAssets.USDC_A_TOKEN, AaveV3ArbitrumAssets.USDC_V_TOKEN, address(0), LenderMappingsArbitrum.AAVE_V3
         );
         management.addGeneralLenderTokens(
-            TokensArbitrum.USDT,
-            AaveV3ArbitrumAssets.USDT_A_TOKEN,
-            AaveV3ArbitrumAssets.USDT_V_TOKEN,
-            address(0),
-            LenderMappingsArbitrum.AAVE_V3
+            TokensArbitrum.USDT, AaveV3ArbitrumAssets.USDT_A_TOKEN, AaveV3ArbitrumAssets.USDT_V_TOKEN, address(0), LenderMappingsArbitrum.AAVE_V3
         );
         management.addGeneralLenderTokens(
-            TokensArbitrum.WBTC,
-            AaveV3ArbitrumAssets.WBTC_A_TOKEN,
-            AaveV3ArbitrumAssets.WBTC_V_TOKEN,
-            address(0),
-            LenderMappingsArbitrum.AAVE_V3
+            TokensArbitrum.WBTC, AaveV3ArbitrumAssets.WBTC_A_TOKEN, AaveV3ArbitrumAssets.WBTC_V_TOKEN, address(0), LenderMappingsArbitrum.AAVE_V3
         );
         management.addGeneralLenderTokens(
-            TokensArbitrum.WETH,
-            AaveV3ArbitrumAssets.WETH_A_TOKEN,
-            AaveV3ArbitrumAssets.WETH_V_TOKEN,
-            address(0),
-            LenderMappingsArbitrum.AAVE_V3
+            TokensArbitrum.WETH, AaveV3ArbitrumAssets.WETH_A_TOKEN, AaveV3ArbitrumAssets.WETH_V_TOKEN, address(0), LenderMappingsArbitrum.AAVE_V3
         );
 
         collateralTokens[TokensArbitrum.USDC][LenderMappingsArbitrum.AAVE_V3] = AaveV3ArbitrumAssets.USDC_A_TOKEN;
@@ -217,32 +210,16 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
     function initializeDeltaAvalon() internal virtual {
         // aave v3
         management.addGeneralLenderTokens(
-            TokensArbitrum.USDC,
-            AvalonArbitrumAssets.USDC_A_TOKEN,
-            AvalonArbitrumAssets.USDC_V_TOKEN,
-            address(0),
-            LenderMappingsArbitrum.AVALON
+            TokensArbitrum.USDC, AvalonArbitrumAssets.USDC_A_TOKEN, AvalonArbitrumAssets.USDC_V_TOKEN, address(0), LenderMappingsArbitrum.AVALON
         );
         management.addGeneralLenderTokens(
-            TokensArbitrum.USDT,
-            AvalonArbitrumAssets.USDT_A_TOKEN,
-            AvalonArbitrumAssets.USDT_V_TOKEN,
-            address(0),
-            LenderMappingsArbitrum.AVALON
+            TokensArbitrum.USDT, AvalonArbitrumAssets.USDT_A_TOKEN, AvalonArbitrumAssets.USDT_V_TOKEN, address(0), LenderMappingsArbitrum.AVALON
         );
         management.addGeneralLenderTokens(
-            TokensArbitrum.WBTC,
-            AvalonArbitrumAssets.WBTC_A_TOKEN,
-            AvalonArbitrumAssets.WBTC_V_TOKEN,
-            address(0),
-            LenderMappingsArbitrum.AVALON
+            TokensArbitrum.WBTC, AvalonArbitrumAssets.WBTC_A_TOKEN, AvalonArbitrumAssets.WBTC_V_TOKEN, address(0), LenderMappingsArbitrum.AVALON
         );
         management.addGeneralLenderTokens(
-            TokensArbitrum.WETH,
-            AvalonArbitrumAssets.WETH_A_TOKEN,
-            AvalonArbitrumAssets.WETH_V_TOKEN,
-            address(0),
-            LenderMappingsArbitrum.AVALON
+            TokensArbitrum.WETH, AvalonArbitrumAssets.WETH_A_TOKEN, AvalonArbitrumAssets.WETH_V_TOKEN, address(0), LenderMappingsArbitrum.AVALON
         );
 
         collateralTokens[TokensArbitrum.USDC][LenderMappingsArbitrum.AVALON] = AvalonArbitrumAssets.USDC_A_TOKEN;
@@ -274,32 +251,16 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
         // approve pools
         IManagement.BatchAddLenderTokensParams[] memory assets = new IManagement.BatchAddLenderTokensParams[](4);
         assets[0] = IManagement.BatchAddLenderTokensParams(
-            TokensArbitrum.USDC,
-            VenusCoreArbitrum.USDC_A_TOKEN,
-            address(0),
-            address(0),
-            LenderMappingsArbitrum.VENUS
+            TokensArbitrum.USDC, VenusCoreArbitrum.USDC_A_TOKEN, address(0), address(0), LenderMappingsArbitrum.VENUS
         );
         assets[1] = IManagement.BatchAddLenderTokensParams(
-            TokensArbitrum.WBTC,
-            VenusCoreArbitrum.WBTC_A_TOKEN,
-            address(0),
-            address(0),
-            LenderMappingsArbitrum.VENUS
+            TokensArbitrum.WBTC, VenusCoreArbitrum.WBTC_A_TOKEN, address(0), address(0), LenderMappingsArbitrum.VENUS
         );
         assets[2] = IManagement.BatchAddLenderTokensParams(
-            TokensArbitrum.WETH,
-            VenusCoreArbitrum.WETH_A_TOKEN,
-            address(0),
-            address(0),
-            LenderMappingsArbitrum.VENUS
+            TokensArbitrum.WETH, VenusCoreArbitrum.WETH_A_TOKEN, address(0), address(0), LenderMappingsArbitrum.VENUS
         );
         assets[3] = IManagement.BatchAddLenderTokensParams(
-            TokensArbitrum.USDT,
-            VenusCoreArbitrum.USDT_A_TOKEN,
-            address(0),
-            address(0),
-            LenderMappingsArbitrum.VENUS
+            TokensArbitrum.USDT, VenusCoreArbitrum.USDT_A_TOKEN, address(0), address(0), LenderMappingsArbitrum.VENUS
         );
 
         management.batchAddGeneralLenderTokens(assets);
@@ -316,32 +277,16 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
     function initializeDeltaYldr() internal virtual {
         // aave v3
         management.addGeneralLenderTokens(
-            TokensArbitrum.USDC,
-            YldrArbitrumAssets.USDC_A_TOKEN,
-            YldrArbitrumAssets.USDC_V_TOKEN,
-            address(0),
-            LenderMappingsArbitrum.YLDR
+            TokensArbitrum.USDC, YldrArbitrumAssets.USDC_A_TOKEN, YldrArbitrumAssets.USDC_V_TOKEN, address(0), LenderMappingsArbitrum.YLDR
         );
         management.addGeneralLenderTokens(
-            TokensArbitrum.USDT,
-            YldrArbitrumAssets.USDT_A_TOKEN,
-            YldrArbitrumAssets.USDT_V_TOKEN,
-            address(0),
-            LenderMappingsArbitrum.YLDR
+            TokensArbitrum.USDT, YldrArbitrumAssets.USDT_A_TOKEN, YldrArbitrumAssets.USDT_V_TOKEN, address(0), LenderMappingsArbitrum.YLDR
         );
         management.addGeneralLenderTokens(
-            TokensArbitrum.WBTC,
-            YldrArbitrumAssets.WBTC_A_TOKEN,
-            YldrArbitrumAssets.WBTC_V_TOKEN,
-            address(0),
-            LenderMappingsArbitrum.YLDR
+            TokensArbitrum.WBTC, YldrArbitrumAssets.WBTC_A_TOKEN, YldrArbitrumAssets.WBTC_V_TOKEN, address(0), LenderMappingsArbitrum.YLDR
         );
         management.addGeneralLenderTokens(
-            TokensArbitrum.WETH,
-            YldrArbitrumAssets.WETH_A_TOKEN,
-            YldrArbitrumAssets.WETH_V_TOKEN,
-            address(0),
-            LenderMappingsArbitrum.YLDR
+            TokensArbitrum.WETH, YldrArbitrumAssets.WETH_A_TOKEN, YldrArbitrumAssets.WETH_V_TOKEN, address(0), LenderMappingsArbitrum.YLDR
         );
 
         collateralTokens[TokensArbitrum.USDC][LenderMappingsArbitrum.YLDR] = YldrArbitrumAssets.USDC_A_TOKEN;
@@ -425,8 +370,9 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
         vm.deal(testUser, 1e18);
     }
 
-    /** DEPOSIT AND OPEN TO SPIN UP POSITIONS */
-
+    /**
+     * DEPOSIT AND OPEN TO SPIN UP POSITIONS
+     */
     function execDeposit(address user, address asset, uint256 depositAmount, uint16 lenderId) internal {
         deal(asset, user, depositAmount);
 
@@ -484,7 +430,9 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
         uint256 checkAmount,
         bytes memory path, //
         uint16 lenderId
-    ) internal {
+    )
+        internal
+    {
         address debtAsset = debtTokens[borrowAsset][lenderId];
         deal(asset, user, depositAmount);
 
@@ -523,7 +471,9 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
         uint256 checkAmount,
         bytes memory path, //
         uint16 lenderId
-    ) internal {
+    )
+        internal
+    {
         address debtAsset = debtTokens[borrowAsset][lenderId];
         deal(asset, user, depositAmount);
 
@@ -557,12 +507,22 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
         if (lenderId < LenderMappingsArbitrum.MAX_AAVE_V2_ID) {
             return IERC20All(debtTokens[asset][lenderId]).balanceOf(user);
         } else if (lenderId < LenderMappingsArbitrum.MAX_ID_COMPOUND_V3) {
-            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_USDC) return IComet(CompoundV3Arbitrum.COMET_USDC).borrowBalanceOf(user);
-            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_USDT) return IComet(CompoundV3Arbitrum.COMET_USDT).borrowBalanceOf(user);
-            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_USDCE) return IComet(CompoundV3Arbitrum.COMET_USDCE).borrowBalanceOf(user);
-            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_WETH) return IComet(CompoundV3Arbitrum.COMET_WETH).borrowBalanceOf(user);
+            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_USDC) {
+                return IComet(CompoundV3Arbitrum.COMET_USDC).borrowBalanceOf(user);
+            }
+            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_USDT) {
+                return IComet(CompoundV3Arbitrum.COMET_USDT).borrowBalanceOf(user);
+            }
+            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_USDCE) {
+                return IComet(CompoundV3Arbitrum.COMET_USDCE).borrowBalanceOf(user);
+            }
+            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_WETH) {
+                return IComet(CompoundV3Arbitrum.COMET_WETH).borrowBalanceOf(user);
+            }
         } else {
-            if (lenderId == LenderMappingsArbitrum.VENUS) return IERC20All(collateralTokens[asset][lenderId]).borrowBalanceCurrent(user);
+            if (lenderId == LenderMappingsArbitrum.VENUS) {
+                return IERC20All(collateralTokens[asset][lenderId]).borrowBalanceCurrent(user);
+            }
         }
         return 0;
     }
@@ -575,10 +535,16 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
                 if (asset == TokensArbitrum.USDC) return IComet(CompoundV3Arbitrum.COMET_USDC).balanceOf(user);
                 return IComet(CompoundV3Arbitrum.COMET_USDC).userCollateral(user, asset).balance;
             }
-            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_USDT) return IComet(CompoundV3Arbitrum.COMET_USDT).userCollateral(user, asset).balance;
-            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_WETH) return IComet(CompoundV3Arbitrum.COMET_WETH).userCollateral(user, asset).balance;
+            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_USDT) {
+                return IComet(CompoundV3Arbitrum.COMET_USDT).userCollateral(user, asset).balance;
+            }
+            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_WETH) {
+                return IComet(CompoundV3Arbitrum.COMET_WETH).userCollateral(user, asset).balance;
+            }
         } else {
-            if (lenderId == LenderMappingsArbitrum.VENUS) return IERC20All(collateralTokens[asset][lenderId]).balanceOfUnderlying(user);
+            if (lenderId == LenderMappingsArbitrum.VENUS) {
+                return IERC20All(collateralTokens[asset][lenderId]).balanceOfUnderlying(user);
+            }
         }
         return 0;
     }
@@ -588,12 +554,20 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
         if (lenderId < LenderMappingsArbitrum.MAX_AAVE_V2_ID) {
             IERC20All(collateralTokens[asset][lenderId]).approve(brokerProxyAddress, amount);
         } else if (lenderId < LenderMappingsArbitrum.MAX_ID_COMPOUND_V3) {
-            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_USDC) IComet(CompoundV3Arbitrum.COMET_USDC).allow(brokerProxyAddress, true);
-            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_USDT) IComet(CompoundV3Arbitrum.COMET_USDT).allow(brokerProxyAddress, true);
-            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_WETH) IComet(CompoundV3Arbitrum.COMET_WETH).allow(brokerProxyAddress, true);
+            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_USDC) {
+                IComet(CompoundV3Arbitrum.COMET_USDC).allow(brokerProxyAddress, true);
+            }
+            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_USDT) {
+                IComet(CompoundV3Arbitrum.COMET_USDT).allow(brokerProxyAddress, true);
+            }
+            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_WETH) {
+                IComet(CompoundV3Arbitrum.COMET_WETH).allow(brokerProxyAddress, true);
+            }
         } else {
             // need to approve max as we approve the collateral token adjusted for exchange rate
-            if (lenderId == LenderMappingsArbitrum.VENUS) IERC20All(collateralTokens[asset][lenderId]).approve(brokerProxyAddress, type(uint256).max);
+            if (lenderId == LenderMappingsArbitrum.VENUS) {
+                IERC20All(collateralTokens[asset][lenderId]).approve(brokerProxyAddress, type(uint256).max);
+            }
         }
         vm.stopPrank();
     }
@@ -613,9 +587,15 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
         if (lenderId < LenderMappingsArbitrum.MAX_AAVE_V2_ID) {
             IERC20All(debtTokens[asset][lenderId]).approveDelegation(brokerProxyAddress, amount);
         } else if (lenderId < LenderMappingsArbitrum.MAX_ID_COMPOUND_V3) {
-            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_USDC) IComet(CompoundV3Arbitrum.COMET_USDC).allow(brokerProxyAddress, true);
-            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_USDT) IComet(CompoundV3Arbitrum.COMET_USDT).allow(brokerProxyAddress, true);
-            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_WETH) IComet(CompoundV3Arbitrum.COMET_WETH).allow(brokerProxyAddress, true);
+            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_USDC) {
+                IComet(CompoundV3Arbitrum.COMET_USDC).allow(brokerProxyAddress, true);
+            }
+            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_USDT) {
+                IComet(CompoundV3Arbitrum.COMET_USDT).allow(brokerProxyAddress, true);
+            }
+            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_WETH) {
+                IComet(CompoundV3Arbitrum.COMET_WETH).allow(brokerProxyAddress, true);
+            }
         } else {
             if (lenderId == LenderMappingsArbitrum.VENUS) {
                 ComptrollerInterface(VenusCoreArbitrum.COMPTROLLER).updateDelegate(brokerProxyAddress, true);
@@ -624,15 +604,18 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
         vm.stopPrank();
     }
 
-    /** HELPER FUNCTIONS */
+    /**
+     * HELPER FUNCTIONS
+     */
 
-    /** OPEN */
-
+    /**
+     * OPEN
+     */
     function getOpenExactInSingle(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
         uint16 fee = DEX_FEE_STABLES;
         uint8 poolId = DexMappingsArbitrum.UNI_V3;
         address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
-        (uint8 actionId, , uint8 endId) = getOpenExactInFlags();
+        (uint8 actionId,, uint8 endId) = getOpenExactInFlags();
         return abi.encodePacked(tokenIn, actionId, poolId, pool, fee, tokenOut, lenderId, endId);
     }
 
@@ -640,7 +623,7 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
         uint16 fee = DEX_FEE_LOW_HIGH;
         uint8 poolId = DexMappingsArbitrum.IZUMI;
         address pool = testQuoter.getiZiPool(tokenIn, tokenOut, fee);
-        (uint8 actionId, , uint8 endId) = getOpenExactInFlags();
+        (uint8 actionId,, uint8 endId) = getOpenExactInFlags();
         return abi.encodePacked(tokenIn, actionId, poolId, pool, fee, tokenOut, lenderId, endId);
     }
 
@@ -662,7 +645,7 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
         uint16 fee = DEX_FEE_LOW;
         uint8 poolId = DexMappingsArbitrum.UNI_V3;
         address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
-        (uint8 actionId, , uint8 endId) = getOpenExactOutFlags();
+        (uint8 actionId,, uint8 endId) = getOpenExactOutFlags();
         return abi.encodePacked(tokenOut, actionId, poolId, pool, fee, tokenIn, lenderId, endId);
     }
 
@@ -690,13 +673,14 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
         return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenIn, lenderId, endId);
     }
 
-    /** CLOSE */
-
+    /**
+     * CLOSE
+     */
     function getCloseExactOutSingle(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
         uint16 fee = DEX_FEE_LOW;
         uint8 poolId = DexMappingsArbitrum.UNI_V3;
         address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
-        (uint8 actionId, , uint8 endId) = getCloseExactOutFlags();
+        (uint8 actionId,, uint8 endId) = getCloseExactOutFlags();
         return abi.encodePacked(tokenOut, actionId, poolId, pool, fee, tokenIn, lenderId, endId);
     }
 
@@ -704,7 +688,7 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
         uint16 fee = DEX_FEE_LOW;
         uint8 poolId = DexMappingsArbitrum.UNI_V3;
         address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
-        (uint8 actionId, , uint8 endId) = getCloseExactInFlags();
+        (uint8 actionId,, uint8 endId) = getCloseExactInFlags();
         return abi.encodePacked(tokenIn, actionId, poolId, pool, fee, tokenOut, lenderId, endId);
     }
 
@@ -732,13 +716,14 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
         return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenIn, lenderId, endId);
     }
 
-    /** COLLATERAL SWAP */
-
+    /**
+     * COLLATERAL SWAP
+     */
     function getCollateralSwapExactInSingle(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
         uint16 fee = DEX_FEE_STABLES;
         uint8 poolId = DexMappingsArbitrum.UNI_V3;
         address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
-        (uint8 actionId, , uint8 endId) = getCollateralSwapExactInFlags();
+        (uint8 actionId,, uint8 endId) = getCollateralSwapExactInFlags();
         return abi.encodePacked(tokenIn, actionId, poolId, pool, fee, tokenOut, lenderId, endId);
     }
 
@@ -746,7 +731,7 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
         uint16 fee = DEX_FEE_LOW;
         uint8 poolId = DexMappingsArbitrum.UNI_V3;
         address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
-        (uint8 actionId, , uint8 endId) = getCollateralSwapExactOutFlags();
+        (uint8 actionId,, uint8 endId) = getCollateralSwapExactOutFlags();
         return abi.encodePacked(tokenOut, actionId, poolId, pool, fee, tokenIn, lenderId, endId);
     }
 
@@ -774,13 +759,14 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
         return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenIn, lenderId, endId);
     }
 
-    /** DEBT SWAP */
-
+    /**
+     * DEBT SWAP
+     */
     function getDebtSwapExactInSingle(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
         uint16 fee = DEX_FEE_LOW_MEDIUM;
         uint8 poolId = DexMappingsArbitrum.UNI_V3;
         address pool = testQuoter.v3TypePool(tokenOut, tokenIn, fee, poolId);
-        (uint8 actionId, , uint8 endId) = getDebtSwapExactInFlags();
+        (uint8 actionId,, uint8 endId) = getDebtSwapExactInFlags();
         return abi.encodePacked(tokenIn, actionId, poolId, pool, fee, tokenOut, lenderId, endId);
     }
 
@@ -788,7 +774,7 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
         uint16 fee = DEX_FEE_LOW_MEDIUM;
         uint8 poolId = DexMappingsArbitrum.UNI_V3;
         address pool = testQuoter.v3TypePool(tokenOut, tokenIn, fee, poolId);
-        (uint8 actionId, , uint8 endId) = getDebtSwapExactOutFlags();
+        (uint8 actionId,, uint8 endId) = getDebtSwapExactOutFlags();
         return abi.encodePacked(tokenOut, actionId, poolId, pool, fee, tokenIn, lenderId, endId);
     }
 
@@ -816,18 +802,19 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
         return abi.encodePacked(firstPart, midId, poolId, pool, fee, tokenIn, lenderId, endId);
     }
 
-    /** OPEN */
-
+    /**
+     * OPEN
+     */
     function getOpenExactInSingleV2(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
         uint8 poolId = DexMappingsArbitrum.CAMELOT_V2_VOLATILE;
-        (uint8 actionId, , uint8 endId) = getOpenExactInFlags();
+        (uint8 actionId,, uint8 endId) = getOpenExactInFlags();
         address pool = testQuoter.v2TypePairAddress(tokenIn, tokenOut, poolId);
         return abi.encodePacked(tokenIn, actionId, poolId, pool, tokenOut, lenderId, endId);
     }
 
     function getOpenExactOutSingleV2(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
         uint8 poolId = DexMappingsArbitrum.CAMELOT_V2_VOLATILE;
-        (uint8 actionId, , uint8 endId) = getOpenExactOutFlags();
+        (uint8 actionId,, uint8 endId) = getOpenExactOutFlags();
         address pool = testQuoter.v2TypePairAddress(tokenIn, tokenOut, poolId);
         return abi.encodePacked(tokenOut, actionId, poolId, pool, tokenIn, lenderId, endId);
     }
@@ -851,19 +838,20 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
         return abi.encodePacked(firstPart, midId, poolId, pool, tokenIn, lenderId, endId);
     }
 
-    /** CLOSE */
-
+    /**
+     * CLOSE
+     */
     function getCloseExactOutSingleV2(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
         uint8 poolId = DexMappingsArbitrum.CAMELOT_V2_VOLATILE;
         address pool = testQuoter.v2TypePairAddress(tokenIn, tokenOut, poolId);
-        (uint8 actionId, , uint8 endId) = getCloseExactOutFlags();
+        (uint8 actionId,, uint8 endId) = getCloseExactOutFlags();
         return abi.encodePacked(tokenOut, actionId, poolId, pool, tokenIn, lenderId, endId);
     }
 
     function getCloseExactInSingleV2(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
         uint8 poolId = DexMappingsArbitrum.CAMELOT_V2_VOLATILE;
         address pool = testQuoter.v2TypePairAddress(tokenIn, tokenOut, poolId);
-        (uint8 actionId, , uint8 endId) = getCloseExactInFlags();
+        (uint8 actionId,, uint8 endId) = getCloseExactInFlags();
         return abi.encodePacked(tokenIn, actionId, poolId, pool, tokenOut, lenderId, endId);
     }
 
@@ -887,19 +875,20 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
         return abi.encodePacked(firstPart, midId, poolId, pool, tokenIn, lenderId, endId);
     }
 
-    /** COLLATERAL SWAP */
-
+    /**
+     * COLLATERAL SWAP
+     */
     function getCollateralSwapExactInSingleV2(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
         uint8 poolId = DexMappingsArbitrum.CAMELOT_V2_VOLATILE;
         address pool = testQuoter.v2TypePairAddress(tokenIn, tokenOut, poolId);
-        (uint8 actionId, , uint8 endId) = getCollateralSwapExactInFlags();
+        (uint8 actionId,, uint8 endId) = getCollateralSwapExactInFlags();
         return abi.encodePacked(tokenIn, actionId, poolId, pool, tokenOut, lenderId, endId);
     }
 
     function getCollateralSwapExactOutSingleV2(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
         uint8 poolId = DexMappingsArbitrum.CAMELOT_V2_VOLATILE;
         address pool = testQuoter.v2TypePairAddress(tokenIn, tokenOut, poolId);
-        (uint8 actionId, , uint8 endId) = getCollateralSwapExactOutFlags();
+        (uint8 actionId,, uint8 endId) = getCollateralSwapExactOutFlags();
         return abi.encodePacked(tokenOut, actionId, poolId, pool, tokenIn, lenderId, endId);
     }
 
@@ -923,19 +912,20 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
         return abi.encodePacked(firstPart, midId, poolId, pool, tokenIn, lenderId, endId);
     }
 
-    /** DEBT SWAP */
-
+    /**
+     * DEBT SWAP
+     */
     function getDebtSwapExactInSingleV2(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
         uint8 poolId = DexMappingsArbitrum.CAMELOT_V2_VOLATILE;
         address pool = testQuoter.v2TypePairAddress(tokenIn, tokenOut, poolId);
-        (uint8 actionId, , uint8 endId) = getDebtSwapExactInFlags();
+        (uint8 actionId,, uint8 endId) = getDebtSwapExactInFlags();
         return abi.encodePacked(tokenIn, actionId, poolId, pool, tokenOut, lenderId, endId);
     }
 
     function getDebtSwapExactOutSingleV2(address tokenIn, address tokenOut, uint16 lenderId) internal view returns (bytes memory data) {
         uint8 poolId = DexMappingsArbitrum.CAMELOT_V2_VOLATILE;
         address pool = testQuoter.v2TypePairAddress(tokenIn, tokenOut, poolId);
-        (uint8 actionId, , uint8 endId) = getDebtSwapExactOutFlags();
+        (uint8 actionId,, uint8 endId) = getDebtSwapExactOutFlags();
         return abi.encodePacked(tokenOut, actionId, poolId, pool, tokenIn, lenderId, endId);
     }
 
@@ -976,7 +966,11 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
         uint256 swapAmount,
         uint256 checkAmount,
         uint16 lenderId
-    ) internal view returns (TestParamsOpen memory p) {
+    )
+        internal
+        view
+        returns (TestParamsOpen memory p)
+    {
         p = TestParamsOpen(
             borrowAsset, //
             collateralAsset,
@@ -997,11 +991,8 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
     }
 
     function validCompoundLender(uint16 id) internal pure returns (bool a) {
-        a =
-            id == LenderMappingsArbitrum.COMPOUND_V3_USDC ||
-            id == LenderMappingsArbitrum.COMPOUND_V3_WETH ||
-            id == LenderMappingsArbitrum.COMPOUND_V3_USDT ||
-            id == LenderMappingsArbitrum.COMPOUND_V3_USDCE;
+        a = id == LenderMappingsArbitrum.COMPOUND_V3_USDC || id == LenderMappingsArbitrum.COMPOUND_V3_WETH
+            || id == LenderMappingsArbitrum.COMPOUND_V3_USDT || id == LenderMappingsArbitrum.COMPOUND_V3_USDCE;
     }
 
     function _deposit(address asset, address user, uint256 amount, uint16 lenderId) internal {
@@ -1024,7 +1015,7 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
         data = abi.encodePacked(transfer, data);
 
         vm.prank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
@@ -1044,7 +1035,7 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
         );
 
         vm.prank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);

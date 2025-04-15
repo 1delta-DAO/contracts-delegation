@@ -2,10 +2,6 @@
 
 pragma solidity 0.8.28;
 
-/******************************************************************************\
-* Author: Achthar | 1delta 
-/******************************************************************************/
-
 /**
  * @title Uniswap V3 type swapper contract
  * @notice Executes Cl swaps and pushing data to the callbacks

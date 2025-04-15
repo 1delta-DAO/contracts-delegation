@@ -6,10 +6,6 @@ import {ERC20Selectors} from "../../shared/selectors/ERC20Selectors.sol";
 import {Masks} from "../../shared/masks/Masks.sol";
 import {DeltaErrors} from "../../shared/errors/Errors.sol";
 
-/******************************************************************************\
-* Author: Achthar | 1delta 
-/******************************************************************************/
-
 // solhint-disable max-line-length
 
 /**
@@ -52,9 +48,7 @@ abstract contract ExternalCallsGeneric is ERC20Selectors, Masks, DeltaErrors {
             let callValue := calldataload(add(currentOffset, 20))
             let dataLength := and(UINT16_MASK, shr(128, callValue))
             callValue := shr(144, callValue) // shr will already mask correctly
-            if iszero(callValue) {
-                callValue := selfbalance()
-            }
+            if iszero(callValue) { callValue := selfbalance() }
 
             // free memo ptr for populating the tx
             let ptr := mload(0x40)
@@ -82,7 +76,8 @@ abstract contract ExternalCallsGeneric is ERC20Selectors, Masks, DeltaErrors {
                     target,
                     callValue,
                     ptr, //
-                    dataLength, // the length must be correct or the call will fail
+                    dataLength,
+                    // the length must be correct or the call will fail
                     0x0, // output = empty
                     0x0 // output size = zero
                 )

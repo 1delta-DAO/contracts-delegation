@@ -2,10 +2,6 @@
 
 pragma solidity 0.8.28;
 
-/******************************************************************************\
-* Author: Achthar | 1delta 
-/******************************************************************************/
-
 import {ERC20Selectors} from "../../../shared/selectors/ERC20Selectors.sol";
 import {Masks} from "../../../shared/masks/Masks.sol";
 
@@ -31,7 +27,10 @@ abstract contract SyncSwapper is ERC20Selectors, Masks {
         address receiver,
         address callerAddress,
         uint256 currentOffset //
-    ) internal returns (uint256 buyAmount, uint256 payFlag) {
+    )
+        internal
+        returns (uint256 buyAmount, uint256 payFlag)
+    {
         assembly {
             let syncSwapData := calldataload(currentOffset)
             let pool := shr(96, syncSwapData)

@@ -41,7 +41,7 @@ contract SwapsSplitsAndHopsLightTest is BaseTest {
     function setUp() public virtual {
         // initialize the chain
         string memory chainName = Chains.BASE;
-        
+
         _init(chainName, forkBlock);
         LBTC = chain.getTokenAddress(Tokens.LBTC);
         WETH = chain.getTokenAddress(Tokens.WETH);
@@ -56,13 +56,17 @@ contract SwapsSplitsAndHopsLightTest is BaseTest {
         uint16[] memory fees,
         uint8[] memory dexIds,
         address receiver
-    ) internal view returns (bytes memory data) {
+    )
+        internal
+        view
+        returns (bytes memory data)
+    {
         printPath(assets);
         data = abi.encodePacked(
             uint8(fees.length - 1), // path max index
             uint8(0) // no splits
         );
-        for (uint i = 0; i < assets.length - 1; i++) {
+        for (uint256 i = 0; i < assets.length - 1; i++) {
             address pool;
             if (dexIds[i] == DexTypeMappings.UNISWAP_V3_ID) {
                 pool = IF(UNI_FACTORY).getPool(assets[i], assets[i + 1], fees[i]);
@@ -74,7 +78,8 @@ contract SwapsSplitsAndHopsLightTest is BaseTest {
             if (i == 0) {
                 data = abi.encodePacked(
                     data, //
-                    uint16(0), // atomic
+                    uint16(0),
+                    // atomic
                     assets[i + 1], // nextToken
                     _receiver,
                     dexIds[i],
@@ -86,7 +91,8 @@ contract SwapsSplitsAndHopsLightTest is BaseTest {
             } else {
                 data = abi.encodePacked(
                     data, //
-                    uint16(0), // atomic
+                    uint16(0),
+                    // atomic
                     assets[i + 1], // nextToken
                     _receiver,
                     dexIds[i],
@@ -101,7 +107,7 @@ contract SwapsSplitsAndHopsLightTest is BaseTest {
 
     function printPath(address[] memory assets) internal view {
         console.log("-----------------------------");
-        for (uint i = 0; i < assets.length; i++) {
+        for (uint256 i = 0; i < assets.length; i++) {
             console.log("          |         ");
             console.log(IERC20All(assets[i]).symbol(), assets[i]);
             if (i < assets.length - 1) console.log("          |         ");
@@ -132,7 +138,11 @@ contract SwapsSplitsAndHopsLightTest is BaseTest {
 
     function get_USDC_WETH_MultiPathCalldata(
         address receiver //
-    ) internal view returns (bytes memory data) {
+    )
+        internal
+        view
+        returns (bytes memory data)
+    {
         (
             address[] memory assets, //
             uint16[] memory fees,
@@ -159,7 +169,8 @@ contract SwapsSplitsAndHopsLightTest is BaseTest {
         data = abi.encodePacked(
             uint8(ComposerCommands.SWAPS),
             uint128(amount), //
-            uint128(1), //
+            uint128(1),
+            //
             assetIn,
             uint8(0), // swaps max index
             uint8(2), // splits
@@ -192,12 +203,12 @@ contract SwapsSplitsAndHopsLightTest is BaseTest {
             fee2,
             uint16(0) // cll length
         ); //
-
         pool = IF(UNI_FACTORY).getPool(assetIn, assetOut, fee2);
         data = abi.encodePacked(
             data,
             get_USDC_WETH_MultiPathCalldata(receiver) //
-        ); //
+        );
+        //
     }
 
     function test_light_swap_v3_splits_with_route() external {
@@ -211,7 +222,7 @@ contract SwapsSplitsAndHopsLightTest is BaseTest {
         uint256 amount = 100.0e6;
 
         vm.prank(user);
-        IERC20All(tokenIn).approve(address(oneDV2), type(uint).max);
+        IERC20All(tokenIn).approve(address(oneDV2), type(uint256).max);
 
         uint256 balBefore = IERC20All(tokenOut).balanceOf(user);
 

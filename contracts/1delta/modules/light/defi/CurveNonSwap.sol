@@ -2,15 +2,9 @@
 
 pragma solidity ^0.8.28;
 
-/******************************************************************************\
-* Author: Achthar | 1delta 
-/******************************************************************************/
-
 // solhint-disable max-line-length
 
 /**
  * Handler for depositing and withdrawing Curve liquidity
  */
-abstract contract CurveLiquidity {
-
-}
+abstract contract CurveLiquidity {}

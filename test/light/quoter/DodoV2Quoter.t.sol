@@ -42,7 +42,7 @@ contract V4QuoterTest is BaseTest {
 
     function setUp() public virtual {
         string memory chainName = Chains.BASE;
-        
+
         _init(chainName, forkBlock);
 
         WETH = chain.getTokenAddress(Tokens.WETH);

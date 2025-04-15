@@ -21,7 +21,7 @@ contract AaveV2LightTest is BaseTest {
     function setUp() public virtual {
         // initialize the chain
         string memory chainName = Chains.BASE;
-        
+
         _init(chainName, forkBlock);
         lender = Lenders.GRANARY;
         LBTC = chain.getTokenAddress(Tokens.LBTC);

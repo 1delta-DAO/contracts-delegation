@@ -1,4 +1,3 @@
-
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
@@ -22,7 +21,9 @@ interface IMorphoEverything {
         uint256 shares,
         address onBehalf,
         bytes memory data
-    ) external returns (uint256 assetsSupplied, uint256 sharesSupplied);
+    )
+        external
+        returns (uint256 assetsSupplied, uint256 sharesSupplied);
 
     function withdraw(
         MarketParams memory marketParams,
@@ -30,7 +31,9 @@ interface IMorphoEverything {
         uint256 shares,
         address onBehalf,
         address receiver
-    ) external returns (uint256 assetsWithdrawn, uint256 sharesWithdrawn);
+    )
+        external
+        returns (uint256 assetsWithdrawn, uint256 sharesWithdrawn);
 
     function borrow(
         MarketParams memory marketParams,
@@ -38,7 +41,9 @@ interface IMorphoEverything {
         uint256 shares,
         address onBehalf,
         address receiver
-    ) external returns (uint256 assetsBorrowed, uint256 sharesBorrowed);
+    )
+        external
+        returns (uint256 assetsBorrowed, uint256 sharesBorrowed);
 
     function repay(
         MarketParams memory marketParams,
@@ -46,18 +51,19 @@ interface IMorphoEverything {
         uint256 shares,
         address onBehalf,
         bytes memory data
-    ) external returns (uint256 assetsRepaid, uint256 sharesRepaid);
+    )
+        external
+        returns (uint256 assetsRepaid, uint256 sharesRepaid);
 
     function supplyCollateral(
         MarketParams memory marketParams,
         uint256 assets,
         address onBehalf, //
         bytes memory data
-    ) external;
-
-    function market(
-        bytes32 id
     )
+        external;
+
+    function market(bytes32 id)
         external
         view
         returns (
@@ -66,9 +72,8 @@ interface IMorphoEverything {
             uint128 totalBorrowAssets,
             uint128 totalBorrowShares,
             uint128 lastUpdate,
-            uint128 fee //
-        );
-
+            uint128 fee
+        ); //
     function withdrawCollateral(MarketParams memory marketParams, uint256 assets, address onBehalf, address receiver) external;
 
     function setAuthorization(address authorized, bool newIsAuthorized) external;

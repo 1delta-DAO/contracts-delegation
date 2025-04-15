@@ -22,7 +22,9 @@ interface IComposerLike {
         uint256[] calldata, // we assume that the data is known to the caller in advance
         address initiator,
         bytes calldata params
-    ) external returns (bool);
+    )
+        external
+        returns (bool);
 
     function executeOperation(
         address,
@@ -30,12 +32,15 @@ interface IComposerLike {
         uint256,
         address initiator,
         bytes calldata params // user params
-    ) external returns (bool);
+    )
+        external
+        returns (bool);
 
     function receiveFlashLoan(
         address[] calldata,
         uint256[] calldata,
         uint256[] calldata,
         bytes calldata params //
-    ) external;
+    )
+        external;
 }

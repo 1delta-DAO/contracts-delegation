@@ -7,7 +7,6 @@ import {ERC20Selectors} from "../selectors/ERC20Selectors.sol";
 /// @title PermitUtilsSlim
 /// @notice A contract containing utilities for Permits
 abstract contract PermitUtilsSlim is PermitConstants, ERC20Selectors {
-
     /*//////////////////////////////////////////////////////////////
                                  ERRORS
     //////////////////////////////////////////////////////////////*/
@@ -21,7 +20,7 @@ abstract contract PermitUtilsSlim is PermitConstants, ERC20Selectors {
                                 CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
-    constructor() { }
+    constructor() {}
 
     /**
      * @notice The function attempts to call the permit function on a given ERC20 token and executes a transfer afterwards
@@ -39,8 +38,8 @@ abstract contract PermitUtilsSlim is PermitConstants, ERC20Selectors {
      * @param permit The off-chain permit data, containing different fields depending on the type of permit function.
      */
     function _permitAndPull(address token, uint256 amount, bytes calldata permit) internal {
-        assembly ("memory-safe") { // solhint-disable-line no-inline-assembly
-
+        assembly ("memory-safe") {
+            // solhint-disable-line no-inline-assembly
             // revert if native value provided
             if gt(callvalue(), 0) {
                 mstore(0x0, HAS_MSG_VALUE)
@@ -52,20 +51,21 @@ abstract contract PermitUtilsSlim is PermitConstants, ERC20Selectors {
             switch permit.length
             // Compact IERC20Permit
             case 100 {
-                mstore(ptr, ERC20_PERMIT)     // store selector
-                mstore(add(ptr, 0x04), caller())    // store owner
-                mstore(add(ptr, 0x24), address())   // store spender
+                mstore(ptr, ERC20_PERMIT) // store selector
+                mstore(add(ptr, 0x04), caller()) // store owner
+                mstore(add(ptr, 0x24), address()) // store spender
 
                 // Compact IERC20Permit.permit(uint256 value, uint32 deadline, uint256 r, uint256 vs)
-                {  // stack too deep
+                {
+                    // stack too deep
                     let deadline := shr(224, calldataload(add(permit.offset, 0x20))) // loads permit.offset 0x20..0x23
-                    let vs := calldataload(add(permit.offset, 0x44))                 // loads permit.offset 0x44..0x63
+                    let vs := calldataload(add(permit.offset, 0x44)) // loads permit.offset 0x44..0x63
 
-                    calldatacopy(add(ptr, 0x44), permit.offset, 0x20)            // store value     = copy permit.offset 0x00..0x19
-                    mstore(add(ptr, 0x64), sub(deadline, 1))                     // store deadline  = deadline - 1
-                    mstore(add(ptr, 0x84), add(27, shr(255, vs)))                // store v         = most significant bit of vs + 27 (27 or 28)
+                    calldatacopy(add(ptr, 0x44), permit.offset, 0x20) // store value     = copy permit.offset 0x00..0x19
+                    mstore(add(ptr, 0x64), sub(deadline, 1)) // store deadline  = deadline - 1
+                    mstore(add(ptr, 0x84), add(27, shr(255, vs))) // store v         = most significant bit of vs + 27 (27 or 28)
                     calldatacopy(add(ptr, 0xa4), add(permit.offset, 0x24), 0x20) // store r         = copy permit.offset 0x24..0x43
-                    mstore(add(ptr, 0xc4), shr(1, shl(1, vs)))                   // store s         = vs without most significant bit
+                    mstore(add(ptr, 0xc4), shr(1, shl(1, vs))) // store s         = vs without most significant bit
                 }
                 // IERC20Permit.permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
                 let success := call(gas(), token, 0, ptr, 0xe4, 0, 0)
@@ -78,9 +78,9 @@ abstract contract PermitUtilsSlim is PermitConstants, ERC20Selectors {
                 ////////////////////////////////////////////////////
                 // selector for transferFrom(address,address,uint256)
                 mstore(ptr, ERC20_TRANSFER_FROM)
-                mstore(add(ptr, 0x04), caller())    // store owner
+                mstore(add(ptr, 0x04), caller()) // store owner
                 // spender still in place
-                mstore(add(ptr, 0x44), amount)      // store amount (we do not want to take the same as the permit one)
+                mstore(add(ptr, 0x44), amount) // store amount (we do not want to take the same as the permit one)
 
                 success := call(gas(), token, 0x0, ptr, 0x64, ptr, 32)
 
@@ -89,16 +89,17 @@ abstract contract PermitUtilsSlim is PermitConstants, ERC20Selectors {
                 // Check for ERC20 success. ERC20 tokens should return a boolean,
                 // but some don't. We accept 0-length return data as success, or at
                 // least 32 bytes that starts with a 32-byte boolean true.
-                success := and(
-                    success, // call itself succeeded
-                    or(
-                        iszero(rdsize), // no return data, or
-                        and(
-                            gt(rdsize, 31), // at least 32 bytes
-                            eq(mload(ptr), 1) // starts with uint256(1)
+                success :=
+                    and(
+                        success, // call itself succeeded
+                        or(
+                            iszero(rdsize), // no return data, or
+                            and(
+                                gt(rdsize, 31), // at least 32 bytes
+                                eq(mload(ptr), 1) // starts with uint256(1)
+                            )
                         )
                     )
-                )
 
                 if iszero(success) {
                     returndatacopy(ptr, 0x0, rdsize)
@@ -107,21 +108,22 @@ abstract contract PermitUtilsSlim is PermitConstants, ERC20Selectors {
             }
             // Compact IDaiLikePermit
             case 72 {
-                mstore(ptr, DAI_PERMIT)  // store selector
-                mstore(add(ptr, 0x04), caller())    // store owner
-                mstore(add(ptr, 0x24), address())   // store spender
+                mstore(ptr, DAI_PERMIT) // store selector
+                mstore(add(ptr, 0x04), caller()) // store owner
+                mstore(add(ptr, 0x24), address()) // store spender
 
                 // Compact IDaiLikePermit.permit(uint32 nonce, uint32 expiry, uint256 r, uint256 vs)
-                {  // stack too deep
+                {
+                    // stack too deep
                     let expiry := shr(224, calldataload(add(permit.offset, 0x04))) // loads permit.offset 0x04..0x07
-                    let vs := calldataload(add(permit.offset, 0x28))               // loads permit.offset 0x28..0x47
+                    let vs := calldataload(add(permit.offset, 0x28)) // loads permit.offset 0x28..0x47
 
                     mstore(add(ptr, 0x44), shr(224, calldataload(permit.offset))) // store nonce   = copy permit.offset 0x00..0x03
-                    mstore(add(ptr, 0x64), sub(expiry, 1))                        // store expiry  = expiry - 1
-                    mstore(add(ptr, 0x84), true)                                  // store allowed = true
-                    mstore(add(ptr, 0xa4), add(27, shr(255, vs)))                 // store v       = most significant bit of vs + 27 (27 or 28)
-                    calldatacopy(add(ptr, 0xc4), add(permit.offset, 0x08), 0x20)  // store r       = copy permit.offset 0x08..0x27
-                    mstore(add(ptr, 0xe4), shr(1, shl(1, vs)))                    // store s       = vs without most significant bit
+                    mstore(add(ptr, 0x64), sub(expiry, 1)) // store expiry  = expiry - 1
+                    mstore(add(ptr, 0x84), true) // store allowed = true
+                    mstore(add(ptr, 0xa4), add(27, shr(255, vs))) // store v       = most significant bit of vs + 27 (27 or 28)
+                    calldatacopy(add(ptr, 0xc4), add(permit.offset, 0x08), 0x20) // store r       = copy permit.offset 0x08..0x27
+                    mstore(add(ptr, 0xe4), shr(1, shl(1, vs))) // store s       = vs without most significant bit
                 }
                 // IDaiLikePermit.permit(address holder, address spender, uint256 nonce, uint256 expiry, bool allowed, uint8 v, bytes32 r, bytes32 s)
                 let success := call(gas(), token, 0, ptr, 0x104, 0, 0)
@@ -134,9 +136,9 @@ abstract contract PermitUtilsSlim is PermitConstants, ERC20Selectors {
                 ////////////////////////////////////////////////////
                 // selector for transferFrom(address,address,uint256)
                 mstore(ptr, ERC20_TRANSFER_FROM)
-                mstore(add(ptr, 0x04), caller())    // store owner
+                mstore(add(ptr, 0x04), caller()) // store owner
                 // spender still in place
-                mstore(add(ptr, 0x44), amount)      // store amount
+                mstore(add(ptr, 0x44), amount) // store amount
 
                 success := call(gas(), token, 0x0, ptr, 0x64, ptr, 32)
 
@@ -145,16 +147,17 @@ abstract contract PermitUtilsSlim is PermitConstants, ERC20Selectors {
                 // Check for ERC20 success. ERC20 tokens should return a boolean,
                 // but some don't. We accept 0-length return data as success, or at
                 // least 32 bytes that starts with a 32-byte boolean true.
-                success := and(
-                    success, // call itself succeeded
-                    or(
-                        iszero(rdsize), // no return data, or
-                        and(
-                            gt(rdsize, 31), // at least 32 bytes
-                            eq(mload(ptr), 1) // starts with uint256(1)
+                success :=
+                    and(
+                        success, // call itself succeeded
+                        or(
+                            iszero(rdsize), // no return data, or
+                            and(
+                                gt(rdsize, 31), // at least 32 bytes
+                                eq(mload(ptr), 1) // starts with uint256(1)
+                            )
                         )
                     )
-                )
 
                 if iszero(success) {
                     returndatacopy(ptr, 0x0, rdsize)
@@ -176,9 +179,9 @@ abstract contract PermitUtilsSlim is PermitConstants, ERC20Selectors {
                 ////////////////////////////////////////////////////
                 // selector for transferFrom(address,address,uint256)
                 mstore(ptr, ERC20_TRANSFER_FROM)
-                mstore(add(ptr, 0x04), caller())    // store owner
+                mstore(add(ptr, 0x04), caller()) // store owner
                 // spender still in place
-                mstore(add(ptr, 0x44), amount)      // store amount (we do not want to take the same as the permit one)
+                mstore(add(ptr, 0x44), amount) // store amount (we do not want to take the same as the permit one)
 
                 success := call(gas(), token, 0x0, ptr, 0x64, ptr, 32)
 
@@ -187,16 +190,17 @@ abstract contract PermitUtilsSlim is PermitConstants, ERC20Selectors {
                 // Check for ERC20 success. ERC20 tokens should return a boolean,
                 // but some don't. We accept 0-length return data as success, or at
                 // least 32 bytes that starts with a 32-byte boolean true.
-                success := and(
-                    success, // call itself succeeded
-                    or(
-                        iszero(rdsize), // no return data, or
-                        and(
-                            gt(rdsize, 31), // at least 32 bytes
-                            eq(mload(ptr), 1) // starts with uint256(1)
+                success :=
+                    and(
+                        success, // call itself succeeded
+                        or(
+                            iszero(rdsize), // no return data, or
+                            and(
+                                gt(rdsize, 31), // at least 32 bytes
+                                eq(mload(ptr), 1) // starts with uint256(1)
+                            )
                         )
                     )
-                )
 
                 if iszero(success) {
                     returndatacopy(ptr, 0x0, rdsize)
@@ -218,7 +222,7 @@ abstract contract PermitUtilsSlim is PermitConstants, ERC20Selectors {
                 ////////////////////////////////////////////////////
                 // selector for transferFrom(address,address,uint256)
                 mstore(ptr, ERC20_TRANSFER_FROM)
-                mstore(add(ptr, 0x04), caller())    // store owner
+                mstore(add(ptr, 0x04), caller()) // store owner
                 // spender still in place
                 mstore(add(ptr, 0x44), amount)
 
@@ -229,16 +233,17 @@ abstract contract PermitUtilsSlim is PermitConstants, ERC20Selectors {
                 // Check for ERC20 success. ERC20 tokens should return a boolean,
                 // but some don't. We accept 0-length return data as success, or at
                 // least 32 bytes that starts with a 32-byte boolean true.
-                success := and(
-                    success, // call itself succeeded
-                    or(
-                        iszero(rdsize), // no return data, or
-                        and(
-                            gt(rdsize, 31), // at least 32 bytes
-                            eq(mload(ptr), 1) // starts with uint256(1)
+                success :=
+                    and(
+                        success, // call itself succeeded
+                        or(
+                            iszero(rdsize), // no return data, or
+                            and(
+                                gt(rdsize, 31), // at least 32 bytes
+                                eq(mload(ptr), 1) // starts with uint256(1)
+                            )
                         )
                     )
-                )
 
                 if iszero(success) {
                     returndatacopy(ptr, 0x0, rdsize)
@@ -248,19 +253,19 @@ abstract contract PermitUtilsSlim is PermitConstants, ERC20Selectors {
             // Compact IPermit2
             case 96 {
                 // Compact IPermit2.permit(uint160 amount, uint32 expiration, uint32 nonce, uint32 sigDeadline, uint256 r, uint256 vs)
-                mstore(ptr, PERMIT2_PERMIT)  // store selector
+                mstore(ptr, PERMIT2_PERMIT) // store selector
                 mstore(add(ptr, 0x04), caller()) // store owner
                 mstore(add(ptr, 0x24), token) // store token
 
-                calldatacopy(add(ptr, 0x50), permit.offset, 0x14)             // store amount = copy permit.offset 0x00..0x13
+                calldatacopy(add(ptr, 0x50), permit.offset, 0x14) // store amount = copy permit.offset 0x00..0x13
                 // and(0xffffffffffff, ...) - conversion to uint48
                 mstore(add(ptr, 0x64), and(0xffffffffffff, sub(shr(224, calldataload(add(permit.offset, 0x14))), 1))) // store expiration = ((permit.offset 0x14..0x17 - 1) & 0xffffffffffff)
                 mstore(add(ptr, 0x84), shr(224, calldataload(add(permit.offset, 0x18)))) // store nonce = copy permit.offset 0x18..0x1b
-                mstore(add(ptr, 0xa4), address())                               // store spender
+                mstore(add(ptr, 0xa4), address()) // store spender
                 // and(0xffffffffffff, ...) - conversion to uint48
                 mstore(add(ptr, 0xc4), and(0xffffffffffff, sub(shr(224, calldataload(add(permit.offset, 0x1c))), 1))) // store sigDeadline = ((permit.offset 0x1c..0x1f - 1) & 0xffffffffffff)
-                mstore(add(ptr, 0xe4), 0x100)                                 // store offset = 256
-                mstore(add(ptr, 0x104), 0x40)                                 // store length = 64
+                mstore(add(ptr, 0xe4), 0x100) // store offset = 256
+                mstore(add(ptr, 0x104), 0x40) // store length = 64
                 calldatacopy(add(ptr, 0x124), add(permit.offset, 0x20), 0x20) // store r      = copy permit.offset 0x20..0x3f
                 calldatacopy(add(ptr, 0x144), add(permit.offset, 0x40), 0x20) // store vs     = copy permit.offset 0x40..0x5f
                 // IPermit2.permit(address owner, PermitSingle calldata permitSingle, bytes calldata signature)
@@ -318,21 +323,22 @@ abstract contract PermitUtilsSlim is PermitConstants, ERC20Selectors {
                 // Check for ERC20 success. ERC20 tokens should return a boolean,
                 // but some don't. We accept 0-length return data as success, or at
                 // least 32 bytes that starts with a 32-byte boolean true.
-                success := and(
-                    success, // call itself succeeded
-                    or(
-                        iszero(rdsize), // no return data, or
-                        and(
-                            gt(rdsize, 31), // at least 32 bytes
-                            eq(mload(ptr), 1) // starts with uint256(1)
+                success :=
+                    and(
+                        success, // call itself succeeded
+                        or(
+                            iszero(rdsize), // no return data, or
+                            and(
+                                gt(rdsize, 31), // at least 32 bytes
+                                eq(mload(ptr), 1) // starts with uint256(1)
+                            )
                         )
                     )
-                )
 
                 if iszero(success) {
                     returndatacopy(ptr, 0x0, rdsize)
                     revert(ptr, rdsize)
-                } 
+                }
             }
             // Unknown
             default {

@@ -30,7 +30,7 @@ contract BalancerFlashSwapTest is BaseTest {
     function setUp() public virtual {
         // initialize the chain
         string memory chainName = Chains.BASE;
-        
+
         _init(chainName, forkBlock);
         lender = Lenders.AAVE_V3;
         USDC = chain.getTokenAddress(Tokens.USDC);
@@ -45,7 +45,11 @@ contract BalancerFlashSwapTest is BaseTest {
         address tokenIn,
         address tokenOut,
         uint256 amount
-    ) internal pure returns (bytes memory data) {
+    )
+        internal
+        pure
+        returns (bytes memory data)
+    {
         data = abi.encodePacked(
             uint8(ComposerCommands.SWAPS),
             uint128(amount), //
@@ -90,8 +94,7 @@ contract BalancerFlashSwapTest is BaseTest {
         bytes memory swapAction = balV3Swap(address(oneDV2), tokenIn, tokenOut, borrowAmount);
         {
             // borrow and deposit with override amounts (optimal)
-            bytes memory borrow =
-                CalldataLib.encodeAaveBorrow(tokenIn, false, borrowAmount, address(BALANCER_V3_VAULT), 2, pool);
+            bytes memory borrow = CalldataLib.encodeAaveBorrow(tokenIn, false, borrowAmount, address(BALANCER_V3_VAULT), 2, pool);
             bytes memory deposit = CalldataLib.encodeAaveDeposit(tokenOut, false, 0, user, pool);
 
             bytes memory settlementActions = CalldataLib.nextGenDexSettleBalancer(

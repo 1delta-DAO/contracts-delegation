@@ -2,10 +2,6 @@
 
 pragma solidity 0.8.28;
 
-/******************************************************************************\
-* Author: Achthar | 1delta 
-/******************************************************************************/
-
 import {Masks} from "../../../shared/masks/Masks.sol";
 
 /**
@@ -32,7 +28,10 @@ abstract contract V3TypeGeneric is Masks {
         address receiver,
         uint256 currentOffset,
         address callerAddress
-    ) internal returns (uint256 receivedAmount, uint256) {
+    )
+        internal
+        returns (uint256 receivedAmount, uint256)
+    {
         // solhint-disable-next-line no-inline-assembly
         assembly {
             let ptr := mload(0x40)
@@ -41,14 +40,16 @@ abstract contract V3TypeGeneric is Masks {
             // skip pool
             currentOffset := add(currentOffset, 20)
             let clLength := and(UINT16_MASK, shr(56, pool))
-            pool := shr(
-                96,
-                pool // starts as first param
-            )
-            let zeroForOne := lt(
-                tokenIn,
-                tokenOut //
-            )
+            pool :=
+                shr(
+                    96,
+                    pool // starts as first param
+                )
+            let zeroForOne :=
+                lt(
+                    tokenIn,
+                    tokenOut //
+                )
             // Prepare external call data
             // Store swap selector (0x128acb08)
             mstore(ptr, 0x128acb0800000000000000000000000000000000000000000000000000000000)
@@ -117,12 +118,8 @@ abstract contract V3TypeGeneric is Masks {
             receivedAmount := sub(0, receivedAmount)
 
             switch lt(clLength, 2)
-            case 1 {
-                currentOffset := add(currentOffset, 5)
-            }
-            default {
-                currentOffset := add(currentOffset, add(5, clLength))
-            }
+            case 1 { currentOffset := add(currentOffset, 5) }
+            default { currentOffset := add(currentOffset, add(5, clLength)) }
         }
         return (receivedAmount, currentOffset);
     }
@@ -135,7 +132,10 @@ abstract contract V3TypeGeneric is Masks {
         address receiver,
         uint256 currentOffset,
         address callerAddress
-    ) internal returns (uint256 receivedAmount, uint256) {
+    )
+        internal
+        returns (uint256 receivedAmount, uint256)
+    {
         // solhint-disable-next-line no-inline-assembly
         assembly {
             let ptr := mload(0x40)
@@ -144,10 +144,11 @@ abstract contract V3TypeGeneric is Masks {
             // skip pool
             currentOffset := add(currentOffset, 20)
             let clLength := and(UINT16_MASK, shr(56, pool))
-            pool := shr(
-                96,
-                pool // starts as first param
-            )
+            pool :=
+                shr(
+                    96,
+                    pool // starts as first param
+                )
             switch lt(
                 tokenIn,
                 tokenOut //
@@ -246,12 +247,8 @@ abstract contract V3TypeGeneric is Masks {
             }
 
             switch lt(clLength, 2)
-            case 1 {
-                currentOffset := add(currentOffset, 5)
-            }
-            default {
-                currentOffset := add(currentOffset, add(5, clLength))
-            }
+            case 1 { currentOffset := add(currentOffset, 5) }
+            default { currentOffset := add(currentOffset, add(5, clLength)) }
         }
         return (receivedAmount, currentOffset);
     }

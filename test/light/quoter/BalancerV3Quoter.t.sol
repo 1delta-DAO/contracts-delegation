@@ -41,7 +41,7 @@ contract BalancerV3QuoterTest is BaseTest {
 
     function setUp() public virtual {
         string memory chainName = Chains.BASE;
-        
+
         _init(chainName, forkBlock);
 
         WETH = chain.getTokenAddress(Tokens.WETH);
@@ -65,7 +65,11 @@ contract BalancerV3QuoterTest is BaseTest {
         address user, //
         address tokenIn,
         address tokenOut
-    ) internal pure returns (bytes memory data) {
+    )
+        internal
+        pure
+        returns (bytes memory data)
+    {
         data = abi.encodePacked(tokenIn);
         // no branching
         data = data.attachBranch(0, 0, hex"");

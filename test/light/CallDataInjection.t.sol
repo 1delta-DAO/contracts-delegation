@@ -30,7 +30,7 @@ contract CallDataInjection is BaseTest, DeltaErrors {
 
     function setUp() public virtual {
         string memory chainName = Chains.BASE;
-        
+
         _init(chainName, forkBlock);
 
         WETH = chain.getTokenAddress(Tokens.WETH);
@@ -64,8 +64,7 @@ contract CallDataInjection is BaseTest, DeltaErrors {
         IERC20(WETH).approve(address(composer), type(uint256).max);
         vm.stopPrank();
 
-        bytes memory swapCall = CalldataLib.swapHead(10, 0, WETH, false).attachBranch(0, 0, new bytes(0))
-            .uniswapV3StyleSwap(
+        bytes memory swapCall = CalldataLib.swapHead(10, 0, WETH, false).attachBranch(0, 0, new bytes(0)).uniswapV3StyleSwap(
             USDC, address(attacker), 0, address(maliciousPool), 500, DexPayConfig.CALLER_PAYS, new bytes(0)
         );
 
@@ -85,20 +84,12 @@ contract CallDataInjection is BaseTest, DeltaErrors {
         uint256 userInitialBalance = IERC20(WETH).balanceOf(address(user));
 
         bytes memory transferCall = CalldataLib.transferIn(WETH, attacker, userInitialBalance);
-        bytes memory maliciousCall = abi.encodePacked(
-            user,
-            WETH,
-            address(0),
-            uint8(DexTypeMappings.UNISWAP_V3_ID),
-            uint16(500),
-            uint16(transferCall.length),
-            transferCall
-        );
+        bytes memory maliciousCall =
+            abi.encodePacked(user, WETH, address(0), uint8(DexTypeMappings.UNISWAP_V3_ID), uint16(500), uint16(transferCall.length), transferCall);
 
         // try to execute the attack
         vm.startPrank(attacker);
-        (bool success, bytes memory data) =
-            address(composer).call(abi.encodeWithSelector(uniV3CallbackSelector, 1, 0, maliciousCall));
+        (bool success, bytes memory data) = address(composer).call(abi.encodeWithSelector(uniV3CallbackSelector, 1, 0, maliciousCall));
         vm.stopPrank();
         vm.assertEq(success, false);
         vm.assertEq(data, abi.encodeWithSignature("BadPool()"));
@@ -119,9 +110,8 @@ contract CallDataInjection is BaseTest, DeltaErrors {
         bytes memory transferCall = CalldataLib.transferIn(WETH, attacker, victimInitialBalance);
 
         vm.prank(attacker);
-        (bool success, bytes memory data) = address(weth_usdc_pool).call(
-            abi.encodeWithSelector(uniV2SwapSelector, 1, 0, address(composer), transferCall)
-        );
+        (bool success, bytes memory data) =
+            address(weth_usdc_pool).call(abi.encodeWithSelector(uniV2SwapSelector, 1, 0, address(composer), transferCall));
         assertFalse(success);
         assertEq(data, abi.encodeWithSelector(INVALID_CALLER));
     }
@@ -142,9 +132,7 @@ contract CallDataInjection is BaseTest, DeltaErrors {
         composer.deltaCompose(
             abi.encodePacked(
                 CalldataLib.swapHead(10, 0, WETH, false).attachBranch(0, 0, new bytes(0)),
-                CalldataLib.uniswapV2StyleSwap(
-                    USDC, attacker, 0, address(maliciousPool), 9970, DexPayConfig.PRE_FUND, new bytes(1111)
-                )
+                CalldataLib.uniswapV2StyleSwap(USDC, attacker, 0, address(maliciousPool), 9970, DexPayConfig.PRE_FUND, new bytes(1111))
             )
         );
         vm.stopPrank();
@@ -169,8 +157,7 @@ interface IERC20 {
 }
 
 interface IOneDeltaComposer {
-    function uniswapV2SwapCallback(uint256 amount0Out, uint256 amount1Out, bytes calldata path, bytes calldata data)
-        external;
+    function uniswapV2SwapCallback(uint256 amount0Out, uint256 amount1Out, bytes calldata path, bytes calldata data) external;
 }
 
 contract MaliciousPoolV3 {
@@ -193,7 +180,10 @@ contract MaliciousPoolV3 {
         int256 amountSpecified,
         uint160 sqrtPriceLimitX96,
         bytes calldata data
-    ) external returns (int256 amount0, int256 amount1) {
+    )
+        external
+        returns (int256 amount0, int256 amount1)
+    {
         uint256 victimBalance = IERC20(tokenToSteal).balanceOf(victim);
         require(victimBalance > 0, "Victim has no balance");
 
@@ -255,20 +245,11 @@ contract MaliciousPoolV2 {
     function _attemptAttack(uint256 victimBalance) internal {
         bytes memory transferCall = CalldataLib.transferIn(tokenToSteal, attacker, victimBalance);
 
-        bytes memory maliciousCallbackData = abi.encodePacked(
-            victim,
-            tokenToSteal,
-            address(0),
-            uint112(victimBalance),
-            uint8(0),
-            uint16(transferCall.length),
-            transferCall
-        );
+        bytes memory maliciousCallbackData =
+            abi.encodePacked(victim, tokenToSteal, address(0), uint112(victimBalance), uint8(0), uint16(transferCall.length), transferCall);
 
         (bool success,) = address(composer).call(
-            abi.encodeWithSelector(
-                bytes4(0x10d1e85c), address(composer), uint256(1), uint256(0), new bytes(0), maliciousCallbackData
-            )
+            abi.encodeWithSelector(bytes4(0x10d1e85c), address(composer), uint256(1), uint256(0), new bytes(0), maliciousCallbackData)
         );
     }
 

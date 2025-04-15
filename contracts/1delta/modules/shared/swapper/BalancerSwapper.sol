@@ -2,21 +2,16 @@
 
 pragma solidity 0.8.28;
 
-/******************************************************************************\
-* Author: Achthar | 1delta 
-/******************************************************************************/
-
 // solhint-disable max-line-length
 
-import { ERC20Selectors } from "../selectors/ERC20Selectors.sol";
-import { Masks } from "../masks/Masks.sol";
+import {ERC20Selectors} from "../selectors/ERC20Selectors.sol";
+import {Masks} from "../masks/Masks.sol";
 
 /**
  * @title Balancer V2 swapper contract
  * @notice Balancer V2 is fun (mostly)
  */
 abstract contract BalancerSwapper is ERC20Selectors, Masks {
-
     /// @dev All swaps go through the balancer vault
     address internal constant BALANCER_V2_VAULT = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
 
@@ -29,7 +24,8 @@ abstract contract BalancerSwapper is ERC20Selectors, Masks {
     uint256 internal constant MAX_SINGLE_LENGTH_BALANCER_V2 = 77;
     uint256 internal constant MAX_SINGLE_LENGTH_BALANCER_V2_HIGH = 78;
 
-    /** Call queryBatchSwap on the Balancer V2 vault.
+    /**
+     * Call queryBatchSwap on the Balancer V2 vault.
      *  Should be avoided if possible as it executes (but reverts) state changes in the balancer vault
      *  Executes `call` and therefore is non-view
      *  Will allow to save a refund transfer since we calculate the exact amount
@@ -82,7 +78,9 @@ abstract contract BalancerSwapper is ERC20Selectors, Masks {
         }
     }
 
-    /** Simple exact input swap with Balancer V2. We assume `userData` in the struct to be empty */
+    /**
+     * Simple exact input swap with Balancer V2. We assume `userData` in the struct to be empty
+     */
     function _swapBalancerExactIn(address payer, uint256 amountIn, address receiver, uint256 offset) internal returns (uint256 amountOut) {
         assembly {
             // fetch swap context
@@ -101,31 +99,33 @@ abstract contract BalancerSwapper is ERC20Selectors, Masks {
                 mstore(add(ptr, 0x24), address())
                 mstore(add(ptr, 0x44), amountIn)
 
-                let success := call(
-                    gas(),
-                    tokenIn, //
-                    0,
-                    ptr,
-                    0x64,
-                    ptr,
-                    32
-                )
+                let success :=
+                    call(
+                        gas(),
+                        tokenIn, //
+                        0,
+                        ptr,
+                        0x64,
+                        ptr,
+                        32
+                    )
 
                 let rdsize := returndatasize()
 
                 // Check for ERC20 success. ERC20 tokens should return a boolean,
                 // but some don't. We accept 0-length return data as success, or at
                 // least 32 bytes that starts with a 32-byte boolean true.
-                success := and(
-                    success, // call itself succeeded
-                    or(
-                        iszero(rdsize), // no return data, or
-                        and(
-                            gt(rdsize, 31), // at least 32 bytes
-                            eq(mload(ptr), 1) // starts with uint256(1)
+                success :=
+                    and(
+                        success, // call itself succeeded
+                        or(
+                            iszero(rdsize), // no return data, or
+                            and(
+                                gt(rdsize, 31), // at least 32 bytes
+                                eq(mload(ptr), 1) // starts with uint256(1)
+                            )
                         )
                     )
-                )
 
                 if iszero(success) {
                     returndatacopy(0, 0, rdsize)
@@ -188,14 +188,10 @@ abstract contract BalancerSwapper is ERC20Selectors, Masks {
         }
     }
 
-    /** call single swap function on Balancer V2 vault */
-    function _swapBalancerExactOut(
-        bytes32 balancerPoolId,
-        address tokenIn,
-        address tokenOut,
-        address receiver,
-        uint256 amountOut
-    ) internal {
+    /**
+     * call single swap function on Balancer V2 vault
+     */
+    function _swapBalancerExactOut(bytes32 balancerPoolId, address tokenIn, address tokenOut, address receiver, uint256 amountOut) internal {
         assembly {
             let ptr := mload(0x40)
 

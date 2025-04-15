@@ -20,7 +20,10 @@ abstract contract V3TypeQuoter is QuoterUtils, Masks {
         address tokenIn,
         address tokenOut,
         uint256 currentOffset
-    ) internal returns (uint256 amountOut, uint256 newOffset) {
+    )
+        internal
+        returns (uint256 amountOut, uint256 newOffset)
+    {
         address pool;
         uint16 config;
         bool zeroForOne;
@@ -35,22 +38,18 @@ abstract contract V3TypeQuoter is QuoterUtils, Masks {
             currentOffset := add(currentOffset, 2)
 
             // skip extra calldat bytes, if any
-            if gt(config, 1) {
-                currentOffset := add(currentOffset, config)
-            }
+            if gt(config, 1) { currentOffset := add(currentOffset, config) }
 
             zeroForOne := lt(tokenIn, tokenOut)
         }
 
-        try
-            ICLPool(pool).swap(
-                address(this), // quoter
-                zeroForOne,
-                int256(amountIn),
-                zeroForOne ? MIN_SQRT_RATIO : MAX_SQRT_RATIO, // price limit
-                abi.encodePacked(tokenIn, tokenOut) // callback data
-            )
-        {} catch (bytes memory reason) {
+        try ICLPool(pool).swap(
+            address(this), // quoter
+            zeroForOne,
+            int256(amountIn),
+            zeroForOne ? MIN_SQRT_RATIO : MAX_SQRT_RATIO, // price limit
+            abi.encodePacked(tokenIn, tokenOut) // callback data
+        ) {} catch (bytes memory reason) {
             return (parseRevertReason(reason), currentOffset);
         }
 
@@ -63,7 +62,10 @@ abstract contract V3TypeQuoter is QuoterUtils, Masks {
         address tokenIn,
         address tokenOut,
         uint256 currentOffset
-    ) internal returns (uint256 amountOut, uint256 newOffset) {
+    )
+        internal
+        returns (uint256 amountOut, uint256 newOffset)
+    {
         address pool;
         uint16 config;
         bool zeroForOne;
@@ -78,35 +80,29 @@ abstract contract V3TypeQuoter is QuoterUtils, Masks {
             currentOffset := add(currentOffset, 2)
 
             // skip extra calldat bytes, if any
-            if gt(config, 1) {
-                currentOffset := add(currentOffset, config)
-            }
+            if gt(config, 1) { currentOffset := add(currentOffset, config) }
 
             zeroForOne := lt(tokenIn, tokenOut)
         }
 
         if (tokenIn < tokenOut) {
             int24 boundaryPoint = -799999;
-            try
-                ICLPool(pool).swapX2Y(
-                    address(this), // address(0) might cause issues with some tokens
-                    uint128(amountIn),
-                    boundaryPoint,
-                    abi.encodePacked(tokenIn, tokenOut)
-                )
-            {} catch (bytes memory reason) {
+            try ICLPool(pool).swapX2Y(
+                address(this), // address(0) might cause issues with some tokens
+                uint128(amountIn),
+                boundaryPoint,
+                abi.encodePacked(tokenIn, tokenOut)
+            ) {} catch (bytes memory reason) {
                 return (parseRevertReason(reason), currentOffset);
             }
         } else {
             int24 boundaryPoint = 799999;
-            try
-                ICLPool(pool).swapY2X(
-                    address(this), // address(0) might cause issues with some tokens
-                    uint128(amountIn),
-                    boundaryPoint,
-                    abi.encodePacked(tokenIn, tokenOut)
-                )
-            {} catch (bytes memory reason) {
+            try ICLPool(pool).swapY2X(
+                address(this), // address(0) might cause issues with some tokens
+                uint128(amountIn),
+                boundaryPoint,
+                abi.encodePacked(tokenIn, tokenOut)
+            ) {} catch (bytes memory reason) {
                 return (parseRevertReason(reason), currentOffset);
             }
         }
@@ -132,9 +128,8 @@ abstract contract V3TypeQuoter is QuoterUtils, Masks {
         }
 
         // Determine which amount is payment and which is received
-        (bool isExactInput, uint256 amountReceived) = amount0Delta > 0
-            ? (tokenIn < tokenOut, uint256(-amount1Delta))
-            : (tokenOut < tokenIn, uint256(-amount0Delta));
+        (bool isExactInput, uint256 amountReceived) =
+            amount0Delta > 0 ? (tokenIn < tokenOut, uint256(-amount1Delta)) : (tokenOut < tokenIn, uint256(-amount0Delta));
 
         // For exact input, we revert with the received amount
         if (isExactInput) {
@@ -218,17 +213,22 @@ interface ICLPool {
         int256 amountSpecified,
         uint160 sqrtPriceLimitX96,
         bytes calldata data
-    ) external returns (int256 amount0, int256 amount1);
+    )
+        external
+        returns (int256 amount0, int256 amount1);
 
-    /** IZUMI */
-
+    /**
+     * IZUMI
+     */
     function swapY2X(
         // exact in swap token1 to 0
         address recipient,
         uint128 amount,
         int24 highPt,
         bytes calldata data
-    ) external returns (uint256 amountX, uint256 amountY);
+    )
+        external
+        returns (uint256 amountX, uint256 amountY);
 
     function swapX2Y(
         // exact in swap token0 to 1
@@ -236,5 +236,7 @@ interface ICLPool {
         uint128 amount,
         int24 lowPt,
         bytes calldata data
-    ) external returns (uint256 amountX, uint256 amountY);
+    )
+        external
+        returns (uint256 amountX, uint256 amountY);
 }

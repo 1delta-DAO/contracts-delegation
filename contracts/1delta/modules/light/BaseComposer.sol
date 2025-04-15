@@ -66,7 +66,10 @@ abstract contract BaseComposer is
         address callerAddress,
         uint256 currentOffset,
         uint256 calldataLength //
-    ) internal virtual {
+    )
+        internal
+        virtual
+    {
         // data loop paramters
         uint256 maxIndex;
         assembly {

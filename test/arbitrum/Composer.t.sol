@@ -29,7 +29,7 @@ contract ComposerTestArbitrum is DeltaSetup {
         );
         data = abi.encodePacked(transfer, data);
         vm.prank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
@@ -61,7 +61,7 @@ contract ComposerTestArbitrum is DeltaSetup {
         );
         data = abi.encodePacked(transfer, data);
         vm.prank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
@@ -93,7 +93,7 @@ contract ComposerTestArbitrum is DeltaSetup {
         );
         data = abi.encodePacked(transfer, data);
         vm.prank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
@@ -119,7 +119,7 @@ contract ComposerTestArbitrum is DeltaSetup {
 
         bytes memory data = borrow(borrowAsset, user, borrowAmount, lenderId, DEFAULT_MODE);
         vm.prank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
@@ -146,7 +146,7 @@ contract ComposerTestArbitrum is DeltaSetup {
 
         bytes memory data = borrow(borrowAsset, user, borrowAmount, lenderId, DEFAULT_MODE);
         vm.prank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
@@ -190,7 +190,7 @@ contract ComposerTestArbitrum is DeltaSetup {
         IERC20All(borrowAsset).approve(address(brokerProxyAddress), repayAmount);
 
         vm.prank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
@@ -234,7 +234,7 @@ contract ComposerTestArbitrum is DeltaSetup {
         uint256 borrowAssetBalance = IERC20All(borrowAsset).balanceOf(user);
 
         {
-            uint gas = gasleft();
+            uint256 gas = gasleft();
             vm.prank(user);
             IFlashAggregator(brokerProxyAddress).deltaCompose(data);
             gas = gas - gasleft();
@@ -283,7 +283,7 @@ contract ComposerTestArbitrum is DeltaSetup {
         uint256 borrowAssetBalance = IERC20All(borrowAsset).balanceOf(user);
 
         {
-            uint gas = gasleft();
+            uint256 gas = gasleft();
             vm.prank(user);
             IFlashAggregator(brokerProxyAddress).deltaCompose(data);
             gas = gas - gasleft();
@@ -297,7 +297,10 @@ contract ComposerTestArbitrum is DeltaSetup {
 
     function test_arbitrum_composer_withdraw(uint16 lenderId) external {
         address user = testUser;
-        vm.assume(user != address(0) && (validAaveLender(lenderId) || lenderId == LenderMappingsArbitrum.COMPOUND_V3_USDC || lenderId == LenderMappingsArbitrum.VENUS));
+        vm.assume(
+            user != address(0)
+                && (validAaveLender(lenderId) || lenderId == LenderMappingsArbitrum.COMPOUND_V3_USDC || lenderId == LenderMappingsArbitrum.VENUS)
+        );
 
         uint256 amount = 10.0e6;
         address asset = TokensArbitrum.USDC;
@@ -310,7 +313,7 @@ contract ComposerTestArbitrum is DeltaSetup {
         approveWithdrawal(user, asset, withdrawAmount, lenderId);
 
         vm.prank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
@@ -333,7 +336,7 @@ contract ComposerTestArbitrum is DeltaSetup {
         approveWithdrawal(user, asset, withdrawAmount, lenderId);
 
         vm.prank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
@@ -378,7 +381,7 @@ contract ComposerTestArbitrum is DeltaSetup {
         IERC20All(assetIn).approve(address(brokerProxyAddress), amount);
 
         vm.prank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
@@ -463,7 +466,7 @@ contract ComposerTestArbitrum is DeltaSetup {
 
         data = abi.encodePacked(wrap(amount), data);
         vm.prank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose{value: amount}(data);
         gas = gas - gasleft();
         console.log("gas", gas);
@@ -509,17 +512,17 @@ contract ComposerTestArbitrum is DeltaSetup {
         vm.prank(user);
         IERC20All(assetIn).approve(brokerProxyAddress, amountMax);
 
-        uint balanceOutBefore = user.balance;
-        uint balanceInBefore = IERC20All(assetIn).balanceOf(user);
+        uint256 balanceOutBefore = user.balance;
+        uint256 balanceInBefore = IERC20All(assetIn).balanceOf(user);
         {
             vm.prank(user);
-            uint gas = gasleft();
+            uint256 gas = gasleft();
             IFlashAggregator(brokerProxyAddress).deltaCompose(data);
             gas = gas - gasleft();
             console.log("gas-exactOut-native-out-2 split", gas);
         }
-        uint balanceOutAfter = user.balance;
-        uint balanceInAfter = IERC20All(assetIn).balanceOf(user);
+        uint256 balanceOutAfter = user.balance;
+        uint256 balanceInAfter = IERC20All(assetIn).balanceOf(user);
 
         assertApproxEqAbs(balanceOutAfter - balanceOutBefore, amount, 1);
         // expect to pay 3.3k USDC for 1 ETH
@@ -563,17 +566,17 @@ contract ComposerTestArbitrum is DeltaSetup {
 
         data = abi.encodePacked(wrap(amountMax), data, unwrap(user, 0, ComposerUtils.SweepType.VALIDATE));
 
-        uint balanceOutBefore = IERC20All(assetOut).balanceOf(user);
-        uint balanceInBefore = user.balance;
+        uint256 balanceOutBefore = IERC20All(assetOut).balanceOf(user);
+        uint256 balanceInBefore = user.balance;
         {
             vm.prank(user);
-            uint gas = gasleft();
+            uint256 gas = gasleft();
             IFlashAggregator(brokerProxyAddress).deltaCompose{value: amountMax}(data);
             gas = gas - gasleft();
             console.log("gas-exactOut-native-in-2 split", gas);
         }
-        uint balanceOutAfter = IERC20All(assetOut).balanceOf(user);
-        uint balanceInAfter = user.balance;
+        uint256 balanceOutAfter = IERC20All(assetOut).balanceOf(user);
+        uint256 balanceInAfter = user.balance;
 
         assertApproxEqAbs(balanceOutAfter - balanceOutBefore, amount, 1);
         // expect to pay 1.05 ETH for 3.5k USDC
@@ -620,17 +623,17 @@ contract ComposerTestArbitrum is DeltaSetup {
         vm.prank(user);
         IERC20All(assetIn).approve(brokerProxyAddress, amount);
 
-        uint balanceOutBefore = user.balance;
-        uint balanceInBefore = IERC20All(assetIn).balanceOf(user);
+        uint256 balanceOutBefore = user.balance;
+        uint256 balanceInBefore = IERC20All(assetIn).balanceOf(user);
         {
             vm.prank(user);
-            uint gas = gasleft();
+            uint256 gas = gasleft();
             IFlashAggregator(brokerProxyAddress).deltaCompose(data);
             gas = gas - gasleft();
             console.log("gas-exactIn-native-out-2 split", gas);
         }
-        uint balanceOutAfter = user.balance;
-        uint balanceInAfter = IERC20All(assetIn).balanceOf(user);
+        uint256 balanceOutAfter = user.balance;
+        uint256 balanceInAfter = IERC20All(assetIn).balanceOf(user);
 
         // receive 1.05 ETH for 3.5k USDT
         assertApproxEqAbs(balanceOutAfter - balanceOutBefore, 1051912572244652711, 1);
@@ -680,7 +683,7 @@ contract ComposerTestArbitrum is DeltaSetup {
         IERC20All(assetIn).approve(brokerProxyAddress, amount);
 
         vm.prank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(abi.encodePacked(transfer, data));
         gas = gas - gasleft();
         console.log("gas", gas);
@@ -723,7 +726,7 @@ contract ComposerTestArbitrum is DeltaSetup {
         IERC20All(assetIn).approve(address(brokerProxyAddress), maxIn * 2);
 
         vm.prank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
@@ -732,7 +735,7 @@ contract ComposerTestArbitrum is DeltaSetup {
     function getSpotExactInMultiGen2(address[] memory tokens, uint8[] memory pids, uint16[] memory fees) internal view returns (bytes memory data) {
         uint8[] memory actions = new uint8[](pids.length);
         data = abi.encodePacked(tokens[0]);
-        for (uint i; i < pids.length; i++) {
+        for (uint256 i; i < pids.length; i++) {
             address pool = testQuoter.v3TypePool(tokens[i], tokens[i + 1], fees[i], pids[i]);
             data = abi.encodePacked(
                 data,
@@ -749,7 +752,7 @@ contract ComposerTestArbitrum is DeltaSetup {
     function getSpotExactOutMultiGen2(address[] memory tokens, uint8[] memory pids, uint16[] memory fees) internal view returns (bytes memory data) {
         uint8[] memory actions = new uint8[](pids.length);
         data = abi.encodePacked(tokens[0]);
-        for (uint i; i < pids.length; i++) {
+        for (uint256 i; i < pids.length; i++) {
             actions[i] = 0;
             address pool = testQuoter.v3TypePool(tokens[i], tokens[i + 1], fees[i], pids[i]);
             data = abi.encodePacked(data, actions[i], pids[i], pool, fees[i], tokens[i + 1]);
