@@ -178,12 +178,12 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
         }
     }
 
-    function onInstall(bytes calldata) external {
+    function onInstall(bytes calldata) external requireNotInExecution {
         if (initialized[msg.sender]) revert AlreadyInitialized();
         initialized[msg.sender] = true;
     }
 
-    function onUninstall(bytes calldata) external {
+    function onUninstall(bytes calldata) external requireNotInExecution {
         if (!initialized[msg.sender]) revert NotInitialized();
         initialized[msg.sender] = false;
     }
