@@ -6,6 +6,6 @@ export namespace OneDeltaHemi {
         managementImplementation: '0x8E24CfC19c6C00c524353CB8816f5f1c2F33c201',
         lensImplementation: '0xcB6Eb8df68153cebF60E1872273Ef52075a5C297',
         ownershipImplementation: '0x0bd7473CbBf81d9dD936c61117eD230d95006CA2',
-        composerImplementation: "0x7e2D250E4FD0EeD6BD2cB3DC525A2b9f12508152",
+        composerImplementation: "0x80416C1e314662D6417ba9fA4F983fE4507785ff",
     }
 }

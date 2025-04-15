@@ -97,6 +97,7 @@ export enum MantleLenderId {
 
 export enum HemiLenderId {
     LENDOS = 10,
+    ZEROLEND = 210,
 }
 
 export const LENDER_TO_ID: { [c: string | number]: { [k: string]: any } } = {
@@ -181,11 +182,12 @@ export const LENDER_TO_ID: { [c: string | number]: { [k: string]: any } } = {
     },
     [Chain.HEMI_NETWORK]: {
         [Lender.LENDOS]: HemiLenderId.LENDOS,
+        [Lender.ZEROLEND]: HemiLenderId.ZEROLEND,
     }
 }
 
 
-export function getCompoundV3Approves(chainId: number) {
+export function getCompoundV3Approves(chainId: string) {
     let params: ApproveParamsStruct[] = []
     Object.entries(COMETS_PER_CHAIN_MAP[chainId]).map(([lender, comet]) => {
         const assets = COMPOUND_STYLE_RESERVE_ASSETS[lender][chainId]
@@ -202,10 +204,10 @@ export function getCompoundV3Approves(chainId: number) {
 }
 
 const specificLenders: string[] = [
-    Lender.LENDOS
+    Lender.ZEROLEND
 ]
 
-export function getAaveForkDatas(chainId: number) {
+export function getAaveForkDatas(chainId: string) {
     let params: BatchAddLenderTokensParamsStruct[] = []
     Object.entries(AAVE_FORK_POOL_DATA).forEach(([lender, data]) => {
         if (specificLenders.length === 0 || specificLenders.includes(lender)) {
@@ -231,7 +233,7 @@ export function getAaveForkDatas(chainId: number) {
 }
 
 
-export function getAaveForkApproves(chainId: number) {
+export function getAaveForkApproves(chainId: string) {
     let params: ApproveParamsStruct[] = []
     Object.entries(AAVE_FORK_POOL_DATA).forEach(([lender, data]) => {
         if (specificLenders.length === 0 || specificLenders.includes(lender)) {

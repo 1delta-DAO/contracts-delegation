@@ -29,6 +29,7 @@ abstract contract BaseLending is Slots, ERC20Selectors {
 
     // Aave V3 style lender pool addresses
     address internal constant LENDOS = 0xaA397b29510a7219A0f3f7cE3eb53A09bc2A924c;
+    address internal constant ZEROLEND = 0xdB7e029394a7cdbE27aBdAAf4D15e78baC34d6E8;
 
     // BadLender()
     bytes4 internal constant BAD_LENDER = 0x603b7f3e;
@@ -85,6 +86,9 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                 case 10 {
                     pool := LENDOS
                 }
+                case 210 {
+                    pool := ZEROLEND
+                }
                 default {
                     mstore(0x0, _lenderId)
                     mstore(0x20, LENDING_POOL_SLOT)
@@ -116,6 +120,9 @@ abstract contract BaseLending is Slots, ERC20Selectors {
             switch _lenderId
             case 10 {
                 pool := LENDOS
+            }
+            case 210 {
+                pool := ZEROLEND
             }
             default {
                 mstore(0x0, _lenderId)
@@ -191,6 +198,9 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                 case 10 {
                     pool := LENDOS
                 }
+                case 210 {
+                    pool := ZEROLEND
+                }
                 default {
                     mstore(0x0, _lenderId)
                     mstore(0x20, LENDING_POOL_SLOT)
@@ -225,6 +235,9 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                 switch _lenderId
                 case 10 {
                     pool := LENDOS
+                }
+                case 210 {
+                    pool := ZEROLEND
                 }
                 default {
                     mstore(0x0, _lenderId)
