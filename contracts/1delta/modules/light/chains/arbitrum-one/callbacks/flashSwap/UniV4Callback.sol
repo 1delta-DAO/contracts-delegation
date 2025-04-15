@@ -1,11 +1,11 @@
-
 // SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity 0.8.28;
 
-/******************************************************************************* Author: Achthar | 1delta 
-/******************************************************************************/
-
+/**
+ * Author: Achthar | 1delta
+ * /*****************************************************************************
+ */
 import {Masks} from "../../../../../shared/masks/Masks.sol";
 import {DeltaErrors} from "../../../../../shared/errors/Errors.sol";
 
@@ -34,15 +34,16 @@ abstract contract UniV4Callbacks is Masks, DeltaErrors {
             // cut off address and poolId
             length := sub(calldataload(36), 89)
 
-            /** Ensure that the caller is the singleton of choice */
+            /**
+             * Ensure that the caller is the singleton of choice
+             */
             switch poolId
             case 0 {
-        if xor(caller(), UNISWAP_V4) {
-            mstore(0, INVALID_CALLER)
-            revert(0, 0x4)
-        }
-    }
-
+                if xor(caller(), UNISWAP_V4) {
+                    mstore(0, INVALID_CALLER)
+                    revert(0, 0x4)
+                }
+            }
             default {
                 mstore(0x0, BAD_POOL)
                 revert(0x0, 0x4)
@@ -76,8 +77,8 @@ abstract contract UniV4Callbacks is Masks, DeltaErrors {
         }
     }
 
-    /** A composer contract should override this */
+    /**
+     * A composer contract should override this
+     */
     function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual {}
 }
-
-

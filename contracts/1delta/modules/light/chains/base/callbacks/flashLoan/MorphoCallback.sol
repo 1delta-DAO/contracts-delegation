@@ -1,4 +1,3 @@
-
 // SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity 0.8.28;
@@ -13,7 +12,9 @@ contract MorphoFlashLoanCallback is Masks, DeltaErrors {
     /// @dev Constant MorphoB address
     address private constant MORPHO_BLUE = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
 
-    /** Morpho blue callbacks */
+    /**
+     * Morpho blue callbacks
+     */
 
     /// @dev Morpho Blue flash loan
     function onMorphoFlashLoan(uint256, bytes calldata params) external {
@@ -58,7 +59,6 @@ contract MorphoFlashLoanCallback is Masks, DeltaErrors {
                     revert(0, 0x4)
                 }
             }
-
             // We revert on any other id
             default {
                 mstore(0, INVALID_FLASH_LOAN)

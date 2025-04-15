@@ -1,4 +1,3 @@
-
 // SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity 0.8.28;
@@ -12,9 +11,9 @@ import {DeltaErrors} from "../../../../../shared/errors/Errors.sol";
 contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
     // Aave V3 style lender pool addresses
     address private constant HANA = 0x4aB85Bf9EA548410023b25a13031E91B4c4f3b91;
-address private constant AVALON = 0xA7f1c55530B1651665C15d8104663B3f03E3386f;
-address private constant AVALON_SOLV_BTC = 0x9dd29AA2BD662E6b569524ba00C55be39e7B00fB;
-address private constant AVALON_USDA = 0xC1bFbF4E0AdCA79790bfa0A557E4080F05e2B438;
+    address private constant AVALON = 0xA7f1c55530B1651665C15d8104663B3f03E3386f;
+    address private constant AVALON_SOLV_BTC = 0x9dd29AA2BD662E6b569524ba00C55be39e7B00fB;
+    address private constant AVALON_USDA = 0xC1bFbF4E0AdCA79790bfa0A557E4080F05e2B438;
 
     /**
      * @dev Aave V3 style flash loan callback
@@ -25,7 +24,10 @@ address private constant AVALON_USDA = 0xC1bFbF4E0AdCA79790bfa0A557E4080F05e2B43
         uint256,
         address initiator,
         bytes calldata params // user params
-    ) external returns (bool) {
+    )
+        external
+        returns (bool)
+    {
         address origCaller;
         uint256 calldataLength;
         assembly {
@@ -47,25 +49,24 @@ address private constant AVALON_USDA = 0xC1bFbF4E0AdCA79790bfa0A557E4080F05e2B43
                     revert(0, 0x4)
                 }
             }
-case 50 {
+            case 50 {
                 if xor(caller(), AVALON) {
                     mstore(0, INVALID_CALLER)
                     revert(0, 0x4)
                 }
             }
-case 51 {
+            case 51 {
                 if xor(caller(), AVALON_SOLV_BTC) {
                     mstore(0, INVALID_CALLER)
                     revert(0, 0x4)
                 }
             }
-case 55 {
+            case 55 {
                 if xor(caller(), AVALON_USDA) {
                     mstore(0, INVALID_CALLER)
                     revert(0, 0x4)
                 }
             }
-
             // We revert on any other id
             default {
                 mstore(0, INVALID_FLASH_LOAN)
@@ -99,4 +100,3 @@ case 55 {
 
     function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual {}
 }
-

@@ -1,4 +1,3 @@
-
 // SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity 0.8.28;
@@ -12,7 +11,7 @@ import {DeltaErrors} from "../../../../../shared/errors/Errors.sol";
 contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
     // Aave V3 style lender pool addresses
     address private constant LENDOS = 0xaA397b29510a7219A0f3f7cE3eb53A09bc2A924c;
-address private constant ZEROLEND = 0xdB7e029394a7cdbE27aBdAAf4D15e78baC34d6E8;
+    address private constant ZEROLEND = 0xdB7e029394a7cdbE27aBdAAf4D15e78baC34d6E8;
 
     /**
      * @dev Aave V3 style flash loan callback
@@ -23,7 +22,10 @@ address private constant ZEROLEND = 0xdB7e029394a7cdbE27aBdAAf4D15e78baC34d6E8;
         uint256,
         address initiator,
         bytes calldata params // user params
-    ) external returns (bool) {
+    )
+        external
+        returns (bool)
+    {
         address origCaller;
         uint256 calldataLength;
         assembly {
@@ -45,13 +47,12 @@ address private constant ZEROLEND = 0xdB7e029394a7cdbE27aBdAAf4D15e78baC34d6E8;
                     revert(0, 0x4)
                 }
             }
-case 20 {
+            case 20 {
                 if xor(caller(), ZEROLEND) {
                     mstore(0, INVALID_CALLER)
                     revert(0, 0x4)
                 }
             }
-
             // We revert on any other id
             default {
                 mstore(0, INVALID_FLASH_LOAN)
@@ -85,4 +86,3 @@ case 20 {
 
     function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual {}
 }
-

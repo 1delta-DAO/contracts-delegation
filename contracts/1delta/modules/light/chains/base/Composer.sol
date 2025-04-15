@@ -1,4 +1,3 @@
-
 // SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity 0.8.28;
@@ -22,13 +21,14 @@ contract OneDeltaComposerBase is BaseComposer, FlashLoanCallbacks, SwapCallbacks
         address callerAddress,
         uint256 currentOffset,
         uint256 calldataLength //
-    ) internal override(BaseComposer, FlashLoanCallbacks, SwapCallbacks) {
-        return
-            BaseComposer._deltaComposeInternal(
-                callerAddress,
-                currentOffset,
-                calldataLength //
-            );
+    )
+        internal
+        override(BaseComposer, FlashLoanCallbacks, SwapCallbacks)
+    {
+        return BaseComposer._deltaComposeInternal(
+            callerAddress,
+            currentOffset,
+            calldataLength //
+        );
     }
 }
-

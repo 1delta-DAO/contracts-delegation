@@ -1,4 +1,3 @@
-
 // SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity 0.8.28;
@@ -7,16 +6,14 @@ import {AaveV2FlashLoanCallback} from "./AaveV2Callback.sol";
 import {AaveV3FlashLoanCallback} from "./AaveV3Callback.sol";
 import {BalancerV2FlashLoanCallback} from "./BalancerV2Callback.sol";
 
-
-
 /**
  * @title Flash loan callbacks - these are chain-specific
  * @author 1delta Labs AG
  */
 contract FlashLoanCallbacks is
-AaveV2FlashLoanCallback,
-AaveV3FlashLoanCallback,
-BalancerV2FlashLoanCallback//
+    AaveV2FlashLoanCallback,
+    AaveV3FlashLoanCallback,
+    BalancerV2FlashLoanCallback //
 {
     // override the compose
     function _deltaComposeInternal(
@@ -28,9 +25,8 @@ BalancerV2FlashLoanCallback//
         virtual
         override(
             AaveV2FlashLoanCallback,
-AaveV3FlashLoanCallback,
-BalancerV2FlashLoanCallback//
+            AaveV3FlashLoanCallback,
+            BalancerV2FlashLoanCallback //
         )
     {}
 }
-

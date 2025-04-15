@@ -1,4 +1,3 @@
-
 // SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity 0.8.28;
@@ -22,7 +21,10 @@ contract AaveV2FlashLoanCallback is Masks, DeltaErrors {
         uint256[] calldata, // we assume that the data is known to the caller in advance
         address initiator,
         bytes calldata params
-    ) external returns (bool) {
+    )
+        external
+        returns (bool)
+    {
         address origCaller;
         uint256 calldataOffset;
         uint256 calldataLength;
@@ -45,7 +47,6 @@ contract AaveV2FlashLoanCallback is Masks, DeltaErrors {
                     revert(0, 0x4)
                 }
             }
-
             // We revert on any other id
             default {
                 mstore(0, INVALID_FLASH_LOAN)

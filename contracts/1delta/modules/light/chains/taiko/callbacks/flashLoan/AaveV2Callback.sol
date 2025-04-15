@@ -1,4 +1,3 @@
-
 // SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity 0.8.28;
@@ -12,8 +11,8 @@ import {DeltaErrors} from "../../../../../shared/errors/Errors.sol";
 contract AaveV2FlashLoanCallback is Masks, DeltaErrors {
     // Aave v2s
     address private constant MERIDIAN = 0x1697A950a67d9040464287b88fCa6cb5FbEC09BA;
-address private constant TAKOTAKO = 0x3A2Fd8a16030fFa8D66E47C3f1C0507c673C841e;
-address private constant TAKOTAKO_ETH = 0xe882a56b8c0C1a5561Febf846614B88718Dc5D9E;
+    address private constant TAKOTAKO = 0x3A2Fd8a16030fFa8D66E47C3f1C0507c673C841e;
+    address private constant TAKOTAKO_ETH = 0xe882a56b8c0C1a5561Febf846614B88718Dc5D9E;
 
     /**
      * @dev Aave V2 style flash loan callback
@@ -24,7 +23,10 @@ address private constant TAKOTAKO_ETH = 0xe882a56b8c0C1a5561Febf846614B88718Dc5D
         uint256[] calldata, // we assume that the data is known to the caller in advance
         address initiator,
         bytes calldata params
-    ) external returns (bool) {
+    )
+        external
+        returns (bool)
+    {
         address origCaller;
         uint256 calldataOffset;
         uint256 calldataLength;
@@ -47,19 +49,18 @@ address private constant TAKOTAKO_ETH = 0xe882a56b8c0C1a5561Febf846614B88718Dc5D
                     revert(0, 0x4)
                 }
             }
-case 4 {
+            case 4 {
                 if xor(caller(), TAKOTAKO) {
                     mstore(0, INVALID_CALLER)
                     revert(0, 0x4)
                 }
             }
-case 5 {
+            case 5 {
                 if xor(caller(), TAKOTAKO_ETH) {
                     mstore(0, INVALID_CALLER)
                     revert(0, 0x4)
                 }
             }
-
             // We revert on any other id
             default {
                 mstore(0, INVALID_FLASH_LOAN)
