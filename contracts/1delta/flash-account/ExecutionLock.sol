@@ -16,31 +16,60 @@ abstract contract ExecutionLock {
 
     /// @dev custom error for violating lok condition
     error Locked();
+    error AlreadyInExecution();
 
     /// @notice All function execution user operations
     /// @dev this modifier makes to function non-reentrant too
     /// need to use this modifier
     modifier setInExecution() {
         assembly {
-            let status := sload(_IN_EXECUTION_SLOT)
+            // mapping(address => uint256)
+            mstore(0x00, caller())
+            mstore(0x20, _IN_EXECUTION_SLOT)
+            let slot := keccak256(0x00, 0x40)
+
+            let status := sload(slot)
             if eq(status, 2) {
                 mstore(0x0, 0x9ef9c1d100000000000000000000000000000000000000000000000000000000) // AlreadyInExecution()
                 revert(0x0, 0x4)
             }
-            sstore(_IN_EXECUTION_SLOT, 2)
+            sstore(slot, 2)
         }
         _;
         assembly {
-            sstore(_IN_EXECUTION_SLOT, 1)
+            // Calculate storage slot for caller
+            mstore(0x00, caller())
+            mstore(0x20, _IN_EXECUTION_SLOT)
+            let slot := keccak256(0x00, 0x40)
+
+            sstore(slot, 1)
         }
     }
 
     // checks whether the account is in execution
     modifier requireInExecution() {
         assembly {
-            if xor(2, sload(_IN_EXECUTION_SLOT)) {
+            mstore(0x00, caller())
+            mstore(0x20, _IN_EXECUTION_SLOT)
+            let slot := keccak256(0x00, 0x40)
+
+            if xor(2, sload(slot)) {
                 mstore(0x0, 0x0f2e5b6c00000000000000000000000000000000000000000000000000000000) // 4-byte selector padded
                 revert(0x0, 0x4) // Revert with exactly 4 bytes
+            }
+        }
+        _;
+    }
+
+    modifier requireNotInExecution() {
+        assembly {
+            mstore(0x00, caller())
+            mstore(0x20, _IN_EXECUTION_SLOT)
+            let slot := keccak256(0x00, 0x40)
+
+            if eq(2, sload(slot)) {
+                mstore(0x0, 0x9ef9c1d100000000000000000000000000000000000000000000000000000000)
+                revert(0x0, 0x4)
             }
         }
         _;
