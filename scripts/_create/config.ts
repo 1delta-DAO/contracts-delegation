@@ -1,15 +1,15 @@
 import { Chain, CHAIN_INFO } from "@1delta/asset-registry";
 
 export const CREATE_CHAIN_IDS = [
-    // Chain.ARBITRUM_ONE,
-    // Chain.HEMI_NETWORK,
-    // Chain.BNB_SMART_CHAIN_MAINNET,
+    Chain.ARBITRUM_ONE,
+    Chain.HEMI_NETWORK,
+    Chain.BNB_SMART_CHAIN_MAINNET,
     // Chain.METIS_ANDROMEDA_MAINNET,
     // Chain.LINEA,
     // Chain.SCROLL,
-    // Chain.BASE,
-    // Chain.POLYGON_MAINNET,
-    // Chain.TAIKO_ALETHIA,
+    Chain.BASE,
+    Chain.POLYGON_MAINNET,
+    Chain.TAIKO_ALETHIA,
     // Chain.MODE,
     // Chain.AVALANCHE_C_CHAIN,
     Chain.SONIC_MAINNET,

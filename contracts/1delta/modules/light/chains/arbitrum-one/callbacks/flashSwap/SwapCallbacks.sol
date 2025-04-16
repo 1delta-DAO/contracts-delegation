@@ -3,7 +3,7 @@
 pragma solidity 0.8.28;
 
 import {UniV4Callbacks} from "./UniV4Callback.sol";
-import {UniV3Callbacks} from "./UniV3Callback.sol";
+import {UniV3Callbacks, V3Callbacker} from "./UniV3Callback.sol";
 import {UniV2Callbacks} from "./UniV2Callback.sol";
 import {DodoV2Callbacks} from "./DodoV2Callback.sol";
 import {BalancerV3Callbacks} from "./BalancerV3Callback.sol";
@@ -29,7 +29,7 @@ contract SwapCallbacks is
         virtual
         override(
             UniV4Callbacks,
-            UniV3Callbacks,
+            V3Callbacker,
             UniV2Callbacks,
             DodoV2Callbacks,
             BalancerV3Callbacks //

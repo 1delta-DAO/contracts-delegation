@@ -37,11 +37,13 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
         bytes32 ffFactoryAddress;
         // this is a data strip that contains [tokenOut(20)|forkId(1)|calldataLength(2)|xxx...xxx(9)]
         bytes32 outData;
+        uint256 forkId;
         assembly {
             outData := calldataload(204)
             switch selector
             case 0x10d1e85c00000000000000000000000000000000000000000000000000000000 {
-                switch and(UINT8_MASK, shr(88, outData))
+                forkId := and(UINT8_MASK, shr(88, outData))
+                switch forkId
                 case 0 {
                     ffFactoryAddress := UNISWAP_V2_FF_FACTORY
                     codeHash := UNISWAP_V2_CODE_HASH
@@ -50,20 +52,25 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
                     ffFactoryAddress := SUSHISWAP_V2_FF_FACTORY
                     codeHash := SUSHISWAP_V2_CODE_HASH
                 }
+                default { revert(0, 0) }
             }
             case 0x8480081200000000000000000000000000000000000000000000000000000000 {
-                switch and(UINT8_MASK, shr(88, outData))
+                forkId := and(UINT8_MASK, shr(88, outData))
+                switch forkId
                 case 0 {
                     ffFactoryAddress := PANCAKESWAP_V2_FF_FACTORY
                     codeHash := PANCAKESWAP_V2_CODE_HASH
                 }
+                default { revert(0, 0) }
             }
             case 0x5b3bc4fe00000000000000000000000000000000000000000000000000000000 {
-                switch and(UINT8_MASK, shr(88, outData))
+                forkId := and(UINT8_MASK, shr(88, outData))
+                switch forkId
                 case 0 {
                     ffFactoryAddress := BISWAP_V2_FF_FACTORY
                     codeHash := BISWAP_V2_CODE_HASH
                 }
+                default { revert(0, 0) }
             }
         }
 
@@ -92,8 +99,18 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
                     mstore(add(ptr, 0x14), tokenOut)
                     mstore(ptr, tokenIn)
                 }
-                let salt := keccak256(add(ptr, 0x0C), 0x28)
-
+                let salt
+                // 128 and higher is solidly
+                // 128-130 are reserved for the ones that have no isStable flag
+                switch gt(forkId, 130)
+                case 1 {
+                    mstore8(
+                        add(ptr, 0x34),
+                        gt(forkId, 191) // store isStable (id>=192)
+                    )
+                    salt := keccak256(add(ptr, 0x0C), 0x29)
+                }
+                default { salt := keccak256(add(ptr, 0x0C), 0x28) }
                 mstore(ptr, ffFactoryAddress)
                 mstore(add(ptr, 0x15), salt)
                 mstore(add(ptr, 0x35), codeHash)

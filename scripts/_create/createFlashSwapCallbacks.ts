@@ -1,6 +1,5 @@
 
 
-import { Chain, CHAIN_INFO } from "@1delta/asset-registry";
 import { getAddress } from "ethers/lib/utils";
 import * as fs from "fs";
 import { UNISWAP_V2_FORKS } from "./dex/uniV2";
@@ -16,8 +15,12 @@ import { UNISWAP_V4_FORKS } from "./dex/uniV4";
 import { templateUniV4 } from "./templates/flashSwap/uniV4Callback";
 import { BALANCER_V3_FORKS } from "./dex/balancerV3";
 import { templateBalancerV3 } from "./templates/flashSwap/balancerV3Callback";
-import { CREATE_CHAIN_IDS, getChainKey, sortForks } from "./config";
+import { CREATE_CHAIN_IDS, getChainKey } from "./config";
 import { composerTestImports } from "./templates/test/composerImport";
+
+const SOLIDLY_V2_MIN_ID = 130
+const SOLIDLY_V2_MIN_ID_LOW = 128
+
 
 /** simple address import */
 function createConstant(pool: string, lender: string) {
@@ -33,14 +36,51 @@ function createffAddressConstant(pool: string, dexName: string, codeHash: string
 }
 
 
-/** createCase function for uni V2s and V3s */
-function createCase(entityName: string, entityId: string) {
+/** createCase function for uni V3s */
+function createCaseV3(entityName: string, entityId: string) {
     return `case ${entityId} {
                 ffFactoryAddress := ${entityName}_FF_FACTORY
                 codeHash := ${entityName}_CODE_HASH
-
             }\n`
 }
+
+/** createCase function for uni V2s and V3s */
+function createCaseUniV2(entityName: string, entityId: string) {
+    return `case ${entityId} {
+                ffFactoryAddress := ${entityName}_FF_FACTORY
+                codeHash := ${entityName}_CODE_HASH
+            }\n`
+
+}
+
+
+function createCaseSolidlyV2(a: DexIdData[]) {
+
+    let entr = (entityName: string, entityId: string, rest: string) => `
+                    if or(eq(forkId, ${entityId}), eq(forkId, ${Number(entityId) + 64})) {
+                        ffFactoryAddress := ${entityName}_FF_FACTORY
+                        codeHash := ${entityName}_CODE_HASH
+                    }
+                    {
+                        ${rest}
+                    }`
+
+    const endData = a[a.length - 1]
+    let data = `
+        if or(eq(forkId, ${endData.entityId}), eq(forkId, ${Number(endData.entityId) + 64})) {
+                        ffFactoryAddress := ${endData.entityName}_FF_FACTORY
+                        codeHash := ${endData.entityName}_CODE_HASH
+                    }
+                    { revert(0, 0) }
+    `
+    a.reverse().slice(1).forEach(({ entityName, entityId }, i) => {
+        data = entr(entityName, entityId, data)
+    })
+
+    return data
+
+}
+
 
 /** switch case for uni V4s and balancer V3 */
 function createCaseUniV4BalV3(entityName: string, entityId: string) {
@@ -53,9 +93,15 @@ function createCaseUniV4BalV3(entityName: string, entityId: string) {
 }
 
 /** selector head for uni V2s */
-function createCaseSelectorV2(selector: string) {
+function createCaseSelectorV2(selector: string, isSolidly: boolean) {
+    if (isSolidly) {
+        return `case ${selector} {
+                    forkId := and(UINT8_MASK, shr(88, outData))
+        `
+    }
     return `case ${selector} {
-                switch and(UINT8_MASK, shr(88, outData))\n
+                forkId := and(UINT8_MASK, shr(88, outData))
+                switch forkId\n
     `
 }
 
@@ -177,11 +223,20 @@ async function main() {
         const slectorsV2 = uniq(dexIdsUniV2.map(s => s.callbackSelector!))
         slectorsV2.forEach(sel => {
             const idsForSelector = dexIdsUniV2.filter(a => a.callbackSelector === sel)
-            switchCaseContentV2 += createCaseSelectorV2(sel)
+            if (
+                idsForSelector.some(a => Number(a.entityId) < SOLIDLY_V2_MIN_ID_LOW) &&
+                idsForSelector.some(a => Number(a.entityId) > SOLIDLY_V2_MIN_ID)
+            ) throw new Error("IVALID: " + chain + " " + idsForSelector.map(a => a.entityName).join(","))
+            const isSolidly = idsForSelector.every(a => Number(a.entityId) > SOLIDLY_V2_MIN_ID)
+            switchCaseContentV2 += createCaseSelectorV2(sel, isSolidly)
+            if (isSolidly) {
+                switchCaseContentV2 += createCaseSolidlyV2(idsForSelector)
+            }
             idsForSelector.forEach(({ pool, entityName, codeHash, entityId }, i) => {
                 constantsDataV2 += createffAddressConstant(pool, entityName, codeHash!)
-                switchCaseContentV2 += createCase(entityName, entityId)
+                if (!isSolidly) switchCaseContentV2 += createCaseUniV2(entityName, entityId)
             })
+            if (!isSolidly) switchCaseContentV2 += `default { revert(0, 0) }`
             switchCaseContentV2 += `}\n`
         })
 
@@ -199,13 +254,15 @@ async function main() {
             switchCaseContentV3 += createCaseSelectorV3(sel)
             idsForSelector.forEach(({ pool, entityName, codeHash, entityId }, i) => {
                 constantsDataV3 += createffAddressConstant(pool, entityName, codeHash!)
-                switchCaseContentV3 += createCase(entityName, entityId)
+                switchCaseContentV3 += createCaseV3(entityName, entityId)
             })
             /** 
              * For uni V3, after each selector, we need to identifty the input amount 
              * Variants like Iumi do this differently, as such, we do it by selector
              */
             switchCaseContentV3 += `
+                default { revert(0, 0) }
+                
                 let _amount1 := calldataload(36)
                 switch sgt(_amount1, 0)
                 case 1 {
@@ -256,7 +313,7 @@ async function main() {
         // console.log("entityIds", dexIdsIzumi)
         dexIdsIzumi.forEach(({ pool, entityName, codeHash, entityId }, i) => {
             constantsDataIzumi += createffAddressConstant(pool, entityName, codeHash!)
-            switchCaseContentIzumi += createCase(entityName, entityId)
+            switchCaseContentIzumi += createCaseV3(entityName, entityId)
         })
 
 

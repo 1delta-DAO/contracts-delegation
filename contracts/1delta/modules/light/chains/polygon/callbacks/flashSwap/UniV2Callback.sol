@@ -17,14 +17,32 @@ import {DeltaErrors} from "../../../../../shared/errors/Errors.sol";
 abstract contract UniV2Callbacks is Masks, DeltaErrors {
     // factories
 
-    bytes32 private constant UNISWAP_V2_FF_FACTORY = 0xff8909Dc15e40173Ff4699343b6eB8132c65e18eC60000000000000000000000;
+    bytes32 private constant UNISWAP_V2_FF_FACTORY = 0xff9e5A52f57b3038F1B8EeE45F28b3C1967e22799C0000000000000000000000;
     bytes32 private constant UNISWAP_V2_CODE_HASH = 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f;
 
-    bytes32 private constant SUSHISWAP_V2_FF_FACTORY = 0xff71524B4f93c58fcbF659783284E38825f06228590000000000000000000000;
+    bytes32 private constant SUSHISWAP_V2_FF_FACTORY = 0xffc35DADB65012eC5796536bD9864eD8773aBc74C40000000000000000000000;
     bytes32 private constant SUSHISWAP_V2_CODE_HASH = 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f;
 
-    bytes32 private constant PANCAKESWAP_V2_FF_FACTORY = 0xff02a84c1b3BBD7401a5f7fa98a384EBC70bB5749E0000000000000000000000;
-    bytes32 private constant PANCAKESWAP_V2_CODE_HASH = 0x00fb7f630766e6a796048ea87d01acd3068e8ff67d078148a3fa3f4a84f69bd5;
+    bytes32 private constant QUICKSWAP_V2_FF_FACTORY = 0xff5757371414417b8C6CAad45bAeF941aBc7d3Ab320000000000000000000000;
+    bytes32 private constant QUICKSWAP_V2_CODE_HASH = 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f;
+
+    bytes32 private constant DFYN_FF_FACTORY = 0xffE7Fb3e833eFE5F9c441105EB65Ef8b261266423B0000000000000000000000;
+    bytes32 private constant DFYN_CODE_HASH = 0xf187ed688403aa4f7acfada758d8d53698753b998a3071b06f1b777f4330eaf3;
+
+    bytes32 private constant POLYCAT_FF_FACTORY = 0xff477Ce834Ae6b7aB003cCe4BC4d8697763FF456FA0000000000000000000000;
+    bytes32 private constant POLYCAT_CODE_HASH = 0x3cad6f9e70e13835b4f07e5dd475f25a109450b22811d0437da51e66c161255a;
+
+    bytes32 private constant COMETH_FF_FACTORY = 0xff800b052609c355cA8103E06F022aA30647eAd60a0000000000000000000000;
+    bytes32 private constant COMETH_CODE_HASH = 0x499154cad90a3563f914a25c3710ed01b9a43b8471a35ba8a66a056f37638542;
+
+    bytes32 private constant APESWAP_FF_FACTORY = 0xffCf083Be4164828f00cAE704EC15a36D7114912840000000000000000000000;
+    bytes32 private constant APESWAP_CODE_HASH = 0x511f0f358fe530cda0859ec20becf391718fdf5a329be02f4c95361f3d6a42d8;
+
+    bytes32 private constant WAULTSWAP_FF_FACTORY = 0xffa98ea6356A316b44Bf710D5f9b6b4eA0081409Ef0000000000000000000000;
+    bytes32 private constant WAULTSWAP_CODE_HASH = 0x1cdc2246d318ab84d8bc7ae2a3d81c235f3db4e113f4c6fdc1e2211a9291be47;
+
+    bytes32 private constant DYSTOPIA_FF_FACTORY = 0xff1d21Db6cde1b18c7E47B0F7F42f4b3F68b9beeC90000000000000000000000;
+    bytes32 private constant DYSTOPIA_CODE_HASH = 0x009bce6d7eb00d3d075e5bd9851068137f44bba159f1cde806a268e20baaf2e8;
 
     /**
      * Generic Uniswap v2 style callbck executor
@@ -49,16 +67,52 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
                     ffFactoryAddress := SUSHISWAP_V2_FF_FACTORY
                     codeHash := SUSHISWAP_V2_CODE_HASH
                 }
-                default { revert(0, 0) }
-            }
-            case 0x8480081200000000000000000000000000000000000000000000000000000000 {
-                forkId := and(UINT8_MASK, shr(88, outData))
-                switch forkId
-                case 0 {
-                    ffFactoryAddress := PANCAKESWAP_V2_FF_FACTORY
-                    codeHash := PANCAKESWAP_V2_CODE_HASH
+                case 3 {
+                    ffFactoryAddress := QUICKSWAP_V2_FF_FACTORY
+                    codeHash := QUICKSWAP_V2_CODE_HASH
+                }
+                case 14 {
+                    ffFactoryAddress := DFYN_FF_FACTORY
+                    codeHash := DFYN_CODE_HASH
+                }
+                case 15 {
+                    ffFactoryAddress := POLYCAT_FF_FACTORY
+                    codeHash := POLYCAT_CODE_HASH
+                }
+                case 16 {
+                    ffFactoryAddress := COMETH_FF_FACTORY
+                    codeHash := COMETH_CODE_HASH
                 }
                 default { revert(0, 0) }
+            }
+            case 0xbecda36300000000000000000000000000000000000000000000000000000000 {
+                forkId := and(UINT8_MASK, shr(88, outData))
+                switch forkId
+                case 12 {
+                    ffFactoryAddress := APESWAP_FF_FACTORY
+                    codeHash := APESWAP_CODE_HASH
+                }
+                default { revert(0, 0) }
+            }
+            case 0x485f399400000000000000000000000000000000000000000000000000000000 {
+                forkId := and(UINT8_MASK, shr(88, outData))
+                switch forkId
+                case 13 {
+                    ffFactoryAddress := WAULTSWAP_FF_FACTORY
+                    codeHash := WAULTSWAP_CODE_HASH
+                }
+                default { revert(0, 0) }
+            }
+            case 0x9a7bff7900000000000000000000000000000000000000000000000000000000 {
+                forkId := and(UINT8_MASK, shr(88, outData))
+
+                if or(eq(forkId, 134), eq(forkId, 198)) {
+                    ffFactoryAddress := DYSTOPIA_FF_FACTORY
+                    codeHash := DYSTOPIA_CODE_HASH
+                }
+                {
+                    revert(0, 0)
+                }
             }
         }
 

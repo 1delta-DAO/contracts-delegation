@@ -17,14 +17,8 @@ import {DeltaErrors} from "../../../../../shared/errors/Errors.sol";
 abstract contract UniV2Callbacks is Masks, DeltaErrors {
     // factories
 
-    bytes32 private constant UNISWAP_V2_FF_FACTORY = 0xff8909Dc15e40173Ff4699343b6eB8132c65e18eC60000000000000000000000;
-    bytes32 private constant UNISWAP_V2_CODE_HASH = 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f;
-
-    bytes32 private constant SUSHISWAP_V2_FF_FACTORY = 0xff71524B4f93c58fcbF659783284E38825f06228590000000000000000000000;
-    bytes32 private constant SUSHISWAP_V2_CODE_HASH = 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f;
-
-    bytes32 private constant PANCAKESWAP_V2_FF_FACTORY = 0xff02a84c1b3BBD7401a5f7fa98a384EBC70bB5749E0000000000000000000000;
-    bytes32 private constant PANCAKESWAP_V2_CODE_HASH = 0x00fb7f630766e6a796048ea87d01acd3068e8ff67d078148a3fa3f4a84f69bd5;
+    bytes32 private constant KODO_FF_FACTORY = 0xff535E02960574d8155596a73c7Ad66e87e37Eb6Bc0000000000000000000000;
+    bytes32 private constant KODO_CODE_HASH = 0x24364b5d47cc9af524ff2ae89d98c1c10f4a388556279eecb00622b5d727c99a;
 
     /**
      * Generic Uniswap v2 style callbck executor
@@ -38,27 +32,16 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
         assembly {
             outData := calldataload(204)
             switch selector
-            case 0x10d1e85c00000000000000000000000000000000000000000000000000000000 {
+            case 0x9a7bff7900000000000000000000000000000000000000000000000000000000 {
                 forkId := and(UINT8_MASK, shr(88, outData))
-                switch forkId
-                case 0 {
-                    ffFactoryAddress := UNISWAP_V2_FF_FACTORY
-                    codeHash := UNISWAP_V2_CODE_HASH
+
+                if or(eq(forkId, 132), eq(forkId, 196)) {
+                    ffFactoryAddress := KODO_FF_FACTORY
+                    codeHash := KODO_CODE_HASH
                 }
-                case 1 {
-                    ffFactoryAddress := SUSHISWAP_V2_FF_FACTORY
-                    codeHash := SUSHISWAP_V2_CODE_HASH
+                {
+                    revert(0, 0)
                 }
-                default { revert(0, 0) }
-            }
-            case 0x8480081200000000000000000000000000000000000000000000000000000000 {
-                forkId := and(UINT8_MASK, shr(88, outData))
-                switch forkId
-                case 0 {
-                    ffFactoryAddress := PANCAKESWAP_V2_FF_FACTORY
-                    codeHash := PANCAKESWAP_V2_CODE_HASH
-                }
-                default { revert(0, 0) }
             }
         }
 

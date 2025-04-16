@@ -7,40 +7,45 @@ export const templateSwapCallbacks = (
     hasDodo: boolean,
     hasBalancerV3: boolean,
 ) => {
-    let cbs: { imports: string, name: string }[] = []
+    let cbs: { imports: string, name: string, overr: string }[] = []
 
     if (hasV4) {
         cbs.push({
             imports: `import {UniV4Callbacks} from "./UniV4Callback.sol";`,
-            name: "UniV4Callbacks"
+            name: "UniV4Callbacks",
+            overr: "UniV4Callbacks"
         })
     }
 
     if (hasV3) {
         cbs.push({
-            imports: `import {UniV3Callbacks} from "./UniV3Callback.sol";`,
-            name: "UniV3Callbacks"
+            imports: `import {UniV3Callbacks, V3Callbacker} from "./UniV3Callback.sol";`,
+            name: "UniV3Callbacks",
+            overr: "V3Callbacker"
         })
     }
 
     if (hasV2) {
         cbs.push({
             imports: `import {UniV2Callbacks} from "./UniV2Callback.sol";`,
-            name: "UniV2Callbacks"
+            name: "UniV2Callbacks",
+            overr: "UniV2Callbacks"
         })
     }
 
     if (hasDodo) {
         cbs.push({
             imports: `import {DodoV2Callbacks} from "./DodoV2Callback.sol";`,
-            name: "DodoV2Callbacks"
+            name: "DodoV2Callbacks",
+            overr: "DodoV2Callbacks"
         })
     }
 
     if (hasBalancerV3) {
         cbs.push({
             imports: `import {BalancerV3Callbacks} from "./BalancerV3Callback.sol";`,
-            name: "BalancerV3Callbacks"
+            name: "BalancerV3Callbacks",
+            overr: "BalancerV3Callbacks"
         })
     }
 
@@ -68,7 +73,7 @@ ${cbs.map(a => a.name).join(",\n") + "//"}
         internal
         virtual
         override(
-            ${cbs.map(a => a.name).join(",\n") + "//"}
+            ${cbs.map(a => a.overr).join(",\n") + "//"}
         )
     {}
 

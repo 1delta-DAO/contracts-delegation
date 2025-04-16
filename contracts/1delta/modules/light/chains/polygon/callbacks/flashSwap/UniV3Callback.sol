@@ -17,22 +17,19 @@ import {V3Callbacker} from "../../../../../light/swappers/callbacks/V3Callbacker
 abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
     // factory ff addresses
 
-    bytes32 private constant UNISWAP_V3_FF_FACTORY = 0xff75FC67473A91335B5b8F8821277262a13B38c9b30000000000000000000000;
+    bytes32 private constant UNISWAP_V3_FF_FACTORY = 0xff1F98431c8aD98523631AE4a59f267346ea31F9840000000000000000000000;
     bytes32 private constant UNISWAP_V3_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
 
-    bytes32 private constant DTX_FF_FACTORY = 0xfffCA1AEf282A99390B62Ca8416a68F5747716260c0000000000000000000000;
-    bytes32 private constant DTX_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
+    bytes32 private constant SUSHISWAP_V3_FF_FACTORY = 0xff917933899c6a5F8E37F31E19f92CdBFF7e8FF0e20000000000000000000000;
+    bytes32 private constant SUSHISWAP_V3_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
 
-    bytes32 private constant SWAPSICLE_FF_FACTORY = 0xffb68b27a1c93A52d698EecA5a759E2E4469432C090000000000000000000000;
-    bytes32 private constant SWAPSICLE_CODE_HASH = 0xf96d2474815c32e070cd63233f06af5413efc5dcb430aee4ff18cc29007c562d;
+    bytes32 private constant QUICKSWAP_V3_FF_FACTORY = 0xff2D98E2FA9da15aa6dC9581AB097Ced7af697CB920000000000000000000000;
+    bytes32 private constant QUICKSWAP_V3_CODE_HASH = 0x6ec6c9c8091d160c0aa74b2b14ba9c1717e95093bd3ac085cee99a49aab294a4;
 
-    bytes32 private constant HENJIN_FF_FACTORY = 0xff0d22b434E478386Cd3564956BFc722073B3508f60000000000000000000000;
-    bytes32 private constant HENJIN_CODE_HASH = 0x4b9e4a8044ce5695e06fce9421a63b6f5c3db8a561eebb30ea4c775469e36eaf;
+    bytes32 private constant HOLIVERSE_FF_FACTORY = 0xff0b643D3A5903ED89921b85c889797dd9887125Ad0000000000000000000000;
+    bytes32 private constant HOLIVERSE_CODE_HASH = 0xb3fc09be5eb433d99b1ec89fd8435aaf5ffea75c1879e19028aa2414a14b3c85;
 
-    bytes32 private constant PANKO_FF_FACTORY = 0xff7DD105453D0AEf177743F5461d7472cC779e63f70000000000000000000000;
-    bytes32 private constant PANKO_CODE_HASH = 0x6ce8eb472fa82df5469c6ab6d485f17c3ad13c8cd7af59b3d4a8026c5ce0f7e2;
-
-    bytes32 private constant IZUMI_FF_FACTORY = 0xff8c7d3063579BdB0b90997e18A770eaE32E1eBb080000000000000000000000;
+    bytes32 private constant IZUMI_FF_FACTORY = 0xffcA7e21764CD8f7c1Ec40e651E25Da68AeD0960370000000000000000000000;
     bytes32 private constant IZUMI_CODE_HASH = 0xbe0bfe068cdd78cafa3ddd44e214cfa4e412c15d7148e932f8043fe883865e40;
 
     /**
@@ -56,9 +53,9 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
                     ffFactoryAddress := UNISWAP_V3_FF_FACTORY
                     codeHash := UNISWAP_V3_CODE_HASH
                 }
-                case 9 {
-                    ffFactoryAddress := DTX_FF_FACTORY
-                    codeHash := DTX_CODE_HASH
+                case 1 {
+                    ffFactoryAddress := SUSHISWAP_V3_FF_FACTORY
+                    codeHash := SUSHISWAP_V3_CODE_HASH
                 }
                 default { revert(0, 0) }
 
@@ -69,26 +66,13 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
             }
             case 0x2c8958f600000000000000000000000000000000000000000000000000000000 {
                 switch and(UINT8_MASK, shr(88, calldataload(172)))
-                case 1 {
-                    ffFactoryAddress := SWAPSICLE_FF_FACTORY
-                    codeHash := SWAPSICLE_CODE_HASH
+                case 0 {
+                    ffFactoryAddress := QUICKSWAP_V3_FF_FACTORY
+                    codeHash := QUICKSWAP_V3_CODE_HASH
                 }
-                case 2 {
-                    ffFactoryAddress := HENJIN_FF_FACTORY
-                    codeHash := HENJIN_CODE_HASH
-                }
-                default { revert(0, 0) }
-
-                let _amount1 := calldataload(36)
-                switch sgt(_amount1, 0)
-                case 1 { amountToPay := _amount1 }
-                default { amountToPay := calldataload(4) }
-            }
-            case 0x23a69e7500000000000000000000000000000000000000000000000000000000 {
-                switch and(UINT8_MASK, shr(88, calldataload(172)))
-                case 1 {
-                    ffFactoryAddress := PANKO_FF_FACTORY
-                    codeHash := PANKO_CODE_HASH
+                case 28 {
+                    ffFactoryAddress := HOLIVERSE_FF_FACTORY
+                    codeHash := HOLIVERSE_CODE_HASH
                 }
                 default { revert(0, 0) }
 

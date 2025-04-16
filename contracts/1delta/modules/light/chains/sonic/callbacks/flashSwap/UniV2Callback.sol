@@ -17,14 +17,14 @@ import {DeltaErrors} from "../../../../../shared/errors/Errors.sol";
 abstract contract UniV2Callbacks is Masks, DeltaErrors {
     // factories
 
-    bytes32 private constant UNISWAP_V2_FF_FACTORY = 0xff8909Dc15e40173Ff4699343b6eB8132c65e18eC60000000000000000000000;
-    bytes32 private constant UNISWAP_V2_CODE_HASH = 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f;
+    bytes32 private constant METROPOLIS_V2_FF_FACTORY = 0xff1570300e9cFEC66c9Fb0C8bc14366C86EB170Ad00000000000000000000000;
+    bytes32 private constant METROPOLIS_V2_CODE_HASH = 0xb174fb9703cd825ac38ca3cf781a2750d5ee57f4268806e0bca9bcd3d74b67b5;
 
-    bytes32 private constant SUSHISWAP_V2_FF_FACTORY = 0xff71524B4f93c58fcbF659783284E38825f06228590000000000000000000000;
-    bytes32 private constant SUSHISWAP_V2_CODE_HASH = 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f;
+    bytes32 private constant SWAPX_V2_FF_FACTORY = 0xff05c1be79d3aC21Cc4B727eeD58C9B2fF757F56630000000000000000000000;
+    bytes32 private constant SWAPX_V2_CODE_HASH = 0x6c45999f36731ff6ab43e943fca4b5a700786bbb202116cf6633b32039161e05;
 
-    bytes32 private constant PANCAKESWAP_V2_FF_FACTORY = 0xff02a84c1b3BBD7401a5f7fa98a384EBC70bB5749E0000000000000000000000;
-    bytes32 private constant PANCAKESWAP_V2_CODE_HASH = 0x00fb7f630766e6a796048ea87d01acd3068e8ff67d078148a3fa3f4a84f69bd5;
+    bytes32 private constant SHADOW_V2_FF_FACTORY = 0xff2dA25E7446A70D7be65fd4c053948BEcAA6374c80000000000000000000000;
+    bytes32 private constant SHADOW_V2_CODE_HASH = 0x4ed7aeec7c0286cad1e282dee1c391719fc17fe923b04fb0775731e413ed3554;
 
     /**
      * Generic Uniswap v2 style callbck executor
@@ -38,27 +38,31 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
         assembly {
             outData := calldataload(204)
             switch selector
-            case 0x10d1e85c00000000000000000000000000000000000000000000000000000000 {
+            case 0xd1f6317800000000000000000000000000000000000000000000000000000000 {
                 forkId := and(UINT8_MASK, shr(88, outData))
                 switch forkId
-                case 0 {
-                    ffFactoryAddress := UNISWAP_V2_FF_FACTORY
-                    codeHash := UNISWAP_V2_CODE_HASH
-                }
-                case 1 {
-                    ffFactoryAddress := SUSHISWAP_V2_FF_FACTORY
-                    codeHash := SUSHISWAP_V2_CODE_HASH
+                case 11 {
+                    ffFactoryAddress := METROPOLIS_V2_FF_FACTORY
+                    codeHash := METROPOLIS_V2_CODE_HASH
                 }
                 default { revert(0, 0) }
             }
-            case 0x8480081200000000000000000000000000000000000000000000000000000000 {
+            case 0x9a7bff7900000000000000000000000000000000000000000000000000000000 {
                 forkId := and(UINT8_MASK, shr(88, outData))
-                switch forkId
-                case 0 {
-                    ffFactoryAddress := PANCAKESWAP_V2_FF_FACTORY
-                    codeHash := PANCAKESWAP_V2_CODE_HASH
+
+                if or(eq(forkId, 131), eq(forkId, 195)) {
+                    ffFactoryAddress := SHADOW_V2_FF_FACTORY
+                    codeHash := SHADOW_V2_CODE_HASH
                 }
-                default { revert(0, 0) }
+                {
+                    if or(eq(forkId, 136), eq(forkId, 200)) {
+                        ffFactoryAddress := SWAPX_V2_FF_FACTORY
+                        codeHash := SWAPX_V2_CODE_HASH
+                    }
+                    {
+                        revert(0, 0)
+                    }
+                }
             }
         }
 

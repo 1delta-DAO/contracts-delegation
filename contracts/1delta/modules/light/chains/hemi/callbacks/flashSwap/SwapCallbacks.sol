@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.28;
 
-import {UniV3Callbacks} from "./UniV3Callback.sol";
+import {UniV3Callbacks, V3Callbacker} from "./UniV3Callback.sol";
 import {UniV2Callbacks} from "./UniV2Callback.sol";
 import {DodoV2Callbacks} from "./DodoV2Callback.sol";
 
@@ -24,7 +24,7 @@ contract SwapCallbacks is
         internal
         virtual
         override(
-            UniV3Callbacks,
+            V3Callbacker,
             UniV2Callbacks,
             DodoV2Callbacks //
         )

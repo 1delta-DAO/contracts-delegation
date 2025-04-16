@@ -6,7 +6,7 @@ const uniswapV2InitHash = "0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326
 const pancakeV2CodeHash = "0x00fb7f630766e6a796048ea87d01acd3068e8ff67d078148a3fa3f4a84f69bd5"
 const uniV2CallbackSelector = "0x10d1e85c00000000000000000000000000000000000000000000000000000000"
 const pancakeV2CallbackSelector = "0x8480081200000000000000000000000000000000000000000000000000000000"
-const solidlyV2CallbackSelector = "0x9a7bff79200000000000000000000000000000000000000000000000000000000"
+const solidlyV2CallbackSelector = "0x9a7bff7900000000000000000000000000000000000000000000000000000000"
 const UNISWAP_V2: UniswapV2Info = {
     factories: {
         [Chain.ETHEREUM_MAINNET]: "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f",
@@ -151,17 +151,141 @@ const BISWAP_V2: UniswapV2Info = {
     forkId: "0"
 }
 
+const SHADOW_V2: UniswapV2Info = {
+    factories: {
+        [Chain.SONIC_MAINNET]: "0x2dA25E7446A70D7be65fd4c053948BEcAA6374c8",
+    },
+    codeHash: { default: "0x4ed7aeec7c0286cad1e282dee1c391719fc17fe923b04fb0775731e413ed3554" },
+    callbackSelector: solidlyV2CallbackSelector,
+    forkId: "131"
+}
 
-// const SHADOW_V2: UniswapV2Info = {
-//     factories: {
-//         [Chain.SONIC_MAINNET]: "0x2dA25E7446A70D7be65fd4c053948BEcAA6374c8",
-//     },
-//     codeHash: { default: "0x4ed7aeec7c0286cad1e282dee1c391719fc17fe923b04fb0775731e413ed3554" },
-//     callbackSelector: solidlyV2CallbackSelector,
-//     forkId: "130"
-// }
+const KODO: UniswapV2Info = {
+    factories: {
+        [Chain.TAIKO_ALETHIA]: "0x535E02960574d8155596a73c7Ad66e87e37Eb6Bc",
+    },
+    codeHash: { default: "0x24364b5d47cc9af524ff2ae89d98c1c10f4a388556279eecb00622b5d727c99a" },
+    callbackSelector: solidlyV2CallbackSelector,
+    forkId: "132"
+}
 
+const VELOCIMETER: UniswapV2Info = {
+    factories: {
+        [Chain.MANTLE]: "0x99F9a4A96549342546f9DAE5B2738EDDcD43Bf4C",
+    },
+    codeHash: { default: "0x0ccd005ee58d5fb11632ef5c2e0866256b240965c62c8e990c0f84a97f311879" },
+    callbackSelector: solidlyV2CallbackSelector,
+    forkId: "133"
+}
+const DYSTOPIA: UniswapV2Info = {
+    factories: {
+        [Chain.POLYGON_MAINNET]: "0x1d21Db6cde1b18c7E47B0F7F42f4b3F68b9beeC9",
+    },
+    codeHash: { default: "0x009bce6d7eb00d3d075e5bd9851068137f44bba159f1cde806a268e20baaf2e8" },
+    callbackSelector: solidlyV2CallbackSelector,
+    forkId: "134"
+}
+const RAMSES_V1: UniswapV2Info = {
+    factories: {
+        [Chain.ARBITRUM_ONE]: "0xAAA20D08e59F6561f242b08513D36266C5A29415",
+        [Chain.MANTLE]: "0xAAA16c016BF556fcD620328f0759252E29b1AB57",
+    },
+    codeHash: {
+        [Chain.ARBITRUM_ONE]: "0xa77e84da9a14a7270882f31b1042615d939daabc0557e093eee47b8da9cb89de",
+        [Chain.MANTLE]: "0xbf2404274de2b11f05e5aebd49e508de933034cb5fa2d0ac3de8cbd4bcef47dc"
+    },
+    callbackSelector: solidlyV2CallbackSelector,
+    forkId: "135"
+}
+/** special case, solidly with uni V2 callback selector */
+const CAMELOT_V2: UniswapV2Info = {
+    factories: {
+        [Chain.ARBITRUM_ONE]: "0x6EcCab422D763aC031210895C81787E87B43A652",
+    },
+    codeHash: { default: "0xa856464ae65f7619087bc369daaf7e387dae1e5af69cfa7935850ebf754b04c1" },
+    callbackSelector: uniV2CallbackSelector,
+    forkId: "130"
+}
+const SWAPX_V2: UniswapV2Info = {
+    factories: {
+        [Chain.SONIC_MAINNET]: "0x05c1be79d3aC21Cc4B727eeD58C9B2fF757F5663",
+    },
+    codeHash: { default: "0x6c45999f36731ff6ab43e943fca4b5a700786bbb202116cf6633b32039161e05" },
+    callbackSelector: solidlyV2CallbackSelector,
+    forkId: "136"
+}
+const METROPOLIS_V2: UniswapV2Info = {
+    factories: {
+        [Chain.SONIC_MAINNET]: "0x1570300e9cFEC66c9Fb0C8bc14366C86EB170Ad0",
+    },
+    codeHash: { default: "0xb174fb9703cd825ac38ca3cf781a2750d5ee57f4268806e0bca9bcd3d74b67b5" },
+    callbackSelector: "0xd1f6317800000000000000000000000000000000000000000000000000000000", // doCall
+    forkId: "11"
+}
 
+const APESWAP_V2: UniswapV2Info = {
+    factories: {
+        [Chain.POLYGON_MAINNET]: '0xCf083Be4164828f00cAE704EC15a36D711491284',
+        [Chain.ARBITRUM_ONE]: '0xCf083Be4164828f00cAE704EC15a36D711491284',
+    },
+    codeHash: {
+        [Chain.POLYGON_MAINNET]: '0x511f0f358fe530cda0859ec20becf391718fdf5a329be02f4c95361f3d6a42d8',
+        [Chain.ARBITRUM_ONE]: '0xae7373e804a043c4c08107a81def627eeb3792e211fb4711fcfe32f0e4c45fd5',
+    },
+    callbackSelector: "0xbecda36300000000000000000000000000000000000000000000000000000000", // apeCall 
+    forkId: "12"
+}
+
+const WAULTSWAP_V2: UniswapV2Info = {
+    factories: {
+        [Chain.POLYGON_MAINNET]: '0xa98ea6356A316b44Bf710D5f9b6b4eA0081409Ef',
+    },
+    codeHash: {
+        [Chain.POLYGON_MAINNET]: '0x1cdc2246d318ab84d8bc7ae2a3d81c235f3db4e113f4c6fdc1e2211a9291be47',
+    },
+    callbackSelector: "0x485f399400000000000000000000000000000000000000000000000000000000", // waultSwapCall 
+    forkId: "13"
+}
+const DFYN: UniswapV2Info = {
+    factories: {
+        [Chain.POLYGON_MAINNET]: '0xE7Fb3e833eFE5F9c441105EB65Ef8b261266423B',
+    },
+    codeHash: {
+        [Chain.POLYGON_MAINNET]: '0xf187ed688403aa4f7acfada758d8d53698753b998a3071b06f1b777f4330eaf3',
+    },
+    callbackSelector: uniV2CallbackSelector,
+    forkId: "14"
+}
+const POLYCAT: UniswapV2Info = {
+    factories: {
+        [Chain.POLYGON_MAINNET]: '0x477Ce834Ae6b7aB003cCe4BC4d8697763FF456FA',
+    },
+    codeHash: {
+        [Chain.POLYGON_MAINNET]: '0x3cad6f9e70e13835b4f07e5dd475f25a109450b22811d0437da51e66c161255a',
+    },
+    callbackSelector: uniV2CallbackSelector,
+    forkId: "15"
+}
+const COMETH: UniswapV2Info = {
+    factories: {
+        [Chain.POLYGON_MAINNET]: '0x800b052609c355cA8103E06F022aA30647eAd60a',
+    },
+    codeHash: {
+        [Chain.POLYGON_MAINNET]: '0x499154cad90a3563f914a25c3710ed01b9a43b8471a35ba8a66a056f37638542',
+    },
+    callbackSelector: uniV2CallbackSelector,
+    forkId: "16"
+}
+const QUICKSWAP_V2: UniswapV2Info = {
+    factories: {
+        [Chain.POLYGON_MAINNET]: '0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32',
+    },
+    codeHash: {
+        [Chain.POLYGON_MAINNET]: '0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f',
+    },
+    callbackSelector: uniV2CallbackSelector,
+    forkId: "3"
+}
 interface UniswapV2Info {
     factories: { [chain: string]: string },
     codeHash: { [chainOrDefault: string]: string },
@@ -176,4 +300,20 @@ export const UNISWAP_V2_FORKS: { [s: string]: UniswapV2Info } = {
     [DexProtocol.PASS]: PASS,
     [DexProtocol.BISWAP_V2]: BISWAP_V2,
     [DexProtocol.UBESWAP_V2]: UBESWAP,
+    [DexProtocol.METROPOLIS_V2]: METROPOLIS_V2,
+    [DexProtocol.APESWAP]: APESWAP_V2,
+    [DexProtocol.WAULTSWAP]: WAULTSWAP_V2,
+    [DexProtocol.DFYN]: DFYN,
+    [DexProtocol.POLYCAT]: POLYCAT,
+    [DexProtocol.COMETH]: COMETH,
+    [DexProtocol.QUICKSWAP_V2]: QUICKSWAP_V2,
+
+    "SHADOW_V2": SHADOW_V2,
+    // solidlies go without the stable & volatile
+    "CAMELOT_V2": CAMELOT_V2,
+    "VELOCIMETER": VELOCIMETER,
+    "DYSTOPIA": DYSTOPIA,
+    "RAMSES_V1": RAMSES_V1,
+    "KODO": KODO,
+    "SWAPX_V2": SWAPX_V2,
 }

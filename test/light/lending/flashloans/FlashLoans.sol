@@ -115,8 +115,8 @@ contract FlashLoanLightTest is BaseTest {
             asset,
             amount,
             GRANARY_POOL,
-            uint8(3), // aave v2 type
-            uint8(0), //
+            uint8(3), // aave v2
+            uint8(7), //is Granary in the auto-gen setup
             dp
         );
         vm.prank(user);

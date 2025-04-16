@@ -27,6 +27,7 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
         bytes32 ffFactoryAddress;
         // this is a data strip that contains [tokenOut(20)|forkId(1)|calldataLength(2)|xxx...xxx(9)]
         bytes32 outData;
+        uint256 forkId;
         assembly {
             outData := calldataload(204)
             switch selector
@@ -58,8 +59,20 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
                     mstore(add(ptr, 0x14), tokenOut)
                     mstore(ptr, tokenIn)
                 }
-                let salt := keccak256(add(ptr, 0x0C), 0x28)
-
+                let salt
+                // 128 and higher is solidly
+                // 128-130 are reserved for the ones that have no isStable flag
+                switch gt(forkId, 130)
+                case 1 {
+                    mstore8(
+                        add(ptr, 0x34),
+                        gt(forkId, 191) // store isStable (id>=192)
+                    )
+                    salt := keccak256(add(ptr, 0x0C), 0x29)
+                }
+                default {
+                    salt := keccak256(add(ptr, 0x0C), 0x28)
+                }
                 mstore(ptr, ffFactoryAddress)
                 mstore(add(ptr, 0x15), salt)
                 mstore(add(ptr, 0x35), codeHash)
