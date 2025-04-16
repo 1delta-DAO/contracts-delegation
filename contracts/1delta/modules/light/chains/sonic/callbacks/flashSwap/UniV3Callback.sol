@@ -17,17 +17,17 @@ import {ERC20Selectors} from "../../../../../shared/selectors/ERC20Selectors.sol
 abstract contract UniV3Callbacks is ERC20Selectors, Masks, DeltaErrors {
     // factory ff addresses
 
-    bytes32 private constant UNISWAP_V3_FF_FACTORY = 0xff346239972d1fa486FC4a521031BC81bFB7D6e8a40000000000000000000000;
+    bytes32 private constant UNISWAP_V3_FF_FACTORY = 0xffcb2436774C3e191c85056d248EF4260ce5f27A9D0000000000000000000000;
     bytes32 private constant UNISWAP_V3_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
 
-    bytes32 private constant SUSHISWAP_V3_FF_FACTORY = 0xffCdBCd51a5E8728E0AF4895ce5771b7d17fF719590000000000000000000000;
-    bytes32 private constant SUSHISWAP_V3_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
+    bytes32 private constant SOLIDLY_V3_FF_FACTORY = 0xff777fAca731b17E8847eBF175c94DbE9d81A8f6300000000000000000000000;
+    bytes32 private constant SOLIDLY_V3_CODE_HASH = 0xe9b68c5f77858eecac2e651646e208175e9b1359d68d0e14fc69f8c54e5010bf;
 
-    bytes32 private constant ATLAS_FF_FACTORY = 0xff6b46AE0e60E0E7a2F8614b3f1dCBf6D5a01029910000000000000000000000;
-    bytes32 private constant ATLAS_CODE_HASH = 0xb3fc09be5eb433d99b1ec89fd8435aaf5ffea75c1879e19028aa2414a14b3c85;
+    bytes32 private constant SHADOW_CL_FF_FACTORY = 0xff8BBDc15759a8eCf99A92E004E0C64ea9A5142d590000000000000000000000;
+    bytes32 private constant SHADOW_CL_CODE_HASH = 0xc701ee63862761c31d620a4a083c61bdc1e81761e6b9c9267fd19afd22e0821d;
 
-    bytes32 private constant IZUMI_FF_FACTORY = 0xff8c7d3063579BdB0b90997e18A770eaE32E1eBb080000000000000000000000;
-    bytes32 private constant IZUMI_CODE_HASH = 0xbe0bfe068cdd78cafa3ddd44e214cfa4e412c15d7148e932f8043fe883865e40;
+    bytes32 private constant SWAPX_FF_FACTORY = 0xff885229E48987EA4c68F0aA1bCBff5184198A91880000000000000000000000;
+    bytes32 private constant SWAPX_CODE_HASH = 0xf96d2474815c32e070cd63233f06af5413efc5dcb430aee4ff18cc29007c562d;
 
     /**
      * This functione xecutes a simple transfer to shortcut the callback if there is no further calldata
@@ -124,9 +124,13 @@ abstract contract UniV3Callbacks is ERC20Selectors, Masks, DeltaErrors {
                     ffFactoryAddress := UNISWAP_V3_FF_FACTORY
                     codeHash := UNISWAP_V3_CODE_HASH
                 }
-                case 1 {
-                    ffFactoryAddress := SUSHISWAP_V3_FF_FACTORY
-                    codeHash := SUSHISWAP_V3_CODE_HASH
+                case 2 {
+                    ffFactoryAddress := SOLIDLY_V3_FF_FACTORY
+                    codeHash := SOLIDLY_V3_CODE_HASH
+                }
+                case 11 {
+                    ffFactoryAddress := SHADOW_CL_FF_FACTORY
+                    codeHash := SHADOW_CL_CODE_HASH
                 }
 
                 let _amount1 := calldataload(36)
@@ -136,41 +140,15 @@ abstract contract UniV3Callbacks is ERC20Selectors, Masks, DeltaErrors {
             }
             case 0x2c8958f600000000000000000000000000000000000000000000000000000000 {
                 switch and(UINT8_MASK, shr(88, calldataload(172)))
-                case 4 {
-                    ffFactoryAddress := ATLAS_FF_FACTORY
-                    codeHash := ATLAS_CODE_HASH
+                case 22 {
+                    ffFactoryAddress := SWAPX_FF_FACTORY
+                    codeHash := SWAPX_CODE_HASH
                 }
 
                 let _amount1 := calldataload(36)
                 switch sgt(_amount1, 0)
                 case 1 { amountToPay := _amount1 }
                 default { amountToPay := calldataload(4) }
-            }
-            default {
-                // check if we do izumi
-                switch selector
-                // SELECTOR_IZI_XY
-                case 0x1878068400000000000000000000000000000000000000000000000000000000 {
-                    switch and(UINT8_MASK, shr(88, calldataload(172)))
-                    // forkId
-                    case 0 {
-                        ffFactoryAddress := IZUMI_FF_FACTORY
-                        codeHash := IZUMI_CODE_HASH
-                    }
-                    default { revert(0, 0) }
-                    amountToPay := calldataload(4)
-                }
-                // SELECTOR_IZI_YX
-                case 0xd3e1c28400000000000000000000000000000000000000000000000000000000 {
-                    switch and(UINT8_MASK, shr(88, calldataload(172)))
-                    // forkId
-                    case 0 {
-                        ffFactoryAddress := IZUMI_FF_FACTORY
-                        codeHash := IZUMI_CODE_HASH
-                    }
-                    default { revert(0, 0) }
-                    amountToPay := calldataload(36)
-                }
             }
         }
 

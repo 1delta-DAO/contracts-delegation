@@ -112,7 +112,7 @@ abstract contract UniV3Callbacks is ERC20Selectors, Masks, DeltaErrors {
         assembly {
             switch selector
             ${switchCaseContent}
-            default {
+            ${switchCaseContentIzumi ? `default {
                 // check if we do izumi
                 switch selector
                 // SELECTOR_IZI_XY
@@ -134,7 +134,7 @@ abstract contract UniV3Callbacks is ERC20Selectors, Masks, DeltaErrors {
                     amountToPay := calldataload(36)
                 }
             }
-        }
+        }`: "}"}
 
         if (ValidatorLib._hasData(ffFactoryAddress)) {
             uint256 calldataLength;

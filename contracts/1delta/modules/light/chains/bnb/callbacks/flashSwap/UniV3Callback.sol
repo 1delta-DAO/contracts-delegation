@@ -17,17 +17,26 @@ import {ERC20Selectors} from "../../../../../shared/selectors/ERC20Selectors.sol
 abstract contract UniV3Callbacks is ERC20Selectors, Masks, DeltaErrors {
     // factory ff addresses
 
-    bytes32 private constant UNISWAP_V3_FF_FACTORY = 0xff346239972d1fa486FC4a521031BC81bFB7D6e8a40000000000000000000000;
+    bytes32 private constant UNISWAP_V3_FF_FACTORY = 0xffdB1d10011AD0Ff90774D0C6Bb92e5C5c8b4461F70000000000000000000000;
     bytes32 private constant UNISWAP_V3_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
 
-    bytes32 private constant SUSHISWAP_V3_FF_FACTORY = 0xffCdBCd51a5E8728E0AF4895ce5771b7d17fF719590000000000000000000000;
+    bytes32 private constant SUSHISWAP_V3_FF_FACTORY = 0xff126555dd55a39328F69400d6aE4F782Bd4C34ABb0000000000000000000000;
     bytes32 private constant SUSHISWAP_V3_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
 
-    bytes32 private constant ATLAS_FF_FACTORY = 0xff6b46AE0e60E0E7a2F8614b3f1dCBf6D5a01029910000000000000000000000;
-    bytes32 private constant ATLAS_CODE_HASH = 0xb3fc09be5eb433d99b1ec89fd8435aaf5ffea75c1879e19028aa2414a14b3c85;
+    bytes32 private constant PANCAKESWAP_V3_FF_FACTORY = 0xff41ff9AA7e16B8B1a8a8dc4f0eFacd93D02d071c90000000000000000000000;
+    bytes32 private constant PANCAKESWAP_V3_CODE_HASH = 0x6ce8eb472fa82df5469c6ab6d485f17c3ad13c8cd7af59b3d4a8026c5ce0f7e2;
 
-    bytes32 private constant IZUMI_FF_FACTORY = 0xff8c7d3063579BdB0b90997e18A770eaE32E1eBb080000000000000000000000;
+    bytes32 private constant THENA_FF_FACTORY = 0xffc89F69Baa3ff17a842AB2DE89E5Fc8a8e2cc73580000000000000000000000;
+    bytes32 private constant THENA_CODE_HASH = 0xd61302e7691f3169f5ebeca3a0a4ab8f7f998c01e55ec944e62cfb1109fd2736;
+
+    bytes32 private constant LITX_FF_FACTORY = 0xff9cF85CaAC177Fb2296dcc68004e1C82A757F95ed0000000000000000000000;
+    bytes32 private constant LITX_CODE_HASH = 0x6ec6c9c8091d160c0aa74b2b14ba9c1717e95093bd3ac085cee99a49aab294a4;
+
+    bytes32 private constant IZUMI_FF_FACTORY = 0xff93BB94a0d5269cb437A1F71FF3a77AB7538444220000000000000000000000;
     bytes32 private constant IZUMI_CODE_HASH = 0xbe0bfe068cdd78cafa3ddd44e214cfa4e412c15d7148e932f8043fe883865e40;
+
+    bytes32 private constant BISWAP_V3_FF_FACTORY = 0xff7C3d53606f9c03e7f54abdDFFc3868E1C54668630000000000000000000000;
+    bytes32 private constant BISWAP_V3_CODE_HASH = 0x712a91d34948c3b3e0b473b519235f7d14dbf2472983bc5d3f7e67c501d7a348;
 
     /**
      * This functione xecutes a simple transfer to shortcut the callback if there is no further calldata
@@ -134,11 +143,27 @@ abstract contract UniV3Callbacks is ERC20Selectors, Masks, DeltaErrors {
                 case 1 { amountToPay := _amount1 }
                 default { amountToPay := calldataload(4) }
             }
+            case 0x23a69e7500000000000000000000000000000000000000000000000000000000 {
+                switch and(UINT8_MASK, shr(88, calldataload(172)))
+                case 0 {
+                    ffFactoryAddress := PANCAKESWAP_V3_FF_FACTORY
+                    codeHash := PANCAKESWAP_V3_CODE_HASH
+                }
+
+                let _amount1 := calldataload(36)
+                switch sgt(_amount1, 0)
+                case 1 { amountToPay := _amount1 }
+                default { amountToPay := calldataload(4) }
+            }
             case 0x2c8958f600000000000000000000000000000000000000000000000000000000 {
                 switch and(UINT8_MASK, shr(88, calldataload(172)))
-                case 4 {
-                    ffFactoryAddress := ATLAS_FF_FACTORY
-                    codeHash := ATLAS_CODE_HASH
+                case 5 {
+                    ffFactoryAddress := THENA_FF_FACTORY
+                    codeHash := THENA_CODE_HASH
+                }
+                case 10 {
+                    ffFactoryAddress := LITX_FF_FACTORY
+                    codeHash := LITX_CODE_HASH
                 }
 
                 let _amount1 := calldataload(36)
@@ -157,6 +182,10 @@ abstract contract UniV3Callbacks is ERC20Selectors, Masks, DeltaErrors {
                         ffFactoryAddress := IZUMI_FF_FACTORY
                         codeHash := IZUMI_CODE_HASH
                     }
+                    case 1 {
+                        ffFactoryAddress := BISWAP_V3_FF_FACTORY
+                        codeHash := BISWAP_V3_CODE_HASH
+                    }
                     default { revert(0, 0) }
                     amountToPay := calldataload(4)
                 }
@@ -167,6 +196,10 @@ abstract contract UniV3Callbacks is ERC20Selectors, Masks, DeltaErrors {
                     case 0 {
                         ffFactoryAddress := IZUMI_FF_FACTORY
                         codeHash := IZUMI_CODE_HASH
+                    }
+                    case 1 {
+                        ffFactoryAddress := BISWAP_V3_FF_FACTORY
+                        codeHash := BISWAP_V3_CODE_HASH
                     }
                     default { revert(0, 0) }
                     amountToPay := calldataload(36)

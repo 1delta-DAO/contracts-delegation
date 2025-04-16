@@ -32,6 +32,9 @@ abstract contract UniV3Callbacks is ERC20Selectors, Masks, DeltaErrors {
     bytes32 private constant CAMELOT_FF_FACTORY = 0xff6Dd3FB9653B10e806650F107C3B5A0a6fF974F650000000000000000000000;
     bytes32 private constant CAMELOT_CODE_HASH = 0x6c1bebd370ba84753516bc1393c0d0a6c645856da55f5393ac8ab3d6dbc861d3;
 
+    bytes32 private constant ZYBERSWAP_FF_FACTORY = 0xff24E85F5F94C6017d2d87b434394e87df4e4D56E30000000000000000000000;
+    bytes32 private constant ZYBERSWAP_CODE_HASH = 0x6ec6c9c8091d160c0aa74b2b14ba9c1717e95093bd3ac085cee99a49aab294a4;
+
     bytes32 private constant IZUMI_FF_FACTORY = 0xffCFD8A067e1fa03474e79Be646c5f6b6A278473990000000000000000000000;
     bytes32 private constant IZUMI_CODE_HASH = 0xbe0bfe068cdd78cafa3ddd44e214cfa4e412c15d7148e932f8043fe883865e40;
 
@@ -158,9 +161,13 @@ abstract contract UniV3Callbacks is ERC20Selectors, Masks, DeltaErrors {
             }
             case 0x2c8958f600000000000000000000000000000000000000000000000000000000 {
                 switch and(UINT8_MASK, shr(88, calldataload(172)))
-                case 0 {
+                case 3 {
                     ffFactoryAddress := CAMELOT_FF_FACTORY
                     codeHash := CAMELOT_CODE_HASH
+                }
+                case 7 {
+                    ffFactoryAddress := ZYBERSWAP_FF_FACTORY
+                    codeHash := ZYBERSWAP_CODE_HASH
                 }
 
                 let _amount1 := calldataload(36)
@@ -174,7 +181,7 @@ abstract contract UniV3Callbacks is ERC20Selectors, Masks, DeltaErrors {
                 // SELECTOR_IZI_XY
                 case 0x1878068400000000000000000000000000000000000000000000000000000000 {
                     switch and(UINT8_MASK, shr(88, calldataload(172)))
-                        // forkId
+                    // forkId
                     case 0 {
                         ffFactoryAddress := IZUMI_FF_FACTORY
                         codeHash := IZUMI_CODE_HASH
@@ -185,7 +192,7 @@ abstract contract UniV3Callbacks is ERC20Selectors, Masks, DeltaErrors {
                 // SELECTOR_IZI_YX
                 case 0xd3e1c28400000000000000000000000000000000000000000000000000000000 {
                     switch and(UINT8_MASK, shr(88, calldataload(172)))
-                        // forkId
+                    // forkId
                     case 0 {
                         ffFactoryAddress := IZUMI_FF_FACTORY
                         codeHash := IZUMI_CODE_HASH

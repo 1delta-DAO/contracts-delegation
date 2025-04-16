@@ -84,7 +84,7 @@ async function main() {
         /** Create  `DexIdData` for each entity - these have additional info vs. flash loans */
 
         let dexIdsUniV2: DexIdData[] = []
-        // aave
+        // uni V2
         Object.entries(UNISWAP_V2_FORKS).forEach(([dex, maps], i) => {
             Object.entries(maps.factories).forEach(([chains, address]) => {
                 if (chains === chain) {
@@ -101,7 +101,7 @@ async function main() {
 
 
         let dexIdsUniV3: DexIdData[] = []
-        // aave
+        // uni V3
         Object.entries(UNISWAP_V3_FORKS).forEach(([dex, maps], i) => {
             Object.entries(maps.factories).forEach(([chains, address]) => {
                 if (chains === chain) {
@@ -172,17 +172,15 @@ async function main() {
          */
         let constantsDataV2 = ``
         let switchCaseContentV2 = ``
-        dexIdsUniV2 = sortForks(
-            dexIdsUniV2,
-            "entityId"
-        )
+        dexIdsUniV2 = dexIdsUniV2
+            .sort((a, b) => Number(a.entityId) < Number(b.entityId) ? -1 : 1)
         const slectorsV2 = uniq(dexIdsUniV2.map(s => s.callbackSelector!))
         slectorsV2.forEach(sel => {
             const idsForSelector = dexIdsUniV2.filter(a => a.callbackSelector === sel)
             switchCaseContentV2 += createCaseSelectorV2(sel)
-            idsForSelector.forEach(({ pool, entityName, codeHash }, i) => {
+            idsForSelector.forEach(({ pool, entityName, codeHash, entityId }, i) => {
                 constantsDataV2 += createffAddressConstant(pool, entityName, codeHash!)
-                switchCaseContentV2 += createCase(entityName, String(i))
+                switchCaseContentV2 += createCase(entityName, entityId)
             })
             switchCaseContentV2 += `}\n`
         })
@@ -192,18 +190,16 @@ async function main() {
          */
         let constantsDataV3 = ``
         let switchCaseContentV3 = ``
-        dexIdsUniV3 = sortForks(
-            dexIdsUniV3,
-            "entityId"
-        )
+        dexIdsUniV3 = dexIdsUniV3
+            .sort((a, b) => Number(a.entityId) < Number(b.entityId) ? -1 : 1)
         const slectorsV3 = uniq(dexIdsUniV3.map(s => s.callbackSelector!))
         // console.log("entityIds", dexIdsUniV3)
         slectorsV3.forEach(sel => {
             const idsForSelector = dexIdsUniV3.filter(a => a.callbackSelector === sel)
             switchCaseContentV3 += createCaseSelectorV3(sel)
-            idsForSelector.forEach(({ pool, entityName, codeHash }, i) => {
+            idsForSelector.forEach(({ pool, entityName, codeHash, entityId }, i) => {
                 constantsDataV3 += createffAddressConstant(pool, entityName, codeHash!)
-                switchCaseContentV3 += createCase(entityName, String(i))
+                switchCaseContentV3 += createCase(entityName, entityId)
             })
             /** 
              * For uni V3, after each selector, we need to identifty the input amount 
@@ -226,13 +222,12 @@ async function main() {
          */
         let constantsDataV4 = ``
         let switchCaseContentV4 = ``
-        dexIdsUniV4 = sortForks(dexIdsUniV4,
-            "entityId"
-        )
+        dexIdsUniV4 = dexIdsUniV4
+            .sort((a, b) => Number(a.entityId) < Number(b.entityId) ? -1 : 1)
         // console.log("entityIds", dexIdsUniV4)
-        dexIdsUniV4.forEach(({ pool, entityName, codeHash }, i) => {
+        dexIdsUniV4.forEach(({ pool, entityName, codeHash, entityId }, i) => {
             constantsDataV4 += createConstant(pool, entityName)
-            switchCaseContentV4 += createCaseUniV4BalV3(entityName, String(i))
+            switchCaseContentV4 += createCaseUniV4BalV3(entityName, entityId)
 
         })
 
@@ -242,11 +237,11 @@ async function main() {
         let constantsDataBalancerV3 = ``
         let switchCaseContentBalancerV3 = ``
         dexIdsBalancerV3 = dexIdsBalancerV3
-            .sort((a, b) => a.entityName < b.entityName ? -1 : 1)
+            .sort((a, b) => Number(a.entityId) < Number(b.entityId) ? -1 : 1)
         // console.log("entityIds", dexIdsBalancerV3)
-        dexIdsBalancerV3.forEach(({ pool, entityName, codeHash }, i) => {
+        dexIdsBalancerV3.forEach(({ pool, entityName, codeHash, entityId }, i) => {
             constantsDataBalancerV3 += createConstant(pool, entityName)
-            switchCaseContentBalancerV3 += createCaseUniV4BalV3(entityName, String(i))
+            switchCaseContentBalancerV3 += createCaseUniV4BalV3(entityName, entityId)
 
         })
 
@@ -257,11 +252,11 @@ async function main() {
         let constantsDataIzumi = ``
         let switchCaseContentIzumi = ``
         dexIdsIzumi = dexIdsIzumi
-            .sort((a, b) => a.entityName < b.entityName ? -1 : 1)
+            .sort((a, b) => Number(a.entityId) < Number(b.entityId) ? -1 : 1)
         // console.log("entityIds", dexIdsIzumi)
-        dexIdsIzumi.forEach(({ pool, entityName, codeHash }, i) => {
+        dexIdsIzumi.forEach(({ pool, entityName, codeHash, entityId }, i) => {
             constantsDataIzumi += createffAddressConstant(pool, entityName, codeHash!)
-            switchCaseContentIzumi += createCase(entityName, String(i))
+            switchCaseContentIzumi += createCase(entityName, entityId)
         })
 
 
@@ -275,7 +270,7 @@ async function main() {
             fs.writeFileSync(filePathV2, templateUniV2(constantsDataV2, switchCaseContentV2));
         }
 
-        if (dexIdsUniV3.length > 0 && dexIdsIzumi.length > 0) {
+        if (dexIdsUniV3.length > 0) {
             const filePathV3 = flashSwapCallbackDir + "UniV3Callback.sol";
             fs.writeFileSync(filePathV3, templateUniV3(
                 constantsDataV3,

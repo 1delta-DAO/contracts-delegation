@@ -6,6 +6,7 @@ const uniswapV2InitHash = "0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326
 const pancakeV2CodeHash = "0x00fb7f630766e6a796048ea87d01acd3068e8ff67d078148a3fa3f4a84f69bd5"
 const uniV2CallbackSelector = "0x10d1e85c00000000000000000000000000000000000000000000000000000000"
 const pancakeV2CallbackSelector = "0x8480081200000000000000000000000000000000000000000000000000000000"
+const solidlyV2CallbackSelector = "0x9a7bff79200000000000000000000000000000000000000000000000000000000"
 const UNISWAP_V2: UniswapV2Info = {
     factories: {
         [Chain.ETHEREUM_MAINNET]: "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f",
@@ -128,8 +129,37 @@ const PASS: UniswapV2Info = {
     },
     codeHash: { default: "0xd040a901beef1fe03d5f83aff62cc341aa8fa949dcdaa516b1adcfae94ada0db" },
     callbackSelector: uniV2CallbackSelector,
+    forkId: "50"
+}
+
+const UBESWAP: UniswapV2Info = {
+    factories: {
+        [Chain.CELO_MAINNET]: "0x62d5b84bE28a183aBB507E125B384122D2C25fAE",
+
+    },
+    codeHash: { default: "0xb3b8ff62960acea3a88039ebcf80699f15786f1b17cebd82802f7375827a339c" },
+    callbackSelector: uniV2CallbackSelector,
+    forkId: "10"
+}
+
+const BISWAP_V2: UniswapV2Info = {
+    factories: {
+        [Chain.BNB_SMART_CHAIN_MAINNET]: "0x858E3312ed3A876947EA49d572A7C42DE08af7EE",
+    },
+    codeHash: { default: "0xfea293c909d87cd4153593f077b76bb7e94340200f4ee84211ae8e4f9bd7ffdf" },
+    callbackSelector: "0x5b3bc4fe00000000000000000000000000000000000000000000000000000000", // BiswapCall
     forkId: "0"
 }
+
+
+// const SHADOW_V2: UniswapV2Info = {
+//     factories: {
+//         [Chain.SONIC_MAINNET]: "0x2dA25E7446A70D7be65fd4c053948BEcAA6374c8",
+//     },
+//     codeHash: { default: "0x4ed7aeec7c0286cad1e282dee1c391719fc17fe923b04fb0775731e413ed3554" },
+//     callbackSelector: solidlyV2CallbackSelector,
+//     forkId: "130"
+// }
 
 
 interface UniswapV2Info {
@@ -144,4 +174,6 @@ export const UNISWAP_V2_FORKS: { [s: string]: UniswapV2Info } = {
     [DexProtocol.SUSHISWAP_V2]: SUSHI_V2,
     [DexProtocol.PANCAKESWAP_V2]: PANCAKE_V2,
     [DexProtocol.PASS]: PASS,
+    [DexProtocol.BISWAP_V2]: BISWAP_V2,
+    [DexProtocol.UBESWAP_V2]: UBESWAP,
 }

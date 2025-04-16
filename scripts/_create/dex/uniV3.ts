@@ -257,7 +257,8 @@ const METHLAB: UniswapV3Info = {
 
 const QUICKSWAP: UniswapV3Info = {
     factories: {
-        [Chain.MANTLE]: "0x2D98E2FA9da15aa6dC9581AB097Ced7af697CB92",
+        [Chain.POLYGON_MAINNET]: "0x2D98E2FA9da15aa6dC9581AB097Ced7af697CB92",
+        [Chain.DOGECHAIN_MAINNET]: "0x56c2162254b0E4417288786eE402c2B41d4e181e",
     },
     codeHash: {
         default: "0x6ec6c9c8091d160c0aa74b2b14ba9c1717e95093bd3ac085cee99a49aab294a4",
@@ -270,10 +271,12 @@ const SWAPSICLE: UniswapV3Info = {
     factories: {
         [Chain.MANTLE]: '0x9dE2dEA5c68898eb4cb2DeaFf357DFB26255a4aa',
         [Chain.TAIKO_ALETHIA]: '0xb68b27a1c93A52d698EecA5a759E2E4469432C09',
+        [Chain.TELOS_EVM_MAINNET]: '0x061e47Ab9f31D293172efb88674782f80eCa88de',
     },
     codeHash: {
         [Chain.MANTLE]: '0x177d5fbf994f4d130c008797563306f1a168dc689f81b2fa23b4396931014d91',
-        [Chain.TAIKO_ALETHIA]: '0xf96d2474815c32e070cd63233f06af5413efc5dcb430aee4ff18cc29007c562d'
+        [Chain.TAIKO_ALETHIA]: '0xf96d2474815c32e070cd63233f06af5413efc5dcb430aee4ff18cc29007c562d',
+        [Chain.TELOS_EVM_MAINNET]: '0x177d5fbf994f4d130c008797563306f1a168dc689f81b2fa23b4396931014d91',
     },
     callbackSelector: algebraV3CallbackSelector,
     forkId: "1"
@@ -312,8 +315,279 @@ const ATLAS: UniswapV3Info = {
     forkId: "4"
 }
 
+const THENA: UniswapV3Info = {
+    factories: {
+        [Chain.BNB_SMART_CHAIN_MAINNET]: '0xc89F69Baa3ff17a842AB2DE89E5Fc8a8e2cc7358',
+    },
+    codeHash: {
+        [Chain.BNB_SMART_CHAIN_MAINNET]: '0xd61302e7691f3169f5ebeca3a0a4ab8f7f998c01e55ec944e62cfb1109fd2736'
+    },
+    callbackSelector: algebraV3CallbackSelector,
+    forkId: "5"
+}
+
+const ZYBERSWAP: UniswapV3Info = {
+    factories: {
+        [Chain.ARBITRUM_ONE]: '0x24E85F5F94C6017d2d87b434394e87df4e4D56E3',
+        [Chain.OP_MAINNET]: '0xc0D4323426C709e8D04B5b130e7F059523464a91',
+    },
+    codeHash: {
+        [Chain.ARBITRUM_ONE]: '0x6ec6c9c8091d160c0aa74b2b14ba9c1717e95093bd3ac085cee99a49aab294a4',
+        [Chain.OP_MAINNET]: '0xbce37a54eab2fcd71913a0d40723e04238970e7fc1159bfd58ad5b79531697e7',
+    },
+    callbackSelector: algebraV3CallbackSelector,
+    forkId: "7"
+}
+
+
+const SKULLSWAP: UniswapV3Info = {
+    factories: {
+        [Chain.FANTOM_OPERA]: '0x630BC1372F73bf779AF5593A5a2Da68ABB3c6E55',
+    },
+    codeHash: {
+        [Chain.FANTOM_OPERA]: '0x6ec6c9c8091d160c0aa74b2b14ba9c1717e95093bd3ac085cee99a49aab294a4'
+    },
+    callbackSelector: algebraV3CallbackSelector,
+    forkId: "8"
+}
+
+const UBESWAP: UniswapV3Info = {
+    factories: {
+        [Chain.CELO_MAINNET]: '0xcC980E18E3efa39e4dD98F057A432343D534314D',
+    },
+    codeHash: {
+        [Chain.CELO_MAINNET]: '0x6ec6c9c8091d160c0aa74b2b14ba9c1717e95093bd3ac085cee99a49aab294a4'
+    },
+    callbackSelector: algebraV3CallbackSelector,
+    forkId: "9"
+}
+
+
+const LITX: UniswapV3Info = {
+    factories: {
+        [Chain.BNB_SMART_CHAIN_MAINNET]: '0x9cF85CaAC177Fb2296dcc68004e1C82A757F95ed',
+    },
+    codeHash: {
+        [Chain.BNB_SMART_CHAIN_MAINNET]: '0x6ec6c9c8091d160c0aa74b2b14ba9c1717e95093bd3ac085cee99a49aab294a4'
+    },
+    callbackSelector: algebraV3CallbackSelector,
+    forkId: "10"
+}
+
+const STELLASWAP: UniswapV3Info = {
+    factories: {
+        [Chain.MOONBEAM]: '0x87a4F009f99E2F34A34A260bEa765877477c7EF9',
+    },
+    codeHash: {
+        [Chain.MOONBEAM]: '0xb3fc09be5eb433d99b1ec89fd8435aaf5ffea75c1879e19028aa2414a14b3c85'
+    },
+    callbackSelector: algebraV3CallbackSelector,
+    forkId: "11"
+}
+
+const LYNEX: UniswapV3Info = {
+    factories: {
+        [Chain.LINEA]: '0x9A89490F1056A7BC607EC53F93b921fE666A2C48',
+    },
+    codeHash: {
+        [Chain.LINEA]: '0xc65e01e65f37c1ec2735556a24a9c10e4c33b2613ad486dd8209d465524bc3f4'
+    },
+    callbackSelector: algebraV3CallbackSelector,
+    forkId: "12"
+}
+
+
+const SWAP_BASED: UniswapV3Info = {
+    factories: {
+        [Chain.BASE]: '0xe4DFd4ad723B5DB11aa41D53603dB03B117eC690',
+    },
+    codeHash: {
+        [Chain.BASE]: '0xbce37a54eab2fcd71913a0d40723e04238970e7fc1159bfd58ad5b79531697e7'
+    },
+    callbackSelector: algebraV3CallbackSelector,
+    forkId: "13"
+}
+const SYNTHSWAP: UniswapV3Info = {
+    factories: {
+        [Chain.BASE]: '0xBA97f8AEe67BaE3105fB4335760B103F24998a92',
+    },
+    codeHash: {
+        [Chain.BASE]: '0xbce37a54eab2fcd71913a0d40723e04238970e7fc1159bfd58ad5b79531697e7'
+    },
+    callbackSelector: algebraV3CallbackSelector,
+    forkId: "14"
+}
+const HERCULES: UniswapV3Info = {
+    factories: {
+        [Chain.METIS_ANDROMEDA_MAINNET]: '0x43AA9b2eD25F972fD8D44fDfb77a4a514eAB4d71',
+    },
+    codeHash: {
+        [Chain.METIS_ANDROMEDA_MAINNET]: '0x6c1bebd370ba84753516bc1393c0d0a6c645856da55f5393ac8ab3d6dbc861d3'
+    },
+    callbackSelector: algebraV3CallbackSelector,
+    forkId: "15"
+}
+
+const KIM: UniswapV3Info = {
+    factories: {
+        [Chain.MODE]: '0x6414A461B19726410E52488d9D5ff33682701635',
+    },
+    codeHash: {
+        [Chain.MODE]: '0xf96d2474815c32e070cd63233f06af5413efc5dcb430aee4ff18cc29007c562d'
+    },
+    callbackSelector: algebraV3CallbackSelector,
+    forkId: "16"
+}
+
+const FENIX: UniswapV3Info = {
+    factories: {
+        [Chain.BLAST_MAINNET]: '0x5aCCAc55f692Ae2F065CEdDF5924C8f6B53cDaa8',
+    },
+    codeHash: {
+        [Chain.BLAST_MAINNET]: '0xf45e886a0794c1d80aeae5ab5befecd4f0f2b77c0cf627f7c46ec92dc1fa00e4'
+    },
+    callbackSelector: algebraV3CallbackSelector,
+    forkId: "17"
+}
+
+const BLADE: UniswapV3Info = {
+    factories: {
+        [Chain.BLAST_MAINNET]: '0xfFeEcb1fe0EAaEFeE69d122F6B7a0368637cb593',
+    },
+    codeHash: {
+        [Chain.BLAST_MAINNET]: '0xa9df2657ce5872e94bdc9525588fd983b0aa5db2f3c7a83d7e6b6a99cd2003a1'
+    },
+    callbackSelector: algebraV3CallbackSelector,
+    forkId: "18"
+}
+const SILVER_SWAP: UniswapV3Info = {
+    factories: {
+        [Chain.FANTOM_OPERA]: '0x98AF00a67F5cC0b362Da34283D7d32817F6c9A29',
+    },
+    codeHash: {
+        [Chain.FANTOM_OPERA]: '0xf96d2474815c32e070cd63233f06af5413efc5dcb430aee4ff18cc29007c562d'
+    },
+    callbackSelector: algebraV3CallbackSelector,
+    forkId: "19"
+}
+const HORIZON: UniswapV3Info = {
+    factories: {
+        [Chain.LINEA]: '0xA76990a229961280200165c4e08c96Ea67304C3e',
+    },
+    codeHash: {
+        [Chain.LINEA]: '0xf96d2474815c32e070cd63233f06af5413efc5dcb430aee4ff18cc29007c562d'
+    },
+    callbackSelector: algebraV3CallbackSelector,
+    forkId: "20"
+}
+const GLYPH: UniswapV3Info = {
+    factories: {
+        [Chain.CORE_BLOCKCHAIN_MAINNET]: '0x24196b3f35E1B8313016b9f6641D605dCf48A76a',
+    },
+    codeHash: {
+        [Chain.CORE_BLOCKCHAIN_MAINNET]: '0xf96d2474815c32e070cd63233f06af5413efc5dcb430aee4ff18cc29007c562d'
+    },
+    callbackSelector: algebraV3CallbackSelector,
+    forkId: "21"
+}
+const SWAPX: UniswapV3Info = {
+    factories: {
+        [Chain.SONIC_MAINNET]: '0x885229E48987EA4c68F0aA1bCBff5184198A9188',
+    },
+    codeHash: {
+        [Chain.SONIC_MAINNET]: '0xf96d2474815c32e070cd63233f06af5413efc5dcb430aee4ff18cc29007c562d'
+    },
+    callbackSelector: algebraV3CallbackSelector,
+    forkId: "22"
+}
+
+
+const BULLA: UniswapV3Info = {
+    factories: {
+        [Chain.BERACHAIN]: '0x425EC3de5FEB62897dbe239Aa218B2DC035DCDF1',
+    },
+    codeHash: {
+        [Chain.BERACHAIN]: '0xf96d2474815c32e070cd63233f06af5413efc5dcb430aee4ff18cc29007c562d'
+    },
+    callbackSelector: algebraV3CallbackSelector,
+    forkId: "23"
+}
+const SCRIBE: UniswapV3Info = {
+    factories: {
+        [Chain.SCROLL]: '0xbAE27269D777D6fc0AefFa9DfAbA8960291E51eB',
+    },
+    codeHash: {
+        [Chain.SCROLL]: '0x4b9e4a8044ce5695e06fce9421a63b6f5c3db8a561eebb30ea4c775469e36eaf'
+    },
+    callbackSelector: algebraV3CallbackSelector,
+    forkId: "24"
+}
+
+const FIBONACCI: UniswapV3Info = {
+    factories: {
+        [Chain.FORM_NETWORK]: '0x1d204Ba9fceD9E5a228727Cd4Ce89620B4e4999a',
+    },
+    codeHash: {
+        [Chain.FORM_NETWORK]: '0xb3fc09be5eb433d99b1ec89fd8435aaf5ffea75c1879e19028aa2414a14b3c85'
+    },
+    callbackSelector: algebraV3CallbackSelector,
+    forkId: "25"
+}
+const VOLTAGE: UniswapV3Info = {
+    factories: {
+        [Chain.FUSE_MAINNET]: '0x9F02d3ddbC690bc65d81A98B93d449528AC4eB8C',
+    },
+    codeHash: {
+        [Chain.FUSE_MAINNET]: '0xb3fc09be5eb433d99b1ec89fd8435aaf5ffea75c1879e19028aa2414a14b3c85'
+    },
+    callbackSelector: algebraV3CallbackSelector,
+    forkId: "26"
+}
+const WASABEE: UniswapV3Info = {
+    factories: {
+        [Chain.BERACHAIN]: '0x598f320907c2FFDBC715D591ffEcC3082bA14660',
+    },
+    codeHash: {
+        [Chain.BERACHAIN]: '0xb3fc09be5eb433d99b1ec89fd8435aaf5ffea75c1879e19028aa2414a14b3c85'
+    },
+    callbackSelector: algebraV3CallbackSelector,
+    forkId: "27"
+}
+const HOLIVERSE: UniswapV3Info = {
+    factories: {
+        [Chain.POLYGON_MAINNET]: '0x0b643D3A5903ED89921b85c889797dd9887125Ad',
+    },
+    codeHash: {
+        [Chain.POLYGON_MAINNET]: '0xb3fc09be5eb433d99b1ec89fd8435aaf5ffea75c1879e19028aa2414a14b3c85'
+    },
+    callbackSelector: algebraV3CallbackSelector,
+    forkId: "28"
+}
+const MOR_FI: UniswapV3Info = {
+    factories: {
+        [Chain.MORPH]: '0xc1db2471ea7ea9227ea02f427543177d63afe44f',
+    },
+    codeHash: {
+        [Chain.MORPH]: '0xb3fc09be5eb433d99b1ec89fd8435aaf5ffea75c1879e19028aa2414a14b3c85'
+    },
+    callbackSelector: algebraV3CallbackSelector,
+    forkId: "29"
+}
+
+const SHADOW_CL: UniswapV3Info = {
+    factories: {
+        [Chain.SONIC_MAINNET]: '0x8BBDc15759a8eCf99A92E004E0C64ea9A5142d59',
+    },
+    codeHash: {
+        [Chain.SONIC_MAINNET]: '0xc701ee63862761c31d620a4a083c61bdc1e81761e6b9c9267fd19afd22e0821d'
+    },
+    callbackSelector: uniswapV3CallbackSelector,
+    forkId: "11"
+}
+
 const IZUMI: UniswapV3Info = {
     factories: {
+        [Chain.BNB_SMART_CHAIN_MAINNET]: "0x93BB94a0d5269cb437A1F71FF3a77AB753844422",
         [Chain.ETHEREUM_MAINNET]: "0x93BB94a0d5269cb437A1F71FF3a77AB753844422",
         [Chain.MANTLE]: '0x45e5F26451CDB01B0fA1f8582E0aAD9A6F27C218',
         [Chain.POLYGON_MAINNET]: '0xcA7e21764CD8f7c1Ec40e651E25Da68AeD096037',
@@ -358,6 +632,15 @@ const IZUMI: UniswapV3Info = {
 }
 
 
+const BISWAP_V3: UniswapV3Info = {
+    factories: {
+        [Chain.BNB_SMART_CHAIN_MAINNET]: "0x7C3d53606f9c03e7f54abdDFFc3868E1C5466863",
+    },
+    codeHash: { default: "0x712a91d34948c3b3e0b473b519235f7d14dbf2472983bc5d3f7e67c501d7a348" },
+    forkId: "1"
+}
+
+
 interface UniswapV3Info {
     factories: { [chain: string]: string },
     codeHash: { [chainOrDefault: string]: string },
@@ -385,8 +668,34 @@ export const UNISWAP_V3_FORKS: { [s: string]: UniswapV3Info } = {
     [DexProtocol.CAMELOT]: CAMELOT,
     [DexProtocol.DTX]: DTX,
     [DexProtocol.ATLAS]: ATLAS,
+    [DexProtocol.THENA]: THENA,
+    [DexProtocol.ZYBERSWAP]: ZYBERSWAP,
+    [DexProtocol.SKULLSWAP]: SKULLSWAP,
+    [DexProtocol.UBESWAP]: UBESWAP,
+    [DexProtocol.LITX]: LITX,
+    [DexProtocol.STELLASWAP]: STELLASWAP,
+    [DexProtocol.LYNEX]: LYNEX,
+    [DexProtocol.SWAP_BASED]: SWAP_BASED,
+    [DexProtocol.SYNTHSWAP]: SYNTHSWAP,
+    [DexProtocol.HERCULES]: HERCULES,
+    [DexProtocol.KIM]: KIM,
+    [DexProtocol.FENIX]: FENIX,
+    [DexProtocol.BLADE]: BLADE,
+    [DexProtocol.SILVER_SWAP]: SILVER_SWAP,
+    [DexProtocol.HORIZON]: HORIZON,
+    [DexProtocol.GLYPH]: GLYPH,
+    [DexProtocol.SWAPX]: SWAPX,
+    [DexProtocol.BULLA]: BULLA,
+    [DexProtocol.SCRIBE]: SCRIBE,
+    [DexProtocol.FIBONACCI]: FIBONACCI,
+    [DexProtocol.VOLTAGE]: VOLTAGE,
+    [DexProtocol.WASABEE]: WASABEE,
+    [DexProtocol.HOLIVERSE]: HOLIVERSE,
+    [DexProtocol.MOR_FI]: MOR_FI,
+    [DexProtocol.SHADOW_CL]: SHADOW_CL,
 }
 
 export const IZUMI_FORKS: { [s: string]: UniswapV3Info } = {
-    [DexProtocol.IZUMI]: IZUMI
+    [DexProtocol.IZUMI]: IZUMI,
+    [DexProtocol.BISWAP_V3]: BISWAP_V3,
 }
