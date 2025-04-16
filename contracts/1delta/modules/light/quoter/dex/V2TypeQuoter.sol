@@ -2,8 +2,8 @@
 
 pragma solidity ^0.8.28;
 
-import {ERC20Selectors} from "modules/shared/selectors/ERC20Selectors.sol";
-import {Masks} from "modules/shared/masks/Masks.sol";
+import {ERC20Selectors} from "../../../shared/selectors/ERC20Selectors.sol";
+import {Masks} from "../../../shared/masks/Masks.sol";
 
 abstract contract V2TypeQuoter is ERC20Selectors, Masks {
     uint256 internal constant SCALE_18 = 1e18;

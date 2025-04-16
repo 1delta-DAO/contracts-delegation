@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.28;
 
-import {Masks} from "modules/shared/masks/Masks.sol";
+import {Masks} from "../../../shared/masks/Masks.sol";
 
 abstract contract DodoV2Quoter is Masks {
     /**
