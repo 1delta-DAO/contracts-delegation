@@ -145,7 +145,7 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
                 // SELECTOR_IZI_XY
                 case 0x1878068400000000000000000000000000000000000000000000000000000000 {
                     switch and(UINT8_MASK, shr(88, calldataload(172)))
-                        // forkId
+                    // forkId
                     case 0 {
                         ffFactoryAddress := IZUMI_FF_FACTORY
                         codeHash := IZUMI_CODE_HASH
@@ -156,7 +156,7 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
                 // SELECTOR_IZI_YX
                 case 0xd3e1c28400000000000000000000000000000000000000000000000000000000 {
                     switch and(UINT8_MASK, shr(88, calldataload(172)))
-                        // forkId
+                    // forkId
                     case 0 {
                         ffFactoryAddress := IZUMI_FF_FACTORY
                         codeHash := IZUMI_CODE_HASH

@@ -7,10 +7,26 @@ import {V4TypeQuoter} from "./dex/V4TypeQuoter.sol";
 import {V3TypeQuoter} from "./dex/V3TypeQuoter.sol";
 import {BalancerV3Quoter} from "./dex/BalancerV3Quoter.sol";
 import {V2TypeQuoter} from "./dex/V2TypeQuoter.sol";
+import {CurveQuoter} from "./dex/CurveQuoter.sol";
+import {WooFiQuoter} from "./dex/WooFiQuoter.sol";
+import {SyncQuoter} from "./dex/SyncQuoter.sol";
 import {DodoV2Quoter} from "./dex/DodoV2Quoter.sol";
+import {LBQuoter} from "./dex/LBQuoter.sol";
+import {BalancerV2Quoter} from "./dex/BalancerV2Quoter.sol";
 import {ERC20Selectors} from "../../shared/selectors/ERC20Selectors.sol";
 
-contract QuoterLight is BalancerV3Quoter, V4TypeQuoter, V3TypeQuoter, V2TypeQuoter, DodoV2Quoter {
+contract QuoterLight is
+    BalancerV3Quoter,
+    V4TypeQuoter,
+    V3TypeQuoter,
+    V2TypeQuoter,
+    DodoV2Quoter,
+    CurveQuoter,
+    WooFiQuoter,
+    SyncQuoter,
+    LBQuoter,
+    BalancerV2Quoter //
+{
     error InvalidDexId();
 
     function quote(uint256 amountIn, bytes calldata data) external returns (uint256 amountOut) {
@@ -22,17 +38,14 @@ contract QuoterLight is BalancerV3Quoter, V4TypeQuoter, V3TypeQuoter, V2TypeQuot
             tokenIn := shr(96, dataStart)
             currentOffset := add(20, currentOffset)
         }
-        (amountOut,,) = _quoteSingleSwapSplitOrRoute(amountIn, tokenIn, currentOffset);
+        (amountOut, , ) = _quoteSingleSwapSplitOrRoute(amountIn, tokenIn, currentOffset);
     }
 
     function _quoteSingleSwapSplitOrRoute(
         uint256 amountIn,
         address tokenIn,
         uint256 currentOffset
-    )
-        internal
-        returns (uint256 amountOut, uint256, address nextToken)
-    {
+    ) internal returns (uint256 amountOut, uint256, address nextToken) {
         uint256 swapMaxIndex;
         uint256 splitsMaxIndex;
         assembly {
@@ -77,10 +90,7 @@ contract QuoterLight is BalancerV3Quoter, V4TypeQuoter, V3TypeQuoter, V2TypeQuot
         address tokenIn,
         address tokenOut,
         uint256 currentOffset
-    )
-        internal
-        returns (uint256 amountOut, uint256)
-    {
+    ) internal returns (uint256 amountOut, uint256) {
         uint256 dexTypeId;
         assembly {
             dexTypeId := shr(248, calldataload(currentOffset))
@@ -102,13 +112,40 @@ contract QuoterLight is BalancerV3Quoter, V4TypeQuoter, V3TypeQuoter, V2TypeQuot
         else if (dexTypeId == DexTypeMappings.IZI_ID) {
             return _getIzumiAmountOut(amountIn, tokenIn, tokenOut, currentOffset);
         }
-        // uniswapV2 style
+        // curve style
         else if (dexTypeId == DexTypeMappings.UNISWAP_V2_ID) {
             return _getV2TypeAmountOut(amountIn, tokenIn, tokenOut, currentOffset);
+        }
+        // wooFi style
+        else if (dexTypeId == DexTypeMappings.WOO_FI_ID) {
+            return _getWooFiAmountOut(tokenIn, tokenOut, amountIn, currentOffset);
+        }
+        // balancerV2 style
+        else if (dexTypeId == DexTypeMappings.BALANCER_V2_ID) {
+            return _getBalancerAmountOut(tokenIn, tokenOut, amountIn, currentOffset);
+        }
+        // uniswapV2 style
+        else if (
+            dexTypeId == DexTypeMappings.CURVE_V1_STANDARD_ID ||
+            dexTypeId == DexTypeMappings.CURVE_FORK_ID || //
+            dexTypeId == DexTypeMappings.CURVE_RECEIVED_ID
+        ) {
+            return _getCurveAmountOut(amountIn, currentOffset);
         }
         // dodoV2 style
         else if (dexTypeId == DexTypeMappings.DODO_ID) {
             return _getDodoV2AmountOut(amountIn, currentOffset);
+        }
+        // LB style
+        else if (dexTypeId == DexTypeMappings.LB_ID) {
+            return _getLBAmountOut(amountIn, currentOffset);
+        }
+        // sync swap style
+        else if (dexTypeId == DexTypeMappings.SYNC_SWAP_ID) {
+            return _getSyncSwapAmoutnOut(tokenIn, amountIn, currentOffset);
+        } else if (dexTypeId == DexTypeMappings.NATIVE_WRAP_ID) {
+            // wrapping has no effect
+            return (amountIn, currentOffset + 21);
         } else {
             revert InvalidDexId();
         }
@@ -119,10 +156,7 @@ contract QuoterLight is BalancerV3Quoter, V4TypeQuoter, V3TypeQuoter, V2TypeQuot
         uint256 swapMaxIndex,
         address tokenIn,
         uint256 currentOffset
-    )
-        internal
-        returns (uint256 amount, uint256, address _tokenIn)
-    {
+    ) internal returns (uint256 amount, uint256, address _tokenIn) {
         amount = amountIn;
         _tokenIn = tokenIn;
         uint256 i;
@@ -170,10 +204,7 @@ contract QuoterLight is BalancerV3Quoter, V4TypeQuoter, V3TypeQuoter, V2TypeQuot
         uint256 splitsMaxIndex,
         address tokenIn,
         uint256 currentOffset
-    )
-        internal
-        returns (uint256, uint256, address)
-    {
+    ) internal returns (uint256, uint256, address) {
         address nextToken;
         // no splits, single swap
         if (splitsMaxIndex == 0) {
@@ -201,17 +232,16 @@ contract QuoterLight is BalancerV3Quoter, V4TypeQuoter, V3TypeQuoter, V2TypeQuot
                     }
                     default {
                         // splits are uint16s as share of uint16.max
-                        split :=
-                            div(
-                                mul(
-                                    and(
-                                        UINT16_MASK,
-                                        shr(sub(112, mul(i, 16)), splits) // read the uin16 in the splits sequence
-                                    ),
-                                    amountIn //
+                        split := div(
+                            mul(
+                                and(
+                                    UINT16_MASK,
+                                    shr(sub(112, mul(i, 16)), splits) // read the uin16 in the splits sequence
                                 ),
-                                UINT16_MASK //
-                            )
+                                amountIn //
+                            ),
+                            UINT16_MASK //
+                        )
                     }
                     i := add(i, 1)
                 }
