@@ -112,7 +112,7 @@ contract QuoterLight is
         else if (dexTypeId == DexTypeMappings.IZI_ID) {
             return _getIzumiAmountOut(amountIn, tokenIn, tokenOut, currentOffset);
         }
-        // curve style
+        // uniswapV2 style
         else if (dexTypeId == DexTypeMappings.UNISWAP_V2_ID) {
             return _getV2TypeAmountOut(amountIn, tokenIn, tokenOut, currentOffset);
         }
@@ -124,7 +124,7 @@ contract QuoterLight is
         else if (dexTypeId == DexTypeMappings.BALANCER_V2_ID) {
             return _getBalancerAmountOut(tokenIn, tokenOut, amountIn, currentOffset);
         }
-        // uniswapV2 style
+        // curve style
         else if (
             dexTypeId == DexTypeMappings.CURVE_V1_STANDARD_ID ||
             dexTypeId == DexTypeMappings.CURVE_FORK_ID || //
