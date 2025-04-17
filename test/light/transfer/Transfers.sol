@@ -3,7 +3,6 @@ pragma solidity ^0.8.19;
 
 import {console} from "forge-std/console.sol";
 import {ComposerUtils, Commands} from "test/shared/utils/ComposerUtils.sol";
-import {OneDeltaComposerLight} from "light/Composer.sol";
 import {IERC20All} from "test/shared/interfaces/IERC20All.sol";
 import {BaseTest} from "test/shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
@@ -17,7 +16,7 @@ import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 contract TransfersLightTest is BaseTest, DeltaErrors {
     using MorphoMathLib for uint256;
 
-    OneDeltaComposerLight oneD;
+    IComposerLike oneD;
 
     uint256 internal constant forkBlock = 26696865;
 
@@ -41,7 +40,7 @@ contract TransfersLightTest is BaseTest, DeltaErrors {
         WETH = chain.getTokenAddress(Tokens.WETH);
         USDC = chain.getTokenAddress(Tokens.USDC);
         GRANARY_POOL = chain.getLendingController(Lenders.GRANARY);
-        oneD = new OneDeltaComposerLight();
+        oneD = ComposerPlugin.getComposer(chainName);
     }
 
     uint256 internal constant UPPER_BIT = 1 << 255;

@@ -13,7 +13,6 @@ import {SyncQuoter} from "./dex/SyncQuoter.sol";
 import {DodoV2Quoter} from "./dex/DodoV2Quoter.sol";
 import {LBQuoter} from "./dex/LBQuoter.sol";
 import {BalancerV2Quoter} from "./dex/BalancerV2Quoter.sol";
-import {ERC20Selectors} from "../../shared/selectors/ERC20Selectors.sol";
 
 contract QuoterLight is
     BalancerV3Quoter,
@@ -38,14 +37,17 @@ contract QuoterLight is
             tokenIn := shr(96, dataStart)
             currentOffset := add(20, currentOffset)
         }
-        (amountOut, , ) = _quoteSingleSwapSplitOrRoute(amountIn, tokenIn, currentOffset);
+        (amountOut,,) = _quoteSingleSwapSplitOrRoute(amountIn, tokenIn, currentOffset);
     }
 
     function _quoteSingleSwapSplitOrRoute(
         uint256 amountIn,
         address tokenIn,
         uint256 currentOffset
-    ) internal returns (uint256 amountOut, uint256, address nextToken) {
+    )
+        internal
+        returns (uint256 amountOut, uint256, address nextToken)
+    {
         uint256 swapMaxIndex;
         uint256 splitsMaxIndex;
         assembly {
@@ -90,7 +92,10 @@ contract QuoterLight is
         address tokenIn,
         address tokenOut,
         uint256 currentOffset
-    ) internal returns (uint256 amountOut, uint256) {
+    )
+        internal
+        returns (uint256 amountOut, uint256)
+    {
         uint256 dexTypeId;
         assembly {
             dexTypeId := shr(248, calldataload(currentOffset))
@@ -126,9 +131,8 @@ contract QuoterLight is
         }
         // curve style
         else if (
-            dexTypeId == DexTypeMappings.CURVE_V1_STANDARD_ID ||
-            dexTypeId == DexTypeMappings.CURVE_FORK_ID || //
-            dexTypeId == DexTypeMappings.CURVE_RECEIVED_ID
+            dexTypeId == DexTypeMappings.CURVE_V1_STANDARD_ID || dexTypeId == DexTypeMappings.CURVE_FORK_ID //
+                || dexTypeId == DexTypeMappings.CURVE_RECEIVED_ID
         ) {
             return _getCurveAmountOut(amountIn, currentOffset);
         }
@@ -156,7 +160,10 @@ contract QuoterLight is
         uint256 swapMaxIndex,
         address tokenIn,
         uint256 currentOffset
-    ) internal returns (uint256 amount, uint256, address _tokenIn) {
+    )
+        internal
+        returns (uint256 amount, uint256, address _tokenIn)
+    {
         amount = amountIn;
         _tokenIn = tokenIn;
         uint256 i;
@@ -204,7 +211,10 @@ contract QuoterLight is
         uint256 splitsMaxIndex,
         address tokenIn,
         uint256 currentOffset
-    ) internal returns (uint256, uint256, address) {
+    )
+        internal
+        returns (uint256, uint256, address)
+    {
         address nextToken;
         // no splits, single swap
         if (splitsMaxIndex == 0) {
@@ -232,16 +242,17 @@ contract QuoterLight is
                     }
                     default {
                         // splits are uint16s as share of uint16.max
-                        split := div(
-                            mul(
-                                and(
-                                    UINT16_MASK,
-                                    shr(sub(112, mul(i, 16)), splits) // read the uin16 in the splits sequence
+                        split :=
+                            div(
+                                mul(
+                                    and(
+                                        UINT16_MASK,
+                                        shr(sub(112, mul(i, 16)), splits) // read the uin16 in the splits sequence
+                                    ),
+                                    amountIn //
                                 ),
-                                amountIn //
-                            ),
-                            UINT16_MASK //
-                        )
+                                UINT16_MASK //
+                            )
                     }
                     i := add(i, 1)
                 }

@@ -4,11 +4,11 @@ pragma solidity ^0.8.19;
 import {MorphoMathLib} from "test/light/lending/utils/MathLib.sol";
 import {MarketParams, IMorphoEverything} from "test/light/lending/utils/Morpho.sol";
 
-import {OneDeltaComposerLight} from "light/Composer.sol";
 import {IERC20All} from "test/shared/interfaces/IERC20All.sol";
 import {BaseTest} from "test/shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
 import "test/light/utils/CalldataLib.sol";
+import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 
 /**
  * We test all CalldataLib.morpho blue operations
@@ -17,7 +17,7 @@ import "test/light/utils/CalldataLib.sol";
 contract ERC4646Test is BaseTest {
     using MorphoMathLib for uint256;
 
-    OneDeltaComposerLight oneD;
+    IComposerLike oneD;
 
     uint256 internal constant forkBlock = 26696865;
 
@@ -34,7 +34,7 @@ contract ERC4646Test is BaseTest {
 
         USDC = chain.getTokenAddress(Tokens.USDC);
 
-        oneD = new OneDeltaComposerLight();
+        oneD = ComposerPlugin.getComposer(chainName);
     }
 
     function test_light_morpho_deposit_to_erc4646() external {

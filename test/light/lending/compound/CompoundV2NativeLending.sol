@@ -2,7 +2,6 @@
 pragma solidity ^0.8.19;
 
 import {MarketParams, IMorphoEverything} from "test/light/lending/utils/Morpho.sol";
-import {OneDeltaComposerLight} from "light/Composer.sol";
 import {IERC20All} from "test/shared/interfaces/IERC20All.sol";
 import {BaseTest} from "test/shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
