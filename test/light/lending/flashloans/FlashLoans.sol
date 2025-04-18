@@ -196,8 +196,11 @@ contract FlashLoanLightTest is BaseTest {
         gas = gas - gasleft();
         console.log("gas", gas);
 
-        vm.expectRevert(bytes4(keccak256("BadPool()")));
-        oneD.balancerUnlockCallback(abi.encodePacked(address(99), uint8(1), dp));
+        /**
+         * this cannot happen anymore as we use single poolId without fallbacks
+         */
+        // vm.expectRevert(bytes4(keccak256("BadPool()")));
+        // oneD.balancerUnlockCallback(abi.encodePacked(address(99), uint8(1), dp));
 
         vm.expectRevert(bytes4(keccak256("InvalidCaller()")));
         oneD.balancerUnlockCallback(abi.encodePacked(address(99), uint8(0), dp));
@@ -239,8 +242,11 @@ contract FlashLoanLightTest is BaseTest {
         gas = gas - gasleft();
         console.log("gas", gas);
 
-        vm.expectRevert(bytes4(keccak256("BadPool()")));
-        oneD.unlockCallback(abi.encodeWithSelector(oneD.balancerUnlockCallback.selector, abi.encodePacked(address(99), uint8(1), dp)));
+        /**
+         * this cannot happen anymore as we use single poolId without fallbacks
+         */
+        // vm.expectRevert(bytes4(keccak256("BadPool()")));
+        // oneD.unlockCallback(abi.encodeWithSelector(oneD.balancerUnlockCallback.selector, abi.encodePacked(address(99), uint8(1), dp)));
 
         vm.expectRevert(bytes4(keccak256("InvalidCaller()")));
         oneD.unlockCallback(abi.encodeWithSelector(oneD.balancerUnlockCallback.selector, abi.encodePacked(address(99), uint8(0), dp)));

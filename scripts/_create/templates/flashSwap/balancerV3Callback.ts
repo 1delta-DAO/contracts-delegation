@@ -57,7 +57,7 @@ abstract contract BalancerV3Callbacks is Masks, DeltaErrors {
 // this covers multiple pools to validate
 function multiContent() {
     return `
-            let poolId := calldataload(136)
+            let poolId := calldataload(68)
             // callerAddress populates the first 20 bytes
             callerAddress := shr(96, poolId)
             poolId := and(UINT8_MASK, shr(88, poolId))
@@ -68,6 +68,6 @@ function multiContent() {
 function singleContent() {
     return `
             // callerAddress populates the first 20 bytes
-            callerAddress := shr(96, calldataload(136))
+            callerAddress := shr(96, calldataload(68))
     `
 }

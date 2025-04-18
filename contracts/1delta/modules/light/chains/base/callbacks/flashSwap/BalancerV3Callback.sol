@@ -25,7 +25,7 @@ abstract contract BalancerV3Callbacks is Masks, DeltaErrors {
         uint256 length;
         assembly {
             // callerAddress populates the first 20 bytes
-            callerAddress := shr(96, calldataload(136))
+            callerAddress := shr(96, calldataload(68))
 
             // cut off address and poolId
             length := sub(calldataload(36), 21)
