@@ -22,7 +22,7 @@ export const customV2ValidationSnippets: { [p: string]: { [c: string]: string } 
     // as this is only V2 and on a L2, we do not care to add a staticcall here
     [DexProtocol.MERCHANT_MOE]: {
         [Chain.MANTLE]: `
-                    // selector for getPair(address,address,bool)
+                    // selector for getPair(address,address)
                     mstore(ptr, 0xe6a4390500000000000000000000000000000000000000000000000000000000)
                     mstore(add(ptr, 0x4), shr(96, calldataload(184))) // tokenIn
                     mstore(add(ptr, 0x24), shr(96, outData)) // tokenOut

@@ -78,7 +78,7 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
                 // this is sometimes needed if the factory deploys different
                 // pool contracts or something like immutableClone is used
                 if and(0xffffffffffffffffffffff, ffFactoryAddress) {
-                    // selector for getPair(address,address,bool)
+                    // selector for getPair(address,address)
                     mstore(ptr, 0xe6a4390500000000000000000000000000000000000000000000000000000000)
                     mstore(add(ptr, 0x4), shr(96, calldataload(184))) // tokenIn
                     mstore(add(ptr, 0x24), shr(96, outData)) // tokenOut
