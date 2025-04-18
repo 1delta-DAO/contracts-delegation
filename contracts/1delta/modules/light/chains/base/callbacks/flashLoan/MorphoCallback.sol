@@ -17,37 +17,35 @@ contract MorphoFlashLoanCallback is Masks, DeltaErrors {
      */
 
     /// @dev Morpho Blue flash loan
-    function onMorphoFlashLoan(uint256, bytes calldata params) external {
-        _onMorphoCallback(params);
+    function onMorphoFlashLoan(uint256, bytes calldata) external {
+        _onMorphoCallback();
     }
 
     /// @dev Morpho Blue supply callback
-    function onMorphoSupply(uint256, bytes calldata params) external {
-        _onMorphoCallback(params);
+    function onMorphoSupply(uint256, bytes calldata) external {
+        _onMorphoCallback();
     }
 
     /// @dev Morpho Blue repay callback
-    function onMorphoRepay(uint256, bytes calldata params) external {
-        _onMorphoCallback(params);
+    function onMorphoRepay(uint256, bytes calldata) external {
+        _onMorphoCallback();
     }
 
     /// @dev Morpho Blue supply collateral callback
-    function onMorphoSupplyCollateral(uint256, bytes calldata params) external {
-        _onMorphoCallback(params);
+    function onMorphoSupplyCollateral(uint256, bytes calldata) external {
+        _onMorphoCallback();
     }
 
     /// @dev Morpho Blue is immutable and their flash loans are callbacks to msg.sender,
     /// Since it is universal batching and the same validation for all
     /// Morpho callbacks, we can use the same logic everywhere
-    function _onMorphoCallback(bytes calldata params) internal {
+    function _onMorphoCallback() internal {
         address origCaller;
         uint256 calldataLength;
         assembly {
-            calldataLength := params.length
-
             // validate caller
             // - extract id from params
-            let firstWord := calldataload(params.offset)
+            let firstWord := calldataload(100)
             if xor(caller(), MORPHO_BLUE) {
                 mstore(0, INVALID_CALLER)
                 revert(0, 0x4)
@@ -58,7 +56,7 @@ contract MorphoFlashLoanCallback is Masks, DeltaErrors {
             // Otherwise, this would be a vulnerability
             origCaller := shr(96, firstWord)
             // shift / slice params
-            calldataLength := sub(calldataLength, 21)
+            calldataLength := sub(calldataload(68), 21)
         }
         // within the flash loan, any compose operation
         // can be executed
