@@ -7,9 +7,7 @@ import {Masks} from "../../shared/masks/Masks.sol";
 import {DeltaErrors} from "../../shared/errors/Errors.sol";
 
 /**
- * @title Universal aggregator contract.
- *        Allows spot and margin swap aggregation
- *        Efficient baching through compact calldata usage.
+ * @title Aave V2 flash loan executor
  * @author 1delta Labs AG
  */
 contract AaveV2FlashLoans is ERC20Selectors, Masks, DeltaErrors {
