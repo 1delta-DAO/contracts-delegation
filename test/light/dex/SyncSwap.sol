@@ -3,6 +3,7 @@ pragma solidity ^0.8.19;
 
 import {console} from "forge-std/console.sol";
 
+import "../../../contracts/1delta/modules/light/quoter/QuoterLight.sol";
 import {IERC20All} from "../../shared/interfaces/IERC20All.sol";
 import {BaseTest} from "../../shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
@@ -17,6 +18,7 @@ contract SyncSwapLightTest is BaseTest {
     using CalldataLib for bytes;
 
     uint256 internal constant forkBlock = 536078;
+    QuoterLight quoter;
     IComposerLike oneDV2;
 
     address internal constant RITSU_USDC_WETH = 0x424Fab7bfA3E3Dd0e5BB96771fFAa72fe566200e;
@@ -33,6 +35,7 @@ contract SyncSwapLightTest is BaseTest {
         USDT = chain.getTokenAddress(Tokens.USDT);
         USDC = chain.getTokenAddress(Tokens.USDC);
         oneDV2 = ComposerPlugin.getComposer(chainName);
+        quoter = new QuoterLight();
     }
 
     function syncPoolWETHUSDCSwap(address receiver, uint256 amount) internal view returns (bytes memory data) {

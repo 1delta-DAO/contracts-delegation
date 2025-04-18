@@ -13,6 +13,7 @@ import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 /**
  * Test DodoV2 simple swaps
  */
+
 contract DodoV2LightTest is BaseTest {
     using CalldataLib for bytes;
 
