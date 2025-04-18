@@ -3,6 +3,7 @@ pragma solidity ^0.8.19;
 
 import {console} from "forge-std/console.sol";
 
+import "../../../contracts/1delta/modules/light/quoter/QuoterLight.sol";
 import {IERC20All} from "../../shared/interfaces/IERC20All.sol";
 import {BaseTest} from "../../shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
@@ -14,6 +15,8 @@ import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
  */
 contract CurveLightTest is BaseTest {
     uint256 internal constant forkBlock = 27970029;
+
+    QuoterLight quoter;
     IComposerLike oneDV2;
 
     uint8 internal constant EXCHANGE_UNDERLYING_SELECTOR_WITH_RECEIVER = 6;
@@ -42,19 +45,17 @@ contract CurveLightTest is BaseTest {
         cbBTC = chain.getTokenAddress(Tokens.CBBTC);
         USDC = chain.getTokenAddress(Tokens.USDC);
         oneDV2 = ComposerPlugin.getComposer(chainName);
+        quoter = new QuoterLight();
     }
 
-    function curvePoolETHcbETHSwap(address receiver, uint256 amount) internal view returns (bytes memory data) {
+    function curvePoolETHcbETHSwapPath(address receiver) internal view returns (bytes memory data) {
         data = abi.encodePacked(
-            uint8(ComposerCommands.SWAPS),
-            uint128(amount), //
-            uint128(1),
             //
             WETH,
             uint8(0), // swaps max index
             uint8(0) // splits
-                // single split data (no data here)
-                // uint8(0), // swaps max index for inner path
+            // single split data (no data here)
+            // uint8(0), // swaps max index for inner path
         );
         data = abi.encodePacked(
             data,
@@ -69,6 +70,15 @@ contract CurveLightTest is BaseTest {
         );
     }
 
+    function curvePoolETHcbETHSwap(address receiver, uint256 amount) internal view returns (bytes memory data) {
+        data = abi.encodePacked(
+            uint8(ComposerCommands.SWAPS),
+            uint128(amount), //
+            uint128(1),
+            curvePoolETHcbETHSwapPath(receiver)
+        );
+    }
+
     function curvePoolcbETHETHSwap(address receiver, uint256 amount) internal view returns (bytes memory data) {
         data = abi.encodePacked(
             uint8(ComposerCommands.SWAPS),
@@ -78,8 +88,8 @@ contract CurveLightTest is BaseTest {
             cbETH,
             uint8(0), // swaps max index
             uint8(0) // splits
-                // single split data (no data here)
-                // uint8(0), // swaps max index for inner path
+            // single split data (no data here)
+            // uint8(0), // swaps max index for inner path
         );
         data = abi.encodePacked(
             data,
@@ -103,8 +113,8 @@ contract CurveLightTest is BaseTest {
             WETH,
             uint8(0), // swaps max index
             uint8(0) // splits
-                // single split data (no data here)
-                // uint8(0), // swaps max index for inner path
+            // single split data (no data here)
+            // uint8(0), // swaps max index for inner path
         );
         data = abi.encodePacked(
             data,
@@ -130,6 +140,12 @@ contract CurveLightTest is BaseTest {
         vm.prank(user);
         IERC20All(tokenIn).approve(address(oneDV2), type(uint256).max);
 
+        bytes memory quotePath = curvePoolETHcbETHSwapPath(address(0));
+
+        uint256 quoted = quoter.quote(amount, quotePath);
+
+        console.log("quoted", quoted);
+
         bytes memory swap = curvePoolETHcbETHSwap(
             user,
             amount //
@@ -141,6 +157,7 @@ contract CurveLightTest is BaseTest {
 
         uint256 balAfter = IERC20All(tokenOut).balanceOf(user);
         console.log("received", balAfter - balBefore);
+        assertApproxEqAbs(balAfter - balBefore, quoted, 0);
         assertApproxEqAbs(balAfter - balBefore, amount, 0.2e18);
     }
 

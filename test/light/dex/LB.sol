@@ -3,20 +3,23 @@ pragma solidity ^0.8.19;
 
 import {console} from "forge-std/console.sol";
 
+import "../../../contracts/1delta/modules/light/quoter/QuoterLight.sol";
 import {IERC20All} from "../../shared/interfaces/IERC20All.sol";
 import {BaseTest} from "../../shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
 import "../utils/CalldataLib.sol";
 import {DexPayConfig} from "contracts/1delta/modules/light/enums/MiscEnums.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
+
 /**
  * This is for TraderJoe / MerchantMoe LB
  */
-
 contract LBLightTest is BaseTest {
     using CalldataLib for bytes;
 
     uint256 internal constant forkBlock = 77869637;
+
+    QuoterLight quoter;
     IComposerLike oneDV2;
 
     address internal constant LB_USDE_USDT = 0x7ccD8a769d466340Fff36c6e10fFA8cf9077D988;
@@ -36,6 +39,22 @@ contract LBLightTest is BaseTest {
         USDC = chain.getTokenAddress(Tokens.USDC);
         // we can use base here as the LB is not chain-dependent
         oneDV2 = ComposerPlugin.getComposer(Chains.BASE);
+        quoter = new QuoterLight();
+    }
+
+    function lbPoolUSDEUSDTSwapPath(address receiver) internal view returns (bytes memory data) {
+        data = abi.encodePacked(USDE).attachBranch(
+            0,
+            0, //
+            hex""
+        );
+        data = data.lbStyleSwap(
+            USDT,
+            receiver,
+            LB_USDE_USDT,
+            true,
+            DexPayConfig.CALLER_PAYS //
+        );
     }
 
     function lbPoolUSDEUSDTSwap(address receiver, uint256 amount) internal view returns (bytes memory data) {
@@ -46,7 +65,6 @@ contract LBLightTest is BaseTest {
             USDE,
             false // no pre param
         );
-        // no branching
         data = data.attachBranch(0, 0, hex"");
         data = data.lbStyleSwap(
             USDT,
@@ -66,6 +84,11 @@ contract LBLightTest is BaseTest {
         uint256 approxOut = 99921167437; // 99921.167437
         deal(tokenIn, user, amount);
 
+        bytes memory data = lbPoolUSDEUSDTSwapPath(address(0));
+
+        uint256 quoted = quoter.quote(amount, data);
+        console.log("quoted", quoted);
+
         vm.prank(user);
         IERC20All(tokenIn).approve(address(oneDV2), type(uint256).max);
 
@@ -80,6 +103,7 @@ contract LBLightTest is BaseTest {
 
         uint256 balAfter = IERC20All(tokenOut).balanceOf(user);
         console.log("received", balAfter - balBefore);
+        assertApproxEqAbs(balAfter - balBefore, quoted, 0);
         assertApproxEqAbs(balAfter - balBefore, approxOut, (approxOut * 10) / 100);
     }
 }

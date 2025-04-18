@@ -3,6 +3,7 @@ pragma solidity ^0.8.19;
 
 import {console} from "forge-std/console.sol";
 
+import "../../../contracts/1delta/modules/light/quoter/QuoterLight.sol";
 import {IERC20All} from "../../shared/interfaces/IERC20All.sol";
 import {BaseTest} from "../../shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
@@ -12,11 +13,11 @@ import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 /**
  * Test DodoV2 simple swaps
  */
-
 contract DodoV2LightTest is BaseTest {
     using CalldataLib for bytes;
 
     uint256 internal constant forkBlock = 27970029;
+    QuoterLight quoter;
     IComposerLike oneDV2;
 
     address internal constant DODO_WETH_JOJO = 0x0Df758CFe1DE840360a92424494776E8C7f29A9c;
@@ -40,6 +41,20 @@ contract DodoV2LightTest is BaseTest {
         cbBTC = chain.getTokenAddress(Tokens.CBBTC);
         USDC = chain.getTokenAddress(Tokens.USDC);
         oneDV2 = ComposerPlugin.getComposer(chainName);
+        quoter = new QuoterLight();
+    }
+
+    function dodoPoolWETHJOJOSwapPath(address receiver) internal view returns (bytes memory data) {
+        data = abi.encodePacked(WETH).attachBranch(0, 0, hex"");
+        data = data.dodoStyleSwap(
+            JOJO,
+            receiver,
+            DODO_WETH_JOJO,
+            DodoSelector.SELL_QUOTE, // sell quote
+            0,
+            DexPayConfig.CALLER_PAYS, // payMode <- user pays
+            hex""
+        );
     }
 
     function dodoPoolWETHJOJOSwap(address receiver, uint256 amount) internal view returns (bytes memory data) {
@@ -72,6 +87,9 @@ contract DodoV2LightTest is BaseTest {
         uint256 approxOut = 21319114459675017318834;
         deal(tokenIn, user, amount);
 
+        uint256 quoted = quoter.quote(amount, dodoPoolWETHJOJOSwapPath(address(0)));
+        console.log("quoted", quoted);
+
         vm.prank(user);
         IERC20All(tokenIn).approve(address(oneDV2), type(uint256).max);
 
@@ -86,6 +104,7 @@ contract DodoV2LightTest is BaseTest {
 
         uint256 balAfter = IERC20All(tokenOut).balanceOf(user);
         console.log("received", balAfter - balBefore);
+        assertApproxEqAbs(balAfter - balBefore, quoted, 0);
         assertApproxEqAbs(balAfter - balBefore, approxOut, (approxOut * 10) / 100);
     }
 }
