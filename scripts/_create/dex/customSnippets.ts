@@ -13,7 +13,7 @@ export const customV2ValidationSnippets: { [p: string]: { [c: string]: string } 
                     mstore(ptr, 0x6801cc3000000000000000000000000000000000000000000000000000000000)
                     mstore(add(ptr, 0x4), shr(96, calldataload(184))) // tokenIn
                     mstore(add(ptr, 0x24), shr(96, outData)) // tokenOut
-                    mstore(add(ptr, 0x34), gt(and(UINT8_MASK, shr(88, outData)), 191))
+                    mstore(add(ptr, 0x34), gt(forkId, 191)) // isStable
                     // get pair from ramses v2 factory
                     pop(staticcall(gas(), ffFactoryAddress, ptr, 0x48, ptr, 0x20))
                     `
