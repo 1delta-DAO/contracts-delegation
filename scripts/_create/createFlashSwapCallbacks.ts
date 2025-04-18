@@ -2,7 +2,7 @@
 
 import { getAddress } from "ethers/lib/utils";
 import * as fs from "fs";
-import { UNISWAP_V2_FORKS } from "./dex/uniV2";
+import { DexValidation, UNISWAP_V2_FORKS } from "./dex/uniV2";
 import { templateUniV2 } from "./templates/flashSwap/uniV2Callback";
 import { IZUMI_FORKS, UNISWAP_V3_FORKS } from "./dex/uniV3";
 import { templateUniV3 } from "./templates/flashSwap/uniV3Callback";
@@ -124,6 +124,7 @@ async function main() {
     const chains = CREATE_CHAIN_IDS
 
     for (let i = 0; i < chains.length; i++) {
+        let hasV2Override = false
         const chain = chains[i]
         const key = getChainKey(chain)
 
@@ -223,21 +224,27 @@ async function main() {
         const slectorsV2 = uniq(dexIdsUniV2.map(s => s.callbackSelector!))
         slectorsV2.forEach(sel => {
             const idsForSelector = dexIdsUniV2.filter(a => a.callbackSelector === sel)
-            if (
-                idsForSelector.some(a => Number(a.entityId) < SOLIDLY_V2_MIN_ID_LOW) &&
-                idsForSelector.some(a => Number(a.entityId) > SOLIDLY_V2_MIN_ID)
-            ) throw new Error("IVALID: " + chain + " " + idsForSelector.map(a => a.entityName).join(","))
-            const isSolidly = idsForSelector.every(a => Number(a.entityId) > SOLIDLY_V2_MIN_ID)
-            switchCaseContentV2 += createCaseSelectorV2(sel, isSolidly)
-            if (isSolidly) {
-                switchCaseContentV2 += createCaseSolidlyV2(idsForSelector)
+            const overriddenIds = idsForSelector.filter(a => a.codeHash === DexValidation.OVERRIDE)
+            const includeIds = idsForSelector.filter(a => a.codeHash !== DexValidation.OVERRIDE)
+            hasV2Override = overriddenIds.length > 0
+            if (includeIds.length > 0) {
+                if (
+                    includeIds.some(a => Number(a.entityId) < SOLIDLY_V2_MIN_ID_LOW) &&
+                    includeIds.some(a => Number(a.entityId) > SOLIDLY_V2_MIN_ID)
+                ) throw new Error("IVALID: " + chain + " " + includeIds.map(a => a.entityName).join(","))
+                const isSolidly = includeIds.every(a => Number(a.entityId) > SOLIDLY_V2_MIN_ID)
+                switchCaseContentV2 += createCaseSelectorV2(sel, isSolidly)
+                if (isSolidly) {
+                    switchCaseContentV2 += createCaseSolidlyV2(includeIds)
+                }
+                includeIds.forEach(({ pool, entityName, codeHash, entityId }, i) => {
+                    constantsDataV2 += createffAddressConstant(pool, entityName, codeHash!)
+                    if (!isSolidly) switchCaseContentV2 += createCaseUniV2(entityName, entityId)
+                })
+                if (!isSolidly) switchCaseContentV2 += `default { revert(0, 0) }`
+                switchCaseContentV2 += `}\n`
             }
-            idsForSelector.forEach(({ pool, entityName, codeHash, entityId }, i) => {
-                constantsDataV2 += createffAddressConstant(pool, entityName, codeHash!)
-                if (!isSolidly) switchCaseContentV2 += createCaseUniV2(entityName, entityId)
-            })
-            if (!isSolidly) switchCaseContentV2 += `default { revert(0, 0) }`
-            switchCaseContentV2 += `}\n`
+
         })
 
         /**
@@ -324,7 +331,7 @@ async function main() {
 
         if (dexIdsUniV2.length > 0) {
             const filePathV2 = flashSwapCallbackDir + "UniV2Callback.sol";
-            fs.writeFileSync(filePathV2, templateUniV2(constantsDataV2, switchCaseContentV2));
+            fs.writeFileSync(filePathV2, templateUniV2(constantsDataV2, switchCaseContentV2, hasV2Override));
         }
 
         if (dexIdsUniV3.length > 0) {

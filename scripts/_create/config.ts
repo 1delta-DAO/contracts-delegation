@@ -10,6 +10,7 @@ export const CREATE_CHAIN_IDS = [
     Chain.BASE,
     Chain.POLYGON_MAINNET,
     Chain.TAIKO_ALETHIA,
+    Chain.MANTLE,
     // Chain.MODE,
     // Chain.AVALANCHE_C_CHAIN,
     Chain.SONIC_MAINNET,

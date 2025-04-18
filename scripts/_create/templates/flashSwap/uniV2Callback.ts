@@ -1,5 +1,5 @@
 
-export const templateUniV2 = (ffFactoryAddressContants: string, switchCaseContent: string) => `
+export const templateUniV2 = (ffFactoryAddressContants: string, switchCaseContent: string, hasOverride: boolean) => `
 // SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity 0.8.28;
@@ -11,12 +11,13 @@ pragma solidity 0.8.28;
 import {ValidatorLib} from "../../../../swappers/callbacks/ValidatorLib.sol";
 import {Masks} from "../../../../../shared/masks/Masks.sol";
 import {DeltaErrors} from "../../../../../shared/errors/Errors.sol";
+${!hasOverride ? "" : `import {UniV2CallbackOverride} from "./UniV2CallbackOverride.sol";`}
 
 /**
  * @title Contract Module for general Margin Trading on an borrow delegation compatible Lender
  * @notice Contains main logic for uniswap-type callbacks and initiator functions
  */
-abstract contract UniV2Callbacks is Masks, DeltaErrors {
+abstract contract UniV2Callbacks is Masks, DeltaErrors${!hasOverride ? "" : ", UniV2CallbackOverride"} {
     // factories
     ${ffFactoryAddressContants}
     /**
@@ -102,6 +103,6 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
         }
     }
 
-    function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual {}
+    function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual${!hasOverride ? "" : " override"} {}
 }
 `

@@ -9,29 +9,19 @@ pragma solidity 0.8.28;
 import {ValidatorLib} from "../../../../swappers/callbacks/ValidatorLib.sol";
 import {Masks} from "../../../../../shared/masks/Masks.sol";
 import {DeltaErrors} from "../../../../../shared/errors/Errors.sol";
-import {UniV2CallbackOverride} from "./UniV2CallbackOverride.sol";
 
 /**
  * @title Contract Module for general Margin Trading on an borrow delegation compatible Lender
  * @notice Contains main logic for uniswap-type callbacks and initiator functions
  */
-abstract contract UniV2Callbacks is Masks, DeltaErrors, UniV2CallbackOverride {
+abstract contract UniV2Callbacks is Masks, DeltaErrors {
     // factories
 
-    bytes32 private constant UNISWAP_V2_FF_FACTORY = 0xfff1D7CC64Fb4452F05c498126312eBE29f30Fbcf90000000000000000000000;
-    bytes32 private constant UNISWAP_V2_CODE_HASH = 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f;
+    bytes32 private constant RAMSES_V1_FF_FACTORY = 0xffAAA16c016BF556fcD620328f0759252E29b1AB570000000000000000000000;
+    bytes32 private constant RAMSES_V1_CODE_HASH = 0xbf2404274de2b11f05e5aebd49e508de933034cb5fa2d0ac3de8cbd4bcef47dc;
 
-    bytes32 private constant SUSHISWAP_V2_FF_FACTORY = 0xffc35DADB65012eC5796536bD9864eD8773aBc74C40000000000000000000000;
-    bytes32 private constant SUSHISWAP_V2_CODE_HASH = 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f;
-
-    bytes32 private constant CAMELOT_V2_FF_FACTORY = 0xff6EcCab422D763aC031210895C81787E87B43A6520000000000000000000000;
-    bytes32 private constant CAMELOT_V2_CODE_HASH = 0xa856464ae65f7619087bc369daaf7e387dae1e5af69cfa7935850ebf754b04c1;
-
-    bytes32 private constant PANCAKESWAP_V2_FF_FACTORY = 0xff02a84c1b3BBD7401a5f7fa98a384EBC70bB5749E0000000000000000000000;
-    bytes32 private constant PANCAKESWAP_V2_CODE_HASH = 0x00fb7f630766e6a796048ea87d01acd3068e8ff67d078148a3fa3f4a84f69bd5;
-
-    bytes32 private constant APESWAP_FF_FACTORY = 0xffCf083Be4164828f00cAE704EC15a36D7114912840000000000000000000000;
-    bytes32 private constant APESWAP_CODE_HASH = 0xae7373e804a043c4c08107a81def627eeb3792e211fb4711fcfe32f0e4c45fd5;
+    bytes32 private constant VELOCIMETER_FF_FACTORY = 0xff99F9a4A96549342546f9DAE5B2738EDDcD43Bf4C0000000000000000000000;
+    bytes32 private constant VELOCIMETER_CODE_HASH = 0x0ccd005ee58d5fb11632ef5c2e0866256b240965c62c8e990c0f84a97f311879;
 
     /**
      * Generic Uniswap v2 style callbck executor
@@ -45,40 +35,22 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors, UniV2CallbackOverride {
         assembly {
             outData := calldataload(204)
             switch selector
-            case 0x10d1e85c00000000000000000000000000000000000000000000000000000000 {
+            case 0x9a7bff7900000000000000000000000000000000000000000000000000000000 {
                 forkId := and(UINT8_MASK, shr(88, outData))
-                switch forkId
-                case 0 {
-                    ffFactoryAddress := UNISWAP_V2_FF_FACTORY
-                    codeHash := UNISWAP_V2_CODE_HASH
+
+                if or(eq(forkId, 133), eq(forkId, 197)) {
+                    ffFactoryAddress := VELOCIMETER_FF_FACTORY
+                    codeHash := VELOCIMETER_CODE_HASH
                 }
-                case 1 {
-                    ffFactoryAddress := SUSHISWAP_V2_FF_FACTORY
-                    codeHash := SUSHISWAP_V2_CODE_HASH
+                {
+                    if or(eq(forkId, 135), eq(forkId, 199)) {
+                        ffFactoryAddress := RAMSES_V1_FF_FACTORY
+                        codeHash := RAMSES_V1_CODE_HASH
+                    }
+                    {
+                        revert(0, 0)
+                    }
                 }
-                case 130 {
-                    ffFactoryAddress := CAMELOT_V2_FF_FACTORY
-                    codeHash := CAMELOT_V2_CODE_HASH
-                }
-                default { revert(0, 0) }
-            }
-            case 0x8480081200000000000000000000000000000000000000000000000000000000 {
-                forkId := and(UINT8_MASK, shr(88, outData))
-                switch forkId
-                case 0 {
-                    ffFactoryAddress := PANCAKESWAP_V2_FF_FACTORY
-                    codeHash := PANCAKESWAP_V2_CODE_HASH
-                }
-                default { revert(0, 0) }
-            }
-            case 0xbecda36300000000000000000000000000000000000000000000000000000000 {
-                forkId := and(UINT8_MASK, shr(88, outData))
-                switch forkId
-                case 12 {
-                    ffFactoryAddress := APESWAP_FF_FACTORY
-                    codeHash := APESWAP_CODE_HASH
-                }
-                default { revert(0, 0) }
             }
         }
 
@@ -148,5 +120,5 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors, UniV2CallbackOverride {
         }
     }
 
-    function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual override {}
+    function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual {}
 }

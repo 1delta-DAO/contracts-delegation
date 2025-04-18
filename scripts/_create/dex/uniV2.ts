@@ -1,6 +1,9 @@
 import { Chain } from "@1delta/asset-registry";
 import { DexProtocol } from "./dexs";
 
+export enum DexValidation {
+    OVERRIDE = "OVERRIDE"
+}
 
 const uniswapV2InitHash = "0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f";
 const pancakeV2CodeHash = "0x00fb7f630766e6a796048ea87d01acd3068e8ff67d078148a3fa3f4a84f69bd5"
@@ -191,7 +194,7 @@ const RAMSES_V1: UniswapV2Info = {
         [Chain.MANTLE]: "0xAAA16c016BF556fcD620328f0759252E29b1AB57",
     },
     codeHash: {
-        [Chain.ARBITRUM_ONE]: "0xa77e84da9a14a7270882f31b1042615d939daabc0557e093eee47b8da9cb89de",
+        [Chain.ARBITRUM_ONE]: DexValidation.OVERRIDE,
         [Chain.MANTLE]: "0xbf2404274de2b11f05e5aebd49e508de933034cb5fa2d0ac3de8cbd4bcef47dc"
     },
     callbackSelector: solidlyV2CallbackSelector,
@@ -286,6 +289,19 @@ const QUICKSWAP_V2: UniswapV2Info = {
     callbackSelector: uniV2CallbackSelector,
     forkId: "3"
 }
+
+
+const MERCHANT_MOE: UniswapV2Info = {
+    factories: {
+        [Chain.MANTLE]: '0x5bEf015CA9424A7C07B68490616a4C1F094BEdEc',
+    },
+    codeHash: {
+        [Chain.MANTLE]: DexValidation.OVERRIDE,
+    },
+    callbackSelector: DexValidation.OVERRIDE,
+    forkId: "0"
+}
+
 interface UniswapV2Info {
     factories: { [chain: string]: string },
     codeHash: { [chainOrDefault: string]: string },
@@ -307,6 +323,7 @@ export const UNISWAP_V2_FORKS: { [s: string]: UniswapV2Info } = {
     [DexProtocol.POLYCAT]: POLYCAT,
     [DexProtocol.COMETH]: COMETH,
     [DexProtocol.QUICKSWAP_V2]: QUICKSWAP_V2,
+    [DexProtocol.MERCHANT_MOE]: MERCHANT_MOE,
 
     "SHADOW_V2": SHADOW_V2,
     // solidlies go without the stable & volatile
