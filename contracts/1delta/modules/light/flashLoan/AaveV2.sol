@@ -2,15 +2,13 @@
 
 pragma solidity 0.8.28;
 
-import {ERC20Selectors} from "../../shared/selectors/ERC20Selectors.sol";
 import {Masks} from "../../shared/masks/Masks.sol";
-import {DeltaErrors} from "../../shared/errors/Errors.sol";
 
 /**
  * @title Aave V2 flash loan executor
  * @author 1delta Labs AG
  */
-contract AaveV2FlashLoans is ERC20Selectors, Masks, DeltaErrors {
+contract AaveV2FlashLoans is Masks {
     /*
      * | Offset | Length (bytes) | Description                     |
      * |--------|----------------|---------------------------------|

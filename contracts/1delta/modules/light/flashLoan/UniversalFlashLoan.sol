@@ -7,6 +7,7 @@ import {AaveV2FlashLoans} from "./AaveV2.sol";
 import {BalancerV2FlashLoans} from "./BalancerV2.sol";
 import {AaveV3FlashLoans} from "./AaveV3.sol";
 import {FlashLoanIds} from "../enums/DeltaEnums.sol";
+import {DeltaErrors} from "../../shared/errors/Errors.sol";
 
 /**
  * @title Flash loan aggregator
@@ -16,7 +17,8 @@ contract UniversalFlashLoan is
     MorphoFlashLoans,
     AaveV2FlashLoans,
     AaveV3FlashLoans,
-    BalancerV2FlashLoans //
+    BalancerV2FlashLoans,
+    DeltaErrors //
 {
     /**
      * All flash ones in one function -what do you need more?
@@ -27,7 +29,6 @@ contract UniversalFlashLoan is
             flashLoanType := shr(248, calldataload(currentOffset)) // already masks uint8 as last byte
             currentOffset := add(currentOffset, 1)
         }
-        // for now we ignore MorphoB poolId
         if (flashLoanType == FlashLoanIds.MORPHO) {
             return morphoFlashLoan(currentOffset, callerAddress);
         } else if (flashLoanType == FlashLoanIds.BALANCER_V2) {

@@ -2,15 +2,13 @@
 
 pragma solidity 0.8.28;
 
-import {ERC20Selectors} from "../../shared/selectors/ERC20Selectors.sol";
 import {Masks} from "../../shared/masks/Masks.sol";
-import {DeltaErrors} from "../../shared/errors/Errors.sol";
 
 /**
  * @title Morpho flash loans
  * @author 1delta Labs AG
  */
-contract MorphoFlashLoans is ERC20Selectors, Masks, DeltaErrors {
+contract MorphoFlashLoans is Masks {
     /*
      * | Offset | Length (bytes) | Description                     |
      * |--------|----------------|---------------------------------|

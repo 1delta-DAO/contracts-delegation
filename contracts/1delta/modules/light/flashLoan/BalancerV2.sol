@@ -3,14 +3,12 @@
 pragma solidity 0.8.28;
 
 import {Slots} from "../slots/Slots.sol";
-import {ERC20Selectors} from "../../shared/selectors/ERC20Selectors.sol";
 import {Masks} from "../../shared/masks/Masks.sol";
-import {DeltaErrors} from "../../shared/errors/Errors.sol";
 
 /**
  * Flash loaning through BalancerV2
  */
-contract BalancerV2FlashLoans is Slots, ERC20Selectors, Masks, DeltaErrors {
+contract BalancerV2FlashLoans is Slots, Masks {
     /*
      * | Offset | Length (bytes) | Description                     |
      * |--------|----------------|---------------------------------|
