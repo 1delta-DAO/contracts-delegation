@@ -139,8 +139,9 @@ contract DodoTest is DeltaSetup {
         assertApproxEqAbs(balanceIn, amountIn, 0);
     }
 
-    /** KTX PATH BUILDERS */
-
+    /**
+     * KTX PATH BUILDERS
+     */
     function getSpotExactInSingleDodoV2(address tokenIn, address tokenOut, uint8 sellQuote) internal pure returns (bytes memory data) {
         uint8 poolId = DexMappingsMantle.DODO;
         return abi.encodePacked(tokenIn, uint8(0), poolId, FBTC_WBTC_POOL, sellQuote, tokenOut);
@@ -155,21 +156,20 @@ contract DodoTest is DeltaSetup {
         uint8 poolId = DexMappingsMantle.DODO;
         uint16 fee = 2500;
         address agniPool = testQuoter.v3TypePool(TokensMantle.FBTC, tokenOut, fee, DexMappingsMantle.AGNI);
-        return
-            abi.encodePacked(
-                tokenIn,
-                uint8(0),
-                poolId,
-                FBTC_WBTC_POOL,
-                sellQuote,
-                FBTC,
-                uint8(0),
-                DexMappingsMantle.AGNI,
-                agniPool,
-                fee, //
-                tokenOut,
-                uint16(0)
-            );
+        return abi.encodePacked(
+            tokenIn,
+            uint8(0),
+            poolId,
+            FBTC_WBTC_POOL,
+            sellQuote,
+            FBTC,
+            uint8(0),
+            DexMappingsMantle.AGNI,
+            agniPool,
+            fee, //
+            tokenOut,
+            uint16(0)
+        );
     }
 
     function fundSwap(address user) internal {

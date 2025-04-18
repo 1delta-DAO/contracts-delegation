@@ -5,9 +5,11 @@ pragma solidity ^0.8.28;
 import {Slots} from "../shared/storage/Slots.sol";
 import {ERC20Selectors} from "../shared/selectors/ERC20Selectors.sol";
 
-/******************************************************************************\
-* Author: Achthar | 1delta 
-/******************************************************************************/
+/**
+ * \
+ * Author: Achthar | 1delta
+ * /*****************************************************************************
+ */
 
 // solhint-disable max-line-length
 
@@ -49,7 +51,9 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                 mstore(0x20, COLLATERAL_TOKENS_SLOT)
                 let collateralToken := sload(keccak256(0x0, 0x40))
 
-                /** PREPARE TRANSFER_FROM USER */
+                /**
+                 * PREPARE TRANSFER_FROM USER
+                 */
 
                 // selector for transferFrom(address,address,uint256)
                 mstore(ptr, ERC20_TRANSFER_FROM)
@@ -61,16 +65,17 @@ abstract contract BaseLending is Slots, ERC20Selectors {
 
                 let rdsize := returndatasize()
 
-                success := and(
-                    success, // call itself succeeded
-                    or(
-                        iszero(rdsize), // no return data, or
-                        and(
-                            iszero(lt(rdsize, 32)), // at least 32 bytes
-                            eq(mload(0x0), 1) // starts with uint256(1)
+                success :=
+                    and(
+                        success, // call itself succeeded
+                        or(
+                            iszero(rdsize), // no return data, or
+                            and(
+                                iszero(lt(rdsize, 32)), // at least 32 bytes
+                                eq(mload(0x0), 1) // starts with uint256(1)
+                            )
                         )
                     )
-                )
 
                 if iszero(success) {
                     returndatacopy(0x0, 0x0, rdsize)
@@ -85,24 +90,12 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                 let pool
                 // assign lending pool
                 switch _lenderId
-                case 0 {
-                    pool := HANA_POOL
-                }
-                case 100 {
-                    pool := AVALON_POOL
-                }
-                case 101 {
-                    pool := AVALON_SOLV_BTC_POOL
-                }
-                case 150 {
-                    pool := AVALON_USDA_POOL
-                }
-                case 1000 {
-                    pool := MERIDIAN_POOL
-                }
-                case 1001 {
-                    pool := TAKOTAKO_POOL
-                }
+                case 0 { pool := HANA_POOL }
+                case 100 { pool := AVALON_POOL }
+                case 101 { pool := AVALON_SOLV_BTC_POOL }
+                case 150 { pool := AVALON_USDA_POOL }
+                case 1000 { pool := MERIDIAN_POOL }
+                case 1001 { pool := TAKOTAKO_POOL }
                 default {
                     mstore(0x0, _lenderId)
                     mstore(0x20, LENDING_POOL_SLOT)
@@ -142,24 +135,12 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                 let pool
                 // assign lending pool
                 switch _lenderId
-                case 0 {
-                    pool := HANA_POOL
-                }
-                case 100 {
-                    pool := AVALON_POOL
-                }
-                case 101 {
-                    pool := AVALON_SOLV_BTC_POOL
-                }
-                case 150 {
-                    pool := AVALON_USDA_POOL
-                }
-                case 1000 {
-                    pool := MERIDIAN_POOL
-                }
-                case 1001 {
-                    pool := TAKOTAKO_POOL
-                }
+                case 0 { pool := HANA_POOL }
+                case 100 { pool := AVALON_POOL }
+                case 101 { pool := AVALON_SOLV_BTC_POOL }
+                case 150 { pool := AVALON_USDA_POOL }
+                case 1000 { pool := MERIDIAN_POOL }
+                case 1001 { pool := TAKOTAKO_POOL }
                 default {
                     mstore(0x0, _lenderId)
                     mstore(0x20, LENDING_POOL_SLOT)
@@ -189,16 +170,17 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                     // Check for ERC20 success. ERC20 tokens should return a boolean,
                     // but some don't. We accept 0-length return data as success, or at
                     // least 32 bytes that starts with a 32-byte boolean true.
-                    success := and(
-                        success, // call itself succeeded
-                        or(
-                            iszero(rdsize), // no return data, or
-                            and(
-                                iszero(lt(rdsize, 32)), // at least 32 bytes
-                                eq(mload(ptr), 1) // starts with uint256(1)
+                    success :=
+                        and(
+                            success, // call itself succeeded
+                            or(
+                                iszero(rdsize), // no return data, or
+                                and(
+                                    iszero(lt(rdsize, 32)), // at least 32 bytes
+                                    eq(mload(ptr), 1) // starts with uint256(1)
+                                )
                             )
                         )
-                    )
 
                     if iszero(success) {
                         returndatacopy(0, 0, rdsize)
@@ -231,18 +213,10 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                     let pool
                     // assign lending pool
                     switch _lenderId
-                    case 0 {
-                        pool := HANA_POOL
-                    }
-                    case 100 {
-                        pool := AVALON_POOL
-                    }
-                    case 101 {
-                        pool := AVALON_SOLV_BTC_POOL
-                    }
-                    case 150 {
-                        pool := AVALON_USDA_POOL
-                    }
+                    case 0 { pool := HANA_POOL }
+                    case 100 { pool := AVALON_POOL }
+                    case 101 { pool := AVALON_SOLV_BTC_POOL }
+                    case 150 { pool := AVALON_USDA_POOL }
                     default {
                         mstore(0x0, _lenderId)
                         mstore(0x20, LENDING_POOL_SLOT)
@@ -268,12 +242,8 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                     let pool
                     // assign lending pool
                     switch _lenderId
-                    case 1000 {
-                        pool := MERIDIAN_POOL
-                    }
-                    case 1001 {
-                        pool := TAKOTAKO_POOL
-                    }
+                    case 1000 { pool := MERIDIAN_POOL }
+                    case 1001 { pool := TAKOTAKO_POOL }
                     default {
                         mstore(0x0, _lenderId)
                         mstore(0x20, LENDING_POOL_SLOT)
@@ -312,24 +282,12 @@ abstract contract BaseLending is Slots, ERC20Selectors {
                 let pool
                 // assign lending pool
                 switch _lenderId
-                case 0 {
-                    pool := HANA_POOL
-                }
-                case 100 {
-                    pool := AVALON_POOL
-                }
-                case 101 {
-                    pool := AVALON_SOLV_BTC_POOL
-                }
-                case 150 {
-                    pool := AVALON_USDA_POOL
-                }
-                case 1000 {
-                    pool := MERIDIAN_POOL
-                }
-                case 1001 {
-                    pool := TAKOTAKO_POOL
-                }
+                case 0 { pool := HANA_POOL }
+                case 100 { pool := AVALON_POOL }
+                case 101 { pool := AVALON_SOLV_BTC_POOL }
+                case 150 { pool := AVALON_USDA_POOL }
+                case 1000 { pool := MERIDIAN_POOL }
+                case 1001 { pool := TAKOTAKO_POOL }
                 default {
                     mstore(0x0, _lenderId)
                     mstore(0x20, LENDING_POOL_SLOT)

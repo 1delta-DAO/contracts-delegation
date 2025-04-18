@@ -12,11 +12,14 @@ interface IFlashAggregator {
     error InvalidOperation();
     error Slippage();
 
-    /** COMPOSER */
+    /**
+     * COMPOSER
+     */
     function deltaCompose(bytes calldata data) external payable;
 
-    /** MARGIN */
-
+    /**
+     * MARGIN
+     */
     function flashSwapExactIn(uint256 amountIn, uint256 amountOutMinimum, bytes calldata path) external payable;
 
     function flashSwapExactOut(uint256 amountOut, uint256 amountInMaximum, bytes calldata path) external payable;
@@ -25,8 +28,9 @@ interface IFlashAggregator {
 
     function flashSwapAllOut(uint256 amountInMaximum, bytes calldata path) external payable;
 
-    /** SPOT */
-
+    /**
+     * SPOT
+     */
     function flashSwapExactInSimple(uint256 amountIn, uint256 amountOutMinimum, bytes calldata path) external payable;
 
     function swapExactOutSpot(uint256 amountOut, uint256 maximumAmountIn, address receiver, bytes calldata path) external payable;
@@ -43,7 +47,9 @@ interface IFlashAggregator {
 
     function swapAllInSpot(uint256 minimumAmountOut, bytes calldata path) external payable;
 
-    /** CALLBACKS */
+    /**
+     * CALLBACKS
+     */
 
     // fusionx
     function fusionXV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata data) external;
@@ -99,20 +105,22 @@ interface IFlashAggregator {
         uint256[] calldata, // we assume that the data is known to the caller in advance
         address initiator,
         bytes calldata params
-    ) external returns (bool);
+    )
+        external
+        returns (bool);
 
     struct BaseSwapCallbackParams {
         address sender;
         address to;
         address tokenIn;
         address tokenOut;
-        uint reserve0;
-        uint reserve1;
-        uint balance0;
-        uint balance1;
-        uint amountIn;
-        uint amountOut;
-        uint feeIn;
+        uint256 reserve0;
+        uint256 reserve1;
+        uint256 balance0;
+        uint256 balance1;
+        uint256 amountIn;
+        uint256 amountOut;
+        uint256 feeIn;
         uint24 swapFee;
         uint8 withdrawMode;
         bytes callbackData;

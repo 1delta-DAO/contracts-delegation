@@ -2,9 +2,11 @@
 
 pragma solidity 0.8.28;
 
-/******************************************************************************\
-* Author: Achthar | 1delta 
-/******************************************************************************/
+/**
+ * \
+ * Author: Achthar | 1delta
+ * /*****************************************************************************
+ */
 
 /**
  * @title GMX V1 swapper, works for most forks, too
@@ -22,7 +24,10 @@ abstract contract GMXSwapper {
         address tokenOut,
         address vault,
         address receiver //
-    ) internal returns (uint256 amountOut) {
+    )
+        internal
+        returns (uint256 amountOut)
+    {
         assembly {
             let ptr := mload(0x40)
             // selector for swap(address,address,address)

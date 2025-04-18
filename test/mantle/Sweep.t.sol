@@ -4,9 +4,8 @@ pragma solidity ^0.8.19;
 import "./DeltaSetup.f.sol";
 
 contract SweepTests is DeltaSetup {
-
     function test_mantle_sweep_fails() external {
-        uint amount = 2112324324432;
+        uint256 amount = 2112324324432;
         address user = testUser;
         address asset = TokensMantle.USDT;
         deal(asset, user, amount);
@@ -24,7 +23,7 @@ contract SweepTests is DeltaSetup {
     }
 
     function test_mantle_sweep_correct_when_zero() external {
-        uint amount = 2112324324432;
+        uint256 amount = 2112324324432;
         address user = testUser;
         address asset = TokensMantle.USDT;
         deal(asset, user, amount);
@@ -45,7 +44,7 @@ contract SweepTests is DeltaSetup {
     }
 
     function test_mantle_sweep_works() external {
-        uint amount = 2112324324432;
+        uint256 amount = 2112324324432;
         address user = testUser;
         address asset = TokensMantle.USDT;
         deal(asset, user, amount);
@@ -60,7 +59,7 @@ contract SweepTests is DeltaSetup {
     }
 
     function test_mantle_sweep_works_balance() external {
-        uint amount = 2112324324432;
+        uint256 amount = 2112324324432;
         address user = testUser;
         address asset = TokensMantle.USDT;
         deal(asset, user, amount);

@@ -76,16 +76,17 @@ abstract contract KTXQuoterMantle {
             //      4.1: get usdg amount
             //      4.2: get getSwapFeeBasisPoints
             ////////////////////////////////////////////////////
-            let usdgAmount := div(
-                mul(
-                    div(
-                        mul(amountIn, priceIn), // price adj
-                        PRICE_PRECISION
+            let usdgAmount :=
+                div(
+                    mul(
+                        div(
+                            mul(amountIn, priceIn), // price adj
+                            PRICE_PRECISION
+                        ),
+                        1000000000000000000 // 1e18
                     ),
-                    1000000000000000000 // 1e18
-                ),
-                decsIn
-            )
+                    decsIn
+                )
             // getSwapFeeBasisPoints(address,address,uint256)
             mstore(ptr, 0xda13381600000000000000000000000000000000000000000000000000000000)
             mstore(ptrPlus4, _tokenIn)
@@ -96,13 +97,14 @@ abstract contract KTXQuoterMantle {
             ////////////////////////////////////////////////////
             // Step 5: get net return amount and validate vs. vault balance
             ////////////////////////////////////////////////////
-            amountOut := div(
-                mul(
-                    amountOut, //  * decsOut / decsIn
-                    sub(10000, mload(ptr))
-                ),
-                10000
-            )
+            amountOut :=
+                div(
+                    mul(
+                        amountOut, //  * decsOut / decsIn
+                        sub(10000, mload(ptr))
+                    ),
+                    10000
+                )
 
             // selector for balanceOf(address)
             mstore(0x0, 0x70a0823100000000000000000000000000000000000000000000000000000000)
@@ -110,13 +112,9 @@ abstract contract KTXQuoterMantle {
             mstore(0x4, KTX_VAULT)
 
             // call to tokenOut to fetch balance
-            if iszero(staticcall(gas(), _tokenOut, 0x0, 0x24, 0x0, 0x20)) {
-                revert(0, 0)
-            }
+            if iszero(staticcall(gas(), _tokenOut, 0x0, 0x24, 0x0, 0x20)) { revert(0, 0) }
             // vault must have enough liquidity
-            if lt(mload(0x0), amountOut) {
-                revert(0, 0)
-            }
+            if lt(mload(0x0), amountOut) { revert(0, 0) }
         }
     }
 }

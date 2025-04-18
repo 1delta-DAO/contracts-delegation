@@ -18,10 +18,10 @@ contract OneDeltaVenuseMoneyMarketTest is OneDeltaBNBFixture {
 
         address vTokenBorrow = vUSDT;
         address underlyingBorrow = USDT;
-        uint baseAmount = 10;
+        uint256 baseAmount = 10;
 
         // 10 units to deposit
-        uint amount = baseAmount * 10 ** IERC20Minimal(underlying).decimals();
+        uint256 amount = baseAmount * 10 ** IERC20Minimal(underlying).decimals();
         // approve delta
         IERC20Minimal(underlying).approve(vToken, amount);
         // call mint
@@ -32,18 +32,18 @@ contract OneDeltaVenuseMoneyMarketTest is OneDeltaBNBFixture {
         // approve vToken
         comptroller.updateDelegate(oneDelta, true);
 
-        uint approxPrice = 300; // BNB is about 300 USDC
+        uint256 approxPrice = 300; // BNB is about 300 USDC
         // borrow amount is 2x depo assuming price of 300
-        uint borrowAmount = 2 * approxPrice * baseAmount * 10 ** IERC20Minimal(underlyingBorrow).decimals();
+        uint256 borrowAmount = 2 * approxPrice * baseAmount * 10 ** IERC20Minimal(underlyingBorrow).decimals();
         // create calldata
         bytes memory path = getOpenSingle(underlyingBorrow, underlying);
 
-        uint gas = gasleft();
-        uint received = 0; // aggregator.flashSwapExactIn(borrowAmount, 0, path);
-        uint gasConsumed = gas - gasleft();
+        uint256 gas = gasleft();
+        uint256 received = 0; // aggregator.flashSwapExactIn(borrowAmount, 0, path);
+        uint256 gasConsumed = gas - gasleft();
         console.log("gasConsumed", gasConsumed);
 
-        uint balRec = IVToken(vTokenBorrow).borrowBalanceStored(address(this));
+        uint256 balRec = IVToken(vTokenBorrow).borrowBalanceStored(address(this));
         assertApproxEqAbs(balRec, borrowAmount, 1e10);
 
         balRec = IVToken(vToken).balanceOfUnderlying(address(this));
@@ -60,10 +60,10 @@ contract OneDeltaVenuseMoneyMarketTest is OneDeltaBNBFixture {
 
         address vTokenBorrow = vUSDT;
         address underlyingBorrow = USDT;
-        uint baseAmount = 10;
+        uint256 baseAmount = 10;
 
         // 10 units to deposit
-        uint amount = baseAmount * 10 ** IERC20Minimal(underlying).decimals();
+        uint256 amount = baseAmount * 10 ** IERC20Minimal(underlying).decimals();
         // approve delta
         IERC20Minimal(underlying).approve(vToken, amount);
         // call mint
@@ -74,30 +74,30 @@ contract OneDeltaVenuseMoneyMarketTest is OneDeltaBNBFixture {
         // approve vToken
         // comptroller.updateDelegate(oneDelta, true);
 
-        uint approxPrice = 300; // BNB is about 300 USDC
+        uint256 approxPrice = 300; // BNB is about 300 USDC
         // borrow amount is 2x depo assuming price of 300
-        uint borrowAmount = (approxPrice * baseAmount * 10 ** IERC20Minimal(underlyingBorrow).decimals()) / 3; // 30%
+        uint256 borrowAmount = (approxPrice * baseAmount * 10 ** IERC20Minimal(underlyingBorrow).decimals()) / 3; // 30%
 
         IVToken(vTokenBorrow).borrow(borrowAmount);
         // approve withdrawal
-        IVToken(vToken).approve(address(aggregator), type(uint).max);
-        uint borrowBalBefore = IVToken(vTokenBorrow).borrowBalanceStored(address(this));
-        uint collatBalBefore = IVToken(vToken).balanceOfUnderlying(address(this));
+        IVToken(vToken).approve(address(aggregator), type(uint256).max);
+        uint256 borrowBalBefore = IVToken(vTokenBorrow).borrowBalanceStored(address(this));
+        uint256 collatBalBefore = IVToken(vToken).balanceOfUnderlying(address(this));
 
         // create calldata
         bytes memory path = getCloseSingle(underlying, underlyingBorrow);
-        uint withdrawAmount = amount / 4; // 25%
-        uint received;
+        uint256 withdrawAmount = amount / 4; // 25%
+        uint256 received;
         {
-            uint gas = gasleft();
+            uint256 gas = gasleft();
             console.log("close");
             received = 0; // aggregator.flashSwapExactIn(withdrawAmount, 0, path);
-            uint gasConsumed = gas - gasleft();
+            uint256 gasConsumed = gas - gasleft();
             console.log("gasConsumed", gasConsumed);
         }
 
-        uint balRec = IVToken(vTokenBorrow).borrowBalanceStored(address(this));
-        uint balDelta = borrowBalBefore - balRec;
+        uint256 balRec = IVToken(vTokenBorrow).borrowBalanceStored(address(this));
+        uint256 balDelta = borrowBalBefore - balRec;
         assertApproxEqAbs(balDelta, received, 1e10);
 
         // check collateral
@@ -115,10 +115,10 @@ contract OneDeltaVenuseMoneyMarketTest is OneDeltaBNBFixture {
 
         address vTokenBorrow = vUSDC;
         address underlyingBorrow = USDC;
-        uint baseAmount = 10;
+        uint256 baseAmount = 10;
 
         // 10 units to deposit
-        uint amount = baseAmount * 10 ** IERC20Minimal(underlying).decimals();
+        uint256 amount = baseAmount * 10 ** IERC20Minimal(underlying).decimals();
         // approve delta
         IERC20Minimal(underlying).approve(vToken, amount);
         // call mint
@@ -129,18 +129,18 @@ contract OneDeltaVenuseMoneyMarketTest is OneDeltaBNBFixture {
         // approve vToken
         comptroller.updateDelegate(oneDelta, true);
 
-        uint approxPrice = 300; // BNB is about 300 USDC
+        uint256 approxPrice = 300; // BNB is about 300 USDC
         // borrow amount is 2x depo assuming price of 300
-        uint borrowAmount = 2 * approxPrice * baseAmount * 10 ** IERC20Minimal(underlyingBorrow).decimals();
+        uint256 borrowAmount = 2 * approxPrice * baseAmount * 10 ** IERC20Minimal(underlyingBorrow).decimals();
         // create calldata
         bytes memory path = getOpenSingleV2(underlyingBorrow, underlying);
 
-        uint gas = gasleft();
-        uint received = 0; // aggregator.flashSwapExactIn(borrowAmount, 0, path);
-        uint gasConsumed = gas - gasleft();
+        uint256 gas = gasleft();
+        uint256 received = 0; // aggregator.flashSwapExactIn(borrowAmount, 0, path);
+        uint256 gasConsumed = gas - gasleft();
         console.log("gasConsumed", gasConsumed);
 
-        uint balRec = IVToken(vTokenBorrow).borrowBalanceStored(address(this));
+        uint256 balRec = IVToken(vTokenBorrow).borrowBalanceStored(address(this));
         assertApproxEqAbs(balRec, borrowAmount, 1e10);
 
         balRec = IVToken(vToken).balanceOfUnderlying(address(this));
@@ -157,10 +157,10 @@ contract OneDeltaVenuseMoneyMarketTest is OneDeltaBNBFixture {
 
         address vTokenBorrow = vUSDC;
         address underlyingBorrow = USDC;
-        uint baseAmount = 10;
+        uint256 baseAmount = 10;
 
         // 10 units to deposit
-        uint amount = baseAmount * 10 ** IERC20Minimal(underlying).decimals();
+        uint256 amount = baseAmount * 10 ** IERC20Minimal(underlying).decimals();
         // approve delta
         IERC20Minimal(underlying).approve(vToken, amount);
         // call mint
@@ -171,30 +171,30 @@ contract OneDeltaVenuseMoneyMarketTest is OneDeltaBNBFixture {
         // approve vToken
         // comptroller.updateDelegate(oneDelta, true);
 
-        uint approxPrice = 300; // BNB is about 300 USDC
+        uint256 approxPrice = 300; // BNB is about 300 USDC
         // borrow amount is 2x depo assuming price of 300
-        uint borrowAmount = (approxPrice * baseAmount * 10 ** IERC20Minimal(underlyingBorrow).decimals()) / 3; // 30%
+        uint256 borrowAmount = (approxPrice * baseAmount * 10 ** IERC20Minimal(underlyingBorrow).decimals()) / 3; // 30%
 
         IVToken(vTokenBorrow).borrow(borrowAmount);
         // approve withdrawal
-        IVToken(vToken).approve(address(aggregator), type(uint).max);
-        uint borrowBalBefore = IVToken(vTokenBorrow).borrowBalanceStored(address(this));
-        uint collatBalBefore = IVToken(vToken).balanceOfUnderlying(address(this));
+        IVToken(vToken).approve(address(aggregator), type(uint256).max);
+        uint256 borrowBalBefore = IVToken(vTokenBorrow).borrowBalanceStored(address(this));
+        uint256 collatBalBefore = IVToken(vToken).balanceOfUnderlying(address(this));
 
         // create calldata
         bytes memory path = getCloseSingleV2(underlying, underlyingBorrow);
-        uint withdrawAmount = amount / 4; // 25%
-        uint received;
+        uint256 withdrawAmount = amount / 4; // 25%
+        uint256 received;
         {
-            uint gas = gasleft();
+            uint256 gas = gasleft();
             console.log("close");
             received = 0; // aggregator.flashSwapExactIn(withdrawAmount, 0, path);
-            uint gasConsumed = gas - gasleft();
+            uint256 gasConsumed = gas - gasleft();
             console.log("gasConsumed", gasConsumed);
         }
 
-        uint balRec = IVToken(vTokenBorrow).borrowBalanceStored(address(this));
-        uint balDelta = borrowBalBefore - balRec;
+        uint256 balRec = IVToken(vTokenBorrow).borrowBalanceStored(address(this));
+        uint256 balDelta = borrowBalBefore - balRec;
         assertApproxEqAbs(balDelta, received, 1e10);
 
         // check collateral
@@ -212,10 +212,10 @@ contract OneDeltaVenuseMoneyMarketTest is OneDeltaBNBFixture {
 
         address vTokenBorrow = vUSDT;
         address underlyingBorrow = USDT;
-        uint baseAmount = 10;
+        uint256 baseAmount = 10;
 
         // 10 units to deposit
-        uint amount = baseAmount * 10 ** IERC20Minimal(underlying).decimals();
+        uint256 amount = baseAmount * 10 ** IERC20Minimal(underlying).decimals();
         // approve delta
         IERC20Minimal(underlying).approve(vToken, amount);
         // call mint
@@ -227,16 +227,16 @@ contract OneDeltaVenuseMoneyMarketTest is OneDeltaBNBFixture {
         comptroller.updateDelegate(oneDelta, true);
 
         // borrow amount is 2x depo assuming price of 300
-        uint depoAmount = 2 * amount;
+        uint256 depoAmount = 2 * amount;
         // create calldata
         bytes memory path = getOpenSingleExactOut(underlyingBorrow, wNative);
 
-        uint gas = gasleft();
-        uint received = 0; // aggregator.flashSwapExactOut(depoAmount, type(uint).max, path);
-        uint gasConsumed = gas - gasleft();
+        uint256 gas = gasleft();
+        uint256 received = 0; // aggregator.flashSwapExactOut(depoAmount, type(uint).max, path);
+        uint256 gasConsumed = gas - gasleft();
         console.log("gasConsumed", gasConsumed);
 
-        uint balRec = IVToken(vToken).balanceOfUnderlying(address(this));
+        uint256 balRec = IVToken(vToken).balanceOfUnderlying(address(this));
         assertApproxEqAbs(balRec, depoAmount + amount, 1e10);
 
         balRec = IVToken(vTokenBorrow).borrowBalanceCurrent(address(this));
@@ -253,10 +253,10 @@ contract OneDeltaVenuseMoneyMarketTest is OneDeltaBNBFixture {
 
         address vTokenBorrow = vUSDT;
         address underlyingBorrow = USDT;
-        uint baseAmount = 10;
+        uint256 baseAmount = 10;
 
         // 10 units to deposit
-        uint amount = baseAmount * 10 ** IERC20Minimal(underlying).decimals();
+        uint256 amount = baseAmount * 10 ** IERC20Minimal(underlying).decimals();
         // approve delta
         IERC20Minimal(underlying).approve(vToken, amount);
         // call mint
@@ -267,30 +267,30 @@ contract OneDeltaVenuseMoneyMarketTest is OneDeltaBNBFixture {
         // approve vToken
         // comptroller.updateDelegate(oneDelta, true);
 
-        uint approxPrice = 300; // BNB is about 300 USDC
+        uint256 approxPrice = 300; // BNB is about 300 USDC
         // borrow amount is 2x depo assuming price of 300
-        uint borrowAmount = (approxPrice * baseAmount * 10 ** IERC20Minimal(underlyingBorrow).decimals()) / 3; // 30%
+        uint256 borrowAmount = (approxPrice * baseAmount * 10 ** IERC20Minimal(underlyingBorrow).decimals()) / 3; // 30%
 
         IVToken(vTokenBorrow).borrow(borrowAmount);
         // approve withdrawal
-        IVToken(vToken).approve(address(aggregator), type(uint).max);
-        uint borrowBalBefore = IVToken(vTokenBorrow).borrowBalanceStored(address(this));
-        uint collatBalBefore = IVToken(vToken).balanceOfUnderlying(address(this));
+        IVToken(vToken).approve(address(aggregator), type(uint256).max);
+        uint256 borrowBalBefore = IVToken(vTokenBorrow).borrowBalanceStored(address(this));
+        uint256 collatBalBefore = IVToken(vToken).balanceOfUnderlying(address(this));
 
         // create calldata
         bytes memory path = getCloseSingleExactOut(underlying, underlyingBorrow);
-        uint repayAmount = borrowAmount / 4; // 25%
-        uint received;
+        uint256 repayAmount = borrowAmount / 4; // 25%
+        uint256 received;
         {
-            uint gas = gasleft();
+            uint256 gas = gasleft();
             console.log("close");
             received = 0; // aggregator.flashSwapExactOut(repayAmount, type(uint).max, path);
-            uint gasConsumed = gas - gasleft();
+            uint256 gasConsumed = gas - gasleft();
             console.log("gasConsumed", gasConsumed);
         }
 
-        uint balRec = IVToken(vTokenBorrow).borrowBalanceStored(address(this));
-        uint balDelta = borrowBalBefore - balRec;
+        uint256 balRec = IVToken(vTokenBorrow).borrowBalanceStored(address(this));
+        uint256 balDelta = borrowBalBefore - balRec;
         assertApproxEqAbs(balDelta, repayAmount, 1e10);
 
         // check collateral
@@ -308,10 +308,10 @@ contract OneDeltaVenuseMoneyMarketTest is OneDeltaBNBFixture {
 
         address vTokenBorrow = vUSDC;
         address underlyingBorrow = USDC;
-        uint baseAmount = 10;
+        uint256 baseAmount = 10;
 
         // 10 units to deposit
-        uint amount = baseAmount * 10 ** IERC20Minimal(underlying).decimals();
+        uint256 amount = baseAmount * 10 ** IERC20Minimal(underlying).decimals();
         // approve delta
         IERC20Minimal(underlying).approve(vToken, amount);
         // call mint
@@ -323,16 +323,16 @@ contract OneDeltaVenuseMoneyMarketTest is OneDeltaBNBFixture {
         comptroller.updateDelegate(oneDelta, true);
 
         // borrow amount is 2x depo assuming price of 300
-        uint depoAmount = 2 * amount;
+        uint256 depoAmount = 2 * amount;
         // create calldata
         bytes memory path = getOpenSingleV2ExactOut(underlyingBorrow, underlying);
 
-        uint gas = gasleft();
-        uint received = 0; // aggregator.flashSwapExactOut(depoAmount, type(uint).max, path);
-        uint gasConsumed = gas - gasleft();
+        uint256 gas = gasleft();
+        uint256 received = 0; // aggregator.flashSwapExactOut(depoAmount, type(uint).max, path);
+        uint256 gasConsumed = gas - gasleft();
         console.log("gasConsumed", gasConsumed);
 
-        uint balRec = IVToken(vTokenBorrow).borrowBalanceStored(address(this));
+        uint256 balRec = IVToken(vTokenBorrow).borrowBalanceStored(address(this));
         assertApproxEqAbs(balRec, received, 1e10);
 
         balRec = IVToken(vToken).balanceOfUnderlying(address(this));
@@ -349,10 +349,10 @@ contract OneDeltaVenuseMoneyMarketTest is OneDeltaBNBFixture {
 
         address vTokenBorrow = vUSDC;
         address underlyingBorrow = USDC;
-        uint baseAmount = 10;
+        uint256 baseAmount = 10;
 
         // 10 units to deposit
-        uint amount = baseAmount * 10 ** IERC20Minimal(underlying).decimals();
+        uint256 amount = baseAmount * 10 ** IERC20Minimal(underlying).decimals();
         // approve delta
         IERC20Minimal(underlying).approve(vToken, amount);
         // call mint
@@ -363,30 +363,30 @@ contract OneDeltaVenuseMoneyMarketTest is OneDeltaBNBFixture {
         // approve vToken
         // comptroller.updateDelegate(oneDelta, true);
 
-        uint approxPrice = 300; // BNB is about 300 USDC
+        uint256 approxPrice = 300; // BNB is about 300 USDC
         // borrow amount is 2x depo assuming price of 300
-        uint borrowAmount = (approxPrice * baseAmount * 10 ** IERC20Minimal(underlyingBorrow).decimals()) / 3; // 30%
+        uint256 borrowAmount = (approxPrice * baseAmount * 10 ** IERC20Minimal(underlyingBorrow).decimals()) / 3; // 30%
 
         IVToken(vTokenBorrow).borrow(borrowAmount);
         // approve withdrawal
-        IVToken(vToken).approve(address(aggregator), type(uint).max);
-        uint borrowBalBefore = IVToken(vTokenBorrow).borrowBalanceStored(address(this));
-        uint collatBalBefore = IVToken(vToken).balanceOfUnderlying(address(this));
+        IVToken(vToken).approve(address(aggregator), type(uint256).max);
+        uint256 borrowBalBefore = IVToken(vTokenBorrow).borrowBalanceStored(address(this));
+        uint256 collatBalBefore = IVToken(vToken).balanceOfUnderlying(address(this));
 
         // create calldata
         bytes memory path = getCloseSingleV2ExactOut(underlying, underlyingBorrow);
-        uint repayAmount = amount / 4; // 25%
-        uint received;
+        uint256 repayAmount = amount / 4; // 25%
+        uint256 received;
         {
-            uint gas = gasleft();
+            uint256 gas = gasleft();
             console.log("close");
             received = 0; // aggregator.flashSwapExactOut(repayAmount, type(uint).max, path);
-            uint gasConsumed = gas - gasleft();
+            uint256 gasConsumed = gas - gasleft();
             console.log("gasConsumed", gasConsumed);
         }
 
-        uint balRec = IVToken(vTokenBorrow).borrowBalanceStored(address(this));
-        uint balDelta = borrowBalBefore - balRec;
+        uint256 balRec = IVToken(vTokenBorrow).borrowBalanceStored(address(this));
+        uint256 balDelta = borrowBalBefore - balRec;
         assertApproxEqAbs(balDelta, repayAmount, 1e10);
 
         // check collateral

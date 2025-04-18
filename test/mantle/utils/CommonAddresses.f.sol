@@ -47,8 +47,9 @@ contract AddressesMantle {
     address internal constant STRATUM_3POOL_2 = 0x7d3621aCA02B711F5f738C9f21C1bFE294df094d;
     address internal constant STRATUM_ETH_POOL = 0xe8792eD86872FD6D8b74d0668E383454cbA15AFc;
 
-    /** DEX CONFIG */
-
+    /**
+     * DEX CONFIG
+     */
     uint16 internal constant DEX_FEE_STABLES = 100;
     uint16 internal constant DEX_FEE_LOW_MEDIUM = 2500;
     uint16 internal constant DEX_FEE_LOW_HIGH = 3000;
@@ -90,8 +91,9 @@ contract AddressesMantle {
     uint8 internal WOO_FI = 150;
     uint8 internal KTX = 152;
 
-    /** TRADE TYPE FLAG GETTERS */
-
+    /**
+     * TRADE TYPE FLAG GETTERS
+     */
     function getOpenExactInFlags() internal pure returns (uint8 flagStart, uint8 flagMiddle, uint8 flagEnd) {
         return (3, 0, 2);
     }

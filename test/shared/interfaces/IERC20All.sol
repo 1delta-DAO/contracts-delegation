@@ -23,12 +23,12 @@ interface IERC20All {
 
     function borrowAllowance(address fromUser, address toUser) external view returns (uint256);
 
-    function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external;
+    function swap(uint256 amount0Out, uint256 amount1Out, address to, bytes calldata data) external;
 
     // compound V2
-    function balanceOfUnderlying(address owner) external returns (uint);
+    function balanceOfUnderlying(address owner) external returns (uint256);
 
-    function borrowBalanceCurrent(address account) external returns (uint);
+    function borrowBalanceCurrent(address account) external returns (uint256);
 
     // ERC4646
     function convertToAssets(uint256 shares) external view returns (uint256 assets);

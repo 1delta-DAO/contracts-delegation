@@ -40,7 +40,10 @@ contract QuoterMantle is
     function quoteExactInput(
         bytes calldata path, // calldata more efficient than memory
         uint256 amountIn
-    ) public returns (uint256 amountOut) {
+    )
+        public
+        returns (uint256 amountOut)
+    {
         while (true) {
             address tokenIn;
             address tokenOut;
@@ -82,8 +85,7 @@ contract QuoterMantle is
                 }
                 amountIn = getCurveAmountOut(indexIn, indexOut, selectorId, pair, amountIn);
                 path = path[CURVE_PARAM_LENGTH:];
-            }
-            else if (poolId == CURVE_FORK_ID) {
+            } else if (poolId == CURVE_FORK_ID) {
                 uint8 indexIn;
                 uint8 indexOut;
                 assembly {
@@ -161,7 +163,10 @@ contract QuoterMantle is
     function quoteExactOutput(
         bytes calldata path, // calldata more efficient than memory
         uint256 amountOut
-    ) public returns (uint256 amountIn) {
+    )
+        public
+        returns (uint256 amountIn)
+    {
         while (true) {
             address tokenIn;
             address tokenOut;
@@ -171,7 +176,8 @@ contract QuoterMantle is
                 let firstWord := calldataload(path.offset)
                 tokenOut := shr(96, firstWord) // get first token
                 poolId := shr(88, firstWord) //
-                pair := shr(96, calldataload(add(path.offset, 21))) //
+                pair := shr(96, calldataload(add(path.offset, 21)))
+                //
             }
 
             // v3 types

@@ -194,7 +194,7 @@ contract MetaAggregatorTest is DeltaSetup {
         deal(address(router), amountOut);
         router.setPayout(amountOut);
 
-        uint bBefore = address(user).balance;
+        uint256 bBefore = address(user).balance;
 
         vm.startPrank(user);
         aggr.swapMeta(

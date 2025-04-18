@@ -346,7 +346,7 @@ contract GeneralMoeLBTest is DeltaSetup {
 
         bytes memory swapPath = getCloseExactOutMultiLB(asset, borrowAsset);
         uint256 amountOut = 1.0e6;
-        uint256 amountInMaximum = 1.20e6;
+        uint256 amountInMaximum = 1.2e6;
 
         vm.prank(user);
         IERC20All(collateralAsset).approve(brokerProxyAddress, amountInMaximum);
@@ -374,8 +374,9 @@ contract GeneralMoeLBTest is DeltaSetup {
         assertApproxEqAbs(amountOut, borrowBalance, 1);
     }
 
-    /** MOE LB PATH BUILDERS */
-
+    /**
+     * MOE LB PATH BUILDERS
+     */
     function getOpenExactInMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         (uint8 actionId, uint8 midId, uint8 endId) = getOpenExactInFlags();
         uint8 poolId = DexMappingsMantle.MERCHANT_MOE;
@@ -452,8 +453,9 @@ contract GeneralMoeLBTest is DeltaSetup {
         return abi.encodePacked(firstPart, midId, DexMappingsMantle.MERCHANT_MOE_LB, pool, tokenOut, LenderMappingsMantle.LENDLE_ID, endId);
     }
 
-    /** DEPO AND BORROW HELPER */
-
+    /**
+     * DEPO AND BORROW HELPER
+     */
     function _deposit(address user, address asset, uint256 amount) internal {
         deal(asset, user, amount);
         vm.prank(user);

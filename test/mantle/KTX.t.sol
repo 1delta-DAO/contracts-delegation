@@ -151,8 +151,9 @@ contract KTXTest is DeltaSetup {
         assertApproxEqAbs(balanceIn, amountIn, 0);
     }
 
-    /** KTX PATH BUILDERS */
-
+    /**
+     * KTX PATH BUILDERS
+     */
     function getSpotExactInSingleKTX(address tokenIn, address tokenOut) internal pure returns (bytes memory data) {
         uint8 poolId = DexMappingsMantle.KTX;
         return abi.encodePacked(tokenIn, uint8(0), poolId, KTX_VAULT, tokenOut);

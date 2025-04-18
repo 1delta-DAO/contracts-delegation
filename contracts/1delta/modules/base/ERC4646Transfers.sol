@@ -6,9 +6,11 @@ import {Slots} from "../shared/storage/Slots.sol";
 import {ERC20Selectors} from "../shared/selectors/ERC20Selectors.sol";
 import {Masks} from "../shared/masks/Masks.sol";
 
-/******************************************************************************\
-* Author: Achthar | 1delta 
-/******************************************************************************/
+/**
+ * \
+ * Author: Achthar | 1delta
+ * /*****************************************************************************
+ */
 
 // solhint-disable max-line-length
 
@@ -58,9 +60,7 @@ abstract contract ERC4646Transfers is Slots, ERC20Selectors, Masks {
                 mstore(add(ptr, 0x04), vaultContract)
                 mstore(add(ptr, 0x24), MAX_UINT256)
 
-                if iszero(call(gas(), asset, 0x0, ptr, 0x44, ptr, 32)) {
-                    revert(0x0, 0x0)
-                }
+                if iszero(call(gas(), asset, 0x0, ptr, 0x44, ptr, 32)) { revert(0x0, 0x0) }
                 sstore(key, 1)
             }
 
@@ -71,11 +71,15 @@ abstract contract ERC4646Transfers is Slots, ERC20Selectors, Masks {
 
             currentOffset := add(currentOffset, 16)
 
-            /** check if it is by shares or assets */
+            /**
+             * check if it is by shares or assets
+             */
             switch and(SHARES_MASK, amount)
             case 0 {
                 mstore(ptr, ERC4646_DEPOSIT)
-                /** if the amount is zero, we assume that the contract balance is deposited */
+                /**
+                 * if the amount is zero, we assume that the contract balance is deposited
+                 */
                 if iszero(amountToDeposit) {
                     // selector for balanceOf(address)
                     mstore(0, ERC20_BALANCE_OF)
@@ -96,9 +100,7 @@ abstract contract ERC4646Transfers is Slots, ERC20Selectors, Masks {
                     amountToDeposit := mload(0x0)
                 }
             }
-            default {
-                mstore(ptr, ERC4646_MINT)
-            }
+            default { mstore(ptr, ERC4646_MINT) }
 
             mstore(add(ptr, 0x4), amountToDeposit) // shares or assets
             mstore(add(ptr, 0x24), shr(96, calldataload(currentOffset))) // receiver
@@ -137,7 +139,9 @@ abstract contract ERC4646Transfers is Slots, ERC20Selectors, Masks {
 
             currentOffset := add(currentOffset, 16)
 
-            /** check if it is by shares or assets */
+            /**
+             * check if it is by shares or assets
+             */
             switch and(SHARES_MASK, amount)
             case 0 {
                 // plain withdraw amount

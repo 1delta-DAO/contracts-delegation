@@ -283,7 +283,11 @@ contract PolygonQuotingTest is DeltaSetup {
         address tokenOut,
         uint8 poolId,
         uint16 fee
-    ) internal view returns (bytes memory data) {
+    )
+        internal
+        view
+        returns (bytes memory data)
+    {
         address pool = testQuoter.v3TypePool(tokenIn, mid, fee, poolId);
         address pool2 = testQuoter.v3TypePool(mid, tokenOut, fee, poolId);
         return abi.encodePacked(tokenIn, uint8(0), poolId, pool, fee, mid, uint8(0), poolId, pool2, fee, tokenOut, uint8(0), uint8(99));
@@ -299,7 +303,17 @@ contract PolygonQuotingTest is DeltaSetup {
         return abi.encodePacked(tokenIn, id, pool, fee, tokenOut);
     }
 
-    function getSpotQuotePathDual_cl(address tokenIn, address mid, address tokenOut, uint8 id, uint16 fee) internal view returns (bytes memory data) {
+    function getSpotQuotePathDual_cl(
+        address tokenIn,
+        address mid,
+        address tokenOut,
+        uint8 id,
+        uint16 fee
+    )
+        internal
+        view
+        returns (bytes memory data)
+    {
         address pool = testQuoter.v3TypePool(tokenIn, mid, fee, id);
         address pool2 = testQuoter.v3TypePool(mid, tokenOut, fee, id);
         return abi.encodePacked(tokenIn, id, pool, fee, mid, id, pool2, fee, tokenOut);
@@ -318,11 +332,13 @@ contract PolygonQuotingTest is DeltaSetup {
     }
 
     function getData() internal pure returns (bytes memory path, uint256 amount) {
-        path = hex"0d500b1d8e8ef31e21c99d1db9a6444d3adf1270011a34eabbe928bf431b679959379b2225d60d9cda01f47ceb23fd6bc0add59e62ac25578270cff1b9f6196492a0e9a04cf2d519c7fba179da43a08f5a1aea7e26f2c2132d05d31c914a87c6611c10748aeb04b58e8f";
+        path =
+            hex"0d500b1d8e8ef31e21c99d1db9a6444d3adf1270011a34eabbe928bf431b679959379b2225d60d9cda01f47ceb23fd6bc0add59e62ac25578270cff1b9f6196492a0e9a04cf2d519c7fba179da43a08f5a1aea7e26f2c2132d05d31c914a87c6611c10748aeb04b58e8f";
         amount = 0x58d15e176280000;
     }
 
     function getData2() internal pure returns (bytes memory data) {
-        data = hex"cdca175300000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000b1a2bc2ec500000000000000000000000000000000000000000000000000000000000000000006a0d500b1d8e8ef31e21c99d1db9a6444d3adf1270011a34eabbe928bf431b679959379b2225d60d9cda01f47ceb23fd6bc0add59e62ac25578270cff1b9f6196492a0e9a04cf2d519c7fba179da43a08f5a1aea7e26f2c2132d05d31c914a87c6611c10748aeb04b58e8f00000000000000000000000000000000000000000000";
+        data =
+            hex"cdca175300000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000b1a2bc2ec500000000000000000000000000000000000000000000000000000000000000000006a0d500b1d8e8ef31e21c99d1db9a6444d3adf1270011a34eabbe928bf431b679959379b2225d60d9cda01f47ceb23fd6bc0add59e62ac25578270cff1b9f6196492a0e9a04cf2d519c7fba179da43a08f5a1aea7e26f2c2132d05d31c914a87c6611c10748aeb04b58e8f00000000000000000000000000000000000000000000";
     }
 }

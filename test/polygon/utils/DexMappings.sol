@@ -42,5 +42,4 @@ library DexMappingsPolygon {
     uint8 internal constant POLYCAT = 104;
     uint8 internal constant APESWAP = 105;
     uint8 internal constant COMETH = 106;
-
 }

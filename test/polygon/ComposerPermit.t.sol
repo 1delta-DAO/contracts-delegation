@@ -30,7 +30,8 @@ interface ICometExt {
         uint8 v, //
         bytes32 r,
         bytes32 s
-    ) external;
+    )
+        external;
 
     /// @notice Sets the authorization for `authorization.authorized` to manage `authorization.authorizer`'s positions.
     /// @dev Warning: Reverts if the signature has already been submitted.
@@ -42,8 +43,8 @@ interface ICometExt {
 }
 
 contract Nothing is ICometExt {
-    uint public signed = 0;
-    uint public signedMorpho = 0;
+    uint256 public signed = 0;
+    uint256 public signedMorpho = 0;
 
     function call() external {}
 
@@ -56,7 +57,10 @@ contract Nothing is ICometExt {
         uint8 v, //
         bytes32 r,
         bytes32 s
-    ) external override {
+    )
+        external
+        override
+    {
         signed++;
     }
 
@@ -92,7 +96,6 @@ contract ComposerPermitTest is DeltaSetup {
         assertEq(_swapTarget.signed(), 1);
     }
 
-
     uint256 internal constant SWEEP = 1 << 255;
 
     function encodeAsset(address asset, bool sweep) private pure returns (bytes32 data) {
@@ -105,12 +108,11 @@ contract ComposerPermitTest is DeltaSetup {
         uint256 _data = uint160(nonce);
         if (allow) _data = (_data & ~SWEEP) | SWEEP;
 
-        return
-            abi.encodePacked(
-                _data,
-                uint32(423),
-                uint256(674321764327), //
-                uint256(943209784329784327982)
-            );
+        return abi.encodePacked(
+            _data,
+            uint32(423),
+            uint256(674321764327), //
+            uint256(943209784329784327982)
+        );
     }
 }

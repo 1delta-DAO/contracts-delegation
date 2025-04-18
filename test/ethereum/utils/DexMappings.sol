@@ -44,5 +44,4 @@ library DexMappingsEthereum {
     uint8 internal constant RITSU = uint8(SYNC_SWAP_ID);
 
     uint8 internal constant DODO = uint8(DODO_ID);
-
 }

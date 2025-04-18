@@ -9,8 +9,9 @@ contract AddressesArbitrum {
 
     address internal constant BALANCER_VAULT = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
 
-    /** DEX CONFIG */
-
+    /**
+     * DEX CONFIG
+     */
     uint16 internal constant DEX_FEE_STABLES = 100;
     uint16 internal constant DEX_FEE_LOW_MEDIUM = 2500;
     uint16 internal constant DEX_FEE_LOW_HIGH = 3000;
@@ -25,8 +26,9 @@ contract AddressesArbitrum {
     uint16 internal constant SUSHI_V2_FEE_DENOM = 10000 - 30;
     uint16 internal constant APESWAP_FEE_DENOM = 10000 - 20;
 
-    /** TRADE TYPE FLAG GETTERS */
-
+    /**
+     * TRADE TYPE FLAG GETTERS
+     */
     function getOpenExactInFlags() internal pure returns (uint8 flagStart, uint8 flagMiddle, uint8 flagEnd) {
         return (3, 0, 2);
     }

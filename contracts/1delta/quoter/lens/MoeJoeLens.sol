@@ -32,13 +32,7 @@ interface IMoeJoePair {
     function getVariableFeeParameters()
         external
         view
-        returns (
-            uint24 volatilityAccumulator,
-            uint24 volatilityReference,
-            uint24 idReference,
-            uint40 timeOfLastUpdate //
-        );
-
+        returns (uint24 volatilityAccumulator, uint24 volatilityReference, uint24 idReference, uint40 timeOfLastUpdate); //
     function getSwapOut(
         uint128 amountIn,
         bool swapForY
@@ -105,7 +99,7 @@ contract MoeJoeLens {
 
         maxLength = currentIndex + maxEnvX;
         // populate Y direction
-        for (; currentIndex < maxLength; ) {
+        for (; currentIndex < maxLength;) {
             currentBin = IMoeJoePair(pair).getNextNonEmptyBin(false, currentBin);
             data[currentIndex] = getAndEncodeReserves(pair, currentBin);
             currentIndex++;
@@ -116,7 +110,7 @@ contract MoeJoeLens {
         currentBin = activeId;
         // max length will be current index plus maximum desired Y entries
         maxLength = currentIndex + maxEnvY;
-        for (; currentIndex < maxLength; ) {
+        for (; currentIndex < maxLength;) {
             currentBin = IMoeJoePair(pair).getNextNonEmptyBin(true, currentBin);
             data[currentIndex] = getAndEncodeReserves(pair, currentBin);
             currentIndex++;

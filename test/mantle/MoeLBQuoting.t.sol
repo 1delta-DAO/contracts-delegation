@@ -87,8 +87,9 @@ contract MoeLBQuotingTest is DeltaSetup {
         quoter.quoteExactInput(quotePath, amountIn);
     }
 
-    /** MOE LB PATH BUILDERS */
-
+    /**
+     * MOE LB PATH BUILDERS
+     */
     function getQuoteExactOutMultiLB(address tokenIn, address tokenOut) internal view returns (bytes memory data) {
         uint24 fee = BIN_STEP_LOW;
         uint8 poolId = DexMappingsMantle.MERCHANT_MOE_LB;

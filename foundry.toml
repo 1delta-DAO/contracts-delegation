@@ -5,3 +5,8 @@ optimizer_runs = 9_950
 src = "contracts/1delta"
 out = "out"
 libs = ["lib"]
+
+[fmt]
+line_length=150
+tab_width=4
+multiline_func_header="all"

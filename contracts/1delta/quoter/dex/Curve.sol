@@ -15,7 +15,11 @@ abstract contract CurveQuoter {
         uint256 selectorId,
         address pool,
         uint256 amountIn
-    ) internal view returns (uint256 amountOut) {
+    )
+        internal
+        view
+        returns (uint256 amountOut)
+    {
         assembly {
             let ptr := mload(0x40)
 
@@ -56,15 +60,11 @@ abstract contract CurveQuoter {
                 // selector for swap(uint8,uint8,uint256,uint256,uint256)
                 mstore(ptr, CURVE_FORK_CALCULATE_SWAP)
             }
-            default {
-                revert(0, 0)
-            }
+            default { revert(0, 0) }
             mstore(add(ptr, 0x04), indexIn)
             mstore(add(ptr, 0x24), indexOut)
             mstore(add(ptr, 0x44), amountIn)
-            if iszero(staticcall(gas(), pool, ptr, 0x64, 0x0, 0x20)) {
-                revert(0, 0)
-            }
+            if iszero(staticcall(gas(), pool, ptr, 0x64, 0x0, 0x20)) { revert(0, 0) }
             amountOut := mload(0x0)
         }
     }

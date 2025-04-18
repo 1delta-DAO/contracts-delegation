@@ -2,14 +2,16 @@
 
 pragma solidity 0.8.28;
 
-/******************************************************************************\
-* Author: Achthar | 1delta 
-/******************************************************************************/
+/**
+ * \
+ * Author: Achthar | 1delta
+ * /*****************************************************************************
+ */
 
 // solhint-disable max-line-length
 
-import { ERC20Selectors } from "../selectors/ERC20Selectors.sol";
-import { Masks } from "../masks/Masks.sol";
+import {ERC20Selectors} from "../selectors/ERC20Selectors.sol";
+import {Masks} from "../masks/Masks.sol";
 
 /**
  * @title Uniswap V2 type swapper contract
@@ -50,7 +52,9 @@ abstract contract V2TypeSwapper is ERC20Selectors, Masks {
         bool useFlashSwap,
         uint256 pathOffset,
         uint256 pathLengh
-    ) internal {
+    )
+        internal
+    {
         // solhint-disable-next-line no-inline-assembly
         assembly {
             let ptr := mload(0x40)
@@ -117,16 +121,17 @@ abstract contract V2TypeSwapper is ERC20Selectors, Masks {
                     // Check for ERC20 success. ERC20 tokens should return a boolean,
                     // but some don't. We accept 0-length return data as success, or at
                     // least 32 bytes that starts with a 32-byte boolean true.
-                    success := and(
-                        success, // call itself succeeded
-                        or(
-                            iszero(rdsize), // no return data, or
-                            and(
-                                iszero(lt(rdsize, 32)), // at least 32 bytes
-                                eq(mload(ptr), 1) // starts with uint256(1)
+                    success :=
+                        and(
+                            success, // call itself succeeded
+                            or(
+                                iszero(rdsize), // no return data, or
+                                and(
+                                    iszero(lt(rdsize, 32)), // at least 32 bytes
+                                    eq(mload(ptr), 1) // starts with uint256(1)
+                                )
                             )
                         )
-                    )
 
                     if iszero(success) {
                         returndatacopy(0, 0, rdsize)
@@ -183,7 +188,11 @@ abstract contract V2TypeSwapper is ERC20Selectors, Masks {
         uint256 buyAmount,
         uint256 feeDenom,
         uint256 pId // poolId is used to identify solidly stable
-    ) internal view returns (uint256 x) {
+    )
+        internal
+        view
+        returns (uint256 x)
+    {
         assembly {
             let ptr := mload(0x40)
             // Call pair.getReserves(), store the results at `scrap space`
@@ -193,9 +202,7 @@ abstract contract V2TypeSwapper is ERC20Selectors, Masks {
                 revert(0, returndatasize())
             }
             // Revert if the pair contract does not return at least two words.
-            if lt(returndatasize(), 0x40) {
-                revert(0, 0)
-            }
+            if lt(returndatasize(), 0x40) { revert(0, 0) }
 
             // Compute the sell amount based on the pair reserves.
             {
@@ -217,16 +224,17 @@ abstract contract V2TypeSwapper is ERC20Selectors, Masks {
                     // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
                     // x = (reserveIn * amountOut * 10000) /
                     //     ((reserveOut - amountOut) * feeAm) + 1;
-                    x := add(
-                        div(
-                            mul(mul(sellReserve, buyAmount), 10000),
-                            mul(
-                                sub(buyReserve, buyAmount),
-                                feeDenom // adjust for Velo fee
-                            )
-                        ),
-                        1
-                    )
+                    x :=
+                        add(
+                            div(
+                                mul(mul(sellReserve, buyAmount), 10000),
+                                mul(
+                                    sub(buyReserve, buyAmount),
+                                    feeDenom // adjust for Velo fee
+                                )
+                            ),
+                            1
+                        )
                 }
                 // covers solidly forks for stable pools (>=135)
                 /// @dev this will be ugly
@@ -255,9 +263,7 @@ abstract contract V2TypeSwapper is ERC20Selectors, Masks {
                             revert(0, returndatasize())
                         }
                         // Revert if the pair contract does not return at least two words.
-                        if lt(returndatasize(), 0x40) {
-                            revert(0, 0)
-                        }
+                        if lt(returndatasize(), 0x40) { revert(0, 0) }
                         // assign reserves to in/out
                         let _reserveOutScaled
                         switch lt(tokenIn, tokenOut)
@@ -272,84 +278,77 @@ abstract contract V2TypeSwapper is ERC20Selectors, Masks {
                         y0 := sub(_reserveOutScaled, div(mul(buyAmount, SCALE_18), _decimalsOut_xy_fee))
                         x := _reserveInScaled
                         // get xy
-                        _decimalsOut_xy_fee := div(
-                            mul(
-                                div(mul(_reserveInScaled, _reserveOutScaled), SCALE_18),
-                                add(
-                                    div(mul(_reserveInScaled, _reserveInScaled), SCALE_18), //
-                                    div(mul(_reserveOutScaled, _reserveOutScaled), SCALE_18)
-                                )
-                            ),
-                            SCALE_18
-                        )
+                        _decimalsOut_xy_fee :=
+                            div(
+                                mul(
+                                    div(mul(_reserveInScaled, _reserveOutScaled), SCALE_18),
+                                    add(
+                                        div(mul(_reserveInScaled, _reserveInScaled), SCALE_18), //
+                                        div(mul(_reserveOutScaled, _reserveOutScaled), SCALE_18)
+                                    )
+                                ),
+                                SCALE_18
+                            )
                     }
                     // for-loop for approximation
                     let i := 0
-                    for {
-
-                    } lt(i, 255) {
-
-                    } {
+                    for {} lt(i, 255) {} {
                         let x_prev := x
-                        let k := add(
-                            div(mul(x, div(mul(div(mul(y0, y0), SCALE_18), y0), SCALE_18)), SCALE_18),
-                            div(mul(y0, div(mul(div(mul(x, x), SCALE_18), x), SCALE_18)), SCALE_18)
-                        )
+                        let k :=
+                            add(
+                                div(mul(x, div(mul(div(mul(y0, y0), SCALE_18), y0), SCALE_18)), SCALE_18),
+                                div(mul(y0, div(mul(div(mul(x, x), SCALE_18), x), SCALE_18)), SCALE_18)
+                            )
                         switch lt(k, _decimalsOut_xy_fee)
                         case 1 {
-                            x := add(
-                                x,
-                                div(
-                                    mul(sub(_decimalsOut_xy_fee, k), SCALE_18),
-                                    add(
-                                        div(mul(mul(3, y0), div(mul(x, x), SCALE_18)), SCALE_18),
-                                        div(
-                                            mul(div(mul(y0, y0), SCALE_18), y0), //
-                                            SCALE_18
+                            x :=
+                                add(
+                                    x,
+                                    div(
+                                        mul(sub(_decimalsOut_xy_fee, k), SCALE_18),
+                                        add(
+                                            div(mul(mul(3, y0), div(mul(x, x), SCALE_18)), SCALE_18),
+                                            div(
+                                                mul(div(mul(y0, y0), SCALE_18), y0), //
+                                                SCALE_18
+                                            )
                                         )
                                     )
                                 )
-                            )
                         }
                         default {
-                            x := sub(
-                                x,
-                                div(
-                                    mul(sub(k, _decimalsOut_xy_fee), SCALE_18),
-                                    add(
-                                        div(
-                                            mul(mul(3, y0), div(mul(x, x), SCALE_18)), //
-                                            SCALE_18
-                                        ),
-                                        div(mul(div(mul(y0, y0), SCALE_18), y0), SCALE_18)
+                            x :=
+                                sub(
+                                    x,
+                                    div(
+                                        mul(sub(k, _decimalsOut_xy_fee), SCALE_18),
+                                        add(
+                                            div(
+                                                mul(mul(3, y0), div(mul(x, x), SCALE_18)), //
+                                                SCALE_18
+                                            ),
+                                            div(mul(div(mul(y0, y0), SCALE_18), y0), SCALE_18)
+                                        )
                                     )
                                 )
-                            )
                         }
                         switch gt(x, x_prev)
-                        case 1 {
-                            if lt(sub(x, x_prev), 2) {
-                                break
-                            }
-                        }
-                        default {
-                            if lt(sub(x_prev, x), 2) {
-                                break
-                            }
-                        }
+                        case 1 { if lt(sub(x, x_prev), 2) { break } }
+                        default { if lt(sub(x_prev, x), 2) { break } }
                         i := add(i, 1)
                     }
                     // calculate and adjust the result (reserveInNew - reserveIn) * 10k / (10k - fee)
-                    x := add(
-                        div(
+                    x :=
+                        add(
                             div(
-                                mul(mul(sub(x, _reserveInScaled), _decimalsIn), 10000),
-                                feeDenom // 10000 - fee
+                                div(
+                                    mul(mul(sub(x, _reserveInScaled), _decimalsIn), 10000),
+                                    feeDenom // 10000 - fee
+                                ),
+                                SCALE_18
                             ),
-                            SCALE_18
-                        ),
-                        1 // rounding up
-                    )
+                            1 // rounding up
+                        )
                 }
             }
         }
@@ -372,7 +371,10 @@ abstract contract V2TypeSwapper is ERC20Selectors, Masks {
         bool useFlashSwap,
         uint256 pathOffset,
         uint256 pathLength
-    ) internal returns (uint256 buyAmount) {
+    )
+        internal
+        returns (uint256 buyAmount)
+    {
         assembly {
             let ptr := mload(0x40) // free memory pointer
             ////////////////////////////////////////////////////
@@ -388,10 +390,11 @@ abstract contract V2TypeSwapper is ERC20Selectors, Masks {
 
             // Compute the buy amount based on the pair reserves.
             {
-                let zeroForOne := lt(
-                    tokenIn_reserveIn,
-                    and(ADDRESS_MASK, calldataload(add(pathOffset, 32))) // tokenOut
-                )
+                let zeroForOne :=
+                    lt(
+                        tokenIn_reserveIn,
+                        and(ADDRESS_MASK, calldataload(add(pathOffset, 32))) // tokenOut
+                    )
                 // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
                 // buyAmount = (pairSellAmount * feeAm * buyReserve) /
                 //     (pairSellAmount * feeAm + sellReserve * 1000);
@@ -408,9 +411,7 @@ abstract contract V2TypeSwapper is ERC20Selectors, Masks {
                         revert(0, returndatasize())
                     }
                     // Revert if the pair contract does not return at least two words.
-                    if lt(returndatasize(), 0x40) {
-                        revert(0, 0)
-                    }
+                    if lt(returndatasize(), 0x40) { revert(0, 0) }
                     switch zeroForOne
                     case 1 {
                         // Transpose if pair order is different.
@@ -424,10 +425,11 @@ abstract contract V2TypeSwapper is ERC20Selectors, Masks {
 
                     // compute out amount
                     poolFeeDenom := mul(amountIn, poolFeeDenom)
-                    buyAmount := div(
-                        mul(poolFeeDenom, buyAmount),
-                        add(poolFeeDenom, mul(tokenIn_reserveIn, 10000)) //
-                    )
+                    buyAmount :=
+                        div(
+                            mul(poolFeeDenom, buyAmount),
+                            add(poolFeeDenom, mul(tokenIn_reserveIn, 10000)) //
+                        )
                 }
                 // all solidly-based protocols
                 default {
@@ -554,10 +556,11 @@ abstract contract V2TypeSwapper is ERC20Selectors, Masks {
             let tokenIn := shr(96, calldataload(pathOffset))
             // Compute the buy amount based on the pair reserves.
             {
-                let zeroForOne := lt(
-                    tokenIn,
-                    and(ADDRESS_MASK, calldataload(add(pathOffset, 32))) // tokenOut
-                )
+                let zeroForOne :=
+                    lt(
+                        tokenIn,
+                        and(ADDRESS_MASK, calldataload(add(pathOffset, 32))) // tokenOut
+                    )
                 // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
                 // buyAmount = (pairSellAmount * feeAm * buyReserve) /
                 //     (pairSellAmount * feeAm + sellReserve * 1000);
@@ -568,9 +571,7 @@ abstract contract V2TypeSwapper is ERC20Selectors, Masks {
                     revert(0, returndatasize())
                 }
                 // Revert if the pair contract does not return at least two words.
-                if lt(returndatasize(), 0x40) {
-                    revert(0, 0)
-                }
+                if lt(returndatasize(), 0x40) { revert(0, 0) }
                 let sellReserve
                 switch zeroForOne
                 case 1 {

@@ -2,9 +2,11 @@
 
 pragma solidity ^0.8.28;
 
-/******************************************************************************\
-* Author: Achthar | 1delta 
-/******************************************************************************/
+/**
+ * \
+ * Author: Achthar | 1delta
+ * /*****************************************************************************
+ */
 
 // solhint-disable max-line-length
 
@@ -23,7 +25,9 @@ abstract contract PreFunder {
     /// @dev Mask of lower 2 bytes.
     uint256 private constant UINT16_MASK = 0xffff;
 
-    /** Erc20 selectors */
+    /**
+     * Erc20 selectors
+     */
 
     /// @dev selector for transferFrom(address,address,uint256)
     bytes32 private constant ERC20_TRANSFER_FROM = 0x23b872dd00000000000000000000000000000000000000000000000000000000;
@@ -43,14 +47,16 @@ abstract contract PreFunder {
             // be sent to the DEX before the swap call
             ////////////////////////////////////////////////////
             if gt(dexId, 99) {
-                let tokenIn := shr(
-                    96,
-                    calldataload(pathOffset) // nextPoolAddress
-                )
-                let nextPool := shr(
-                    96,
-                    calldataload(add(pathOffset, 22)) // nextPoolAddress
-                )
+                let tokenIn :=
+                    shr(
+                        96,
+                        calldataload(pathOffset) // nextPoolAddress
+                    )
+                let nextPool :=
+                    shr(
+                        96,
+                        calldataload(add(pathOffset, 22)) // nextPoolAddress
+                    )
 
                 ////////////////////////////////////////////////////
                 // if the payer is this not contract, we
@@ -73,16 +79,17 @@ abstract contract PreFunder {
                     // Check for ERC20 success. ERC20 tokens should return a boolean,
                     // but some don't. We accept 0-length return data as success, or at
                     // least 32 bytes that starts with a 32-byte boolean true.
-                    success := and(
-                        success, // call itself succeeded
-                        or(
-                            iszero(rdsize), // no return data, or
-                            and(
-                                iszero(lt(rdsize, 32)), // at least 32 bytes
-                                eq(mload(ptr), 1) // starts with uint256(1)
+                    success :=
+                        and(
+                            success, // call itself succeeded
+                            or(
+                                iszero(rdsize), // no return data, or
+                                and(
+                                    iszero(lt(rdsize, 32)), // at least 32 bytes
+                                    eq(mload(ptr), 1) // starts with uint256(1)
+                                )
                             )
                         )
-                    )
 
                     if iszero(success) {
                         returndatacopy(0, 0, rdsize)
@@ -104,16 +111,17 @@ abstract contract PreFunder {
                     // Check for ERC20 success. ERC20 tokens should return a boolean,
                     // but some don't. We accept 0-length return data as success, or at
                     // least 32 bytes that starts with a 32-byte boolean true.
-                    success := and(
-                        success, // call itself succeeded
-                        or(
-                            iszero(rdsize), // no return data, or
-                            and(
-                                iszero(lt(rdsize, 32)), // at least 32 bytes
-                                eq(mload(ptr), 1) // starts with uint256(1)
+                    success :=
+                        and(
+                            success, // call itself succeeded
+                            or(
+                                iszero(rdsize), // no return data, or
+                                and(
+                                    iszero(lt(rdsize, 32)), // at least 32 bytes
+                                    eq(mload(ptr), 1) // starts with uint256(1)
+                                )
                             )
                         )
-                    )
 
                     if iszero(success) {
                         returndatacopy(0, 0, rdsize)
@@ -143,16 +151,17 @@ abstract contract PreFunder {
                 // Check for ERC20 success. ERC20 tokens should return a boolean,
                 // but some don't. We accept 0-length return data as success, or at
                 // least 32 bytes that starts with a 32-byte boolean true.
-                success := and(
-                    success, // call itself succeeded
-                    or(
-                        iszero(rdsize), // no return data, or
-                        and(
-                            iszero(lt(rdsize, 32)), // at least 32 bytes
-                            eq(mload(ptr), 1) // starts with uint256(1)
+                success :=
+                    and(
+                        success, // call itself succeeded
+                        or(
+                            iszero(rdsize), // no return data, or
+                            and(
+                                iszero(lt(rdsize, 32)), // at least 32 bytes
+                                eq(mload(ptr), 1) // starts with uint256(1)
+                            )
                         )
                     )
-                )
 
                 if iszero(success) {
                     returndatacopy(ptr, 0, rdsize)
@@ -174,16 +183,17 @@ abstract contract PreFunder {
                 // Check for ERC20 success. ERC20 tokens should return a boolean,
                 // but some don't. We accept 0-length return data as success, or at
                 // least 32 bytes that starts with a 32-byte boolean true.
-                success := and(
-                    success, // call itself succeeded
-                    or(
-                        iszero(rdsize), // no return data, or
-                        and(
-                            iszero(lt(rdsize, 32)), // at least 32 bytes
-                            eq(mload(ptr), 1) // starts with uint256(1)
+                success :=
+                    and(
+                        success, // call itself succeeded
+                        or(
+                            iszero(rdsize), // no return data, or
+                            and(
+                                iszero(lt(rdsize, 32)), // at least 32 bytes
+                                eq(mload(ptr), 1) // starts with uint256(1)
+                            )
                         )
                     )
-                )
 
                 if iszero(success) {
                     returndatacopy(ptr, 0, rdsize)

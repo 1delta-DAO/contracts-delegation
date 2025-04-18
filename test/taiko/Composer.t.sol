@@ -12,12 +12,8 @@ contract ComposerTestTaiko is DeltaSetup {
         LenderMappingsTaiko.MERIDIAN_ID,
         LenderMappingsTaiko.TAKOTAKO_ID //
     ];
-    uint16[] extendedLenderIds = [
-        LenderMappingsTaiko.HANA_ID,
-        LenderMappingsTaiko.MERIDIAN_ID,
-        LenderMappingsTaiko.TAKOTAKO_ID,
-        LenderMappingsTaiko.AVALON_ID
-    ];
+    uint16[] extendedLenderIds =
+        [LenderMappingsTaiko.HANA_ID, LenderMappingsTaiko.MERIDIAN_ID, LenderMappingsTaiko.TAKOTAKO_ID, LenderMappingsTaiko.AVALON_ID];
 
     function getProperLenderAsset(uint16 lenderId, address origAsset) internal pure returns (address) {
         return lenderId == LenderMappingsTaiko.AVALON_ID ? TokensTaiko.SOLV_BTC : origAsset;
@@ -52,7 +48,7 @@ contract ComposerTestTaiko is DeltaSetup {
         );
         data = abi.encodePacked(transfer, data);
         vm.startPrank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         vm.expectRevert();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
@@ -84,7 +80,7 @@ contract ComposerTestTaiko is DeltaSetup {
             );
             data = abi.encodePacked(transfer, data);
             vm.prank(user);
-            uint gas = gasleft();
+            uint256 gas = gasleft();
             IFlashAggregator(brokerProxyAddress).deltaCompose(data);
             gas = gas - gasleft();
             console.log("gas", gas);
@@ -112,7 +108,7 @@ contract ComposerTestTaiko is DeltaSetup {
             bytes memory data = borrow(borrowAsset, user, borrowAmount, lenderId, DEFAULT_MODE);
             vm.prank(user);
 
-            uint gas = gasleft();
+            uint256 gas = gasleft();
             IFlashAggregator(brokerProxyAddress).deltaCompose(data);
             gas = gas - gasleft();
             console.log("gas", gas);
@@ -134,7 +130,7 @@ contract ComposerTestTaiko is DeltaSetup {
 
             _borrow(borrowAsset, user, borrowAmount, lenderId);
 
-            uint256 repayAmount = 2.50e6;
+            uint256 repayAmount = 2.5e6;
 
             bytes memory transfer = transferIn(
                 borrowAsset,
@@ -155,7 +151,7 @@ contract ComposerTestTaiko is DeltaSetup {
             IERC20All(borrowAsset).approve(address(brokerProxyAddress), repayAmount);
 
             vm.prank(user);
-            uint gas = gasleft();
+            uint256 gas = gasleft();
             IFlashAggregator(brokerProxyAddress).deltaCompose(data);
             gas = gas - gasleft();
             console.log("gas", gas);
@@ -177,7 +173,7 @@ contract ComposerTestTaiko is DeltaSetup {
 
             _borrow(borrowAsset, user, borrowAmount, lenderId);
 
-            uint256 repayAmount = 12.50e6;
+            uint256 repayAmount = 12.5e6;
             deal(borrowAsset, user, repayAmount);
             bytes memory transfer = transferIn(
                 borrowAsset,
@@ -197,7 +193,7 @@ contract ComposerTestTaiko is DeltaSetup {
             IERC20All(borrowAsset).approve(address(brokerProxyAddress), repayAmount);
 
             vm.prank(user);
-            uint gas = gasleft();
+            uint256 gas = gasleft();
             IFlashAggregator(brokerProxyAddress).deltaCompose(data);
             gas = gas - gasleft();
             console.log("gas", gas);
@@ -216,7 +212,7 @@ contract ComposerTestTaiko is DeltaSetup {
             address asset = getProperLenderAsset(lenderId, TokensTaiko.WETH);
 
             _deposit(asset, user, amount, lenderId);
-            uint256 withdrawAmount = 0.50e18;
+            uint256 withdrawAmount = 0.5e18;
 
             bytes memory data = withdraw(asset, user, withdrawAmount, lenderId);
 
@@ -224,7 +220,7 @@ contract ComposerTestTaiko is DeltaSetup {
             IERC20All(collateralTokens[asset][lenderId]).approve(address(brokerProxyAddress), withdrawAmount);
 
             vm.prank(user);
-            uint gas = gasleft();
+            uint256 gas = gasleft();
             IFlashAggregator(brokerProxyAddress).deltaCompose(data);
             gas = gas - gasleft();
             console.log("gas", gas);
@@ -249,7 +245,7 @@ contract ComposerTestTaiko is DeltaSetup {
             IERC20All(collateralTokens[asset][lenderId]).approve(address(brokerProxyAddress), withdrawAmount);
 
             vm.prank(user);
-            uint gas = gasleft();
+            uint256 gas = gasleft();
             IFlashAggregator(brokerProxyAddress).deltaCompose(data);
             gas = gas - gasleft();
             console.log("gas", gas);
@@ -294,10 +290,10 @@ contract ComposerTestTaiko is DeltaSetup {
         vm.prank(user);
         IERC20All(assetIn).approve(address(brokerProxyAddress), amount);
 
-        uint received = IERC20All(assetOut).balanceOf(user);
+        uint256 received = IERC20All(assetOut).balanceOf(user);
 
         vm.prank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas, TokensTaiko.WETH);
@@ -352,7 +348,7 @@ contract ComposerTestTaiko is DeltaSetup {
     function test_taiko_composer_multi_route_exact_in_native() external {
         address user = testUser;
         uint256 amount = 0.1e18;
-        uint256 amountMin = 50.10e18;
+        uint256 amountMin = 50.1e18;
 
         address assetIn = TokensTaiko.WETH;
         address assetOut = TokensTaiko.TAIKO;
@@ -386,7 +382,7 @@ contract ComposerTestTaiko is DeltaSetup {
 
         data = abi.encodePacked(wrap(amount), data);
         vm.prank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose{value: amount}(data);
         gas = gas - gasleft();
         console.log("gas", gas);
@@ -432,17 +428,17 @@ contract ComposerTestTaiko is DeltaSetup {
         vm.prank(user);
         IERC20All(assetIn).approve(brokerProxyAddress, amountMax);
 
-        uint balanceOutBefore = user.balance;
-        uint balanceInBefore = IERC20All(assetIn).balanceOf(user);
+        uint256 balanceOutBefore = user.balance;
+        uint256 balanceInBefore = IERC20All(assetIn).balanceOf(user);
         {
             vm.prank(user);
-            uint gas = gasleft();
+            uint256 gas = gasleft();
             IFlashAggregator(brokerProxyAddress).deltaCompose(data);
             gas = gas - gasleft();
             console.log("gas-exactOut-native-out-2 split", gas);
         }
-        uint balanceOutAfter = user.balance;
-        uint balanceInAfter = IERC20All(assetIn).balanceOf(user);
+        uint256 balanceOutAfter = user.balance;
+        uint256 balanceInAfter = IERC20All(assetIn).balanceOf(user);
 
         assertApproxEqAbs(balanceOutAfter - balanceOutBefore, amount, 1);
         assertApproxEqAbs(balanceInBefore - balanceInAfter, 19348096685317699468, 0);
@@ -485,17 +481,17 @@ contract ComposerTestTaiko is DeltaSetup {
 
         data = abi.encodePacked(wrap(amountMax), data, unwrap(user, 0, ComposerUtils.SweepType.VALIDATE));
 
-        uint balanceOutBefore = IERC20All(assetOut).balanceOf(user);
-        uint balanceInBefore = user.balance;
+        uint256 balanceOutBefore = IERC20All(assetOut).balanceOf(user);
+        uint256 balanceInBefore = user.balance;
         {
             vm.prank(user);
-            uint gas = gasleft();
+            uint256 gas = gasleft();
             IFlashAggregator(brokerProxyAddress).deltaCompose{value: amountMax}(data);
             gas = gas - gasleft();
             console.log("gas-exactOut-native-in-2 split", gas);
         }
-        uint balanceOutAfter = IERC20All(assetOut).balanceOf(user);
-        uint balanceInAfter = user.balance;
+        uint256 balanceOutAfter = IERC20All(assetOut).balanceOf(user);
+        uint256 balanceInAfter = user.balance;
 
         assertApproxEqAbs(balanceOutAfter - balanceOutBefore, amount, 1);
         assertApproxEqAbs(balanceInBefore - balanceInAfter, 536614779499599354, 0);
@@ -541,17 +537,17 @@ contract ComposerTestTaiko is DeltaSetup {
         vm.prank(user);
         IERC20All(assetIn).approve(brokerProxyAddress, amount);
 
-        uint balanceOutBefore = user.balance;
-        uint balanceInBefore = IERC20All(assetIn).balanceOf(user);
+        uint256 balanceOutBefore = user.balance;
+        uint256 balanceInBefore = IERC20All(assetIn).balanceOf(user);
         {
             vm.prank(user);
-            uint gas = gasleft();
+            uint256 gas = gasleft();
             IFlashAggregator(brokerProxyAddress).deltaCompose(data);
             gas = gas - gasleft();
             console.log("gas-exactIn-native-out-2 split", gas);
         }
-        uint balanceOutAfter = user.balance;
-        uint balanceInAfter = IERC20All(assetIn).balanceOf(user);
+        uint256 balanceOutAfter = user.balance;
+        uint256 balanceInAfter = IERC20All(assetIn).balanceOf(user);
 
         assertApproxEqAbs(balanceOutAfter - balanceOutBefore, 102863875609968494, 1);
         assertApproxEqAbs(balanceInBefore - balanceInAfter, amount, 0);
@@ -600,7 +596,7 @@ contract ComposerTestTaiko is DeltaSetup {
         IERC20All(assetIn).approve(brokerProxyAddress, amount);
 
         vm.prank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(abi.encodePacked(transfer, data));
         gas = gas - gasleft();
         console.log("gas", gas);
@@ -608,7 +604,7 @@ contract ComposerTestTaiko is DeltaSetup {
 
     function test_taiko_composer_multi_route_exact_out_x() external {
         address user = testUser;
-        uint256 amount = 0.0010e18;
+        uint256 amount = 0.001e18;
         uint256 maxIn = 40.0e6;
 
         address assetIn = TokensTaiko.USDC;
@@ -642,17 +638,17 @@ contract ComposerTestTaiko is DeltaSetup {
         vm.prank(user);
         IERC20All(assetIn).approve(address(brokerProxyAddress), maxIn * 2);
 
-        uint balanceOutBefore = IERC20All(assetOut).balanceOf(user);
-        uint balanceInBefore = IERC20All(assetIn).balanceOf(user);
+        uint256 balanceOutBefore = IERC20All(assetOut).balanceOf(user);
+        uint256 balanceInBefore = IERC20All(assetIn).balanceOf(user);
 
         vm.prank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
 
-        uint balanceOutAfter = IERC20All(assetOut).balanceOf(user);
-        uint balanceInAfter = IERC20All(assetIn).balanceOf(user);
+        uint256 balanceOutAfter = IERC20All(assetOut).balanceOf(user);
+        uint256 balanceInAfter = IERC20All(assetIn).balanceOf(user);
 
         assertApproxEqAbs(balanceOutAfter - balanceOutBefore, amount, 1);
         assertApproxEqAbs(balanceInBefore - balanceInAfter, 2733647, 1);
@@ -661,7 +657,7 @@ contract ComposerTestTaiko is DeltaSetup {
     function getCompactPath(address[] memory tokens, uint8[] memory pids, uint16[] memory fees) internal view returns (bytes memory data) {
         uint8[] memory actions = new uint8[](pids.length);
         data = abi.encodePacked(tokens[0]);
-        for (uint i = 1; i < tokens.length; i++) {
+        for (uint256 i = 1; i < tokens.length; i++) {
             uint8 pId = pids[i - 1];
             if (pId < 50) {
                 address pool = testQuoter.v3TypePool(tokens[i - 1], tokens[i], fees[i - 1], pId);
@@ -713,7 +709,7 @@ contract ComposerTestTaiko is DeltaSetup {
         data = abi.encodePacked(transfer, data);
 
         vm.prank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
@@ -735,7 +731,7 @@ contract ComposerTestTaiko is DeltaSetup {
         );
 
         vm.prank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);

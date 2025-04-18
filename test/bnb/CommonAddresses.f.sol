@@ -3,9 +3,9 @@
 pragma solidity ^0.8.28;
 
 interface ComptrollerInterface {
-    function enterMarkets(address[] calldata vTokens) external returns (uint[] memory);
+    function enterMarkets(address[] calldata vTokens) external returns (uint256[] memory);
 
-    function exitMarket(address vToken) external returns (uint);
+    function exitMarket(address vToken) external returns (uint256);
 
     function updateDelegate(address delegate, bool allowBorrows) external;
 }

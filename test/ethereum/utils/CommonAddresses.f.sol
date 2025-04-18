@@ -3,7 +3,7 @@ pragma solidity ^0.8.19;
 
 contract AddressesEthereum {
     // assets
-    
+
     // users
     address internal testUser = 0x5f6f935A9a69F886Dc0147904D0F455ABaC67e14;
 
@@ -39,8 +39,9 @@ contract AddressesEthereum {
     address internal constant CRV_NG_USDN_CRVUSD = 0x5225010A0AE133B357861782B0B865a48471b2C5;
     address internal constant crvUSD = 0xc4Ce1D6F5D98D65eE25Cf85e9F2E9DcFEe6Cb5d6;
 
-    /** DEFAULTS */
-
+    /**
+     * DEFAULTS
+     */
     uint8 DEFAULT_LENDER = 1;
     uint8 internal constant AAVE_V3 = 0;
     uint8 internal constant SPARK = 1;
@@ -57,8 +58,9 @@ contract AddressesEthereum {
     uint8 BALANCER_V2 = 0xff;
     uint8 BALANCER_V2_DEXID = 50;
 
-    /** DEX CONFIG */
-
+    /**
+     * DEX CONFIG
+     */
     uint16 internal DEX_FEE_STABLES = 100;
     uint16 internal DEX_FEE_LOW_MEDIUM = 2500;
     uint16 internal DEX_FEE_LOW_HIGH = 3000;
@@ -73,8 +75,9 @@ contract AddressesEthereum {
 
     uint8 internal WOO_FI = 150;
 
-    /** TRADE TYPE FLAG GETTERS */
-
+    /**
+     * TRADE TYPE FLAG GETTERS
+     */
     function getOpenExactInFlags() internal pure returns (uint8 flagStart, uint8 flagMiddle, uint8 flagEnd) {
         return (3, 0, 2);
     }

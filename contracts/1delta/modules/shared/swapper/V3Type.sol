@@ -2,13 +2,15 @@
 
 pragma solidity 0.8.28;
 
-/******************************************************************************\
-* Author: Achthar | 1delta 
-/******************************************************************************/
+/**
+ * \
+ * Author: Achthar | 1delta
+ * /*****************************************************************************
+ */
 
 // solhint-disable max-line-length
 
-import { Masks } from "../masks/Masks.sol";
+import {Masks} from "../masks/Masks.sol";
 
 /**
  * @title Uniswap V3 type swapper contract
@@ -39,20 +41,25 @@ abstract contract V3TypeSwapper is Masks {
         address receiver,
         uint256 pathOffset,
         uint256 pathLength
-    ) internal returns (uint256 receivedAmount) {
+    )
+        internal
+        returns (uint256 receivedAmount)
+    {
         // solhint-disable-next-line no-inline-assembly
         assembly {
             let ptr := mload(0x40)
             // read the pool address
-            let pool := and(
-                ADDRESS_MASK,
-                calldataload(add(pathOffset, 10)) // starts as first param
-            )
+            let pool :=
+                and(
+                    ADDRESS_MASK,
+                    calldataload(add(pathOffset, 10)) // starts as first param
+                )
             // Return amount0 or amount1 depending on direction
-            let zeroForOne := lt(
-                shr(96, calldataload(pathOffset)), // tokenIn
-                and(ADDRESS_MASK, calldataload(add(pathOffset, 32))) // tokenOut
-            )
+            let zeroForOne :=
+                lt(
+                    shr(96, calldataload(pathOffset)), // tokenIn
+                    and(ADDRESS_MASK, calldataload(add(pathOffset, 32))) // tokenOut
+                )
 
             // Prepare external call data
             // Store swap selector (0x128acb08)
@@ -122,15 +129,19 @@ abstract contract V3TypeSwapper is Masks {
         address receiver,
         uint256 pathOffset,
         uint256 pathLength
-    ) internal returns (uint256 receivedAmount) {
+    )
+        internal
+        returns (uint256 receivedAmount)
+    {
         // solhint-disable-next-line no-inline-assembly
         assembly {
             let ptr := mload(0x40)
             // read the pool address
-            let pool := and(
-                ADDRESS_MASK,
-                calldataload(add(pathOffset, 10)) // starts as first param
-            )
+            let pool :=
+                and(
+                    ADDRESS_MASK,
+                    calldataload(add(pathOffset, 10)) // starts as first param
+                )
             // Return amount0 or amount1 depending on direction
             switch lt(
                 shr(96, calldataload(pathOffset)), // tokenIn
@@ -219,14 +230,18 @@ abstract contract V3TypeSwapper is Masks {
         address receiver,
         uint256 pathOffset,
         uint256 pathLength
-    ) internal returns (uint256 fromAmount) {
+    )
+        internal
+        returns (uint256 fromAmount)
+    {
         // solhint-disable-next-line no-inline-assembly
         assembly {
             let ptr := mload(0x40)
-            let pool := and(
-                ADDRESS_MASK,
-                calldataload(add(pathOffset, 10)) // starts as first param
-            )
+            let pool :=
+                and(
+                    ADDRESS_MASK,
+                    calldataload(add(pathOffset, 10)) // starts as first param
+                )
             // Return amount0 or amount1 depending on direction
             switch lt(
                 and(ADDRESS_MASK, calldataload(add(pathOffset, 32))), // tokenIn
@@ -315,19 +330,24 @@ abstract contract V3TypeSwapper is Masks {
         address receiver,
         uint256 pathOffset,
         uint256 pathLength
-    ) internal returns (uint256 receivedAmount) {
+    )
+        internal
+        returns (uint256 receivedAmount)
+    {
         // solhint-disable-next-line no-inline-assembly
         assembly {
             let ptr := mload(0x40)
-            let pool := and(
-                ADDRESS_MASK,
-                calldataload(add(pathOffset, 10)) // starts as first param
-            )
+            let pool :=
+                and(
+                    ADDRESS_MASK,
+                    calldataload(add(pathOffset, 10)) // starts as first param
+                )
             // Return amount0 or amount1 depending on direction
-            let zeroForOne := lt(
-                and(ADDRESS_MASK, calldataload(add(pathOffset, 32))), // tokenIn
-                shr(96, calldataload(pathOffset)) // tokenOut
-            )
+            let zeroForOne :=
+                lt(
+                    and(ADDRESS_MASK, calldataload(add(pathOffset, 32))), // tokenIn
+                    shr(96, calldataload(pathOffset)) // tokenOut
+                )
 
             // Return amount0 or amount1 depending on direction
             // Prepare external call data

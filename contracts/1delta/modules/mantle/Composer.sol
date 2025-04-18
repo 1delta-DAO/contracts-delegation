@@ -96,12 +96,8 @@ contract OneDeltaComposerMantle is MarginTrading {
                         minimumAmountOut := and(_UINT112_MASK, shr(128, amountIn))
                         // check whether the swap is internal by the highest bit
                         switch iszero(and(_PAY_SELF, amountIn))
-                        case 0 {
-                            payer := address()
-                        }
-                        default {
-                            payer := callerAddress
-                        }
+                        case 0 { payer := address() }
+                        default { payer := callerAddress }
                         noFOT := iszero(and(_FEE_ON_TRANSFER, amountIn))
                         // mask input amount
                         amountIn := and(_UINT112_MASK, shr(16, amountIn))
@@ -170,12 +166,8 @@ contract OneDeltaComposerMantle is MarginTrading {
                         amountInMaximum := and(_UINT112_MASK, shr(128, amountOut))
                         // check the upper bit as to whether it is a internal swap
                         switch iszero(and(_PAY_SELF, amountOut))
-                        case 0 {
-                            payer := address()
-                        }
-                        default {
-                            payer := callerAddress
-                        }
+                        case 0 { payer := address() }
+                        default { payer := callerAddress }
                         // rigth shigt by pathlength size and masking yields
                         // the final amout out
                         amountOut := and(_UINT112_MASK, shr(16, amountOut))
@@ -240,12 +232,8 @@ contract OneDeltaComposerMantle is MarginTrading {
 
                         // upper bit signals whether to pay self
                         switch iszero(and(_PAY_SELF, temp))
-                        case 0 {
-                            payer := address()
-                        }
-                        default {
-                            payer := callerAddress
-                        }
+                        case 0 { payer := address() }
+                        default { payer := callerAddress }
                         // mask input amount
                         amountIn := and(_UINT112_MASK, shr(16, temp))
                         ////////////////////////////////////////////////////
@@ -257,15 +245,16 @@ contract OneDeltaComposerMantle is MarginTrading {
                         ////////////////////////////////////////////////////
                         if iszero(amountIn) {
                             // first we assign lenderId
-                            let lenderId_tokenIn := and(
-                                calldataload(
-                                    sub(
-                                        add(opdataLength, opdataOffset), //
-                                        33
-                                    )
-                                ),
-                                UINT16_MASK
-                            )
+                            let lenderId_tokenIn :=
+                                and(
+                                    calldataload(
+                                        sub(
+                                            add(opdataLength, opdataOffset), //
+                                            33
+                                        )
+                                    ),
+                                    UINT16_MASK
+                                )
                             switch lt(lenderId_tokenIn, MAX_ID_AAVE_V2)
                             // Aave types
                             case 1 {
@@ -393,12 +382,8 @@ contract OneDeltaComposerMantle is MarginTrading {
                         amountInMaximum := and(shr(128, firstParam), _UINT112_MASK)
                         // check highest bit
                         switch iszero(and(_PAY_SELF, firstParam))
-                        case 0 {
-                            payer := address()
-                        }
-                        default {
-                            payer := callerAddress
-                        }
+                        case 0 { payer := address() }
+                        default { payer := callerAddress }
                         amountOut := and(_UINT112_MASK, shr(16, firstParam))
                         ////////////////////////////////////////////////////
                         // Fetch the debt balance in case amountOut is zero
@@ -412,15 +397,9 @@ contract OneDeltaComposerMantle is MarginTrading {
                                 let mode := and(UINT8_MASK, shr(88, tokenOut))
                                 mstore(0x0, or(shl(240, lenderId), shr(96, tokenOut)))
                                 switch mode
-                                case 2 {
-                                    mstore(0x20, VARIABLE_DEBT_TOKENS_SLOT)
-                                }
-                                case 1 {
-                                    mstore(0x20, STABLE_DEBT_TOKENS_SLOT)
-                                }
-                                default {
-                                    revert(0, 0)
-                                }
+                                case 2 { mstore(0x20, VARIABLE_DEBT_TOKENS_SLOT) }
+                                case 1 { mstore(0x20, STABLE_DEBT_TOKENS_SLOT) }
+                                default { revert(0, 0) }
 
                                 let debtToken := sload(keccak256(0x0, 0x40))
                                 // selector for balanceOf(address)
@@ -435,9 +414,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                             default {
                                 let cometPool
                                 switch lenderId
-                                case 2000 {
-                                    cometPool := COMET_USDE
-                                }
+                                case 2000 { cometPool := COMET_USDE }
                                 // default: load comet from storage
                                 // if it is not provided directly
                                 default {
@@ -524,16 +501,12 @@ contract OneDeltaComposerMantle is MarginTrading {
                                 mstore(add(ptr, 0x04), target)
                                 mstore(add(ptr, 0x24), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff)
 
-                                if iszero(call(gas(), token, 0x0, ptr, 0x44, ptr, 32)) {
-                                    revert(0x0, 0x0)
-                                }
+                                if iszero(call(gas(), token, 0x0, ptr, 0x44, ptr, 32)) { revert(0x0, 0x0) }
                                 sstore(key, 1)
                             }
                             nativeValue := 0
                         }
-                        default {
-                            nativeValue := amount
-                        }
+                        default { nativeValue := amount }
                         // increment offset to calldata start
                         currentOffset := add(56, currentOffset)
                         // copy calldata
@@ -544,7 +517,8 @@ contract OneDeltaComposerMantle is MarginTrading {
                                 target,
                                 nativeValue,
                                 ptr, //
-                                dataLength, // the length must be correct or the call will fail
+                                dataLength,
+                                // the length must be correct or the call will fail
                                 0x0, // output = empty
                                 0x0 // output size = zero
                             )
@@ -666,9 +640,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                         // only used for Compound V3. Overpaying results into the residual
                         // being converted to collateral
                         // Aave V2/3s allow higher amounts than the balance and will correctly adapt
-                        case 0xffffffffffffffffffffffffffff {
-                            amount := 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
-                        }
+                        case 0xffffffffffffffffffffffffffff { amount := 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff }
                         currentOffset := add(currentOffset, 57)
                     }
                     _repay(underlying, receiver, amount, mode, lenderId);
@@ -832,16 +804,17 @@ contract OneDeltaComposerMantle is MarginTrading {
                         // Check for ERC20 success. ERC20 tokens should return a boolean,
                         // but some don't. We accept 0-length return data as success, or at
                         // least 32 bytes that starts with a 32-byte boolean true.
-                        success := and(
-                            success, // call itself succeeded
-                            or(
-                                iszero(rdsize), // no return data, or
-                                and(
-                                    iszero(lt(rdsize, 32)), // at least 32 bytes
-                                    eq(mload(ptr), 1) // starts with uint256(1)
+                        success :=
+                            and(
+                                success, // call itself succeeded
+                                or(
+                                    iszero(rdsize), // no return data, or
+                                    and(
+                                        iszero(lt(rdsize, 32)), // at least 32 bytes
+                                        eq(mload(ptr), 1) // starts with uint256(1)
+                                    )
                                 )
                             )
-                        )
 
                         if iszero(success) {
                             returndatacopy(ptr, 0, rdsize)
@@ -911,9 +884,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                                     revert(0, 0x4)
                                 }
                             }
-                            default {
-                                transferAmount := providedAmount
-                            }
+                            default { transferAmount := providedAmount }
                             if gt(transferAmount, 0) {
                                 let ptr := mload(0x40) // free memory pointer
 
@@ -929,16 +900,17 @@ contract OneDeltaComposerMantle is MarginTrading {
                                 // Check for ERC20 success. ERC20 tokens should return a boolean,
                                 // but some don't. We accept 0-length return data as success, or at
                                 // least 32 bytes that starts with a 32-byte boolean true.
-                                success := and(
-                                    success, // call itself succeeded
-                                    or(
-                                        iszero(rdsize), // no return data, or
-                                        and(
-                                            iszero(lt(rdsize, 32)), // at least 32 bytes
-                                            eq(mload(ptr), 1) // starts with uint256(1)
+                                success :=
+                                    and(
+                                        success, // call itself succeeded
+                                        or(
+                                            iszero(rdsize), // no return data, or
+                                            and(
+                                                iszero(lt(rdsize, 32)), // at least 32 bytes
+                                                eq(mload(ptr), 1) // starts with uint256(1)
+                                            )
                                         )
                                     )
-                                )
 
                                 if iszero(success) {
                                     returndatacopy(ptr, 0, rdsize)
@@ -959,9 +931,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                                     revert(0, 0x4)
                                 }
                             }
-                            default {
-                                transferAmount := providedAmount
-                            }
+                            default { transferAmount := providedAmount }
                             if gt(transferAmount, 0) {
                                 if iszero(
                                     call(
@@ -1042,9 +1012,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                                 revert(0, 0x4)
                             }
                         }
-                        default {
-                            transferAmount := providedAmount
-                        }
+                        default { transferAmount := providedAmount }
                         if gt(transferAmount, 0) {
                             // selector for withdraw(uint256)
                             mstore(0x0, 0x2e1a7d4d00000000000000000000000000000000000000000000000000000000)
@@ -1221,12 +1189,8 @@ contract OneDeltaComposerMantle is MarginTrading {
                         case 1 {
                             let pool
                             switch source
-                            case 0 {
-                                pool := LENDLE_POOL
-                            }
-                            case 1 {
-                                pool := AURELIUS_POOL
-                            }
+                            case 0 { pool := LENDLE_POOL }
+                            case 1 { pool := AURELIUS_POOL }
                             // We revert on any other id
                             default {
                                 mstore(0, INVALID_FLASH_LOAN)
@@ -1285,9 +1249,7 @@ contract OneDeltaComposerMantle is MarginTrading {
                         default {
                             let pool
                             switch source
-                            case 190 {
-                                pool := KINZA_POOL
-                            }
+                            case 190 { pool := KINZA_POOL }
                             default {
                                 mstore(0, INVALID_FLASH_LOAN)
                                 revert(0, 0x4)
@@ -1347,7 +1309,10 @@ contract OneDeltaComposerMantle is MarginTrading {
         uint256[] calldata, // we assume that the data is known to the caller in advance
         address initiator,
         bytes calldata params
-    ) external returns (bool) {
+    )
+        external
+        returns (bool)
+    {
         address origCaller;
         assembly {
             // we expect at least an address
@@ -1418,7 +1383,10 @@ contract OneDeltaComposerMantle is MarginTrading {
         uint256,
         address initiator,
         bytes calldata params // user params
-    ) external returns (bool) {
+    )
+        external
+        returns (bool)
+    {
         address origCaller;
         assembly {
             // we expect at least an address

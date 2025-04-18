@@ -66,8 +66,9 @@ contract WithBrokerStorage {
         return LibStorage.callManagerStorage();
     }
 
-    /** TOKEN GETTERS */
-
+    /**
+     * TOKEN GETTERS
+     */
     function _getLenderTokenKey(address _underlying, uint16 _lenderId) internal pure returns (bytes32 key) {
         assembly {
             key := or(shl(240, _lenderId), _underlying)

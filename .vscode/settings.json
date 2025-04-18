@@ -1,21 +1,23 @@
 {
-    "solidity.compileUsingRemoteVersion": "v0.8.28+commit.40a35a09",
-    "solidity.packageDefaultDependenciesContractsDirectory": "node_modules/forge-std/src",
-    "solidity.packageDefaultDependenciesDirectory": "/node_modules/forge-std/lib",
-    "cSpell.words": [
-        "achi",
-        "annualize",
-        "bulker",
-        "Bulker",
-        "Collateralized",
-        "defactor",
-        "dflt",
-        "ethersproject",
-        "gabi",
-        "Mintable",
-        "nomiclabs",
-        "USUP",
-        "WMATIC",
-        "xander"
-    ]
+  "solidity.compileUsingRemoteVersion": "v0.8.28+commit.40a35a09",
+  "solidity.packageDefaultDependenciesContractsDirectory": "node_modules/forge-std/src",
+  "solidity.packageDefaultDependenciesDirectory": "/node_modules/forge-std/lib",
+  "editor.formatOnSave": true,
+  "solidity.formatter": "forge",
+  "cSpell.words": [
+    "achi",
+    "annualize",
+    "bulker",
+    "Bulker",
+    "Collateralized",
+    "defactor",
+    "dflt",
+    "ethersproject",
+    "gabi",
+    "Mintable",
+    "nomiclabs",
+    "USUP",
+    "WMATIC",
+    "xander"
+  ]
 }

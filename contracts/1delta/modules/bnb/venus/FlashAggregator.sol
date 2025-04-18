@@ -2,10 +2,11 @@
 
 pragma solidity ^0.8.28;
 
-/******************************************************************************\
-* Author: Achthar | 1delta 
-/******************************************************************************/
-
+/**
+ * \
+ * Author: Achthar | 1delta
+ * /*****************************************************************************
+ */
 import {LendingOps} from "./VenusOps.sol";
 
 // solhint-disable max-line-length
@@ -17,19 +18,19 @@ import {LendingOps} from "./VenusOps.sol";
 contract VenusFlashAggregatorBNB is LendingOps {
     constructor() LendingOps() {}
 
-    function deposit(address underlying, uint amount) external {
+    function deposit(address underlying, uint256 amount) external {
         _deposit(underlying, amount, msg.sender);
     }
 
-    function withdraw(address underlying, uint amount) external {
+    function withdraw(address underlying, uint256 amount) external {
         _withdraw(underlying, amount, msg.sender, msg.sender);
     }
 
-    function borrow(address underlying, uint amount) external {
+    function borrow(address underlying, uint256 amount) external {
         _borrow(underlying, amount, msg.sender, msg.sender);
     }
 
-    function repay(address underlying, uint amount) external {
+    function repay(address underlying, uint256 amount) external {
         _repay(underlying, amount, msg.sender);
     }
 }

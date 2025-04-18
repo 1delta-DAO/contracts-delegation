@@ -7,28 +7,37 @@ import "./DeltaSetup.f.sol";
 interface ISwap {
     function getAmountIn(
         address _tokenOut, //
-        uint _amountOut,
+        uint256 _amountOut,
         address _sender
-    ) external view returns (uint _amountIn);
+    )
+        external
+        view
+        returns (uint256 _amountIn);
 
     function getAmountOut(
         address _tokenIn, //
-        uint _amountIn,
+        uint256 _amountIn,
         address _sender
-    ) external view returns (uint _amountOut);
+    )
+        external
+        view
+        returns (uint256 _amountOut);
 
     function master() external view returns (address);
 
     function symbol() external view returns (string memory);
 
-    function getReserves() external view returns (uint _reserve0, uint _reserve1);
+    function getReserves() external view returns (uint256 _reserve0, uint256 _reserve1);
 
     function getSwapFee(
         address _sender,
         address _tokenIn,
         address _tokenOut, //
         bytes memory data
-    ) external view returns (uint24 _swapFee);
+    )
+        external
+        view
+        returns (uint24 _swapFee);
 }
 
 contract DTXV1TestTaiko is DeltaSetup {
@@ -46,20 +55,16 @@ contract DTXV1TestTaiko is DeltaSetup {
         address pool = testQuoter.v2TypePairAddress(assetIn, assetOut, DexMappingsTaiko.DTXV1);
         bytes memory dataRitsu = getSpotExactInSingleGen2(assetIn, assetOut, DexMappingsTaiko.DTXV1, pool);
 
-        bytes memory data = abi.encodePacked(
-            uint8(Commands.SWAP_EXACT_IN),
-            user,
-            encodeSwapAmountParams(amount, amountMin, false, dataRitsu.length),
-            dataRitsu
-        );
+        bytes memory data =
+            abi.encodePacked(uint8(Commands.SWAP_EXACT_IN), user, encodeSwapAmountParams(amount, amountMin, false, dataRitsu.length), dataRitsu);
 
         vm.prank(user);
         IERC20All(assetIn).approve(address(brokerProxyAddress), amount);
 
-        uint received = IERC20All(assetOut).balanceOf(user);
+        uint256 received = IERC20All(assetOut).balanceOf(user);
 
         vm.prank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
