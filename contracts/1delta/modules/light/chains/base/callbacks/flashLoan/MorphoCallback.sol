@@ -48,20 +48,8 @@ contract MorphoFlashLoanCallback is Masks, DeltaErrors {
             // validate caller
             // - extract id from params
             let firstWord := calldataload(params.offset)
-            let source := and(UINT8_MASK, shr(88, firstWord))
-
-            // Validate the caller
-            // We check that the caller is a trusted morpho blue entity
-            switch source
-            case 0 {
-                if xor(caller(), MORPHO_BLUE) {
-                    mstore(0, INVALID_CALLER)
-                    revert(0, 0x4)
-                }
-            }
-            // We revert on any other id
-            default {
-                mstore(0, INVALID_FLASH_LOAN)
+            if xor(caller(), MORPHO_BLUE) {
+                mstore(0, INVALID_CALLER)
                 revert(0, 0x4)
             }
             // Slice the original caller off the beginnig of the calldata

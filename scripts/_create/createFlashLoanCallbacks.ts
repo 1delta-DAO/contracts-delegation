@@ -28,6 +28,31 @@ function createCase(lender: string, lenderId: string) {
             }\n`
 }
 
+/** switch-case entry for flash loan that validates a caller */
+function createCaseSolo(lender: string) {
+    return `    if xor(caller(), ${lender}) {
+                    mstore(0, INVALID_CALLER)
+                    revert(0, 0x4)
+                }`
+}
+
+/** start of switch case clauses if we allow multiple flash loan sources */
+const multiSwitchCaseHead = `
+            let source := and(UINT8_MASK, shr(88, firstWord))
+            // Validate the caller
+            // We check that the caller is one of the lending pools
+            // This is a crucial check since this makes
+            // the initiator paramter the caller of flashLoan
+            switch source
+            `
+/** end of switch case clauses if we allow multiple flash loan sources */
+const multiSwitchCaseEnd = `
+                      // We revert on any other id
+                    default {
+                        mstore(0, INVALID_FLASH_LOAN)
+                        revert(0, 0x4)
+                    }`
+
 interface FlashLoanIdData {
     entityName: string
     entityId: string
@@ -110,10 +135,19 @@ async function main() {
         let switchCaseContentV2 = ``
         lenderIdsAaveV2 = lenderIdsAaveV2
             .sort((a, b) => Number(a.entityId) < Number(b.entityId) ? -1 : 1)
-        lenderIdsAaveV2.forEach(({ pool, entityName, entityId }) => {
+
+        if (lenderIdsAaveV2.length === 1) {
+            const { pool, entityName } = lenderIdsAaveV2[0]
             constantsDataV2 += createConstant(pool, entityName)
-            switchCaseContentV2 += createCase(entityName, entityId)
-        })
+            switchCaseContentV2 += createCaseSolo(entityName)
+        } else {
+            switchCaseContentV2 += multiSwitchCaseHead
+            lenderIdsAaveV2.forEach(({ pool, entityName, entityId }) => {
+                constantsDataV2 += createConstant(pool, entityName)
+                switchCaseContentV2 += createCase(entityName, entityId)
+            })
+            switchCaseContentV2 += multiSwitchCaseEnd
+        }
 
         /**
          * Aave V3
@@ -122,11 +156,18 @@ async function main() {
         let switchCaseContentV3 = ``
         lenderIdsAaveV3 = lenderIdsAaveV3
             .sort((a, b) => Number(a.entityId) < Number(b.entityId) ? -1 : 1)
-        lenderIdsAaveV3.forEach(({ pool, entityName, entityId }) => {
+        if (lenderIdsAaveV3.length === 1) {
+            const { pool, entityName } = lenderIdsAaveV3[0]
             constantsDataV3 += createConstant(pool, entityName)
-            switchCaseContentV3 += createCase(entityName, entityId)
-        })
-
+            switchCaseContentV3 += createCaseSolo(entityName)
+        } else {
+            switchCaseContentV3 += multiSwitchCaseHead
+            lenderIdsAaveV3.forEach(({ pool, entityName, entityId }) => {
+                constantsDataV3 += createConstant(pool, entityName)
+                switchCaseContentV3 += createCase(entityName, entityId)
+            })
+            switchCaseContentV3 += multiSwitchCaseEnd
+        }
         /**
          * Morpho B
          */
@@ -134,11 +175,18 @@ async function main() {
         let switchCaseContentMorpho = ``
         lenderIdsMorphoBlue = lenderIdsMorphoBlue
             .sort((a, b) => Number(a.entityId) < Number(b.entityId) ? -1 : 1)
-        lenderIdsMorphoBlue.forEach(({ pool, entityName, entityId }) => {
+        if (lenderIdsMorphoBlue.length === 1) {
+            const { pool, entityName } = lenderIdsMorphoBlue[0]
             constantsDataMorpho += createConstant(pool, entityName)
-            switchCaseContentMorpho += createCase(entityName, entityId)
-        })
-
+            switchCaseContentMorpho += createCaseSolo(entityName)
+        } else {
+            switchCaseContentMorpho += multiSwitchCaseHead
+            lenderIdsMorphoBlue.forEach(({ pool, entityName, entityId }) => {
+                constantsDataMorpho += createConstant(pool, entityName)
+                switchCaseContentMorpho += createCase(entityName, entityId)
+            })
+            switchCaseContentMorpho += multiSwitchCaseEnd
+        }
         /**
          * Balancer V2
          */
@@ -146,10 +194,18 @@ async function main() {
         let switchCaseContentBalancerV2 = ``
         poolIdsMBalancerV2 = poolIdsMBalancerV2
             .sort((a, b) => Number(a.entityId) < Number(b.entityId) ? -1 : 1)
-        poolIdsMBalancerV2.forEach(({ pool, entityName, entityId }) => {
+        if (poolIdsMBalancerV2.length === 1) {
+            const { pool, entityName } = poolIdsMBalancerV2[0]
             constantsDataBalancerV2 += createConstant(pool, entityName)
-            switchCaseContentBalancerV2 += createCase(entityName, entityId)
-        })
+            switchCaseContentBalancerV2 += createCaseSolo(entityName)
+        } else {
+            switchCaseContentBalancerV2 += multiSwitchCaseHead
+            poolIdsMBalancerV2.forEach(({ pool, entityName, entityId }) => {
+                constantsDataBalancerV2 += createConstant(pool, entityName)
+                switchCaseContentBalancerV2 += createCase(entityName, entityId)
+            })
+            switchCaseContentBalancerV2 += multiSwitchCaseEnd
+        }
 
         /** Write files */
 

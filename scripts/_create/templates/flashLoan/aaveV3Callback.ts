@@ -31,19 +31,7 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
             // validate caller
             // - extract id from params
             let firstWord := calldataload(196)
-            let source := and(UINT8_MASK, shr(88, firstWord))
-
-            // Validate the caller
-            // We check that the caller is one of the lending pools
-            // This is a crucial check since this makes
-            // the initiator paramter the caller of flashLoan
-            switch source
             ${switchCaseContent}
-            // We revert on any other id
-            default {
-                mstore(0, INVALID_FLASH_LOAN)
-                revert(0, 0x4)
-            }
             // We require to self-initiate
             // this prevents caller impersonation,
             // but ONLY if the caller address is

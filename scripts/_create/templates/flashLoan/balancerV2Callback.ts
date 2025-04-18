@@ -34,19 +34,7 @@ contract BalancerV2FlashLoanCallback is Slots, Masks, DeltaErrors {
             // validate caller
             // - extract id from params
             let firstWord := calldataload(calldataOffset)
-            let source := and(UINT8_MASK, shr(88, firstWord))
-
-            // Validate the caller
-            // We check that the caller is one of the lending pools
-            // This is a crucial check since this makes
-            // the initiator paramter the caller of flashLoan
-            switch source
             ${switchCaseContent}
-            // We revert on any other id
-            default {
-                mstore(0, INVALID_FLASH_LOAN)
-                revert(0, 0x4)
-            }
             // check that the entry flag is
             if iszero(eq(2, sload(FLASH_LOAN_GATEWAY_SLOT))) {
                 mstore(0, INVALID_CALLER)

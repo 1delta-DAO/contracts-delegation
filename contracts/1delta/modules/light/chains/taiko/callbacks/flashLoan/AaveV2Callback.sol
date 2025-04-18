@@ -36,8 +36,8 @@ contract AaveV2FlashLoanCallback is Masks, DeltaErrors {
             // validate caller
             // - extract id from params
             let firstWord := calldataload(calldataOffset)
-            let source := and(UINT8_MASK, shr(88, firstWord))
 
+            let source := and(UINT8_MASK, shr(88, firstWord))
             // Validate the caller
             // We check that the caller is one of the lending pools
             // This is a crucial check since this makes
