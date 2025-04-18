@@ -448,6 +448,28 @@ library CalldataLib {
         );
     }
 
+    function ktxStyleSwap(
+        bytes memory currentData,
+        address tokenOut,
+        address receiver,
+        address pool,
+        DexPayConfig cfg
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        if (cfg == DexPayConfig.FLASH) revert("No flash for Woo");
+        return abi.encodePacked(
+            currentData,
+            tokenOut,
+            receiver,
+            uint8(DexTypeMappings.KTX_ID),
+            pool,
+            uint16(uint256(cfg)) //
+        );
+    }
+
     function curveStyleSwap(
         address tokenOut,
         address receiver,

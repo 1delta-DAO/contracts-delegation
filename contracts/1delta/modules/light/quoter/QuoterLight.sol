@@ -12,6 +12,8 @@ import {WooFiQuoter} from "./dex/WooFiQuoter.sol";
 import {SyncQuoter} from "./dex/SyncQuoter.sol";
 import {DodoV2Quoter} from "./dex/DodoV2Quoter.sol";
 import {LBQuoter} from "./dex/LBQuoter.sol";
+import {KTXQuoter} from "./dex/KTXQuoter.sol";
+import {GMXQuoter} from "./dex/GMXV1Quoter.sol";
 import {BalancerV2Quoter} from "./dex/BalancerV2Quoter.sol";
 
 contract QuoterLight is
@@ -24,6 +26,8 @@ contract QuoterLight is
     WooFiQuoter,
     SyncQuoter,
     LBQuoter,
+    GMXQuoter,
+    KTXQuoter,
     BalancerV2Quoter //
 {
     error InvalidDexId();
@@ -60,12 +64,18 @@ contract QuoterLight is
         if (swapMaxIndex == 0) {
             // Single swap or split swap
             if (splitsMaxIndex == 0) {
+                /**
+                 * Some Dexs ue the receiver param as an additional parameter
+                 * that is not used for swapping, only for quoting
+                 */
+                address receiverParam;
                 assembly {
                     nextToken := shr(96, calldataload(currentOffset))
-                    currentOffset := add(currentOffset, 40) // skip the receiver: 20 + 20
+                    receiverParam := shr(96, calldataload(add(currentOffset, 20)))
+                    currentOffset := add(currentOffset, 40) // skip the receiverParam: 20 + 20
                 }
 
-                (amountOut, currentOffset) = _quoteSingleSwap(amountIn, tokenIn, nextToken, currentOffset);
+                (amountOut, currentOffset) = _quoteSingleSwap(amountIn, tokenIn, nextToken, receiverParam, currentOffset);
             } else {
                 // Split swap
                 (amountOut, currentOffset, nextToken) = _quoteSingleSwapOrSplit(
@@ -87,10 +97,15 @@ contract QuoterLight is
         return (amountOut, currentOffset, nextToken);
     }
 
+    /**
+     * We use the `receiver`
+     *
+     */
     function _quoteSingleSwap(
         uint256 amountIn,
         address tokenIn,
         address tokenOut,
+        address receiverParam,
         uint256 currentOffset
     )
         internal
@@ -139,6 +154,20 @@ contract QuoterLight is
         // dodoV2 style
         else if (dexTypeId == DexTypeMappings.DODO_ID) {
             return _getDodoV2AmountOut(amountIn, currentOffset);
+        }
+        // GMX style
+        else if (dexTypeId == DexTypeMappings.GMX_ID) {
+            /**
+             * Receiver param = GMX reader contract
+             */
+            return _getGMXAmountOut(tokenIn, tokenOut, amountIn, receiverParam, currentOffset);
+        }
+        // KTX style
+        else if (dexTypeId == DexTypeMappings.KTX_ID) {
+            /**
+             * Receiver param = KTX vault utils contract
+             */
+            return _getKTXAmountOut(tokenIn, tokenOut, amountIn, receiverParam, currentOffset);
         }
         // LB style
         else if (dexTypeId == DexTypeMappings.LB_ID) {
