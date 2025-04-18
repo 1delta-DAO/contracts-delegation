@@ -87,32 +87,21 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
             }
             case 0xbecda36300000000000000000000000000000000000000000000000000000000 {
                 forkId := and(UINT8_MASK, shr(88, outData))
-                switch forkId
-                case 12 {
-                    ffFactoryAddress := APESWAP_FF_FACTORY
-                    codeHash := APESWAP_CODE_HASH
-                }
-                default { revert(0, 0) }
+
+                ffFactoryAddress := APESWAP_FF_FACTORY
+                codeHash := APESWAP_CODE_HASH
             }
             case 0x485f399400000000000000000000000000000000000000000000000000000000 {
                 forkId := and(UINT8_MASK, shr(88, outData))
-                switch forkId
-                case 13 {
-                    ffFactoryAddress := WAULTSWAP_FF_FACTORY
-                    codeHash := WAULTSWAP_CODE_HASH
-                }
-                default { revert(0, 0) }
+
+                ffFactoryAddress := WAULTSWAP_FF_FACTORY
+                codeHash := WAULTSWAP_CODE_HASH
             }
             case 0x9a7bff7900000000000000000000000000000000000000000000000000000000 {
                 forkId := and(UINT8_MASK, shr(88, outData))
 
-                if or(eq(forkId, 134), eq(forkId, 198)) {
-                    ffFactoryAddress := DYSTOPIA_FF_FACTORY
-                    codeHash := DYSTOPIA_CODE_HASH
-                }
-                {
-                    revert(0, 0)
-                }
+                ffFactoryAddress := DYSTOPIA_FF_FACTORY
+                codeHash := DYSTOPIA_CODE_HASH
             }
         }
 
@@ -128,7 +117,6 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
 
                 // get tokens
                 let tokenIn := shr(96, calldataload(184))
-                calldataLength := and(UINT16_MASK, shr(72, outData))
                 let tokenOut := shr(96, outData)
 
                 let ptr := mload(0x40)
@@ -163,6 +151,7 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
                     revert(0x0, 0x4)
                 }
 
+                calldataLength := and(UINT16_MASK, shr(72, outData))
                 // get caller address as provided in the call setup
                 callerAddress := shr(96, calldataload(164))
             }

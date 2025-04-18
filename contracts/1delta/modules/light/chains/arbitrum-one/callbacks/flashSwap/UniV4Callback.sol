@@ -27,26 +27,18 @@ abstract contract UniV4Callbacks is Masks, DeltaErrors {
         address callerAddress;
         uint256 length;
         assembly {
-            let poolId := calldataload(136)
             // callerAddress populates the first 20 bytes
-            callerAddress := shr(96, poolId)
-            poolId := and(UINT8_MASK, shr(88, poolId))
+            callerAddress := shr(96, calldataload(136))
+
             // cut off address and poolId
             length := sub(calldataload(36), 89)
 
             /**
              * Ensure that the caller is the singleton of choice
              */
-            switch poolId
-            case 0 {
-                if xor(caller(), UNISWAP_V4) {
-                    mstore(0, INVALID_CALLER)
-                    revert(0, 0x4)
-                }
-            }
-            default {
-                mstore(0x0, BAD_POOL)
-                revert(0x0, 0x4)
+            if xor(caller(), UNISWAP_V4) {
+                mstore(0, INVALID_CALLER)
+                revert(0, 0x4)
             }
         }
         /**

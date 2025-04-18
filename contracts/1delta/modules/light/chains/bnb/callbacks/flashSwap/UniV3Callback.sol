@@ -64,19 +64,14 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
                     codeHash := SUSHISWAP_V3_CODE_HASH
                 }
                 default { revert(0, 0) }
-
                 let _amount1 := calldataload(36)
                 switch sgt(_amount1, 0)
                 case 1 { amountToPay := _amount1 }
                 default { amountToPay := calldataload(4) }
             }
             case 0x23a69e7500000000000000000000000000000000000000000000000000000000 {
-                switch and(UINT8_MASK, shr(88, calldataload(172)))
-                case 0 {
-                    ffFactoryAddress := PANCAKESWAP_V3_FF_FACTORY
-                    codeHash := PANCAKESWAP_V3_CODE_HASH
-                }
-                default { revert(0, 0) }
+                ffFactoryAddress := PANCAKESWAP_V3_FF_FACTORY
+                codeHash := PANCAKESWAP_V3_CODE_HASH
 
                 let _amount1 := calldataload(36)
                 switch sgt(_amount1, 0)
@@ -94,45 +89,38 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
                     codeHash := LITX_CODE_HASH
                 }
                 default { revert(0, 0) }
-
                 let _amount1 := calldataload(36)
                 switch sgt(_amount1, 0)
                 case 1 { amountToPay := _amount1 }
                 default { amountToPay := calldataload(4) }
             }
-            default {
-                // check if we do izumi
-                switch selector
-                // SELECTOR_IZI_XY
-                case 0x1878068400000000000000000000000000000000000000000000000000000000 {
-                    switch and(UINT8_MASK, shr(88, calldataload(172)))
-                    // forkId
-                    case 0 {
-                        ffFactoryAddress := IZUMI_FF_FACTORY
-                        codeHash := IZUMI_CODE_HASH
-                    }
-                    case 1 {
-                        ffFactoryAddress := BISWAP_V3_FF_FACTORY
-                        codeHash := BISWAP_V3_CODE_HASH
-                    }
-                    default { revert(0, 0) }
-                    amountToPay := calldataload(4)
+            // SELECTOR_IZI_XY
+            case 0x1878068400000000000000000000000000000000000000000000000000000000 {
+                switch and(UINT8_MASK, shr(88, calldataload(172)))
+                case 0 {
+                    ffFactoryAddress := IZUMI_FF_FACTORY
+                    codeHash := IZUMI_CODE_HASH
                 }
-                // SELECTOR_IZI_YX
-                case 0xd3e1c28400000000000000000000000000000000000000000000000000000000 {
-                    switch and(UINT8_MASK, shr(88, calldataload(172)))
-                    // forkId
-                    case 0 {
-                        ffFactoryAddress := IZUMI_FF_FACTORY
-                        codeHash := IZUMI_CODE_HASH
-                    }
-                    case 1 {
-                        ffFactoryAddress := BISWAP_V3_FF_FACTORY
-                        codeHash := BISWAP_V3_CODE_HASH
-                    }
-                    default { revert(0, 0) }
-                    amountToPay := calldataload(36)
+                case 1 {
+                    ffFactoryAddress := BISWAP_V3_FF_FACTORY
+                    codeHash := BISWAP_V3_CODE_HASH
                 }
+                default { revert(0, 0) }
+                amountToPay := calldataload(4)
+            }
+            // SELECTOR_IZI_YX
+            case 0xd3e1c28400000000000000000000000000000000000000000000000000000000 {
+                switch and(UINT8_MASK, shr(88, calldataload(172)))
+                case 0 {
+                    ffFactoryAddress := IZUMI_FF_FACTORY
+                    codeHash := IZUMI_CODE_HASH
+                }
+                case 1 {
+                    ffFactoryAddress := BISWAP_V3_FF_FACTORY
+                    codeHash := BISWAP_V3_CODE_HASH
+                }
+                default { revert(0, 0) }
+                amountToPay := calldataload(36)
             }
         }
 

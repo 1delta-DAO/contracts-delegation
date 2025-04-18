@@ -2,6 +2,7 @@
 export const templateUniV4 = (
     constants: string,
     switchCaseContent: string,
+    multi = false
 ) => `
 // SPDX-License-Identifier: BUSL-1.1
 
@@ -31,20 +32,12 @@ abstract contract UniV4Callbacks is Masks, DeltaErrors {
         address callerAddress;
         uint256 length;
         assembly {
-            let poolId := calldataload(136)
-            // callerAddress populates the first 20 bytes
-            callerAddress := shr(96, poolId)
-            poolId := and(UINT8_MASK, shr(88, poolId))
+            ${multi ? multiContent() : singleContent()}
             // cut off address and poolId
             length := sub(calldataload(36), 89)
 
             /** Ensure that the caller is the singleton of choice */
-            switch poolId
             ${switchCaseContent}
-            default {
-                mstore(0x0, BAD_POOL)
-                revert(0x0, 0x4)
-            }
         }
         /**
          * This is to execute swaps or flash laons
@@ -77,6 +70,23 @@ abstract contract UniV4Callbacks is Masks, DeltaErrors {
     /** A composer contract should override this */
     function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual {}
 }
-
-
 `
+
+
+// this covers multiple pools to validate
+function multiContent() {
+    return `
+            let poolId := calldataload(136)
+            // callerAddress populates the first 20 bytes
+            callerAddress := shr(96, poolId)
+            poolId := and(UINT8_MASK, shr(88, poolId))
+    `
+}
+
+// abbreviated single pool version
+function singleContent() {
+    return `
+            // callerAddress populates the first 20 bytes
+            callerAddress := shr(96, calldataload(136))
+    `
+}

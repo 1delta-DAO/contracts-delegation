@@ -298,7 +298,7 @@ const MERCHANT_MOE: UniswapV2Info = {
     codeHash: {
         [Chain.MANTLE]: DexValidation.OVERRIDE,
     },
-    callbackSelector: DexValidation.OVERRIDE,
+    callbackSelector: "0xba85410f00000000000000000000000000000000000000000000000000000000", // moeCall
     forkId: "0"
 }
 

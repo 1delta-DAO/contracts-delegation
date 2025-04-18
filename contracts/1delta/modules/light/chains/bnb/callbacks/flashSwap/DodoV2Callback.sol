@@ -101,9 +101,9 @@ abstract contract DodoV2Callbacks is Masks, DeltaErrors {
             switch selector
             // DVMFlashLoanCall()
             case 0xeb2021c300000000000000000000000000000000000000000000000000000000 { factoryAddress := DVM_FACTORY }
-            // DSPFlashLoanCall
+            // DSPFlashLoanCall()
             case 0xd5b9979700000000000000000000000000000000000000000000000000000000 { factoryAddress := DSP_FACTORY }
-            // DPPFlashLoanCall
+            // DPPFlashLoanCall()
             case 0x7ed1f1dd00000000000000000000000000000000000000000000000000000000 { factoryAddress := DPP_FACTORY }
         }
         if (ValidatorLib._hasAddress(factoryAddress)) {

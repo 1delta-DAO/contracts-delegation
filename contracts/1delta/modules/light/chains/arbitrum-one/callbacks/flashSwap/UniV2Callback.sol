@@ -9,13 +9,12 @@ pragma solidity 0.8.28;
 import {ValidatorLib} from "../../../../swappers/callbacks/ValidatorLib.sol";
 import {Masks} from "../../../../../shared/masks/Masks.sol";
 import {DeltaErrors} from "../../../../../shared/errors/Errors.sol";
-import {UniV2CallbackOverride} from "./UniV2CallbackOverride.sol";
 
 /**
  * @title Contract Module for general Margin Trading on an borrow delegation compatible Lender
  * @notice Contains main logic for uniswap-type callbacks and initiator functions
  */
-abstract contract UniV2Callbacks is Masks, DeltaErrors, UniV2CallbackOverride {
+abstract contract UniV2Callbacks is Masks, DeltaErrors {
     // factories
 
     bytes32 private constant UNISWAP_V2_FF_FACTORY = 0xfff1D7CC64Fb4452F05c498126312eBE29f30Fbcf90000000000000000000000;
@@ -32,6 +31,8 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors, UniV2CallbackOverride {
 
     bytes32 private constant APESWAP_FF_FACTORY = 0xffCf083Be4164828f00cAE704EC15a36D7114912840000000000000000000000;
     bytes32 private constant APESWAP_CODE_HASH = 0xae7373e804a043c4c08107a81def627eeb3792e211fb4711fcfe32f0e4c45fd5;
+
+    bytes32 private constant RAMSES_V1_FACTORY = 0x000000000000000000000000AAA20D08e59F6561f242b08513D36266C5A29415;
 
     /**
      * Generic Uniswap v2 style callbck executor
@@ -64,21 +65,20 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors, UniV2CallbackOverride {
             }
             case 0x8480081200000000000000000000000000000000000000000000000000000000 {
                 forkId := and(UINT8_MASK, shr(88, outData))
-                switch forkId
-                case 0 {
-                    ffFactoryAddress := PANCAKESWAP_V2_FF_FACTORY
-                    codeHash := PANCAKESWAP_V2_CODE_HASH
-                }
-                default { revert(0, 0) }
+
+                ffFactoryAddress := PANCAKESWAP_V2_FF_FACTORY
+                codeHash := PANCAKESWAP_V2_CODE_HASH
             }
             case 0xbecda36300000000000000000000000000000000000000000000000000000000 {
                 forkId := and(UINT8_MASK, shr(88, outData))
-                switch forkId
-                case 12 {
-                    ffFactoryAddress := APESWAP_FF_FACTORY
-                    codeHash := APESWAP_CODE_HASH
-                }
-                default { revert(0, 0) }
+
+                ffFactoryAddress := APESWAP_FF_FACTORY
+                codeHash := APESWAP_CODE_HASH
+            }
+            case 0x9a7bff7900000000000000000000000000000000000000000000000000000000 {
+                forkId := and(UINT8_MASK, shr(88, outData))
+
+                ffFactoryAddress := RAMSES_V1_FACTORY
             }
         }
 
@@ -92,43 +92,61 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors, UniV2CallbackOverride {
                     revert(0, 0x4)
                 }
 
-                // get tokens
-                let tokenIn := shr(96, calldataload(184))
-                calldataLength := and(UINT16_MASK, shr(72, outData))
-                let tokenOut := shr(96, outData)
+                let ptr
+                let pool
+                // if the lower bytes are populated, execute the override validation
+                // via a staticcall instead of an address computation
+                // this is sometimes needed if the factory deploys different
+                // pool contracts or something like immutableClone is used
+                if and(0xffffffffffffffffffffff, ffFactoryAddress) {
+                    // selector for getPair(address,address,bool)
+                    mstore(ptr, 0x6801cc3000000000000000000000000000000000000000000000000000000000)
+                    mstore(add(ptr, 0x4), shr(96, calldataload(184))) // tokenIn
+                    mstore(add(ptr, 0x24), shr(96, outData)) // tokenOut
+                    mstore(add(ptr, 0x34), gt(and(UINT8_MASK, shr(88, outData)), 191))
+                    // get pair from ramses v2 factory
+                    pop(staticcall(gas(), ffFactoryAddress, ptr, 0x48, ptr, 0x20))
 
-                let ptr := mload(0x40)
-                switch lt(tokenIn, tokenOut)
-                case 0 {
-                    mstore(add(ptr, 0x14), tokenIn)
-                    mstore(ptr, tokenOut)
+                    pool := mload(ptr)
                 }
-                default {
-                    mstore(add(ptr, 0x14), tokenOut)
-                    mstore(ptr, tokenIn)
-                }
-                let salt
-                // 128 and higher is solidly
-                // 128-130 are reserved for the ones that have no isStable flag
-                switch gt(forkId, 130)
-                case 1 {
-                    mstore8(
-                        add(ptr, 0x34),
-                        gt(forkId, 191) // store isStable (id>=192)
-                    )
-                    salt := keccak256(add(ptr, 0x0C), 0x29)
-                }
-                default { salt := keccak256(add(ptr, 0x0C), 0x28) }
-                mstore(ptr, ffFactoryAddress)
-                mstore(add(ptr, 0x15), salt)
-                mstore(add(ptr, 0x35), codeHash)
+                {
+                    // get tokens
+                    let tokenIn := shr(96, calldataload(184))
+                    let tokenOut := shr(96, outData)
 
+                    switch lt(tokenIn, tokenOut)
+                    case 0 {
+                        mstore(add(ptr, 0x14), tokenIn)
+                        mstore(ptr, tokenOut)
+                    }
+                    default {
+                        mstore(add(ptr, 0x14), tokenOut)
+                        mstore(ptr, tokenIn)
+                    }
+                    let salt
+                    // 128 and higher is solidly
+                    // 128-130 are reserved for the ones that have no isStable flag
+                    switch gt(forkId, 130)
+                    case 1 {
+                        mstore8(
+                            add(ptr, 0x34),
+                            gt(forkId, 191) // store isStable (id>=192)
+                        )
+                        salt := keccak256(add(ptr, 0x0C), 0x29)
+                    }
+                    default { salt := keccak256(add(ptr, 0x0C), 0x28) }
+                    mstore(ptr, ffFactoryAddress)
+                    mstore(add(ptr, 0x15), salt)
+                    mstore(add(ptr, 0x35), codeHash)
+                    pool := and(ADDRESS_MASK, keccak256(ptr, 0x55))
+                }
                 // verify that the caller is a v2 type pool
-                if xor(and(ADDRESS_MASK, keccak256(ptr, 0x55)), caller()) {
+                if xor(pool, caller()) {
                     mstore(0x0, BAD_POOL)
                     revert(0x0, 0x4)
                 }
 
+                calldataLength := and(UINT16_MASK, shr(72, outData))
                 // get caller address as provided in the call setup
                 callerAddress := shr(96, calldataload(164))
             }
@@ -148,5 +166,5 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors, UniV2CallbackOverride {
         }
     }
 
-    function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual override {}
+    function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual {}
 }

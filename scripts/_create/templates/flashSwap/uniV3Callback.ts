@@ -42,27 +42,16 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
         assembly {
             switch selector
             ${switchCaseContent}
-            ${switchCaseContentIzumi ? `default {
-                // check if we do izumi
-                switch selector
-                // SELECTOR_IZI_XY
-                case 0x1878068400000000000000000000000000000000000000000000000000000000 {
-                    switch and(UINT8_MASK, shr(88, calldataload(172))) // forkId
-                    ${switchCaseContentIzumi}
-                    default {
-                        revert(0, 0)
-                    }
-                    amountToPay := calldataload(4)
-                }
-                // SELECTOR_IZI_YX
-                case 0xd3e1c28400000000000000000000000000000000000000000000000000000000 {
-                    switch and(UINT8_MASK, shr(88, calldataload(172))) // forkId
-                    ${switchCaseContentIzumi}
-                    default {
-                        revert(0, 0)
-                    }
-                    amountToPay := calldataload(36)
-                }
+            ${switchCaseContentIzumi ? `
+            // SELECTOR_IZI_XY
+            case 0x1878068400000000000000000000000000000000000000000000000000000000 {
+                ${switchCaseContentIzumi}
+                amountToPay := calldataload(4)
+            }
+            // SELECTOR_IZI_YX
+            case 0xd3e1c28400000000000000000000000000000000000000000000000000000000 {
+                ${switchCaseContentIzumi}
+                amountToPay := calldataload(36)
             }
         }`: "}"}
 

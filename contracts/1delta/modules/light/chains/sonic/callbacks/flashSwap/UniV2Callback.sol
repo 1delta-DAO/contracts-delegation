@@ -40,12 +40,9 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
             switch selector
             case 0xd1f6317800000000000000000000000000000000000000000000000000000000 {
                 forkId := and(UINT8_MASK, shr(88, outData))
-                switch forkId
-                case 11 {
-                    ffFactoryAddress := METROPOLIS_V2_FF_FACTORY
-                    codeHash := METROPOLIS_V2_CODE_HASH
-                }
-                default { revert(0, 0) }
+
+                ffFactoryAddress := METROPOLIS_V2_FF_FACTORY
+                codeHash := METROPOLIS_V2_CODE_HASH
             }
             case 0x9a7bff7900000000000000000000000000000000000000000000000000000000 {
                 forkId := and(UINT8_MASK, shr(88, outData))
@@ -78,7 +75,6 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
 
                 // get tokens
                 let tokenIn := shr(96, calldataload(184))
-                calldataLength := and(UINT16_MASK, shr(72, outData))
                 let tokenOut := shr(96, outData)
 
                 let ptr := mload(0x40)
@@ -113,6 +109,7 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
                     revert(0x0, 0x4)
                 }
 
+                calldataLength := and(UINT16_MASK, shr(72, outData))
                 // get caller address as provided in the call setup
                 callerAddress := shr(96, calldataload(164))
             }

@@ -64,7 +64,6 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
                     codeHash := SUSHISWAP_V3_CODE_HASH
                 }
                 default { revert(0, 0) }
-
                 let _amount1 := calldataload(36)
                 switch sgt(_amount1, 0)
                 case 1 { amountToPay := _amount1 }
@@ -81,7 +80,6 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
                     codeHash := DACKIESWAP_V3_CODE_HASH
                 }
                 default { revert(0, 0) }
-
                 let _amount1 := calldataload(36)
                 switch sgt(_amount1, 0)
                 case 1 { amountToPay := _amount1 }
@@ -98,37 +96,24 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
                     codeHash := ZYBERSWAP_CODE_HASH
                 }
                 default { revert(0, 0) }
-
                 let _amount1 := calldataload(36)
                 switch sgt(_amount1, 0)
                 case 1 { amountToPay := _amount1 }
                 default { amountToPay := calldataload(4) }
             }
-            default {
-                // check if we do izumi
-                switch selector
-                // SELECTOR_IZI_XY
-                case 0x1878068400000000000000000000000000000000000000000000000000000000 {
-                    switch and(UINT8_MASK, shr(88, calldataload(172)))
-                    // forkId
-                    case 0 {
-                        ffFactoryAddress := IZUMI_FF_FACTORY
-                        codeHash := IZUMI_CODE_HASH
-                    }
-                    default { revert(0, 0) }
-                    amountToPay := calldataload(4)
-                }
-                // SELECTOR_IZI_YX
-                case 0xd3e1c28400000000000000000000000000000000000000000000000000000000 {
-                    switch and(UINT8_MASK, shr(88, calldataload(172)))
-                    // forkId
-                    case 0 {
-                        ffFactoryAddress := IZUMI_FF_FACTORY
-                        codeHash := IZUMI_CODE_HASH
-                    }
-                    default { revert(0, 0) }
-                    amountToPay := calldataload(36)
-                }
+            // SELECTOR_IZI_XY
+            case 0x1878068400000000000000000000000000000000000000000000000000000000 {
+                ffFactoryAddress := IZUMI_FF_FACTORY
+                codeHash := IZUMI_CODE_HASH
+
+                amountToPay := calldataload(4)
+            }
+            // SELECTOR_IZI_YX
+            case 0xd3e1c28400000000000000000000000000000000000000000000000000000000 {
+                ffFactoryAddress := IZUMI_FF_FACTORY
+                codeHash := IZUMI_CODE_HASH
+
+                amountToPay := calldataload(36)
             }
         }
 

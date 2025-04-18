@@ -62,7 +62,6 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
 
                 // get tokens
                 let tokenIn := shr(96, calldataload(184))
-                calldataLength := and(UINT16_MASK, shr(72, outData))
                 let tokenOut := shr(96, outData)
 
                 let ptr := mload(0x40)
@@ -97,6 +96,7 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
                     revert(0x0, 0x4)
                 }
 
+                calldataLength := and(UINT16_MASK, shr(72, outData))
                 // get caller address as provided in the call setup
                 callerAddress := shr(96, calldataload(164))
             }
