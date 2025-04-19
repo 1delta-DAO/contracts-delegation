@@ -84,7 +84,7 @@ contract ComposerUtils {
     /**
      * MORPHO OPERATIONS
      */
-    function morphoDepositCollateral(bytes memory market, uint256 assets, bytes memory data) internal pure returns (bytes memory) {
+    function encodeMorphoDepositCollateral(bytes memory market, uint256 assets, bytes memory data) internal pure returns (bytes memory) {
         return abi.encodePacked(
             uint8(Commands.MORPH), // 1
             uint8(0), // 1
@@ -95,7 +95,7 @@ contract ComposerUtils {
         );
     }
 
-    function morphoDeposit(
+    function encodeMorphoDeposit(
         bytes memory market,
         bool isShares, //
         uint256 assets,
@@ -115,7 +115,7 @@ contract ComposerUtils {
         );
     }
 
-    function erc4646Deposit(
+    function encodeErc4646Deposit(
         address asset,
         address vault,
         bool isShares, //
@@ -136,7 +136,7 @@ contract ComposerUtils {
         );
     }
 
-    function erc4646Withdraw(
+    function encodeErc4646Withdraw(
         address vault,
         bool isShares, //
         uint256 assets,
@@ -155,7 +155,7 @@ contract ComposerUtils {
         );
     }
 
-    function morphoWithdraw(
+    function encodeMorphoWithdraw(
         bytes memory market,
         bool isShares, //
         uint256 assets,
@@ -174,7 +174,7 @@ contract ComposerUtils {
         );
     }
 
-    function morphoWithdrawCollateral(bytes memory market, uint256 assets, address receiver) internal pure returns (bytes memory) {
+    function encodeMorphoWithdrawCollateral(bytes memory market, uint256 assets, address receiver) internal pure returns (bytes memory) {
         return abi.encodePacked(
             uint8(Commands.MORPH), // 1
             uint8(3), // 1

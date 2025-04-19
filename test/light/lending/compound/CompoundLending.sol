@@ -10,7 +10,7 @@ import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 
 /**
  * We test all morpho blue operations
- * - supply, supplyCollateral, borrow, repay, erc4646Deposit, erc4646Withdraw
+ * - supply, supplyCollateral, borrow, repay, encodeErc4646Deposit, encodeErc4646Withdraw
  */
 contract CompoundV3ComposerLightTest is BaseTest {
     uint16 internal constant COMPOUND_V3_ID = 2000;
@@ -52,13 +52,13 @@ contract CompoundV3ComposerLightTest is BaseTest {
         uint256 collateralBefore = chain.getCollateralBalance(user, token, lender);
         uint256 underlyingBefore = IERC20All(token).balanceOf(user);
 
-        bytes memory transferTo = CalldataLib.transferIn(
+        bytes memory transferTo = CalldataLib.encodeTransferIn(
             token,
             address(oneDV2),
             amount //
         );
 
-        bytes memory d = CalldataLib.encodeCompoundV3Deposit(token, false, amount, user, comet);
+        bytes memory d = CalldataLib.encodeCompoundV3Deposit(token, amount, user, comet);
 
         vm.prank(user);
         oneDV2.deltaCompose(abi.encodePacked(transferTo, d));
@@ -88,7 +88,7 @@ contract CompoundV3ComposerLightTest is BaseTest {
         approveBorrowDelegation(user, depositToken, address(oneDV2), lender);
 
         uint256 amountToBorrow = 100.0e6;
-        bytes memory d = CalldataLib.encodeCompoundV3Borrow(token, false, amountToBorrow, user, comet);
+        bytes memory d = CalldataLib.encodeCompoundV3Borrow(token, amountToBorrow, user, comet);
 
         // Check balances before borrowing
         uint256 borrowBalanceBefore = chain.getDebtBalance(user, depositToken, lender);
@@ -119,7 +119,7 @@ contract CompoundV3ComposerLightTest is BaseTest {
         approveWithdrawalDelegation(user, token, address(oneDV2), lender);
 
         uint256 amountToWithdraw = 10.0e6;
-        bytes memory d = CalldataLib.encodeCompoundV3Withdraw(token, false, amountToWithdraw, user, comet, token == chain.getCometToBase(lender));
+        bytes memory d = CalldataLib.encodeCompoundV3Withdraw(token, amountToWithdraw, user, comet, token == chain.getCometToBase(lender));
 
         // Check balances before withdrawal
         uint256 collateralBefore = chain.getCollateralBalance(user, token, lender);
@@ -158,13 +158,13 @@ contract CompoundV3ComposerLightTest is BaseTest {
 
         uint256 amountToRepay = 70.0e6;
 
-        bytes memory transferTo = CalldataLib.transferIn(
+        bytes memory transferTo = CalldataLib.encodeTransferIn(
             token,
             address(oneDV2),
             amountToRepay //
         );
 
-        bytes memory d = CalldataLib.encodeCompoundV3Repay(token, false, amountToRepay, user, comet);
+        bytes memory d = CalldataLib.encodeCompoundV3Repay(token, amountToRepay, user, comet);
 
         // Check balances before repay
         uint256 debtBefore = chain.getDebtBalance(user, depositToken, lender);
@@ -189,13 +189,13 @@ contract CompoundV3ComposerLightTest is BaseTest {
         vm.prank(userAddress);
         IERC20All(token).approve(address(oneDV2), type(uint256).max);
 
-        bytes memory transferTo = CalldataLib.transferIn(
+        bytes memory transferTo = CalldataLib.encodeTransferIn(
             token,
             address(oneDV2),
             amount //
         );
 
-        bytes memory d = CalldataLib.encodeCompoundV3Deposit(token, false, amount, userAddress, comet);
+        bytes memory d = CalldataLib.encodeCompoundV3Deposit(token, amount, userAddress, comet);
 
         vm.prank(userAddress);
         oneDV2.deltaCompose(abi.encodePacked(transferTo, d));
@@ -205,7 +205,7 @@ contract CompoundV3ComposerLightTest is BaseTest {
         vm.prank(userAddress);
         IERC20All(comet).allow(address(oneDV2), true);
 
-        bytes memory d = CalldataLib.encodeCompoundV3Borrow(token, false, amountToBorrow, userAddress, comet);
+        bytes memory d = CalldataLib.encodeCompoundV3Borrow(token, amountToBorrow, userAddress, comet);
 
         vm.prank(userAddress);
         oneDV2.deltaCompose(d);

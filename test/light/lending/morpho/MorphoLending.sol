@@ -13,7 +13,7 @@ import "test/light/utils/CalldataLib.sol";
 
 /**
  * We test all CalldataLib.morpho blue operations
- * - supply, supplyCollateral, borrow, repay, erc4646Deposit, erc4646Withdraw
+ * - supply, supplyCollateral, borrow, repay, encodeErc4646Deposit, encodeErc4646Withdraw
  */
 contract MorphoBlueTest is BaseTest {
     using MorphoMathLib for uint256;
@@ -93,7 +93,7 @@ contract MorphoBlueTest is BaseTest {
 
         uint256 underlyingBefore = IERC20All(LBTC).balanceOf(user);
 
-        bytes memory withdrawCall = CalldataLib.morphoWithdrawCollateral(
+        bytes memory withdrawCall = CalldataLib.encodeMorphoWithdrawCollateral(
             encodeMarket(LBTC_USDC_MARKET),
             withdrawAssets, //
             user,
@@ -183,7 +183,7 @@ contract MorphoBlueTest is BaseTest {
         vm.prank(user);
         IERC20All(borrowAsset).approve(address(oneD), type(uint256).max);
 
-        bytes memory transferTo = CalldataLib.transferIn(
+        bytes memory transferTo = CalldataLib.encodeTransferIn(
             borrowAsset,
             address(oneD),
             borrowAssets //
@@ -221,7 +221,7 @@ contract MorphoBlueTest is BaseTest {
         vm.prank(user);
         IERC20All(borrowAsset).approve(address(oneD), type(uint256).max);
 
-        bytes memory transferTo = CalldataLib.transferIn(
+        bytes memory transferTo = CalldataLib.encodeTransferIn(
             borrowAsset,
             address(oneD),
             borrowAssets //
@@ -261,7 +261,7 @@ contract MorphoBlueTest is BaseTest {
         vm.prank(user);
         oneD.deltaCompose(borrowCall);
 
-        bytes memory sweepWethInCallback = CalldataLib.sweep(
+        bytes memory sweepWethInCallback = CalldataLib.encodeSweep(
             WETH,
             user,
             recoverWeth,
@@ -282,7 +282,7 @@ contract MorphoBlueTest is BaseTest {
         vm.prank(user);
         IERC20All(borrowAsset).approve(address(oneD), type(uint256).max);
 
-        bytes memory transferTo = CalldataLib.transferIn(
+        bytes memory transferTo = CalldataLib.encodeTransferIn(
             borrowAsset,
             address(oneD),
             borrowAssets //
@@ -336,7 +336,7 @@ contract MorphoBlueTest is BaseTest {
         vm.prank(user);
         IERC20All(borrowAsset).approve(address(oneD), type(uint256).max);
 
-        bytes memory transferTo = CalldataLib.transferIn(
+        bytes memory transferTo = CalldataLib.encodeTransferIn(
             borrowAsset,
             address(oneD),
             borrowAssets + 1 //
@@ -359,13 +359,13 @@ contract MorphoBlueTest is BaseTest {
         uint256 assets = 1.0e8;
 
         address loan = USDC;
-        bytes memory transferTo = CalldataLib.transferIn(
+        bytes memory transferTo = CalldataLib.encodeTransferIn(
             loan,
             address(oneD),
             assets //
         );
 
-        bytes memory deposit = CalldataLib.morphoDeposit(
+        bytes memory deposit = CalldataLib.encodeMorphoDeposit(
             encodeMarket(LBTC_USDC_MARKET),
             false,
             assets,
@@ -403,20 +403,20 @@ contract MorphoBlueTest is BaseTest {
         uint256 assets = 1.0e8;
 
         address loan = USDC;
-        bytes memory transferTo = CalldataLib.transferIn(
+        bytes memory transferTo = CalldataLib.encodeTransferIn(
             loan,
             address(oneD),
             assets //
         );
 
-        bytes memory sweepWethInCallback = CalldataLib.sweep(
+        bytes memory sweepWethInCallback = CalldataLib.encodeSweep(
             WETH,
             user,
             recoverWeth,
             SweepType.VALIDATE //
         );
 
-        bytes memory deposit = CalldataLib.morphoDeposit(
+        bytes memory deposit = CalldataLib.encodeMorphoDeposit(
             encodeMarket(LBTC_USDC_MARKET),
             false,
             assets,
@@ -456,7 +456,7 @@ contract MorphoBlueTest is BaseTest {
         address loan = USDC;
         depositToMorpho(user, false, loanAssetAm);
 
-        bytes memory withdrawCall = CalldataLib.morphoWithdraw(
+        bytes memory withdrawCall = CalldataLib.encodeMorphoWithdraw(
             encodeMarket(LBTC_USDC_MARKET),
             false,
             loanAssetAmWithdraw,
@@ -498,7 +498,7 @@ contract MorphoBlueTest is BaseTest {
         address loan = USDC;
         depositToMorpho(user, false, loanAssetAm);
 
-        bytes memory withdrawCall = CalldataLib.morphoWithdraw(
+        bytes memory withdrawCall = CalldataLib.encodeMorphoWithdraw(
             encodeMarket(LBTC_USDC_MARKET),
             false,
             loanAssetAmWithdraw,
@@ -538,13 +538,13 @@ contract MorphoBlueTest is BaseTest {
         uint256 assets = 1.0e8;
 
         address collateral = LBTC;
-        bytes memory transferTo = CalldataLib.transferIn(
+        bytes memory transferTo = CalldataLib.encodeTransferIn(
             collateral,
             address(oneD),
             assets //
         );
 
-        bytes memory deposit = CalldataLib.morphoDepositCollateral(
+        bytes memory deposit = CalldataLib.encodeMorphoDepositCollateral(
             encodeMarket(LBTC_USDC_MARKET),
             assets,
             user,
@@ -571,20 +571,20 @@ contract MorphoBlueTest is BaseTest {
         uint256 assets = 1.0e8;
 
         address collateral = LBTC;
-        bytes memory transferTo = CalldataLib.transferIn(
+        bytes memory transferTo = CalldataLib.encodeTransferIn(
             collateral,
             address(oneD),
             assets //
         );
 
-        bytes memory sweepWethInCallback = CalldataLib.sweep(
+        bytes memory sweepWethInCallback = CalldataLib.encodeSweep(
             WETH,
             user,
             recoverWeth,
             SweepType.VALIDATE //
         );
 
-        bytes memory deposit = CalldataLib.morphoDepositCollateral(
+        bytes memory deposit = CalldataLib.encodeMorphoDepositCollateral(
             encodeMarket(LBTC_USDC_MARKET),
             assets,
             user,
@@ -608,13 +608,13 @@ contract MorphoBlueTest is BaseTest {
 
     function depositCollateralToMorpho(address userAddr, uint256 amount) internal {
         address collateral = LBTC;
-        bytes memory transferTo = CalldataLib.transferIn(
+        bytes memory transferTo = CalldataLib.encodeTransferIn(
             collateral,
             address(oneD),
             amount //
         );
 
-        bytes memory deposit = CalldataLib.morphoDepositCollateral(
+        bytes memory deposit = CalldataLib.encodeMorphoDepositCollateral(
             encodeMarket(LBTC_USDC_MARKET),
             amount,
             user,
@@ -631,13 +631,13 @@ contract MorphoBlueTest is BaseTest {
 
     function depositToMorpho(address userAddr, bool isShares, uint256 amount) internal {
         address loan = USDC;
-        bytes memory transferTo = CalldataLib.transferIn(
+        bytes memory transferTo = CalldataLib.encodeTransferIn(
             loan,
             address(oneD),
             amount //
         );
 
-        bytes memory deposit = CalldataLib.morphoDeposit(
+        bytes memory deposit = CalldataLib.encodeMorphoDeposit(
             encodeMarket(LBTC_USDC_MARKET),
             isShares,
             amount,

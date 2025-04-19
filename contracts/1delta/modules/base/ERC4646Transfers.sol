@@ -28,7 +28,7 @@ abstract contract ERC4646Transfers is Slots, ERC20Selectors, Masks {
     bytes32 private constant ERC4646_REDEEM = 0xba08765200000000000000000000000000000000000000000000000000000000;
 
     /// @notice Deposit to (morpho) vault
-    function _erc4646Deposit(uint256 currentOffset) internal returns (uint256) {
+    function _encodeErc4646Deposit(uint256 currentOffset) internal returns (uint256) {
         assembly {
             let ptr := mload(0x40)
 
@@ -120,7 +120,7 @@ abstract contract ERC4646Transfers is Slots, ERC20Selectors, Masks {
     }
 
     /// @notice withdraw from (morpho) vault
-    function _erc4646Withdraw(uint256 currentOffset, address callerAddress) internal returns (uint256) {
+    function _encodeErc4646Withdraw(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
             let ptr := mload(0x40)
 

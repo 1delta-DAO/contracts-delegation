@@ -26,7 +26,7 @@ contract AssetTransfers is ERC20Selectors, Masks, DeltaErrors {
      * | 20     | 20             | receiver            |
      * | 40     | 16             | amount              |
      */
-    function _permit2TransferFrom(uint256 currentOffset, address callerAddress) internal returns (uint256) {
+    function _encodePermit2TransferFrom(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         ////////////////////////////////////////////////////
         // Transfers tokens from caller to this address
         // zero amount flags that the entire balance is sent

@@ -44,13 +44,13 @@ contract AaveLightTest is BaseTest {
         uint256 collateralBefore = chain.getCollateralBalance(user, token, lender);
         uint256 underlyingBefore = IERC20All(token).balanceOf(user);
 
-        bytes memory transferTo = CalldataLib.transferIn(
+        bytes memory transferTo = CalldataLib.encodeTransferIn(
             token,
             address(oneDV2),
             amount //
         );
 
-        bytes memory d = CalldataLib.encodeAaveDeposit(token, false, amount, user, pool);
+        bytes memory d = CalldataLib.encodeAaveDeposit(token, amount, user, pool);
 
         vm.prank(user);
         oneDV2.deltaCompose(abi.encodePacked(transferTo, d));
@@ -78,7 +78,7 @@ contract AaveLightTest is BaseTest {
         approveBorrowDelegation(user, token, address(oneDV2), lender);
 
         uint256 amountToBorrow = 10.0e6;
-        bytes memory d = CalldataLib.encodeAaveBorrow(token, false, amountToBorrow, user, 2, pool);
+        bytes memory d = CalldataLib.encodeAaveBorrow(token, amountToBorrow, user, 2, pool);
 
         // Check balances before borrowing
         uint256 borrowBalanceBefore = chain.getDebtBalance(user, token, lender);
@@ -112,7 +112,7 @@ contract AaveLightTest is BaseTest {
         approveWithdrawalDelegation(user, token, address(oneDV2), lender);
 
         uint256 amountToWithdraw = 10.0e6;
-        bytes memory d = CalldataLib.encodeAaveWithdraw(token, false, amountToWithdraw, user, aToken, pool);
+        bytes memory d = CalldataLib.encodeAaveWithdraw(token, amountToWithdraw, user, aToken, pool);
 
         // Check balances before withdrawal
         uint256 collateralBefore = chain.getCollateralBalance(user, token, lender);
@@ -149,7 +149,7 @@ contract AaveLightTest is BaseTest {
 
         uint256 amountToRepay = 7.0e6;
 
-        bytes memory transferTo = CalldataLib.transferIn(
+        bytes memory transferTo = CalldataLib.encodeTransferIn(
             token,
             address(oneDV2),
             amountToRepay //
@@ -157,7 +157,7 @@ contract AaveLightTest is BaseTest {
 
         address vToken = _getDebtToken(token);
 
-        bytes memory d = CalldataLib.encodeAaveRepay(token, false, amountToRepay, user, 2, vToken, pool);
+        bytes memory d = CalldataLib.encodeAaveRepay(token, amountToRepay, user, 2, vToken, pool);
 
         // Check balances before repay
         uint256 debtBefore = chain.getDebtBalance(user, token, lender);
@@ -182,13 +182,13 @@ contract AaveLightTest is BaseTest {
         vm.prank(userAddress);
         IERC20All(token).approve(address(oneDV2), type(uint256).max);
 
-        bytes memory transferTo = CalldataLib.transferIn(
+        bytes memory transferTo = CalldataLib.encodeTransferIn(
             token,
             address(oneDV2),
             amount //
         );
 
-        bytes memory d = CalldataLib.encodeAaveDeposit(token, false, amount, userAddress, pool);
+        bytes memory d = CalldataLib.encodeAaveDeposit(token, amount, userAddress, pool);
 
         vm.prank(userAddress);
         oneDV2.deltaCompose(abi.encodePacked(transferTo, d));
@@ -200,7 +200,7 @@ contract AaveLightTest is BaseTest {
         vm.prank(userAddress);
         IERC20All(vToken).approveDelegation(address(oneDV2), type(uint256).max);
 
-        bytes memory d = CalldataLib.encodeAaveBorrow(token, false, amountToBorrow, userAddress, 2, pool);
+        bytes memory d = CalldataLib.encodeAaveBorrow(token, amountToBorrow, userAddress, 2, pool);
 
         vm.prank(userAddress);
         oneDV2.deltaCompose(d);

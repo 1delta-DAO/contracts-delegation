@@ -62,8 +62,7 @@ contract LBLightTest is BaseTest {
         data = CalldataLib.swapHead(
             amount,
             1, // amountOut min
-            USDE,
-            false // no pre param
+            USDE
         );
         data = data.attachBranch(0, 0, hex"");
         data = data.lbStyleSwap(

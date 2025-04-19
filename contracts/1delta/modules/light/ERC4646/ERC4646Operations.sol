@@ -22,13 +22,13 @@ abstract contract ERC4646Operations is ERC4646Transfers {
          * ERC6464 deposit
          */
         if (erc4646Operation == ERC4646Ids.DEPOSIT) {
-            currentOffset = _erc4646Deposit(currentOffset);
+            currentOffset = _encodeErc4646Deposit(currentOffset);
         }
         /**
          * ERC6464 withdraw
          */
         else if (erc4646Operation == ERC4646Ids.WITHDRAW) {
-            currentOffset = _erc4646Withdraw(currentOffset, callerAddress);
+            currentOffset = _encodeErc4646Withdraw(currentOffset, callerAddress);
         } else {
             _invalidOperation();
         }

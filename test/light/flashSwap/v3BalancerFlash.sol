@@ -93,16 +93,16 @@ contract BalancerFlashSwapTest is BaseTest {
         bytes memory swapAction = balV3Swap(address(oneDV2), tokenIn, tokenOut, borrowAmount);
         {
             // borrow and deposit with override amounts (optimal)
-            bytes memory borrow = CalldataLib.encodeAaveBorrow(tokenIn, false, borrowAmount, address(BALANCER_V3_VAULT), 2, pool);
-            bytes memory deposit = CalldataLib.encodeAaveDeposit(tokenOut, false, 0, user, pool);
+            bytes memory borrow = CalldataLib.encodeAaveBorrow(tokenIn, borrowAmount, address(BALANCER_V3_VAULT), 2, pool);
+            bytes memory deposit = CalldataLib.encodeAaveDeposit(tokenOut, 0, user, pool);
 
-            bytes memory settlementActions = CalldataLib.nextGenDexSettleBalancer(
+            bytes memory settlementActions = CalldataLib.encodeNextGenDexSettleBalancer(
                 BALANCER_V3_VAULT, //
                 tokenIn,
                 borrowAmount
             );
 
-            swapAction = CalldataLib.nextGenDexUnlock(
+            swapAction = CalldataLib.encodeNextGenDexUnlock(
                 BALANCER_V3_VAULT,
                 BALANCER_V3_POOL_ID,
                 abi.encodePacked(
@@ -141,13 +141,13 @@ contract BalancerFlashSwapTest is BaseTest {
         vm.prank(userAddress);
         IERC20All(token).approve(address(oneDV2), type(uint256).max);
 
-        bytes memory transferTo = CalldataLib.transferIn(
+        bytes memory transferTo = CalldataLib.encodeTransferIn(
             token,
             address(oneDV2),
             amount //
         );
 
-        bytes memory d = CalldataLib.encodeAaveDeposit(token, false, amount, userAddress, pool);
+        bytes memory d = CalldataLib.encodeAaveDeposit(token, amount, userAddress, pool);
 
         vm.prank(userAddress);
         oneDV2.deltaCompose(abi.encodePacked(transferTo, d));

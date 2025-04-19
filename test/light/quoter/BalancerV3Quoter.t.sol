@@ -108,7 +108,7 @@ contract BalancerV3QuoterTest is BaseTest {
         bytes memory swapHead = abi.encodePacked(uint8(ComposerCommands.SWAPS), uint128(amountIn), uint128(1));
         bytes memory swapCall = abi.encodePacked(swapHead, path);
 
-        swapCall = CalldataLib.nextGenDexUnlock(BALANCER_V3_VAULT, 0, swapCall);
+        swapCall = CalldataLib.encodeNextGenDexUnlock(BALANCER_V3_VAULT, 0, swapCall);
 
         // Get actual amount from a real swap
         uint256 balanceBefore = IERC20(USDC).balanceOf(address(user));

@@ -66,8 +66,7 @@ contract BalV3LightTest is BaseTest {
         data = CalldataLib.swapHead(
             amount,
             1, // amountOut min
-            tokenIn,
-            false // no pre param
+            tokenIn
         );
         // no branching
         data = data.attachBranch(0, 0, hex"");
@@ -111,7 +110,7 @@ contract BalV3LightTest is BaseTest {
 
         bytes memory dat = balancerV3Swap(user, tokenIn, tokenOut, amount);
 
-        bytes memory swap = CalldataLib.nextGenDexUnlock(
+        bytes memory swap = CalldataLib.encodeNextGenDexUnlock(
             BALANCER_V3_VAULT,
             DexForkMappings.BALANCER_V3, // this is also the poolId for the unlock
             dat //

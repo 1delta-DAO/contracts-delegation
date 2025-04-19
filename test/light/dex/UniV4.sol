@@ -110,7 +110,7 @@ contract UnoV4LightTest is BaseTest {
 
         bytes memory dat = unoV4Swap(user, tokenIn, tokenOut, amount);
 
-        bytes memory swap = CalldataLib.nextGenDexUnlock(
+        bytes memory swap = CalldataLib.encodeNextGenDexUnlock(
             UNI_V4_PM,
             UNISWAP_V4_POOL_ID,
             dat //

@@ -51,7 +51,7 @@ contract FlashLoanLightTest is BaseTest {
         uint256 sweepAm = 30.0e18;
         vm.deal(address(oneD), sweepAm);
         uint256 amount = 11111;
-        bytes memory dp = CalldataLib.sweep(
+        bytes memory dp = CalldataLib.encodeSweep(
             address(0),
             user,
             sweepAm, //
@@ -78,7 +78,7 @@ contract FlashLoanLightTest is BaseTest {
         vm.deal(address(oneD), sweepAm);
         uint256 amount = 1.0e18;
         deal(asset, address(oneD), 0.0005e18); // fee
-        bytes memory dp = CalldataLib.sweep(
+        bytes memory dp = CalldataLib.encodeSweep(
             address(0),
             user,
             sweepAm, //
@@ -105,7 +105,7 @@ contract FlashLoanLightTest is BaseTest {
         vm.deal(address(oneD), sweepAm);
         uint256 amount = 1.0e18;
         deal(asset, address(oneD), 0.0009e18); // fee
-        bytes memory dp = CalldataLib.sweep(
+        bytes memory dp = CalldataLib.encodeSweep(
             address(0),
             user,
             sweepAm, //
@@ -132,14 +132,14 @@ contract FlashLoanLightTest is BaseTest {
         vm.deal(address(oneD), sweepAm);
         uint256 amount = 1.0e18;
         deal(asset, address(oneD), 0.0009e18); // fee
-        bytes memory dp = CalldataLib.sweep(
+        bytes memory dp = CalldataLib.encodeSweep(
             address(0),
             user,
             sweepAm, //
             SweepType.AMOUNT
         );
 
-        bytes memory t = CalldataLib.sweep(
+        bytes memory t = CalldataLib.encodeSweep(
             asset,
             BALANCER_V2_VAULT,
             amount, //
@@ -151,6 +151,7 @@ contract FlashLoanLightTest is BaseTest {
             uint8(0), //
             abi.encodePacked(dp, t)
         );
+
         vm.prank(user);
         oneD.deltaCompose(d);
 
@@ -185,21 +186,21 @@ contract FlashLoanLightTest is BaseTest {
         uint256 sweepAm = 30.0e18;
         vm.deal(address(oneD), sweepAm);
         uint256 amount = 432.0e6;
-        bytes memory dp = CalldataLib.sweep(
+        bytes memory dp = CalldataLib.encodeSweep(
             address(0),
             user,
             sweepAm, //
             SweepType.AMOUNT
         );
 
-        bytes memory sweep = CalldataLib.sweep(
+        bytes memory sweep = CalldataLib.encodeSweep(
             assetFlash,
             BALANCER_V3_VAULT,
             amount, //
             SweepType.AMOUNT
         );
 
-        bytes memory unlock = CalldataLib.balancerV3FlashLoan(
+        bytes memory unlock = CalldataLib.encodeBalancerV3FlashLoan(
             BALANCER_V3_VAULT,
             DexForkMappings.BALANCER_V3,
             assetFlash,
@@ -231,21 +232,21 @@ contract FlashLoanLightTest is BaseTest {
         uint256 sweepAm = 30.0e18;
         vm.deal(address(oneD), sweepAm);
         uint256 amount = 432.0e6;
-        bytes memory dp = CalldataLib.sweep(
+        bytes memory dp = CalldataLib.encodeSweep(
             address(0),
             user,
             sweepAm, //
             SweepType.AMOUNT
         );
 
-        bytes memory sweep = CalldataLib.sweep(
+        bytes memory sweep = CalldataLib.encodeSweep(
             assetFlash,
             UNI_V4_PM,
             amount, //
             SweepType.AMOUNT
         );
 
-        bytes memory unlock = CalldataLib.uniswapV4FlashLoan(
+        bytes memory unlock = CalldataLib.encodeUniswapV4FlashLoan(
             UNI_V4_PM,
             DexForkMappings.UNISWAP_V4,
             assetFlash,

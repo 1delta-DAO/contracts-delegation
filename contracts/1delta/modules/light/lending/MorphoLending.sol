@@ -125,7 +125,7 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
      * | 152    | 2              | calldataLength                  |
      * | 154    | calldataLength | calldata                        |
      */
-    function _morphoDeposit(uint256 currentOffset, address callerAddress) internal returns (uint256) {
+    function _encodeMorphoDeposit(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
             let ptrBase := mload(0x40)
             let ptr := add(128, ptrBase)
@@ -248,7 +248,7 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
      * | 152    | 2              | calldataLength                  |
      * | 154    | calldataLength | calldata                        |
      */
-    function _morphoDepositCollateral(uint256 currentOffset, address callerAddress) internal returns (uint256) {
+    function _encodeMorphoDepositCollateral(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
             // use two memory ranges
             let ptrBase := mload(0x40)
@@ -342,7 +342,7 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
     }
 
     /// @notice Withdraw collateral from Morpho Blue
-    function _morphoWithdrawCollateral(uint256 currentOffset, address callerAddress) internal returns (uint256) {
+    function _encodeMorphoWithdrawCollateral(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
             // morpho should be the primary choice
             let ptr := mload(0x40)
@@ -403,7 +403,7 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
     }
 
     /// @notice Withdraw borrowAsset from Morpho
-    function _morphoWithdraw(uint256 currentOffset, address callerAddress) internal returns (uint256) {
+    function _encodeMorphoWithdraw(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
             // morpho should be the primary choice
             let ptrBase := mload(0x40)

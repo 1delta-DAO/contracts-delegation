@@ -33,7 +33,7 @@ abstract contract BalancerV2FlashLoans is Slots, Masks {
 
             let pool
             // switch-case over poolId to ensure trusted target
-            switch and(UINT16_MASK, shr(104, slice))
+            switch and(UINT8_MASK, shr(104, slice))
             case 0 { pool := BALANCER_V2 }
             case 2 { pool := SWAAP }
             default { revert(0, 0) }

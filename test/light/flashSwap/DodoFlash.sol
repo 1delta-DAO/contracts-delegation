@@ -18,7 +18,7 @@ interface DVMF {
 
 /**
  * We test all morpho blue operations
- * - supply, supplyCollateral, borrow, repay, erc4646Deposit, erc4646Withdraw
+ * - supply, supplyCollateral, borrow, repay, encodeErc4646Deposit, encodeErc4646Withdraw
  */
 contract DodoLightTest is BaseTest {
     using CalldataLib for bytes;
@@ -57,8 +57,7 @@ contract DodoLightTest is BaseTest {
         data = CalldataLib.swapHead(
             amount,
             1, // amountOut min
-            WETH,
-            false // no pre param
+            WETH
         );
         // no branching
         data = data.attachBranch(0, 0, hex"");
@@ -84,7 +83,7 @@ contract DodoLightTest is BaseTest {
 
         vm.prank(user);
         IERC20All(tokenIn).approve(address(oneDV2), type(uint256).max);
-        bytes memory transfer = CalldataLib.transferIn(
+        bytes memory transfer = CalldataLib.encodeTransferIn(
             tokenIn,
             DODO_WETH_JOJO,
             amount //

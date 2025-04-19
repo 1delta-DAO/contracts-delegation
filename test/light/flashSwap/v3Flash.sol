@@ -107,8 +107,8 @@ contract FlashSwapTest is BaseTest {
         uint16 fee = 500;
         address uniPool = IF(UNI_FACTORY).getPool(tokenIn, tokenOut, fee);
         // borrow and deposit with override amounts (optimal)
-        bytes memory borrow = CalldataLib.encodeAaveBorrow(tokenIn, true, borrowAmount, uniPool, 2, pool);
-        bytes memory action = CalldataLib.encodeAaveDeposit(tokenOut, true, 0, user, pool);
+        bytes memory borrow = CalldataLib.encodeAaveBorrow(tokenIn, borrowAmount, uniPool, 2, pool);
+        bytes memory action = CalldataLib.encodeAaveDeposit(tokenOut, 0, user, pool);
 
         action = v3poolFlashSwap(
             tokenIn,
@@ -182,7 +182,6 @@ contract FlashSwapTest is BaseTest {
         // borrow and deposit with override amounts (optimal)
         bytes memory borrow = CalldataLib.encodeAaveBorrow(
             tokenIn,
-            false, // no override
             borrowAmount, // borrow total exact input amount
             address(oneDV2), // borrow to self
             2,
@@ -191,14 +190,13 @@ contract FlashSwapTest is BaseTest {
         // depost all received
         bytes memory action = CalldataLib.encodeAaveDeposit(
             tokenOut,
-            false, // no override
             0, // deposit balanceOf(this)
             user,
             pool
         );
 
         address uniPool = IF(UNI_FACTORY).getPool(tokenIn, tokenOut, 500);
-        bytes memory sweep = CalldataLib.sweep(
+        bytes memory sweep = CalldataLib.encodeSweep(
             tokenIn,
             uniPool,
             borrowAmount / 2, // split payment for first pool
@@ -208,7 +206,7 @@ contract FlashSwapTest is BaseTest {
         uniPool = IF(UNI_FACTORY).getPool(tokenIn, tokenOut, 3000);
         sweep = abi.encodePacked(
             sweep,
-            CalldataLib.sweep(
+            CalldataLib.encodeSweep(
                 tokenIn,
                 uniPool, // pay second pool
                 borrowAmount / 2, // split payment for second pool
@@ -253,13 +251,13 @@ contract FlashSwapTest is BaseTest {
         vm.prank(userAddress);
         IERC20All(token).approve(address(oneDV2), type(uint256).max);
 
-        bytes memory transferTo = CalldataLib.transferIn(
+        bytes memory transferTo = CalldataLib.encodeTransferIn(
             token,
             address(oneDV2),
             amount //
         );
 
-        bytes memory d = CalldataLib.encodeAaveDeposit(token, false, amount, userAddress, pool);
+        bytes memory d = CalldataLib.encodeAaveDeposit(token, amount, userAddress, pool);
 
         vm.prank(userAddress);
         oneDV2.deltaCompose(abi.encodePacked(transferTo, d));

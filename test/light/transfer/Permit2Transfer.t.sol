@@ -62,7 +62,7 @@ contract Permit2TransferTest is BaseTest, DeltaErrors {
 
         IPermit2(PERMIT2).permit(user, permitSingle, signature);
 
-        bytes memory data = CalldataLib.permit2TransferFrom(USDC, address(oneD), transferAmount);
+        bytes memory data = CalldataLib.encodePermit2TransferFrom(USDC, address(oneD), transferAmount);
 
         oneD.deltaCompose(data);
         vm.stopPrank();

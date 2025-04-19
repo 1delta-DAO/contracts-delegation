@@ -12,7 +12,7 @@ import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 
 /**
  * We test all CalldataLib.morpho blue operations
- * - supply, supplyCollateral, borrow, repay, erc4646Deposit, erc4646Withdraw
+ * - supply, supplyCollateral, borrow, repay, encodeErc4646Deposit, encodeErc4646Withdraw
  */
 contract ERC4646Test is BaseTest {
     using MorphoMathLib for uint256;
@@ -45,13 +45,13 @@ contract ERC4646Test is BaseTest {
 
         uint256 assets = 100.0e6;
 
-        bytes memory transferTo = CalldataLib.transferIn(
+        bytes memory transferTo = CalldataLib.encodeTransferIn(
             asset,
             address(oneD),
             assets //
         );
 
-        bytes memory deposit = CalldataLib.erc4646Deposit(
+        bytes memory deposit = CalldataLib.encodeErc4646Deposit(
             asset,
             vault, //
             false,
@@ -80,13 +80,13 @@ contract ERC4646Test is BaseTest {
 
         uint256 assets = IERC20All(META_MORPHO_USDC).convertToAssets(desiredShares);
 
-        bytes memory transferTo = CalldataLib.transferIn(
+        bytes memory transferTo = CalldataLib.encodeTransferIn(
             asset,
             address(oneD),
             assets //
         );
 
-        bytes memory deposit = CalldataLib.erc4646Deposit(
+        bytes memory deposit = CalldataLib.encodeErc4646Deposit(
             asset,
             vault, //
             true,
@@ -107,13 +107,13 @@ contract ERC4646Test is BaseTest {
     }
 
     function depositToMetaMorpho(address userAddress, address asset, uint256 assets) internal {
-        bytes memory transferTo = CalldataLib.transferIn(
+        bytes memory transferTo = CalldataLib.encodeTransferIn(
             asset,
             address(oneD),
             assets //
         );
 
-        bytes memory deposit = CalldataLib.erc4646Deposit(
+        bytes memory deposit = CalldataLib.encodeErc4646Deposit(
             asset,
             META_MORPHO_USDC, //
             false,
@@ -137,7 +137,7 @@ contract ERC4646Test is BaseTest {
         depositToMetaMorpho(user, USDC, assets);
 
         uint256 withdrawAssets = 70.0e6;
-        bytes memory withdrawCall = CalldataLib.erc4646Withdraw(
+        bytes memory withdrawCall = CalldataLib.encodeErc4646Withdraw(
             vault, //
             false,
             withdrawAssets,
@@ -172,7 +172,7 @@ contract ERC4646Test is BaseTest {
 
         uint256 userShares = IERC20All(vault).balanceOf(user);
 
-        bytes memory withdrawCall = CalldataLib.erc4646Withdraw(
+        bytes memory withdrawCall = CalldataLib.encodeErc4646Withdraw(
             vault, //
             true,
             userShares / 2,

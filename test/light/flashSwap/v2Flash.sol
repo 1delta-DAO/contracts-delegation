@@ -106,8 +106,8 @@ contract FlashSwapTest is BaseTest {
 
         address uniPool = IF(UNI_V2_FACTORY).getPair(tokenIn, tokenOut);
         // borrow and deposit with override amounts (optimal)
-        bytes memory borrow = CalldataLib.encodeAaveBorrow(tokenIn, false, borrowAmount, uniPool, 2, pool);
-        bytes memory action = CalldataLib.encodeAaveDeposit(tokenOut, false, 0, user, pool);
+        bytes memory borrow = CalldataLib.encodeAaveBorrow(tokenIn, borrowAmount, uniPool, 2, pool);
+        bytes memory action = CalldataLib.encodeAaveDeposit(tokenOut, 0, user, pool);
 
         action = v2poolFlashSwap(
             tokenIn,
@@ -128,13 +128,13 @@ contract FlashSwapTest is BaseTest {
         vm.prank(userAddress);
         IERC20All(token).approve(address(oneDV2), type(uint256).max);
 
-        bytes memory transferTo = CalldataLib.transferIn(
+        bytes memory transferTo = CalldataLib.encodeTransferIn(
             token,
             address(oneDV2),
             amount //
         );
 
-        bytes memory d = CalldataLib.encodeAaveDeposit(token, false, amount, userAddress, pool);
+        bytes memory d = CalldataLib.encodeAaveDeposit(token, amount, userAddress, pool);
 
         vm.prank(userAddress);
         oneDV2.deltaCompose(abi.encodePacked(transferTo, d));

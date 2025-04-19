@@ -48,13 +48,13 @@ contract CompoundV2ComposerLightTest is BaseTest {
         uint256 collateralBefore = chain.getCollateralBalance(user, token, lender);
         uint256 underlyingBefore = IERC20All(token).balanceOf(user);
 
-        bytes memory transferTo = CalldataLib.transferIn(
+        bytes memory transferTo = CalldataLib.encodeTransferIn(
             token,
             address(oneDV2),
             amount //
         );
 
-        bytes memory d = CalldataLib.encodeCompoundV2Deposit(token, false, amount, user, cToken);
+        bytes memory d = CalldataLib.encodeCompoundV2Deposit(token, amount, user, cToken);
 
         vm.prank(user);
         oneDV2.deltaCompose(abi.encodePacked(transferTo, d));
@@ -85,7 +85,7 @@ contract CompoundV2ComposerLightTest is BaseTest {
         approveBorrowDelegation(user, token, address(oneDV2), lender);
 
         uint256 amountToBorrow = 10.0e6;
-        bytes memory d = CalldataLib.encodeCompoundV2Borrow(token, false, amountToBorrow, user, cToken);
+        bytes memory d = CalldataLib.encodeCompoundV2Borrow(token, amountToBorrow, user, cToken);
 
         // Check balances before borrowing
         uint256 borrowBalanceBefore = chain.getDebtBalance(user, token, lender);
@@ -119,7 +119,7 @@ contract CompoundV2ComposerLightTest is BaseTest {
         approveWithdrawalDelegation(user, token, address(oneDV2), lender);
 
         uint256 amountToWithdraw = 10.0e6;
-        bytes memory d = CalldataLib.encodeCompoundV2Withdraw(token, false, amountToWithdraw, user, cToken);
+        bytes memory d = CalldataLib.encodeCompoundV2Withdraw(token, amountToWithdraw, user, cToken);
 
         // Check balances before withdrawal
         uint256 collateralBefore = chain.getCollateralBalance(user, token, lender);
@@ -158,14 +158,14 @@ contract CompoundV2ComposerLightTest is BaseTest {
 
         uint256 amountToRepay = 7.0e6;
 
-        bytes memory transferTo = CalldataLib.transferIn(
+        bytes memory transferTo = CalldataLib.encodeTransferIn(
             token,
             address(oneDV2),
             amountToRepay //
         );
 
         address cToken = _getCollateralToken(token);
-        bytes memory d = CalldataLib.encodeCompoundV2Repay(token, false, amountToRepay, user, cToken);
+        bytes memory d = CalldataLib.encodeCompoundV2Repay(token, amountToRepay, user, cToken);
 
         // Check balances before repay
         uint256 debtBefore = chain.getDebtBalance(user, token, lender);
@@ -196,14 +196,14 @@ contract CompoundV2ComposerLightTest is BaseTest {
         vm.prank(userAddress);
         IERC20All(token).approve(address(oneDV2), type(uint256).max);
 
-        bytes memory transferTo = CalldataLib.transferIn(
+        bytes memory transferTo = CalldataLib.encodeTransferIn(
             token,
             address(oneDV2),
             amount //
         );
 
         address cToken = _getCollateralToken(token);
-        bytes memory d = CalldataLib.encodeCompoundV2Deposit(token, false, amount, userAddress, cToken);
+        bytes memory d = CalldataLib.encodeCompoundV2Deposit(token, amount, userAddress, cToken);
 
         vm.prank(userAddress);
         oneDV2.deltaCompose(abi.encodePacked(transferTo, d));
@@ -214,7 +214,7 @@ contract CompoundV2ComposerLightTest is BaseTest {
         IERC20All(comptroller).updateDelegate(address(oneDV2), true);
 
         address cToken = _getCollateralToken(token);
-        bytes memory d = CalldataLib.encodeCompoundV2Borrow(token, false, amountToBorrow, userAddress, cToken);
+        bytes memory d = CalldataLib.encodeCompoundV2Borrow(token, amountToBorrow, userAddress, cToken);
 
         vm.prank(userAddress);
         oneDV2.deltaCompose(d);

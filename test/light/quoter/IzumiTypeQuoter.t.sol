@@ -110,7 +110,7 @@ contract IzumiQuoterTest is BaseTest {
         console.log("Quoted amount:", quotedAmountOut);
 
         // add quotedAmountOut as amountOutMin
-        bytes memory swapHead = CalldataLib.swapHead(amountIn, quotedAmountOut, WETH, false);
+        bytes memory swapHead = CalldataLib.swapHead(amountIn, quotedAmountOut, WETH);
         bytes memory swapCall =
             CalldataLib.izumiV3StyleSwap(abi.encodePacked(swapHead, swapBranch), USDC, user, 0, WETH_USDC_500_POOL, 500, DexPayConfig.CALLER_PAYS, "");
 
@@ -187,7 +187,7 @@ contract IzumiQuoterTest is BaseTest {
         console.log("Quoted amount:", quotedAmountOut);
 
         // actual swap,  pass in the quote
-        bytes memory swapHead = CalldataLib.swapHead(amountIn, quotedAmountOut, USDC, false);
+        bytes memory swapHead = CalldataLib.swapHead(amountIn, quotedAmountOut, USDC);
 
         // Create the swap path for the composer
         path = multiPath(assets, fees, user);
@@ -254,7 +254,7 @@ contract IzumiQuoterTest is BaseTest {
 
         // actual swap
 
-        bytes memory swapPath = CalldataLib.swapHead(amountIn, quotedAmountOut, WETH, false);
+        bytes memory swapPath = CalldataLib.swapHead(amountIn, quotedAmountOut, WETH);
 
         swapPath = swapPath.attachBranch(
             0,

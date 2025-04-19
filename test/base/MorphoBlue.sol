@@ -12,7 +12,7 @@ import {IERC20All} from "../shared/interfaces/IERC20All.sol";
 
 /**
  * We test all morpho blue operations
- * - supply, supplyCollateral, borrow, repay, erc4646Deposit, erc4646Withdraw
+ * - supply, supplyCollateral, borrow, repay, encodeErc4646Deposit, encodeErc4646Withdraw
  */
 contract MorphoBlueTest is Test, ComposerUtils {
     using MorphoMathLib for uint256;
@@ -101,7 +101,7 @@ contract MorphoBlueTest is Test, ComposerUtils {
         depositCollateralToMorpho(user, assets);
 
         uint256 withdrawAssets = 0.5e8;
-        bytes memory withdrawCall = morphoWithdrawCollateral(
+        bytes memory withdrawCall = encodeMorphoWithdrawCollateral(
             encodeMarket(LBTC_USDC_MARKET),
             withdrawAssets, //
             user
@@ -312,7 +312,7 @@ contract MorphoBlueTest is Test, ComposerUtils {
             assets //
         );
 
-        bytes memory deposit = morphoDeposit(
+        bytes memory deposit = encodeMorphoDeposit(
             encodeMarket(LBTC_USDC_MARKET),
             false,
             assets,
@@ -360,7 +360,7 @@ contract MorphoBlueTest is Test, ComposerUtils {
             SweepType.VALIDATE //
         );
 
-        bytes memory deposit = morphoDeposit(
+        bytes memory deposit = encodeMorphoDeposit(
             encodeMarket(LBTC_USDC_MARKET),
             false,
             assets,
@@ -397,7 +397,7 @@ contract MorphoBlueTest is Test, ComposerUtils {
         address loan = USDC;
         depositToMorpho(user, false, loanAssetAm);
 
-        bytes memory withdrawCall = morphoWithdraw(
+        bytes memory withdrawCall = encodeMorphoWithdraw(
             encodeMarket(LBTC_USDC_MARKET),
             false,
             loanAssetAmWithdraw,
@@ -438,7 +438,7 @@ contract MorphoBlueTest is Test, ComposerUtils {
         address loan = USDC;
         depositToMorpho(user, false, loanAssetAm);
 
-        bytes memory withdrawCall = morphoWithdraw(
+        bytes memory withdrawCall = encodeMorphoWithdraw(
             encodeMarket(LBTC_USDC_MARKET),
             false,
             loanAssetAmWithdraw,
@@ -483,7 +483,7 @@ contract MorphoBlueTest is Test, ComposerUtils {
             assets //
         );
 
-        bytes memory deposit = morphoDepositCollateral(encodeMarket(LBTC_USDC_MARKET), assets, hex"");
+        bytes memory deposit = encodeMorphoDepositCollateral(encodeMarket(LBTC_USDC_MARKET), assets, hex"");
         vm.prank(user);
         IERC20All(collateral).approve(address(oneD), type(uint256).max);
 
@@ -508,7 +508,7 @@ contract MorphoBlueTest is Test, ComposerUtils {
             assets //
         );
 
-        bytes memory deposit = erc4646Deposit(
+        bytes memory deposit = encodeErc4646Deposit(
             asset,
             vault, //
             false,
@@ -544,7 +544,7 @@ contract MorphoBlueTest is Test, ComposerUtils {
             assets //
         );
 
-        bytes memory deposit = erc4646Deposit(
+        bytes memory deposit = encodeErc4646Deposit(
             asset,
             vault, //
             true,
@@ -571,7 +571,7 @@ contract MorphoBlueTest is Test, ComposerUtils {
             assets //
         );
 
-        bytes memory deposit = erc4646Deposit(
+        bytes memory deposit = encodeErc4646Deposit(
             asset,
             META_MORPHO_USDC, //
             false,
@@ -596,7 +596,7 @@ contract MorphoBlueTest is Test, ComposerUtils {
         depositToMetaMorpho(user, USDC, assets);
 
         uint256 withdrawAssets = 70.0e6;
-        bytes memory withdrawCall = erc4646Withdraw(
+        bytes memory withdrawCall = encodeErc4646Withdraw(
             vault, //
             false,
             withdrawAssets,
@@ -632,7 +632,7 @@ contract MorphoBlueTest is Test, ComposerUtils {
 
         uint256 userShares = IERC20All(vault).balanceOf(user);
 
-        bytes memory withdrawCall = erc4646Withdraw(
+        bytes memory withdrawCall = encodeErc4646Withdraw(
             vault, //
             true,
             userShares / 2,
@@ -670,7 +670,7 @@ contract MorphoBlueTest is Test, ComposerUtils {
             SweepType.VALIDATE //
         );
 
-        bytes memory deposit = morphoDepositCollateral(encodeMarket(LBTC_USDC_MARKET), assets, sweepWethInCallback);
+        bytes memory deposit = encodeMorphoDepositCollateral(encodeMarket(LBTC_USDC_MARKET), assets, sweepWethInCallback);
         vm.prank(user);
         IERC20All(collateral).approve(address(oneD), type(uint256).max);
 
@@ -693,7 +693,7 @@ contract MorphoBlueTest is Test, ComposerUtils {
             amount //
         );
 
-        bytes memory deposit = morphoDepositCollateral(encodeMarket(LBTC_USDC_MARKET), amount, hex"");
+        bytes memory deposit = encodeMorphoDepositCollateral(encodeMarket(LBTC_USDC_MARKET), amount, hex"");
         vm.prank(userAddr);
         IERC20All(collateral).approve(address(oneD), type(uint256).max);
 
@@ -709,7 +709,7 @@ contract MorphoBlueTest is Test, ComposerUtils {
             amount //
         );
 
-        bytes memory deposit = morphoDeposit(encodeMarket(LBTC_USDC_MARKET), isShares, amount, hex"");
+        bytes memory deposit = encodeMorphoDeposit(encodeMarket(LBTC_USDC_MARKET), isShares, amount, hex"");
         vm.prank(userAddr);
         IERC20All(loan).approve(address(oneD), type(uint256).max);
 

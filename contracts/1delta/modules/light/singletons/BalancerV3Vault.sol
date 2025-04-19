@@ -20,7 +20,7 @@ abstract contract BalancerV3VaultActions is Masks, DeltaErrors {
 
     constructor() {}
 
-    function _balancerV3Take(uint256 currentOffset) internal returns (uint256) {
+    function _encodeBalancerV3Take(uint256 currentOffset) internal returns (uint256) {
         /*
          * | Offset | Length (bytes) | Description         |
          * |--------|----------------|---------------------|

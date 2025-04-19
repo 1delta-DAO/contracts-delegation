@@ -897,7 +897,7 @@ contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
                      * Morpho deposit collateral
                      */
                     if (morphoOperation == 0) {
-                        currentOffset = _morphoDepositCollateral(currentOffset, callerAddress);
+                        currentOffset = _encodeMorphoDepositCollateral(currentOffset, callerAddress);
                     }
                     /**
                      * Morpho borrow
@@ -915,19 +915,19 @@ contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
                      * Morpho withdraw colalteral
                      */
                     else if (morphoOperation == 3) {
-                        currentOffset = _morphoWithdrawCollateral(currentOffset, callerAddress);
+                        currentOffset = _encodeMorphoWithdrawCollateral(currentOffset, callerAddress);
                     }
                     /**
                      * Morpho deposit lendingToken
                      */
                     else if (morphoOperation == 4) {
-                        currentOffset = _morphoDeposit(currentOffset, callerAddress);
+                        currentOffset = _encodeMorphoDeposit(currentOffset, callerAddress);
                     }
                     /**
                      * Morpho withdraw lendingToken
                      */
                     else if (morphoOperation == 5) {
-                        currentOffset = _morphoWithdraw(currentOffset, callerAddress);
+                        currentOffset = _encodeMorphoWithdraw(currentOffset, callerAddress);
                     } else {
                         revert();
                     }
@@ -1277,13 +1277,13 @@ contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
                      * ERC6464 deposit
                      */
                     if (erc4646Operation == 0) {
-                        currentOffset = _erc4646Deposit(currentOffset);
+                        currentOffset = _encodeErc4646Deposit(currentOffset);
                     }
                     /**
                      * MetaMorpho withdraw
                      */
                     else {
-                        currentOffset = _erc4646Withdraw(currentOffset, callerAddress);
+                        currentOffset = _encodeErc4646Withdraw(currentOffset, callerAddress);
                     }
                 }
             } else {

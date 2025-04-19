@@ -53,7 +53,7 @@ abstract contract UniversalLending is AaveLending, CompoundV3Lending, CompoundV2
             } else if (lender < LenderIds.UP_TO_COMPOUND_V2) {
                 return _depositToCompoundV2(currentOffset);
             } else {
-                return _morphoDepositCollateral(currentOffset, callerAddress);
+                return _encodeMorphoDepositCollateral(currentOffset, callerAddress);
             }
         }
         /**
@@ -95,20 +95,20 @@ abstract contract UniversalLending is AaveLending, CompoundV3Lending, CompoundV2
             } else if (lender < LenderIds.UP_TO_COMPOUND_V2) {
                 return _withdrawFromCompoundV2(currentOffset, callerAddress);
             } else {
-                return _morphoWithdrawCollateral(currentOffset, callerAddress);
+                return _encodeMorphoWithdrawCollateral(currentOffset, callerAddress);
             }
         }
         /**
          * deposit lendingToken
          */
         else if (lendingOperation == LenderOps.DEPOSIT_LENDING_TOKEN) {
-            return _morphoDeposit(currentOffset, callerAddress);
+            return _encodeMorphoDeposit(currentOffset, callerAddress);
         }
         /**
          * withdraw lendingToken
          */
         else if (lendingOperation == LenderOps.WITHDRAW_LENDING_TOKEN) {
-            return _morphoWithdraw(currentOffset, callerAddress);
+            return _encodeMorphoWithdraw(currentOffset, callerAddress);
         } else {
             revert();
         }

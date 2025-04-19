@@ -102,7 +102,7 @@ contract V4QuoterTest is BaseTest {
         bytes memory swapHead = abi.encodePacked(uint8(ComposerCommands.SWAPS), uint128(amountIn), uint128(1));
         bytes memory swapCall = abi.encodePacked(swapHead, path);
 
-        swapCall = CalldataLib.nextGenDexUnlock(UNI_V4_PM, 0, swapCall);
+        swapCall = CalldataLib.encodeNextGenDexUnlock(UNI_V4_PM, 0, swapCall);
 
         // Get actual amount from a real swap
         uint256 balanceBefore = IERC20(USDC).balanceOf(address(user));

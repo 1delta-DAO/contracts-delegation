@@ -222,7 +222,7 @@ async function main() {
             switchCaseContentBalancerV2Trigger += `
                             let pool
                             // switch-case over poolId to ensure trusted target
-                            switch and(UINT16_MASK, shr(104, slice))
+                            switch and(UINT8_MASK, shr(104, slice))
 
                             `
             poolIdsBalancerV2.forEach(({ pool, entityName, entityId }) => {

@@ -34,7 +34,7 @@ abstract contract Gen2025DexActions is UniswapV4SingletonActions, BalancerV3Vaul
             }
         } else {
             if (transferOperation == Gen2025ActionIds.BAL_V3_TAKE) {
-                return _balancerV3Take(currentOffset);
+                return _encodeBalancerV3Take(currentOffset);
             } else if (transferOperation == Gen2025ActionIds.BAL_V3_SETTLE) {
                 return _balancerV3Settle(currentOffset);
             } else {

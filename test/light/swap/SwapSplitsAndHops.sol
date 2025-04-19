@@ -18,7 +18,7 @@ interface IF {
 
 /**
  * We test all morpho blue operations
- * - supply, supplyCollateral, borrow, repay, erc4646Deposit, erc4646Withdraw
+ * - supply, supplyCollateral, borrow, repay, encodeErc4646Deposit, encodeErc4646Withdraw
  */
 contract SwapsSplitsAndHopsLightTest is BaseTest {
     uint8 internal UNISWAP_V3_DEX_ID = 0;

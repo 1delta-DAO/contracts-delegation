@@ -21,7 +21,7 @@ interface IF {
 
 /**
  * We test all morpho blue operations
- * - supply, supplyCollateral, borrow, repay, erc4646Deposit, erc4646Withdraw
+ * - supply, supplyCollateral, borrow, repay, encodeErc4646Deposit, encodeErc4646Withdraw
  */
 contract ExternalCallsTest is BaseTest {
     CallForwarder cf;
@@ -52,7 +52,7 @@ contract ExternalCallsTest is BaseTest {
     }
 
     function extCall(address asset, uint256 amount, address receiver) internal view returns (bytes memory data) {
-        data = CalldataLib.sweep(
+        data = CalldataLib.encodeSweep(
             asset,
             receiver,
             amount, //

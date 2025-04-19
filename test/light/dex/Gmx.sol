@@ -43,8 +43,7 @@ contract GmxLightTest is BaseTest {
         data = CalldataLib.swapHead(
             amount,
             1, // amountOut min
-            WETH,
-            false // no pre param
+            WETH
         );
         // no branching
         data = data.attachBranch(0, 0, hex"");
@@ -61,8 +60,7 @@ contract GmxLightTest is BaseTest {
         data = CalldataLib.swapHead(
             amount,
             1, // amountOut min
-            WETH,
-            false // no pre param
+            WETH
         );
         // no branching
         data = data.attachBranch(0, 0, hex"");

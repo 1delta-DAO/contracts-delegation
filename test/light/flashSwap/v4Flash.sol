@@ -56,8 +56,7 @@ contract FlashSwapTest is BaseTest {
         data = CalldataLib.swapHead(
             amount,
             1, // amountOut min
-            tokenIn,
-            false // no pre param
+            tokenIn
         );
         // no branching
         data = data.attachBranch(0, 0, hex"");
@@ -97,14 +96,14 @@ contract FlashSwapTest is BaseTest {
         bytes memory swapAction = unoV4Swap(address(oneDV2), tokenIn, tokenOut, borrowAmount);
         {
             // borrow and deposit with override amounts (optimal)
-            bytes memory borrow = CalldataLib.encodeAaveBorrow(WETH, false, borrowAmount, address(oneDV2), 2, pool);
-            bytes memory deposit = CalldataLib.encodeAaveDeposit(tokenOut, false, 0, user, pool);
+            bytes memory borrow = CalldataLib.encodeAaveBorrow(WETH, borrowAmount, address(oneDV2), 2, pool);
+            bytes memory deposit = CalldataLib.encodeAaveDeposit(tokenOut, 0, user, pool);
 
-            bytes memory settlementActions = CalldataLib.nextGenDexSettle(
+            bytes memory settlementActions = CalldataLib.encodeNextGenDexSettle(
                 UNI_V4_PM, //
                 borrowAmount
             );
-            settlementActions = abi.encodePacked(CalldataLib.unwrap(WETH, address(oneDV2), borrowAmount, SweepType.AMOUNT), settlementActions);
+            settlementActions = abi.encodePacked(CalldataLib.encodeUnwrap(WETH, address(oneDV2), borrowAmount, SweepType.AMOUNT), settlementActions);
 
             deposit = abi.encodePacked(
                 swapAction, // the swap
@@ -113,7 +112,7 @@ contract FlashSwapTest is BaseTest {
                 settlementActions
             );
 
-            swapAction = CalldataLib.nextGenDexUnlock(
+            swapAction = CalldataLib.encodeNextGenDexUnlock(
                 UNI_V4_PM, //
                 UNISWAP_V4_POOL_ID,
                 deposit
@@ -148,13 +147,13 @@ contract FlashSwapTest is BaseTest {
         vm.prank(userAddress);
         IERC20All(token).approve(address(oneDV2), type(uint256).max);
 
-        bytes memory transferTo = CalldataLib.transferIn(
+        bytes memory transferTo = CalldataLib.encodeTransferIn(
             token,
             address(oneDV2),
             amount //
         );
 
-        bytes memory d = CalldataLib.encodeAaveDeposit(token, false, amount, userAddress, pool);
+        bytes memory d = CalldataLib.encodeAaveDeposit(token, amount, userAddress, pool);
 
         vm.prank(userAddress);
         oneDV2.deltaCompose(abi.encodePacked(transferTo, d));
