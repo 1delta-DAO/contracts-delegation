@@ -460,8 +460,12 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
         if (lenderId < LenderMappingsPolygon.MAX_AAVE_V2_ID) {
             return IERC20All(debtTokens[asset][lenderId]).balanceOf(user);
         } else {
-            if (lenderId == LenderMappingsPolygon.COMPOUND_V3_USDCE) return IComet(CompoundV3Polygon.COMET_USDC).borrowBalanceOf(user);
-            if (lenderId == LenderMappingsPolygon.COMPOUND_V3_USDT) return IComet(CompoundV3Polygon.COMET_USDT).borrowBalanceOf(user);
+            if (lenderId == LenderMappingsPolygon.COMPOUND_V3_USDCE) {
+                return IComet(CompoundV3Polygon.COMET_USDC).borrowBalanceOf(user);
+            }
+            if (lenderId == LenderMappingsPolygon.COMPOUND_V3_USDT) {
+                return IComet(CompoundV3Polygon.COMET_USDT).borrowBalanceOf(user);
+            }
         }
         return 0;
     }
@@ -470,8 +474,12 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
         if (lenderId < LenderMappingsPolygon.MAX_AAVE_V2_ID) {
             return IERC20All(collateralTokens[asset][lenderId]).balanceOf(user);
         } else {
-            if (lenderId == LenderMappingsPolygon.COMPOUND_V3_USDCE) return IComet(CompoundV3Polygon.COMET_USDC).userCollateral(user, asset).balance;
-            if (lenderId == LenderMappingsPolygon.COMPOUND_V3_USDT) return IComet(CompoundV3Polygon.COMET_USDT).userCollateral(user, asset).balance;
+            if (lenderId == LenderMappingsPolygon.COMPOUND_V3_USDCE) {
+                return IComet(CompoundV3Polygon.COMET_USDC).userCollateral(user, asset).balance;
+            }
+            if (lenderId == LenderMappingsPolygon.COMPOUND_V3_USDT) {
+                return IComet(CompoundV3Polygon.COMET_USDT).userCollateral(user, asset).balance;
+            }
         }
         return 0;
     }
@@ -481,8 +489,12 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
         if (lenderId < LenderMappingsPolygon.MAX_AAVE_V2_ID) {
             IERC20All(collateralTokens[asset][lenderId]).approve(address(brokerProxyAddress), amount);
         } else {
-            if (lenderId == LenderMappingsPolygon.COMPOUND_V3_USDCE) IComet(CompoundV3Polygon.COMET_USDC).allow(brokerProxyAddress, true);
-            if (lenderId == LenderMappingsPolygon.COMPOUND_V3_USDT) IComet(CompoundV3Polygon.COMET_USDT).allow(brokerProxyAddress, true);
+            if (lenderId == LenderMappingsPolygon.COMPOUND_V3_USDCE) {
+                IComet(CompoundV3Polygon.COMET_USDC).allow(brokerProxyAddress, true);
+            }
+            if (lenderId == LenderMappingsPolygon.COMPOUND_V3_USDT) {
+                IComet(CompoundV3Polygon.COMET_USDT).allow(brokerProxyAddress, true);
+            }
         }
         vm.stopPrank();
     }
@@ -492,8 +504,12 @@ contract DeltaSetup is AddressesPolygon, ComposerUtils, Script, Test {
         if (lenderId < LenderMappingsPolygon.MAX_AAVE_V2_ID) {
             IERC20All(debtTokens[asset][lenderId]).approveDelegation(address(brokerProxyAddress), amount);
         } else {
-            if (lenderId == LenderMappingsPolygon.COMPOUND_V3_USDCE) IComet(CompoundV3Polygon.COMET_USDC).allow(brokerProxyAddress, true);
-            if (lenderId == LenderMappingsPolygon.COMPOUND_V3_USDT) IComet(CompoundV3Polygon.COMET_USDT).allow(brokerProxyAddress, true);
+            if (lenderId == LenderMappingsPolygon.COMPOUND_V3_USDCE) {
+                IComet(CompoundV3Polygon.COMET_USDC).allow(brokerProxyAddress, true);
+            }
+            if (lenderId == LenderMappingsPolygon.COMPOUND_V3_USDT) {
+                IComet(CompoundV3Polygon.COMET_USDT).allow(brokerProxyAddress, true);
+            }
         }
         vm.stopPrank();
     }

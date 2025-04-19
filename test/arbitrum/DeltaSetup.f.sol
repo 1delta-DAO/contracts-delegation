@@ -507,12 +507,22 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
         if (lenderId < LenderMappingsArbitrum.MAX_AAVE_V2_ID) {
             return IERC20All(debtTokens[asset][lenderId]).balanceOf(user);
         } else if (lenderId < LenderMappingsArbitrum.MAX_ID_COMPOUND_V3) {
-            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_USDC) return IComet(CompoundV3Arbitrum.COMET_USDC).borrowBalanceOf(user);
-            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_USDT) return IComet(CompoundV3Arbitrum.COMET_USDT).borrowBalanceOf(user);
-            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_USDCE) return IComet(CompoundV3Arbitrum.COMET_USDCE).borrowBalanceOf(user);
-            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_WETH) return IComet(CompoundV3Arbitrum.COMET_WETH).borrowBalanceOf(user);
+            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_USDC) {
+                return IComet(CompoundV3Arbitrum.COMET_USDC).borrowBalanceOf(user);
+            }
+            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_USDT) {
+                return IComet(CompoundV3Arbitrum.COMET_USDT).borrowBalanceOf(user);
+            }
+            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_USDCE) {
+                return IComet(CompoundV3Arbitrum.COMET_USDCE).borrowBalanceOf(user);
+            }
+            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_WETH) {
+                return IComet(CompoundV3Arbitrum.COMET_WETH).borrowBalanceOf(user);
+            }
         } else {
-            if (lenderId == LenderMappingsArbitrum.VENUS) return IERC20All(collateralTokens[asset][lenderId]).borrowBalanceCurrent(user);
+            if (lenderId == LenderMappingsArbitrum.VENUS) {
+                return IERC20All(collateralTokens[asset][lenderId]).borrowBalanceCurrent(user);
+            }
         }
         return 0;
     }
@@ -525,10 +535,16 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
                 if (asset == TokensArbitrum.USDC) return IComet(CompoundV3Arbitrum.COMET_USDC).balanceOf(user);
                 return IComet(CompoundV3Arbitrum.COMET_USDC).userCollateral(user, asset).balance;
             }
-            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_USDT) return IComet(CompoundV3Arbitrum.COMET_USDT).userCollateral(user, asset).balance;
-            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_WETH) return IComet(CompoundV3Arbitrum.COMET_WETH).userCollateral(user, asset).balance;
+            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_USDT) {
+                return IComet(CompoundV3Arbitrum.COMET_USDT).userCollateral(user, asset).balance;
+            }
+            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_WETH) {
+                return IComet(CompoundV3Arbitrum.COMET_WETH).userCollateral(user, asset).balance;
+            }
         } else {
-            if (lenderId == LenderMappingsArbitrum.VENUS) return IERC20All(collateralTokens[asset][lenderId]).balanceOfUnderlying(user);
+            if (lenderId == LenderMappingsArbitrum.VENUS) {
+                return IERC20All(collateralTokens[asset][lenderId]).balanceOfUnderlying(user);
+            }
         }
         return 0;
     }
@@ -538,12 +554,20 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
         if (lenderId < LenderMappingsArbitrum.MAX_AAVE_V2_ID) {
             IERC20All(collateralTokens[asset][lenderId]).approve(brokerProxyAddress, amount);
         } else if (lenderId < LenderMappingsArbitrum.MAX_ID_COMPOUND_V3) {
-            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_USDC) IComet(CompoundV3Arbitrum.COMET_USDC).allow(brokerProxyAddress, true);
-            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_USDT) IComet(CompoundV3Arbitrum.COMET_USDT).allow(brokerProxyAddress, true);
-            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_WETH) IComet(CompoundV3Arbitrum.COMET_WETH).allow(brokerProxyAddress, true);
+            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_USDC) {
+                IComet(CompoundV3Arbitrum.COMET_USDC).allow(brokerProxyAddress, true);
+            }
+            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_USDT) {
+                IComet(CompoundV3Arbitrum.COMET_USDT).allow(brokerProxyAddress, true);
+            }
+            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_WETH) {
+                IComet(CompoundV3Arbitrum.COMET_WETH).allow(brokerProxyAddress, true);
+            }
         } else {
             // need to approve max as we approve the collateral token adjusted for exchange rate
-            if (lenderId == LenderMappingsArbitrum.VENUS) IERC20All(collateralTokens[asset][lenderId]).approve(brokerProxyAddress, type(uint256).max);
+            if (lenderId == LenderMappingsArbitrum.VENUS) {
+                IERC20All(collateralTokens[asset][lenderId]).approve(brokerProxyAddress, type(uint256).max);
+            }
         }
         vm.stopPrank();
     }
@@ -563,9 +587,15 @@ contract DeltaSetup is AddressesArbitrum, ComposerUtils, Script, Test {
         if (lenderId < LenderMappingsArbitrum.MAX_AAVE_V2_ID) {
             IERC20All(debtTokens[asset][lenderId]).approveDelegation(brokerProxyAddress, amount);
         } else if (lenderId < LenderMappingsArbitrum.MAX_ID_COMPOUND_V3) {
-            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_USDC) IComet(CompoundV3Arbitrum.COMET_USDC).allow(brokerProxyAddress, true);
-            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_USDT) IComet(CompoundV3Arbitrum.COMET_USDT).allow(brokerProxyAddress, true);
-            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_WETH) IComet(CompoundV3Arbitrum.COMET_WETH).allow(brokerProxyAddress, true);
+            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_USDC) {
+                IComet(CompoundV3Arbitrum.COMET_USDC).allow(brokerProxyAddress, true);
+            }
+            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_USDT) {
+                IComet(CompoundV3Arbitrum.COMET_USDT).allow(brokerProxyAddress, true);
+            }
+            if (lenderId == LenderMappingsArbitrum.COMPOUND_V3_WETH) {
+                IComet(CompoundV3Arbitrum.COMET_WETH).allow(brokerProxyAddress, true);
+            }
         } else {
             if (lenderId == LenderMappingsArbitrum.VENUS) {
                 ComptrollerInterface(VenusCoreArbitrum.COMPTROLLER).updateDelegate(brokerProxyAddress, true);

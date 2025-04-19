@@ -71,7 +71,7 @@ contract MockERC20 is ERC20 {
         data = abi.encodeWithSelector(IERC20.transferFrom.selector, sender, recipient, amount);
     }
 
-    function encodePermit2TransferFrom(address user, address spender, uint256 amount, address token) public pure returns (bytes memory data) {
+    function encodeencodePermit2TransferFrom(address user, address spender, uint256 amount, address token) public pure returns (bytes memory data) {
         // transferFrom(address user, address spender, uint160 amount, address token)
         data = abi.encodeWithSelector(IPermit2.transferFrom.selector, user, spender, amount, token);
     }

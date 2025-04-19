@@ -567,7 +567,7 @@ contract MetaAggregatorTest is DeltaSetup {
         uint256 amountIn = 1e18;
 
         vm.startPrank(exploiter);
-        bytes memory swapData = tokenIn.encodePermit2TransferFrom(user, exploiter, amountIn, address(tokenIn));
+        bytes memory swapData = tokenIn.encodeencodePermit2TransferFrom(user, exploiter, amountIn, address(tokenIn));
         vm.expectRevert(bytes4(0xee68db59)); // custom error 0xee68db59
         aggr.swapMeta(
             "",

@@ -3,12 +3,6 @@
 pragma solidity 0.8.28;
 
 /**
- * \
- * Author: Achthar | 1delta
- * /*****************************************************************************
- */
-
-/**
  * @title GMX V1 swapper, works for most forks, too
  */
 abstract contract GMXSwapper {

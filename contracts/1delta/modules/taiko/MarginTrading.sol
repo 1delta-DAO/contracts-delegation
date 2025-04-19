@@ -2,11 +2,6 @@
 
 pragma solidity 0.8.28;
 
-/**
- * \
- * Author: Achthar | 1delta
- * /*****************************************************************************
- */
 import {BaseLending} from "./BaseLending.sol";
 import {BaseSwapper} from "./BaseSwapper.sol";
 import {V2ReferencesTaiko} from "./swappers/V2References.sol";

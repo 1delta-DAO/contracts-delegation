@@ -2,11 +2,6 @@
 
 pragma solidity ^0.8.28;
 
-/**
- * \
- * Author: Achthar | 1delta
- * /*****************************************************************************
- */
 import {LendingOps, IERC20} from "./VenusOps.sol";
 import {TokenTransfer} from "../../libraries/TokenTransfer.sol";
 

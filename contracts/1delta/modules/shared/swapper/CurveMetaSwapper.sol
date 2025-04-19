@@ -2,11 +2,6 @@
 
 pragma solidity 0.8.28;
 
-/**
- * \
- * Author: Achthar | 1delta
- * /*****************************************************************************
- */
 import {ERC20Selectors} from "../selectors/ERC20Selectors.sol";
 import {Masks} from "../masks/Masks.sol";
 
@@ -78,7 +73,7 @@ abstract contract CurveMetaSwapper is ERC20Selectors, Masks {
                         or(
                             iszero(rdsize), // no return data, or
                             and(
-                                iszero(lt(rdsize, 32)), // at least 32 bytes
+                                gt(rdsize, 31), // at least 32 bytes
                                 eq(mload(ptr), 1) // starts with uint256(1)
                             )
                         )
@@ -201,7 +196,7 @@ abstract contract CurveMetaSwapper is ERC20Selectors, Masks {
                             or(
                                 iszero(rdsize), // no return data, or
                                 and(
-                                    iszero(lt(rdsize, 32)), // at least 32 bytes
+                                    gt(rdsize, 31), // at least 32 bytes
                                     eq(mload(ptr), 1) // starts with uint256(1)
                                 )
                             )

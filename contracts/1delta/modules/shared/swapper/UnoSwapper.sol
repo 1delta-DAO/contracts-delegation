@@ -2,11 +2,6 @@
 
 pragma solidity 0.8.28;
 
-/**
- * \
- * Author: Achthar | 1delta
- * /*****************************************************************************
- */
 import {CurveSwapper} from "./Curve.sol";
 import {V2TypeSwapper} from "./V2Type.sol";
 import {V3TypeSwapper} from "./V3Type.sol";

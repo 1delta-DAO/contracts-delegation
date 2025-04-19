@@ -2,11 +2,6 @@
 
 pragma solidity ^0.8.28;
 
-/**
- * \
- * Author: Achthar | 1delta
- * /*****************************************************************************
- */
 import {DeltaErrors} from "../shared/errors/Errors.sol";
 import {PermitUtils} from "../shared/permit/PermitUtils.sol";
 import {DexMappings} from "../shared/swapper/DexMappings.sol";

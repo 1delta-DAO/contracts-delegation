@@ -3,12 +3,6 @@
 pragma solidity 0.8.28;
 
 /**
- * \
- * Author: Achthar | 1delta
- * /*****************************************************************************
- */
-
-/**
  * @title SyncSwap style swapper, pre-funded, all pool variations
  */
 abstract contract SyncSwapper {
