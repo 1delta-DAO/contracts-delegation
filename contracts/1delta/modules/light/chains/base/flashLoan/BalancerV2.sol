@@ -16,9 +16,9 @@ abstract contract BalancerV2FlashLoans is Slots, Masks {
      * | Offset | Length (bytes) | Description                     |
      * |--------|----------------|---------------------------------|
      * | 0      | 20             | asset                           |
-     * | 40     | 16             | amount                          |
-     * | 56     | 2              | paramsLength                    |
-     * | 58     | paramsLength   | params                          | <- the first param here is the poolId 
+     * | 20     | 16             | amount                          |
+     * | 36     | 2              | paramsLength                    |
+     * | 38     | paramsLength   | params                          | <- the first param here is the poolId 
      */
     function balancerV2FlashLoan(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
