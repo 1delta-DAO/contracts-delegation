@@ -122,7 +122,7 @@ contract MorphoBlueTest is BaseTest {
         uint256 borrowAssets = 30_000.0e6;
         depositCollateralToMorpho(user, assets);
 
-        bytes memory borrowCall = CalldataLib.morphoBorrow(
+        bytes memory borrowCall = CalldataLib.encodeMorphoBorrow(
             encodeMarket(LBTC_USDC_MARKET),
             false,
             borrowAssets, //
@@ -155,7 +155,7 @@ contract MorphoBlueTest is BaseTest {
         uint256 borrowAssets = 30_000.0e6;
         depositCollateralToMorpho(user, assets);
 
-        bytes memory borrowCall = CalldataLib.morphoBorrow(
+        bytes memory borrowCall = CalldataLib.encodeMorphoBorrow(
             encodeMarket(LBTC_USDC_MARKET),
             false,
             borrowAssets, //
@@ -169,7 +169,7 @@ contract MorphoBlueTest is BaseTest {
         vm.prank(user);
         oneD.deltaCompose(borrowCall);
 
-        bytes memory repayCall = CalldataLib.morphoRepay(
+        bytes memory repayCall = CalldataLib.encodeMorphoRepay(
             encodeMarket(LBTC_USDC_MARKET),
             false,
             true,
@@ -206,7 +206,7 @@ contract MorphoBlueTest is BaseTest {
         uint256 borrowAssets = 30_000.0e6;
         depositCollateralToMorpho(user, assets);
 
-        bytes memory borrowCall = CalldataLib.morphoBorrow(encodeMarket(LBTC_USDC_MARKET), false, borrowAssets, user, MORPHO);
+        bytes memory borrowCall = CalldataLib.encodeMorphoBorrow(encodeMarket(LBTC_USDC_MARKET), false, borrowAssets, user, MORPHO);
 
         vm.prank(user);
         IMorphoEverything(MORPHO).setAuthorization(address(oneD), true);
@@ -216,7 +216,8 @@ contract MorphoBlueTest is BaseTest {
 
         (, uint128 borrowShares,) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
 
-        bytes memory repayCall = CalldataLib.morphoRepay(encodeMarket(LBTC_USDC_MARKET), true, false, borrowShares, user, hex"", MORPHO, MORPHO_ID);
+        bytes memory repayCall =
+            CalldataLib.encodeMorphoRepay(encodeMarket(LBTC_USDC_MARKET), true, false, borrowShares, user, hex"", MORPHO, MORPHO_ID);
 
         vm.prank(user);
         IERC20All(borrowAsset).approve(address(oneD), type(uint256).max);
@@ -247,7 +248,7 @@ contract MorphoBlueTest is BaseTest {
         uint256 borrowAssets = 30_000.0e6;
         depositCollateralToMorpho(user, assets);
 
-        bytes memory borrowCall = CalldataLib.morphoBorrow(
+        bytes memory borrowCall = CalldataLib.encodeMorphoBorrow(
             encodeMarket(LBTC_USDC_MARKET),
             false,
             borrowAssets, //
@@ -268,7 +269,7 @@ contract MorphoBlueTest is BaseTest {
             SweepType.VALIDATE //
         );
 
-        bytes memory repayCall = CalldataLib.morphoRepay(
+        bytes memory repayCall = CalldataLib.encodeMorphoRepay(
             encodeMarket(LBTC_USDC_MARKET),
             false,
             true,
@@ -305,7 +306,7 @@ contract MorphoBlueTest is BaseTest {
         uint256 borrowAssets = 30_000.0e6;
         depositCollateralToMorpho(user, assets);
 
-        bytes memory borrowCall = CalldataLib.morphoBorrow(
+        bytes memory borrowCall = CalldataLib.encodeMorphoBorrow(
             encodeMarket(LBTC_USDC_MARKET),
             false,
             borrowAssets, //
@@ -322,7 +323,7 @@ contract MorphoBlueTest is BaseTest {
         logMarket(marketId(LBTC_USDC_MARKET));
         logPos(marketId(LBTC_USDC_MARKET), user);
 
-        bytes memory repayCall = CalldataLib.morphoRepay(
+        bytes memory repayCall = CalldataLib.encodeMorphoRepay(
             encodeMarket(LBTC_USDC_MARKET),
             false,
             false,

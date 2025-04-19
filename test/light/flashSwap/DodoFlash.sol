@@ -61,7 +61,7 @@ contract DodoLightTest is BaseTest {
         );
         // no branching
         data = data.attachBranch(0, 0, hex"");
-        data = data.dodoStyleSwap(
+        data = data.encodeDodoStyleSwap(
             JOJO,
             receiver,
             DODO_WETH_JOJO,

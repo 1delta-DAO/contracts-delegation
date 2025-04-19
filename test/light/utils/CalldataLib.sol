@@ -351,7 +351,7 @@ library CalldataLib {
         );
     }
 
-    function izumiStyleSwap(
+    function encodeIzumiStyleSwap(
         address tokenOut,
         address receiver,
         uint256 forkId,
@@ -377,7 +377,7 @@ library CalldataLib {
         );
     }
 
-    function dodoStyleSwap(
+    function encodeDodoStyleSwap(
         bytes memory currentData,
         address tokenOut,
         address receiver,
@@ -404,7 +404,7 @@ library CalldataLib {
         );
     }
 
-    function wooStyleSwap(
+    function encodeWooStyleSwap(
         bytes memory currentData,
         address tokenOut,
         address receiver,
@@ -426,7 +426,7 @@ library CalldataLib {
         );
     }
 
-    function gmxStyleSwap(
+    function encodeGmxStyleSwap(
         bytes memory currentData,
         address tokenOut,
         address receiver,
@@ -448,7 +448,7 @@ library CalldataLib {
         );
     }
 
-    function ktxStyleSwap(
+    function encodeKtxStyleSwap(
         bytes memory currentData,
         address tokenOut,
         address receiver,
@@ -470,7 +470,7 @@ library CalldataLib {
         );
     }
 
-    function curveStyleSwap(
+    function encodeCurveStyleSwap(
         address tokenOut,
         address receiver,
         address pool,
@@ -797,7 +797,7 @@ library CalldataLib {
         );
     }
 
-    function morphoBorrow(
+    function encodeMorphoBorrow(
         bytes memory market,
         bool isShares, //
         uint256 assets,
@@ -819,7 +819,7 @@ library CalldataLib {
         );
     }
 
-    function morphoRepay(
+    function encodeMorphoRepay(
         bytes memory market,
         bool isShares, //
         bool unsafe,

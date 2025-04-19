@@ -184,7 +184,7 @@ contract ComposerUtils {
         );
     }
 
-    function morphoBorrow(
+    function encodeMorphoBorrow(
         bytes memory market,
         bool isShares, //
         uint256 assets,
@@ -203,7 +203,7 @@ contract ComposerUtils {
         );
     }
 
-    function morphoRepay(
+    function encodeMorphoRepay(
         bytes memory market,
         bool isShares, //
         uint256 assets,

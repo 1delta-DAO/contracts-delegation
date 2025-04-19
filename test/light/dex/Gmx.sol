@@ -47,7 +47,7 @@ contract GmxLightTest is BaseTest {
         );
         // no branching
         data = data.attachBranch(0, 0, hex"");
-        data = data.gmxStyleSwap(
+        data = data.encodeGmxStyleSwap(
             USDC,
             receiver,
             GMX_POOL,
@@ -64,7 +64,7 @@ contract GmxLightTest is BaseTest {
         );
         // no branching
         data = data.attachBranch(0, 0, hex"");
-        data = data.gmxStyleSwap(
+        data = data.encodeGmxStyleSwap(
             USDC,
             receiver,
             KTX_POOL,
@@ -76,13 +76,13 @@ contract GmxLightTest is BaseTest {
         // no branching
         data = abi.encodePacked(WETH).attachBranch(0, 0, hex"");
         data = isGmx
-            ? data.gmxStyleSwap(
+            ? data.encodeGmxStyleSwap(
                 USDC,
                 reader,
                 pool,
                 DexPayConfig.CALLER_PAYS //
             )
-            : data.ktxStyleSwap(
+            : data.encodeKtxStyleSwap(
                 USDC,
                 reader,
                 pool,

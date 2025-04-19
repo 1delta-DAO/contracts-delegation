@@ -48,7 +48,7 @@ contract WooLightTest is BaseTest {
         );
         // no branching
         data = data.attachBranch(0, 0, hex"");
-        data = data.wooStyleSwap(
+        data = data.encodeWooStyleSwap(
             cbBTC,
             receiver,
             WOO_POOL,

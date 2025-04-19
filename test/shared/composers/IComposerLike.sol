@@ -8,7 +8,7 @@ interface IComposerLike {
 
     function onMorphoSupply(uint256, bytes calldata params) external;
 
-    function onMorphoRepay(uint256, bytes calldata params) external;
+    function onencodeMorphoRepay(uint256, bytes calldata params) external;
 
     function onMorphoSupplyCollateral(uint256, bytes calldata params) external;
 

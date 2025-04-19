@@ -128,7 +128,7 @@ contract MorphoBlueTest is Test, ComposerUtils {
         uint256 borrowAssets = 30_000.0e6;
         depositCollateralToMorpho(user, assets);
 
-        bytes memory borrowCall = morphoBorrow(
+        bytes memory borrowCall = encodeMorphoBorrow(
             encodeMarket(LBTC_USDC_MARKET),
             false,
             borrowAssets, //
@@ -159,7 +159,7 @@ contract MorphoBlueTest is Test, ComposerUtils {
         uint256 borrowAssets = 30_000.0e6;
         depositCollateralToMorpho(user, assets);
 
-        bytes memory borrowCall = morphoBorrow(
+        bytes memory borrowCall = encodeMorphoBorrow(
             encodeMarket(LBTC_USDC_MARKET),
             false,
             borrowAssets, //
@@ -172,7 +172,7 @@ contract MorphoBlueTest is Test, ComposerUtils {
         vm.prank(user);
         oneD.deltaCompose(borrowCall);
 
-        bytes memory repayCall = morphoRepay(
+        bytes memory repayCall = encodeMorphoRepay(
             encodeMarket(LBTC_USDC_MARKET),
             false,
             borrowAssets, //
@@ -207,7 +207,7 @@ contract MorphoBlueTest is Test, ComposerUtils {
         uint256 borrowAssets = 30_000.0e6;
         depositCollateralToMorpho(user, assets);
 
-        bytes memory borrowCall = morphoBorrow(
+        bytes memory borrowCall = encodeMorphoBorrow(
             encodeMarket(LBTC_USDC_MARKET),
             false,
             borrowAssets, //
@@ -227,7 +227,7 @@ contract MorphoBlueTest is Test, ComposerUtils {
             SweepType.VALIDATE //
         );
 
-        bytes memory repayCall = morphoRepay(
+        bytes memory repayCall = encodeMorphoRepay(
             encodeMarket(LBTC_USDC_MARKET),
             false,
             borrowAssets, //
@@ -260,7 +260,7 @@ contract MorphoBlueTest is Test, ComposerUtils {
         uint256 borrowAssets = 30_000.0e6;
         depositCollateralToMorpho(user, assets);
 
-        bytes memory borrowCall = morphoBorrow(
+        bytes memory borrowCall = encodeMorphoBorrow(
             encodeMarket(LBTC_USDC_MARKET),
             false,
             borrowAssets, //
@@ -276,7 +276,7 @@ contract MorphoBlueTest is Test, ComposerUtils {
         logMarket(marketId(LBTC_USDC_MARKET));
         logPos(marketId(LBTC_USDC_MARKET), user);
 
-        bytes memory repayCall = morphoRepay(
+        bytes memory repayCall = encodeMorphoRepay(
             encodeMarket(LBTC_USDC_MARKET),
             false,
             type(uint120).max, //

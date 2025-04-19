@@ -47,7 +47,7 @@ contract DodoV2LightTest is BaseTest {
 
     function dodoPoolWETHJOJOSwapPath(address receiver) internal view returns (bytes memory data) {
         data = abi.encodePacked(WETH).attachBranch(0, 0, hex"");
-        data = data.dodoStyleSwap(
+        data = data.encodeDodoStyleSwap(
             JOJO,
             receiver,
             DODO_WETH_JOJO,
@@ -67,7 +67,7 @@ contract DodoV2LightTest is BaseTest {
         );
         // no branching
         data = data.attachBranch(0, 0, hex"");
-        data = data.dodoStyleSwap(
+        data = data.encodeDodoStyleSwap(
             JOJO,
             receiver,
             DODO_WETH_JOJO,
