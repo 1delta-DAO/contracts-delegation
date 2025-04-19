@@ -598,6 +598,26 @@ library CalldataLib {
         ); // 14 bytes
     }
 
+    function encodeBalancerV2FlashLoan(
+        address asset,
+        uint256 amount,
+        uint8 poolId, //
+        bytes memory data
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            uint8(ComposerCommands.FLASH_LOAN),
+            uint8(FlashLoanIds.BALANCER_V2),
+            asset, //
+            uint128(amount),
+            uint16(data.length + 1),
+            encodeUint8AndBytes(poolId, data)
+        );
+    }
+
     function encodeFlashLoan(
         address asset,
         uint256 amount,

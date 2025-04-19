@@ -3,17 +3,15 @@
 pragma solidity 0.8.28;
 
 import {BaseComposer} from "../../BaseComposer.sol";
-import {SwapCallbacks} from "./callbacks/flashSwap/SwapCallbacks.sol";
-import {FlashLoanCallbacks} from "./callbacks/flashLoan/FlashLoanCallbacks.sol";
+import {SwapCallbacks} from "./flashSwap/SwapCallbacks.sol";
+import {FlashLoanCallbacks} from "./flashLoan/FlashLoanCallbacks.sol";
+import {UniversalFlashLoan} from "./flashLoan/UniversalFlashLoan.sol";
 
 /**
  * @title Chain-dependent Universal aggregator contract.
  * @author 1delta Labs AG
  */
-contract OneDeltaComposerPolygon is BaseComposer, FlashLoanCallbacks, SwapCallbacks {
-    // initialize with an immutable forwarder
-    constructor() BaseComposer() {}
-
+contract OneDeltaComposerPolygon is BaseComposer, UniversalFlashLoan, SwapCallbacks {
     /**
      * Execute a set of packed operations
      */
@@ -29,6 +27,20 @@ contract OneDeltaComposerPolygon is BaseComposer, FlashLoanCallbacks, SwapCallba
             callerAddress,
             currentOffset,
             calldataLength //
+        );
+    }
+
+    function _universalFlashLoan(
+        uint256 currentOffset,
+        address callerAddress
+    )
+        internal
+        override(UniversalFlashLoan, BaseComposer)
+        returns (uint256)
+    {
+        return UniversalFlashLoan._universalFlashLoan(
+            currentOffset,
+            callerAddress //
         );
     }
 }

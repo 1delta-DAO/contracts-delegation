@@ -5,7 +5,7 @@ import { getAddress } from "ethers/lib/utils";
 import * as fs from "fs";
 import { templateAaveV2 } from "./templates/flashLoan/aaveV2Callback";
 import { templateAaveV3 } from "./templates/flashLoan/aaveV3Callback";
-import { templateFlahLoan } from "./templates/flashLoan/flashLoanCallbacks.ts";
+import { templateFlashLoan } from "./templates/flashLoan/flashLoanCallbacks.ts";
 import { BALANCER_V2_FORKS } from "./dex/balancerV2";
 import { templateMorphoBlue } from "./templates/flashLoan/morphoCallback";
 import { templateBalancerV2 } from "./templates/flashLoan/balancerV2Callback";
@@ -158,7 +158,7 @@ async function main() {
         }
 
         const filePathFlashCallbacks = `./contracts/1delta/modules/light/chains/${key}/callbacks/flashLoan/FlashLoanCallbacks.sol`
-        fs.writeFileSync(filePathFlashCallbacks, templateFlahLoan(
+        fs.writeFileSync(filePathFlashCallbacks, templateFlashLoan(
             lenderIdsAaveV2.length > 0,
             lenderIdsAaveV3.length > 0,
             lenderIdsMorphoBlue.length > 0,

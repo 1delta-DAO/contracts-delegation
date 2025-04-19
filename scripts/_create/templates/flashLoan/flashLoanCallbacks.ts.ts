@@ -1,6 +1,6 @@
 
 
-export const templateFlahLoan = (
+export const templateFlashLoan = (
     hasAaveV2: boolean,
     hasAaveV3: boolean,
     hasMorpho: boolean,
@@ -10,7 +10,7 @@ export const templateFlahLoan = (
 
     if (hasAaveV2) {
         cbs.push({
-            imports: `import {AaveV2FlashLoanCallback} from "./AaveV2Callback.sol";`,
+            imports: `import {AaveV2FlashLoanCallback} from "./callbacks/AaveV2Callback.sol";`,
             name: "AaveV2FlashLoanCallback"
         })
     }
@@ -18,7 +18,7 @@ export const templateFlahLoan = (
 
     if (hasAaveV3) {
         cbs.push({
-            imports: `import {AaveV3FlashLoanCallback} from "./AaveV3Callback.sol";`,
+            imports: `import {AaveV3FlashLoanCallback} from "./callbacks/AaveV3Callback.sol";`,
             name: "AaveV3FlashLoanCallback"
         })
     }
@@ -26,7 +26,7 @@ export const templateFlahLoan = (
 
     if (hasMorpho) {
         cbs.push({
-            imports: `import {MorphoFlashLoanCallback} from "./MorphoCallback.sol";`,
+            imports: `import {MorphoFlashLoanCallback} from "./callbacks/MorphoCallback.sol";`,
             name: "MorphoFlashLoanCallback"
         })
     }
@@ -34,12 +34,12 @@ export const templateFlahLoan = (
 
     if (hasBalancerV2) {
         cbs.push({
-            imports: `import {BalancerV2FlashLoanCallback} from "./BalancerV2Callback.sol";`,
+            imports: `import {BalancerV2FlashLoanCallback} from "./callbacks/BalancerV2Callback.sol";`,
             name: "BalancerV2FlashLoanCallback"
         })
     }
 
-    if(cbs.length ===0) throw new Error("No Flash loans")
+    if (cbs.length === 0) throw new Error("No Flash loans")
 
     return `
 // SPDX-License-Identifier: BUSL-1.1

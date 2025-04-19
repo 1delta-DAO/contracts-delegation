@@ -145,19 +145,39 @@ contract FlashLoanLightTest is BaseTest {
             amount, //
             SweepType.AMOUNT
         );
-        bytes memory d = CalldataLib.encodeFlashLoan(
+        bytes memory d = CalldataLib.encodeBalancerV2FlashLoan(
             asset,
             amount,
-            BALANCER_V2_VAULT,
-            uint8(1), // balancer v2 type
             uint8(0), //
             abi.encodePacked(dp, t)
         );
         vm.prank(user);
         oneD.deltaCompose(d);
 
-        vm.expectRevert();
-        oneD.executeOperation(asset, 0, 9, user, d);
+        address[] memory assets = new address[](1);
+        uint256[] memory ams = new uint256[](1);
+
+        vm.expectRevert(bytes4(keccak256("InvalidFlashLoan()")));
+        oneD.receiveFlashLoan(
+            assets,
+            ams,
+            ams,
+            abi.encodePacked(
+                uint8(0), // correct Id
+                user // victim
+            )
+        );
+
+        vm.expectRevert(bytes4(keccak256("InvalidFlashLoan()")));
+        oneD.receiveFlashLoan(
+            assets,
+            ams,
+            ams,
+            abi.encodePacked(
+                uint8(99), // wrong Id
+                user // victim
+            )
+        );
     }
 
     function test_light_flash_loan_balancerV3() external {

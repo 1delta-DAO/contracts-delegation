@@ -5,13 +5,15 @@ import { getAddress } from "ethers/lib/utils";
 import * as fs from "fs";
 import { templateAaveV2 } from "./templates/flashLoan/aaveV2Callback";
 import { templateAaveV3 } from "./templates/flashLoan/aaveV3Callback";
-import { templateFlahLoan } from "./templates/flashLoan/flashLoanCallbacks.ts";
+import { templateFlashLoan } from "./templates/flashLoan/flashLoanCallbacks.ts";
 import { BALANCER_V2_FORKS } from "./dex/balancerV2";
 import { templateMorphoBlue } from "./templates/flashLoan/morphoCallback";
 import { templateBalancerV2 } from "./templates/flashLoan/balancerV2Callback";
 import { templateComposer } from "./templates/composer";
 import { CREATE_CHAIN_IDS, getChainKey, toCamelCaseWithFirstUpper } from "./config";
 import { FLASH_LOAN_IDS } from "./flashLoan/flashLoanIds";
+import { templateUniversalFlashLoan } from "./templates/flashLoan/universalFlashLoan";
+import { templateBalancerV2Trigger } from "./templates/flashLoan/balancerV2Trigger";
 
 /** constant for the head part */
 function createConstant(pool: string, lender: string) {
@@ -36,14 +38,29 @@ function createCaseSolo(lender: string) {
                 }`
 }
 
+/** switch-case entry for flash loan that validates a caller */
+function createCaseTriggerBalancerV2(lender: string, lenderId: string) {
+    return `case ${lenderId} {
+                pool := ${lender}
+            }\n`
+}
+
+/** switch-case entry for flash loan that validates a caller */
+function createCaseSoloTriggerBalancerV2(lender: string) {
+    return `
+             let pool := ${lender}
+    `
+}
+
+
+
 /** start of switch case clauses if we allow multiple flash loan sources */
 const multiSwitchCaseHead = `
-            let source := and(UINT8_MASK, shr(88, firstWord))
             // Validate the caller
             // We check that the caller is one of the lending pools
             // This is a crucial check since this makes
             // the initiator paramter the caller of flashLoan
-            switch source
+            switch and(UINT8_MASK, shr(88, firstWord))
             `
 /** end of switch case clauses if we allow multiple flash loan sources */
 const multiSwitchCaseEnd = `
@@ -108,11 +125,11 @@ async function main() {
         });
 
 
-        let poolIdsMBalancerV2: FlashLoanIdData[] = []
+        let poolIdsBalancerV2: FlashLoanIdData[] = []
         Object.entries(BALANCER_V2_FORKS).forEach(([lender, maps]) => {
             Object.entries(maps).forEach(([chains, e]) => {
                 if (chains === chain) {
-                    poolIdsMBalancerV2.push({
+                    poolIdsBalancerV2.push({
                         entityName: lender,
                         entityId: FLASH_LOAN_IDS[lender].toString(),
                         pool: e
@@ -192,24 +209,34 @@ async function main() {
          */
         let constantsDataBalancerV2 = ``
         let switchCaseContentBalancerV2 = ``
-        poolIdsMBalancerV2 = poolIdsMBalancerV2
+        let switchCaseContentBalancerV2Trigger = ``
+        poolIdsBalancerV2 = poolIdsBalancerV2
             .sort((a, b) => Number(a.entityId) < Number(b.entityId) ? -1 : 1)
-        if (poolIdsMBalancerV2.length === 1) {
-            const { pool, entityName } = poolIdsMBalancerV2[0]
+        if (poolIdsBalancerV2.length === 1) {
+            const { pool, entityName } = poolIdsBalancerV2[0]
             constantsDataBalancerV2 += createConstant(pool, entityName)
             switchCaseContentBalancerV2 += createCaseSolo(entityName)
+            switchCaseContentBalancerV2Trigger += createCaseSoloTriggerBalancerV2(entityName)
         } else {
             switchCaseContentBalancerV2 += multiSwitchCaseHead
-            poolIdsMBalancerV2.forEach(({ pool, entityName, entityId }) => {
+            switchCaseContentBalancerV2Trigger += `
+                            let pool
+                            // switch-case over poolId to ensure trusted target
+                            switch and(UINT16_MASK, shr(104, slice))
+
+                            `
+            poolIdsBalancerV2.forEach(({ pool, entityName, entityId }) => {
                 constantsDataBalancerV2 += createConstant(pool, entityName)
                 switchCaseContentBalancerV2 += createCase(entityName, entityId)
+                switchCaseContentBalancerV2Trigger += createCaseTriggerBalancerV2(entityName, entityId)
             })
             switchCaseContentBalancerV2 += multiSwitchCaseEnd
+            switchCaseContentBalancerV2Trigger += `default { revert (0,0 )}`
         }
 
         /** Write files */
 
-        const flashLoanCallbackDir = `./contracts/1delta/modules/light/chains/${key}/callbacks/flashLoan/`
+        const flashLoanCallbackDir = `./contracts/1delta/modules/light/chains/${key}/flashLoan/callbacks/`
         fs.mkdirSync(flashLoanCallbackDir, { recursive: true });
 
         if (lenderIdsAaveV2.length > 0) {
@@ -227,19 +254,34 @@ async function main() {
             fs.writeFileSync(filePathMorpho, templateMorphoBlue(constantsDataMorpho, switchCaseContentMorpho));
         }
 
-        if (poolIdsMBalancerV2.length > 0) {
+        if (poolIdsBalancerV2.length > 0) {
             const filePathBalancerV2 = flashLoanCallbackDir + "BalancerV2Callback.sol";
             fs.writeFileSync(filePathBalancerV2, templateBalancerV2(constantsDataBalancerV2, switchCaseContentBalancerV2));
         }
 
-        const filePathFlashCallbacks = `./contracts/1delta/modules/light/chains/${key}/callbacks/flashLoan/FlashLoanCallbacks.sol`
-        fs.writeFileSync(filePathFlashCallbacks, templateFlahLoan(
+        const filePathFlashCallbacks = `./contracts/1delta/modules/light/chains/${key}/flashLoan/FlashLoanCallbacks.sol`
+        fs.writeFileSync(filePathFlashCallbacks, templateFlashLoan(
             lenderIdsAaveV2.length > 0,
             lenderIdsAaveV3.length > 0,
             lenderIdsMorphoBlue.length > 0,
-            poolIdsMBalancerV2.length > 0
+            poolIdsBalancerV2.length > 0
         ));
 
+
+        const filePathFlashLoans = `./contracts/1delta/modules/light/chains/${key}/flashLoan/UniversalFlashLoan.sol`
+        fs.writeFileSync(filePathFlashLoans, templateUniversalFlashLoan(
+            lenderIdsMorphoBlue.length > 0,
+            lenderIdsAaveV2.length > 0,
+            lenderIdsAaveV3.length > 0,
+            poolIdsBalancerV2.length > 0
+        ));
+
+        if (poolIdsBalancerV2.length > 0) {
+            const filePathBalancerV2FlashLoanTrigger = `./contracts/1delta/modules/light/chains/${key}/flashLoan/BalancerV2.sol`
+            fs.writeFileSync(filePathBalancerV2FlashLoanTrigger, templateBalancerV2Trigger(
+                constantsDataBalancerV2, switchCaseContentBalancerV2Trigger
+            ));
+        }
 
         const filePathComposer = `./contracts/1delta/modules/light/chains/${key}/Composer.sol`
         fs.writeFileSync(filePathComposer, templateComposer(toCamelCaseWithFirstUpper(key)));

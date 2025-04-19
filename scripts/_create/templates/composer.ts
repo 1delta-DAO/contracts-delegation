@@ -6,16 +6,15 @@ export const templateComposer = (name: string) => `
 pragma solidity 0.8.28;
 
 import {BaseComposer} from "../../BaseComposer.sol";
-import {SwapCallbacks} from "./callbacks/flashSwap/SwapCallbacks.sol";
-import {FlashLoanCallbacks} from "./callbacks/flashLoan/FlashLoanCallbacks.sol";
+import {SwapCallbacks} from "./flashSwap/SwapCallbacks.sol";
+import {FlashLoanCallbacks} from "./flashLoan/FlashLoanCallbacks.sol";
+import {UniversalFlashLoan} from "./flashLoan/UniversalFlashLoan.sol";
 
 /**
  * @title Chain-dependent Universal aggregator contract.
  * @author 1delta Labs AG
  */
-contract OneDeltaComposer${name} is BaseComposer, FlashLoanCallbacks, SwapCallbacks {
-    // initialize with an immutable forwarder
-    constructor() BaseComposer() {}
+contract OneDeltaComposer${name} is BaseComposer, UniversalFlashLoan, SwapCallbacks {
 
     /**
      * Execute a set of packed operations
@@ -31,6 +30,20 @@ contract OneDeltaComposer${name} is BaseComposer, FlashLoanCallbacks, SwapCallba
                 currentOffset,
                 calldataLength //
             );
+    }
+
+    function _universalFlashLoan(
+        uint256 currentOffset,
+        address callerAddress
+    )
+        internal
+        override(UniversalFlashLoan, BaseComposer)
+        returns (uint256)
+    {
+        return UniversalFlashLoan._universalFlashLoan(
+            currentOffset,
+            callerAddress //
+        );
     }
 }
 

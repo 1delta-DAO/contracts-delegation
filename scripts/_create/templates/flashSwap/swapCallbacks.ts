@@ -11,7 +11,7 @@ export const templateSwapCallbacks = (
 
     if (hasV4) {
         cbs.push({
-            imports: `import {UniV4Callbacks} from "./UniV4Callback.sol";`,
+            imports: `import {UniV4Callbacks} from "./callbacks/UniV4Callback.sol";`,
             name: "UniV4Callbacks",
             overr: "UniV4Callbacks"
         })
@@ -19,7 +19,7 @@ export const templateSwapCallbacks = (
 
     if (hasV3) {
         cbs.push({
-            imports: `import {UniV3Callbacks, V3Callbacker} from "./UniV3Callback.sol";`,
+            imports: `import {UniV3Callbacks, V3Callbacker} from "./callbacks/UniV3Callback.sol";`,
             name: "UniV3Callbacks",
             overr: "V3Callbacker"
         })
@@ -27,7 +27,7 @@ export const templateSwapCallbacks = (
 
     if (hasV2) {
         cbs.push({
-            imports: `import {UniV2Callbacks} from "./UniV2Callback.sol";`,
+            imports: `import {UniV2Callbacks} from "./callbacks/UniV2Callback.sol";`,
             name: "UniV2Callbacks",
             overr: "UniV2Callbacks"
         })
@@ -35,7 +35,7 @@ export const templateSwapCallbacks = (
 
     if (hasDodo) {
         cbs.push({
-            imports: `import {DodoV2Callbacks} from "./DodoV2Callback.sol";`,
+            imports: `import {DodoV2Callbacks} from "./callbacks/DodoV2Callback.sol";`,
             name: "DodoV2Callbacks",
             overr: "DodoV2Callbacks"
         })
@@ -43,7 +43,7 @@ export const templateSwapCallbacks = (
 
     if (hasBalancerV3) {
         cbs.push({
-            imports: `import {BalancerV3Callbacks} from "./BalancerV3Callback.sol";`,
+            imports: `import {BalancerV3Callbacks} from "./callbacks/BalancerV3Callback.sol";`,
             name: "BalancerV3Callbacks",
             overr: "BalancerV3Callbacks"
         })

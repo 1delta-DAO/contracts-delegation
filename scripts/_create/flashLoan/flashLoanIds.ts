@@ -59,5 +59,6 @@ export const FLASH_LOAN_IDS: { [e: string]: number } = {
 
     /** Balancer V2 */
     [DexProtocol.BALANCER_V2]: 0,
-    [DexProtocol.SYMMETRIC]: 1
+    [DexProtocol.SYMMETRIC]: 1,
+    [DexProtocol.SWAAP]: 2
 }

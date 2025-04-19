@@ -302,6 +302,27 @@ const MERCHANT_MOE: UniswapV2Info = {
     forkId: "0"
 }
 
+const SQUADSWAP_V2: UniswapV2Info = {
+    factories: {
+        [Chain.BNB_SMART_CHAIN_MAINNET]: "0x918Adf1f2C03b244823Cd712E010B6e3CD653DbA",
+        // [Chain.ARBITRUM_ONE]: "0xba34aA640b8Be02A439221BCbea1f48c1035EEF9",
+        // [Chain.BASE]: "0xba34aA640b8Be02A439221BCbea1f48c1035EEF9",
+        // [Chain.BLAST]: "0x4B599f3425D54AfBf94bFD41EA9931fF92AD6551",
+        // [Chain.POLYGON_MAINNET]: "0xEE8F37D490CB7Ea1dae7d080c5738894731299f0",
+        // [Chain.OP_MAINNET]: "0xba34aA640b8Be02A439221BCbea1f48c1035EEF9",
+    },
+    codeHash: {
+        [Chain.BNB_SMART_CHAIN_MAINNET]: "0x666b17e0f0313ce8c608a4761ae7fd0e1c936c7c63eb833ac540370647c0efdb",
+        // [Chain.ARBITRUM_ONE]: "0x98859e91a2d7077a5647fc52bfa56461f1be3991cfafdee3a968bf5d9a947f22",
+        // [Chain.BASE]: "0x98859e91a2d7077a5647fc52bfa56461f1be3991cfafdee3a968bf5d9a947f22",
+        // [Chain.BLAST]: "0x58c2c3390cddef0a17aed31cf6b51cc4b11e96866b8b16a613fc7999daefb24e",
+        // [Chain.POLYGON_MAINNET]: "0x98859e91a2d7077a5647fc52bfa56461f1be3991cfafdee3a968bf5d9a947f22",
+        // [Chain.OP_MAINNET]: "0x98859e91a2d7077a5647fc52bfa56461f1be3991cfafdee3a968bf5d9a947f22",
+    },
+    forkId: "0",
+    callbackSelector: "0xa691a9c900000000000000000000000000000000000000000000000000000000", // squadswapCall
+}
+
 interface UniswapV2Info {
     factories: { [chain: string]: string },
     codeHash: { [chainOrDefault: string]: string },
@@ -323,6 +344,7 @@ export const UNISWAP_V2_FORKS: { [s: string]: UniswapV2Info } = {
     [DexProtocol.POLYCAT]: POLYCAT,
     [DexProtocol.COMETH]: COMETH,
     [DexProtocol.QUICKSWAP_V2]: QUICKSWAP_V2,
+    [DexProtocol.SQUADSWAP_V2]: SQUADSWAP_V2,
     [DexProtocol.MERCHANT_MOE]: MERCHANT_MOE,
 
     "SHADOW_V2": SHADOW_V2,

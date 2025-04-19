@@ -10,7 +10,6 @@ import {UniversalLending} from "./lending/UniversalLending.sol";
 import {Permits} from "./permit/Permits.sol";
 import {Swaps} from "./swappers/Swaps.sol";
 import {Gen2025DexActions} from "./singletons/Gen2025DexActions.sol";
-import {UniversalFlashLoan} from "./flashLoan/UniversalFlashLoan.sol";
 
 /**
  * @title Base aggregator contract that needs overrides for explicit chains.
@@ -23,7 +22,6 @@ abstract contract BaseComposer is
     Swaps,
     Gen2025DexActions,
     UniversalLending,
-    UniversalFlashLoan,
     ERC4646Operations,
     Transfers,
     Permits,
@@ -123,4 +121,6 @@ abstract contract BaseComposer is
             if (currentOffset >= maxIndex) break;
         }
     }
+
+    function _universalFlashLoan(uint256 currentOffset, address callerAddress) internal virtual returns (uint256) {}
 }
