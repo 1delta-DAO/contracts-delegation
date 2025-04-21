@@ -17,36 +17,36 @@ contract MockERC20 is ERC20 {
 
     // IERC20Permit
     function permit(
-        address owner, 
-        address spender, 
-        uint256 value, 
-        uint256 /* deadline */, 
-        uint8 /* v */, 
-        bytes32 /* r */, 
+        address owner,
+        address spender,
+        uint256 value,
+        uint256, /* deadline */
+        uint8, /* v */
+        bytes32, /* r */
         bytes32 /* s */
-    ) external {
+    )
+        external
+    {
         _approve(owner, spender, value);
     }
 
     // IDaiLikePermit
     function permit(
-        address holder, 
-        address spender, 
-        uint256 /* nonce */, 
-        uint256 /* expiry */, 
-        bool /* allowed */, 
-        uint8 /* v */, 
-        bytes32 /* r */, 
+        address holder,
+        address spender,
+        uint256, /* nonce */
+        uint256, /* expiry */
+        bool, /* allowed */
+        uint8, /* v */
+        bytes32, /* r */
         bytes32 /* s */
-    ) external {
-        _approve(holder, spender, type(uint256).max); 
+    )
+        external
+    {
+        _approve(holder, spender, type(uint256).max);
     }
 
-    function encodeERC20Permit(
-        address owner,
-        address spender,
-        uint256 value
-    ) public pure returns (bytes memory data) {
+    function encodeERC20Permit(address owner, address spender, uint256 value) public pure returns (bytes memory data) {
         // IERC20Permit.permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
         data = abi.encode(owner, spender, value, uint256(0), uint8(0), bytes32(""), bytes32(""));
     }
@@ -56,11 +56,8 @@ contract MockERC20 is ERC20 {
         return abi.encodePacked(value, uint32(0), uint256(0), uint256(0));
     }
 
-    function encodeDaiLikePermit(
-        address holder,
-        address spender
-    ) public pure returns (bytes memory data) {
-        // IDaiLikePermit.permit(address holder, address spender, 
+    function encodeDaiLikePermit(address holder, address spender) public pure returns (bytes memory data) {
+        // IDaiLikePermit.permit(address holder, address spender,
         // uint256 nonce, uint256 expiry, bool allowed, uint8 v, bytes32 r, bytes32 s)
         data = abi.encode(holder, spender, uint256(0), uint256(0), true, uint8(0), bytes32(""), bytes32(""));
     }
@@ -74,8 +71,7 @@ contract MockERC20 is ERC20 {
         data = abi.encodeWithSelector(IERC20.transferFrom.selector, sender, recipient, amount);
     }
 
-    function encodePermit2TransferFrom(address user, address spender, uint256 amount, address token) public pure 
-        returns (bytes memory data) {
+    function encodePermit2TransferFrom(address user, address spender, uint256 amount, address token) public pure returns (bytes memory data) {
         // transferFrom(address user, address spender, uint160 amount, address token)
         data = abi.encodeWithSelector(IPermit2.transferFrom.selector, user, spender, amount, token);
     }

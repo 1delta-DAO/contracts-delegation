@@ -76,7 +76,11 @@ contract ArbitrumQuotingTest is DeltaSetup {
         address tokenOut,
         uint8 poolId,
         uint16 fee
-    ) internal view returns (bytes memory data) {
+    )
+        internal
+        view
+        returns (bytes memory data)
+    {
         address pool = testQuoter.v3TypePool(tokenIn, mid, fee, poolId);
         address pool2 = testQuoter.v3TypePool(mid, tokenOut, fee, poolId);
         return abi.encodePacked(tokenIn, uint8(0), poolId, pool, fee, mid, uint8(0), poolId, pool2, fee, tokenOut, uint8(0), uint8(99));

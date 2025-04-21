@@ -14,7 +14,6 @@ contract IzumiQuotingTest is DeltaSetup {
         vm.createSelectFork({blockNumber: 63134243, urlOrAlias: "https://mantle-mainnet.public.blastapi.io"});
 
         intitializeFullDelta();
-
     }
 
     function test_mantle_izumi_quote_spot_exact_in_works() external {

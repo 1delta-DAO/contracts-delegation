@@ -9,17 +9,22 @@ interface ISwapPool {
         int256 amountRequired,
         uint160 limitSqrtPrice,
         bytes calldata data
-    ) external returns (int256 amount0, int256 amount1);
+    )
+        external
+        returns (int256 amount0, int256 amount1);
 
-    /** IZUMI */
-
+    /**
+     * IZUMI
+     */
     function swapY2X(
         // exact in swap token1 to 0
         address recipient,
         uint128 amount,
         int24 highPt,
         bytes calldata data
-    ) external returns (uint256 amountX, uint256 amountY);
+    )
+        external
+        returns (uint256 amountX, uint256 amountY);
 
     function swapY2XDesireX(
         // exact out swap token1 to 0
@@ -27,7 +32,9 @@ interface ISwapPool {
         uint128 desireX,
         int24 highPt,
         bytes calldata data
-    ) external returns (uint256 amountX, uint256 amountY);
+    )
+        external
+        returns (uint256 amountX, uint256 amountY);
 
     function swapX2Y(
         // exact in swap token0 to 1
@@ -35,7 +42,9 @@ interface ISwapPool {
         uint128 amount,
         int24 lowPt,
         bytes calldata data
-    ) external returns (uint256 amountX, uint256 amountY);
+    )
+        external
+        returns (uint256 amountX, uint256 amountY);
 
     function swapX2YDesireY(
         // exact out swap token0 to 1
@@ -43,7 +52,9 @@ interface ISwapPool {
         uint128 desireY,
         int24 lowPt,
         bytes calldata data
-    ) external returns (uint256 amountX, uint256 amountY);
+    )
+        external
+        returns (uint256 amountX, uint256 amountY);
 }
 
 abstract contract V3TypeQuoter {
@@ -174,15 +185,13 @@ abstract contract V3TypeQuoter {
     function getV3TypeAmountOut(address tokenIn, address tokenOut, address pair, uint256 amountIn) internal returns (uint256 amountOut) {
         bool zeroForOne = tokenIn < tokenOut;
 
-        try
-            ISwapPool(pair).swap(
-                address(this), // address(0) might cause issues with some tokens
-                zeroForOne,
-                int256(amountIn),
-                zeroForOne ? MIN_SQRT_RATIO : MAX_SQRT_RATIO,
-                abi.encodePacked(tokenIn, tokenOut)
-            )
-        {} catch (bytes memory reason) {
+        try ISwapPool(pair).swap(
+            address(this), // address(0) might cause issues with some tokens
+            zeroForOne,
+            int256(amountIn),
+            zeroForOne ? MIN_SQRT_RATIO : MAX_SQRT_RATIO,
+            abi.encodePacked(tokenIn, tokenOut)
+        ) {} catch (bytes memory reason) {
             return parseRevertReason(reason);
         }
     }
@@ -193,29 +202,28 @@ abstract contract V3TypeQuoter {
         address tokenOut,
         address pair,
         uint128 amount
-    ) internal returns (uint256 amountOut) {
+    )
+        internal
+        returns (uint256 amountOut)
+    {
         if (tokenIn < tokenOut) {
             int24 boundaryPoint = -799999;
-            try
-                ISwapPool(pair).swapX2Y(
-                    address(this), // address(0) might cause issues with some tokens
-                    amount,
-                    boundaryPoint,
-                    abi.encodePacked(tokenIn, tokenOut)
-                )
-            {} catch (bytes memory reason) {
+            try ISwapPool(pair).swapX2Y(
+                address(this), // address(0) might cause issues with some tokens
+                amount,
+                boundaryPoint,
+                abi.encodePacked(tokenIn, tokenOut)
+            ) {} catch (bytes memory reason) {
                 return parseRevertReason(reason);
             }
         } else {
             int24 boundaryPoint = 799999;
-            try
-                ISwapPool(pair).swapY2X(
-                    address(this), // address(0) might cause issues with some tokens
-                    amount,
-                    boundaryPoint,
-                    abi.encodePacked(tokenIn, tokenOut)
-                )
-            {} catch (bytes memory reason) {
+            try ISwapPool(pair).swapY2X(
+                address(this), // address(0) might cause issues with some tokens
+                amount,
+                boundaryPoint,
+                abi.encodePacked(tokenIn, tokenOut)
+            ) {} catch (bytes memory reason) {
                 return parseRevertReason(reason);
             }
         }
@@ -226,15 +234,13 @@ abstract contract V3TypeQuoter {
 
         // if no price limit has been specified, cache the output amount for comparison in the swap callback
         amountOutCached = amountOut;
-        try
-            ISwapPool(pair).swap(
-                address(this), // address(0) might cause issues with some tokens
-                zeroForOne,
-                -int256(amountOut),
-                zeroForOne ? MIN_SQRT_RATIO : MAX_SQRT_RATIO,
-                abi.encodePacked(tokenOut, tokenIn)
-            )
-        {} catch (bytes memory reason) {
+        try ISwapPool(pair).swap(
+            address(this), // address(0) might cause issues with some tokens
+            zeroForOne,
+            -int256(amountOut),
+            zeroForOne ? MIN_SQRT_RATIO : MAX_SQRT_RATIO,
+            abi.encodePacked(tokenOut, tokenIn)
+        ) {} catch (bytes memory reason) {
             delete amountOutCached; // clear cache
             return parseRevertReason(reason);
         }
@@ -246,30 +252,29 @@ abstract contract V3TypeQuoter {
         address tokenOut,
         address pair,
         uint128 desire
-    ) internal returns (uint256 amountIn) {
+    )
+        internal
+        returns (uint256 amountIn)
+    {
         amountOutCached = desire;
         if (tokenIn < tokenOut) {
             int24 boundaryPoint = -799999;
-            try
-                ISwapPool(pair).swapX2YDesireY(
-                    address(this), // address(0) might cause issues with some tokens
-                    desire + 1,
-                    boundaryPoint,
-                    abi.encodePacked(tokenOut, tokenIn)
-                )
-            {} catch (bytes memory reason) {
+            try ISwapPool(pair).swapX2YDesireY(
+                address(this), // address(0) might cause issues with some tokens
+                desire + 1,
+                boundaryPoint,
+                abi.encodePacked(tokenOut, tokenIn)
+            ) {} catch (bytes memory reason) {
                 return parseRevertReason(reason);
             }
         } else {
             int24 boundaryPoint = 799999;
-            try
-                ISwapPool(pair).swapY2XDesireX(
-                    address(this), // address(0) might cause issues with some tokens
-                    desire + 1,
-                    boundaryPoint,
-                    abi.encodePacked(tokenOut, tokenIn)
-                )
-            {} catch (bytes memory reason) {
+            try ISwapPool(pair).swapY2XDesireX(
+                address(this), // address(0) might cause issues with some tokens
+                desire + 1,
+                boundaryPoint,
+                abi.encodePacked(tokenOut, tokenIn)
+            ) {} catch (bytes memory reason) {
                 return parseRevertReason(reason);
             }
         }

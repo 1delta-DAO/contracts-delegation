@@ -8,13 +8,15 @@ interface IV2Router {
     function addLiquidity(
         address tokenA,
         address tokenB,
-        uint amountADesired,
-        uint amountBDesired,
-        uint amountAMin,
-        uint amountBMin,
+        uint256 amountADesired,
+        uint256 amountBDesired,
+        uint256 amountAMin,
+        uint256 amountBMin,
         address to,
-        uint deadline
-    ) external returns (uint amountA, uint amountB, uint liquidity);
+        uint256 deadline
+    )
+        external
+        returns (uint256 amountA, uint256 amountB, uint256 liquidity);
 }
 
 contract SwapGen2Test is DeltaSetup {
@@ -27,9 +29,9 @@ contract SwapGen2Test is DeltaSetup {
         DeflatingERC20 t = new DeflatingERC20(1_000_000.0e18);
 
         vm.prank(creator);
-        t.approve(FUSION_ROUTER, type(uint).max);
+        t.approve(FUSION_ROUTER, type(uint256).max);
         vm.prank(creator);
-        IERC20All(otherToken).approve(FUSION_ROUTER, type(uint).max);
+        IERC20All(otherToken).approve(FUSION_ROUTER, type(uint256).max);
 
         deal(otherToken, creator, 2e30);
         token = address(t);
@@ -42,12 +44,16 @@ contract SwapGen2Test is DeltaSetup {
             0,
             0,
             creator,
-            type(uint).max //
+            type(uint256).max //
         );
         console.log("supplied fot token", token);
     }
 
-    function test_mantle_gen_2_buy_FOT() external /** address user, uint8 lenderId */ {
+    function test_mantle_gen_2_buy_FOT() external 
+    /**
+     * address user, uint8 lenderId
+     */
+    {
         address user = testUser;
         vm.assume(user != address(0));
         address assetFrom = TokensMantle.USDT;
@@ -86,7 +92,11 @@ contract SwapGen2Test is DeltaSetup {
         assertApproxEqAbs(373776188540138142370, balanceOut, 1e6);
     }
 
-    function test_mantle_gen_2_sell_FOT() external /** address user, uint8 lenderId */ {
+    function test_mantle_gen_2_sell_FOT() external 
+    /**
+     * address user, uint8 lenderId
+     */
+    {
         address user = testUser;
         vm.assume(user != address(0));
         address mid = TokensMantle.WMNT;
@@ -104,10 +114,7 @@ contract SwapGen2Test is DeltaSetup {
         uint256 balanceOut = IERC20All(assetTo).balanceOf(user);
 
         bytes memory data = abi.encodePacked(
-            uint8(Commands.SWAP_EXACT_IN),
-            user,
-            encodeSwapAmountParamsFOT(amountToSwap, minimumOut, false, true, swapPath.length),
-            swapPath
+            uint8(Commands.SWAP_EXACT_IN), user, encodeSwapAmountParamsFOT(amountToSwap, minimumOut, false, true, swapPath.length), swapPath
         );
         vm.prank(user);
         uint256 gas = gasleft();
@@ -134,15 +141,14 @@ contract SwapGen2Test is DeltaSetup {
         );
         pool = testQuoter.v2TypePairAddress(tokenOut, mid, poolId);
         poolId = DexMappingsMantle.FUSION_X_V2;
-        return
-            abi.encodePacked(
-                data,
-                uint8(0),
-                poolId,
-                pool,
-                getV2PairFeeDenom(poolId, pool), //
-                tokenOut
-            );
+        return abi.encodePacked(
+            data,
+            uint8(0),
+            poolId,
+            pool,
+            getV2PairFeeDenom(poolId, pool), //
+            tokenOut
+        );
     }
 
     function getSpotExactInSellFOT(address tokenIn, address mid, address tokenOut) internal view returns (bytes memory data) {
@@ -158,14 +164,13 @@ contract SwapGen2Test is DeltaSetup {
         );
         poolId = DexMappingsMantle.FUSION_X_V2;
         pool = testQuoter.v2TypePairAddress(tokenOut, mid, poolId);
-        return
-            abi.encodePacked(
-                data,
-                uint8(0),
-                poolId,
-                pool,
-                getV2PairFeeDenom(poolId, pool), //
-                tokenOut
-            );
+        return abi.encodePacked(
+            data,
+            uint8(0),
+            poolId,
+            pool,
+            getV2PairFeeDenom(poolId, pool), //
+            tokenOut
+        );
     }
 }

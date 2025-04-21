@@ -55,5 +55,4 @@ library DexMappingsMantle {
     uint8 internal constant KTX = uint8(KTX_ID);
 
     uint8 internal constant DODO = uint8(DODO_ID);
-
 }

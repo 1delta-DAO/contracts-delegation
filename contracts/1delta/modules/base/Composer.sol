@@ -103,12 +103,8 @@ contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
                         minimumAmountOut := and(_UINT112_MASK, shr(128, amountIn))
                         // check whether the swap is internal by the highest bit
                         switch iszero(and(_PAY_SELF, amountIn))
-                        case 0 {
-                            payer := address()
-                        }
-                        default {
-                            payer := callerAddress
-                        }
+                        case 0 { payer := address() }
+                        default { payer := callerAddress }
                         noFOT := iszero(and(_FEE_ON_TRANSFER, amountIn))
                         // mask input amount
                         amountIn := and(_UINT112_MASK, shr(16, amountIn))
@@ -180,12 +176,8 @@ contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
                         amountInMaximum := and(_UINT112_MASK, shr(128, amountOut))
                         // check the upper bit as to whether it is a internal swap
                         switch iszero(and(_PAY_SELF, amountOut))
-                        case 0 {
-                            payer := address()
-                        }
-                        default {
-                            payer := callerAddress
-                        }
+                        case 0 { payer := address() }
+                        default { payer := callerAddress }
                         // right shift by pathlength size and masking yields
                         // the final amout out
                         amountOut := and(_UINT112_MASK, shr(16, amountOut))
@@ -250,12 +242,8 @@ contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
 
                         // upper bit signals whether to pay self
                         switch iszero(and(_PAY_SELF, temp))
-                        case 0 {
-                            payer := address()
-                        }
-                        default {
-                            payer := callerAddress
-                        }
+                        case 0 { payer := address() }
+                        default { payer := callerAddress }
                         // mask input amount
                         amountIn := and(_UINT112_MASK, shr(16, temp))
                         ////////////////////////////////////////////////////
@@ -267,15 +255,16 @@ contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
                         ////////////////////////////////////////////////////
                         if iszero(amountIn) {
                             // first we assign lenderId
-                            let lenderId_tokenIn := and(
-                                calldataload(
-                                    sub(
-                                        add(opdataLength, opdataOffset), //
-                                        33
-                                    )
-                                ),
-                                UINT16_MASK
-                            )
+                            let lenderId_tokenIn :=
+                                and(
+                                    calldataload(
+                                        sub(
+                                            add(opdataLength, opdataOffset), //
+                                            33
+                                        )
+                                    ),
+                                    UINT16_MASK
+                                )
                             switch lt(lenderId_tokenIn, MAX_ID_AAVE_V2)
                             // Aave types
                             case 1 {
@@ -449,12 +438,8 @@ contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
                         amountInMaximum := and(shr(128, firstParam), _UINT112_MASK)
                         // check highest bit
                         switch iszero(and(_PAY_SELF, firstParam))
-                        case 0 {
-                            payer := address()
-                        }
-                        default {
-                            payer := callerAddress
-                        }
+                        case 0 { payer := address() }
+                        default { payer := callerAddress }
                         amountOut := and(_UINT112_MASK, shr(16, firstParam))
                         ////////////////////////////////////////////////////
                         // Fetch the debt balance in case amountOut is zero
@@ -469,15 +454,9 @@ contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
                                 mstore(0x0, or(shl(240, lenderId), shr(96, tokenOut)))
 
                                 switch mode
-                                case 2 {
-                                    mstore(0x20, VARIABLE_DEBT_TOKENS_SLOT)
-                                }
-                                case 1 {
-                                    mstore(0x20, STABLE_DEBT_TOKENS_SLOT)
-                                }
-                                default {
-                                    revert(0, 0)
-                                }
+                                case 2 { mstore(0x20, VARIABLE_DEBT_TOKENS_SLOT) }
+                                case 1 { mstore(0x20, STABLE_DEBT_TOKENS_SLOT) }
+                                default { revert(0, 0) }
 
                                 let debtToken := sload(keccak256(0x0, 0x40))
                                 if iszero(debtToken) {
@@ -499,18 +478,10 @@ contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
                                 case 1 {
                                     let cometPool
                                     switch lenderId
-                                    case 2000 {
-                                        cometPool := COMET_USDC
-                                    }
-                                    case 2001 {
-                                        cometPool := COMET_WETH
-                                    }
-                                    case 2002 {
-                                        cometPool := COMET_USDBC
-                                    }
-                                    case 2003 {
-                                        cometPool := COMET_AERO
-                                    }
+                                    case 2000 { cometPool := COMET_USDC }
+                                    case 2001 { cometPool := COMET_WETH }
+                                    case 2002 { cometPool := COMET_USDBC }
+                                    case 2003 { cometPool := COMET_AERO }
                                     // default: load comet from storage
                                     // if it is not provided directly
                                     default {
@@ -627,16 +598,12 @@ contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
                                 mstore(add(ptr, 0x04), target)
                                 mstore(add(ptr, 0x24), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff)
 
-                                if iszero(call(gas(), token, 0x0, ptr, 0x44, ptr, 32)) {
-                                    revert(0x0, 0x0)
-                                }
+                                if iszero(call(gas(), token, 0x0, ptr, 0x44, ptr, 32)) { revert(0x0, 0x0) }
                                 sstore(key, 1)
                             }
                             nativeValue := 0
                         }
-                        default {
-                            nativeValue := amount
-                        }
+                        default { nativeValue := amount }
                         // increment offset to calldata start
                         currentOffset := add(56, currentOffset)
                         // copy calldata
@@ -647,7 +614,8 @@ contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
                                 target,
                                 nativeValue,
                                 ptr, //
-                                dataLength, // the length must be correct or the call will fail
+                                dataLength,
+                                // the length must be correct or the call will fail
                                 0x0, // output = empty
                                 0x0 // output size = zero
                             )
@@ -820,18 +788,10 @@ contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
                                     let cometCcy
                                     switch lenderId
                                     // Compound V3 USDC.e
-                                    case 2000 {
-                                        cometPool := COMET_USDC
-                                    }
-                                    case 2001 {
-                                        cometPool := COMET_WETH
-                                    }
-                                    case 2002 {
-                                        cometPool := COMET_USDBC
-                                    }
-                                    case 2003 {
-                                        cometPool := COMET_AERO
-                                    }
+                                    case 2000 { cometPool := COMET_USDC }
+                                    case 2001 { cometPool := COMET_WETH }
+                                    case 2002 { cometPool := COMET_USDBC }
+                                    case 2003 { cometPool := COMET_AERO }
                                     // default: load comet from storage
                                     // if it is not provided directly
                                     // note that the debt token is stored as
@@ -933,30 +893,44 @@ contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
                         morphoOperation := shr(248, calldataload(currentOffset))
                         currentOffset := add(currentOffset, 1)
                     }
-                    /** Morpho deposit collateral */
+                    /**
+                     * Morpho deposit collateral
+                     */
                     if (morphoOperation == 0) {
                         currentOffset = _morphoDepositCollateral(currentOffset, callerAddress);
                     }
-                    /** Morpho borrow */
+                    /**
+                     * Morpho borrow
+                     */
                     else if (morphoOperation == 1) {
                         currentOffset = _morphoBorrow(currentOffset, callerAddress);
                     }
-                    /** Morpho repay */
+                    /**
+                     * Morpho repay
+                     */
                     else if (morphoOperation == 2) {
                         currentOffset = _morphoRepay(currentOffset, callerAddress);
                     }
-                    /** Morpho withdraw colalteral */
+                    /**
+                     * Morpho withdraw colalteral
+                     */
                     else if (morphoOperation == 3) {
                         currentOffset = _morphoWithdrawCollateral(currentOffset, callerAddress);
                     }
-                    /** Morpho deposit lendingToken */
+                    /**
+                     * Morpho deposit lendingToken
+                     */
                     else if (morphoOperation == 4) {
                         currentOffset = _morphoDeposit(currentOffset, callerAddress);
                     }
-                    /** Morpho withdraw lendingToken */
+                    /**
+                     * Morpho withdraw lendingToken
+                     */
                     else if (morphoOperation == 5) {
                         currentOffset = _morphoWithdraw(currentOffset, callerAddress);
-                    } else revert();
+                    } else {
+                        revert();
+                    }
                 }
             } else if (operation < 0x30) {
                 if (operation == Commands.TRANSFER_FROM) {
@@ -1003,16 +977,17 @@ contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
                         // Check for ERC20 success. ERC20 tokens should return a boolean,
                         // but some don't. We accept 0-length return data as success, or at
                         // least 32 bytes that starts with a 32-byte boolean true.
-                        success := and(
-                            success, // call itself succeeded
-                            or(
-                                iszero(rdsize), // no return data, or
-                                and(
-                                    iszero(lt(rdsize, 32)), // at least 32 bytes
-                                    eq(mload(ptr), 1) // starts with uint256(1)
+                        success :=
+                            and(
+                                success, // call itself succeeded
+                                or(
+                                    iszero(rdsize), // no return data, or
+                                    and(
+                                        iszero(lt(rdsize, 32)), // at least 32 bytes
+                                        eq(mload(ptr), 1) // starts with uint256(1)
+                                    )
                                 )
                             )
-                        )
 
                         if iszero(success) {
                             returndatacopy(0, 0, rdsize)
@@ -1082,9 +1057,7 @@ contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
                                     revert(0, 0x4)
                                 }
                             }
-                            default {
-                                transferAmount := providedAmount
-                            }
+                            default { transferAmount := providedAmount }
                             if gt(transferAmount, 0) {
                                 let ptr := mload(0x40) // free memory pointer
 
@@ -1100,16 +1073,17 @@ contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
                                 // Check for ERC20 success. ERC20 tokens should return a boolean,
                                 // but some don't. We accept 0-length return data as success, or at
                                 // least 32 bytes that starts with a 32-byte boolean true.
-                                success := and(
-                                    success, // call itself succeeded
-                                    or(
-                                        iszero(rdsize), // no return data, or
-                                        and(
-                                            iszero(lt(rdsize, 32)), // at least 32 bytes
-                                            eq(mload(ptr), 1) // starts with uint256(1)
+                                success :=
+                                    and(
+                                        success, // call itself succeeded
+                                        or(
+                                            iszero(rdsize), // no return data, or
+                                            and(
+                                                iszero(lt(rdsize, 32)), // at least 32 bytes
+                                                eq(mload(ptr), 1) // starts with uint256(1)
+                                            )
                                         )
                                     )
-                                )
 
                                 if iszero(success) {
                                     returndatacopy(0, 0, rdsize)
@@ -1130,9 +1104,7 @@ contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
                                     revert(0, 0x4)
                                 }
                             }
-                            default {
-                                transferAmount := providedAmount
-                            }
+                            default { transferAmount := providedAmount }
                             if gt(transferAmount, 0) {
                                 if iszero(
                                     call(
@@ -1213,9 +1185,7 @@ contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
                                 revert(0, 0x4)
                             }
                         }
-                        default {
-                            transferAmount := providedAmount
-                        }
+                        default { transferAmount := providedAmount }
                         if gt(transferAmount, 0) {
                             // selector for withdraw(uint256)
                             mstore(0x0, 0x2e1a7d4d00000000000000000000000000000000000000000000000000000000)
@@ -1303,11 +1273,15 @@ contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
                         erc4646Operation := shr(248, calldataload(currentOffset))
                         currentOffset := add(currentOffset, 1)
                     }
-                    /** ERC6464 deposit */
+                    /**
+                     * ERC6464 deposit
+                     */
                     if (erc4646Operation == 0) {
                         currentOffset = _erc4646Deposit(currentOffset);
                     }
-                    /** MetaMorpho withdraw */
+                    /**
+                     * MetaMorpho withdraw
+                     */
                     else {
                         currentOffset = _erc4646Withdraw(currentOffset, callerAddress);
                     }
@@ -1422,13 +1396,13 @@ contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
                                 mstore(add(ptr, 0x04), MORPHO_BLUE)
                                 mstore(add(ptr, 0x24), 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff)
 
-                                if iszero(call(gas(), token, 0x0, ptr, 0x44, ptr, 32)) {
-                                    revert(0x0, 0x0)
-                                }
+                                if iszero(call(gas(), token, 0x0, ptr, 0x44, ptr, 32)) { revert(0x0, 0x0) }
                                 sstore(key, 1)
                             }
 
-                            /** Prepare call */
+                            /**
+                             * Prepare call
+                             */
 
                             // flashLoan(...)
                             mstore(ptr, 0xe0232b4200000000000000000000000000000000000000000000000000000000)
@@ -1500,15 +1474,9 @@ contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
                             case 1 {
                                 let pool
                                 switch source
-                                case 0 {
-                                    pool := AAVE_V3
-                                }
-                                case 100 {
-                                    pool := AVALON
-                                }
-                                case 210 {
-                                    pool := ZEROLEND
-                                }
+                                case 0 { pool := AAVE_V3 }
+                                case 100 { pool := AVALON }
+                                case 210 { pool := ZEROLEND }
                                 default {
                                     mstore(0, INVALID_FLASH_LOAN)
                                     revert(0, 0x4)
@@ -1547,9 +1515,7 @@ contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
                             default {
                                 let pool
                                 switch source
-                                case 240 {
-                                    pool := GRANARY
-                                }
+                                case 240 { pool := GRANARY }
                                 // We revert on any other id
                                 default {
                                     mstore(0, INVALID_FLASH_LOAN)
@@ -1630,7 +1596,10 @@ contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
         uint256[] calldata, // we assume that the data is known to the caller in advance
         address initiator,
         bytes calldata params
-    ) external returns (bool) {
+    )
+        external
+        returns (bool)
+    {
         address origCaller;
         assembly {
             // we expect at least an address
@@ -1695,7 +1664,10 @@ contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
         uint256,
         address initiator,
         bytes calldata params // user params
-    ) external returns (bool) {
+    )
+        external
+        returns (bool)
+    {
         address origCaller;
         assembly {
             // we expect at least an address
@@ -1772,7 +1744,9 @@ contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
         uint256[] calldata,
         uint256[] calldata,
         bytes calldata params //
-    ) external {
+    )
+        external
+    {
         address origCaller;
         assembly {
             // we expect at least an address
@@ -1824,7 +1798,9 @@ contract OneDeltaComposerBase is MarginTrading, Morpho, ERC4646Transfers {
         _deltaComposeInternal(origCaller, params);
     }
 
-    /** Morpho blue callbacks */
+    /**
+     * Morpho blue callbacks
+     */
 
     /// @dev Morpho Blue flash loan
     function onMorphoFlashLoan(uint256, bytes calldata params) external {

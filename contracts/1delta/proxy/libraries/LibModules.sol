@@ -2,11 +2,12 @@
 
 pragma solidity ^0.8.0;
 
-/******************************************************************************\
-* Author: Achthar - 1delta.io
-* Modified diamond module handling library
-/******************************************************************************/
-
+/**
+ * \
+ * Author: Achthar - 1delta.io
+ * Modified diamond module handling library
+ * /*****************************************************************************
+ */
 import {IModuleConfig} from "../interfaces/IModuleConfig.sol";
 
 // solhint-disable max-line-length
@@ -144,23 +145,14 @@ library LibModules {
         ds.moduleExists[_moduleAddress] = true;
     }
 
-    function addFunction(
-        ModuleStorage storage ds,
-        bytes4 _selector,
-        uint96 _selectorPosition,
-        address _moduleAddress
-    ) internal {
+    function addFunction(ModuleStorage storage ds, bytes4 _selector, uint96 _selectorPosition, address _moduleAddress) internal {
         ds.selectorToModuleAndPosition[_selector].functionSelectorPosition = _selectorPosition;
         ds.moduleFunctionSelectors[_moduleAddress].functionSelectors.push(_selector);
         ds.selectorToModuleAndPosition[_selector].moduleAddress = _moduleAddress;
         ds.selectorToModule[_selector] = _moduleAddress;
     }
 
-    function removeFunction(
-        ModuleStorage storage ds,
-        address _moduleAddress,
-        bytes4 _selector
-    ) internal {
+    function removeFunction(ModuleStorage storage ds, address _moduleAddress, bytes4 _selector) internal {
         require(_moduleAddress != address(0), "LibModuleConfig: Can't remove function that doesn't exist");
         // an immutable function is a function defined directly in a diamond
         require(_moduleAddress != address(this), "LibModuleConfig: Can't remove immutable function");

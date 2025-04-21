@@ -14,7 +14,11 @@ contract ComposedFlashLoanTestArbitrum is DeltaSetup {
      *  borrow
      *  payback
      */
-    function test_arbitrum_composed_flash_loan_open(uint16 lenderId) external /** address user, uint16 lenderId */ {
+    function test_arbitrum_composed_flash_loan_open(uint16 lenderId) external 
+    /**
+     * address user, uint16 lenderId
+     */
+    {
         TestParamsOpen memory params;
         address user = testUser;
 
@@ -61,9 +65,9 @@ contract ComposedFlashLoanTestArbitrum is DeltaSetup {
 
         uint8 flashSource = FlashMappingsArbitrum.BALANCER_V2;
         {
-            uint borrowAm = params.swapAmount +
-                (params.swapAmount * getFlashFee(flashSource)) / //
-                10000;
+            uint256 borrowAm = params.swapAmount
+                + (params.swapAmount * getFlashFee(flashSource)) //
+                    / 10000;
 
             approveBorrowDelegation(user, params.borrowAsset, borrowAm, lenderId);
 
@@ -100,7 +104,7 @@ contract ComposedFlashLoanTestArbitrum is DeltaSetup {
             )
         );
         vm.prank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
 
@@ -112,9 +116,9 @@ contract ComposedFlashLoanTestArbitrum is DeltaSetup {
         // deposit 10, recieve 32.1... makes 42.1...
         assertApproxEqAbs(1599889575762086734, balance, 1e10);
         {
-            uint borrowAm = params.swapAmount +
-                (params.swapAmount * getFlashFee(flashSource)) / //
-                10000;
+            uint256 borrowAm = params.swapAmount
+                + (params.swapAmount * getFlashFee(flashSource)) //
+                    / 10000;
             // deviations through rouding expected, accuracy for 10 decimals
             assertApproxEqAbs(borrowBalance, borrowAm, 1);
         }
@@ -152,7 +156,7 @@ contract ComposedFlashLoanTestArbitrum is DeltaSetup {
         uint256 borrowBalance = getBorrowBalance(user, borrowAsset, lenderId);
         uint256 balance = getCollateralBalance(user, asset, lenderId);
         bytes memory data;
-        uint witdrawAm;
+        uint256 witdrawAm;
         {
             witdrawAm = amountToFlashWithdraw + (amountToFlashWithdraw * getFlashFee(flashSource)) / 10000;
             approveWithdrawal(user, asset, witdrawAm, lenderId);
@@ -186,7 +190,7 @@ contract ComposedFlashLoanTestArbitrum is DeltaSetup {
                 ) //
             );
             vm.prank(user);
-            uint gas = gasleft();
+            uint256 gas = gasleft();
             IFlashAggregator(brokerProxyAddress).deltaCompose(data);
             gas = gas - gasleft();
             console.log("gas-flash-loan-close", gas);
@@ -219,20 +223,19 @@ contract ComposedFlashLoanTestArbitrum is DeltaSetup {
         deal(b, address(router), 1e20);
     }
 
-    function encodeExtCall(address token, address tokenOut, address target, uint amount) internal pure returns (bytes memory) {
+    function encodeExtCall(address token, address tokenOut, address target, uint256 amount) internal pure returns (bytes memory) {
         bytes memory data = abi.encodeWithSelector(MockRouter.swapExactIn.selector, token, tokenOut, amount);
-        return
-            abi.encodePacked(
-                uint8(Commands.EXTERNAL_CALL), //
-                token,
-                target,
-                uint112(amount),
-                uint16(data.length),
-                data
-            );
+        return abi.encodePacked(
+            uint8(Commands.EXTERNAL_CALL), //
+            token,
+            target,
+            uint112(amount),
+            uint16(data.length),
+            data
+        );
     }
 
-    function getFlashFee(uint8 source) internal view returns (uint) {
+    function getFlashFee(uint8 source) internal view returns (uint256) {
         return source == FlashMappingsArbitrum.BALANCER_V2 ? 0 : ILendingPool(AaveV3Arbitrum.POOL).FLASHLOAN_PREMIUM_TOTAL();
     }
 }

@@ -179,9 +179,7 @@ contract PoolGetter {
                 mstore(p, IZI_POOL_INIT_CODE_HASH)
                 pool := and(ADDRESS_MASK, keccak256(s, 85))
             }
-            default {
-                revert(0, 0)
-            }
+            default { revert(0, 0) }
         }
     }
 
@@ -269,9 +267,7 @@ contract PoolGetter {
 
                 pair := and(ADDRESS_MASK, keccak256(0xB00, 0x55))
             }
-            default {
-                revert(0, 0)
-            }
+            default { revert(0, 0) }
         }
     }
 

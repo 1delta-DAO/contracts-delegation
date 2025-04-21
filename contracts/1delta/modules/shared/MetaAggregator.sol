@@ -93,7 +93,10 @@ contract DeltaMetaAggregator is PermitUtilsSlim, DeadLogger {
         address approvalTarget,
         address swapTarget,
         address receiver
-    ) external payable {
+    )
+        external
+        payable
+    {
         (address asset, bool sweep) = _decodeAssetData(assetInData);
         // zero address assumes native transfer
         if (asset != address(0)) {
@@ -149,12 +152,15 @@ contract DeltaMetaAggregator is PermitUtilsSlim, DeadLogger {
         address approvalTarget,
         address swapTarget,
         address receiver
-    ) external payable {
+    )
+        external
+        payable
+    {
         // we use a struct to avoid stack too deep
         SimAmounts memory simAmounts;
         // read asset data
-        (simAmounts.payAsset, ) = _decodeAssetData(assetInData);
-        (simAmounts.receiveAsset, ) = _decodeAssetData(assetOutData);
+        (simAmounts.payAsset,) = _decodeAssetData(assetInData);
+        (simAmounts.receiveAsset,) = _decodeAssetData(assetOutData);
 
         // get initial balances of receiver
         simAmounts.amountReceived = _balanceOf(simAmounts.receiveAsset, receiver);
@@ -204,7 +210,8 @@ contract DeltaMetaAggregator is PermitUtilsSlim, DeadLogger {
                     target,
                     callvalue(),
                     ptr, //
-                    data.length, // the length must be correct or the call will fail
+                    data.length,
+                    // the length must be correct or the call will fail
                     0x0, // output = empty
                     0x0 // output size = zero
                 )
@@ -272,9 +279,7 @@ contract DeltaMetaAggregator is PermitUtilsSlim, DeadLogger {
                 mstore(add(ptr, 0x04), spender)
                 mstore(add(ptr, 0x24), MAX_UINT_256)
 
-                if iszero(call(gas(), token, 0x0, ptr, 0x44, ptr, 32)) {
-                    revert(0x0, 0x0)
-                }
+                if iszero(call(gas(), token, 0x0, ptr, 0x44, ptr, 32)) { revert(0x0, 0x0) }
             }
             _approvedTargets[token][spender] = true;
         }
@@ -284,9 +289,7 @@ contract DeltaMetaAggregator is PermitUtilsSlim, DeadLogger {
     function _balanceOf(address underlying, address entity) private view returns (uint256 entityBalance) {
         assembly {
             switch iszero(underlying)
-            case 1 {
-                entityBalance := balance(entity)
-            }
+            case 1 { entityBalance := balance(entity) }
             default {
                 ////////////////////////////////////////////////////
                 // get token balance in assembly usingn scrap space (64 bytes)
@@ -298,9 +301,7 @@ contract DeltaMetaAggregator is PermitUtilsSlim, DeadLogger {
                 mstore(0x4, entity)
 
                 // call to underlying
-                if iszero(staticcall(gas(), underlying, 0x0, 0x24, 0x0, 0x20)) {
-                    revert(0x0, 0x0)
-                }
+                if iszero(staticcall(gas(), underlying, 0x0, 0x24, 0x0, 0x20)) { revert(0x0, 0x0) }
 
                 entityBalance := mload(0x0)
             }
@@ -366,16 +367,17 @@ contract DeltaMetaAggregator is PermitUtilsSlim, DeadLogger {
                         // Check for ERC20 success. ERC20 tokens should return a boolean,
                         // but some don't. We accept 0-length return data as success, or at
                         // least 32 bytes that starts with a 32-byte boolean true.
-                        success := and(
-                            success, // call itself succeeded
-                            or(
-                                iszero(rdsize), // no return data, or
-                                and(
-                                    iszero(lt(rdsize, 32)), // at least 32 bytes
-                                    eq(mload(ptr), 1) // starts with uint256(1)
+                        success :=
+                            and(
+                                success, // call itself succeeded
+                                or(
+                                    iszero(rdsize), // no return data, or
+                                    and(
+                                        iszero(lt(rdsize, 32)), // at least 32 bytes
+                                        eq(mload(ptr), 1) // starts with uint256(1)
+                                    )
                                 )
                             )
-                        )
 
                         if iszero(success) {
                             returndatacopy(ptr, 0, rdsize)
@@ -447,16 +449,17 @@ contract DeltaMetaAggregator is PermitUtilsSlim, DeadLogger {
                         // Check for ERC20 success. ERC20 tokens should return a boolean,
                         // but some don't. We accept 0-length return data as success, or at
                         // least 32 bytes that starts with a 32-byte boolean true.
-                        success := and(
-                            success, // call itself succeeded
-                            or(
-                                iszero(rdsize), // no return data, or
-                                and(
-                                    iszero(lt(rdsize, 32)), // at least 32 bytes
-                                    eq(mload(ptr), 1) // starts with uint256(1)
+                        success :=
+                            and(
+                                success, // call itself succeeded
+                                or(
+                                    iszero(rdsize), // no return data, or
+                                    and(
+                                        iszero(lt(rdsize, 32)), // at least 32 bytes
+                                        eq(mload(ptr), 1) // starts with uint256(1)
+                                    )
                                 )
                             )
-                        )
 
                         if iszero(success) {
                             returndatacopy(ptr, 0, rdsize)

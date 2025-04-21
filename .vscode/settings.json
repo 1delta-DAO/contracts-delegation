@@ -1,7 +1,9 @@
 {
   "solidity.compileUsingRemoteVersion": "v0.8.28+commit.40a35a09",
-  "solidity.packageDefaultDependenciesContractsDirectory": "lib/forge-std/src",
-  "solidity.packageDefaultDependenciesDirectory": "lib/forge-std/lib",
+  "solidity.packageDefaultDependenciesContractsDirectory": "node_modules/forge-std/src",
+  "solidity.packageDefaultDependenciesDirectory": "/node_modules/forge-std/lib",
+  "editor.formatOnSave": true,
+  "solidity.formatter": "forge",
   "cSpell.words": [
     "achi",
     "annualize",

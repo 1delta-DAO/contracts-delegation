@@ -2,9 +2,11 @@
 
 pragma solidity 0.8.28;
 
-/******************************************************************************\
-* Author: Achthar | 1delta 
-/******************************************************************************/
+/**
+ * \
+ * Author: Achthar | 1delta
+ * /*****************************************************************************
+ */
 
 // solhint-disable max-line-length
 
@@ -24,7 +26,10 @@ abstract contract LBSwapper {
         address tokenOut,
         address pair,
         address receiver //
-    ) internal returns (uint256 amountOut) {
+    )
+        internal
+        returns (uint256 amountOut)
+    {
         assembly {
             // getTokenY()
             mstore(0x0, 0xda10610c00000000000000000000000000000000000000000000000000000000)
@@ -38,9 +43,7 @@ abstract contract LBSwapper {
                     0x0,
                     0x20
                 )
-            ) {
-                revert(0, 0)
-            }
+            ) { revert(0, 0) }
             let swapForY := eq(tokenOut, mload(0x0))
             ////////////////////////////////////////////////////
             // Execute swap function
@@ -58,12 +61,8 @@ abstract contract LBSwapper {
             }
             // the swap call returns both amounts encoded into a single bytes32 as (amountX,amountY)
             switch swapForY
-            case 0 {
-                amountOut := and(mload(ptr), 0xffffffffffffffffffffffffffffffff)
-            }
-            default {
-                amountOut := shr(128, mload(ptr))
-            }
+            case 0 { amountOut := and(mload(ptr), 0xffffffffffffffffffffffffffffffff) }
+            default { amountOut := shr(128, mload(ptr)) }
         }
     }
 
@@ -79,7 +78,9 @@ abstract contract LBSwapper {
         bool swapForY,
         uint256 amountOut,
         address receiver //
-    ) internal {
+    )
+        internal
+    {
         assembly {
             let ptr := mload(0x40)
 
@@ -105,16 +106,10 @@ abstract contract LBSwapper {
             let amountOutReceived
             // the swap call returns both amounts encoded into a single bytes32 as (amountX,amountY)
             switch swapForY
-            case 0 {
-                amountOutReceived := and(mload(ptr), 0xffffffffffffffffffffffffffffffff)
-            }
-            default {
-                amountOutReceived := shr(128, mload(ptr))
-            }
+            case 0 { amountOutReceived := and(mload(ptr), 0xffffffffffffffffffffffffffffffff) }
+            default { amountOutReceived := shr(128, mload(ptr)) }
             // revert if we did not get enough
-            if lt(amountOutReceived, amountOut) {
-                revert(0, 0)
-            }
+            if lt(amountOutReceived, amountOut) { revert(0, 0) }
         }
     }
 
@@ -129,7 +124,11 @@ abstract contract LBSwapper {
         address tokenOut,
         address pair,
         uint256 amountOut //
-    ) internal view returns (uint256 amountIn, bool swapForY) {
+    )
+        internal
+        view
+        returns (uint256 amountIn, bool swapForY)
+    {
         assembly {
             // getTokenY()
             mstore(0x0, 0xda10610c00000000000000000000000000000000000000000000000000000000)
@@ -143,9 +142,7 @@ abstract contract LBSwapper {
                     0x0,
                     0x20
                 )
-            ) {
-                revert(0, 0)
-            }
+            ) { revert(0, 0) }
             // override swapForY
             swapForY := eq(tokenOut, mload(0x0))
 
@@ -155,17 +152,14 @@ abstract contract LBSwapper {
             mstore(add(ptr, 0x4), amountOut)
             mstore(add(ptr, 0x24), swapForY)
             // call swap simulator, revert if invalid/undefined pair
-            if iszero(staticcall(gas(), pair, ptr, 0x44, ptr, 0x40)) {
-                revert(0, 0)
-            }
-            amountIn := and(
-                0x00000000000000000000000000000000ffffffffffffffffffffffffffffffff, // mask uint128
-                mload(ptr)
-            )
+            if iszero(staticcall(gas(), pair, ptr, 0x44, ptr, 0x40)) { revert(0, 0) }
+            amountIn :=
+                and(
+                    0x00000000000000000000000000000000ffffffffffffffffffffffffffffffff, // mask uint128
+                    mload(ptr)
+                )
             // the second slot returns amount out left, if positive, we revert
-            if gt(0, mload(add(ptr, 0x20))) {
-                revert(0, 0)
-            }
+            if gt(0, mload(add(ptr, 0x20))) { revert(0, 0) }
         }
     }
 }

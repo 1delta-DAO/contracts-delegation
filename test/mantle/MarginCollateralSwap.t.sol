@@ -234,8 +234,9 @@ contract MarginCollateralSwapTest is DeltaSetup {
         assertApproxEqAbs(39083106, balance, 1);
     }
 
-    /** TEST FOR V2 CALLBACKS */
-
+    /**
+     * TEST FOR V2 CALLBACKS
+     */
     function test_margin_mantle_collateral_exact_in_v2(uint8 lenderIndex) external {
         address user = testUser;
         vm.assume(user != address(0) && validLenderIndex(lenderIndex));

@@ -8,45 +8,45 @@ import "./interfaces/IWP.sol";
 import "./balancer-math/StableMath.sol";
 import "./balancer-math/WeightedMath.sol";
 
-/** Balancer quoter unchecked form - will run into overflows - needs additional checks*/
+/**
+ * Balancer quoter unchecked form - will run into overflows - needs additional checks
+ */
 contract BalancerQuoter {
     using FixedPoint for uint256;
+
     address internal constant BALANCER_V2_VAULT = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
 
-    function getAmountInCSP(bytes32 poolId, address tokenIn, address tokenOut, uint amountOut) external view returns (uint256) {
+    function getAmountInCSP(bytes32 poolId, address tokenIn, address tokenOut, uint256 amountOut) external view returns (uint256) {
         (
             address[] memory tokens,
             uint256[] memory balances, //
-
         ) = IVault(BALANCER_V2_VAULT).getPoolTokens(poolId);
 
         (uint256 indexIn, uint256 indexOut) = getIndexes(tokens, tokenIn, tokenOut);
         address pool = address(uint160(uint256(poolId) >> (12 * 8)));
 
-        return
-            _swapGivenOutCSP(
-                amountOut,
-                balances,
-                indexIn,
-                indexOut,
-                getCSPScalingFactors(pool), //
-                pool
-            );
+        return _swapGivenOutCSP(
+            amountOut,
+            balances,
+            indexIn,
+            indexOut,
+            getCSPScalingFactors(pool), //
+            pool
+        );
     }
 
-    function getAmountInWP(bytes32 poolId, address tokenIn, address tokenOut, uint amountOut) external view returns (uint256) {
+    function getAmountInWP(bytes32 poolId, address tokenIn, address tokenOut, uint256 amountOut) external view returns (uint256) {
         address pool = address(uint160(uint256(poolId) >> (12 * 8)));
-        uint scalingFactorIn;
-        uint scalingFactorOut;
-        uint weightIn;
-        uint weightOut;
-        uint balanceIn;
-        uint balanceOut;
+        uint256 scalingFactorIn;
+        uint256 scalingFactorOut;
+        uint256 weightIn;
+        uint256 weightOut;
+        uint256 balanceIn;
+        uint256 balanceOut;
         {
             (
                 address[] memory tokens,
                 uint256[] memory balances, //
-
             ) = IVault(BALANCER_V2_VAULT).getPoolTokens(poolId);
 
             (
@@ -65,17 +65,16 @@ contract BalancerQuoter {
             );
         }
 
-        return
-            _swapGivenOutWP(
-                balanceIn,
-                weightIn,
-                scalingFactorIn,
-                balanceOut,
-                weightOut,
-                amountOut,
-                scalingFactorOut, //
-                pool
-            );
+        return _swapGivenOutWP(
+            balanceIn,
+            weightIn,
+            scalingFactorIn,
+            balanceOut,
+            weightOut,
+            amountOut,
+            scalingFactorOut, //
+            pool
+        );
     }
 
     /**
@@ -83,7 +82,7 @@ contract BalancerQuoter {
      */
     function _dropBptItem(
         uint256[] memory amounts,
-        uint bptIndex
+        uint256 bptIndex
     )
         internal
         pure
@@ -94,7 +93,7 @@ contract BalancerQuoter {
         unchecked {
             uint256[] memory amountsWithoutBpt = new uint256[](amounts.length - 1);
             for (uint256 i; i < amountsWithoutBpt.length; i++) {
-                uint index = i < bptIndex ? i : i + 1;
+                uint256 index = i < bptIndex ? i : i + 1;
                 amountsWithoutBpt[i] = amounts[index];
             }
 
@@ -102,11 +101,11 @@ contract BalancerQuoter {
         }
     }
 
-    function _skipBptIndex(uint256 index, uint bptIndex) internal pure returns (uint256) {
+    function _skipBptIndex(uint256 index, uint256 bptIndex) internal pure returns (uint256) {
         return index < bptIndex ? index : index.sub(1);
     }
 
-    function getIndexes(address[] memory tokens, address tokenIn, address tokenOut) internal pure returns (uint indexIn, uint indexOut) {
+    function getIndexes(address[] memory tokens, address tokenIn, address tokenOut) internal pure returns (uint256 indexIn, uint256 indexOut) {
         for (uint256 i; i < tokens.length; i++) {
             address t = tokens[i];
             if (tokenIn == t) indexIn = i;
@@ -114,7 +113,7 @@ contract BalancerQuoter {
         }
     }
 
-    function getCSPScalingFactors(address pool) internal view returns (uint[] memory sf) {
+    function getCSPScalingFactors(address pool) internal view returns (uint256[] memory sf) {
         sf = ICSP(pool).getScalingFactors();
     }
 
@@ -124,7 +123,11 @@ contract BalancerQuoter {
         address tokenIn,
         address tokenOut,
         address pool
-    ) internal view returns (uint scalingFactorIn, uint scalingFactorOut, uint weightIn, uint weightOut, uint balanceIn, uint balanceOut) {
+    )
+        internal
+        view
+        returns (uint256 scalingFactorIn, uint256 scalingFactorOut, uint256 weightIn, uint256 weightOut, uint256 balanceIn, uint256 balanceOut)
+    {
         uint256[] memory weights = IWP(pool).getNormalizedWeights();
 
         for (uint256 i; i < tokens.length; i++) {
@@ -173,8 +176,8 @@ contract BalancerQuoter {
         return FixedPoint.divUp(amount, scalingFactor);
     }
 
-    function _getAmplificationParameter(address pool) internal view returns (uint a) {
-        (a, , ) = ICSP(pool).getAmplificationParameter();
+    function _getAmplificationParameter(address pool) internal view returns (uint256 a) {
+        (a,,) = ICSP(pool).getAmplificationParameter();
     }
 
     /**
@@ -198,7 +201,7 @@ contract BalancerQuoter {
         return FixedPoint.ONE * 10 ** decimalsDifference;
     }
 
-    function _tokenDecimals(address token) internal view returns (uint d) {
+    function _tokenDecimals(address token) internal view returns (uint256 d) {
         assembly {
             // selector for decimals()
             mstore(0, 0x313ce56700000000000000000000000000000000000000000000000000000000)
@@ -225,13 +228,17 @@ contract BalancerQuoter {
     }
 
     function _swapGivenOutCSP(
-        uint amount,
+        uint256 amount,
         uint256[] memory balances,
         uint256 indexIn,
         uint256 indexOut,
         uint256[] memory scalingFactors,
         address pool
-    ) internal view returns (uint256) {
+    )
+        internal
+        view
+        returns (uint256)
+    {
         _upscaleArray(balances, scalingFactors);
         amount = _upscale(amount, scalingFactors[indexOut]);
 
@@ -264,26 +271,29 @@ contract BalancerQuoter {
      * so forward to `onRegularSwap`.
      */
     function _onSwapGivenOutCSP(
-        uint amountGiven,
+        uint256 amountGiven,
         uint256[] memory registeredBalances,
         uint256 registeredIndexIn,
         uint256 registeredIndexOut,
-        uint currentAmp,
+        uint256 currentAmp,
         address pool
-    ) internal view returns (uint256) {
-        uint bptIdnex = ICSP(pool).getBptIndex();
+    )
+        internal
+        view
+        returns (uint256)
+    {
+        uint256 bptIdnex = ICSP(pool).getBptIndex();
         // Adjust indices and balances for BPT token
         registeredBalances = _dropBptItem(registeredBalances, bptIdnex);
 
-        return
-            StableMath._calcInGivenOut(
-                currentAmp,
-                registeredBalances, //
-                _skipBptIndex(registeredIndexIn, bptIdnex),
-                _skipBptIndex(registeredIndexOut, bptIdnex),
-                amountGiven,
-                StableMath._calculateInvariant(currentAmp, registeredBalances)
-            );
+        return StableMath._calcInGivenOut(
+            currentAmp,
+            registeredBalances, //
+            _skipBptIndex(registeredIndexIn, bptIdnex),
+            _skipBptIndex(registeredIndexOut, bptIdnex),
+            amountGiven,
+            StableMath._calculateInvariant(currentAmp, registeredBalances)
+        );
     }
 
     function _swapGivenOutWP(
@@ -295,7 +305,11 @@ contract BalancerQuoter {
         uint256 amountOut,
         uint256 scalingOut,
         address pool
-    ) internal view returns (uint256) {
+    )
+        internal
+        view
+        returns (uint256)
+    {
         uint256 amountIn = WeightedMath._calcInGivenOut(
             _upscale(balanceIn, scalingIn),
             weightIn,

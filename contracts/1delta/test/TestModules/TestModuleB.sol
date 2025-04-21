@@ -43,6 +43,6 @@ contract TestModuleB {
     function testBFunc19() external {}
 
     function testBFunc20() external {
-                console.log("Func20B");
+        console.log("Func20B");
     }
 }

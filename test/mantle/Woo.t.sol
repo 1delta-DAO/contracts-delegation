@@ -53,8 +53,9 @@ contract WooFiTest is DeltaSetup {
         assertApproxEqAbs(balanceIn, amountIn, 0);
     }
 
-    /** WOO_FI PATH BUILDERS */
-
+    /**
+     * WOO_FI PATH BUILDERS
+     */
     function getSpotExactInSingleWOO_FI(address tokenIn, address tokenOut) internal pure returns (bytes memory data) {
         uint8 poolId = DexMappingsMantle.WOO_FI;
         return abi.encodePacked(tokenIn, uint8(0), poolId, WOO_POOL, tokenOut);

@@ -21,8 +21,9 @@ contract ManagementModule is WithBrokerStorage, Slots {
 
     // STATE CHANGING FUNCTION
 
-    /** ADD TOKEN SET FOR A LENDER */
-
+    /**
+     * ADD TOKEN SET FOR A LENDER
+     */
     struct BatchAddLenderTokensParams {
         address underlying;
         address collateralToken;
@@ -34,7 +35,10 @@ contract ManagementModule is WithBrokerStorage, Slots {
     // add lender tokens in batch
     function batchAddGeneralLenderTokens(
         BatchAddLenderTokensParams[] memory lenderParams //
-    ) external onlyOwner {
+    )
+        external
+        onlyOwner
+    {
         for (uint256 i = 0; i < lenderParams.length; i++) {
             BatchAddLenderTokensParams memory params = lenderParams[i];
             bytes32 key = _getLenderTokenKey(params.underlying, params.lenderId);
@@ -50,7 +54,10 @@ contract ManagementModule is WithBrokerStorage, Slots {
         address _vToken,
         address _sToken,
         uint16 _lenderId //
-    ) external onlyOwner {
+    )
+        external
+        onlyOwner
+    {
         bytes32 key = _getLenderTokenKey(_underlying, _lenderId);
         ls().debtTokens[key] = _vToken;
         ls().stableDebtTokens[key] = _sToken;
@@ -84,7 +91,10 @@ contract ManagementModule is WithBrokerStorage, Slots {
     function addLendingPool(
         address _poolAddress,
         uint16 _lenderId //
-    ) external onlyOwner {
+    )
+        external
+        onlyOwner
+    {
         ls().lendingPools[_lenderId] = _poolAddress;
     }
 
@@ -106,8 +116,9 @@ contract ManagementModule is WithBrokerStorage, Slots {
 
     // VIEW FUNCTIONS
 
-    /** NEW GETTERS */
-
+    /**
+     * NEW GETTERS
+     */
     function getIsValidTarget(address _target) external view returns (bool) {
         return cms().isValid[_target];
     }
@@ -124,8 +135,9 @@ contract ManagementModule is WithBrokerStorage, Slots {
         return ls().debtTokens[_getLenderTokenKey(_underlying, _lenderId)];
     }
 
-    /** TARGET FOR SWAPPING */
-
+    /**
+     * TARGET FOR SWAPPING
+     */
     function getLendingPool(uint16 _lenderId) external view returns (address pool) {
         // equivalent to
         // return ls().lendingPools[_lenderId];

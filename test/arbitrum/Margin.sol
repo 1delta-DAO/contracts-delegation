@@ -35,7 +35,7 @@ contract MarginTestArbitrum is DeltaSetup {
         approveBorrowDelegation(user, assetIn, amount, lenderId);
 
         vm.prank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
@@ -70,7 +70,7 @@ contract MarginTestArbitrum is DeltaSetup {
         approveWithdrawal(user, assetIn, amount, lenderId);
 
         vm.prank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
@@ -106,7 +106,7 @@ contract MarginTestArbitrum is DeltaSetup {
         approveWithdrawal(user, assetIn, amount, lenderId);
 
         vm.prank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);

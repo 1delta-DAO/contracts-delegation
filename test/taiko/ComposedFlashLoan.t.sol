@@ -74,9 +74,9 @@ contract ComposedFlashLoanTestTaiko is DeltaSetup {
 
         bytes memory dataBorrow;
         {
-            uint borrowAm = params.swapAmount +
-                (params.swapAmount * ILendingPool(HanaTaiko.POOL).FLASHLOAN_PREMIUM_TOTAL()) / //
-                10000;
+            uint256 borrowAm = params.swapAmount
+                + (params.swapAmount * ILendingPool(HanaTaiko.POOL).FLASHLOAN_PREMIUM_TOTAL()) //
+                    / 10000;
             vm.prank(user);
             IERC20All(params.debtToken).approveDelegation(brokerProxyAddress, borrowAm);
 
@@ -110,7 +110,7 @@ contract ComposedFlashLoanTestTaiko is DeltaSetup {
         );
 
         vm.prank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
 
@@ -159,7 +159,7 @@ contract ComposedFlashLoanTestTaiko is DeltaSetup {
         uint256 borrowBalance = IERC20All(debtToken).balanceOf(user);
         uint256 balance = IERC20All(collateralToken).balanceOf(user);
         bytes memory dataWithdraw;
-        uint witdrawAm;
+        uint256 witdrawAm;
         {
             witdrawAm = amountToFlashWithdraw + (amountToFlashWithdraw * ILendingPool(HanaTaiko.POOL).FLASHLOAN_PREMIUM_TOTAL()) / 10000;
             vm.prank(user);
@@ -194,7 +194,7 @@ contract ComposedFlashLoanTestTaiko is DeltaSetup {
             );
 
             vm.prank(user);
-            uint gas = gasleft();
+            uint256 gas = gasleft();
             IFlashAggregator(brokerProxyAddress).deltaCompose(data);
             gas = gas - gasleft();
             console.log("gas-flash-loan-close", gas);
@@ -227,17 +227,16 @@ contract ComposedFlashLoanTestTaiko is DeltaSetup {
         deal(b, address(router), 1e20);
     }
 
-    function encodeExtCall(address token, address tokenOut, address target, uint amount) internal pure returns (bytes memory) {
+    function encodeExtCall(address token, address tokenOut, address target, uint256 amount) internal pure returns (bytes memory) {
         bytes memory data = abi.encodeWithSelector(MockRouter.swapExactIn.selector, token, tokenOut, amount);
-        return
-            abi.encodePacked(
-                uint8(Commands.EXTERNAL_CALL), //
-                token,
-                target,
-                uint112(amount),
-                uint16(data.length),
-                data
-            );
+        return abi.encodePacked(
+            uint8(Commands.EXTERNAL_CALL), //
+            token,
+            target,
+            uint112(amount),
+            uint16(data.length),
+            data
+        );
     }
 
     function openSimple2(address user, address asset, address borrowAsset, uint256 depositAmount, uint256 borrowAmount, uint16 lenderId) internal {
@@ -276,7 +275,7 @@ contract ComposedFlashLoanTestTaiko is DeltaSetup {
         uint16 fee = DEX_FEE_HIGHEST;
         uint8 poolId = DexMappingsTaiko.IZUMI;
         address pool = testQuoter.v3TypePool(tokenIn, tokenOut, fee, poolId);
-        (uint8 actionId, , uint8 endId) = getOpenExactInFlags();
+        (uint8 actionId,, uint8 endId) = getOpenExactInFlags();
         return abi.encodePacked(tokenIn, actionId, poolId, pool, fee, tokenOut, lenderId, endId);
     }
 }

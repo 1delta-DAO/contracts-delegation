@@ -14,6 +14,7 @@ interface IPermit2 {
         uint48 nonce;
     }
     /// @notice The permit message signed for a single token allownce
+
     struct PermitSingle {
         // the permit data for a single token alownce
         PermitDetails details;
@@ -23,6 +24,7 @@ interface IPermit2 {
         uint256 sigDeadline;
     }
     /// @notice Packed allowance
+
     struct PackedAllowance {
         // amount allowed
         uint160 amount;

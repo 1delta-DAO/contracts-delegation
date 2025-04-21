@@ -2,12 +2,13 @@
 
 pragma solidity 0.8.28;
 
-/******************************************************************************\
-* Author: Achthar | 1delta 
-/******************************************************************************/
-
-import { ERC20Selectors } from "../selectors/ERC20Selectors.sol";
-import { Masks } from "../masks/Masks.sol";
+/**
+ * \
+ * Author: Achthar | 1delta
+ * /*****************************************************************************
+ */
+import {ERC20Selectors} from "../selectors/ERC20Selectors.sol";
+import {Masks} from "../masks/Masks.sol";
 
 /**
  * @title Curve swapper contract
@@ -17,7 +18,9 @@ abstract contract CurveMetaSwapper is ERC20Selectors, Masks {
     // approval slot
     bytes32 private constant CALL_MANAGEMENT_APPROVALS = 0x1aae13105d9b6581c36534caba5708726e5ea1e03175e823c989a5756966d1f3;
 
-    /** Meta pool zap selectors - first argument is another curve pool */
+    /**
+     * Meta pool zap selectors - first argument is another curve pool
+     */
 
     /// @notice selector exchange(address,uint256,uint256,uint256,uint256)
     bytes32 private constant EXCHANGE_META = 0x64a1455800000000000000000000000000000000000000000000000000000000;
@@ -45,7 +48,10 @@ abstract contract CurveMetaSwapper is ERC20Selectors, Masks {
         uint256 amountIn,
         address payer,
         address receiver //
-    ) internal returns (uint256 amountOut) {
+    )
+        internal
+        returns (uint256 amountOut)
+    {
         assembly {
             let ptr := mload(0x40)
             let tokenIn := shr(96, calldataload(pathOffset))
@@ -66,16 +72,17 @@ abstract contract CurveMetaSwapper is ERC20Selectors, Masks {
                 // Check for ERC20 success. ERC20 tokens should return a boolean,
                 // but some don't. We accept 0-length return data as success, or at
                 // least 32 bytes that starts with a 32-byte boolean true.
-                success := and(
-                    success, // call itself succeeded
-                    or(
-                        iszero(rdsize), // no return data, or
-                        and(
-                            iszero(lt(rdsize, 32)), // at least 32 bytes
-                            eq(mload(ptr), 1) // starts with uint256(1)
+                success :=
+                    and(
+                        success, // call itself succeeded
+                        or(
+                            iszero(rdsize), // no return data, or
+                            and(
+                                iszero(lt(rdsize, 32)), // at least 32 bytes
+                                eq(mload(ptr), 1) // starts with uint256(1)
+                            )
                         )
                     )
-                )
 
                 if iszero(success) {
                     returndatacopy(0, 0, rdsize)
@@ -172,31 +179,33 @@ abstract contract CurveMetaSwapper is ERC20Selectors, Masks {
                     mstore(ptr, ERC20_TRANSFER)
                     mstore(add(ptr, 0x04), receiver)
                     mstore(add(ptr, 0x24), amountOut)
-                    let success := call(
-                        gas(),
-                        shr(96, calldataload(add(pathOffset, 44))), // tokenIn, added 2x addr + 4x uint8
-                        0,
-                        ptr,
-                        0x44,
-                        ptr,
-                        32
-                    )
+                    let success :=
+                        call(
+                            gas(),
+                            shr(96, calldataload(add(pathOffset, 44))), // tokenIn, added 2x addr + 4x uint8
+                            0,
+                            ptr,
+                            0x44,
+                            ptr,
+                            32
+                        )
 
                     let rdsize := returndatasize()
 
                     // Check for ERC20 success. ERC20 tokens should return a boolean,
                     // but some don't. We accept 0-length return data as success, or at
                     // least 32 bytes that starts with a 32-byte boolean true.
-                    success := and(
-                        success, // call itself succeeded
-                        or(
-                            iszero(rdsize), // no return data, or
-                            and(
-                                iszero(lt(rdsize, 32)), // at least 32 bytes
-                                eq(mload(ptr), 1) // starts with uint256(1)
+                    success :=
+                        and(
+                            success, // call itself succeeded
+                            or(
+                                iszero(rdsize), // no return data, or
+                                and(
+                                    iszero(lt(rdsize, 32)), // at least 32 bytes
+                                    eq(mload(ptr), 1) // starts with uint256(1)
+                                )
                             )
                         )
-                    )
 
                     if iszero(success) {
                         returndatacopy(0, 0, rdsize)

@@ -7,14 +7,13 @@ import "./DeltaSetup.f.sol";
 // solhint-disable max-line-length
 
 contract ComposerTestTaiko is DeltaSetup {
-
     bytes32 internal constant SYNCSWAP_SELECTOR = 0x7132bb7f00000000000000000000000000000000000000000000000000000000;
 
     function extCall(address t) internal {
         address tokenIn = address(1);
         address to = address(2);
         uint8 wm = 99;
-        uint len = 64;
+        uint256 len = 64;
         bytes32 data = 0xe18a34eb0e04b04f7a0ac29a6e80748dca96319b42c54d679cb821dca90c6303;
         address sender = address(11);
         address callback = address(12);

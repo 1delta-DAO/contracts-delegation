@@ -2,7 +2,8 @@
 src = "contracts/1delta"
 out = "out"
 libs = ["lib"]
-evm_version = "cancun"
-optimizer_runs = 9_950
-solc = "0.8.28"
 
+[fmt]
+line_length=150
+tab_width=4
+multiline_func_header="all"

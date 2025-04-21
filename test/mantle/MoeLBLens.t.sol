@@ -68,8 +68,8 @@ contract MoeLBQuotingTest is DeltaSetup {
         }
 
         {
-            (uint24 volatilityAccumulator, uint24 volatilityReference, uint24 idReference, uint40 timeOfLastUpdate) = IMoeJoePair(POOL_WMNT_METH)
-                .getVariableFeeParameters();
+            (uint24 volatilityAccumulator, uint24 volatilityReference, uint24 idReference, uint40 timeOfLastUpdate) =
+                IMoeJoePair(POOL_WMNT_METH).getVariableFeeParameters();
             console.log("volatilityAccumulator", volatilityAccumulator);
             console.log("volatilityReference", volatilityReference);
             console.log("idReference", idReference);
@@ -92,11 +92,11 @@ contract MoeLBQuotingTest is DeltaSetup {
         printData(data);
     }
 
-    function printData(uint[] memory data) internal view {
-        for (uint i = 0; i < data.length; i++) {
-            uint entry = data[i];
-            uint reserveY = uint112(entry);
-            uint reserveX = uint112(entry >> 112);
+    function printData(uint256[] memory data) internal view {
+        for (uint256 i = 0; i < data.length; i++) {
+            uint256 entry = data[i];
+            uint256 reserveY = uint112(entry);
+            uint256 reserveX = uint112(entry >> 112);
             uint24 bin = uint24(entry >> 232);
             console.log("reserveX", reserveX);
             console.log("reserveY", reserveY);
@@ -118,10 +118,10 @@ contract MoeLBQuotingTest is DeltaSetup {
 
         uint256[] memory data = lens.getMoeJoeBinsWithActiveId(pool, 10, 10);
 
-        for (uint i; i < data.length; i++) {
-            uint entry = data[i];
-            uint reserveY = uint112(entry);
-            uint reserveX = uint112(entry >> 112);
+        for (uint256 i; i < data.length; i++) {
+            uint256 entry = data[i];
+            uint256 reserveY = uint112(entry);
+            uint256 reserveX = uint112(entry >> 112);
             uint24 bin = uint24(entry >> 232);
             console.log("reserveX", reserveX);
             console.log("reserveY", reserveY);
@@ -134,8 +134,8 @@ contract MoeLBQuotingTest is DeltaSetup {
         uint16 bs = 10;
 
         console.log("base", getBase(bs));
-        int e = getExponent(id);
-        console.log("exponent", e > 0, e > 0 ? uint(e) : uint(-e));
+        int256 e = getExponent(id);
+        console.log("exponent", e > 0, e > 0 ? uint256(e) : uint256(-e));
     }
 
     /**
@@ -163,15 +163,15 @@ contract MoeLBQuotingTest is DeltaSetup {
     int256 private constant REAL_ID_SHIFT = 1 << 23;
 
     function test_exp() external view {
-        uint x = 340622649287859401926837982039199979667;
-        int y = -8389;
-        uint cc = pow(x, y);
+        uint256 x = 340622649287859401926837982039199979667;
+        int256 y = -8389;
+        uint256 cc = pow(x, y);
         console.log("cc", cc);
-        uint mpx = 0;
-        uint mpy = 340282366920938463463374607431768211456;
-        (uint dd, uint ee) = _getMulProds(mpx, mpy);
+        uint256 mpx = 0;
+        uint256 mpy = 340282366920938463463374607431768211456;
+        (uint256 dd, uint256 ee) = _getMulProds(mpx, mpy);
         console.log("prod0, prod1", dd, ee);
-        uint denominator = 74982764324320;
+        uint256 denominator = 74982764324320;
         console.log("uint256 lpotdod = denominator & (~denominator + 1);", denominator & (~denominator + 1));
     }
 
@@ -207,88 +207,48 @@ contract MoeLBQuotingTest is DeltaSetup {
                     invert := iszero(invert)
                 }
 
-                if and(absY, 0x1) {
-                    result := shr(128, mul(result, squared))
-                }
+                if and(absY, 0x1) { result := shr(128, mul(result, squared)) }
                 squared := shr(128, mul(squared, squared))
-                if and(absY, 0x2) {
-                    result := shr(128, mul(result, squared))
-                }
+                if and(absY, 0x2) { result := shr(128, mul(result, squared)) }
                 squared := shr(128, mul(squared, squared))
-                if and(absY, 0x4) {
-                    result := shr(128, mul(result, squared))
-                }
+                if and(absY, 0x4) { result := shr(128, mul(result, squared)) }
                 squared := shr(128, mul(squared, squared))
-                if and(absY, 0x8) {
-                    result := shr(128, mul(result, squared))
-                }
+                if and(absY, 0x8) { result := shr(128, mul(result, squared)) }
                 squared := shr(128, mul(squared, squared))
-                if and(absY, 0x10) {
-                    result := shr(128, mul(result, squared))
-                }
+                if and(absY, 0x10) { result := shr(128, mul(result, squared)) }
                 squared := shr(128, mul(squared, squared))
-                if and(absY, 0x20) {
-                    result := shr(128, mul(result, squared))
-                }
+                if and(absY, 0x20) { result := shr(128, mul(result, squared)) }
                 squared := shr(128, mul(squared, squared))
-                if and(absY, 0x40) {
-                    result := shr(128, mul(result, squared))
-                }
+                if and(absY, 0x40) { result := shr(128, mul(result, squared)) }
                 squared := shr(128, mul(squared, squared))
-                if and(absY, 0x80) {
-                    result := shr(128, mul(result, squared))
-                }
+                if and(absY, 0x80) { result := shr(128, mul(result, squared)) }
                 squared := shr(128, mul(squared, squared))
-                if and(absY, 0x100) {
-                    result := shr(128, mul(result, squared))
-                }
+                if and(absY, 0x100) { result := shr(128, mul(result, squared)) }
                 squared := shr(128, mul(squared, squared))
-                if and(absY, 0x200) {
-                    result := shr(128, mul(result, squared))
-                }
+                if and(absY, 0x200) { result := shr(128, mul(result, squared)) }
                 squared := shr(128, mul(squared, squared))
-                if and(absY, 0x400) {
-                    result := shr(128, mul(result, squared))
-                }
+                if and(absY, 0x400) { result := shr(128, mul(result, squared)) }
                 squared := shr(128, mul(squared, squared))
-                if and(absY, 0x800) {
-                    result := shr(128, mul(result, squared))
-                }
+                if and(absY, 0x800) { result := shr(128, mul(result, squared)) }
                 squared := shr(128, mul(squared, squared))
-                if and(absY, 0x1000) {
-                    result := shr(128, mul(result, squared))
-                }
+                if and(absY, 0x1000) { result := shr(128, mul(result, squared)) }
                 squared := shr(128, mul(squared, squared))
-                if and(absY, 0x2000) {
-                    result := shr(128, mul(result, squared))
-                }
+                if and(absY, 0x2000) { result := shr(128, mul(result, squared)) }
                 squared := shr(128, mul(squared, squared))
-                if and(absY, 0x4000) {
-                    result := shr(128, mul(result, squared))
-                }
+                if and(absY, 0x4000) { result := shr(128, mul(result, squared)) }
                 squared := shr(128, mul(squared, squared))
-                if and(absY, 0x8000) {
-                    result := shr(128, mul(result, squared))
-                }
+                if and(absY, 0x8000) { result := shr(128, mul(result, squared)) }
                 squared := shr(128, mul(squared, squared))
-                if and(absY, 0x10000) {
-                    result := shr(128, mul(result, squared))
-                }
+                if and(absY, 0x10000) { result := shr(128, mul(result, squared)) }
                 squared := shr(128, mul(squared, squared))
-                if and(absY, 0x20000) {
-                    result := shr(128, mul(result, squared))
-                }
+                if and(absY, 0x20000) { result := shr(128, mul(result, squared)) }
                 squared := shr(128, mul(squared, squared))
-                if and(absY, 0x40000) {
-                    result := shr(128, mul(result, squared))
-                }
+                if and(absY, 0x40000) { result := shr(128, mul(result, squared)) }
                 squared := shr(128, mul(squared, squared))
-                if and(absY, 0x80000) {
-                    result := shr(128, mul(result, squared))
-                }
+                if and(absY, 0x80000) { result := shr(128, mul(result, squared)) }
             }
         }
-        uint xx;
+        uint256 xx;
         assembly {
             xx := not(0)
         }

@@ -11,14 +11,7 @@ import {V3TypeQuoter} from "./dex/V3Type.sol";
 /**
  * Quoter contract
  */
-contract QuoterHemi is
-    DodoV2Quoter,
-    CurveQuoter,
-    V2TypeQuoter,
-    V3TypeQuoter,
-    QuoterParamsLayout,
-    DexMappings
-{
+contract QuoterHemi is DodoV2Quoter, CurveQuoter, V2TypeQuoter, V3TypeQuoter, QuoterParamsLayout, DexMappings {
     error invalidDexId();
 
     // masking
@@ -30,7 +23,10 @@ contract QuoterHemi is
     function quoteExactInput(
         bytes calldata path, // calldata more efficient than memory
         uint256 amountIn
-    ) public returns (uint256 amountOut) {
+    )
+        public
+        returns (uint256 amountOut)
+    {
         while (true) {
             address tokenIn;
             address tokenOut;
@@ -128,7 +124,10 @@ contract QuoterHemi is
     function quoteExactOutput(
         bytes calldata path, // calldata more efficient than memory
         uint256 amountOut
-    ) public returns (uint256 amountIn) {
+    )
+        public
+        returns (uint256 amountIn)
+    {
         while (true) {
             address tokenIn;
             address tokenOut;
@@ -138,7 +137,8 @@ contract QuoterHemi is
                 let firstWord := calldataload(path.offset)
                 tokenOut := shr(96, firstWord) // get first token
                 poolId := shr(88, firstWord) //
-                pair := shr(96, calldataload(add(path.offset, 21))) //
+                pair := shr(96, calldataload(add(path.offset, 21)))
+                //
             }
 
             // v3 types

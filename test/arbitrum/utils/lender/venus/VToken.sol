@@ -7,8 +7,9 @@ pragma solidity >=0.8.25;
  * @notice Interface implemented by the `VToken` contract
  */
 interface VTokenInterface {
-    /*** User Interface ***/
-
+    /**
+     * User Interface **
+     */
     function mint(uint256 mintAmount) external returns (uint256);
 
     function mintBehalf(address minter, uint256 mintAllowed) external returns (uint256);
@@ -39,7 +40,8 @@ interface VTokenInterface {
         uint256 repayAmount,
         VTokenInterface vTokenCollateral,
         bool skipCloseFactorCheck
-    ) external;
+    )
+        external;
 
     function seize(address liquidator, address borrower, uint256 seizeTokens) external;
 
@@ -51,8 +53,9 @@ interface VTokenInterface {
 
     function sweepToken(address token) external;
 
-    /*** Admin Functions ***/
-
+    /**
+     * Admin Functions **
+     */
     function setReserveFactor(uint256 newReserveFactorMantissa) external;
 
     function reduceReserves(uint256 reduceAmount) external;

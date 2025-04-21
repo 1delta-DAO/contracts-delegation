@@ -2,9 +2,11 @@
 
 pragma solidity 0.8.28;
 
-/******************************************************************************\
-* Author: Achthar | 1delta 
-/******************************************************************************/
+/**
+ * \
+ * Author: Achthar | 1delta
+ * /*****************************************************************************
+ */
 
 // solhint-disable max-line-length
 
@@ -30,7 +32,10 @@ abstract contract WooFiSwapper {
         address pool,
         uint256 amountIn,
         address receiver
-    ) internal returns (uint256 amountOut) {
+    )
+        internal
+        returns (uint256 amountOut)
+    {
         assembly {
             let ptr := mload(0x40)
             // selector for swap(address,address,uint256,uint256,address,address)

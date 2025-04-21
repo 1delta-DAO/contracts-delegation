@@ -17,19 +17,15 @@ contract BalancerTestArbitrum is DeltaSetup {
         address user = testUser;
         uint256 amount = 10.0e18;
         uint256 maxIn = 10.0e18;
-        uint gas;
+        uint256 gas;
         address assetIn = TokensArbitrum.WSTETH;
         address assetOut = TokensArbitrum.EZETH;
         deal(assetIn, user, 1e23);
 
         bytes memory dataBalancer = getSpotExactOutBalancer(assetIn, assetOut, two_pool_id);
 
-        bytes memory data = abi.encodePacked(
-            uint8(Commands.SWAP_EXACT_OUT),
-            user,
-            encodeSwapAmountParams(amount, maxIn, false, dataBalancer.length),
-            dataBalancer
-        );
+        bytes memory data =
+            abi.encodePacked(uint8(Commands.SWAP_EXACT_OUT), user, encodeSwapAmountParams(amount, maxIn, false, dataBalancer.length), dataBalancer);
 
         vm.prank(user);
         IERC20All(assetIn).approve(address(brokerProxyAddress), maxIn * 2);
@@ -55,19 +51,15 @@ contract BalancerTestArbitrum is DeltaSetup {
         address user = testUser;
         uint256 amount = 1.0e18;
         uint256 minOut = 1.0e18;
-        uint gas;
+        uint256 gas;
         address assetIn = TokensArbitrum.WSTETH;
         address assetOut = TokensArbitrum.EZETH;
         deal(assetIn, user, 1e23);
 
         bytes memory dataBalancer = getSpotExactInBalancer(assetIn, assetOut, two_pool_id);
 
-        bytes memory data = abi.encodePacked(
-            uint8(Commands.SWAP_EXACT_IN),
-            user,
-            encodeSwapAmountParams(amount, minOut, false, dataBalancer.length),
-            dataBalancer
-        );
+        bytes memory data =
+            abi.encodePacked(uint8(Commands.SWAP_EXACT_IN), user, encodeSwapAmountParams(amount, minOut, false, dataBalancer.length), dataBalancer);
 
         vm.prank(user);
         IERC20All(assetIn).approve(address(brokerProxyAddress), amount);
@@ -99,12 +91,8 @@ contract BalancerTestArbitrum is DeltaSetup {
 
         bytes memory dataBalancer = getSpotExactOutBalancer(assetIn, assetOut, cs_pool_id);
 
-        bytes memory data = abi.encodePacked(
-            uint8(Commands.SWAP_EXACT_OUT),
-            user,
-            encodeSwapAmountParams(amount, maxIn, false, dataBalancer.length),
-            dataBalancer
-        );
+        bytes memory data =
+            abi.encodePacked(uint8(Commands.SWAP_EXACT_OUT), user, encodeSwapAmountParams(amount, maxIn, false, dataBalancer.length), dataBalancer);
 
         vm.prank(user);
         IERC20All(assetIn).approve(address(brokerProxyAddress), maxIn * 2);
@@ -113,7 +101,7 @@ contract BalancerTestArbitrum is DeltaSetup {
         uint256 balanceIn = IERC20All(assetIn).balanceOf(user);
 
         vm.prank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas CSP EO", gas);
@@ -137,12 +125,8 @@ contract BalancerTestArbitrum is DeltaSetup {
 
         bytes memory dataBalancer = getSpotExactOutBalancerMultiCSP(assetIn, assetOut, cs_pool_id);
 
-        bytes memory data = abi.encodePacked(
-            uint8(Commands.SWAP_EXACT_OUT),
-            user,
-            encodeSwapAmountParams(amount, maxIn, false, dataBalancer.length),
-            dataBalancer
-        );
+        bytes memory data =
+            abi.encodePacked(uint8(Commands.SWAP_EXACT_OUT), user, encodeSwapAmountParams(amount, maxIn, false, dataBalancer.length), dataBalancer);
 
         vm.prank(user);
         IERC20All(assetIn).approve(address(brokerProxyAddress), maxIn * 2);
@@ -151,7 +135,7 @@ contract BalancerTestArbitrum is DeltaSetup {
         uint256 balanceIn = IERC20All(assetIn).balanceOf(user);
 
         vm.prank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas CSP multi EO", gas);
@@ -175,12 +159,8 @@ contract BalancerTestArbitrum is DeltaSetup {
 
         bytes memory dataBalancer = getSpotExactInBalancer(assetIn, assetOut, cs_pool_id);
 
-        bytes memory data = abi.encodePacked(
-            uint8(Commands.SWAP_EXACT_IN),
-            user,
-            encodeSwapAmountParams(amount, minOut, false, dataBalancer.length),
-            dataBalancer
-        );
+        bytes memory data =
+            abi.encodePacked(uint8(Commands.SWAP_EXACT_IN), user, encodeSwapAmountParams(amount, minOut, false, dataBalancer.length), dataBalancer);
 
         vm.prank(user);
         IERC20All(assetIn).approve(address(brokerProxyAddress), amount);
@@ -189,7 +169,7 @@ contract BalancerTestArbitrum is DeltaSetup {
         uint256 balanceIn = IERC20All(assetIn).balanceOf(user);
 
         vm.prank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas WP multi reverse EI", gas);
@@ -212,12 +192,10 @@ contract BalancerTestArbitrum is DeltaSetup {
         return abi.encodePacked(tokenIn, action, DexMappingsArbitrum.BALANCER_V2_DEXID, pId, tokenOut, uint8(99), uint8(99));
     }
 
-    /** UniswapV3 -> BalancerV2 CSP exactOut */
-    function getSpotExactOutBalancerMultiCSP(
-        address tokenIn,
-        address tokenOut,
-        bytes32 pId
-    ) internal view returns (bytes memory data) {
+    /**
+     * UniswapV3 -> BalancerV2 CSP exactOut
+     */
+    function getSpotExactOutBalancerMultiCSP(address tokenIn, address tokenOut, bytes32 pId) internal view returns (bytes memory data) {
         uint8 action = 0;
         uint16 fee = DEX_FEE_STABLES;
         address pool = testQuoter.v3TypePool(tokenIn, TokensArbitrum.USDT, fee, DexMappingsArbitrum.UNI_V3);

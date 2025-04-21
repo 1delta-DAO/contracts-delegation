@@ -25,6 +25,7 @@ struct BatchSwapStep {
     uint256 amount;
     bytes userData;
 }
+
 struct SingleSwap {
     bytes32 poolId;
     SwapKind kind;
@@ -62,14 +63,19 @@ interface IVault {
         BatchSwapStep[] memory swaps,
         address[] memory assets,
         FundManagement memory funds
-    ) external returns (int256[] memory assetDeltas);
+    )
+        external
+        returns (int256[] memory assetDeltas);
 
     function swap(
         SingleSwap memory singleSwap,
         FundManagement memory funds,
         uint256 limit,
         uint256 deadline
-    ) external payable returns (uint256 amountCalculated);
+    )
+        external
+        payable
+        returns (uint256 amountCalculated);
 }
 
 contract BalancerCaller {
@@ -93,13 +99,8 @@ contract BalancerCaller {
         assets[1] = singleSwap.assetOut;
 
         BatchSwapStep[] memory swaps = new BatchSwapStep[](1);
-        swaps[0] = BatchSwapStep({
-            poolId: singleSwap.poolId,
-            assetInIndex: 0,
-            assetOutIndex: 1,
-            amount: singleSwap.amount,
-            userData: singleSwap.userData
-        });
+        swaps[0] =
+            BatchSwapStep({poolId: singleSwap.poolId, assetInIndex: 0, assetOutIndex: 1, amount: singleSwap.amount, userData: singleSwap.userData});
         int256[] memory assetDeltas = IVault(BALANCER_V2_VAULT).queryBatchSwap(singleSwap.kind, swaps, assets, funds);
 
         // Batch swaps return the full Vault asset deltas, which in the special case of a single step swap contains more
@@ -128,13 +129,8 @@ contract BalancerCaller {
         assets[1] = singleSwap.assetOut;
 
         BatchSwapStep[] memory swaps = new BatchSwapStep[](1);
-        swaps[0] = BatchSwapStep({
-            poolId: singleSwap.poolId,
-            assetInIndex: 0,
-            assetOutIndex: 1,
-            amount: singleSwap.amount,
-            userData: singleSwap.userData
-        });
+        swaps[0] =
+            BatchSwapStep({poolId: singleSwap.poolId, assetInIndex: 0, assetOutIndex: 1, amount: singleSwap.amount, userData: singleSwap.userData});
         int256[] memory assetDeltas = IVault(address(fv)).queryBatchSwap(singleSwap.kind, swaps, assets, funds);
 
         // Batch swaps return the full Vault asset deltas, which in the special case of a single step swap contains more

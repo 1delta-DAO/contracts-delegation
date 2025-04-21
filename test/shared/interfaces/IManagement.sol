@@ -18,7 +18,8 @@ interface IManagement {
         address _vToken,
         address _sToken,
         uint16 _lenderId //
-    ) external;
+    )
+        external;
 
     function setValidTarget(address _target, bool value) external;
 
@@ -36,7 +37,8 @@ interface IManagement {
 
     function batchAddGeneralLenderTokens(
         BatchAddLenderTokensParams[] memory lenderParams //
-    ) external;
+    )
+        external;
 
     struct ApproveParams {
         address token;
@@ -66,5 +68,6 @@ interface IManagement {
     function addLendingPool(
         address _poolAddress,
         uint16 _lenderId //
-    ) external;
+    )
+        external;
 }

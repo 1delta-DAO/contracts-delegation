@@ -7,34 +7,42 @@ import "./DeltaSetup.f.sol";
 interface ISwap {
     function getAmountIn(
         address _tokenOut, //
-        uint _amountOut,
+        uint256 _amountOut,
         address _sender
-    ) external view returns (uint _amountIn);
+    )
+        external
+        view
+        returns (uint256 _amountIn);
 
     function getAmountOut(
         address _tokenIn, //
-        uint _amountIn,
+        uint256 _amountIn,
         address _sender
-    ) external view returns (uint _amountOut);
+    )
+        external
+        view
+        returns (uint256 _amountOut);
 
     function master() external view returns (address);
 
     function symbol() external view returns (string memory);
 
-    function getReserves() external view returns (uint _reserve0, uint _reserve1);
+    function getReserves() external view returns (uint256 _reserve0, uint256 _reserve1);
 
     function getSwapFee(
         address _sender,
         address _tokenIn,
         address _tokenOut, //
         bytes memory data
-    ) external view returns (uint24 _swapFee);
+    )
+        external
+        view
+        returns (uint24 _swapFee);
 
     function getA() external view returns (uint64);
 }
 
 contract RitsuTestTaiko is DeltaSetup {
-
     address internal constant USDC_WETH_RITSU_POOL = 0x424Fab7bfA3E3Dd0e5BB96771fFAa72fe566200e;
     address internal constant USDC_sgUSDC_RITSU_POOL = 0x6c7839E0CE8AdA360a865E18a111A462d08DC15a;
     address internal constant USDC_TAIKO_RYTHM_POOL = 0xB4F80b81a82184D754F933b0A6C2Ba8D5495567C;
@@ -48,25 +56,21 @@ contract RitsuTestTaiko is DeltaSetup {
         address assetOut = TokensTaiko.WETH;
         deal(assetIn, user, 1e23);
         address pool = USDC_WETH_RITSU_POOL;
-        uint expectedOut = ISwap(pool).getAmountOut(assetIn, amount, address(0));
+        uint256 expectedOut = ISwap(pool).getAmountOut(assetIn, amount, address(0));
         console.log("ISwap.master f", testQuoter.syncClassicPairAddress(assetIn, assetOut));
 
         bytes memory dataRitsu = getSpotExactInSingleGen2(assetIn, assetOut, DexMappingsTaiko.RITSU, pool);
 
-        bytes memory data = abi.encodePacked(
-            uint8(Commands.SWAP_EXACT_IN),
-            user,
-            encodeSwapAmountParams(amount, amountMin, false, dataRitsu.length),
-            dataRitsu
-        );
+        bytes memory data =
+            abi.encodePacked(uint8(Commands.SWAP_EXACT_IN), user, encodeSwapAmountParams(amount, amountMin, false, dataRitsu.length), dataRitsu);
 
         vm.prank(user);
         IERC20All(assetIn).approve(address(brokerProxyAddress), amount);
 
-        uint received = IERC20All(assetOut).balanceOf(user);
+        uint256 received = IERC20All(assetOut).balanceOf(user);
 
         vm.prank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
@@ -94,20 +98,16 @@ contract RitsuTestTaiko is DeltaSetup {
         );
 
         console.log("expected", expectedOut);
-        bytes memory data = abi.encodePacked(
-            uint8(Commands.SWAP_EXACT_IN),
-            user,
-            encodeSwapAmountParams(amount, amountMin, false, dataRitsu.length),
-            dataRitsu
-        );
+        bytes memory data =
+            abi.encodePacked(uint8(Commands.SWAP_EXACT_IN), user, encodeSwapAmountParams(amount, amountMin, false, dataRitsu.length), dataRitsu);
 
         vm.prank(user);
         IERC20All(assetIn).approve(address(brokerProxyAddress), amount);
 
-        uint received = IERC20All(assetOut).balanceOf(user);
+        uint256 received = IERC20All(assetOut).balanceOf(user);
 
         vm.prank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
@@ -127,26 +127,22 @@ contract RitsuTestTaiko is DeltaSetup {
         address assetOut = TokensTaiko.sgUSDC;
         deal(assetIn, user, 1e23);
         address pool = USDC_sgUSDC_RITSU_POOL;
-        uint expectedOut = ISwap(pool).getAmountOut(assetIn, amount, address(0));
+        uint256 expectedOut = ISwap(pool).getAmountOut(assetIn, amount, address(0));
         console.log("ISwap.master f", testQuoter.syncStablePairAddress(assetIn, assetOut));
         console.log("a", ISwap(pool).getA());
 
         bytes memory dataRitsu = getSpotExactInSingleGen2(assetIn, assetOut, DexMappingsTaiko.RITSU, pool);
 
-        bytes memory data = abi.encodePacked(
-            uint8(Commands.SWAP_EXACT_IN),
-            user,
-            encodeSwapAmountParams(amount, amountMin, false, dataRitsu.length),
-            dataRitsu
-        );
+        bytes memory data =
+            abi.encodePacked(uint8(Commands.SWAP_EXACT_IN), user, encodeSwapAmountParams(amount, amountMin, false, dataRitsu.length), dataRitsu);
 
         vm.prank(user);
         IERC20All(assetIn).approve(address(brokerProxyAddress), amount);
 
-        uint received = IERC20All(assetOut).balanceOf(user);
+        uint256 received = IERC20All(assetOut).balanceOf(user);
 
         vm.prank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
@@ -166,25 +162,21 @@ contract RitsuTestTaiko is DeltaSetup {
         address assetOut = TokensTaiko.TAIKO;
         deal(assetIn, user, 1e23);
         address pool = USDC_TAIKO_RYTHM_POOL;
-        uint expectedOut = ISwap(pool).getAmountOut(assetIn, amount, address(0));
+        uint256 expectedOut = ISwap(pool).getAmountOut(assetIn, amount, address(0));
         console.log("ISwap.master f", testQuoter.syncStablePairAddress(assetIn, assetOut));
 
         bytes memory dataRitsu = getSpotExactInSingleGen2(assetIn, assetOut, DexMappingsTaiko.RITSU, pool);
 
-        bytes memory data = abi.encodePacked(
-            uint8(Commands.SWAP_EXACT_IN),
-            user,
-            encodeSwapAmountParams(amount, amountMin, false, dataRitsu.length),
-            dataRitsu
-        );
+        bytes memory data =
+            abi.encodePacked(uint8(Commands.SWAP_EXACT_IN), user, encodeSwapAmountParams(amount, amountMin, false, dataRitsu.length), dataRitsu);
 
         vm.prank(user);
         IERC20All(assetIn).approve(address(brokerProxyAddress), amount);
 
-        uint received = IERC20All(assetOut).balanceOf(user);
+        uint256 received = IERC20All(assetOut).balanceOf(user);
 
         vm.prank(user);
-        uint gas = gasleft();
+        uint256 gas = gasleft();
         IFlashAggregator(brokerProxyAddress).deltaCompose(data);
         gas = gas - gasleft();
         console.log("gas", gas);
@@ -197,8 +189,8 @@ contract RitsuTestTaiko is DeltaSetup {
 
     function getSpotExactInSingleGen2(address tokenIn, address tokenOut, uint8 poolId, address pool) internal view returns (bytes memory data) {
         {
-            (uint r0, uint r1) = ISwap(pool).getReserves();
-            uint sf = ISwap(pool).getSwapFee(tokenIn, tokenOut, address(0), "");
+            (uint256 r0, uint256 r1) = ISwap(pool).getReserves();
+            uint256 sf = ISwap(pool).getSwapFee(tokenIn, tokenOut, address(0), "");
             console.log("reserve0:", r0);
             console.log("reserve1:", r1);
             console.log("swapFee:", sf);
