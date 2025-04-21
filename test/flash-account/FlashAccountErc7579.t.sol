@@ -269,10 +269,9 @@ contract FlashAccountErc7579Test is Test {
 
         entryPoint.handleOps(ops, payable(address(0x1)));
 
-        (bool reverted, bytes memory revertReason) = _getRevertReason(entryPoint.getUserOpHash(ops[0]));
+        (bool reverted, bytes4 revertReason) = _getRevertReason(entryPoint.getUserOpHash(ops[0]));
         assertTrue(reverted); // should revert
-        // assertEq(revertReason, abi.encode(FlashAccountErc7579.NotInitialized.selector));
-        console.logBytes(revertReason);
+        assertEq(revertReason, bytes4(keccak256("NotInitialized()")));
     }
 
     function test_flash_account_module_installation() public {
@@ -418,7 +417,7 @@ contract FlashAccountErc7579Test is Test {
         vm.prank(user_);
         entryPoint.handleOps(ops, payable(user_));
 
-        (bool reverted, bytes memory revertReason) = _getRevertReason(entryPoint.getUserOpHash(ops[0]));
+        (bool reverted, bytes4 revertReason) = _getRevertReason(entryPoint.getUserOpHash(ops[0]));
         assertFalse(reverted); // should not revert
 
         return account_;
@@ -483,18 +482,19 @@ contract FlashAccountErc7579Test is Test {
         return op;
     }
 
-    function _getRevertReason(bytes32 userOpHash) internal returns (bool reverted, bytes memory revertReason) {
+    function _getRevertReason(bytes32 userOpHash) internal returns (bool reverted, bytes4 revertReason) {
         Vm.Log[] memory entries = vm.getRecordedLogs();
 
-        // bytes32 eventSignature = keccak256("UserOperationRevertReason(bytes32,address,uint256,bytes)");
-        bytes32 eventSignature = UserOperationRevertReason.selector;
+        bytes32 eventSignature = keccak256("UserOperationRevertReason(bytes32,address,uint256,bytes)");
+        console.log("Event signature");
+        console.logBytes32(eventSignature);
 
-        for (uint256 i = 0; i < entries.length; i++) {
+        for (uint256 i = entries.length - 1; i != 0; i--) {
+            // find the latest revert reason
             if (entries[i].topics[0] == eventSignature) {
                 if (entries[i].topics[1] == userOpHash) {
                     reverted = true;
-                    revertReason = abi.decode(entries[i].data, (bytes));
-                    console.logBytes(abi.encode(entries[i]));
+                    (,,, revertReason) = abi.decode(entries[i].data, (bytes32, bytes32, bytes32, bytes4));
                     break;
                 }
             }
