@@ -185,10 +185,15 @@ contract FlashAccountErc7579Test is Test {
         PackedUserOperation[] memory ops = new PackedUserOperation[](1);
         ops[0] = _createUserOp({sender: account, privateKey: PRIVATE_KEY, nounce: 1, calldata_: execute, initCode: ""});
 
+        vm.recordLogs();
+
         vm.prank(user);
         // vm.expectEmit(true, true, true, false);
         // emit FlashLoan(address(module), address(account), USDC, amountToBorrow, 0, aavePremium, 0);
         entryPoint.handleOps(ops, payable(address(0x1)));
+
+        // we should explicitly check that no revert is emitted
+        assertFalse(_callReverted(entryPoint.getUserOpHash(ops[0])));
     }
 
     function test_flash_account_module_eoa_flash_loan_reverts() public {
@@ -263,10 +268,6 @@ contract FlashAccountErc7579Test is Test {
         vm.recordLogs();
 
         vm.prank(user_);
-        // it is possible to check the revert reason, but the complete event log should be read and parsed
-        vm.expectEmit(true, false, false, false);
-        emit UserOperationRevertReason(entryPoint.getUserOpHash(ops[0]), address(0), 0, new bytes(0));
-
         entryPoint.handleOps(ops, payable(address(0x1)));
 
         (bool reverted, bytes4 revertReason) = _getRevertReason(entryPoint.getUserOpHash(ops[0]));
@@ -486,8 +487,6 @@ contract FlashAccountErc7579Test is Test {
         Vm.Log[] memory entries = vm.getRecordedLogs();
 
         bytes32 eventSignature = keccak256("UserOperationRevertReason(bytes32,address,uint256,bytes)");
-        console.log("Event signature");
-        console.logBytes32(eventSignature);
 
         for (uint256 i = entries.length - 1; i != 0; i--) {
             // find the latest revert reason
@@ -501,5 +500,17 @@ contract FlashAccountErc7579Test is Test {
         }
 
         return (reverted, revertReason);
+    }
+
+    function _callReverted(bytes32 userOpHash) internal returns (bool) {
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+        bytes32 eventSignature = keccak256("UserOperationRevertReason(bytes32,address,uint256,bytes)");
+
+        for (uint256 i = 0; i < logs.length; i++) {
+            if (logs[i].topics[0] == eventSignature) {
+                return true;
+            }
+        }
+        return false;
     }
 }
