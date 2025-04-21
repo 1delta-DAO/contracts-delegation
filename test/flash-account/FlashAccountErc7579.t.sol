@@ -2,6 +2,7 @@
 pragma solidity ^0.8.28;
 
 import {Test} from "forge-std/Test.sol";
+import {Vm} from "forge-std/Vm.sol";
 import {StdStyle} from "forge-std/StdStyle.sol";
 import {console} from "forge-std/console.sol";
 import {FlashAccountErc7579} from "contracts/1delta/flash-account/FlashAccountErc7579.sol";
@@ -66,31 +67,19 @@ library ExecLib {
         callData = abi.encode(executions);
     }
 
-    function decodeSingle(bytes calldata executionCalldata)
-        internal
-        pure
-        returns (address target, uint256 value, bytes calldata callData)
-    {
+    function decodeSingle(bytes calldata executionCalldata) internal pure returns (address target, uint256 value, bytes calldata callData) {
         target = address(bytes20(executionCalldata[0:20]));
         value = uint256(bytes32(executionCalldata[20:52]));
         callData = executionCalldata[52:];
     }
 
-    function decodeDelegateCall(bytes calldata executionCalldata)
-        internal
-        pure
-        returns (address delegate, bytes calldata callData)
-    {
+    function decodeDelegateCall(bytes calldata executionCalldata) internal pure returns (address delegate, bytes calldata callData) {
         // destructure executionCallData according to single exec
         delegate = address(uint160(bytes20(executionCalldata[0:20])));
         callData = executionCalldata[20:];
     }
 
-    function encodeSingle(address target, uint256 value, bytes memory callData)
-        internal
-        pure
-        returns (bytes memory userOpCalldata)
-    {
+    function encodeSingle(address target, uint256 value, bytes memory callData) internal pure returns (bytes memory userOpCalldata) {
         userOpCalldata = abi.encodePacked(target, value, callData);
     }
 }
@@ -108,9 +97,7 @@ contract FlashAccountErc7579Test is Test {
         uint16 indexed referralCode
     );
 
-    event UserOperationRevertReason(
-        bytes32 indexed userOpHash, address indexed sender, uint256 nonce, bytes revertReason
-    );
+    event UserOperationRevertReason(bytes32 indexed userOpHash, address indexed sender, uint256 nonce, bytes revertReason);
 
     address public constant MAINNET_ENTRYPOINT_ADDRESS = 0x0000000071727De22E5E9d8BAf0edAc6f37da032;
     address public constant NEXUS_BOOTSTRAP_ADDRESS = 0x879fa30248eeb693dcCE3eA94a743622170a3658;
@@ -170,18 +157,13 @@ contract FlashAccountErc7579Test is Test {
 
         Execution[] memory repayExec = new Execution[](2);
 
-        repayExec[0] = Execution({
-            target: USDC,
-            value: 0,
-            callData: abi.encodeWithSelector(IERC20.transfer.selector, address(module), aavePremium)
-        });
+        repayExec[0] = Execution({target: USDC, value: 0, callData: abi.encodeWithSelector(IERC20.transfer.selector, address(module), aavePremium)});
 
         repayExec[1] = Execution({
             target: address(module),
             value: 0,
             callData: abi.encodeWithSelector(
-                FlashAccountErc7579.handleRepay.selector,
-                abi.encode(USDC, abi.encodeWithSelector(IERC20.approve.selector, address(aavePool), totalDebt))
+                FlashAccountErc7579.handleRepay.selector, abi.encode(USDC, abi.encodeWithSelector(IERC20.approve.selector, address(aavePool), totalDebt))
             )
         });
 
@@ -190,22 +172,14 @@ contract FlashAccountErc7579Test is Test {
         console.logBytes(repayCalldata);
 
         bytes memory aaveFlashLoanCalldata = abi.encodeWithSelector(
-            IPool.flashLoanSimple.selector,
-            address(module),
-            USDC,
-            amountToBorrow,
-            abi.encodePacked(ModeLib.encodeSimpleBatch(), repayCalldata),
-            0
+            IPool.flashLoanSimple.selector, address(module), USDC, amountToBorrow, abi.encodePacked(ModeLib.encodeSimpleBatch(), repayCalldata), 0
         );
 
-        bytes memory flashloanCallData = abi.encodeWithSelector(
-            FlashAccountErc7579.flashLoan.selector, address(aavePool), uint256(100), aaveFlashLoanCalldata
-        );
+        bytes memory flashloanCallData =
+            abi.encodeWithSelector(FlashAccountErc7579.flashLoan.selector, address(aavePool), uint256(100), aaveFlashLoanCalldata);
 
         bytes memory execute = abi.encodeWithSignature(
-            "execute(bytes32,bytes)",
-            ModeLib.encodeSimpleSingle(),
-            abi.encodePacked(address(module), uint256(0), flashloanCallData)
+            "execute(bytes32,bytes)", ModeLib.encodeSimpleSingle(), abi.encodePacked(address(module), uint256(0), flashloanCallData)
         );
 
         PackedUserOperation[] memory ops = new PackedUserOperation[](1);
@@ -231,9 +205,8 @@ contract FlashAccountErc7579Test is Test {
         );
 
         // Create the call to the module
-        bytes memory flashloanCallData = abi.encodeWithSelector(
-            FlashAccountErc7579.flashLoan.selector, address(aavePool), uint256(100), aaveFlashLoanCalldata
-        );
+        bytes memory flashloanCallData =
+            abi.encodeWithSelector(FlashAccountErc7579.flashLoan.selector, address(aavePool), uint256(100), aaveFlashLoanCalldata);
 
         // should revert
         vm.prank(user);
@@ -260,18 +233,13 @@ contract FlashAccountErc7579Test is Test {
 
         Execution[] memory repayExec = new Execution[](2);
 
-        repayExec[0] = Execution({
-            target: USDC,
-            value: 0,
-            callData: abi.encodeWithSelector(IERC20.transfer.selector, address(module), aavePremium)
-        });
+        repayExec[0] = Execution({target: USDC, value: 0, callData: abi.encodeWithSelector(IERC20.transfer.selector, address(module), aavePremium)});
 
         repayExec[1] = Execution({
             target: address(module),
             value: 0,
             callData: abi.encodeWithSelector(
-                FlashAccountErc7579.handleRepay.selector,
-                abi.encode(USDC, abi.encodeWithSelector(IERC20.approve.selector, address(aavePool), totalDebt))
+                FlashAccountErc7579.handleRepay.selector, abi.encode(USDC, abi.encodeWithSelector(IERC20.approve.selector, address(aavePool), totalDebt))
             )
         });
 
@@ -279,26 +247,20 @@ contract FlashAccountErc7579Test is Test {
         console.logBytes(repayCalldata);
 
         bytes memory aaveFlashLoanCalldata = abi.encodeWithSelector(
-            IPool.flashLoanSimple.selector,
-            address(module),
-            USDC,
-            amountToBorrow,
-            abi.encodePacked(ModeLib.encodeSimpleBatch(), repayCalldata),
-            0
+            IPool.flashLoanSimple.selector, address(module), USDC, amountToBorrow, abi.encodePacked(ModeLib.encodeSimpleBatch(), repayCalldata), 0
         );
 
-        bytes memory flashloanCallData = abi.encodeWithSelector(
-            FlashAccountErc7579.flashLoan.selector, address(aavePool), uint256(100), aaveFlashLoanCalldata
-        );
+        bytes memory flashloanCallData =
+            abi.encodeWithSelector(FlashAccountErc7579.flashLoan.selector, address(aavePool), uint256(100), aaveFlashLoanCalldata);
 
         bytes memory execute = abi.encodeWithSignature(
-            "execute(bytes32,bytes)",
-            ModeLib.encodeSimpleSingle(),
-            abi.encodePacked(address(module), uint256(0), flashloanCallData)
+            "execute(bytes32,bytes)", ModeLib.encodeSimpleSingle(), abi.encodePacked(address(module), uint256(0), flashloanCallData)
         );
 
         PackedUserOperation[] memory ops = new PackedUserOperation[](1);
         ops[0] = _createUserOp({sender: acc_, privateKey: pk, nounce: 1, calldata_: execute, initCode: ""});
+
+        vm.recordLogs();
 
         vm.prank(user_);
         // it is possible to check the revert reason, but the complete event log should be read and parsed
@@ -306,6 +268,11 @@ contract FlashAccountErc7579Test is Test {
         emit UserOperationRevertReason(entryPoint.getUserOpHash(ops[0]), address(0), 0, new bytes(0));
 
         entryPoint.handleOps(ops, payable(address(0x1)));
+
+        (bool reverted, bytes memory revertReason) = _getRevertReason(entryPoint.getUserOpHash(ops[0]));
+        assertTrue(reverted); // should revert
+        // assertEq(revertReason, abi.encode(FlashAccountErc7579.NotInitialized.selector));
+        console.logBytes(revertReason);
     }
 
     function test_flash_account_module_installation() public {
@@ -331,23 +298,14 @@ contract FlashAccountErc7579Test is Test {
             0
         );
 
-        bytes memory flashloanCallData =
-            abi.encodeWithSelector(FlashAccountErc7579.flashLoan.selector, address(0x100), uint256(100), maliciousData);
+        bytes memory flashloanCallData = abi.encodeWithSelector(FlashAccountErc7579.flashLoan.selector, address(0x100), uint256(100), maliciousData);
 
         bytes memory execute = abi.encodeWithSignature(
-            "execute(bytes32,bytes)",
-            ModeLib.encodeSimpleSingle(),
-            abi.encodePacked(address(module), uint256(0), flashloanCallData)
+            "execute(bytes32,bytes)", ModeLib.encodeSimpleSingle(), abi.encodePacked(address(module), uint256(0), flashloanCallData)
         );
 
         PackedUserOperation[] memory ops = new PackedUserOperation[](1);
-        ops[0] = _createUserOp({
-            sender: attackerAccount,
-            privateKey: attackerPk,
-            nounce: 1,
-            calldata_: execute,
-            initCode: ""
-        });
+        ops[0] = _createUserOp({sender: attackerAccount, privateKey: attackerPk, nounce: 1, calldata_: execute, initCode: ""});
 
         vm.prank(attacker);
         entryPoint.handleOps(ops, payable(address(0x1)));
@@ -392,14 +350,11 @@ contract FlashAccountErc7579Test is Test {
             0 // no threshold
         );
 
-        bytes memory initCode = abi.encodePacked(
-            address(factory), abi.encodeWithSelector(INexusFactory.createAccount.selector, initData, bytes32(0))
-        );
+        bytes memory initCode = abi.encodePacked(address(factory), abi.encodeWithSelector(INexusFactory.createAccount.selector, initData, bytes32(0)));
 
         // get sender address
-        (bool success, bytes memory data) = address(factory).staticcall(
-            abi.encodeWithSelector(INexusFactory.computeAccountAddress.selector, initData, bytes32(0))
-        );
+        (bool success, bytes memory data) =
+            address(factory).staticcall(abi.encodeWithSelector(INexusFactory.computeAccountAddress.selector, initData, bytes32(0)));
         require(success, "Failed to get account address");
         address account_ = abi.decode(data, (address));
 
@@ -442,14 +397,11 @@ contract FlashAccountErc7579Test is Test {
             0 // no threshold
         );
 
-        bytes memory initCode = abi.encodePacked(
-            address(factory), abi.encodeWithSelector(INexusFactory.createAccount.selector, initData, bytes32(0))
-        );
+        bytes memory initCode = abi.encodePacked(address(factory), abi.encodeWithSelector(INexusFactory.createAccount.selector, initData, bytes32(0)));
 
         // get sender address
-        (bool success, bytes memory data) = address(factory).staticcall(
-            abi.encodeWithSelector(INexusFactory.computeAccountAddress.selector, initData, bytes32(0))
-        );
+        (bool success, bytes memory data) =
+            address(factory).staticcall(abi.encodeWithSelector(INexusFactory.computeAccountAddress.selector, initData, bytes32(0)));
         require(success, "Failed to get account address");
         address account_ = abi.decode(data, (address));
 
@@ -459,9 +411,15 @@ contract FlashAccountErc7579Test is Test {
         // Fund account BEFORE the operation
         vm.deal(address(account_), 100 ether);
 
+        // record logs
+        vm.recordLogs();
+
         // Execute the operation
         vm.prank(user_);
         entryPoint.handleOps(ops, payable(user_));
+
+        (bool reverted, bytes memory revertReason) = _getRevertReason(entryPoint.getUserOpHash(ops[0]));
+        assertFalse(reverted); // should not revert
 
         return account_;
     }
@@ -478,7 +436,10 @@ contract FlashAccountErc7579Test is Test {
         uint64 nounce,
         bytes memory calldata_,
         bytes memory initCode
-    ) internal returns (PackedUserOperation memory op) {
+    )
+        internal
+        returns (PackedUserOperation memory op)
+    {
         uint128 verificationGasLimit = 2_000_000;
         uint128 callGasLimit = 2_000_000;
         uint128 maxPriorityFeePerGas = 1 gwei;
@@ -514,15 +475,31 @@ contract FlashAccountErc7579Test is Test {
         }
     }
 
-    function _signUserOp(PackedUserOperation memory op, uint256 privateKey)
-        internal
-        view
-        returns (PackedUserOperation memory)
-    {
+    function _signUserOp(PackedUserOperation memory op, uint256 privateKey) internal view returns (PackedUserOperation memory) {
         bytes32 userOpHash = entryPoint.getUserOpHash(op);
         bytes32 signHash = MessageHashUtils.toEthSignedMessageHash(userOpHash);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, signHash);
         op.signature = abi.encodePacked(r, s, v);
         return op;
+    }
+
+    function _getRevertReason(bytes32 userOpHash) internal returns (bool reverted, bytes memory revertReason) {
+        Vm.Log[] memory entries = vm.getRecordedLogs();
+
+        // bytes32 eventSignature = keccak256("UserOperationRevertReason(bytes32,address,uint256,bytes)");
+        bytes32 eventSignature = UserOperationRevertReason.selector;
+
+        for (uint256 i = 0; i < entries.length; i++) {
+            if (entries[i].topics[0] == eventSignature) {
+                if (entries[i].topics[1] == userOpHash) {
+                    reverted = true;
+                    revertReason = abi.decode(entries[i].data, (bytes));
+                    console.logBytes(abi.encode(entries[i]));
+                    break;
+                }
+            }
+        }
+
+        return (reverted, revertReason);
     }
 }
