@@ -17,6 +17,12 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
     error InvalidCall();
     error UnknownFlashLoanCallback();
 
+    constructor() {
+        assembly {
+            sstore(IN_EXECUTION_SLOT, UINT256_MAX)
+        }
+    }
+
     /**
      * @dev Aave simple flash loan
      */
@@ -26,9 +32,13 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
         uint256,
         address,
         bytes calldata params // user params
-    ) external requireInExecution returns (bool) {
+    )
+        external
+        onlyInExecution
+        returns (bool)
+    {
         // forward execution
-        _decodeAndExecute(params);
+        _executeOnCaller(params);
 
         return true;
     }
@@ -42,9 +52,13 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
         uint256[] calldata,
         address,
         bytes calldata params
-    ) external requireInExecution returns (bool) {
+    )
+        external
+        onlyInExecution
+        returns (bool)
+    {
         // forward execution
-        _decodeAndExecute(params);
+        _executeOnCaller(params);
 
         return true;
     }
@@ -52,43 +66,40 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
     /**
      * @dev Balancer flash loan
      */
-    function receiveFlashLoan(address[] calldata, uint256[] calldata, uint256[] calldata, bytes calldata params)
-        external
-        requireInExecution
-    {
+    function receiveFlashLoan(address[] calldata, uint256[] calldata, uint256[] calldata, bytes calldata params) external onlyInExecution {
         // execute further operations
-        _decodeAndExecute(params);
+        _executeOnCaller(params);
     }
 
     /**
      * @dev BalancerV3 flash loan
      */
-    function receiveFlashLoan(bytes calldata data) external requireInExecution {
+    function receiveFlashLoan(bytes calldata data) external onlyInExecution {
         // execute further operations
-        _decodeAndExecute(data);
+        _executeOnCaller(data);
     }
 
     /**
      * @dev Uniswap V4 flash loan
      */
-    function unlockCallback(bytes calldata data) external requireInExecution {
+    function unlockCallback(bytes calldata data) external onlyInExecution {
         // execute further operations
-        _decodeAndExecute(data);
+        _executeOnCaller(data);
     }
 
     /**
      * @dev Morpho flash loan
      */
-    function onMorphoFlashLoan(uint256, bytes calldata params) external requireInExecution {
+    function onMorphoFlashLoan(uint256, bytes calldata params) external onlyInExecution {
         // execute further operations
-        _decodeAndExecute(params);
+        _executeOnCaller(params);
     }
 
     /**
      * @dev Handle flashloan repay
      * @param data The calldata to be executed
      */
-    function handleRepay(bytes calldata data) external requireInExecution {
+    function handleRepay(bytes calldata data) external onlyInExecution {
         (address dest, bytes memory call) = abi.decode(data, (address, bytes));
         (bool success, bytes memory result) = dest.call(call);
         if (!success) {
@@ -100,77 +111,14 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
 
     /// @notice Execute a flash loan
     /// @param flashLoanProvider The flashloan provider address
-    /// @param dataOffset The offset of the calldata that indicates the start of the flashloan calldata
     /// @param data The calldata that will be passed as the data to flashloan execute function
-    function flashLoan(address flashLoanProvider, uint256 dataOffset, bytes calldata data) external setInExecution {
+    function flashLoan(address flashLoanProvider, bytes calldata data) external lockExecution {
         if (!initialized[msg.sender]) revert NotInitialized();
-        if (data.length == 0 || dataOffset <= 4) {
-            // the dataOffset must be greater than 4 because the first 4 bytes are the selector
+        if (data.length == 0) {
             revert InvalidCall();
         }
 
-        /// @dev inject msg.sender into the calldata of flashloan request
-        // Create a new memory buffer with extra space for msg.sender (20 bytes)
-        bytes memory memData = new bytes(data.length + 20);
-
-        assembly {
-            // Get the pointer to the data area (after the length prefix)
-            let memPtr := add(memData, 32)
-
-            // Copy the original data up to the params offset position
-            calldatacopy(
-                memPtr, // destination
-                data.offset, // source
-                dataOffset // length to copy
-            )
-
-            // Read the params offset from the original data
-            let paramsOffsetPos := add(data.offset, dataOffset)
-            let paramsOffset := calldataload(paramsOffsetPos)
-
-            // Calculate where the params data starts in the original calldata
-            let paramsDataPos := add(data.offset, add(4, paramsOffset)) // +4 to skip selector
-
-            // Read the params length
-            let paramsLength := calldataload(paramsDataPos)
-
-            // Store the updated params offset
-            mstore(add(memPtr, dataOffset), paramsOffset)
-
-            // Calculate where the params data will be in our new buffer
-            let newParamsDataPtr := add(memPtr, add(4, paramsOffset)) // +4 to skip selector
-
-            // Write the updated params length (original + 20 bytes for address)
-            mstore(newParamsDataPtr, add(paramsLength, 20))
-
-            // Write the msg.sender at the beginning of the params data
-            mstore(add(newParamsDataPtr, 32), shl(96, caller()))
-
-            // Copy the original params data after the msg.sender
-            calldatacopy(
-                add(newParamsDataPtr, 52), // destination: after length (32) + address (20)
-                add(paramsDataPos, 32), // source: after length
-                paramsLength // length to copy
-            )
-
-            // Copy any remaining data after the params
-            let remainingDataPos := add(add(paramsDataPos, 32), paramsLength)
-            let remainingDataLength := sub(add(data.offset, data.length), remainingDataPos)
-            let newRemainingDataPos := add(add(newParamsDataPtr, 52), paramsLength)
-
-            if gt(remainingDataLength, 0) {
-                calldatacopy(
-                    newRemainingDataPos, // destination
-                    remainingDataPos, // source
-                    remainingDataLength // length
-                )
-            }
-
-            // Set the total length of our modified data
-            mstore(memData, add(data.length, 20))
-        }
-
-        (bool success, bytes memory result) = flashLoanProvider.call(memData);
+        (bool success, bytes memory result) = flashLoanProvider.call(data);
         if (!success) {
             assembly {
                 revert(add(result, 32), mload(result))
@@ -178,12 +126,12 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
         }
     }
 
-    function onInstall(bytes calldata) external requireNotInExecution {
+    function onInstall(bytes calldata) external onlyNotInExecution {
         if (initialized[msg.sender]) revert AlreadyInitialized();
         initialized[msg.sender] = true;
     }
 
-    function onUninstall(bytes calldata) external requireNotInExecution {
+    function onUninstall(bytes calldata) external onlyNotInExecution {
         if (!initialized[msg.sender]) revert NotInitialized();
         initialized[msg.sender] = false;
     }
@@ -199,11 +147,7 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
     /**
      * @dev Internal function to decode batch calldata
      */
-    function _decodeAndExecute(bytes calldata params) internal {
-        // extract sender address and data
-        address sender = address(uint160(uint256(bytes32(params[0:32])) >> 96));
-        bytes memory data = params[52:];
-        // execute, using batch mode
-        INexus(sender).executeFromExecutor(ModeLib.encodeSimpleBatch(), data);
+    function _executeOnCaller(bytes calldata data) internal {
+        INexus(_getCaller()).executeFromExecutor(ModeLib.encodeSimpleBatch(), data);
     }
 }
