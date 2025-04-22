@@ -2,22 +2,19 @@
 
 import { getAddress } from "ethers/lib/utils";
 import * as fs from "fs";
-import { DexValidation, UNISWAP_V2_FORKS } from "./dex/uniV2";
 import { templateUniV2 } from "./templates/flashSwap/uniV2Callback";
-import { IZUMI_FORKS, UNISWAP_V3_FORKS } from "./dex/uniV3";
 import { templateUniV3 } from "./templates/flashSwap/uniV3Callback";
 import { uniq } from "lodash";
-import { DODO_V2_DATA } from "./dex/dodoV2";
 import { templateDodoV2 } from "./templates/flashSwap/dodoV2Callback";
-import { DexProtocol } from "./dex/dexs";
 import { templateSwapCallbacks } from "./templates/flashSwap/swapCallbacks";
-import { UNISWAP_V4_FORKS } from "./dex/uniV4";
 import { templateUniV4 } from "./templates/flashSwap/uniV4Callback";
-import { BALANCER_V3_FORKS } from "./dex/balancerV3";
 import { templateBalancerV3 } from "./templates/flashSwap/balancerV3Callback";
 import { CREATE_CHAIN_IDS, getChainKey } from "./config";
 import { composerTestImports } from "./templates/test/composerImport";
 import { customV2ValidationSnippets } from "./dex/customSnippets";
+
+import { IZUMI_FORKS, UNISWAP_V2_FORKS, UNISWAP_V3_FORKS, DODO_V2_DATA, DexValidation, UNISWAP_V4_FORKS, BALANCER_V3_FORKS, DexProtocol } from "@1delta/dex-registry"
+import { DEX_TO_CHAINS_EXCLUSIONS } from "./dex/blacklists";
 
 const SOLIDLY_V2_MIN_ID = 130
 const SOLIDLY_V2_MIN_ID_LOW = 128
@@ -214,13 +211,14 @@ async function main() {
         Object.entries(UNISWAP_V2_FORKS).forEach(([dex, maps], i) => {
             Object.entries(maps.factories).forEach(([chains, address]) => {
                 if (chains === chain) {
-                    dexIdsUniV2.push({
-                        entityName: dex,
-                        entityId: maps.forkId,
-                        pool: address,
-                        codeHash: maps.codeHash[chain] ?? maps.codeHash.default,
-                        callbackSelector: maps.callbackSelector,
-                    })
+                    if (!DEX_TO_CHAINS_EXCLUSIONS[dex]?.includes(chain))
+                        dexIdsUniV2.push({
+                            entityName: dex,
+                            entityId: maps.forkId,
+                            pool: address,
+                            codeHash: maps.codeHash[chain] ?? maps.codeHash.default,
+                            callbackSelector: maps.callbackSelector,
+                        })
                 }
             });
         });
@@ -231,13 +229,14 @@ async function main() {
         Object.entries(UNISWAP_V3_FORKS).forEach(([dex, maps], i) => {
             Object.entries(maps.factories).forEach(([chains, address]) => {
                 if (chains === chain) {
-                    dexIdsUniV3.push({
-                        entityName: dex,
-                        entityId: maps.forkId,
-                        pool: address,
-                        codeHash: maps.codeHash[chain] ?? maps.codeHash.default,
-                        callbackSelector: maps.callbackSelector,
-                    })
+                    if (!DEX_TO_CHAINS_EXCLUSIONS[dex]?.includes(chain))
+                        dexIdsUniV3.push({
+                            entityName: dex,
+                            entityId: maps.forkId,
+                            pool: address,
+                            codeHash: maps.codeHash[chain] ?? maps.codeHash.default,
+                            callbackSelector: maps.callbackSelector,
+                        })
                 }
             });
         });
@@ -247,12 +246,13 @@ async function main() {
         Object.entries(IZUMI_FORKS).forEach(([dex, maps], i) => {
             Object.entries(maps.factories).forEach(([chains, address]) => {
                 if (chains === chain) {
-                    dexIdsIzumi.push({
-                        entityName: dex,
-                        entityId: maps.forkId,
-                        pool: address,
-                        codeHash: maps.codeHash[chain] ?? maps.codeHash.default
-                    })
+                    if (!DEX_TO_CHAINS_EXCLUSIONS[dex]?.includes(chain))
+                        dexIdsIzumi.push({
+                            entityName: dex,
+                            entityId: maps.forkId,
+                            pool: address,
+                            codeHash: maps.codeHash[chain] ?? maps.codeHash.default
+                        })
                 }
             });
         });
@@ -262,11 +262,12 @@ async function main() {
         Object.entries(UNISWAP_V4_FORKS).forEach(([dex, maps], i) => {
             Object.entries(maps.pm).forEach(([chains, address]) => {
                 if (chains === chain) {
-                    dexIdsUniV4.push({
-                        entityName: dex,
-                        entityId: maps.forkId,
-                        pool: address,
-                    })
+                    if (!DEX_TO_CHAINS_EXCLUSIONS[dex]?.includes(chain))
+                        dexIdsUniV4.push({
+                            entityName: dex,
+                            entityId: maps.forkId,
+                            pool: address,
+                        })
                 }
             });
         });
@@ -277,11 +278,12 @@ async function main() {
         Object.entries(BALANCER_V3_FORKS).forEach(([dex, maps], i) => {
             Object.entries(maps.vault).forEach(([chains, address]) => {
                 if (chains === chain) {
-                    dexIdsBalancerV3.push({
-                        entityName: dex,
-                        entityId: maps.forkId,
-                        pool: address,
-                    })
+                    if (!DEX_TO_CHAINS_EXCLUSIONS[dex]?.includes(chain))
+                        dexIdsBalancerV3.push({
+                            entityName: dex,
+                            entityId: maps.forkId,
+                            pool: address,
+                        })
                 }
             });
         });

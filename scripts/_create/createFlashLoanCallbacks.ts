@@ -6,14 +6,13 @@ import * as fs from "fs";
 import { templateAaveV2 } from "./templates/flashLoan/aaveV2Callback";
 import { templateAaveV3 } from "./templates/flashLoan/aaveV3Callback";
 import { templateFlashLoan } from "./templates/flashLoan/flashLoanCallbacks.ts";
-import { BALANCER_V2_FORKS } from "./dex/balancerV2";
 import { templateMorphoBlue } from "./templates/flashLoan/morphoCallback";
 import { templateBalancerV2 } from "./templates/flashLoan/balancerV2Callback";
 import { templateComposer } from "./templates/composer";
 import { CREATE_CHAIN_IDS, getChainKey, toCamelCaseWithFirstUpper } from "./config";
-import { FLASH_LOAN_IDS } from "./flashLoan/flashLoanIds";
 import { templateUniversalFlashLoan } from "./templates/flashLoan/universalFlashLoan";
 import { templateBalancerV2Trigger } from "./templates/flashLoan/balancerV2Trigger";
+import { BALANCER_V2_FORKS, FLASH_LOAN_IDS } from "@1delta/dex-registry";
 
 /** constant for the head part */
 function createConstant(pool: string, lender: string) {

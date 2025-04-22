@@ -1,5 +1,5 @@
 import { Chain } from "@1delta/asset-registry";
-import { DexProtocol } from "./dexs";
+import { DexProtocol } from "@1delta/dex-registry";
 
 /** 
  * these are override snippets to be used

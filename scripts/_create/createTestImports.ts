@@ -1,16 +1,16 @@
 
 
-import { AAVE_FORK_POOL_DATA, AAVE_V2_LENDERS, AAVE_V3_LENDERS, Chain, CHAIN_INFO, MORPHO_BLUE_POOL_DATA } from "@1delta/asset-registry";
+import { AAVE_FORK_POOL_DATA, AAVE_V2_LENDERS, AAVE_V3_LENDERS, MORPHO_BLUE_POOL_DATA } from "@1delta/asset-registry";
 import { getAddress } from "ethers/lib/utils";
 import * as fs from "fs";
 import { templateAaveV2 } from "./templates/flashLoan/aaveV2Callback";
 import { templateAaveV3 } from "./templates/flashLoan/aaveV3Callback";
 import { templateFlashLoan } from "./templates/flashLoan/flashLoanCallbacks.ts";
-import { BALANCER_V2_FORKS } from "./dex/balancerV2";
 import { templateMorphoBlue } from "./templates/flashLoan/morphoCallback";
 import { templateBalancerV2 } from "./templates/flashLoan/balancerV2Callback";
 import { templateComposer } from "./templates/composer";
 import { CREATE_CHAIN_IDS, getChainKey, toCamelCaseWithFirstUpper } from "./config";
+import { BALANCER_V2_FORKS } from "@1delta/dex-registry";
 
 
 function createConstant(pool: string, lender: string) {
