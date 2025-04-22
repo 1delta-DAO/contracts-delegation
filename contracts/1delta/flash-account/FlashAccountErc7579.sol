@@ -62,8 +62,18 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
      * @dev BalancerV3 flash loan
      */
     function receiveFlashLoan(bytes calldata data) external {
+        // we should call the balancer V3 vault to transfer the tokens to the module
+        // then the data should start with the call to sendTo
+        // the sendTo function call is sendTo(address,address,uint256), the length of the calldata is 100 (4+32+32+32),
+        // the rest of the data will be later is used as the data for the flashloan callback
+        (bool success, bytes memory result) = msg.sender.call(data[:100]);
+        if (!success) {
+            assembly {
+                revert(add(result, 32), mload(result))
+            }
+        }
         // execute further operations
-        _forwardExecutionToCaller(data);
+        _forwardExecutionToCaller(data[100:]);
     }
 
     /**
