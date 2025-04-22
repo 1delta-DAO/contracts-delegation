@@ -258,7 +258,7 @@ contract FlashAccountErc7579Test is Test {
         console.logBytes(repayCalldata);
 
         bytes memory aaveFlashLoanCalldata = abi.encodeWithSelector(
-            IPool.flashLoanSimple.selector, address(module), USDC, amountToBorrow, abi.encodePacked(ModeLib.encodeSimpleBatch(), repayCalldata), 0
+            IPool.flashLoanSimple.selector, address(module), USDC, amountToBorrow, abi.encode(ModeLib.encodeSimpleBatch(), repayCalldata), 0
         );
 
         bytes memory flashloanCallData = abi.encodeWithSelector(FlashAccountErc7579.flashLoan.selector, address(aavePool), aaveFlashLoanCalldata);
@@ -275,6 +275,8 @@ contract FlashAccountErc7579Test is Test {
         vm.prank(user_);
         entryPoint.handleOps(ops, payable(address(0x1)));
 
+        // we check the latest revert reason, so it is possible for the call to revert for other reasons too
+        // in this test, it only reverts once with the NotInitialized error
         (bool reverted, bytes4 revertReason) = _getRevertReason(entryPoint.getUserOpHash(ops[0]));
         assertTrue(reverted); // should revert
         assertEq(revertReason, bytes4(keccak256("NotInitialized()")));
@@ -282,6 +284,10 @@ contract FlashAccountErc7579Test is Test {
 
     function test_flash_account_module_installation() public {
         assertTrue(module.isInitialized(address(account)));
+    }
+
+    function test_flash_account_module_not_initialized() public {
+        assertFalse(module.isInitialized(address(0xdeadadd)));
     }
 
     function test_flash_account_module_attack_malicious_call_reverts() public {
