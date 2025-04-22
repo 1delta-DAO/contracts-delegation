@@ -18,9 +18,7 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
     error UnknownFlashLoanCallback();
 
     constructor() {
-        assembly {
-            sstore(IN_EXECUTION_SLOT, UINT256_MAX)
-        }
+        _initializeLock();
     }
 
     /**

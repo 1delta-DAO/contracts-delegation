@@ -19,6 +19,12 @@ abstract contract ExecutionLock {
     error Locked();
     error AlreadyInExecution();
 
+    function _initializeLock() internal {
+        assembly {
+            sstore(IN_EXECUTION_SLOT, UINT256_MAX)
+        }
+    }
+
     /// @notice All function execution user operations
     /// @dev this modifier makes to function non-reentrant too
     /// need to use this modifier
