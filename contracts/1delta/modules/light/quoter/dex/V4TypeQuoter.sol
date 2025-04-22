@@ -190,10 +190,10 @@ abstract contract V4TypeQuoter is QuoterUtils, Masks {
             // Store fromAmount
             mstore(add(ptr, 196), sub(0, fromAmount))
 
-            // if xor(0, clLength) {
-            //     // Store furhter calldata (add 4 to length due to fee and clLength)
-            //     calldatacopy(add(ptr, 324), currentOffset, clLength)
-            // }
+            if xor(0, clLength) {
+                // Store furhter calldata (add 4 to length due to fee and clLength)
+                calldatacopy(add(ptr, 324), currentOffset, clLength)
+            }
 
             switch lt(tokenIn, tokenOut)
             // zeroForOne

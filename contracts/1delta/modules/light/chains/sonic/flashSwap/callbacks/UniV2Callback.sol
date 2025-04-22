@@ -47,18 +47,18 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
             case 0x9a7bff7900000000000000000000000000000000000000000000000000000000 {
                 forkId := and(UINT8_MASK, shr(88, outData))
 
-                if or(eq(forkId, 131), eq(forkId, 195)) {
+                switch or(eq(forkId, 131), eq(forkId, 195))
+                case 1 {
                     ffFactoryAddress := SHADOW_V2_FF_FACTORY
                     codeHash := SHADOW_V2_CODE_HASH
                 }
-                {
-                    if or(eq(forkId, 136), eq(forkId, 200)) {
+                default {
+                    switch or(eq(forkId, 136), eq(forkId, 200))
+                    case 1 {
                         ffFactoryAddress := SWAPX_V2_FF_FACTORY
                         codeHash := SWAPX_V2_CODE_HASH
                     }
-                    {
-                        revert(0, 0)
-                    }
+                    default { revert(0, 0) }
                 }
             }
         }

@@ -63,6 +63,7 @@ abstract contract V4TypeGeneric is ERC20Selectors, Masks {
     )
         internal
         returns (
+            // this var changes from zeroToOne to the received amount
             uint256 receivedAmount,
             // similar to other implementations, we use this temp variable
             // to avoid stackToo deep
@@ -93,14 +94,9 @@ abstract contract V4TypeGeneric is ERC20Selectors, Masks {
         // solhint-disable-next-line no-inline-assembly
         assembly {
             let ptr := mload(0x40)
-            // read the hook address and insta store it to keep stack smaller
-            mstore(add(ptr, 132), shr(96, calldataload(currentOffset)))
-            // skip hook
-            currentOffset := add(currentOffset, 20)
+
             // read the pool address
-            let pool := calldataload(currentOffset)
-            // skip pool plus params
-            currentOffset := add(currentOffset, 29)
+            let pool := calldataload(add(currentOffset, 20))
 
             // let tickSpacing := and(UINT24_MASK, shr(48, pool))
             // pay flag
@@ -121,11 +117,11 @@ abstract contract V4TypeGeneric is ERC20Selectors, Masks {
             // Store tickSpacing
             mstore(add(ptr, 100), and(UINT24_MASK, shr(48, pool)))
 
-            pool :=
-                shr(
-                    96,
-                    pool // starts as first param
-                )
+            // get the hook
+            let hook := shr(96, calldataload(currentOffset))
+            mstore(add(ptr, 132), hook)
+
+            pool := shr(96, pool)
 
             // Store data offset
             mstore(add(ptr, 260), 0x120)
@@ -139,17 +135,21 @@ abstract contract V4TypeGeneric is ERC20Selectors, Masks {
             // Store fromAmount
             mstore(add(ptr, 196), sub(0, fromAmount))
 
+            // skip pool plus params
+            currentOffset := add(currentOffset, 49)
             if xor(0, clLength) {
                 // Store furhter calldata (add 4 to length due to fee and clLength)
                 calldatacopy(add(ptr, 324), currentOffset, clLength)
             }
 
-            switch lt(tokenIn, tokenOut)
+            // use receivedAmount as zeroForOne
+            receivedAmount := lt(tokenIn, tokenOut)
+            // Store zeroForOne
+            mstore(add(ptr, 164), receivedAmount)
+            // store pool key and limits
+            switch receivedAmount
             // zeroForOne
             case 1 {
-                // Store zeroForOne
-                mstore(add(ptr, 164), 1)
-
                 /**
                  * PoolKey  (1/2)
                  */
@@ -163,9 +163,6 @@ abstract contract V4TypeGeneric is ERC20Selectors, Masks {
                 mstore(add(ptr, 228), MIN_SQRT_RATIO)
             }
             default {
-                // Store zeroForOne
-                mstore(add(ptr, 164), 0)
-
                 /**
                  * PoolKey  (1/2)
                  */
@@ -180,46 +177,62 @@ abstract contract V4TypeGeneric is ERC20Selectors, Masks {
             }
 
             // Perform the external 'swap' call
-            if iszero(call(gas(), pool, 0, ptr, add(324, clLength), 0, 0)) {
+            if iszero(call(gas(), pool, 0, ptr, add(324, clLength), 0, 0x20)) {
                 // store return value directly to free memory pointer
                 // The call failed; we retrieve the exact error message and revert with it
                 returndatacopy(0, 0, returndatasize()) // Copy the error message to the start of memory
                 revert(0, returndatasize()) // Revert with the error message
             }
 
-            /**
-             * Load actual deltas from pool manager
-             * This is recommended in the docs
-             */
-            mstore(ptr, EXTTLOAD)
-            mstore(add(ptr, 4), 0x20) // offset
-            mstore(add(ptr, 36), 2) // array length
+            // if no hook provided, read plain swap, otherwise, read deltas
+            switch iszero(hook)
+            case 1 {
+                fromAmount := mload(0)
+                switch receivedAmount
+                case 1 {
+                    receivedAmount := and(UINT128_MASK, fromAmount)
+                    fromAmount := sub(0, sar(128, fromAmount))
+                }
+                default {
+                    receivedAmount := shr(128, fromAmount)
+                    fromAmount := sub(0, signextend(15, fromAmount))
+                }
+            }
+            default {
+                /**
+                 * Load actual deltas from pool manager if hook provided
+                 * This is recommended in the docs
+                 */
+                mstore(ptr, EXTTLOAD)
+                mstore(add(ptr, 4), 0x20) // offset
+                mstore(add(ptr, 36), 2) // array length
 
-            mstore(0, address())
-            mstore(0x20, tokenIn)
-            // first key
-            mstore(add(ptr, 68), keccak256(0, 0x40))
-            // output token for 2nd key
-            mstore(0x20, tokenOut)
-            // second key
-            mstore(add(ptr, 100), keccak256(0, 0x40))
+                mstore(0, address())
+                mstore(0x20, tokenIn)
+                // first key
+                mstore(add(ptr, 68), keccak256(0, 0x40))
+                // output token for 2nd key
+                mstore(0x20, tokenOut)
+                // second key
+                mstore(add(ptr, 100), keccak256(0, 0x40))
 
-            if iszero(
-                // the call will always succeed due to the pair being nonzero
-                staticcall(
-                    gas(),
-                    pool,
-                    ptr,
-                    132, // selector + offs + length + key0 + key1
-                    ptr,
-                    0x80 // output (offset, length, data0, data1)
+                // get the deltas
+                pop(
+                    staticcall(
+                        gas(),
+                        pool,
+                        ptr,
+                        132, // selector + offs + length + key0 + key1
+                        ptr,
+                        0x80 // output (offset, length, data0, data1)
+                    )
                 )
-            ) { revert(0, 0) }
 
-            // 1st array output element
-            fromAmount := sub(0, mload(add(ptr, 0x40)))
-            // 2nd array output element
-            receivedAmount := mload(add(ptr, 0x60))
+                // 1st array output element
+                fromAmount := sub(0, mload(add(ptr, 0x40)))
+                // 2nd array output element
+                receivedAmount := mload(add(ptr, 0x60))
+            }
 
             /**
              * Pull funds to receiver
@@ -282,23 +295,31 @@ abstract contract V4TypeGeneric is ERC20Selectors, Masks {
                         revert(0, returndatasize())
                     }
 
-                    switch tempVar
-                    case 0 {
-                        // selector for transferFrom(address,address,uint256)
-                        mstore(ptr, ERC20_TRANSFER_FROM)
-                        mstore(add(ptr, 0x04), callerAddress)
-                        mstore(add(ptr, 0x24), pool)
-                        mstore(add(ptr, 0x44), fromAmount)
-
-                        let success := call(gas(), tokenIn, 0, ptr, 0x64, 0, 32)
+                    {
+                        // temp var is the pay mode and then succes flag
+                        switch tempVar
+                        case 0 {
+                            // selector for transferFrom(address,address,uint256)
+                            mstore(ptr, ERC20_TRANSFER_FROM)
+                            mstore(add(ptr, 0x04), callerAddress)
+                            mstore(add(ptr, 0x24), pool)
+                            mstore(add(ptr, 0x44), fromAmount)
+                            tempVar := call(gas(), tokenIn, 0, ptr, 0x64, 0, 32)
+                        }
+                        // transfer plain
+                        case 1 {
+                            // selector for transfer(address,uint256)
+                            mstore(ptr, ERC20_TRANSFER)
+                            mstore(add(ptr, 0x04), pool)
+                            mstore(add(ptr, 0x24), fromAmount)
+                            tempVar := call(gas(), tokenIn, 0, ptr, 0x44, 0, 32)
+                        }
 
                         let rdsize := returndatasize()
-                        // Check for ERC20 success. ERC20 tokens should return a boolean,
-                        // but some don't. We accept 0-length return data as success, or at
-                        // least 32 bytes that starts with a 32-byte boolean true.
-                        success :=
+
+                        if iszero(
                             and(
-                                success, // call itself succeeded
+                                tempVar, // call itself succeeded
                                 or(
                                     iszero(rdsize), // no return data, or
                                     and(
@@ -307,44 +328,16 @@ abstract contract V4TypeGeneric is ERC20Selectors, Masks {
                                     )
                                 )
                             )
-
-                        if iszero(success) {
+                        ) {
                             returndatacopy(0, 0, rdsize)
                             revert(0, rdsize)
                         }
                     }
-                    // transfer plain
-                    case 1 {
-                        // selector for transfer(address,uint256)
-                        mstore(ptr, ERC20_TRANSFER)
-                        mstore(add(ptr, 0x04), pool)
-                        mstore(add(ptr, 0x24), fromAmount)
-                        let success := call(gas(), tokenIn, 0, ptr, 0x44, 0, 32)
-
-                        let rdsize := returndatasize()
-                        // Check for ERC20 success. ERC20 tokens should return a boolean,
-                        // but some don't. We accept 0-length return data as success, or at
-                        // least 32 bytes that starts with a 32-byte boolean true.
-                        success :=
-                            and(
-                                success, // call itself succeeded
-                                or(
-                                    iszero(rdsize), // no return data, or
-                                    and(
-                                        gt(rdsize, 31), // at least 32 bytes
-                                        eq(mload(0), 1) // starts with uint256(1)
-                                    )
-                                )
-                            )
-
-                        if iszero(success) {
-                            returndatacopy(0, 0, rdsize)
-                            revert(0, rdsize)
-                        }
-                    }
+                    // we continue to use it as native value
+                    // zero for erc20 transfer
                     tempVar := 0
                 }
-                // native
+                // native (temVar is the fromAmount)
                 default { tempVar := fromAmount }
                 /**
                  * Settle funds in pool manager

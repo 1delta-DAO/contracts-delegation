@@ -97,32 +97,34 @@ function createCaseSolidlyV2(dexDataArray: DexIdData[]) {
     }
 
     let entr = (entityName: string, entityId: string, rest: string, override: boolean) => override ? `
-                    if or(eq(forkId, ${entityId}), eq(forkId, ${Number(entityId) + 64})) {
+                    switch or(eq(forkId, ${entityId}), eq(forkId, ${Number(entityId) + 64}))
+                    case 1 {
                         ffFactoryAddress := ${entityName}_FACTORY
                     }
-                    {
+                    default {
                         ${rest}
                     }`: `
-                    if or(eq(forkId, ${entityId}), eq(forkId, ${Number(entityId) + 64})) {
+                    switch or(eq(forkId, ${entityId}), eq(forkId, ${Number(entityId) + 64})) 
+                    case 1 {
                         ffFactoryAddress := ${entityName}_FF_FACTORY
                         codeHash := ${entityName}_CODE_HASH
                     }
-                    {
+                    default {
                         ${rest}
                     }`
 
     const endData = dexDataArray[dexDataArray.length - 1]
     let data = endData.codeHash !== DexValidation.OVERRIDE ? `
-        if or(eq(forkId, ${endData.entityId}), eq(forkId, ${Number(endData.entityId) + 64})) {
-                        ffFactoryAddress := ${endData.entityName}_FF_FACTORY
-                        codeHash := ${endData.entityName}_CODE_HASH
-                    }
-                    { revert(0, 0) }
+        switch or(eq(forkId, ${endData.entityId}), eq(forkId, ${Number(endData.entityId) + 64})) 
+        case 1 {
+                ffFactoryAddress := ${endData.entityName}_FF_FACTORY
+                codeHash := ${endData.entityName}_CODE_HASH
+        } default { revert(0, 0) }
     ` : `
-        if or(eq(forkId, ${endData.entityId}), eq(forkId, ${Number(endData.entityId) + 64})) {
-                        ffFactoryAddress := ${endData.entityName}_FACTORY
-                    }
-                    { revert(0, 0) }
+        switch or(eq(forkId, ${endData.entityId}), eq(forkId, ${Number(endData.entityId) + 64})) 
+        case 1 {
+            ffFactoryAddress := ${endData.entityName}_FACTORY
+        } default { revert(0, 0) }
     `
     dexDataArray.reverse().slice(1).forEach(({ entityName, entityId, codeHash }, i) => {
         data = entr(entityName, entityId, data, codeHash === DexValidation.OVERRIDE)
