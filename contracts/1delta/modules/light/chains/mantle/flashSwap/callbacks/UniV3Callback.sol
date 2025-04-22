@@ -23,11 +23,17 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
     bytes32 private constant METHLAB_FF_FACTORY = 0xff8f140Fc3e9211b8DC2fC1D7eE3292F6817C5dD5D0000000000000000000000;
     bytes32 private constant METHLAB_CODE_HASH = 0xacd26fbb15704ae5e5fe7342ea8ebace020e4fa5ad4a03122ce1678278cf382b;
 
+    bytes32 private constant CRUST_FF_FACTORY = 0xffEaD128BDF9Cff441eF401Ec8D18a96b4A2d252520000000000000000000000;
+    bytes32 private constant CRUST_CODE_HASH = 0x55664e1b1a13929bcf29e892daf029637225ec5c85a385091b8b31dcca255627;
+
     bytes32 private constant AGNI_FF_FACTORY = 0xffe9827B4EBeB9AE41FC57efDdDd79EDddC2EA4d030000000000000000000000;
     bytes32 private constant AGNI_CODE_HASH = 0x1bce652aaa6528355d7a339037433a20cd28410e3967635ba8d2ddb037440dbf;
 
     bytes32 private constant FUSIONX_V3_FF_FACTORY = 0xff7DD105453D0AEf177743F5461d7472cC779e63f70000000000000000000000;
     bytes32 private constant FUSIONX_V3_CODE_HASH = 0x1bce652aaa6528355d7a339037433a20cd28410e3967635ba8d2ddb037440dbf;
+
+    bytes32 private constant BUTTER_FF_FACTORY = 0xffEECa0a86431A7B42ca2Ee5F479832c3D4a4c26440000000000000000000000;
+    bytes32 private constant BUTTER_CODE_HASH = 0xc7d06444331e4f63b0764bb53c88788882395aa31961eed3c2768cc9568323ee;
 
     bytes32 private constant SWAPSICLE_FF_FACTORY = 0xff9dE2dEA5c68898eb4cb2DeaFf357DFB26255a4aa0000000000000000000000;
     bytes32 private constant SWAPSICLE_CODE_HASH = 0x177d5fbf994f4d130c008797563306f1a168dc689f81b2fa23b4396931014d91;
@@ -60,6 +66,10 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
                     ffFactoryAddress := METHLAB_FF_FACTORY
                     codeHash := METHLAB_CODE_HASH
                 }
+                case 12 {
+                    ffFactoryAddress := CRUST_FF_FACTORY
+                    codeHash := CRUST_CODE_HASH
+                }
                 default { revert(0, 0) }
                 let _amount1 := calldataload(36)
                 switch sgt(_amount1, 0)
@@ -78,6 +88,15 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
             case 0xae067e0f00000000000000000000000000000000000000000000000000000000 {
                 ffFactoryAddress := FUSIONX_V3_FF_FACTORY
                 codeHash := FUSIONX_V3_CODE_HASH
+
+                let _amount1 := calldataload(36)
+                switch sgt(_amount1, 0)
+                case 1 { amountToPay := _amount1 }
+                default { amountToPay := calldataload(4) }
+            }
+            case 0xe5f6c0f800000000000000000000000000000000000000000000000000000000 {
+                ffFactoryAddress := BUTTER_FF_FACTORY
+                codeHash := BUTTER_CODE_HASH
 
                 let _amount1 := calldataload(36)
                 switch sgt(_amount1, 0)

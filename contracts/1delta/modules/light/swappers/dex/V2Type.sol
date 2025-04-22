@@ -75,7 +75,7 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
             case 1 {
                 // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
                 // buyAmount = (pairSellAmount * feeAm * buyReserve) /
-                //     (pairSellAmount * feeAm + sellReserve * 1000);
+                //     (pairSellAmount * feeAm + sellReserve * 10000);
                 // this is expected to be 10000 - x, where x is the poolfee in bps
                 let poolFeeDenom := and(shr(80, pool), UINT16_MASK)
                 pool := shr(96, pool)

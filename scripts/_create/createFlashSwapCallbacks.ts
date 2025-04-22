@@ -302,7 +302,7 @@ async function main() {
         let switchCaseContentV2 = ``
         dexIdsUniV2 = dexIdsUniV2
             .sort((a, b) => Number(a.entityId) < Number(b.entityId) ? -1 : 1)
-        const slectorsV2 = uniq(dexIdsUniV2.map(s => s.callbackSelector!))
+        const slectorsV2 = uniq(dexIdsUniV2.filter(q => q.callbackSelector !== DexValidation.EXCLUDE).map(s => s.callbackSelector!))
         slectorsV2.forEach(sel => {
             const idsForSelector = dexIdsUniV2.filter(a => a.callbackSelector === sel)
             const overriddenIds = idsForSelector.filter(a => a.codeHash === DexValidation.OVERRIDE)

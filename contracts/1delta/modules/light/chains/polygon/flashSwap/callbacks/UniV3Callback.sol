@@ -23,6 +23,9 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
     bytes32 private constant SUSHISWAP_V3_FF_FACTORY = 0xff917933899c6a5F8E37F31E19f92CdBFF7e8FF0e20000000000000000000000;
     bytes32 private constant SUSHISWAP_V3_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
 
+    bytes32 private constant RETRO_FF_FACTORY = 0xff91e1B99072f238352f59e58de875691e20Dc19c10000000000000000000000;
+    bytes32 private constant RETRO_CODE_HASH = 0x817e07951f93017a93327ac8cc31e946540203a19e1ecc37bc1761965c2d1090;
+
     bytes32 private constant QUICKSWAP_V3_FF_FACTORY = 0xff2D98E2FA9da15aa6dC9581AB097Ced7af697CB920000000000000000000000;
     bytes32 private constant QUICKSWAP_V3_CODE_HASH = 0x6ec6c9c8091d160c0aa74b2b14ba9c1717e95093bd3ac085cee99a49aab294a4;
 
@@ -56,6 +59,10 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
                 case 1 {
                     ffFactoryAddress := SUSHISWAP_V3_FF_FACTORY
                     codeHash := SUSHISWAP_V3_CODE_HASH
+                }
+                case 13 {
+                    ffFactoryAddress := RETRO_FF_FACTORY
+                    codeHash := RETRO_CODE_HASH
                 }
                 default { revert(0, 0) }
                 let _amount1 := calldataload(36)

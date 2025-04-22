@@ -19,8 +19,8 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
 
     bytes32 private constant MERCHANT_MOE_FACTORY = 0x0000000000000000000000005bEf015CA9424A7C07B68490616a4C1F094BEdEc;
 
-    bytes32 private constant RAMSES_V1_FF_FACTORY = 0xffAAA16c016BF556fcD620328f0759252E29b1AB570000000000000000000000;
-    bytes32 private constant RAMSES_V1_CODE_HASH = 0xbf2404274de2b11f05e5aebd49e508de933034cb5fa2d0ac3de8cbd4bcef47dc;
+    bytes32 private constant CLEOPATRA_V1_FF_FACTORY = 0xffAAA16c016BF556fcD620328f0759252E29b1AB570000000000000000000000;
+    bytes32 private constant CLEOPATRA_V1_CODE_HASH = 0xbf2404274de2b11f05e5aebd49e508de933034cb5fa2d0ac3de8cbd4bcef47dc;
 
     bytes32 private constant VELOCIMETER_FF_FACTORY = 0xff99F9a4A96549342546f9DAE5B2738EDDcD43Bf4C0000000000000000000000;
     bytes32 private constant VELOCIMETER_CODE_HASH = 0x0ccd005ee58d5fb11632ef5c2e0866256b240965c62c8e990c0f84a97f311879;
@@ -51,8 +51,8 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
                 }
                 {
                     if or(eq(forkId, 135), eq(forkId, 199)) {
-                        ffFactoryAddress := RAMSES_V1_FF_FACTORY
-                        codeHash := RAMSES_V1_CODE_HASH
+                        ffFactoryAddress := CLEOPATRA_V1_FF_FACTORY
+                        codeHash := CLEOPATRA_V1_CODE_HASH
                     }
                     {
                         revert(0, 0)
