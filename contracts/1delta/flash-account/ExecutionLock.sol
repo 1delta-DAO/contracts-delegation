@@ -4,7 +4,7 @@ pragma solidity ^0.8.28;
 /**
  * @notice Module that allows setting a flag once operations are triggered
  * This is necessary for managing flash loan callbacks
- * Its strage slot needs to be fixed to prevent colissions
+ * Its storage slot needs to be fixed to prevent collisions
  */
 abstract contract ExecutionLock {
     /// @notice inExecution flag is stored here:

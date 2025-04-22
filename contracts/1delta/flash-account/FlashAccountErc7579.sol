@@ -145,9 +145,14 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
     }
 
     /**
-     * @dev Internal function to decode batch calldata
+     * @dev Internal function to execute the calldata on the caller
      */
     function _executeOnCaller(bytes calldata data) internal {
-        INexus(_getCaller()).executeFromExecutor(ModeLib.encodeSimpleBatch(), data);
+        (bool success, bytes memory result) = _getCaller().call(abi.encodePacked(INexus.executeFromExecutor.selector, data));
+        if (!success) {
+            assembly {
+                revert(add(result, 32), mload(result))
+            }
+        }
     }
 }

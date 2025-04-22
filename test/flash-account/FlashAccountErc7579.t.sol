@@ -109,7 +109,7 @@ contract FlashAccountErc7579Test is Test {
     address public constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
-    bytes32 public constant IN_EXECUTION_SLOT = 0x3c25485dd7fcb5b79c6e101a51e4ac1d265adde8f4b2805851861db54821825d;
+    bytes32 public constant IN_EXECUTION_SLOT = 0x12cfb2d397d8c322044bd0ecc925788f7eda447a6b3031394cf3b7c2f759f1b0;
 
     // Test user
     uint256 public constant PRIVATE_KEY = 0x1de17a;
@@ -172,11 +172,10 @@ contract FlashAccountErc7579Test is Test {
         console.logBytes(repayCalldata);
 
         bytes memory aaveFlashLoanCalldata = abi.encodeWithSelector(
-            IPool.flashLoanSimple.selector, address(module), USDC, amountToBorrow, abi.encodePacked(ModeLib.encodeSimpleBatch(), repayCalldata), 0
+            IPool.flashLoanSimple.selector, address(module), USDC, amountToBorrow, abi.encode(ModeLib.encodeSimpleBatch(), repayCalldata), 0
         );
 
-        bytes memory flashloanCallData =
-            abi.encodeWithSelector(FlashAccountErc7579.flashLoan.selector, address(aavePool), uint256(100), aaveFlashLoanCalldata);
+        bytes memory flashloanCallData = abi.encodeWithSelector(FlashAccountErc7579.flashLoan.selector, address(aavePool), aaveFlashLoanCalldata);
 
         bytes memory execute = abi.encodeWithSignature(
             "execute(bytes32,bytes)", ModeLib.encodeSimpleSingle(), abi.encodePacked(address(module), uint256(0), flashloanCallData)
@@ -196,6 +195,14 @@ contract FlashAccountErc7579Test is Test {
         assertFalse(_callReverted(entryPoint.getUserOpHash(ops[0])));
     }
 
+    function test_flash_account_module_lock_is_cleared_after_flash_loan() public {
+        // run the flash loan test
+        test_flash_account_module_aave_v3_flash_loan();
+
+        bytes32 inExecution = vm.load(address(module), IN_EXECUTION_SLOT);
+        vm.assertEq(uint256(inExecution), type(uint256).max);
+    }
+
     function test_flash_account_module_eoa_flash_loan_reverts() public {
         uint256 amountToBorrow = 1000e6;
 
@@ -210,8 +217,7 @@ contract FlashAccountErc7579Test is Test {
         );
 
         // Create the call to the module
-        bytes memory flashloanCallData =
-            abi.encodeWithSelector(FlashAccountErc7579.flashLoan.selector, address(aavePool), uint256(100), aaveFlashLoanCalldata);
+        bytes memory flashloanCallData = abi.encodeWithSelector(FlashAccountErc7579.flashLoan.selector, address(aavePool), aaveFlashLoanCalldata);
 
         // should revert
         vm.prank(user);
@@ -255,8 +261,7 @@ contract FlashAccountErc7579Test is Test {
             IPool.flashLoanSimple.selector, address(module), USDC, amountToBorrow, abi.encodePacked(ModeLib.encodeSimpleBatch(), repayCalldata), 0
         );
 
-        bytes memory flashloanCallData =
-            abi.encodeWithSelector(FlashAccountErc7579.flashLoan.selector, address(aavePool), uint256(100), aaveFlashLoanCalldata);
+        bytes memory flashloanCallData = abi.encodeWithSelector(FlashAccountErc7579.flashLoan.selector, address(aavePool), aaveFlashLoanCalldata);
 
         bytes memory execute = abi.encodeWithSignature(
             "execute(bytes32,bytes)", ModeLib.encodeSimpleSingle(), abi.encodePacked(address(module), uint256(0), flashloanCallData)
@@ -298,7 +303,7 @@ contract FlashAccountErc7579Test is Test {
             0
         );
 
-        bytes memory flashloanCallData = abi.encodeWithSelector(FlashAccountErc7579.flashLoan.selector, address(0x100), uint256(100), maliciousData);
+        bytes memory flashloanCallData = abi.encodeWithSelector(FlashAccountErc7579.flashLoan.selector, address(0x100), maliciousData);
 
         bytes memory execute = abi.encodeWithSignature(
             "execute(bytes32,bytes)", ModeLib.encodeSimpleSingle(), abi.encodePacked(address(module), uint256(0), flashloanCallData)
@@ -311,9 +316,10 @@ contract FlashAccountErc7579Test is Test {
         entryPoint.handleOps(ops, payable(address(0x1)));
 
         // load the execution lock storage slot
-        bytes32 slot = keccak256(abi.encode(address(attackerAccount), IN_EXECUTION_SLOT));
-        bytes32 inExecution = vm.load(address(module), slot);
-        vm.assertEq(uint256(inExecution), 1); // not in execution
+        bytes32 inExecution = vm.load(address(module), IN_EXECUTION_SLOT);
+        console.log("inExecution");
+        console.logBytes32(inExecution);
+        vm.assertEq(uint256(inExecution), type(uint256).max); // not in execution
     }
 
     // ------------------------------------------------------------
