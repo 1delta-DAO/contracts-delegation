@@ -64,7 +64,7 @@ abstract contract ExecutionLock {
     }
 
     // gets the caller address from the slot, reverts if not set
-    function _getCaller() internal view returns (address caller_) {
+    function _getCallerWithLockCheck() internal view returns (address caller_) {
         assembly {
             let valueInSlot := sload(IN_EXECUTION_SLOT)
             if eq(UINT256_MAX, valueInSlot) {

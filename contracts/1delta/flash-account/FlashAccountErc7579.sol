@@ -35,7 +35,7 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
         returns (bool)
     {
         // forward execution
-        _executeOnCaller(params);
+        _forwardExecutionToCaller(params);
 
         return true;
     }
@@ -45,7 +45,7 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
      */
     function executeOperation(address[] calldata, uint256[] calldata, uint256[] calldata, address, bytes calldata params) external returns (bool) {
         // forward execution
-        _executeOnCaller(params);
+        _forwardExecutionToCaller(params);
 
         return true;
     }
@@ -55,7 +55,7 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
      */
     function receiveFlashLoan(address[] calldata, uint256[] calldata, uint256[] calldata, bytes calldata params) external {
         // execute further operations
-        _executeOnCaller(params);
+        _forwardExecutionToCaller(params);
     }
 
     /**
@@ -63,7 +63,7 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
      */
     function receiveFlashLoan(bytes calldata data) external {
         // execute further operations
-        _executeOnCaller(data);
+        _forwardExecutionToCaller(data);
     }
 
     /**
@@ -71,7 +71,7 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
      */
     function unlockCallback(bytes calldata data) external {
         // execute further operations
-        _executeOnCaller(data);
+        _forwardExecutionToCaller(data);
     }
 
     /**
@@ -79,7 +79,7 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
      */
     function onMorphoFlashLoan(uint256, bytes calldata params) external {
         // execute further operations
-        _executeOnCaller(params);
+        _forwardExecutionToCaller(params);
     }
 
     /**
@@ -134,8 +134,8 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
     /**
      * @dev Internal function to execute the calldata on the caller
      */
-    function _executeOnCaller(bytes calldata data) internal {
-        (bool success, bytes memory result) = _getCaller().call(abi.encodePacked(INexus.executeFromExecutor.selector, data));
+    function _forwardExecutionToCaller(bytes calldata data) internal {
+        (bool success, bytes memory result) = _getCallerWithLockCheck().call(abi.encodePacked(INexus.executeFromExecutor.selector, data));
         if (!success) {
             assembly {
                 revert(add(result, 32), mload(result))

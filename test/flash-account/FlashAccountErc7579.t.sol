@@ -192,7 +192,7 @@ contract FlashAccountErc7579Test is Test {
         entryPoint.handleOps(ops, payable(address(0x1)));
 
         // we should explicitly check that no revert is emitted
-        assertFalse(_callReverted(entryPoint.getUserOpHash(ops[0])));
+        assertFalse(_callReverted());
     }
 
     function test_flash_account_module_lock_is_cleared_after_flash_loan() public {
@@ -222,7 +222,7 @@ contract FlashAccountErc7579Test is Test {
         // should revert
         vm.prank(user);
         vm.expectRevert(FlashAccountErc7579.NotInitialized.selector);
-        (bool success,) = address(module).call(flashloanCallData);
+        address(module).call(flashloanCallData);
     }
 
     function test_flash_account_module_uninitialized_account_reverts() public {
@@ -282,11 +282,11 @@ contract FlashAccountErc7579Test is Test {
         assertEq(revertReason, bytes4(keccak256("NotInitialized()")));
     }
 
-    function test_flash_account_module_installation() public {
+    function test_flash_account_module_installation() public view {
         assertTrue(module.isInitialized(address(account)));
     }
 
-    function test_flash_account_module_not_initialized() public {
+    function test_flash_account_module_not_initialized() public view {
         assertFalse(module.isInitialized(address(0xdeadadd)));
     }
 
@@ -430,7 +430,7 @@ contract FlashAccountErc7579Test is Test {
         vm.prank(user_);
         entryPoint.handleOps(ops, payable(user_));
 
-        (bool reverted, bytes4 revertReason) = _getRevertReason(entryPoint.getUserOpHash(ops[0]));
+        (bool reverted,) = _getRevertReason(entryPoint.getUserOpHash(ops[0]));
         assertFalse(reverted); // should not revert
 
         return account_;
@@ -450,6 +450,7 @@ contract FlashAccountErc7579Test is Test {
         bytes memory initCode
     )
         internal
+        view
         returns (PackedUserOperation memory op)
     {
         uint128 verificationGasLimit = 2_000_000;
@@ -514,7 +515,7 @@ contract FlashAccountErc7579Test is Test {
         return (reverted, revertReason);
     }
 
-    function _callReverted(bytes32 userOpHash) internal returns (bool) {
+    function _callReverted() internal returns (bool) {
         Vm.Log[] memory logs = vm.getRecordedLogs();
         bytes32 eventSignature = keccak256("UserOperationRevertReason(bytes32,address,uint256,bytes)");
 
