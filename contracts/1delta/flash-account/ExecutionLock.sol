@@ -12,8 +12,8 @@ abstract contract ExecutionLock {
     /// IN_EXECUTION_SLOT == type(uint256).max => not locked for any caller, can accept flash loan calls
     /// slot to store the inExecution flag
     /// @dev this is the slot for keccak256("flash_loan_module.lock")
-    bytes32 internal constant IN_EXECUTION_SLOT = 0x12cfb2d397d8c322044bd0ecc925788f7eda447a6b3031394cf3b7c2f759f1b0;
-    uint256 internal constant UINT256_MAX = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
+    bytes32 private constant IN_EXECUTION_SLOT = 0x12cfb2d397d8c322044bd0ecc925788f7eda447a6b3031394cf3b7c2f759f1b0;
+    uint256 private constant UINT256_MAX = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
 
     /// @dev custom error for violating lok condition
     error Locked();
@@ -22,7 +22,7 @@ abstract contract ExecutionLock {
     /// @notice All function execution user operations
     /// @dev this modifier makes to function non-reentrant too
     /// need to use this modifier
-    modifier lockExecution() {
+    modifier lockExecutionForCaller() {
         assembly {
             if xor(sload(IN_EXECUTION_SLOT), UINT256_MAX) {
                 mstore(0x0, 0x9ef9c1d100000000000000000000000000000000000000000000000000000000) // AlreadyInExecution()
@@ -57,13 +57,15 @@ abstract contract ExecutionLock {
         _;
     }
 
+    // gets the caller address from the slot, reverts if not set
     function _getCaller() internal view returns (address caller_) {
         assembly {
-            if eq(UINT256_MAX, sload(IN_EXECUTION_SLOT)) {
+            let valueInSlot := sload(IN_EXECUTION_SLOT)
+            if eq(UINT256_MAX, valueInSlot) {
                 mstore(0x0, 0x0f2e5b6c00000000000000000000000000000000000000000000000000000000) // 4-byte selector padded
                 revert(0x0, 0x4) // Revert with exactly 4 bytes
             }
-            caller_ := sload(IN_EXECUTION_SLOT)
+            caller_ := valueInSlot
         }
     }
 }

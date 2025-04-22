@@ -112,7 +112,7 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
     /// @notice Execute a flash loan
     /// @param flashLoanProvider The flashloan provider address
     /// @param data The calldata that will be passed as the data to flashloan execute function
-    function flashLoan(address flashLoanProvider, bytes calldata data) external lockExecution {
+    function flashLoan(address flashLoanProvider, bytes calldata data) external lockExecutionForCaller {
         if (!initialized[msg.sender]) revert NotInitialized();
         if (data.length == 0) {
             revert InvalidCall();
