@@ -61,7 +61,7 @@ contract IzumiQuoterTest is BaseTest {
         vm.stopPrank();
     }
 
-    function izumiV3StyleSwap(
+    function encodeIzumiStyleSwap(
         address tokenOut,
         address receiver,
         uint256 forkId,
@@ -97,7 +97,7 @@ contract IzumiQuoterTest is BaseTest {
         uint256 amountIn = 0.01e18; // 1 WETH
 
         // Use utility function to encode path
-        bytes memory path = izumiV3StyleSwap(USDC, address(quoter), 0, WETH_USDC_500_POOL, 500, DexPayConfig.CALLER_PAYS, new bytes(0));
+        bytes memory path = encodeIzumiStyleSwap(USDC, address(quoter), 0, WETH_USDC_500_POOL, 500, DexPayConfig.CALLER_PAYS, new bytes(0));
         // single swap branch (0,0)
         bytes memory swapBranch = (new bytes(0)).attachBranch(0, 0, ""); //(0,0)
         uint256 gas = gasleft();
@@ -111,8 +111,9 @@ contract IzumiQuoterTest is BaseTest {
 
         // add quotedAmountOut as amountOutMin
         bytes memory swapHead = CalldataLib.swapHead(amountIn, quotedAmountOut, WETH);
-        bytes memory swapCall =
-            CalldataLib.izumiV3StyleSwap(abi.encodePacked(swapHead, swapBranch), USDC, user, 0, WETH_USDC_500_POOL, 500, DexPayConfig.CALLER_PAYS, "");
+        bytes memory swapCall = CalldataLib.encodeIzumiStyleSwap(
+            abi.encodePacked(swapHead, swapBranch), USDC, user, 0, WETH_USDC_500_POOL, 500, DexPayConfig.CALLER_PAYS, ""
+        );
 
         // Get actual amount from a real swap
         uint256 balanceBefore = IERC20(USDC).balanceOf(address(user));
@@ -227,7 +228,7 @@ contract IzumiQuoterTest is BaseTest {
 
         quotePath = quotePath.attachBranch(0, 0, "");
 
-        quotePath = quotePath.izumiV3StyleSwap( //
+        quotePath = quotePath.encodeIzumiStyleSwap( //
             USDC,
             address(quoter),
             0, //
@@ -237,7 +238,7 @@ contract IzumiQuoterTest is BaseTest {
             ""
         );
         quotePath = quotePath.attachBranch(0, 0, "");
-        quotePath = quotePath.izumiV3StyleSwap( // //
+        quotePath = quotePath.encodeIzumiStyleSwap( // //
             USDC,
             address(quoter),
             0,
@@ -263,7 +264,7 @@ contract IzumiQuoterTest is BaseTest {
         ); //
         swapPath = swapPath.attachBranch(0, 0, "");
         //
-        swapPath = swapPath.izumiV3StyleSwap(
+        swapPath = swapPath.encodeIzumiStyleSwap(
             USDC,
             user,
             0, //
@@ -273,7 +274,7 @@ contract IzumiQuoterTest is BaseTest {
             ""
         );
         swapPath = swapPath.attachBranch(0, 0, "");
-        swapPath = swapPath.izumiV3StyleSwap( // //
+        swapPath = swapPath.encodeIzumiStyleSwap( // //
             USDC,
             user,
             0,

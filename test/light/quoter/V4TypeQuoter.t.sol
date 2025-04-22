@@ -63,17 +63,16 @@ contract V4QuoterTest is BaseTest {
             uint8(0), // swaps max index
             uint8(0) // splits
         ); // swaps max index for inner path
-        data = abi.encodePacked(
+        data = CalldataLib.encodeUniswapV4StyleSwap(
             data,
             tokenOut,
             receiver,
-            uint8(DexTypeMappings.UNISWAP_V4_ID), // dexId !== poolId here
-            address(0), // hook
             UNI_V4_PM,
             uint24(500), // fee
             uint24(10), // tick spacing
-            uint8(0), // caller pays
-            uint16(0) // data length
+            address(0), // hook
+            hex"", // data length
+            DexPayConfig.CALLER_PAYS // caller pays
         );
     }
 

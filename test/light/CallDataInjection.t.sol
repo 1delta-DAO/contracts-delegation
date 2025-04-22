@@ -63,7 +63,7 @@ contract CallDataInjection is BaseTest, DeltaErrors {
         IERC20(WETH).approve(address(composer), type(uint256).max);
         vm.stopPrank();
 
-        bytes memory swapCall = CalldataLib.swapHead(10, 0, WETH).attachBranch(0, 0, new bytes(0)).uniswapV3StyleSwap(
+        bytes memory swapCall = CalldataLib.swapHead(10, 0, WETH).attachBranch(0, 0, new bytes(0)).encodeUniswapV3StyleSwap(
             USDC, address(attacker), 0, address(maliciousPool), 500, DexPayConfig.CALLER_PAYS, new bytes(0)
         );
 
@@ -131,7 +131,7 @@ contract CallDataInjection is BaseTest, DeltaErrors {
         composer.deltaCompose(
             abi.encodePacked(
                 CalldataLib.swapHead(10, 0, WETH).attachBranch(0, 0, new bytes(0)),
-                CalldataLib.uniswapV2StyleSwap(USDC, attacker, 0, address(maliciousPool), 9970, DexPayConfig.PRE_FUND, new bytes(1111))
+                CalldataLib.encodeUniswapV2StyleSwap(USDC, attacker, 0, address(maliciousPool), 9970, DexPayConfig.PRE_FUND, new bytes(1111))
             )
         );
         vm.stopPrank();

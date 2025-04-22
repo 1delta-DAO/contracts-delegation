@@ -48,7 +48,7 @@ contract LBLightTest is BaseTest {
             0, //
             hex""
         );
-        data = data.lbStyleSwap(
+        data = data.encodeLbStyleSwap(
             USDT,
             receiver,
             LB_USDE_USDT,
@@ -65,7 +65,7 @@ contract LBLightTest is BaseTest {
             USDE
         );
         data = data.attachBranch(0, 0, hex"");
-        data = data.lbStyleSwap(
+        data = data.encodeLbStyleSwap(
             USDT,
             receiver,
             LB_USDE_USDT,

@@ -61,7 +61,7 @@ contract FlashSwapTest is BaseTest {
         // no branching
         data = data.attachBranch(0, 0, hex"");
         // append swap
-        data = data.uniswapV4StyleSwap(
+        data = data.encodeUniswapV4StyleSwap(
             tokenOut,
             user,
             UNI_V4_PM,

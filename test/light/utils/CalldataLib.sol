@@ -142,7 +142,7 @@ library CalldataLib {
         );
     }
 
-    function uniswapV2StyleSwap(
+    function encodeUniswapV2StyleSwap(
         address tokenOut,
         address receiver,
         uint256 forkId,
@@ -168,7 +168,7 @@ library CalldataLib {
         );
     }
 
-    function uniswapV4StyleSwap(
+    function encodeUniswapV4StyleSwap(
         bytes memory currentData,
         address tokenOut,
         address receiver,
@@ -199,7 +199,7 @@ library CalldataLib {
         );
     }
 
-    function balancerV2StyleSwap(
+    function encodeBalancerV2StyleSwap(
         bytes memory currentData,
         address tokenOut,
         address receiver,
@@ -223,7 +223,7 @@ library CalldataLib {
         );
     }
 
-    function lbStyleSwap(
+    function encodeLbStyleSwap(
         bytes memory currentData,
         address tokenOut,
         address receiver,
@@ -247,7 +247,7 @@ library CalldataLib {
         );
     }
 
-    function syncSwapStyleSwap(
+    function encodeSyncSwapStyleSwap(
         bytes memory currentData,
         address tokenOut,
         address receiver,
@@ -269,7 +269,7 @@ library CalldataLib {
         );
     }
 
-    function uniswapV3StyleSwap(
+    function encodeUniswapV3StyleSwap(
         bytes memory currentData,
         address tokenOut,
         address receiver,
@@ -297,7 +297,7 @@ library CalldataLib {
         );
     }
 
-    function izumiV3StyleSwap(
+    function encodeIzumiStyleSwap(
         bytes memory currentData,
         address tokenOut,
         address receiver,
@@ -325,7 +325,7 @@ library CalldataLib {
         );
     }
 
-    function balancerV3StyleSwap(
+    function encodeBalancerV3StyleSwap(
         bytes memory currentData,
         address tokenOut,
         address receiver,
@@ -348,32 +348,6 @@ library CalldataLib {
             uint8(cfg),
             uint16(poolUserData.length), //
             poolUserData
-        );
-    }
-
-    function encodeIzumiStyleSwap(
-        address tokenOut,
-        address receiver,
-        uint256 forkId,
-        address pool,
-        uint256 feeTier, //
-        DexPayConfig cfg,
-        bytes memory flashCalldata
-    )
-        internal
-        pure
-        returns (bytes memory)
-    {
-        if (uint256(cfg) < 2 && flashCalldata.length > 2) revert("Invalid config for v2 swap");
-        return abi.encodePacked(
-            tokenOut,
-            receiver,
-            uint8(DexTypeMappings.IZI_ID),
-            pool,
-            uint8(forkId),
-            uint16(feeTier), // fee tier to validate pool
-            uint16(cfg == DexPayConfig.FLASH ? flashCalldata.length : uint256(cfg)), //
-            bytes(cfg == DexPayConfig.FLASH ? flashCalldata : new bytes(0))
         );
     }
 
@@ -476,9 +450,7 @@ library CalldataLib {
         address pool,
         uint256 indexIn, //
         uint256 indexOut,
-        //
         uint256 selectorId,
-        //
         DexPayConfig cfg
     )
         internal

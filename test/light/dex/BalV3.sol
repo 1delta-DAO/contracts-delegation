@@ -71,7 +71,7 @@ contract BalV3LightTest is BaseTest {
         // no branching
         data = data.attachBranch(0, 0, hex"");
         // attach swap
-        data = data.balancerV3StyleSwap(
+        data = data.encodeBalancerV3StyleSwap(
             tokenOut,
             user,
             BALANCER_V3_VAULT,

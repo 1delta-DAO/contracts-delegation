@@ -61,32 +61,6 @@ contract V3QuoterTest is BaseTest {
         vm.stopPrank();
     }
 
-    function uniswapV3StyleSwap(
-        address tokenOut,
-        address receiver,
-        uint256 forkId,
-        address pool,
-        uint256 feeTier, //
-        DexPayConfig cfg,
-        bytes memory flashCalldata
-    )
-        internal
-        pure
-        returns (bytes memory data)
-    {
-        if (uint256(cfg) < 2 && flashCalldata.length > 2) revert("Invalid config for v3 swap");
-        data = abi.encodePacked(
-            tokenOut,
-            receiver,
-            uint8(DexTypeMappings.UNISWAP_V3_ID),
-            pool,
-            uint8(forkId),
-            uint16(feeTier), // fee tier to validate pool
-            uint16(cfg == DexPayConfig.FLASH ? flashCalldata.length : uint256(cfg)), //
-            bytes(cfg == DexPayConfig.FLASH ? flashCalldata : new bytes(0))
-        );
-    }
-
     /**
      * END OF CALLDATA UTILS
      */
@@ -97,7 +71,8 @@ contract V3QuoterTest is BaseTest {
         uint256 amountIn = 1 * 1e18; // 1 WETH
 
         // Use utility function to encode path
-        bytes memory path = uniswapV3StyleSwap(USDC, address(quoter), 0, WETH_USDC_500_POOL, 500, DexPayConfig.CALLER_PAYS, new bytes(0));
+        bytes memory path =
+            CalldataLib.encodeUniswapV3StyleSwap(hex"", USDC, address(quoter), 0, WETH_USDC_500_POOL, 500, DexPayConfig.CALLER_PAYS, new bytes(0));
         // single swap branch (0,0)
         bytes memory swapBranch = (new bytes(0)).attachBranch(0, 0, ""); //(0,0)
         uint256 gas = gasleft();
@@ -111,7 +86,7 @@ contract V3QuoterTest is BaseTest {
 
         // add quotedAmountOut as amountOutMin
         bytes memory swapHead = CalldataLib.swapHead(amountIn, quotedAmountOut, WETH);
-        bytes memory swapCall = CalldataLib.uniswapV3StyleSwap(
+        bytes memory swapCall = CalldataLib.encodeUniswapV3StyleSwap(
             abi.encodePacked(swapHead, swapBranch), USDC, user, 0, WETH_USDC_500_POOL, 500, DexPayConfig.CALLER_PAYS, ""
         );
 
@@ -228,7 +203,7 @@ contract V3QuoterTest is BaseTest {
 
         quotePath = quotePath.attachBranch(0, 0, "");
 
-        quotePath = quotePath.uniswapV3StyleSwap( //
+        quotePath = quotePath.encodeUniswapV3StyleSwap( //
             USDC,
             address(quoter),
             0, //
@@ -238,7 +213,7 @@ contract V3QuoterTest is BaseTest {
             ""
         );
         quotePath = quotePath.attachBranch(0, 0, "");
-        quotePath = quotePath.uniswapV3StyleSwap( // //
+        quotePath = quotePath.encodeUniswapV3StyleSwap( // //
             USDC,
             address(quoter),
             0,
@@ -264,7 +239,7 @@ contract V3QuoterTest is BaseTest {
         ); //
         swapPath = swapPath.attachBranch(0, 0, "");
         //
-        swapPath = swapPath.uniswapV3StyleSwap(
+        swapPath = swapPath.encodeUniswapV3StyleSwap(
             USDC,
             user,
             0, //
@@ -274,7 +249,7 @@ contract V3QuoterTest is BaseTest {
             ""
         );
         swapPath = swapPath.attachBranch(0, 0, "");
-        swapPath = swapPath.uniswapV3StyleSwap( // //
+        swapPath = swapPath.encodeUniswapV3StyleSwap( // //
             USDC,
             user,
             0,

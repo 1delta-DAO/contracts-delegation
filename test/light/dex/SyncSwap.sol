@@ -47,7 +47,7 @@ contract SyncSwapLightTest is BaseTest {
         );
         // no branching
         data = data.attachBranch(0, 0, hex"");
-        data = data.syncSwapStyleSwap(
+        data = data.encodeSyncSwapStyleSwap(
             USDC,
             receiver,
             RITSU_USDC_WETH,
