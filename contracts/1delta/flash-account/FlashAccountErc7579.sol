@@ -32,7 +32,6 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
         bytes calldata params // user params
     )
         external
-        onlyInExecution
         returns (bool)
     {
         // forward execution
@@ -44,17 +43,7 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
     /**
      * @dev Aave V2 flash loan callback
      */
-    function executeOperation(
-        address[] calldata,
-        uint256[] calldata,
-        uint256[] calldata,
-        address,
-        bytes calldata params
-    )
-        external
-        onlyInExecution
-        returns (bool)
-    {
+    function executeOperation(address[] calldata, uint256[] calldata, uint256[] calldata, address, bytes calldata params) external returns (bool) {
         // forward execution
         _executeOnCaller(params);
 
@@ -64,7 +53,7 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
     /**
      * @dev Balancer flash loan
      */
-    function receiveFlashLoan(address[] calldata, uint256[] calldata, uint256[] calldata, bytes calldata params) external onlyInExecution {
+    function receiveFlashLoan(address[] calldata, uint256[] calldata, uint256[] calldata, bytes calldata params) external {
         // execute further operations
         _executeOnCaller(params);
     }
@@ -72,7 +61,7 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
     /**
      * @dev BalancerV3 flash loan
      */
-    function receiveFlashLoan(bytes calldata data) external onlyInExecution {
+    function receiveFlashLoan(bytes calldata data) external {
         // execute further operations
         _executeOnCaller(data);
     }
@@ -80,7 +69,7 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
     /**
      * @dev Uniswap V4 flash loan
      */
-    function unlockCallback(bytes calldata data) external onlyInExecution {
+    function unlockCallback(bytes calldata data) external {
         // execute further operations
         _executeOnCaller(data);
     }
@@ -88,7 +77,7 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
     /**
      * @dev Morpho flash loan
      */
-    function onMorphoFlashLoan(uint256, bytes calldata params) external onlyInExecution {
+    function onMorphoFlashLoan(uint256, bytes calldata params) external {
         // execute further operations
         _executeOnCaller(params);
     }
