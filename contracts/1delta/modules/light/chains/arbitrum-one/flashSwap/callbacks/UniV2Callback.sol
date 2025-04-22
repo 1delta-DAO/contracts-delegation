@@ -98,7 +98,8 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
                 // via a staticcall instead of an address computation
                 // this is sometimes needed if the factory deploys different
                 // pool contracts or something like immutableClone is used
-                if and(0xffffffffffffffffffffff, ffFactoryAddress) {
+                switch and(0xffffffffffffffffffffff, ffFactoryAddress)
+                case 1 {
                     // selector for getPair(address,address,bool)
                     mstore(ptr, 0x6801cc3000000000000000000000000000000000000000000000000000000000)
                     mstore(add(ptr, 0x4), shr(96, calldataload(184))) // tokenIn
@@ -109,7 +110,7 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
 
                     pool := mload(ptr)
                 }
-                {
+                default {
                     // get tokens
                     let tokenIn := shr(96, calldataload(184))
                     let tokenOut := shr(96, outData)

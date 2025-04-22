@@ -79,11 +79,12 @@ function overrideContent(data: string) {
         // via a staticcall instead of an address computation
         // this is sometimes needed if the factory deploys different
         // pool contracts or something like immutableClone is used
-        if and(0xffffffffffffffffffffff, ffFactoryAddress) {
+        switch and(0xffffffffffffffffffffff, ffFactoryAddress) 
+        case 1 {
             ${data}    
             pool := mload(ptr)
         }
-        {
+        default {
             // get tokens
             let tokenIn := shr(96, calldataload(184))
             let tokenOut := shr(96, outData)
