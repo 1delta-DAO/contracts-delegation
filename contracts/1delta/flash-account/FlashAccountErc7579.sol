@@ -128,7 +128,7 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
 
         IBalancerV3Vault vault = IBalancerV3Vault(msg.sender);
 
-        // execute the sendTo call
+        // execute the sendTo call, pulling funds from vault
         vault.sendTo(token, caller, amount);
 
         // execute further operations, forward to the caller who unlocked the module
@@ -152,6 +152,7 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
         // decode the asset and amount
         (address currency, uint256 amount) = FlashDataLib.getAssetAndAmount(data);
 
+        // pull funds from pool manager
         IUniswapV4PoolManager poolManager = IUniswapV4PoolManager(msg.sender);
 
         poolManager.take(currency, caller, amount);
