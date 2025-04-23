@@ -163,7 +163,7 @@ library CalldataLib {
             pool,
             uint16(feeDenom), // fee denom
             uint8(forkId),
-            uint16(flashCalldata.length), // cll length <- user pays
+            uint16(cfg == DexPayConfig.FLASH ? flashCalldata.length : uint256(cfg)), // cll length <- user pays
             bytes(cfg == DexPayConfig.FLASH ? flashCalldata : new bytes(0))
         );
     }
@@ -517,12 +517,12 @@ library CalldataLib {
         ); // swaps max index for inner path
     }
 
-    function encodeTransferIn(address asset, address receiver, uint256 amount) internal pure returns (bytes memory) {
+    function encodeTransferIn(address asset, address from, uint256 amount) internal pure returns (bytes memory) {
         return abi.encodePacked(
             uint8(ComposerCommands.TRANSFERS),
             uint8(TransferIds.TRANSFER_FROM),
             asset,
-            receiver,
+            from,
             uint128(amount) //
         ); // 2 + 20 + 20 + 14 = 56 bytes
     }
