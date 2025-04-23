@@ -68,7 +68,7 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
      */
     function executeOperation(
         address[] calldata assets,
-        uint256[] calldata,
+        uint256[] calldata amounts,
         uint256[] calldata,
         address,
         bytes calldata params
@@ -78,6 +78,11 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
     {
         // validate if the module is locked and get the caller who locked the module
         address caller = _getCallerWithLockCheck();
+
+        // transfer the assets to the caller
+        for (uint256 i = 0; i < assets.length; i++) {
+            _transfer(assets[i], amounts[i], caller);
+        }
 
         // forward executions to the caller
         _forwardExecutionToCaller(caller, params);
@@ -98,6 +103,11 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
     function receiveFlashLoan(address[] calldata tokens, uint256[] calldata amounts, uint256[] calldata feeAmounts, bytes calldata params) external {
         // validate if the module is locked and get the caller who locked the module
         address caller = _getCallerWithLockCheck();
+
+        // transfer the assets to the caller
+        for (uint256 i = 0; i < tokens.length; i++) {
+            _transfer(tokens[i], amounts[i], caller);
+        }
 
         // forward executions to the caller
         _forwardExecutionToCaller(caller, params);
@@ -162,7 +172,7 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
 
         // transfer the assets to the caller
         if (currency == address(0)) {
-            caller.call{value: amount}();
+            caller.call{value: amount}("");
         } else {
             _transfer(currency, amount, caller);
         }
@@ -186,12 +196,15 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
     /**
      * @dev Morpho flash loan
      */
-    function onMorphoFlashLoan(uint256, bytes calldata params) external {
+    function onMorphoFlashLoan(uint256 amount, bytes calldata params) external {
         // validate if the module is locked and get the caller who locked the module
         address caller = _getCallerWithLockCheck();
 
         // decode address of the token
         address token = address(bytes20(params[:20]));
+
+        // transfer the assets to the caller
+        _transfer(token, amount, caller);
 
         // execute further operations
         _forwardExecutionToCaller(caller, params[20:]);
