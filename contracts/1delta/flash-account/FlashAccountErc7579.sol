@@ -157,6 +157,13 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
 
         poolManager.take(currency, caller, amount);
 
+        // transfer the assets to the caller
+        if (currency == address(0)) {
+            caller.call{value: amount}();
+        } else {
+            _transfer(currency, amount, caller);
+        }
+
         // execute further operations
         // skip address (20) and amount (32)
         _forwardExecutionToCaller(caller, data[52:]);
