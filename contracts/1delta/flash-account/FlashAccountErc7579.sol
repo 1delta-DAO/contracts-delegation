@@ -185,7 +185,7 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
         address caller = _getCallerWithLockCheck();
 
         // decode address of the token
-        address token = abi.decode(params[:20], (address));
+        address token = address(bytes20(params[:20]));
 
         // execute further operations
         _forwardExecutionToCaller(caller, params[20:]);
