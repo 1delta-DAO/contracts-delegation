@@ -163,7 +163,7 @@ library CalldataLib {
             pool,
             uint16(feeDenom), // fee denom
             uint8(forkId),
-            uint16(flashCalldata.length), // cll length <- user pays
+            uint16(cfg != DexPayConfig.FLASH ? uint256(cfg) : flashCalldata.length), // cll length <- user pays
             bytes(cfg == DexPayConfig.FLASH ? flashCalldata : new bytes(0))
         );
     }
