@@ -28,16 +28,27 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
      */
     function executeOperation(
         address asset,
+        uint256 amount,
         uint256,
-        uint256,
-        address,
+        address initiator,
         bytes calldata params // user params
     )
         external
         returns (bool)
     {
-        // forward execution
-        _forwardExecutionToCaller(params);
+        // validate if the initiator is the module
+        if (initiator != address(this)) {
+            revert InvalidCaller();
+        }
+
+        // validate if the module is locked and get the caller who locked the module
+        address caller = _getCallerWithLockCheck();
+
+        /// @dev basically the module should transfer the assets to the caller, then the caller can use these assets
+        _transfer(asset, amount, caller);
+
+        // forward executions to the caller
+        _forwardExecutionToCaller(caller, params);
 
         // handle aave repay
         /// @dev the module should be pre-funded with the repay amount (flashloan amount + premium)
@@ -62,8 +73,11 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
         external
         returns (bool)
     {
-        // forward execution
-        _forwardExecutionToCaller(params);
+        // validate if the module is locked and get the caller who locked the module
+        address caller = _getCallerWithLockCheck();
+
+        // forward executions to the caller
+        _forwardExecutionToCaller(caller, params);
 
         // handle aave repay
         for (uint256 i = 0; i < assets.length; i++) {
@@ -79,8 +93,11 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
      * @dev Balancer v2 flash loan
      */
     function receiveFlashLoan(address[] calldata tokens, uint256[] calldata amounts, uint256[] calldata feeAmounts, bytes calldata params) external {
-        // execute further operations
-        _forwardExecutionToCaller(params);
+        // validate if the module is locked and get the caller who locked the module
+        address caller = _getCallerWithLockCheck();
+
+        // forward executions to the caller
+        _forwardExecutionToCaller(caller, params);
 
         // repay the flash loan
         for (uint256 i = 0; i < tokens.length; i++) {
@@ -100,6 +117,9 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
      *    - Used as callback data for the flash loan execution
      */
     function receiveFlashLoan(bytes calldata data) external {
+        // validate if the module is locked and get the caller who locked the module
+        address caller = _getCallerWithLockCheck();
+
         // decode the sendTo call
         (address recipient, address token, uint256 amount) = abi.decode(data[4:100], (address, address, uint256));
         if (recipient != address(this)) {
@@ -114,7 +134,7 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
         }
 
         // execute further operations, forward to the caller who unlocked the module
-        _forwardExecutionToCaller(data[100:]);
+        _forwardExecutionToCaller(caller, data[100:]);
 
         // repay the flash loan
         _transfer(token, amount, msg.sender);
@@ -132,19 +152,25 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
      * @dev Uniswap V4 flash loan
      */
     function unlockCallback(bytes calldata data) external {
+        // validate if the module is locked and get the caller who locked the module
+        address caller = _getCallerWithLockCheck();
+
         // execute further operations
-        _forwardExecutionToCaller(data);
+        _forwardExecutionToCaller(caller, data);
     }
 
     /**
      * @dev Morpho flash loan
      */
     function onMorphoFlashLoan(uint256, bytes calldata params) external {
+        // validate if the module is locked and get the caller who locked the module
+        address caller = _getCallerWithLockCheck();
+
         // decode address of the token
         address token = abi.decode(params[:20], (address));
 
         // execute further operations
-        _forwardExecutionToCaller(params[20:]);
+        _forwardExecutionToCaller(caller, params[20:]);
 
         // repay the flash loan
         if (!_approvals[token]) {
@@ -205,8 +231,8 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
     /**
      * @dev Internal function to execute the calldata on the caller
      */
-    function _forwardExecutionToCaller(bytes calldata data) internal {
-        (bool success, bytes memory result) = _getCallerWithLockCheck().call(abi.encodePacked(INexus.executeFromExecutor.selector, data));
+    function _forwardExecutionToCaller(address caller_, bytes calldata data) internal {
+        (bool success, bytes memory result) = caller_.call(abi.encodePacked(INexus.executeFromExecutor.selector, data));
         if (!success) {
             assembly {
                 revert(add(result, 32), mload(result))
