@@ -166,11 +166,11 @@ abstract contract PermitUtils is PermitConstants {
 
     /**
      * Executes compound will not use it at all.
-     * @param comet comet to permit / delegate
+     * @param target target to permit / delegate
      * @param permitOffset calldata
      * @param permitLength calldata
      */
-    function _tryFlagBasedLendingPermit(address comet, uint256 permitOffset, uint256 permitLength, address callerAddress) internal {
+    function _tryFlagBasedLendingPermit(address target, uint256 permitOffset, uint256 permitLength, address callerAddress) internal {
         assembly {
             let ptr := mload(0x40)
             switch permitLength
@@ -201,7 +201,7 @@ abstract contract PermitUtils is PermitConstants {
                     mstore(add(ptr, 0xE4), shr(1, shl(1, vs))) // store s         = vs without most significant bit
                 }
                 // ICreditPermit.allowBySig(address owner, address manager, bool isAllowed, uint256 value, uint256 expiry, uint8 v, bytes32 r, bytes32 s)
-                if iszero(call(gas(), comet, 0, ptr, 0x104, 0, 0)) {
+                if iszero(call(gas(), target, 0, ptr, 0x104, 0, 0)) {
                     returndatacopy(0, 0, returndatasize())
                     revert(0, returndatasize())
                 }
