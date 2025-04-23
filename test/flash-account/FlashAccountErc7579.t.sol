@@ -15,74 +15,7 @@ import {IEntryPoint, PackedUserOperation} from "./interfaces/IEntryPoint.sol";
 import {INexusBootstrap, BootstrapConfig, IERC7484} from "./interfaces/INexusBootstrap.sol";
 import {INexusFactory} from "./interfaces/INexusFactory.sol";
 import {PercentageMath} from "./utils/PercentageMath.sol";
-
-struct Execution {
-    /// @notice The target address for the transaction
-    address target;
-    /// @notice The value in wei to send with the transaction
-    uint256 value;
-    /// @notice The calldata for the transaction
-    bytes callData;
-}
-
-library ExecLib {
-    function get2771CallData(bytes calldata) internal view returns (bytes memory callData) {
-        /// @solidity memory-safe-assembly
-        assembly {
-            // as per solidity docs
-            function allocate(length) -> pos {
-                pos := mload(0x40)
-                mstore(0x40, add(pos, length))
-            }
-
-            callData := allocate(add(calldatasize(), 0x20)) //allocate extra 0x20 to store length
-            mstore(callData, add(calldatasize(), 0x14)) //store length, extra 0x14 is for msg.sender address
-            calldatacopy(add(callData, 0x20), 0, calldatasize())
-
-            // The msg.sender address is shifted to the left by 12 bytes to remove the padding
-            // Then the address without padding is stored right after the calldata
-            let senderPtr := allocate(0x14)
-            mstore(senderPtr, shl(96, caller()))
-        }
-    }
-
-    function decodeBatch(bytes calldata callData) internal pure returns (Execution[] calldata executionBatch) {
-        /*
-         * Batch Call Calldata Layout
-         * Offset (in bytes)    | Length (in bytes) | Contents
-         * 0x0                  | 0x4               | bytes4 function selector
-         * 0x4                  | -                 |
-        abi.encode(IERC7579Execution.Execution[])
-         */
-        assembly ("memory-safe") {
-            let dataPointer := add(callData.offset, calldataload(callData.offset))
-
-            // Extract the ERC7579 Executions
-            executionBatch.offset := add(dataPointer, 32)
-            executionBatch.length := calldataload(dataPointer)
-        }
-    }
-
-    function encodeBatch(Execution[] memory executions) internal pure returns (bytes memory callData) {
-        callData = abi.encode(executions);
-    }
-
-    function decodeSingle(bytes calldata executionCalldata) internal pure returns (address target, uint256 value, bytes calldata callData) {
-        target = address(bytes20(executionCalldata[0:20]));
-        value = uint256(bytes32(executionCalldata[20:52]));
-        callData = executionCalldata[52:];
-    }
-
-    function decodeDelegateCall(bytes calldata executionCalldata) internal pure returns (address delegate, bytes calldata callData) {
-        // destructure executionCallData according to single exec
-        delegate = address(uint160(bytes20(executionCalldata[0:20])));
-        callData = executionCalldata[20:];
-    }
-
-    function encodeSingle(address target, uint256 value, bytes memory callData) internal pure returns (bytes memory userOpCalldata) {
-        userOpCalldata = abi.encodePacked(target, value, callData);
-    }
-}
+import {FlashLoanLib, ExecLib, Execution} from "./utils/ModuleCalldatalib.sol";
 
 contract FlashAccountErc7579Test is Test {
     using MessageHashUtils for bytes32;
@@ -155,31 +88,19 @@ contract FlashAccountErc7579Test is Test {
 
         deal(USDC, address(account), aavePremium); // fund account with aave premium
 
-        Execution[] memory repayExec = new Execution[](2);
+        // Create executions that will be executed after receiving the flash loan, here we only added one which transfers the amount to be repaid
+        // but we could add more executions to be executed after the flash loan is received
+        Execution[] memory repayExec = new Execution[](1);
+        repayExec[0] = Execution({target: USDC, value: 0, callData: abi.encodeWithSelector(IERC20.transfer.selector, address(module), totalDebt)});
 
-        repayExec[0] = Execution({target: USDC, value: 0, callData: abi.encodeWithSelector(IERC20.transfer.selector, address(module), aavePremium)});
-
-        repayExec[1] = Execution({
-            target: address(module),
-            value: 0,
-            callData: abi.encodeWithSelector(
-                FlashAccountErc7579.handleRepay.selector, abi.encode(USDC, abi.encodeWithSelector(IERC20.approve.selector, address(aavePool), totalDebt))
-            )
-        });
-
+        // Encode the repay execution batch
         bytes memory repayCalldata = ExecLib.encodeBatch(repayExec);
-        console.log("repayCalldata length", repayCalldata.length);
-        console.logBytes(repayCalldata);
 
-        bytes memory aaveFlashLoanCalldata = abi.encodeWithSelector(
-            IPool.flashLoanSimple.selector, address(module), USDC, amountToBorrow, abi.encode(ModeLib.encodeSimpleBatch(), repayCalldata), 0
-        );
+        // Create the flash loan calldata using FlashLoanLib
+        bytes memory aaveFlashLoanCalldata = FlashLoanLib.createAaveV3SimpleFlashLoanCalldata(address(module), USDC, amountToBorrow, repayCalldata);
 
-        bytes memory flashloanCallData = abi.encodeWithSelector(FlashAccountErc7579.flashLoan.selector, address(aavePool), aaveFlashLoanCalldata);
-
-        bytes memory execute = abi.encodeWithSignature(
-            "execute(bytes32,bytes)", ModeLib.encodeSimpleSingle(), abi.encodePacked(address(module), uint256(0), flashloanCallData)
-        );
+        // Create the execute calldata for the user operation
+        bytes memory execute = FlashLoanLib.createFlashLoanExecute(address(module), address(aavePool), aaveFlashLoanCalldata);
 
         PackedUserOperation[] memory ops = new PackedUserOperation[](1);
         ops[0] = _createUserOp({sender: account, privateKey: PRIVATE_KEY, nounce: 1, calldata_: execute, initCode: ""});
@@ -187,11 +108,9 @@ contract FlashAccountErc7579Test is Test {
         vm.recordLogs();
 
         vm.prank(user);
-        // vm.expectEmit(true, true, true, false);
-        // emit FlashLoan(address(module), address(account), USDC, amountToBorrow, 0, aavePremium, 0);
         entryPoint.handleOps(ops, payable(address(0x1)));
 
-        // we should explicitly check that no revert is emitted
+        // Verify no revert was emitted
         assertFalse(_callReverted());
     }
 
@@ -206,20 +125,18 @@ contract FlashAccountErc7579Test is Test {
     function test_flash_account_module_eoa_flash_loan_reverts() public {
         uint256 amountToBorrow = 1000e6;
 
-        bytes memory aaveFlashLoanCalldata = abi.encodeWithSelector(
-            IPool.flashLoanSimple.selector,
+        // Create flash loan calldata using FlashLoanLib
+        bytes memory aaveFlashLoanCalldata = FlashLoanLib.createAaveV3SimpleFlashLoanCalldata(
             address(module),
             USDC,
             amountToBorrow,
-            // the repay calldata is empty, because the module should revert before handling the flash loan
-            abi.encodePacked(ModeLib.encodeSimpleBatch(), ""),
-            0
+            "" // empty callback data, module should revert before this is used
         );
 
-        // Create the call to the module
+        // Create the call to the module's flashLoan function
         bytes memory flashloanCallData = abi.encodeWithSelector(FlashAccountErc7579.flashLoan.selector, address(aavePool), aaveFlashLoanCalldata);
 
-        // should revert
+        // Should revert when called directly by EOA
         vm.prank(user);
         vm.expectRevert(FlashAccountErc7579.NotInitialized.selector);
         address(module).call(flashloanCallData);
@@ -234,7 +151,7 @@ contract FlashAccountErc7579Test is Test {
         // create smart account
         address acc_ = _createUninitializedAccount(user_, pk);
 
-        // flash loan
+        // flash loan setup
         uint128 flashLoanPremiumTotal = aavePool.FLASHLOAN_PREMIUM_TOTAL();
         uint256 amountToBorrow = 1e9; // 1000 USDC
         uint256 aavePremium = PercentageMath.percentMul(amountToBorrow, flashLoanPremiumTotal);
@@ -242,30 +159,17 @@ contract FlashAccountErc7579Test is Test {
 
         deal(USDC, address(acc_), aavePremium); // fund account with aave premium
 
-        Execution[] memory repayExec = new Execution[](2);
-
-        repayExec[0] = Execution({target: USDC, value: 0, callData: abi.encodeWithSelector(IERC20.transfer.selector, address(module), aavePremium)});
-
-        repayExec[1] = Execution({
-            target: address(module),
-            value: 0,
-            callData: abi.encodeWithSelector(
-                FlashAccountErc7579.handleRepay.selector, abi.encode(USDC, abi.encodeWithSelector(IERC20.approve.selector, address(aavePool), totalDebt))
-            )
-        });
+        // Create transfer execution
+        Execution[] memory repayExec = new Execution[](1);
+        repayExec[0] = Execution({target: USDC, value: 0, callData: abi.encodeWithSelector(IERC20.transfer.selector, address(module), totalDebt)});
 
         bytes memory repayCalldata = ExecLib.encodeBatch(repayExec);
-        console.logBytes(repayCalldata);
 
-        bytes memory aaveFlashLoanCalldata = abi.encodeWithSelector(
-            IPool.flashLoanSimple.selector, address(module), USDC, amountToBorrow, abi.encode(ModeLib.encodeSimpleBatch(), repayCalldata), 0
-        );
+        // Create the flash loan calldata using FlashLoanLib
+        bytes memory aaveFlashLoanCalldata = FlashLoanLib.createAaveV3SimpleFlashLoanCalldata(address(module), USDC, amountToBorrow, repayCalldata);
 
-        bytes memory flashloanCallData = abi.encodeWithSelector(FlashAccountErc7579.flashLoan.selector, address(aavePool), aaveFlashLoanCalldata);
-
-        bytes memory execute = abi.encodeWithSignature(
-            "execute(bytes32,bytes)", ModeLib.encodeSimpleSingle(), abi.encodePacked(address(module), uint256(0), flashloanCallData)
-        );
+        // Create the execute calldata for the user operation
+        bytes memory execute = FlashLoanLib.createFlashLoanExecute(address(module), address(aavePool), aaveFlashLoanCalldata);
 
         PackedUserOperation[] memory ops = new PackedUserOperation[](1);
         ops[0] = _createUserOp({sender: acc_, privateKey: pk, nounce: 1, calldata_: execute, initCode: ""});
@@ -309,10 +213,11 @@ contract FlashAccountErc7579Test is Test {
             0
         );
 
-        bytes memory flashloanCallData = abi.encodeWithSelector(FlashAccountErc7579.flashLoan.selector, address(0x100), maliciousData);
-
-        bytes memory execute = abi.encodeWithSignature(
-            "execute(bytes32,bytes)", ModeLib.encodeSimpleSingle(), abi.encodePacked(address(module), uint256(0), flashloanCallData)
+        // Create the execute calldata for the user operation
+        bytes memory execute = FlashLoanLib.createFlashLoanExecute(
+            address(module),
+            address(0x100), // using invalid flash loan provider
+            maliciousData
         );
 
         PackedUserOperation[] memory ops = new PackedUserOperation[](1);
