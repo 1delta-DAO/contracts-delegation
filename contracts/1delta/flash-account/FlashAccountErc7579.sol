@@ -6,6 +6,17 @@ import {ExecutionLock} from "./ExecutionLock.sol";
 import {INexus} from "./interfaces/INexus.sol";
 import "./utils/ModeLib.sol";
 
+/**
+ * Uniswap V4 PoolManager
+ */
+interface IPM {
+    function sync(address currency) external;
+
+    function take(address currency, address to, uint256 amount) external;
+
+    function settle() external payable returns (uint256 paid);
+}
+
 /// @title FlashAccountErc7579
 /// @notice A module that allows a smart account to handle flash loan callbacks
 /// @dev This module is compatible with the ERC-7579 standard
@@ -155,8 +166,25 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
         // validate if the module is locked and get the caller who locked the module
         address caller = _getCallerWithLockCheck();
 
+        (address currency, uint256 amount) = abi.decode(data[:64], (address, uint256));
+
+        IPM poolManager = IPM(msg.sender);
+
+        poolManager.take(currency, caller, amount);
+
         // execute further operations
         _forwardExecutionToCaller(caller, data);
+
+        // native case - no sync
+        if (currency == address(0)) {
+            poolManager.settle{value: amount}();
+        } else {
+            // erc20 case
+            poolManager.sync(currency);
+            // repay the flash loan
+            _transfer(currency, amount, address(poolManager));
+            poolManager.settle();
+        }
     }
 
     /**
