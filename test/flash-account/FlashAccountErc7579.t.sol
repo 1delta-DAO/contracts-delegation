@@ -73,11 +73,11 @@ contract FlashAccountErc7579Test is Test {
         account = _createAndSetupAccount(user, PRIVATE_KEY);
 
         // print addresses
-        console.log("--------------------------------");
-        console.log(StdStyle.blue("account"), account);
-        console.log(StdStyle.blue("module"), address(module));
-        console.log(StdStyle.blue("aavePool"), address(aavePool));
-        console.log("--------------------------------");
+        // console.log("--------------------------------");
+        // console.log(StdStyle.blue("account"), account);
+        // console.log(StdStyle.blue("module"), address(module));
+        // console.log(StdStyle.blue("aavePool"), address(aavePool));
+        // console.log("--------------------------------");
     }
 
     function test_flash_account_module_aave_v3_flash_loan() public {
@@ -229,8 +229,6 @@ contract FlashAccountErc7579Test is Test {
 
         // load the execution lock storage slot
         bytes32 inExecution = vm.load(address(module), IN_EXECUTION_SLOT);
-        console.log("inExecution");
-        console.logBytes32(inExecution);
         vm.assertEq(uint256(inExecution), type(uint256).max); // not in execution
     }
 
