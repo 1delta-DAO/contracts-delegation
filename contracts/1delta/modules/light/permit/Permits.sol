@@ -40,7 +40,7 @@ abstract contract Permits is Masks, PermitUtils, DeltaErrors {
             _tryCreditPermit(permitTarget, permitOffset, permitLength, callerAddress);
             return currentOffset;
         } else if (permitOperation == PermitIds.ALLOW_CREDIT_PERMIT) {
-            _tryCompoundV3Permit(permitTarget, permitOffset, permitLength, callerAddress);
+            _tryFlagBasedLendingPermit(permitTarget, permitOffset, permitLength, callerAddress);
             return currentOffset;
         } else {
             _invalidOperation();

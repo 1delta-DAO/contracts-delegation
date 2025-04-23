@@ -23,5 +23,6 @@ abstract contract PermitConstants {
 
     // bitmap padding
     uint256 internal constant HIGH_BIT = 1 << 255;
+    uint256 internal constant SECOND_HIGH_BIT = 1 << 254;
     uint256 internal constant LOWER_BITS = 0x00ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
 }

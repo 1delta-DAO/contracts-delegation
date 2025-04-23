@@ -1277,7 +1277,7 @@ contract OneDeltaComposerArbitrum is MarginTrading {
                         permitOffset := add(currentOffset, 22)
                         currentOffset := add(permitOffset, permitLength)
                     }
-                    _tryCompoundV3Permit(comet, permitOffset, permitLength, callerAddress);
+                    _tryFlagBasedLendingPermit(comet, permitOffset, permitLength, callerAddress);
                 } else if (operation == Commands.FLASH_LOAN) {
                     ////////////////////////////////////////////////////
                     // Execute single asset flash loan

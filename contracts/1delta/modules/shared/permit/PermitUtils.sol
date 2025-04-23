@@ -170,17 +170,19 @@ abstract contract PermitUtils is PermitConstants {
      * @param permitOffset calldata
      * @param permitLength calldata
      */
-    function _tryCompoundV3Permit(address comet, uint256 permitOffset, uint256 permitLength, address callerAddress) internal {
+    function _tryFlagBasedLendingPermit(address comet, uint256 permitOffset, uint256 permitLength, address callerAddress) internal {
         assembly {
             let ptr := mload(0x40)
             switch permitLength
             // Compact ICreditPermit
             case 100 {
+                let allowedAndNonce := calldataload(permitOffset) // load [allowed nonce] 2 single bits and number
                 // mopho blue and CompoundV3 are similarly parametrized
-                switch eq(comet, 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb)
-                case 1 { mstore(ptr, MORPHO_CREDIT_PERMIT) }
+                // if the second high bit is set
+                switch and(SECOND_HIGH_BIT, allowedAndNonce)
+                case 0 { mstore(ptr, COMPOUND_V3_CREDIT_PERMIT) }
                 // store selector
-                default { mstore(ptr, COMPOUND_V3_CREDIT_PERMIT) } // store selector
+                default { mstore(ptr, MORPHO_CREDIT_PERMIT) }
 
                 mstore(add(ptr, 0x04), callerAddress) // store owner
                 mstore(add(ptr, 0x24), address()) // store manager
@@ -190,7 +192,6 @@ abstract contract PermitUtils is PermitConstants {
                     // stack too deep
                     let expiry := shr(224, calldataload(add(permitOffset, 0x20))) // loads permitOffset 0x20..0x23
                     let vs := calldataload(add(permitOffset, 0x44)) // loads permitOffset 0x44..0x63
-                    let allowedAndNonce := calldataload(permitOffset) // load [allowed nonce] as single bit and number
                     // check if high bit is pupulated
                     mstore(add(ptr, 0x44), iszero(iszero(and(HIGH_BIT, allowedAndNonce))))
                     mstore(add(ptr, 0x64), and(LOWER_BITS, allowedAndNonce)) // nonce

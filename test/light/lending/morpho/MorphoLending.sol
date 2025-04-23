@@ -49,9 +49,11 @@ contract MorphoBlueTest is BaseTest {
     }
 
     uint256 internal constant UPPER_BIT = 1 << 255;
+    uint256 internal constant UPPER_BIT_2 = 1 << 254;
 
     function encodeMorphoPermit(uint256 nonce, bool allow) private pure returns (bytes memory) {
         uint256 _data = uint160(nonce);
+        _data = (_data & ~UPPER_BIT_2) | UPPER_BIT_2;
         if (allow) _data = (_data & ~UPPER_BIT) | UPPER_BIT;
 
         return abi.encodePacked(
