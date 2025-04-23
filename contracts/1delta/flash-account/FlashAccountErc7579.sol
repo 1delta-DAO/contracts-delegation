@@ -21,6 +21,7 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
     error InvalidCall();
     error InvalidCaller();
     error UnknownFlashLoanCallback();
+    error NativeTransferFailed();
 
     constructor() {
         _initializeLock();
@@ -172,7 +173,8 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
 
         // transfer the assets to the caller
         if (currency == address(0)) {
-            caller.call{value: amount}("");
+            (bool success,) = caller.call{value: amount}("");
+            if (!success) revert NativeTransferFailed();
         } else {
             _transfer(currency, amount, caller);
         }
