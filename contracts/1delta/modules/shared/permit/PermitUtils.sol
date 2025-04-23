@@ -165,8 +165,8 @@ abstract contract PermitUtils is PermitConstants {
     }
 
     /**
-     * Executes compound will not use it at all.
-     * @param target target to permit / delegate
+     * Executes compound or morpho permit.
+     * @param target target address to permit / delegate
      * @param permitOffset calldata
      * @param permitLength calldata
      */
