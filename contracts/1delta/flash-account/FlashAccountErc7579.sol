@@ -131,6 +131,9 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
         // execute the sendTo call, pulling funds from vault
         vault.sendTo(token, caller, amount);
 
+        // transfer the assets to the caller
+        _transfer(token, amount, caller);
+
         // execute further operations, forward to the caller who unlocked the module
         // skip address (20) and amount (32)
         _forwardExecutionToCaller(caller, data[52:]);
