@@ -179,20 +179,6 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
         }
     }
 
-    /**
-     * @dev Handle flashloan repay
-     * @param data The calldata to be executed
-     */
-    function handleRepay(bytes calldata data) external onlyInExecution {
-        (address dest, bytes memory call) = abi.decode(data, (address, bytes));
-        (bool success, bytes memory result) = dest.call(call);
-        if (!success) {
-            assembly {
-                revert(add(result, 32), mload(result))
-            }
-        }
-    }
-
     /// @notice Execute a flash loan
     /// @param flashLoanProvider The flashloan provider address
     /// @param data The calldata that will be passed as the data to flashloan execute function

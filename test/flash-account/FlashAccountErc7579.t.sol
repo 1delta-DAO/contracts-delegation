@@ -139,7 +139,8 @@ contract FlashAccountErc7579Test is Test {
         // Should revert when called directly by EOA
         vm.prank(user);
         vm.expectRevert(FlashAccountErc7579.NotInitialized.selector);
-        address(module).call(flashloanCallData);
+        (bool success,) = address(module).call(flashloanCallData);
+        assertTrue(success);
     }
 
     function test_flash_account_module_uninitialized_account_reverts() public {
