@@ -11,10 +11,12 @@ import "./utils/ModeLib.sol";
 /// @dev This module is compatible with the ERC-7579 standard
 contract FlashAccountErc7579 is ExecutionLock, IExecutor {
     mapping(address => bool) public initialized;
+    mapping(address => bool) private _approvals;
 
     error AlreadyInitialized();
     error NotInitialized();
     error InvalidCall();
+    error InvalidCaller();
     error UnknownFlashLoanCallback();
 
     constructor() {
@@ -25,7 +27,7 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
      * @dev Aave simple flash loan
      */
     function executeOperation(
-        address,
+        address asset,
         uint256,
         uint256,
         address,
@@ -37,43 +39,93 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
         // forward execution
         _forwardExecutionToCaller(params);
 
+        // handle aave repay
+        /// @dev the module should be pre-funded with the repay amount (flashloan amount + premium)
+        /// the smart account could transfer the repay amount as its last encoded action in the data
+        if (!_approvals[asset]) {
+            _approve(asset, type(uint256).max, msg.sender);
+            _approvals[asset] = true;
+        }
         return true;
     }
 
     /**
      * @dev Aave V2 flash loan callback
      */
-    function executeOperation(address[] calldata, uint256[] calldata, uint256[] calldata, address, bytes calldata params) external returns (bool) {
+    function executeOperation(
+        address[] calldata assets,
+        uint256[] calldata,
+        uint256[] calldata,
+        address,
+        bytes calldata params
+    )
+        external
+        returns (bool)
+    {
         // forward execution
         _forwardExecutionToCaller(params);
 
+        // handle aave repay
+        for (uint256 i = 0; i < assets.length; i++) {
+            if (!_approvals[assets[i]]) {
+                _approve(assets[i], type(uint256).max, msg.sender);
+                _approvals[assets[i]] = true;
+            }
+        }
         return true;
     }
 
     /**
-     * @dev Balancer flash loan
+     * @dev Balancer v2 flash loan
      */
-    function receiveFlashLoan(address[] calldata, uint256[] calldata, uint256[] calldata, bytes calldata params) external {
+    function receiveFlashLoan(address[] calldata tokens, uint256[] calldata amounts, uint256[] calldata feeAmounts, bytes calldata params) external {
         // execute further operations
         _forwardExecutionToCaller(params);
+
+        // repay the flash loan
+        for (uint256 i = 0; i < tokens.length; i++) {
+            _transfer(tokens[i], amounts[i] + feeAmounts[i], msg.sender);
+        }
     }
 
     /**
-     * @dev BalancerV3 flash loan
+     * @dev Balancer V3 flash loan implementation
+     *
+     * The data parameter contains:
+     * 1. First 100 bytes:
+     *    - 4 bytes: sendTo selector (transferring tokens to module)
+     *    - 96 bytes: sendTo arguments (address recipient, address token, uint256 amount)
+     *    - n bytes: what should be executed after the module received the funds
+     * 2. Remaining bytes:
+     *    - Used as callback data for the flash loan execution
      */
     function receiveFlashLoan(bytes calldata data) external {
-        // we should call the balancer V3 vault to transfer the tokens to the module
-        // then the data should start with the call to sendTo
-        // the sendTo function call is sendTo(address,address,uint256), the length of the calldata is 100 (4+32+32+32),
-        // the rest of the data will be later is used as the data for the flashloan callback
+        // decode the sendTo call
+        (address recipient, address token, uint256 amount) = abi.decode(data[4:100], (address, address, uint256));
+        if (recipient != address(this)) {
+            revert InvalidCaller();
+        }
+        // execute the sendTo call
         (bool success, bytes memory result) = msg.sender.call(data[:100]);
         if (!success) {
             assembly {
                 revert(add(result, 32), mload(result))
             }
         }
-        // execute further operations
+
+        // execute further operations, forward to the caller who unlocked the module
         _forwardExecutionToCaller(data[100:]);
+
+        // repay the flash loan
+        _transfer(token, amount, msg.sender);
+
+        // settle the flash loan
+        (success, result) = msg.sender.call(abi.encodeWithSignature("settle(address,uint256)", token, amount));
+        if (!success) {
+            assembly {
+                revert(add(result, 32), mload(result))
+            }
+        }
     }
 
     /**
@@ -88,8 +140,17 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
      * @dev Morpho flash loan
      */
     function onMorphoFlashLoan(uint256, bytes calldata params) external {
+        // decode address of the token
+        address token = abi.decode(params[:20], (address));
+
         // execute further operations
-        _forwardExecutionToCaller(params);
+        _forwardExecutionToCaller(params[20:]);
+
+        // repay the flash loan
+        if (!_approvals[token]) {
+            _approve(token, type(uint256).max, msg.sender);
+            _approvals[token] = true;
+        }
     }
 
     /**
@@ -146,6 +207,24 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
      */
     function _forwardExecutionToCaller(bytes calldata data) internal {
         (bool success, bytes memory result) = _getCallerWithLockCheck().call(abi.encodePacked(INexus.executeFromExecutor.selector, data));
+        if (!success) {
+            assembly {
+                revert(add(result, 32), mload(result))
+            }
+        }
+    }
+
+    function _approve(address asset, uint256 amount, address to) internal {
+        (bool success, bytes memory result) = asset.call(abi.encodeWithSignature("approve(address,uint256)", to, amount));
+        if (!success) {
+            assembly {
+                revert(add(result, 32), mload(result))
+            }
+        }
+    }
+
+    function _transfer(address asset, uint256 amount, address to) internal {
+        (bool success, bytes memory result) = asset.call(abi.encodeWithSignature("transfer(address,uint256)", to, amount));
         if (!success) {
             assembly {
                 revert(add(result, 32), mload(result))
