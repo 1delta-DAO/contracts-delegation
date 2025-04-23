@@ -42,17 +42,6 @@ abstract contract ExecutionLock {
         }
     }
 
-    // checks whether the account is in execution
-    modifier onlyInExecution() {
-        assembly {
-            if eq(UINT256_MAX, sload(IN_EXECUTION_SLOT)) {
-                mstore(0x0, 0x0f2e5b6c00000000000000000000000000000000000000000000000000000000) // 4-byte selector padded
-                revert(0x0, 0x4) // Revert with exactly 4 bytes
-            }
-        }
-        _;
-    }
-
     modifier onlyNotInExecution() {
         assembly {
             if xor(UINT256_MAX, sload(IN_EXECUTION_SLOT)) {
