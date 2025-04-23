@@ -5,7 +5,9 @@ import {IExecutor} from "./interfaces/IExecuter.sol";
 import {ExecutionLock} from "./ExecutionLock.sol";
 import {INexus} from "./interfaces/INexus.sol";
 import {IUniswapV4PoolManager} from "./interfaces/external/IUniswapV4PoolManager.sol";
+import {IBalancerV3Vault} from "./interfaces/external/IBalancerV3Vault.sol";
 import "./utils/ModeLib.sol";
+import {FlashDataLib} from "./utils/FlashDataLib.sol";
 
 /// @title FlashAccountErc7579
 /// @notice A module that allows a smart account to handle flash loan callbacks
@@ -121,32 +123,23 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
         // validate if the module is locked and get the caller who locked the module
         address caller = _getCallerWithLockCheck();
 
-        // decode the sendTo call
-        (address recipient, address token, uint256 amount) = abi.decode(data[4:100], (address, address, uint256));
-        if (recipient != address(this)) {
-            revert InvalidCaller();
-        }
+        // decode the asset and amount
+        (address token, uint256 amount) = FlashDataLib.getAssetAndAmount(data);
+
+        IBalancerV3Vault vault = IBalancerV3Vault(msg.sender);
+
         // execute the sendTo call
-        (bool success, bytes memory result) = msg.sender.call(data[:100]);
-        if (!success) {
-            assembly {
-                revert(add(result, 32), mload(result))
-            }
-        }
+        vault.sendTo(token, caller, amount);
 
         // execute further operations, forward to the caller who unlocked the module
-        _forwardExecutionToCaller(caller, data[100:]);
+        // skip address (20) and amount (32)
+        _forwardExecutionToCaller(caller, data[52:]);
 
         // repay the flash loan
         _transfer(token, amount, msg.sender);
 
         // settle the flash loan
-        (success, result) = msg.sender.call(abi.encodeWithSignature("settle(address,uint256)", token, amount));
-        if (!success) {
-            assembly {
-                revert(add(result, 32), mload(result))
-            }
-        }
+        vault.settle(token, amount);
     }
 
     /**
@@ -156,14 +149,16 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
         // validate if the module is locked and get the caller who locked the module
         address caller = _getCallerWithLockCheck();
 
-        (address currency, uint256 amount) = abi.decode(data[:64], (address, uint256));
+        // decode the asset and amount
+        (address currency, uint256 amount) = FlashDataLib.getAssetAndAmount(data);
 
         IUniswapV4PoolManager poolManager = IUniswapV4PoolManager(msg.sender);
 
         poolManager.take(currency, caller, amount);
 
         // execute further operations
-        _forwardExecutionToCaller(caller, data);
+        // skip address (20) and amount (32)
+        _forwardExecutionToCaller(caller, data[52:]);
 
         // native case - no sync
         if (currency == address(0)) {
@@ -172,7 +167,7 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
             // erc20 case
             poolManager.sync(currency);
             // repay the flash loan
-            _transfer(currency, amount, address(poolManager));
+            _transfer(currency, amount, msg.sender);
             poolManager.settle();
         }
     }
