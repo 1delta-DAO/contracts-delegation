@@ -4,18 +4,8 @@ pragma solidity ^0.8.28;
 import {IExecutor} from "./interfaces/IExecuter.sol";
 import {ExecutionLock} from "./ExecutionLock.sol";
 import {INexus} from "./interfaces/INexus.sol";
+import {IUniswapV4PoolManager} from "./interfaces/external/IUniswapV4PoolManager.sol";
 import "./utils/ModeLib.sol";
-
-/**
- * Uniswap V4 PoolManager
- */
-interface IPM {
-    function sync(address currency) external;
-
-    function take(address currency, address to, uint256 amount) external;
-
-    function settle() external payable returns (uint256 paid);
-}
 
 /// @title FlashAccountErc7579
 /// @notice A module that allows a smart account to handle flash loan callbacks
@@ -168,7 +158,7 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
 
         (address currency, uint256 amount) = abi.decode(data[:64], (address, uint256));
 
-        IPM poolManager = IPM(msg.sender);
+        IUniswapV4PoolManager poolManager = IUniswapV4PoolManager(msg.sender);
 
         poolManager.take(currency, caller, amount);
 
