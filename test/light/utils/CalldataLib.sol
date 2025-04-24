@@ -396,7 +396,7 @@ library CalldataLib {
             receiver,
             uint8(DexTypeMappings.WOO_FI_ID),
             pool,
-            uint16(uint256(cfg)) //
+            uint8(uint256(cfg)) //
         );
     }
 
