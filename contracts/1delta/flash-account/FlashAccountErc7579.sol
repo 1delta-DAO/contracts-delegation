@@ -8,6 +8,8 @@ import {IUniswapV4PoolManager} from "./interfaces/external/IUniswapV4PoolManager
 import {IBalancerV3Vault} from "./interfaces/external/IBalancerV3Vault.sol";
 import "./utils/ModeLib.sol";
 import {FlashDataLib} from "./utils/FlashDataLib.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @title FlashAccountErc7579
 /// @notice A module that allows a smart account to handle flash loan callbacks
@@ -48,7 +50,7 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
         // validate if the module is locked and get the caller who locked the module
         address caller = _getCallerWithLockCheck();
 
-        /// @dev basically the module should transfer the assets to the caller, then the caller can use these assets
+        // transfer assets to the caller
         _transfer(asset, amount, caller);
 
         // forward executions to the caller
@@ -275,11 +277,6 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
     }
 
     function _transfer(address asset, uint256 amount, address to) internal {
-        (bool success, bytes memory result) = asset.call(abi.encodeWithSignature("transfer(address,uint256)", to, amount));
-        if (!success) {
-            assembly {
-                revert(add(result, 32), mload(result))
-            }
-        }
+        SafeERC20.safeTransfer(IERC20(asset), to, amount);
     }
 }
