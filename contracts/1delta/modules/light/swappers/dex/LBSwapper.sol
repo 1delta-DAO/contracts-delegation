@@ -94,8 +94,8 @@ abstract contract LBSwapper is ERC20Selectors, Masks {
             switch swapForY
             case 0 { amountOut := and(mload(ptr), 0xffffffffffffffffffffffffffffffff) }
             default { amountOut := shr(128, mload(ptr)) }
-
-            currentOffset := add(currentOffset, 21)
+            // skip 22 bytes
+            currentOffset := add(currentOffset, 22)
         }
         return (amountOut, currentOffset);
     }

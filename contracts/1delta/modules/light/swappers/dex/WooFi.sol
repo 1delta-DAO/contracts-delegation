@@ -33,7 +33,7 @@ abstract contract WooFiSwapper is ERC20Selectors, Masks {
     )
         internal
         returns (
-            uint256 amountOut,
+            uint256 poolThenAmountOut,
             // first assign payFlag, then return offset
             uint256 payFlagCurrentOffset
         )
@@ -41,28 +41,30 @@ abstract contract WooFiSwapper is ERC20Selectors, Masks {
         assembly {
             let ptr := mload(0x40)
 
-            let pool := calldataload(currentOffset)
-
-            payFlagCurrentOffset := and(UINT8_MASK, shr(88, pool))
-            if lt(payFlagCurrentOffset, 2) {
+            // load first 32 bytes
+            poolThenAmountOut := calldataload(currentOffset)
+            // pay flag extraction
+            payFlagCurrentOffset := and(UINT8_MASK, shr(88, poolThenAmountOut))
+            // get pool
+            poolThenAmountOut := shr(96, poolThenAmountOut)
+            switch lt(payFlagCurrentOffset, 2)
+            case 1 {
                 let success
                 // payFlag evaluation
-                switch and(UINT8_MASK, shr(88, pool))
+                switch payFlagCurrentOffset
                 case 0 {
-                    pool := shr(96, pool)
                     // selector for transferFrom(address,address,uint256)
                     mstore(ptr, ERC20_TRANSFER_FROM)
                     mstore(add(ptr, 0x04), callerAddress)
-                    mstore(add(ptr, 0x24), pool)
+                    mstore(add(ptr, 0x24), poolThenAmountOut)
                     mstore(add(ptr, 0x44), fromAmount)
                     success := call(gas(), tokenIn, 0, ptr, 0x64, 0, 32)
                 }
                 // transfer plain
                 case 1 {
-                    pool := shr(96, pool)
                     // selector for transfer(address,uint256)
                     mstore(ptr, ERC20_TRANSFER)
-                    mstore(add(ptr, 0x04), pool)
+                    mstore(add(ptr, 0x04), poolThenAmountOut)
                     mstore(add(ptr, 0x24), fromAmount)
                     success := call(gas(), tokenIn, 0, ptr, 0x44, 0, 32)
                 }
@@ -99,7 +101,7 @@ abstract contract WooFiSwapper is ERC20Selectors, Masks {
             if iszero(
                 call(
                     gas(),
-                    pool,
+                    poolThenAmountOut,
                     0x0, // no native transfer
                     ptr,
                     0xC4, // input length 196
@@ -110,11 +112,13 @@ abstract contract WooFiSwapper is ERC20Selectors, Masks {
                 returndatacopy(ptr, 0, returndatasize())
                 revert(ptr, returndatasize())
             }
+            // map amountOut to var
+            poolThenAmountOut := mload(0x0)
 
-            amountOut := mload(0x0)
-            currentOffset := add(currentOffset, 21)
+            // skip 21 bytes
+            payFlagCurrentOffset := add(currentOffset, 21)
         }
 
-        return (amountOut, currentOffset);
+        return (poolThenAmountOut, payFlagCurrentOffset);
     }
 }
