@@ -15,8 +15,11 @@ abstract contract LBQuoter is Masks {
     {
         assembly {
             let ptr := mload(0x40)
+            // get dex data
             lbDataThenOffset := calldataload(currentOffset)
+            // swap direction flag
             let swapForY := and(UINT8_MASK, shr(88, lbDataThenOffset))
+            // pool shift
             lbDataThenOffset := shr(96, lbDataThenOffset)
 
             // getSwapOut(uint128,bool)
@@ -25,11 +28,8 @@ abstract contract LBQuoter is Masks {
             mstore(add(ptr, 0x24), swapForY)
             // call swap simulator, revert if invalid/undefined pair
             if iszero(staticcall(gas(), lbDataThenOffset, ptr, 0x44, ptr, 0x40)) { revert(0, 0) }
-            amountOut :=
-                and(
-                    0x00000000000000000000000000000000ffffffffffffffffffffffffffffffff, // mask uint128
-                    mload(add(ptr, 0x20))
-                )
+            // amount is lower 16 bytes
+            amountOut := and(UINT128_MASK, mload(add(ptr, 0x20)))
             // the first slot returns amount in left, if positive, we revert
             if gt(mload(ptr), 0) { revert(0, 0) }
             lbDataThenOffset := add(currentOffset, 22)
