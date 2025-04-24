@@ -40,6 +40,7 @@ contract FlashAccountErc7579Test is Test {
     address public constant NEXUS_K1_VALIDATOR_FACTORY_ADDRESS = 0x2828A0E0f36d8d8BeAE95F00E2BbF235e4230fAc;
     address public constant AAVE_POOL_ADDRESSES_PROVIDER = 0x2f39d218133AFaB8F2B819B1066c7E434Ad94E9e;
     address public constant MORPHO_BLUE = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
+    address public constant BALANCER_V2_VAULT = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
     address public constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
@@ -144,8 +145,36 @@ contract FlashAccountErc7579Test is Test {
         assertFalse(_callReverted());
     }
 
+    function test_flash_account_module_balancer_v2_flash_loan() public {
+        uint256 amountToBorrow = 1e9;
+        uint256 fee = 0.009e9;
+
+        deal(USDC, address(account), fee); // funs account with fee amount
+        uint256 totalDebt = amountToBorrow + fee;
+
+        Execution[] memory repayExec = new Execution[](1);
+        repayExec[0] = Execution({target: USDC, value: 0, callData: abi.encodeWithSelector(IERC20.transfer.selector, address(module), totalDebt)});
+
+        bytes memory repayCalldata = ExecLib.encodeBatch(repayExec);
+
+        bytes memory balancerFlashLoanCalldata =
+            FlashLoanLib.createBalancerV2SimpleFlashLoanCalldata(address(module), USDC, amountToBorrow, repayCalldata);
+
+        bytes memory execute = FlashLoanLib.createFlashLoanExecute(address(module), BALANCER_V2_VAULT, balancerFlashLoanCalldata);
+
+        PackedUserOperation[] memory ops = new PackedUserOperation[](1);
+        ops[0] = _createUserOp({sender: account, privateKey: PRIVATE_KEY, nounce: 1, calldata_: execute, initCode: ""});
+
+        vm.recordLogs();
+
+        vm.prank(user);
+        entryPoint.handleOps(ops, payable(address(0x1)));
+
+        // Verify no revert was emitted
+        assertFalse(_callReverted());
+    }
+
     function test_flash_account_module_lock_is_cleared_after_flash_loan() public {
-        // run the flash loan test
         test_flash_account_module_aave_v3_flash_loan();
 
         bytes32 inExecution = vm.load(address(module), IN_EXECUTION_SLOT);
@@ -154,6 +183,13 @@ contract FlashAccountErc7579Test is Test {
 
     function test_flash_account_module_lock_is_cleared_after_morpho_flash_loan() public {
         test_flash_account_module_morpho_flash_loan();
+
+        bytes32 inExecution = vm.load(address(module), IN_EXECUTION_SLOT);
+        vm.assertEq(uint256(inExecution), type(uint256).max);
+    }
+
+    function test_flash_account_module_lock_is_cleared_after_balancer_v2_flash_loan() public {
+        test_flash_account_module_balancer_v2_flash_loan();
 
         bytes32 inExecution = vm.load(address(module), IN_EXECUTION_SLOT);
         vm.assertEq(uint256(inExecution), type(uint256).max);
