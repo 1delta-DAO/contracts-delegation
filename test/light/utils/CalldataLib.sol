@@ -517,12 +517,12 @@ library CalldataLib {
         ); // swaps max index for inner path
     }
 
-    function encodeTransferIn(address asset, address from, uint256 amount) internal pure returns (bytes memory) {
+    function encodeTransferIn(address asset, address receiver, uint256 amount) internal pure returns (bytes memory) {
         return abi.encodePacked(
             uint8(ComposerCommands.TRANSFERS),
             uint8(TransferIds.TRANSFER_FROM),
             asset,
-            from,
+            receiver,
             uint128(amount) //
         ); // 2 + 20 + 20 + 14 = 56 bytes
     }
