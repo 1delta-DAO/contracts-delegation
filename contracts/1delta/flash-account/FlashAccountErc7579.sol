@@ -23,7 +23,6 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
     error InvalidCall();
     error InvalidCaller();
     error UnknownFlashLoanCallback();
-    error NativeTransferFailed();
 
     constructor() {
         _initializeLock();
@@ -123,14 +122,6 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
 
     /**
      * @dev Balancer V3 flash loan implementation
-     *
-     * The data parameter contains:
-     * 1. First 100 bytes:
-     *    - 4 bytes: sendTo selector (transferring tokens to module)
-     *    - 96 bytes: sendTo arguments (address recipient, address token, uint256 amount)
-     *    - n bytes: what should be executed after the module received the funds
-     * 2. Remaining bytes:
-     *    - Used as callback data for the flash loan execution
      */
     function receiveFlashLoan(bytes calldata data) external {
         // validate if the module is locked and get the caller who locked the module
@@ -141,11 +132,8 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
 
         IBalancerV3Vault vault = IBalancerV3Vault(msg.sender);
 
-        // execute the sendTo call, pulling funds from vault
+        // execute the sendTo call, pulling funds from vault and transferring to the caller
         vault.sendTo(token, caller, amount);
-
-        // transfer the assets to the caller
-        _transfer(token, amount, caller);
 
         // execute further operations, forward to the caller who unlocked the module
         // skip address (20) and amount (32)
@@ -171,15 +159,8 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
         // pull funds from pool manager
         IUniswapV4PoolManager poolManager = IUniswapV4PoolManager(msg.sender);
 
+        // pull funds from pool manager and transfer to the caller
         poolManager.take(currency, caller, amount);
-
-        // transfer the assets to the caller
-        if (currency == address(0)) {
-            (bool success,) = caller.call{value: amount}("");
-            if (!success) revert NativeTransferFailed();
-        } else {
-            _transfer(currency, amount, caller);
-        }
 
         // execute further operations
         // skip address (20) and amount (32)
