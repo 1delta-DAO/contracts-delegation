@@ -41,8 +41,10 @@ contract FlashAccountErc7579Test is Test {
     address public constant AAVE_POOL_ADDRESSES_PROVIDER = 0x2f39d218133AFaB8F2B819B1066c7E434Ad94E9e;
     address public constant MORPHO_BLUE = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
     address public constant BALANCER_V2_VAULT = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
+    address public constant BALANCER_V3_VAULT = 0xbA1333333333a1BA1108E8412f11850A5C319bA9;
     address public constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address public constant UNISWAP_V4_POOL_MANAGER = 0x000000000004444c5dc75cB358380D2e3dE08A90;
 
     bytes32 public constant IN_EXECUTION_SLOT = 0x12cfb2d397d8c322044bd0ecc925788f7eda447a6b3031394cf3b7c2f759f1b0;
 
@@ -223,6 +225,39 @@ contract FlashAccountErc7579Test is Test {
 
     function test_flash_account_module_lock_is_cleared_after_balancer_v2_flash_loan() public {
         test_flash_account_module_balancer_v2_flash_loan();
+
+        bytes32 inExecution = vm.load(address(module), IN_EXECUTION_SLOT);
+        vm.assertEq(uint256(inExecution), type(uint256).max);
+    }
+
+    function test_flash_account_module_uniswap_v4_flash_loan() public {
+        uint256 amountToBorrow = 1000e6;
+        deal(USDC, address(account), 10e6);
+
+        Execution[] memory repayExec = new Execution[](1);
+        repayExec[0] =
+            Execution({target: USDC, value: 0, callData: abi.encodeWithSelector(IERC20.transfer.selector, address(module), amountToBorrow + 10e6)});
+
+        bytes memory repayCalldata = ExecLib.encodeBatch(repayExec);
+
+        bytes memory uniswapV4FlashLoanCalldata = FlashLoanLib.createUniswapV4FlashLoanCalldata(USDC, amountToBorrow, repayCalldata);
+
+        bytes memory execute = FlashLoanLib.createFlashLoanExecute(address(module), UNISWAP_V4_POOL_MANAGER, uniswapV4FlashLoanCalldata);
+
+        PackedUserOperation[] memory ops = new PackedUserOperation[](1);
+        ops[0] = _createUserOp({sender: account, privateKey: PRIVATE_KEY, nounce: 1, calldata_: execute, initCode: ""});
+
+        vm.recordLogs();
+
+        vm.prank(user);
+        entryPoint.handleOps(ops, payable(address(0x1)));
+
+        // Verify no revert was emitted
+        assertFalse(_callReverted());
+    }
+
+    function test_flash_account_module_lock_is_cleared_after_uniswap_v4_flash_loan() public {
+        test_flash_account_module_uniswap_v4_flash_loan();
 
         bytes32 inExecution = vm.load(address(module), IN_EXECUTION_SLOT);
         vm.assertEq(uint256(inExecution), type(uint256).max);
