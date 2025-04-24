@@ -232,11 +232,10 @@ contract FlashAccountErc7579Test is Test {
 
     function test_flash_account_module_uniswap_v4_flash_loan() public {
         uint256 amountToBorrow = 1000e6;
-        deal(USDC, address(account), 10e6);
 
         Execution[] memory repayExec = new Execution[](1);
         repayExec[0] =
-            Execution({target: USDC, value: 0, callData: abi.encodeWithSelector(IERC20.transfer.selector, address(module), amountToBorrow + 10e6)});
+            Execution({target: USDC, value: 0, callData: abi.encodeWithSelector(IERC20.transfer.selector, address(module), amountToBorrow)});
 
         bytes memory repayCalldata = ExecLib.encodeBatch(repayExec);
 
