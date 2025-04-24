@@ -154,10 +154,7 @@ library FlashLoanLib {
     {
         return abi.encodeWithSignature(
             "unlock(bytes)",
-            abi.encodeWithSignature(
-                "receiveFlashLoan(bytes)",
-                abi.encodePacked(abi.encodeWithSignature("sendTo(address,address,uint256)", token, moduleAddress, amount), data)
-            )
+            abi.encodeWithSignature("receiveFlashLoan(bytes)", abi.encodePacked(token, amount, abi.encode(ModeLib.encodeSimpleBatch(), data)))
         );
     }
 
