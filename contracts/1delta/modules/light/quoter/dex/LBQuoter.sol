@@ -32,7 +32,7 @@ abstract contract LBQuoter is Masks {
                 )
             // the first slot returns amount in left, if positive, we revert
             if gt(mload(ptr), 0) { revert(0, 0) }
-            currentOffset := add(currentOffset, 21)
+            currentOffset := add(currentOffset, 22)
         }
 
         return (amountOut, currentOffset);
