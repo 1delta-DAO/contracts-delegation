@@ -174,6 +174,32 @@ contract FlashAccountErc7579Test is Test {
         assertFalse(_callReverted());
     }
 
+    function test_flash_account_module_balancer_v3_flash_loan() public {
+        uint256 amountToBorrow = 1e9;
+        uint256 totalDebt = amountToBorrow; // No fees
+
+        Execution[] memory repayExec = new Execution[](1);
+        repayExec[0] = Execution({target: USDC, value: 0, callData: abi.encodeWithSelector(IERC20.transfer.selector, address(module), totalDebt)});
+
+        bytes memory repayCalldata = ExecLib.encodeBatch(repayExec);
+
+        bytes memory balancerV3FlashLoanCalldata =
+            FlashLoanLib.createBalancerV3FlashLoanCalldata(address(module), USDC, amountToBorrow, repayCalldata);
+
+        bytes memory execute = FlashLoanLib.createFlashLoanExecute(address(module), BALANCER_V3_VAULT, balancerV3FlashLoanCalldata);
+
+        PackedUserOperation[] memory ops = new PackedUserOperation[](1);
+        ops[0] = _createUserOp({sender: account, privateKey: PRIVATE_KEY, nounce: 1, calldata_: execute, initCode: ""});
+
+        vm.recordLogs();
+
+        vm.prank(user);
+        entryPoint.handleOps(ops, payable(address(0x1)));
+
+        // Verify no revert was emitted
+        assertFalse(_callReverted());
+    }
+
     function test_flash_account_module_lock_is_cleared_after_flash_loan() public {
         test_flash_account_module_aave_v3_flash_loan();
 
@@ -183,6 +209,13 @@ contract FlashAccountErc7579Test is Test {
 
     function test_flash_account_module_lock_is_cleared_after_morpho_flash_loan() public {
         test_flash_account_module_morpho_flash_loan();
+
+        bytes32 inExecution = vm.load(address(module), IN_EXECUTION_SLOT);
+        vm.assertEq(uint256(inExecution), type(uint256).max);
+    }
+
+    function test_flash_account_module_lock_is_cleared_after_balancer_v3_flash_loan() public {
+        test_flash_account_module_balancer_v3_flash_loan();
 
         bytes32 inExecution = vm.load(address(module), IN_EXECUTION_SLOT);
         vm.assertEq(uint256(inExecution), type(uint256).max);
