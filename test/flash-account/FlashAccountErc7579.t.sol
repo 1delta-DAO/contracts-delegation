@@ -43,6 +43,7 @@ contract FlashAccountErc7579Test is Test {
     address public constant BALANCER_V2_VAULT = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
     address public constant BALANCER_V3_VAULT = 0xbA1333333333a1BA1108E8412f11850A5C319bA9;
     address public constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+    address public constant USDT = 0xdAC17F958D2ee523a2206206994597C13D831ec7;
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address public constant UNISWAP_V4_POOL_MANAGER = 0x000000000004444c5dc75cB358380D2e3dE08A90;
 
@@ -235,11 +236,11 @@ contract FlashAccountErc7579Test is Test {
 
         Execution[] memory repayExec = new Execution[](1);
         repayExec[0] =
-            Execution({target: USDC, value: 0, callData: abi.encodeWithSelector(IERC20.transfer.selector, address(module), amountToBorrow)});
+            Execution({target: USDT, value: 0, callData: abi.encodeWithSelector(IERC20.transfer.selector, address(module), amountToBorrow)});
 
         bytes memory repayCalldata = ExecLib.encodeBatch(repayExec);
 
-        bytes memory uniswapV4FlashLoanCalldata = FlashLoanLib.createUniswapV4FlashLoanCalldata(USDC, amountToBorrow, repayCalldata);
+        bytes memory uniswapV4FlashLoanCalldata = FlashLoanLib.createUniswapV4FlashLoanCalldata(USDT, amountToBorrow, repayCalldata);
 
         bytes memory execute = FlashLoanLib.createFlashLoanExecute(address(module), UNISWAP_V4_POOL_MANAGER, uniswapV4FlashLoanCalldata);
 

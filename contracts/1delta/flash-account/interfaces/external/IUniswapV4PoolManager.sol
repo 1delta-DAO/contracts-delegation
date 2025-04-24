@@ -10,4 +10,6 @@ interface IUniswapV4PoolManager {
     function take(address currency, address to, uint256 amount) external;
 
     function settle() external payable returns (uint256 paid);
+
+    function exttload(bytes32 slot) external view returns (bytes32 value);
 }

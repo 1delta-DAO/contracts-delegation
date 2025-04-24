@@ -176,6 +176,13 @@ contract FlashAccountErc7579 is ExecutionLock, IExecutor {
             _transfer(currency, amount, msg.sender);
             poolManager.settle();
         }
+        // solidity-compiled code in uni V4 bugs out if we return nothing
+        // as such, we return "nothing-bytes" here :D
+        assembly {
+            mstore(0x0, 0x0)
+            mstore(0x20, 0x0)
+            return(0x0, 0x40)
+        }
     }
 
     /**
