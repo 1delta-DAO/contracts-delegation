@@ -2,6 +2,8 @@
 src = "contracts/1delta"
 out = "out"
 libs = ["lib"]
+solc-version = "0.8.28"
+evm_version="cancun"
 
 [fmt]
 line_length=150
