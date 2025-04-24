@@ -182,6 +182,15 @@ library FlashLoanLib {
             )
         );
     }
+
+    /// @notice Creates Uniswap V4 flash loan calldata
+    /// @param token The token to borrow
+    /// @param amount The amount to borrow
+    /// @param data The data to execute after the flash loan
+    /// @return uniswapV4FlashLoanCalldata The encoded Uniswap V4 flash loan calldata
+    function createUniswapV4FlashLoanCalldata(address token, uint256 amount, bytes memory data) internal pure returns (bytes memory) {
+        return abi.encodeWithSignature("unlock(bytes)", abi.encodePacked(token, amount, abi.encode(ModeLib.encodeSimpleBatch(), data)));
+    }
 }
 
 struct Execution {
