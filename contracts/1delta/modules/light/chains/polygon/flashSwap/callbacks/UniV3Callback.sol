@@ -110,7 +110,6 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
                 tokenIn := shr(96, calldataload(152))
                 let tokenOutAndFee := calldataload(172)
                 let tokenOut := shr(96, tokenOutAndFee)
-                calldataLength := and(UINT16_MASK, shr(56, tokenOutAndFee))
                 let s := mload(0x40)
                 mstore(s, ffFactoryAddress)
                 let p := add(s, 21)
@@ -137,6 +136,9 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
                     mstore(0x0, BAD_POOL)
                     revert(0x0, 0x4)
                 }
+
+                calldataLength := and(UINT16_MASK, shr(56, tokenOutAndFee))
+
                 // get original caller address
                 callerAddress := shr(96, calldataload(132))
             }

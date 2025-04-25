@@ -3,7 +3,9 @@ export const templateUniV3 = (
     ffFactoryAddressContants: string,
     switchCaseContent: string,
     ffFactoryAddressContantsIzumi: string,
-    switchCaseContentIzumi: string
+    switchCaseContentIzumi: string,
+    hasOverride: boolean,
+    overrideData?: string
 ) => `
 // SPDX-License-Identifier: BUSL-1.1
 
@@ -60,10 +62,78 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
             address callerAddress;
             address tokenIn;
             assembly {
+                ${hasOverride ? overrideContent(overrideData!) : defaultContent()}
+                // get original caller address
+                callerAddress := shr(96, calldataload(132))
+            }
+            clSwapCallback(amountToPay, tokenIn, callerAddress, calldataLength);
+            // force return
+            assembly {
+                return(0, 0)
+            }
+        }
+    }
+}
+
+`
+
+function overrideContent(data: string) {
+    return `
+        let ptr
+        let pool
+        tokenIn := shr(96, calldataload(152))
+        let tokenOutAndFee := calldataload(172)
+        let tokenOut := shr(96, tokenOutAndFee)
+        // if the lower bytes are populated, execute the override validation
+        // via a staticcall or Solady clone calculation instead of
+        // a standard address computation
+        // this is sometimes needed if the factory deploys different
+        // pool contracts or something like immutableClone is used
+        switch and(FF_ADDRESS_COMPLEMENT, ffFactoryAddress) 
+        case 0 {
+            let s := mload(0x40)
+            mstore(s, ffFactoryAddress)
+            let p := add(s, 21)
+            // Compute the inner hash in-place
+            switch lt(tokenIn, tokenOut)
+            case 0 {
+                mstore(p, tokenOut)
+                mstore(add(p, 32), tokenIn)
+            }
+            default {
+                mstore(p, tokenIn)
+                mstore(add(p, 32), tokenOut)
+            }
+            // this stores the fee
+            mstore(add(p, 64), and(UINT16_MASK, shr(72, tokenOutAndFee)))
+            mstore(p, keccak256(p, 96))
+            p := add(p, 32)
+            mstore(p, codeHash)
+
+            pool := and(ADDRESS_MASK, keccak256(s, 85))
+        }
+        default {
+            ${data}    
+        }
+
+        calldataLength := and(UINT16_MASK, shr(56, tokenOutAndFee))
+        ////////////////////////////////////////////////////
+        // If the caller is not the calculated pool, we revert
+        ////////////////////////////////////////////////////
+
+        if xor(pool, caller()) {
+            mstore(0x0, BAD_POOL)
+            revert(0x0, 0x4)
+        }
+    
+    `
+}
+
+function defaultContent() {
+    return `
                 tokenIn := shr(96, calldataload(152))
                 let tokenOutAndFee := calldataload(172)
                 let tokenOut := shr(96, tokenOutAndFee)
-                calldataLength := and(UINT16_MASK, shr(56, tokenOutAndFee))
                 let s := mload(0x40)
                 mstore(s, ffFactoryAddress)
                 let p := add(s, 21)
@@ -90,16 +160,7 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
                     mstore(0x0, BAD_POOL)
                     revert(0x0, 0x4)
                 }
-                // get original caller address
-                callerAddress := shr(96, calldataload(132))
-            }
-            clSwapCallback(amountToPay, tokenIn, callerAddress, calldataLength);
-            // force return
-            assembly {
-                return(0, 0)
-            }
-        }
-    }
-}
 
-`
+                calldataLength := and(UINT16_MASK, shr(56, tokenOutAndFee))
+    `
+}

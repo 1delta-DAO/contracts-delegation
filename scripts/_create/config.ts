@@ -14,6 +14,7 @@ export const CREATE_CHAIN_IDS = [
     // Chain.MODE,
     // Chain.AVALANCHE_C_CHAIN,
     Chain.SONIC_MAINNET,
+    Chain.OP_MAINNET,
     // Chain.ETHEREUM_MAINNET
 ]
 

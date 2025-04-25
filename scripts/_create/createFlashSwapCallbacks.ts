@@ -11,7 +11,7 @@ import { templateUniV4 } from "./templates/flashSwap/uniV4Callback";
 import { templateBalancerV3 } from "./templates/flashSwap/balancerV3Callback";
 import { CREATE_CHAIN_IDS, getChainKey } from "./config";
 import { composerTestImports } from "./templates/test/composerImport";
-import { customV2ValidationSnippets } from "./dex/customSnippets";
+import { customV2ValidationSnippets, customV3ValidationSnippets } from "./dex/customSnippets";
 
 import { IZUMI_FORKS, UNISWAP_V2_FORKS, UNISWAP_V3_FORKS, DODO_V2_DATA, DexValidation, UNISWAP_V4_FORKS, BALANCER_V3_FORKS, DexProtocol } from "@1delta/dex-registry"
 import { DEX_TO_CHAINS_EXCLUSIONS } from "./dex/blacklists";
@@ -28,11 +28,12 @@ function createConstant(pool: string, lender: string) {
  * constants imports for uni V2s and V3s
  * respect overrdides that populate lower bytes and have no code hash 
  */
-function createffAddressConstant(pool: string, dexName: string, codeHash: string) {
+function createffAddressConstant(pool: string, dexName: string, codeHash: string, impl?: string) {
     if (codeHash === DexValidation.OVERRIDE)
         return `
             bytes32 private constant ${dexName}_FACTORY = 0x000000000000000000000000${getAddress(pool).replace("0x", "")};
-           `
+            ${impl ? `bytes32 private constant ${dexName}_IMPLEMENTATION = 0x000000000000000000000000${getAddress(impl).replace("0x", "")};` : ""}
+            `
     return `
             bytes32 private constant ${dexName}_FF_FACTORY = ${getAddress(pool).replace("0x", "0xff")}0000000000000000000000;
             bytes32 private constant ${dexName}_CODE_HASH = ${codeHash};
@@ -41,7 +42,10 @@ function createffAddressConstant(pool: string, dexName: string, codeHash: string
 
 
 /** createCase function for uni V3s for multiple entries */
-function createCaseV3(entityName: string, entityId: string) {
+function createCaseV3(entityName: string, entityId: string, override = false) {
+    if (override) return `case ${entityId} {
+    ffFactoryAddress := ${entityName}_FACTORY
+    }\n`
     return `case ${entityId} {
                 ffFactoryAddress := ${entityName}_FF_FACTORY
                 codeHash := ${entityName}_CODE_HASH
@@ -49,7 +53,10 @@ function createCaseV3(entityName: string, entityId: string) {
 }
 
 /** createCase function for uni V3s for single entries */
-function createCaseV3Solo(entityName: string) {
+function createCaseV3Solo(entityName: string, override = false) {
+    if (override) return `
+    ffFactoryAddress := ${entityName}_FACTORY
+`
     return `
                 ffFactoryAddress := ${entityName}_FF_FACTORY
                 codeHash := ${entityName}_CODE_HASH
@@ -195,6 +202,7 @@ interface DexIdData {
     pool: string
     codeHash?: string
     callbackSelector?: string
+    impl?: string
 }
 
 async function main() {
@@ -220,12 +228,15 @@ async function main() {
                             pool: address,
                             codeHash: maps.codeHash[chain] ?? maps.codeHash.default,
                             callbackSelector: maps.callbackSelector,
+                            impl: maps.implementation?.[chain]
                         })
                 }
             });
         });
 
 
+        let hasV3Override = false
+        let v3OverrideData = ""
         let dexIdsUniV3: DexIdData[] = []
         // uni V3
         Object.entries(UNISWAP_V3_FORKS).forEach(([dex, maps], i) => {
@@ -238,6 +249,7 @@ async function main() {
                             pool: address,
                             codeHash: maps.codeHash[chain] ?? maps.codeHash.default,
                             callbackSelector: maps.callbackSelector,
+                            impl: maps.implementation?.[chain]
                         })
                 }
             });
@@ -323,17 +335,17 @@ async function main() {
             }
             // single case first, we use the abbreviated version that does not do a switch-case
             if (idsForSelector.length === 1) {
-                const { pool, entityName, codeHash } = idsForSelector[0]
+                const { pool, entityName, codeHash, impl } = idsForSelector[0]
                 // add constants at the top of the file
-                constantsDataV2 += createffAddressConstant(pool, entityName, codeHash!)
+                constantsDataV2 += createffAddressConstant(pool, entityName, codeHash!, impl)
                 // for solidly, we already created the switch-case type check at the top
                 if (!isSolidly) switchCaseContentV2 += createCaseUniV2Solo(entityName, codeHash === DexValidation.OVERRIDE)
             }
             // multiple cases
             else {
-                idsForSelector.forEach(({ pool, entityName, codeHash, entityId }, i) => {
+                idsForSelector.forEach(({ pool, entityName, codeHash, entityId, impl }, i) => {
                     // add constants at the top of the file
-                    constantsDataV2 += createffAddressConstant(pool, entityName, codeHash!)
+                    constantsDataV2 += createffAddressConstant(pool, entityName, codeHash!, impl)
                     // for solidly, we already created the switch-case type check at the top
                     if (!isSolidly) switchCaseContentV2 += createCaseUniV2(entityName, entityId, codeHash === DexValidation.OVERRIDE)
                 })
@@ -360,24 +372,34 @@ async function main() {
         // console.log("entityIds", dexIdsUniV3)
         slectorsV3.forEach(sel => {
             const idsForSelector = dexIdsUniV3.filter(a => a.callbackSelector === sel)
+            const overriddenIds = idsForSelector.filter(a => a.codeHash === DexValidation.OVERRIDE)
 
             // single case
             if (idsForSelector.length === 1) {
                 switchCaseContentV3 += createCaseSelectorV3Solo(sel)
-                const { pool, entityName, codeHash } = idsForSelector[0]
-                constantsDataV3 += createffAddressConstant(pool, entityName, codeHash!)
-                switchCaseContentV3 += createCaseV3Solo(entityName)
+                const { pool, entityName, codeHash, impl } = idsForSelector[0]
+                constantsDataV3 += createffAddressConstant(pool, entityName, codeHash!, impl)
+                switchCaseContentV3 += createCaseV3Solo(entityName, codeHash === DexValidation.OVERRIDE)
             }
             // multi case
             else {
                 switchCaseContentV3 += createCaseSelectorV3(sel)
-                idsForSelector.forEach(({ pool, entityName, codeHash, entityId }, i) => {
-                    constantsDataV3 += createffAddressConstant(pool, entityName, codeHash!)
-                    switchCaseContentV3 += createCaseV3(entityName, entityId)
+                idsForSelector.forEach(({ pool, entityName, codeHash, entityId, impl }, i) => {
+                    constantsDataV3 += createffAddressConstant(pool, entityName, codeHash!, impl)
+                    switchCaseContentV3 += createCaseV3(entityName, entityId, codeHash === DexValidation.OVERRIDE)
                 })
                 // mutli case rejects invalid ids
                 switchCaseContentV3 += `default { revert(0, 0) }`
             }
+
+            if (overriddenIds.length > 0) {
+                if (overriddenIds.length > 1) throw new Error("2 overrides not supported")
+                console.log("test", overriddenIds[0].entityName, chain)
+                v3OverrideData = customV3ValidationSnippets[overriddenIds[0].entityName as any][chain as any]
+                // set fag to true for validation at the bottom
+                hasV3Override = true
+            }
+
             /** 
              * For uni V3, after each selector, we need to identifty the input amount 
              * Variants like Iumi do this differently, as such, we do it by selector
@@ -483,7 +505,12 @@ async function main() {
 
         if (dexIdsUniV2.length > 0) {
             const filePathV2 = flashSwapCallbackDir + "UniV2Callback.sol";
-            fs.writeFileSync(filePathV2, templateUniV2(constantsDataV2, switchCaseContentV2, hasV2Override, v2OverrideData));
+            fs.writeFileSync(filePathV2, templateUniV2(
+                constantsDataV2,
+                switchCaseContentV2,
+                hasV2Override,
+                v2OverrideData
+            ));
         }
 
         if (dexIdsUniV3.length > 0) {
@@ -492,7 +519,9 @@ async function main() {
                 constantsDataV3,
                 switchCaseContentV3,
                 constantsDataIzumi,
-                switchCaseContentIzumi
+                switchCaseContentIzumi,
+                hasV3Override,
+                v3OverrideData
             ));
         }
 

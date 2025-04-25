@@ -12,8 +12,8 @@ importers:
         specifier: ^0.0.122
         version: 0.0.122
       '@1delta/dex-registry':
-        specifier: ^0.0.23
-        version: 0.0.23
+        specifier: ^0.0.26
+        version: 0.0.26
       '@chainlink/contracts':
         specifier: ^0.6.1
         version: 0.6.1(bufferutil@4.0.9)(ethers@5.8.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)
@@ -193,8 +193,8 @@ packages:
     resolution: {integrity: sha512-zbt1PxRV0FjZEn7xgFkpdKjmwUxhyEFbsmuenATBbXiifSq0EDe5mTZ1alv26F0kHYvkHfAEMUvDVyV9wFSKvg==}
     engines: {node: '>=20'}
 
-  '@1delta/dex-registry@0.0.23':
-    resolution: {integrity: sha512-u/BxTxRx8g5O3jSx+p+dc6nQMTba4XHonGar8Z0X+VFXN5hJJEuBhQwc4CPAscrtX15YiK26gaOWhe0Zgasu9A==}
+  '@1delta/dex-registry@0.0.26':
+    resolution: {integrity: sha512-MiGox6hFH/9IR59KGf+VvQJhRXg9gvnYHebAOJi1W0xh6WUxHQRtL8l4wakaiO+ympFJ8pRgK06B1hbV/vBaFQ==}
     engines: {node: '>=20'}
 
   '@ampproject/remapping@2.3.0':
@@ -6781,7 +6781,7 @@ snapshots:
 
   '@1delta/asset-registry@0.0.122': {}
 
-  '@1delta/dex-registry@0.0.23': {}
+  '@1delta/dex-registry@0.0.26': {}
 
   '@ampproject/remapping@2.3.0':
     dependencies:

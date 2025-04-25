@@ -21,6 +21,8 @@ abstract contract Masks {
     uint160 internal constant MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970341;
     /// @dev Maximum Uint256 value
     uint256 internal constant MAX_UINT256 = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
+    /// @dev Use this to distinguish FF upper bytes addresses and lower bytes addresses
+    uint256 internal constant FF_ADDRESS_COMPLEMENT = 0x000000000000000000000000000000000000000000ffffffffffffffffffffff;
 
     /// @notice Composer-specific masks
 

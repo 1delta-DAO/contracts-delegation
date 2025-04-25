@@ -17,13 +17,17 @@ import {DeltaErrors} from "../../../../../shared/errors/Errors.sol";
 abstract contract UniV2Callbacks is Masks, DeltaErrors {
     // factories
 
-    bytes32 private constant MERCHANT_MOE_FACTORY = 0x0000000000000000000000005bEf015CA9424A7C07B68490616a4C1F094BEdEc;
+    bytes32 private constant UNISWAP_V2_FF_FACTORY = 0xff0c3c1c532F1e39EdF36BE9Fe0bE1410313E074Bf0000000000000000000000;
+    bytes32 private constant UNISWAP_V2_CODE_HASH = 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f;
 
-    bytes32 private constant CLEOPATRA_V1_FF_FACTORY = 0xffAAA16c016BF556fcD620328f0759252E29b1AB570000000000000000000000;
-    bytes32 private constant CLEOPATRA_V1_CODE_HASH = 0xbf2404274de2b11f05e5aebd49e508de933034cb5fa2d0ac3de8cbd4bcef47dc;
+    bytes32 private constant SUSHISWAP_V2_FF_FACTORY = 0xffFbc12984689e5f15626Bad03Ad60160Fe98B303C0000000000000000000000;
+    bytes32 private constant SUSHISWAP_V2_CODE_HASH = 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f;
 
-    bytes32 private constant VELOCIMETER_FF_FACTORY = 0xff99F9a4A96549342546f9DAE5B2738EDDcD43Bf4C0000000000000000000000;
-    bytes32 private constant VELOCIMETER_CODE_HASH = 0x0ccd005ee58d5fb11632ef5c2e0866256b240965c62c8e990c0f84a97f311879;
+    bytes32 private constant VELODROME_V2_FACTORY = 0x000000000000000000000000F1046053aa5682b4F9a81b5481394DA16BE5FF5a;
+    bytes32 private constant VELODROME_V2_IMPLEMENTATION = 0x00000000000000000000000095885Af5492195F0754bE71AD1545Fe81364E531;
+
+    bytes32 private constant VELODROME_V1_FF_FACTORY = 0xff25CbdDb98b35ab1FF77413456B31EC81A6B6B7460000000000000000000000;
+    bytes32 private constant VELODROME_V1_CODE_HASH = 0xc1ac28b1c4ebe53c0cff67bab5878c4eb68759bb1e9f73977cd266b247d149f0;
 
     /**
      * Generic Uniswap v2 style callbck executor
@@ -37,25 +41,30 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
         assembly {
             outData := calldataload(204)
             switch selector
-            case 0xba85410f00000000000000000000000000000000000000000000000000000000 {
+            case 0x10d1e85c00000000000000000000000000000000000000000000000000000000 {
                 forkId := and(UINT8_MASK, shr(88, outData))
-
-                ffFactoryAddress := MERCHANT_MOE_FACTORY
+                switch forkId
+                case 0 {
+                    ffFactoryAddress := UNISWAP_V2_FF_FACTORY
+                    codeHash := UNISWAP_V2_CODE_HASH
+                }
+                case 1 {
+                    ffFactoryAddress := SUSHISWAP_V2_FF_FACTORY
+                    codeHash := SUSHISWAP_V2_CODE_HASH
+                }
+                default { revert(0, 0) }
             }
             case 0x9a7bff7900000000000000000000000000000000000000000000000000000000 {
                 forkId := and(UINT8_MASK, shr(88, outData))
 
-                switch or(eq(forkId, 133), eq(forkId, 197))
+                switch or(eq(forkId, 137), eq(forkId, 201))
                 case 1 {
-                    ffFactoryAddress := VELOCIMETER_FF_FACTORY
-                    codeHash := VELOCIMETER_CODE_HASH
+                    ffFactoryAddress := VELODROME_V1_FF_FACTORY
+                    codeHash := VELODROME_V1_CODE_HASH
                 }
                 default {
-                    switch or(eq(forkId, 135), eq(forkId, 199))
-                    case 1 {
-                        ffFactoryAddress := CLEOPATRA_V1_FF_FACTORY
-                        codeHash := CLEOPATRA_V1_CODE_HASH
-                    }
+                    switch or(eq(forkId, 138), eq(forkId, 202))
+                    case 1 { ffFactoryAddress := VELODROME_V2_FACTORY }
                     default { revert(0, 0) }
                 }
             }
@@ -111,13 +120,33 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
                     pool := and(ADDRESS_MASK, keccak256(ptr, 0x55))
                 }
                 default {
-                    // selector for getPair(address,address)
-                    mstore(ptr, 0xe6a4390500000000000000000000000000000000000000000000000000000000)
-                    mstore(add(ptr, 0x4), shr(96, calldataload(184))) // tokenIn
-                    mstore(add(ptr, 0x24), shr(96, outData)) // tokenOut
-                    // get pair from merchant moe factory
-                    pop(staticcall(gas(), ffFactoryAddress, ptr, 0x48, ptr, 0x20))
-                    pool := mload(ptr)
+                    // get tokens
+                    let tokenIn := shr(96, calldataload(184))
+                    let tokenOut := shr(96, outData)
+
+                    switch lt(tokenIn, tokenOut)
+                    case 0 {
+                        mstore(add(ptr, 0x14), tokenIn)
+                        mstore(ptr, tokenOut)
+                    }
+                    default {
+                        mstore(add(ptr, 0x14), tokenOut)
+                        mstore(ptr, tokenIn)
+                    }
+
+                    mstore8(
+                        add(ptr, 0x34),
+                        gt(forkId, 191) // store isStable (id>=192)
+                    )
+                    let salt := keccak256(add(ptr, 0x0C), 0x29)
+
+                    mstore(add(ptr, 0x38), VELODROME_V2_FACTORY)
+                    mstore(add(ptr, 0x24), 0x5af43d82803e903d91602b57fd5bf3ff)
+                    mstore(add(ptr, 0x14), VELODROME_V2_IMPLEMENTATION)
+                    mstore(ptr, 0x3d602d80600a3d3981f3363d3d373d3d3d363d73)
+                    mstore(add(ptr, 0x58), salt)
+                    mstore(add(ptr, 0x78), keccak256(add(ptr, 0x0c), 0x37))
+                    pool := keccak256(add(ptr, 0x43), 0x55)
                 }
                 // verify that the caller is a v2 type pool
                 if xor(pool, caller()) {

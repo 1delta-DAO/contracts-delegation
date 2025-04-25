@@ -95,22 +95,12 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
                 let ptr
                 let pool
                 // if the lower bytes are populated, execute the override validation
-                // via a staticcall instead of an address computation
+                // via a staticcall or Solady clone calculation instead of
+                // a standard address computation
                 // this is sometimes needed if the factory deploys different
                 // pool contracts or something like immutableClone is used
-                switch and(0xffffffffffffffffffffff, ffFactoryAddress)
-                case 1 {
-                    // selector for getPair(address,address,bool)
-                    mstore(ptr, 0x6801cc3000000000000000000000000000000000000000000000000000000000)
-                    mstore(add(ptr, 0x4), shr(96, calldataload(184))) // tokenIn
-                    mstore(add(ptr, 0x24), shr(96, outData)) // tokenOut
-                    mstore(add(ptr, 0x34), gt(forkId, 191)) // isStable
-                    // get pair from ramses v2 factory
-                    pop(staticcall(gas(), ffFactoryAddress, ptr, 0x48, ptr, 0x20))
-
-                    pool := mload(ptr)
-                }
-                default {
+                switch and(FF_ADDRESS_COMPLEMENT, ffFactoryAddress)
+                case 0 {
                     // get tokens
                     let tokenIn := shr(96, calldataload(184))
                     let tokenOut := shr(96, outData)
@@ -140,6 +130,16 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
                     mstore(add(ptr, 0x15), salt)
                     mstore(add(ptr, 0x35), codeHash)
                     pool := and(ADDRESS_MASK, keccak256(ptr, 0x55))
+                }
+                default {
+                    // selector for getPair(address,address,bool)
+                    mstore(ptr, 0x6801cc3000000000000000000000000000000000000000000000000000000000)
+                    mstore(add(ptr, 0x4), shr(96, calldataload(184))) // tokenIn
+                    mstore(add(ptr, 0x24), shr(96, outData)) // tokenOut
+                    mstore(add(ptr, 0x34), gt(forkId, 191)) // isStable
+                    // get pair from ramses v2 factory
+                    pop(staticcall(gas(), ffFactoryAddress, ptr, 0x48, ptr, 0x20))
+                    pool := mload(ptr)
                 }
                 // verify that the caller is a v2 type pool
                 if xor(pool, caller()) {

@@ -12,6 +12,7 @@ import {OneDeltaComposerPolygon} from "../../../contracts/1delta/modules/light/c
 import {OneDeltaComposerTaiko} from "../../../contracts/1delta/modules/light/chains/taiko/Composer.sol";
 import {OneDeltaComposerMantle} from "../../../contracts/1delta/modules/light/chains/mantle/Composer.sol";
 import {OneDeltaComposerSonic} from "../../../contracts/1delta/modules/light/chains/sonic/Composer.sol";
+import {OneDeltaComposerOp} from "../../../contracts/1delta/modules/light/chains/op/Composer.sol";
 
 library ComposerPlugin {
     function getComposer(string memory chainName) public returns (IComposerLike) {
@@ -26,6 +27,7 @@ library ComposerPlugin {
         if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.TAIKO_ALETHIA))) return IComposerLike(address(new OneDeltaComposerTaiko()));
         if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.MANTLE))) return IComposerLike(address(new OneDeltaComposerMantle()));
         if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.SONIC_MAINNET))) return IComposerLike(address(new OneDeltaComposerSonic()));
+        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.OP_MAINNET))) return IComposerLike(address(new OneDeltaComposerOp()));
 
         revert("No composer for chain");
     }
