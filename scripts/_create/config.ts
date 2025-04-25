@@ -4,7 +4,7 @@ export const CREATE_CHAIN_IDS = [
     Chain.ARBITRUM_ONE,
     Chain.HEMI_NETWORK,
     Chain.BNB_SMART_CHAIN_MAINNET,
-    // Chain.METIS_ANDROMEDA_MAINNET,
+    Chain.METIS_ANDROMEDA_MAINNET,
     // Chain.LINEA,
     // Chain.SCROLL,
     Chain.BASE,

@@ -17,20 +17,17 @@ import {V3Callbacker} from "../../../../../light/swappers/callbacks/V3Callbacker
 abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
     // factory ff addresses
 
-    bytes32 private constant UNISWAP_V3_FF_FACTORY = 0xffcb2436774C3e191c85056d248EF4260ce5f27A9D0000000000000000000000;
-    bytes32 private constant UNISWAP_V3_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
+    bytes32 private constant SUSHISWAP_V3_FF_FACTORY = 0xff145d82bCa93cCa2AE057D1c6f26245d1b9522E6F0000000000000000000000;
+    bytes32 private constant SUSHISWAP_V3_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
 
-    bytes32 private constant SOLIDLY_V3_FF_FACTORY = 0xff777fAca731b17E8847eBF175c94DbE9d81A8f6300000000000000000000000;
-    bytes32 private constant SOLIDLY_V3_CODE_HASH = 0xe9b68c5f77858eecac2e651646e208175e9b1359d68d0e14fc69f8c54e5010bf;
-
-    bytes32 private constant SHADOW_CL_FF_FACTORY = 0xff8BBDc15759a8eCf99A92E004E0C64ea9A5142d590000000000000000000000;
-    bytes32 private constant SHADOW_CL_CODE_HASH = 0xc701ee63862761c31d620a4a083c61bdc1e81761e6b9c9267fd19afd22e0821d;
-
-    bytes32 private constant WAGMI_FF_FACTORY = 0xff56CFC796bC88C9c7e1b38C2b0aF9B7120B079aef0000000000000000000000;
+    bytes32 private constant WAGMI_FF_FACTORY = 0xff8112E18a34b63964388a3B2984037d6a2EFE5B8A0000000000000000000000;
     bytes32 private constant WAGMI_CODE_HASH = 0x30146866f3a846fe3c636beb2756dbd24cf321bc52c9113c837c21f47470dfeb;
 
-    bytes32 private constant SWAPX_FF_FACTORY = 0xff885229E48987EA4c68F0aA1bCBff5184198A91880000000000000000000000;
-    bytes32 private constant SWAPX_CODE_HASH = 0xf96d2474815c32e070cd63233f06af5413efc5dcb430aee4ff18cc29007c562d;
+    bytes32 private constant MAIA_V3_FF_FACTORY = 0xfff5fd18Cd5325904cC7141cB9Daca1F2F964B99270000000000000000000000;
+    bytes32 private constant MAIA_V3_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
+
+    bytes32 private constant HERCULES_FF_FACTORY = 0xff43AA9b2eD25F972fD8D44fDfb77a4a514eAB4d710000000000000000000000;
+    bytes32 private constant HERCULES_CODE_HASH = 0x6c1bebd370ba84753516bc1393c0d0a6c645856da55f5393ac8ab3d6dbc861d3;
 
     /**
      * Generic UniswapV3 callback executor
@@ -49,21 +46,17 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
             switch selector
             case 0xfa461e3300000000000000000000000000000000000000000000000000000000 {
                 switch and(UINT8_MASK, shr(88, calldataload(172)))
-                case 0 {
-                    ffFactoryAddress := UNISWAP_V3_FF_FACTORY
-                    codeHash := UNISWAP_V3_CODE_HASH
-                }
-                case 2 {
-                    ffFactoryAddress := SOLIDLY_V3_FF_FACTORY
-                    codeHash := SOLIDLY_V3_CODE_HASH
-                }
-                case 11 {
-                    ffFactoryAddress := SHADOW_CL_FF_FACTORY
-                    codeHash := SHADOW_CL_CODE_HASH
+                case 1 {
+                    ffFactoryAddress := SUSHISWAP_V3_FF_FACTORY
+                    codeHash := SUSHISWAP_V3_CODE_HASH
                 }
                 case 15 {
                     ffFactoryAddress := WAGMI_FF_FACTORY
                     codeHash := WAGMI_CODE_HASH
+                }
+                case 16 {
+                    ffFactoryAddress := MAIA_V3_FF_FACTORY
+                    codeHash := MAIA_V3_CODE_HASH
                 }
                 default { revert(0, 0) }
                 let _amount1 := calldataload(36)
@@ -72,8 +65,8 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
                 default { amountToPay := calldataload(4) }
             }
             case 0x2c8958f600000000000000000000000000000000000000000000000000000000 {
-                ffFactoryAddress := SWAPX_FF_FACTORY
-                codeHash := SWAPX_CODE_HASH
+                ffFactoryAddress := HERCULES_FF_FACTORY
+                codeHash := HERCULES_CODE_HASH
 
                 let _amount1 := calldataload(36)
                 switch sgt(_amount1, 0)

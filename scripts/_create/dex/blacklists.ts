@@ -20,4 +20,13 @@ export const DEX_TO_CHAINS_EXCLUSIONS: { [dex: string]: string[] } = {
         Chain.POLYGON_MAINNET,
         Chain.OP_MAINNET,
     ],
+    [DexProtocol.WAGMI]: [
+        Chain.ZKLINK_NOVA_MAINNET,
+        Chain.ETHEREUM_MAINNET,
+        Chain.ZKSYNC_MAINNET,
+        Chain.FANTOM_OPERA,
+        Chain.BASE,
+        Chain.POLYGON_MAINNET,
+        Chain.BNB_SMART_CHAIN_MAINNET,
+    ],
 }
