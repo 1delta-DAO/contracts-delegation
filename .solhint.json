@@ -1,13 +1,8 @@
 {
   "extends": "solhint:default",
-  "plugins": [
-    "prettier"
-  ],
+  "plugins": ["prettier"],
   "rules": {
     "prettier/prettier": "error",
-    "max-line-length": [
-      "error",
-      136
-    ]
+    "max-line-length": ["error", 150]
   }
 }
