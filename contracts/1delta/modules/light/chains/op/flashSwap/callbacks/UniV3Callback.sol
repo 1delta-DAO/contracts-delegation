@@ -23,8 +23,8 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
     bytes32 private constant WAGMI_FF_FACTORY = 0xffC49c177736107fD8351ed6564136B9ADbE5B1eC30000000000000000000000;
     bytes32 private constant WAGMI_CODE_HASH = 0x30146866f3a846fe3c636beb2756dbd24cf321bc52c9113c837c21f47470dfeb;
 
-    bytes32 private constant VELODROME_V3_FACTORY = 0x000000000000000000000000Cc0bDDB707055e04e497aB22a59c2aF4391cd12F;
-    bytes32 private constant VELODROME_V3_IMPLEMENTATION = 0x000000000000000000000000c28aD28853A547556780BEBF7847628501A3bCbb;
+    bytes32 private constant VELODROME_V3_FF_FACTORY = 0xffCc0bDDB707055e04e497aB22a59c2aF4391cd12F0000000000000000000000;
+    bytes32 private constant VELODROME_V3_CODE_HASH = 0x339492e30b7a68609e535da9b0773082bfe60230ca47639ee5566007d525f5a7;
 
     bytes32 private constant DACKIESWAP_V3_FF_FACTORY = 0xffa466ebCfa58848Feb6D8022081f1C21a884889bB0000000000000000000000;
     bytes32 private constant DACKIESWAP_V3_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
@@ -57,7 +57,10 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
                     ffFactoryAddress := WAGMI_FF_FACTORY
                     codeHash := WAGMI_CODE_HASH
                 }
-                case 19 { ffFactoryAddress := VELODROME_V3_FACTORY }
+                case 19 {
+                    ffFactoryAddress := VELODROME_V3_FF_FACTORY
+                    codeHash := VELODROME_V3_CODE_HASH
+                }
                 default { revert(0, 0) }
                 let _amount1 := calldataload(36)
                 switch sgt(_amount1, 0)
@@ -89,73 +92,37 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
             address callerAddress;
             address tokenIn;
             assembly {
-                let ptr
-                let pool
                 tokenIn := shr(96, calldataload(152))
                 let tokenOutAndFee := calldataload(172)
                 let tokenOut := shr(96, tokenOutAndFee)
-                // if the lower bytes are populated, execute the override validation
-                // via a staticcall or Solady clone calculation instead of
-                // a standard address computation
-                // this is sometimes needed if the factory deploys different
-                // pool contracts or something like immutableClone is used
-                switch and(FF_ADDRESS_COMPLEMENT, ffFactoryAddress)
+                let s := mload(0x40)
+                mstore(s, ffFactoryAddress)
+                let p := add(s, 21)
+                // Compute the inner hash in-place
+                switch lt(tokenIn, tokenOut)
                 case 0 {
-                    let s := mload(0x40)
-                    mstore(s, ffFactoryAddress)
-                    let p := add(s, 21)
-                    // Compute the inner hash in-place
-                    switch lt(tokenIn, tokenOut)
-                    case 0 {
-                        mstore(p, tokenOut)
-                        mstore(add(p, 32), tokenIn)
-                    }
-                    default {
-                        mstore(p, tokenIn)
-                        mstore(add(p, 32), tokenOut)
-                    }
-                    // this stores the fee
-                    mstore(add(p, 64), and(UINT16_MASK, shr(72, tokenOutAndFee)))
-                    mstore(p, keccak256(p, 96))
-                    p := add(p, 32)
-                    mstore(p, codeHash)
-
-                    pool := and(ADDRESS_MASK, keccak256(s, 85))
+                    mstore(p, tokenOut)
+                    mstore(add(p, 32), tokenIn)
                 }
                 default {
-                    // Compute Salt
-                    switch lt(tokenIn, tokenOut)
-                    case 0 {
-                        mstore(ptr, tokenOut)
-                        mstore(add(ptr, 32), tokenIn)
-                    }
-                    default {
-                        mstore(ptr, tokenIn)
-                        mstore(add(ptr, 32), tokenOut)
-                    }
-                    // this stores the fee
-                    mstore(add(ptr, 64), and(UINT16_MASK, shr(72, tokenOutAndFee)))
-                    let salt := keccak256(ptr, 96)
-
-                    // get pool by using solady clone calculation
-                    mstore(add(ptr, 0x38), VELODROME_V3_FACTORY)
-                    mstore(add(ptr, 0x24), 0x5af43d82803e903d91602b57fd5bf3ff)
-                    mstore(add(ptr, 0x14), VELODROME_V3_IMPLEMENTATION)
-                    mstore(ptr, 0x3d602d80600a3d3981f3363d3d373d3d3d363d73)
-                    mstore(add(ptr, 0x58), salt)
-                    mstore(add(ptr, 0x78), keccak256(add(ptr, 0x0c), 0x37))
-                    pool := keccak256(add(ptr, 0x43), 0x55)
+                    mstore(p, tokenIn)
+                    mstore(add(p, 32), tokenOut)
                 }
+                // this stores the fee
+                mstore(add(p, 64), and(UINT16_MASK, shr(72, tokenOutAndFee)))
+                mstore(p, keccak256(p, 96))
+                p := add(p, 32)
+                mstore(p, codeHash)
 
-                calldataLength := and(UINT16_MASK, shr(56, tokenOutAndFee))
                 ////////////////////////////////////////////////////
                 // If the caller is not the calculated pool, we revert
                 ////////////////////////////////////////////////////
-
-                if xor(pool, caller()) {
+                if xor(caller(), and(ADDRESS_MASK, keccak256(s, 85))) {
                     mstore(0x0, BAD_POOL)
                     revert(0x0, 0x4)
                 }
+
+                calldataLength := and(UINT16_MASK, shr(56, tokenOutAndFee))
 
                 // get original caller address
                 callerAddress := shr(96, calldataload(132))

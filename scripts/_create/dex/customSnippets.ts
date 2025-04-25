@@ -5,10 +5,11 @@ import { DexProtocol } from "@1delta/dex-registry";
  * these are override snippets to be used
  * where the uni V2 type callback cannot be validated via codeHash and factory address 
  */
-export const customV2ValidationSnippets: { [p: string]: { [c: string]: string } } = {
+export const customV2ValidationSnippets: { [p: string]: { [c: string]: { code: string, constants?: string } } } = {
     // ramses: multiple pool contract implementations
     "RAMSES_V1": {
-        [Chain.ARBITRUM_ONE]: `
+        [Chain.ARBITRUM_ONE]: {
+            code: `
                     // selector for getPair(address,address,bool)
                     mstore(ptr, 0x6801cc3000000000000000000000000000000000000000000000000000000000)
                     mstore(add(ptr, 0x4), shr(96, calldataload(184))) // tokenIn
@@ -18,52 +19,44 @@ export const customV2ValidationSnippets: { [p: string]: { [c: string]: string } 
                     pop(staticcall(gas(), ffFactoryAddress, ptr, 0x48, ptr, 0x20))
                     pool := mload(ptr)
                     `
+        }
     },
     // moe: uses immutable clone, can be calculated, results in bloated bytecode though
     // as this is only V2 and on a L2, we do not care to add a staticcall here
     [DexProtocol.MERCHANT_MOE]: {
-        [Chain.MANTLE]: `
-                    // selector for getPair(address,address)
-                    mstore(ptr, 0xe6a4390500000000000000000000000000000000000000000000000000000000)
-                    mstore(add(ptr, 0x4), shr(96, calldataload(184))) // tokenIn
-                    mstore(add(ptr, 0x24), shr(96, outData)) // tokenOut
-                    // get pair from merchant moe factory
-                    pop(staticcall(gas(), ffFactoryAddress, ptr, 0x48, ptr, 0x20))
-                    pool := mload(ptr)
-                    
-    `},
-    // Solady clone
-    [DexProtocol.VELODROME_V2]: {
-        [Chain.OP_MAINNET]: `
-                    // get tokens
+        [Chain.MANTLE]: {
+            code: `
+                    // immutable clone creation code that includes implementation (0x08477e01A19d44C31E4C11Dc2aC86E3BBE69c28B)
                     let tokenIn := shr(96, calldataload(184))
                     let tokenOut := shr(96, outData)
+                    mstore(ptr, 0x61005f3d81600a3d39f3363d3d373d3d3d3d61002a806035363936013d730847)
+                    mstore(add(ptr, 0x20), 0x7e01a19d44c31e4c11dc2ac86e3bbe69c28b5af43d3d93803e603357fd5bf300)
 
                     switch lt(tokenIn, tokenOut)
                     case 0 {
-                        mstore(add(ptr, 0x14), tokenIn)
-                        mstore(ptr, tokenOut)
+                        mstore(add(ptr, 63), shl(96, tokenOut))
+                        mstore(add(ptr, 83), shl(96, tokenIn))
                     }
                     default {
-                        mstore(add(ptr, 0x14), tokenOut)
-                        mstore(ptr, tokenIn)
+                        mstore(add(ptr, 63), shl(96, tokenIn))
+                        mstore(add(ptr, 83), shl(96, tokenOut))
                     }
-
-                    mstore8(
-                        add(ptr, 0x34),
-                        gt(forkId, 191) // store isStable (id>=192)
-                    )
-                    let salt := keccak256(add(ptr, 0x0C), 0x29)
-
-                    mstore(add(ptr, 0x38), VELODROME_V2_FACTORY)
-                    mstore(add(ptr, 0x24), 0x5af43d82803e903d91602b57fd5bf3ff)
-                    mstore(add(ptr, 0x14), VELODROME_V2_IMPLEMENTATION)
-                    mstore(ptr, 0x3d602d80600a3d3981f3363d3d373d3d3d363d73)
-                    mstore(add(ptr, 0x58), salt)
-                    mstore(add(ptr, 0x78), keccak256(add(ptr, 0x0c), 0x37))
-                    pool := keccak256(add(ptr, 0x43), 0x55)
-                    
-    `}
+                    // salt are the tokens hashed
+                    let salt := keccak256(add(ptr, 63), 0x28)
+                    // last part (only the top 2 bytes are needed)
+                    mstore(add(ptr, 103), 0x002a000000000000000000000000000000000000000000000000000000000000)
+                    let _codeHash := keccak256(ptr, 105)
+                    // the factory here starts with ff and puplates the next upper bytes
+                    mstore(ptr, MERCHANT_MOE_FACTORY)
+                    mstore(add(ptr, 0x15), salt)
+                    mstore(add(ptr, 0x35), _codeHash)
+                    pool := and(ADDRESS_MASK, keccak256(ptr, 0x55))     
+    `,
+            constants: `
+            // lower byte is populated to enter the alternative validation mode
+            bytes32 private constant MERCHANT_MOE_FACTORY = 0xff5bEf015CA9424A7C07B68490616a4C1F094BEdEc0000000000000000000001;`
+        }
+    },
 }
 
 
@@ -73,31 +66,5 @@ export const customV2ValidationSnippets: { [p: string]: { [c: string]: string } 
  * where the uni V3 type callback cannot be validated via codeHash and factory address 
  */
 export const customV3ValidationSnippets: { [p: string]: { [c: string]: string } } = {
-    // Solady clone
-    [DexProtocol.VELODROME_V3]: {
-        [Chain.OP_MAINNET]: `
-                    // Compute Salt
-                    switch lt(tokenIn, tokenOut)
-                    case 0 {
-                        mstore(ptr, tokenOut)
-                        mstore(add(ptr, 32), tokenIn)
-                    }
-                    default {
-                        mstore(ptr, tokenIn)
-                        mstore(add(ptr, 32), tokenOut)
-                    }
-                    // this stores the fee
-                    mstore(add(ptr, 64), and(UINT16_MASK, shr(72, tokenOutAndFee)))
-                    let salt := keccak256(ptr, 96)
 
-                    // get pool by using solady clone calculation
-                    mstore(add(ptr, 0x38), VELODROME_V3_FACTORY)
-                    mstore(add(ptr, 0x24), 0x5af43d82803e903d91602b57fd5bf3ff)
-                    mstore(add(ptr, 0x14), VELODROME_V3_IMPLEMENTATION)
-                    mstore(ptr, 0x3d602d80600a3d3981f3363d3d373d3d3d363d73)
-                    mstore(add(ptr, 0x58), salt)
-                    mstore(add(ptr, 0x78), keccak256(add(ptr, 0x0c), 0x37))
-                    pool := keccak256(add(ptr, 0x43), 0x55)
-                    
-    `}
 }

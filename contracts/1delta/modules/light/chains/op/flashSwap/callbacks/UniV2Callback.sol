@@ -23,8 +23,8 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
     bytes32 private constant SUSHISWAP_V2_FF_FACTORY = 0xffFbc12984689e5f15626Bad03Ad60160Fe98B303C0000000000000000000000;
     bytes32 private constant SUSHISWAP_V2_CODE_HASH = 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f;
 
-    bytes32 private constant VELODROME_V2_FACTORY = 0x000000000000000000000000F1046053aa5682b4F9a81b5481394DA16BE5FF5a;
-    bytes32 private constant VELODROME_V2_IMPLEMENTATION = 0x00000000000000000000000095885Af5492195F0754bE71AD1545Fe81364E531;
+    bytes32 private constant VELODROME_V2_FF_FACTORY = 0xffF1046053aa5682b4F9a81b5481394DA16BE5FF5a0000000000000000000000;
+    bytes32 private constant VELODROME_V2_CODE_HASH = 0xc0629f1c7daa09624e54d4f711ba99922a844907cce02997176399e4cc7e8fcf;
 
     bytes32 private constant VELODROME_V1_FF_FACTORY = 0xff25CbdDb98b35ab1FF77413456B31EC81A6B6B7460000000000000000000000;
     bytes32 private constant VELODROME_V1_CODE_HASH = 0xc1ac28b1c4ebe53c0cff67bab5878c4eb68759bb1e9f73977cd266b247d149f0;
@@ -64,7 +64,10 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
                 }
                 default {
                     switch or(eq(forkId, 138), eq(forkId, 202))
-                    case 1 { ffFactoryAddress := VELODROME_V2_FACTORY }
+                    case 1 {
+                        ffFactoryAddress := VELODROME_V2_FF_FACTORY
+                        codeHash := VELODROME_V2_CODE_HASH
+                    }
                     default { revert(0, 0) }
                 }
             }
@@ -80,76 +83,38 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
                     revert(0, 0x4)
                 }
 
-                let ptr
-                let pool
-                // if the lower bytes are populated, execute the override validation
-                // via a staticcall or Solady clone calculation instead of
-                // a standard address computation
-                // this is sometimes needed if the factory deploys different
-                // pool contracts or something like immutableClone is used
-                switch and(FF_ADDRESS_COMPLEMENT, ffFactoryAddress)
-                case 0 {
-                    // get tokens
-                    let tokenIn := shr(96, calldataload(184))
-                    let tokenOut := shr(96, outData)
+                // get tokens
+                let tokenIn := shr(96, calldataload(184))
+                let tokenOut := shr(96, outData)
 
-                    switch lt(tokenIn, tokenOut)
-                    case 0 {
-                        mstore(add(ptr, 0x14), tokenIn)
-                        mstore(ptr, tokenOut)
-                    }
-                    default {
-                        mstore(add(ptr, 0x14), tokenOut)
-                        mstore(ptr, tokenIn)
-                    }
-                    let salt
-                    // 128 and higher is solidly
-                    // 128-130 are reserved for the ones that have no isStable flag
-                    switch gt(forkId, 130)
-                    case 1 {
-                        mstore8(
-                            add(ptr, 0x34),
-                            gt(forkId, 191) // store isStable (id>=192)
-                        )
-                        salt := keccak256(add(ptr, 0x0C), 0x29)
-                    }
-                    default { salt := keccak256(add(ptr, 0x0C), 0x28) }
-                    mstore(ptr, ffFactoryAddress)
-                    mstore(add(ptr, 0x15), salt)
-                    mstore(add(ptr, 0x35), codeHash)
-                    pool := and(ADDRESS_MASK, keccak256(ptr, 0x55))
+                let ptr := mload(0x40)
+                switch lt(tokenIn, tokenOut)
+                case 0 {
+                    mstore(add(ptr, 0x14), tokenIn)
+                    mstore(ptr, tokenOut)
                 }
                 default {
-                    // get tokens
-                    let tokenIn := shr(96, calldataload(184))
-                    let tokenOut := shr(96, outData)
-
-                    switch lt(tokenIn, tokenOut)
-                    case 0 {
-                        mstore(add(ptr, 0x14), tokenIn)
-                        mstore(ptr, tokenOut)
-                    }
-                    default {
-                        mstore(add(ptr, 0x14), tokenOut)
-                        mstore(ptr, tokenIn)
-                    }
-
+                    mstore(add(ptr, 0x14), tokenOut)
+                    mstore(ptr, tokenIn)
+                }
+                let salt
+                // 128 and higher is solidly
+                // 128-130 are reserved for the ones that have no isStable flag
+                switch gt(forkId, 130)
+                case 1 {
                     mstore8(
                         add(ptr, 0x34),
                         gt(forkId, 191) // store isStable (id>=192)
                     )
-                    let salt := keccak256(add(ptr, 0x0C), 0x29)
-
-                    mstore(add(ptr, 0x38), VELODROME_V2_FACTORY)
-                    mstore(add(ptr, 0x24), 0x5af43d82803e903d91602b57fd5bf3ff)
-                    mstore(add(ptr, 0x14), VELODROME_V2_IMPLEMENTATION)
-                    mstore(ptr, 0x3d602d80600a3d3981f3363d3d373d3d3d363d73)
-                    mstore(add(ptr, 0x58), salt)
-                    mstore(add(ptr, 0x78), keccak256(add(ptr, 0x0c), 0x37))
-                    pool := keccak256(add(ptr, 0x43), 0x55)
+                    salt := keccak256(add(ptr, 0x0C), 0x29)
                 }
+                default { salt := keccak256(add(ptr, 0x0C), 0x28) }
+                mstore(ptr, ffFactoryAddress)
+                mstore(add(ptr, 0x15), salt)
+                mstore(add(ptr, 0x35), codeHash)
+
                 // verify that the caller is a v2 type pool
-                if xor(pool, caller()) {
+                if xor(and(ADDRESS_MASK, keccak256(ptr, 0x55)), caller()) {
                     mstore(0x0, BAD_POOL)
                     revert(0x0, 0x4)
                 }

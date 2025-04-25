@@ -28,11 +28,10 @@ function createConstant(pool: string, lender: string) {
  * constants imports for uni V2s and V3s
  * respect overrdides that populate lower bytes and have no code hash 
  */
-function createffAddressConstant(pool: string, dexName: string, codeHash: string, impl?: string) {
+function createffAddressConstant(pool: string, dexName: string, codeHash: string, overrideConstants?: string) {
     if (codeHash === DexValidation.OVERRIDE)
         return `
-            bytes32 private constant ${dexName}_FACTORY = 0x000000000000000000000000${getAddress(pool).replace("0x", "")};
-            ${impl ? `bytes32 private constant ${dexName}_IMPLEMENTATION = 0x000000000000000000000000${getAddress(impl).replace("0x", "")};` : ""}
+            ${overrideConstants ? overrideConstants : `bytes32 private constant ${dexName}_FACTORY = 0x000000000000000000000000${getAddress(pool).replace("0x", "")};`}
             `
     return `
             bytes32 private constant ${dexName}_FF_FACTORY = ${getAddress(pool).replace("0x", "0xff")}0000000000000000000000;
@@ -228,7 +227,7 @@ async function main() {
                             pool: address,
                             codeHash: maps.codeHash[chain] ?? maps.codeHash.default,
                             callbackSelector: maps.callbackSelector,
-                            impl: maps.implementation?.[chain]
+                            impl: customV2ValidationSnippets[dex]?.[chain]?.constants
                         })
                 }
             });
@@ -249,7 +248,7 @@ async function main() {
                             pool: address,
                             codeHash: maps.codeHash[chain] ?? maps.codeHash.default,
                             callbackSelector: maps.callbackSelector,
-                            impl: maps.implementation?.[chain]
+                            impl: customV2ValidationSnippets[dex]?.[chain]?.constants
                         })
                 }
             });
@@ -354,7 +353,7 @@ async function main() {
             switchCaseContentV2 += `}\n`
             if (overriddenIds.length > 0) {
                 if (overriddenIds.length > 1) throw new Error("2 overrides not supported")
-                v2OverrideData = customV2ValidationSnippets[overriddenIds[0].entityName as any][chain as any]
+                v2OverrideData = customV2ValidationSnippets[overriddenIds[0].entityName as any][chain as any]?.code
                 // set fag to true for validation at the bottom
                 hasV2Override = true
             }

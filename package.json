@@ -80,7 +80,7 @@
   },
   "dependencies": {
     "@1delta/asset-registry": "^0.0.122",
-    "@1delta/dex-registry": "^0.0.26",
+    "@1delta/dex-registry": "^0.0.28",
     "@chainlink/contracts": "^0.6.1",
     "@defi-wonderland/smock": "^2.0.7",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.8",

@@ -75,10 +75,9 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
 }
 `
 
-
 function overrideContent(data: string) {
     return `
-        let ptr
+        let ptr := mload(0x40)
         let pool
         // if the lower bytes are populated, execute the override validation
         // via a staticcall or Solady clone calculation instead of
