@@ -2,11 +2,12 @@
   "compilerOptions": {
     "allowJs": true,
     "target": "es2021",
-    "module": "commonjs",
     "strict": true,
     "esModuleInterop": true,
     "outDir": "dist",
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "moduleResolution": "nodenext", // or "node16"
+    "module": "nodenext",
   },
   "include": [
     "./scripts",

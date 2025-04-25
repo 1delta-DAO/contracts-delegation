@@ -9,11 +9,11 @@ importers:
   .:
     dependencies:
       '@1delta/asset-registry':
-        specifier: ^0.0.119
-        version: 0.0.119
+        specifier: ^0.0.122
+        version: 0.0.122
       '@1delta/dex-registry':
-        specifier: ^0.0.19
-        version: 0.0.19
+        specifier: ^0.0.23
+        version: 0.0.23
       '@chainlink/contracts':
         specifier: ^0.6.1
         version: 0.6.1(bufferutil@4.0.9)(ethers@5.8.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)
@@ -43,7 +43,7 @@ importers:
         version: 1.0.1
       axios:
         specifier: ^1.4.0
-        version: 1.8.4(debug@4.4.0)
+        version: 1.9.0(debug@4.4.0)
       decimal.js:
         specifier: ^10.3.1
         version: 10.5.0
@@ -189,12 +189,12 @@ importers:
 
 packages:
 
-  '@1delta/asset-registry@0.0.119':
-    resolution: {integrity: sha512-WKIpkk//1EGwOSjmpfu7r1yBfk4Odpr3wX6OMqkC1zRNxGpnt4nGgvyt9ka6Kj9LcxcqQT2GixW8DGGKYQoO1Q==}
+  '@1delta/asset-registry@0.0.122':
+    resolution: {integrity: sha512-zbt1PxRV0FjZEn7xgFkpdKjmwUxhyEFbsmuenATBbXiifSq0EDe5mTZ1alv26F0kHYvkHfAEMUvDVyV9wFSKvg==}
     engines: {node: '>=20'}
 
-  '@1delta/dex-registry@0.0.19':
-    resolution: {integrity: sha512-AsFJXChAa04r2hhKM7HpfkZKC8hBxhFZD6SBRnF0rcfphWbm63ltTRHUu8QFL9QoWNzxzU17Q3AfpF6axL5NeA==}
+  '@1delta/dex-registry@0.0.23':
+    resolution: {integrity: sha512-u/BxTxRx8g5O3jSx+p+dc6nQMTba4XHonGar8Z0X+VFXN5hJJEuBhQwc4CPAscrtX15YiK26gaOWhe0Zgasu9A==}
     engines: {node: '>=20'}
 
   '@ampproject/remapping@2.3.0':
@@ -696,6 +696,10 @@ packages:
     resolution: {integrity: sha512-biZ0NUSxyjLLqo6KxEJ1b+C2NAx0wtDoFvCaXHGgUkeHzf3Xc1xKumFKREuT7f7DARNZ/slvYUwFG6B0f2b6hQ==}
     engines: {node: ^14.21.3 || >=16}
 
+  '@noble/hashes@1.8.0':
+    resolution: {integrity: sha512-jCs9ldd7NwzpgXDIf6P3+NrHh9/sD6CQdxHyjQI+h/6rDNo88ypBxxz45UDuZHz9r3tNz7N/VInSVoVdtXEI4A==}
+    engines: {node: ^14.21.3 || >=16}
+
   '@noble/secp256k1@1.7.1':
     resolution: {integrity: sha512-hOUk6AyBFmqVrv7k5WAw/LpszxVbj9gGN4JRkIX52fdFAj1UA61KXmZDvqVEm+pOyec3+fIeZB02LYa/pWOArw==}
 
@@ -891,8 +895,8 @@ packages:
   '@scure/base@1.1.9':
     resolution: {integrity: sha512-8YKhl8GHiNI/pU2VMaofa2Tor7PJRAjwQLBBuilkJ9L5+13yVbC7JO/wS7piioAvPSwR3JKM1IJ/u4xQzbcXKg==}
 
-  '@scure/base@1.2.4':
-    resolution: {integrity: sha512-5Yy9czTO47mqz+/J8GM6GIId4umdCk1wc1q8rKERQulIoc8VP9pzDcghv10Tl2E7R96ZUx/PhND3ESYUQX8NuQ==}
+  '@scure/base@1.2.5':
+    resolution: {integrity: sha512-9rE6EOVeIQzt5TSu4v+K523F8u6DhBsoZWPGKlnCshhlDhy0kJzUX4V+tr2dWmzF1GdekvThABoEQBGBQI7xZw==}
 
   '@scure/bip32@1.1.5':
     resolution: {integrity: sha512-XyNh1rB0SkEqd3tXcXMi+Xe1fvg+kUIcoRIEujP1Jgv7DqW2r9lg3Ah0NkFaCs9sTkQAQA8kw7xiRXzENi9Rtw==}
@@ -1520,8 +1524,8 @@ packages:
   axios@0.27.2:
     resolution: {integrity: sha512-t+yRIyySRTp/wua5xEr+z1q60QmLq8ABsS5O9Me1AsE5dfKqgnCFzwiCZZ/cGNd1lq4/7akDWMxdhVlucjmnOQ==}
 
-  axios@1.8.4:
-    resolution: {integrity: sha512-eBSYY4Y68NNlHbHBMdeDmKNtDgXWhQsJcGqzO3iLUM0GraQFSS9cVgPX5I9b3lbdFKyYoAEGAZF1DwhTaljNAw==}
+  axios@1.9.0:
+    resolution: {integrity: sha512-re4CqKTJaURpzbLHtIi6XpDv20/CnpXOtjRY5/CU32L8gU8ek9UIivcfvSWvmKEngmVbrUtPpdDwWDWL7DNHvg==}
 
   babel-code-frame@6.26.0:
     resolution: {integrity: sha512-XqYMR2dfdGMW+hd0IUZ2PwK+fGeFkOxZJ0wY+JaQAHzt1Zx8LcvpiZD2NiGkEG8qx0CfkAOr5xt76d1e8vG90g==}
@@ -2480,8 +2484,8 @@ packages:
   ee-first@1.1.1:
     resolution: {integrity: sha512-WMwm9LhRUo+WUaRN+vRuETqG89IgZphVSNkdFgeb6sS/E4OrDIN7t48CAewSHXc6C8lefD8KKfr5vY61brQlow==}
 
-  electron-to-chromium@1.5.139:
-    resolution: {integrity: sha512-GGnRYOTdN5LYpwbIr0rwP/ZHOQSvAF6TG0LSzp28uCBb9JiXHJGmaaKw29qjNJc5bGnnp6kXJqRnGMQoELwi5w==}
+  electron-to-chromium@1.5.142:
+    resolution: {integrity: sha512-Ah2HgkTu/9RhTDNThBtzu2Wirdy4DC9b0sMT1pUhbkZQ5U/iwmE+PHZX1MpjD5IkJCc2wSghgGG/B04szAx07w==}
 
   elliptic@6.5.4:
     resolution: {integrity: sha512-iLhC6ULemrljPZb+QutR5TQGB+pdW6KGD5RSegS+8sorOZT+rdQFbsQFJgvN3eRqNALqJer4oQ16YvJHlU8hzQ==}
@@ -3984,8 +3988,8 @@ packages:
   json-stable-stringify-without-jsonify@1.0.1:
     resolution: {integrity: sha512-Bdboy+l7tA3OGW6FjyFHWkP5LuByj1Tk33Ljyq0axyzdk9//JSi2u3fP1QSmd1KNwq6VOKYGlAu87CisVir6Pw==}
 
-  json-stable-stringify@1.2.1:
-    resolution: {integrity: sha512-Lp6HbbBgosLmJbjx0pBLbgvx68FaFU1sdkmBuckmhhJ88kL13OA51CDtR2yJB50eCNMH9wRqtQNNiAqQH4YXnA==}
+  json-stable-stringify@1.3.0:
+    resolution: {integrity: sha512-qtYiSSFlwot9XHtF9bD9c7rwKjr+RecWT//ZnPvSmEjpV5mmPOCN4j8UjY5hbjNkOwZ/jQv3J6R1/pL7RwgMsg==}
     engines: {node: '>= 0.4'}
 
   json-stream-stringify@3.1.6:
@@ -4293,8 +4297,8 @@ packages:
   micro-ftch@0.3.1:
     resolution: {integrity: sha512-/0LLxhzP0tfiR5hcQebtudP56gUurs2CLkGarnCiB/OqEyUFQ6U3paQi/tgLv0hBJYt2rnr9MNpxz4fiiugstg==}
 
-  micro-packed@0.7.2:
-    resolution: {integrity: sha512-HJ/u8+tMzgrJVAl6P/4l8KGjJSA3SCZaRb1m4wpbovNScCSmVOGUYbkkcoPPcknCHWPpRAdjy+yqXqyQWf+k8g==}
+  micro-packed@0.7.3:
+    resolution: {integrity: sha512-2Milxs+WNC00TRlem41oRswvw31146GiSaoCT7s3Xi2gMUglW5QBeqlQaZeHr5tJx9nm3i57LNXPqxOOaWtTYg==}
 
   micromatch@3.1.10:
     resolution: {integrity: sha512-MWikgl9n9M3w+bpsY3He8L+w9eF9338xRl8IAO5viDizwSzziFEyUzo2xrrloB64ADbTf8uA8vRqqttDTOmccg==}
@@ -6775,9 +6779,9 @@ packages:
 
 snapshots:
 
-  '@1delta/asset-registry@0.0.119': {}
+  '@1delta/asset-registry@0.0.122': {}
 
-  '@1delta/dex-registry@0.0.19': {}
+  '@1delta/dex-registry@0.0.23': {}
 
   '@ampproject/remapping@2.3.0':
     dependencies:
@@ -7660,6 +7664,8 @@ snapshots:
 
   '@noble/hashes@1.7.2': {}
 
+  '@noble/hashes@1.8.0': {}
+
   '@noble/secp256k1@1.7.1': {}
 
   '@nodelib/fs.scandir@2.1.5':
@@ -7809,7 +7815,7 @@ snapshots:
     dependencies:
       amazon-cognito-identity-js: 6.3.15(encoding@0.1.13)
       async-retry: 1.3.3
-      axios: 1.8.4(debug@4.4.0)
+      axios: 1.9.0(debug@4.4.0)
       lodash: 4.17.21
       node-fetch: 2.7.0(encoding@0.1.13)
     transitivePeerDependencies:
@@ -7897,7 +7903,7 @@ snapshots:
 
   '@scure/base@1.1.9': {}
 
-  '@scure/base@1.2.4': {}
+  '@scure/base@1.2.5': {}
 
   '@scure/bip32@1.1.5':
     dependencies:
@@ -8021,7 +8027,7 @@ snapshots:
   '@tenderly/hardhat-integration@1.1.1(@types/node@15.14.9)(bufferutil@4.0.9)(hardhat@2.23.0(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@15.14.9)(typescript@4.9.5))(typescript@4.9.5)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)':
     dependencies:
       '@tenderly/api-client': 1.1.0(ts-node@10.9.2(@types/node@15.14.9)(typescript@4.9.5))(typescript@5.8.3)
-      axios: 1.8.4(debug@4.4.0)
+      axios: 1.9.0(debug@4.4.0)
       dotenv: 16.5.0
       fs-extra: 10.1.0
       hardhat: 2.23.0(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@15.14.9)(typescript@4.9.5))(typescript@4.9.5)(utf-8-validate@5.0.10)
@@ -8589,7 +8595,7 @@ snapshots:
     transitivePeerDependencies:
       - debug
 
-  axios@1.8.4(debug@4.4.0):
+  axios@1.9.0(debug@4.4.0):
     dependencies:
       follow-redirects: 1.15.9(debug@4.4.0)
       form-data: 4.0.2
@@ -9203,12 +9209,12 @@ snapshots:
   browserslist@3.2.8:
     dependencies:
       caniuse-lite: 1.0.30001715
-      electron-to-chromium: 1.5.139
+      electron-to-chromium: 1.5.142
 
   browserslist@4.24.4:
     dependencies:
       caniuse-lite: 1.0.30001715
-      electron-to-chromium: 1.5.139
+      electron-to-chromium: 1.5.142
       node-releases: 2.0.19
       update-browserslist-db: 1.1.3(browserslist@4.24.4)
 
@@ -9940,7 +9946,7 @@ snapshots:
 
   ee-first@1.1.1: {}
 
-  electron-to-chromium@1.5.139: {}
+  electron-to-chromium@1.5.142: {}
 
   elliptic@6.5.4:
     dependencies:
@@ -10301,7 +10307,7 @@ snapshots:
   eth-gas-reporter@0.2.27(bufferutil@4.0.9)(utf-8-validate@5.0.10):
     dependencies:
       '@solidity-parser/parser': 0.14.5
-      axios: 1.8.4(debug@4.4.0)
+      axios: 1.9.0(debug@4.4.0)
       cli-table3: 0.5.1
       colors: 1.4.0
       ethereum-cryptography: 1.2.0
@@ -10340,7 +10346,7 @@ snapshots:
       fetch-ponyfill: 4.1.0
       json-rpc-engine: 3.8.0
       json-rpc-error: 2.0.0
-      json-stable-stringify: 1.2.1
+      json-stable-stringify: 1.3.0
       promise-to-callback: 1.0.0
       tape: 4.17.0
     transitivePeerDependencies:
@@ -10406,7 +10412,7 @@ snapshots:
 
   ethereum-bloom-filters@1.2.0:
     dependencies:
-      '@noble/hashes': 1.7.2
+      '@noble/hashes': 1.8.0
 
   ethereum-common@0.0.18: {}
 
@@ -12125,7 +12131,7 @@ snapshots:
 
   json-stable-stringify-without-jsonify@1.0.1: {}
 
-  json-stable-stringify@1.2.1:
+  json-stable-stringify@1.3.0:
     dependencies:
       call-bind: 1.0.8
       call-bound: 1.0.4
@@ -12473,13 +12479,13 @@ snapshots:
     dependencies:
       '@noble/curves': 1.8.2
       '@noble/hashes': 1.7.2
-      micro-packed: 0.7.2
+      micro-packed: 0.7.3
 
   micro-ftch@0.3.1: {}
 
-  micro-packed@0.7.2:
+  micro-packed@0.7.3:
     dependencies:
-      '@scure/base': 1.2.4
+      '@scure/base': 1.2.5
 
   micromatch@3.1.10:
     dependencies:
@@ -15240,7 +15246,7 @@ snapshots:
       ethereumjs-util: 5.2.1
       ethereumjs-vm: 2.6.0
       json-rpc-error: 2.0.0
-      json-stable-stringify: 1.2.1
+      json-stable-stringify: 1.3.0
       promise-to-callback: 1.0.0
       readable-stream: 2.3.8
       request: 2.88.2

@@ -81,6 +81,7 @@ async function main() {
 
     for (let i = 0; i < chains.length; i++) {
         const chain = chains[i]
+        console.log(`Start: ${chain}`);
         const key = getChainKey(chain)
 
         /** Create  `FlashLoanIdData` for each entity */

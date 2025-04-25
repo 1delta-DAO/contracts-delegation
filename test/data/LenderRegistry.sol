@@ -1656,6 +1656,62 @@ contract LenderRegistry {
         );
         lendingControllers[Chains.GNOSIS][Lenders.AGAVE] = 0x5E15d5E33d318dCEd84Bfe3F4EACe07909bE6d9c;
         lendingControllers[Chains.CELO_MAINNET][Lenders.MOOLA] = 0x970b12522CA9b4054807a2c5B736149a5BE6f670;
+        lendingTokens[Chains.OP_MAINNET][Lenders.XLEND][0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1] = LenderTokens(
+            0x80F7084272D861f5c5F5f60648c085B1F7a2FE41, 0x01b7435E33844fbBaF948a8C88FBfB8C67A4e663, 0xb29e1Dab375A2247C2972707884149a78F956f43
+        );
+        lendingTokens[Chains.OP_MAINNET][Lenders.XLEND][0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85] = LenderTokens(
+            0xbA2111F1498627E66f930cC539b7fbBdd5044F6D, 0x60C85491232E553B5D8121d41ecd41CEFdB034B9, 0x445E23254D207a9eb9E4D8B1c67e6418Fc95b745
+        );
+        lendingTokens[Chains.OP_MAINNET][Lenders.XLEND][0x4200000000000000000000000000000000000006] = LenderTokens(
+            0xf58BEc4C57F8A459dB9840236613082aE17eb23F, 0x3663d302ce1294d182BAfeC89b4B28345fa99db3, 0x767b87aC92612Ec7F26dfDab82C4c99E92efEa53
+        );
+        lendingTokens[Chains.OP_MAINNET][Lenders.XLEND][0x94b008aA00579c1307B0EF2c499aD98a8ce58e58] = LenderTokens(
+            0xea299346c31a13f85CCf70Ca337d83e93EA6BdF3, 0x49C7B5dd887e4fF60416b420e110a6f09F5A9702, 0xAa790Dc3d7a83d53b5673e63F0550285f587C5fA
+        );
+        lendingTokens[Chains.OP_MAINNET][Lenders.XLEND][0x1F32b1c2345538c0c6f582fCB022739c4A194Ebb] = LenderTokens(
+            0xe40EC46C8554eDAf61829AC68c0AE8183B0b23B5, 0xC71dC31bF7989E78f9E6Cc167Ede9141b83535D7, 0x860d4AC5DbD3e4bD1201F008821D8A5d01967Ed3
+        );
+        lendingTokens[Chains.OP_MAINNET][Lenders.XLEND][0x4200000000000000000000000000000000000042] = LenderTokens(
+            0xb4F8a17E9917a7dd45C3726041bCD3848C5c2e94, 0x7C47c84C57a9237ed8164E30db7e7b7F4bba5d59, 0x9197F86e017a631204643Ba22057EE241151248E
+        );
+        lendingTokens[Chains.OP_MAINNET][Lenders.XLEND][0x68f180fcCe6836688e9084f035309E29Bf0A2095] = LenderTokens(
+            0x920f4A7510f138b1FcD90a8a7DdedB7b4Cb0a04F, 0x2f48c271a55c3CBD3514c51D343E72d681284326, 0x7E20eB4C24C2cbD200a01141cc59d6A998A35617
+        );
+        lendingTokens[Chains.OP_MAINNET][Lenders.XLEND][0x9Bcef72be871e61ED4fBbc7630889beE758eb81D] = LenderTokens(
+            0x15e24124E93892EdCDbb835Fe82C00Ff2eb0e766, 0x856A83D43243871924B9214201CB1e2BC250Bf9C, 0x051fd6Cc4aE259bB8bc8555d218D52D6A5A094A4
+        );
+        lendingTokens[Chains.BASE][Lenders.XLEND][0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913] = LenderTokens(
+            0xf17182f6f28Ded63B77A2Bb774c58aDe44612bE4, 0x26CeD5493511cAB401C64a58a5F29D55Dbe494c5, 0xEd72525251946b960494a07217B36091Fe242F7C
+        );
+        lendingTokens[Chains.BASE][Lenders.XLEND][0x4200000000000000000000000000000000000006] = LenderTokens(
+            0x9Ef15597B0B900bfceE4A77204F72bd20C85d7c8, 0xe99Ec9b8EA5322D8B5BDC66dad3D2294dC61b740, 0x14124Fc9f01978bc64a82ABF72D22430F6b1ee16
+        );
+        lendingTokens[Chains.BASE][Lenders.XLEND][0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452] = LenderTokens(
+            0x749Fc8D298A41A55AB305164602a185dB29f8F2B, 0x28bBF6ca0762e9Ba99d0745F079f71BfD8A7D0D6, 0xE58e662C2CFcaD5947c913BC35Faf75b2D14d064
+        );
+        lendingTokens[Chains.BASE][Lenders.XLEND][0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22] = LenderTokens(
+            0x2308Fc7785597cC40aB53f302b491294b8d8d8bE, 0x3d54e017E1902c055a1FDCee85B0117A52dFcFf1, 0x6aDDA94f5576b8490BA58F0046021162353426cd
+        );
+        lendingTokens[Chains.BASE][Lenders.XLEND][0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf] = LenderTokens(
+            0xdf2730830c77780A11248945C342c002DB73A8Be, 0x2AF3a2518d0a33907b0647E0654b75939dCA4D8A, 0xF01E3b5653fcCb1ECf1344BC739C39b0fee5D043
+        );
+        lendingTokens[Chains.BASE][Lenders.XLEND][0x04C0599Ae5A44757c0af6F9eC3b93da8976c150A] = LenderTokens(
+            0x951092b1eD953D0879E3840489bE6Fbfc4Ad363D, 0xa47f8E51DF05131A9330795c2f67f555710b1b97, 0x96d1B6cf9C825eDb3abC852a26176E94B8530bF0
+        );
+        lendingTokens[Chains.BASE][Lenders.XLEND][0xB6fe221Fe9EeF5aBa221c348bA20A1Bf5e73624c] = LenderTokens(
+            0x2Bc746DCa46776B34a065A5b2F675104368a491E, 0x36D7ad88CD411300CfA0fBB2114f8ef803E26e3c, 0x0f51Ae264c08f67F031372BBB700587db077FfA7
+        );
+        lendingTokens[Chains.BASE][Lenders.XLEND][0x940181a94A35A4569E4529A3CDfB74e38FD98631] = LenderTokens(
+            0x227545F1d9cDf944f0badFCf91c5EfE90E7c068f, 0xC3aB85875aF5Ba1eb38F33FeAEE3758521CdBcF8, 0x09FB5be9E15161be6Ad72353854cE79d0aB5C56f
+        );
+        lendingTokens[Chains.BASE][Lenders.XLEND][0xecAc9C5F704e954931349Da37F60E39f515c11c1] = LenderTokens(
+            0x2e326563baC9A17B3e12dB45d2A2a86f9f734F6f, 0x628194170111B7DEA9B4F8DA882CD9797d6a865f, 0x12E0563befC020088c1F695C37127DD981D2FAEB
+        );
+        lendingTokens[Chains.BASE][Lenders.XLEND][0xEDfa23602D0EC14714057867A78d01e94176BEA0] = LenderTokens(
+            0xa6d1c5419Ac814240A75935d094131A37B8616D2, 0x8bAfC99f2Bf1DbD85b447D8D291E4C63aE9dEFE8, 0x89C71EdE3033Ea0B6914F8F2C7d3B245e9f59904
+        );
+        lendingControllers[Chains.OP_MAINNET][Lenders.XLEND] = 0x345D2827f36621b02B783f7D5004B4a2fec00186;
+        lendingControllers[Chains.BASE][Lenders.XLEND] = 0x09b11746DFD1b5a8325e30943F8B3D5000922E03;
 
         // Initialize Compound V3 protocol data
         lendingControllers[Chains.ETHEREUM_MAINNET][Lenders.COMPOUND_V3_USDC] = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
@@ -2151,6 +2207,7 @@ contract LenderRegistry {
         tokens[Chains.BASE][Tokens.WSUPEROETHB] = 0x7FcD174E80f264448ebeE8c88a7C4476AAF58Ea6;
         tokens[Chains.BASE][Tokens.ZAI] = 0x69000dFD5025E82f48Eb28325A2B88a241182CEd;
         tokens[Chains.BASE][Tokens.DAI] = 0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb;
+        tokens[Chains.BASE][Tokens.RETH] = 0xB6fe221Fe9EeF5aBa221c348bA20A1Bf5e73624c;
         tokens[Chains.MODE][Tokens.SOLVBTC] = 0x541FD749419CA806a8bc7da8ac23D346f2dF8B77;
         tokens[Chains.MODE][Tokens.M_BTC] = 0x59889b7021243dB5B1e065385F918316cD90D46c;
         tokens[Chains.MODE][Tokens.UNIBTC] = 0x6B2a01A5f79dEb4c2f3c0eDa7b01DF456FbD726a;
@@ -2447,6 +2504,7 @@ library Lenders {
     string internal constant MAGSIN = "MAGSIN";
     string internal constant AGAVE = "AGAVE";
     string internal constant MOOLA = "MOOLA";
+    string internal constant XLEND = "XLEND";
     string internal constant COMPOUND_V3_USDC = "COMPOUND_V3_USDC";
     string internal constant COMPOUND_V3_WETH = "COMPOUND_V3_WETH";
     string internal constant COMPOUND_V3_USDT = "COMPOUND_V3_USDT";
@@ -2495,7 +2553,8 @@ library Lenders {
             || _lender == keccak256(abi.encodePacked((YLDR))) || _lender == keccak256(abi.encodePacked((IRONCLAD_FINANCE)))
             || _lender == keccak256(abi.encodePacked((MOLEND))) || _lender == keccak256(abi.encodePacked((SEISMIC)))
             || _lender == keccak256(abi.encodePacked((POLTER))) || _lender == keccak256(abi.encodePacked((MAGSIN)))
-            || _lender == keccak256(abi.encodePacked((AGAVE))) || _lender == keccak256(abi.encodePacked((MOOLA)));
+            || _lender == keccak256(abi.encodePacked((AGAVE))) || _lender == keccak256(abi.encodePacked((MOOLA)))
+            || _lender == keccak256(abi.encodePacked((XLEND)));
     }
 
     function isCompoundV3(string memory lender) internal pure returns (bool isCompoundV3Flag) {
