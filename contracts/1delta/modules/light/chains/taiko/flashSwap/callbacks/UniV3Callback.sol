@@ -56,7 +56,7 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
                     ffFactoryAddress := UNISWAP_V3_FF_FACTORY
                     codeHash := UNISWAP_V3_CODE_HASH
                 }
-                case 9 {
+                case 10 {
                     ffFactoryAddress := DTX_FF_FACTORY
                     codeHash := DTX_CODE_HASH
                 }

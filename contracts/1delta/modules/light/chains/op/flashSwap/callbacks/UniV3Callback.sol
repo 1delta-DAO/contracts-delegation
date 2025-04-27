@@ -20,14 +20,11 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
     bytes32 private constant UNISWAP_V3_FF_FACTORY = 0xff1F98431c8aD98523631AE4a59f267346ea31F9840000000000000000000000;
     bytes32 private constant UNISWAP_V3_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
 
-    bytes32 private constant WAGMI_FF_FACTORY = 0xffC49c177736107fD8351ed6564136B9ADbE5B1eC30000000000000000000000;
-    bytes32 private constant WAGMI_CODE_HASH = 0x30146866f3a846fe3c636beb2756dbd24cf321bc52c9113c837c21f47470dfeb;
+    bytes32 private constant SUSHISWAP_V3_FF_FACTORY = 0xff9c6522117e2ed1fE5bdb72bb0eD5E3f2bdE7DBe00000000000000000000000;
+    bytes32 private constant SUSHISWAP_V3_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
 
     bytes32 private constant VELODROME_V3_FF_FACTORY = 0xffCc0bDDB707055e04e497aB22a59c2aF4391cd12F0000000000000000000000;
     bytes32 private constant VELODROME_V3_CODE_HASH = 0x339492e30b7a68609e535da9b0773082bfe60230ca47639ee5566007d525f5a7;
-
-    bytes32 private constant DACKIESWAP_V3_FF_FACTORY = 0xffa466ebCfa58848Feb6D8022081f1C21a884889bB0000000000000000000000;
-    bytes32 private constant DACKIESWAP_V3_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
 
     bytes32 private constant ZYBERSWAP_FF_FACTORY = 0xffc0D4323426C709e8D04B5b130e7F059523464a910000000000000000000000;
     bytes32 private constant ZYBERSWAP_CODE_HASH = 0xbce37a54eab2fcd71913a0d40723e04238970e7fc1159bfd58ad5b79531697e7;
@@ -53,24 +50,15 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
                     ffFactoryAddress := UNISWAP_V3_FF_FACTORY
                     codeHash := UNISWAP_V3_CODE_HASH
                 }
-                case 15 {
-                    ffFactoryAddress := WAGMI_FF_FACTORY
-                    codeHash := WAGMI_CODE_HASH
+                case 1 {
+                    ffFactoryAddress := SUSHISWAP_V3_FF_FACTORY
+                    codeHash := SUSHISWAP_V3_CODE_HASH
                 }
                 case 19 {
                     ffFactoryAddress := VELODROME_V3_FF_FACTORY
                     codeHash := VELODROME_V3_CODE_HASH
                 }
                 default { revert(0, 0) }
-                let _amount1 := calldataload(36)
-                switch sgt(_amount1, 0)
-                case 1 { amountToPay := _amount1 }
-                default { amountToPay := calldataload(4) }
-            }
-            case 0x23a69e7500000000000000000000000000000000000000000000000000000000 {
-                ffFactoryAddress := DACKIESWAP_V3_FF_FACTORY
-                codeHash := DACKIESWAP_V3_CODE_HASH
-
                 let _amount1 := calldataload(36)
                 switch sgt(_amount1, 0)
                 case 1 { amountToPay := _amount1 }

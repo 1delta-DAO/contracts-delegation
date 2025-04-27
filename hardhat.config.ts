@@ -178,10 +178,10 @@ const config: HardhatUserConfig = {
       metis: "XX",
       avalanche: "XX",
       hemi: "XX",
-      core:  process.env.CORESCAN_API_KEY ?? '',
-      sonic:  process.env.SONICSCAN_API_KEY ?? '',
-      scroll:  process.env.SCROLLSCAN_API_KEY ?? '',
-      fantom:  process.env.FANTOMSCAN_API_KEY ?? '',
+      core: process.env.CORESCAN_API_KEY ?? '',
+      sonic: process.env.SONICSCAN_API_KEY ?? '',
+      scroll: process.env.SCROLLSCAN_API_KEY ?? '',
+      fantom: process.env.FANTOMSCAN_API_KEY ?? '',
     }
   },
   gasReporter: {
@@ -364,7 +364,7 @@ const config: HardhatUserConfig = {
       live: true,
     },
     optimism: {
-      url: "https://rpc.ankr.com/optimism",
+      url: "https://mainnet.optimism.io",
       live: true,
       accounts,
     },

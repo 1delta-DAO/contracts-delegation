@@ -11,11 +11,13 @@ export const CREATE_CHAIN_IDS = [
     Chain.POLYGON_MAINNET,
     Chain.TAIKO_ALETHIA,
     Chain.MANTLE,
-    // Chain.MODE,
-    // Chain.AVALANCHE_C_CHAIN,
+    Chain.CELO_MAINNET,
+    Chain.GNOSIS,
+    Chain.AVALANCHE_C_CHAIN,
     Chain.SONIC_MAINNET,
     Chain.OP_MAINNET,
-    // Chain.ETHEREUM_MAINNET
+    Chain.SCROLL,
+    Chain.LINEA,
 ]
 
 export function sortForks<T>(arr: T[], field: keyof T) {

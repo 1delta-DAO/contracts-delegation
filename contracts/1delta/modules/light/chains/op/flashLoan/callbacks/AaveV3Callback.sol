@@ -46,7 +46,7 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
                     revert(0, 0x4)
                 }
             }
-            case 15 {
+            case 85 {
                 if xor(caller(), XLEND) {
                     mstore(0, INVALID_CALLER)
                     revert(0, 0x4)

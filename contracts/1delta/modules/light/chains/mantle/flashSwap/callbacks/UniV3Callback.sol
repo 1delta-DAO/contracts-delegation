@@ -38,6 +38,9 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
     bytes32 private constant SWAPSICLE_FF_FACTORY = 0xff9dE2dEA5c68898eb4cb2DeaFf357DFB26255a4aa0000000000000000000000;
     bytes32 private constant SWAPSICLE_CODE_HASH = 0x177d5fbf994f4d130c008797563306f1a168dc689f81b2fa23b4396931014d91;
 
+    bytes32 private constant CLEOPATRA_FF_FACTORY = 0xffAAA32926fcE6bE95ea2c51cB4Fcb60836D320C420000000000000000000000;
+    bytes32 private constant CLEOPATRA_CODE_HASH = 0x1565b129f2d1790f12d45301b9b084335626f0c92410bc43130763b69971135d;
+
     bytes32 private constant IZUMI_FF_FACTORY = 0xff45e5F26451CDB01B0fA1f8582E0aAD9A6F27C2180000000000000000000000;
     bytes32 private constant IZUMI_CODE_HASH = 0xbe0bfe068cdd78cafa3ddd44e214cfa4e412c15d7148e932f8043fe883865e40;
 
@@ -106,6 +109,15 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
             case 0x2c8958f600000000000000000000000000000000000000000000000000000000 {
                 ffFactoryAddress := SWAPSICLE_FF_FACTORY
                 codeHash := SWAPSICLE_CODE_HASH
+
+                let _amount1 := calldataload(36)
+                switch sgt(_amount1, 0)
+                case 1 { amountToPay := _amount1 }
+                default { amountToPay := calldataload(4) }
+            }
+            case 0x654b648700000000000000000000000000000000000000000000000000000000 {
+                ffFactoryAddress := CLEOPATRA_FF_FACTORY
+                codeHash := CLEOPATRA_CODE_HASH
 
                 let _amount1 := calldataload(36)
                 switch sgt(_amount1, 0)

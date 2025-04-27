@@ -11,8 +11,13 @@ import {OneDeltaComposerBase} from "../../../contracts/1delta/modules/light/chai
 import {OneDeltaComposerPolygon} from "../../../contracts/1delta/modules/light/chains/polygon/Composer.sol";
 import {OneDeltaComposerTaiko} from "../../../contracts/1delta/modules/light/chains/taiko/Composer.sol";
 import {OneDeltaComposerMantle} from "../../../contracts/1delta/modules/light/chains/mantle/Composer.sol";
+import {OneDeltaComposerCelo} from "../../../contracts/1delta/modules/light/chains/celo/Composer.sol";
+import {OneDeltaComposerGnosis} from "../../../contracts/1delta/modules/light/chains/gnosis/Composer.sol";
+import {OneDeltaComposerAvalanche} from "../../../contracts/1delta/modules/light/chains/avalanche/Composer.sol";
 import {OneDeltaComposerSonic} from "../../../contracts/1delta/modules/light/chains/sonic/Composer.sol";
 import {OneDeltaComposerOp} from "../../../contracts/1delta/modules/light/chains/op/Composer.sol";
+import {OneDeltaComposerScroll} from "../../../contracts/1delta/modules/light/chains/scroll/Composer.sol";
+import {OneDeltaComposerLinea} from "../../../contracts/1delta/modules/light/chains/linea/Composer.sol";
 
 library ComposerPlugin {
     function getComposer(string memory chainName) public returns (IComposerLike) {
@@ -26,8 +31,13 @@ library ComposerPlugin {
         if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.POLYGON_MAINNET))) return IComposerLike(address(new OneDeltaComposerPolygon()));
         if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.TAIKO_ALETHIA))) return IComposerLike(address(new OneDeltaComposerTaiko()));
         if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.MANTLE))) return IComposerLike(address(new OneDeltaComposerMantle()));
+        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.CELO_MAINNET))) return IComposerLike(address(new OneDeltaComposerCelo()));
+        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.GNOSIS))) return IComposerLike(address(new OneDeltaComposerGnosis()));
+        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.AVALANCHE_C_CHAIN))) return IComposerLike(address(new OneDeltaComposerAvalanche()));
         if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.SONIC_MAINNET))) return IComposerLike(address(new OneDeltaComposerSonic()));
         if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.OP_MAINNET))) return IComposerLike(address(new OneDeltaComposerOp()));
+        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.SCROLL))) return IComposerLike(address(new OneDeltaComposerScroll()));
+        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.LINEA))) return IComposerLike(address(new OneDeltaComposerLinea()));
 
         revert("No composer for chain");
     }

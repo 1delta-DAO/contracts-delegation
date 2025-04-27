@@ -10,8 +10,8 @@ import {DeltaErrors} from "../../../../../shared/errors/Errors.sol";
  */
 contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
     // Aave V3 style lender pool addresses
-    address private constant LENDOS = 0xaA397b29510a7219A0f3f7cE3eb53A09bc2A924c;
     address private constant ZEROLEND = 0xdB7e029394a7cdbE27aBdAAf4D15e78baC34d6E8;
+    address private constant LENDOS = 0xaA397b29510a7219A0f3f7cE3eb53A09bc2A924c;
 
     /**
      * @dev Aave V3 style flash loan callback
@@ -40,14 +40,14 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
             // This is a crucial check since this makes
             // the initiator paramter the caller of flashLoan
             switch and(UINT8_MASK, shr(88, firstWord))
-            case 13 {
-                if xor(caller(), LENDOS) {
+            case 20 {
+                if xor(caller(), ZEROLEND) {
                     mstore(0, INVALID_CALLER)
                     revert(0, 0x4)
                 }
             }
-            case 20 {
-                if xor(caller(), ZEROLEND) {
+            case 83 {
+                if xor(caller(), LENDOS) {
                     mstore(0, INVALID_CALLER)
                     revert(0, 0x4)
                 }

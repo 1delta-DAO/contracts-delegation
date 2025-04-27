@@ -11,6 +11,9 @@ import {DeltaErrors} from "../../../../../shared/errors/Errors.sol";
 contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
     // Aave V3 style lender pool addresses
     address private constant AAVE_V3 = 0x5362dBb1e601abF3a4c14c22ffEdA64042E5eAA3;
+    address private constant AVALON = 0x974E2B16ddbF0ae6F78b4534353c2871213f2Dc9;
+    address private constant AVALON_USDA = 0xD33Ee43551167cdd15Ef9CF87ceecC0fF69Cc922;
+    address private constant AVALON_BEETS = 0x6CCE1BC3fe54C9B1915e5f01ee076E4c4C3Cdd19;
     address private constant MAGSIN = 0x73B635843352aF89278bDe2213866C457C94b271;
 
     /**
@@ -46,7 +49,25 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
                     revert(0, 0x4)
                 }
             }
-            case 14 {
+            case 50 {
+                if xor(caller(), AVALON) {
+                    mstore(0, INVALID_CALLER)
+                    revert(0, 0x4)
+                }
+            }
+            case 55 {
+                if xor(caller(), AVALON_USDA) {
+                    mstore(0, INVALID_CALLER)
+                    revert(0, 0x4)
+                }
+            }
+            case 61 {
+                if xor(caller(), AVALON_BEETS) {
+                    mstore(0, INVALID_CALLER)
+                    revert(0, 0x4)
+                }
+            }
+            case 84 {
                 if xor(caller(), MAGSIN) {
                     mstore(0, INVALID_CALLER)
                     revert(0, 0x4)

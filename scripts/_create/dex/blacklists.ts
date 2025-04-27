@@ -28,5 +28,16 @@ export const DEX_TO_CHAINS_EXCLUSIONS: { [dex: string]: string[] } = {
         Chain.BASE,
         Chain.POLYGON_MAINNET,
         Chain.BNB_SMART_CHAIN_MAINNET,
+        Chain.OP_MAINNET,
+        Chain.AVALANCHE_C_CHAIN,
+    ],
+    [DexProtocol.DACKIESWAP_V3]: [
+        Chain.ARBITRUM_ONE,
+        Chain.X_LAYER_MAINNET,
+        Chain.OP_MAINNET,
+        Chain.LINEA,
+        Chain.MODE,
+        Chain.BLAST,
+        Chain.WORLD_CHAIN,
     ],
 }

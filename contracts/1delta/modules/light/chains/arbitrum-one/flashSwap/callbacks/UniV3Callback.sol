@@ -29,14 +29,8 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
     bytes32 private constant PANCAKESWAP_V3_FF_FACTORY = 0xff41ff9AA7e16B8B1a8a8dc4f0eFacd93D02d071c90000000000000000000000;
     bytes32 private constant PANCAKESWAP_V3_CODE_HASH = 0x6ce8eb472fa82df5469c6ab6d485f17c3ad13c8cd7af59b3d4a8026c5ce0f7e2;
 
-    bytes32 private constant DACKIESWAP_V3_FF_FACTORY = 0xfff79A36F6f440392C63AD61252a64d5d3C43F860D0000000000000000000000;
-    bytes32 private constant DACKIESWAP_V3_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
-
     bytes32 private constant RAMSES_V2_FF_FACTORY = 0xffAA2cd7477c451E703f3B9Ba5663334914763edF80000000000000000000000;
     bytes32 private constant RAMSES_V2_CODE_HASH = 0x1565b129f2d1790f12d45301b9b084335626f0c92410bc43130763b69971135d;
-
-    bytes32 private constant CLEOPATRA_FF_FACTORY = 0xffAAA32926fcE6bE95ea2c51cB4Fcb60836D320C420000000000000000000000;
-    bytes32 private constant CLEOPATRA_CODE_HASH = 0x1565b129f2d1790f12d45301b9b084335626f0c92410bc43130763b69971135d;
 
     bytes32 private constant CAMELOT_FF_FACTORY = 0xff6Dd3FB9653B10e806650F107C3B5A0a6fF974F650000000000000000000000;
     bytes32 private constant CAMELOT_CODE_HASH = 0x6c1bebd370ba84753516bc1393c0d0a6c645856da55f5393ac8ab3d6dbc861d3;
@@ -83,32 +77,18 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
                 default { amountToPay := calldataload(4) }
             }
             case 0x23a69e7500000000000000000000000000000000000000000000000000000000 {
-                switch and(UINT8_MASK, shr(88, calldataload(172)))
-                case 0 {
-                    ffFactoryAddress := PANCAKESWAP_V3_FF_FACTORY
-                    codeHash := PANCAKESWAP_V3_CODE_HASH
-                }
-                case 1 {
-                    ffFactoryAddress := DACKIESWAP_V3_FF_FACTORY
-                    codeHash := DACKIESWAP_V3_CODE_HASH
-                }
-                default { revert(0, 0) }
+                ffFactoryAddress := PANCAKESWAP_V3_FF_FACTORY
+                codeHash := PANCAKESWAP_V3_CODE_HASH
+
                 let _amount1 := calldataload(36)
                 switch sgt(_amount1, 0)
                 case 1 { amountToPay := _amount1 }
                 default { amountToPay := calldataload(4) }
             }
             case 0x654b648700000000000000000000000000000000000000000000000000000000 {
-                switch and(UINT8_MASK, shr(88, calldataload(172)))
-                case 0 {
-                    ffFactoryAddress := RAMSES_V2_FF_FACTORY
-                    codeHash := RAMSES_V2_CODE_HASH
-                }
-                case 1 {
-                    ffFactoryAddress := CLEOPATRA_FF_FACTORY
-                    codeHash := CLEOPATRA_CODE_HASH
-                }
-                default { revert(0, 0) }
+                ffFactoryAddress := RAMSES_V2_FF_FACTORY
+                codeHash := RAMSES_V2_CODE_HASH
+
                 let _amount1 := calldataload(36)
                 switch sgt(_amount1, 0)
                 case 1 { amountToPay := _amount1 }
