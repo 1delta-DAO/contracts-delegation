@@ -93,11 +93,7 @@ function splitIntoGroups(numbers: number[], splits = 4): number[][] {
 }
 
 function generateSwitchCaseStructure(entities: FlashLoanIdData[]): string {
-    const splits = splitIntoGroups(entities.map(({entityId}) => Number(entityId)));
-
-    const groups = splits;
-
-    if (groups.length === 0) return "";
+    const groups = splitIntoGroups(entities.map(({entityId}) => Number(entityId)));
 
     // Create map for quick entityName lookup
     const entityMap = new Map<string, string>();
