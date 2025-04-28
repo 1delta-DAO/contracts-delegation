@@ -499,7 +499,7 @@ async function main() {
 
         /** Write files */
 
-        const flashSwapCallbackDir = `./contracts/1delta/modules/light/chains/${key}/flashSwap/callbacks/`
+        const flashSwapCallbackDir = `./contracts/1delta/composer/chains/${key}/flashSwap/callbacks/`
         fs.mkdirSync(flashSwapCallbackDir, { recursive: true });
 
         if (dexIdsUniV2.length > 0) {
@@ -553,7 +553,7 @@ async function main() {
             ));
         }
 
-        const filePathSwapCallbacks = `./contracts/1delta/modules/light/chains/${key}/flashSwap/SwapCallbacks.sol`;
+        const filePathSwapCallbacks = `./contracts/1delta/composer/chains/${key}/flashSwap/SwapCallbacks.sol`;
         fs.writeFileSync(filePathSwapCallbacks, templateSwapCallbacks(
             dexIdsUniV4.length > 0,
             dexIdsUniV3.length > 0,

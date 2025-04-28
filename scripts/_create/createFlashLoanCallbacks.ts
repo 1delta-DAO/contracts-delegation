@@ -236,7 +236,7 @@ async function main() {
 
         /** Write files */
 
-        const flashLoanCallbackDir = `./contracts/1delta/modules/light/chains/${key}/flashLoan/callbacks/`
+        const flashLoanCallbackDir = `./contracts/1delta/composer/chains/${key}/flashLoan/callbacks/`
         fs.mkdirSync(flashLoanCallbackDir, { recursive: true });
 
         if (lenderIdsAaveV2.length > 0) {
@@ -259,7 +259,7 @@ async function main() {
             fs.writeFileSync(filePathBalancerV2, templateBalancerV2(constantsDataBalancerV2, switchCaseContentBalancerV2));
         }
 
-        const filePathFlashCallbacks = `./contracts/1delta/modules/light/chains/${key}/flashLoan/FlashLoanCallbacks.sol`
+        const filePathFlashCallbacks = `./contracts/1delta/composer/chains/${key}/flashLoan/FlashLoanCallbacks.sol`
         fs.writeFileSync(filePathFlashCallbacks, templateFlashLoan(
             lenderIdsAaveV2.length > 0,
             lenderIdsAaveV3.length > 0,
@@ -268,7 +268,7 @@ async function main() {
         ));
 
 
-        const filePathFlashLoans = `./contracts/1delta/modules/light/chains/${key}/flashLoan/UniversalFlashLoan.sol`
+        const filePathFlashLoans = `./contracts/1delta/composer/chains/${key}/flashLoan/UniversalFlashLoan.sol`
         fs.writeFileSync(filePathFlashLoans, templateUniversalFlashLoan(
             lenderIdsMorphoBlue.length > 0,
             lenderIdsAaveV2.length > 0,
@@ -277,13 +277,13 @@ async function main() {
         ));
 
         if (poolIdsBalancerV2.length > 0) {
-            const filePathBalancerV2FlashLoanTrigger = `./contracts/1delta/modules/light/chains/${key}/flashLoan/BalancerV2.sol`
+            const filePathBalancerV2FlashLoanTrigger = `./contracts/1delta/composer/chains/${key}/flashLoan/BalancerV2.sol`
             fs.writeFileSync(filePathBalancerV2FlashLoanTrigger, templateBalancerV2Trigger(
                 constantsDataBalancerV2, switchCaseContentBalancerV2Trigger
             ));
         }
 
-        const filePathComposer = `./contracts/1delta/modules/light/chains/${key}/Composer.sol`
+        const filePathComposer = `./contracts/1delta/composer/chains/${key}/Composer.sol`
         fs.writeFileSync(filePathComposer, templateComposer(toCamelCaseWithFirstUpper(key)));
 
 

@@ -495,7 +495,7 @@ const config: HardhatUserConfig = {
         },
       },
       // deploy factory
-      "contracts/1delta/modules/shared/DeployFactory.sol": {
+      "contracts/1delta/contracts/1delta/shared/DeployFactory.sol": {
         version: '0.8.28',
         settings: {
           optimizer: {
@@ -506,7 +506,7 @@ const config: HardhatUserConfig = {
         },
       },
       // ma
-      "contracts/1delta/modules/shared/MetaAggregator.sol": {
+      "contracts/1delta/contracts/1delta/shared/MetaAggregator.sol": {
         version: '0.8.28',
         settings: {
           optimizer: {

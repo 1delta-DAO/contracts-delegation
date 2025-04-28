@@ -58,7 +58,7 @@
     "lint": "eslint \"**/*.{js,ts}\" && solhint src/**/*.sol",
     "lint:fix": "eslint --fix \"**/*.{js,ts}\" && solhint --fix src/**/*.sol",
     "format": "prettier --check \"**/*.{ts,js,sol}\"",
-    "auto-format": "npx prettier --config .prettierrc --write contracts/1delta/modules/light/chains/**/*.sol",
+    "auto-format": "npx prettier --config .prettierrc --write contracts/1delta/composer/chains/**/*.sol",
     "format:fix": "prettier --write \"**/*.{ts,js,sol}\"",
     "compile": "hardhat compile",
     "void:deploy": "hardhat deploy",

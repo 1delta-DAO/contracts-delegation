@@ -3,21 +3,21 @@ pragma solidity ^0.8.28;
 
 import {IComposerLike} from "./IComposerLike.sol";
 import {Chains} from "../../data/LenderRegistry.sol";
-import {OneDeltaComposerArbitrumOne} from "../../../contracts/1delta/modules/light/chains/arbitrum-one/Composer.sol";
-import {OneDeltaComposerHemi} from "../../../contracts/1delta/modules/light/chains/hemi/Composer.sol";
-import {OneDeltaComposerBnb} from "../../../contracts/1delta/modules/light/chains/bnb/Composer.sol";
-import {OneDeltaComposerMetisAndromeda} from "../../../contracts/1delta/modules/light/chains/metis-andromeda/Composer.sol";
-import {OneDeltaComposerBase} from "../../../contracts/1delta/modules/light/chains/base/Composer.sol";
-import {OneDeltaComposerPolygon} from "../../../contracts/1delta/modules/light/chains/polygon/Composer.sol";
-import {OneDeltaComposerTaiko} from "../../../contracts/1delta/modules/light/chains/taiko/Composer.sol";
-import {OneDeltaComposerMantle} from "../../../contracts/1delta/modules/light/chains/mantle/Composer.sol";
-import {OneDeltaComposerCelo} from "../../../contracts/1delta/modules/light/chains/celo/Composer.sol";
-import {OneDeltaComposerGnosis} from "../../../contracts/1delta/modules/light/chains/gnosis/Composer.sol";
-import {OneDeltaComposerAvalanche} from "../../../contracts/1delta/modules/light/chains/avalanche/Composer.sol";
-import {OneDeltaComposerSonic} from "../../../contracts/1delta/modules/light/chains/sonic/Composer.sol";
-import {OneDeltaComposerOp} from "../../../contracts/1delta/modules/light/chains/op/Composer.sol";
-import {OneDeltaComposerScroll} from "../../../contracts/1delta/modules/light/chains/scroll/Composer.sol";
-import {OneDeltaComposerLinea} from "../../../contracts/1delta/modules/light/chains/linea/Composer.sol";
+import {OneDeltaComposerArbitrumOne} from "../../../contracts/1delta/composer//chains/arbitrum-one/Composer.sol";
+import {OneDeltaComposerHemi} from "../../../contracts/1delta/composer//chains/hemi/Composer.sol";
+import {OneDeltaComposerBnb} from "../../../contracts/1delta/composer//chains/bnb/Composer.sol";
+import {OneDeltaComposerMetisAndromeda} from "../../../contracts/1delta/composer//chains/metis-andromeda/Composer.sol";
+import {OneDeltaComposerBase} from "../../../contracts/1delta/composer//chains/base/Composer.sol";
+import {OneDeltaComposerPolygon} from "../../../contracts/1delta/composer//chains/polygon/Composer.sol";
+import {OneDeltaComposerTaiko} from "../../../contracts/1delta/composer//chains/taiko/Composer.sol";
+import {OneDeltaComposerMantle} from "../../../contracts/1delta/composer//chains/mantle/Composer.sol";
+import {OneDeltaComposerCelo} from "../../../contracts/1delta/composer//chains/celo/Composer.sol";
+import {OneDeltaComposerGnosis} from "../../../contracts/1delta/composer//chains/gnosis/Composer.sol";
+import {OneDeltaComposerAvalanche} from "../../../contracts/1delta/composer//chains/avalanche/Composer.sol";
+import {OneDeltaComposerSonic} from "../../../contracts/1delta/composer//chains/sonic/Composer.sol";
+import {OneDeltaComposerOp} from "../../../contracts/1delta/composer//chains/op/Composer.sol";
+import {OneDeltaComposerScroll} from "../../../contracts/1delta/composer//chains/scroll/Composer.sol";
+import {OneDeltaComposerLinea} from "../../../contracts/1delta/composer//chains/linea/Composer.sol";
 
 library ComposerPlugin {
     function getComposer(string memory chainName) public returns (IComposerLike) {

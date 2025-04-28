@@ -134,7 +134,7 @@ async function main() {
 
 
 
-        const flashLoanCallbackDir = `./contracts/1delta/modules/light/chains/${key}/callbacks/flashLoan/`
+        const flashLoanCallbackDir = `./contracts/1delta/composer/chains/${key}/callbacks/flashLoan/`
         fs.mkdirSync(flashLoanCallbackDir, { recursive: true });
 
         if (lenderIdsAaveV2.length > 0) {
@@ -157,7 +157,7 @@ async function main() {
             fs.writeFileSync(filePathBalancerV2, templateBalancerV2(constantsDataBalancerV2, switchCaseContentBalancerV2));
         }
 
-        const filePathFlashCallbacks = `./contracts/1delta/modules/light/chains/${key}/callbacks/flashLoan/FlashLoanCallbacks.sol`
+        const filePathFlashCallbacks = `./contracts/1delta/composer/chains/${key}/callbacks/flashLoan/FlashLoanCallbacks.sol`
         fs.writeFileSync(filePathFlashCallbacks, templateFlashLoan(
             lenderIdsAaveV2.length > 0,
             lenderIdsAaveV3.length > 0,
@@ -166,7 +166,7 @@ async function main() {
         ));
 
 
-        const filePathComposer = `./contracts/1delta/modules/light/chains/${key}/Composer.sol`
+        const filePathComposer = `./contracts/1delta/composer/chains/${key}/Composer.sol`
         fs.writeFileSync(filePathComposer, templateComposer(toCamelCaseWithFirstUpper(key)));
 
 
