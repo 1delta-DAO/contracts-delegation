@@ -71,24 +71,20 @@ interface FlashLoanIdData {
     pool: string;
 }
 
-function multiCaseSplitter(numbers: number[], splits = 4): number[] {
-    // assuming the numbers are sorted (which is the case here)
+function splitIntoGroups(numbers: number[], splits = 4): number[][] {
     const n = numbers.length;
     const boundaries: number[] = [];
     for (let i = 1; i < splits - 1; i++) {
         const idx = Math.floor((i * n) / splits);
         boundaries.push(numbers[idx]);
     }
-    return boundaries;
-}
 
-function splitByBoundaries(numbers: number[], splits: number[]): number[][] {
-    const result: number[][] = Array(splits.length + 1)
+    const result: number[][] = Array(boundaries.length + 1)
         .fill(0)
         .map(() => []);
     let splitIdx = 0;
     for (const num of numbers) {
-        while (splitIdx < splits.length && num > splits[splitIdx]) {
+        while (splitIdx < boundaries.length && num > boundaries[splitIdx]) {
             splitIdx++;
         }
         result[splitIdx].push(num);
@@ -97,12 +93,9 @@ function splitByBoundaries(numbers: number[], splits: number[]): number[][] {
 }
 
 function generateSwitchCaseStructure(entities: {entityName: string; entityId: string}[]): string {
-    const splits = multiCaseSplitter(entities.map(({entityId}) => Number(entityId)));
+    const splits = splitIntoGroups(entities.map(({entityId}) => Number(entityId)));
 
-    const groups = splitByBoundaries(
-        entities.map(({entityId}) => Number(entityId)),
-        splits
-    );
+    const groups = splits;
 
     if (groups.length === 0) return "";
 
@@ -286,11 +279,8 @@ async function main() {
             });
             switchCaseContentV3 += multiSwitchCaseEnd;
         } else {
-            const splits = multiCaseSplitter(lenderIdsAaveV3.map(({entityId}) => Number(entityId)));
-            const groups = splitByBoundaries(
-                lenderIdsAaveV3.map(({entityId}) => Number(entityId)),
-                splits
-            );
+            const splits = splitIntoGroups(lenderIdsAaveV3.map(({entityId}) => Number(entityId)));
+            const groups = splits;
             // create the constants for all
             lenderIdsAaveV3.forEach(({pool, entityName}) => {
                 constantsDataV3 += createConstant(pool, entityName);
