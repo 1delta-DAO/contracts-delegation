@@ -232,9 +232,12 @@ contract SwapsSplitsAndHopsLightTest is BaseTest {
             amount //
         );
 
+        uint256 gas = gasleft();
         vm.prank(user);
         oneDV2.deltaCompose(swap);
 
+        gas = gas - gasleft();
+        console.log("gas", gas);
         uint256 balAfter = IERC20All(tokenOut).balanceOf(user);
         console.log("received", balAfter - balBefore);
     }
