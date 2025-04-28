@@ -279,8 +279,6 @@ async function main() {
             });
             switchCaseContentV3 += multiSwitchCaseEnd;
         } else {
-            const splits = splitIntoGroups(lenderIdsAaveV3.map(({entityId}) => Number(entityId)));
-            const groups = splits;
             // create the constants for all
             lenderIdsAaveV3.forEach(({pool, entityName}) => {
                 constantsDataV3 += createConstant(pool, entityName);
@@ -291,10 +289,8 @@ async function main() {
             // This is a crucial check since this makes
             // the initiator paramter the caller of flashLoan
             let poolId := and(UINT8_MASK, shr(88, firstWord))
+            ${generateSwitchCaseStructure(lenderIdsAaveV3)}
             `;
-
-            // Generate the nested switch-case structure
-            switchCaseContentV3 += generateSwitchCaseStructure(lenderIdsAaveV3);
         }
         /**
          * Morpho B
