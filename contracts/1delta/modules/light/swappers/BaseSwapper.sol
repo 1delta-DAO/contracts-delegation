@@ -329,7 +329,8 @@ abstract contract BaseSwapper is
             currentOffset := add(currentOffset, 1)
         }
 
-        if (dexTypeId <= 7) {
+        // first block of ids
+        if (dexTypeId <= 50) {
             if (dexTypeId == DexTypeMappings.UNISWAP_V3_ID) {
                 return _swapUniswapV3PoolExactInGeneric(amountIn, tokenIn, tokenOut, receiver, currentOffset, payer);
             } else if (dexTypeId == DexTypeMappings.IZI_ID) {
@@ -346,32 +347,32 @@ abstract contract BaseSwapper is
                 return _swapUniV2ExactInFOTGeneric(amountIn, tokenIn, tokenOut, receiver, currentOffset, payer);
             }
         }
-        // Check Curve types (60-61)
-        else if (dexTypeId <= 61) {
+        // Second block: Check Curve types (60-61) and commonly used exotics
+        else if (dexTypeId <= 100) {
             if (dexTypeId == DexTypeMappings.CURVE_V1_STANDARD_ID) {
                 return _swapCurveGeneral(tokenIn, tokenOut, amountIn, receiver, payer, currentOffset);
             } else if (dexTypeId == DexTypeMappings.CURVE_FORK_ID) {
                 return _swapCurveFork(tokenIn, tokenOut, amountIn, receiver, payer, currentOffset);
-            }
-        }
-        // Handle remaining ones
-        else if (dexTypeId <= 170) {
-            if (dexTypeId == DexTypeMappings.CURVE_RECEIVED_ID) {
+            } else if (dexTypeId == DexTypeMappings.CURVE_RECEIVED_ID) {
                 return _swapCurveReceived(tokenIn, amountIn, receiver, payer, currentOffset);
             } else if (dexTypeId == DexTypeMappings.WOO_FI_ID) {
                 return _swapWooFiExactIn(amountIn, tokenIn, tokenOut, receiver, payer, currentOffset);
-            } else if (dexTypeId == DexTypeMappings.LB_ID) {
+            }
+        }
+        // Handle remaining swappers
+        else if (dexTypeId <= 200) {
+            if (dexTypeId == DexTypeMappings.LB_ID) {
                 return _swapLBexactIn(amountIn, tokenIn, receiver, payer, currentOffset);
             } else if (dexTypeId == DexTypeMappings.GMX_ID) {
                 return _swapGMXExactIn(amountIn, tokenIn, tokenOut, receiver, payer, currentOffset);
-            }
-        } else if (dexTypeId <= 190) {
-            if (dexTypeId == DexTypeMappings.DODO_ID) {
+            } else if (dexTypeId == DexTypeMappings.DODO_ID) {
                 return _swapDodoV2ExactIn(amountIn, tokenIn, tokenOut, receiver, payer, currentOffset);
             } else if (dexTypeId == DexTypeMappings.SYNC_SWAP_ID) {
                 return _swapSyncExactIn(amountIn, tokenIn, receiver, payer, currentOffset);
             }
-        } else if (dexTypeId == DexTypeMappings.NATIVE_WRAP_ID) {
+        }
+        // wrap operations
+        else if (dexTypeId == DexTypeMappings.NATIVE_WRAP_ID) {
             return _wrapOrUnwrapSimple(amountIn, currentOffset);
         }
 
