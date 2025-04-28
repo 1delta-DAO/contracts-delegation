@@ -2,7 +2,6 @@
 
 pragma solidity ^0.8.28;
 
-import {Slots} from "../../shared/storage/Slots.sol";
 import {ERC20Selectors} from "../../shared/selectors/ERC20Selectors.sol";
 import {ERC4646Transfers} from "./ERC4646Transfers.sol";
 import {ERC4646Ids} from "../enums/DeltaEnums.sol";
