@@ -92,7 +92,7 @@ function splitIntoGroups(numbers: number[], splits = 4): number[][] {
     return result;
 }
 
-function generateSwitchCaseStructure(entities: {entityName: string; entityId: string}[]): string {
+function generateSwitchCaseStructure(entities: FlashLoanIdData[]): string {
     const splits = splitIntoGroups(entities.map(({entityId}) => Number(entityId)));
 
     const groups = splits;
