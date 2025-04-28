@@ -105,25 +105,28 @@ function generateSwitchCaseStructure(entities: FlashLoanIdData[]): string {
 
     // Generate case statements for each ID
     const generateCases = (idGroup: number[]): string => {
-        return idGroup
+        const cases = idGroup
             .map((id) => {
                 const entityName = entityMap.get(id.toString());
                 return createCase(entityName!, id.toString());
             })
             .join("\n");
+        return `
+            switch poolId
+                ${cases}
+                // We revert on any other id
+                default {
+                    mstore(0, INVALID_FLASH_LOAN)
+                    revert(0, 0x4)
+                }
+            `;
     };
 
     // Handle first group directly
     result += `
     switch lt(poolId, ${1 + groups[0][groups[0].length - 1]})
     case 1 {
-        switch poolId
         ${generateCases(groups[0])}
-        // We revert on any other id
-        default {
-            mstore(0, INVALID_FLASH_LOAN)
-            revert(0, 0x4)
-        }
     }
     `;
     // Handle remaining groups in nested structure
@@ -138,26 +141,14 @@ function generateSwitchCaseStructure(entities: FlashLoanIdData[]): string {
                 result += `
                 switch lt(poolId, ${1 + group[group.length - 1]})
                 case 1 {
-                    switch poolId
                     ${generateCases(group)}
-                    // We revert on any other id
-                    default {
-                        mstore(0, INVALID_FLASH_LOAN)
-                        revert(0, 0x4)
-                    }
                 }
                 default {
                 `;
             } else {
                 // Last group doesn't need an lte check
                 result += `
-                switch poolId
                 ${generateCases(group)}
-                // We revert on any other id
-                default {
-                    mstore(0, INVALID_FLASH_LOAN)
-                    revert(0, 0x4)
-                }
                 `;
             }
         }
@@ -166,6 +157,14 @@ function generateSwitchCaseStructure(entities: FlashLoanIdData[]): string {
         for (let i = 1; i < groups.length; i++) {
             result += `}\n`;
         }
+    } else {
+        result += `
+        // We revert on any other id
+        default {
+            mstore(0, INVALID_FLASH_LOAN)
+            revert(0, 0x4)
+        }
+        `;
     }
 
     return result;
