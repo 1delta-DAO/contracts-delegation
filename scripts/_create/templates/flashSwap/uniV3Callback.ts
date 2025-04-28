@@ -18,7 +18,7 @@ pragma solidity 0.8.28;
 import {ValidatorLib} from "../../../../swappers/callbacks/ValidatorLib.sol";
 import {Masks} from "../../../../../shared/masks/Masks.sol";
 import {DeltaErrors} from "../../../../../shared/errors/Errors.sol";
-import {V3Callbacker} from "../../../../../composer/swappers/callbacks/V3Callbacker.sol";
+import {V3Callbacker} from "../../../../swappers/callbacks/V3Callbacker.sol";
 
 /**
  * @title Uniswap V3 type callback implementations
