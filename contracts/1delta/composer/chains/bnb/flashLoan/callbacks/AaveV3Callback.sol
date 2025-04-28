@@ -97,6 +97,11 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
                             revert(0, 0x4)
                         }
                     }
+                    // We revert on any other id
+                    default {
+                        mstore(0, INVALID_FLASH_LOAN)
+                        revert(0, 0x4)
+                    }
                 }
                 default {
                     switch poolId
@@ -123,6 +128,11 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
                             mstore(0, INVALID_CALLER)
                             revert(0, 0x4)
                         }
+                    }
+                    // We revert on any other id
+                    default {
+                        mstore(0, INVALID_FLASH_LOAN)
+                        revert(0, 0x4)
                     }
                 }
             }

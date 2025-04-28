@@ -151,6 +151,11 @@ function generateSwitchCaseStructure(entities: {entityName: string; entityId: st
                 case 1 {
                     switch poolId
                     ${generateCases(group)}
+                    // We revert on any other id
+                    default {
+                        mstore(0, INVALID_FLASH_LOAN)
+                        revert(0, 0x4)
+                    }
                 }
                 default {
                 `;
@@ -159,6 +164,11 @@ function generateSwitchCaseStructure(entities: {entityName: string; entityId: st
                 result += `
                 switch poolId
                 ${generateCases(group)}
+                // We revert on any other id
+                default {
+                    mstore(0, INVALID_FLASH_LOAN)
+                    revert(0, 0x4)
+                }
                 `;
             }
         }
