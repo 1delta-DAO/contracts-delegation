@@ -21,7 +21,7 @@ abstract contract BalancerV2Swapper is ERC20Selectors, Masks {
      * | 32     | 20             | vault                |
      * | 21     | 1              | pay flag             | <- 0: caller pays; 1: contract pays; greater: pre-funded
      */
-    function _swapBalancerExactIn(
+    function _swapBalancerV2ExactIn(
         address tokenIn,
         address tokenOut,
         uint256 amountIn,

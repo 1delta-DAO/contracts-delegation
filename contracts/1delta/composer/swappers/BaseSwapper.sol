@@ -329,49 +329,49 @@ abstract contract BaseSwapper is
             currentOffset := add(currentOffset, 1)
         }
 
-        // first block of ids
-        if (dexTypeId <= 50) {
+        // First block: prioritize Uniswap
+        if (dexTypeId <= 63) {
             if (dexTypeId == DexTypeMappings.UNISWAP_V3_ID) {
                 return _swapUniswapV3PoolExactInGeneric(amountIn, tokenIn, tokenOut, receiver, currentOffset, payer);
-            } else if (dexTypeId == DexTypeMappings.IZI_ID) {
-                return _swapIZIPoolExactInGeneric(amountIn, tokenIn, tokenOut, receiver, currentOffset, payer);
             } else if (dexTypeId == DexTypeMappings.UNISWAP_V4_ID) {
                 return _swapUniswapV4ExactInGeneric(amountIn, tokenIn, tokenOut, receiver, currentOffset, payer);
-            } else if (dexTypeId == DexTypeMappings.BALANCER_V2_ID) {
-                return _swapBalancerExactIn(tokenIn, tokenOut, amountIn, receiver, payer, currentOffset);
-            } else if (dexTypeId == DexTypeMappings.BALANCER_V3_ID) {
-                return _swapBalancerV3ExactInGeneric(amountIn, tokenIn, tokenOut, receiver, currentOffset, payer);
             } else if (dexTypeId == DexTypeMappings.UNISWAP_V2_ID) {
                 return _swapUniswapV2PoolExactInGeneric(amountIn, tokenIn, tokenOut, receiver, currentOffset, payer);
+            } else if (dexTypeId == DexTypeMappings.IZI_ID) {
+                return _swapIZIPoolExactInGeneric(amountIn, tokenIn, tokenOut, receiver, currentOffset, payer);
             } else if (dexTypeId == DexTypeMappings.UNISWAP_V2_FOT_ID) {
                 return _swapUniV2ExactInFOTGeneric(amountIn, tokenIn, tokenOut, receiver, currentOffset, payer);
             }
         }
-        // Second block: Check Curve types (60-61) and commonly used exotics
-        else if (dexTypeId <= 100) {
+        // Second block: prioritize Curve
+        else if (dexTypeId <= 127) {
             if (dexTypeId == DexTypeMappings.CURVE_V1_STANDARD_ID) {
                 return _swapCurveGeneral(tokenIn, tokenOut, amountIn, receiver, payer, currentOffset);
-            } else if (dexTypeId == DexTypeMappings.CURVE_FORK_ID) {
-                return _swapCurveFork(tokenIn, tokenOut, amountIn, receiver, payer, currentOffset);
             } else if (dexTypeId == DexTypeMappings.CURVE_RECEIVED_ID) {
                 return _swapCurveReceived(tokenIn, amountIn, receiver, payer, currentOffset);
+            } else if (dexTypeId == DexTypeMappings.CURVE_FORK_ID) {
+                return _swapCurveFork(tokenIn, tokenOut, amountIn, receiver, payer, currentOffset);
             } else if (dexTypeId == DexTypeMappings.WOO_FI_ID) {
                 return _swapWooFiExactIn(amountIn, tokenIn, tokenOut, receiver, payer, currentOffset);
-            }
-        }
-        // Handle remaining swappers
-        else if (dexTypeId <= 200) {
-            if (dexTypeId == DexTypeMappings.LB_ID) {
-                return _swapLBexactIn(amountIn, tokenIn, receiver, payer, currentOffset);
             } else if (dexTypeId == DexTypeMappings.GMX_ID) {
                 return _swapGMXExactIn(amountIn, tokenIn, tokenOut, receiver, payer, currentOffset);
+            }
+        }
+        // Third block: prioritize Balancer
+        else if (dexTypeId <= 191) {
+            if (dexTypeId == DexTypeMappings.BALANCER_V2_ID) {
+                return _swapBalancerV2ExactIn(tokenIn, tokenOut, amountIn, receiver, payer, currentOffset);
+            } else if (dexTypeId == DexTypeMappings.BALANCER_V3_ID) {
+                return _swapBalancerV3ExactInGeneric(amountIn, tokenIn, tokenOut, receiver, currentOffset, payer);
+            } else if (dexTypeId == DexTypeMappings.LB_ID) {
+                return _swapLBexactIn(amountIn, tokenIn, receiver, payer, currentOffset);
             } else if (dexTypeId == DexTypeMappings.DODO_ID) {
                 return _swapDodoV2ExactIn(amountIn, tokenIn, tokenOut, receiver, payer, currentOffset);
             } else if (dexTypeId == DexTypeMappings.SYNC_SWAP_ID) {
                 return _swapSyncExactIn(amountIn, tokenIn, receiver, payer, currentOffset);
             }
         }
-        // wrap operations
+        // Rest: Rare wrap/unwrap operations
         else if (dexTypeId == DexTypeMappings.NATIVE_WRAP_ID) {
             return _wrapOrUnwrapSimple(amountIn, currentOffset);
         }
