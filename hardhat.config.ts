@@ -292,7 +292,7 @@ const config: HardhatUserConfig = {
       chainId: 5000,
     },
     xdai: {
-      url: 'https://rpc.ankr.com/gnosis',
+      url: 'https://rpc.gnosischain.com',
       accounts,
       chainId: 100,
       live: true,
