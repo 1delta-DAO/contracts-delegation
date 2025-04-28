@@ -46,95 +46,42 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
             // We check that the caller is one of the lending pools
             // This is a crucial check since this makes
             // the initiator paramter the caller of flashLoan
+            let pool
             let poolId := and(UINT8_MASK, shr(88, firstWord))
 
             switch lt(poolId, 54)
             case 1 {
                 switch poolId
-                case 0 {
-                    if xor(caller(), AAVE_V3) {
-                        mstore(0, INVALID_CALLER)
-                        revert(0, 0x4)
-                    }
-                }
-                case 51 {
-                    if xor(caller(), AVALON_SOLV_BTC) {
-                        mstore(0, INVALID_CALLER)
-                        revert(0, 0x4)
-                    }
-                }
-                case 53 {
-                    if xor(caller(), AVALON_PUMP_BTC) {
-                        mstore(0, INVALID_CALLER)
-                        revert(0, 0x4)
-                    }
-                }
-                // We revert on any other id
-                default {
-                    mstore(0, INVALID_FLASH_LOAN)
-                    revert(0, 0x4)
-                }
+                case 0 { pool := AAVE_V3 }
+                case 51 { pool := AVALON_SOLV_BTC }
+                case 53 { pool := AVALON_PUMP_BTC }
             }
             default {
                 switch lt(poolId, 67)
                 case 1 {
                     switch poolId
-                    case 64 {
-                        if xor(caller(), AVALON_STBTC) {
-                            mstore(0, INVALID_CALLER)
-                            revert(0, 0x4)
-                        }
-                    }
-                    case 65 {
-                        if xor(caller(), AVALON_WBTC) {
-                            mstore(0, INVALID_CALLER)
-                            revert(0, 0x4)
-                        }
-                    }
-                    case 66 {
-                        if xor(caller(), AVALON_LBTC) {
-                            mstore(0, INVALID_CALLER)
-                            revert(0, 0x4)
-                        }
-                    }
-                    // We revert on any other id
-                    default {
-                        mstore(0, INVALID_FLASH_LOAN)
-                        revert(0, 0x4)
-                    }
+                    case 64 { pool := AVALON_STBTC }
+                    case 65 { pool := AVALON_WBTC }
+                    case 66 { pool := AVALON_LBTC }
                 }
                 default {
                     switch poolId
-                    case 67 {
-                        if xor(caller(), AVALON_XAUM) {
-                            mstore(0, INVALID_CALLER)
-                            revert(0, 0x4)
-                        }
-                    }
-                    case 68 {
-                        if xor(caller(), AVALON_LISTA) {
-                            mstore(0, INVALID_CALLER)
-                            revert(0, 0x4)
-                        }
-                    }
-                    case 69 {
-                        if xor(caller(), AVALON_USDX) {
-                            mstore(0, INVALID_CALLER)
-                            revert(0, 0x4)
-                        }
-                    }
-                    case 82 {
-                        if xor(caller(), KINZA) {
-                            mstore(0, INVALID_CALLER)
-                            revert(0, 0x4)
-                        }
-                    }
-                    // We revert on any other id
-                    default {
-                        mstore(0, INVALID_FLASH_LOAN)
-                        revert(0, 0x4)
-                    }
+                    case 67 { pool := AVALON_XAUM }
+                    case 68 { pool := AVALON_LISTA }
+                    case 69 { pool := AVALON_USDX }
+                    case 82 { pool := KINZA }
                 }
+            }
+
+            // catch unassigned pool / bad poolId
+            if iszero(pool) {
+                mstore(0, INVALID_FLASH_LOAN)
+                revert(0, 0x4)
+            }
+            // match pool address
+            if xor(caller(), pool) {
+                mstore(0, INVALID_CALLER)
+                revert(0, 0x4)
             }
 
             // We require to self-initiate
