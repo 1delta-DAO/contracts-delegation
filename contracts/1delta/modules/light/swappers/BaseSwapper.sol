@@ -86,6 +86,7 @@ abstract contract BaseSwapper is
      * multihop swapper that allows for splits in each hops
      * forward the amountOut received from the last hop
      */
+
     function _multihopSplitSwap(
         uint256 amountIn,
         uint256 swapMaxIndex,
@@ -327,183 +328,58 @@ abstract contract BaseSwapper is
             dexTypeId := shr(248, calldataload(currentOffset))
             currentOffset := add(currentOffset, 1)
         }
-        ////////////////////////////////////////////////////
-        // We switch-case through the different pool types
-        // To select the correct pool for the swap action
-        ////////////////////////////////////////////////////
 
-        // uniswapV3 style
-        if (dexTypeId == DexTypeMappings.UNISWAP_V3_ID) {
-            (amountIn, currentOffset) = _swapUniswapV3PoolExactInGeneric(
-                amountIn,
-                tokenIn,
-                tokenOut,
-                receiver,
-                currentOffset,
-                payer //
-            );
-        }
-        // iZi
-        else if (dexTypeId == DexTypeMappings.IZI_ID) {
-            (amountIn, currentOffset) = _swapIZIPoolExactInGeneric(
-                amountIn,
-                tokenIn,
-                tokenOut,
-                receiver,
-                currentOffset,
-                payer //
-            );
-        }
-        // uni V4
-        else if (dexTypeId == DexTypeMappings.UNISWAP_V4_ID) {
-            (amountIn, currentOffset) = _swapUniswapV4ExactInGeneric(
-                amountIn,
-                tokenIn,
-                tokenOut,
-                receiver,
-                currentOffset,
-                payer //
-            );
-        }
-        // Balancer V3s
-        else if (dexTypeId == DexTypeMappings.BALANCER_V3_ID) {
-            (amountIn, currentOffset) = _swapBalancerV3ExactInGeneric(
-                amountIn,
-                tokenIn,
-                tokenOut,
-                receiver,
-                currentOffset,
-                payer //
-            );
-        }
-        // Balancer V2s
-        else if (dexTypeId == DexTypeMappings.BALANCER_V2_ID) {
-            (amountIn, currentOffset) = _swapBalancerExactIn(
-                tokenIn,
-                tokenOut,
-                amountIn,
-                receiver, //
-                payer,
-                currentOffset
-            );
-        }
-        // Curve standard pool
-        else if (dexTypeId == DexTypeMappings.CURVE_V1_STANDARD_ID) {
-            (amountIn, currentOffset) = _swapCurveGeneral(
-                tokenIn,
-                tokenOut,
-                amountIn,
-                receiver, //
-                payer,
-                currentOffset
-            );
-        }
-        // solidity-based forks of Curve
-        else if (dexTypeId == DexTypeMappings.CURVE_FORK_ID) {
-            (amountIn, currentOffset) = _swapCurveFork(
-                tokenIn,
-                tokenOut,
-                amountIn,
-                receiver, //
-                payer,
-                currentOffset
-            );
-        }
-        // uniswapV2 style
-        else if (dexTypeId == DexTypeMappings.UNISWAP_V2_ID) {
-            (amountIn, currentOffset) = _swapUniswapV2PoolExactInGeneric(
-                amountIn,
-                tokenIn,
-                tokenOut,
-                receiver,
-                currentOffset,
-                payer //
-            );
-        }
-        // uniswapV2 style
-        else if (dexTypeId == DexTypeMappings.UNISWAP_V2_FOT_ID) {
-            (amountIn, currentOffset) = _swapUniV2ExactInFOTGeneric(
-                amountIn,
-                tokenIn,
-                tokenOut,
-                receiver,
-                currentOffset,
-                payer //
-            );
-        }
-        // WOO Fi
-        else if (dexTypeId == DexTypeMappings.WOO_FI_ID) {
-            (amountIn, currentOffset) = _swapWooFiExactIn(
-                amountIn,
-                tokenIn,
-                tokenOut,
-                receiver,
-                payer, //
-                currentOffset
-            );
-        }
-        // Curve NG
-        else if (dexTypeId == DexTypeMappings.CURVE_RECEIVED_ID) {
-            (amountIn, currentOffset) = _swapCurveReceived(
-                tokenIn,
-                amountIn,
-                receiver, //
-                payer,
-                currentOffset
-            );
-        }
-        // GMX
-        else if (dexTypeId == DexTypeMappings.GMX_ID) {
-            (amountIn, currentOffset) = _swapGMXExactIn(
-                amountIn,
-                tokenIn,
-                tokenOut,
-                receiver,
-                payer, //
-                currentOffset
-            );
-        }
-        // syncSwap style
-        else if (dexTypeId == DexTypeMappings.SYNC_SWAP_ID) {
-            (amountIn, currentOffset) = _swapSyncExactIn(
-                amountIn,
-                tokenIn,
-                receiver,
-                payer, //
-                currentOffset
-            );
-        }
-        // DODO V2
-        else if (dexTypeId == DexTypeMappings.DODO_ID) {
-            (amountIn, currentOffset) = _swapDodoV2ExactIn(
-                amountIn,
-                tokenIn,
-                tokenOut,
-                receiver,
-                payer, //
-                currentOffset
-            );
-        }
-        // Moe/Joe LB
-        else if (dexTypeId == DexTypeMappings.LB_ID) {
-            (amountIn, currentOffset) = _swapLBexactIn(
-                amountIn,
-                tokenIn,
-                receiver,
-                payer, //
-                currentOffset
-            );
-        } else if (dexTypeId == DexTypeMappings.NATIVE_WRAP_ID) {
-            (amountIn, currentOffset) = _wrapOrUnwrapSimple(
-                amountIn,
-                currentOffset //
-            );
-        } else {
-            assembly {
-                mstore(0, INVALID_DEX)
-                revert(0, 0x4)
+        // first block of ids
+        if (dexTypeId <= 50) {
+            if (dexTypeId == DexTypeMappings.UNISWAP_V3_ID) {
+                return _swapUniswapV3PoolExactInGeneric(amountIn, tokenIn, tokenOut, receiver, currentOffset, payer);
+            } else if (dexTypeId == DexTypeMappings.IZI_ID) {
+                return _swapIZIPoolExactInGeneric(amountIn, tokenIn, tokenOut, receiver, currentOffset, payer);
+            } else if (dexTypeId == DexTypeMappings.UNISWAP_V4_ID) {
+                return _swapUniswapV4ExactInGeneric(amountIn, tokenIn, tokenOut, receiver, currentOffset, payer);
+            } else if (dexTypeId == DexTypeMappings.BALANCER_V2_ID) {
+                return _swapBalancerExactIn(tokenIn, tokenOut, amountIn, receiver, payer, currentOffset);
+            } else if (dexTypeId == DexTypeMappings.BALANCER_V3_ID) {
+                return _swapBalancerV3ExactInGeneric(amountIn, tokenIn, tokenOut, receiver, currentOffset, payer);
+            } else if (dexTypeId == DexTypeMappings.UNISWAP_V2_ID) {
+                return _swapUniswapV2PoolExactInGeneric(amountIn, tokenIn, tokenOut, receiver, currentOffset, payer);
+            } else if (dexTypeId == DexTypeMappings.UNISWAP_V2_FOT_ID) {
+                return _swapUniV2ExactInFOTGeneric(amountIn, tokenIn, tokenOut, receiver, currentOffset, payer);
             }
         }
-        return (amountIn, currentOffset);
+        // Second block: Check Curve types (60-61) and commonly used exotics
+        else if (dexTypeId <= 100) {
+            if (dexTypeId == DexTypeMappings.CURVE_V1_STANDARD_ID) {
+                return _swapCurveGeneral(tokenIn, tokenOut, amountIn, receiver, payer, currentOffset);
+            } else if (dexTypeId == DexTypeMappings.CURVE_FORK_ID) {
+                return _swapCurveFork(tokenIn, tokenOut, amountIn, receiver, payer, currentOffset);
+            } else if (dexTypeId == DexTypeMappings.CURVE_RECEIVED_ID) {
+                return _swapCurveReceived(tokenIn, amountIn, receiver, payer, currentOffset);
+            } else if (dexTypeId == DexTypeMappings.WOO_FI_ID) {
+                return _swapWooFiExactIn(amountIn, tokenIn, tokenOut, receiver, payer, currentOffset);
+            }
+        }
+        // Handle remaining swappers
+        else if (dexTypeId <= 200) {
+            if (dexTypeId == DexTypeMappings.LB_ID) {
+                return _swapLBexactIn(amountIn, tokenIn, receiver, payer, currentOffset);
+            } else if (dexTypeId == DexTypeMappings.GMX_ID) {
+                return _swapGMXExactIn(amountIn, tokenIn, tokenOut, receiver, payer, currentOffset);
+            } else if (dexTypeId == DexTypeMappings.DODO_ID) {
+                return _swapDodoV2ExactIn(amountIn, tokenIn, tokenOut, receiver, payer, currentOffset);
+            } else if (dexTypeId == DexTypeMappings.SYNC_SWAP_ID) {
+                return _swapSyncExactIn(amountIn, tokenIn, receiver, payer, currentOffset);
+            }
+        }
+        // wrap operations
+        else if (dexTypeId == DexTypeMappings.NATIVE_WRAP_ID) {
+            return _wrapOrUnwrapSimple(amountIn, currentOffset);
+        }
+
+        // If no match was found, revert
+        assembly {
+            mstore(0, INVALID_DEX)
+            revert(0, 0x4)
+        }
     }
 }
