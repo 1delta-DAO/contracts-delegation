@@ -30,7 +30,7 @@ contract SyncSwapLightTest is BaseTest {
     function setUp() public virtual {
         string memory chainName = Chains.TAIKO_ALETHIA;
         // initialize the chain
-        _init(chainName, forkBlock);
+        _init(chainName, forkBlock, true);
         WETH = chain.getTokenAddress(Tokens.WETH);
         USDT = chain.getTokenAddress(Tokens.USDT);
         USDC = chain.getTokenAddress(Tokens.USDC);

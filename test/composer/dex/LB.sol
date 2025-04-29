@@ -32,7 +32,7 @@ contract LBLightTest is BaseTest {
     function setUp() public virtual {
         string memory chainName = Chains.MANTLE;
         // initialize the chain
-        _init(chainName, forkBlock);
+        _init(chainName, forkBlock, true);
         USDE = chain.getTokenAddress(Tokens.USDE);
         WETH = chain.getTokenAddress(Tokens.WETH);
         USDT = chain.getTokenAddress(Tokens.USDT);
