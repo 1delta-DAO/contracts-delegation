@@ -178,10 +178,10 @@ const config: HardhatUserConfig = {
       metis: "XX",
       avalanche: "XX",
       hemi: "XX",
-      core:  process.env.CORESCAN_API_KEY ?? '',
-      sonic:  process.env.SONICSCAN_API_KEY ?? '',
-      scroll:  process.env.SCROLLSCAN_API_KEY ?? '',
-      fantom:  process.env.FANTOMSCAN_API_KEY ?? '',
+      core: process.env.CORESCAN_API_KEY ?? '',
+      sonic: process.env.SONICSCAN_API_KEY ?? '',
+      scroll: process.env.SCROLLSCAN_API_KEY ?? '',
+      fantom: process.env.FANTOMSCAN_API_KEY ?? '',
     }
   },
   gasReporter: {
@@ -292,7 +292,7 @@ const config: HardhatUserConfig = {
       chainId: 5000,
     },
     xdai: {
-      url: 'https://rpc.ankr.com/gnosis',
+      url: 'https://rpc.gnosischain.com',
       accounts,
       chainId: 100,
       live: true,
@@ -364,7 +364,7 @@ const config: HardhatUserConfig = {
       live: true,
     },
     optimism: {
-      url: "https://rpc.ankr.com/optimism",
+      url: "https://mainnet.optimism.io",
       live: true,
       accounts,
     },
@@ -495,7 +495,7 @@ const config: HardhatUserConfig = {
         },
       },
       // deploy factory
-      "contracts/1delta/modules/shared/DeployFactory.sol": {
+      "contracts/1delta/contracts/1delta/shared/DeployFactory.sol": {
         version: '0.8.28',
         settings: {
           optimizer: {
@@ -506,7 +506,7 @@ const config: HardhatUserConfig = {
         },
       },
       // ma
-      "contracts/1delta/modules/shared/MetaAggregator.sol": {
+      "contracts/1delta/contracts/1delta/shared/MetaAggregator.sol": {
         version: '0.8.28',
         settings: {
           optimizer: {

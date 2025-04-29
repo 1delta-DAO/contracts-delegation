@@ -1,6 +1,9 @@
-@openzeppelin/contracts/=lib/openzeppelin-contracts/
+@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/
 forge-std/=lib/forge-std/src/
 ds-test/=contracts/ds-test/
 @chainlink/contracts/=node_modules/@chainlink/contracts/
 base64-sol/=lib/base64/
 hardhat/=node_modules/hardhat/
+light/=contracts/1delta/composer/
+plugins/=test/shared/composers/
+modules/=contracts/1delta/modules/

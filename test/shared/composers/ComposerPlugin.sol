@@ -1,0 +1,44 @@
+// SPDX-License-Identifier: NONE
+pragma solidity ^0.8.28;
+
+import {IComposerLike} from "./IComposerLike.sol";
+import {Chains} from "../../data/LenderRegistry.sol";
+import {OneDeltaComposerArbitrumOne} from "../../../contracts/1delta/composer//chains/arbitrum-one/Composer.sol";
+import {OneDeltaComposerHemi} from "../../../contracts/1delta/composer//chains/hemi/Composer.sol";
+import {OneDeltaComposerBnb} from "../../../contracts/1delta/composer//chains/bnb/Composer.sol";
+import {OneDeltaComposerMetisAndromeda} from "../../../contracts/1delta/composer//chains/metis-andromeda/Composer.sol";
+import {OneDeltaComposerBase} from "../../../contracts/1delta/composer//chains/base/Composer.sol";
+import {OneDeltaComposerPolygon} from "../../../contracts/1delta/composer//chains/polygon/Composer.sol";
+import {OneDeltaComposerTaiko} from "../../../contracts/1delta/composer//chains/taiko/Composer.sol";
+import {OneDeltaComposerMantle} from "../../../contracts/1delta/composer//chains/mantle/Composer.sol";
+import {OneDeltaComposerCelo} from "../../../contracts/1delta/composer//chains/celo/Composer.sol";
+import {OneDeltaComposerGnosis} from "../../../contracts/1delta/composer//chains/gnosis/Composer.sol";
+import {OneDeltaComposerAvalanche} from "../../../contracts/1delta/composer//chains/avalanche/Composer.sol";
+import {OneDeltaComposerSonic} from "../../../contracts/1delta/composer//chains/sonic/Composer.sol";
+import {OneDeltaComposerOp} from "../../../contracts/1delta/composer//chains/op/Composer.sol";
+import {OneDeltaComposerScroll} from "../../../contracts/1delta/composer//chains/scroll/Composer.sol";
+import {OneDeltaComposerLinea} from "../../../contracts/1delta/composer//chains/linea/Composer.sol";
+
+library ComposerPlugin {
+    function getComposer(string memory chainName) public returns (IComposerLike) {
+        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.ARBITRUM_ONE))) return IComposerLike(address(new OneDeltaComposerArbitrumOne()));
+        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.HEMI_NETWORK))) return IComposerLike(address(new OneDeltaComposerHemi()));
+        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.BNB_SMART_CHAIN_MAINNET))) return IComposerLike(address(new OneDeltaComposerBnb()));
+        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.METIS_ANDROMEDA_MAINNET))) {
+            return IComposerLike(address(new OneDeltaComposerMetisAndromeda()));
+        }
+        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.BASE))) return IComposerLike(address(new OneDeltaComposerBase()));
+        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.POLYGON_MAINNET))) return IComposerLike(address(new OneDeltaComposerPolygon()));
+        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.TAIKO_ALETHIA))) return IComposerLike(address(new OneDeltaComposerTaiko()));
+        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.MANTLE))) return IComposerLike(address(new OneDeltaComposerMantle()));
+        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.CELO_MAINNET))) return IComposerLike(address(new OneDeltaComposerCelo()));
+        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.GNOSIS))) return IComposerLike(address(new OneDeltaComposerGnosis()));
+        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.AVALANCHE_C_CHAIN))) return IComposerLike(address(new OneDeltaComposerAvalanche()));
+        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.SONIC_MAINNET))) return IComposerLike(address(new OneDeltaComposerSonic()));
+        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.OP_MAINNET))) return IComposerLike(address(new OneDeltaComposerOp()));
+        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.SCROLL))) return IComposerLike(address(new OneDeltaComposerScroll()));
+        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.LINEA))) return IComposerLike(address(new OneDeltaComposerLinea()));
+
+        revert("No composer for chain");
+    }
+}

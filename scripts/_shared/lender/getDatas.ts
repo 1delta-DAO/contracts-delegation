@@ -1,98 +1,116 @@
-
-import { ApproveParamsStruct, BatchAddLenderTokensParamsStruct } from "../../../types/ManagementModule"
-import { AAVE_FORK_POOL_DATA, AAVE_STYLE_RESERVE_ASSETS, AAVE_STYLE_TOKENS, Chain, COMETS_PER_CHAIN_MAP, COMPOUND_STYLE_RESERVE_ASSETS, Lender } from "@1delta/asset-registry"
+import {
+  ApproveParamsStruct,
+  BatchAddLenderTokensParamsStruct,
+} from "../../../types/ManagementModule";
+import {
+  AAVE_FORK_POOL_DATA,
+  AAVE_STYLE_RESERVE_ASSETS,
+  AAVE_STYLE_TOKENS,
+  Chain,
+  COMETS_PER_CHAIN_MAP,
+  COMPOUND_STYLE_RESERVE_ASSETS,
+  Lender,
+} from "@1delta/asset-registry";
 
 export enum ArbitrumLenderId {
-    // aave v3s
-    AAVE_V3 = 0,
-    AVALON = 100,
-    AVALON_PBTC = 101,
-    YLDR = 900,
-    // aave V2s
-    GRANARY = 1000,
-    // comets
-    COMPOUND_V3_USDC = 2000,
-    COMPOUND_V3_WETH = 2001,
-    COMPOUND_V3_USDT = 2002,
-    COMPOUND_V3_USDCE = 2003,
-    // venuses
-    VENUS = 3000,
-    VENUS_ETH = 3001,
+  // aave v3s
+  AAVE_V3 = 0,
+  AVALON = 100,
+  AVALON_PBTC = 101,
+  YLDR = 900,
+  // aave V2s
+  GRANARY = 1000,
+  // comets
+  COMPOUND_V3_USDC = 2000,
+  COMPOUND_V3_WETH = 2001,
+  COMPOUND_V3_USDT = 2002,
+  COMPOUND_V3_USDCE = 2003,
+  // venuses
+  VENUS = 3000,
+  VENUS_ETH = 3001,
 }
 
 export enum BaseLenderId {
-    // aave v3s
-    AAVE_V3 = 0,
-    AVALON = 100,
-    ZEROLEND = 210,
-    // aave V2s
-    GRANARY = 1000,
-    // comets
-    COMPOUND_V3_USDC = 2000,
-    COMPOUND_V3_WETH = 2001,
-    COMPOUND_V3_USDBC = 2002,
-    COMPOUND_V3_AERO = 2003,
-    // venuses
-    VENUS = 3000,
+  // aave v3s
+  AAVE_V3 = 0,
+  AVALON = 100,
+  ZEROLEND = 210,
+  // aave V2s
+  GRANARY = 1000,
+  // comets
+  COMPOUND_V3_USDC = 2000,
+  COMPOUND_V3_WETH = 2001,
+  COMPOUND_V3_USDBC = 2002,
+  COMPOUND_V3_AERO = 2003,
+  // venuses
+  VENUS = 3000,
 }
 
 export enum OptimismLenderId {
-    // aave v3s
-    AAVE_V3 = 0,
-    // aave V2s
-    GRANARY = 1000,
-    // comets
-    COMPOUND_V3_USDT = 2000,
-    COMPOUND_V3_USDC = 2001,
-    COMPOUND_V3_WETH = 2002,
-    // venuses
-    VENUS = 3000,
+  // aave v3s
+  AAVE_V3 = 0,
+  // aave V2s
+  GRANARY = 1000,
+  // comets
+  COMPOUND_V3_USDT = 2000,
+  COMPOUND_V3_USDC = 2001,
+  COMPOUND_V3_WETH = 2002,
+  // venuses
+  VENUS = 3000,
 }
 
 export enum EthereumLenderId {
-    // aave v3s
-    AAVE_V3 = 0,
-    AAVE_V3_PRIME = 1,
-    AAVE_V3_ETHER_FI = 2,
-    SPARK = 200,
-    KINZA = 250,
-    // avalons
-    AVALON_SOLV_BTC = 100,
-    AVALON_SWELL_BTC = 101,
-    AVALON_PUMP_BTC = 102,
-    AVALON_EBTC_LBTC = 103,
+  // aave v3s
+  AAVE_V3 = 0,
+  AAVE_V3_PRIME = 1,
+  AAVE_V3_ETHER_FI = 2,
+  SPARK = 200,
+  KINZA = 250,
+  // avalons
+  AVALON_SOLV_BTC = 100,
+  AVALON_SWELL_BTC = 101,
+  AVALON_PUMP_BTC = 102,
+  AVALON_EBTC_LBTC = 103,
 
-    // aave V2s
-    GRANARY = 1000,
+  // aave V2s
+  GRANARY = 1000,
 
-    // zerolends
-    ZEROLEND_STABLECOINS_RWA = 210,
-    ZEROLEND_ETH_LRTS = 211,
-    ZEROLEND_BTC_LRTS = 212,
-    // comets
-    COMPOUND_V3_USDC = 2000,
-    COMPOUND_V3_WETH = 2001,
-    COMPOUND_V3_USDT = 2002,
-    COMPOUND_V3_WSTETH = 2003,
-    COMPOUND_V3_USDS = 2004,
-    // venuses
-    VENUS = 3000,
+  // zerolends
+  ZEROLEND_STABLECOINS_RWA = 210,
+  ZEROLEND_ETH_LRTS = 211,
+  ZEROLEND_BTC_LRTS = 212,
+  // comets
+  COMPOUND_V3_USDC = 2000,
+  COMPOUND_V3_WETH = 2001,
+  COMPOUND_V3_USDT = 2002,
+  COMPOUND_V3_WSTETH = 2003,
+  COMPOUND_V3_USDS = 2004,
+  // venuses
+  VENUS = 3000,
 }
 
 export enum TaikoLenderId {
-    HANA = 0,
-    AVALON = 100,
-    AVALON_SOLV_BTC = 101,
-    AVALON_USDA = 150,
-    MERIDIAN = 1000,
-    TAKOTAKO = 1001
+  HANA = 0,
+  AVALON = 100,
+  AVALON_SOLV_BTC = 101,
+  AVALON_USDA = 150,
+  MERIDIAN = 1000,
+  TAKOTAKO = 1001,
 }
 
 export enum MantleLenderId {
-    KINZA = 250,
-    LENDLE = 1000,
-    AURELIUS = 1001,
-    COMPOUND_V3_USDE = 2000
+  KINZA = 250,
+  LENDLE = 1000,
+  AURELIUS = 1001,
+  COMPOUND_V3_USDE = 2000,
+}
+
+export enum PolygonLenderId {
+  AAVE_V3 = 0,
+  YLDR = 900,
+  AAVE_V2 = 1000,
+  COMPOUND_V3_USDCE = 2000,
+  COMPOUND_V3_USDT = 2001
 }
 
 export enum HemiLenderId {
@@ -197,10 +215,9 @@ export function getCompoundV3Approves(chainId: string) {
                 target: comet as any,
             })
         })
+      })
 
-    })
-
-    return params
+  return params;
 }
 
 const specificLenders: string[] = [
@@ -229,7 +246,7 @@ export function getAaveForkDatas(chainId: string) {
         }
     })
 
-    return params
+  return params;
 }
 
 

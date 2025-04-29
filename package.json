@@ -44,8 +44,8 @@
     "hardhat-gas-reporter": "^1.0.4",
     "mocha": "^9.0.0",
     "mocha-chai-jest-snapshot": "^1.1.0",
-    "prettier": "^2.3.2",
-    "prettier-plugin-solidity": "^1.0.0-beta.13",
+    "prettier": "^2.8.8",
+    "prettier-plugin-solidity": "^1.4.2",
     "solhint": "^3.3.6",
     "solhint-plugin-prettier": "^0.0.5",
     "solidity-coverage": "^0.7.15",
@@ -55,10 +55,10 @@
     "typescript": "^4.3.2"
   },
   "scripts": {
-    "prepare": "node ./.setup.js && hardhat typechain",
     "lint": "eslint \"**/*.{js,ts}\" && solhint src/**/*.sol",
     "lint:fix": "eslint --fix \"**/*.{js,ts}\" && solhint --fix src/**/*.sol",
     "format": "prettier --check \"**/*.{ts,js,sol}\"",
+    "auto-format": "npx prettier --config .prettierrc --write contracts/1delta/composer/chains/**/*.sol",
     "format:fix": "prettier --write \"**/*.{ts,js,sol}\"",
     "compile": "hardhat compile",
     "void:deploy": "hardhat deploy",
@@ -66,6 +66,7 @@
     "gas": "cross-env REPORT_GAS=true hardhat test",
     "coverage": "cross-env HARDHAT_DEPLOY_FIXTURE=true hardhat coverage",
     "dev": "hardhat node --watch --export contractsInfo.json",
+    "create-composer": "tsx scripts/_create/createFlashLoanCallbacks.ts && tsx scripts/_create/createFlashSwapCallbacks.ts && forge fmt",
     "local:dev": "hardhat --network localhost deploy --watch",
     "execute": "node ./_scripts.js run",
     "deploy": "node ./_scripts.js deploy",
@@ -78,7 +79,8 @@
     "build": "export NODE_OPTIONS=--openssl-legacy-provider; gatsby build"
   },
   "dependencies": {
-    "@1delta/asset-registry": "^0.0.99",
+    "@1delta/asset-registry": "^0.0.131",
+    "@1delta/dex-registry": "^0.0.39",
     "@chainlink/contracts": "^0.6.1",
     "@defi-wonderland/smock": "^2.0.7",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.8",
