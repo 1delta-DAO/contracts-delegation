@@ -9,20 +9,20 @@ import {DeltaErrors} from "../../shared/errors/Errors.sol";
 // solhint-disable max-line-length
 
 /**
- * @notice ERC4646 deposit and withdraw actions
+ * @notice ERC4626 deposit and withdraw actions
  */
-abstract contract ERC4646Transfers is ERC20Selectors, Masks, DeltaErrors {
+abstract contract ERC4626Transfers is ERC20Selectors, Masks, DeltaErrors {
     /// @dev  mint(...)
-    bytes32 private constant ERC4646_MINT = 0x94bf804d00000000000000000000000000000000000000000000000000000000;
+    bytes32 private constant ERC4626_MINT = 0x94bf804d00000000000000000000000000000000000000000000000000000000;
 
     /// @dev  deposit(...)
-    bytes32 private constant ERC4646_DEPOSIT = 0x6e553f6500000000000000000000000000000000000000000000000000000000;
+    bytes32 private constant ERC4626_DEPOSIT = 0x6e553f6500000000000000000000000000000000000000000000000000000000;
 
     /// @dev  withdraw(...)
-    bytes32 private constant ERC4646_WITHDRAW = 0xb460af9400000000000000000000000000000000000000000000000000000000;
+    bytes32 private constant ERC4626_WITHDRAW = 0xb460af9400000000000000000000000000000000000000000000000000000000;
 
     /// @dev  redeem(...)
-    bytes32 private constant ERC4646_REDEEM = 0xba08765200000000000000000000000000000000000000000000000000000000;
+    bytes32 private constant ERC4626_REDEEM = 0xba08765200000000000000000000000000000000000000000000000000000000;
 
     /// @notice Deposit to (morpho) vault
     function _encodeErc4646Deposit(uint256 currentOffset) internal returns (uint256) {
@@ -48,7 +48,7 @@ abstract contract ERC4646Transfers is ERC20Selectors, Masks, DeltaErrors {
              */
             switch and(_SHARES_MASK, amount)
             case 0 {
-                mstore(ptr, ERC4646_DEPOSIT)
+                mstore(ptr, ERC4626_DEPOSIT)
                 /**
                  * if the amount is zero, we assume that the contract balance is deposited
                  */
@@ -72,7 +72,7 @@ abstract contract ERC4646Transfers is ERC20Selectors, Masks, DeltaErrors {
                     amountToDeposit := mload(0x0)
                 }
             }
-            default { mstore(ptr, ERC4646_MINT) }
+            default { mstore(ptr, ERC4626_MINT) }
 
             mstore(add(ptr, 0x4), amountToDeposit) // shares or assets
             mstore(add(ptr, 0x24), shr(96, calldataload(currentOffset))) // receiver
@@ -117,12 +117,12 @@ abstract contract ERC4646Transfers is ERC20Selectors, Masks, DeltaErrors {
             switch and(_SHARES_MASK, amount)
             case 0 {
                 // plain withdraw amount
-                mstore(ptr, ERC4646_WITHDRAW)
+                mstore(ptr, ERC4626_WITHDRAW)
             }
             default {
                 // note that this covers max withdraw already as the user can apply the
                 // static shares amount hey own
-                mstore(ptr, ERC4646_REDEEM)
+                mstore(ptr, ERC4626_REDEEM)
             }
 
             mstore(add(ptr, 0x4), amountToWithdrawOrRedeem) // shares or assets

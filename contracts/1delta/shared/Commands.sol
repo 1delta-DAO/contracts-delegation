@@ -25,7 +25,7 @@ library Commands {
     uint256 internal constant WRAP_NATIVE = 0x23;
     uint256 internal constant UNWRAP_WNATIVE = 0x24;
     uint256 internal constant PERMIT2_TRANSFER_FROM = 0x25;
-    uint256 internal constant ERC4646 = 0x26;
+    uint256 internal constant ERC4626 = 0x26;
 
     // Command Types where 0x30<=value<0x40, executed in the fourth nested-if block
     uint256 internal constant CALL_ON_VALID_TARGET = 0x31;
