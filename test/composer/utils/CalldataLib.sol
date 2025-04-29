@@ -698,7 +698,7 @@ library CalldataLib {
     {
         return abi.encodePacked(
             encodeApprove(asset, vault), // always approve
-            uint8(ComposerCommands.ERC4646), // 1
+            uint8(ComposerCommands.ERC4626), // 1
             uint8(0), // 1
             asset, // 20
             vault, // 20
@@ -718,7 +718,7 @@ library CalldataLib {
         returns (bytes memory)
     {
         return abi.encodePacked(
-            uint8(ComposerCommands.ERC4646), // 1
+            uint8(ComposerCommands.ERC4626), // 1
             uint8(1), // 1
             vault, // 20
             generateAmountBitmap(uint128(assets), isShares, false),
