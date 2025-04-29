@@ -607,6 +607,16 @@ const config: HardhatUserConfig = {
           evmVersion: 'paris',
         },
       },
+      "contracts/1delta/composer/quoter/QuoterLight.sol": {
+        version: '0.8.28',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 10_000_000,
+          },
+          evmVersion: 'paris',
+        },
+      },
       // periphery
       'contracts/external-protocols/algebra/periphery/NonfungiblePositionManager.sol': LOW_OPTIMIZER_COMPILER_SETTINGS,
       'contracts/external-protocols/algebra/periphery/LimitOrderManager.sol': LOW_OPTIMIZER_COMPILER_SETTINGS,
