@@ -91,8 +91,11 @@ contract FlashLoanLightTest is BaseTest {
             uint8(0), // the aave V3
             dp
         );
+        uint256 gas = gasleft();
         vm.prank(user);
         oneD.deltaCompose(d);
+        gas = gas - gasleft();
+        console.log("gas", gas);
 
         vm.expectRevert();
         oneD.executeOperation(asset, 0, 9, user, d);

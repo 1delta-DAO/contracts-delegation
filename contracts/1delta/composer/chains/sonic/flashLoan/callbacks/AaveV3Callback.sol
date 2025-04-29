@@ -42,42 +42,24 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
             // We check that the caller is one of the lending pools
             // This is a crucial check since this makes
             // the initiator paramter the caller of flashLoan
+            let pool
             switch and(UINT8_MASK, shr(88, firstWord))
-            case 0 {
-                if xor(caller(), AAVE_V3) {
-                    mstore(0, INVALID_CALLER)
-                    revert(0, 0x4)
-                }
-            }
-            case 50 {
-                if xor(caller(), AVALON) {
-                    mstore(0, INVALID_CALLER)
-                    revert(0, 0x4)
-                }
-            }
-            case 55 {
-                if xor(caller(), AVALON_USDA) {
-                    mstore(0, INVALID_CALLER)
-                    revert(0, 0x4)
-                }
-            }
-            case 61 {
-                if xor(caller(), AVALON_BEETS) {
-                    mstore(0, INVALID_CALLER)
-                    revert(0, 0x4)
-                }
-            }
-            case 84 {
-                if xor(caller(), MAGSIN) {
-                    mstore(0, INVALID_CALLER)
-                    revert(0, 0x4)
-                }
-            }
+            case 0 { pool := AAVE_V3 }
+            case 50 { pool := AVALON }
+            case 55 { pool := AVALON_USDA }
+            case 61 { pool := AVALON_BEETS }
+            case 84 { pool := MAGSIN }
             // We revert on any other id
             default {
                 mstore(0, INVALID_FLASH_LOAN)
                 revert(0, 0x4)
             }
+            // revert if caller is not a whitelisted pool
+            if xor(caller(), pool) {
+                mstore(0, INVALID_CALLER)
+                revert(0, 0x4)
+            }
+
             // We require to self-initiate
             // this prevents caller impersonation,
             // but ONLY if the caller address is

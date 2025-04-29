@@ -111,6 +111,8 @@ function overrideContent(data: string) {
                 salt := keccak256(add(ptr, 0x0C), 0x29)
             }
             default { salt := keccak256(add(ptr, 0x0C), 0x28) }
+            
+            // calculate pool address in next 4 lines
             mstore(ptr, ffFactoryAddress)
             mstore(add(ptr, 0x15), salt)
             mstore(add(ptr, 0x35), codeHash)
@@ -157,6 +159,7 @@ function defaultContent() {
                 default {
                     salt := keccak256(add(ptr, 0x0C), 0x28)
                 }
+                // calculate pool address in next 4 lines
                 mstore(ptr, ffFactoryAddress)
                 mstore(add(ptr, 0x15), salt)
                 mstore(add(ptr, 0x35), codeHash)

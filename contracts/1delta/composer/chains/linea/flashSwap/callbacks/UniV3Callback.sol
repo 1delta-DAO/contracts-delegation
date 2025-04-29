@@ -43,7 +43,7 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
      * The call looks like
      * function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata) external {...}
      *
-     * Izumi deviates from this, we handle these below
+     * Izumi deviates from this, we handle these below if it is deployed on this chain
      */
     function _executeUniV3IfSelector(bytes32 selector) internal {
         bytes32 codeHash;
