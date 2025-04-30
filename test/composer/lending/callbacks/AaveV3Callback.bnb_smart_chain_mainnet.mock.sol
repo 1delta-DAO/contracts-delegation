@@ -58,21 +58,107 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         mockPool = new AaveMockPool();
     }
 
-    function test_flash_loan_with_callbacks() public {
-        for (uint256 i = 0; i < validPools.length; i++) {
-            PoolCase memory pc = validPools[i];
+    function test_flash_loan_AaveV3_AAVE_V3_with_callbacks() public {
+        // mock implementation
+        replaceLendingPoolWithMock(AAVE_V3);
 
-            // mock implementation
-            replaceLendingPoolWithMock(pc.poolAddr);
+        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AAVE_V3, uint8(2), uint8(0), "");
 
-            bytes memory params = CalldataLib.encodeFlashLoan(pc.asset, 1e6, pc.poolAddr, uint8(2), uint8(pc.poolId), "");
-
-            vm.prank(user);
-            oneDV2.deltaCompose(params);
-        }
+        vm.prank(user);
+        oneDV2.deltaCompose(params);
     }
 
-    function test_wrongCaller_revert() public {
+    function test_flash_loan_AaveV3_AVALON_SOLV_BTC_with_callbacks() public {
+        // mock implementation
+        replaceLendingPoolWithMock(AVALON_SOLV_BTC);
+
+        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AVALON_SOLV_BTC, uint8(2), uint8(51), "");
+
+        vm.prank(user);
+        oneDV2.deltaCompose(params);
+    }
+
+    function test_flash_loan_AaveV3_AVALON_PUMP_BTC_with_callbacks() public {
+        // mock implementation
+        replaceLendingPoolWithMock(AVALON_PUMP_BTC);
+
+        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AVALON_PUMP_BTC, uint8(2), uint8(53), "");
+
+        vm.prank(user);
+        oneDV2.deltaCompose(params);
+    }
+
+    function test_flash_loan_AaveV3_AVALON_STBTC_with_callbacks() public {
+        // mock implementation
+        replaceLendingPoolWithMock(AVALON_STBTC);
+
+        bytes memory params = CalldataLib.encodeFlashLoan(STBTC, 1e6, AVALON_STBTC, uint8(2), uint8(64), "");
+
+        vm.prank(user);
+        oneDV2.deltaCompose(params);
+    }
+
+    function test_flash_loan_AaveV3_AVALON_WBTC_with_callbacks() public {
+        // mock implementation
+        replaceLendingPoolWithMock(AVALON_WBTC);
+
+        bytes memory params = CalldataLib.encodeFlashLoan(WBTC, 1e6, AVALON_WBTC, uint8(2), uint8(65), "");
+
+        vm.prank(user);
+        oneDV2.deltaCompose(params);
+    }
+
+    function test_flash_loan_AaveV3_AVALON_LBTC_with_callbacks() public {
+        // mock implementation
+        replaceLendingPoolWithMock(AVALON_LBTC);
+
+        bytes memory params = CalldataLib.encodeFlashLoan(LBTC, 1e6, AVALON_LBTC, uint8(2), uint8(66), "");
+
+        vm.prank(user);
+        oneDV2.deltaCompose(params);
+    }
+
+    function test_flash_loan_AaveV3_AVALON_XAUM_with_callbacks() public {
+        // mock implementation
+        replaceLendingPoolWithMock(AVALON_XAUM);
+
+        bytes memory params = CalldataLib.encodeFlashLoan(XAUM, 1e6, AVALON_XAUM, uint8(2), uint8(67), "");
+
+        vm.prank(user);
+        oneDV2.deltaCompose(params);
+    }
+
+    function test_flash_loan_AaveV3_AVALON_LISTA_with_callbacks() public {
+        // mock implementation
+        replaceLendingPoolWithMock(AVALON_LISTA);
+
+        bytes memory params = CalldataLib.encodeFlashLoan(LISTA, 1e6, AVALON_LISTA, uint8(2), uint8(68), "");
+
+        vm.prank(user);
+        oneDV2.deltaCompose(params);
+    }
+
+    function test_flash_loan_AaveV3_AVALON_USDX_with_callbacks() public {
+        // mock implementation
+        replaceLendingPoolWithMock(AVALON_USDX);
+
+        bytes memory params = CalldataLib.encodeFlashLoan(USDX, 1e6, AVALON_USDX, uint8(2), uint8(69), "");
+
+        vm.prank(user);
+        oneDV2.deltaCompose(params);
+    }
+
+    function test_flash_loan_AaveV3_KINZA_with_callbacks() public {
+        // mock implementation
+        replaceLendingPoolWithMock(KINZA);
+
+        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, KINZA, uint8(2), uint8(82), "");
+
+        vm.prank(user);
+        oneDV2.deltaCompose(params);
+    }
+
+    function test_flash_loan_AaveV3_wrongCaller_revert() public {
         for (uint256 i = 0; i < validPools.length; i++) {
             bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, address(mockPool), uint8(2), uint8(validPools[0].poolId), "");
 
@@ -82,7 +168,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         }
     }
 
-    function test_wrongInitiator_revert() public {
+    function test_flash_loan_AaveV3_wrongInitiator_revert() public {
         for (uint256 i = 0; i < validPools.length; i++) {
             PoolCase memory pc = validPools[i];
             // mock implementation
@@ -94,7 +180,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         }
     }
 
-    function test_fuzz_invalidPoolIds(uint8 poolId) public {
+    function test_flash_loan_AaveV3_fuzz_invalidPoolIds(uint8 poolId) public {
         replaceLendingPoolWithMock(AAVE_V3);
 
         for (uint256 i = 0; i < validPools.length; i++) {

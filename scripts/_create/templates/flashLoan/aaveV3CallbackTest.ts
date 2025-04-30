@@ -4,6 +4,7 @@ export const templateAaveV3Test = (chainKey: string, lenders: {entityName: strin
     let tokenDeclarations = "";
     let mockTokens = "";
     let populateValidPools = "";
+    let individualTestFunctions = "";
 
     // Collect unique token types from the lenders
     const uniqueTokens = new Set<string>();
@@ -17,6 +18,19 @@ export const templateAaveV3Test = (chainKey: string, lenders: {entityName: strin
 
         // Add pool entry
         populateValidPools += `        validPools.push(PoolCase({poolId: ${lender.entityId}, poolAddr: ${lender.entityName}, asset: ${lender.assetType}}));\n`;
+
+        // Create an individual test function for each lender
+        individualTestFunctions += `
+    function test_flash_loan_AaveV3_${lender.entityName}_with_callbacks() public {
+        // mock implementation
+        replaceLendingPoolWithMock(${lender.entityName});
+
+        bytes memory params = CalldataLib.encodeFlashLoan(${lender.assetType}, 1e6, ${lender.entityName}, uint8(2), uint8(${lender.entityId}), "");
+
+        vm.prank(user);
+        oneDV2.deltaCompose(params);
+    }
+`;
     });
 
     // Generate token declaration statements
@@ -69,22 +83,8 @@ ${tokenDeclarations}
         oneDV2 = ComposerPlugin.getComposer(chainName);
         mockPool = new AaveMockPool();
     }
-
-    function test_flash_loan_with_callbacks() public {
-        for (uint256 i = 0; i < validPools.length; i++) {
-            PoolCase memory pc = validPools[i];
-
-            // mock implementation
-            replaceLendingPoolWithMock(pc.poolAddr);
-
-            bytes memory params = CalldataLib.encodeFlashLoan(pc.asset, 1e6, pc.poolAddr, uint8(2), uint8(pc.poolId), "");
-
-            vm.prank(user);
-            oneDV2.deltaCompose(params);
-        }
-    }
-
-    function test_wrongCaller_revert() public {
+${individualTestFunctions}
+    function test_flash_loan_AaveV3_wrongCaller_revert() public {
         for (uint256 i = 0; i < validPools.length; i++) {
             bytes memory params = CalldataLib.encodeFlashLoan(${
                 uniqueTokens.values().next().value || "address(0)"
@@ -96,7 +96,7 @@ ${tokenDeclarations}
         }
     }
 
-    function test_wrongInitiator_revert() public {
+    function test_flash_loan_AaveV3_wrongInitiator_revert() public {
         for (uint256 i = 0; i < validPools.length; i++) {
             PoolCase memory pc = validPools[i];
             // mock implementation
@@ -110,7 +110,7 @@ ${tokenDeclarations}
         }
     }
 
-    function test_fuzz_invalidPoolIds(uint8 poolId) public {
+    function test_flash_loan_AaveV3_fuzz_invalidPoolIds(uint8 poolId) public {
         replaceLendingPoolWithMock(${lenders[0]?.entityName || "address(0)"});
 
         for (uint256 i = 0; i < validPools.length; i++) {

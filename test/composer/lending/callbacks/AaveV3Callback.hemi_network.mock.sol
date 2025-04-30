@@ -44,21 +44,27 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         mockPool = new AaveMockPool();
     }
 
-    function test_flash_loan_with_callbacks() public {
-        for (uint256 i = 0; i < validPools.length; i++) {
-            PoolCase memory pc = validPools[i];
+    function test_flash_loan_AaveV3_ZEROLEND_with_callbacks() public {
+        // mock implementation
+        replaceLendingPoolWithMock(ZEROLEND);
 
-            // mock implementation
-            replaceLendingPoolWithMock(pc.poolAddr);
+        bytes memory params = CalldataLib.encodeFlashLoan(WBTC, 1e6, ZEROLEND, uint8(2), uint8(20), "");
 
-            bytes memory params = CalldataLib.encodeFlashLoan(pc.asset, 1e6, pc.poolAddr, uint8(2), uint8(pc.poolId), "");
-
-            vm.prank(user);
-            oneDV2.deltaCompose(params);
-        }
+        vm.prank(user);
+        oneDV2.deltaCompose(params);
     }
 
-    function test_wrongCaller_revert() public {
+    function test_flash_loan_AaveV3_LENDOS_with_callbacks() public {
+        // mock implementation
+        replaceLendingPoolWithMock(LENDOS);
+
+        bytes memory params = CalldataLib.encodeFlashLoan(WBTC, 1e6, LENDOS, uint8(2), uint8(83), "");
+
+        vm.prank(user);
+        oneDV2.deltaCompose(params);
+    }
+
+    function test_flash_loan_AaveV3_wrongCaller_revert() public {
         for (uint256 i = 0; i < validPools.length; i++) {
             bytes memory params = CalldataLib.encodeFlashLoan(WBTC, 1e6, address(mockPool), uint8(2), uint8(validPools[0].poolId), "");
 
@@ -68,7 +74,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         }
     }
 
-    function test_wrongInitiator_revert() public {
+    function test_flash_loan_AaveV3_wrongInitiator_revert() public {
         for (uint256 i = 0; i < validPools.length; i++) {
             PoolCase memory pc = validPools[i];
             // mock implementation
@@ -80,7 +86,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         }
     }
 
-    function test_fuzz_invalidPoolIds(uint8 poolId) public {
+    function test_flash_loan_AaveV3_fuzz_invalidPoolIds(uint8 poolId) public {
         replaceLendingPoolWithMock(ZEROLEND);
 
         for (uint256 i = 0; i < validPools.length; i++) {
