@@ -21,7 +21,7 @@ export const templateAaveV3Test = (chainKey: string, lenders: {entityName: strin
 
         // Create an individual test function for each lender
         individualTestFunctions += `
-    function test_flash_loan_AaveV3_${lender.entityName}_with_callbacks() public {
+    function test_flash_loan_aaveV3_type_${lender.entityName.toLowerCase()}_pool_with_callbacks() public {
         // mock implementation
         replaceLendingPoolWithMock(${lender.entityName});
 
@@ -84,7 +84,7 @@ ${tokenDeclarations}
         mockPool = new AaveMockPool();
     }
 ${individualTestFunctions}
-    function test_flash_loan_AaveV3_wrongCaller_revert() public {
+    function test_flash_loan_aaveV3_type_wrongCaller_revert() public {
         for (uint256 i = 0; i < validPools.length; i++) {
             bytes memory params = CalldataLib.encodeFlashLoan(${
                 uniqueTokens.values().next().value || "address(0)"
@@ -96,7 +96,7 @@ ${individualTestFunctions}
         }
     }
 
-    function test_flash_loan_AaveV3_wrongInitiator_revert() public {
+    function test_flash_loan_aaveV3_type_WrongInitiator_revert() public {
         for (uint256 i = 0; i < validPools.length; i++) {
             PoolCase memory pc = validPools[i];
             // mock implementation
@@ -110,7 +110,7 @@ ${individualTestFunctions}
         }
     }
 
-    function test_flash_loan_AaveV3_fuzz_invalidPoolIds(uint8 poolId) public {
+    function test_flash_loan_aaveV3_type_fuzz_invalidPoolIds(uint8 poolId) public {
         replaceLendingPoolWithMock(${lenders[0]?.entityName || "address(0)"});
 
         for (uint256 i = 0; i < validPools.length; i++) {

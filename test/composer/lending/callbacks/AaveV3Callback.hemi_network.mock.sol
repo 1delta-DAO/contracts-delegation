@@ -44,7 +44,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         mockPool = new AaveMockPool();
     }
 
-    function test_flash_loan_AaveV3_ZEROLEND_with_callbacks() public {
+    function test_flash_loan_aaveV3_type_zerolend_pool_with_callbacks() public {
         // mock implementation
         replaceLendingPoolWithMock(ZEROLEND);
 
@@ -54,7 +54,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         oneDV2.deltaCompose(params);
     }
 
-    function test_flash_loan_AaveV3_LENDOS_with_callbacks() public {
+    function test_flash_loan_aaveV3_type_lendos_pool_with_callbacks() public {
         // mock implementation
         replaceLendingPoolWithMock(LENDOS);
 
@@ -64,7 +64,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         oneDV2.deltaCompose(params);
     }
 
-    function test_flash_loan_AaveV3_wrongCaller_revert() public {
+    function test_flash_loan_aaveV3_type_wrongCaller_revert() public {
         for (uint256 i = 0; i < validPools.length; i++) {
             bytes memory params = CalldataLib.encodeFlashLoan(WBTC, 1e6, address(mockPool), uint8(2), uint8(validPools[0].poolId), "");
 
@@ -74,7 +74,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         }
     }
 
-    function test_flash_loan_AaveV3_wrongInitiator_revert() public {
+    function test_flash_loan_aaveV3_type_WrongInitiator_revert() public {
         for (uint256 i = 0; i < validPools.length; i++) {
             PoolCase memory pc = validPools[i];
             // mock implementation
@@ -86,7 +86,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         }
     }
 
-    function test_flash_loan_AaveV3_fuzz_invalidPoolIds(uint8 poolId) public {
+    function test_flash_loan_aaveV3_type_fuzz_invalidPoolIds(uint8 poolId) public {
         replaceLendingPoolWithMock(ZEROLEND);
 
         for (uint256 i = 0; i < validPools.length; i++) {
