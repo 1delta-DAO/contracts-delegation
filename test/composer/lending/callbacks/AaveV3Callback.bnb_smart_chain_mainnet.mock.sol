@@ -1,0 +1,178 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.28;
+
+import {console} from "forge-std/console.sol";
+import {Vm} from "forge-std/Vm.sol";
+import {Chains, Lenders, Tokens} from "test/data/LenderRegistry.sol";
+import {DeltaErrors} from "contracts/1delta/shared/errors/Errors.sol";
+import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
+import {CalldataLib} from "test/composer/utils/CalldataLib.sol";
+import {BaseTest} from "test/shared/BaseTest.sol";
+import {AaveMockPool, IAaveFlashLoanReceiver, IAavePool} from "test/mocks/AaveMockPool.sol";
+import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+
+contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
+    IComposerLike oneDV2;
+    AaveMockPool mockPool;
+
+    address private AAVE_V3;
+    address private AVALON_SOLV_BTC;
+    address private AVALON_PUMP_BTC;
+    address private AVALON_STBTC;
+    address private AVALON_WBTC;
+    address private AVALON_LBTC;
+    address private AVALON_XAUM;
+    address private AVALON_LISTA;
+    address private AVALON_USDX;
+    address private KINZA;
+
+    address private USDC;
+    address private STBTC;
+    address private WBTC;
+    address private LBTC;
+    address private XAUM;
+    address private LISTA;
+    address private USDX;
+
+    struct PoolCase {
+        uint8 poolId;
+        address poolAddr;
+        address asset; // The specific asset for each pool to lend, not used in this test, can be used with chain forking
+    }
+
+    PoolCase[] validPools;
+
+    function setUp() public virtual {
+        string memory chainName = Chains.BNB_SMART_CHAIN_MAINNET;
+
+        // Initialize chain (for token info) with no forking
+        _init(chainName, 0, false);
+
+        getAddressFromRegistry();
+
+        mockERC20FunctionsForAllTokens();
+
+        populateValidPools();
+
+        oneDV2 = ComposerPlugin.getComposer(chainName);
+        mockPool = new AaveMockPool();
+    }
+
+    function test_flash_loan_with_callbacks() public {
+        for (uint256 i = 0; i < validPools.length; i++) {
+            PoolCase memory pc = validPools[i];
+
+            // mock implementation
+            replaceLendingPoolWithMock(pc.poolAddr);
+
+            bytes memory params = CalldataLib.encodeFlashLoan(pc.asset, 1e6, pc.poolAddr, uint8(2), uint8(pc.poolId), "");
+
+            vm.prank(user);
+            oneDV2.deltaCompose(params);
+        }
+    }
+
+    function test_invalidPoolIds_revert() public {
+        replaceLendingPoolWithMock(AAVE_V3);
+        uint8[5] memory invalidIds = [1, 52, 63, 70, 100];
+        for (uint256 i = 0; i < invalidIds.length; i++) {
+            bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AAVE_V3, uint8(2), uint8(invalidIds[i]), "");
+
+            vm.prank(user);
+            vm.expectRevert(DeltaErrors.INVALID_FLASH_LOAN);
+            oneDV2.deltaCompose(params);
+        }
+    }
+
+    function test_wrongCaller_revert() public {
+        for (uint256 i = 0; i < validPools.length; i++) {
+            bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, address(mockPool), uint8(2), uint8(0), "");
+
+            vm.prank(user);
+            vm.expectRevert(DeltaErrors.INVALID_CALLER);
+            oneDV2.deltaCompose(params);
+        }
+    }
+
+    function test_wrongInitiator_revert() public {
+        for (uint256 i = 0; i < validPools.length; i++) {
+            PoolCase memory pc = validPools[i];
+            // mock implementation
+            replaceLendingPoolWithMock(pc.poolAddr);
+
+            vm.prank(user);
+            vm.expectRevert(DeltaErrors.INVALID_INITIATOR);
+            IAavePool(pc.poolAddr).flashLoanSimple(address(oneDV2), USDC, 1e6, abi.encodePacked(address(user), pc.poolId), 0);
+        }
+    }
+
+    function test_fuzz_invalidPoolIds(uint8 poolId) public {
+        replaceLendingPoolWithMock(AAVE_V3);
+
+        for (uint256 i = 0; i < validPools.length; i++) {
+            if (poolId == validPools[i].poolId) return;
+        }
+        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AAVE_V3, uint8(2), uint8(poolId), "");
+        vm.prank(user);
+        vm.expectRevert(DeltaErrors.INVALID_FLASH_LOAN);
+        oneDV2.deltaCompose(params);
+    }
+
+    // Helper Functions
+    function getAddressFromRegistry() internal {
+        AAVE_V3 = chain.getLendingController(Lenders.AAVE_V3);
+        AVALON_SOLV_BTC = chain.getLendingController(Lenders.AVALON_SOLV_BTC);
+        AVALON_PUMP_BTC = chain.getLendingController(Lenders.AVALON_PUMP_BTC);
+        AVALON_STBTC = chain.getLendingController(Lenders.AVALON_STBTC);
+        AVALON_WBTC = chain.getLendingController(Lenders.AVALON_WBTC);
+        AVALON_LBTC = chain.getLendingController(Lenders.AVALON_LBTC);
+        AVALON_XAUM = chain.getLendingController(Lenders.AVALON_XAUM);
+        AVALON_LISTA = chain.getLendingController(Lenders.AVALON_LISTA);
+        AVALON_USDX = chain.getLendingController(Lenders.AVALON_USDX);
+        KINZA = chain.getLendingController(Lenders.KINZA);
+
+        // Get token addresses
+        USDC = chain.getTokenAddress(Tokens.USDC);
+        STBTC = chain.getTokenAddress(Tokens.STBTC);
+        WBTC = chain.getTokenAddress(Tokens.WBTC);
+        LBTC = chain.getTokenAddress(Tokens.LBTC);
+        XAUM = chain.getTokenAddress(Tokens.XAUM);
+        LISTA = chain.getTokenAddress(Tokens.LISTA);
+        USDX = chain.getTokenAddress(Tokens.USDX);
+    }
+
+    function populateValidPools() internal {
+        validPools.push(PoolCase({poolId: 0, poolAddr: AAVE_V3, asset: USDC}));
+        validPools.push(PoolCase({poolId: 51, poolAddr: AVALON_SOLV_BTC, asset: USDC}));
+        validPools.push(PoolCase({poolId: 53, poolAddr: AVALON_PUMP_BTC, asset: USDC}));
+        validPools.push(PoolCase({poolId: 64, poolAddr: AVALON_STBTC, asset: STBTC}));
+        validPools.push(PoolCase({poolId: 65, poolAddr: AVALON_WBTC, asset: WBTC}));
+        validPools.push(PoolCase({poolId: 66, poolAddr: AVALON_LBTC, asset: LBTC}));
+        validPools.push(PoolCase({poolId: 67, poolAddr: AVALON_XAUM, asset: XAUM}));
+        validPools.push(PoolCase({poolId: 68, poolAddr: AVALON_LISTA, asset: LISTA}));
+        validPools.push(PoolCase({poolId: 69, poolAddr: AVALON_USDX, asset: USDX}));
+        validPools.push(PoolCase({poolId: 82, poolAddr: KINZA, asset: USDC}));
+    }
+
+    function mockERC20FunctionsForAllTokens() internal {
+        mockERC20Functions(USDC);
+        mockERC20Functions(STBTC);
+        mockERC20Functions(WBTC);
+        mockERC20Functions(LBTC);
+        mockERC20Functions(XAUM);
+        mockERC20Functions(LISTA);
+        mockERC20Functions(USDX);
+    }
+
+    function mockERC20Functions(address token) internal {
+        vm.mockCall(token, abi.encodeWithSignature("transfer(address,uint256)"), abi.encode(true));
+        vm.mockCall(token, abi.encodeWithSignature("transferFrom(address,address,uint256)"), abi.encode(true));
+        vm.mockCall(token, abi.encodeWithSignature("approve(address,uint256)"), abi.encode(true));
+        vm.mockCall(token, abi.encodeWithSignature("balanceOf(address)"), abi.encode(1e20));
+    }
+
+    /// @notice mock implementation for each pool
+    function replaceLendingPoolWithMock(address poolAddr) internal {
+        vm.etch(poolAddr, address(mockPool).code);
+    }
+}

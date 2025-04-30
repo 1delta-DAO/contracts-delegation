@@ -8,6 +8,7 @@ import {DeltaErrors} from "contracts/1delta/shared/errors/Errors.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 import {CalldataLib} from "test/composer/utils/CalldataLib.sol";
 import {BaseTest} from "test/shared/BaseTest.sol";
+import {AaveMockPool, IAaveFlashLoanReceiver, IAavePool} from "test/mocks/AaveMockPool.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
@@ -15,23 +16,11 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
     AaveMockPool mockPool;
 
     address private AAVE_V3;
-    address private AVALON_SOLV_BTC;
-    address private AVALON_PUMP_BTC;
-    address private AVALON_STBTC;
-    address private AVALON_WBTC;
-    address private AVALON_LBTC;
-    address private AVALON_XAUM;
-    address private AVALON_LISTA;
-    address private AVALON_USDX;
-    address private KINZA;
+    address private ZEROLEND;
+    address private ZEROLEND_CROAK;
+    address private ZEROLEND_FOXY;
 
     address private USDC;
-    address private WBTC;
-    address private STBTC;
-    address private LBTC;
-    address private XAUM;
-    address private LISTA;
-    address private USDX;
 
     struct PoolCase {
         uint8 poolId;
@@ -42,7 +31,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
     PoolCase[] validPools;
 
     function setUp() public virtual {
-        string memory chainName = Chains.BNB_SMART_CHAIN_MAINNET;
+        string memory chainName = Chains.LINEA;
 
         // Initialize chain (for token info) with no forking
         _init(chainName, 0, false);
@@ -120,47 +109,23 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
     // Helper Functions
     function getAddressFromRegistry() internal {
         AAVE_V3 = chain.getLendingController(Lenders.AAVE_V3);
-        AVALON_SOLV_BTC = chain.getLendingController(Lenders.AVALON_SOLV_BTC);
-        AVALON_PUMP_BTC = chain.getLendingController(Lenders.AVALON_PUMP_BTC);
-        AVALON_STBTC = chain.getLendingController(Lenders.AVALON_STBTC);
-        AVALON_WBTC = chain.getLendingController(Lenders.AVALON_WBTC);
-        AVALON_LBTC = chain.getLendingController(Lenders.AVALON_LBTC);
-        AVALON_XAUM = chain.getLendingController(Lenders.AVALON_XAUM);
-        AVALON_LISTA = chain.getLendingController(Lenders.AVALON_LISTA);
-        AVALON_USDX = chain.getLendingController(Lenders.AVALON_USDX);
-        KINZA = chain.getLendingController(Lenders.KINZA);
+        ZEROLEND = chain.getLendingController(Lenders.ZEROLEND);
+        ZEROLEND_CROAK = chain.getLendingController(Lenders.ZEROLEND_CROAK);
+        ZEROLEND_FOXY = chain.getLendingController(Lenders.ZEROLEND_FOXY);
 
         // Get token addresses
         USDC = chain.getTokenAddress(Tokens.USDC);
-        WBTC = chain.getTokenAddress(Tokens.WBTC);
-        STBTC = chain.getTokenAddress(Tokens.STBTC);
-        LBTC = chain.getTokenAddress(Tokens.LBTC);
-        XAUM = chain.getTokenAddress(Tokens.XAUM);
-        LISTA = chain.getTokenAddress(Tokens.LISTA);
-        USDX = chain.getTokenAddress(Tokens.USDX);
     }
 
     function populateValidPools() internal {
         validPools.push(PoolCase({poolId: 0, poolAddr: AAVE_V3, asset: USDC}));
-        validPools.push(PoolCase({poolId: 51, poolAddr: AVALON_SOLV_BTC, asset: WBTC}));
-        validPools.push(PoolCase({poolId: 53, poolAddr: AVALON_PUMP_BTC, asset: WBTC}));
-        validPools.push(PoolCase({poolId: 64, poolAddr: AVALON_STBTC, asset: STBTC}));
-        validPools.push(PoolCase({poolId: 65, poolAddr: AVALON_WBTC, asset: WBTC}));
-        validPools.push(PoolCase({poolId: 66, poolAddr: AVALON_LBTC, asset: LBTC}));
-        validPools.push(PoolCase({poolId: 67, poolAddr: AVALON_XAUM, asset: XAUM}));
-        validPools.push(PoolCase({poolId: 68, poolAddr: AVALON_LISTA, asset: LISTA}));
-        validPools.push(PoolCase({poolId: 69, poolAddr: AVALON_USDX, asset: USDX}));
-        validPools.push(PoolCase({poolId: 82, poolAddr: KINZA, asset: USDC}));
+        validPools.push(PoolCase({poolId: 20, poolAddr: ZEROLEND, asset: USDC}));
+        validPools.push(PoolCase({poolId: 24, poolAddr: ZEROLEND_CROAK, asset: USDC}));
+        validPools.push(PoolCase({poolId: 25, poolAddr: ZEROLEND_FOXY, asset: USDC}));
     }
 
     function mockERC20FunctionsForAllTokens() internal {
         mockERC20Functions(USDC);
-        mockERC20Functions(WBTC);
-        mockERC20Functions(STBTC);
-        mockERC20Functions(LBTC);
-        mockERC20Functions(XAUM);
-        mockERC20Functions(LISTA);
-        mockERC20Functions(USDX);
     }
 
     function mockERC20Functions(address token) internal {
@@ -174,22 +139,4 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
     function replaceLendingPoolWithMock(address poolAddr) internal {
         vm.etch(poolAddr, address(mockPool).code);
     }
-}
-
-// Helper contracts and interfaces
-
-contract AaveMockPool {
-    function flashLoanSimple(address receiverAddress, address asset, uint256 amount, bytes calldata params, uint16 referralCode) external {
-        bool success = IAaveFlashLoanReceiver(receiverAddress).executeOperation(asset, amount, amount * 5 / 10000, msg.sender, params);
-
-        require(success, "Callback failed");
-    }
-}
-
-interface IAaveFlashLoanReceiver {
-    function executeOperation(address asset, uint256 amount, uint256 premium, address initiator, bytes calldata params) external returns (bool);
-}
-
-interface IAavePool {
-    function flashLoanSimple(address receiverAddress, address asset, uint256 amount, bytes calldata params, uint16 referralCode) external;
 }
