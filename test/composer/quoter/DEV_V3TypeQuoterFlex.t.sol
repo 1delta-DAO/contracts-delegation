@@ -38,7 +38,7 @@
 //     function setUp() public virtual {
 //         string memory chainName = Chains.OP_MAINNET;
 
-//         _init(chainName, forkBlock);
+//         _init(chainName, forkBlock, true);
 
 //         WETH = chain.getTokenAddress(Tokens.WETH);
 //         USDC = chain.getTokenAddress(Tokens.USDC);

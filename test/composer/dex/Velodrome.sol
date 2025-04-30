@@ -44,7 +44,7 @@ contract Velodrome123Test is BaseTest {
         string memory chainName = Chains.OP_MAINNET;
         lender = Lenders.AAVE_V3;
 
-        _init(chainName, forkBlock);
+        _init(chainName, forkBlock, true);
         OP = chain.getTokenAddress(Tokens.OP);
         WETH = chain.getTokenAddress(Tokens.WETH);
         USDC = chain.getTokenAddress(Tokens.USDC);

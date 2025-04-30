@@ -31,7 +31,7 @@ contract GmxLightTest is BaseTest {
         // initialize the chain
         string memory chainName = Chains.ARBITRUM_ONE;
 
-        _init(chainName, forkBlock);
+        _init(chainName, forkBlock, true);
         WETH = chain.getTokenAddress(Tokens.WETH);
         USDC = chain.getTokenAddress(Tokens.USDC_E);
         oneDV2 = ComposerPlugin.getComposer(chainName);

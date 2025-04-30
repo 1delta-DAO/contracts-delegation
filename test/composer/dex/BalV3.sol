@@ -37,7 +37,7 @@ contract BalV3LightTest is BaseTest {
         // initialize the chain
         string memory chainName = Chains.BASE;
 
-        _init(chainName, forkBlock);
+        _init(chainName, forkBlock, true);
         WETH = chain.getTokenAddress(Tokens.WETH);
         cbETH = chain.getTokenAddress(Tokens.CBETH);
         cbBTC = chain.getTokenAddress(Tokens.CBBTC);

@@ -33,7 +33,7 @@ contract FlashSwapTest is BaseTest {
         // initialize the chain
         string memory chainName = Chains.BASE;
 
-        _init(chainName, forkBlock);
+        _init(chainName, forkBlock, true);
         lender = Lenders.AAVE_V3;
         USDC = chain.getTokenAddress(Tokens.USDC);
         WETH = chain.getTokenAddress(Tokens.WETH);

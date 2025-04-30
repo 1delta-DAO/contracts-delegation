@@ -27,7 +27,7 @@ contract CompoundV3ComposerLightTest is BaseTest {
         // initialize the chain
         string memory chainName = Chains.BASE;
 
-        _init(chainName, forkBlock);
+        _init(chainName, forkBlock, true);
         lender = Lenders.COMPOUND_V3_USDC;
         USDC = chain.getTokenAddress(Tokens.USDC);
         COMPOUND_V3_USDC_COMET = chain.getLendingController(lender);

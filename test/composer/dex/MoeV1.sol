@@ -38,7 +38,7 @@ contract MoeV1Test is BaseTest {
         string memory chainName = Chains.MANTLE;
         lender = Lenders.LENDLE;
 
-        _init(chainName, forkBlock);
+        _init(chainName, forkBlock, true);
         WETH = chain.getTokenAddress(Tokens.WETH);
         USDC = chain.getTokenAddress(Tokens.USDC);
         LENDLE_POOL = chain.getLendingController(lender);

@@ -41,7 +41,7 @@ contract SwapSplitTest is BaseTest {
         // initialize the chain
         string memory chainName = Chains.BASE;
 
-        _init(chainName, forkBlock);
+        _init(chainName, forkBlock, true);
         LBTC = chain.getTokenAddress(Tokens.LBTC);
         WETH = chain.getTokenAddress(Tokens.WETH);
         cbETH = chain.getTokenAddress(Tokens.CBETH);

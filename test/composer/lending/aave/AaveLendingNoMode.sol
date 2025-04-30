@@ -23,7 +23,7 @@ contract AaveV3NoModesLightTest is BaseTest {
         // initialize the chain
         string memory chainName = Chains.BASE;
 
-        _init(chainName, forkBlock);
+        _init(chainName, forkBlock, true);
         lender = Lenders.YLDR;
         LBTC = chain.getTokenAddress(Tokens.LBTC);
         USDC = chain.getTokenAddress(Tokens.USDC);

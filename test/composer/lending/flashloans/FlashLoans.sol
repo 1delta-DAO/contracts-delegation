@@ -34,7 +34,7 @@ contract FlashLoanLightTest is BaseTest {
     function setUp() public virtual {
         string memory chainName = Chains.BASE;
 
-        _init(chainName, forkBlock);
+        _init(chainName, forkBlock, true);
 
         oneD = ComposerPlugin.getComposer(chainName);
         AAVE_V3_POOL = chain.getLendingController(Lenders.AAVE_V3);

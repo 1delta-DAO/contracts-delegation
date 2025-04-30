@@ -25,7 +25,7 @@ contract CompoundV2NativeComposerLightTest is BaseTest {
         // initialize the chain
         string memory chainName = Chains.BNB_SMART_CHAIN_MAINNET;
 
-        _init(chainName, forkBlock);
+        _init(chainName, forkBlock, true);
 
         lender = Lenders.VENUS;
         USDC = chain.getTokenAddress(Tokens.USDC);

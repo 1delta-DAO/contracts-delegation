@@ -23,7 +23,7 @@ contract CompoundV2ComposerLightTest is BaseTest {
         // initialize the chain
         string memory chainName = Chains.ARBITRUM_ONE;
 
-        _init(chainName, forkBlock);
+        _init(chainName, forkBlock, true);
         lender = Lenders.VENUS;
         USDC = chain.getTokenAddress(Tokens.USDC);
         WETH = chain.getTokenAddress(Tokens.WETH);
