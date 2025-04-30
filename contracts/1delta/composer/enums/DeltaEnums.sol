@@ -57,9 +57,9 @@ library FlashLoanIds {
 }
 
 /**
- * ERC4646 classifier enums
+ * ERC4626 classifier enums
  */
-library ERC4646Ids {
+library ERC4626Ids {
     uint256 internal constant DEPOSIT = 0;
     uint256 internal constant WITHDRAW = 1;
 }
@@ -85,6 +85,6 @@ library ComposerCommands {
     uint256 internal constant TRANSFERS = 0x80;
     uint256 internal constant PERMIT = 0xA0;
     uint256 internal constant FLASH_LOAN = 0xC0;
-    uint256 internal constant ERC4646 = 0xE0;
+    uint256 internal constant ERC4626 = 0xE0;
     uint256 internal constant GEN_2025_SINGELTONS = 0xE1;
 }

@@ -14,7 +14,7 @@ import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
  * We test all CalldataLib.morpho blue operations
  * - supply, supplyCollateral, borrow, repay, encodeErc4646Deposit, encodeErc4646Withdraw
  */
-contract ERC4646Test is BaseTest {
+contract ERC4626Test is BaseTest {
     using MorphoMathLib for uint256;
 
     IComposerLike oneD;
@@ -37,7 +37,7 @@ contract ERC4646Test is BaseTest {
         oneD = ComposerPlugin.getComposer(chainName);
     }
 
-    function test_light_morpho_deposit_to_erc4646() external {
+    function test_light_morpho_deposit_to_erc4626() external {
         deal(USDC, user, 300_000.0e6);
 
         address vault = META_MORPHO_USDC;
@@ -70,7 +70,7 @@ contract ERC4646Test is BaseTest {
         assertApproxEqAbs(assets, assetsInVault, 1); // adjust for rounding
     }
 
-    function test_light_morpho_deposit_shares_to_erc4646() external {
+    function test_light_morpho_deposit_shares_to_erc4626() external {
         deal(USDC, user, 300_000.0e6);
 
         address asset = USDC;
@@ -127,7 +127,7 @@ contract ERC4646Test is BaseTest {
         oneD.deltaCompose(abi.encodePacked(transferTo, deposit));
     }
 
-    function test_light_morpho_withdraw_from_erc4646() external {
+    function test_light_morpho_withdraw_from_erc4626() external {
         deal(USDC, user, 300_000.0e6);
 
         uint256 assets = 100.0e6;
@@ -161,7 +161,7 @@ contract ERC4646Test is BaseTest {
         assertApproxEqAbs(underlyingAfter - underlyingBefore, withdrawAssets, 1);
     }
 
-    function test_light_morpho_withdraw_shares_from_erc4646() external {
+    function test_light_morpho_withdraw_shares_from_erc4626() external {
         deal(USDC, user, 300_000.0e6);
 
         address underlying = USDC;

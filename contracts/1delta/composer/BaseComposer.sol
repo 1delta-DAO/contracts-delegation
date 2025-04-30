@@ -5,7 +5,7 @@ pragma solidity 0.8.28;
 import {ComposerCommands} from "./enums/DeltaEnums.sol";
 import {ExternalCall} from "./generic/ExternalCall.sol";
 import {Transfers} from "./transfers/Transfers.sol";
-import {ERC4646Operations} from "./ERC4646/ERC4646Operations.sol";
+import {ERC4626Operations} from "./ERC4626/ERC4626Operations.sol";
 import {UniversalLending} from "./lending/UniversalLending.sol";
 import {Permits} from "./permit/Permits.sol";
 import {Swaps} from "./swappers/Swaps.sol";
@@ -22,7 +22,7 @@ abstract contract BaseComposer is
     Swaps,
     Gen2025DexActions,
     UniversalLending,
-    ERC4646Operations,
+    ERC4626Operations,
     Transfers,
     Permits,
     ExternalCall //
@@ -109,8 +109,8 @@ abstract contract BaseComposer is
                     currentOffset = _permit(currentOffset, callerAddress);
                 } else if (operation == ComposerCommands.FLASH_LOAN) {
                     currentOffset = _universalFlashLoan(currentOffset, callerAddress);
-                } else if (operation == ComposerCommands.ERC4646) {
-                    currentOffset = _ERC4646Operations(currentOffset, callerAddress);
+                } else if (operation == ComposerCommands.ERC4626) {
+                    currentOffset = _ERC4626Operations(currentOffset, callerAddress);
                 } else if (operation == ComposerCommands.GEN_2025_SINGELTONS) {
                     currentOffset = _gen2025DexActions(currentOffset, callerAddress);
                 } else {
