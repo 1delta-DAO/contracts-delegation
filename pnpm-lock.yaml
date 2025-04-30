@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@1delta/asset-registry':
-        specifier: ^0.0.131
-        version: 0.0.131
+        specifier: ^0.0.133
+        version: 0.0.133
       '@1delta/dex-registry':
         specifier: ^0.0.40
         version: 0.0.40
@@ -189,8 +189,8 @@ importers:
 
 packages:
 
-  '@1delta/asset-registry@0.0.131':
-    resolution: {integrity: sha512-HON1PQ/h+8AWeI6BIdKJDxZJW+Kywt+6XzxFSkknGMms/crZbfv6sOPSSbCjOYFRBGNyZFvFcKGtG0puKAIS1g==}
+  '@1delta/asset-registry@0.0.133':
+    resolution: {integrity: sha512-ToeM1pvo6qaljlw3aUK5boHzgG4DcZQ/JHX6/hQ3fDtvwoJaTmqEmLYxjxJup+rBmL7o1Q4sLJwb9gzJ+3+x0A==}
     engines: {node: '>=20'}
 
   '@1delta/dex-registry@0.0.40':
@@ -6779,7 +6779,7 @@ packages:
 
 snapshots:
 
-  '@1delta/asset-registry@0.0.131': {}
+  '@1delta/asset-registry@0.0.133': {}
 
   '@1delta/dex-registry@0.0.40': {}
 
