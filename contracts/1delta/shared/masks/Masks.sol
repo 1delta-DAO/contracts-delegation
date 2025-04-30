@@ -24,21 +24,14 @@ abstract contract Masks {
     /// @dev Use this to distinguish FF upper bytes addresses and lower bytes addresses
     uint256 internal constant FF_ADDRESS_COMPLEMENT = 0x000000000000000000000000000000000000000000ffffffffffffffffffffff;
 
-    /// @notice Composer-specific masks
-
-    /// @dev The highest bit signals whether the swap is internal (the payer is this contract)
-    uint256 internal constant _PAY_SELF = 1 << 255;
-    /// @dev The second bit signals whether the input token is a FOT token
-    ///      Only used for SWAP_EXACT_IN
-    uint256 internal constant _FEE_ON_TRANSFER = 1 << 254;
     /// @dev We use uint112-encoded amounts to typically fit one bit flag, one path length (uint16)
     ///      add 2 amounts (2xuint112) into 32bytes, as such we use this mask for extracting those
-    uint256 internal constant _UINT112_MASK = 0x000000000000000000000000000000000000ffffffffffffffffffffffffffff;
+    uint256 internal constant UINT112_MASK = 0x000000000000000000000000000000000000ffffffffffffffffffffffffffff;
 
     /// @dev Mask for using the injected amount
-    uint256 internal constant _PRE_PARAM = 1 << 127;
+    uint256 internal constant BALANCE_FLAG = 1 << 127;
     /// @dev Mask for shares
-    uint256 internal constant _SHARES_MASK = 1 << 126;
+    uint256 internal constant USE_SHARES_FLAG = 1 << 126;
     /// @dev Mask for morpho using unsafe repay
-    uint256 internal constant _UNSAFE_AMOUNT = 1 << 125;
+    uint256 internal constant UNSAFE_AMOUNT_FLAG = 1 << 125;
 }

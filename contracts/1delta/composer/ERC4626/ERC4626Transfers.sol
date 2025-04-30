@@ -46,7 +46,7 @@ abstract contract ERC4626Transfers is ERC20Selectors, Masks, DeltaErrors {
             /**
              * check if it is by shares or assets
              */
-            switch and(_SHARES_MASK, amount)
+            switch and(USE_SHARES_FLAG, amount)
             case 0 {
                 mstore(ptr, ERC4626_DEPOSIT)
                 /**
@@ -114,7 +114,7 @@ abstract contract ERC4626Transfers is ERC20Selectors, Masks, DeltaErrors {
             /**
              * check if it is by shares or assets
              */
-            switch and(_SHARES_MASK, amount)
+            switch and(USE_SHARES_FLAG, amount)
             case 0 {
                 // plain withdraw amount
                 mstore(ptr, ERC4626_WITHDRAW)

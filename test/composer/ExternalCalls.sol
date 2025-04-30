@@ -60,7 +60,7 @@ contract ExternalCallsTest is BaseTest {
         );
 
         data = abi.encodePacked(
-            ForwarderCommands.EXT_CALL,
+            ComposerCommands.EXT_CALL,
             address(cf),
             uint112(amount),
             uint16(data.length),

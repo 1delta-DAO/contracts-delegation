@@ -66,12 +66,12 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
             let lltvAndAmount := calldataload(currentOffset)
             mstore(add(ptr, 132), shr(128, lltvAndAmount)) // MarketParams.lltv
 
-            let borrowAm := and(_UINT112_MASK, lltvAndAmount)
+            let borrowAm := and(UINT112_MASK, lltvAndAmount)
 
             /**
              * check if it is by shares or assets
              */
-            switch and(_SHARES_MASK, lltvAndAmount)
+            switch and(USE_SHARES_FLAG, lltvAndAmount)
             case 0 {
                 mstore(add(ptr, 164), borrowAm) // assets
                 mstore(add(ptr, 196), 0) // shares
@@ -149,7 +149,7 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
 
             mstore(add(ptr, 132), shr(128, lltvAndAmount)) // MarketParams.lltv
 
-            let amountToDeposit := and(_UINT112_MASK, lltvAndAmount)
+            let amountToDeposit := and(UINT112_MASK, lltvAndAmount)
 
             // increment for the amounts
             currentOffset := add(currentOffset, 32)
@@ -157,7 +157,7 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
             /**
              * check if it is by shares or assets
              */
-            switch and(_SHARES_MASK, lltvAndAmount)
+            switch and(USE_SHARES_FLAG, lltvAndAmount)
             case 0 {
                 /**
                  * if the amount is zero, we assume that the contract balance is deposited
@@ -437,7 +437,7 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
              * 0 => by assets
              * 1 => by shares
              */
-            switch and(_SHARES_MASK, lltvAndAmount)
+            switch and(USE_SHARES_FLAG, lltvAndAmount)
             case 0 {
                 /**
                  * Withdraw amount variations
@@ -558,9 +558,9 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
                 mstore(add(ptr, 196), mload(add(ptrBase, 0x20))) // shares
             }
             default {
-                switch and(_UNSAFE_AMOUNT, tempData)
+                switch and(UNSAFE_AMOUNT_FLAG, tempData)
                 case 0 {
-                    switch and(_SHARES_MASK, tempData)
+                    switch and(USE_SHARES_FLAG, tempData)
                     case 0 {
                         // by shares
                         mstore(add(ptr, 164), 0) // assets

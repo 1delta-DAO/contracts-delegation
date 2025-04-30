@@ -2,15 +2,17 @@
 
 pragma solidity ^0.8.28;
 
-import {ForwarderCommands} from "../enums/ForwarderEnums.sol";
+import {ComposerCommands} from "../enums/DeltaEnums.sol";
 import {Transfers} from "../transfers/Transfers.sol";
 import {ExternalCallsGeneric} from "../generic/ExternalCallsGeneric.sol";
 
 /**
- * @notice An arbitrary call contract
+ * @notice An arbitrary call contract to forward generic calls
  * Does pull funds if desired
- * One transfers funds to this contract and ooperates with them
+ * One transfers funds to this contract and operates with them, ideally pre-funded
+ * All composer transfer options are available (approve,transferFrom,transfer,native transfers)
  * Can generically call any target and checks if the selector for these calls is not `transferFrom`
+ * We assume that this contract is never an approve target!
  */
 contract CallForwarder is Transfers, ExternalCallsGeneric {
     // base receive function
@@ -18,7 +20,8 @@ contract CallForwarder is Transfers, ExternalCallsGeneric {
 
     /**
      * A selector different to the classic Composer
-     * Should be called by a composer
+     * Should be called by a more generalized composer
+     * That cannot call arbitrary selectors.
      */
     function deltaComposeLevel2(bytes calldata) external payable {
         uint256 currentOffset;
@@ -42,9 +45,9 @@ contract CallForwarder is Transfers, ExternalCallsGeneric {
                 // we increment the current offset to skip the operation
                 currentOffset := add(1, currentOffset)
             }
-            if (operation == ForwarderCommands.EXT_CALL) {
+            if (operation == ComposerCommands.EXT_CALL) {
                 currentOffset = _callExternal(currentOffset);
-            } else if (operation == ForwarderCommands.ASSET_HANDLING) {
+            } else if (operation == ComposerCommands.TRANSFERS) {
                 currentOffset = _transfers(currentOffset, callerAddress);
             }
             // break criteria - we shifted to the end of the calldata
